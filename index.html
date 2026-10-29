@@ -2782,7 +2782,7 @@ const { ORTE } = m_data_namen;
 const { marktZeilen, marktKopf, warenVergleich } = m_ui_markt;
 const { isk } = m_ui_zusammenfassung;
 const { $, html, esc, marke } = m_ui_zeichnen;
-const { gebuehr } = m_core_index;
+const { gebuehr, verkaufbar, aufnehmbar } = m_core_index;
 const trendMarke = (t) => (t ? marke(t.art, t.symbol, t.text) : '<span class="muted">–</span>');
 const rezeptText = (r) => `${r.ein.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} → ${r.aus.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} · ${esc(ORTE[r.ort])}, ${r.dauer} Min`;
 
@@ -2838,12 +2838,23 @@ function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
         + `<li><span class="liste-links">Größte Preisänderungen</span><span class="liste-rechts">${kopf.abweichungen.length ? kopf.abweichungen.map((a) => `${esc(a.name)} ${marke('muted', a.symbol, a.text)}`).join('<br>') : '<span class="muted">–</span>'}</span></li>`
         + (schiffe.length ? `<li><span class="liste-links">Schiffe im Dock</span><span class="liste-rechts">${schiffe.length} · Kasse ${isk(state.owners[RULES.economy.start.owner].cash)}</span></li>` : '');
       html($('markt-preise'), marktZeilen(state, RULES, system, basis).map((z) => {
-        const kaufMenge = z.stufe === 'schiff' ? 1 : 10;
-        const kaufSchiff = handelsschiff(schiffe, z.ware, kaufMenge, true);
-        const verkaufSchiff = handelsschiff(schiffe, z.ware, 1, false);
+        // Wähle die größte sofort ausführbare Kaufmenge (Gebühr, Reserve und Frachtraum).
+        const maxKauf = Math.min(z.stufe === 'schiff' ? 1 : 10, verkaufbar(state, RULES, station, z.ware));
+        const spielerKasse = state.owners[RULES.economy.start.owner].cash;
+        let kaufMenge = 0;
+        let kaufSchiff = null;
+        for (let menge = maxKauf; menge > 0; menge--) {
+          const wert = menge * z.preis;
+          if (spielerKasse < wert + gebuehr(state, RULES, station, wert)) continue;
+          const kandidat = handelsschiff(schiffe, z.ware, menge, true);
+          if (kandidat) { kaufMenge = menge; kaufSchiff = kandidat; break; }
+        }
+        // Die Station kann nur so viel annehmen, wie ihre Kasse und das Lager zulassen.
+        const verkaufLimit = aufnehmbar(state, RULES, station, z.ware);
+        const verkaufSchiff = verkaufLimit > 0 ? handelsschiff(schiffe, z.ware, 1, false) : null;
+        const verkaufMenge = verkaufSchiff ? Math.min(10, verkaufSchiff.ladung[z.ware], verkaufLimit) : 0;
         const kaufWert = kaufMenge * z.preis;
         const kaufGesamt = kaufWert + gebuehr(state, RULES, station, kaufWert);
-        const verkaufMenge = verkaufSchiff ? Math.min(10, verkaufSchiff.ladung[z.ware]) : 0;
         const verkaufWert = verkaufMenge * z.preis;
         const verkaufNetto = verkaufWert - gebuehr(state, RULES, station, verkaufWert);
         const kauf = kaufSchiff

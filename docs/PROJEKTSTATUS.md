@@ -1,16 +1,16 @@
 # Aphros Void – Projektstatus
 
-Stand: 29. Oktober 2026. v0.11.2 auf `feat/v0.11.2-wirtschaft`, Basis main `d53bf14`. Noch nicht gemergt, veröffentlicht oder auf NAS/iPad abgenommen.
+Stand: 29. Oktober 2026. PR #15 wurde als `f01fd57` nach main gemergt: v0.11.2 mit Schutzgeld 0 und bezahlter NPC-Reserve R=2. Die iPad-/NAS-Abnahme steht weiterhin aus.
 
-Schutzgeld ist 0; automatische NPC-Frachter verwenden zwei regulär bezahlte Reserveeinheiten. Schema 8 bleibt erhalten, Regelmigration 7→8 ändert nur die Regelnummer. [Aktueller Testbericht und Risiken](TEST_WIRTSCHAFT_V0_11_2.md): 40 Node-22-Tests sowie 13 wiederholte 90-Tage-Simulationen, alle Audits und Referenzvergleiche korrekt.
+v0.11.3 liegt auf `feat/v0.11.3-npc1-wachstum`, noch nicht gemergt/veröffentlicht. Begrenzter NPC1-Pilot: ein bezahlter vierter Soll-Frachter nach mindestens sieben Tagen. Schema 8, Regelmigration 8→9 ohne Bestandsänderung. [Aktueller Test-/Entscheidungsbericht](TEST_WACHSTUM_V0_11_3.md): 46 Tests, 13 Seed-Paare mit Wiederholungen/Save-Load, keine Gesamtblockaden; Liquiditätsrestrisiken dokumentiert.
 
 ## Version und Architektur
 
 | Bestandteil | Aktueller Stand |
 | --- | --- |
-| Anwendung | Aphros Void, HTML-Metatag `aphros-version`: `v0.11.2` |
+| Anwendung | Aphros Void, HTML-Metatag `aphros-version`: `v0.11.3` |
 | Spielstandschema | 8 |
-| Regelversion | 8 |
+| Regelversion | 9 |
 | Laufzeit | HTML, CSS, Vanilla JavaScript in einer `index.html` |
 | Auslieferung | Statische Datei; für iPad Safari und NAS-Webserver vorgesehen |
 | Entwicklung | Node.js 22, integrierter Test-Runner; keine npm-Abhängigkeiten, kein Build-Schritt |
@@ -30,6 +30,7 @@ Quelle: GitHub-Liste der [geschlossenen Pull Requests](https://github.com/tobias
 
 | PR | Ergebnis | Inhalt |
 | --- | --- | --- |
+| [#15](https://github.com/tobiasfranziskus/Check/pull/15) | Gemergt | v0.11.2: Schutzgeld 0, bezahlte NPC-Reserve R=2, Regeln 8 |
 | [#4](https://github.com/tobiasfranziskus/Check/pull/4) | Gemergt | v0.11.1: Jagdprämie Faktor 3 und Warenbilanz bei Verlust beladener Schiffe |
 | [#7](https://github.com/tobiasfranziskus/Check/pull/7) | Gemergt | Startfehler, Pause und Flottenbedienung repariert |
 | [#8](https://github.com/tobiasfranziskus/Check/pull/8) | Gemergt | iPad-Querformat mit zwei Spalten und kompakten Schiffsmenüs |
@@ -54,11 +55,12 @@ node --test tests/*.test.mjs
 ```
 
 - `tests/handel-ui.test.mjs`: Handelsmengen und Gebühren, Schiffswahl, Inbetriebnahme, Namen, Escaping, Queue und deterministische Drei-Tages-Simulationen mit festen Referenz-Hashes für Seeds 42, 1234 und 98765.
-- `tests/spielstand.test.mjs`: Save/Load-Roundtrip, Schema 7→8, Regelversion 6→7 sowie Ablehnung beschädigter/zukünftiger Formate.
+- `tests/spielstand.test.mjs`: Save/Load-Roundtrip, Schema 7→8, Regelversionen bis 9 sowie Ablehnung beschädigter/zukünftiger Formate.
 - `tests/start-smoke.test.mjs`: gesamter Spielstart, Pause, Flotte, Schiffsauswahl, Zeitschritt und Umbenennen einschließlich IndexedDB-Speicherung mit simulierten Browser-Schnittstellen.
+- `tests/expansion.test.mjs`: finanzierte NPC1-Expansion, Puffergrenze, Sollflotte/Ersatz, Migration und Save/Load. Die Drei-Tages-Referenzen für Regeln 9 wurden unabhängig geprüft; die historischen Regeln-8-Referenzen bleiben erhalten.
 - `.github/workflows/ui-regression.yml`: Node.js 22 auf PRs und `main`, mit Pfadfilter für `index.html`, `tests/**` und die Workflow-Datei. Reine Markdown-PRs lösen diesen Job nicht aus.
 
-Aktueller Lauf am 29. Oktober 2026 mit Node.js v22.23.4: **40 bestanden, 0 fehlgeschlagen, 0 übersprungen**. Wirtschaftsregeln, Versionsangabe und Tests wurden wie im aktuellen Testbericht beschrieben geändert; der Workflow bleibt unverändert. Die Tests enthalten keine echte iPad-Safari- oder NAS-End-to-End-Prüfung.
+Aktueller Lauf am 29. Oktober 2026 mit Node.js v22.23.4: **46 bestanden, 0 fehlgeschlagen, 0 übersprungen**. Wirtschaftsregeln, Versionsangabe und Tests wurden wie im aktuellen Testbericht beschrieben geändert; der Workflow bleibt unverändert. Die Tests enthalten keine echte iPad-Safari- oder NAS-End-to-End-Prüfung.
 
 ## Offene Probleme und Grenzen
 
@@ -77,4 +79,4 @@ Die GitHub-API war bei dieser Prüfung durch den Netzwerkproxy gesperrt. Die PR-
 3. Nur reproduzierte Befunde als gezielte UI-/Speicheraufträge bearbeiten. Dabei Regressionstests, deterministische Hashes und Audits erhalten; keine beiläufigen Balancingänderungen.
 4. Offene GitHub-Issues nach verfügbarem API-Zugang abgleichen. Bedarf an stabilen Standard-Seriennummern oder vereinheitlichter Versionsanzeige gesondert klären, bevor Code oder Schema geändert werden.
 
-Entwicklungsregeln stehen in [AGENTS.md](../AGENTS.md). Dieser Dokumentationsauftrag verändert weder `index.html` noch Spielmechaniken, Speicherformat oder Tests und umfasst keinen Merge oder Deployment.
+Entwicklungsregeln stehen in [AGENTS.md](../AGENTS.md). Die aktuellen Pilotänderungen sind im verlinkten Testbericht dokumentiert. Es erfolgte kein Merge, Deployment oder Veröffentlichung von v0.11.3.

@@ -2,7 +2,10 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const source = html.slice(html.indexOf('<script>') + 8, html.indexOf('const m_data_oberflaeche'));
+// Historische Regel-8-Referenzen bewahren: nur den neuen Investitionsaufruf deaktivieren.
+const source = html.slice(html.indexOf('<script>') + 8, html.indexOf('const m_data_oberflaeche'))
+  .replace('schema: 8, rulesVersion: 9', 'schema: 8, rulesVersion: 8')
+  .replace('if (state.tick % (rules.economy.stunde * 24) === 0) investieren(state, rules);', '');
 const expected = JSON.parse(fs.readFileSync(new URL('../tests/fixtures/economy-v8.json', import.meta.url)));
 const rules = new Function(source + ';return m_data_rules.RULES;')();
 let sales = 0;

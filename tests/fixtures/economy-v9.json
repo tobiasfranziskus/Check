@@ -1,0 +1,262 @@
+[
+  {
+    "seed": 7,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "81c75ce60c9cbc69",
+        "mangel": 14
+      },
+      {
+        "tick": 43200,
+        "hash": "9cf99308319affdd",
+        "mangel": 94
+      },
+      {
+        "tick": 129600,
+        "hash": "6029cbd4a891b474",
+        "mangel": 255
+      }
+    ]
+  },
+  {
+    "seed": 11,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "0984f2911b3ea48f",
+        "mangel": 13
+      },
+      {
+        "tick": 43200,
+        "hash": "3b5146aa9f9ef896",
+        "mangel": 100
+      },
+      {
+        "tick": 129600,
+        "hash": "1fc793eebab261cb",
+        "mangel": 395
+      }
+    ]
+  },
+  {
+    "seed": 1,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "85ba0358c83e9aa1",
+        "mangel": 4
+      },
+      {
+        "tick": 43200,
+        "hash": "3afa7c79235fba3e",
+        "mangel": 93
+      },
+      {
+        "tick": 129600,
+        "hash": "922a661fe340fe39",
+        "mangel": 286
+      }
+    ]
+  },
+  {
+    "seed": 2,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "729f74d6c8fb3e07",
+        "mangel": 7
+      },
+      {
+        "tick": 43200,
+        "hash": "1d0343f2a3fba15a",
+        "mangel": 97
+      },
+      {
+        "tick": 129600,
+        "hash": "258af923323e9127",
+        "mangel": 285
+      }
+    ]
+  },
+  {
+    "seed": 65535,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "ec81bdc9d20429c4",
+        "mangel": 15
+      },
+      {
+        "tick": 43200,
+        "hash": "c8d1813b1ada5871",
+        "mangel": 103
+      },
+      {
+        "tick": 129600,
+        "hash": "b4ac5fd3a36e1a63",
+        "mangel": 342
+      }
+    ]
+  },
+  {
+    "seed": 42,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "43909ad39ac277ee",
+        "mangel": 8
+      },
+      {
+        "tick": 43200,
+        "hash": "4d3a6e072d4e136b",
+        "mangel": 73
+      },
+      {
+        "tick": 129600,
+        "hash": "86c36e88e5d4503d",
+        "mangel": 312
+      }
+    ]
+  },
+  {
+    "seed": 1234,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "33b4fc75f7f3955e",
+        "mangel": 8
+      },
+      {
+        "tick": 43200,
+        "hash": "4d29e525de4d8977",
+        "mangel": 101
+      },
+      {
+        "tick": 129600,
+        "hash": "e72f80dfb98107ea",
+        "mangel": 302
+      }
+    ]
+  },
+  {
+    "seed": 98765,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "f42e7a6da8d5938f",
+        "mangel": 8
+      },
+      {
+        "tick": 43200,
+        "hash": "b12f673becb7d24c",
+        "mangel": 107
+      },
+      {
+        "tick": 129600,
+        "hash": "c28d141d8135fa35",
+        "mangel": 272
+      }
+    ]
+  },
+  {
+    "seed": 3,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "f74af44d82db3155",
+        "mangel": 14
+      },
+      {
+        "tick": 43200,
+        "hash": "672f797993454384",
+        "mangel": 114
+      },
+      {
+        "tick": 129600,
+        "hash": "c2b1546db1a1ac2b",
+        "mangel": 287
+      }
+    ]
+  },
+  {
+    "seed": 99,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "18c1df79cb98eb6b",
+        "mangel": 11
+      },
+      {
+        "tick": 43200,
+        "hash": "6dc2bce35fb7417e",
+        "mangel": 84
+      },
+      {
+        "tick": 129600,
+        "hash": "7005c8015869b946",
+        "mangel": 278
+      }
+    ]
+  },
+  {
+    "seed": 2024,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "e2c520eab3b13106",
+        "mangel": 12
+      },
+      {
+        "tick": 43200,
+        "hash": "3b51fc0291c9ac0a",
+        "mangel": 100
+      },
+      {
+        "tick": 129600,
+        "hash": "5f4f5958625be797",
+        "mangel": 308
+      }
+    ]
+  },
+  {
+    "seed": 2025,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "cf5ec60d660058a9",
+        "mangel": 4
+      },
+      {
+        "tick": 43200,
+        "hash": "710a1d3e2c64c5ce",
+        "mangel": 97
+      },
+      {
+        "tick": 129600,
+        "hash": "3ead01e4f3cb082c",
+        "mangel": 316
+      }
+    ]
+  },
+  {
+    "seed": 314159,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "6a0b7f18dcd5491a",
+        "mangel": 3
+      },
+      {
+        "tick": 43200,
+        "hash": "aeb18c66dcc627d6",
+        "mangel": 84
+      },
+      {
+        "tick": 129600,
+        "hash": "58d354ee6cc071f4",
+        "mangel": 248
+      }
+    ]
+  }
+]

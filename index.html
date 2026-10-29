@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f5f5f7">
-<meta name="aphros-version" content="v0.11.2">
+<meta name="aphros-version" content="v0.11.3">
 <title>Aphros Void</title>
 <style>
 :root {
@@ -171,7 +171,7 @@ button.zeile .liste-links { color: var(--text); }
 
 <main id="ansicht-hq" class="ansicht" aria-label="HQ">
   <header class="kopf">
-    <p class="muted kopf-klein">HQ · v0.11.2</p>
+    <p class="muted kopf-klein">HQ · v0.11.3</p>
     <p class="kasse"><span id="hq-kasse" class="kasse-zahl">–</span></p>
     <p id="hq-trend" class="trend muted"><span class="trend-symbol" id="hq-trend-symbol"></span><span id="hq-trend-text">–</span> <span class="trend-bezug">zur letzten vollen Spielstunde</span></p>
   </header>
@@ -264,7 +264,7 @@ button.zeile .liste-links { color: var(--text); }
     <div class="blatt-inhalt">
 
       <div class="blatt-seite" id="blatt-pruefung" data-titel="Prüfung" hidden>
-        <p class="muted">Version v0.11.2</p>
+        <p class="muted">Version v0.11.3</p>
         <section class="card" aria-label="Zustand">
           <dl>
             <div><dt>Spielzeit</dt><dd id="zeit">–</dd></div>
@@ -572,7 +572,7 @@ const WORLD = {
   fields: m_data_systeme.fields,
   minerOwner: 'npc3',
   traders: m_data_systeme.traders,
-  treibstoffJeSprung: 1, treibstoffReserve: 2, aussenhandelTeiler: 10,
+  treibstoffJeSprung: 1, treibstoffReserve: 2, npc1Expansion: { maximum: 4, abTag: 7, puffer: 3000 }, aussenhandelTeiler: 10,
   betriebskosten: { miner: 150, frachter: 250, jaeger: 50 },
   senkeBesitzer: ['security'], mindeststand: 2500, fondsObergrenze: 1500, npcObergrenze: 6000, npcAusgabenArten: ['trader', 'miner'],
   sicherheit: { owner: 'security', jaeger: m_data_systeme.sicherheitJaeger, fokus: 'schwach', rueckzug: 30 },
@@ -603,7 +603,7 @@ return { COMBAT };
 
 const m_data_rules = (() => {
 const RULES = {
-  schema: 8, rulesVersion: 8, maxAdvanceSteps: 10000, startSeed: 1,
+  schema: 8, rulesVersion: 9, maxAdvanceSteps: 10000, startSeed: 1,
   owners: m_data_world.WORLD.owners, economy: m_data_economy.ECONOMY,
   world: m_data_world.WORLD, combat: m_data_combat.COMBAT,
 };
@@ -1709,7 +1709,7 @@ const { ids, anzahl } = m_core_zahl;
 const { preis } = m_core_preis;
 const { route } = m_core_route;
 const { handel, gebuehr, stationIn, fondsIn } = m_core_handel;
-const { neuesSchiff } = m_core_state;
+const { neuesSchiff, protokolliere } = m_core_state;
 const schluessel = (x) => `${x.klasse}/${x.heimat}/${x.ware}`;
 function fehlend(state, owner) {
   const da = {};
@@ -1722,6 +1722,21 @@ function zuschuss(state, rules, owner, bedarf) {
   if (n <= 0 || f.cash < n) return 0;
   f.cash -= n; state.owners[owner].cash += n; state.stats.zuschuss += n; return n;
 }
+// Gemeinsamer, regulär bezahlter Warenkauf für Ersatz und Investition.
+function kaufeSchiff(state, rules, owner, x) {
+  const werft = rules.world.werft;
+  const s = neuesSchiff(state, { owner, klasse: x.klasse, system: state.stations[werft].system,
+    heimat: x.heimat, ware: x.ware, auftrag: x.auftrag });
+  if (!handel(state, rules, s, werft, x.klasse, 1, true)) {
+    delete state.ships[s.id];
+    delete state.stats.verkaeufe[s.id];
+    return null;
+  }
+  delete s.ladung[x.klasse]; state.ledger[x.klasse].consumed += 1;
+  state.stats.indienst[owner] ||= {};
+  state.stats.indienst[owner][x.klasse] = anzahl(state.stats.indienst[owner], x.klasse) + 1;
+  return s;
+}
 function ersatzkauf(state, rules) {
   const w = rules.world; const werft = w.werft;
   for (const owner of ids(state.sollflotte)) {
@@ -1731,19 +1746,14 @@ function ersatzkauf(state, rules) {
       if (anzahl(state.stations[werft].lager, x.klasse) < 1) continue;
       const p = preis(state, werft, x.klasse, rules);
       const bedarf = p + gebuehr(state, rules, werft, p);
-      if (leer) zuschuss(state, rules, owner, bedarf);
+      // Der vierte Sollplatz des Piloten erhält keinen eigenen Zuschuss.
+      const expansion = owner === 'npc1' && state.sollflotte[owner].indexOf(x) >= 3;
+      if (leer && !expansion) zuschuss(state, rules, owner, bedarf);
       if (state.owners[owner].cash < bedarf + (leer ? 0 : w.ersatzRuecklage)) continue;
       const von = state.stations[werft].system;
       const r = route(w, von, x.heimat);
-      const s = neuesSchiff(state, { owner, klasse: x.klasse, system: von, heimat: x.heimat, ware: x.ware, auftrag: x.auftrag });
-      if (!handel(state, rules, s, werft, x.klasse, 1, true)) {
-        delete state.ships[s.id];
-        delete state.stats.verkaeufe[s.id];
-        continue;
-      }
-      delete s.ladung[x.klasse]; state.ledger[x.klasse].consumed += 1;
-      state.stats.indienst[owner] ||= {};
-      state.stats.indienst[owner][x.klasse] = anzahl(state.stats.indienst[owner], x.klasse) + 1;
+      const s = kaufeSchiff(state, rules, owner, x);
+      if (!s) continue;
       if (npcAutomatik(state, s)) {
         const bezahlt = automatischTanken(state, rules, s, werft, r.spruenge * w.treibstoffJeSprung);
         s.ankunft = state.tick + (bezahlt ? r.zeit : 0);
@@ -1756,7 +1766,42 @@ function ersatzkauf(state, rules) {
     }
   }
 }
-return { zuschuss, ersatzkauf };
+// Nur der Pilot NPC1; Uhrzeit und vorhandene Sollflotte ersetzen neue Speicherfelder.
+function investieren(state, rules) {
+  const w = rules.world, cfg = w.npc1Expansion;
+  const tag = rules.economy.stunde * 24;
+  if (state.tick < cfg.abTag * tag || state.tick % tag !== 0) return { ok: false, reason: 'zeit' };
+  const owner = 'npc1', soll = state.sollflotte[owner];
+  if (soll.length >= cfg.maximum) return { ok: false, reason: 'maximum' };
+  if (soll.length !== 3 || fehlend(state, owner).length) return { ok: false, reason: 'ersatz' };
+  const aktiv = Object.values(state.ships).some(s => s.owner === owner && s.klasse === 'frachter'
+    && s.auftrag === 'handeln' && s.phase === 'reise' && state.stats.verkaeufe[s.id] > 0
+    && Object.keys(s.ladung).some(ware => m_core_treibstoff.handelsladung(s, ware, rules) > 0));
+  const konto = state.stats.konto[owner];
+  if (!aktiv || konto.erloes <= konto.kosten) return { ok: false, reason: 'handel' };
+  const werft = w.werft;
+  if (anzahl(state.stations[werft].lager, 'frachter') < 1) return { ok: false, reason: 'ware' };
+  const p = preis(state, werft, 'frachter', rules);
+  const kauf = p + gebuehr(state, rules, werft, p);
+  if (state.owners[owner].cash < kauf + cfg.puffer) return { ok: false, reason: 'kapital' };
+  const x = { klasse: 'frachter', heimat: state.stations[werft].system, ware: null, auftrag: 'handeln' };
+  const probe = { ...x, owner, ladung: {} };
+  const ansicht = { ...state, owners: { ...state.owners,
+    [owner]: { ...state.owners[owner], cash: state.owners[owner].cash - kauf } } };
+  const plan = m_core_treibstoff.treibstoffPlan(ansicht, rules, probe, werft, 0);
+  if (!plan.ok || plan.post < w.treibstoffReserve) return { ok: false, reason: 'treibstoff' };
+  const bedarf = kauf + plan.cash;
+  if (state.owners[owner].cash < bedarf + cfg.puffer) return { ok: false, reason: 'kapital' };
+  const vorher = state.owners[owner].cash;
+  const s = kaufeSchiff(state, rules, owner, x);
+  if (!s) return { ok: false, reason: 'kauf' };
+  automatischTanken(state, rules, s, werft, 0);
+  // Erst jetzt ist der bezahlte Frachter samt Reserve ein neuer Sollplatz.
+  soll.push(x);
+  protokolliere(state, 'investition', `${owner} erweitert die Handelsflotte um ${s.id}`, owner, werft);
+  return { ok: true, schiff: s.id, vorher, nachher: state.owners[owner].cash };
+}
+return { zuschuss, ersatzkauf, investieren };
 })();
 
 const m_core_step = (() => {
@@ -1768,7 +1813,7 @@ const { entscheidung } = m_core_entscheidung;
 const { produktion } = m_core_produktion;
 const { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende } = m_core_stunde;
 const { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewegen } = m_core_sicherheit;
-const { ersatzkauf } = m_core_schiffbau;
+const { ersatzkauf, investieren } = m_core_schiffbau;
 
 function step(state, rules) {
   state.tick += 1;
@@ -1782,7 +1827,9 @@ function step(state, rules) {
   if (state.tick % rules.economy.stunde === 0) {
     verbrauch(state, rules); betriebskosten(state, rules); aussenhandel(state, rules);
     patrouille(state, rules); ueberfall(state, rules); piratenErsatz(state, rules); schutzgeld(state, rules);
-    ersatzkauf(state, rules); npcAusgaben(state, rules); fonds(state, rules); dividende(state, rules);
+    ersatzkauf(state, rules);
+    if (state.tick % (rules.economy.stunde * 24) === 0) investieren(state, rules);
+    npcAusgaben(state, rules); fonds(state, rules); dividende(state, rules);
   }
   return ergebnisse;
 }
@@ -1928,11 +1975,16 @@ function migrationRegel7(s) {
   return { ...s, rulesVersion: 8 };
 }
 
+function migrationRegel8(s) {
+  return { ...s, rulesVersion: 9 };
+}
+
 const RULE_MIGRATIONS = {
   4: migrationRegel4,
   5: migrationRegel5,
   6: migrationRegel6,
   7: migrationRegel7,
+  8: migrationRegel8,
 };
 function migrate(state, from, to, table = MIGRATIONS) {
   let s = state;

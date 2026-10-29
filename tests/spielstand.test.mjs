@@ -43,7 +43,7 @@ test('Schema 7 wird nach Schema 8 migriert, NPC-Produktionslinien bleiben korrek
   assert.ok(e.audit(restored).ok);
 });
 
-test('Alte Regelversion 6 migriert auf 8 ohne Wirtschaftseinfluss', () => {
+test('Alte Regelversion 6 migriert auf 9 ohne Wirtschaftseinfluss', () => {
   const e = engine();
   const current = e.create(42, e.rules);
   const old = JSON.parse(e.save(current));

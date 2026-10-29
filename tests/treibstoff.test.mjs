@@ -52,12 +52,12 @@ test('Voller Frachtraum: keine zusätzliche Reserve; Spieler tankt unverändert 
   assert.equal(s.stations.st_aldera.lager.treibstoff, before - 1);
   assert(c.audit(s).ok);
 });
-test('Regelmigration 7→8 erhält Reise, Treibstofffracht und sämtliche Konten', () => {
+test('Regelmigration 7→9 erhält Reise, Treibstofffracht und sämtliche Konten', () => {
   const { s, ship } = fixture(); buy(s, ship, 'treibstoff', 3);
   assert(c.execute(s, {type:'shipMove',owner:ship.owner,schiff:ship.id,ziel:'st_cyris'}).ok);
   s.rulesVersion = 7;
   const old = c.save(s), restored = c.load(old);
-  s.rulesVersion = 8;
+  s.rulesVersion = 9;
   assert.equal(c.hash(restored), c.hash(s));
   assert.equal(restored.ships[ship.id].phase, 'reise');
   assert.equal(restored.ships[ship.id].ladung.treibstoff, 3);
@@ -84,7 +84,7 @@ test('Regulärer Ersatz bezahlt Schiff und Überführung; Heimat/Soll bleiben ko
 
 test('Realer Regel-7-Spielstand mitten auf Reise migriert ausschließlich die Regelnummer', () => {
   const text = fs.readFileSync(new URL('./fixtures/rules7-inflight.json', import.meta.url), 'utf8');
-  const expected = JSON.parse(text); expected.rulesVersion = 8;
+  const expected = JSON.parse(text); expected.rulesVersion = 9;
   const restored = c.load(text);
   assert.equal(c.canonical(restored), c.canonical(expected));
   assert(Object.values(restored.ships).some(x => x.phase === 'reise' && x.ladung.treibstoff > 0));
@@ -95,6 +95,6 @@ test('Realer Regel-7-Spielstand mitten auf Reise migriert ausschließlich die Re
 });
 
 test('Zukünftige Regelversion wird nicht stillschweigend übernommen', () => {
-  const { s } = fixture(); s.rulesVersion = 9;
+  const { s } = fixture(); s.rulesVersion = 10;
   assert.throws(() => c.load(c.save(s)), /neuer/);
 });

@@ -1,0 +1,340 @@
+[
+  {
+    "seed": 7,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "f5fe5adbb5b01ee1",
+        "experimentHash": "1d6e9e695a746ddb",
+        "mangel": 14,
+        "sales": 616
+      },
+      {
+        "tick": 43200,
+        "hash": "54b7ca45fa747045",
+        "experimentHash": "52008038928c2af4",
+        "mangel": 127,
+        "sales": 6792
+      },
+      {
+        "tick": 129600,
+        "hash": "0fb91851e677fd65",
+        "experimentHash": "d6fb5d9eb2157b78",
+        "mangel": 337,
+        "sales": 20663
+      }
+    ]
+  },
+  {
+    "seed": 11,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "c2d03e2c6d59e8e6",
+        "experimentHash": "83fd9df1a4024e80",
+        "mangel": 13,
+        "sales": 673
+      },
+      {
+        "tick": 43200,
+        "hash": "b3d254535d089e90",
+        "experimentHash": "bf2f0291e50823f5",
+        "mangel": 94,
+        "sales": 7049
+      },
+      {
+        "tick": 129600,
+        "hash": "be6bd45c6d74e508",
+        "experimentHash": "d5c758606714eeac",
+        "mangel": 331,
+        "sales": 21074
+      }
+    ]
+  },
+  {
+    "seed": 1,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "f814957ffa565568",
+        "experimentHash": "2803a5e19de84247",
+        "mangel": 4,
+        "sales": 683
+      },
+      {
+        "tick": 43200,
+        "hash": "b0636ecf5203b7a5",
+        "experimentHash": "a821a28df2eba4b7",
+        "mangel": 99,
+        "sales": 6992
+      },
+      {
+        "tick": 129600,
+        "hash": "c403b37ef949ced1",
+        "experimentHash": "2fca5de5ca181f2b",
+        "mangel": 346,
+        "sales": 20872
+      }
+    ]
+  },
+  {
+    "seed": 2,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "033020c91e89bc68",
+        "experimentHash": "b2105153ea3905d1",
+        "mangel": 7,
+        "sales": 704
+      },
+      {
+        "tick": 43200,
+        "hash": "5581d9262026daee",
+        "experimentHash": "cfc0de3f1caba8a1",
+        "mangel": 93,
+        "sales": 6986
+      },
+      {
+        "tick": 129600,
+        "hash": "e6267eb9dd66d9b3",
+        "experimentHash": "5d300c4a4683298c",
+        "mangel": 309,
+        "sales": 21173
+      }
+    ]
+  },
+  {
+    "seed": 65535,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "5cdb04f59d76ff29",
+        "experimentHash": "bca6c9f8b15630b5",
+        "mangel": 15,
+        "sales": 671
+      },
+      {
+        "tick": 43200,
+        "hash": "61ef176c3b9d5893",
+        "experimentHash": "58bfc6682c9d640c",
+        "mangel": 111,
+        "sales": 6967
+      },
+      {
+        "tick": 129600,
+        "hash": "048a51935e21c828",
+        "experimentHash": "8f31e51edaca1263",
+        "mangel": 285,
+        "sales": 21118
+      }
+    ]
+  },
+  {
+    "seed": 42,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "3f78258b99b1d90e",
+        "experimentHash": "316aeab03b706735",
+        "mangel": 8,
+        "sales": 740
+      },
+      {
+        "tick": 43200,
+        "hash": "1409e3103e4bd4ae",
+        "experimentHash": "b902a40b1885380f",
+        "mangel": 85,
+        "sales": 7095
+      },
+      {
+        "tick": 129600,
+        "hash": "5dec20b4956c7f0a",
+        "experimentHash": "74d8d94aa79cc30b",
+        "mangel": 275,
+        "sales": 21253
+      }
+    ]
+  },
+  {
+    "seed": 1234,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "1945ddfbed494f70",
+        "experimentHash": "95c701ec76b91427",
+        "mangel": 8,
+        "sales": 722
+      },
+      {
+        "tick": 43200,
+        "hash": "265af1ecb4683290",
+        "experimentHash": "7fd0f48f68eaa213",
+        "mangel": 102,
+        "sales": 7104
+      },
+      {
+        "tick": 129600,
+        "hash": "fdeced93b01aedb8",
+        "experimentHash": "4cb6e34f0cca07c0",
+        "mangel": 346,
+        "sales": 20919
+      }
+    ]
+  },
+  {
+    "seed": 98765,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "35fdef51c0f73a97",
+        "experimentHash": "30dabbcc30bf268d",
+        "mangel": 8,
+        "sales": 659
+      },
+      {
+        "tick": 43200,
+        "hash": "02c55e4b5afcdfbd",
+        "experimentHash": "3c650775a53ebee0",
+        "mangel": 83,
+        "sales": 6995
+      },
+      {
+        "tick": 129600,
+        "hash": "d24da94491e1d894",
+        "experimentHash": "23f6a7d872c55c15",
+        "mangel": 289,
+        "sales": 21182
+      }
+    ]
+  },
+  {
+    "seed": 3,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "43e7c3ddb8a4d57e",
+        "experimentHash": "9b1af91463255c35",
+        "mangel": 14,
+        "sales": 682
+      },
+      {
+        "tick": 43200,
+        "hash": "bb9b7b483d2be3eb",
+        "experimentHash": "4495f2171cd1193e",
+        "mangel": 122,
+        "sales": 6997
+      },
+      {
+        "tick": 129600,
+        "hash": "d12a26fbcec98de9",
+        "experimentHash": "f3e9697214acb6b8",
+        "mangel": 346,
+        "sales": 21105
+      }
+    ]
+  },
+  {
+    "seed": 99,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "42e69705a666a56f",
+        "experimentHash": "18ca6f6ad4ecb891",
+        "mangel": 11,
+        "sales": 661
+      },
+      {
+        "tick": 43200,
+        "hash": "c9e13e85ff743b8d",
+        "experimentHash": "63c6cc2c658e264b",
+        "mangel": 121,
+        "sales": 7083
+      },
+      {
+        "tick": 129600,
+        "hash": "539796a9c571f0b6",
+        "experimentHash": "9b41109ecadd4eb4",
+        "mangel": 340,
+        "sales": 20991
+      }
+    ]
+  },
+  {
+    "seed": 2024,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "2e7536117066e548",
+        "experimentHash": "07604fa6a60802ac",
+        "mangel": 12,
+        "sales": 665
+      },
+      {
+        "tick": 43200,
+        "hash": "605786d538d90e7d",
+        "experimentHash": "eff7693893397071",
+        "mangel": 109,
+        "sales": 6979
+      },
+      {
+        "tick": 129600,
+        "hash": "270f942e7b89f604",
+        "experimentHash": "c9292d5d722a2165",
+        "mangel": 313,
+        "sales": 20984
+      }
+    ]
+  },
+  {
+    "seed": 2025,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "30d4f259a23a99de",
+        "experimentHash": "d528dbd68ee6af0a",
+        "mangel": 4,
+        "sales": 747
+      },
+      {
+        "tick": 43200,
+        "hash": "6f87456f427b93e2",
+        "experimentHash": "c348ee3c05a8ba75",
+        "mangel": 126,
+        "sales": 7005
+      },
+      {
+        "tick": 129600,
+        "hash": "34ba8d3f9d5aaa9e",
+        "experimentHash": "1cfddcd72c9a6270",
+        "mangel": 361,
+        "sales": 20938
+      }
+    ]
+  },
+  {
+    "seed": 314159,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "d123d6d01e1ce9d1",
+        "experimentHash": "1902870dc583adcc",
+        "mangel": 3,
+        "sales": 700
+      },
+      {
+        "tick": 43200,
+        "hash": "d2482a158f8a2340",
+        "experimentHash": "78bb98d1ecaf26a2",
+        "mangel": 79,
+        "sales": 7170
+      },
+      {
+        "tick": 129600,
+        "hash": "ef8f7d0dc3feb36e",
+        "experimentHash": "7a1d432570febcf2",
+        "mangel": 318,
+        "sales": 21010
+      }
+    ]
+  }
+]

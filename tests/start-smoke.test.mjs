@@ -153,9 +153,44 @@ test('Gesamter Start: Pause, Flotte, Schiffsauswahl, Simulation', async () => {
     target: { closest: () => ({ dataset: { schiff: 'sh001' } }) },
   });
   assert.equal(get('blatt').hidden, false);
-  assert.equal(get('blatt-titel').textContent, 'Miner sh001');
+  assert.equal(get('blatt-titel').textContent, 'Miner');
   assert.match(get('schiff-befehle').innerHTML, /Handeln \(\d+\)/);
 
   browser.fire('b-hour', 'click');
   assert.equal(get('spielzeit').textContent, 'Tag 1 · 01:00');
+});
+
+
+test('iPad-Bedienpfad: Miner per Dialog umbenennen und wieder zurücksetzen', async () => {
+  const browser = createBrowser();
+  vm.runInNewContext(script, browser.sandbox, { timeout: 10000 });
+  for (let i = 0; i < 24; i++) await Promise.resolve();
+  const get = id => browser.nodes.get(id);
+
+  browser.fire(browser.all.find(item => item.dataset.ansicht === 'flotte'), 'click');
+  browser.fire('flotte-schiffe', 'click', {
+    target: { closest: () => ({ dataset: { schiff: 'sh001' } }) },
+  });
+  assert.equal(get('blatt-titel').textContent, 'Miner');
+
+  browser.fire('b-schiff-umbenennen', 'click');
+  const input = get('dialog-eingabe');
+  assert.equal(input.hidden, false);
+  assert.equal(input.placeholder, 'Miner');
+  input.value = 'Aurora';
+  let save = get('dialog-knoepfe').children.find(button => button.textContent === 'Speichern');
+  assert.ok(save, 'Speichern-Knopf im Dialog');
+  browser.fire(save, 'click');
+  assert.equal(get('dialog').hidden, true);
+  assert.equal(get('blatt-titel').textContent, 'Aurora');
+  assert.match(get('flotte-schiffe').innerHTML, /Aurora/);
+
+  browser.fire('b-schiff-umbenennen', 'click');
+  assert.equal(input.value, 'Aurora');
+  input.value = '';
+  save = [...get('dialog-knoepfe').children].reverse()
+    .find(button => button.textContent === 'Speichern');
+  browser.fire(save, 'click');
+  assert.equal(get('blatt-titel').textContent, 'Miner');
+  assert.match(get('flotte-schiffe').innerHTML, />Miner</);
 });

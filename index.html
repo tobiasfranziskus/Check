@@ -3350,7 +3350,7 @@ function schritte(n) {
 function kopfAktualisieren() {
   $('spielzeit').textContent = spielzeitText(state.tick);
   if (!$('ansicht-hq').hidden) hqZeichnen(state, kasseBasis);
-  spielstandZeichnen();
+  spielstandZeigen();
   if (!$('ansicht-karte').hidden && karte) karte.aktualisieren(state);
   ansichtenZeichnen();
   const ungelesen = Math.max(0, state.ereignisse.length - berichtGelesen);

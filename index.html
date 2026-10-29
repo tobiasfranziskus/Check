@@ -709,7 +709,7 @@ const anzahlLadung = (lager, ware) => (Object.hasOwn(lager, ware) ? lager[ware] 
 const FIELDS = {
   shipMove: ['schiff', 'ziel'], shipTrade: ['schiff', 'ware', 'menge', 'kauf'],
   shipMine: ['schiff', 'ware'], shipWait: ['schiff'],
-  shipActivate: ['schiff', 'klasse'], shipHandeln: ['schiff'],
+  shipActivate: ['schiff', 'klasse'], shipHandeln: ['schiff'], shipRename: ['schiff', 'name'],
   shipEscort: ['schiff', 'ziel'], shipHunt: ['schiff'],
   shipInstall: ['schiff', 'modul'], stationBuy: ['schiff'],
   stationRecipe: ['station', 'rezept'], shipRemoveModule: ['schiff', 'modul'],
@@ -724,7 +724,7 @@ function checkShape(state, cmd, rules) {
     if (typeof cmd.schiff !== 'string' || !Object.hasOwn(state.ships, cmd.schiff)) return 'unbekanntes Schiff';
     const s = state.ships[cmd.schiff];
     if (s.owner !== cmd.owner) return 'Schiff gehört nicht dem Besitzer';
-    if (s.phase !== 'dock' && !(cmd.type === 'shipWait' && s.phase === 'reise')) return 'Schiff ist nicht im Dock';
+    if (s.phase !== 'dock' && cmd.type !== 'shipRename' && !(cmd.type === 'shipWait' && s.phase === 'reise')) return 'Schiff ist nicht im Dock';
     if (cmd.type === 'shipMove') {
       if (typeof cmd.ziel !== 'string' || !Object.hasOwn(rules.world.stations, cmd.ziel)) return 'unbekanntes Ziel';
     }
@@ -740,6 +740,10 @@ function checkShape(state, cmd, rules) {
         const lager = state.stations[station].lager[cmd.ware] || 0;
         if (lager - cmd.menge < m_core_handel.reserve(rules, station, cmd.ware)) return 'Station behält ihren Vorrat';
       }
+    }
+    if (cmd.type === 'shipRename') {
+      if (typeof cmd.name !== 'string' || cmd.name.length > 24 || /[\u0000-\u001f\u007f]/.test(cmd.name))
+        return 'Schiffsname muss Text mit maximal 24 Zeichen ohne Steuerzeichen sein';
     }
     if (cmd.type === 'shipActivate') {
       if (typeof cmd.klasse !== 'string' || !Object.hasOwn(rules.economy.waren, cmd.klasse)) return 'unbekannte Schiffsklasse';
@@ -832,6 +836,13 @@ function execute(state, cmd, rules) {
     }
     case 'shipMine': { const s = state.ships[cmd.schiff]; s.auftrag = 'foerdern'; s.ware = cmd.ware; s.eskorte = null; break; }
     case 'shipWait': { const s = state.ships[cmd.schiff]; s.auftrag = 'halten'; s.eskorte = null; break; }
+    case 'shipRename': {
+      const s = state.ships[cmd.schiff];
+      const name = cmd.name.trim();
+      if (name) s.rufname = name;
+      else delete s.rufname;
+      break;
+    }
     case 'shipActivate': {
       const traeger = state.ships[cmd.schiff];
       traeger.ladung[cmd.klasse] -= 1;

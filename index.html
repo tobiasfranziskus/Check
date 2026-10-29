@@ -2118,11 +2118,30 @@ m_data_systeme.tiefFrieren({ WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, OR
 return { WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, ORTE };
 })();
 
+// Sichtbare Namen für Spielerschiffe; IDs bleiben unveränderte technische Schlüssel.
+const m_ui_schiffsnamen = (() => {
+const { KLASSEN } = m_data_namen;
+function namenVon(state) {
+  const zaehler = {}, namen = {};
+  for (const id of Object.keys(state.ships).sort()) {
+    const s = state.ships[id];
+    if (state.owners[s.owner]?.kind !== 'player') continue;
+    zaehler[s.klasse] = (zaehler[s.klasse] || 0) + 1;
+    const klasse = KLASSEN[s.klasse] || s.klasse;
+    namen[id] = s.rufname || (zaehler[s.klasse] === 1 ? klasse : `${klasse} ${zaehler[s.klasse]}`);
+  }
+  return namen;
+}
+const nameVon = (state, schiff) => namenVon(state)[schiff.id] || KLASSEN[schiff.klasse] || schiff.klasse;
+return { namenVon, nameVon };
+})();
+
 const m_ui_sicht = (() => {
 const { route } = m_core_index;
 const { positionAufWeg, fortschritt } = m_ui_karte_geometrie;
 const { OBERFLAECHE } = m_data_oberflaeche;
 const { KLASSEN, AUFTRAEGE, PHASEN } = m_data_namen;
+const { namenVon } = m_ui_schiffsnamen;
 const ROLLE_NACH_ART = { player: 'eigen', trader: 'neutral', miner: 'neutral', authority: 'sicherheit', pirate: 'pirat' };
 const rolle = (state, schiff) => ROLLE_NACH_ART[state.owners[schiff.owner].kind] || 'neutral';
 const systemName = (karte, id) => (karte.systeme[id] ? karte.systeme[id].name : id);
@@ -2162,11 +2181,11 @@ function lageMarke(l) {
 }
 const SCHIFFSABSTAND = 50;
 function flotte(state, regeln, karte) {
-  const w = regeln.world;
+  const w = regeln.world; const namen = namenVon(state);
   return schiffe(state).filter((s) => rolle(state, s) === 'eigen').map((s) => {
     const unterwegs = s.phase === 'reise';
     const ort = unterwegs ? `unterwegs nach ${systemName(karte, w.stations[s.ziel].system)}` : `in ${systemName(karte, s.system)}`;
-    return { id: s.id, klasse: KLASSEN[s.klasse] || s.klasse, ort, taetigkeit: unterwegs ? PHASEN.reise : (AUFTRAEGE[s.auftrag] || s.auftrag) };
+    return { id: s.id, name: namen[s.id], klasse: KLASSEN[s.klasse] || s.klasse, ort, taetigkeit: unterwegs ? PHASEN.reise : (AUFTRAEGE[s.auftrag] || s.auftrag) };
   });
 }
 function reiseWeg(regeln, s) {
@@ -2264,7 +2283,7 @@ function hqZeichnen(state, kasseBasis) {
   const f = flotte(state, RULES, KARTE);
   text($('hq-flotte-zahl'), `${f.length} ${f.length === 1 ? 'Schiff' : 'Schiffe'}`);
   html($('hq-flotte'), f.length
-    ? f.map((s) => `<li><span class="liste-links">${esc(s.klasse)} <span class="muted">${esc(s.id)}</span></span><span class="liste-rechts">${esc(s.ort)} · ${esc(s.taetigkeit)}</span></li>`).join('')
+    ? f.map((s) => `<li><span class="liste-links">${esc(s.name)}</span><span class="liste-rechts">${esc(s.ort)} · ${esc(s.taetigkeit)}</span></li>`).join('')
     : '<li><span class="liste-links muted">Keine Schiffe.</span></li>');
   const l = lage(state, RULES, KARTE);
   html($('hq-lage'), Object.keys(l).sort().map((id) => {
@@ -2821,6 +2840,7 @@ const { marktZeilen, marktKopf, warenVergleich } = m_ui_markt;
 const { isk } = m_ui_zusammenfassung;
 const { $, html, esc, marke } = m_ui_zeichnen;
 const { kauf: kaufAngebot, verkauf: verkaufAngebot, ladungsmenge } = m_ui_handelsangebot;
+const { namenVon } = m_ui_schiffsnamen;
 const trendMarke = (t) => (t ? marke(t.art, t.symbol, t.text) : '<span class="muted">–</span>');
 const rezeptText = (r) => `${r.ein.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} → ${r.aus.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} · ${esc(ORTE[r.ort])}, ${r.dauer} Min`;
 
@@ -2873,6 +2893,7 @@ function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
       stand = state; letzte = schluessel; letzteDirty = dirty;
       for (const b of leiste.children) b.setAttribute('aria-pressed', String(b.dataset.system === system));
       const schiffe = dockSchiffe(state, system);
+      const namen = namenVon(state);
       const station = RULES.world.systems[system].station;
       const kopf = marktKopf(state, RULES, system, basis);
       $('markt-kopf').innerHTML =
@@ -2889,15 +2910,15 @@ function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
         const verkaufSchiff = verkaufsschiff(schiffe, z.ware);
         const verkaufOption = verkaufSchiff ? verkaufAngebot(state, RULES, station, verkaufSchiff, z.ware, 10) : null;
         const kauf = kaufAuswahl
-          ? `<button type="button" class="primary" data-trade="buy" data-schiff="${esc(kaufAuswahl.schiff.id)}" data-trade-ware="${z.ware}" data-menge="${kaufAuswahl.angebot.menge}">Kaufe ${kaufAuswahl.angebot.menge}${z.stufe === 'schiff' ? ` ${esc(z.name)} als Fracht` : ` × ${esc(z.name)}`} (${isk(kaufAuswahl.angebot.betrag)} inkl. Gebühr) · ${esc(kaufAuswahl.schiff.id)}</button>`
+          ? `<button type="button" class="primary" data-trade="buy" data-schiff="${esc(kaufAuswahl.schiff.id)}" data-trade-ware="${z.ware}" data-menge="${kaufAuswahl.angebot.menge}">Kaufe ${kaufAuswahl.angebot.menge}${z.stufe === 'schiff' ? ` ${esc(z.name)} als Fracht` : ` × ${esc(z.name)}`} (${isk(kaufAuswahl.angebot.betrag)} inkl. Gebühr) · ${esc(namen[kaufAuswahl.schiff.id])}</button>`
           : '';
         const verkauf = verkaufOption
-          ? `<button type="button" data-trade="sell" data-schiff="${esc(verkaufSchiff.id)}" data-trade-ware="${z.ware}" data-menge="${verkaufOption.menge}">Verkaufe ${verkaufOption.menge} (${isk(verkaufOption.betrag)} netto) · ${esc(verkaufSchiff.id)}</button>`
+          ? `<button type="button" data-trade="sell" data-schiff="${esc(verkaufSchiff.id)}" data-trade-ware="${z.ware}" data-menge="${verkaufOption.menge}">Verkaufe ${verkaufOption.menge} (${isk(verkaufOption.betrag)} netto) · ${esc(namen[verkaufSchiff.id])}</button>`
           : '';
         // Schiffsware wird als Fracht gekauft; die Inbetriebnahme ist ein eigener Befehl.
         // Auch bei leerer Stationskasse bleibt die Inbetriebnahme möglich.
         const aktivieren = z.stufe === 'schiff' && verkaufSchiff
-          ? `<button type="button" class="primary" data-activate="${esc(z.ware)}" data-schiff="${esc(verkaufSchiff.id)}">${esc(z.name)} in Dienst stellen · ${esc(verkaufSchiff.id)}</button>`
+          ? `<button type="button" class="primary" data-activate="${esc(z.ware)}" data-schiff="${esc(verkaufSchiff.id)}">${esc(z.name)} in Dienst stellen · ${esc(namen[verkaufSchiff.id])}</button>`
           : '';
         const trade = kauf || aktivieren || verkauf ? `<div class="befehle-leiste">${kauf}${aktivieren}${verkauf}</div>` : '';
         return `<li style="flex-direction:column;align-items:stretch;padding:8px 0"><button type="button" class="zeile" data-ware="${z.ware}">`
@@ -2921,13 +2942,14 @@ return { marktErzeugen, wareZeichnen };
 
 const m_ui_flotte_detail = (() => {
 const { rolle, reiseWeg } = m_ui_sicht;
+const { namenVon } = m_ui_schiffsnamen;
 const { fortschritt } = m_ui_karte_geometrie;
 const { KLASSEN, AUFTRAEGE, PHASEN, WAREN } = m_data_namen;
 const systemName = (karte, id) => (karte.systeme[id] ? karte.systeme[id].name : id);
 const ladungVon = (s) => Object.keys(s.ladung).sort().filter((w) => s.ladung[w] > 0).map((ware) => ({ ware, name: WAREN[ware], menge: s.ladung[ware] }));
 const betriebskostenStunde = (schiff, regeln) => (Object.hasOwn(regeln.world.betriebskosten, schiff.klasse) ? regeln.world.betriebskosten[schiff.klasse] : 0);
 function eigeneSchiffe(state, regeln, karte) {
-  const w = regeln.world;
+  const w = regeln.world; const namen = namenVon(state);
   return Object.keys(state.ships).sort().map((id) => state.ships[id]).filter((s) => rolle(state, s) === 'eigen').map((s) => {
     let ort = { art: 'system', system: s.system, name: systemName(karte, s.system) };
     if (s.phase === 'reise') {
@@ -2936,7 +2958,7 @@ function eigeneSchiffe(state, regeln, karte) {
       ort = { art: 'reise', system: s.system, name: systemName(karte, s.system), ziel, zielName: systemName(karte, ziel), fortschritt: rw ? fortschritt(state.tick, s.ankunft, rw.dauer) : null };
     }
     return {
-      id: s.id, klasse: s.klasse, klasseName: KLASSEN[s.klasse], ort,
+      id: s.id, name: namen[s.id], rufname: !!s.rufname, klasse: s.klasse, klasseName: KLASSEN[s.klasse], ort,
       taetigkeit: s.phase === 'reise' ? PHASEN.reise : AUFTRAEGE[s.auftrag],
       auftrag: s.auftrag, auftragName: AUFTRAEGE[s.auftrag], ladung: ladungVon(s),
       heimat: s.heimat, heimatName: systemName(karte, s.heimat), arbeit: s.arbeit, kostenStunde: betriebskostenStunde(s, regeln),

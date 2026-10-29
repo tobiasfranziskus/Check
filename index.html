@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f5f5f7">
-<meta name="aphros-version" content="v0.7.0">
-<meta name="aphros-file-sha256" content="03a28e4823e0fd01fe3ce16ae0608756cc374601916cebd62fcae6b7fc170a98">
+<meta name="aphros-version" content="v0.11.0">
 <title>Aphros Void</title>
 <style>
 :root {
@@ -142,7 +141,7 @@ button.zeile .liste-links { color: var(--text); }
 
 <main id="ansicht-hq" class="ansicht" aria-label="HQ">
   <header class="kopf">
-    <p class="muted kopf-klein">HQ · v0.7.0</p>
+    <p class="muted kopf-klein">HQ · v0.11.0</p>
     <p class="kasse"><span id="hq-kasse" class="kasse-zahl">–</span></p>
     <p id="hq-trend" class="trend muted"><span class="trend-symbol" id="hq-trend-symbol"></span><span id="hq-trend-text">–</span> <span class="trend-bezug">zur letzten vollen Spielstunde</span></p>
   </header>
@@ -152,6 +151,7 @@ button.zeile .liste-links { color: var(--text); }
     <h2>Welt</h2>
     <ul class="liste">
       <li><span class="liste-links">Geldmenge</span><span class="liste-rechts" id="hq-geld">–</span></li>
+      <li><span class="liste-links">Betriebskosten (max.)</span><span class="liste-rechts" id="hq-kosten">–</span></li>
       <li><span class="liste-links">Erhaltungsprüfung</span><span class="liste-rechts" id="hq-erhaltung">–</span></li>
     </ul>
   </section>
@@ -159,13 +159,14 @@ button.zeile .liste-links { color: var(--text); }
     <ul class="liste">
       <li class="zeile-knopf"><button type="button" class="zeile" id="b-spielstand"><span class="liste-links">Spielstand</span><span class="liste-rechts muted" id="hq-gespeichert">–</span></button></li>
       <li id="hq-hinweis-zeile" class="hinweis-zeile" hidden><span class="marke marke-warn" id="hq-hinweis"></span></li>
+      <li class="zeile-knopf"><button type="button" class="zeile" id="b-bericht"><span class="liste-links">Berichte</span><span class="liste-rechts muted" id="bericht-zahl">–</span></button></li>
       <li class="zeile-knopf"><button type="button" class="zeile" id="b-pruefung"><span class="liste-links">Prüfung</span><span class="liste-rechts muted">Werte und Schritte</span></button></li>
     </ul>
   </section>
 </main>
 
 <section id="ansicht-karte" class="ansicht ansicht-karte" aria-label="Karte" hidden>
-  <svg id="karte" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Karte der fünf Systeme"></svg>
+  <svg id="karte" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Karte der Systeme"></svg>
 </section>
 
 <section id="ansicht-markt" class="ansicht" aria-label="Markt" hidden>
@@ -180,7 +181,7 @@ button.zeile .liste-links { color: var(--text); }
   <section class="card" aria-label="Zusammenfassung"><ul id="flotte-kopf" class="liste"></ul></section>
   <section class="card" aria-label="Meine Schiffe"><h2>Meine Schiffe</h2><ul id="flotte-schiffe" class="liste"></ul></section>
   <section class="card" aria-label="In der Welt"><h2>In der Welt</h2><ul id="flotte-welt" class="liste"></ul></section>
-  <p class="muted hinweis-text">Tippe ein Schiff an, um es zu befehligen.</p>
+  <p class="muted hinweis-text">Tippe ein Schiff an, um es zu befehlen. Frachter können mit „Auto-Handel" selbständig handeln, Jäger können Piraten jagen oder Schiffe eskortieren.</p>
 </section>
 
 <section id="ansicht-reich" class="ansicht" aria-label="Reich" hidden>
@@ -196,8 +197,9 @@ button.zeile .liste-links { color: var(--text); }
     <ul id="reich-lager" class="liste"></ul>
   </section>
   <section class="card" aria-label="Flotte"><h2>Flotte <span id="reich-flotte-zahl" class="muted">–</span></h2><ul id="reich-flotte" class="liste"></ul></section>
+  <section class="card" aria-label="Eigene Stationen"><h2>Eigene Stationen</h2><ul id="reich-eigene" class="liste"></ul></section>
   <section class="card" aria-label="Reich"><h2>Reich</h2><ul class="liste"><li><span class="liste-links">Eigene Systeme</span><span class="liste-rechts" id="reich-systeme">–</span></li></ul></section>
-  <div class="leer"><p>Baue deine Flotte aus, um mehr Systeme zu erschließen.</p><button type="button" class="primary" data-ansicht-ziel="karte">Zur Karte</button></div>
+  <div class="leer"><p>Verdiene genug ISK, um Stationen zu kaufen und dein Reich auszubauen.</p><button type="button" class="primary" data-ansicht-ziel="karte">Zur Karte</button></div>
 </section>
 
 <div id="leistung" class="leistung" hidden></div>
@@ -232,7 +234,7 @@ button.zeile .liste-links { color: var(--text); }
     <div class="blatt-inhalt">
 
       <div class="blatt-seite" id="blatt-pruefung" data-titel="Prüfung" hidden>
-        <p class="muted">Version v0.7.0 · Datei <span id="filehash">–</span></p>
+        <p class="muted">Version v0.11.0</p>
         <section class="card" aria-label="Zustand">
           <dl>
             <div><dt>Spielzeit</dt><dd id="zeit">–</dd></div>
@@ -240,7 +242,7 @@ button.zeile .liste-links { color: var(--text); }
             <div><dt>Prüfsumme</dt><dd id="hash">–</dd></div>
             <div><dt>Wartende Befehle</dt><dd id="queue">–</dd></div>
             <div><dt>Erhaltung</dt><dd id="erhaltung">–</dd></div>
-            <div><dt>Rechenzeit „1 Stunde“</dt><dd id="rechenzeit">–</dd></div>
+            <div><dt>Rechenzeit „1 Stunde"</dt><dd id="rechenzeit">–</dd></div>
             <div><dt>Kopfgeld geschöpft</dt><dd id="kopfgeld">–</dd></div>
             <div><dt>Geld vernichtet</dt><dd id="burned">–</dd></div>
             <div><dt>Piraten</dt><dd id="piraten">–</dd></div>
@@ -268,6 +270,10 @@ button.zeile .liste-links { color: var(--text); }
         <section class="card" aria-label="Meldungen"><ul id="weg-liste" class="liste"></ul></section>
       </div>
 
+      <div class="blatt-seite" id="blatt-bericht" data-titel="Berichte" hidden>
+        <section class="card" aria-label="Berichte"><ul id="bericht-liste" class="liste"></ul></section>
+      </div>
+
       <div class="blatt-seite" id="blatt-system" data-titel="System" hidden>
         <section class="card" aria-label="System"><ul id="sys-kopf" class="liste"></ul></section>
         <section class="card" aria-label="Stationen"><h2>Stationen</h2><ul id="sys-stationen" class="liste"></ul></section>
@@ -285,6 +291,14 @@ button.zeile .liste-links { color: var(--text); }
         <section class="card" aria-label="Schiff"><ul id="schiff-liste" class="liste"></ul></section>
         <section class="card" aria-label="Befehle"><h2>Befehle</h2><div id="schiff-befehle"></div></section>
         <section class="actions" aria-label="Schiff-Aktionen"><button id="b-schiff-karte" type="button" class="primary">Auf der Karte zeigen</button></section>
+      </div>
+
+      <div class="blatt-seite" id="blatt-station" data-titel="Station" hidden>
+        <section class="card" aria-label="Kopf"><ul id="station-kopf" class="liste"></ul></section>
+        <section class="card" aria-label="Module"><h2>Module</h2><ul id="station-module" class="liste"></ul></section>
+        <section class="card" aria-label="Produktionslinien"><h2>Produktionslinien</h2><ul id="station-linien" class="liste"></ul></section>
+        <section class="card" aria-label="Kennzahlen"><h2>Kennzahlen</h2><ul id="station-kennzahlen" class="liste"></ul></section>
+        <section class="card" aria-label="Bericht"><h2>Bericht</h2><ul id="station-bericht" class="liste"></ul></section>
       </div>
 
       <div class="blatt-seite" id="blatt-spielstand" data-titel="Spielstand" hidden>
@@ -320,6 +334,160 @@ button.zeile .liste-links { color: var(--text); }
 <script>
 'use strict';
 
+const m_data_systeme = (() => {
+  function tiefFrieren(obj, seen = new WeakSet()) {
+    if (obj === null || typeof obj !== 'object' || seen.has(obj)) return obj;
+    seen.add(obj);
+    Object.freeze(obj);
+    for (const k of Object.keys(obj)) tiefFrieren(obj[k], seen);
+    return obj;
+  }
+
+  const SYSTEME = [
+    {
+      id: 'aldera', name: 'Aldera',
+      karte: { x: 140, y: 500 }, region: 1000,
+      gates: [{ to: 'cyris', time: 25 }, { to: 'dravos', time: 20 }],
+      station: {
+        cash: 4000, fondsCash: 1000, gebuehr: 40,
+        linien: ['r_material', 'r_bauteil', 'r_treibstoff', 'r_miner', 'r_frachter', 'r_jaeger', 'r_lager', 'r_bergbau', 'r_fabrik', 'r_dock', 'r_werft', 'r_verteidigung', 'r_bauschiff'],
+        verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
+        ziel: { erz: 240, material: 156, bauteil: 40, eis: 96, treibstoff: 52, nahrung: 20, medikamente: 20, miner: 2, frachter: 2, jaeger: 2, lager: 6, bergbau: 4, fabrik: 3, dock: 3, werft: 2, verteidigung: 4, bauschiff: 1 },
+      },
+      fields: [{ ware: 'erz', miner: 2 }],
+      pirates: {},
+      security: true,
+      traders: [{ owner: 'npc1', start: 0 }],
+    },
+    {
+      id: 'cyris', name: 'Cyris',
+      karte: { x: 400, y: 810 }, region: 1100,
+      gates: [{ to: 'meridian', time: 30 }, { to: 'veldra', time: 25 }],
+      station: {
+        cash: 4000, fondsCash: 1000, gebuehr: 40,
+        linien: ['r_bauteil', 'r_medikamente', 'r_nahrung'],
+        verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
+        ziel: { material: 132, bauteil: 40, kristall: 36, medikamente: 40, eis: 80, nahrung: 52, treibstoff: 20 },
+      },
+      fields: [{ ware: 'kristall', miner: 1 }, { ware: 'eis', miner: 1 }],
+      pirates: { pirat_mittel: 1 },
+      security: true,
+      traders: [{ owner: 'npc1', start: 10 }],
+    },
+    {
+      id: 'dravos', name: 'Dravos',
+      karte: { x: 400, y: 190 }, region: 900,
+      gates: [{ to: 'orion', time: 22 }, { to: 'veldra', time: 20 }],
+      station: {
+        cash: 4000, fondsCash: 1000, gebuehr: 40,
+        linien: ['r_material', 'r_treibstoff'],
+        verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
+        ziel: { erz: 240, material: 96, eis: 96, treibstoff: 52, nahrung: 20, medikamente: 20, bauteil: 20 },
+      },
+      fields: [{ ware: 'erz', miner: 1 }, { ware: 'eis', miner: 1 }],
+      pirates: { pirat_klein: 1 },
+      security: true,
+      traders: [{ owner: 'npc2', start: 5 }],
+    },
+    {
+      id: 'meridian', name: 'Meridian',
+      karte: { x: 880, y: 880 }, region: 1300,
+      gates: [{ to: 'veldra', time: 30 }],
+      station: {
+        cash: 6000, fondsCash: 1000, gebuehr: 0,
+        aussenhandel: true,
+        linien: [],
+        verbrauch: {},
+        ziel: { erz: 100, eis: 100, kristall: 100, material: 100, bauteil: 100, treibstoff: 100, nahrung: 100, medikamente: 100 },
+      },
+      fields: [],
+      pirates: { pirat_mittel: 1, pirat_gross: 1 },
+      security: false,
+      traders: [],
+    },
+    {
+      id: 'orion', name: 'Orion',
+      karte: { x: 830, y: 220 }, region: 1050,
+      gates: [{ to: 'veldra', time: 18 }],
+      station: {
+        cash: 4000, fondsCash: 1000, gebuehr: 40,
+        linien: ['r_material'],
+        verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
+        ziel: { erz: 240, eis: 160, material: 120, bauteil: 30, nahrung: 30, treibstoff: 30, medikamente: 15 },
+      },
+      fields: [{ ware: 'erz', miner: 1 }, { ware: 'eis', miner: 1 }],
+      pirates: { pirat_klein: 1 },
+      security: true,
+      traders: [{ owner: 'npc1', start: 8 }],
+    },
+    {
+      id: 'veldra', name: 'Veldra',
+      karte: { x: 670, y: 500 }, region: 950,
+      gates: [],
+      station: {
+        cash: 4000, fondsCash: 1000, gebuehr: 40,
+        linien: ['r_material', 'r_nahrung'],
+        verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
+        ziel: { erz: 240, material: 96, eis: 80, nahrung: 52, treibstoff: 20, medikamente: 20, bauteil: 20 },
+      },
+      fields: [{ ware: 'erz', miner: 1 }],
+      pirates: { pirat_klein: 1 },
+      security: true,
+      traders: [{ owner: 'npc2', start: 15 }],
+    },
+  ];
+
+  const GLOBALE_OWNER = [
+    { id: 'house', kind: 'player', cash: 2000 },
+    { id: 'security', kind: 'authority', cash: 5000 },
+    { id: 'pirates', kind: 'pirate', cash: 3000 },
+    { id: 'npc1', kind: 'trader', cash: 3000 },
+    { id: 'npc2', kind: 'trader', cash: 3000 },
+    { id: 'npc3', kind: 'miner', cash: 2000 },
+  ];
+
+  const systems = {};
+  const stations = {};
+  const region = {};
+  const karteSysteme = {};
+  const fields = [];
+  const traders = [];
+  const piratenSoll = {};
+  const sicherheitJaeger = [];
+  const owners = GLOBALE_OWNER.map((o) => ({ ...o }));
+  const gatesMap = new Map();
+
+  for (const def of SYSTEME) {
+    systems[def.id] = { station: `st_${def.id}`, fonds: `fonds_${def.id}` };
+    stations[`st_${def.id}`] = {
+      system: def.id,
+      linien: [...def.station.linien],
+      verbrauch: { ...def.station.verbrauch },
+      ziel: { ...def.station.ziel },
+      gebuehr: def.station.gebuehr,
+      ...(def.station.aussenhandel ? { aussenhandel: true } : {}),
+    };
+    region[def.id] = def.region;
+    karteSysteme[def.id] = { name: def.name, x: def.karte.x, y: def.karte.y };
+    for (const f of (def.fields || [])) fields.push({ system: def.id, ware: f.ware, miner: f.miner });
+    for (const t of (def.traders || [])) traders.push({ owner: t.owner, system: def.id, start: t.start });
+    if (def.pirates && Object.keys(def.pirates).length > 0) piratenSoll[def.id] = { ...def.pirates };
+    if (def.security) sicherheitJaeger.push(def.id);
+    for (const g of def.gates) {
+      const key = [def.id, g.to].sort().join('|');
+      if (!gatesMap.has(key)) gatesMap.set(key, [def.id, g.to, g.time]);
+    }
+    owners.push(
+      { id: `st_${def.id}`, kind: 'station', cash: def.station.cash },
+      { id: `fonds_${def.id}`, kind: 'fund', cash: def.station.fondsCash ?? 1000 },
+    );
+  }
+
+  const gates = [...gatesMap.values()];
+
+  return { SYSTEME, GLOBALE_OWNER, systems, stations, region, karteSysteme, fields, traders, piratenSoll, sicherheitJaeger, gates, owners, tiefFrieren };
+})();
+
 const m_data_economy = (() => {
 const ECONOMY = {
   waren: {
@@ -348,73 +516,38 @@ const ECONOMY = {
     r_bauschiff: { ein: { bauteil: 12, material: 2 }, aus: { bauschiff: 1 }, ort: 'werft', dauer: 48 },
   },
   s: 800, preisgrenzen: [550, 2500],
-  region: { aldera: 1000, dravos: 900, cyris: 1100, veldra: 950, meridian: 1300 },
-  kopfgeld: { klein: 240, mittel: 360, gross: 480 },
-  killsProStunde: 2, miningRate: 1, cargo: 100, stunde: 60,
-  start: { owner: 'house', kasse: 2000, flotte: ['miner', 'frachter'], system: 'aldera', auftrag: 'halten' },
+  region: m_data_systeme.region,
+  kopfgeld: { klein: 120, mittel: 180, gross: 240 }, kopfgeldFaktor: 2,
+  miningRate: 1, cargo: 100, stunde: 60,
+  start: { owner: 'house', flotte: ['miner', 'frachter'], system: 'aldera', auftrag: 'halten' },
 };
 return { ECONOMY };
 })();
 
 const m_data_world = (() => {
-const ZIEL_SCHIFF = 2;
 const WORLD = {
-  systems: {
-    aldera: { station: 'st_aldera', fonds: 'fonds_aldera' },
-    cyris: { station: 'st_cyris', fonds: 'fonds_cyris' },
-    dravos: { station: 'st_dravos', fonds: 'fonds_dravos' },
-    meridian: { station: 'st_meridian', fonds: 'fonds_meridian' },
-    veldra: { station: 'st_veldra', fonds: 'fonds_veldra' },
-  },
-  gates: [
-    ['aldera', 'dravos', 20], ['aldera', 'cyris', 25], ['dravos', 'veldra', 20],
-    ['cyris', 'veldra', 25], ['veldra', 'meridian', 30], ['cyris', 'meridian', 30],
-  ],
-  aktiveRezepte: ['r_bauteil', 'r_frachter', 'r_jaeger', 'r_material', 'r_medikamente', 'r_miner', 'r_nahrung', 'r_treibstoff'],
-  werft: 'st_aldera', zielSchiff: ZIEL_SCHIFF,
-  stations: {
-    st_aldera: { system: 'aldera', linien: ['r_material', 'r_bauteil', 'r_treibstoff', 'r_miner', 'r_frachter', 'r_jaeger'],
-      verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
-      ziel: { erz: 240, material: 156, bauteil: 40, eis: 96, treibstoff: 52, nahrung: 20, medikamente: 20, miner: ZIEL_SCHIFF, frachter: ZIEL_SCHIFF, jaeger: ZIEL_SCHIFF },
-      gebuehr: 40 },
-    st_cyris: { system: 'cyris', linien: ['r_bauteil', 'r_medikamente', 'r_nahrung'],
-      verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
-      ziel: { material: 132, bauteil: 40, kristall: 36, medikamente: 40, eis: 80, nahrung: 52, treibstoff: 20 }, gebuehr: 40 },
-    st_dravos: { system: 'dravos', linien: ['r_material', 'r_treibstoff'],
-      verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
-      ziel: { erz: 240, material: 96, eis: 96, treibstoff: 52, nahrung: 20, medikamente: 20, bauteil: 20 }, gebuehr: 40 },
-    st_meridian: { system: 'meridian', linien: [], verbrauch: {},
-      ziel: { erz: 100, eis: 100, kristall: 100, material: 100, bauteil: 100, treibstoff: 100, nahrung: 100, medikamente: 100 }, gebuehr: 0, aussenhandel: true },
-    st_veldra: { system: 'veldra', linien: ['r_material', 'r_nahrung'],
-      verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
-      ziel: { erz: 240, material: 96, eis: 80, nahrung: 52, treibstoff: 20, medikamente: 20, bauteil: 20 }, gebuehr: 40 },
-  },
-  zielFaktor: 4, zielMin: 20, obergrenze: 1250,
-  fields: [
-    { system: 'aldera', ware: 'erz', miner: 2 }, { system: 'dravos', ware: 'erz', miner: 1 },
-    { system: 'dravos', ware: 'eis', miner: 1 }, { system: 'cyris', ware: 'kristall', miner: 1 },
-    { system: 'cyris', ware: 'eis', miner: 1 }, { system: 'veldra', ware: 'erz', miner: 1 },
-  ],
+  systems: m_data_systeme.systems,
+  gates: m_data_systeme.gates,
+  aktiveRezepte: ['r_bauteil', 'r_frachter', 'r_jaeger', 'r_material', 'r_medikamente', 'r_miner', 'r_nahrung', 'r_treibstoff', 'r_lager', 'r_bergbau', 'r_fabrik', 'r_dock', 'r_werft', 'r_verteidigung', 'r_bauschiff'],
+  werft: 'st_aldera', zielSchiff: 2, reichsgroesse: 3,
+  // v0.11.0 / A3: dividendeFreibetrag von 2000 auf 3000 angehoben.
+  // 3000 liegt bewusst über mindeststand (2500). In v0.10.0 (2000 < 2500) füllte
+  // der Fonds Stationskassen bis mindeststand auf und die Dividende zog sie im
+  // selben Tick wieder über den Freibetrag ab — Endlosschleife. Zusätzlich
+  // subventioniert der Fonds seit A2 keine Stationen mit Eigentümer mehr.
+  dividendeFreibetrag: 3000,
+  stations: m_data_systeme.stations,
+  obergrenze: 1250,
+  fields: m_data_systeme.fields,
   minerOwner: 'npc3',
-  traders: [
-    { owner: 'npc1', system: 'aldera', start: 0 }, { owner: 'npc2', system: 'dravos', start: 5 },
-    { owner: 'npc1', system: 'cyris', start: 10 }, { owner: 'npc2', system: 'veldra', start: 15 },
-  ],
+  traders: m_data_systeme.traders,
   treibstoffJeSprung: 1, aussenhandelTeiler: 10,
   betriebskosten: { miner: 150, frachter: 250, jaeger: 50 },
   senkeBesitzer: ['security'], mindeststand: 2500, fondsObergrenze: 1500, npcObergrenze: 6000, npcAusgabenArten: ['trader', 'miner'],
-  sicherheit: { owner: 'security', jaeger: ['aldera', 'dravos', 'cyris', 'veldra'], fokus: 'schwach', rueckzug: 30 },
-  piraten: { owner: 'pirates', markt: 'st_meridian',
-    soll: { dravos: { pirat_klein: 1 }, cyris: { pirat_mittel: 1 }, veldra: { pirat_klein: 1 }, meridian: { pirat_mittel: 1, pirat_gross: 1 } } },
-  patrouilleChance: 900, ueberfallChance: 200, ersatzRuecklage: 250, warteLeer: 30, warteTreibstoff: 10,
-  owners: [
-    { id: 'house', kind: 'player', cash: 2000 }, { id: 'security', kind: 'authority', cash: 5000 }, { id: 'pirates', kind: 'pirate', cash: 3000 },
-    { id: 'npc1', kind: 'trader', cash: 3000 }, { id: 'npc2', kind: 'trader', cash: 3000 }, { id: 'npc3', kind: 'miner', cash: 2000 },
-    { id: 'st_aldera', kind: 'station', cash: 4000 }, { id: 'st_cyris', kind: 'station', cash: 4000 },
-    { id: 'st_dravos', kind: 'station', cash: 4000 }, { id: 'st_meridian', kind: 'station', cash: 6000 }, { id: 'st_veldra', kind: 'station', cash: 4000 },
-    { id: 'fonds_aldera', kind: 'fund', cash: 1000 }, { id: 'fonds_cyris', kind: 'fund', cash: 1000 },
-    { id: 'fonds_dravos', kind: 'fund', cash: 1000 }, { id: 'fonds_meridian', kind: 'fund', cash: 1000 }, { id: 'fonds_veldra', kind: 'fund', cash: 1000 },
-  ],
+  sicherheit: { owner: 'security', jaeger: m_data_systeme.sicherheitJaeger, fokus: 'schwach', rueckzug: 30 },
+  piraten: { owner: 'pirates', markt: 'st_meridian', soll: m_data_systeme.piratenSoll },
+  patrouilleChance: 600, ueberfallChance: 100, ersatzRuecklage: 250, warteLeer: 30, warteTreibstoff: 10, schutzgeldJeStunde: 80,
+  owners: m_data_systeme.owners,
 };
 return { WORLD };
 })();
@@ -429,7 +562,6 @@ const COMBAT = {
     pirat_klein: { hp: 110, angriff: 22, ruestung: 3, treffer: 503 },
     pirat_mittel: { hp: 190, angriff: 32, ruestung: 0, treffer: 600 },
     pirat_gross: { hp: 206, angriff: 55, ruestung: 3, treffer: 576 },
-    geschuetz: { hp: 137, angriff: 49, ruestung: 2, treffer: 752 },
   },
   flucht: 500, maxRunden: 12,
   kopfgeldKlasse: { pirat_klein: 'klein', pirat_mittel: 'mittel', pirat_gross: 'gross' },
@@ -440,10 +572,11 @@ return { COMBAT };
 
 const m_data_rules = (() => {
 const RULES = {
-  schema: 5, rulesVersion: 4, maxAdvanceSteps: 10000, startSeed: 1, mintKinds: ['authority'],
+  schema: 8, rulesVersion: 7, maxAdvanceSteps: 10000, startSeed: 1,
   owners: m_data_world.WORLD.owners, economy: m_data_economy.ECONOMY,
   world: m_data_world.WORLD, combat: m_data_combat.COMBAT,
 };
+m_data_systeme.tiefFrieren(RULES);
 return { RULES };
 })();
 
@@ -479,11 +612,21 @@ function kontoStats(owners) {
 }
 const kampfStats = () => ({ kaempfe: 0, kopfgeld: 0, abschuesse: {}, verluste: {}, indienst: {}, vernichtet: 0, piratenErsatz: 0 });
 const zuschussStats = () => ({ zuschuss: 0 });
+// v0.11.0: protokolliere um optionale station-ID erweitert, damit das
+// Stations-Blatt Ereignisse ohne fragile Textsuche filtern kann. Der
+// station-Schlüssel wird nur gesetzt, wenn vorhanden — sonst bleiben alte
+// und neue Ereignisse im canonical-Hash unterscheidbar.
+function protokolliere(state, art, text, owner = null, station = null) {
+  const eintrag = { tick: state.tick, art, text, owner };
+  if (station) eintrag.station = station;
+  state.ereignisse.push(eintrag);
+  if (state.ereignisse.length > 60) state.ereignisse.shift();
+}
 const schiffId = (n) => `sh${String(n).padStart(3, '0')}`;
 function neuesSchiff(state, felder) {
   const id = schiffId(state.nextShip);
   state.nextShip += 1;
-  const s = { id, phase: 'dock', ziel: null, ankunft: 0, ladung: {}, warten: 0, ware: null, arbeit: 0, ...felder };
+  const s = { id, phase: 'dock', ziel: null, ankunft: 0, ladung: {}, warten: 0, ware: null, arbeit: 0, escorte: null, ...felder };
   state.ships[id] = s; state.stats.verkaeufe[id] = 0; return s;
 }
 function createState(seed, rules) {
@@ -497,7 +640,11 @@ function createState(seed, rules) {
   for (const id of ids(w.stations)) {
     const cfg = w.stations[id]; const lager = {};
     for (const ware of ids(cfg.ziel)) lager[ware] = cfg.ziel[ware];
-    stations[id] = { id, system: cfg.system, lager, linien: cfg.linien.map((rezept) => ({ rezept, rest: 0 })) };
+    stations[id] = {
+      id, system: cfg.system, lager,
+      linien: cfg.linien.map((rezept) => ({ rezept, rest: 0, herkunft: 'npc' })),
+      eigentum: null, module: {},
+    };
     stats.rezepte[id] = 0; stats.mangel[id] = {};
     for (const ware of ids(cfg.verbrauch)) stats.mangel[id][ware] = 0;
   }
@@ -508,8 +655,8 @@ function createState(seed, rules) {
     ledger[ware] = { initial, mined: 0, produced: 0, consumed: 0, imported: 0, exported: 0 };
   }
   const state = {
-    schema: rules.schema, rulesVersion: rules.rulesVersion, tick: 0, rng: seedToState(seed), queue: [],
-    owners, systems, entities: {}, nextId: 1, nextShip: 1, minted: 0, burned: 0, initialSupply,
+    schema: rules.schema, rulesVersion: rules.rulesVersion, tick: 0, rng: seedToState(seed), queue: [], ereignisse: [],
+    owners, systems, nextShip: 1, minted: 0, burned: 0, initialSupply,
     stations, ships: {}, sollflotte: {}, ledger, stats,
   };
   const soll = (felder) => {
@@ -525,38 +672,31 @@ function createState(seed, rules) {
       neuesSchiff(state, { owner: w.piraten.owner, klasse, system, heimat: system, auftrag: 'pirat' });
   return state;
 }
-return { leereStats, kontoStats, kampfStats, zuschussStats, schiffId, neuesSchiff, createState };
+return { leereStats, kontoStats, kampfStats, zuschussStats, protokolliere, schiffId, neuesSchiff, createState };
 })();
 
 const m_core_commands = (() => {
-const { rngInt } = m_core_rng;
+const { ids } = m_core_zahl;
+const anzahlLadung = (lager, ware) => (Object.hasOwn(lager, ware) ? lager[ware] : 0);
 const FIELDS = {
-  noop: [], creditTransfer: ['to', 'amount'], spawnTestEntity: [], mint: ['amount'],
   shipMove: ['schiff', 'ziel'], shipTrade: ['schiff', 'ware', 'menge', 'kauf'],
   shipMine: ['schiff', 'ware'], shipWait: ['schiff'],
+  shipActivate: ['schiff', 'klasse'], shipHandeln: ['schiff'],
+  shipEscort: ['schiff', 'ziel'], shipHunt: ['schiff'],
+  shipInstall: ['schiff', 'modul'], stationBuy: ['schiff'],
+  stationRecipe: ['station', 'rezept'], shipRemoveModule: ['schiff', 'modul'],
 };
-const isAmount = (x) => Number.isSafeInteger(x) && x > 0;
-
 function checkShape(state, cmd, rules) {
   if (cmd === null || typeof cmd !== 'object' || Array.isArray(cmd)) return 'Befehl ist kein Objekt';
   if (!Object.hasOwn(FIELDS, cmd.type)) return 'unbekannter Befehlstyp';
   if (typeof cmd.owner !== 'string' || !Object.hasOwn(state.owners, cmd.owner)) return 'unbekannter Besitzer';
   const erlaubt = new Set(['type', 'owner', ...FIELDS[cmd.type]]);
   for (const k of Object.keys(cmd)) if (!erlaubt.has(k)) return `unerlaubtes Feld: ${k}`;
-  if (cmd.type === 'creditTransfer') {
-    if (typeof cmd.to !== 'string' || !Object.hasOwn(state.owners, cmd.to)) return 'unbekannter Empfänger';
-    if (cmd.to === cmd.owner) return 'Absender und Empfänger sind gleich';
-    if (!isAmount(cmd.amount)) return 'Betrag muss eine positive ganze Zahl sein';
-  }
-  if (cmd.type === 'mint') {
-    if (!isAmount(cmd.amount)) return 'Betrag muss eine positive ganze Zahl sein';
-    if (!rules.mintKinds.includes(state.owners[cmd.owner].kind)) return 'Besitzer darf kein Geld schöpfen';
-  }
   if (FIELDS[cmd.type].includes('schiff')) {
     if (typeof cmd.schiff !== 'string' || !Object.hasOwn(state.ships, cmd.schiff)) return 'unbekanntes Schiff';
     const s = state.ships[cmd.schiff];
     if (s.owner !== cmd.owner) return 'Schiff gehört nicht dem Besitzer';
-    if (s.phase !== 'dock') return 'Schiff ist nicht im Dock';
+    if (s.phase !== 'dock' && !(cmd.type === 'shipWait' && s.phase === 'reise')) return 'Schiff ist nicht im Dock';
     if (cmd.type === 'shipMove') {
       if (typeof cmd.ziel !== 'string' || !Object.hasOwn(rules.world.stations, cmd.ziel)) return 'unbekanntes Ziel';
     }
@@ -566,11 +706,70 @@ function checkShape(state, cmd, rules) {
       if (typeof cmd.kauf !== 'boolean') return 'kauf muss boolean sein';
       const station = rules.world.systems[s.system].station;
       if (!Object.hasOwn(rules.world.stations[station].ziel, cmd.ware)) return 'Station handelt diese Ware nicht';
+      if (cmd.kauf) {
+        const fracht = Object.values(s.ladung).reduce((a, b) => a + b, 0);
+        if (fracht + cmd.menge > rules.economy.cargo) return 'zu wenig Frachtraum';
+        const lager = state.stations[station].lager[cmd.ware] || 0;
+        if (lager - cmd.menge < m_core_handel.reserve(rules, station, cmd.ware)) return 'Station behält ihren Vorrat';
+      }
     }
+    if (cmd.type === 'shipActivate') {
+      if (typeof cmd.klasse !== 'string' || !Object.hasOwn(rules.economy.waren, cmd.klasse)) return 'unbekannte Schiffsklasse';
+      if (rules.economy.waren[cmd.klasse].stufe !== 'schiff') return 'Ware ist kein aktivierbares Schiff';
+      if (!Object.hasOwn(s.ladung, cmd.klasse) || s.ladung[cmd.klasse] < 1) return 'Schiff nicht im Frachtraum';
+    }
+    if (cmd.type === 'shipHandeln' && s.klasse !== 'frachter') return 'nur Frachter können selbständig handeln';
     if (cmd.type === 'shipMine') {
       if (s.klasse !== 'miner') return 'nur Miner können fördern';
       if (typeof cmd.ware !== 'string' || !Object.hasOwn(rules.economy.waren, cmd.ware)) return 'unbekannte Ware';
+      if (!rules.world.fields.some((f) => f.system === s.system && f.ware === cmd.ware))
+        return `kein ${cmd.ware}-Vorkommen in ${s.system}`;
     }
+    if (cmd.type === 'shipEscort' || cmd.type === 'shipHunt') {
+      if (s.klasse !== 'jaeger') return 'nur Jäger können das';
+      if (cmd.type === 'shipEscort') {
+        if (typeof cmd.ziel !== 'string' || !Object.hasOwn(state.ships, cmd.ziel)) return 'unbekanntes Zielschiff';
+        if (cmd.ziel === cmd.schiff) return 'Ein Schiff kann sich nicht selbst eskortieren';
+        if (state.ships[cmd.ziel].owner !== cmd.owner) return 'Zielschiff gehört nicht dem Besitzer';
+      }
+    }
+    if (cmd.type === 'shipInstall') {
+      if (s.klasse !== 'bauschiff') return 'nur Bauschiffe können Module einbauen';
+      if (typeof cmd.modul !== 'string' || !Object.hasOwn(rules.economy.waren, cmd.modul)) return 'unbekanntes Modul';
+      if (rules.economy.waren[cmd.modul].stufe !== 'modul') return 'Ware ist kein Modul';
+      if (anzahlLadung(s.ladung, cmd.modul) < 1) return 'Modul nicht im Frachtraum';
+      const st = state.stations[rules.world.systems[s.system].station];
+      // v0.11.0 / A4: Einbau nur an eigenen Stationen.
+      if (st.eigentum !== cmd.owner) return 'Station gehört nicht dem Besitzer';
+      if ((st.module[cmd.modul] || 0) >= 2) return 'maximal 2 Module dieser Art pro Station';
+      if (Object.values(st.module).reduce((a, b) => a + b, 0) >= 6) return 'maximal 6 Module pro Station';
+    }
+    if (cmd.type === 'shipRemoveModule') {
+      if (s.klasse !== 'bauschiff') return 'nur Bauschiffe können Module ausbauen';
+      if (typeof cmd.modul !== 'string' || !Object.hasOwn(rules.economy.waren, cmd.modul)) return 'unbekanntes Modul';
+      if (rules.economy.waren[cmd.modul].stufe !== 'modul') return 'Ware ist kein Modul';
+      const st = state.stations[rules.world.systems[s.system].station];
+      if (st.eigentum !== cmd.owner) return 'Station gehört nicht dem Besitzer';
+      if ((st.module[cmd.modul] || 0) <= 0) return 'Modul nicht vorhanden';
+      const fracht = Object.values(s.ladung).reduce((a, b) => a + b, 0);
+      if (fracht + 1 > rules.economy.cargo) return 'zu wenig Frachtraum';
+    }
+    if (cmd.type === 'stationBuy') {
+      const station = rules.world.systems[s.system].station;
+      const st = state.stations[station];
+      if (st.eigentum) return 'Station gehört bereits jemandem';
+      const eigen = ids(state.stations).filter((id) => state.stations[id].eigentum === cmd.owner).length;
+      if (eigen >= rules.world.reichsgroesse) return `Reich ist auf ${rules.world.reichsgroesse} Stationen begrenzt`;
+      if (state.owners[cmd.owner].cash < m_core_handel.stationspreis(state, rules, station)) return 'zu wenig ISK für den Stationskauf';
+    }
+  }
+  if (cmd.type === 'stationRecipe') {
+    if (typeof cmd.station !== 'string' || !Object.hasOwn(state.stations, cmd.station)) return 'unbekannte Station';
+    if (state.stations[cmd.station].eigentum !== cmd.owner) return 'Station gehört nicht dem Besitzer';
+    if (typeof cmd.rezept !== 'string' || !Object.hasOwn(rules.economy.rezepte, cmd.rezept)) return 'unbekanntes Rezept';
+    const ort = rules.economy.rezepte[cmd.rezept].ort;
+    if (!state.stations[cmd.station].linien.some((l) => rules.economy.rezepte[l.rezept].ort === ort))
+      return 'keine passende Produktionslinie vorhanden';
   }
   return null;
 }
@@ -586,17 +785,6 @@ function execute(state, cmd, rules) {
   const fehler = checkShape(state, cmd, rules);
   if (fehler) return { ok: false, type: cmd && cmd.type, reason: fehler };
   switch (cmd.type) {
-    case 'noop': break;
-    case 'creditTransfer': {
-      const sender = state.owners[cmd.owner]; const receiver = state.owners[cmd.to];
-      if (sender.cash < cmd.amount) return { ok: false, type: cmd.type, reason: 'keine Deckung' };
-      sender.cash -= cmd.amount; receiver.cash += cmd.amount; break;
-    }
-    case 'spawnTestEntity': {
-      const id = `e${state.nextId}`; state.nextId += 1;
-      state.entities[id] = { id, owner: cmd.owner, x: rngInt(state, 1000), y: rngInt(state, 1000) }; break;
-    }
-    case 'mint': state.owners[cmd.owner].cash += cmd.amount; state.minted += cmd.amount; break;
     case 'shipMove': {
       const s = state.ships[cmd.schiff];
       const r = m_core_route.route(rules.world, s.system, rules.world.stations[cmd.ziel].system);
@@ -605,17 +793,104 @@ function execute(state, cmd, rules) {
       const sprit = r.spruenge * rules.world.treibstoffJeSprung;
       if (sprit > 0 && !m_core_handel.tanken(state, rules, s, station, sprit))
         return { ok: false, type: cmd.type, reason: 'kein Treibstoff oder Geld' };
-      s.phase = 'reise'; s.ziel = cmd.ziel; s.ankunft = state.tick + r.zeit; s.warten = 0; break;
+      s.phase = 'reise'; s.ziel = cmd.ziel; s.ankunft = state.tick + r.zeit; s.warten = 0; s.eskorte = null; break;
     }
     case 'shipTrade': {
       const s = state.ships[cmd.schiff];
       const station = rules.world.systems[s.system].station;
       if (!m_core_handel.handel(state, rules, s, station, cmd.ware, cmd.menge, cmd.kauf))
-        return { ok: false, type: cmd.type, reason: 'Handel nicht möglich (Kasse, Bestand oder Platz)' };
+        return { ok: false, type: cmd.type, reason: 'Handel nicht möglich (Kasse, Bestand, Frachtraum oder Vorrat)' };
       state.stats.handel += 1; state.stats.verkaeufe[s.id] += 1; break;
     }
-    case 'shipMine': { const s = state.ships[cmd.schiff]; s.auftrag = 'foerdern'; s.ware = cmd.ware; break; }
-    case 'shipWait': { const s = state.ships[cmd.schiff]; s.auftrag = 'halten'; break; }
+    case 'shipMine': { const s = state.ships[cmd.schiff]; s.auftrag = 'foerdern'; s.ware = cmd.ware; s.eskorte = null; break; }
+    case 'shipWait': { const s = state.ships[cmd.schiff]; s.auftrag = 'halten'; s.eskorte = null; break; }
+    case 'shipActivate': {
+      const traeger = state.ships[cmd.schiff];
+      traeger.ladung[cmd.klasse] -= 1;
+      if (traeger.ladung[cmd.klasse] === 0) delete traeger.ladung[cmd.klasse];
+      state.ledger[cmd.klasse].consumed += 1;
+      const neu = m_core_state.neuesSchiff(state, { owner: cmd.owner, klasse: cmd.klasse, system: traeger.system, heimat: traeger.system, auftrag: 'halten', ware: null });
+      m_core_state.protokolliere(state, 'dienst', `${neu.id} (${cmd.klasse}) in Dienst gestellt`, cmd.owner);
+      break;
+    }
+    case 'shipHandeln': {
+      const s = state.ships[cmd.schiff];
+      s.auftrag = 'handeln'; s.ware = null; s.warten = 0; s.eskorte = null;
+      m_core_state.protokolliere(state, 'auftrag', `${s.id} handelt jetzt selbständig`, cmd.owner);
+      break;
+    }
+    case 'shipHunt': {
+      const s = state.ships[cmd.schiff];
+      s.auftrag = 'jagd'; s.eskorte = null; s.ware = null; s.warten = 0;
+      m_core_state.protokolliere(state, 'auftrag', `${s.id} jagt Piraten in ${s.system}`, cmd.owner);
+      break;
+    }
+    case 'shipEscort': {
+      const s = state.ships[cmd.schiff];
+      s.auftrag = 'eskorte'; s.eskorte = cmd.ziel; s.ware = null; s.warten = 0;
+      m_core_state.protokolliere(state, 'auftrag', `${s.id} eskortiert ${cmd.ziel}`, cmd.owner);
+      break;
+    }
+    case 'shipInstall': {
+      const s = state.ships[cmd.schiff];
+      const station = rules.world.systems[s.system].station;
+      const st = state.stations[station];
+      s.ladung[cmd.modul] -= 1;
+      if (s.ladung[cmd.modul] === 0) delete s.ladung[cmd.modul];
+      state.ledger[cmd.modul].consumed += 1;
+      st.module[cmd.modul] = (st.module[cmd.modul] || 0) + 1;
+      if (cmd.modul === 'fabrik') {
+        const vorhanden = new Set(st.linien.map((l) => l.rezept));
+        const rezept = ['r_material', 'r_treibstoff', 'r_nahrung', 'r_bauteil', 'r_medikamente'].find((r) => !vorhanden.has(r));
+        if (rezept) st.linien.push({ rezept, rest: 0, herkunft: 'spieler' });
+      }
+      if (cmd.modul === 'werft') {
+        const vorhanden = new Set(st.linien.map((l) => l.rezept));
+        const rezept = ['r_jaeger', 'r_frachter', 'r_miner'].find((r) => !vorhanden.has(r));
+        if (rezept) st.linien.push({ rezept, rest: 0, herkunft: 'spieler' });
+      }
+      m_core_state.protokolliere(state, 'dienst', `${s.id} baut ${cmd.modul} in ${station} ein`, cmd.owner, station);
+      break;
+    }
+    case 'shipRemoveModule': {
+      const s = state.ships[cmd.schiff];
+      const station = rules.world.systems[s.system].station;
+      const st = state.stations[station];
+      st.module[cmd.modul] -= 1;
+      if (!st.module[cmd.modul]) delete st.module[cmd.modul];
+      s.ladung[cmd.modul] = (s.ladung[cmd.modul] || 0) + 1;
+      state.ledger[cmd.modul].consumed -= 1;
+      if ((cmd.modul === 'fabrik' || cmd.modul === 'werft') && !st.module[cmd.modul]) {
+        const ort = cmd.modul;
+        for (let i = st.linien.length - 1; i >= 0; i--) {
+          const l = st.linien[i];
+          if (l.herkunft === 'spieler' && rules.economy.rezepte[l.rezept].ort === ort) {
+            st.linien.splice(i, 1);
+            break;
+          }
+        }
+      }
+      m_core_state.protokolliere(state, 'dienst', `${s.id} baut ${cmd.modul} in ${station} aus`, cmd.owner, station);
+      break;
+    }
+    case 'stationRecipe': {
+      const st = state.stations[cmd.station];
+      const ort = rules.economy.rezepte[cmd.rezept].ort;
+      const idx = st.linien.findIndex((l) => rules.economy.rezepte[l.rezept].ort === ort);
+      if (idx < 0) return { ok: false, type: cmd.type, reason: 'keine passende Produktionslinie vorhanden' };
+      st.linien[idx] = { rezept: cmd.rezept, rest: 0, herkunft: st.linien[idx].herkunft };
+      m_core_state.protokolliere(state, 'dienst', `${cmd.station}: Rezept auf ${cmd.rezept} umgestellt`, cmd.owner, cmd.station);
+      break;
+    }
+    case 'stationBuy': {
+      const station = rules.world.systems[state.ships[cmd.schiff].system].station;
+      const preis = m_core_handel.stationspreis(state, rules, station);
+      state.owners[cmd.owner].cash -= preis;
+      state.burned += preis;
+      state.stations[station].eigentum = cmd.owner;
+      m_core_state.protokolliere(state, 'dienst', `${station} gekauft für ${preis} ISK`, cmd.owner, station);
+      break;
+    }
   }
   return { ok: true, type: cmd.type };
 }
@@ -660,12 +935,13 @@ function verkaufbar(state, rules, station, ware) {
   if (zielVon(rules, station, ware) <= 0) return 0;
   return Math.max(0, anzahl(state.stations[station].lager, ware) - reserve(rules, station, ware));
 }
-function obergrenze(rules, station, ware) {
-  return div(zielVon(rules, station, ware) * rules.world.obergrenze, 1000);
+function obergrenze(state, rules, station, ware) {
+  const n = anzahl(state.stations[station].module, 'lager');
+  return div(zielVon(rules, station, ware) * rules.world.obergrenze * (1000 + 500 * n), 1000000);
 }
 function aufnehmbar(state, rules, station, ware) {
   if (zielVon(rules, station, ware) <= 0) return 0;
-  const platz = obergrenze(rules, station, ware) - anzahl(state.stations[station].lager, ware);
+  const platz = obergrenze(state, rules, station, ware) - anzahl(state.stations[station].lager, ware);
   const geld = div(state.owners[station].cash, preis(state, station, ware, rules));
   return Math.max(0, Math.min(platz, geld));
 }
@@ -674,13 +950,14 @@ function buche(state, owner, feld, n) {
   if (!Object.hasOwn(konto, owner)) konto[owner] = { erloes: 0, kosten: 0 };
   konto[owner][feld] += n;
 }
-const gebuehr = (rules, station, wert) => div(wert * rules.world.stations[station].gebuehr, 1000);
+const gebuehr = (state, rules, station, wert) => div(wert * rules.world.stations[station].gebuehr * 1000, 1000 * (1000 + 500 * anzahl(state.stations[station].module, 'dock')));
+const stationspreis = (state, rules, station) => 2 * state.owners[station].cash + 3000;
 function bezahlbar(rules, station, kasse, p) {
   if (kasse <= 0 || p <= 0) return 0;
   return div(kasse * 1000, p * (1000 + rules.world.stations[station].gebuehr));
 }
 
-function handel(state, rules, schiff, station, ware, menge, kauf) {
+function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt = false) {
   if (!Number.isSafeInteger(menge) || menge <= 0) return false;
   const p = preis(state, station, ware, rules);
   if (p <= 0) return false;
@@ -689,11 +966,14 @@ function handel(state, rules, schiff, station, ware, menge, kauf) {
   const besitzer = state.owners[schiff.owner];
   const fondsId = fondsIn(rules, st.system);
   const wert = menge * p;
-  const fee = gebuehr(rules, station, wert);
+  const fee = gebuehr(state, rules, station, wert);
+  const fracht = Object.values(schiff.ladung).reduce((a, b) => a + b, 0);
   const reicht = kauf
     ? anzahl(st.lager, ware) >= menge && besitzer.cash >= wert + fee
+      && (freigestellt || (fracht + menge <= rules.economy.cargo
+        && anzahl(st.lager, ware) - menge >= reserve(rules, station, ware)))
     : anzahl(schiff.ladung, ware) >= menge && kasse.cash >= wert
-      && anzahl(st.lager, ware) + menge <= obergrenze(rules, station, ware);
+      && anzahl(st.lager, ware) + menge <= obergrenze(state, rules, station, ware);
   if (!reicht) return false;
   const d = kauf ? menge : -menge;
   st.lager[ware] -= d;
@@ -701,7 +981,11 @@ function handel(state, rules, schiff, station, ware, menge, kauf) {
   if (schiff.ladung[ware] === 0) delete schiff.ladung[ware];
   const geld = kauf ? wert : -wert;
   besitzer.cash -= geld; kasse.cash += geld;
-  besitzer.cash -= fee; state.owners[fondsId].cash += fee;
+  // v0.11.0 / A1: Gebühren gehen an die Stationskasse, wenn die Station einen
+  // Besitzer hat (st.eigentum ist die Owner-ID, nicht die Stations-ID).
+  // Sonst — bei besitzerlosen NPC-Stationen — an den Fonds des Systems.
+  const empfaenger = st.eigentum ? station : fondsId;
+  besitzer.cash -= fee; state.owners[empfaenger].cash += fee;
   buche(state, kauf ? station : schiff.owner, 'erloes', wert);
   buche(state, kauf ? schiff.owner : station, 'kosten', wert);
   buche(state, schiff.owner, 'kosten', fee);
@@ -711,7 +995,7 @@ function handel(state, rules, schiff, station, ware, menge, kauf) {
 function tanken(state, rules, schiff, station, n) {
   if (n <= 0) return true;
   if (anzahl(state.stations[station].lager, 'treibstoff') < n) return false;
-  if (!handel(state, rules, schiff, station, 'treibstoff', n, true)) return false;
+  if (!handel(state, rules, schiff, station, 'treibstoff', n, true, true)) return false;
   schiff.ladung.treibstoff -= n;
   if (schiff.ladung.treibstoff === 0) delete schiff.ladung.treibstoff;
   state.ledger.treibstoff.consumed += n; state.stats.tanken += 1; return true;
@@ -721,9 +1005,9 @@ function treibstoffkosten(state, rules, station, n) {
   if (n <= 0) return 0;
   const p = preis(state, station, 'treibstoff', rules);
   if (p <= 0) return null;
-  return n * p + gebuehr(rules, station, n * p);
+  return n * p + gebuehr(state, rules, station, n * p);
 }
-return { stationIn, fondsIn, reserve, verkaufbar, obergrenze, aufnehmbar, buche, gebuehr, bezahlbar, handel, tanken, treibstoffkosten };
+return { stationIn, fondsIn, reserve, verkaufbar, obergrenze, aufnehmbar, buche, gebuehr, bezahlbar, handel, tanken, treibstoffkosten, stationspreis };
 })();
 
 const m_core_ankunft = (() => {
@@ -738,10 +1022,18 @@ function entladen(state, rules, s) {
     }
   }
 }
-function reise(state) {
+function reise(state, rules) {
+  const jagdOhneBeute = rules
+    ? (s) => !(Object.values(state.ships).some((x) => x.owner === rules.world.piraten.owner
+      && x.system === s.system && x.phase === 'dock' && x.auftrag === 'pirat'))
+    : () => true;
   for (const id of ids(state.ships)) {
     const s = state.ships[id];
-    if (s.phase === 'reise' || (s.auftrag === 'patrouille' && s.phase === 'dock')) s.arbeit += 1;
+    if (s.phase === 'reise') { s.arbeit += 1; continue; }
+    if (s.phase === 'dock' && (s.auftrag === 'patrouille' || s.auftrag === 'jagd' || s.auftrag === 'eskorte')) {
+      if (s.auftrag === 'jagd' && s.owner === rules.economy.start.owner && jagdOhneBeute(s)) continue;
+      s.arbeit += 1;
+    }
   }
 }
 function ankunft(state, rules) {
@@ -759,15 +1051,23 @@ return { entladen, reise, ankunft };
 const m_core_foerderung = (() => {
 const { ids, anzahl } = m_core_zahl;
 const { handel, aufnehmbar, stationIn } = m_core_handel;
+const { protokolliere } = m_core_state;
 function foerderung(state, rules) {
   const e = rules.economy;
   for (const id of ids(state.ships)) {
     const s = state.ships[id];
     if (s.klasse !== 'miner' || s.auftrag !== 'foerdern' || s.phase !== 'dock') continue;
     const ware = s.ware;
+    if (!rules.world.fields.some((f) => f.system === s.system && f.ware === ware)) {
+      protokolliere(state, 'auftrag', `${id}: ${ware} kommt in ${s.system} nicht vor – Förderung gestoppt`, s.owner);
+      s.auftrag = 'halten'; s.ware = null;
+      continue;
+    }
     const vorher = anzahl(s.ladung, ware);
     if (vorher < e.cargo) {
-      const n = Math.min(e.miningRate, e.cargo - vorher);
+      const station = stationIn(rules, s.system);
+      const rate = e.miningRate * (1 + anzahl(state.stations[station].module, 'bergbau'));
+      const n = Math.min(rate, e.cargo - vorher);
       s.ladung[ware] = vorher + n;
       state.ledger[ware].mined += n; s.arbeit += 1;
     }
@@ -843,7 +1143,7 @@ function bestesPaar(state, rules, s, station) {
       const menge = Math.min(rules.economy.cargo, ware === 'treibstoff' ? vorrat - sprit : vorrat,
         aufnehmbar(state, rules, ziel, ware), bezahlbar(rules, station, kasse - fuel, pHier));
       if (menge <= 0) continue;
-      const gewinn = menge * (pDort - pHier) - gebuehr(rules, station, menge * pHier) - gebuehr(rules, ziel, menge * pDort) - fuel;
+      const gewinn = menge * (pDort - pHier) - gebuehr(state, rules, station, menge * pHier) - gebuehr(state, rules, ziel, menge * pDort) - fuel;
       if (gewinn <= 0) continue;
       if (!best || besser(gewinn, r.zeit, best.gewinn, best.zeit)) best = { ware, ziel, menge, gewinn, zeit: r.zeit };
     }
@@ -863,7 +1163,7 @@ function besterAbsatz(state, rules, s, station) {
       const m = Math.min(s.ladung[ware], aufnehmbar(state, rules, ziel, ware));
       if (m <= 0) continue;
       const wert = m * preis(state, ziel, ware, rules);
-      erloes += wert - gebuehr(rules, ziel, wert);
+      erloes += wert - gebuehr(state, rules, ziel, wert);
     }
     if (erloes <= 0) continue;
     if (!best || besser(erloes, r.zeit, best.erloes, best.zeit)) best = { ziel, erloes, zeit: r.zeit };
@@ -930,7 +1230,7 @@ function produktion(state, rules) {
       }
       if (linie.rest > 0) continue;
       const eingaben = ids(r.ein).every((w) => anzahl(st.lager, w) >= r.ein[w]);
-      const platz = ids(r.aus).every((w) => anzahl(st.lager, w) + r.aus[w] <= obergrenze(rules, id, w));
+      const platz = ids(r.aus).every((w) => anzahl(st.lager, w) + r.aus[w] <= obergrenze(state, rules, id, w));
       if (!eingaben || !platz) continue;
       for (const ware of ids(r.ein)) { st.lager[ware] -= r.ein[ware]; state.ledger[ware].consumed += r.ein[ware]; }
       linie.rest = r.dauer;
@@ -943,6 +1243,11 @@ return { produktion };
 const m_core_stunde = (() => {
 const { div, ids, anzahl } = m_core_zahl;
 const { fondsIn, buche } = m_core_handel;
+const { protokolliere } = m_core_state;
+// v0.11.0 / A3: einziger Lesezugriff auf den Dividenden-Freibetrag.
+// Regel und UI ziehen beide über diese Funktion, damit Anzeige und
+// Berechnung nicht auseinanderlaufen können.
+const wirksamerFreibetrag = (rules) => rules.world.dividendeFreibetrag;
 function verbrauch(state, rules) {
   for (const id of ids(state.stations)) {
     const st = state.stations[id]; const bedarf = rules.world.stations[id].verbrauch;
@@ -961,7 +1266,13 @@ function betriebskosten(state, rules) {
     if (s.auftrag === 'halten') continue;
     const kosten = div(anzahl(w.betriebskosten, s.klasse) * arbeit, rules.economy.stunde);
     const system = s.phase === 'reise' ? w.stations[s.ziel].system : s.system;
-    const besitzer = state.owners[s.owner]; const n = Math.min(besitzer.cash, kosten);
+    const besitzer = state.owners[s.owner];
+    if (arbeit > 0 && s.owner === rules.economy.start.owner
+      && (s.auftrag === 'jagd' || s.auftrag === 'eskorte' || s.auftrag === 'patrouille') && kosten > besitzer.cash) {
+      s.auftrag = 'halten'; s.eskorte = null; s.ware = null;
+      protokolliere(state, 'kosten', `${id} automatisch gestoppt – Kasse deckt die Betriebskosten (${kosten} ISK) nicht`, s.owner);
+    }
+    const n = Math.min(besitzer.cash, kosten);
     if (n <= 0) continue;
     besitzer.cash -= n;
     if (w.senkeBesitzer.includes(s.owner)) state.burned += n;
@@ -999,6 +1310,9 @@ function npcAusgaben(state, rules) {
 function fonds(state, rules) {
   const w = rules.world; const o = state.owners; const stationen = ids(state.stations);
   for (const id of stationen) {
+    // v0.11.0 / A2: Stationen mit Besitzer (Spieler wie NPC) werden nicht aus
+    // dem Fonds aufgefüllt — sonst würde der Fonds die Spielerkasse subventionieren.
+    if (state.stations[id].eigentum) continue;
     const f = o[fondsIn(rules, state.stations[id].system)];
     const n = Math.min(f.cash, w.mindeststand - o[id].cash);
     if (n <= 0) continue;
@@ -1013,7 +1327,18 @@ function fonds(state, rules) {
     o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;
   }
 }
-return { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds };
+function dividende(state, rules) {
+  const spieler = rules.economy.start.owner;
+  const freibetrag = wirksamerFreibetrag(rules);
+  for (const id of ids(state.stations)) {
+    if (state.stations[id].eigentum !== spieler) continue;
+    const n = state.owners[id].cash - freibetrag;
+    if (n <= 0) continue;
+    state.owners[id].cash -= n; state.owners[spieler].cash += n;
+    buche(state, id, 'kosten', n); buche(state, spieler, 'erloes', n);
+  }
+}
+return { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag };
 })();
 
 const m_core_kampf = (() => {
@@ -1067,20 +1392,27 @@ return { kampf };
 })();
 
 const m_core_sicherheit = (() => {
-const { ids, anzahl } = m_core_zahl;
+const { ids, anzahl, div } = m_core_zahl;
 const { rngInt } = m_core_rng;
 const { preis } = m_core_preis;
-const { aufnehmbar, buche } = m_core_handel;
+const { aufnehmbar, buche, tanken, stationIn } = m_core_handel;
+const { route } = m_core_route;
 const { kampf } = m_core_kampf;
-const { neuesSchiff } = m_core_state;
+const { neuesSchiff, protokolliere } = m_core_state;
 const zaehle = (obj, a, b) => { obj[a] ||= {}; obj[a][b] = anzahl(obj[a], b) + 1; };
 const imSystem = (state, owner, system, auftrag) => ids(state.ships).map((id) => state.ships[id])
   .filter((s) => s.owner === owner && s.system === system && s.phase === 'dock' && s.auftrag === auftrag);
 const seite = (rules, schiffe, fokus, rueckzug) => ({ schiffe: schiffe.map((s) => ({ einheit: s.klasse, hp: rules.combat.einheiten[s.klasse].hp })), fokus, rueckzug });
-function entfernen(state, s) {
+
+function entfernen(state, rules, s) {
   delete state.ships[s.id];
   delete state.stats.verkaeufe[s.id];
   zaehle(state.stats.verluste, s.owner, s.klasse);
+  for (const id of ids(state.ships)) {
+    const e = state.ships[id];
+    if (e.eskorte === s.id) { e.eskorte = null; if (e.auftrag === 'eskorte') e.auftrag = 'halten'; }
+  }
+  if (s.owner === rules.economy.start.owner) protokolliere(state, 'verlust', `${s.id} (${s.klasse}) verloren in ${s.system}`, s.owner);
 }
 function zerstoeren(state, rules, s) {
   const { markt, owner } = rules.world.piraten;
@@ -1097,31 +1429,51 @@ function zerstoeren(state, rules, s) {
     state.ledger[ware].consumed += rest; state.stats.vernichtet += rest;
     delete s.ladung[ware];
   }
-  entfernen(state, s);
+  entfernen(state, rules, s);
 }
 function patrouille(state, rules) {
-  const w = rules.world; const { owner, fokus, rueckzug } = w.sicherheit;
-  for (const system of ids(w.systems)) {
-    const jaeger = imSystem(state, owner, system, 'patrouille');
-    const piraten = imSystem(state, w.piraten.owner, system, 'pirat');
-    if (jaeger.length === 0 || piraten.length === 0) continue;
+  const w = rules.world;
+  const gruppen = new Map();
+  for (const id of ids(state.ships)) {
+    const s = state.ships[id];
+    if (s.klasse !== 'jaeger' || s.phase !== 'dock') continue;
+    if (s.auftrag !== 'patrouille' && s.auftrag !== 'jagd') continue;
+    const key = `${s.owner}|${s.system}`;
+    if (!gruppen.has(key)) {
+      const sicherheit = s.owner === w.sicherheit.owner;
+      gruppen.set(key, {
+        owner: s.owner, system: s.system,
+        fokus: sicherheit ? w.sicherheit.fokus : 'schwach',
+        rueckzug: sicherheit ? w.sicherheit.rueckzug : 50,
+        jaeger: [],
+      });
+    }
+    gruppen.get(key).jaeger.push(s);
+  }
+  for (const g of gruppen.values()) {
+    const piraten = imSystem(state, w.piraten.owner, g.system, 'pirat');
+    if (piraten.length === 0) continue;
     if (rngInt(state, 1000) >= w.patrouilleChance) continue;
-    const e = kampf(state, seite(rules, jaeger, fokus, rueckzug), seite(rules, piraten, 'erste', 0), rules);
+    const e = kampf(state, seite(rules, g.jaeger, g.fokus, g.rueckzug), seite(rules, piraten, 'erste', 0), rules);
     state.stats.kaempfe += 1;
-    jaeger.forEach((s, i) => { if (e.a[i] <= 0) entfernen(state, s); });
+    g.jaeger.forEach((s, i) => { if (e.a[i] <= 0) entfernen(state, rules, s); });
+    const wer = g.owner === w.sicherheit.owner ? 'der Sicherheit' : 'deiner Flotte';
     piraten.forEach((p, i) => {
       if (e.b[i] > 0) return;
-      const geld = rules.economy.kopfgeld[rules.combat.kopfgeldKlasse[p.klasse]];
-      state.owners[owner].cash += geld; state.minted += geld; state.stats.kopfgeld += geld;
-      buche(state, owner, 'erloes', geld);
+      const praemie = g.owner === rules.economy.start.owner ? rules.economy.kopfgeldFaktor : 1;
+      const geld = rules.economy.kopfgeld[rules.combat.kopfgeldKlasse[p.klasse]] * praemie;
+      state.owners[g.owner].cash += geld; state.minted += geld; state.stats.kopfgeld += geld;
+      buche(state, g.owner, 'erloes', geld);
       state.stats.abschuesse[p.klasse] = anzahl(state.stats.abschuesse, p.klasse) + 1;
-      entfernen(state, p);
+      protokolliere(state, 'abschuss', `${p.klasse} von ${wer} in ${g.system} abgeschossen`, g.owner);
+      entfernen(state, rules, p);
     });
   }
 }
 function zivil(rules, s, system) {
   const w = rules.world;
-  if (s.auftrag === 'halten' || s.owner === w.sicherheit.owner || s.owner === w.piraten.owner) return false;
+  if (s.owner === w.sicherheit.owner || s.owner === w.piraten.owner) return false;
+  if (s.auftrag === 'halten' && Object.values(s.ladung).reduce((a, b) => a + b, 0) === 0) return false;
   if (s.klasse === 'miner') return s.auftrag === 'foerdern' && s.phase === 'dock' && s.system === system;
   if (s.klasse === 'frachter') return s.phase === 'reise' ? w.stations[s.ziel].system === system : s.system === system;
   return false;
@@ -1131,14 +1483,46 @@ function ueberfall(state, rules) {
   for (const system of ids(w.systems)) {
     const piraten = imSystem(state, w.piraten.owner, system, 'pirat');
     if (piraten.length === 0) continue;
-    if (rngInt(state, 1000) >= w.ueberfallChance) continue;
+    const verteidigung = anzahl(state.stations[w.systems[system].station].module, 'verteidigung');
+    const chance = div(w.ueberfallChance * 1000, 1000 + 500 * verteidigung);
+    if (rngInt(state, 1000) >= chance) continue;
     const ziele = ids(state.ships).filter((id) => zivil(rules, state.ships[id], system));
     if (ziele.length === 0) continue;
     const ziel = state.ships[ziele[rngInt(state, ziele.length)]];
-    const e = kampf(state, seite(rules, [ziel], 'schwach', 0), seite(rules, piraten, 'erste', 0), rules);
+    const eskorten = ids(state.ships).map((id) => state.ships[id]).filter((s) =>
+      s.klasse === 'jaeger' && s.phase === 'dock' && s.system === system &&
+      s.auftrag === 'eskorte' && s.eskorte === ziel.id && s.owner === ziel.owner);
+    const verteidiger = [ziel, ...eskorten];
+    const e = kampf(state, seite(rules, verteidiger, 'schwach', 0), seite(rules, piraten, 'erste', 0), rules);
     state.stats.kaempfe += 1;
     if (e.a[0] <= 0) zerstoeren(state, rules, ziel);
-    piraten.forEach((p, i) => { if (e.b[i] <= 0) entfernen(state, p); });
+    eskorten.forEach((s, i) => { if (e.a[i + 1] <= 0) entfernen(state, rules, s); });
+    piraten.forEach((p, i) => {
+      if (e.b[i] > 0) return;
+      const praemie = ziel.owner === rules.economy.start.owner ? rules.economy.kopfgeldFaktor : 1;
+      const geld = rules.economy.kopfgeld[rules.combat.kopfgeldKlasse[p.klasse]] * praemie;
+      state.owners[ziel.owner].cash += geld; state.minted += geld; state.stats.kopfgeld += geld;
+      buche(state, ziel.owner, 'erloes', geld);
+      state.stats.abschuesse[p.klasse] = anzahl(state.stats.abschuesse, p.klasse) + 1;
+      protokolliere(state, 'abschuss', `${p.klasse} in ${system} verteidigt`, ziel.owner);
+      entfernen(state, rules, p);
+    });
+  }
+}
+function escorteBewegen(state, rules) {
+  const w = rules.world;
+  for (const id of ids(state.ships)) {
+    const s = state.ships[id];
+    if (s.klasse !== 'jaeger' || s.auftrag !== 'eskorte' || !s.eskorte || s.phase !== 'dock') continue;
+    const ziel = state.ships[s.eskorte];
+    if (!ziel) { s.eskorte = null; s.auftrag = 'halten'; continue; }
+    const zielSystem = ziel.phase === 'reise' ? w.stations[ziel.ziel].system : ziel.system;
+    if (s.system === zielSystem) continue;
+    const r = route(w, s.system, zielSystem);
+    if (!r || r.zeit <= 0) continue;
+    const sprit = r.spruenge * w.treibstoffJeSprung;
+    if (!tanken(state, rules, s, stationIn(rules, s.system), sprit)) continue;
+    s.phase = 'reise'; s.ziel = w.systems[zielSystem].station; s.ankunft = state.tick + r.zeit; s.warten = 0;
   }
 }
 function piratenErsatz(state, rules) {
@@ -1153,7 +1537,21 @@ function piratenErsatz(state, rules) {
     neuesSchiff(state, { owner, klasse, system, heimat: system, auftrag: 'pirat' });
   }
 }
-return { patrouille, ueberfall, piratenErsatz };
+function schutzgeld(state, rules) {
+  const w = rules.world;
+  const je = w.schutzgeldJeStunde;
+  if (!je) return;
+  for (const system of ids(w.systems)) {
+    const piraten = imSystem(state, w.piraten.owner, system, 'pirat');
+    if (piraten.length === 0) continue;
+    const st = w.systems[system].station;
+    const n = Math.min(state.owners[st].cash, je * piraten.length);
+    if (n <= 0) continue;
+    state.owners[st].cash -= n; state.owners[w.piraten.owner].cash += n;
+    buche(state, st, 'kosten', n); buche(state, w.piraten.owner, 'erloes', n);
+  }
+}
+return { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewegen };
 })();
 
 const m_core_schiffbau = (() => {
@@ -1182,7 +1580,7 @@ function ersatzkauf(state, rules) {
     for (const x of fehlend(state, owner)) {
       if (anzahl(state.stations[werft].lager, x.klasse) < 1) continue;
       const p = preis(state, werft, x.klasse, rules);
-      const bedarf = p + gebuehr(rules, werft, p);
+      const bedarf = p + gebuehr(state, rules, werft, p);
       if (leer) zuschuss(state, rules, owner, bedarf);
       if (state.owners[owner].cash < bedarf + (leer ? 0 : w.ersatzRuecklage)) continue;
       const von = state.stations[werft].system;
@@ -1207,23 +1605,28 @@ return { zuschuss, ersatzkauf };
 
 const m_core_step = (() => {
 const { execute } = m_core_commands;
+const { protokolliere } = m_core_state;
 const { ankunft, reise } = m_core_ankunft;
 const { foerderung } = m_core_foerderung;
 const { entscheidung } = m_core_entscheidung;
 const { produktion } = m_core_produktion;
-const { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds } = m_core_stunde;
-const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
+const { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende } = m_core_stunde;
+const { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewegen } = m_core_sicherheit;
 const { ersatzkauf } = m_core_schiffbau;
 
 function step(state, rules) {
   state.tick += 1;
   const wartend = state.queue; state.queue = [];
   const ergebnisse = wartend.map((cmd) => execute(state, cmd, rules));
-  ankunft(state, rules); foerderung(state, rules); entscheidung(state, rules); reise(state); produktion(state, rules);
+  wartend.forEach((cmd, i) => {
+    if (!ergebnisse[i].ok) protokolliere(state, 'befehl', `${cmd.schiff ? `${cmd.schiff}: ` : ''}Befehl abgelehnt: ${ergebnisse[i].reason}`, cmd.owner);
+  });
+  ankunft(state, rules); foerderung(state, rules); entscheidung(state, rules); reise(state, rules); produktion(state, rules);
+  escorteBewegen(state, rules);
   if (state.tick % rules.economy.stunde === 0) {
     verbrauch(state, rules); betriebskosten(state, rules); aussenhandel(state, rules);
-    patrouille(state, rules); ueberfall(state, rules); piratenErsatz(state, rules);
-    ersatzkauf(state, rules); npcAusgaben(state, rules); fonds(state, rules);
+    patrouille(state, rules); ueberfall(state, rules); piratenErsatz(state, rules); schutzgeld(state, rules);
+    ersatzkauf(state, rules); npcAusgaben(state, rules); fonds(state, rules); dividende(state, rules);
   }
   return ergebnisse;
 }
@@ -1268,7 +1671,7 @@ return { canonical, hashString, hash };
 const m_core_serialize = (() => {
 const { canonical } = m_core_hash;
 const { ids } = m_core_zahl;
-const { leereStats, kontoStats, kampfStats, zuschussStats } = m_core_state;
+const { leereStats, kontoStats, kampfStats, zuschussStats, neuesSchiff } = m_core_state;
 function migration3(s) {
   const ships = {}; const sollflotte = {}; let hoechste = 0;
   for (const id of ids(s.ships)) {
@@ -1284,8 +1687,91 @@ const MIGRATIONS = {
   2: (s) => ({ ...s, schema: 3, ships: Object.fromEntries(Object.entries(s.ships).map(([id, x]) => [id, { ...x, arbeit: 0 }])), stats: { ...s.stats, ...kontoStats(s.owners) } }),
   3: migration3,
   4: (s) => ({ ...s, schema: 5, burned: 0, stats: { ...s.stats, ...zuschussStats() } }),
+  5: (s) => ({ ...s, schema: 6, ereignisse: [] }),
+  6: (s) => ({ ...s, schema: 7, stations: Object.fromEntries(Object.entries(s.stations).map(([id, st]) => [id, { ...st, eigentum: st.eigentum ?? null, module: st.module ?? {} }])) }),
+  // v0.11.0 / B2: Schema 7→8. Jede bestehende Produktionslinie bekommt ein
+  // herkunft-Feld; fehlt es (Bestand), gilt sie als 'npc'. Neue Linien aus
+  // shipInstall werden ab v0.11.0 mit 'spieler' angelegt.
+  7: (s) => ({
+    ...s,
+    schema: 8,
+    stations: Object.fromEntries(Object.entries(s.stations).map(([id, st]) => [
+      id,
+      { ...st, linien: st.linien.map((l) => ({ ...l, herkunft: l.herkunft ?? 'npc' })) },
+    ])),
+  }),
 };
-const RULE_MIGRATIONS = {};
+
+function migrationRegel4(s) {
+  const def = m_data_systeme.SYSTEME.find((x) => x.id === 'orion');
+  if (!def) throw new Error('Regelmigration 4→5: Orion fehlt in m_data_systeme.SYSTEME');
+  const neu = JSON.parse(JSON.stringify(s));
+  neu.systems.orion = { id: 'orion', station: 'st_orion', fonds: 'fonds_orion' };
+  const lager = {};
+  for (const ware of Object.keys(def.station.ziel)) lager[ware] = def.station.ziel[ware];
+  neu.stations.st_orion = {
+    id: 'st_orion', system: 'orion', lager,
+    linien: def.station.linien.map((rezept) => ({ rezept, rest: 0, herkunft: 'npc' })),
+  };
+  neu.owners.st_orion = { id: 'st_orion', kind: 'station', cash: def.station.cash };
+  neu.owners.fonds_orion = { id: 'fonds_orion', kind: 'fund', cash: def.station.fondsCash ?? 1000 };
+  neu.stats.konto.st_orion = { erloes: 0, kosten: 0 };
+  neu.stats.konto.fonds_orion = { erloes: 0, kosten: 0 };
+  neu.stats.abgabe.st_orion = 0;
+  neu.stats.abgabe.fonds_orion = 0;
+  neu.initialSupply += def.station.cash + (def.station.fondsCash ?? 1000);
+  for (const ware of Object.keys(lager)) {
+    if (!neu.ledger[ware]) neu.ledger[ware] = { initial: 0, mined: 0, produced: 0, consumed: 0, imported: 0, exported: 0 };
+    neu.ledger[ware].initial += lager[ware];
+  }
+  neu.stats.rezepte.st_orion = 0;
+  neu.stats.mangel.st_orion = {};
+  for (const ware of Object.keys(def.station.verbrauch)) neu.stats.mangel.st_orion[ware] = 0;
+  const spawn = (felder, inSollflotte) => {
+    const schiff = neuesSchiff(neu, felder);
+    if (inSollflotte) (neu.sollflotte[schiff.owner] ||= []).push({ klasse: schiff.klasse, heimat: schiff.heimat, ware: schiff.ware, auftrag: schiff.auftrag });
+  };
+  if (def.security) spawn({ owner: 'security', klasse: 'jaeger', system: 'orion', heimat: 'orion', auftrag: 'patrouille' }, true);
+  for (const t of (def.traders || [])) spawn({ owner: t.owner, klasse: 'frachter', system: 'orion', heimat: 'orion', auftrag: 'handeln', ankunft: t.start }, true);
+  for (const f of (def.fields || [])) for (let i = 0; i < f.miner; i++) spawn({ owner: 'npc3', klasse: 'miner', system: 'orion', heimat: 'orion', auftrag: 'foerdern', ware: f.ware }, true);
+  for (const klasse of Object.keys(def.pirates || {})) for (let i = 0; i < def.pirates[klasse]; i++) spawn({ owner: 'pirates', klasse, system: 'orion', heimat: 'orion', auftrag: 'pirat' }, false);
+  neu.rulesVersion = 5;
+  return neu;
+}
+
+function migrationRegel5(s) {
+  const def = m_data_systeme.SYSTEME.find((x) => x.id === 'aldera');
+  if (!def) throw new Error('Regelmigration 5→6: Aldera fehlt in m_data_systeme.SYSTEME');
+  const neu = JSON.parse(JSON.stringify(s));
+  const st = neu.stations.st_aldera;
+  for (const rezept of def.station.linien) {
+    if (!st.linien.some((l) => l.rezept === rezept)) st.linien.push({ rezept, rest: 0, herkunft: 'npc' });
+  }
+  for (const ware of Object.keys(def.station.ziel)) {
+    if (Object.hasOwn(st.lager, ware)) continue;
+    st.lager[ware] = def.station.ziel[ware];
+    if (!neu.ledger[ware]) neu.ledger[ware] = { initial: 0, mined: 0, produced: 0, consumed: 0, imported: 0, exported: 0 };
+    neu.ledger[ware].initial += def.station.ziel[ware];
+  }
+  neu.rulesVersion = 6;
+  return neu;
+}
+
+// v0.11.0 / Regelmigration 6→7: reine Regeländerung ohne Schema-Anpassung.
+// Die einzige inhaltliche Neuerung ist world.dividendeFreibetrag = 3000; sie
+// wird bei jedem Start aus den eingefrorenen Regeln gelesen und braucht keine
+// Anpassung der Spielstand-Struktur. Die Migration setzt nur die Regelversion.
+function migrationRegel6(s) {
+  const neu = JSON.parse(JSON.stringify(s));
+  neu.rulesVersion = 7;
+  return neu;
+}
+
+const RULE_MIGRATIONS = {
+  4: migrationRegel4,
+  5: migrationRegel5,
+  6: migrationRegel6,
+};
 function migrate(state, from, to, table = MIGRATIONS) {
   let s = state;
   for (let v = from; v < to; v++) {
@@ -1301,7 +1787,7 @@ function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, rule
   if (s === null || typeof s !== 'object' || !Number.isSafeInteger(s.schema)) throw new Error('Spielstand ohne Schema');
   if (s.schema > currentSchema) throw new Error(`Schema ${s.schema} ist neuer als ${currentSchema}`);
   let neu = s.schema < currentSchema ? migrate(s, s.schema, currentSchema, table) : s;
-  for (const k of ['tick', 'rng', 'queue', 'owners', 'systems', 'entities', 'nextId', 'minted', 'burned', 'initialSupply', 'rulesVersion', 'stations', 'ships', 'ledger', 'stats', 'sollflotte', 'nextShip'])
+  for (const k of ['tick', 'rng', 'queue', 'ereignisse', 'owners', 'systems', 'minted', 'burned', 'initialSupply', 'rulesVersion', 'stations', 'ships', 'ledger', 'stats', 'sollflotte', 'nextShip'])
     if (!(k in neu)) throw new Error(`Spielstand unvollständig: ${k}`);
   const v = neu.rulesVersion;
   if (!Number.isSafeInteger(v)) throw new Error('Spielstand ohne Regelversion');
@@ -1317,6 +1803,12 @@ return { MIGRATIONS, RULE_MIGRATIONS, migrate, save, load };
 
 const m_core_audit = (() => {
 const { ids, anzahl } = m_core_zahl;
+// v0.11.0 / B3: Bewusste Audit-Entscheidung zu Modulen.
+// state.stations[*].module bleibt aus dem Waren-Audit-ist draußen. Einbauten
+// werden als ledger[ware].consumed ± 1 gebucht (Install +1, Remove −1); das
+// eingebaute Modul taucht weder im Lager noch im Frachtraum auf, ist also
+// netto "verbraucht". Zwischen Installation und Ausbau stimmen Ist und Soll,
+// weil Remove symmetrisch bucht.
 function audit(state) {
   let total = 0;
   for (const o of Object.values(state.owners)) total += o.cash;
@@ -1352,17 +1844,18 @@ const faktor = (state, station, ware, rules = RULES) => m_core_preis.faktor(stat
 const { hash, hashString, canonical } = m_core_hash;
 const { save, migrate, MIGRATIONS, RULE_MIGRATIONS } = m_core_serialize;
 const { audit } = m_core_audit;
+const { protokolliere } = m_core_state;
 const { rngNext, rngInt } = m_core_rng;
 const { div } = m_core_zahl;
 const { faktorFormel, preisFormel } = m_core_preis;
-const { handel, verkaufbar, aufnehmbar, reserve, obergrenze } = m_core_handel;
+const { handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr } = m_core_handel;
 const { route } = m_core_route;
-const { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds } = m_core_stunde;
+const { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag } = m_core_stunde;
 const { reise } = m_core_ankunft;
 const { kampf } = m_core_kampf;
 const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
-return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, createState, submit, execute, step, advance, load, preis, faktor };
+return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, createState, submit, execute, step, advance, load, preis, faktor };
 })();
 
 const m_data_oberflaeche = (() => {
@@ -1375,11 +1868,10 @@ const OBERFLAECHE = {
   msProSchrittAbwesend: 60000, zusammenfassungAbSchritten: 60, autosaveAlleSchritte: 60,
   exportErinnerungTage: 7, slot: 'slot1', plageAbPiraten: 2, reichsgroesse: 3,
 };
+m_data_systeme.tiefFrieren(OBERFLAECHE);
 return { OBERFLAECHE };
 })();
 
-// Zählt State-Mutationen, die nicht über den Tick laufen (z.B. Pause-Befehle).
-// Die Zeichnen-Caches der Ansichten prüfen diesen Zähler zusätzlich zu state und tick.
 const m_ui_dirty = (() => {
   let zaehler = 0;
   return { bump: () => { zaehler += 1; }, current: () => zaehler };
@@ -1428,7 +1920,7 @@ function vorText(ms) {
   return `vor ${Math.floor(std / 24)} Tagen`;
 }
 function exportHinweis({ letzterExport, jetzt, tick }, daten) {
-  if (!Number.isFinite(letzterExport)) return tick > 1440 ? 'Noch nie als Datei gesichert. Sichere deinen Spielstand mit „Export als Datei“.' : null;
+  if (!Number.isFinite(letzterExport)) return tick > 1440 ? 'Noch nie als Datei gesichert. Sichere deinen Spielstand mit „Export als Datei".' : null;
   const tage = Math.floor((jetzt - letzterExport) / 86400000);
   return tage >= daten.exportErinnerungTage ? `Zuletzt vor ${tage} Tagen als Datei gesichert. Sichere den Spielstand erneut.` : null;
 }
@@ -1510,12 +2002,9 @@ return { isk, mitVorzeichen, dauerText, kennzahlen, zusammenfassung, kassenTrend
 const m_data_karte = (() => {
 const KARTE = {
   breite: 1000, hoehe: 1000,
-  systeme: {
-    aldera: { name: 'Aldera', x: 140, y: 500 }, dravos: { name: 'Dravos', x: 400, y: 190 },
-    cyris: { name: 'Cyris', x: 400, y: 810 }, veldra: { name: 'Veldra', x: 670, y: 500 },
-    meridian: { name: 'Meridian', x: 880, y: 880 },
-  },
+  systeme: m_data_systeme.karteSysteme,
 };
+m_data_systeme.tiefFrieren(KARTE);
 return { KARTE };
 })();
 
@@ -1572,12 +2061,13 @@ const WAREN = {
 };
 const KLASSEN = {
   miner: 'Miner', frachter: 'Frachter', jaeger: 'Jäger', bauschiff: 'Bauschiff',
-  pirat_klein: 'Pirat klein', pirat_mittel: 'Pirat mittel', pirat_gross: 'Pirat groß', geschuetz: 'Geschütz',
+  pirat_klein: 'Pirat klein', pirat_mittel: 'Pirat mittel', pirat_gross: 'Pirat groß',
 };
-const AUFTRAEGE = { halten: 'Wartet', foerdern: 'Fördert', handeln: 'Handelt', patrouille: 'Patrouilliert', pirat: 'Lauert' };
+const AUFTRAEGE = { halten: 'Wartet', foerdern: 'Fördert', handeln: 'Handelt', patrouille: 'Patrouilliert', pirat: 'Lauert', escorte: 'Eskortiert', jagd: 'Jagt Piraten' };
 const PHASEN = { dock: 'Im Dock', reise: 'Unterwegs' };
 const ROLLEN_NAMEN = { eigen: 'Eigene Schiffe', neutral: 'Neutrale Schiffe', sicherheit: 'Sicherheit', pirat: 'Piraten' };
 const ORTE = { fabrik: 'Fabrik', werft: 'Werft' };
+m_data_systeme.tiefFrieren({ WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, ORTE });
 return { WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, ORTE };
 })();
 
@@ -1597,6 +2087,10 @@ function lage(state, regeln, karte) {
   for (const id of Object.keys(w.systems)) {
     const stationen = Object.keys(w.stations).filter((st) => w.stations[st].system === id).map((st) => {
       const zusatz = [st === w.werft ? 'Werft' : null, w.stations[st].aussenhandel ? 'Außenhandel' : null].filter(Boolean);
+      if (state.stations[st].eigentum === regeln.economy.start.owner) {
+        const module = Object.values(state.stations[st].module).reduce((a, b) => a + b, 0);
+        zusatz.push(`Deine Station${module > 0 ? ` · ${module} Modul${module === 1 ? '' : 'e'}` : ''}`);
+      }
       return { id: st, name: `Station ${systemName(karte, id)}`, zusatz };
     });
     const nachbarn = w.gates.filter(([a, b]) => a === id || b === id).map(([a, b, zeit]) => ({ id: a === id ? b : a, name: systemName(karte, a === id ? b : a), zeit }));
@@ -1686,7 +2180,7 @@ const { symbolSvg, ROLLEN_FORM } = m_ui_symbole;
 const $ = (id) => document.getElementById(id);
 function text(el, wert) { if (el.textContent !== wert) el.textContent = wert; }
 function html(el, wert) { if (el.dataset.inhalt !== wert) { el.dataset.inhalt = wert; el.innerHTML = wert; } }
-const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const marke = (art, symbol, t) => `<span class="marke marke-${art}">${symbolSvg(symbol, 16)}<span>${esc(t)}</span></span>`;
 const rollenSymbol = (r) => `<span class="rolle rolle-${r}">${symbolSvg(ROLLEN_FORM[r] || 'punkt', 16)}</span>`;
 return { $, text, html, esc, marke, rollenSymbol };
@@ -1697,12 +2191,12 @@ const { audit, hash, preis } = m_core_index;
 const { RULES } = m_data_rules;
 const { KARTE } = m_data_karte;
 const { flotte, lage, lageMarke, geldmenge } = m_ui_sicht;
-const { ROLLEN_NAMEN } = m_data_namen;
 const { isk, kassenTrend } = m_ui_zusammenfassung;
-const { vorText, exportHinweis } = m_ui_zeit;
+const { vorText, exportHinweis, spielzeitText } = m_ui_zeit;
 const { OBERFLAECHE } = m_data_oberflaeche;
 const { symbolSvg } = m_ui_symbole;
 const { $, text, html, esc, marke, rollenSymbol } = m_ui_zeichnen;
+const { ROLLEN_NAMEN } = m_data_namen;
 
 let hqLetzte = { state: null, tick: -1, kasse: null, dirty: -1 };
 let pruefungLetzte = { state: null, tick: -1, dirty: -1 };
@@ -1731,6 +2225,13 @@ function hqZeichnen(state, kasseBasis) {
     return `<li><span class="liste-links">${esc(s.name)}</span><span class="liste-rechts">${marke(lm.art, lm.symbol, lm.text)}</span></li>`;
   }).join(''));
   text($('hq-geld'), isk(geldmenge(state)));
+  const kostenStunde = Object.values(state.ships).filter((s) => s.owner === RULES.economy.start.owner
+    && (s.phase === 'reise' || (s.phase === 'dock' && (s.auftrag === 'patrouille' || s.auftrag === 'jagd' || s.auftrag === 'eskorte' || s.auftrag === 'foerdern'))))
+    .reduce((n, s) => n + (RULES.world.betriebskosten[s.klasse] || 0), 0);
+  const kasse = state.owners[RULES.economy.start.owner].cash;
+  html($('hq-kosten'), kostenStunde === 0 ? '<span class="muted">keine</span>'
+    : kasse < kostenStunde ? marke('schlecht', 'kreuz', `${kostenStunde} ISK/h · Kasse reicht nicht`)
+    : esc(`${kostenStunde} ISK/h`));
   const a = audit(state);
   html($('hq-erhaltung'), a.ok ? marke('gut', 'haken', 'Stimmt') : marke('schlecht', 'kreuz', 'Weicht ab'));
 }
@@ -1763,7 +2264,6 @@ function systemZeichnen(l) {
     `<li><span class="liste-links">${rollenSymbol(r)} ${esc(ROLLEN_NAMEN[r])}</span><span class="liste-rechts">${l.rollen[r]}</span></li>`).join(''));
   html($('sys-nachbarn'), l.nachbarn.map((n) => `<li><span class="liste-links">${esc(n.name)}</span><span class="liste-rechts muted">${n.zeit} Min</span></li>`).join(''));
 }
-function spielzeit(tick) { const h = Math.floor(tick / RULES.economy.stunde); return `${h}:${String(tick % RULES.economy.stunde).padStart(2, '0')}`; }
 function tabelle(id, zeilen) {
   const tbody = $(id); tbody.textContent = '';
   for (const [links, rechts] of zeilen) {
@@ -1777,15 +2277,14 @@ function pruefungZeigen(state, force = false) {
   const dirty = m_ui_dirty.current();
   if (!force && pruefungLetzte.state === state && pruefungLetzte.tick === state.tick && pruefungLetzte.dirty === dirty) return;
   pruefungLetzte = { state, tick: state.tick, dirty };
-  $('filehash').textContent = document.querySelector('meta[name=aphros-file-sha256]').content.slice(0, 12);
-  $('zeit').textContent = spielzeit(state.tick);
+  $('zeit').textContent = spielzeitText(state.tick);
   $('tick').textContent = state.tick;
   $('hash').textContent = hash(state);
   $('queue').textContent = state.queue.length;
   const a = audit(state);
-  const isk = a.isk.ok ? 'ISK stimmt' : `ISK Abweichung ${a.isk.delta}`;
+  const iskText = a.isk.ok ? 'ISK stimmt' : `ISK Abweichung ${a.isk.delta}`;
   const waren = a.goods.ok ? 'Waren stimmen' : `Waren weichen ab (${Object.keys(a.goods.delta).join(', ')})`;
-  $('erhaltung').textContent = `${isk} · ${waren}`;
+  $('erhaltung').textContent = `${iskText} · ${waren}`;
   $('erhaltung').className = a.ok ? 'good' : 'bad';
   const art = (id) => state.owners[id].kind;
   const piraten = Object.values(state.ships).filter((s) => art(s.owner) === 'pirate').length;
@@ -1802,7 +2301,14 @@ function pruefungZeigen(state, force = false) {
     : []);
   tabelle('owners', Object.values(state.owners).map((o) => [o.id, `${o.cash} ISK`]));
 }
-return { kasseZeichnen, hqZeichnen, spielstandZeichnen, wegZeichnen, systemZeichnen, pruefungZeigen };
+function berichteZeichnen(ereignisse) {
+  const symbol = (e) => (e.art === 'verlust' || e.art === 'befehl' || e.art === 'kosten' ? 'kreuz' : e.art === 'abschuss' ? 'schild' : e.art === 'dienst' ? 'plus' : 'uhr');
+  const farbe = (e) => (e.art === 'verlust' || e.art === 'befehl' || e.art === 'kosten' ? 'marke-schlecht' : e.art === 'abschuss' ? 'marke-gut' : 'marke-muted');
+  html($('bericht-liste'), ereignisse.length
+    ? [...ereignisse].reverse().map((e) => `<li><span class="liste-links">${symbolSvg(symbol(e), 16)} ${esc(spielzeitText(e.tick))} · ${esc(e.text)}</span><span class="marke ${farbe(e)}" aria-hidden="true">·</span></li>`).join('')
+    : '<li><span class="liste-links muted">Keine Berichte.</span></li>');
+}
+return { kasseZeichnen, hqZeichnen, spielstandZeichnen, wegZeichnen, systemZeichnen, pruefungZeigen, berichteZeichnen };
 })();
 
 const m_ui_karte_ansicht = (() => {
@@ -1969,7 +2475,7 @@ return { leistungErzeugen };
 
 const m_ui_lauf = (() => {
 const { schritteFuer } = m_ui_zeit;
-function laufErzeugen({ daten, faktor, beiSchritten, nachBild }) {
+function laufErzeugen({ daten, faktor, beiSchritten }) {
   let kennung = 0; let letzte = null; let rest = 0;
   const bild = (zeit) => {
     kennung = 0;
@@ -1980,7 +2486,6 @@ function laufErzeugen({ daten, faktor, beiSchritten, nachBild }) {
     const r = schritteFuer(dt + rest, f, daten);
     rest = r.rest;
     if (r.schritte > 0) beiSchritten(r.schritte);
-    if (nachBild) nachBild(zeit, r.schritte);
     kennung = requestAnimationFrame(bild);
   };
   return {
@@ -2023,7 +2528,17 @@ function groesseUmschalten() {
 function blattVerdrahten() {
   $('blatt-fertig').addEventListener('click', blattSchliessen);
   $('blatt-hintergrund').addEventListener('click', blattSchliessen);
-  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') blattSchliessen(); });
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Escape') return;
+    const dialog = $('dialog');
+    if (!dialog.hidden) {
+      const buttons = [...dialog.querySelectorAll('.dialog-knoepfe button')];
+      const cancel = buttons.find((b) => b.textContent === 'Abbrechen' || b.textContent === 'Schließen');
+      if (cancel) cancel.click();
+      return;
+    }
+    blattSchliessen();
+  });
   const griff = $('blatt-griff'); let start = null;
   griff.addEventListener('pointerdown', (ev) => { start = ev.clientY; griff.setPointerCapture?.(ev.pointerId); });
   griff.addEventListener('pointerup', (ev) => {
@@ -2047,12 +2562,14 @@ function dialogZeigen({ titel, text, knoepfe }) {
     reihe.append(b);
   }
   huelle.hidden = false;
-  reihe.querySelector('button').focus({ preventScroll: true });
+  const erste = reihe.querySelector('button');
+  if (erste) erste.focus({ preventScroll: true });
 }
 function bestaetigen({ titel, text, aktionText, aktion }) {
   dialogZeigen({ titel, text, knoepfe: [{ text: 'Abbrechen', art: 'normal' }, { text: aktionText, art: 'gefahr', aktion }] });
 }
-return { blattOeffnen, blattSchliessen, blattVerdrahten, dialogZeigen, bestaetigen };
+function sichtbar() { return !$('blatt').hidden; }
+return { blattOeffnen, blattSchliessen, blattVerdrahten, dialogZeigen, bestaetigen, sichtbar };
 })();
 
 const m_ui_theme = (() => {
@@ -2198,7 +2715,8 @@ function marktZeilen(state, regeln, systemId, basis) {
 function marktKopf(state, regeln, systemId, basis) {
   const zeilen = marktZeilen(state, regeln, systemId, basis);
   const station = stationVon(regeln, systemId);
-  const betrag = (z) => Math.abs(z.trend.delta) / basis[station][z.ware];
+  const betrag = (z) => (basis && basis[station] && basis[station][z.ware])
+    ? Math.abs(z.trend.delta) / basis[station][z.ware] : 0;
   const abweichungen = zeilen.filter((z) => z.trend && z.trend.delta !== 0)
     .sort((a, b) => betrag(b) - betrag(a) || (a.ware < b.ware ? -1 : 1)).slice(0, 3)
     .map((z) => ({ ware: z.ware, name: z.name, prozent: z.trend.prozent, symbol: z.trend.symbol, text: z.trend.text }));
@@ -2227,7 +2745,6 @@ const { KARTE } = m_data_karte;
 const { ORTE } = m_data_namen;
 const { marktZeilen, marktKopf, warenVergleich } = m_ui_markt;
 const { isk } = m_ui_zusammenfassung;
-const { preis } = m_core_index;
 const { $, html, esc, marke } = m_ui_zeichnen;
 const trendMarke = (t) => (t ? marke(t.art, t.symbol, t.text) : '<span class="muted">–</span>');
 const rezeptText = (r) => `${r.ein.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} → ${r.aus.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} · ${esc(ORTE[r.ort])}, ${r.dauer} Min`;
@@ -2245,8 +2762,13 @@ function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
   $('markt-preise').addEventListener('click', (ev) => {
     const trade = ev.target.closest('button[data-trade]');
     if (trade) {
-      const schiff = Object.values(stateFn().ships).find((x) => x.owner === 'house' && x.phase === 'dock' && x.system === system);
-      if (schiff) befehlFn({ type: 'shipTrade', owner: 'house', schiff: schiff.id, ware: trade.dataset.tradeWare, menge: Number(trade.dataset.menge), kauf: trade.dataset.trade === 'buy' });
+      const schiffe = Object.values(stateFn().ships).filter((x) => x.owner === RULES.economy.start.owner && x.phase === 'dock' && x.system === system);
+      const schiff = schiffe.sort((a, b) => {
+        const fa = Object.values(a.ladung).reduce((n, v) => n + v, 0);
+        const fb = Object.values(b.ladung).reduce((n, v) => n + v, 0);
+        return fa - fb || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+      })[0];
+      if (schiff) befehlFn({ type: 'shipTrade', owner: RULES.economy.start.owner, schiff: schiff.id, ware: trade.dataset.tradeWare, menge: Number(trade.dataset.menge), kauf: trade.dataset.trade === 'buy' });
       return;
     }
     const ware = ev.target.closest('button[data-ware]');
@@ -2259,17 +2781,29 @@ function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
       if (stand === state && letzte === schluessel && letzteDirty === dirty) return;
       stand = state; letzte = schluessel; letzteDirty = dirty;
       for (const b of leiste.children) b.setAttribute('aria-pressed', String(b.dataset.system === system));
-      const schiff = Object.values(state.ships).find((s) => s.owner === 'house' && s.phase === 'dock' && s.system === system);
+      const schiffe = Object.values(state.ships).filter((s) => s.owner === RULES.economy.start.owner && s.phase === 'dock' && s.system === system);
+      const schiff = schiffe.sort((a, b) => {
+        const fa = Object.values(a.ladung).reduce((n, v) => n + v, 0);
+        const fb = Object.values(b.ladung).reduce((n, v) => n + v, 0);
+        return fa - fb || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+      })[0];
       const station = RULES.world.systems[system].station;
       const kopf = marktKopf(state, RULES, system, basis);
       $('markt-kopf').innerHTML =
         `<li><span class="liste-links">Waren im Mangel</span><span class="liste-rechts">${kopf.mangel > 0 ? marke('warn', 'dreieck', `${kopf.mangel}`) : marke('gut', 'haken', 'keine')}</span></li>`
         + `<li><span class="liste-links">Größte Preisänderungen</span><span class="liste-rechts">${kopf.abweichungen.length ? kopf.abweichungen.map((a) => `${esc(a.name)} ${marke('muted', a.symbol, a.text)}`).join('<br>') : '<span class="muted">–</span>'}</span></li>`
-        + (schiff ? `<li><span class="liste-links">Handelsschiff</span><span class="liste-rechts">${esc(schiff.id)} · Kasse ${isk(state.owners.house.cash)}</span></li>` : '');
+        + (schiff ? `<li><span class="liste-links">Handelsschiff</span><span class="liste-rechts">${esc(schiff.id)} · Kasse ${isk(state.owners[RULES.economy.start.owner].cash)}</span></li>` : '');
       html($('markt-preise'), marktZeilen(state, RULES, system, basis).map((z) => {
+        const kaufMenge = z.stufe === 'schiff' ? 1 : 10;
+        const kaufGesamt = kaufMenge * z.preis;
+        const hat = schiff ? (schiff.ladung[z.ware] || 0) : 0;
+        const verkaufMenge = Math.min(10, hat);
+        const verkaufGesamt = verkaufMenge * z.preis;
+        const verkauf = hat > 0
+          ? `<button type="button" data-trade="sell" data-trade-ware="${z.ware}" data-menge="${verkaufMenge}">Verkaufe ${verkaufMenge} (${isk(verkaufGesamt)})</button>`
+          : '';
         const trade = schiff
-          ? `<div class="befehle-leiste"><button type="button" class="primary" data-trade="buy" data-trade-ware="${z.ware}" data-menge="10">Kaufe 10 (${preis(state, station, z.ware, RULES)} ISK)</button>`
-            + `<button type="button" data-trade="sell" data-trade-ware="${z.ware}" data-menge="10">Verkaufe 10</button></div>`
+          ? `<div class="befehle-leiste"><button type="button" class="primary" data-trade="buy" data-trade-ware="${z.ware}" data-menge="${kaufMenge}">Kaufe ${kaufMenge}${z.stufe === 'schiff' ? ` ${esc(z.name)}` : ` × ${esc(z.name)}`} (${isk(kaufGesamt)})</button>${verkauf}</div>`
           : '';
         return `<li style="flex-direction:column;align-items:stretch;padding:8px 0"><button type="button" class="zeile" data-ware="${z.ware}">`
           + `<span class="zeile-text"><span class="liste-links">${esc(z.name)}</span>${marke(z.knappheit.art, z.knappheit.symbol, z.knappheit.text)}</span>`
@@ -2304,7 +2838,7 @@ function eigeneSchiffe(state, regeln, karte) {
     if (s.phase === 'reise') {
       const ziel = w.stations[s.ziel].system;
       const rw = reiseWeg(regeln, s);
-      ort = { art: 'reise', system: s.system, name: systemName(karte, s.system), ziel, zielName: systemName(karte, ziel), fortschritt: rw ? fortschritt(state.tick, s.ankunft, rw.dauer) : null, rest: Math.max(0, s.ankunft - state.tick) };
+      ort = { art: 'reise', system: s.system, name: systemName(karte, s.system), ziel, zielName: systemName(karte, ziel), fortschritt: rw ? fortschritt(state.tick, s.ankunft, rw.dauer) : null };
     }
     return {
       id: s.id, klasse: s.klasse, klasseName: KLASSEN[s.klasse], ort,
@@ -2322,14 +2856,159 @@ function weltFlotten(state) {
 return { betriebskostenStunde, eigeneSchiffe, weltFlotten };
 })();
 
+const m_ui_station = (() => {
+const { RULES } = m_data_rules;
+const { KARTE } = m_data_karte;
+const { WAREN, ORTE } = m_data_namen;
+const { wirksamerFreibetrag } = m_core_index;
+const { $, html, esc } = m_ui_zeichnen;
+const { isk } = m_ui_zusammenfassung;
+const { blattOeffnen, dialogZeigen } = m_ui_blatt;
+
+let aktuelleState = null;
+let aktuelleStation = null;
+let aktuellerBefehl = null;
+let letzteKombi = null;
+let letzteDirty = -1;
+let verdrahtet = false;
+
+function verdrahten() {
+  if (verdrahtet) return;
+  verdrahtet = true;
+  $('blatt-station').addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-befehl]');
+    if (!b) return;
+    if (!aktuelleState || !aktuelleStation || !aktuellerBefehl) return;
+    const art = b.dataset.befehl;
+    if (art === 'removemodul') {
+      const schiff = ausbauBauschiff(aktuelleState, aktuelleStation);
+      if (!schiff) {
+        // Statt still zu scheitern: klarer Hinweis, damit der Klick nicht ins
+        // Leere läuft, wenn das Bauschiff zwischen Render und Klick abdockt.
+        dialogZeigen({
+          titel: 'Kein Bauschiff',
+          text: 'Kein eigenes Bauschiff im Dock dieser Station mit freiem Frachtraum. Docke zuerst eines an.',
+          knoepfe: [{ text: 'OK', art: 'normal' }],
+        });
+        return;
+      }
+      aktuellerBefehl({ type: 'shipRemoveModule', owner: RULES.economy.start.owner, schiff: schiff.id, modul: b.dataset.modul });
+    } else if (art === 'recipe') {
+      aktuellerBefehl({ type: 'stationRecipe', owner: RULES.economy.start.owner, station: aktuelleStation, rezept: b.dataset.rezept });
+    }
+  });
+}
+
+function ausbauBauschiff(state, stationId) {
+  const sys = RULES.world.stations[stationId].system;
+  const kandidaten = Object.values(state.ships).filter((s) =>
+    s.owner === RULES.economy.start.owner &&
+    s.klasse === 'bauschiff' &&
+    s.phase === 'dock' &&
+    s.system === sys &&
+    Object.values(s.ladung).reduce((n, v) => n + v, 0) < RULES.economy.cargo
+  );
+  kandidaten.sort((a, b) => {
+    const fa = Object.values(a.ladung).reduce((n, v) => n + v, 0);
+    const fb = Object.values(b.ladung).reduce((n, v) => n + v, 0);
+    return fa - fb || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  });
+  return kandidaten[0] || null;
+}
+
+function stationZeichnen(state, stationId, onBefehl, force = false) {
+  if (!state.stations[stationId]) return;
+  aktuelleState = state; aktuelleStation = stationId; aktuellerBefehl = onBefehl;
+  verdrahten();
+  const dirty = m_ui_dirty.current();
+  const kombi = `${stationId}|${state.tick}`;
+  if (!force && letzteKombi === kombi && letzteDirty === dirty) return;
+  letzteKombi = kombi; letzteDirty = dirty;
+
+  const st = state.stations[stationId];
+  const sys = RULES.world.stations[stationId].system;
+  const sysName = KARTE.systeme[sys] ? KARTE.systeme[sys].name : sys;
+  const kasse = state.owners[stationId].cash;
+  const freibetrag = wirksamerFreibetrag(RULES);
+  const verfuegbar = Math.max(0, kasse - freibetrag);
+
+  html($('station-kopf'),
+    `<li><span class="liste-links">${esc('Station ' + sysName)}</span><span class="liste-rechts muted">${esc(stationId)}</span></li>`
+    + `<li><span class="liste-links">Kasse</span><span class="liste-rechts">${isk(kasse)}</span></li>`
+    + `<li><span class="liste-links">Dividende verfügbar</span><span class="liste-rechts">${isk(verfuegbar)}</span></li>`
+  );
+
+  const module = Object.keys(st.module).sort();
+  const schiffFuerAusbau = ausbauBauschiff(state, stationId);
+  html($('station-module'), module.length
+    ? module.map((m) => {
+        const btn = schiffFuerAusbau
+          ? `<button type="button" data-befehl="removemodul" data-modul="${esc(m)}">Ausbauen</button>`
+          : `<span class="muted">Kein Bauschiff im Dock mit Frachtraum</span>`;
+        return `<li><span class="liste-links">${esc(WAREN[m] || m)} ×${st.module[m]}</span><span class="liste-rechts">${btn}</span></li>`;
+      }).join('')
+    : '<li><span class="liste-links muted">Keine Module eingebaut.</span></li>'
+  );
+
+  html($('station-linien'), st.linien.length
+    ? st.linien.map((l) => {
+        const r = RULES.economy.rezepte[l.rezept];
+        if (!r) return '';
+        const ort = r.ort;
+        const andere = Object.keys(RULES.economy.rezepte).sort().filter((id) => id !== l.rezept && RULES.economy.rezepte[id].ort === ort);
+        const btns = andere.map((id) => `<button type="button" data-befehl="recipe" data-rezept="${esc(id)}">${esc(id.replace(/^r_/, ''))}</button>`).join('');
+        const herkunft = l.herkunft === 'spieler' ? ' <span class="muted">(Spieler)</span>' : '';
+        return `<li style="flex-direction:column;align-items:stretch;padding:8px 0">`
+          + `<span class="liste-links">${esc(l.rezept)} · ${esc(ORTE[ort] || ort)}${herkunft}</span>`
+          + `<div class="befehle-leiste">${btns}</div></li>`;
+      }).join('')
+    : '<li><span class="liste-links muted">Keine Produktionslinien.</span></li>'
+  );
+
+  const docks = st.module.dock || 0;
+  const lagers = st.module.lager || 0;
+  const bergbaus = st.module.bergbau || 0;
+  const verts = st.module.verteidigung || 0;
+  const gebuehrProzent = (RULES.world.stations[stationId].gebuehr * 100) / (1000 + 500 * docks);
+  const lagerMult = 1 + 0.5 * lagers;
+  const vertReduktion = (500 * verts) / (1000 + 500 * verts) * 100;
+  html($('station-kennzahlen'),
+    `<li><span class="liste-links">Gebühr</span><span class="liste-rechts">${gebuehrProzent.toFixed(2)} %</span></li>`
+    + `<li><span class="liste-links">Lager-Multiplikator</span><span class="liste-rechts">${lagerMult.toFixed(2)}×</span></li>`
+    + `<li><span class="liste-links">Bergbau-Bonus</span><span class="liste-rechts">+${bergbaus} pro Miner</span></li>`
+    + `<li><span class="liste-links">Verteidigungs-Reduktion</span><span class="liste-rechts">${vertReduktion.toFixed(1)} %</span></li>`
+  );
+
+  // Filter über explizites station-Feld statt fragiler Textsuche.
+  const berichte = state.ereignisse.filter((e) => e.station === stationId).slice(-10).reverse();
+  html($('station-bericht'), berichte.length
+    ? berichte.map((e) => `<li><span class="liste-links">${esc(e.text)}</span><span class="liste-rechts muted">Tick ${e.tick}</span></li>`).join('')
+    : '<li><span class="liste-links muted">Keine Ereignisse.</span></li>'
+  );
+}
+
+function stationBlattOeffnen(state, stationId, onBefehl) {
+  if (!state.stations[stationId]) return;
+  const sys = RULES.world.stations[stationId].system;
+  const sysName = KARTE.systeme[sys] ? KARTE.systeme[sys].name : sys;
+  $('blatt-station').dataset.station = stationId;
+  blattOeffnen('blatt-station', { titel: `Station ${sysName}`, stufe: 'voll' });
+  stationZeichnen(state, stationId, onBefehl, true);
+}
+
+return { stationZeichnen, stationBlattOeffnen };
+})();
+
 const m_ui_flotte_ansicht = (() => {
 const { RULES } = m_data_rules;
 const { KARTE } = m_data_karte;
-const { ROLLEN_NAMEN, WAREN } = m_data_namen;
+const { ROLLEN_NAMEN, WAREN, KLASSEN } = m_data_namen;
 const { eigeneSchiffe, weltFlotten } = m_ui_flotte_detail;
 const { isk } = m_ui_zusammenfassung;
-const { preis } = m_core_index;
+const { preis, stationspreis } = m_core_index;
 const { $, html, esc, rollenSymbol } = m_ui_zeichnen;
+const { bestaetigen } = m_ui_blatt;
+const { stationBlattOeffnen } = m_ui_station;
 const ortText = (o) => (o.art === 'reise' ? `unterwegs nach ${o.zielName}${o.fortschritt === null ? '' : ` · ${Math.round(o.fortschritt * 100)} %`}` : `in ${o.name}`);
 const zeile = (links, rechts) => `<li><span class="liste-links">${links}</span><span class="liste-rechts">${rechts}</span></li>`;
 
@@ -2348,7 +3027,7 @@ function flotteErzeugen(beiSchiff) {
       const halten = f.filter((s) => s.auftrag === 'halten').length;
       html($('flotte-kopf'), zeile('Eigene Schiffe', String(f.length))
         + zeile('Kosten je Stunde bei voller Arbeit', isk(f.reduce((n, s) => n + s.kostenStunde, 0)))
-        + zeile('Im Auftrag „Wartet“', String(halten)));
+        + zeile('Im Auftrag „Wartet"', String(halten)));
       html($('flotte-schiffe'), f.length
         ? f.map((s) => `<li class="zeile-knopf"><button type="button" class="zeile" data-schiff="${esc(s.id)}"><span class="liste-links">${rollenSymbol('eigen')} ${esc(s.klasseName)} <span class="muted">${esc(s.id)}</span></span>`
           + `<span class="liste-rechts">${esc(ortText(s.ort))} · ${esc(s.taetigkeit)}</span></button></li>`).join('')
@@ -2359,49 +3038,131 @@ function flotteErzeugen(beiSchiff) {
   };
 }
 
+let schiffCache = null;
+
 function schiffZeichnen(state, id, onBefehl) {
+  const dirty = m_ui_dirty.current();
+  if (schiffCache && schiffCache.state === state && schiffCache.tick === state.tick && schiffCache.id === id && schiffCache.dirty === dirty) {
+    return schiffCache.result;
+  }
   const s = eigeneSchiffe(state, RULES, KARTE).find((x) => x.id === id);
-  if (!s) return null;
+  if (!s) { schiffCache = null; return null; }
+  const roh = state.ships[s.id];
+  const istJaeger = s.klasse === 'jaeger';
+  const sys = s.ort.art === 'reise' ? null : s.ort.system;
+  const piratenImSystem = (istJaeger && sys)
+    ? Object.keys(state.ships).filter((sid) => {
+        const x = state.ships[sid];
+        return x.owner === RULES.world.piraten.owner && x.system === sys && x.phase === 'dock';
+      }).map((sid) => state.ships[sid])
+    : [];
+  const piratenHier = piratenImSystem.length;
+  const piratenText = piratenHier === 0 ? 'keine'
+    : `${piratenHier} · ${[...new Set(piratenImSystem.map((p) => KLASSEN[p.klasse] || p.klasse))].join(', ')}`;
+  const eskorteZiel = (roh.eskorte && state.ships[roh.eskorte])
+    ? `${KLASSEN[state.ships[roh.eskorte].klasse] || state.ships[roh.eskorte].klasse} ${roh.eskorte}`
+    : null;
+
   html($('schiff-liste'), zeile('Ort', esc(ortText(s.ort))) + zeile('Tätigkeit', esc(s.taetigkeit)) + zeile('Heimat', esc(s.heimatName))
+    + (istJaeger
+        ? zeile('Kampfwerte',
+            `${RULES.combat.einheiten.jaeger.hp} HP · ${RULES.combat.einheiten.jaeger.angriff} Angriff · `
+            + `${RULES.combat.einheiten.jaeger.ruestung} Rüstung · ${RULES.combat.einheiten.jaeger.treffer}/1000 Treffer`)
+          + (sys ? zeile('Piraten im System', esc(piratenText)) : '')
+        : '')
+    + (eskorteZiel ? zeile('Eskorte für', esc(eskorteZiel)) : '')
     + zeile('Auftrag', esc(s.auftragName))
     + zeile('Ladung', s.ladung.length ? s.ladung.map((l) => `${l.menge} ${esc(l.name)}`).join(', ') : '<span class="muted">leer</span>')
+    + zeile('Frachtraum', `${s.ladung.reduce((n, l) => n + l.menge, 0)} / ${RULES.economy.cargo}`)
     + zeile('Arbeitsschritte', String(s.arbeit)) + zeile('Kosten je Stunde bei voller Arbeit', isk(s.kostenStunde)));
   $('b-schiff-karte').dataset.system = s.ort.art === 'reise' ? s.ort.ziel : s.ort.system;
 
-  const roh = state.ships[s.id];
   if (!roh || roh.phase !== 'dock') {
-    $('schiff-befehle').innerHTML = '<p class="muted">Befehle nur im Dock verfügbar.</p>';
-    return { titel: `${s.klasseName} ${s.id}`, system: $('b-schiff-karte').dataset.system };
+    if (roh && roh.phase === 'reise' && (roh.auftrag === 'handeln' || roh.auftrag === 'jagd' || roh.auftrag === 'eskorte' || roh.auftrag === 'patrouille')) {
+      const label = roh.auftrag === 'handeln' ? 'Automatik stoppen (bei Ankunft)' : 'Auftrag beenden (bei Ankunft)';
+      $('schiff-befehle').innerHTML = `<div class="befehle-leiste"><button type="button" data-befehl="wait">${esc(label)}</button></div>`;
+      $('schiff-befehle').onclick = (ev) => {
+        if (ev.target.closest('button[data-befehl]')) onBefehl({ owner: RULES.economy.start.owner, schiff: s.id, type: 'shipWait' });
+      };
+    } else {
+      $('schiff-befehle').innerHTML = '<p class="muted">Befehle nur im Dock verfügbar.</p>';
+      $('schiff-befehle').onclick = null;
+    }
+    const result = { titel: `${s.klasseName} ${s.id}`, system: $('b-schiff-karte').dataset.system };
+    schiffCache = { state, tick: state.tick, id, dirty, result };
+    return result;
   }
-  const sys = s.ort.system;
   const station = RULES.world.systems[sys].station;
+  const eigeneStation = state.stations[station].eigentum === RULES.economy.start.owner;
   const knopf = (label, attrs = '') => `<button type="button" ${attrs}>${label}</button>`;
+  const felderHier = s.klasse === 'miner'
+    ? [...new Set(RULES.world.fields.filter((f) => f.system === sys).map((f) => f.ware))]
+    : [];
   const bef = [
     knopf('Warten', 'data-befehl="wait"'),
-    ...(s.klasse === 'miner' ? ['erz', 'eis', 'kristall'].map((w) => knopf(`Fördere ${esc(WAREN[w])}`, `data-befehl="mine" data-ware="${w}"`)) : []),
+    ...(eigeneStation ? [knopf('Station verwalten', 'data-befehl="stationinfo"')] : []),
+    ...(s.klasse === 'frachter' ? [knopf('Auto-Handel starten', 'data-befehl="handeln"')] : []),
+    ...(istJaeger ? [knopf('Jagd auf Piraten (dieses System)', 'data-befehl="hunt"')] : []),
+    ...(istJaeger ? eigeneSchiffe(state, RULES, KARTE)
+        .filter((x) => x.id !== s.id && (x.klasse === 'frachter' || x.klasse === 'miner'))
+        .map((x) => knopf(`Eskorte ${esc(x.klasseName)} ${esc(x.id)}`, `data-befehl="escort" data-eskorte="${x.id}"`)) : []),
+    ...felderHier.map((w) => knopf(`Fördere ${esc(WAREN[w])}`, `data-befehl="mine" data-ware="${w}"`)),
     ...Object.keys(RULES.world.systems).sort().filter((x) => x !== sys)
       .map((x) => knopf(`→ ${esc(KARTE.systeme[x].name)}`, `data-befehl="move" data-ziel="${RULES.world.systems[x].station}"`)),
     ...Object.keys(RULES.world.stations[station].ziel).sort().filter((w) => preis(state, station, w, RULES) > 0)
-      .flatMap((w) => [
-        knopf(`Kaufe 10 ${esc(WAREN[w])} (${preis(state, station, w, RULES)} ISK)`, `data-befehl="buy" data-ware="${w}" data-menge="10"`),
-        ...((roh.ladung[w] || 0) > 0 ? [knopf(`Verkaufe ${roh.ladung[w]} ${esc(WAREN[w])}`, `data-befehl="sell" data-ware="${w}" data-menge="${roh.ladung[w]}"`)] : []),
-      ]),
+      .flatMap((w) => {
+        const menge = RULES.economy.waren[w].stufe === 'schiff' ? 1 : 10;
+        const gesamt = menge * preis(state, station, w, RULES);
+        return [
+          knopf(`Kaufe ${menge} ${esc(WAREN[w])} (${isk(gesamt)})`, `data-befehl="buy" data-ware="${w}" data-menge="${menge}"`),
+          ...((roh.ladung[w] || 0) > 0 ? [knopf(`Verkaufe ${roh.ladung[w]} ${esc(WAREN[w])} (${isk(roh.ladung[w] * preis(state, station, w, RULES))})`, `data-befehl="sell" data-ware="${w}" data-menge="${roh.ladung[w]}"`)] : []),
+        ];
+      }),
+    ...Object.keys(roh.ladung).sort().filter((w) => RULES.economy.waren[w] && RULES.economy.waren[w].stufe === 'schiff')
+      .map((w) => knopf(`${esc(WAREN[w])} in Dienst stellen`, `data-befehl="activate" data-ware="${w}"`)),
+    ...(s.klasse === 'bauschiff' ? Object.keys(roh.ladung).sort().filter((w) => RULES.economy.waren[w] && RULES.economy.waren[w].stufe === 'modul')
+      .map((w) => knopf(`${esc(WAREN[w])} hier einbauen`, `data-befehl="install" data-ware="${w}"`)) : []),
+    ...(!eigeneStation
+      ? [knopf(`Station kaufen (${isk(stationspreis(state, RULES, station))})`, 'data-befehl="buystation"')] : []),
   ];
   $('schiff-befehle').innerHTML = `<div class="befehle-leiste">${bef.join('')}</div>`;
   $('schiff-befehle').onclick = (ev) => {
     const b = ev.target.closest('button[data-befehl]');
     if (!b) return;
     const art = b.dataset.befehl;
-    const cmd = { owner: 'house', schiff: s.id };
+    if (art === 'stationinfo') {
+      stationBlattOeffnen(state, station, onBefehl);
+      return;
+    }
+    if (art === 'buystation') {
+      const preisKauf = stationspreis(state, RULES, station);
+      const sysName = KARTE.systeme[sys] ? KARTE.systeme[sys].name : sys;
+      bestaetigen({
+        titel: 'Station kaufen?',
+        text: `Station ${sysName} für ${isk(preisKauf)} ISK kaufen?`,
+        aktionText: 'Kaufen',
+        aktion: () => onBefehl({ owner: RULES.economy.start.owner, schiff: s.id, type: 'stationBuy' }),
+      });
+      return;
+    }
+    const cmd = { owner: RULES.economy.start.owner, schiff: s.id };
     if (art === 'wait') cmd.type = 'shipWait';
+    else if (art === 'handeln') cmd.type = 'shipHandeln';
+    else if (art === 'hunt') cmd.type = 'shipHunt';
+    else if (art === 'escort') Object.assign(cmd, { type: 'shipEscort', ziel: b.dataset.eskorte });
+    else if (art === 'activate') Object.assign(cmd, { type: 'shipActivate', klasse: b.dataset.ware });
+    else if (art === 'install') Object.assign(cmd, { type: 'shipInstall', modul: b.dataset.ware });
     else if (art === 'mine') Object.assign(cmd, { type: 'shipMine', ware: b.dataset.ware });
     else if (art === 'move') Object.assign(cmd, { type: 'shipMove', ziel: b.dataset.ziel });
     else if (art === 'buy') Object.assign(cmd, { type: 'shipTrade', ware: b.dataset.ware, menge: Number(b.dataset.menge), kauf: true });
     else if (art === 'sell') Object.assign(cmd, { type: 'shipTrade', ware: b.dataset.ware, menge: Number(b.dataset.menge), kauf: false });
     onBefehl(cmd);
   };
-  return { titel: `${s.klasseName} ${s.id}`, system: $('b-schiff-karte').dataset.system };
+  const result = { titel: `${s.klasseName} ${s.id}`, system: $('b-schiff-karte').dataset.system };
+  schiffCache = { state, tick: state.tick, id, dirty, result };
+  return result;
 }
+
 return { flotteErzeugen, schiffZeichnen };
 })();
 
@@ -2423,10 +3184,18 @@ function reichKennzahlen(state, regeln, karte = KARTE) {
   const schiffe = Object.keys(nach).map((klasse) => ({ klasse, name: KLASSEN[klasse], anzahl: nach[klasse] })).sort((a, b) => a.name.localeCompare(b.name, 'de'));
   const ziel = regeln.world.stations[station].ziel;
   const lager = sortiereWaren(regeln, Object.keys(ziel).filter((w) => ziel[w] > 0)).map((ware) => ({ ware, name: WAREN[ware], menge: state.stations[station].lager[ware] || 0 }));
+  const eigene = Object.keys(state.stations).sort().filter((id) => state.stations[id].eigentum === start.owner)
+    .map((id) => {
+      const system = regeln.world.stations[id].system;
+      const module = Object.keys(state.stations[id].module).sort()
+        .map((m) => `${WAREN[m] || m} ×${state.stations[id].module[m]}`).join(', ');
+      return { id, name: `Station ${karte.systeme[system] ? karte.systeme[system].name : system}`, module };
+    });
   return {
     kasse: state.owners[start.owner].cash, schiffe, schiffeGesamt: schiffe.reduce((n, x) => n + x.anzahl, 0),
     hauptsitz: { system: start.system, systemName, station, stationName: `Station ${systemName}` },
-    lager, systemeEigen: 0, systemeMax: OBERFLAECHE.reichsgroesse,
+    lager, eigene,
+    systemeEigen: eigene.length, systemeMax: regeln.world.reichsgroesse,
   };
 }
 return { reichKennzahlen };
@@ -2434,12 +3203,26 @@ return { reichKennzahlen };
 
 const m_ui_reich_ansicht = (() => {
 const { RULES } = m_data_rules;
+const { KARTE } = m_data_karte;
 const { reichKennzahlen } = m_ui_reich;
 const { kasseZeichnen } = m_ui_hq;
 const { $, text, html, esc } = m_ui_zeichnen;
+const { stationBlattOeffnen } = m_ui_station;
 const zeile = (links, rechts) => `<li><span class="liste-links">${esc(links)}</span><span class="liste-rechts">${esc(rechts)}</span></li>`;
-function reichErzeugen() {
+function reichErzeugen(aktuellerStateFn, onBefehlFn) {
   let letzte = -1; let zuletzt; let stand = null; let letzteDirty = -1;
+  const liste = $('reich-eigene');
+  if (liste && !liste.dataset.draht) {
+    liste.dataset.draht = '1';
+    liste.addEventListener('click', (ev) => {
+      const b = ev.target.closest('button[data-station]');
+      if (!b) return;
+      const stationId = b.dataset.station;
+      const state = aktuellerStateFn ? aktuellerStateFn() : null;
+      if (!state) return;
+      stationBlattOeffnen(state, stationId, onBefehlFn);
+    });
+  }
   return {
     zeichnen(state, kasseBasis) {
       const dirty = m_ui_dirty.current();
@@ -2452,6 +3235,9 @@ function reichErzeugen() {
       html($('reich-flotte'), k.schiffe.length ? k.schiffe.map((x) => zeile(x.name, String(x.anzahl))).join('') : '<li><span class="liste-links muted">Keine Schiffe.</span></li>');
       text($('reich-flotte-zahl'), `${k.schiffeGesamt} ${k.schiffeGesamt === 1 ? 'Schiff' : 'Schiffe'}`);
       text($('reich-systeme'), `${k.systemeEigen} von ${k.systemeMax}`);
+      html($('reich-eigene'), k.eigene.length
+        ? k.eigene.map((x) => `<li class="zeile-knopf"><button type="button" class="zeile" data-station="${esc(x.id)}"><span class="liste-links">${esc(x.name)}</span><span class="liste-rechts muted">${esc(x.module || 'keine Module')}</span></button></li>`).join('')
+        : '<li><span class="liste-links muted">Noch keine eigenen Stationen.</span></li>');
     },
   };
 }
@@ -2471,13 +3257,14 @@ const { mischen } = m_ui_farbe;
 const { spielzeitText } = m_ui_zeit;
 const { nachholen } = m_ui_nachholen;
 const { kennzahlen, zusammenfassung } = m_ui_zusammenfassung;
-const { hqZeichnen, spielstandZeichnen, wegZeichnen, systemZeichnen, pruefungZeigen } = m_ui_hq;
+const { hqZeichnen, spielstandZeichnen, wegZeichnen, systemZeichnen, pruefungZeigen, berichteZeichnen } = m_ui_hq;
 const { karteErzeugen } = m_ui_karte_ansicht;
 const { leistungErzeugen } = m_ui_leistung;
 const { lage } = m_ui_sicht;
 const { KARTE } = m_data_karte;
 const { laufErzeugen } = m_ui_lauf;
-const { blattVerdrahten, blattOeffnen, blattSchliessen, dialogZeigen, bestaetigen } = m_ui_blatt;
+const { blattVerdrahten, blattOeffnen, blattSchliessen, dialogZeigen, bestaetigen, sichtbar } = m_ui_blatt;
+const { stationZeichnen } = m_ui_station;
 const { farbschemaAnwenden } = m_ui_farbschema;
 const { dbPut, dbGet, dauerhaftAnfragen, dateiSichern } = m_ui_speicher;
 const { packen, auspacken } = m_ui_speicher_huelle;
@@ -2490,16 +3277,20 @@ const { ersetztLaufendesSpiel } = m_ui_import_regel;
 let state = createState(RULES.startSeed);
 let stufe = 'pause';
 let kasseBasis; let marktBasisStand;
-const VERSION = document.querySelector('meta[name=aphros-version]').content.replace(/^v/, '');
+const VERSION = (document.querySelector('meta[name=aphros-version]')?.content ?? 'v0').replace(/^v/, '');
 let gespeichertUm = null;
 let meta = { letzterExport: null, diagnose: false };
 let dauerhaft = '–';
 let sperre = false;
 let seitSpeichern = 0;
 let speicherFehler = false;
+let speicherLaeuft = false;
 let bereit = false;
 let verlassenUm = null;
 let aktuellesSchiff = null;
+let berichtGelesen = 0; let berichtGemeldet = 0;
+let lauf = null;
+let karte = null;
 
 const $ = (id) => document.getElementById(id);
 const jetzt = () => Date.now();
@@ -2521,6 +3312,16 @@ function meldung(text, schlecht = false) {
   el.className = schlecht ? 'muted bad' : 'muted';
 }
 
+function berichteAbholen(toastZeigen) {
+  if (berichtGemeldet > state.ereignisse.length) berichtGemeldet = Math.max(0, state.ereignisse.length - 60);
+  const neue = state.ereignisse.slice(berichtGemeldet);
+  berichtGemeldet = state.ereignisse.length;
+  if (!toastZeigen || neue.length === 0) return;
+  const wichtig = neue.find((e) => e.art === 'verlust' && e.owner === RULES.economy.start.owner)
+    || neue.find((e) => e.art === 'befehl' || (e.art === 'kosten' && e.owner === RULES.economy.start.owner));
+  if (wichtig) meldungZeigen(wichtig.text, { schlecht: true });
+}
+
 function schritte(n) {
   if (!bereit || sperre) return;
   const stunde = RULES.economy.stunde;
@@ -2533,6 +3334,7 @@ function schritte(n) {
       marktBasisStand = marktBasis(state, RULES);
     }
   }
+  berichteAbholen(true);
   seitSpeichern += n;
   if (seitSpeichern >= OBERFLAECHE.autosaveAlleSchritte) speichern();
 }
@@ -2540,25 +3342,45 @@ function schritte(n) {
 function kopfAktualisieren() {
   $('spielzeit').textContent = spielzeitText(state.tick);
   if (!$('ansicht-hq').hidden) hqZeichnen(state, kasseBasis);
-  spielstandZeigen();
-  if (!$('ansicht-karte').hidden) karte.aktualisieren(state);
+  spielstandZeichnen();
+  if (!$('ansicht-karte').hidden && karte) karte.aktualisieren(state);
   ansichtenZeichnen();
+  const ungelesen = Math.max(0, state.ereignisse.length - berichtGelesen);
+  $('bericht-zahl').textContent = state.ereignisse.length === 0 ? '–' : ungelesen > 0 ? `${ungelesen} neu` : 'alles gelesen';
+  // v0.11.0: Ohne diesen Guard würde ein geschlossenes Blatt weiter Tick für
+  // Tick gerendert, weil .blatt-seite:not([hidden]) das versteckte Container-
+  // Element #blatt nicht berücksichtigt.
+  if (!sichtbar()) return;
+  const offen = document.querySelector('.blatt-seite:not([hidden])');
+  if (offen?.id === 'blatt-schiff' && aktuellesSchiff) {
+    const r2 = schiffZeichnen(state, aktuellesSchiff, befehlAusfuehren);
+    if (r2) $('blatt-titel').textContent = r2.titel;
+    else { blattSchliessen(); aktuellesSchiff = null; }
+  } else if (offen?.id === 'blatt-station') {
+    const stationId = $('blatt-station').dataset.station;
+    if (stationId && state.stations[stationId]) stationZeichnen(state, stationId, befehlAusfuehren);
+    else blattSchliessen();
+  } else if (offen?.id === 'blatt-bericht') {
+    berichteZeichnen(state.ereignisse);
+    berichtGelesen = berichtGemeldet = state.ereignisse.length;
+  }
 }
 function ansichtenZeichnen() {
   if (!$('ansicht-markt').hidden) markt.zeichnen(state, marktBasisStand);
   if (!$('ansicht-flotte').hidden) flotteAnsicht.zeichnen(state);
   if (!$('ansicht-reich').hidden) reichAnsicht.zeichnen(state, kasseBasis);
 }
-function anzeigen() { kopfAktualisieren(); pruefungZeigen(state); }
+function anzeigen() {
+  kopfAktualisieren();
+  if (!$('blatt-pruefung').hidden) pruefungZeigen(state);
+}
 
-// Variante B: In der Pause wird der Befehl sofort auf den eingefrorenen State angewendet,
-// ohne einen Tick zu verbrauchen. So bleiben Tick, Stundenereignisse und Trend-Basis konsistent.
-// Außerhalb der Pause wandert der Befehl in die Queue und wird vom nächsten Tick ausgeführt.
 function befehlAusfuehren(cmd) {
   if (!bereit) return;
   if (sperre) return meldungZeigen('Spielstand ist gesperrt – bitte neu laden.', { schlecht: true });
   if (stufe === 'pause') {
     const erg = execute(state, cmd, RULES);
+    berichtGelesen = berichtGemeldet = state.ereignisse.length;
     if (!erg.ok) return meldungZeigen(`Befehl abgelehnt: ${erg.reason}`, { schlecht: true });
     seitSpeichern += 1;
     if (seitSpeichern >= OBERFLAECHE.autosaveAlleSchritte) speichern();
@@ -2567,12 +3389,9 @@ function befehlAusfuehren(cmd) {
     if (!r.ok) return meldungZeigen(`Befehl abgelehnt: ${r.reason}`, { schlecht: true });
   }
   m_ui_dirty.bump();
-  const offen = document.querySelector('.blatt-seite:not([hidden])');
-  if (offen?.id === 'blatt-schiff' && aktuellesSchiff) {
-    const r2 = schiffZeichnen(state, aktuellesSchiff, befehlAusfuehren);
-    if (r2) $('blatt-titel').textContent = r2.titel;
-    else { blattSchliessen(); aktuellesSchiff = null; }
-  }
+  // kopfAktualisieren über anzeigen() rendert das offene Schiff-Blatt einmal,
+  // sobald der Dirty-Zähler sich ändert. Ein separater Inline-Render hier war
+  // bis v0.10.0 doppelt vorhanden und ist hier bewusst entfernt.
   anzeigen();
 }
 
@@ -2585,24 +3404,24 @@ function stufeSetzen(id) {
   $('stufentext').textContent = s.faktor === 0 ? 'Pausiert' : `Läuft ${s.label}`;
   const hinweis = $('pause-hinweis');
   if (hinweis) hinweis.hidden = s.faktor !== 0;
-  lauf.aktualisieren();
+  if (lauf) lauf.aktualisieren();
   if (id === 'pause' && vorher !== 'pause' && bereit) speichern();
 }
 
 const leistung = leistungErzeugen($('leistung'));
-const karte = karteErzeugen($('karte'), { arbeit: leistung.arbeit, beiSystem: (id) => systemOeffnen(id) });
 function systemOeffnen(id) {
   const l = lage(state, RULES, KARTE)[id];
   systemZeichnen(l);
   blattOeffnen('blatt-system', { titel: l.name, stufe: 'halb' });
 }
+karte = karteErzeugen($('karte'), { arbeit: leistung.arbeit, beiSystem: (id) => systemOeffnen(id) });
 
 const markt = marktErzeugen(() => ansichtenZeichnen(), (ware) => {
   const name = wareZeichnen(state, ware);
   blattOeffnen('blatt-ware', { titel: name, stufe: 'halb' });
 }, () => state, befehlAusfuehren);
 
-const lauf = laufErzeugen({
+lauf = laufErzeugen({
   daten: OBERFLAECHE, faktor,
   beiSchritten: (n) => {
     const start = performance.now();
@@ -2616,7 +3435,7 @@ const flotteAnsicht = flotteErzeugen((id) => {
   const r = schiffZeichnen(state, id, befehlAusfuehren);
   if (r) blattOeffnen('blatt-schiff', { titel: r.titel, stufe: 'halb' });
 });
-const reichAnsicht = reichErzeugen();
+const reichAnsicht = reichErzeugen(() => state, befehlAusfuehren);
 
 $('b-schiff-karte').addEventListener('click', () => {
   const system = $('b-schiff-karte').dataset.system;
@@ -2638,6 +3457,12 @@ for (const b of document.querySelectorAll('[data-ansicht-ziel]')) b.addEventList
 
 blattVerdrahten(); farbschemaAnwenden();
 $('b-pruefung').addEventListener('click', () => { pruefungZeigen(state, true); blattOeffnen('blatt-pruefung', { stufe: 'voll' }); });
+$('b-bericht').addEventListener('click', () => {
+  berichteZeichnen(state.ereignisse);
+  berichtGelesen = berichtGemeldet = state.ereignisse.length;
+  kopfAktualisieren();
+  blattOeffnen('blatt-bericht', { stufe: 'voll' });
+});
 $('b-spielstand').addEventListener('click', () => blattOeffnen('blatt-spielstand'));
 
 $('b-step').addEventListener('click', () => {
@@ -2666,6 +3491,7 @@ function aufholen(seit) {
     leistung.nachholen(performance.now() - start);
     kasseBasis = undefined; marktBasisStand = undefined;
   }
+  berichtGelesen = berichtGemeldet = state.ereignisse.length;
   if (n.schritte > 0 || n.rueckwaerts) speichern();
   anzeigen();
   if (n.schritte >= OBERFLAECHE.zusammenfassungAbSchritten || n.rueckwaerts) {
@@ -2684,7 +3510,10 @@ $('b-diagnose').addEventListener('click', () => { diagnoseSchalten(!meta.diagnos
 
 $('b-abwesend').addEventListener('click', () => {
   if (sperre) return;
-  speichern().then(() => dbGet(OBERFLAECHE.slot)).then((text) => {
+  speichern().then((ok) => {
+    if (!ok) throw new Error('Speichern vor der Simulation fehlgeschlagen');
+    return dbGet(OBERFLAECHE.slot);
+  }).then((text) => {
     const r = auspacken(text, RULES.rulesVersion);
     if (r.art !== 'huelle') throw new Error('kein Spielstand mit Uhrzeit');
     sperre = true;
@@ -2699,13 +3528,17 @@ function metaSpeichern() { return dbPut('meta', meta).catch(() => {}); }
 
 function speichern() {
   if (sperre || !bereit) return Promise.resolve(false);
+  if (speicherLaeuft) return Promise.resolve(false);
+  speicherLaeuft = true;
   const t = jetzt();
   return dbPut(OBERFLAECHE.slot, packen(save(state), t, VERSION)).then(() => {
+    speicherLaeuft = false;
     gespeichertUm = t; speicherFehler = false; seitSpeichern = 0;
     if (dauerhaft === '–') dauerhaftAnfragen().then((e) => { dauerhaft = e; spielstandZeigen(); });
     spielstandZeigen();
     return true;
   }, (e) => {
+    speicherLaeuft = false;
     if (!speicherFehler) meldungZeigen(`Speichern fehlgeschlagen: ${e && e.message ? e.message : 'unbekannter Fehler'}`, { schlecht: true, knopf: 'Als Datei sichern', aktion: exportieren });
     speicherFehler = true;
     return false;
@@ -2727,6 +3560,7 @@ function neuBeginnen(alt) {
     state = createState(RULES.startSeed);
     sperre = false;
     kasseBasis = undefined; marktBasisStand = undefined; gespeichertUm = null; aktuellesSchiff = null;
+    berichtGelesen = berichtGemeldet = state.ereignisse.length;
     m_ui_dirty.bump();
     stufeSetzen('pause'); anzeigen();
     return speichern();
@@ -2765,7 +3599,8 @@ function einlesen(text, quelle) {
   }
   if (r.art === 'regel-neu') {
     if (vomSpeicher) sperre = true;
-    dialogZeigen({ titel: 'Neuere Spielversion', text: 'Dieser Stand ist für eine neuere Spielversion. Er wird nicht geladen und nicht überschrieben.', knoepfe: [schliessen] });
+    const neustart = vomSpeicher ? { text: 'Neues Spiel beginnen', art: 'gefahr', aktion: () => { neuBeginnen(); } } : null;
+    dialogZeigen({ titel: 'Neuere Spielversion', text: 'Dieser Stand ist für eine neuere Spielversion. Er wird nicht geladen und nicht überschrieben. Starte ein neues Spiel, um fortzufahren.', knoepfe: [neustart, schliessen].filter(Boolean) });
     return null;
   }
   let geladen = null;
@@ -2774,16 +3609,18 @@ function einlesen(text, quelle) {
   }
   if (!geladen) {
     if (vomSpeicher) sperre = true;
+    const neustart = vomSpeicher ? { text: 'Neues Spiel beginnen', art: 'gefahr', aktion: () => { neuBeginnen(); } } : null;
     dialogZeigen({
       titel: 'Spielstand beschädigt',
       text: 'Dieser Spielstand ist beschädigt. Er wird nicht überschrieben. Du kannst den Rohtext als Datei sichern.',
-      knoepfe: [{ text: 'Rohtext als Datei sichern', art: 'normal', aktion: () => dateiSichern(text, 'aphros-void-beschaedigt.json') }, schliessen],
+      knoepfe: [{ text: 'Rohtext als Datei sichern', art: 'normal', aktion: () => dateiSichern(text, 'aphros-void-beschaedigt.json') }, neustart, schliessen].filter(Boolean),
     });
     return null;
   }
   state = geladen;
   kasseBasis = undefined; marktBasisStand = undefined;
   gespeichertUm = r.art === 'huelle' ? r.gespeichertUm : null;
+  berichtGelesen = berichtGemeldet = state.ereignisse.length;
   m_ui_dirty.bump();
   return r;
 }

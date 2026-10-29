@@ -1,0 +1,2909 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f5f5f7">
+<meta name="aphros-version" content="v0.7.0">
+<meta name="aphros-file-sha256" content="03a28e4823e0fd01fe3ce16ae0608756cc374601916cebd62fcae6b7fc170a98">
+<title>Aphros Void</title>
+<style>
+:root {
+  --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --muted: #6e6e73;
+  --accent: #0071e3; --accent-fill: #0071e3; --accent-text: #ffffff; --accent-press: #00479a; --card-press: #dbdbdb;
+  --line: #d2d2d7; --good: #1c7f36; --bad: #d70015; --warn: #8a6a2a;
+  --karte-raum: #dfe7ef; --karte-tor: #6f7a8c; --eigen: #167d73; --neutral: #64748b;
+  --sicherheit: #5b3fbf; --pirat: #b43f28; --schwarzmarkt: #7b2d8e;
+  --press-fade: 0.5s;
+  --leiste-hoehe: calc(49px + env(safe-area-inset-bottom)); --zeit-hoehe: 104px; --unten: calc(var(--leiste-hoehe) + var(--zeit-hoehe));
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000; --card: #1c1c1e; --text: #f5f5f7; --muted: #98989d;
+    --accent: #0a84ff; --accent-fill: #0071e3; --accent-text: #ffffff; --accent-press: #00479a; --card-press: #49494b;
+    --line: #38383a; --good: #30d158; --bad: #ff453a; --warn: #d99a2b;
+    --karte-raum: #070b14; --karte-tor: #5f6f86; --eigen: #2dd4bf; --neutral: #94a3b8;
+    --sicherheit: #8579e8; --pirat: #d65628; --schwarzmarkt: #b56ad6;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.4 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+[hidden] { display: none !important; }
+.ansicht { max-width: 560px; margin: 0 auto; padding: 32px 20px calc(var(--unten) + 24px); }
+h1 { margin: 0; font-size: 34px; font-weight: 700; letter-spacing: -0.02em; }
+.muted { color: var(--muted); font-size: 15px; margin: 4px 0 0; }
+.card { background: var(--card); border-radius: 14px; padding: 4px 16px; margin-top: 24px; }
+dl { margin: 0; }
+dl > div, tr { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+dl > div:last-child, tr:last-child { border-bottom: 0; }
+dt, td:first-child { color: var(--muted); }
+dd, td { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+dd#hash, dd#erhaltung { font-size: 15px; }
+dd#hash { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+table { width: 100%; border-collapse: collapse; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
+.actions .primary, .actions .wide { grid-column: 1 / -1; }
+button { --n: var(--card); --p: var(--card-press); min-height: 48px; min-width: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--n); color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; }
+button.primary { --n: var(--accent-fill); --p: var(--accent-press); color: var(--accent-text); }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.good { color: var(--good); } .bad { color: var(--bad); }
+.diagnose { margin-top: 24px; font-size: 13px; text-align: center; }
+.kopf { padding-top: 4px; }
+.kopf-klein { margin: 0; }
+.kasse { margin: 4px 0 0; }
+.kasse-zahl { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.trend { display: flex; align-items: center; gap: 4px; margin: 4px 0 0; font-size: 15px; font-variant-numeric: tabular-nums; }
+.trend-bezug { color: var(--muted); }
+.trend .symbol { display: block; }
+.card h2 { margin: 12px 0 0; font-size: 22px; font-weight: 600; color: var(--text); }
+.card .muted { font-size: 15px; font-weight: 400; }
+.liste { list-style: none; margin: 0; padding: 0; }
+.liste li { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); min-height: 44px; }
+.liste li:last-child { border-bottom: 0; }
+.liste-links { color: var(--text); }
+.liste-rechts { text-align: right; font-variant-numeric: tabular-nums; }
+.liste .zeile-knopf { padding: 0; }
+button.zeile { --n: var(--card); --p: var(--card-press); width: 100%; min-height: 56px; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 6px 0; border-radius: 0; background: var(--n); color: var(--text); font-weight: 400; text-align: left; }
+button.zeile .liste-links { color: var(--text); }
+.marke { display: inline-flex; align-items: center; gap: 4px; font-size: 15px; }
+.marke-warn { color: var(--warn); } .marke-gut { color: var(--good); } .marke-schlecht { color: var(--bad); }
+.marke-pirat { color: var(--text); } .marke-pirat .symbol { color: var(--pirat); }
+.symbol { flex: none; }
+.hinweis { margin: 12px 0 0; padding: 12px 16px; border-radius: 14px; background: var(--card); color: var(--warn); }
+.leer { text-align: center; padding-top: 32px; }
+.leer p { color: var(--muted); margin: 8px 0 24px; }
+.meldung-zeile { position: fixed; top: calc(8px + env(safe-area-inset-top)); left: 20px; right: 20px; z-index: 40; max-width: 560px; margin: 0 auto; padding: 12px 16px; border-radius: 14px; background: var(--card); color: var(--text); border: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.meldung-zeile.schlecht { color: var(--bad); }
+.zeitsteuerung { position: fixed; left: 0; right: 0; bottom: var(--leiste-hoehe); z-index: 10; background: var(--card); border-top: 1px solid var(--line); padding: 8px 20px 8px; }
+.zeit-status { display: flex; justify-content: space-between; align-items: baseline; max-width: 560px; margin: 0 auto 8px; font-size: 15px; font-variant-numeric: tabular-nums; }
+.zeit-text { font-weight: 600; }
+.zeit-uhr { color: var(--muted); }
+.zeit-gruppe { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-width: 560px; margin: 0 auto; }
+.zeit-gruppe button { --n: var(--bg); --p: var(--card-press); color: var(--text); font-weight: 600; }
+.zeit-gruppe button[aria-pressed="true"] { --n: var(--accent-fill); --p: var(--accent-press); color: var(--accent-text); font-weight: 700; box-shadow: inset 0 -4px 0 var(--accent-text); }
+.leistung { position: fixed; left: 0; right: 0; bottom: var(--unten); z-index: 9; padding: 4px 20px; font-size: 13px; text-align: center; color: var(--muted); background: var(--card); font-variant-numeric: tabular-nums; }
+.leiste { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; min-height: calc(49px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); background: var(--card); border-top: 1px solid var(--line); }
+.leiste button { --n: var(--card); --p: var(--card-press); flex: 1; min-height: 49px; border-radius: 0; padding: 0 4px; color: var(--muted); font-size: 13px; font-weight: 600; border-top: 3px solid transparent; }
+.leiste button[aria-current="page"] { color: var(--accent); font-weight: 700; border-top: 3px solid var(--accent); }
+.leiste-text { display: block; }
+.blatt { position: fixed; inset: 0; z-index: 30; }
+.blatt-hintergrund, .dialog-hintergrund { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); }
+.blatt-tafel { position: absolute; left: 0; right: 0; bottom: 0; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; background: var(--bg); border-radius: 14px 14px 0 0; padding-bottom: env(safe-area-inset-bottom); }
+.blatt-tafel[data-groesse="halb"] { height: 50vh; }
+.blatt-tafel[data-groesse="voll"] { height: 92vh; }
+.blatt-kopf { display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 0 20px; border-bottom: 1px solid var(--line); background: var(--card); border-radius: 14px 14px 0 0; }
+.blatt-kopf h2 { margin: 0; font-size: 22px; font-weight: 600; grid-column: 1; padding: 4px 0 12px; }
+.blatt-griff { --n: var(--card); --p: var(--card-press); grid-column: 1 / -1; width: 100%; height: 28px; padding: 0; border-radius: 14px 14px 0 0; touch-action: none; display: flex; justify-content: center; align-items: center; }
+.blatt-griff span { display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--muted); }
+.blatt-fertig { grid-column: 2; grid-row: 2; --n: var(--card); --p: var(--card-press); color: var(--accent); min-height: 44px; }
+.blatt-inhalt { flex: 1; overflow-y: auto; padding: 0 20px 24px; -webkit-overflow-scrolling: touch; }
+.blatt-seite { max-width: 560px; margin: 0 auto; }
+.dialog { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.dialog-tafel { position: relative; width: 100%; max-width: 420px; background: var(--card); border-radius: 14px; padding: 24px 20px 20px; }
+.dialog-tafel h2 { margin: 0 0 8px; font-size: 22px; font-weight: 600; }
+.dialog-tafel p { margin: 0 0 24px; color: var(--text); }
+.dialog-knoepfe { display: flex; gap: 12px; justify-content: space-between; }
+.dialog-knoepfe button { flex: 1; --n: var(--bg); --p: var(--card-press); }
+.dialog-knoepfe button.primary { --n: var(--accent-fill); --p: var(--accent-press); color: var(--accent-text); }
+.dialog-knoepfe button.gefahr { color: var(--bad); }
+.blatt .card { margin-top: 16px; }
+.ansicht-karte { position: fixed; top: 0; left: 0; right: 0; bottom: var(--unten); max-width: none; margin: 0; padding: 0; }
+#karte { display: block; width: 100%; height: 100%; touch-action: none; background: var(--karte-raum); user-select: none; -webkit-user-select: none; }
+.meldung-knoepfe { display: flex; gap: 8px; flex: none; }
+.meldung-zeile button { min-height: 44px; }
+.hinweis-zeile { display: block; }
+.actions button.gefahr { color: var(--bad); }
+.weg-good { color: var(--good); } .weg-bad { color: var(--bad); } .weg-warn { color: var(--warn); } .weg-muted { color: var(--muted); }
+.liste-links .symbol { vertical-align: -3px; }
+.rolle { display: inline-flex; vertical-align: -3px; }
+.rolle-eigen { color: var(--eigen); } .rolle-neutral { color: var(--neutral); } .rolle-sicherheit { color: var(--sicherheit); } .rolle-pirat { color: var(--pirat); }
+.karte-name { font: 700 26px -apple-system, BlinkMacSystemFont, system-ui, sans-serif; fill: var(--text); paint-order: stroke; stroke: var(--karte-raum); stroke-width: 6px; stroke-linejoin: round; }
+.karte-marke { font: 500 20px -apple-system, BlinkMacSystemFont, system-ui, sans-serif; fill: var(--text); paint-order: stroke; stroke: var(--karte-raum); stroke-width: 5px; stroke-linejoin: round; }
+.marke-muted { color: var(--muted); }
+.hinweis-text { margin: 16px 0 0; text-align: center; }
+.segment { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; margin-top: 12px; }
+.segment button { --n: var(--card); --p: var(--card-press); color: var(--text); font-weight: 600; }
+.segment button[aria-pressed="true"] { --n: var(--accent-fill); --p: var(--accent-press); color: var(--accent-text); font-weight: 700; box-shadow: inset 0 -4px 0 var(--accent-text); }
+.zeile-text { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.zeile-zahl { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-variant-numeric: tabular-nums; }
+.unterzeile { margin: 12px 0 0; }
+.befehle-leiste { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.befehle-leiste button { min-height: 40px; padding: 0 12px; font-size: 15px; }
+.pause-hinweis { margin: 0 0 8px; font-size: 13px; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body>
+<div id="meldung-zeile" class="meldung-zeile" role="status" aria-live="polite" hidden>
+  <span id="meldung-text"></span>
+  <span class="meldung-knoepfe"><button type="button" id="meldung-knopf" hidden></button><button type="button" id="meldung-zu">OK</button></span>
+</div>
+
+<main id="ansicht-hq" class="ansicht" aria-label="HQ">
+  <header class="kopf">
+    <p class="muted kopf-klein">HQ · v0.7.0</p>
+    <p class="kasse"><span id="hq-kasse" class="kasse-zahl">–</span></p>
+    <p id="hq-trend" class="trend muted"><span class="trend-symbol" id="hq-trend-symbol"></span><span id="hq-trend-text">–</span> <span class="trend-bezug">zur letzten vollen Spielstunde</span></p>
+  </header>
+  <section class="card" aria-label="Flotte"><h2>Flotte <span id="hq-flotte-zahl" class="muted">–</span></h2><ul id="hq-flotte" class="liste"></ul></section>
+  <section class="card" aria-label="Lage"><h2>Lage</h2><ul id="hq-lage" class="liste"></ul></section>
+  <section class="card" aria-label="Welt">
+    <h2>Welt</h2>
+    <ul class="liste">
+      <li><span class="liste-links">Geldmenge</span><span class="liste-rechts" id="hq-geld">–</span></li>
+      <li><span class="liste-links">Erhaltungsprüfung</span><span class="liste-rechts" id="hq-erhaltung">–</span></li>
+    </ul>
+  </section>
+  <section class="card" aria-label="Spielstand">
+    <ul class="liste">
+      <li class="zeile-knopf"><button type="button" class="zeile" id="b-spielstand"><span class="liste-links">Spielstand</span><span class="liste-rechts muted" id="hq-gespeichert">–</span></button></li>
+      <li id="hq-hinweis-zeile" class="hinweis-zeile" hidden><span class="marke marke-warn" id="hq-hinweis"></span></li>
+      <li class="zeile-knopf"><button type="button" class="zeile" id="b-pruefung"><span class="liste-links">Prüfung</span><span class="liste-rechts muted">Werte und Schritte</span></button></li>
+    </ul>
+  </section>
+</main>
+
+<section id="ansicht-karte" class="ansicht ansicht-karte" aria-label="Karte" hidden>
+  <svg id="karte" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Karte der fünf Systeme"></svg>
+</section>
+
+<section id="ansicht-markt" class="ansicht" aria-label="Markt" hidden>
+  <header class="kopf"><p class="muted kopf-klein">Markt</p><div id="markt-systeme" class="segment" role="group" aria-label="System wählen"></div></header>
+  <section class="card" aria-label="Zusammenfassung"><ul id="markt-kopf" class="liste"></ul></section>
+  <section class="card" aria-label="Preise"><h2>Preise</h2><ul id="markt-preise" class="liste"></ul></section>
+  <p class="muted hinweis-text">Wähle oben ein System. Ist dort ein eigenes Schiff angedockt, kannst du direkt handeln.</p>
+</section>
+
+<section id="ansicht-flotte" class="ansicht" aria-label="Flotte" hidden>
+  <header class="kopf"><p class="muted kopf-klein">Flotte</p></header>
+  <section class="card" aria-label="Zusammenfassung"><ul id="flotte-kopf" class="liste"></ul></section>
+  <section class="card" aria-label="Meine Schiffe"><h2>Meine Schiffe</h2><ul id="flotte-schiffe" class="liste"></ul></section>
+  <section class="card" aria-label="In der Welt"><h2>In der Welt</h2><ul id="flotte-welt" class="liste"></ul></section>
+  <p class="muted hinweis-text">Tippe ein Schiff an, um es zu befehligen.</p>
+</section>
+
+<section id="ansicht-reich" class="ansicht" aria-label="Reich" hidden>
+  <header class="kopf">
+    <p class="muted kopf-klein">Reich</p>
+    <p class="kasse"><span id="reich-kasse" class="kasse-zahl">–</span></p>
+    <p id="reich-trend" class="trend muted"><span class="trend-symbol" id="reich-trend-symbol"></span><span id="reich-trend-text">–</span> <span class="trend-bezug">zur letzten vollen Spielstunde</span></p>
+  </header>
+  <section class="card" aria-label="Hauptsitz">
+    <h2>Hauptsitz</h2>
+    <ul id="reich-hauptsitz" class="liste"></ul>
+    <p class="muted unterzeile">Lager am Hauptsitz</p>
+    <ul id="reich-lager" class="liste"></ul>
+  </section>
+  <section class="card" aria-label="Flotte"><h2>Flotte <span id="reich-flotte-zahl" class="muted">–</span></h2><ul id="reich-flotte" class="liste"></ul></section>
+  <section class="card" aria-label="Reich"><h2>Reich</h2><ul class="liste"><li><span class="liste-links">Eigene Systeme</span><span class="liste-rechts" id="reich-systeme">–</span></li></ul></section>
+  <div class="leer"><p>Baue deine Flotte aus, um mehr Systeme zu erschließen.</p><button type="button" class="primary" data-ansicht-ziel="karte">Zur Karte</button></div>
+</section>
+
+<div id="leistung" class="leistung" hidden></div>
+
+<div id="zeitsteuerung" class="zeitsteuerung" role="group" aria-label="Zeitsteuerung">
+  <div class="zeit-status"><span id="stufentext" class="zeit-text">Pausiert</span><span id="spielzeit" class="zeit-uhr">Tag 1 · 00:00</span></div>
+  <div class="zeit-gruppe">
+    <button type="button" data-stufe="pause" aria-pressed="true">Pause</button>
+    <button type="button" data-stufe="x1" aria-pressed="false">1×</button>
+    <button type="button" data-stufe="x5" aria-pressed="false">5×</button>
+    <button type="button" data-stufe="x20" aria-pressed="false">20×</button>
+  </div>
+  <p id="pause-hinweis" class="pause-hinweis">Welt steht still · Befehle wirken sofort, ohne Spielzeit zu kosten</p>
+</div>
+
+<nav class="leiste" aria-label="Hauptmenü">
+  <button type="button" data-ansicht="hq" aria-current="page"><span class="leiste-text">HQ</span></button>
+  <button type="button" data-ansicht="karte"><span class="leiste-text">Karte</span></button>
+  <button type="button" data-ansicht="markt"><span class="leiste-text">Markt</span></button>
+  <button type="button" data-ansicht="flotte"><span class="leiste-text">Flotte</span></button>
+  <button type="button" data-ansicht="reich"><span class="leiste-text">Reich</span></button>
+</nav>
+
+<div id="blatt" class="blatt" hidden>
+  <div class="blatt-hintergrund" id="blatt-hintergrund"></div>
+  <section class="blatt-tafel" role="dialog" aria-modal="true" aria-labelledby="blatt-titel" data-groesse="halb">
+    <div class="blatt-kopf">
+      <button type="button" class="blatt-griff" id="blatt-griff" aria-label="Größe ändern"><span></span></button>
+      <h2 id="blatt-titel">Blatt</h2>
+      <button type="button" class="blatt-fertig" id="blatt-fertig">Fertig</button>
+    </div>
+    <div class="blatt-inhalt">
+
+      <div class="blatt-seite" id="blatt-pruefung" data-titel="Prüfung" hidden>
+        <p class="muted">Version v0.7.0 · Datei <span id="filehash">–</span></p>
+        <section class="card" aria-label="Zustand">
+          <dl>
+            <div><dt>Spielzeit</dt><dd id="zeit">–</dd></div>
+            <div><dt>Tick</dt><dd id="tick">–</dd></div>
+            <div><dt>Prüfsumme</dt><dd id="hash">–</dd></div>
+            <div><dt>Wartende Befehle</dt><dd id="queue">–</dd></div>
+            <div><dt>Erhaltung</dt><dd id="erhaltung">–</dd></div>
+            <div><dt>Rechenzeit „1 Stunde“</dt><dd id="rechenzeit">–</dd></div>
+            <div><dt>Kopfgeld geschöpft</dt><dd id="kopfgeld">–</dd></div>
+            <div><dt>Geld vernichtet</dt><dd id="burned">–</dd></div>
+            <div><dt>Piraten</dt><dd id="piraten">–</dd></div>
+            <div><dt>Verluste (zivil)</dt><dd id="verluste">–</dd></div>
+          </dl>
+        </section>
+        <section class="card" aria-label="Preise in Aldera"><h2>Preise in Aldera</h2><table><tbody id="preise"></tbody></table></section>
+        <section class="card" aria-label="Kassen"><table><tbody id="owners"></tbody></table></section>
+        <section class="actions" aria-label="Aktionen">
+          <button id="b-step" class="primary" type="button">10 Schritte</button>
+          <button id="b-hour" class="wide" type="button">1 Stunde</button>
+        </section>
+        <section class="card" aria-label="Diagnose">
+          <h2>Diagnose</h2>
+          <ul class="liste">
+            <li class="zeile-knopf"><button type="button" class="zeile" id="b-diagnose" role="switch" aria-checked="false"><span class="liste-links">Diagnose anzeigen</span><span class="liste-rechts" id="diagnose-wert">Aus</span></button></li>
+            <li class="zeile-knopf"><button type="button" class="zeile" id="b-abwesend"><span class="liste-links">Abwesenheit simulieren (+2 Stunden)</span></button></li>
+          </ul>
+        </section>
+        <p id="msg" class="muted" role="status" aria-live="polite">&nbsp;</p>
+        <p id="diagnose" class="muted diagnose">&nbsp;</p>
+      </div>
+
+      <div class="blatt-seite" id="blatt-weg" data-titel="Während du weg warst" hidden>
+        <section class="card" aria-label="Meldungen"><ul id="weg-liste" class="liste"></ul></section>
+      </div>
+
+      <div class="blatt-seite" id="blatt-system" data-titel="System" hidden>
+        <section class="card" aria-label="System"><ul id="sys-kopf" class="liste"></ul></section>
+        <section class="card" aria-label="Stationen"><h2>Stationen</h2><ul id="sys-stationen" class="liste"></ul></section>
+        <section class="card" aria-label="Schiffe im System"><h2>Schiffe im System</h2><ul id="sys-schiffe" class="liste"></ul></section>
+        <section class="card" aria-label="Nachbarsysteme"><h2>Nachbarsysteme (Tore)</h2><ul id="sys-nachbarn" class="liste"></ul></section>
+      </div>
+
+      <div class="blatt-seite" id="blatt-ware" data-titel="Ware" hidden>
+        <section class="card" aria-label="Preise in den Systemen"><h2>Preis in den Systemen</h2><ul id="ware-stationen" class="liste"></ul></section>
+        <section class="card" aria-label="Entsteht aus"><h2>Entsteht aus</h2><ul id="ware-entsteht" class="liste"></ul></section>
+        <section class="card" aria-label="Wird gebraucht für"><h2>Wird gebraucht für</h2><ul id="ware-gebraucht" class="liste"></ul></section>
+      </div>
+
+      <div class="blatt-seite" id="blatt-schiff" data-titel="Schiff" hidden>
+        <section class="card" aria-label="Schiff"><ul id="schiff-liste" class="liste"></ul></section>
+        <section class="card" aria-label="Befehle"><h2>Befehle</h2><div id="schiff-befehle"></div></section>
+        <section class="actions" aria-label="Schiff-Aktionen"><button id="b-schiff-karte" type="button" class="primary">Auf der Karte zeigen</button></section>
+      </div>
+
+      <div class="blatt-seite" id="blatt-spielstand" data-titel="Spielstand" hidden>
+        <section class="card" aria-label="Spielstand">
+          <ul class="liste">
+            <li><span class="liste-links">Zuletzt gespeichert</span><span class="liste-rechts" id="ss-gespeichert">–</span></li>
+            <li><span class="liste-links">Zuletzt exportiert</span><span class="liste-rechts" id="ss-export">–</span></li>
+            <li><span class="liste-links">Speicher</span><span class="liste-rechts" id="ss-dauerhaft">–</span></li>
+          </ul>
+        </section>
+        <p id="ss-hinweis" class="hinweis" hidden></p>
+        <section class="actions" aria-label="Spielstand-Aktionen">
+          <button id="b-save" type="button">Jetzt speichern</button>
+          <button id="b-export" type="button">Export als Datei</button>
+          <button id="b-import" type="button">Import</button>
+          <button id="b-neu" type="button" class="gefahr">Neues Spiel</button>
+          <input id="f-import" type="file" accept=".json,application/json" hidden>
+        </section>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="dialog" class="dialog" hidden>
+  <div class="dialog-hintergrund"></div>
+  <section class="dialog-tafel" role="alertdialog" aria-modal="true" aria-labelledby="dialog-titel" aria-describedby="dialog-text">
+    <h2 id="dialog-titel">Hinweis</h2>
+    <p id="dialog-text"></p>
+    <div id="dialog-knoepfe" class="dialog-knoepfe"></div>
+  </section>
+</div>
+
+<script>
+'use strict';
+
+const m_data_economy = (() => {
+const ECONOMY = {
+  waren: {
+    erz: { stufe: 'rohstoff', basis: 10 }, eis: { stufe: 'rohstoff', basis: 12 }, kristall: { stufe: 'rohstoff', basis: 24 },
+    material: { stufe: 'material', basis: 30 }, bauteil: { stufe: 'bauteil', basis: 75 },
+    treibstoff: { stufe: 'verbrauch', basis: 30 }, nahrung: { stufe: 'verbrauch', basis: 30 }, medikamente: { stufe: 'verbrauch', basis: 105 },
+    lager: { stufe: 'modul', basis: 180 }, bergbau: { stufe: 'modul', basis: 225 }, fabrik: { stufe: 'modul', basis: 300 },
+    dock: { stufe: 'modul', basis: 360 }, werft: { stufe: 'modul', basis: 450 }, verteidigung: { stufe: 'modul', basis: 252 },
+    miner: { stufe: 'schiff', basis: 600 }, frachter: { stufe: 'schiff', basis: 750 }, jaeger: { stufe: 'schiff', basis: 900 }, bauschiff: { stufe: 'schiff', basis: 1200 },
+  },
+  rezepte: {
+    r_material: { ein: { erz: 10 }, aus: { material: 4 }, ort: 'fabrik', dauer: 10 },
+    r_bauteil: { ein: { material: 2 }, aus: { bauteil: 1 }, ort: 'fabrik', dauer: 8 },
+    r_treibstoff: { ein: { eis: 2 }, aus: { treibstoff: 1 }, ort: 'fabrik', dauer: 5 },
+    r_nahrung: { ein: { eis: 2 }, aus: { nahrung: 1 }, ort: 'fabrik', dauer: 6 },
+    r_medikamente: { ein: { kristall: 1, material: 2 }, aus: { medikamente: 1 }, ort: 'fabrik', dauer: 7 },
+    r_lager: { ein: { bauteil: 2 }, aus: { lager: 1 }, ort: 'fabrik', dauer: 12 },
+    r_bergbau: { ein: { bauteil: 2, material: 1 }, aus: { bergbau: 1 }, ort: 'fabrik', dauer: 15 },
+    r_fabrik: { ein: { bauteil: 2, material: 3 }, aus: { fabrik: 1 }, ort: 'fabrik', dauer: 18 },
+    r_dock: { ein: { bauteil: 4 }, aus: { dock: 1 }, ort: 'fabrik', dauer: 20 },
+    r_werft: { ein: { bauteil: 4, material: 2 }, aus: { werft: 1 }, ort: 'fabrik', dauer: 24 },
+    r_verteidigung: { ein: { bauteil: 2, material: 2 }, aus: { verteidigung: 1 }, ort: 'fabrik', dauer: 14 },
+    r_miner: { ein: { bauteil: 6, material: 1 }, aus: { miner: 1 }, ort: 'werft', dauer: 30 },
+    r_frachter: { ein: { bauteil: 8 }, aus: { frachter: 1 }, ort: 'werft', dauer: 36 },
+    r_jaeger: { ein: { bauteil: 8, material: 4 }, aus: { jaeger: 1 }, ort: 'werft', dauer: 32 },
+    r_bauschiff: { ein: { bauteil: 12, material: 2 }, aus: { bauschiff: 1 }, ort: 'werft', dauer: 48 },
+  },
+  s: 800, preisgrenzen: [550, 2500],
+  region: { aldera: 1000, dravos: 900, cyris: 1100, veldra: 950, meridian: 1300 },
+  kopfgeld: { klein: 240, mittel: 360, gross: 480 },
+  killsProStunde: 2, miningRate: 1, cargo: 100, stunde: 60,
+  start: { owner: 'house', kasse: 2000, flotte: ['miner', 'frachter'], system: 'aldera', auftrag: 'halten' },
+};
+return { ECONOMY };
+})();
+
+const m_data_world = (() => {
+const ZIEL_SCHIFF = 2;
+const WORLD = {
+  systems: {
+    aldera: { station: 'st_aldera', fonds: 'fonds_aldera' },
+    cyris: { station: 'st_cyris', fonds: 'fonds_cyris' },
+    dravos: { station: 'st_dravos', fonds: 'fonds_dravos' },
+    meridian: { station: 'st_meridian', fonds: 'fonds_meridian' },
+    veldra: { station: 'st_veldra', fonds: 'fonds_veldra' },
+  },
+  gates: [
+    ['aldera', 'dravos', 20], ['aldera', 'cyris', 25], ['dravos', 'veldra', 20],
+    ['cyris', 'veldra', 25], ['veldra', 'meridian', 30], ['cyris', 'meridian', 30],
+  ],
+  aktiveRezepte: ['r_bauteil', 'r_frachter', 'r_jaeger', 'r_material', 'r_medikamente', 'r_miner', 'r_nahrung', 'r_treibstoff'],
+  werft: 'st_aldera', zielSchiff: ZIEL_SCHIFF,
+  stations: {
+    st_aldera: { system: 'aldera', linien: ['r_material', 'r_bauteil', 'r_treibstoff', 'r_miner', 'r_frachter', 'r_jaeger'],
+      verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
+      ziel: { erz: 240, material: 156, bauteil: 40, eis: 96, treibstoff: 52, nahrung: 20, medikamente: 20, miner: ZIEL_SCHIFF, frachter: ZIEL_SCHIFF, jaeger: ZIEL_SCHIFF },
+      gebuehr: 40 },
+    st_cyris: { system: 'cyris', linien: ['r_bauteil', 'r_medikamente', 'r_nahrung'],
+      verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
+      ziel: { material: 132, bauteil: 40, kristall: 36, medikamente: 40, eis: 80, nahrung: 52, treibstoff: 20 }, gebuehr: 40 },
+    st_dravos: { system: 'dravos', linien: ['r_material', 'r_treibstoff'],
+      verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
+      ziel: { erz: 240, material: 96, eis: 96, treibstoff: 52, nahrung: 20, medikamente: 20, bauteil: 20 }, gebuehr: 40 },
+    st_meridian: { system: 'meridian', linien: [], verbrauch: {},
+      ziel: { erz: 100, eis: 100, kristall: 100, material: 100, bauteil: 100, treibstoff: 100, nahrung: 100, medikamente: 100 }, gebuehr: 0, aussenhandel: true },
+    st_veldra: { system: 'veldra', linien: ['r_material', 'r_nahrung'],
+      verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
+      ziel: { erz: 240, material: 96, eis: 80, nahrung: 52, treibstoff: 20, medikamente: 20, bauteil: 20 }, gebuehr: 40 },
+  },
+  zielFaktor: 4, zielMin: 20, obergrenze: 1250,
+  fields: [
+    { system: 'aldera', ware: 'erz', miner: 2 }, { system: 'dravos', ware: 'erz', miner: 1 },
+    { system: 'dravos', ware: 'eis', miner: 1 }, { system: 'cyris', ware: 'kristall', miner: 1 },
+    { system: 'cyris', ware: 'eis', miner: 1 }, { system: 'veldra', ware: 'erz', miner: 1 },
+  ],
+  minerOwner: 'npc3',
+  traders: [
+    { owner: 'npc1', system: 'aldera', start: 0 }, { owner: 'npc2', system: 'dravos', start: 5 },
+    { owner: 'npc1', system: 'cyris', start: 10 }, { owner: 'npc2', system: 'veldra', start: 15 },
+  ],
+  treibstoffJeSprung: 1, aussenhandelTeiler: 10,
+  betriebskosten: { miner: 150, frachter: 250, jaeger: 50 },
+  senkeBesitzer: ['security'], mindeststand: 2500, fondsObergrenze: 1500, npcObergrenze: 6000, npcAusgabenArten: ['trader', 'miner'],
+  sicherheit: { owner: 'security', jaeger: ['aldera', 'dravos', 'cyris', 'veldra'], fokus: 'schwach', rueckzug: 30 },
+  piraten: { owner: 'pirates', markt: 'st_meridian',
+    soll: { dravos: { pirat_klein: 1 }, cyris: { pirat_mittel: 1 }, veldra: { pirat_klein: 1 }, meridian: { pirat_mittel: 1, pirat_gross: 1 } } },
+  patrouilleChance: 900, ueberfallChance: 200, ersatzRuecklage: 250, warteLeer: 30, warteTreibstoff: 10,
+  owners: [
+    { id: 'house', kind: 'player', cash: 2000 }, { id: 'security', kind: 'authority', cash: 5000 }, { id: 'pirates', kind: 'pirate', cash: 3000 },
+    { id: 'npc1', kind: 'trader', cash: 3000 }, { id: 'npc2', kind: 'trader', cash: 3000 }, { id: 'npc3', kind: 'miner', cash: 2000 },
+    { id: 'st_aldera', kind: 'station', cash: 4000 }, { id: 'st_cyris', kind: 'station', cash: 4000 },
+    { id: 'st_dravos', kind: 'station', cash: 4000 }, { id: 'st_meridian', kind: 'station', cash: 6000 }, { id: 'st_veldra', kind: 'station', cash: 4000 },
+    { id: 'fonds_aldera', kind: 'fund', cash: 1000 }, { id: 'fonds_cyris', kind: 'fund', cash: 1000 },
+    { id: 'fonds_dravos', kind: 'fund', cash: 1000 }, { id: 'fonds_meridian', kind: 'fund', cash: 1000 }, { id: 'fonds_veldra', kind: 'fund', cash: 1000 },
+  ],
+};
+return { WORLD };
+})();
+
+const m_data_combat = (() => {
+const COMBAT = {
+  einheiten: {
+    jaeger: { hp: 296, angriff: 45, ruestung: 2, treffer: 511 },
+    miner: { hp: 90, angriff: 3, ruestung: 2, treffer: 400 },
+    frachter: { hp: 110, angriff: 3, ruestung: 2, treffer: 400 },
+    bauschiff: { hp: 300, angriff: 3, ruestung: 2, treffer: 300 },
+    pirat_klein: { hp: 110, angriff: 22, ruestung: 3, treffer: 503 },
+    pirat_mittel: { hp: 190, angriff: 32, ruestung: 0, treffer: 600 },
+    pirat_gross: { hp: 206, angriff: 55, ruestung: 3, treffer: 576 },
+    geschuetz: { hp: 137, angriff: 49, ruestung: 2, treffer: 752 },
+  },
+  flucht: 500, maxRunden: 12,
+  kopfgeldKlasse: { pirat_klein: 'klein', pirat_mittel: 'mittel', pirat_gross: 'gross' },
+  ersatzpreis: { pirat_klein: 300, pirat_mittel: 450, pirat_gross: 900 },
+};
+return { COMBAT };
+})();
+
+const m_data_rules = (() => {
+const RULES = {
+  schema: 5, rulesVersion: 4, maxAdvanceSteps: 10000, startSeed: 1, mintKinds: ['authority'],
+  owners: m_data_world.WORLD.owners, economy: m_data_economy.ECONOMY,
+  world: m_data_world.WORLD, combat: m_data_combat.COMBAT,
+};
+return { RULES };
+})();
+
+const m_core_rng = (() => {
+function seedToState(seed) { if (!Number.isSafeInteger(seed)) throw new TypeError('Startwert muss eine ganze Zahl sein'); return seed >>> 0; }
+function rngNext(state) {
+  state.rng = (state.rng + 0x6D2B79F5) >>> 0;
+  let t = state.rng;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function rngInt(state, n) { return Math.floor(rngNext(state) * n); }
+return { seedToState, rngNext, rngInt };
+})();
+
+const m_core_zahl = (() => {
+function div(a, b) { if (!(b > 0)) throw new RangeError('div: Teiler muss positiv sein'); return Math.floor(a / b); }
+const clamp = (lo, hi, x) => (x < lo ? lo : x > hi ? hi : x);
+const ids = (obj) => Object.keys(obj).sort();
+const anzahl = (obj, k) => (Object.hasOwn(obj, k) ? obj[k] : 0);
+return { div, clamp, ids, anzahl };
+})();
+
+const m_core_state = (() => {
+const { seedToState } = m_core_rng;
+const { ids } = m_core_zahl;
+const leereStats = () => ({ handel: 0, tanken: 0, rezepte: {}, verkaeufe: {}, mangel: {} });
+function kontoStats(owners) {
+  const konto = {}; const abgabe = {};
+  for (const id of ids(owners)) { konto[id] = { erloes: 0, kosten: 0 }; abgabe[id] = 0; }
+  return { konto, abgabe };
+}
+const kampfStats = () => ({ kaempfe: 0, kopfgeld: 0, abschuesse: {}, verluste: {}, indienst: {}, vernichtet: 0, piratenErsatz: 0 });
+const zuschussStats = () => ({ zuschuss: 0 });
+const schiffId = (n) => `sh${String(n).padStart(3, '0')}`;
+function neuesSchiff(state, felder) {
+  const id = schiffId(state.nextShip);
+  state.nextShip += 1;
+  const s = { id, phase: 'dock', ziel: null, ankunft: 0, ladung: {}, warten: 0, ware: null, arbeit: 0, ...felder };
+  state.ships[id] = s; state.stats.verkaeufe[id] = 0; return s;
+}
+function createState(seed, rules) {
+  const w = rules.world; const e = rules.economy;
+  const owners = {}; let initialSupply = 0;
+  for (const o of rules.owners) { owners[o.id] = { id: o.id, kind: o.kind, cash: o.cash }; initialSupply += o.cash; }
+  const systems = {};
+  for (const id of ids(w.systems)) systems[id] = { id, station: w.systems[id].station, fonds: w.systems[id].fonds };
+  const stats = { ...leereStats(), ...kontoStats(owners), ...kampfStats(), ...zuschussStats() };
+  const stations = {};
+  for (const id of ids(w.stations)) {
+    const cfg = w.stations[id]; const lager = {};
+    for (const ware of ids(cfg.ziel)) lager[ware] = cfg.ziel[ware];
+    stations[id] = { id, system: cfg.system, lager, linien: cfg.linien.map((rezept) => ({ rezept, rest: 0 })) };
+    stats.rezepte[id] = 0; stats.mangel[id] = {};
+    for (const ware of ids(cfg.verbrauch)) stats.mangel[id][ware] = 0;
+  }
+  const ledger = {};
+  for (const ware of ids(e.waren)) {
+    let initial = 0;
+    for (const id of ids(stations)) initial += stations[id].lager[ware] || 0;
+    ledger[ware] = { initial, mined: 0, produced: 0, consumed: 0, imported: 0, exported: 0 };
+  }
+  const state = {
+    schema: rules.schema, rulesVersion: rules.rulesVersion, tick: 0, rng: seedToState(seed), queue: [],
+    owners, systems, entities: {}, nextId: 1, nextShip: 1, minted: 0, burned: 0, initialSupply,
+    stations, ships: {}, sollflotte: {}, ledger, stats,
+  };
+  const soll = (felder) => {
+    const s = neuesSchiff(state, { heimat: felder.system, ...felder });
+    (state.sollflotte[s.owner] ||= []).push({ klasse: s.klasse, heimat: s.heimat, ware: s.ware, auftrag: s.auftrag });
+  };
+  for (const klasse of e.start.flotte) soll({ owner: e.start.owner, klasse, system: e.start.system, auftrag: e.start.auftrag });
+  for (const f of w.fields) for (let i = 0; i < f.miner; i++) soll({ owner: w.minerOwner, klasse: 'miner', system: f.system, auftrag: 'foerdern', ware: f.ware });
+  for (const t of w.traders) soll({ owner: t.owner, klasse: 'frachter', system: t.system, auftrag: 'handeln', ankunft: t.start });
+  for (const system of w.sicherheit.jaeger) soll({ owner: w.sicherheit.owner, klasse: 'jaeger', system, auftrag: 'patrouille' });
+  for (const system of ids(w.piraten.soll)) for (const klasse of ids(w.piraten.soll[system]))
+    for (let i = 0; i < w.piraten.soll[system][klasse]; i++)
+      neuesSchiff(state, { owner: w.piraten.owner, klasse, system, heimat: system, auftrag: 'pirat' });
+  return state;
+}
+return { leereStats, kontoStats, kampfStats, zuschussStats, schiffId, neuesSchiff, createState };
+})();
+
+const m_core_commands = (() => {
+const { rngInt } = m_core_rng;
+const FIELDS = {
+  noop: [], creditTransfer: ['to', 'amount'], spawnTestEntity: [], mint: ['amount'],
+  shipMove: ['schiff', 'ziel'], shipTrade: ['schiff', 'ware', 'menge', 'kauf'],
+  shipMine: ['schiff', 'ware'], shipWait: ['schiff'],
+};
+const isAmount = (x) => Number.isSafeInteger(x) && x > 0;
+
+function checkShape(state, cmd, rules) {
+  if (cmd === null || typeof cmd !== 'object' || Array.isArray(cmd)) return 'Befehl ist kein Objekt';
+  if (!Object.hasOwn(FIELDS, cmd.type)) return 'unbekannter Befehlstyp';
+  if (typeof cmd.owner !== 'string' || !Object.hasOwn(state.owners, cmd.owner)) return 'unbekannter Besitzer';
+  const erlaubt = new Set(['type', 'owner', ...FIELDS[cmd.type]]);
+  for (const k of Object.keys(cmd)) if (!erlaubt.has(k)) return `unerlaubtes Feld: ${k}`;
+  if (cmd.type === 'creditTransfer') {
+    if (typeof cmd.to !== 'string' || !Object.hasOwn(state.owners, cmd.to)) return 'unbekannter Empfänger';
+    if (cmd.to === cmd.owner) return 'Absender und Empfänger sind gleich';
+    if (!isAmount(cmd.amount)) return 'Betrag muss eine positive ganze Zahl sein';
+  }
+  if (cmd.type === 'mint') {
+    if (!isAmount(cmd.amount)) return 'Betrag muss eine positive ganze Zahl sein';
+    if (!rules.mintKinds.includes(state.owners[cmd.owner].kind)) return 'Besitzer darf kein Geld schöpfen';
+  }
+  if (FIELDS[cmd.type].includes('schiff')) {
+    if (typeof cmd.schiff !== 'string' || !Object.hasOwn(state.ships, cmd.schiff)) return 'unbekanntes Schiff';
+    const s = state.ships[cmd.schiff];
+    if (s.owner !== cmd.owner) return 'Schiff gehört nicht dem Besitzer';
+    if (s.phase !== 'dock') return 'Schiff ist nicht im Dock';
+    if (cmd.type === 'shipMove') {
+      if (typeof cmd.ziel !== 'string' || !Object.hasOwn(rules.world.stations, cmd.ziel)) return 'unbekanntes Ziel';
+    }
+    if (cmd.type === 'shipTrade') {
+      if (typeof cmd.ware !== 'string' || !Object.hasOwn(rules.economy.waren, cmd.ware)) return 'unbekannte Ware';
+      if (!Number.isSafeInteger(cmd.menge) || cmd.menge <= 0) return 'Menge muss positive ganze Zahl sein';
+      if (typeof cmd.kauf !== 'boolean') return 'kauf muss boolean sein';
+      const station = rules.world.systems[s.system].station;
+      if (!Object.hasOwn(rules.world.stations[station].ziel, cmd.ware)) return 'Station handelt diese Ware nicht';
+    }
+    if (cmd.type === 'shipMine') {
+      if (s.klasse !== 'miner') return 'nur Miner können fördern';
+      if (typeof cmd.ware !== 'string' || !Object.hasOwn(rules.economy.waren, cmd.ware)) return 'unbekannte Ware';
+    }
+  }
+  return null;
+}
+
+function submit(state, cmd, rules) {
+  const fehler = checkShape(state, cmd, rules);
+  if (fehler) return { ok: false, reason: fehler };
+  state.queue.push(JSON.parse(JSON.stringify(cmd)));
+  return { ok: true };
+}
+
+function execute(state, cmd, rules) {
+  const fehler = checkShape(state, cmd, rules);
+  if (fehler) return { ok: false, type: cmd && cmd.type, reason: fehler };
+  switch (cmd.type) {
+    case 'noop': break;
+    case 'creditTransfer': {
+      const sender = state.owners[cmd.owner]; const receiver = state.owners[cmd.to];
+      if (sender.cash < cmd.amount) return { ok: false, type: cmd.type, reason: 'keine Deckung' };
+      sender.cash -= cmd.amount; receiver.cash += cmd.amount; break;
+    }
+    case 'spawnTestEntity': {
+      const id = `e${state.nextId}`; state.nextId += 1;
+      state.entities[id] = { id, owner: cmd.owner, x: rngInt(state, 1000), y: rngInt(state, 1000) }; break;
+    }
+    case 'mint': state.owners[cmd.owner].cash += cmd.amount; state.minted += cmd.amount; break;
+    case 'shipMove': {
+      const s = state.ships[cmd.schiff];
+      const r = m_core_route.route(rules.world, s.system, rules.world.stations[cmd.ziel].system);
+      if (!r || r.zeit <= 0) return { ok: false, type: cmd.type, reason: 'kein Weg' };
+      const station = rules.world.systems[s.system].station;
+      const sprit = r.spruenge * rules.world.treibstoffJeSprung;
+      if (sprit > 0 && !m_core_handel.tanken(state, rules, s, station, sprit))
+        return { ok: false, type: cmd.type, reason: 'kein Treibstoff oder Geld' };
+      s.phase = 'reise'; s.ziel = cmd.ziel; s.ankunft = state.tick + r.zeit; s.warten = 0; break;
+    }
+    case 'shipTrade': {
+      const s = state.ships[cmd.schiff];
+      const station = rules.world.systems[s.system].station;
+      if (!m_core_handel.handel(state, rules, s, station, cmd.ware, cmd.menge, cmd.kauf))
+        return { ok: false, type: cmd.type, reason: 'Handel nicht möglich (Kasse, Bestand oder Platz)' };
+      state.stats.handel += 1; state.stats.verkaeufe[s.id] += 1; break;
+    }
+    case 'shipMine': { const s = state.ships[cmd.schiff]; s.auftrag = 'foerdern'; s.ware = cmd.ware; break; }
+    case 'shipWait': { const s = state.ships[cmd.schiff]; s.auftrag = 'halten'; break; }
+  }
+  return { ok: true, type: cmd.type };
+}
+return { submit, execute };
+})();
+
+const m_core_preis = (() => {
+const { div, clamp, anzahl } = m_core_zahl;
+function faktorFormel(region, s, grenzen, ziel, bestand) {
+  const kn = clamp(-1000, 1000, div(1000 * (ziel - bestand), ziel));
+  const roh = div(region * (1000 + div(s * kn, 1000)), 1000);
+  return clamp(grenzen[0], grenzen[1], roh);
+}
+function preisFormel(basis, f) { return Math.max(1, div(basis * f + 500, 1000)); }
+function faktor(state, station, ware, rules) {
+  const st = rules.world.stations[station];
+  const ziel = anzahl(st.ziel, ware);
+  if (ziel <= 0) return 0;
+  const e = rules.economy;
+  return faktorFormel(e.region[st.system], e.s, e.preisgrenzen, ziel, anzahl(state.stations[station].lager, ware));
+}
+function preis(state, station, ware, rules) {
+  const f = faktor(state, station, ware, rules);
+  return f > 0 ? preisFormel(rules.economy.waren[ware].basis, f) : 0;
+}
+return { faktorFormel, preisFormel, faktor, preis };
+})();
+
+const m_core_handel = (() => {
+const { div, anzahl } = m_core_zahl;
+const { preis } = m_core_preis;
+const zielVon = (rules, station, ware) => anzahl(rules.world.stations[station].ziel, ware);
+const stationIn = (rules, system) => rules.world.systems[system].station;
+const fondsIn = (rules, system) => rules.world.systems[system].fonds;
+
+function reserve(rules, station, ware) {
+  const st = rules.world.stations[station];
+  const nutzt = Object.hasOwn(st.verbrauch, ware) || st.linien.some((r) => Object.hasOwn(rules.economy.rezepte[r].ein, ware));
+  return nutzt ? div(zielVon(rules, station, ware), 2) : 0;
+}
+function verkaufbar(state, rules, station, ware) {
+  if (zielVon(rules, station, ware) <= 0) return 0;
+  return Math.max(0, anzahl(state.stations[station].lager, ware) - reserve(rules, station, ware));
+}
+function obergrenze(rules, station, ware) {
+  return div(zielVon(rules, station, ware) * rules.world.obergrenze, 1000);
+}
+function aufnehmbar(state, rules, station, ware) {
+  if (zielVon(rules, station, ware) <= 0) return 0;
+  const platz = obergrenze(rules, station, ware) - anzahl(state.stations[station].lager, ware);
+  const geld = div(state.owners[station].cash, preis(state, station, ware, rules));
+  return Math.max(0, Math.min(platz, geld));
+}
+function buche(state, owner, feld, n) {
+  const konto = state.stats.konto;
+  if (!Object.hasOwn(konto, owner)) konto[owner] = { erloes: 0, kosten: 0 };
+  konto[owner][feld] += n;
+}
+const gebuehr = (rules, station, wert) => div(wert * rules.world.stations[station].gebuehr, 1000);
+function bezahlbar(rules, station, kasse, p) {
+  if (kasse <= 0 || p <= 0) return 0;
+  return div(kasse * 1000, p * (1000 + rules.world.stations[station].gebuehr));
+}
+
+function handel(state, rules, schiff, station, ware, menge, kauf) {
+  if (!Number.isSafeInteger(menge) || menge <= 0) return false;
+  const p = preis(state, station, ware, rules);
+  if (p <= 0) return false;
+  const st = state.stations[station];
+  const kasse = state.owners[station];
+  const besitzer = state.owners[schiff.owner];
+  const fondsId = fondsIn(rules, st.system);
+  const wert = menge * p;
+  const fee = gebuehr(rules, station, wert);
+  const reicht = kauf
+    ? anzahl(st.lager, ware) >= menge && besitzer.cash >= wert + fee
+    : anzahl(schiff.ladung, ware) >= menge && kasse.cash >= wert
+      && anzahl(st.lager, ware) + menge <= obergrenze(rules, station, ware);
+  if (!reicht) return false;
+  const d = kauf ? menge : -menge;
+  st.lager[ware] -= d;
+  schiff.ladung[ware] = anzahl(schiff.ladung, ware) + d;
+  if (schiff.ladung[ware] === 0) delete schiff.ladung[ware];
+  const geld = kauf ? wert : -wert;
+  besitzer.cash -= geld; kasse.cash += geld;
+  besitzer.cash -= fee; state.owners[fondsId].cash += fee;
+  buche(state, kauf ? station : schiff.owner, 'erloes', wert);
+  buche(state, kauf ? schiff.owner : station, 'kosten', wert);
+  buche(state, schiff.owner, 'kosten', fee);
+  return true;
+}
+
+function tanken(state, rules, schiff, station, n) {
+  if (n <= 0) return true;
+  if (anzahl(state.stations[station].lager, 'treibstoff') < n) return false;
+  if (!handel(state, rules, schiff, station, 'treibstoff', n, true)) return false;
+  schiff.ladung.treibstoff -= n;
+  if (schiff.ladung.treibstoff === 0) delete schiff.ladung.treibstoff;
+  state.ledger.treibstoff.consumed += n; state.stats.tanken += 1; return true;
+}
+
+function treibstoffkosten(state, rules, station, n) {
+  if (n <= 0) return 0;
+  const p = preis(state, station, 'treibstoff', rules);
+  if (p <= 0) return null;
+  return n * p + gebuehr(rules, station, n * p);
+}
+return { stationIn, fondsIn, reserve, verkaufbar, obergrenze, aufnehmbar, buche, gebuehr, bezahlbar, handel, tanken, treibstoffkosten };
+})();
+
+const m_core_ankunft = (() => {
+const { ids, anzahl } = m_core_zahl;
+const { handel, aufnehmbar, stationIn } = m_core_handel;
+function entladen(state, rules, s) {
+  const station = stationIn(rules, s.system);
+  for (const ware of ids(s.ladung)) {
+    const m = Math.min(anzahl(s.ladung, ware), aufnehmbar(state, rules, station, ware));
+    if (m > 0 && handel(state, rules, s, station, ware, m, false)) {
+      state.stats.handel += 1; state.stats.verkaeufe[s.id] += 1;
+    }
+  }
+}
+function reise(state) {
+  for (const id of ids(state.ships)) {
+    const s = state.ships[id];
+    if (s.phase === 'reise' || (s.auftrag === 'patrouille' && s.phase === 'dock')) s.arbeit += 1;
+  }
+}
+function ankunft(state, rules) {
+  for (const id of ids(state.ships)) {
+    const s = state.ships[id];
+    if (s.phase !== 'reise' || s.ankunft > state.tick) continue;
+    s.system = rules.world.stations[s.ziel].system;
+    s.phase = 'dock'; s.ziel = null; s.ankunft = state.tick;
+    entladen(state, rules, s);
+  }
+}
+return { entladen, reise, ankunft };
+})();
+
+const m_core_foerderung = (() => {
+const { ids, anzahl } = m_core_zahl;
+const { handel, aufnehmbar, stationIn } = m_core_handel;
+function foerderung(state, rules) {
+  const e = rules.economy;
+  for (const id of ids(state.ships)) {
+    const s = state.ships[id];
+    if (s.klasse !== 'miner' || s.auftrag !== 'foerdern' || s.phase !== 'dock') continue;
+    const ware = s.ware;
+    const vorher = anzahl(s.ladung, ware);
+    if (vorher < e.cargo) {
+      const n = Math.min(e.miningRate, e.cargo - vorher);
+      s.ladung[ware] = vorher + n;
+      state.ledger[ware].mined += n; s.arbeit += 1;
+    }
+    if (s.ladung[ware] < e.cargo) continue;
+    const station = stationIn(rules, s.system);
+    const m = Math.min(s.ladung[ware], aufnehmbar(state, rules, station, ware));
+    if (m > 0 && handel(state, rules, s, station, ware, m, false)) {
+      state.stats.handel += 1; state.stats.verkaeufe[id] += 1;
+    }
+  }
+}
+return { foerderung };
+})();
+
+const m_core_route = (() => {
+const ABLAGE = new WeakMap();
+function kleiner(a, b) { for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i] < b[i]; return a.length < b.length; }
+function berechnen(gates) {
+  const nachbarn = {};
+  for (const [a, b, zeit] of gates) { (nachbarn[a] ||= []).push([b, zeit]); (nachbarn[b] ||= []).push([a, zeit]); }
+  for (const k of Object.keys(nachbarn)) nachbarn[k].sort((x, y) => (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0));
+  const alle = {};
+  for (const start of Object.keys(nachbarn).sort()) {
+    const beste = {};
+    const suche = (weg, zeit) => {
+      const hier = weg[weg.length - 1];
+      const b = beste[hier];
+      if (!b || zeit < b.zeit || (zeit === b.zeit && kleiner(weg, b.weg))) beste[hier] = { zeit, weg: weg.slice() };
+      for (const [n, t] of nachbarn[hier]) if (!weg.includes(n)) suche([...weg, n], zeit + t);
+    };
+    suche([start], 0);
+    for (const ziel of Object.keys(beste)) beste[ziel].spruenge = beste[ziel].weg.length - 1;
+    alle[start] = beste;
+  }
+  return alle;
+}
+function route(world, a, b) {
+  let alle = ABLAGE.get(world.gates);
+  if (!alle) { alle = berechnen(world.gates); ABLAGE.set(world.gates, alle); }
+  return (alle[a] && alle[a][b]) || null;
+}
+return { route };
+})();
+
+const m_core_entscheidung = (() => {
+const { ids, anzahl } = m_core_zahl;
+const { rngInt } = m_core_rng;
+const { preis } = m_core_preis;
+const { route } = m_core_route;
+const { handel, verkaufbar, aufnehmbar, gebuehr, bezahlbar, tanken, treibstoffkosten, stationIn } = m_core_handel;
+const { entladen } = m_core_ankunft;
+const besser = (a, za, b, zb) => a * zb > b * za;
+const weiterreise = (state, rules, ziel, bringtTreibstoff) => bringtTreibstoff || anzahl(state.stations[ziel].lager, 'treibstoff') >= rules.world.treibstoffJeSprung;
+
+function bestesPaar(state, rules, s, station) {
+  const w = rules.world; const hier = w.stations[station];
+  const kasse = state.owners[s.owner].cash; let best = null;
+  for (const ware of ids(hier.ziel)) {
+    const vorrat = verkaufbar(state, rules, station, ware);
+    if (vorrat <= 0) continue;
+    const pHier = preis(state, station, ware, rules);
+    for (const ziel of ids(w.stations)) {
+      if (ziel === station || anzahl(w.stations[ziel].ziel, ware) <= 0) continue;
+      if (!weiterreise(state, rules, ziel, ware === 'treibstoff')) continue;
+      const r = route(w, hier.system, w.stations[ziel].system);
+      if (!r || r.zeit <= 0) continue;
+      const pDort = preis(state, ziel, ware, rules);
+      if (pDort <= pHier) continue;
+      const sprit = r.spruenge * w.treibstoffJeSprung;
+      if (sprit > anzahl(state.stations[station].lager, 'treibstoff')) continue;
+      const fuel = treibstoffkosten(state, rules, station, sprit);
+      if (fuel === null) continue;
+      const menge = Math.min(rules.economy.cargo, ware === 'treibstoff' ? vorrat - sprit : vorrat,
+        aufnehmbar(state, rules, ziel, ware), bezahlbar(rules, station, kasse - fuel, pHier));
+      if (menge <= 0) continue;
+      const gewinn = menge * (pDort - pHier) - gebuehr(rules, station, menge * pHier) - gebuehr(rules, ziel, menge * pDort) - fuel;
+      if (gewinn <= 0) continue;
+      if (!best || besser(gewinn, r.zeit, best.gewinn, best.zeit)) best = { ware, ziel, menge, gewinn, zeit: r.zeit };
+    }
+  }
+  return best;
+}
+function besterAbsatz(state, rules, s, station) {
+  const w = rules.world; const system = w.stations[station].system; let best = null;
+  for (const ziel of ids(w.stations)) {
+    if (ziel === station || !weiterreise(state, rules, ziel, anzahl(s.ladung, 'treibstoff') > 0)) continue;
+    const r = route(w, system, w.stations[ziel].system);
+    if (!r || r.zeit <= 0 || r.spruenge * w.treibstoffJeSprung > anzahl(state.stations[station].lager, 'treibstoff')) continue;
+    const fuel = treibstoffkosten(state, rules, station, r.spruenge * w.treibstoffJeSprung);
+    if (fuel === null) continue;
+    let erloes = -fuel;
+    for (const ware of ids(s.ladung)) {
+      const m = Math.min(s.ladung[ware], aufnehmbar(state, rules, ziel, ware));
+      if (m <= 0) continue;
+      const wert = m * preis(state, ziel, ware, rules);
+      erloes += wert - gebuehr(rules, ziel, wert);
+    }
+    if (erloes <= 0) continue;
+    if (!best || besser(erloes, r.zeit, best.erloes, best.zeit)) best = { ziel, erloes, zeit: r.zeit };
+  }
+  return best;
+}
+function abflug(state, rules, s, station, ziel, ware, menge) {
+  const w = rules.world;
+  const r = route(w, w.stations[station].system, w.stations[ziel].system);
+  if (!tanken(state, rules, s, station, r.spruenge * w.treibstoffJeSprung)) { s.ankunft = state.tick + w.warteTreibstoff; return false; }
+  if (ware !== null) {
+    const p = preis(state, station, ware, rules);
+    const m = Math.min(menge, verkaufbar(state, rules, station, ware), bezahlbar(rules, station, state.owners[s.owner].cash, p));
+    if (m > 0 && handel(state, rules, s, station, ware, m, true)) state.stats.handel += 1;
+  }
+  s.phase = 'reise'; s.ziel = ziel; s.ankunft = state.tick + r.zeit; s.warten = 0; return true;
+}
+function entscheidung(state, rules) {
+  const w = rules.world;
+  for (const id of ids(state.ships)) {
+    const s = state.ships[id];
+    if (s.klasse !== 'frachter' || s.auftrag !== 'handeln' || s.phase !== 'dock' || s.ankunft > state.tick) continue;
+    const station = stationIn(rules, s.system);
+    if (ids(s.ladung).length > 0) {
+      entladen(state, rules, s);
+      if (ids(s.ladung).length > 0) {
+        const z = besterAbsatz(state, rules, s, station);
+        if (z) abflug(state, rules, s, station, z.ziel, null, 0);
+        else s.ankunft = state.tick + w.warteLeer;
+        continue;
+      }
+    }
+    const paar = bestesPaar(state, rules, s, station);
+    if (paar) abflug(state, rules, s, station, paar.ziel, paar.ware, paar.menge);
+    else if (s.warten >= 2) {
+      const treibstoff = anzahl(state.stations[station].lager, 'treibstoff');
+      const andere = ids(w.stations).filter((x) => {
+        const r = x !== station && route(w, s.system, w.stations[x].system);
+        return r && r.spruenge * w.treibstoffJeSprung <= treibstoff && weiterreise(state, rules, x, false);
+      });
+      if (andere.length > 0) abflug(state, rules, s, station, andere[rngInt(state, andere.length)], null, 0);
+      else s.ankunft = state.tick + w.warteLeer;
+    } else { s.warten += 1; s.ankunft = state.tick + w.warteLeer; }
+  }
+}
+return { entscheidung };
+})();
+
+const m_core_produktion = (() => {
+const { ids, anzahl } = m_core_zahl;
+const { obergrenze } = m_core_handel;
+function produktion(state, rules) {
+  const rezepte = rules.economy.rezepte;
+  for (const id of ids(state.stations)) {
+    const st = state.stations[id];
+    for (const linie of st.linien) {
+      const r = rezepte[linie.rezept];
+      if (linie.rest > 0) {
+        linie.rest -= 1;
+        if (linie.rest === 0) {
+          for (const ware of ids(r.aus)) { st.lager[ware] = anzahl(st.lager, ware) + r.aus[ware]; state.ledger[ware].produced += r.aus[ware]; }
+          state.stats.rezepte[id] += 1;
+        }
+      }
+      if (linie.rest > 0) continue;
+      const eingaben = ids(r.ein).every((w) => anzahl(st.lager, w) >= r.ein[w]);
+      const platz = ids(r.aus).every((w) => anzahl(st.lager, w) + r.aus[w] <= obergrenze(rules, id, w));
+      if (!eingaben || !platz) continue;
+      for (const ware of ids(r.ein)) { st.lager[ware] -= r.ein[ware]; state.ledger[ware].consumed += r.ein[ware]; }
+      linie.rest = r.dauer;
+    }
+  }
+}
+return { produktion };
+})();
+
+const m_core_stunde = (() => {
+const { div, ids, anzahl } = m_core_zahl;
+const { fondsIn, buche } = m_core_handel;
+function verbrauch(state, rules) {
+  for (const id of ids(state.stations)) {
+    const st = state.stations[id]; const bedarf = rules.world.stations[id].verbrauch;
+    for (const ware of ids(bedarf)) {
+      const da = anzahl(st.lager, ware);
+      const n = Math.min(da, bedarf[ware]);
+      st.lager[ware] = da - n; state.ledger[ware].consumed += n;
+      if (da < bedarf[ware]) state.stats.mangel[id][ware] += 1;
+    }
+  }
+}
+function betriebskosten(state, rules) {
+  const w = rules.world;
+  for (const id of ids(state.ships)) {
+    const s = state.ships[id]; const arbeit = s.arbeit; s.arbeit = 0;
+    if (s.auftrag === 'halten') continue;
+    const kosten = div(anzahl(w.betriebskosten, s.klasse) * arbeit, rules.economy.stunde);
+    const system = s.phase === 'reise' ? w.stations[s.ziel].system : s.system;
+    const besitzer = state.owners[s.owner]; const n = Math.min(besitzer.cash, kosten);
+    if (n <= 0) continue;
+    besitzer.cash -= n;
+    if (w.senkeBesitzer.includes(s.owner)) state.burned += n;
+    else state.owners[fondsIn(rules, system)].cash += n;
+    buche(state, s.owner, 'kosten', n);
+  }
+}
+function aussenhandel(state, rules) {
+  for (const id of ids(state.stations)) {
+    const cfg = rules.world.stations[id]; if (!cfg.aussenhandel) continue;
+    const st = state.stations[id];
+    for (const ware of ids(cfg.ziel)) {
+      const da = anzahl(st.lager, ware);
+      const d = div(cfg.ziel[ware] - da, rules.world.aussenhandelTeiler);
+      st.lager[ware] = da + d;
+      if (d > 0) state.ledger[ware].imported += d;
+      if (d < 0) state.ledger[ware].exported -= d;
+    }
+  }
+}
+function npcAusgaben(state, rules) {
+  const w = rules.world; const o = state.owners; const stationen = ids(state.stations);
+  if (stationen.length === 0) return;
+  let arm = stationen[0];
+  for (const id of stationen) if (o[id].cash < o[arm].cash) arm = id;
+  const ziel = fondsIn(rules, state.stations[arm].system);
+  for (const id of ids(o)) {
+    if (!w.npcAusgabenArten.includes(o[id].kind)) continue;
+    const n = o[id].cash - w.npcObergrenze;
+    if (n <= 0) continue;
+    o[id].cash -= n; o[ziel].cash += n;
+    state.stats.abgabe[id] = anzahl(state.stats.abgabe, id) + n;
+  }
+}
+function fonds(state, rules) {
+  const w = rules.world; const o = state.owners; const stationen = ids(state.stations);
+  for (const id of stationen) {
+    const f = o[fondsIn(rules, state.stations[id].system)];
+    const n = Math.min(f.cash, w.mindeststand - o[id].cash);
+    if (n <= 0) continue;
+    f.cash -= n; o[id].cash += n;
+  }
+  if (stationen.length === 0) return;
+  for (const system of ids(w.systems)) {
+    const f = o[fondsIn(rules, system)];
+    if (!f || f.cash <= w.fondsObergrenze) continue;
+    let arm = stationen[0];
+    for (const id of stationen) if (o[id].cash < o[arm].cash) arm = id;
+    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;
+  }
+}
+return { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds };
+})();
+
+const m_core_kampf = (() => {
+const { rngInt } = m_core_rng;
+const lebt = (hp) => hp.some((x) => x > 0);
+const summe = (hp) => hp.reduce((n, x) => (x > 0 ? n + x : n), 0);
+function zielwahl(fokus, hp) {
+  let z = -1;
+  for (let i = 0; i < hp.length; i++) {
+    if (hp[i] <= 0) continue;
+    if (z < 0) { z = i; if (fokus === 'erste') break; }
+    else if ((fokus === 'schwach' && hp[i] < hp[z]) || (fokus === 'stark' && hp[i] > hp[z])) z = i;
+  }
+  return z;
+}
+function schiessen(state, werte, hp, fokus, gegnerWerte, gegnerHp, schaden) {
+  for (let i = 0; i < hp.length; i++) {
+    if (hp[i] <= 0) continue;
+    const z = zielwahl(fokus, gegnerHp);
+    const wurf = rngInt(state, 1000);
+    if (z >= 0 && wurf < werte[i].treffer) schaden[z] += Math.max(1, werte[i].angriff - gegnerWerte[z].ruestung);
+  }
+}
+function flieht(state, rules, seite, hp, start) {
+  if (summe(hp) * 100 > seite.rueckzug * start) return false;
+  return rngInt(state, 1000) < rules.combat.flucht;
+}
+function kampf(state, seiteA, seiteB, rules) {
+  const einheiten = rules.combat.einheiten;
+  const wa = seiteA.schiffe.map((s) => einheiten[s.einheit]);
+  const wb = seiteB.schiffe.map((s) => einheiten[s.einheit]);
+  const a = seiteA.schiffe.map((s) => s.hp); const b = seiteB.schiffe.map((s) => s.hp);
+  const startA = summe(a); const startB = summe(b);
+  let runden = 0; let flucht = null;
+  while (runden < rules.combat.maxRunden && lebt(a) && lebt(b)) {
+    runden += 1;
+    const schadenA = a.map(() => 0); const schadenB = b.map(() => 0);
+    schiessen(state, wa, a, seiteA.fokus, wb, b, schadenB);
+    schiessen(state, wb, b, seiteB.fokus, wa, a, schadenA);
+    for (let i = 0; i < a.length; i++) a[i] -= schadenA[i];
+    for (let i = 0; i < b.length; i++) b[i] -= schadenB[i];
+    if (!lebt(a) || !lebt(b)) break;
+    if (flieht(state, rules, seiteA, a, startA)) flucht = 'A';
+    else if (flieht(state, rules, seiteB, b, startB)) flucht = 'B';
+    if (flucht) break;
+  }
+  const sieger = (flucht || lebt(a) === lebt(b)) ? 'keiner' : (lebt(a) ? 'A' : 'B');
+  return { sieger, runden, flucht, a: a.map((x) => Math.max(0, x)), b: b.map((x) => Math.max(0, x)) };
+}
+return { kampf };
+})();
+
+const m_core_sicherheit = (() => {
+const { ids, anzahl } = m_core_zahl;
+const { rngInt } = m_core_rng;
+const { preis } = m_core_preis;
+const { aufnehmbar, buche } = m_core_handel;
+const { kampf } = m_core_kampf;
+const { neuesSchiff } = m_core_state;
+const zaehle = (obj, a, b) => { obj[a] ||= {}; obj[a][b] = anzahl(obj[a], b) + 1; };
+const imSystem = (state, owner, system, auftrag) => ids(state.ships).map((id) => state.ships[id])
+  .filter((s) => s.owner === owner && s.system === system && s.phase === 'dock' && s.auftrag === auftrag);
+const seite = (rules, schiffe, fokus, rueckzug) => ({ schiffe: schiffe.map((s) => ({ einheit: s.klasse, hp: rules.combat.einheiten[s.klasse].hp })), fokus, rueckzug });
+function entfernen(state, s) {
+  delete state.ships[s.id];
+  delete state.stats.verkaeufe[s.id];
+  zaehle(state.stats.verluste, s.owner, s.klasse);
+}
+function zerstoeren(state, rules, s) {
+  const { markt, owner } = rules.world.piraten;
+  for (const ware of ids(s.ladung)) {
+    const m = Math.min(s.ladung[ware], aufnehmbar(state, rules, markt, ware));
+    if (m > 0) {
+      const wert = m * preis(state, markt, ware, rules);
+      state.owners[markt].cash -= wert; state.owners[owner].cash += wert;
+      state.stations[markt].lager[ware] = anzahl(state.stations[markt].lager, ware) + m;
+      s.ladung[ware] -= m;
+      buche(state, owner, 'erloes', wert); buche(state, markt, 'kosten', wert);
+    }
+    const rest = s.ladung[ware];
+    state.ledger[ware].consumed += rest; state.stats.vernichtet += rest;
+    delete s.ladung[ware];
+  }
+  entfernen(state, s);
+}
+function patrouille(state, rules) {
+  const w = rules.world; const { owner, fokus, rueckzug } = w.sicherheit;
+  for (const system of ids(w.systems)) {
+    const jaeger = imSystem(state, owner, system, 'patrouille');
+    const piraten = imSystem(state, w.piraten.owner, system, 'pirat');
+    if (jaeger.length === 0 || piraten.length === 0) continue;
+    if (rngInt(state, 1000) >= w.patrouilleChance) continue;
+    const e = kampf(state, seite(rules, jaeger, fokus, rueckzug), seite(rules, piraten, 'erste', 0), rules);
+    state.stats.kaempfe += 1;
+    jaeger.forEach((s, i) => { if (e.a[i] <= 0) entfernen(state, s); });
+    piraten.forEach((p, i) => {
+      if (e.b[i] > 0) return;
+      const geld = rules.economy.kopfgeld[rules.combat.kopfgeldKlasse[p.klasse]];
+      state.owners[owner].cash += geld; state.minted += geld; state.stats.kopfgeld += geld;
+      buche(state, owner, 'erloes', geld);
+      state.stats.abschuesse[p.klasse] = anzahl(state.stats.abschuesse, p.klasse) + 1;
+      entfernen(state, p);
+    });
+  }
+}
+function zivil(rules, s, system) {
+  const w = rules.world;
+  if (s.auftrag === 'halten' || s.owner === w.sicherheit.owner || s.owner === w.piraten.owner) return false;
+  if (s.klasse === 'miner') return s.auftrag === 'foerdern' && s.phase === 'dock' && s.system === system;
+  if (s.klasse === 'frachter') return s.phase === 'reise' ? w.stations[s.ziel].system === system : s.system === system;
+  return false;
+}
+function ueberfall(state, rules) {
+  const w = rules.world;
+  for (const system of ids(w.systems)) {
+    const piraten = imSystem(state, w.piraten.owner, system, 'pirat');
+    if (piraten.length === 0) continue;
+    if (rngInt(state, 1000) >= w.ueberfallChance) continue;
+    const ziele = ids(state.ships).filter((id) => zivil(rules, state.ships[id], system));
+    if (ziele.length === 0) continue;
+    const ziel = state.ships[ziele[rngInt(state, ziele.length)]];
+    const e = kampf(state, seite(rules, [ziel], 'schwach', 0), seite(rules, piraten, 'erste', 0), rules);
+    state.stats.kaempfe += 1;
+    if (e.a[0] <= 0) zerstoeren(state, rules, ziel);
+    piraten.forEach((p, i) => { if (e.b[i] <= 0) entfernen(state, p); });
+  }
+}
+function piratenErsatz(state, rules) {
+  const { owner, markt, soll } = rules.world.piraten;
+  for (const system of ids(soll)) for (const klasse of ids(soll[system])) {
+    const da = imSystem(state, owner, system, 'pirat').filter((p) => p.klasse === klasse).length;
+    const p = rules.combat.ersatzpreis[klasse];
+    if (da >= soll[system][klasse] || state.owners[owner].cash < p) continue;
+    state.owners[owner].cash -= p; state.owners[markt].cash += p;
+    buche(state, owner, 'kosten', p); buche(state, markt, 'erloes', p);
+    state.stats.piratenErsatz += 1;
+    neuesSchiff(state, { owner, klasse, system, heimat: system, auftrag: 'pirat' });
+  }
+}
+return { patrouille, ueberfall, piratenErsatz };
+})();
+
+const m_core_schiffbau = (() => {
+const { ids, anzahl } = m_core_zahl;
+const { preis } = m_core_preis;
+const { route } = m_core_route;
+const { handel, gebuehr, stationIn, fondsIn } = m_core_handel;
+const { neuesSchiff } = m_core_state;
+const schluessel = (x) => `${x.klasse}/${x.heimat}/${x.ware}`;
+function fehlend(state, owner) {
+  const da = {};
+  for (const id of ids(state.ships)) { const s = state.ships[id]; if (s.owner === owner) da[schluessel(s)] = anzahl(da, schluessel(s)) + 1; }
+  return state.sollflotte[owner].filter((x) => { const k = schluessel(x); if (anzahl(da, k) === 0) return true; da[k] -= 1; return false; });
+}
+function zuschuss(state, rules, owner, bedarf) {
+  const n = bedarf - state.owners[owner].cash;
+  const f = state.owners[fondsIn(rules, state.stations[rules.world.werft].system)];
+  if (n <= 0 || f.cash < n) return 0;
+  f.cash -= n; state.owners[owner].cash += n; state.stats.zuschuss += n; return n;
+}
+function ersatzkauf(state, rules) {
+  const w = rules.world; const werft = w.werft;
+  for (const owner of ids(state.sollflotte)) {
+    if (owner === w.piraten.owner || state.owners[owner].kind === 'player') continue;
+    const leer = !ids(state.ships).some((id) => state.ships[id].owner === owner);
+    for (const x of fehlend(state, owner)) {
+      if (anzahl(state.stations[werft].lager, x.klasse) < 1) continue;
+      const p = preis(state, werft, x.klasse, rules);
+      const bedarf = p + gebuehr(rules, werft, p);
+      if (leer) zuschuss(state, rules, owner, bedarf);
+      if (state.owners[owner].cash < bedarf + (leer ? 0 : w.ersatzRuecklage)) continue;
+      const von = state.stations[werft].system;
+      const r = route(w, von, x.heimat);
+      const s = neuesSchiff(state, { owner, klasse: x.klasse, system: von, heimat: x.heimat, ware: x.ware, auftrag: x.auftrag });
+      if (!handel(state, rules, s, werft, x.klasse, 1, true)) {
+        delete state.ships[s.id];
+        delete state.stats.verkaeufe[s.id];
+        continue;
+      }
+      delete s.ladung[x.klasse]; state.ledger[x.klasse].consumed += 1;
+      state.stats.indienst[owner] ||= {};
+      state.stats.indienst[owner][x.klasse] = anzahl(state.stats.indienst[owner], x.klasse) + 1;
+      s.ankunft = state.tick + r.zeit;
+      if (r.zeit > 0) { s.phase = 'reise'; s.ziel = stationIn(rules, x.heimat); }
+      break;
+    }
+  }
+}
+return { zuschuss, ersatzkauf };
+})();
+
+const m_core_step = (() => {
+const { execute } = m_core_commands;
+const { ankunft, reise } = m_core_ankunft;
+const { foerderung } = m_core_foerderung;
+const { entscheidung } = m_core_entscheidung;
+const { produktion } = m_core_produktion;
+const { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds } = m_core_stunde;
+const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
+const { ersatzkauf } = m_core_schiffbau;
+
+function step(state, rules) {
+  state.tick += 1;
+  const wartend = state.queue; state.queue = [];
+  const ergebnisse = wartend.map((cmd) => execute(state, cmd, rules));
+  ankunft(state, rules); foerderung(state, rules); entscheidung(state, rules); reise(state); produktion(state, rules);
+  if (state.tick % rules.economy.stunde === 0) {
+    verbrauch(state, rules); betriebskosten(state, rules); aussenhandel(state, rules);
+    patrouille(state, rules); ueberfall(state, rules); piratenErsatz(state, rules);
+    ersatzkauf(state, rules); npcAusgaben(state, rules); fonds(state, rules);
+  }
+  return ergebnisse;
+}
+function advance(state, n, rules) {
+  if (!Number.isSafeInteger(n) || n < 0) throw new RangeError('n muss eine ganze Zahl >= 0 sein');
+  if (n > rules.maxAdvanceSteps) throw new RangeError(`n=${n} übersteigt die Obergrenze ${rules.maxAdvanceSteps}`);
+  for (let i = 0; i < n; i++) step(state, rules);
+}
+return { step, advance };
+})();
+
+const m_core_hash = (() => {
+function canonical(value) {
+  if (value === null) return 'null';
+  switch (typeof value) {
+    case 'boolean': return value ? 'true' : 'false';
+    case 'number': if (!Number.isFinite(value)) throw new TypeError('Zahl nicht endlich'); return JSON.stringify(value);
+    case 'string': return JSON.stringify(value);
+    case 'object': {
+      if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
+      const keys = Object.keys(value).sort();
+      return `{${keys.map((k) => `${JSON.stringify(k)}:${canonical(value[k])}`).join(',')}}`;
+    }
+    default: throw new TypeError(`Typ nicht serialisierbar: ${typeof value}`);
+  }
+}
+const hex8 = (n) => (n >>> 0).toString(16).padStart(8, '0');
+function hashString(str) {
+  let h1 = 0xdeadbeef; let h2 = 0x41c6ce57;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return hex8(h2) + hex8(h1);
+}
+function hash(state) { return hashString(canonical(state)); }
+return { canonical, hashString, hash };
+})();
+
+const m_core_serialize = (() => {
+const { canonical } = m_core_hash;
+const { ids } = m_core_zahl;
+const { leereStats, kontoStats, kampfStats, zuschussStats } = m_core_state;
+function migration3(s) {
+  const ships = {}; const sollflotte = {}; let hoechste = 0;
+  for (const id of ids(s.ships)) {
+    const x = { ...s.ships[id], heimat: s.ships[id].system };
+    ships[id] = x;
+    (sollflotte[x.owner] ||= []).push({ klasse: x.klasse, heimat: x.heimat, ware: x.ware, auftrag: x.auftrag });
+    hoechste = Math.max(hoechste, Number(id.slice(2)));
+  }
+  return { ...s, schema: 4, ships, sollflotte, nextShip: hoechste + 1, stats: { ...s.stats, ...kampfStats() } };
+}
+const MIGRATIONS = {
+  1: (s) => ({ ...s, schema: 2, rulesVersion: 0, stations: {}, ships: {}, ledger: {}, stats: leereStats() }),
+  2: (s) => ({ ...s, schema: 3, ships: Object.fromEntries(Object.entries(s.ships).map(([id, x]) => [id, { ...x, arbeit: 0 }])), stats: { ...s.stats, ...kontoStats(s.owners) } }),
+  3: migration3,
+  4: (s) => ({ ...s, schema: 5, burned: 0, stats: { ...s.stats, ...zuschussStats() } }),
+};
+const RULE_MIGRATIONS = {};
+function migrate(state, from, to, table = MIGRATIONS) {
+  let s = state;
+  for (let v = from; v < to; v++) {
+    if (typeof table[v] !== 'function') throw new Error(`Keine Migration von Schema ${v} nach ${v + 1}`);
+    s = table[v](s);
+    if (s.schema !== v + 1) throw new Error(`Migration ${v} lieferte Schema ${s.schema}`);
+  }
+  return s;
+}
+function save(state) { return canonical(state); }
+function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, ruleTable = RULE_MIGRATIONS) {
+  const s = JSON.parse(json);
+  if (s === null || typeof s !== 'object' || !Number.isSafeInteger(s.schema)) throw new Error('Spielstand ohne Schema');
+  if (s.schema > currentSchema) throw new Error(`Schema ${s.schema} ist neuer als ${currentSchema}`);
+  let neu = s.schema < currentSchema ? migrate(s, s.schema, currentSchema, table) : s;
+  for (const k of ['tick', 'rng', 'queue', 'owners', 'systems', 'entities', 'nextId', 'minted', 'burned', 'initialSupply', 'rulesVersion', 'stations', 'ships', 'ledger', 'stats', 'sollflotte', 'nextShip'])
+    if (!(k in neu)) throw new Error(`Spielstand unvollständig: ${k}`);
+  const v = neu.rulesVersion;
+  if (!Number.isSafeInteger(v)) throw new Error('Spielstand ohne Regelversion');
+  if (v > currentRulesVersion) throw new Error(`Regelversion ${v} ist neuer als ${currentRulesVersion}`);
+  for (let r = v; r < currentRulesVersion; r++) {
+    if (typeof ruleTable[r] !== 'function') throw new Error(`Regelversion ${v} ist älter als ${currentRulesVersion}, keine Regelmigration vorhanden`);
+    neu = ruleTable[r](neu);
+  }
+  return neu;
+}
+return { MIGRATIONS, RULE_MIGRATIONS, migrate, save, load };
+})();
+
+const m_core_audit = (() => {
+const { ids, anzahl } = m_core_zahl;
+function audit(state) {
+  let total = 0;
+  for (const o of Object.values(state.owners)) total += o.cash;
+  const expected = state.initialSupply + state.minted - (state.burned || 0);
+  const isk = { ok: total === expected, total, expected, delta: total - expected };
+  const ist = {};
+  const zaehle = (lager) => { for (const w of ids(lager)) ist[w] = anzahl(ist, w) + lager[w]; };
+  for (const id of ids(state.stations || {})) zaehle(state.stations[id].lager);
+  for (const id of ids(state.ships || {})) zaehle(state.ships[id].ladung);
+  const ledger = state.ledger || {};
+  const goods = { ok: true, delta: {} };
+  for (const w of [...new Set([...ids(ledger), ...ids(ist)])].sort()) {
+    const l = ledger[w] || { initial: 0, mined: 0, produced: 0, consumed: 0, imported: 0, exported: 0 };
+    const soll = l.initial + l.mined + l.produced + l.imported - l.consumed - l.exported;
+    const d = anzahl(ist, w) - soll;
+    if (d !== 0) { goods.ok = false; goods.delta[w] = d; }
+  }
+  return { ok: isk.ok && goods.ok, total, expected, delta: total - expected, isk, goods };
+}
+return { audit };
+})();
+
+const m_core_index = (() => {
+const { RULES } = m_data_rules;
+const createState = (seed = RULES.startSeed, rules = RULES) => m_core_state.createState(seed, rules);
+const submit = (state, cmd, rules = RULES) => m_core_commands.submit(state, cmd, rules);
+const execute = (state, cmd, rules = RULES) => m_core_commands.execute(state, cmd, rules);
+const step = (state, rules = RULES) => m_core_step.step(state, rules);
+const advance = (state, n, rules = RULES) => m_core_step.advance(state, n, rules);
+const load = (json, table, rules = RULES) => m_core_serialize.load(json, table, rules.schema, rules.rulesVersion);
+const preis = (state, station, ware, rules = RULES) => m_core_preis.preis(state, station, ware, rules);
+const faktor = (state, station, ware, rules = RULES) => m_core_preis.faktor(state, station, ware, rules);
+const { hash, hashString, canonical } = m_core_hash;
+const { save, migrate, MIGRATIONS, RULE_MIGRATIONS } = m_core_serialize;
+const { audit } = m_core_audit;
+const { rngNext, rngInt } = m_core_rng;
+const { div } = m_core_zahl;
+const { faktorFormel, preisFormel } = m_core_preis;
+const { handel, verkaufbar, aufnehmbar, reserve, obergrenze } = m_core_handel;
+const { route } = m_core_route;
+const { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds } = m_core_stunde;
+const { reise } = m_core_ankunft;
+const { kampf } = m_core_kampf;
+const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
+const { ersatzkauf, zuschuss } = m_core_schiffbau;
+return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, createState, submit, execute, step, advance, load, preis, faktor };
+})();
+
+const m_data_oberflaeche = (() => {
+const OBERFLAECHE = {
+  zeitstufen: [
+    { id: 'pause', label: 'Pause', faktor: 0 }, { id: 'x1', label: '1×', faktor: 1 },
+    { id: 'x5', label: '5×', faktor: 5 }, { id: 'x20', label: '20×', faktor: 20 },
+  ],
+  msProSchrittBei1x: 1000, maxSchritteProBild: 120, nachholenMaxSchritte: 480,
+  msProSchrittAbwesend: 60000, zusammenfassungAbSchritten: 60, autosaveAlleSchritte: 60,
+  exportErinnerungTage: 7, slot: 'slot1', plageAbPiraten: 2, reichsgroesse: 3,
+};
+return { OBERFLAECHE };
+})();
+
+// Zählt State-Mutationen, die nicht über den Tick laufen (z.B. Pause-Befehle).
+// Die Zeichnen-Caches der Ansichten prüfen diesen Zähler zusätzlich zu state und tick.
+const m_ui_dirty = (() => {
+  let zaehler = 0;
+  return { bump: () => { zaehler += 1; }, current: () => zaehler };
+})();
+
+const m_ui_farbe = (() => {
+function rgb(hex) {
+  let h = String(hex).trim().replace(/^#/, '');
+  if (h.length === 3) h = [...h].map((c) => c + c).join('');
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function mischen(vonHex, nachHex, t) {
+  const a = rgb(vonHex); const b = rgb(nachHex);
+  const k = Math.min(1, Math.max(0, t));
+  return '#' + a.map((v, i) => Math.round(v + (b[i] - v) * k).toString(16).padStart(2, '0')).join('');
+}
+return { mischen };
+})();
+
+const m_ui_zeit = (() => {
+const MAX_RUECKSTAND_MS = 1000;
+function schritteFuer(msVergangen, faktor, daten) {
+  if (!(msVergangen > 0) || !(faktor > 0)) return { schritte: 0, rest: 0 };
+  const spielMs = msVergangen * faktor;
+  const n = Math.floor(spielMs / daten.msProSchrittBei1x);
+  if (n > daten.maxSchritteProBild) {
+    const rest = (spielMs - daten.maxSchritteProBild * daten.msProSchrittBei1x) / faktor;
+    return { schritte: daten.maxSchritteProBild, rest: Math.min(rest, MAX_RUECKSTAND_MS) };
+  }
+  return { schritte: n, rest: (spielMs - n * daten.msProSchrittBei1x) / faktor };
+}
+function spielzeitText(tick) {
+  const tag = Math.floor(tick / 1440) + 1;
+  const minuten = tick % 1440;
+  const zwei = (n) => String(n).padStart(2, '0');
+  return `Tag ${tag} · ${zwei(Math.floor(minuten / 60))}:${zwei(minuten % 60)}`;
+}
+function vorText(ms) {
+  if (!Number.isFinite(ms) || ms < 0) return '–';
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return 'gerade eben';
+  if (min < 60) return `vor ${min} Min`;
+  const std = Math.floor(min / 60);
+  if (std < 48) return `vor ${std} Std`;
+  return `vor ${Math.floor(std / 24)} Tagen`;
+}
+function exportHinweis({ letzterExport, jetzt, tick }, daten) {
+  if (!Number.isFinite(letzterExport)) return tick > 1440 ? 'Noch nie als Datei gesichert. Sichere deinen Spielstand mit „Export als Datei“.' : null;
+  const tage = Math.floor((jetzt - letzterExport) / 86400000);
+  return tage >= daten.exportErinnerungTage ? `Zuletzt vor ${tage} Tagen als Datei gesichert. Sichere den Spielstand erneut.` : null;
+}
+return { schritteFuer, spielzeitText, vorText, exportHinweis };
+})();
+
+const m_ui_nachholen = (() => {
+function nachholen(gespeichertUm, jetzt, daten) {
+  if (!Number.isFinite(gespeichertUm) || !Number.isFinite(jetzt)) return { schritte: 0, gedeckelt: false, rueckwaerts: false, dauerMs: 0 };
+  const ms = jetzt - gespeichertUm;
+  if (ms < 0) return { schritte: 0, gedeckelt: false, rueckwaerts: true, dauerMs: 0 };
+  const schritte = Math.floor(ms / daten.msProSchrittAbwesend);
+  const gedeckelt = schritte > daten.nachholenMaxSchritte;
+  return { schritte: gedeckelt ? daten.nachholenMaxSchritte : schritte, gedeckelt, rueckwaerts: false, dauerMs: ms };
+}
+return { nachholen };
+})();
+
+const m_ui_zusammenfassung = (() => {
+const { preis } = m_core_index;
+const MINUS = '−'; const SCHMAL = ' '; const STATION = 'st_aldera';
+const gruppiert = (n) => String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, SCHMAL);
+const isk = (n) => `${n < 0 ? MINUS : ''}${gruppiert(n)} ISK`;
+const mitVorzeichen = (n) => (n > 0 ? `+${n}` : n < 0 ? `${MINUS}${Math.abs(n)}` : '0');
+function dauerText(schritte) {
+  const tage = Math.floor(schritte / 1440); const std = Math.floor((schritte % 1440) / 60); const min = schritte % 60;
+  if (tage > 0) return `${tage} Tag${tage === 1 ? '' : 'e'} ${std} Std ${min} Min`;
+  if (std > 0) return `${std} Std ${min} Min`;
+  return `${min} Min`;
+}
+function kennzahlen(z, regeln) {
+  const art = (id) => z.owners[id].kind;
+  const summe = (o) => Object.values(o).reduce((n, k) => n + Object.values(k).reduce((x, y) => x + y, 0), 0);
+  const zivil = Object.fromEntries(Object.entries(z.stats.verluste).filter(([id]) => art(id) !== 'pirate' && art(id) !== 'authority'));
+  const preise = {};
+  if (z.stations[STATION]) for (const ware of Object.keys(regeln.world.stations[STATION].ziel).sort()) preise[ware] = preis(z, STATION, ware, regeln);
+  return {
+    tick: z.tick, kasse: z.owners[regeln.economy.start.owner].cash, zivileVerluste: summe(zivil),
+    abschuesse: Object.values(z.stats.abschuesse).reduce((x, y) => x + y, 0),
+    kopfgeld: z.stats.kopfgeld, ersatzkaeufe: summe(z.stats.indienst), preise,
+  };
+}
+const zeile = (symbol, text, zahl, wichtigkeit) => ({ symbol, text, zahl, wichtigkeit });
+const pfeil = (d) => (d > 0 ? 'pfeil-auf' : 'pfeil-ab');
+function zusammenfassung(vorher, nachher, nach) {
+  const z = [];
+  if (nach.rueckwaerts) z.push(zeile('warnung', 'Die Uhr deines Geräts ging zurück, es wurde nichts nachgeholt.', '', 95));
+  if (nach.schritte > 0) z.push(zeile('uhr', 'Nachgeholt', dauerText(nach.schritte), 100));
+  if (nach.gedeckelt) z.push(zeile('warnung', 'Es wurden höchstens 8 Stunden nachgeholt.', '', 95));
+  const dk = nachher.kasse - vorher.kasse;
+  if (dk !== 0) z.push(zeile(pfeil(dk), 'Kasse', `${dk > 0 ? '+' : MINUS}${isk(Math.abs(dk))}`, 80));
+  const dv = nachher.zivileVerluste - vorher.zivileVerluste;
+  if (dv > 0) z.push(zeile('dreieck', 'Zivile Schiffe verloren', mitVorzeichen(-dv), 70));
+  const da = nachher.abschuesse - vorher.abschuesse;
+  if (da > 0) z.push(zeile('schild', 'Piraten abgeschossen', mitVorzeichen(da), 60));
+  const dg = nachher.kopfgeld - vorher.kopfgeld;
+  if (dg > 0) z.push(zeile('pfeil-auf', 'Kopfgeld ausgezahlt', `+${isk(dg)}`, 50));
+  const de = nachher.ersatzkaeufe - vorher.ersatzkaeufe;
+  if (de > 0) z.push(zeile('plus', 'Ersatzschiffe gekauft', mitVorzeichen(de), 40));
+  const aenderungen = [];
+  for (const ware of Object.keys(nachher.preise).sort()) {
+    const v = vorher.preise[ware]; const n = nachher.preise[ware];
+    if (!(v > 0) || Math.abs(n - v) * 100 < 5 * v) continue;
+    aenderungen.push({ ware, d: n - v, prozent: Math.round(((n - v) * 100) / v), betrag: Math.abs(n - v) / v });
+  }
+  aenderungen.sort((a, b) => b.betrag - a.betrag);
+  for (const a of aenderungen.slice(0, 3)) z.push(zeile(pfeil(a.d), `Preis ${a.ware} in Aldera`, `${a.d > 0 ? '+' : MINUS}${Math.abs(a.prozent)} %`, 30));
+  return z.map((x, i) => ({ x, i })).sort((a, b) => b.x.wichtigkeit - a.x.wichtigkeit || a.i - b.i).map((e) => e.x);
+}
+function kassenTrend(basis, jetzt) {
+  if (!Number.isFinite(basis)) return null;
+  const delta = jetzt - basis;
+  if (delta === 0) return { delta, symbol: 'gleich', text: '0 ISK', art: 'muted' };
+  return { delta, symbol: pfeil(delta), text: `${delta > 0 ? '+' : MINUS}${isk(Math.abs(delta))}`, art: delta > 0 ? 'good' : 'bad' };
+}
+return { isk, mitVorzeichen, dauerText, kennzahlen, zusammenfassung, kassenTrend };
+})();
+
+const m_data_karte = (() => {
+const KARTE = {
+  breite: 1000, hoehe: 1000,
+  systeme: {
+    aldera: { name: 'Aldera', x: 140, y: 500 }, dravos: { name: 'Dravos', x: 400, y: 190 },
+    cyris: { name: 'Cyris', x: 400, y: 810 }, veldra: { name: 'Veldra', x: 670, y: 500 },
+    meridian: { name: 'Meridian', x: 880, y: 880 },
+  },
+};
+return { KARTE };
+})();
+
+const m_ui_karte_geometrie = (() => {
+const ZOOM_MIN = 1, ZOOM_MAX = 4, MIN_TIPP_PUNKT = 44;
+const startAnsicht = () => ({ zoom: 1, tx: 0, ty: 0 });
+const rasterZuBild = (p, a) => ({ x: a.zoom * p.x + a.tx, y: a.zoom * p.y + a.ty });
+const bildZuRaster = (p, a) => ({ x: (p.x - a.tx) / a.zoom, y: (p.y - a.ty) / a.zoom });
+const klemmen = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+function begrenzen(a, flaeche) {
+  const zoom = klemmen(a.zoom, ZOOM_MIN, ZOOM_MAX);
+  return { zoom, tx: klemmen(a.tx, flaeche.breite - zoom * flaeche.breite, 0), ty: klemmen(a.ty, flaeche.hoehe - zoom * flaeche.hoehe, 0) };
+}
+const verschieben = (a, dx, dy, flaeche) => begrenzen({ zoom: a.zoom, tx: a.tx + dx, ty: a.ty + dy }, flaeche);
+function zoomen(a, faktor, mitte, flaeche) {
+  const zoom = klemmen(a.zoom * faktor, ZOOM_MIN, ZOOM_MAX);
+  const k = zoom / a.zoom;
+  return begrenzen({ zoom, tx: mitte.x - (mitte.x - a.tx) * k, ty: mitte.y - (mitte.y - a.ty) * k }, flaeche);
+}
+function treffer(lagen, tipp, a, opt) {
+  const mindest = MIN_TIPP_PUNKT / 2 / opt.pxProEinheit;
+  const grenze = Math.max(opt.radius * a.zoom, mindest);
+  let beste = null; let bestD = Infinity;
+  for (const id of Object.keys(lagen)) {
+    const b = rasterZuBild(lagen[id], a);
+    const d = Math.hypot(b.x - tipp.x, b.y - tipp.y);
+    if (d <= grenze && d < bestD) { beste = id; bestD = d; }
+  }
+  return beste;
+}
+function punktAufLinie(von, nach, f) {
+  const t = klemmen(f, 0, 1);
+  return { x: von.x + (nach.x - von.x) * t, y: von.y + (nach.y - von.y) * t };
+}
+function positionAufWeg(lagen, weg, zeiten, f) {
+  const gesamt = zeiten.reduce((s, t) => s + t, 0);
+  let rest = klemmen(f, 0, 1) * gesamt;
+  for (let i = 0; i < zeiten.length; i++) {
+    if (rest <= zeiten[i] || i === zeiten.length - 1) return punktAufLinie(lagen[weg[i]], lagen[weg[i + 1]], zeiten[i] === 0 ? 1 : rest / zeiten[i]);
+    rest -= zeiten[i];
+  }
+  return { ...lagen[weg[0]] };
+}
+function fortschritt(tick, ankunft, dauer) { if (!(dauer > 0)) return 1; return klemmen(1 - (ankunft - tick) / dauer, 0, 1); }
+return { ZOOM_MIN, ZOOM_MAX, MIN_TIPP_PUNKT, startAnsicht, rasterZuBild, bildZuRaster, begrenzen, verschieben, zoomen, treffer, punktAufLinie, positionAufWeg, fortschritt };
+})();
+
+const m_data_namen = (() => {
+const WAREN = {
+  erz: 'Erz', eis: 'Eis', kristall: 'Kristall', material: 'Material', bauteil: 'Bauteil',
+  treibstoff: 'Treibstoff', nahrung: 'Nahrung', medikamente: 'Medikamente',
+  lager: 'Lagermodul', bergbau: 'Bergbaumodul', fabrik: 'Fabrikmodul', dock: 'Dockmodul', werft: 'Werftmodul', verteidigung: 'Verteidigungsmodul',
+  miner: 'Miner', frachter: 'Frachter', jaeger: 'Jäger', bauschiff: 'Bauschiff',
+};
+const KLASSEN = {
+  miner: 'Miner', frachter: 'Frachter', jaeger: 'Jäger', bauschiff: 'Bauschiff',
+  pirat_klein: 'Pirat klein', pirat_mittel: 'Pirat mittel', pirat_gross: 'Pirat groß', geschuetz: 'Geschütz',
+};
+const AUFTRAEGE = { halten: 'Wartet', foerdern: 'Fördert', handeln: 'Handelt', patrouille: 'Patrouilliert', pirat: 'Lauert' };
+const PHASEN = { dock: 'Im Dock', reise: 'Unterwegs' };
+const ROLLEN_NAMEN = { eigen: 'Eigene Schiffe', neutral: 'Neutrale Schiffe', sicherheit: 'Sicherheit', pirat: 'Piraten' };
+const ORTE = { fabrik: 'Fabrik', werft: 'Werft' };
+return { WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, ORTE };
+})();
+
+const m_ui_sicht = (() => {
+const { route } = m_core_index;
+const { positionAufWeg, fortschritt } = m_ui_karte_geometrie;
+const { OBERFLAECHE } = m_data_oberflaeche;
+const { KLASSEN, AUFTRAEGE, PHASEN } = m_data_namen;
+const ROLLE_NACH_ART = { player: 'eigen', trader: 'neutral', miner: 'neutral', authority: 'sicherheit', pirate: 'pirat' };
+const rolle = (state, schiff) => ROLLE_NACH_ART[state.owners[schiff.owner].kind] || 'neutral';
+const systemName = (karte, id) => (karte.systeme[id] ? karte.systeme[id].name : id);
+const schiffe = (state) => Object.keys(state.ships).sort().map((id) => state.ships[id]);
+
+function lage(state, regeln, karte) {
+  const w = regeln.world;
+  const aus = {};
+  for (const id of Object.keys(w.systems)) {
+    const stationen = Object.keys(w.stations).filter((st) => w.stations[st].system === id).map((st) => {
+      const zusatz = [st === w.werft ? 'Werft' : null, w.stations[st].aussenhandel ? 'Außenhandel' : null].filter(Boolean);
+      return { id: st, name: `Station ${systemName(karte, id)}`, zusatz };
+    });
+    const nachbarn = w.gates.filter(([a, b]) => a === id || b === id).map(([a, b, zeit]) => ({ id: a === id ? b : a, name: systemName(karte, a === id ? b : a), zeit }));
+    const hafen = w.stations[w.systems[id].station].aussenhandel === true;
+    aus[id] = { id, name: systemName(karte, id), zustand: hafen ? 'piratenhafen' : 'normal', piraten: 0, rollen: { eigen: 0, neutral: 0, sicherheit: 0, pirat: 0 }, stationen, nachbarn };
+  }
+  for (const s of schiffe(state)) {
+    if (s.phase === 'reise' || !aus[s.system]) continue;
+    aus[s.system].rollen[rolle(state, s)] += 1;
+  }
+  for (const id of Object.keys(aus)) {
+    aus[id].piraten = aus[id].rollen.pirat;
+    if (aus[id].zustand === 'normal' && aus[id].piraten >= OBERFLAECHE.plageAbPiraten) aus[id].zustand = 'piratenplage';
+  }
+  return aus;
+}
+function lageMarke(l) {
+  const zahl = l.piraten > 1 ? ` · ${l.piraten} Schiffe` : '';
+  if (l.zustand === 'piratenhafen') return { art: 'pirat', symbol: 'kreuz', text: `Piratenhafen${zahl}`, kurz: 'Piratenhafen' };
+  if (l.zustand === 'piratenplage') return { art: 'warn', symbol: 'dreieck', text: `Piratenplage${zahl}`, kurz: 'Piratenplage' };
+  return { art: 'gut', symbol: 'haken', text: 'Normal', kurz: 'Normal' };
+}
+const SCHIFFSABSTAND = 50;
+function flotte(state, regeln, karte) {
+  const w = regeln.world;
+  return schiffe(state).filter((s) => rolle(state, s) === 'eigen').map((s) => {
+    const unterwegs = s.phase === 'reise';
+    const ort = unterwegs ? `unterwegs nach ${systemName(karte, w.stations[s.ziel].system)}` : `in ${systemName(karte, s.system)}`;
+    return { id: s.id, klasse: KLASSEN[s.klasse] || s.klasse, ort, taetigkeit: unterwegs ? PHASEN.reise : (AUFTRAEGE[s.auftrag] || s.auftrag) };
+  });
+}
+function reiseWeg(regeln, s) {
+  const w = regeln.world;
+  const r = route(w, s.system, w.stations[s.ziel].system);
+  if (!r) return null;
+  const zeiten = [];
+  for (let i = 0; i < r.weg.length - 1; i++) {
+    const g = w.gates.find(([a, b]) => (a === r.weg[i] && b === r.weg[i + 1]) || (b === r.weg[i] && a === r.weg[i + 1]));
+    zeiten.push(g[2]);
+  }
+  return { weg: r.weg, zeiten, dauer: r.zeit };
+}
+function schiffsPunkte(state, regeln, karte) {
+  const lagen = karte.systeme; const zaehler = {};
+  return schiffe(state).map((s) => {
+    const art = rolle(state, s);
+    if (s.phase === 'reise') {
+      const rw = reiseWeg(regeln, s);
+      const f = rw ? fortschritt(state.tick, s.ankunft, rw.dauer) : 0.5;
+      const p = rw ? positionAufWeg(lagen, rw.weg, rw.zeiten, f) : { ...lagen[s.system] };
+      return { id: s.id, rolle: art, unterwegs: true, x: p.x, y: p.y };
+    }
+    const i = zaehler[s.system] = (zaehler[s.system] || 0); zaehler[s.system] += 1;
+    const winkel = Math.PI + ((i % 6) + 0.5) * (Math.PI / 6);
+    const radius = SCHIFFSABSTAND + Math.floor(i / 6) * 28;
+    const l = lagen[s.system];
+    return { id: s.id, rolle: art, unterwegs: false, x: l.x + Math.cos(winkel) * radius, y: l.y + Math.sin(winkel) * radius };
+  });
+}
+const geldmenge = (state) => Object.values(state.owners).reduce((n, o) => n + o.cash, 0);
+return { rolle, lage, lageMarke, flotte, reiseWeg, schiffsPunkte, geldmenge };
+})();
+
+const m_ui_symbole = (() => {
+const LINIE = 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+const FORMEN = {
+  'pfeil-auf': `<path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" ${LINIE}/>`, 'pfeil-ab': `<path d="M8 3v10M3.5 8.5 8 13l4.5-4.5" ${LINIE}/>`,
+  gleich: `<path d="M3 8h10" ${LINIE}/>`, plus: `<path d="M8 3v10M3 8h10" ${LINIE}/>`,
+  haken: `<path d="M3 8.5 6.5 12 13 4.5" ${LINIE}/>`, kreuz: `<path d="M3.5 3.5l9 9M12.5 3.5l-9 9" ${LINIE}/>`,
+  dreieck: `<path d="M8 2.5 14 13.5H2Z" ${LINIE}/><path d="M8 7v3" ${LINIE}/>`,
+  schild: `<path d="M8 2l5 2v4.5c0 3-2.5 4.6-5 5.5-2.5-.9-5-2.5-5-5.5V4z" ${LINIE}/>`,
+  ring: `<circle cx="8" cy="8" r="5" ${LINIE}/>`, punkt: '<circle cx="8" cy="8" r="4.5" fill="currentColor"/>',
+  randgestrichelt: `<circle cx="8" cy="8" r="5" ${LINIE} stroke-dasharray="2.2 2"/>`,
+  uhr: `<circle cx="8" cy="8" r="6" ${LINIE}/><path d="M8 4.5V8l2.5 1.5" ${LINIE}/>`,
+};
+FORMEN.warnung = FORMEN.dreieck;
+function symbolSvg(name, groesse = 16) {
+  return `<svg class="symbol symbol-${name}" width="${groesse}" height="${groesse}" viewBox="0 0 16 16" aria-hidden="true" focusable="false">${FORMEN[name] || ''}</svg>`;
+}
+const formInnen = (name) => FORMEN[name];
+const ROLLEN_FORM = { eigen: 'ring', neutral: 'punkt', sicherheit: 'schild', pirat: 'kreuz', schwarzmarkt: 'randgestrichelt' };
+return { FORMEN, symbolSvg, formInnen, ROLLEN_FORM };
+})();
+
+const m_ui_zeichnen = (() => {
+const { symbolSvg, ROLLEN_FORM } = m_ui_symbole;
+const $ = (id) => document.getElementById(id);
+function text(el, wert) { if (el.textContent !== wert) el.textContent = wert; }
+function html(el, wert) { if (el.dataset.inhalt !== wert) { el.dataset.inhalt = wert; el.innerHTML = wert; } }
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const marke = (art, symbol, t) => `<span class="marke marke-${art}">${symbolSvg(symbol, 16)}<span>${esc(t)}</span></span>`;
+const rollenSymbol = (r) => `<span class="rolle rolle-${r}">${symbolSvg(ROLLEN_FORM[r] || 'punkt', 16)}</span>`;
+return { $, text, html, esc, marke, rollenSymbol };
+})();
+
+const m_ui_hq = (() => {
+const { audit, hash, preis } = m_core_index;
+const { RULES } = m_data_rules;
+const { KARTE } = m_data_karte;
+const { flotte, lage, lageMarke, geldmenge } = m_ui_sicht;
+const { ROLLEN_NAMEN } = m_data_namen;
+const { isk, kassenTrend } = m_ui_zusammenfassung;
+const { vorText, exportHinweis } = m_ui_zeit;
+const { OBERFLAECHE } = m_data_oberflaeche;
+const { symbolSvg } = m_ui_symbole;
+const { $, text, html, esc, marke, rollenSymbol } = m_ui_zeichnen;
+
+let hqLetzte = { state: null, tick: -1, kasse: null, dirty: -1 };
+let pruefungLetzte = { state: null, tick: -1, dirty: -1 };
+
+function kasseZeichnen(prefix, kasse, kasseBasis) {
+  text($(`${prefix}-kasse`), isk(kasse));
+  const trend = kassenTrend(kasseBasis, kasse);
+  const el = $(`${prefix}-trend`);
+  el.className = `trend ${trend ? trend.art : 'muted'}`;
+  html($(`${prefix}-trend-symbol`), trend ? symbolSvg(trend.symbol, 16) : '');
+  text($(`${prefix}-trend-text`), trend ? trend.text : '–');
+}
+function hqZeichnen(state, kasseBasis) {
+  const dirty = m_ui_dirty.current();
+  if (hqLetzte.state === state && hqLetzte.tick === state.tick && hqLetzte.kasse === kasseBasis && hqLetzte.dirty === dirty) return;
+  hqLetzte = { state, tick: state.tick, kasse: kasseBasis, dirty };
+  kasseZeichnen('hq', state.owners[RULES.economy.start.owner].cash, kasseBasis);
+  const f = flotte(state, RULES, KARTE);
+  text($('hq-flotte-zahl'), `${f.length} ${f.length === 1 ? 'Schiff' : 'Schiffe'}`);
+  html($('hq-flotte'), f.length
+    ? f.map((s) => `<li><span class="liste-links">${esc(s.klasse)} <span class="muted">${esc(s.id)}</span></span><span class="liste-rechts">${esc(s.ort)} · ${esc(s.taetigkeit)}</span></li>`).join('')
+    : '<li><span class="liste-links muted">Keine Schiffe.</span></li>');
+  const l = lage(state, RULES, KARTE);
+  html($('hq-lage'), Object.keys(l).sort().map((id) => {
+    const s = l[id]; const lm = lageMarke(s);
+    return `<li><span class="liste-links">${esc(s.name)}</span><span class="liste-rechts">${marke(lm.art, lm.symbol, lm.text)}</span></li>`;
+  }).join(''));
+  text($('hq-geld'), isk(geldmenge(state)));
+  const a = audit(state);
+  html($('hq-erhaltung'), a.ok ? marke('gut', 'haken', 'Stimmt') : marke('schlecht', 'kreuz', 'Weicht ab'));
+}
+function spielstandZeichnen({ gespeichertUm, letzterExport, jetzt, tick, dauerhaft }) {
+  const gespeichert = Number.isFinite(gespeichertUm) ? vorText(jetzt - gespeichertUm) : 'noch nicht gespeichert';
+  const exportiert = Number.isFinite(letzterExport) ? vorText(jetzt - letzterExport) : 'noch nie';
+  text($('hq-gespeichert'), `gespeichert ${gespeichert}`);
+  text($('ss-gespeichert'), gespeichert); text($('ss-export'), exportiert);
+  text($('ss-dauerhaft'), dauerhaft === 'dauerhaft' ? 'Dauerhaft' : dauerhaft === 'loeschbar' ? 'Kann vom Browser gelöscht werden' : '–');
+  const hinweis = exportHinweis({ letzterExport, jetzt, tick }, OBERFLAECHE);
+  $('hq-hinweis-zeile').hidden = !hinweis;
+  html($('hq-hinweis'), hinweis ? `${symbolSvg('dreieck', 16)}<span>${esc(hinweis)}</span>` : '');
+  const ss = $('ss-hinweis'); ss.hidden = !hinweis; text(ss, hinweis || '');
+}
+function wegZeichnen(zeilen) {
+  const art = (z) => {
+    if (z.text.startsWith('Preis')) return 'muted';
+    if (z.symbol === 'pfeil-auf') return 'good';
+    if (z.symbol === 'pfeil-ab') return 'bad';
+    return z.symbol === 'dreieck' || z.symbol === 'warnung' ? 'warn' : '';
+  };
+  html($('weg-liste'), zeilen.map((z) => `<li><span class="liste-links weg-${art(z)}">${symbolSvg(z.symbol, 16)} ${esc(z.text)}</span><span class="liste-rechts weg-${art(z)}">${esc(z.zahl)}</span></li>`).join(''));
+}
+function systemZeichnen(l) {
+  const lm = lageMarke(l);
+  const m = marke(lm.art, lm.symbol, lm.text);
+  html($('sys-kopf'), `<li><span class="liste-links">Zustand</span><span class="liste-rechts">${m}</span></li>`);
+  html($('sys-stationen'), l.stationen.map((s) => `<li><span class="liste-links">${esc(s.name)}</span><span class="liste-rechts muted">${esc(s.zusatz.join(', '))}</span></li>`).join(''));
+  html($('sys-schiffe'), ['eigen', 'neutral', 'sicherheit', 'pirat'].map((r) =>
+    `<li><span class="liste-links">${rollenSymbol(r)} ${esc(ROLLEN_NAMEN[r])}</span><span class="liste-rechts">${l.rollen[r]}</span></li>`).join(''));
+  html($('sys-nachbarn'), l.nachbarn.map((n) => `<li><span class="liste-links">${esc(n.name)}</span><span class="liste-rechts muted">${n.zeit} Min</span></li>`).join(''));
+}
+function spielzeit(tick) { const h = Math.floor(tick / RULES.economy.stunde); return `${h}:${String(tick % RULES.economy.stunde).padStart(2, '0')}`; }
+function tabelle(id, zeilen) {
+  const tbody = $(id); tbody.textContent = '';
+  for (const [links, rechts] of zeilen) {
+    const tr = document.createElement('tr');
+    const a = document.createElement('td'); a.textContent = links;
+    const b = document.createElement('td'); b.textContent = rechts;
+    tr.append(a, b); tbody.append(tr);
+  }
+}
+function pruefungZeigen(state, force = false) {
+  const dirty = m_ui_dirty.current();
+  if (!force && pruefungLetzte.state === state && pruefungLetzte.tick === state.tick && pruefungLetzte.dirty === dirty) return;
+  pruefungLetzte = { state, tick: state.tick, dirty };
+  $('filehash').textContent = document.querySelector('meta[name=aphros-file-sha256]').content.slice(0, 12);
+  $('zeit').textContent = spielzeit(state.tick);
+  $('tick').textContent = state.tick;
+  $('hash').textContent = hash(state);
+  $('queue').textContent = state.queue.length;
+  const a = audit(state);
+  const isk = a.isk.ok ? 'ISK stimmt' : `ISK Abweichung ${a.isk.delta}`;
+  const waren = a.goods.ok ? 'Waren stimmen' : `Waren weichen ab (${Object.keys(a.goods.delta).join(', ')})`;
+  $('erhaltung').textContent = `${isk} · ${waren}`;
+  $('erhaltung').className = a.ok ? 'good' : 'bad';
+  const art = (id) => state.owners[id].kind;
+  const piraten = Object.values(state.ships).filter((s) => art(s.owner) === 'pirate').length;
+  const verluste = Object.entries(state.stats.verluste)
+    .filter(([id]) => art(id) !== 'pirate' && art(id) !== 'authority')
+    .reduce((n, [, k]) => n + Object.values(k).reduce((x, y) => x + y, 0), 0);
+  $('kopfgeld').textContent = `${state.stats.kopfgeld} ISK`;
+  $('burned').textContent = `${state.burned} ISK`;
+  $('piraten').textContent = `${piraten} Schiffe`;
+  $('verluste').textContent = `${verluste} Schiffe`;
+  const aldera = state.stations.st_aldera;
+  tabelle('preise', aldera
+    ? Object.keys(RULES.world.stations.st_aldera.ziel).sort().map((w) => [w, `${preis(state, 'st_aldera', w)} ISK · Bestand ${aldera.lager[w] ?? 0}`])
+    : []);
+  tabelle('owners', Object.values(state.owners).map((o) => [o.id, `${o.cash} ISK`]));
+}
+return { kasseZeichnen, hqZeichnen, spielstandZeichnen, wegZeichnen, systemZeichnen, pruefungZeigen };
+})();
+
+const m_ui_karte_ansicht = (() => {
+const { KARTE } = m_data_karte;
+const { RULES } = m_data_rules;
+const { startAnsicht, verschieben, zoomen, treffer } = m_ui_karte_geometrie;
+const { schiffsPunkte, lage, lageMarke } = m_ui_sicht;
+const { FORMEN, ROLLEN_FORM } = m_ui_symbole;
+const NS = 'http://www.w3.org/2000/svg';
+const FLAECHE = { breite: KARTE.breite, hoehe: KARTE.hoehe };
+const SYSTEM_RADIUS = 26; const SCHIFF = 28; const TAP_PIXEL = 10;
+function el(name, attrs = {}, eltern) {
+  const e = document.createElementNS(NS, name);
+  for (const k of Object.keys(attrs)) e.setAttribute(k, attrs[k]);
+  if (eltern) eltern.append(e);
+  return e;
+}
+function karteErzeugen(svg, { beiSystem, arbeit }) {
+  let ansicht = startAnsicht();
+  const welt = el('g', { id: 'karte-welt' });
+  const schiffe = new Map(); const marken = {};
+  let schiffeGruppe; let letztesLageText = '';
+  const defs = el('defs', {}, svg);
+  for (const name of Object.keys(FORMEN)) {
+    const sym = el('symbol', { id: `f-${name}`, viewBox: '0 0 16 16' }, defs);
+    sym.innerHTML = FORMEN[name];
+  }
+  svg.append(welt);
+  const tore = el('g', { class: 'karte-tore' }, welt);
+  for (const [a, b] of RULES.world.gates) {
+    const p = KARTE.systeme[a]; const q = KARTE.systeme[b];
+    el('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, stroke: 'var(--karte-tor)', 'stroke-width': 3, 'vector-effect': 'non-scaling-stroke' }, tore);
+  }
+  const systeme = el('g', { class: 'karte-systeme' }, welt);
+  for (const id of Object.keys(KARTE.systeme)) {
+    const s = KARTE.systeme[id];
+    const aussen = RULES.world.stations[RULES.world.systems[id].station].aussenhandel === true;
+    const farbe = aussen ? 'var(--schwarzmarkt)' : 'var(--neutral)';
+    const g = el('g', { 'data-system': id }, systeme);
+    el('circle', { cx: s.x, cy: s.y, r: SYSTEM_RADIUS, fill: 'var(--karte-raum)', stroke: farbe, 'stroke-width': 4, ...(aussen ? { 'stroke-dasharray': '9 7' } : {}) }, g);
+    el('circle', { cx: s.x, cy: s.y, r: 6, fill: farbe }, g);
+    const name = el('text', { x: s.x, y: s.y + SYSTEM_RADIUS + 30, class: 'karte-name', 'text-anchor': 'middle' }, g);
+    name.textContent = s.name;
+    const symbol = el('use', { href: '#f-haken', width: 20, height: 20, y: s.y + SYSTEM_RADIUS + 38, class: 'karte-marke-symbol' }, g);
+    const text = el('text', { x: s.x, y: s.y + SYSTEM_RADIUS + 58, class: 'karte-marke', 'text-anchor': 'middle' }, g);
+    marken[id] = { symbol, text, x: s.x, art: '' };
+  }
+  schiffeGruppe = el('g', { class: 'karte-schiffe' }, welt);
+  function transform() { welt.setAttribute('transform', `translate(${ansicht.tx} ${ansicht.ty}) scale(${ansicht.zoom})`); }
+  const MARKENFARBE = { gut: 'var(--muted)', warn: 'var(--warn)', pirat: 'var(--pirat)' };
+  function markenSetzen(l) {
+    for (const id of Object.keys(marken)) {
+      const m = marken[id]; const lm = lageMarke(l[id]);
+      if (m.art === lm.kurz) continue;
+      m.art = lm.kurz; m.text.textContent = lm.kurz;
+      m.symbol.setAttribute('href', `#f-${lm.symbol}`);
+      m.symbol.style.color = MARKENFARBE[lm.art];
+      m.symbol.setAttribute('x', m.x + 12 - lm.kurz.length * 5.2 - 24);
+      m.text.setAttribute('x', m.x + 12);
+    }
+  }
+  function aktualisieren(state) {
+    const t0 = performance.now();
+    const punkte = schiffsPunkte(state, RULES, KARTE); const da = new Set();
+    for (const p of punkte) {
+      da.add(p.id);
+      let u = schiffe.get(p.id);
+      if (!u) {
+        u = el('use', { href: `#f-${ROLLEN_FORM[p.rolle]}`, width: SCHIFF, height: SCHIFF }, schiffeGruppe);
+        u.style.color = `var(--${p.rolle})`; u.dataset.rolle = p.rolle;
+        schiffe.set(p.id, u);
+      }
+      u.setAttribute('x', p.x - SCHIFF / 2); u.setAttribute('y', p.y - SCHIFF / 2);
+    }
+    for (const [id, u] of schiffe) if (!da.has(id)) { u.remove(); schiffe.delete(id); }
+    const l = lage(state, RULES, KARTE);
+    const lt = Object.keys(l).map((id) => `${id}:${l[id].zustand}`).join();
+    if (lt !== letztesLageText) { letztesLageText = lt; markenSetzen(l); }
+    if (arbeit) arbeit(performance.now() - t0);
+  }
+  const zeiger = new Map(); let aufgesetzt = null; let geometrie = null;
+  function messen() {
+    const r = svg.getBoundingClientRect();
+    const s0 = Math.min(r.width, r.height) / FLAECHE.breite;
+    geometrie = { r, s0, ox: (r.width - FLAECHE.breite * s0) / 2, oy: (r.height - FLAECHE.hoehe * s0) / 2 };
+    return geometrie;
+  }
+  const inBild = (cx, cy) => ({ x: (cx - geometrie.r.left - geometrie.ox) / geometrie.s0, y: (cy - geometrie.r.top - geometrie.oy) / geometrie.s0 });
+  const mitte = () => { const [a, b] = [...zeiger.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) }; };
+  svg.addEventListener('pointerdown', (ev) => {
+    messen();
+    try { svg.setPointerCapture(ev.pointerId); } catch { /* egal */ }
+    zeiger.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    aufgesetzt = zeiger.size === 1 ? { x: ev.clientX, y: ev.clientY, bewegt: false } : null;
+  });
+  svg.addEventListener('pointermove', (ev) => {
+    const alt = zeiger.get(ev.pointerId);
+    if (!alt) return;
+    const t0 = performance.now();
+    if (zeiger.size === 1) {
+      if (aufgesetzt && Math.hypot(ev.clientX - aufgesetzt.x, ev.clientY - aufgesetzt.y) > TAP_PIXEL) aufgesetzt.bewegt = true;
+      ansicht = verschieben(ansicht, (ev.clientX - alt.x) / geometrie.s0, (ev.clientY - alt.y) / geometrie.s0, FLAECHE);
+      zeiger.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    } else if (zeiger.size === 2) {
+      const vorher = mitte();
+      zeiger.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      const jetzt = mitte();
+      if (vorher.d > 0) ansicht = zoomen(ansicht, jetzt.d / vorher.d, inBild(jetzt.x, jetzt.y), FLAECHE);
+      ansicht = verschieben(ansicht, (jetzt.x - vorher.x) / geometrie.s0, (jetzt.y - vorher.y) / geometrie.s0, FLAECHE);
+    }
+    transform();
+    if (arbeit) arbeit(performance.now() - t0);
+  });
+  const abheben = (ev) => {
+    const tipp = aufgesetzt && !aufgesetzt.bewegt && zeiger.size === 1 && ev.type === 'pointerup';
+    zeiger.delete(ev.pointerId);
+    if (zeiger.size === 0) aufgesetzt = null;
+    if (!tipp) return;
+    const id = treffer(KARTE.systeme, inBild(ev.clientX, ev.clientY), ansicht, { pxProEinheit: geometrie.s0, radius: SYSTEM_RADIUS });
+    if (id) beiSystem(id);
+  };
+  svg.addEventListener('pointerup', abheben);
+  svg.addEventListener('pointercancel', abheben);
+  svg.addEventListener('wheel', (ev) => {
+    ev.preventDefault(); messen();
+    ansicht = zoomen(ansicht, Math.exp(-Math.max(-300, Math.min(300, ev.deltaY)) * 0.0025), inBild(ev.clientX, ev.clientY), FLAECHE);
+    transform();
+  }, { passive: false });
+  transform();
+  return { aktualisieren, ansicht: () => ({ ...ansicht }) };
+}
+return { karteErzeugen };
+})();
+
+const m_ui_leistung = (() => {
+function leistungErzeugen(zeile) {
+  const fenster = [];
+  let an = false; let kennung = 0; let arbeitImBild = 0; let nachholMs = null; let letzteAnzeige = 0;
+  const bild = (t) => {
+    fenster.push({ t, ms: arbeitImBild }); arbeitImBild = 0;
+    while (fenster.length > 1 && t - fenster[0].t > 1000) fenster.shift();
+    if (t - letzteAnzeige >= 250) {
+      letzteAnzeige = t;
+      const n = fenster.length; const dauer = Math.max(1, t - fenster[0].t);
+      const fps = n > 1 ? ((n - 1) * 1000) / dauer : 0;
+      const ms = fenster.map((f) => f.ms);
+      const mittel = ms.reduce((a, b) => a + b, 0) / n; const hoechst = Math.max(...ms);
+      zeile.textContent = `${fps.toFixed(0)} Bilder/s · Rechnen Ø ${mittel.toFixed(1)} ms, max ${hoechst.toFixed(1)} ms · Nachholen ${nachholMs === null ? '–' : `${nachholMs.toFixed(0)} ms`}`;
+    }
+    kennung = requestAnimationFrame(bild);
+  };
+  return {
+    schalten(ein) {
+      an = ein; zeile.hidden = !ein;
+      if (ein && !kennung) { fenster.length = 0; kennung = requestAnimationFrame(bild); }
+      if (!ein && kennung) { cancelAnimationFrame(kennung); kennung = 0; }
+    },
+    arbeit(ms) { if (an) arbeitImBild += ms; },
+    nachholen(ms) { nachholMs = ms; },
+  };
+}
+return { leistungErzeugen };
+})();
+
+const m_ui_lauf = (() => {
+const { schritteFuer } = m_ui_zeit;
+function laufErzeugen({ daten, faktor, beiSchritten, nachBild }) {
+  let kennung = 0; let letzte = null; let rest = 0;
+  const bild = (zeit) => {
+    kennung = 0;
+    const f = faktor();
+    if (!(f > 0)) { letzte = null; return; }
+    const dt = letzte === null ? 0 : Math.max(0, zeit - letzte);
+    letzte = zeit;
+    const r = schritteFuer(dt + rest, f, daten);
+    rest = r.rest;
+    if (r.schritte > 0) beiSchritten(r.schritte);
+    if (nachBild) nachBild(zeit, r.schritte);
+    kennung = requestAnimationFrame(bild);
+  };
+  return {
+    aktualisieren() {
+      if (faktor() > 0) { if (!kennung) { letzte = null; rest = 0; kennung = requestAnimationFrame(bild); } }
+      else if (kennung) { cancelAnimationFrame(kennung); kennung = 0; letzte = null; rest = 0; }
+    },
+    anhalten() { if (kennung) cancelAnimationFrame(kennung); kennung = 0; letzte = null; rest = 0; },
+  };
+}
+return { laufErzeugen };
+})();
+
+const m_ui_blatt = (() => {
+const $ = (id) => document.getElementById(id);
+let zuletztFokus = null; let beimSchliessen = null;
+function seiten() { return [...document.querySelectorAll('.blatt-seite')]; }
+function blattOeffnen(id, { titel, stufe = 'halb', zu } = {}) {
+  const tafel = document.querySelector('.blatt-tafel');
+  for (const s of seiten()) s.hidden = s.id !== id;
+  const seite = $(id);
+  $('blatt-titel').textContent = titel || seite.dataset.titel || '';
+  tafel.dataset.groesse = stufe;
+  zuletztFokus = document.activeElement; beimSchliessen = zu || null;
+  $('blatt').hidden = false;
+  document.querySelector('.blatt-inhalt').scrollTop = 0;
+  $('blatt-fertig').focus({ preventScroll: true });
+}
+function blattSchliessen() {
+  if ($('blatt').hidden) return;
+  $('blatt').hidden = true;
+  const f = beimSchliessen; beimSchliessen = null;
+  if (zuletztFokus && zuletztFokus.focus) zuletztFokus.focus({ preventScroll: true });
+  if (f) f();
+}
+function groesseUmschalten() {
+  const tafel = document.querySelector('.blatt-tafel');
+  tafel.dataset.groesse = tafel.dataset.groesse === 'halb' ? 'voll' : 'halb';
+}
+function blattVerdrahten() {
+  $('blatt-fertig').addEventListener('click', blattSchliessen);
+  $('blatt-hintergrund').addEventListener('click', blattSchliessen);
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') blattSchliessen(); });
+  const griff = $('blatt-griff'); let start = null;
+  griff.addEventListener('pointerdown', (ev) => { start = ev.clientY; griff.setPointerCapture?.(ev.pointerId); });
+  griff.addEventListener('pointerup', (ev) => {
+    if (start === null) return;
+    const d = ev.clientY - start; start = null;
+    if (d > 48) { if (document.querySelector('.blatt-tafel').dataset.groesse === 'voll') groesseUmschalten(); else blattSchliessen(); }
+    else if (d < -48) document.querySelector('.blatt-tafel').dataset.groesse = 'voll';
+    else groesseUmschalten();
+  });
+  griff.addEventListener('pointercancel', () => { start = null; });
+}
+function dialogZeigen({ titel, text, knoepfe }) {
+  const huelle = $('dialog');
+  $('dialog-titel').textContent = titel; $('dialog-text').textContent = text;
+  const reihe = $('dialog-knoepfe'); reihe.textContent = '';
+  for (const k of knoepfe) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = k.text;
+    if (k.art === 'primary') b.className = 'primary';
+    if (k.art === 'gefahr') b.className = 'gefahr';
+    b.addEventListener('click', () => { huelle.hidden = true; if (k.aktion) k.aktion(); });
+    reihe.append(b);
+  }
+  huelle.hidden = false;
+  reihe.querySelector('button').focus({ preventScroll: true });
+}
+function bestaetigen({ titel, text, aktionText, aktion }) {
+  dialogZeigen({ titel, text, knoepfe: [{ text: 'Abbrechen', art: 'normal' }, { text: aktionText, art: 'gefahr', aktion }] });
+}
+return { blattOeffnen, blattSchliessen, blattVerdrahten, dialogZeigen, bestaetigen };
+})();
+
+const m_ui_theme = (() => {
+const ROLLEN = {
+  hell: { bg: '#f5f5f7', card: '#ffffff', text: '#1d1d1f', muted: '#6e6e73', accent: '#0071e3', 'accent-fill': '#0071e3', 'accent-text': '#ffffff', 'accent-press': '#00479a', 'card-press': '#dbdbdb', line: '#d2d2d7', good: '#1c7f36', bad: '#d70015', warn: '#8a6a2a', 'karte-raum': '#dfe7ef', 'karte-tor': '#6f7a8c', eigen: '#167d73', neutral: '#64748b', sicherheit: '#5b3fbf', pirat: '#b43f28', schwarzmarkt: '#7b2d8e' },
+  dunkel: { bg: '#000000', card: '#1c1c1e', text: '#f5f5f7', muted: '#98989d', accent: '#0a84ff', 'accent-fill': '#0071e3', 'accent-text': '#ffffff', 'accent-press': '#00479a', 'card-press': '#49494b', line: '#38383a', good: '#30d158', bad: '#ff453a', warn: '#d99a2b', 'karte-raum': '#070b14', 'karte-tor': '#5f6f86', eigen: '#2dd4bf', neutral: '#94a3b8', sicherheit: '#8579e8', pirat: '#d65628', schwarzmarkt: '#b56ad6' },
+};
+return { ROLLEN };
+})();
+
+const m_ui_farbschema = (() => {
+const { ROLLEN } = m_ui_theme;
+function farbschemaAnwenden() {
+  const mq = matchMedia('(prefers-color-scheme: dark)');
+  const meta = document.querySelector('meta[name=theme-color]');
+  const setzen = () => { if (meta) meta.content = (mq.matches ? ROLLEN.dunkel : ROLLEN.hell).bg; };
+  mq.addEventListener('change', setzen); setzen();
+}
+return { farbschemaAnwenden };
+})();
+
+const m_ui_speicher = (() => {
+function db() {
+  return new Promise((ok, fehler) => {
+    const r = indexedDB.open('aphros-void', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('saves');
+    r.onsuccess = () => ok(r.result); r.onerror = () => fehler(r.error);
+  });
+}
+function dbPut(key, value) {
+  return db().then((d) => new Promise((ok, fehler) => {
+    const tx = d.transaction('saves', 'readwrite');
+    tx.objectStore('saves').put(value, key);
+    tx.oncomplete = () => ok(); tx.onerror = () => fehler(tx.error); tx.onabort = () => fehler(tx.error);
+  }));
+}
+function dbGet(key) {
+  return db().then((d) => new Promise((ok, fehler) => {
+    const req = d.transaction('saves').objectStore('saves').get(key);
+    req.onsuccess = () => ok(req.result); req.onerror = () => fehler(req.error);
+  }));
+}
+function dauerhaftAnfragen() {
+  const s = typeof navigator !== 'undefined' ? navigator.storage : null;
+  if (!s || !s.persist) return Promise.resolve('unbekannt');
+  return (s.persisted ? s.persisted() : Promise.resolve(false))
+    .then((schon) => (schon ? true : s.persist()))
+    .then((ja) => (ja ? 'dauerhaft' : 'loeschbar'), () => 'unbekannt');
+}
+function dateiSichern(text, name) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+return { dbPut, dbGet, dauerhaftAnfragen, dateiSichern };
+})();
+
+const m_ui_speicher_huelle = (() => {
+const FORMAT = 'aphros-void-save';
+function packen(zustandText, jetzt, version) { return JSON.stringify({ format: FORMAT, gespeichertUm: jetzt, version, stand: zustandText }); }
+const unlesbar = (rohtext, grund) => ({ art: 'unlesbar', grund, rohtext });
+function regelVersion(standObj) {
+  if (Number.isSafeInteger(standObj.rulesVersion)) return standObj.rulesVersion;
+  if (Number.isSafeInteger(standObj.schema) && standObj.schema < 2) return 0;
+  return null;
+}
+function pruefen(stand, standObj, erwartet, rest) {
+  const gefunden = regelVersion(standObj);
+  if (gefunden === null) return null;
+  if (Number.isSafeInteger(erwartet) && gefunden < erwartet) return { art: 'regel-alt', gefunden, erwartet, stand, ...rest };
+  if (Number.isSafeInteger(erwartet) && gefunden > erwartet) return { art: 'regel-neu', gefunden, erwartet, stand, ...rest };
+  return false;
+}
+const istObjekt = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
+function auspacken(text, erwartet) {
+  if (typeof text !== 'string') return unlesbar(text, 'kein Text');
+  let obj;
+  try { obj = JSON.parse(text); } catch { return unlesbar(text, 'kein JSON'); }
+  if (!istObjekt(obj)) return unlesbar(text, 'falsche Form');
+  if (obj.format === FORMAT) {
+    if (!Number.isFinite(obj.gespeichertUm) || typeof obj.stand !== 'string') return unlesbar(text, 'Hülle unvollständig');
+    let standObj;
+    try { standObj = JSON.parse(obj.stand); } catch { return unlesbar(text, 'Spielstand in der Hülle unlesbar'); }
+    if (!istObjekt(standObj)) return unlesbar(text, 'Spielstand in der Hülle hat falsche Form');
+    const rest = { gespeichertUm: obj.gespeichertUm, version: obj.version };
+    const p = pruefen(obj.stand, standObj, erwartet, rest);
+    if (p === null) return unlesbar(text, 'Spielstand ohne Regelversion');
+    return p || { art: 'huelle', ...rest, stand: obj.stand };
+  }
+  if (!Number.isSafeInteger(obj.schema)) return unlesbar(text, 'kein Spielstand');
+  const p = pruefen(text, obj, erwartet, {});
+  if (p === null) return unlesbar(text, 'Spielstand ohne Regelversion');
+  return p || { art: 'alt', stand: text };
+}
+return { packen, auspacken };
+})();
+
+const m_ui_markt = (() => {
+const { preis, reserve } = m_core_index;
+const { WAREN } = m_data_namen;
+const STUFEN = ['rohstoff', 'material', 'bauteil', 'verbrauch', 'modul', 'schiff'];
+const MINUS = '−';
+const KNAPPHEIT = {
+  knapp: { stufe: 'knapp', symbol: 'dreieck', art: 'warn', text: 'Knapp' },
+  ausgeglichen: { stufe: 'ausgeglichen', symbol: 'gleich', art: 'muted', text: 'Ausgeglichen' },
+  reichlich: { stufe: 'reichlich', symbol: 'plus', art: 'gut', text: 'Reichlich' },
+};
+const stationVon = (regeln, system) => regeln.world.systems[system].station;
+const gehandelt = (regeln, station) => Object.keys(regeln.world.stations[station].ziel).filter((w) => regeln.world.stations[station].ziel[w] > 0);
+const bestandVon = (state, station, ware) => state.stations[station].lager[ware] || 0;
+function sortiereWaren(regeln, waren) {
+  return [...waren].sort((a, b) => STUFEN.indexOf(regeln.economy.waren[a].stufe) - STUFEN.indexOf(regeln.economy.waren[b].stufe)
+    || WAREN[a].localeCompare(WAREN[b], 'de') || (a < b ? -1 : 1));
+}
+function marktBasis(state, regeln) {
+  const aus = {};
+  for (const station of Object.keys(regeln.world.stations)) {
+    aus[station] = {};
+    for (const ware of gehandelt(regeln, station)) aus[station][ware] = preis(state, station, ware, regeln);
+  }
+  return aus;
+}
+function trendVon(jetzt, vorher) {
+  if (!(vorher > 0)) return null;
+  const delta = jetzt - vorher;
+  const p = Math.round((Math.abs(delta) * 100) / vorher);
+  if (delta === 0) return { delta, prozent: 0, symbol: 'gleich', art: 'muted', text: '0 %' };
+  return { delta, prozent: delta > 0 ? p : -p, symbol: delta > 0 ? 'pfeil-auf' : 'pfeil-ab', art: 'muted', text: `${delta > 0 ? '+' : MINUS}${p} %` };
+}
+function marktZeilen(state, regeln, systemId, basis) {
+  const station = stationVon(regeln, systemId);
+  return sortiereWaren(regeln, gehandelt(regeln, station)).map((ware) => {
+    const bestand = bestandVon(state, station, ware);
+    const ziel = regeln.world.stations[station].ziel[ware];
+    const p = preis(state, station, ware, regeln);
+    const stufe = bestand < reserve(regeln, station, ware) ? 'knapp' : bestand > ziel ? 'reichlich' : 'ausgeglichen';
+    const vorher = basis && basis[station] ? basis[station][ware] : undefined;
+    return { ware, name: WAREN[ware], stufe: regeln.economy.waren[ware].stufe, preis: p, bestand, ziel, knappheit: KNAPPHEIT[stufe], trend: trendVon(p, vorher) };
+  });
+}
+function marktKopf(state, regeln, systemId, basis) {
+  const zeilen = marktZeilen(state, regeln, systemId, basis);
+  const station = stationVon(regeln, systemId);
+  const betrag = (z) => Math.abs(z.trend.delta) / basis[station][z.ware];
+  const abweichungen = zeilen.filter((z) => z.trend && z.trend.delta !== 0)
+    .sort((a, b) => betrag(b) - betrag(a) || (a.ware < b.ware ? -1 : 1)).slice(0, 3)
+    .map((z) => ({ ware: z.ware, name: z.name, prozent: z.trend.prozent, symbol: z.trend.symbol, text: z.trend.text }));
+  return { abweichungen, mangel: zeilen.filter((z) => z.knappheit.stufe === 'knapp').length };
+}
+const mitNamen = (liste) => Object.keys(liste).sort().map((ware) => ({ ware, name: WAREN[ware], menge: liste[ware] }));
+const rezeptVon = (regeln, id) => {
+  const r = regeln.economy.rezepte[id];
+  return { id, ein: mitNamen(r.ein), aus: mitNamen(r.aus), ort: r.ort, dauer: r.dauer };
+};
+function warenVergleich(state, regeln, ware) {
+  const stationen = Object.keys(regeln.world.systems).sort()
+    .map((system) => ({ system, station: stationVon(regeln, system) }))
+    .filter((s) => regeln.world.stations[s.station].ziel[ware] > 0)
+    .map((s) => ({ system: s.system, station: s.station, preis: preis(state, s.station, ware, regeln), bestand: bestandVon(state, s.station, ware), ziel: regeln.world.stations[s.station].ziel[ware] }));
+  const aktiv = [...regeln.world.aktiveRezepte].sort();
+  const hat = (seite) => aktiv.filter((id) => Object.hasOwn(regeln.economy.rezepte[id][seite], ware)).map((id) => rezeptVon(regeln, id));
+  return { ware, name: WAREN[ware], stufe: regeln.economy.waren[ware].stufe, stationen, rezepte: { entsteht: hat('aus'), gebraucht: hat('ein') } };
+}
+return { sortiereWaren, marktBasis, marktZeilen, marktKopf, warenVergleich };
+})();
+
+const m_ui_markt_ansicht = (() => {
+const { RULES } = m_data_rules;
+const { KARTE } = m_data_karte;
+const { ORTE } = m_data_namen;
+const { marktZeilen, marktKopf, warenVergleich } = m_ui_markt;
+const { isk } = m_ui_zusammenfassung;
+const { preis } = m_core_index;
+const { $, html, esc, marke } = m_ui_zeichnen;
+const trendMarke = (t) => (t ? marke(t.art, t.symbol, t.text) : '<span class="muted">–</span>');
+const rezeptText = (r) => `${r.ein.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} → ${r.aus.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} · ${esc(ORTE[r.ort])}, ${r.dauer} Min`;
+
+function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
+  let system = RULES.economy.start.system;
+  let letzte = ''; let stand = null; let letzteDirty = -1;
+  const leiste = $('markt-systeme');
+  for (const id of Object.keys(RULES.world.systems).sort()) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.system = id; b.textContent = KARTE.systeme[id].name;
+    b.addEventListener('click', () => { system = id; letzte = ''; beiAuswahl(); });
+    leiste.append(b);
+  }
+  $('markt-preise').addEventListener('click', (ev) => {
+    const trade = ev.target.closest('button[data-trade]');
+    if (trade) {
+      const schiff = Object.values(stateFn().ships).find((x) => x.owner === 'house' && x.phase === 'dock' && x.system === system);
+      if (schiff) befehlFn({ type: 'shipTrade', owner: 'house', schiff: schiff.id, ware: trade.dataset.tradeWare, menge: Number(trade.dataset.menge), kauf: trade.dataset.trade === 'buy' });
+      return;
+    }
+    const ware = ev.target.closest('button[data-ware]');
+    if (ware) beiWare(ware.dataset.ware);
+  });
+  return {
+    zeichnen(state, basis) {
+      const schluessel = `${state.tick}|${system}`;
+      const dirty = m_ui_dirty.current();
+      if (stand === state && letzte === schluessel && letzteDirty === dirty) return;
+      stand = state; letzte = schluessel; letzteDirty = dirty;
+      for (const b of leiste.children) b.setAttribute('aria-pressed', String(b.dataset.system === system));
+      const schiff = Object.values(state.ships).find((s) => s.owner === 'house' && s.phase === 'dock' && s.system === system);
+      const station = RULES.world.systems[system].station;
+      const kopf = marktKopf(state, RULES, system, basis);
+      $('markt-kopf').innerHTML =
+        `<li><span class="liste-links">Waren im Mangel</span><span class="liste-rechts">${kopf.mangel > 0 ? marke('warn', 'dreieck', `${kopf.mangel}`) : marke('gut', 'haken', 'keine')}</span></li>`
+        + `<li><span class="liste-links">Größte Preisänderungen</span><span class="liste-rechts">${kopf.abweichungen.length ? kopf.abweichungen.map((a) => `${esc(a.name)} ${marke('muted', a.symbol, a.text)}`).join('<br>') : '<span class="muted">–</span>'}</span></li>`
+        + (schiff ? `<li><span class="liste-links">Handelsschiff</span><span class="liste-rechts">${esc(schiff.id)} · Kasse ${isk(state.owners.house.cash)}</span></li>` : '');
+      html($('markt-preise'), marktZeilen(state, RULES, system, basis).map((z) => {
+        const trade = schiff
+          ? `<div class="befehle-leiste"><button type="button" class="primary" data-trade="buy" data-trade-ware="${z.ware}" data-menge="10">Kaufe 10 (${preis(state, station, z.ware, RULES)} ISK)</button>`
+            + `<button type="button" data-trade="sell" data-trade-ware="${z.ware}" data-menge="10">Verkaufe 10</button></div>`
+          : '';
+        return `<li style="flex-direction:column;align-items:stretch;padding:8px 0"><button type="button" class="zeile" data-ware="${z.ware}">`
+          + `<span class="zeile-text"><span class="liste-links">${esc(z.name)}</span>${marke(z.knappheit.art, z.knappheit.symbol, z.knappheit.text)}</span>`
+          + `<span class="zeile-zahl"><span>${isk(z.preis)}</span>${trendMarke(z.trend)}</span></button>${trade}</li>`;
+      }).join(''));
+    },
+  };
+}
+
+function wareZeichnen(state, ware) {
+  const v = warenVergleich(state, RULES, ware);
+  html($('ware-stationen'), v.stationen.map((s) => `<li><span class="liste-links">${esc(KARTE.systeme[s.system].name)}</span><span class="liste-rechts">${isk(s.preis)} <span class="muted">· ${s.bestand} von ${s.ziel}</span></span></li>`).join(''));
+  const zeilen = (liste, leer) => (liste.length ? liste.map((r) => `<li><span class="liste-links">${rezeptText(r)}</span></li>`).join('') : `<li><span class="liste-links muted">${leer}</span></li>`);
+  html($('ware-entsteht'), zeilen(v.rezepte.entsteht, 'Entsteht durch kein laufendes Rezept.'));
+  html($('ware-gebraucht'), zeilen(v.rezepte.gebraucht, 'Wird in keinem laufenden Rezept gebraucht.'));
+  return v.name;
+}
+return { marktErzeugen, wareZeichnen };
+})();
+
+const m_ui_flotte_detail = (() => {
+const { rolle, reiseWeg } = m_ui_sicht;
+const { fortschritt } = m_ui_karte_geometrie;
+const { KLASSEN, AUFTRAEGE, PHASEN, WAREN } = m_data_namen;
+const systemName = (karte, id) => (karte.systeme[id] ? karte.systeme[id].name : id);
+const ladungVon = (s) => Object.keys(s.ladung).sort().filter((w) => s.ladung[w] > 0).map((ware) => ({ ware, name: WAREN[ware], menge: s.ladung[ware] }));
+const betriebskostenStunde = (schiff, regeln) => (Object.hasOwn(regeln.world.betriebskosten, schiff.klasse) ? regeln.world.betriebskosten[schiff.klasse] : 0);
+function eigeneSchiffe(state, regeln, karte) {
+  const w = regeln.world;
+  return Object.keys(state.ships).sort().map((id) => state.ships[id]).filter((s) => rolle(state, s) === 'eigen').map((s) => {
+    let ort = { art: 'system', system: s.system, name: systemName(karte, s.system) };
+    if (s.phase === 'reise') {
+      const ziel = w.stations[s.ziel].system;
+      const rw = reiseWeg(regeln, s);
+      ort = { art: 'reise', system: s.system, name: systemName(karte, s.system), ziel, zielName: systemName(karte, ziel), fortschritt: rw ? fortschritt(state.tick, s.ankunft, rw.dauer) : null, rest: Math.max(0, s.ankunft - state.tick) };
+    }
+    return {
+      id: s.id, klasse: s.klasse, klasseName: KLASSEN[s.klasse], ort,
+      taetigkeit: s.phase === 'reise' ? PHASEN.reise : AUFTRAEGE[s.auftrag],
+      auftrag: s.auftrag, auftragName: AUFTRAEGE[s.auftrag], ladung: ladungVon(s),
+      heimat: s.heimat, heimatName: systemName(karte, s.heimat), arbeit: s.arbeit, kostenStunde: betriebskostenStunde(s, regeln),
+    };
+  });
+}
+function weltFlotten(state) {
+  const n = { eigen: 0, neutral: 0, sicherheit: 0, pirat: 0 };
+  for (const id of Object.keys(state.ships)) n[rolle(state, state.ships[id])] += 1;
+  return n;
+}
+return { betriebskostenStunde, eigeneSchiffe, weltFlotten };
+})();
+
+const m_ui_flotte_ansicht = (() => {
+const { RULES } = m_data_rules;
+const { KARTE } = m_data_karte;
+const { ROLLEN_NAMEN, WAREN } = m_data_namen;
+const { eigeneSchiffe, weltFlotten } = m_ui_flotte_detail;
+const { isk } = m_ui_zusammenfassung;
+const { preis } = m_core_index;
+const { $, html, esc, rollenSymbol } = m_ui_zeichnen;
+const ortText = (o) => (o.art === 'reise' ? `unterwegs nach ${o.zielName}${o.fortschritt === null ? '' : ` · ${Math.round(o.fortschritt * 100)} %`}` : `in ${o.name}`);
+const zeile = (links, rechts) => `<li><span class="liste-links">${links}</span><span class="liste-rechts">${rechts}</span></li>`;
+
+function flotteErzeugen(beiSchiff) {
+  let letzte = -1; let stand = null; let letzteDirty = -1;
+  $('flotte-schiffe').addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-schiff]');
+    if (b) beiSchiff(b.dataset.schiff);
+  });
+  return {
+    zeichnen(state) {
+      const dirty = m_ui_dirty.current();
+      if (stand === state && letzte === state.tick && letzteDirty === dirty) return;
+      stand = state; letzte = state.tick; letzteDirty = dirty;
+      const f = eigeneSchiffe(state, RULES, KARTE);
+      const halten = f.filter((s) => s.auftrag === 'halten').length;
+      html($('flotte-kopf'), zeile('Eigene Schiffe', String(f.length))
+        + zeile('Kosten je Stunde bei voller Arbeit', isk(f.reduce((n, s) => n + s.kostenStunde, 0)))
+        + zeile('Im Auftrag „Wartet“', String(halten)));
+      html($('flotte-schiffe'), f.length
+        ? f.map((s) => `<li class="zeile-knopf"><button type="button" class="zeile" data-schiff="${esc(s.id)}"><span class="liste-links">${rollenSymbol('eigen')} ${esc(s.klasseName)} <span class="muted">${esc(s.id)}</span></span>`
+          + `<span class="liste-rechts">${esc(ortText(s.ort))} · ${esc(s.taetigkeit)}</span></button></li>`).join('')
+        : '<li><span class="liste-links muted">Keine Schiffe.</span></li>');
+      const w = weltFlotten(state);
+      html($('flotte-welt'), ['eigen', 'neutral', 'sicherheit', 'pirat'].map((r) => zeile(`${rollenSymbol(r)} ${esc(ROLLEN_NAMEN[r])}`, String(w[r]))).join(''));
+    },
+  };
+}
+
+function schiffZeichnen(state, id, onBefehl) {
+  const s = eigeneSchiffe(state, RULES, KARTE).find((x) => x.id === id);
+  if (!s) return null;
+  html($('schiff-liste'), zeile('Ort', esc(ortText(s.ort))) + zeile('Tätigkeit', esc(s.taetigkeit)) + zeile('Heimat', esc(s.heimatName))
+    + zeile('Auftrag', esc(s.auftragName))
+    + zeile('Ladung', s.ladung.length ? s.ladung.map((l) => `${l.menge} ${esc(l.name)}`).join(', ') : '<span class="muted">leer</span>')
+    + zeile('Arbeitsschritte', String(s.arbeit)) + zeile('Kosten je Stunde bei voller Arbeit', isk(s.kostenStunde)));
+  $('b-schiff-karte').dataset.system = s.ort.art === 'reise' ? s.ort.ziel : s.ort.system;
+
+  const roh = state.ships[s.id];
+  if (!roh || roh.phase !== 'dock') {
+    $('schiff-befehle').innerHTML = '<p class="muted">Befehle nur im Dock verfügbar.</p>';
+    return { titel: `${s.klasseName} ${s.id}`, system: $('b-schiff-karte').dataset.system };
+  }
+  const sys = s.ort.system;
+  const station = RULES.world.systems[sys].station;
+  const knopf = (label, attrs = '') => `<button type="button" ${attrs}>${label}</button>`;
+  const bef = [
+    knopf('Warten', 'data-befehl="wait"'),
+    ...(s.klasse === 'miner' ? ['erz', 'eis', 'kristall'].map((w) => knopf(`Fördere ${esc(WAREN[w])}`, `data-befehl="mine" data-ware="${w}"`)) : []),
+    ...Object.keys(RULES.world.systems).sort().filter((x) => x !== sys)
+      .map((x) => knopf(`→ ${esc(KARTE.systeme[x].name)}`, `data-befehl="move" data-ziel="${RULES.world.systems[x].station}"`)),
+    ...Object.keys(RULES.world.stations[station].ziel).sort().filter((w) => preis(state, station, w, RULES) > 0)
+      .flatMap((w) => [
+        knopf(`Kaufe 10 ${esc(WAREN[w])} (${preis(state, station, w, RULES)} ISK)`, `data-befehl="buy" data-ware="${w}" data-menge="10"`),
+        ...((roh.ladung[w] || 0) > 0 ? [knopf(`Verkaufe ${roh.ladung[w]} ${esc(WAREN[w])}`, `data-befehl="sell" data-ware="${w}" data-menge="${roh.ladung[w]}"`)] : []),
+      ]),
+  ];
+  $('schiff-befehle').innerHTML = `<div class="befehle-leiste">${bef.join('')}</div>`;
+  $('schiff-befehle').onclick = (ev) => {
+    const b = ev.target.closest('button[data-befehl]');
+    if (!b) return;
+    const art = b.dataset.befehl;
+    const cmd = { owner: 'house', schiff: s.id };
+    if (art === 'wait') cmd.type = 'shipWait';
+    else if (art === 'mine') Object.assign(cmd, { type: 'shipMine', ware: b.dataset.ware });
+    else if (art === 'move') Object.assign(cmd, { type: 'shipMove', ziel: b.dataset.ziel });
+    else if (art === 'buy') Object.assign(cmd, { type: 'shipTrade', ware: b.dataset.ware, menge: Number(b.dataset.menge), kauf: true });
+    else if (art === 'sell') Object.assign(cmd, { type: 'shipTrade', ware: b.dataset.ware, menge: Number(b.dataset.menge), kauf: false });
+    onBefehl(cmd);
+  };
+  return { titel: `${s.klasseName} ${s.id}`, system: $('b-schiff-karte').dataset.system };
+}
+return { flotteErzeugen, schiffZeichnen };
+})();
+
+const m_ui_reich = (() => {
+const { rolle } = m_ui_sicht;
+const { sortiereWaren } = m_ui_markt;
+const { KARTE } = m_data_karte;
+const { OBERFLAECHE } = m_data_oberflaeche;
+const { KLASSEN, WAREN } = m_data_namen;
+function reichKennzahlen(state, regeln, karte = KARTE) {
+  const start = regeln.economy.start;
+  const station = regeln.world.systems[start.system].station;
+  const systemName = karte.systeme[start.system] ? karte.systeme[start.system].name : start.system;
+  const nach = {};
+  for (const id of Object.keys(state.ships)) {
+    const s = state.ships[id];
+    if (rolle(state, s) === 'eigen') nach[s.klasse] = (nach[s.klasse] || 0) + 1;
+  }
+  const schiffe = Object.keys(nach).map((klasse) => ({ klasse, name: KLASSEN[klasse], anzahl: nach[klasse] })).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  const ziel = regeln.world.stations[station].ziel;
+  const lager = sortiereWaren(regeln, Object.keys(ziel).filter((w) => ziel[w] > 0)).map((ware) => ({ ware, name: WAREN[ware], menge: state.stations[station].lager[ware] || 0 }));
+  return {
+    kasse: state.owners[start.owner].cash, schiffe, schiffeGesamt: schiffe.reduce((n, x) => n + x.anzahl, 0),
+    hauptsitz: { system: start.system, systemName, station, stationName: `Station ${systemName}` },
+    lager, systemeEigen: 0, systemeMax: OBERFLAECHE.reichsgroesse,
+  };
+}
+return { reichKennzahlen };
+})();
+
+const m_ui_reich_ansicht = (() => {
+const { RULES } = m_data_rules;
+const { reichKennzahlen } = m_ui_reich;
+const { kasseZeichnen } = m_ui_hq;
+const { $, text, html, esc } = m_ui_zeichnen;
+const zeile = (links, rechts) => `<li><span class="liste-links">${esc(links)}</span><span class="liste-rechts">${esc(rechts)}</span></li>`;
+function reichErzeugen() {
+  let letzte = -1; let zuletzt; let stand = null; let letzteDirty = -1;
+  return {
+    zeichnen(state, kasseBasis) {
+      const dirty = m_ui_dirty.current();
+      if (stand === state && letzte === state.tick && zuletzt === kasseBasis && letzteDirty === dirty) return;
+      stand = state; letzte = state.tick; zuletzt = kasseBasis; letzteDirty = dirty;
+      const k = reichKennzahlen(state, RULES);
+      kasseZeichnen('reich', k.kasse, kasseBasis);
+      html($('reich-hauptsitz'), zeile('System', k.hauptsitz.systemName) + zeile('Station', k.hauptsitz.stationName));
+      html($('reich-lager'), k.lager.map((x) => zeile(x.name, String(x.menge))).join(''));
+      html($('reich-flotte'), k.schiffe.length ? k.schiffe.map((x) => zeile(x.name, String(x.anzahl))).join('') : '<li><span class="liste-links muted">Keine Schiffe.</span></li>');
+      text($('reich-flotte-zahl'), `${k.schiffeGesamt} ${k.schiffeGesamt === 1 ? 'Schiff' : 'Schiffe'}`);
+      text($('reich-systeme'), `${k.systemeEigen} von ${k.systemeMax}`);
+    },
+  };
+}
+return { reichErzeugen };
+})();
+
+const m_ui_import_regel = (() => {
+function ersetztLaufendesSpiel(state, gespeichertUm) { return state.tick > 0 || Number.isFinite(gespeichertUm); }
+return { ersetztLaufendesSpiel };
+})();
+
+const m_ui_main = (() => {
+const { createState, advance, save, load, submit, execute } = m_core_index;
+const { RULES } = m_data_rules;
+const { OBERFLAECHE } = m_data_oberflaeche;
+const { mischen } = m_ui_farbe;
+const { spielzeitText } = m_ui_zeit;
+const { nachholen } = m_ui_nachholen;
+const { kennzahlen, zusammenfassung } = m_ui_zusammenfassung;
+const { hqZeichnen, spielstandZeichnen, wegZeichnen, systemZeichnen, pruefungZeigen } = m_ui_hq;
+const { karteErzeugen } = m_ui_karte_ansicht;
+const { leistungErzeugen } = m_ui_leistung;
+const { lage } = m_ui_sicht;
+const { KARTE } = m_data_karte;
+const { laufErzeugen } = m_ui_lauf;
+const { blattVerdrahten, blattOeffnen, blattSchliessen, dialogZeigen, bestaetigen } = m_ui_blatt;
+const { farbschemaAnwenden } = m_ui_farbschema;
+const { dbPut, dbGet, dauerhaftAnfragen, dateiSichern } = m_ui_speicher;
+const { packen, auspacken } = m_ui_speicher_huelle;
+const { marktBasis } = m_ui_markt;
+const { marktErzeugen, wareZeichnen } = m_ui_markt_ansicht;
+const { flotteErzeugen, schiffZeichnen } = m_ui_flotte_ansicht;
+const { reichErzeugen } = m_ui_reich_ansicht;
+const { ersetztLaufendesSpiel } = m_ui_import_regel;
+
+let state = createState(RULES.startSeed);
+let stufe = 'pause';
+let kasseBasis; let marktBasisStand;
+const VERSION = document.querySelector('meta[name=aphros-version]').content.replace(/^v/, '');
+let gespeichertUm = null;
+let meta = { letzterExport: null, diagnose: false };
+let dauerhaft = '–';
+let sperre = false;
+let seitSpeichern = 0;
+let speicherFehler = false;
+let bereit = false;
+let verlassenUm = null;
+let aktuellesSchiff = null;
+
+const $ = (id) => document.getElementById(id);
+const jetzt = () => Date.now();
+const faktor = () => OBERFLAECHE.zeitstufen.find((s) => s.id === stufe).faktor;
+
+function meldungZeigen(text, { schlecht = false, knopf, aktion } = {}) {
+  $('meldung-text').textContent = text;
+  $('meldung-zeile').classList.toggle('schlecht', schlecht);
+  const k = $('meldung-knopf');
+  k.hidden = !knopf;
+  if (knopf) { k.textContent = knopf; k.onclick = aktion; }
+  $('meldung-zeile').hidden = false;
+}
+$('meldung-zu').addEventListener('click', () => { $('meldung-zeile').hidden = true; });
+
+function meldung(text, schlecht = false) {
+  const el = $('msg');
+  el.textContent = text;
+  el.className = schlecht ? 'muted bad' : 'muted';
+}
+
+function schritte(n) {
+  if (!bereit || sperre) return;
+  const stunde = RULES.economy.stunde;
+  let rest = n;
+  while (rest > 0) {
+    const k = Math.min(rest, stunde - (state.tick % stunde));
+    advance(state, k, RULES); rest -= k;
+    if (state.tick % stunde === 0) {
+      kasseBasis = state.owners[RULES.economy.start.owner].cash;
+      marktBasisStand = marktBasis(state, RULES);
+    }
+  }
+  seitSpeichern += n;
+  if (seitSpeichern >= OBERFLAECHE.autosaveAlleSchritte) speichern();
+}
+
+function kopfAktualisieren() {
+  $('spielzeit').textContent = spielzeitText(state.tick);
+  if (!$('ansicht-hq').hidden) hqZeichnen(state, kasseBasis);
+  spielstandZeigen();
+  if (!$('ansicht-karte').hidden) karte.aktualisieren(state);
+  ansichtenZeichnen();
+}
+function ansichtenZeichnen() {
+  if (!$('ansicht-markt').hidden) markt.zeichnen(state, marktBasisStand);
+  if (!$('ansicht-flotte').hidden) flotteAnsicht.zeichnen(state);
+  if (!$('ansicht-reich').hidden) reichAnsicht.zeichnen(state, kasseBasis);
+}
+function anzeigen() { kopfAktualisieren(); pruefungZeigen(state); }
+
+// Variante B: In der Pause wird der Befehl sofort auf den eingefrorenen State angewendet,
+// ohne einen Tick zu verbrauchen. So bleiben Tick, Stundenereignisse und Trend-Basis konsistent.
+// Außerhalb der Pause wandert der Befehl in die Queue und wird vom nächsten Tick ausgeführt.
+function befehlAusfuehren(cmd) {
+  if (!bereit) return;
+  if (sperre) return meldungZeigen('Spielstand ist gesperrt – bitte neu laden.', { schlecht: true });
+  if (stufe === 'pause') {
+    const erg = execute(state, cmd, RULES);
+    if (!erg.ok) return meldungZeigen(`Befehl abgelehnt: ${erg.reason}`, { schlecht: true });
+    seitSpeichern += 1;
+    if (seitSpeichern >= OBERFLAECHE.autosaveAlleSchritte) speichern();
+  } else {
+    const r = submit(state, cmd, RULES);
+    if (!r.ok) return meldungZeigen(`Befehl abgelehnt: ${r.reason}`, { schlecht: true });
+  }
+  m_ui_dirty.bump();
+  const offen = document.querySelector('.blatt-seite:not([hidden])');
+  if (offen?.id === 'blatt-schiff' && aktuellesSchiff) {
+    const r2 = schiffZeichnen(state, aktuellesSchiff, befehlAusfuehren);
+    if (r2) $('blatt-titel').textContent = r2.titel;
+    else { blattSchliessen(); aktuellesSchiff = null; }
+  }
+  anzeigen();
+}
+
+function stufeSetzen(id) {
+  if (!bereit) return;
+  if (sperre && id !== 'pause') return;
+  const vorher = stufe; stufe = id;
+  for (const b of document.querySelectorAll('[data-stufe]')) b.setAttribute('aria-pressed', String(b.dataset.stufe === id));
+  const s = OBERFLAECHE.zeitstufen.find((x) => x.id === id);
+  $('stufentext').textContent = s.faktor === 0 ? 'Pausiert' : `Läuft ${s.label}`;
+  const hinweis = $('pause-hinweis');
+  if (hinweis) hinweis.hidden = s.faktor !== 0;
+  lauf.aktualisieren();
+  if (id === 'pause' && vorher !== 'pause' && bereit) speichern();
+}
+
+const leistung = leistungErzeugen($('leistung'));
+const karte = karteErzeugen($('karte'), { arbeit: leistung.arbeit, beiSystem: (id) => systemOeffnen(id) });
+function systemOeffnen(id) {
+  const l = lage(state, RULES, KARTE)[id];
+  systemZeichnen(l);
+  blattOeffnen('blatt-system', { titel: l.name, stufe: 'halb' });
+}
+
+const markt = marktErzeugen(() => ansichtenZeichnen(), (ware) => {
+  const name = wareZeichnen(state, ware);
+  blattOeffnen('blatt-ware', { titel: name, stufe: 'halb' });
+}, () => state, befehlAusfuehren);
+
+const lauf = laufErzeugen({
+  daten: OBERFLAECHE, faktor,
+  beiSchritten: (n) => {
+    const start = performance.now();
+    schritte(n); kopfAktualisieren();
+    leistung.arbeit(performance.now() - start);
+  },
+});
+
+const flotteAnsicht = flotteErzeugen((id) => {
+  aktuellesSchiff = id;
+  const r = schiffZeichnen(state, id, befehlAusfuehren);
+  if (r) blattOeffnen('blatt-schiff', { titel: r.titel, stufe: 'halb' });
+});
+const reichAnsicht = reichErzeugen();
+
+$('b-schiff-karte').addEventListener('click', () => {
+  const system = $('b-schiff-karte').dataset.system;
+  blattSchliessen(); ansichtWechseln('karte'); systemOeffnen(system);
+});
+
+for (const b of document.querySelectorAll('[data-stufe]')) b.addEventListener('click', () => stufeSetzen(b.dataset.stufe));
+
+function ansichtWechseln(name) {
+  for (const a of document.querySelectorAll('.ansicht')) a.hidden = a.id !== `ansicht-${name}`;
+  for (const b of document.querySelectorAll('.leiste button')) {
+    if (b.dataset.ansicht === name) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  }
+  kopfAktualisieren();
+}
+for (const b of document.querySelectorAll('[data-ansicht]')) b.addEventListener('click', () => ansichtWechseln(b.dataset.ansicht));
+for (const b of document.querySelectorAll('[data-ansicht-ziel]')) b.addEventListener('click', () => ansichtWechseln(b.dataset.ansichtZiel));
+
+blattVerdrahten(); farbschemaAnwenden();
+$('b-pruefung').addEventListener('click', () => { pruefungZeigen(state, true); blattOeffnen('blatt-pruefung', { stufe: 'voll' }); });
+$('b-spielstand').addEventListener('click', () => blattOeffnen('blatt-spielstand'));
+
+$('b-step').addEventListener('click', () => {
+  if (!bereit) return;
+  if (sperre) return meldungZeigen('Spielstand gesperrt.', { schlecht: true });
+  schritte(10); anzeigen(); meldung('10 Schritte gelaufen.');
+});
+$('b-hour').addEventListener('click', () => {
+  if (!bereit) return;
+  if (sperre) return meldungZeigen('Spielstand gesperrt.', { schlecht: true });
+  const start = performance.now();
+  schritte(RULES.economy.stunde);
+  const ms = performance.now() - start;
+  anzeigen();
+  $('rechenzeit').textContent = `${ms.toFixed(1)} ms`;
+  meldung(`1 Stunde gelaufen (${ms.toFixed(1)} ms).`);
+});
+
+function aufholen(seit) {
+  if (sperre) return;
+  const n = nachholen(seit, jetzt(), OBERFLAECHE);
+  const vorher = kennzahlen(state, RULES);
+  if (n.schritte > 0) {
+    const start = performance.now();
+    advance(state, n.schritte, RULES);
+    leistung.nachholen(performance.now() - start);
+    kasseBasis = undefined; marktBasisStand = undefined;
+  }
+  if (n.schritte > 0 || n.rueckwaerts) speichern();
+  anzeigen();
+  if (n.schritte >= OBERFLAECHE.zusammenfassungAbSchritten || n.rueckwaerts) {
+    wegZeichnen(zusammenfassung(vorher, kennzahlen(state, RULES), n));
+    blattOeffnen('blatt-weg', { stufe: 'halb' });
+  }
+}
+
+function diagnoseSchalten(ein) {
+  meta.diagnose = ein;
+  $('b-diagnose').setAttribute('aria-checked', String(ein));
+  $('diagnose-wert').textContent = ein ? 'An' : 'Aus';
+  leistung.schalten(ein);
+}
+$('b-diagnose').addEventListener('click', () => { diagnoseSchalten(!meta.diagnose); metaSpeichern(); });
+
+$('b-abwesend').addEventListener('click', () => {
+  if (sperre) return;
+  speichern().then(() => dbGet(OBERFLAECHE.slot)).then((text) => {
+    const r = auspacken(text, RULES.rulesVersion);
+    if (r.art !== 'huelle') throw new Error('kein Spielstand mit Uhrzeit');
+    sperre = true;
+    return dbPut(OBERFLAECHE.slot, packen(r.stand, r.gespeichertUm - 2 * 3600000, r.version));
+  }).then(() => location.reload(), (e) => meldungZeigen(`Simulation fehlgeschlagen: ${e.message}`, { schlecht: true }));
+});
+
+function spielstandZeigen() {
+  spielstandZeichnen({ gespeichertUm, letzterExport: meta.letzterExport, jetzt: jetzt(), tick: state.tick, dauerhaft });
+}
+function metaSpeichern() { return dbPut('meta', meta).catch(() => {}); }
+
+function speichern() {
+  if (sperre || !bereit) return Promise.resolve(false);
+  const t = jetzt();
+  return dbPut(OBERFLAECHE.slot, packen(save(state), t, VERSION)).then(() => {
+    gespeichertUm = t; speicherFehler = false; seitSpeichern = 0;
+    if (dauerhaft === '–') dauerhaftAnfragen().then((e) => { dauerhaft = e; spielstandZeigen(); });
+    spielstandZeigen();
+    return true;
+  }, (e) => {
+    if (!speicherFehler) meldungZeigen(`Speichern fehlgeschlagen: ${e && e.message ? e.message : 'unbekannter Fehler'}`, { schlecht: true, knopf: 'Als Datei sichern', aktion: exportieren });
+    speicherFehler = true;
+    return false;
+  });
+}
+
+function exportieren() {
+  const t = jetzt();
+  dateiSichern(packen(save(state), t, VERSION), `aphros-void-tick-${state.tick}.json`);
+  meta.letzterExport = t; metaSpeichern(); spielstandZeigen();
+}
+
+function alterSchluessel(basis) {
+  return dbGet(basis).then((da) => (da === undefined ? basis : `${basis}-${jetzt()}`), () => basis);
+}
+
+function neuBeginnen(alt) {
+  const start = () => {
+    state = createState(RULES.startSeed);
+    sperre = false;
+    kasseBasis = undefined; marktBasisStand = undefined; gespeichertUm = null; aktuellesSchiff = null;
+    m_ui_dirty.bump();
+    stufeSetzen('pause'); anzeigen();
+    return speichern();
+  };
+  if (!alt) return start();
+  return alterSchluessel(alt.key).then((key) => dbPut(key, alt.text)).then(start, () => {
+    meldungZeigen('Der alte Stand konnte nicht abgelegt werden. Er wurde nicht überschrieben.', { schlecht: true });
+  });
+}
+
+function einlesen(text, quelle) {
+  const r = auspacken(text, RULES.rulesVersion);
+  const vomSpeicher = quelle === 'speicher';
+  const schliessen = { text: 'Schließen', art: 'normal' };
+  if (r.art === 'regel-alt') {
+    if (vomSpeicher) sperre = true;
+    const laufend = !vomSpeicher && ersetztLaufendesSpiel(state, gespeichertUm);
+    const knopf = {
+      text: 'Alten Stand sichern und neu beginnen', art: 'primary',
+      aktion: () => {
+        dateiSichern(text, `aphros-void-regel${r.gefunden}.json`);
+        const neu = () => neuBeginnen({ key: `alt-regel${r.gefunden}`, text });
+        if (!laufend) { neu(); return; }
+        const laufendText = packen(save(state), jetzt(), VERSION);
+        alterSchluessel(`vor-import-${jetzt()}`).then((key) => dbPut(key, laufendText)).then(neu, () => {
+          meldungZeigen('Dein laufendes Spiel konnte nicht abgelegt werden. Es wurde nicht ersetzt.', { schlecht: true });
+        });
+      },
+    };
+    dialogZeigen({
+      titel: 'Älterer Spielstand',
+      text: `Dein Spielstand stammt aus einer älteren Spielversion und kann nicht übernommen werden.${laufend ? ' Dein laufendes Spiel wird dabei ersetzt.' : ''}`,
+      knoepfe: vomSpeicher ? [knopf] : [{ text: 'Abbrechen', art: 'normal' }, knopf],
+    });
+    return null;
+  }
+  if (r.art === 'regel-neu') {
+    if (vomSpeicher) sperre = true;
+    dialogZeigen({ titel: 'Neuere Spielversion', text: 'Dieser Stand ist für eine neuere Spielversion. Er wird nicht geladen und nicht überschrieben.', knoepfe: [schliessen] });
+    return null;
+  }
+  let geladen = null;
+  if (r.art !== 'unlesbar') {
+    try { geladen = load(r.stand); } catch { geladen = null; }
+  }
+  if (!geladen) {
+    if (vomSpeicher) sperre = true;
+    dialogZeigen({
+      titel: 'Spielstand beschädigt',
+      text: 'Dieser Spielstand ist beschädigt. Er wird nicht überschrieben. Du kannst den Rohtext als Datei sichern.',
+      knoepfe: [{ text: 'Rohtext als Datei sichern', art: 'normal', aktion: () => dateiSichern(text, 'aphros-void-beschaedigt.json') }, schliessen],
+    });
+    return null;
+  }
+  state = geladen;
+  kasseBasis = undefined; marktBasisStand = undefined;
+  gespeichertUm = r.art === 'huelle' ? r.gespeichertUm : null;
+  m_ui_dirty.bump();
+  return r;
+}
+
+$('b-save').addEventListener('click', () => {
+  speichern().then((ok) => { if (ok) meldungZeigen(`Gespeichert bei Tick ${state.tick}.`); });
+});
+$('b-export').addEventListener('click', () => { exportieren(); meldungZeigen('Als Datei gesichert.'); });
+$('b-import').addEventListener('click', () => $('f-import').click());
+$('f-import').addEventListener('change', async (ev) => {
+  const datei = ev.target.files[0];
+  ev.target.value = '';
+  if (!datei) return;
+  const text = await datei.text();
+  const laden = () => {
+    const r = einlesen(text, 'import');
+    if (!r) return;
+    stufeSetzen('pause');
+    sperre = false; aktuellesSchiff = null;
+    anzeigen(); speichern(); blattSchliessen();
+    meldungZeigen(`Importiert: Tick ${state.tick}.`);
+  };
+  if (ersetztLaufendesSpiel(state, gespeichertUm)) {
+    bestaetigen({
+      titel: 'Spielstand importieren?',
+      text: 'Der laufende Spielstand wird ersetzt. Das kann nicht rückgängig gemacht werden.',
+      aktionText: 'Importieren',
+      aktion: laden,
+    });
+  } else {
+    laden();
+  }
+});
+$('b-neu').addEventListener('click', () => {
+  const los = () => { blattSchliessen(); neuBeginnen(); };
+  if (gespeichertUm === null && state.tick === 0 && !sperre) return los();
+  bestaetigen({ titel: 'Neues Spiel beginnen?', text: 'Dein aktueller Spielstand wird überschrieben. Das kann nicht rückgängig gemacht werden.', aktionText: 'Neues Spiel', aktion: los });
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    verlassenUm = jetzt();
+    lauf.anhalten();
+    speichern();
+  } else if (bereit && verlassenUm !== null) {
+    const seit = verlassenUm; verlassenUm = null;
+    aufholen(seit);
+    lauf.aktualisieren();
+  }
+});
+addEventListener('pagehide', () => { speichern(); });
+
+async function starten() {
+  try {
+    const m = await dbGet('meta');
+    if (m) meta = { ...meta, ...m };
+  } catch { /* ohne meta weiter */ }
+  let geladen = null;
+  try {
+    const text = await dbGet(OBERFLAECHE.slot);
+    if (text !== undefined) geladen = einlesen(text, 'speicher');
+  } catch {
+    meldungZeigen('Der Speicher im Browser ist nicht verfügbar. Das Spiel läuft, wird aber nicht gespeichert. Du kannst es als Datei sichern.', { schlecht: true, knopf: 'Als Datei sichern', aktion: exportieren });
+  }
+  bereit = true;
+  diagnoseSchalten(meta.diagnose === true);
+  stufeSetzen('pause');
+  anzeigen();
+  if (geladen && geladen.art === 'huelle') aufholen(geladen.gespeichertUm);
+}
+
+function diagnose() {
+  const mq = matchMedia('(prefers-reduced-motion: reduce)');
+  const zeigen = () => { $('diagnose').textContent = `Diagnose: Bewegung reduzieren ${mq.matches ? 'an' : 'aus'} · Tipps erkannt: ${tipps}`; };
+  mq.addEventListener('change', zeigen);
+  zeigen();
+  return zeigen;
+}
+
+const gedrueckt = new Set();
+const laufend = new WeakMap();
+let tipps = 0;
+const diagnoseZeigen = diagnose();
+
+function farben(knopf) {
+  const s = getComputedStyle(knopf);
+  return { n: s.getPropertyValue('--n').trim(), p: s.getPropertyValue('--p').trim() };
+}
+function abbrechen(knopf) { if (laufend.has(knopf)) cancelAnimationFrame(laufend.get(knopf)); laufend.delete(knopf); }
+function andruecken(knopf) { abbrechen(knopf); gedrueckt.add(knopf); knopf.style.backgroundColor = farben(knopf).p; }
+function abblenden(knopf) {
+  abbrechen(knopf);
+  const { n, p } = farben(knopf);
+  const dauer = (parseFloat(getComputedStyle(knopf).getPropertyValue('--press-fade')) || 0.5) * 1000;
+  let start = null;
+  const bild = (zeit) => {
+    if (zeit !== undefined) {
+      if (start === null) start = zeit;
+      const t = Math.min(1, (zeit - start) / dauer);
+      if (t >= 1) { laufend.delete(knopf); knopf.style.removeProperty('background-color'); return; }
+      knopf.style.backgroundColor = mischen(p, n, t);
+    }
+    laufend.set(knopf, requestAnimationFrame(bild));
+  };
+  bild();
+}
+
+document.addEventListener('pointerdown', (ev) => { const knopf = ev.target.closest?.('button'); if (knopf) andruecken(knopf); });
+document.addEventListener('pointerup', (ev) => {
+  if (ev.target.closest?.('button')) { tipps += 1; diagnoseZeigen(); }
+  for (const k of gedrueckt) abblenden(k);
+  gedrueckt.clear();
+});
+document.addEventListener('pointercancel', () => { for (const k of gedrueckt) abblenden(k); gedrueckt.clear(); });
+
+anzeigen();
+starten();
+
+return {};
+})();
+</script>
+</body>
+</html>

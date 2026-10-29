@@ -2,7 +2,7 @@
 
 Stand: 29. Oktober 2026. PR #15 wurde als `f01fd57` nach main gemergt: v0.11.2 mit Schutzgeld 0 und bezahlter NPC-Reserve R=2. Die iPad-/NAS-Abnahme steht weiterhin aus.
 
-v0.11.3 liegt auf `feat/v0.11.3-npc1-wachstum`, noch nicht gemergt/veröffentlicht. Begrenzter NPC1-Pilot: ein bezahlter vierter Soll-Frachter nach mindestens sieben Tagen. Schema 8, Regelmigration 8→9 ohne Bestandsänderung. [Aktueller Test-/Entscheidungsbericht](TEST_WACHSTUM_V0_11_3.md): 46 Tests, 13 Seed-Paare mit Wiederholungen/Save-Load, keine Gesamtblockaden; Liquiditätsrestrisiken dokumentiert.
+v0.11.3 liegt auf `feat/v0.11.3-npc1-wachstum`, noch nicht gemergt/veröffentlicht. Begrenzter NPC1-Pilot: ein bezahlter vierter Soll-Frachter nach mindestens sieben Tagen. Schema 8, Regelmigration 8→9 ohne Bestandsänderung. [Aktueller Test-/Entscheidungsbericht](TEST_WACHSTUM_V0_11_3.md): 46 Tests, 13 Seed-Paare mit Wiederholungen/Save-Load, keine Gesamtblockaden; Systematisch häufigere Liquiditätsnullstände: noch keine Integrationsempfehlung, PR als Entwurf.
 
 ## Version und Architektur
 

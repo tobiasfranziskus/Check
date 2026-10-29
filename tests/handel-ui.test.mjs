@@ -55,6 +55,7 @@ function environment() {
     'drawShip: m_ui_flotte_ansicht.schiffZeichnen',
     'createFleet: m_ui_flotte_ansicht.flotteErzeugen',
     'offers: m_ui_handelsangebot',
+    'shipNames: m_ui_schiffsnamen.namenVon',
   ].join(', ') + ' })', { document });
   const state = E.createState(42, E.rules);
   const own = Object.values(state.ships).filter(ship => ship.owner === E.rules.economy.start.owner);
@@ -337,4 +338,90 @@ test('Schiffsdetail kennzeichnet gekaufte Schiffe ebenfalls als Fracht', () => {
   assert.ok(a.E.execute(a.state, a.clickShip(buy), a.E.rules).ok);
   const view = a.renderShip(a.freighter.id);
   assert.match(view, /Miner in Dienst stellen/);
+});
+
+
+test('Startschiffe heißen Miner und Frachter, interne IDs bleiben Datenattribute', () => {
+  const a = environment();
+  const names = a.E.shipNames(a.state);
+  assert.equal(names[a.miner.id], 'Miner');
+  assert.equal(names[a.freighter.id], 'Frachter');
+  const fleet = a.renderFleet();
+  assert.match(fleet, />Miner</);
+  assert.match(fleet, />Frachter</);
+  assert.doesNotMatch(fleet, />sh001</);
+  assert.match(fleet, /data-schiff="sh001"/);
+  a.renderShip(a.miner.id);
+  const sheet = a.elements.get('schiff-liste').innerHTML;
+  assert.match(sheet, /Name/);
+  assert.match(sheet, /Miner/);
+});
+
+test('Zweiter Miner heißt Miner 2, auch wenn der erste umbenannt ist', () => {
+  const a = environment();
+  const purchase = a.button(a.renderMarket(), 'buy', 'miner');
+  assert.ok(a.E.execute(a.state, a.clickMarket(purchase), a.E.rules).ok);
+  const activate = a.button(a.renderMarket(), 'miner', null, 'activate');
+  assert.ok(a.E.execute(a.state, a.clickMarket(activate), a.E.rules).ok);
+  const extra = Object.values(a.state.ships).find(ship =>
+    ship.owner === 'house' && ship.klasse === 'miner' && ship.id !== a.miner.id);
+  assert.ok(extra);
+  assert.equal(a.E.shipNames(a.state)[extra.id], 'Miner 2');
+  assert.match(a.renderFleet(), /Miner 2/);
+  assert.ok(a.E.execute(a.state, {
+    type: 'shipRename', owner: 'house', schiff: a.miner.id, name: 'Scout',
+  }, a.E.rules).ok);
+  assert.equal(a.E.shipNames(a.state)[a.miner.id], 'Scout');
+  assert.equal(a.E.shipNames(a.state)[extra.id], 'Miner 2');
+  assert.match(a.renderMarket(), /Scout/);
+});
+
+test('Rufname wird gespeichert, getrimmt und beim Zurücksetzen entfernt', () => {
+  const a = environment();
+  const cmd = { type: 'shipRename', owner: 'house', schiff: a.freighter.id, name: '  Sternenläufer  ' };
+  assert.ok(a.E.execute(a.state, cmd, a.E.rules).ok);
+  assert.equal(a.state.ships[a.freighter.id].rufname, 'Sternenläufer');
+  assert.equal(a.E.shipNames(a.state)[a.freighter.id], 'Sternenläufer');
+  const loaded = a.E.load(a.E.save(a.state), undefined, a.E.rules);
+  assert.equal(loaded.ships[a.freighter.id].rufname, 'Sternenläufer');
+  assert.equal(a.E.hash(a.state), a.E.hash(loaded));
+  assert.ok(a.E.audit(a.state).ok);
+  assert.ok(a.E.execute(a.state, { ...cmd, name: '  ' }, a.E.rules).ok);
+  assert.equal(a.state.ships[a.freighter.id].rufname, undefined);
+  assert.equal(a.E.shipNames(a.state)[a.freighter.id], 'Frachter');
+});
+
+test('Ungültige Schiffsnamen werden zurückgewiesen, Umbenennen auf Reise ist erlaubt', () => {
+  const a = environment();
+  const base = { type: 'shipRename', owner: 'house', schiff: a.miner.id };
+  for (const name of ['a'.repeat(25), 'Zeile\n2', null, 5]) {
+    const result = a.E.execute(a.state, { ...base, name }, a.E.rules);
+    assert.equal(result.ok, false);
+  }
+  assert.equal(a.state.ships[a.miner.id].rufname, undefined);
+  a.miner.phase = 'reise';
+  assert.ok(a.E.submit(a.state, { ...base, name: 'Reisender' }, a.E.rules).ok);
+  assert.ok(a.E.step(a.state, a.E.rules)[0].ok);
+  assert.equal(a.state.ships[a.miner.id].rufname, 'Reisender');
+});
+
+test('HTML im Rufnamen wird bei der Darstellung maskiert', () => {
+  const a = environment();
+  const input = '<b>Foo</b>';
+  assert.ok(a.E.execute(a.state, {
+    type: 'shipRename', owner: 'house', schiff: a.miner.id, name: input,
+  }, a.E.rules).ok);
+  assert.equal(a.E.shipNames(a.state)[a.miner.id], input);
+  const markup = a.renderFleet();
+  assert.match(markup, /&lt;b&gt;Foo&lt;\/b&gt;/);
+  assert.doesNotMatch(markup, /<b>Foo<\/b>/);
+});
+
+test('Bisheriger Spielstand ohne Rufnamen bleibt ohne Migration nutzbar', () => {
+  const a = environment();
+  const saved = a.E.save(a.state);
+  assert.equal(a.E.shipNames(a.state)[a.miner.id], 'Miner');
+  const restored = a.E.load(saved, undefined, a.E.rules);
+  assert.equal(a.E.hash(a.state), a.E.hash(restored));
+  assert.equal(a.E.shipNames(restored)[a.freighter.id], 'Frachter');
 });

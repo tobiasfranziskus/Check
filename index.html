@@ -201,7 +201,7 @@ button.zeile .liste-links { color: var(--text); }
   <header class="kopf"><p class="muted kopf-klein">Markt</p><div id="markt-systeme" class="segment" role="group" aria-label="System wählen"></div></header>
   <section class="card" aria-label="Zusammenfassung"><ul id="markt-kopf" class="liste"></ul></section>
   <section class="card" aria-label="Preise"><h2>Preise</h2><ul id="markt-preise" class="liste"></ul></section>
-  <p class="muted hinweis-text">Wähle oben ein System. Ist dort ein eigenes Schiff angedockt, kannst du direkt handeln.</p>
+  <p class="muted hinweis-text">Wähle ein System mit eigenem Schiff im Dock. Mengen berücksichtigen Kassen, Stationsvorräte und freien Frachtraum.</p>
 </section>
 
 <section id="ansicht-flotte" class="ansicht" aria-label="Flotte" hidden>
@@ -2775,6 +2775,33 @@ function warenVergleich(state, regeln, ware) {
 return { sortiereWaren, marktBasis, marktZeilen, marktKopf, warenVergleich };
 })();
 
+// Gemeinsame, rein lesende Handelsangebote für Markt und Schiffsdetails.
+const m_ui_handelsangebot = (() => {
+const { preis, gebuehr, verkaufbar, aufnehmbar } = m_core_index;
+const ladungsmenge = (schiff) => Object.values(schiff.ladung).reduce((summe, menge) => summe + menge, 0);
+function kauf(state, rules, station, schiff, ware, limit = 10) {
+  const p = preis(state, station, ware, rules);
+  if (p <= 0 || schiff.phase !== 'dock' || rules.world.systems[schiff.system].station !== station) return null;
+  const max = Math.min(limit, rules.economy.cargo - ladungsmenge(schiff), verkaufbar(state, rules, station, ware));
+  const kasse = state.owners[schiff.owner].cash;
+  for (let menge = max; menge > 0; menge--) {
+    const wert = menge * p;
+    const betrag = wert + gebuehr(state, rules, station, wert);
+    if (kasse >= betrag) return { menge, betrag };
+  }
+  return null;
+}
+function verkauf(state, rules, station, schiff, ware, limit = 10) {
+  const p = preis(state, station, ware, rules);
+  if (p <= 0 || schiff.phase !== 'dock' || rules.world.systems[schiff.system].station !== station) return null;
+  const menge = Math.min(limit, schiff.ladung[ware] || 0, aufnehmbar(state, rules, station, ware));
+  if (menge <= 0) return null;
+  const wert = menge * p;
+  return { menge, betrag: wert - gebuehr(state, rules, station, wert) };
+}
+return { kauf, verkauf, ladungsmenge };
+})();
+
 const m_ui_markt_ansicht = (() => {
 const { RULES } = m_data_rules;
 const { KARTE } = m_data_karte;
@@ -2782,25 +2809,18 @@ const { ORTE } = m_data_namen;
 const { marktZeilen, marktKopf, warenVergleich } = m_ui_markt;
 const { isk } = m_ui_zusammenfassung;
 const { $, html, esc, marke } = m_ui_zeichnen;
-const { gebuehr, verkaufbar, aufnehmbar } = m_core_index;
+const { kauf: kaufAngebot, verkauf: verkaufAngebot, ladungsmenge } = m_ui_handelsangebot;
 const trendMarke = (t) => (t ? marke(t.art, t.symbol, t.text) : '<span class="muted">–</span>');
 const rezeptText = (r) => `${r.ein.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} → ${r.aus.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} · ${esc(ORTE[r.ort])}, ${r.dauer} Min`;
 
-// Auswahl nur aus eigenen, angedockten Schiffen; bei Gleichstand feste ID-Reihenfolge.
-const ladungsmenge = (s) => Object.values(s.ladung).reduce((summe, n) => summe + n, 0);
+// Eigene Dock-Schiffe; bei Gleichstand deterministisch nach ID.
 const nachId = (a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 const dockSchiffe = (state, system) => Object.values(state.ships)
   .filter((s) => s.owner === RULES.economy.start.owner && s.phase === 'dock' && s.system === system);
-function handelsschiff(schiffe, ware, menge, kauf) {
-  const kandidaten = schiffe.filter((s) => kauf
-    ? ladungsmenge(s) + menge <= RULES.economy.cargo
-    : (s.ladung[ware] || 0) > 0);
-  kandidaten.sort((a, b) => kauf
-    ? ladungsmenge(a) - ladungsmenge(b) || nachId(a, b)
-    : (b.ladung[ware] || 0) - (a.ladung[ware] || 0) || nachId(a, b));
-  return kandidaten[0] || null;
+function verkaufsschiff(schiffe, ware) {
+  return schiffe.filter((s) => (s.ladung[ware] || 0) > 0)
+    .sort((a, b) => (b.ladung[ware] || 0) - (a.ladung[ware] || 0) || nachId(a, b))[0] || null;
 }
-
 function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
   let system = RULES.economy.start.system;
   let letzte = ''; let stand = null; let letzteDirty = -1;
@@ -2838,30 +2858,19 @@ function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
         + `<li><span class="liste-links">Größte Preisänderungen</span><span class="liste-rechts">${kopf.abweichungen.length ? kopf.abweichungen.map((a) => `${esc(a.name)} ${marke('muted', a.symbol, a.text)}`).join('<br>') : '<span class="muted">–</span>'}</span></li>`
         + (schiffe.length ? `<li><span class="liste-links">Schiffe im Dock</span><span class="liste-rechts">${schiffe.length} · Kasse ${isk(state.owners[RULES.economy.start.owner].cash)}</span></li>` : '');
       html($('markt-preise'), marktZeilen(state, RULES, system, basis).map((z) => {
-        // Wähle die größte sofort ausführbare Kaufmenge (Gebühr, Reserve und Frachtraum).
-        const maxKauf = Math.min(z.stufe === 'schiff' ? 1 : 10, verkaufbar(state, RULES, station, z.ware));
-        const spielerKasse = state.owners[RULES.economy.start.owner].cash;
-        let kaufMenge = 0;
-        let kaufSchiff = null;
-        for (let menge = maxKauf; menge > 0; menge--) {
-          const wert = menge * z.preis;
-          if (spielerKasse < wert + gebuehr(state, RULES, station, wert)) continue;
-          const kandidat = handelsschiff(schiffe, z.ware, menge, true);
-          if (kandidat) { kaufMenge = menge; kaufSchiff = kandidat; break; }
-        }
-        // Die Station kann nur so viel annehmen, wie ihre Kasse und das Lager zulassen.
-        const verkaufLimit = aufnehmbar(state, RULES, station, z.ware);
-        const verkaufSchiff = verkaufLimit > 0 ? handelsschiff(schiffe, z.ware, 1, false) : null;
-        const verkaufMenge = verkaufSchiff ? Math.min(10, verkaufSchiff.ladung[z.ware], verkaufLimit) : 0;
-        const kaufWert = kaufMenge * z.preis;
-        const kaufGesamt = kaufWert + gebuehr(state, RULES, station, kaufWert);
-        const verkaufWert = verkaufMenge * z.preis;
-        const verkaufNetto = verkaufWert - gebuehr(state, RULES, station, verkaufWert);
-        const kauf = kaufSchiff
-          ? `<button type="button" class="primary" data-trade="buy" data-schiff="${esc(kaufSchiff.id)}" data-trade-ware="${z.ware}" data-menge="${kaufMenge}">Kaufe ${kaufMenge}${z.stufe === 'schiff' ? ` ${esc(z.name)}` : ` × ${esc(z.name)}`} (${isk(kaufGesamt)} inkl. Gebühr) · ${esc(kaufSchiff.id)}</button>`
+        // Dieselbe Mengen- und Gebührenberechnung wie im Schiffsmenü.
+        const kaufAuswahl = schiffe.map((schiff) => ({
+          schiff, angebot: kaufAngebot(state, RULES, station, schiff, z.ware, z.stufe === 'schiff' ? 1 : 10),
+        })).filter((x) => x.angebot)
+          .sort((a, b) => b.angebot.menge - a.angebot.menge
+            || ladungsmenge(a.schiff) - ladungsmenge(b.schiff) || nachId(a.schiff, b.schiff))[0];
+        const verkaufSchiff = verkaufsschiff(schiffe, z.ware);
+        const verkaufOption = verkaufSchiff ? verkaufAngebot(state, RULES, station, verkaufSchiff, z.ware, 10) : null;
+        const kauf = kaufAuswahl
+          ? `<button type="button" class="primary" data-trade="buy" data-schiff="${esc(kaufAuswahl.schiff.id)}" data-trade-ware="${z.ware}" data-menge="${kaufAuswahl.angebot.menge}">Kaufe ${kaufAuswahl.angebot.menge}${z.stufe === 'schiff' ? ` ${esc(z.name)}` : ` × ${esc(z.name)}`} (${isk(kaufAuswahl.angebot.betrag)} inkl. Gebühr) · ${esc(kaufAuswahl.schiff.id)}</button>`
           : '';
-        const verkauf = verkaufSchiff
-          ? `<button type="button" data-trade="sell" data-schiff="${esc(verkaufSchiff.id)}" data-trade-ware="${z.ware}" data-menge="${verkaufMenge}">Verkaufe ${verkaufMenge} (${isk(verkaufNetto)} netto) · ${esc(verkaufSchiff.id)}</button>`
+        const verkauf = verkaufOption
+          ? `<button type="button" data-trade="sell" data-schiff="${esc(verkaufSchiff.id)}" data-trade-ware="${z.ware}" data-menge="${verkaufOption.menge}">Verkaufe ${verkaufOption.menge} (${isk(verkaufOption.betrag)} netto) · ${esc(verkaufSchiff.id)}</button>`
           : '';
         const trade = kauf || verkauf ? `<div class="befehle-leiste">${kauf}${verkauf}</div>` : '';
         return `<li style="flex-direction:column;align-items:stretch;padding:8px 0"><button type="button" class="zeile" data-ware="${z.ware}">`
@@ -3064,7 +3073,8 @@ const { KARTE } = m_data_karte;
 const { ROLLEN_NAMEN, WAREN, KLASSEN } = m_data_namen;
 const { eigeneSchiffe, weltFlotten } = m_ui_flotte_detail;
 const { isk } = m_ui_zusammenfassung;
-const { preis, stationspreis, gebuehr } = m_core_index;
+const { preis, stationspreis } = m_core_index;
+const { kauf: kaufAngebot, verkauf: verkaufAngebot } = m_ui_handelsangebot;
 const { $, html, esc, rollenSymbol } = m_ui_zeichnen;
 const { bestaetigen } = m_ui_blatt;
 const { stationBlattOeffnen } = m_ui_station;
@@ -3178,16 +3188,12 @@ function schiffZeichnen(state, id, onBefehl) {
     .map((x) => knopf(`→ ${esc(KARTE.systeme[x].name)}`, `data-befehl="move" data-ziel="${RULES.world.systems[x].station}"`));
   const handeln = Object.keys(RULES.world.stations[station].ziel).sort().filter((w) => preis(state, station, w, RULES) > 0)
     .flatMap((w) => {
-      const menge = RULES.economy.waren[w].stufe === 'schiff' ? 1 : 10;
-      const einzelpreis = preis(state, station, w, RULES);
-      const kaufWert = menge * einzelpreis;
-      const kaufGesamt = kaufWert + gebuehr(state, RULES, station, kaufWert);
-      const verkaufMenge = roh.ladung[w] || 0;
-      const verkaufWert = verkaufMenge * einzelpreis;
-      const verkaufNetto = verkaufWert - gebuehr(state, RULES, station, verkaufWert);
+      const kaufen = kaufAngebot(state, RULES, station, roh, w, RULES.economy.waren[w].stufe === 'schiff' ? 1 : 10);
+      // In Schiffsdetails bleibt der Verkauf der gesamten Ladung möglich.
+      const verkaufen = verkaufAngebot(state, RULES, station, roh, w, roh.ladung[w] || 0);
       return [
-        knopf(`Kaufe ${menge} ${esc(WAREN[w])} (${isk(kaufGesamt)} inkl. Gebühr)`, `data-befehl="buy" data-ware="${w}" data-menge="${menge}"`),
-        ...(verkaufMenge > 0 ? [knopf(`Verkaufe ${verkaufMenge} ${esc(WAREN[w])} (${isk(verkaufNetto)} netto)`, `data-befehl="sell" data-ware="${w}" data-menge="${verkaufMenge}"`)] : []),
+        ...(kaufen ? [knopf(`Kaufe ${kaufen.menge} ${esc(WAREN[w])} (${isk(kaufen.betrag)} inkl. Gebühr)`, `data-befehl="buy" data-ware="${w}" data-menge="${kaufen.menge}"`)] : []),
+        ...(verkaufen ? [knopf(`Verkaufe ${verkaufen.menge} ${esc(WAREN[w])} (${isk(verkaufen.betrag)} netto)`, `data-befehl="sell" data-ware="${w}" data-menge="${verkaufen.menge}"`)] : []),
       ];
     });
   // Während die Simulation läuft, darf ein Re-Render geöffnete Gruppen nicht schließen.
@@ -3201,6 +3207,7 @@ function schiffZeichnen(state, id, onBefehl) {
   $('schiff-befehle').innerHTML = `<div class="befehle-leiste">${direkt.join('')}</div>`
     + gruppe('reise', 'Reiseziele', reisen)
     + gruppe('handel', 'Handeln', handeln)
+    + (!handeln.length ? '<p class="muted">Derzeit kein Handel möglich (Kasse, Vorräte oder Frachtraum).</p>' : '')
     + gruppe('eskorte', 'Eskortieren', eskortieren);
   $('schiff-befehle').onclick = (ev) => {
     const b = ev.target.closest('button[data-befehl]');

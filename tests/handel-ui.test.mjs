@@ -427,3 +427,19 @@ test('Bisheriger Spielstand ohne Rufnamen bleibt ohne Migration nutzbar', () => 
   assert.equal(a.E.hash(a.state), a.E.hash(restored));
   assert.equal(a.E.shipNames(restored)[a.freighter.id], 'Frachter');
 });
+
+
+test('Zweiter Frachter wird als Frachter 2 angezeigt', () => {
+  const a = environment();
+  const buy = a.button(a.renderMarket(), 'buy', 'frachter');
+  assert.ok(buy, 'Frachter an der Startwerft kaufbar');
+  assert.ok(a.E.execute(a.state, a.clickMarket(buy), a.E.rules).ok);
+  const activate = a.button(a.renderMarket(), 'frachter', null, 'activate');
+  assert.ok(activate);
+  assert.ok(a.E.execute(a.state, a.clickMarket(activate), a.E.rules).ok);
+  const newShip = Object.values(a.state.ships).find(ship =>
+    ship.owner === 'house' && ship.klasse === 'frachter' && ship.id !== a.freighter.id);
+  assert.ok(newShip);
+  assert.equal(a.E.shipNames(a.state)[newShip.id], 'Frachter 2');
+  assert.match(a.renderFleet(), /Frachter 2/);
+});

@@ -52,3 +52,34 @@ Zusätzlich bleiben die vorherigen 19 Node-Regressionstests (Markt-/Flottenhande
 - Bei laufender Simulation wird eine Aktion erst bei der Tick-Ausführung wirksam; unmittelbar nach einem Kauf kann der Aktivierungsbutton daher noch fehlen.
 
 **Merge nach `main` nur nach Freigabe.**
+
+
+## Erweiterung vor Freigabe: lesbare Schiffsnamen und Umbenennen
+
+**Nutzeranforderung:** technische IDs wie `sh001` nicht als Schiffsnamen anzeigen. Die erste aktive Einheit einer Klasse soll „Miner“, „Frachter“ usw. heißen; weitere aktive Einheiten werden nach Klasse nummeriert: „Miner 2“, „Frachter 2“. Ein Schiff soll einen eigenen Rufnamen erhalten können.
+
+### Umsetzung
+
+- Neues UI-Modul `m_ui_schiffsnamen`: bildet die Standardnamen ausschließlich aus den **derzeit vorhandenen eigenen Schiffen**, nach interner ID deterministisch sortiert. Die internen Schlüssel (`sh001` usw.) bleiben in `state.ships`, Befehlen und DOM-`data-schiff` unverändert.
+- Die Anzeigen von **Hauptquartier, Flotte, Markt (Trägerschiff der Kauf-/Verkaufs-/Aktivierungsbuttons), Schiffstitel und Eskortbefehlen** zeigen die lesbaren Namen. Bei selbst vergebenen Namen enthält die Flottenliste zusätzlich die Schiffsklasse in Klammern.
+- Auf dem Schiffsblatt gibt es unabhängig von seinem Standort die Touch-Schaltfläche **„Umbenennen“**. Ein Eingabedialog mit iPad-Tastatur, 24-Zeichen-Begrenzung und „Speichern“ übermittelt den neuen Namen als `shipRename`-Befehl. Leere Eingabe setzt auf den automatisch vergebenen Standardnamen zurück.
+- Die zentrale Befehlsprüfung akzeptiert **nur eigene Schiffe**, String-Namen mit maximal 24 UTF-16-Codeeinheiten und ohne Steuerzeichen. Ein Umbenennen ist auch unterwegs möglich und wird bei laufender Simulation wie andere Befehle im nächsten Tick ausgeführt.
+- `state.ships[id].rufname` ist **optional** und wird nur nach eigener Benennung gesetzt. Bereits vorhandene Speicherstände enthalten diesen Schlüssel nicht und funktionieren ohne Migration weiterhin. Keine Regel-, Schema- oder RNG-Änderung; die Wirtschaft und die deterministische Simulation sind für nicht umbenannte Schiffe unverändert.
+- Alle sichtbaren Rufnamen werden für HTML per `esc` maskiert; HTML-Tags im Namen können nicht als Markup interpretiert werden.
+
+### Zusätzliche Risiken und Grenzen
+
+- Die automatische Nummer folgt dem Bestand aktuell vorhandener eigener Schiffe einer Klasse. Nach Zerstörung eines früheren Schiffs kann ein noch vorhandenes Schiff automatisch neu nummeriert werden. **Eigene Rufnamen bleiben dagegen stabil**, weil sie am Schiff gespeichert sind. Dauerhaft unveränderliche Standard-Seriennummern wären eine gesonderte, größere Schemaentscheidung.
+- Benutzer können denselben Rufnamen mehrfach vergeben. Die **interne ID bleibt immer eindeutig**, sodass Befehle weiterhin auf das richtige Schiff zeigen.
+- Technische Fehlermeldungen/alte Ereignisprotokolle können weiterhin die interne ID enthalten; dies ist für Nachvollziehbarkeit bewusst unverändert geblieben.
+
+### Regressionstests
+
+Der bestehende GitHub-Actions-Job wurde um Tests ergänzt für:
+- Initialnamen, zusätzliche Miner/Frachter („Miner 2“, „Frachter 2“), Klassenname bei Custom-Namen, Marktbeschriftung und interne Datenattribute.
+- Namensänderung und Zurücksetzen, dauerhaftes Save/Load ohne Schemaänderung, fehlerhafte Eingaben und Umbenennen während einer echten Schiffreise.
+- HTML-Escaping eines selbst gewählten Namens.
+- Kompletten simulierten UI-Weg: Flotte → Miner → „Umbenennen“ → Eingabe „Aurora“ → Speichern → Flottenliste / Schiffsblatt aktualisieren → Standardname zurücksetzen.
+- Bisherige deterministische Simulation und Migrationstests.
+
+**Ein tatsächlicher Safari-/iPad-Touchtest des neuen Dialogs steht noch aus.** Die JS-/DOM-Simulation deckt keine reale iPad-Bildschirmtastatur ab.

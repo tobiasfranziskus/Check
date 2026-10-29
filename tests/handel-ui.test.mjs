@@ -347,8 +347,8 @@ test('Startschiffe heißen Miner und Frachter, interne IDs bleiben Datenattribut
   assert.equal(names[a.miner.id], 'Miner');
   assert.equal(names[a.freighter.id], 'Frachter');
   const fleet = a.renderFleet();
-  assert.match(fleet, />Miner</);
-  assert.match(fleet, />Frachter</);
+  assert.match(fleet, / Miner<\/span>/);
+  assert.match(fleet, / Frachter<\/span>/);
   assert.doesNotMatch(fleet, />sh001</);
   assert.match(fleet, /data-schiff="sh001"/);
   a.renderShip(a.miner.id);
@@ -399,7 +399,9 @@ test('Ungültige Schiffsnamen werden zurückgewiesen, Umbenennen auf Reise ist e
     assert.equal(result.ok, false);
   }
   assert.equal(a.state.ships[a.miner.id].rufname, undefined);
-  a.miner.phase = 'reise';
+  const move = { type: 'shipMove', owner: 'house', schiff: a.miner.id, ziel: 'st_dravos' };
+  assert.ok(a.E.execute(a.state, move, a.E.rules).ok);
+  assert.equal(a.miner.phase, 'reise');
   assert.ok(a.E.submit(a.state, { ...base, name: 'Reisender' }, a.E.rules).ok);
   assert.ok(a.E.step(a.state, a.E.rules)[0].ok);
   assert.equal(a.state.ships[a.miner.id].rufname, 'Reisender');

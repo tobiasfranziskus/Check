@@ -2786,6 +2786,21 @@ const { gebuehr } = m_core_index;
 const trendMarke = (t) => (t ? marke(t.art, t.symbol, t.text) : '<span class="muted">–</span>');
 const rezeptText = (r) => `${r.ein.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} → ${r.aus.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} · ${esc(ORTE[r.ort])}, ${r.dauer} Min`;
 
+// Auswahl nur aus eigenen, angedockten Schiffen; bei Gleichstand feste ID-Reihenfolge.
+const ladungsmenge = (s) => Object.values(s.ladung).reduce((summe, n) => summe + n, 0);
+const nachId = (a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+const dockSchiffe = (state, system) => Object.values(state.ships)
+  .filter((s) => s.owner === RULES.economy.start.owner && s.phase === 'dock' && s.system === system);
+function handelsschiff(schiffe, ware, menge, kauf) {
+  const kandidaten = schiffe.filter((s) => kauf
+    ? ladungsmenge(s) + menge <= RULES.economy.cargo
+    : (s.ladung[ware] || 0) > 0);
+  kandidaten.sort((a, b) => kauf
+    ? ladungsmenge(a) - ladungsmenge(b) || nachId(a, b)
+    : (b.ladung[ware] || 0) - (a.ladung[ware] || 0) || nachId(a, b));
+  return kandidaten[0] || null;
+}
+
 function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
   let system = RULES.economy.start.system;
   let letzte = ''; let stand = null; let letzteDirty = -1;
@@ -2799,13 +2814,10 @@ function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
   $('markt-preise').addEventListener('click', (ev) => {
     const trade = ev.target.closest('button[data-trade]');
     if (trade) {
-      const schiffe = Object.values(stateFn().ships).filter((x) => x.owner === RULES.economy.start.owner && x.phase === 'dock' && x.system === system);
-      const schiff = schiffe.sort((a, b) => {
-        const fa = Object.values(a.ladung).reduce((n, v) => n + v, 0);
-        const fb = Object.values(b.ladung).reduce((n, v) => n + v, 0);
-        return fa - fb || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
-      })[0];
-      if (schiff) befehlFn({ type: 'shipTrade', owner: RULES.economy.start.owner, schiff: schiff.id, ware: trade.dataset.tradeWare, menge: Number(trade.dataset.menge), kauf: trade.dataset.trade === 'buy' });
+      // Button und Befehl beziehen sich auf dasselbe zuvor ausgewählte Schiff.
+      const schiff = stateFn().ships[trade.dataset.schiff];
+      if (schiff && schiff.owner === RULES.economy.start.owner && schiff.phase === 'dock' && schiff.system === system)
+        befehlFn({ type: 'shipTrade', owner: RULES.economy.start.owner, schiff: schiff.id, ware: trade.dataset.tradeWare, menge: Number(trade.dataset.menge), kauf: trade.dataset.trade === 'buy' });
       return;
     }
     const ware = ev.target.closest('button[data-ware]');
@@ -2818,32 +2830,29 @@ function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
       if (stand === state && letzte === schluessel && letzteDirty === dirty) return;
       stand = state; letzte = schluessel; letzteDirty = dirty;
       for (const b of leiste.children) b.setAttribute('aria-pressed', String(b.dataset.system === system));
-      const schiffe = Object.values(state.ships).filter((s) => s.owner === RULES.economy.start.owner && s.phase === 'dock' && s.system === system);
-      const schiff = schiffe.sort((a, b) => {
-        const fa = Object.values(a.ladung).reduce((n, v) => n + v, 0);
-        const fb = Object.values(b.ladung).reduce((n, v) => n + v, 0);
-        return fa - fb || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
-      })[0];
+      const schiffe = dockSchiffe(state, system);
       const station = RULES.world.systems[system].station;
       const kopf = marktKopf(state, RULES, system, basis);
       $('markt-kopf').innerHTML =
         `<li><span class="liste-links">Waren im Mangel</span><span class="liste-rechts">${kopf.mangel > 0 ? marke('warn', 'dreieck', `${kopf.mangel}`) : marke('gut', 'haken', 'keine')}</span></li>`
         + `<li><span class="liste-links">Größte Preisänderungen</span><span class="liste-rechts">${kopf.abweichungen.length ? kopf.abweichungen.map((a) => `${esc(a.name)} ${marke('muted', a.symbol, a.text)}`).join('<br>') : '<span class="muted">–</span>'}</span></li>`
-        + (schiff ? `<li><span class="liste-links">Handelsschiff</span><span class="liste-rechts">${esc(schiff.id)} · Kasse ${isk(state.owners[RULES.economy.start.owner].cash)}</span></li>` : '');
+        + (schiffe.length ? `<li><span class="liste-links">Schiffe im Dock</span><span class="liste-rechts">${schiffe.length} · Kasse ${isk(state.owners[RULES.economy.start.owner].cash)}</span></li>` : '');
       html($('markt-preise'), marktZeilen(state, RULES, system, basis).map((z) => {
         const kaufMenge = z.stufe === 'schiff' ? 1 : 10;
+        const kaufSchiff = handelsschiff(schiffe, z.ware, kaufMenge, true);
+        const verkaufSchiff = handelsschiff(schiffe, z.ware, 1, false);
         const kaufWert = kaufMenge * z.preis;
         const kaufGesamt = kaufWert + gebuehr(state, RULES, station, kaufWert);
-        const hat = schiff ? (schiff.ladung[z.ware] || 0) : 0;
-        const verkaufMenge = Math.min(10, hat);
+        const verkaufMenge = verkaufSchiff ? Math.min(10, verkaufSchiff.ladung[z.ware]) : 0;
         const verkaufWert = verkaufMenge * z.preis;
         const verkaufNetto = verkaufWert - gebuehr(state, RULES, station, verkaufWert);
-        const verkauf = hat > 0
-          ? `<button type="button" data-trade="sell" data-trade-ware="${z.ware}" data-menge="${verkaufMenge}">Verkaufe ${verkaufMenge} (${isk(verkaufNetto)} netto)</button>`
+        const kauf = kaufSchiff
+          ? `<button type="button" class="primary" data-trade="buy" data-schiff="${esc(kaufSchiff.id)}" data-trade-ware="${z.ware}" data-menge="${kaufMenge}">Kaufe ${kaufMenge}${z.stufe === 'schiff' ? ` ${esc(z.name)}` : ` × ${esc(z.name)}`} (${isk(kaufGesamt)} inkl. Gebühr) · ${esc(kaufSchiff.id)}</button>`
           : '';
-        const trade = schiff
-          ? `<div class="befehle-leiste"><button type="button" class="primary" data-trade="buy" data-trade-ware="${z.ware}" data-menge="${kaufMenge}">Kaufe ${kaufMenge}${z.stufe === 'schiff' ? ` ${esc(z.name)}` : ` × ${esc(z.name)}`} (${isk(kaufGesamt)} inkl. Gebühr)</button>${verkauf}</div>`
+        const verkauf = verkaufSchiff
+          ? `<button type="button" data-trade="sell" data-schiff="${esc(verkaufSchiff.id)}" data-trade-ware="${z.ware}" data-menge="${verkaufMenge}">Verkaufe ${verkaufMenge} (${isk(verkaufNetto)} netto) · ${esc(verkaufSchiff.id)}</button>`
           : '';
+        const trade = kauf || verkauf ? `<div class="befehle-leiste">${kauf}${verkauf}</div>` : '';
         return `<li style="flex-direction:column;align-items:stretch;padding:8px 0"><button type="button" class="zeile" data-ware="${z.ware}">`
           + `<span class="zeile-text"><span class="liste-links">${esc(z.name)}</span>${marke(z.knappheit.art, z.knappheit.symbol, z.knappheit.text)}</span>`
           + `<span class="zeile-zahl"><span>${isk(z.preis)}</span>${trendMarke(z.trend)}</span></button>${trade}</li>`;

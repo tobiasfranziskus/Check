@@ -3073,7 +3073,8 @@ const { KARTE } = m_data_karte;
 const { ROLLEN_NAMEN, WAREN, KLASSEN } = m_data_namen;
 const { eigeneSchiffe, weltFlotten } = m_ui_flotte_detail;
 const { isk } = m_ui_zusammenfassung;
-const { preis, stationspreis, gebuehr } = m_core_index;
+const { stationspreis } = m_core_index;
+const { kauf: kaufAngebot, verkauf: verkaufAngebot } = m_ui_handelsangebot;
 const { $, html, esc, rollenSymbol } = m_ui_zeichnen;
 const { bestaetigen } = m_ui_blatt;
 const { stationBlattOeffnen } = m_ui_station;
@@ -3187,16 +3188,12 @@ function schiffZeichnen(state, id, onBefehl) {
     .map((x) => knopf(`→ ${esc(KARTE.systeme[x].name)}`, `data-befehl="move" data-ziel="${RULES.world.systems[x].station}"`));
   const handeln = Object.keys(RULES.world.stations[station].ziel).sort().filter((w) => preis(state, station, w, RULES) > 0)
     .flatMap((w) => {
-      const menge = RULES.economy.waren[w].stufe === 'schiff' ? 1 : 10;
-      const einzelpreis = preis(state, station, w, RULES);
-      const kaufWert = menge * einzelpreis;
-      const kaufGesamt = kaufWert + gebuehr(state, RULES, station, kaufWert);
-      const verkaufMenge = roh.ladung[w] || 0;
-      const verkaufWert = verkaufMenge * einzelpreis;
-      const verkaufNetto = verkaufWert - gebuehr(state, RULES, station, verkaufWert);
+      const kaufen = kaufAngebot(state, RULES, station, roh, w, RULES.economy.waren[w].stufe === 'schiff' ? 1 : 10);
+      // In Schiffsdetails bleibt der Verkauf der gesamten Ladung möglich.
+      const verkaufen = verkaufAngebot(state, RULES, station, roh, w, roh.ladung[w] || 0);
       return [
-        knopf(`Kaufe ${menge} ${esc(WAREN[w])} (${isk(kaufGesamt)} inkl. Gebühr)`, `data-befehl="buy" data-ware="${w}" data-menge="${menge}"`),
-        ...(verkaufMenge > 0 ? [knopf(`Verkaufe ${verkaufMenge} ${esc(WAREN[w])} (${isk(verkaufNetto)} netto)`, `data-befehl="sell" data-ware="${w}" data-menge="${verkaufMenge}"`)] : []),
+        ...(kaufen ? [knopf(`Kaufe ${kaufen.menge} ${esc(WAREN[w])} (${isk(kaufen.betrag)} inkl. Gebühr)`, `data-befehl="buy" data-ware="${w}" data-menge="${kaufen.menge}"`)] : []),
+        ...(verkaufen ? [knopf(`Verkaufe ${verkaufen.menge} ${esc(WAREN[w])} (${isk(verkaufen.betrag)} netto)`, `data-befehl="sell" data-ware="${w}" data-menge="${verkaufen.menge}"`)] : []),
       ];
     });
   // Während die Simulation läuft, darf ein Re-Render geöffnete Gruppen nicht schließen.
@@ -3210,6 +3207,7 @@ function schiffZeichnen(state, id, onBefehl) {
   $('schiff-befehle').innerHTML = `<div class="befehle-leiste">${direkt.join('')}</div>`
     + gruppe('reise', 'Reiseziele', reisen)
     + gruppe('handel', 'Handeln', handeln)
+    + (!handeln.length ? '<p class="muted">Derzeit kein Handel möglich (Kasse, Vorräte oder Frachtraum).</p>' : '')
     + gruppe('eskorte', 'Eskortieren', eskortieren);
   $('schiff-befehle').onclick = (ev) => {
     const b = ev.target.closest('button[data-befehl]');

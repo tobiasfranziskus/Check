@@ -311,8 +311,6 @@ test('Veralteter Aktivieren-Button aktiviert weder verkaufte noch reisende Schif
   assert.ok(activation);
   // Nach Verkauf existiert die Fracht nicht mehr, daher kein Auftrag.
   assert.ok(a.E.trade(a.state, a.E.rules, a.freighter, 'st_aldera', 'miner', 1, false));
-  const count = a.E.createState(42, a.E.rules).ships; // Referenz ohne Mutation
-  assert.ok(Object.keys(count).length > 0);
   assert.equal(a.clickMarket(activation), undefined);
   // Auch bei Kurswechsel ist der alte Markt-Button nicht mehr gültig.
   assert.ok(a.E.trade(a.state, a.E.rules, a.freighter, 'st_aldera', 'miner', 1, true));

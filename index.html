@@ -3164,7 +3164,7 @@ function flotteErzeugen(beiSchiff) {
         + zeile('Kosten je Stunde bei voller Arbeit', isk(f.reduce((n, s) => n + s.kostenStunde, 0)))
         + zeile('Im Auftrag „Wartet"', String(halten)));
       html($('flotte-schiffe'), f.length
-        ? f.map((s) => `<li class="zeile-knopf"><button type="button" class="zeile" data-schiff="${esc(s.id)}"><span class="liste-links">${rollenSymbol('eigen')} ${esc(s.klasseName)} <span class="muted">${esc(s.id)}</span></span>`
+        ? f.map((s) => `<li class="zeile-knopf"><button type="button" class="zeile" data-schiff="${esc(s.id)}"><span class="liste-links">${rollenSymbol('eigen')} ${esc(s.name)}${s.rufname ? ` <span class="muted">(${esc(s.klasseName)})</span>` : ''}</span>`
           + `<span class="liste-rechts">${esc(ortText(s.ort))} · ${esc(s.taetigkeit)}</span></button></li>`).join('')
         : '<li><span class="liste-links muted">Keine Schiffe.</span></li>');
       const w = weltFlotten(state);
@@ -3198,7 +3198,7 @@ function schiffZeichnen(state, id, onBefehl) {
     ? `${KLASSEN[state.ships[roh.eskorte].klasse] || state.ships[roh.eskorte].klasse} ${roh.eskorte}`
     : null;
 
-  html($('schiff-liste'), zeile('Ort', esc(ortText(s.ort))) + zeile('Tätigkeit', esc(s.taetigkeit)) + zeile('Heimat', esc(s.heimatName))
+  html($('schiff-liste'), zeile('Name', esc(s.name)) + zeile('Klasse', esc(s.klasseName)) + zeile('Ort', esc(ortText(s.ort))) + zeile('Tätigkeit', esc(s.taetigkeit)) + zeile('Heimat', esc(s.heimatName))
     + (istJaeger
         ? zeile('Kampfwerte',
             `${RULES.combat.einheiten.jaeger.hp} HP · ${RULES.combat.einheiten.jaeger.angriff} Angriff · `
@@ -3223,7 +3223,7 @@ function schiffZeichnen(state, id, onBefehl) {
       $('schiff-befehle').innerHTML = '<p class="muted">Befehle nur im Dock verfügbar.</p>';
       $('schiff-befehle').onclick = null;
     }
-    const result = { titel: `${s.klasseName} ${s.id}`, system: $('b-schiff-karte').dataset.system };
+    const result = { titel: s.name, system: $('b-schiff-karte').dataset.system };
     schiffCache = { state, tick: state.tick, id, dirty, result };
     return result;
   }
@@ -3249,7 +3249,7 @@ function schiffZeichnen(state, id, onBefehl) {
   ];
   const eskortieren = istJaeger ? eigeneSchiffe(state, RULES, KARTE)
     .filter((x) => x.id !== s.id && (x.klasse === 'frachter' || x.klasse === 'miner'))
-    .map((x) => knopf(`Eskorte ${esc(x.klasseName)} ${esc(x.id)}`, `data-befehl="escort" data-eskorte="${x.id}"`)) : [];
+    .map((x) => knopf(`Eskorte ${esc(x.name)}`, `data-befehl="escort" data-eskorte="${x.id}"`)) : [];
   const reisen = Object.keys(RULES.world.systems).sort().filter((x) => x !== sys)
     .map((x) => knopf(`→ ${esc(KARTE.systeme[x].name)}`, `data-befehl="move" data-ziel="${RULES.world.systems[x].station}"`));
   const handeln = Object.keys(RULES.world.stations[station].ziel).sort().filter((w) => preis(state, station, w, RULES) > 0)
@@ -3307,7 +3307,7 @@ function schiffZeichnen(state, id, onBefehl) {
     else if (art === 'sell') Object.assign(cmd, { type: 'shipTrade', ware: b.dataset.ware, menge: Number(b.dataset.menge), kauf: false });
     onBefehl(cmd);
   };
-  const result = { titel: `${s.klasseName} ${s.id}`, system: $('b-schiff-karte').dataset.system };
+  const result = { titel: s.name, system: $('b-schiff-karte').dataset.system };
   schiffCache = { state, tick: state.tick, id, dirty, result };
   return result;
 }

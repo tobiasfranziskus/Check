@@ -63,5 +63,5 @@ test('Zukünftige Spielstandschemas werden zurückgewiesen statt überschrieben'
 
 test('Beschädigte Spielstände werden nicht als gültige Zustände übernommen', () => {
   const e = engine();
-  assert.throws(() => e.load('{"schema":8,"owners":', undefined, e.rules), SyntaxError);
+  assert.throws(() => e.load('{"schema":8,"owners":', undefined, e.rules), /Unexpected end of JSON input/);
 });

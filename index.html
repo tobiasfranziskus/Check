@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f5f5f7">
-<meta name="aphros-version" content="v0.11.0">
+<meta name="aphros-version" content="v0.11.1">
 <title>Aphros Void</title>
 <style>
 :root {
@@ -517,7 +517,7 @@ const ECONOMY = {
   },
   s: 800, preisgrenzen: [550, 2500],
   region: m_data_systeme.region,
-  kopfgeld: { klein: 120, mittel: 180, gross: 240 }, kopfgeldFaktor: 2,
+  kopfgeld: { klein: 120, mittel: 180, gross: 240 }, kopfgeldFaktor: 3,
   miningRate: 1, cargo: 100, stunde: 60,
   start: { owner: 'house', flotte: ['miner', 'frachter'], system: 'aldera', auftrag: 'halten' },
 };
@@ -1405,6 +1405,14 @@ const imSystem = (state, owner, system, auftrag) => ids(state.ships).map((id) =>
 const seite = (rules, schiffe, fokus, rueckzug) => ({ schiffe: schiffe.map((s) => ({ einheit: s.klasse, hp: rules.combat.einheiten[s.klasse].hp })), fokus, rueckzug });
 
 function entfernen(state, rules, s) {
+  // Verbliebene Fracht beim Schiffverlust vollständig aus der Warenbilanz buchen.
+  // zerstoeren() entfernt zuvor bereits verkaufte oder verbuchte Ladung.
+  for (const ware of ids(s.ladung)) {
+    const n = s.ladung[ware];
+    state.ledger[ware].consumed += n;
+    state.stats.vernichtet += n;
+    delete s.ladung[ware];
+  }
   delete state.ships[s.id];
   delete state.stats.verkaeufe[s.id];
   zaehle(state.stats.verluste, s.owner, s.klasse);

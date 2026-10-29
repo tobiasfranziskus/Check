@@ -131,6 +131,34 @@ button.zeile .liste-links { color: var(--text); }
 .befehle-leiste { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .befehle-leiste button { min-height: 40px; padding: 0 12px; font-size: 15px; }
 .pause-hinweis { margin: 0 0 8px; font-size: 13px; color: var(--muted); text-align: center; }
+/* Lange Befehlslisten erst auf Wunsch anzeigen; Touch-Flächen bleiben groß. */
+.befehle-gruppe { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; }
+.befehle-gruppe summary { min-height: 48px; padding: 12px 14px; cursor: pointer; color: var(--accent); font-weight: 600; }
+.befehle-gruppe[open] summary { border-bottom: 1px solid var(--line); }
+.befehle-gruppe > .befehle-leiste { padding: 12px; margin-top: 0; }
+/* iPad-Querformat: freie Breite für parallele Informationen statt lange Seiten nutzen. */
+@media (min-width: 900px) and (orientation: landscape) {
+  .ansicht:not(.ansicht-karte) { max-width: 1100px; padding: 16px 28px calc(var(--unten) + 20px); }
+  .card { margin-top: 12px; }
+  #ansicht-hq, #ansicht-flotte, #ansicht-reich {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; align-content: start;
+  }
+  #ansicht-hq > .kopf, #ansicht-flotte > .kopf, #ansicht-reich > .kopf { grid-column: 1 / -1; }
+  #ansicht-flotte > .hinweis-text, #ansicht-reich > .leer { grid-column: 1 / -1; }
+  #markt-preise { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; }
+  #markt-preise > li { min-width: 0; }
+  .blatt-tafel { max-width: 1100px; }
+  .blatt-tafel[data-groesse="halb"] { height: 82vh; height: 82dvh; }
+  .blatt-tafel[data-groesse="voll"] { height: 94vh; height: 94dvh; }
+  .blatt-seite { max-width: none; }
+  #blatt-schiff, #blatt-station, #blatt-ware {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    align-items: start; gap: 0 18px;
+  }
+  #blatt-schiff > .card, #blatt-station > .card, #blatt-ware > .card { min-width: 0; margin-top: 12px; }
+  #blatt-schiff > .actions { grid-column: 2; margin-top: 12px; }
+  #blatt-station > .card:first-child, #blatt-ware > .card:first-child { grid-column: 1 / -1; }
+}
 </style>
 </head>
 <body>
@@ -3106,26 +3134,13 @@ function schiffZeichnen(state, id, onBefehl) {
   const felderHier = s.klasse === 'miner'
     ? [...new Set(RULES.world.fields.filter((f) => f.system === sys).map((f) => f.ware))]
     : [];
-  const bef = [
+  // Direktaktionen bleiben erreichbar; längere Listen sind aufklappbar.
+  const direkt = [
     knopf('Warten', 'data-befehl="wait"'),
     ...(eigeneStation ? [knopf('Station verwalten', 'data-befehl="stationinfo"')] : []),
     ...(s.klasse === 'frachter' ? [knopf('Auto-Handel starten', 'data-befehl="handeln"')] : []),
     ...(istJaeger ? [knopf('Jagd auf Piraten (dieses System)', 'data-befehl="hunt"')] : []),
-    ...(istJaeger ? eigeneSchiffe(state, RULES, KARTE)
-        .filter((x) => x.id !== s.id && (x.klasse === 'frachter' || x.klasse === 'miner'))
-        .map((x) => knopf(`Eskorte ${esc(x.klasseName)} ${esc(x.id)}`, `data-befehl="escort" data-eskorte="${x.id}"`)) : []),
     ...felderHier.map((w) => knopf(`Fördere ${esc(WAREN[w])}`, `data-befehl="mine" data-ware="${w}"`)),
-    ...Object.keys(RULES.world.systems).sort().filter((x) => x !== sys)
-      .map((x) => knopf(`→ ${esc(KARTE.systeme[x].name)}`, `data-befehl="move" data-ziel="${RULES.world.systems[x].station}"`)),
-    ...Object.keys(RULES.world.stations[station].ziel).sort().filter((w) => preis(state, station, w, RULES) > 0)
-      .flatMap((w) => {
-        const menge = RULES.economy.waren[w].stufe === 'schiff' ? 1 : 10;
-        const gesamt = menge * preis(state, station, w, RULES);
-        return [
-          knopf(`Kaufe ${menge} ${esc(WAREN[w])} (${isk(gesamt)})`, `data-befehl="buy" data-ware="${w}" data-menge="${menge}"`),
-          ...((roh.ladung[w] || 0) > 0 ? [knopf(`Verkaufe ${roh.ladung[w]} ${esc(WAREN[w])} (${isk(roh.ladung[w] * preis(state, station, w, RULES))})`, `data-befehl="sell" data-ware="${w}" data-menge="${roh.ladung[w]}"`)] : []),
-        ];
-      }),
     ...Object.keys(roh.ladung).sort().filter((w) => RULES.economy.waren[w] && RULES.economy.waren[w].stufe === 'schiff')
       .map((w) => knopf(`${esc(WAREN[w])} in Dienst stellen`, `data-befehl="activate" data-ware="${w}"`)),
     ...(s.klasse === 'bauschiff' ? Object.keys(roh.ladung).sort().filter((w) => RULES.economy.waren[w] && RULES.economy.waren[w].stufe === 'modul')
@@ -3133,7 +3148,32 @@ function schiffZeichnen(state, id, onBefehl) {
     ...(!eigeneStation
       ? [knopf(`Station kaufen (${isk(stationspreis(state, RULES, station))})`, 'data-befehl="buystation"')] : []),
   ];
-  $('schiff-befehle').innerHTML = `<div class="befehle-leiste">${bef.join('')}</div>`;
+  const eskortieren = istJaeger ? eigeneSchiffe(state, RULES, KARTE)
+    .filter((x) => x.id !== s.id && (x.klasse === 'frachter' || x.klasse === 'miner'))
+    .map((x) => knopf(`Eskorte ${esc(x.klasseName)} ${esc(x.id)}`, `data-befehl="escort" data-eskorte="${x.id}"`)) : [];
+  const reisen = Object.keys(RULES.world.systems).sort().filter((x) => x !== sys)
+    .map((x) => knopf(`→ ${esc(KARTE.systeme[x].name)}`, `data-befehl="move" data-ziel="${RULES.world.systems[x].station}"`));
+  const handeln = Object.keys(RULES.world.stations[station].ziel).sort().filter((w) => preis(state, station, w, RULES) > 0)
+    .flatMap((w) => {
+      const menge = RULES.economy.waren[w].stufe === 'schiff' ? 1 : 10;
+      const gesamt = menge * preis(state, station, w, RULES);
+      return [
+        knopf(`Kaufe ${menge} ${esc(WAREN[w])} (${isk(gesamt)})`, `data-befehl="buy" data-ware="${w}" data-menge="${menge}"`),
+        ...((roh.ladung[w] || 0) > 0 ? [knopf(`Verkaufe ${roh.ladung[w]} ${esc(WAREN[w])} (${isk(roh.ladung[w] * preis(state, station, w, RULES))})`, `data-befehl="sell" data-ware="${w}" data-menge="${roh.ladung[w]}"`)] : []),
+      ];
+    });
+  // Während die Simulation läuft, darf ein Re-Render geöffnete Gruppen nicht schließen.
+  const offen = schiffCache?.id === id
+    ? Object.fromEntries([...$('schiff-befehle').querySelectorAll('details[data-gruppe]')]
+        .map((el) => [el.dataset.gruppe, el.open]))
+    : {};
+  const gruppe = (kennung, titel, knoepfe) => knoepfe.length
+    ? `<details class="befehle-gruppe" data-gruppe="${kennung}"${offen[kennung] ? ' open' : ''}><summary>${titel} (${knoepfe.length})</summary><div class="befehle-leiste">${knoepfe.join('')}</div></details>`
+    : '';
+  $('schiff-befehle').innerHTML = `<div class="befehle-leiste">${direkt.join('')}</div>`
+    + gruppe('reise', 'Reiseziele', reisen)
+    + gruppe('handel', 'Handeln', handeln)
+    + gruppe('eskorte', 'Eskortieren', eskortieren);
   $('schiff-befehle').onclick = (ev) => {
     const b = ev.target.closest('button[data-befehl]');
     if (!b) return;

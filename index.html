@@ -1405,6 +1405,14 @@ const imSystem = (state, owner, system, auftrag) => ids(state.ships).map((id) =>
 const seite = (rules, schiffe, fokus, rueckzug) => ({ schiffe: schiffe.map((s) => ({ einheit: s.klasse, hp: rules.combat.einheiten[s.klasse].hp })), fokus, rueckzug });
 
 function entfernen(state, rules, s) {
+  // Verbleibende Schiffsladung beim Verlust als vernichtet verbuchen.
+  // Zuvor in zerstoeren() behandelte Fracht ist bereits aus ladung entfernt.
+  for (const ware of ids(s.ladung)) {
+    const n = s.ladung[ware];
+    state.ledger[ware].consumed += n;
+    state.stats.vernichtet += n;
+    delete s.ladung[ware];
+  }
   delete state.ships[s.id];
   delete state.stats.verkaeufe[s.id];
   zaehle(state.stats.verluste, s.owner, s.klasse);

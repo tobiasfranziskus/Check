@@ -129,7 +129,7 @@ function createBrowser() {
     assert.ok(item.listeners[kind]?.length, 'Event angebunden: ' + (item.id || item.dataset.stufe || item.dataset.ansicht));
     for (const callback of item.listeners[kind]) callback(event);
   };
-  return { sandbox, nodes, all, fire };
+  return { sandbox, nodes, all, fire, storage };
 }
 
 test('Gesamter Start: Pause, Flotte, Schiffsauswahl, Simulation', async () => {
@@ -184,6 +184,8 @@ test('iPad-Bedienpfad: Miner per Dialog umbenennen und wieder zurücksetzen', as
   assert.equal(get('dialog').hidden, true);
   assert.equal(get('blatt-titel').textContent, 'Aurora');
   assert.match(get('flotte-schiffe').innerHTML, /Aurora/);
+  for (let i = 0; i < 24; i++) await Promise.resolve();
+  assert.match(browser.storage.get('slot1') || '', /Aurora/, 'Rufname direkt in IndexedDB gespeichert');
 
   browser.fire('b-schiff-umbenennen', 'click');
   assert.equal(input.value, 'Aurora');
@@ -193,4 +195,6 @@ test('iPad-Bedienpfad: Miner per Dialog umbenennen und wieder zurücksetzen', as
   browser.fire(save, 'click');
   assert.equal(get('blatt-titel').textContent, 'Miner');
   assert.match(get('flotte-schiffe').innerHTML, / Miner<\/span>/);
+  for (let i = 0; i < 24; i++) await Promise.resolve();
+  assert.doesNotMatch(browser.storage.get('slot1') || '', /Aurora/, 'Zurücksetzung direkt gespeichert');
 });

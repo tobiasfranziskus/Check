@@ -234,11 +234,9 @@ test('Spielstand bleibt mit unverändertem Format ladbar', () => {
 });
 
 test('Deterministische Drei-Tages-Simulation mit festen Referenz-Hashes', () => {
-  const expected = [
-    [42, '83c525ce00a82e1f'],
-    [1234, 'ddbff4ee4451d56d'],
-    [98765, 'beb70fdb280d85ba'],
-  ];
+  // Regel-8-Hashes unabhängig aus dem geprüften Prototyp ermittelt.
+  const expected = JSON.parse(fs.readFileSync(new URL('./fixtures/economy-v8.json', import.meta.url)))
+    .filter(r => [42, 1234, 98765].includes(r.seed)).map(r => [r.seed, r.points[0].hash]);
   const a = environment();
   for (const [seed, hash] of expected) {
     const state = a.E.createState(seed, a.E.rules);

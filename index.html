@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f5f5f7">
-<meta name="aphros-version" content="v0.11.1">
+<meta name="aphros-version" content="v0.11.2">
 <title>Aphros Void</title>
 <style>
 :root {
@@ -171,7 +171,7 @@ button.zeile .liste-links { color: var(--text); }
 
 <main id="ansicht-hq" class="ansicht" aria-label="HQ">
   <header class="kopf">
-    <p class="muted kopf-klein">HQ · v0.11.0</p>
+    <p class="muted kopf-klein">HQ · v0.11.2</p>
     <p class="kasse"><span id="hq-kasse" class="kasse-zahl">–</span></p>
     <p id="hq-trend" class="trend muted"><span class="trend-symbol" id="hq-trend-symbol"></span><span id="hq-trend-text">–</span> <span class="trend-bezug">zur letzten vollen Spielstunde</span></p>
   </header>
@@ -264,7 +264,7 @@ button.zeile .liste-links { color: var(--text); }
     <div class="blatt-inhalt">
 
       <div class="blatt-seite" id="blatt-pruefung" data-titel="Prüfung" hidden>
-        <p class="muted">Version v0.11.0</p>
+        <p class="muted">Version v0.11.2</p>
         <section class="card" aria-label="Zustand">
           <dl>
             <div><dt>Spielzeit</dt><dd id="zeit">–</dd></div>
@@ -572,12 +572,12 @@ const WORLD = {
   fields: m_data_systeme.fields,
   minerOwner: 'npc3',
   traders: m_data_systeme.traders,
-  treibstoffJeSprung: 1, aussenhandelTeiler: 10,
+  treibstoffJeSprung: 1, treibstoffReserve: 2, aussenhandelTeiler: 10,
   betriebskosten: { miner: 150, frachter: 250, jaeger: 50 },
   senkeBesitzer: ['security'], mindeststand: 2500, fondsObergrenze: 1500, npcObergrenze: 6000, npcAusgabenArten: ['trader', 'miner'],
   sicherheit: { owner: 'security', jaeger: m_data_systeme.sicherheitJaeger, fokus: 'schwach', rueckzug: 30 },
   piraten: { owner: 'pirates', markt: 'st_meridian', soll: m_data_systeme.piratenSoll },
-  patrouilleChance: 600, ueberfallChance: 100, ersatzRuecklage: 250, warteLeer: 30, warteTreibstoff: 10, schutzgeldJeStunde: 80,
+  patrouilleChance: 600, ueberfallChance: 100, ersatzRuecklage: 250, warteLeer: 30, warteTreibstoff: 10, schutzgeldJeStunde: 0,
   owners: m_data_systeme.owners,
 };
 return { WORLD };
@@ -603,7 +603,7 @@ return { COMBAT };
 
 const m_data_rules = (() => {
 const RULES = {
-  schema: 8, rulesVersion: 7, maxAdvanceSteps: 10000, startSeed: 1,
+  schema: 8, rulesVersion: 8, maxAdvanceSteps: 10000, startSeed: 1,
   owners: m_data_world.WORLD.owners, economy: m_data_economy.ECONOMY,
   world: m_data_world.WORLD, combat: m_data_combat.COMBAT,
 };
@@ -1034,7 +1034,8 @@ function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt =
   return true;
 }
 
-function tanken(state, rules, schiff, station, n) {
+function tanken(state, rules, schiff, station, n, automatisch = false) {
+  if (automatisch  &&  m_core_treibstoff.npcAutomatik(state, schiff)) return m_core_treibstoff.automatischTanken(state, rules, schiff, station, n);
   if (n <= 0) return true;
   if (anzahl(state.stations[station].lager, 'treibstoff') < n) return false;
   if (!handel(state, rules, schiff, station, 'treibstoff', n, true, true)) return false;
@@ -1043,7 +1044,11 @@ function tanken(state, rules, schiff, station, n) {
   state.ledger.treibstoff.consumed += n; state.stats.tanken += 1; return true;
 }
 
-function treibstoffkosten(state, rules, station, n) {
+function treibstoffkosten(state, rules, station, n, schiff = null, plan = null) {
+  if (schiff  &&  m_core_treibstoff.npcAutomatik(state, schiff)) {
+    const p = plan || m_core_treibstoff.treibstoffPlan(state, rules, schiff, station, n);
+    return p.ok ? p.burnCost : null;
+  }
   if (n <= 0) return 0;
   const p = preis(state, station, 'treibstoff', rules);
   if (p <= 0) return null;
@@ -1052,13 +1057,89 @@ function treibstoffkosten(state, rules, station, n) {
 return { stationIn, fondsIn, reserve, verkaufbar, obergrenze, aufnehmbar, buche, gebuehr, bezahlbar, handel, tanken, treibstoffkosten, stationspreis };
 })();
 
+const m_core_treibstoff = (() => {
+// Nur automatische NPC-Frachter. Manuelle tanken-Aufrufe bleiben unverändert.
+function npcAutomatik(state, s) {
+  return s.klasse === 'frachter' && s.auftrag === 'handeln' && state.owners[s.owner].kind === 'trader';
+}
+const bordtreibstoff = (s) => s.ladung.treibstoff || 0;
+const frachtmenge = (s) => Object.values(s.ladung).reduce((a, b) => a + b, 0);
+function handelsladung(s, ware, rules) {
+  const reserve = ware === 'treibstoff' ? Math.min(rules.world.treibstoffReserve, bordtreibstoff(s)) : 0;
+  return Math.max(0, (s.ladung[ware] || 0) - reserve);
+}
+function treibstoffPlan(state, rules, s, station, n) {
+  const h = m_core_handel;
+  const p = m_core_preis.preis(state, station, 'treibstoff', rules);
+  const anBord = bordtreibstoff(s);
+  const fehlend = Math.max(0, n - anBord);
+  const bestand = state.stations[station].lager.treibstoff || 0;
+  const sofort = fehlend * p + h.gebuehr(state, rules, station, fehlend * p);
+  if (fehlend > bestand || sofort > state.owners[s.owner].cash) return { ok: false };
+  // Preis nach dem unmittelbaren Kauf: lokale Ansicht, keine Zustandsmutation
+  // und keine zweite Preisformel. Der Reservekauf wird separat abgerechnet.
+  const ansicht = { ...state, stations: { ...state.stations,
+    [station]: { ...state.stations[station], lager: { ...state.stations[station].lager, treibstoff: bestand - fehlend } },
+  } };
+  const p2 = m_core_preis.preis(ansicht, station, 'treibstoff', rules);
+  const rest = Math.max(0, anBord - n);
+  const platz = Math.max(0, rules.economy.cargo - (frachtmenge(s) - Math.min(anBord, n)));
+  const extra = Math.max(0, Math.min(rules.world.treibstoffReserve - rest, platz,
+    h.verkaufbar(ansicht, rules, station, 'treibstoff'),
+    h.bezahlbar(rules, station, state.owners[s.owner].cash - sofort, p2)));
+  const cash = sofort + extra * p2 + h.gebuehr(state, rules, station, extra * p2);
+  ansicht.stations[station].lager.treibstoff -= extra;
+  return { ok: true, cash, extra, post: rest + extra, buy: fehlend + extra, space: platz - extra,
+    priceAfter: m_core_preis.preis(ansicht, station, 'treibstoff', rules),
+    // Verbrauch hat auch dann einen Wert, wenn er schon früher bezahlt wurde.
+    burnCost: h.treibstoffkosten(state, rules, station, n) };
+}
+function reserveErgaenzen(state, rules, s, station) {
+  const h = m_core_handel;
+  const p = m_core_preis.preis(state, station, 'treibstoff', rules);
+  const n = Math.max(0, Math.min(rules.world.treibstoffReserve - bordtreibstoff(s),
+    rules.economy.cargo - frachtmenge(s), h.verkaufbar(state, rules, station, 'treibstoff'),
+    h.bezahlbar(rules, station, state.owners[s.owner].cash, p)));
+  if (n > 0 && h.handel(state, rules, s, station, 'treibstoff', n, true)) {
+    state.stats.handel += 1;
+    return n;
+  }
+  return 0;
+}
+function automatischTanken(state, rules, s, station, n) {
+  const plan = treibstoffPlan(state, rules, s, station, n);
+  if (!plan.ok) return false;
+  const fehlend = Math.max(0, n - bordtreibstoff(s));
+  if (fehlend > 0 && !m_core_handel.handel(state, rules, s, station, 'treibstoff', fehlend, true, true)) return false;
+  s.ladung.treibstoff = bordtreibstoff(s) - n;
+  if (s.ladung.treibstoff === 0) delete s.ladung.treibstoff;
+  state.ledger.treibstoff.consumed += n;
+  if (n > 0) state.stats.tanken += 1;
+  reserveErgaenzen(state, rules, s, station);
+  return true;
+}
+function weiterfahrtMoeglich(state, rules, ziel, bringtTreibstoff, s, rest) {
+  if (bringtTreibstoff || (state.stations[ziel].lager.treibstoff || 0) >= rules.world.treibstoffJeSprung) return true;
+  const system = rules.world.stations[ziel].system;
+  let bedarf = Infinity;
+  for (const [station, cfg] of Object.entries(rules.world.stations)) {
+    if (station === ziel || (state.stations[station].lager.treibstoff || 0) < 1) continue;
+    const r = m_core_route.route(rules.world, system, cfg.system);
+    if (r) bedarf = Math.min(bedarf, r.spruenge * rules.world.treibstoffJeSprung);
+  }
+  return rest >= bedarf;
+}
+return { npcAutomatik, bordtreibstoff, frachtmenge, handelsladung, treibstoffPlan, reserveErgaenzen, automatischTanken, weiterfahrtMoeglich };
+})();
+
 const m_core_ankunft = (() => {
+const { npcAutomatik, handelsladung } = m_core_treibstoff;
 const { ids, anzahl } = m_core_zahl;
 const { handel, aufnehmbar, stationIn } = m_core_handel;
 function entladen(state, rules, s) {
   const station = stationIn(rules, s.system);
   for (const ware of ids(s.ladung)) {
-    const m = Math.min(anzahl(s.ladung, ware), aufnehmbar(state, rules, station, ware));
+    const m = Math.min(npcAutomatik(state, s)?handelsladung(s, ware, rules):anzahl(s.ladung, ware), aufnehmbar(state, rules, station, ware));
     if (m > 0 && handel(state, rules, s, station, ware, m, false)) {
       state.stats.handel += 1; state.stats.verkaeufe[s.id] += 1;
     }
@@ -1155,6 +1236,7 @@ return { route };
 })();
 
 const m_core_entscheidung = (() => {
+const { npcAutomatik, handelsladung, treibstoffPlan, reserveErgaenzen, automatischTanken, weiterfahrtMoeglich } = m_core_treibstoff;
 const { ids, anzahl } = m_core_zahl;
 const { rngInt } = m_core_rng;
 const { preis } = m_core_preis;
@@ -1162,7 +1244,10 @@ const { route } = m_core_route;
 const { handel, verkaufbar, aufnehmbar, gebuehr, bezahlbar, tanken, treibstoffkosten, stationIn } = m_core_handel;
 const { entladen } = m_core_ankunft;
 const besser = (a, za, b, zb) => a * zb > b * za;
-const weiterreise = (state, rules, ziel, bringtTreibstoff) => bringtTreibstoff || anzahl(state.stations[ziel].lager, 'treibstoff') >= rules.world.treibstoffJeSprung;
+function weiterreise(state, rules, ziel, bringtTreibstoff, s = null, rest = 0) {
+  if (s && npcAutomatik(state, s)) return weiterfahrtMoeglich(state, rules, ziel, bringtTreibstoff, s, rest);
+  return bringtTreibstoff || anzahl(state.stations[ziel].lager, 'treibstoff') >= rules.world.treibstoffJeSprung;
+}
 
 function bestesPaar(state, rules, s, station) {
   const w = rules.world; const hier = w.stations[station];
@@ -1170,20 +1255,23 @@ function bestesPaar(state, rules, s, station) {
   for (const ware of ids(hier.ziel)) {
     const vorrat = verkaufbar(state, rules, station, ware);
     if (vorrat <= 0) continue;
-    const pHier = preis(state, station, ware, rules);
+    let pHier = preis(state, station, ware, rules);
     for (const ziel of ids(w.stations)) {
       if (ziel === station || anzahl(w.stations[ziel].ziel, ware) <= 0) continue;
-      if (!weiterreise(state, rules, ziel, ware === 'treibstoff')) continue;
+      if (!npcAutomatik(state, s) && !weiterreise(state, rules, ziel, ware === 'treibstoff')) continue;
       const r = route(w, hier.system, w.stations[ziel].system);
       if (!r || r.zeit <= 0) continue;
+      const q = npcAutomatik(state, s)?treibstoffPlan(state, rules, s, station, r.spruenge*w.treibstoffJeSprung):null;
+      if (npcAutomatik(state, s) && (!q.ok || !weiterreise(state, rules, ziel, ware==='treibstoff', s, q.post))) continue;
+      if (npcAutomatik(state, s)  &&  ware === 'treibstoff') pHier = q.priceAfter;
       const pDort = preis(state, ziel, ware, rules);
       if (pDort <= pHier) continue;
       const sprit = r.spruenge * w.treibstoffJeSprung;
-      if (sprit > anzahl(state.stations[station].lager, 'treibstoff')) continue;
-      const fuel = treibstoffkosten(state, rules, station, sprit);
+      if (!npcAutomatik(state, s) && sprit > anzahl(state.stations[station].lager, 'treibstoff')) continue;
+      const fuel = treibstoffkosten(state, rules, station, sprit, s, q);
       if (fuel === null) continue;
-      const menge = Math.min(rules.economy.cargo, ware === 'treibstoff' ? vorrat - sprit : vorrat,
-        aufnehmbar(state, rules, ziel, ware), bezahlbar(rules, station, kasse - fuel, pHier));
+      const menge = Math.min(npcAutomatik(state, s)?q.space:rules.economy.cargo, ware === 'treibstoff' ? vorrat - (npcAutomatik(state, s)?q.buy:sprit) : vorrat,
+        aufnehmbar(state, rules, ziel, ware), bezahlbar(rules, station, kasse - (npcAutomatik(state, s)?q.cash:fuel), pHier));
       if (menge <= 0) continue;
       const gewinn = menge * (pDort - pHier) - gebuehr(state, rules, station, menge * pHier) - gebuehr(state, rules, ziel, menge * pDort) - fuel;
       if (gewinn <= 0) continue;
@@ -1195,14 +1283,18 @@ function bestesPaar(state, rules, s, station) {
 function besterAbsatz(state, rules, s, station) {
   const w = rules.world; const system = w.stations[station].system; let best = null;
   for (const ziel of ids(w.stations)) {
-    if (ziel === station || !weiterreise(state, rules, ziel, anzahl(s.ladung, 'treibstoff') > 0)) continue;
+    if (ziel === station  ||  (!npcAutomatik(state, s) && !weiterreise(state, rules, ziel, anzahl(s.ladung, 'treibstoff') > 0))) continue;
     const r = route(w, system, w.stations[ziel].system);
-    if (!r || r.zeit <= 0 || r.spruenge * w.treibstoffJeSprung > anzahl(state.stations[station].lager, 'treibstoff')) continue;
-    const fuel = treibstoffkosten(state, rules, station, r.spruenge * w.treibstoffJeSprung);
+    if (!r || r.zeit <= 0) continue;
+    const q = npcAutomatik(state, s)?treibstoffPlan(state, rules, s, station, r.spruenge*w.treibstoffJeSprung):null;
+    if (npcAutomatik(state, s)) {
+      if (!q.ok || !weiterreise(state, rules, ziel, handelsladung(s, 'treibstoff', rules) > 0, s, q.post)) continue;
+    } else if (r.spruenge * w.treibstoffJeSprung > anzahl(state.stations[station].lager, 'treibstoff')) continue;
+    const fuel = treibstoffkosten(state, rules, station, r.spruenge * w.treibstoffJeSprung, s, q);
     if (fuel === null) continue;
     let erloes = -fuel;
     for (const ware of ids(s.ladung)) {
-      const m = Math.min(s.ladung[ware], aufnehmbar(state, rules, ziel, ware));
+      const m = Math.min(npcAutomatik(state, s)?handelsladung(s, ware, rules):s.ladung[ware], aufnehmbar(state, rules, ziel, ware));
       if (m <= 0) continue;
       const wert = m * preis(state, ziel, ware, rules);
       erloes += wert - gebuehr(state, rules, ziel, wert);
@@ -1215,10 +1307,10 @@ function besterAbsatz(state, rules, s, station) {
 function abflug(state, rules, s, station, ziel, ware, menge) {
   const w = rules.world;
   const r = route(w, w.stations[station].system, w.stations[ziel].system);
-  if (!tanken(state, rules, s, station, r.spruenge * w.treibstoffJeSprung)) { s.ankunft = state.tick + w.warteTreibstoff; return false; }
+  if (!tanken(state, rules, s, station, r.spruenge * w.treibstoffJeSprung, true)) { s.ankunft = state.tick + w.warteTreibstoff; return false; }
   if (ware !== null) {
     const p = preis(state, station, ware, rules);
-    const m = Math.min(menge, verkaufbar(state, rules, station, ware), bezahlbar(rules, station, state.owners[s.owner].cash, p));
+    const m = Math.min(menge, npcAutomatik(state, s)?rules.economy.cargo-m_core_treibstoff.frachtmenge(s):rules.economy.cargo, verkaufbar(state, rules, station, ware), bezahlbar(rules, station, state.owners[s.owner].cash, p));
     if (m > 0 && handel(state, rules, s, station, ware, m, true)) state.stats.handel += 1;
   }
   s.phase = 'reise'; s.ziel = ziel; s.ankunft = state.tick + r.zeit; s.warten = 0; return true;
@@ -1229,9 +1321,11 @@ function entscheidung(state, rules) {
     const s = state.ships[id];
     if (s.klasse !== 'frachter' || s.auftrag !== 'handeln' || s.phase !== 'dock' || s.ankunft > state.tick) continue;
     const station = stationIn(rules, s.system);
-    if (ids(s.ladung).length > 0) {
+    if (npcAutomatik(state, s)) reserveErgaenzen(state, rules, s, station);
+    if ((npcAutomatik(state, s)?ids(s.ladung).some(w=>handelsladung(s, w, rules)>0):ids(s.ladung).length>0)) {
       entladen(state, rules, s);
-      if (ids(s.ladung).length > 0) {
+      if (npcAutomatik(state, s)) reserveErgaenzen(state, rules, s, station);
+      if ((npcAutomatik(state, s)?ids(s.ladung).some(w=>handelsladung(s, w, rules)>0):ids(s.ladung).length>0)) {
         const z = besterAbsatz(state, rules, s, station);
         if (z) abflug(state, rules, s, station, z.ziel, null, 0);
         else s.ankunft = state.tick + w.warteLeer;
@@ -1244,7 +1338,12 @@ function entscheidung(state, rules) {
       const treibstoff = anzahl(state.stations[station].lager, 'treibstoff');
       const andere = ids(w.stations).filter((x) => {
         const r = x !== station && route(w, s.system, w.stations[x].system);
-        return r && r.spruenge * w.treibstoffJeSprung <= treibstoff && weiterreise(state, rules, x, false);
+        if (!r) return false;
+        if (npcAutomatik(state, s)) {
+          const q = treibstoffPlan(state, rules, s, station, r.spruenge * w.treibstoffJeSprung);
+          return q.ok && weiterreise(state, rules, x, false, s, q.post);
+        }
+        return r.spruenge * w.treibstoffJeSprung <= treibstoff && weiterreise(state, rules, x, false);
       });
       if (andere.length > 0) abflug(state, rules, s, station, andere[rngInt(state, andere.length)], null, 0);
       else s.ankunft = state.tick + w.warteLeer;
@@ -1605,6 +1704,7 @@ return { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewegen };
 })();
 
 const m_core_schiffbau = (() => {
+const { npcAutomatik, automatischTanken } = m_core_treibstoff;
 const { ids, anzahl } = m_core_zahl;
 const { preis } = m_core_preis;
 const { route } = m_core_route;
@@ -1644,8 +1744,14 @@ function ersatzkauf(state, rules) {
       delete s.ladung[x.klasse]; state.ledger[x.klasse].consumed += 1;
       state.stats.indienst[owner] ||= {};
       state.stats.indienst[owner][x.klasse] = anzahl(state.stats.indienst[owner], x.klasse) + 1;
-      s.ankunft = state.tick + r.zeit;
-      if (r.zeit > 0) { s.phase = 'reise'; s.ziel = stationIn(rules, x.heimat); }
+      if (npcAutomatik(state, s)) {
+        const bezahlt = automatischTanken(state, rules, s, werft, r.spruenge * w.treibstoffJeSprung);
+        s.ankunft = state.tick + (bezahlt ? r.zeit : 0);
+        if (bezahlt && r.zeit > 0) { s.phase = 'reise'; s.ziel = stationIn(rules, x.heimat); }
+      } else {
+        s.ankunft = state.tick + r.zeit;
+        if (r.zeit > 0) { s.phase = 'reise'; s.ziel = stationIn(rules, x.heimat); }
+      }
       break;
     }
   }
@@ -1817,10 +1923,16 @@ function migrationRegel6(s) {
   return neu;
 }
 
+// Reine Regelübernahme: keine Schiffe, Waren oder Konten verändern.
+function migrationRegel7(s) {
+  return { ...s, rulesVersion: 8 };
+}
+
 const RULE_MIGRATIONS = {
   4: migrationRegel4,
   5: migrationRegel5,
   6: migrationRegel6,
+  7: migrationRegel7,
 };
 function migrate(state, from, to, table = MIGRATIONS) {
   let s = state;

@@ -1,14 +1,16 @@
 # Aphros Void – Projektstatus
 
-Stand: 29. Oktober 2026. Geprüfte Basis: Branch `main`, Commit `332eecb88f2b590417a316f59ead731eac9b39a5` ([GitHub](https://github.com/tobiasfranziskus/Check/commit/332eecb88f2b590417a316f59ead731eac9b39a5)). Dieser Bericht beschreibt den Repository-Stand, keine verifizierte NAS- oder GitHub-Pages-Veröffentlichung.
+Stand: 29. Oktober 2026. v0.11.2 auf `feat/v0.11.2-wirtschaft`, Basis main `d53bf14`. Noch nicht gemergt, veröffentlicht oder auf NAS/iPad abgenommen.
+
+Schutzgeld ist 0; automatische NPC-Frachter verwenden zwei regulär bezahlte Reserveeinheiten. Schema 8 bleibt erhalten, Regelmigration 7→8 ändert nur die Regelnummer. [Aktueller Testbericht und Risiken](TEST_WIRTSCHAFT_V0_11_2.md): 40 Node-22-Tests sowie 13 wiederholte 90-Tage-Simulationen, alle Audits und Referenzvergleiche korrekt.
 
 ## Version und Architektur
 
 | Bestandteil | Aktueller Stand |
 | --- | --- |
-| Anwendung | Aphros Void, HTML-Metatag `aphros-version`: `v0.11.1` |
+| Anwendung | Aphros Void, HTML-Metatag `aphros-version`: `v0.11.2` |
 | Spielstandschema | 8 |
-| Regelversion | 7 |
+| Regelversion | 8 |
 | Laufzeit | HTML, CSS, Vanilla JavaScript in einer `index.html` |
 | Auslieferung | Statische Datei; für iPad Safari und NAS-Webserver vorgesehen |
 | Entwicklung | Node.js 22, integrierter Test-Runner; keine npm-Abhängigkeiten, kein Build-Schritt |
@@ -56,7 +58,7 @@ node --test tests/*.test.mjs
 - `tests/start-smoke.test.mjs`: gesamter Spielstart, Pause, Flotte, Schiffsauswahl, Zeitschritt und Umbenennen einschließlich IndexedDB-Speicherung mit simulierten Browser-Schnittstellen.
 - `.github/workflows/ui-regression.yml`: Node.js 22 auf PRs und `main`, mit Pfadfilter für `index.html`, `tests/**` und die Workflow-Datei. Reine Markdown-PRs lösen diesen Job nicht aus.
 
-Aktueller Lauf am 29. Oktober 2026 mit Node.js v22.23.4: **32 bestanden, 0 fehlgeschlagen, 0 übersprungen**. `index.html`, Tests und Workflow sind gegenüber der geprüften Basis unverändert. Die Tests enthalten keine echte iPad-Safari- oder NAS-End-to-End-Prüfung.
+Aktueller Lauf am 29. Oktober 2026 mit Node.js v22.23.4: **40 bestanden, 0 fehlgeschlagen, 0 übersprungen**. Wirtschaftsregeln, Versionsangabe und Tests wurden wie im aktuellen Testbericht beschrieben geändert; der Workflow bleibt unverändert. Die Tests enthalten keine echte iPad-Safari- oder NAS-End-to-End-Prüfung.
 
 ## Offene Probleme und Grenzen
 

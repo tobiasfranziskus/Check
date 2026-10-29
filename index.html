@@ -2754,6 +2754,7 @@ const { ORTE } = m_data_namen;
 const { marktZeilen, marktKopf, warenVergleich } = m_ui_markt;
 const { isk } = m_ui_zusammenfassung;
 const { $, html, esc, marke } = m_ui_zeichnen;
+const { gebuehr } = m_core_index;
 const trendMarke = (t) => (t ? marke(t.art, t.symbol, t.text) : '<span class="muted">–</span>');
 const rezeptText = (r) => `${r.ein.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} → ${r.aus.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} · ${esc(ORTE[r.ort])}, ${r.dauer} Min`;
 
@@ -2803,15 +2804,17 @@ function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
         + (schiff ? `<li><span class="liste-links">Handelsschiff</span><span class="liste-rechts">${esc(schiff.id)} · Kasse ${isk(state.owners[RULES.economy.start.owner].cash)}</span></li>` : '');
       html($('markt-preise'), marktZeilen(state, RULES, system, basis).map((z) => {
         const kaufMenge = z.stufe === 'schiff' ? 1 : 10;
-        const kaufGesamt = kaufMenge * z.preis;
+        const kaufWert = kaufMenge * z.preis;
+        const kaufGesamt = kaufWert + gebuehr(state, RULES, station, kaufWert);
         const hat = schiff ? (schiff.ladung[z.ware] || 0) : 0;
         const verkaufMenge = Math.min(10, hat);
-        const verkaufGesamt = verkaufMenge * z.preis;
+        const verkaufWert = verkaufMenge * z.preis;
+        const verkaufNetto = verkaufWert - gebuehr(state, RULES, station, verkaufWert);
         const verkauf = hat > 0
-          ? `<button type="button" data-trade="sell" data-trade-ware="${z.ware}" data-menge="${verkaufMenge}">Verkaufe ${verkaufMenge} (${isk(verkaufGesamt)})</button>`
+          ? `<button type="button" data-trade="sell" data-trade-ware="${z.ware}" data-menge="${verkaufMenge}">Verkaufe ${verkaufMenge} (${isk(verkaufNetto)} netto)</button>`
           : '';
         const trade = schiff
-          ? `<div class="befehle-leiste"><button type="button" class="primary" data-trade="buy" data-trade-ware="${z.ware}" data-menge="${kaufMenge}">Kaufe ${kaufMenge}${z.stufe === 'schiff' ? ` ${esc(z.name)}` : ` × ${esc(z.name)}`} (${isk(kaufGesamt)})</button>${verkauf}</div>`
+          ? `<div class="befehle-leiste"><button type="button" class="primary" data-trade="buy" data-trade-ware="${z.ware}" data-menge="${kaufMenge}">Kaufe ${kaufMenge}${z.stufe === 'schiff' ? ` ${esc(z.name)}` : ` × ${esc(z.name)}`} (${isk(kaufGesamt)} inkl. Gebühr)</button>${verkauf}</div>`
           : '';
         return `<li style="flex-direction:column;align-items:stretch;padding:8px 0"><button type="button" class="zeile" data-ware="${z.ware}">`
           + `<span class="zeile-text"><span class="liste-links">${esc(z.name)}</span>${marke(z.knappheit.art, z.knappheit.symbol, z.knappheit.text)}</span>`
@@ -3013,7 +3016,7 @@ const { KARTE } = m_data_karte;
 const { ROLLEN_NAMEN, WAREN, KLASSEN } = m_data_namen;
 const { eigeneSchiffe, weltFlotten } = m_ui_flotte_detail;
 const { isk } = m_ui_zusammenfassung;
-const { preis, stationspreis } = m_core_index;
+const { preis, stationspreis, gebuehr } = m_core_index;
 const { $, html, esc, rollenSymbol } = m_ui_zeichnen;
 const { bestaetigen } = m_ui_blatt;
 const { stationBlattOeffnen } = m_ui_station;
@@ -3120,10 +3123,15 @@ function schiffZeichnen(state, id, onBefehl) {
     ...Object.keys(RULES.world.stations[station].ziel).sort().filter((w) => preis(state, station, w, RULES) > 0)
       .flatMap((w) => {
         const menge = RULES.economy.waren[w].stufe === 'schiff' ? 1 : 10;
-        const gesamt = menge * preis(state, station, w, RULES);
+        const einzelpreis = preis(state, station, w, RULES);
+        const kaufWert = menge * einzelpreis;
+        const kaufGesamt = kaufWert + gebuehr(state, RULES, station, kaufWert);
+        const verkaufMenge = roh.ladung[w] || 0;
+        const verkaufWert = verkaufMenge * einzelpreis;
+        const verkaufNetto = verkaufWert - gebuehr(state, RULES, station, verkaufWert);
         return [
-          knopf(`Kaufe ${menge} ${esc(WAREN[w])} (${isk(gesamt)})`, `data-befehl="buy" data-ware="${w}" data-menge="${menge}"`),
-          ...((roh.ladung[w] || 0) > 0 ? [knopf(`Verkaufe ${roh.ladung[w]} ${esc(WAREN[w])} (${isk(roh.ladung[w] * preis(state, station, w, RULES))})`, `data-befehl="sell" data-ware="${w}" data-menge="${roh.ladung[w]}"`)] : []),
+          knopf(`Kaufe ${menge} ${esc(WAREN[w])} (${isk(kaufGesamt)} inkl. Gebühr)`, `data-befehl="buy" data-ware="${w}" data-menge="${menge}"`),
+          ...(verkaufMenge > 0 ? [knopf(`Verkaufe ${verkaufMenge} ${esc(WAREN[w])} (${isk(verkaufNetto)} netto)`, `data-befehl="sell" data-ware="${w}" data-menge="${verkaufMenge}"`)] : []),
         ];
       }),
     ...Object.keys(roh.ladung).sort().filter((w) => RULES.economy.waren[w] && RULES.economy.waren[w].stufe === 'schiff')

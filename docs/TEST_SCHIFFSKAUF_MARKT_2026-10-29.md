@@ -64,6 +64,7 @@ Zusätzlich bleiben die vorherigen 19 Node-Regressionstests (Markt-/Flottenhande
 - Die Anzeigen von **Hauptquartier, Flotte, Markt (Trägerschiff der Kauf-/Verkaufs-/Aktivierungsbuttons), Schiffstitel und Eskortbefehlen** zeigen die lesbaren Namen. Bei selbst vergebenen Namen enthält die Flottenliste zusätzlich die Schiffsklasse in Klammern.
 - Auf dem Schiffsblatt gibt es unabhängig von seinem Standort die Touch-Schaltfläche **„Umbenennen“**. Ein Eingabedialog mit iPad-Tastatur, 24-Zeichen-Begrenzung und „Speichern“ übermittelt den neuen Namen als `shipRename`-Befehl. Leere Eingabe setzt auf den automatisch vergebenen Standardnamen zurück.
 - Die zentrale Befehlsprüfung akzeptiert **nur eigene Schiffe**, String-Namen mit maximal 24 UTF-16-Codeeinheiten und ohne Steuerzeichen. Ein Umbenennen ist auch unterwegs möglich und wird bei laufender Simulation wie andere Befehle im nächsten Tick ausgeführt.
+- Eine erfolgreich ausgeführte Umbenennung löst **sofortiges Speichern** aus: im Pausenmodus unmittelbar nach dem Befehl, bei laufender Simulation nach dem nächsten Tick, der die Umbenennung verarbeitet. Der vollständige simulierte UI-Test kontrolliert die tatsächlich in IndexedDB gespeicherte Benennung und deren Zurücksetzung.
 - `state.ships[id].rufname` ist **optional** und wird nur nach eigener Benennung gesetzt. Bereits vorhandene Speicherstände enthalten diesen Schlüssel nicht und funktionieren ohne Migration weiterhin. Keine Regel-, Schema- oder RNG-Änderung; die Wirtschaft und die deterministische Simulation sind für nicht umbenannte Schiffe unverändert.
 - Alle sichtbaren Rufnamen werden für HTML per `esc` maskiert; HTML-Tags im Namen können nicht als Markup interpretiert werden.
 
@@ -75,7 +76,7 @@ Zusätzlich bleiben die vorherigen 19 Node-Regressionstests (Markt-/Flottenhande
 
 ### Regressionstests
 
-Der bestehende GitHub-Actions-Job wurde um Tests ergänzt für:
+Der bestehende GitHub-Actions-Job wurde um Tests ergänzt für (insgesamt **32 automatisierte Tests erfolgreich**, Stand 2026-10-29):
 - Initialnamen, zusätzliche Miner/Frachter („Miner 2“, „Frachter 2“), Klassenname bei Custom-Namen, Marktbeschriftung und interne Datenattribute.
 - Namensänderung und Zurücksetzen, dauerhaftes Save/Load ohne Schemaänderung, fehlerhafte Eingaben und Umbenennen während einer echten Schiffreise.
 - HTML-Escaping eines selbst gewählten Namens.

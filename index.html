@@ -201,7 +201,7 @@ button.zeile .liste-links { color: var(--text); }
   <header class="kopf"><p class="muted kopf-klein">Markt</p><div id="markt-systeme" class="segment" role="group" aria-label="System wählen"></div></header>
   <section class="card" aria-label="Zusammenfassung"><ul id="markt-kopf" class="liste"></ul></section>
   <section class="card" aria-label="Preise"><h2>Preise</h2><ul id="markt-preise" class="liste"></ul></section>
-  <p class="muted hinweis-text">Wähle ein System mit eigenem Schiff im Dock. Mengen berücksichtigen Kassen, Stationsvorräte und freien Frachtraum.</p>
+  <p class="muted hinweis-text">Wähle ein System mit eigenem Schiff im Dock. Gekaufte Schiffe sind zunächst Fracht und lassen sich hier über „In Dienst stellen“ aktivieren. Mengen berücksichtigen Kassen, Vorräte und Frachtraum.</p>
 </section>
 
 <section id="ansicht-flotte" class="ansicht" aria-label="Flotte" hidden>
@@ -2840,6 +2840,17 @@ function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
         befehlFn({ type: 'shipTrade', owner: RULES.economy.start.owner, schiff: schiff.id, ware: trade.dataset.tradeWare, menge: Number(trade.dataset.menge), kauf: trade.dataset.trade === 'buy' });
       return;
     }
+    const aktivieren = ev.target.closest('button[data-activate]');
+    if (aktivieren) {
+      const state = stateFn();
+      const schiff = state.ships[aktivieren.dataset.schiff];
+      const klasse = aktivieren.dataset.activate;
+      if (schiff && schiff.owner === RULES.economy.start.owner && schiff.phase === 'dock'
+        && schiff.system === system && RULES.economy.waren[klasse]?.stufe === 'schiff'
+        && (schiff.ladung[klasse] || 0) > 0)
+        befehlFn({ type: 'shipActivate', owner: RULES.economy.start.owner, schiff: schiff.id, klasse });
+      return;
+    }
     const ware = ev.target.closest('button[data-ware]');
     if (ware) beiWare(ware.dataset.ware);
   });
@@ -2867,12 +2878,17 @@ function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
         const verkaufSchiff = verkaufsschiff(schiffe, z.ware);
         const verkaufOption = verkaufSchiff ? verkaufAngebot(state, RULES, station, verkaufSchiff, z.ware, 10) : null;
         const kauf = kaufAuswahl
-          ? `<button type="button" class="primary" data-trade="buy" data-schiff="${esc(kaufAuswahl.schiff.id)}" data-trade-ware="${z.ware}" data-menge="${kaufAuswahl.angebot.menge}">Kaufe ${kaufAuswahl.angebot.menge}${z.stufe === 'schiff' ? ` ${esc(z.name)}` : ` × ${esc(z.name)}`} (${isk(kaufAuswahl.angebot.betrag)} inkl. Gebühr) · ${esc(kaufAuswahl.schiff.id)}</button>`
+          ? `<button type="button" class="primary" data-trade="buy" data-schiff="${esc(kaufAuswahl.schiff.id)}" data-trade-ware="${z.ware}" data-menge="${kaufAuswahl.angebot.menge}">Kaufe ${kaufAuswahl.angebot.menge}${z.stufe === 'schiff' ? ` ${esc(z.name)} als Fracht` : ` × ${esc(z.name)}`} (${isk(kaufAuswahl.angebot.betrag)} inkl. Gebühr) · ${esc(kaufAuswahl.schiff.id)}</button>`
           : '';
         const verkauf = verkaufOption
           ? `<button type="button" data-trade="sell" data-schiff="${esc(verkaufSchiff.id)}" data-trade-ware="${z.ware}" data-menge="${verkaufOption.menge}">Verkaufe ${verkaufOption.menge} (${isk(verkaufOption.betrag)} netto) · ${esc(verkaufSchiff.id)}</button>`
           : '';
-        const trade = kauf || verkauf ? `<div class="befehle-leiste">${kauf}${verkauf}</div>` : '';
+        // Schiffsware wird als Fracht gekauft; die Inbetriebnahme ist ein eigener Befehl.
+        // Auch bei leerer Stationskasse bleibt die Inbetriebnahme möglich.
+        const aktivieren = z.stufe === 'schiff' && verkaufSchiff
+          ? `<button type="button" class="primary" data-activate="${esc(z.ware)}" data-schiff="${esc(verkaufSchiff.id)}">${esc(z.name)} in Dienst stellen · ${esc(verkaufSchiff.id)}</button>`
+          : '';
+        const trade = kauf || aktivieren || verkauf ? `<div class="befehle-leiste">${kauf}${aktivieren}${verkauf}</div>` : '';
         return `<li style="flex-direction:column;align-items:stretch;padding:8px 0"><button type="button" class="zeile" data-ware="${z.ware}">`
           + `<span class="zeile-text"><span class="liste-links">${esc(z.name)}</span>${marke(z.knappheit.art, z.knappheit.symbol, z.knappheit.text)}</span>`
           + `<span class="zeile-zahl"><span>${isk(z.preis)}</span>${trendMarke(z.trend)}</span></button>${trade}</li>`;
@@ -3192,7 +3208,7 @@ function schiffZeichnen(state, id, onBefehl) {
       // In Schiffsdetails bleibt der Verkauf der gesamten Ladung möglich.
       const verkaufen = verkaufAngebot(state, RULES, station, roh, w, roh.ladung[w] || 0);
       return [
-        ...(kaufen ? [knopf(`Kaufe ${kaufen.menge} ${esc(WAREN[w])} (${isk(kaufen.betrag)} inkl. Gebühr)`, `data-befehl="buy" data-ware="${w}" data-menge="${kaufen.menge}"`)] : []),
+        ...(kaufen ? [knopf(`Kaufe ${kaufen.menge} ${esc(WAREN[w])}${RULES.economy.waren[w].stufe === 'schiff' ? ' als Fracht' : ''} (${isk(kaufen.betrag)} inkl. Gebühr)`, `data-befehl="buy" data-ware="${w}" data-menge="${kaufen.menge}"`)] : []),
         ...(verkaufen ? [knopf(`Verkaufe ${verkaufen.menge} ${esc(WAREN[w])} (${isk(verkaufen.betrag)} netto)`, `data-befehl="sell" data-ware="${w}" data-menge="${verkaufen.menge}"`)] : []),
       ];
     });

@@ -103,6 +103,8 @@ button.zeile .liste-links { color: var(--text); }
 .dialog-tafel { position: relative; width: 100%; max-width: 420px; background: var(--card); border-radius: 14px; padding: 24px 20px 20px; }
 .dialog-tafel h2 { margin: 0 0 8px; font-size: 22px; font-weight: 600; }
 .dialog-tafel p { margin: 0 0 24px; color: var(--text); }
+.dialog-tafel input { width: 100%; min-height: 48px; margin-bottom: 16px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--text); font: inherit; font-size: 17px; }
+#blatt-schiff .actions .primary { grid-column: auto; }
 .dialog-knoepfe { display: flex; gap: 12px; justify-content: space-between; }
 .dialog-knoepfe button { flex: 1; --n: var(--bg); --p: var(--card-press); }
 .dialog-knoepfe button.primary { --n: var(--accent-fill); --p: var(--accent-press); color: var(--accent-text); }
@@ -318,7 +320,7 @@ button.zeile .liste-links { color: var(--text); }
       <div class="blatt-seite" id="blatt-schiff" data-titel="Schiff" hidden>
         <section class="card" aria-label="Schiff"><ul id="schiff-liste" class="liste"></ul></section>
         <section class="card" aria-label="Befehle"><h2>Befehle</h2><div id="schiff-befehle"></div></section>
-        <section class="actions" aria-label="Schiff-Aktionen"><button id="b-schiff-karte" type="button" class="primary">Auf der Karte zeigen</button></section>
+        <section class="actions" aria-label="Schiff-Aktionen"><button id="b-schiff-karte" type="button" class="primary">Auf der Karte zeigen</button><button id="b-schiff-umbenennen" type="button">Umbenennen</button></section>
       </div>
 
       <div class="blatt-seite" id="blatt-station" data-titel="Station" hidden>
@@ -355,6 +357,7 @@ button.zeile .liste-links { color: var(--text); }
   <section class="dialog-tafel" role="alertdialog" aria-modal="true" aria-labelledby="dialog-titel" aria-describedby="dialog-text">
     <h2 id="dialog-titel">Hinweis</h2>
     <p id="dialog-text"></p>
+    <input id="dialog-eingabe" type="text" maxlength="24" autocomplete="off" aria-label="Schiffsname" hidden>
     <div id="dialog-knoepfe" class="dialog-knoepfe"></div>
   </section>
 </div>
@@ -2616,20 +2619,34 @@ function blattVerdrahten() {
   });
   griff.addEventListener('pointercancel', () => { start = null; });
 }
-function dialogZeigen({ titel, text, knoepfe }) {
+function dialogZeigen({ titel, text, knoepfe, eingabe = null }) {
   const huelle = $('dialog');
   $('dialog-titel').textContent = titel; $('dialog-text').textContent = text;
+  const feld = $('dialog-eingabe');
+  feld.hidden = !eingabe;
+  feld.value = eingabe ? (eingabe.wert || '') : '';
+  feld.placeholder = eingabe ? (eingabe.platzhalter || '') : '';
   const reihe = $('dialog-knoepfe'); reihe.textContent = '';
   for (const k of knoepfe) {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = k.text;
     if (k.art === 'primary') b.className = 'primary';
     if (k.art === 'gefahr') b.className = 'gefahr';
-    b.addEventListener('click', () => { huelle.hidden = true; if (k.aktion) k.aktion(); });
+    b.addEventListener('click', () => { huelle.hidden = true; if (k.aktion) k.aktion(feld.value); });
     reihe.append(b);
   }
+  feld.onkeydown = eingabe ? (ev) => {
+    if (ev.key === 'Enter' && !ev.isComposing) {
+      ev.preventDefault();
+      const ok = reihe.querySelector('button.primary');
+      if (ok) ok.click();
+    }
+  } : null;
   huelle.hidden = false;
-  const erste = reihe.querySelector('button');
-  if (erste) erste.focus({ preventScroll: true });
+  if (eingabe) feld.focus({ preventScroll: true });
+  else {
+    const erste = reihe.querySelector('button');
+    if (erste) erste.focus({ preventScroll: true });
+  }
 }
 function bestaetigen({ titel, text, aktionText, aktion }) {
   dialogZeigen({ titel, text, knoepfe: [{ text: 'Abbrechen', art: 'normal' }, { text: aktionText, art: 'gefahr', aktion }] });
@@ -3403,6 +3420,7 @@ const { packen, auspacken } = m_ui_speicher_huelle;
 const { marktBasis } = m_ui_markt;
 const { marktErzeugen, wareZeichnen } = m_ui_markt_ansicht;
 const { flotteErzeugen, schiffZeichnen } = m_ui_flotte_ansicht;
+const { nameVon } = m_ui_schiffsnamen;
 const { reichErzeugen } = m_ui_reich_ansicht;
 const { ersetztLaufendesSpiel } = m_ui_import_regel;
 
@@ -3572,6 +3590,19 @@ const reichAnsicht = reichErzeugen(() => state, befehlAusfuehren);
 $('b-schiff-karte').addEventListener('click', () => {
   const system = $('b-schiff-karte').dataset.system;
   blattSchliessen(); ansichtWechseln('karte'); systemOeffnen(system);
+});
+$('b-schiff-umbenennen').addEventListener('click', () => {
+  const schiff = state.ships[aktuellesSchiff];
+  if (!schiff || schiff.owner !== RULES.economy.start.owner) return;
+  dialogZeigen({
+    titel: 'Schiff umbenennen',
+    text: `Aktuell: ${nameVon(state, schiff)}. Maximal 24 Zeichen; ein leeres Feld stellt den Standardnamen wieder her.`,
+    eingabe: { wert: schiff.rufname || '', platzhalter: nameVon(state, schiff) },
+    knoepfe: [
+      { text: 'Abbrechen', art: 'normal' },
+      { text: 'Speichern', art: 'primary', aktion: (name) => befehlAusfuehren({ type: 'shipRename', owner: RULES.economy.start.owner, schiff: schiff.id, name }) },
+    ],
+  });
 });
 
 for (const b of document.querySelectorAll('[data-stufe]')) b.addEventListener('click', () => stufeSetzen(b.dataset.stufe));

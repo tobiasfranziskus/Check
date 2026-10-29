@@ -1782,6 +1782,38 @@ function migrate(state, from, to, table = MIGRATIONS) {
   return s;
 }
 function save(state) { return canonical(state); }
+// Vor einer Übernahme auch referenzielle Mindeststruktur prüfen (nach Migration).
+const standObjekt = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
+function pruefeStand(s) {
+  for (const key of ['owners', 'systems', 'stations', 'ships', 'ledger', 'stats', 'sollflotte'])
+    if (!standObjekt(s[key])) throw new Error(`Spielstand: ${key} ist kein Objekt`);
+  if (!Array.isArray(s.queue) || !Array.isArray(s.ereignisse)) throw new Error('Spielstand: Befehle oder Ereignisse ungültig');
+  if (![s.tick, s.rng, s.nextShip, s.initialSupply, s.minted, s.burned].every(Number.isSafeInteger)
+    || s.tick < 0 || s.nextShip < 1) throw new Error('Spielstand: Zähler ungültig');
+  const spieler = m_data_rules.RULES.economy.start.owner;
+  if (!standObjekt(s.owners[spieler]) || !Number.isSafeInteger(s.owners[spieler].cash))
+    throw new Error('Spielstand: Spielerkasse fehlt');
+  if (!standObjekt(s.stats.konto) || !standObjekt(s.stats.konto[spieler])
+    || !standObjekt(s.stats.mangel) || !standObjekt(s.stats.rezepte) || !standObjekt(s.stats.verkaeufe))
+    throw new Error('Spielstand: Wirtschaftsstatistik unvollständig');
+  for (const id of Object.keys(m_data_rules.RULES.world.systems)) {
+    const sys = s.systems[id];
+    if (!standObjekt(sys) || !standObjekt(s.stations[sys.station]) || !standObjekt(s.owners[sys.station])
+      || !standObjekt(s.owners[sys.fonds])) throw new Error(`Spielstand: System ${id} unvollständig`);
+  }
+  for (const id of Object.keys(s.stations)) {
+    const st = s.stations[id];
+    if (!standObjekt(st) || !standObjekt(st.lager) || !standObjekt(st.module)
+      || !Array.isArray(st.linien) || !standObjekt(s.stats.mangel[id]) || !Number.isSafeInteger(s.stats.rezepte[id]))
+      throw new Error(`Spielstand: Station ${id} unvollständig`);
+  }
+  for (const id of Object.keys(s.ships)) {
+    const sh = s.ships[id];
+    if (!standObjekt(sh) || !standObjekt(sh.ladung) || !standObjekt(s.owners[sh.owner])
+      || !standObjekt(s.systems[sh.system]) || (sh.phase === 'reise' && !standObjekt(s.stations[sh.ziel]))
+      || !Number.isSafeInteger(s.stats.verkaeufe[id])) throw new Error(`Spielstand: Schiff ${id} unvollständig`);
+  }
+}
 function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, ruleTable = RULE_MIGRATIONS) {
   const s = JSON.parse(json);
   if (s === null || typeof s !== 'object' || !Number.isSafeInteger(s.schema)) throw new Error('Spielstand ohne Schema');
@@ -1796,6 +1828,7 @@ function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, rule
     if (typeof ruleTable[r] !== 'function') throw new Error(`Regelversion ${v} ist älter als ${currentRulesVersion}, keine Regelmigration vorhanden`);
     neu = ruleTable[r](neu);
   }
+  pruefeStand(neu);
   return neu;
 }
 return { MIGRATIONS, RULE_MIGRATIONS, migrate, save, load };
@@ -3571,11 +3604,36 @@ function neuBeginnen(alt) {
   });
 }
 
-function einlesen(text, quelle) {
+async function einlesen(text, quelle) {
   const r = auspacken(text, RULES.rulesVersion);
   const vomSpeicher = quelle === 'speicher';
   const schliessen = { text: 'Schließen', art: 'normal' };
+  let geladen = null; let migriert = false;
   if (r.art === 'regel-alt') {
+    // Nur nach erfolgreicher Kernmigration weiterarbeiten; Altstand vorher sichern.
+    try { geladen = load(r.stand); } catch { /* nicht migrierbare Stände bleiben gesperrt */ }
+    if (geladen) {
+      if (vomSpeicher) sperre = true;
+      const backup = vomSpeicher ? text
+        : (ersetztLaufendesSpiel(state, gespeichertUm) ? packen(save(state), jetzt(), VERSION) : null);
+      try {
+        if (backup !== null) {
+          const key = await alterSchluessel(vomSpeicher ? `alt-regel${r.gefunden}` : 'vor-import');
+          await dbPut(key, backup);
+        }
+      } catch {
+        dialogZeigen({
+          titel: 'Migration nicht gesichert',
+          text: 'Der bisherige Spielstand konnte nicht als Sicherheitskopie abgelegt werden. Er wurde nicht ersetzt.',
+          knoepfe: [{ text: 'Als Datei sichern', art: 'normal', aktion: () => dateiSichern(text, 'aphros-void-vor-migration.json') }, schliessen],
+        });
+        return null;
+      }
+      if (vomSpeicher) sperre = false;
+      migriert = true;
+    }
+  }
+  if (r.art === 'regel-alt' && !geladen) {
     if (vomSpeicher) sperre = true;
     const laufend = !vomSpeicher && ersetztLaufendesSpiel(state, gespeichertUm);
     const knopf = {
@@ -3603,8 +3661,7 @@ function einlesen(text, quelle) {
     dialogZeigen({ titel: 'Neuere Spielversion', text: 'Dieser Stand ist für eine neuere Spielversion. Er wird nicht geladen und nicht überschrieben. Starte ein neues Spiel, um fortzufahren.', knoepfe: [neustart, schliessen].filter(Boolean) });
     return null;
   }
-  let geladen = null;
-  if (r.art !== 'unlesbar') {
+  if (r.art !== 'unlesbar' && !geladen) {
     try { geladen = load(r.stand); } catch { geladen = null; }
   }
   if (!geladen) {
@@ -3619,10 +3676,10 @@ function einlesen(text, quelle) {
   }
   state = geladen;
   kasseBasis = undefined; marktBasisStand = undefined;
-  gespeichertUm = r.art === 'huelle' ? r.gespeichertUm : null;
+  gespeichertUm = Number.isFinite(r.gespeichertUm) ? r.gespeichertUm : null;
   berichtGelesen = berichtGemeldet = state.ereignisse.length;
   m_ui_dirty.bump();
-  return r;
+  return migriert ? { ...r, art: gespeichertUm === null ? 'alt' : 'huelle', migriert: true } : r;
 }
 
 $('b-save').addEventListener('click', () => {
@@ -3635,8 +3692,8 @@ $('f-import').addEventListener('change', async (ev) => {
   ev.target.value = '';
   if (!datei) return;
   const text = await datei.text();
-  const laden = () => {
-    const r = einlesen(text, 'import');
+  const laden = async () => {
+    const r = await einlesen(text, 'import');
     if (!r) return;
     stufeSetzen('pause');
     sperre = false; aktuellesSchiff = null;
@@ -3681,7 +3738,7 @@ async function starten() {
   let geladen = null;
   try {
     const text = await dbGet(OBERFLAECHE.slot);
-    if (text !== undefined) geladen = einlesen(text, 'speicher');
+    if (text !== undefined) geladen = await einlesen(text, 'speicher');
   } catch {
     meldungZeigen('Der Speicher im Browser ist nicht verfügbar. Das Spiel läuft, wird aber nicht gespeichert. Du kannst es als Datei sichern.', { schlecht: true, knopf: 'Als Datei sichern', aktion: exportieren });
   }
@@ -3690,6 +3747,7 @@ async function starten() {
   stufeSetzen('pause');
   anzeigen();
   if (geladen && geladen.art === 'huelle') aufholen(geladen.gespeichertUm);
+  if (geladen && geladen.migriert) speichern();
 }
 
 function diagnose() {

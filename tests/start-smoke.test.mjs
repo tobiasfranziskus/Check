@@ -192,5 +192,5 @@ test('iPad-Bedienpfad: Miner per Dialog umbenennen und wieder zurücksetzen', as
     .find(button => button.textContent === 'Speichern');
   browser.fire(save, 'click');
   assert.equal(get('blatt-titel').textContent, 'Miner');
-  assert.match(get('flotte-schiffe').innerHTML, />Miner</);
+  assert.match(get('flotte-schiffe').innerHTML, / Miner<\/span>/);
 });

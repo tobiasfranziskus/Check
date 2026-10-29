@@ -3474,6 +3474,7 @@ function berichteAbholen(toastZeigen) {
 
 function schritte(n) {
   if (!bereit || sperre) return;
+  const umbenannt = state.queue.some((cmd) => cmd.type === 'shipRename');
   const stunde = RULES.economy.stunde;
   let rest = n;
   while (rest > 0) {
@@ -3486,7 +3487,7 @@ function schritte(n) {
   }
   berichteAbholen(true);
   seitSpeichern += n;
-  if (seitSpeichern >= OBERFLAECHE.autosaveAlleSchritte) speichern();
+  if (umbenannt || seitSpeichern >= OBERFLAECHE.autosaveAlleSchritte) speichern();
 }
 
 function kopfAktualisieren() {
@@ -3533,7 +3534,7 @@ function befehlAusfuehren(cmd) {
     berichtGelesen = berichtGemeldet = state.ereignisse.length;
     if (!erg.ok) return meldungZeigen(`Befehl abgelehnt: ${erg.reason}`, { schlecht: true });
     seitSpeichern += 1;
-    if (seitSpeichern >= OBERFLAECHE.autosaveAlleSchritte) speichern();
+    if (cmd.type === 'shipRename' || seitSpeichern >= OBERFLAECHE.autosaveAlleSchritte) speichern();
   } else {
     const r = submit(state, cmd, RULES);
     if (!r.ok) return meldungZeigen(`Befehl abgelehnt: ${r.reason}`, { schlecht: true });

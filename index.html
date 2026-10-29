@@ -103,6 +103,8 @@ button.zeile .liste-links { color: var(--text); }
 .dialog-tafel { position: relative; width: 100%; max-width: 420px; background: var(--card); border-radius: 14px; padding: 24px 20px 20px; }
 .dialog-tafel h2 { margin: 0 0 8px; font-size: 22px; font-weight: 600; }
 .dialog-tafel p { margin: 0 0 24px; color: var(--text); }
+.dialog-tafel input { width: 100%; min-height: 48px; margin-bottom: 16px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--text); font: inherit; font-size: 17px; }
+#blatt-schiff .actions .primary { grid-column: auto; }
 .dialog-knoepfe { display: flex; gap: 12px; justify-content: space-between; }
 .dialog-knoepfe button { flex: 1; --n: var(--bg); --p: var(--card-press); }
 .dialog-knoepfe button.primary { --n: var(--accent-fill); --p: var(--accent-press); color: var(--accent-text); }
@@ -201,7 +203,7 @@ button.zeile .liste-links { color: var(--text); }
   <header class="kopf"><p class="muted kopf-klein">Markt</p><div id="markt-systeme" class="segment" role="group" aria-label="System wählen"></div></header>
   <section class="card" aria-label="Zusammenfassung"><ul id="markt-kopf" class="liste"></ul></section>
   <section class="card" aria-label="Preise"><h2>Preise</h2><ul id="markt-preise" class="liste"></ul></section>
-  <p class="muted hinweis-text">Wähle ein System mit eigenem Schiff im Dock. Mengen berücksichtigen Kassen, Stationsvorräte und freien Frachtraum.</p>
+  <p class="muted hinweis-text">Wähle ein System mit eigenem Schiff im Dock. Gekaufte Schiffe sind zunächst Fracht und lassen sich hier über „In Dienst stellen“ aktivieren. Mengen berücksichtigen Kassen, Vorräte und Frachtraum.</p>
 </section>
 
 <section id="ansicht-flotte" class="ansicht" aria-label="Flotte" hidden>
@@ -318,7 +320,7 @@ button.zeile .liste-links { color: var(--text); }
       <div class="blatt-seite" id="blatt-schiff" data-titel="Schiff" hidden>
         <section class="card" aria-label="Schiff"><ul id="schiff-liste" class="liste"></ul></section>
         <section class="card" aria-label="Befehle"><h2>Befehle</h2><div id="schiff-befehle"></div></section>
-        <section class="actions" aria-label="Schiff-Aktionen"><button id="b-schiff-karte" type="button" class="primary">Auf der Karte zeigen</button></section>
+        <section class="actions" aria-label="Schiff-Aktionen"><button id="b-schiff-karte" type="button" class="primary">Auf der Karte zeigen</button><button id="b-schiff-umbenennen" type="button">Umbenennen</button></section>
       </div>
 
       <div class="blatt-seite" id="blatt-station" data-titel="Station" hidden>
@@ -355,6 +357,7 @@ button.zeile .liste-links { color: var(--text); }
   <section class="dialog-tafel" role="alertdialog" aria-modal="true" aria-labelledby="dialog-titel" aria-describedby="dialog-text">
     <h2 id="dialog-titel">Hinweis</h2>
     <p id="dialog-text"></p>
+    <input id="dialog-eingabe" type="text" maxlength="24" autocomplete="off" aria-label="Schiffsname" hidden>
     <div id="dialog-knoepfe" class="dialog-knoepfe"></div>
   </section>
 </div>
@@ -709,7 +712,7 @@ const anzahlLadung = (lager, ware) => (Object.hasOwn(lager, ware) ? lager[ware] 
 const FIELDS = {
   shipMove: ['schiff', 'ziel'], shipTrade: ['schiff', 'ware', 'menge', 'kauf'],
   shipMine: ['schiff', 'ware'], shipWait: ['schiff'],
-  shipActivate: ['schiff', 'klasse'], shipHandeln: ['schiff'],
+  shipActivate: ['schiff', 'klasse'], shipHandeln: ['schiff'], shipRename: ['schiff', 'name'],
   shipEscort: ['schiff', 'ziel'], shipHunt: ['schiff'],
   shipInstall: ['schiff', 'modul'], stationBuy: ['schiff'],
   stationRecipe: ['station', 'rezept'], shipRemoveModule: ['schiff', 'modul'],
@@ -724,7 +727,7 @@ function checkShape(state, cmd, rules) {
     if (typeof cmd.schiff !== 'string' || !Object.hasOwn(state.ships, cmd.schiff)) return 'unbekanntes Schiff';
     const s = state.ships[cmd.schiff];
     if (s.owner !== cmd.owner) return 'Schiff gehört nicht dem Besitzer';
-    if (s.phase !== 'dock' && !(cmd.type === 'shipWait' && s.phase === 'reise')) return 'Schiff ist nicht im Dock';
+    if (s.phase !== 'dock' && cmd.type !== 'shipRename' && !(cmd.type === 'shipWait' && s.phase === 'reise')) return 'Schiff ist nicht im Dock';
     if (cmd.type === 'shipMove') {
       if (typeof cmd.ziel !== 'string' || !Object.hasOwn(rules.world.stations, cmd.ziel)) return 'unbekanntes Ziel';
     }
@@ -740,6 +743,10 @@ function checkShape(state, cmd, rules) {
         const lager = state.stations[station].lager[cmd.ware] || 0;
         if (lager - cmd.menge < m_core_handel.reserve(rules, station, cmd.ware)) return 'Station behält ihren Vorrat';
       }
+    }
+    if (cmd.type === 'shipRename') {
+      if (typeof cmd.name !== 'string' || cmd.name.length > 24 || /[\u0000-\u001f\u007f]/.test(cmd.name))
+        return 'Schiffsname muss Text mit maximal 24 Zeichen ohne Steuerzeichen sein';
     }
     if (cmd.type === 'shipActivate') {
       if (typeof cmd.klasse !== 'string' || !Object.hasOwn(rules.economy.waren, cmd.klasse)) return 'unbekannte Schiffsklasse';
@@ -832,6 +839,13 @@ function execute(state, cmd, rules) {
     }
     case 'shipMine': { const s = state.ships[cmd.schiff]; s.auftrag = 'foerdern'; s.ware = cmd.ware; s.eskorte = null; break; }
     case 'shipWait': { const s = state.ships[cmd.schiff]; s.auftrag = 'halten'; s.eskorte = null; break; }
+    case 'shipRename': {
+      const s = state.ships[cmd.schiff];
+      const name = cmd.name.trim();
+      if (name) s.rufname = name;
+      else delete s.rufname;
+      break;
+    }
     case 'shipActivate': {
       const traeger = state.ships[cmd.schiff];
       traeger.ladung[cmd.klasse] -= 1;
@@ -2107,11 +2121,30 @@ m_data_systeme.tiefFrieren({ WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, OR
 return { WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, ORTE };
 })();
 
+// Sichtbare Namen für Spielerschiffe; IDs bleiben unveränderte technische Schlüssel.
+const m_ui_schiffsnamen = (() => {
+const { KLASSEN } = m_data_namen;
+function namenVon(state) {
+  const zaehler = {}, namen = {};
+  for (const id of Object.keys(state.ships).sort()) {
+    const s = state.ships[id];
+    if (state.owners[s.owner]?.kind !== 'player') continue;
+    zaehler[s.klasse] = (zaehler[s.klasse] || 0) + 1;
+    const klasse = KLASSEN[s.klasse] || s.klasse;
+    namen[id] = s.rufname || (zaehler[s.klasse] === 1 ? klasse : `${klasse} ${zaehler[s.klasse]}`);
+  }
+  return namen;
+}
+const nameVon = (state, schiff) => namenVon(state)[schiff.id] || KLASSEN[schiff.klasse] || schiff.klasse;
+return { namenVon, nameVon };
+})();
+
 const m_ui_sicht = (() => {
 const { route } = m_core_index;
 const { positionAufWeg, fortschritt } = m_ui_karte_geometrie;
 const { OBERFLAECHE } = m_data_oberflaeche;
 const { KLASSEN, AUFTRAEGE, PHASEN } = m_data_namen;
+const { namenVon } = m_ui_schiffsnamen;
 const ROLLE_NACH_ART = { player: 'eigen', trader: 'neutral', miner: 'neutral', authority: 'sicherheit', pirate: 'pirat' };
 const rolle = (state, schiff) => ROLLE_NACH_ART[state.owners[schiff.owner].kind] || 'neutral';
 const systemName = (karte, id) => (karte.systeme[id] ? karte.systeme[id].name : id);
@@ -2151,11 +2184,11 @@ function lageMarke(l) {
 }
 const SCHIFFSABSTAND = 50;
 function flotte(state, regeln, karte) {
-  const w = regeln.world;
+  const w = regeln.world; const namen = namenVon(state);
   return schiffe(state).filter((s) => rolle(state, s) === 'eigen').map((s) => {
     const unterwegs = s.phase === 'reise';
     const ort = unterwegs ? `unterwegs nach ${systemName(karte, w.stations[s.ziel].system)}` : `in ${systemName(karte, s.system)}`;
-    return { id: s.id, klasse: KLASSEN[s.klasse] || s.klasse, ort, taetigkeit: unterwegs ? PHASEN.reise : (AUFTRAEGE[s.auftrag] || s.auftrag) };
+    return { id: s.id, name: namen[s.id], klasse: KLASSEN[s.klasse] || s.klasse, ort, taetigkeit: unterwegs ? PHASEN.reise : (AUFTRAEGE[s.auftrag] || s.auftrag) };
   });
 }
 function reiseWeg(regeln, s) {
@@ -2253,7 +2286,7 @@ function hqZeichnen(state, kasseBasis) {
   const f = flotte(state, RULES, KARTE);
   text($('hq-flotte-zahl'), `${f.length} ${f.length === 1 ? 'Schiff' : 'Schiffe'}`);
   html($('hq-flotte'), f.length
-    ? f.map((s) => `<li><span class="liste-links">${esc(s.klasse)} <span class="muted">${esc(s.id)}</span></span><span class="liste-rechts">${esc(s.ort)} · ${esc(s.taetigkeit)}</span></li>`).join('')
+    ? f.map((s) => `<li><span class="liste-links">${esc(s.name)}</span><span class="liste-rechts">${esc(s.ort)} · ${esc(s.taetigkeit)}</span></li>`).join('')
     : '<li><span class="liste-links muted">Keine Schiffe.</span></li>');
   const l = lage(state, RULES, KARTE);
   html($('hq-lage'), Object.keys(l).sort().map((id) => {
@@ -2586,20 +2619,34 @@ function blattVerdrahten() {
   });
   griff.addEventListener('pointercancel', () => { start = null; });
 }
-function dialogZeigen({ titel, text, knoepfe }) {
+function dialogZeigen({ titel, text, knoepfe, eingabe = null }) {
   const huelle = $('dialog');
   $('dialog-titel').textContent = titel; $('dialog-text').textContent = text;
+  const feld = $('dialog-eingabe');
+  feld.hidden = !eingabe;
+  feld.value = eingabe ? (eingabe.wert || '') : '';
+  feld.placeholder = eingabe ? (eingabe.platzhalter || '') : '';
   const reihe = $('dialog-knoepfe'); reihe.textContent = '';
   for (const k of knoepfe) {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = k.text;
     if (k.art === 'primary') b.className = 'primary';
     if (k.art === 'gefahr') b.className = 'gefahr';
-    b.addEventListener('click', () => { huelle.hidden = true; if (k.aktion) k.aktion(); });
+    b.addEventListener('click', () => { huelle.hidden = true; if (k.aktion) k.aktion(feld.value); });
     reihe.append(b);
   }
+  feld.onkeydown = eingabe ? (ev) => {
+    if (ev.key === 'Enter' && !ev.isComposing) {
+      ev.preventDefault();
+      const ok = reihe.querySelector('button.primary');
+      if (ok) ok.click();
+    }
+  } : null;
   huelle.hidden = false;
-  const erste = reihe.querySelector('button');
-  if (erste) erste.focus({ preventScroll: true });
+  if (eingabe) feld.focus({ preventScroll: true });
+  else {
+    const erste = reihe.querySelector('button');
+    if (erste) erste.focus({ preventScroll: true });
+  }
 }
 function bestaetigen({ titel, text, aktionText, aktion }) {
   dialogZeigen({ titel, text, knoepfe: [{ text: 'Abbrechen', art: 'normal' }, { text: aktionText, art: 'gefahr', aktion }] });
@@ -2810,6 +2857,7 @@ const { marktZeilen, marktKopf, warenVergleich } = m_ui_markt;
 const { isk } = m_ui_zusammenfassung;
 const { $, html, esc, marke } = m_ui_zeichnen;
 const { kauf: kaufAngebot, verkauf: verkaufAngebot, ladungsmenge } = m_ui_handelsangebot;
+const { namenVon } = m_ui_schiffsnamen;
 const trendMarke = (t) => (t ? marke(t.art, t.symbol, t.text) : '<span class="muted">–</span>');
 const rezeptText = (r) => `${r.ein.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} → ${r.aus.map((x) => `${x.menge} ${esc(x.name)}`).join(' + ')} · ${esc(ORTE[r.ort])}, ${r.dauer} Min`;
 
@@ -2840,6 +2888,17 @@ function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
         befehlFn({ type: 'shipTrade', owner: RULES.economy.start.owner, schiff: schiff.id, ware: trade.dataset.tradeWare, menge: Number(trade.dataset.menge), kauf: trade.dataset.trade === 'buy' });
       return;
     }
+    const aktivieren = ev.target.closest('button[data-activate]');
+    if (aktivieren) {
+      const state = stateFn();
+      const schiff = state.ships[aktivieren.dataset.schiff];
+      const klasse = aktivieren.dataset.activate;
+      if (schiff && schiff.owner === RULES.economy.start.owner && schiff.phase === 'dock'
+        && schiff.system === system && RULES.economy.waren[klasse]?.stufe === 'schiff'
+        && (schiff.ladung[klasse] || 0) > 0)
+        befehlFn({ type: 'shipActivate', owner: RULES.economy.start.owner, schiff: schiff.id, klasse });
+      return;
+    }
     const ware = ev.target.closest('button[data-ware]');
     if (ware) beiWare(ware.dataset.ware);
   });
@@ -2851,6 +2910,7 @@ function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
       stand = state; letzte = schluessel; letzteDirty = dirty;
       for (const b of leiste.children) b.setAttribute('aria-pressed', String(b.dataset.system === system));
       const schiffe = dockSchiffe(state, system);
+      const namen = namenVon(state);
       const station = RULES.world.systems[system].station;
       const kopf = marktKopf(state, RULES, system, basis);
       $('markt-kopf').innerHTML =
@@ -2867,12 +2927,17 @@ function marktErzeugen(beiAuswahl, beiWare, stateFn, befehlFn) {
         const verkaufSchiff = verkaufsschiff(schiffe, z.ware);
         const verkaufOption = verkaufSchiff ? verkaufAngebot(state, RULES, station, verkaufSchiff, z.ware, 10) : null;
         const kauf = kaufAuswahl
-          ? `<button type="button" class="primary" data-trade="buy" data-schiff="${esc(kaufAuswahl.schiff.id)}" data-trade-ware="${z.ware}" data-menge="${kaufAuswahl.angebot.menge}">Kaufe ${kaufAuswahl.angebot.menge}${z.stufe === 'schiff' ? ` ${esc(z.name)}` : ` × ${esc(z.name)}`} (${isk(kaufAuswahl.angebot.betrag)} inkl. Gebühr) · ${esc(kaufAuswahl.schiff.id)}</button>`
+          ? `<button type="button" class="primary" data-trade="buy" data-schiff="${esc(kaufAuswahl.schiff.id)}" data-trade-ware="${z.ware}" data-menge="${kaufAuswahl.angebot.menge}">Kaufe ${kaufAuswahl.angebot.menge}${z.stufe === 'schiff' ? ` ${esc(z.name)} als Fracht` : ` × ${esc(z.name)}`} (${isk(kaufAuswahl.angebot.betrag)} inkl. Gebühr) · ${esc(namen[kaufAuswahl.schiff.id])}</button>`
           : '';
         const verkauf = verkaufOption
-          ? `<button type="button" data-trade="sell" data-schiff="${esc(verkaufSchiff.id)}" data-trade-ware="${z.ware}" data-menge="${verkaufOption.menge}">Verkaufe ${verkaufOption.menge} (${isk(verkaufOption.betrag)} netto) · ${esc(verkaufSchiff.id)}</button>`
+          ? `<button type="button" data-trade="sell" data-schiff="${esc(verkaufSchiff.id)}" data-trade-ware="${z.ware}" data-menge="${verkaufOption.menge}">Verkaufe ${verkaufOption.menge} (${isk(verkaufOption.betrag)} netto) · ${esc(namen[verkaufSchiff.id])}</button>`
           : '';
-        const trade = kauf || verkauf ? `<div class="befehle-leiste">${kauf}${verkauf}</div>` : '';
+        // Schiffsware wird als Fracht gekauft; die Inbetriebnahme ist ein eigener Befehl.
+        // Auch bei leerer Stationskasse bleibt die Inbetriebnahme möglich.
+        const aktivieren = z.stufe === 'schiff' && verkaufSchiff
+          ? `<button type="button" class="primary" data-activate="${esc(z.ware)}" data-schiff="${esc(verkaufSchiff.id)}">${esc(z.name)} in Dienst stellen · ${esc(namen[verkaufSchiff.id])}</button>`
+          : '';
+        const trade = kauf || aktivieren || verkauf ? `<div class="befehle-leiste">${kauf}${aktivieren}${verkauf}</div>` : '';
         return `<li style="flex-direction:column;align-items:stretch;padding:8px 0"><button type="button" class="zeile" data-ware="${z.ware}">`
           + `<span class="zeile-text"><span class="liste-links">${esc(z.name)}</span>${marke(z.knappheit.art, z.knappheit.symbol, z.knappheit.text)}</span>`
           + `<span class="zeile-zahl"><span>${isk(z.preis)}</span>${trendMarke(z.trend)}</span></button>${trade}</li>`;
@@ -2894,13 +2959,14 @@ return { marktErzeugen, wareZeichnen };
 
 const m_ui_flotte_detail = (() => {
 const { rolle, reiseWeg } = m_ui_sicht;
+const { namenVon } = m_ui_schiffsnamen;
 const { fortschritt } = m_ui_karte_geometrie;
 const { KLASSEN, AUFTRAEGE, PHASEN, WAREN } = m_data_namen;
 const systemName = (karte, id) => (karte.systeme[id] ? karte.systeme[id].name : id);
 const ladungVon = (s) => Object.keys(s.ladung).sort().filter((w) => s.ladung[w] > 0).map((ware) => ({ ware, name: WAREN[ware], menge: s.ladung[ware] }));
 const betriebskostenStunde = (schiff, regeln) => (Object.hasOwn(regeln.world.betriebskosten, schiff.klasse) ? regeln.world.betriebskosten[schiff.klasse] : 0);
 function eigeneSchiffe(state, regeln, karte) {
-  const w = regeln.world;
+  const w = regeln.world; const namen = namenVon(state);
   return Object.keys(state.ships).sort().map((id) => state.ships[id]).filter((s) => rolle(state, s) === 'eigen').map((s) => {
     let ort = { art: 'system', system: s.system, name: systemName(karte, s.system) };
     if (s.phase === 'reise') {
@@ -2909,7 +2975,7 @@ function eigeneSchiffe(state, regeln, karte) {
       ort = { art: 'reise', system: s.system, name: systemName(karte, s.system), ziel, zielName: systemName(karte, ziel), fortschritt: rw ? fortschritt(state.tick, s.ankunft, rw.dauer) : null };
     }
     return {
-      id: s.id, klasse: s.klasse, klasseName: KLASSEN[s.klasse], ort,
+      id: s.id, name: namen[s.id], rufname: !!s.rufname, klasse: s.klasse, klasseName: KLASSEN[s.klasse], ort,
       taetigkeit: s.phase === 'reise' ? PHASEN.reise : AUFTRAEGE[s.auftrag],
       auftrag: s.auftrag, auftragName: AUFTRAEGE[s.auftrag], ladung: ladungVon(s),
       heimat: s.heimat, heimatName: systemName(karte, s.heimat), arbeit: s.arbeit, kostenStunde: betriebskostenStunde(s, regeln),
@@ -3098,7 +3164,7 @@ function flotteErzeugen(beiSchiff) {
         + zeile('Kosten je Stunde bei voller Arbeit', isk(f.reduce((n, s) => n + s.kostenStunde, 0)))
         + zeile('Im Auftrag „Wartet"', String(halten)));
       html($('flotte-schiffe'), f.length
-        ? f.map((s) => `<li class="zeile-knopf"><button type="button" class="zeile" data-schiff="${esc(s.id)}"><span class="liste-links">${rollenSymbol('eigen')} ${esc(s.klasseName)} <span class="muted">${esc(s.id)}</span></span>`
+        ? f.map((s) => `<li class="zeile-knopf"><button type="button" class="zeile" data-schiff="${esc(s.id)}"><span class="liste-links">${rollenSymbol('eigen')} ${esc(s.name)}${s.rufname ? ` <span class="muted">(${esc(s.klasseName)})</span>` : ''}</span>`
           + `<span class="liste-rechts">${esc(ortText(s.ort))} · ${esc(s.taetigkeit)}</span></button></li>`).join('')
         : '<li><span class="liste-links muted">Keine Schiffe.</span></li>');
       const w = weltFlotten(state);
@@ -3132,7 +3198,7 @@ function schiffZeichnen(state, id, onBefehl) {
     ? `${KLASSEN[state.ships[roh.eskorte].klasse] || state.ships[roh.eskorte].klasse} ${roh.eskorte}`
     : null;
 
-  html($('schiff-liste'), zeile('Ort', esc(ortText(s.ort))) + zeile('Tätigkeit', esc(s.taetigkeit)) + zeile('Heimat', esc(s.heimatName))
+  html($('schiff-liste'), zeile('Name', esc(s.name)) + zeile('Klasse', esc(s.klasseName)) + zeile('Ort', esc(ortText(s.ort))) + zeile('Tätigkeit', esc(s.taetigkeit)) + zeile('Heimat', esc(s.heimatName))
     + (istJaeger
         ? zeile('Kampfwerte',
             `${RULES.combat.einheiten.jaeger.hp} HP · ${RULES.combat.einheiten.jaeger.angriff} Angriff · `
@@ -3157,7 +3223,7 @@ function schiffZeichnen(state, id, onBefehl) {
       $('schiff-befehle').innerHTML = '<p class="muted">Befehle nur im Dock verfügbar.</p>';
       $('schiff-befehle').onclick = null;
     }
-    const result = { titel: `${s.klasseName} ${s.id}`, system: $('b-schiff-karte').dataset.system };
+    const result = { titel: s.name, system: $('b-schiff-karte').dataset.system };
     schiffCache = { state, tick: state.tick, id, dirty, result };
     return result;
   }
@@ -3183,7 +3249,7 @@ function schiffZeichnen(state, id, onBefehl) {
   ];
   const eskortieren = istJaeger ? eigeneSchiffe(state, RULES, KARTE)
     .filter((x) => x.id !== s.id && (x.klasse === 'frachter' || x.klasse === 'miner'))
-    .map((x) => knopf(`Eskorte ${esc(x.klasseName)} ${esc(x.id)}`, `data-befehl="escort" data-eskorte="${x.id}"`)) : [];
+    .map((x) => knopf(`Eskorte ${esc(x.name)}`, `data-befehl="escort" data-eskorte="${x.id}"`)) : [];
   const reisen = Object.keys(RULES.world.systems).sort().filter((x) => x !== sys)
     .map((x) => knopf(`→ ${esc(KARTE.systeme[x].name)}`, `data-befehl="move" data-ziel="${RULES.world.systems[x].station}"`));
   const handeln = Object.keys(RULES.world.stations[station].ziel).sort().filter((w) => preis(state, station, w, RULES) > 0)
@@ -3192,7 +3258,7 @@ function schiffZeichnen(state, id, onBefehl) {
       // In Schiffsdetails bleibt der Verkauf der gesamten Ladung möglich.
       const verkaufen = verkaufAngebot(state, RULES, station, roh, w, roh.ladung[w] || 0);
       return [
-        ...(kaufen ? [knopf(`Kaufe ${kaufen.menge} ${esc(WAREN[w])} (${isk(kaufen.betrag)} inkl. Gebühr)`, `data-befehl="buy" data-ware="${w}" data-menge="${kaufen.menge}"`)] : []),
+        ...(kaufen ? [knopf(`Kaufe ${kaufen.menge} ${esc(WAREN[w])}${RULES.economy.waren[w].stufe === 'schiff' ? ' als Fracht' : ''} (${isk(kaufen.betrag)} inkl. Gebühr)`, `data-befehl="buy" data-ware="${w}" data-menge="${kaufen.menge}"`)] : []),
         ...(verkaufen ? [knopf(`Verkaufe ${verkaufen.menge} ${esc(WAREN[w])} (${isk(verkaufen.betrag)} netto)`, `data-befehl="sell" data-ware="${w}" data-menge="${verkaufen.menge}"`)] : []),
       ];
     });
@@ -3241,7 +3307,7 @@ function schiffZeichnen(state, id, onBefehl) {
     else if (art === 'sell') Object.assign(cmd, { type: 'shipTrade', ware: b.dataset.ware, menge: Number(b.dataset.menge), kauf: false });
     onBefehl(cmd);
   };
-  const result = { titel: `${s.klasseName} ${s.id}`, system: $('b-schiff-karte').dataset.system };
+  const result = { titel: s.name, system: $('b-schiff-karte').dataset.system };
   schiffCache = { state, tick: state.tick, id, dirty, result };
   return result;
 }
@@ -3354,6 +3420,7 @@ const { packen, auspacken } = m_ui_speicher_huelle;
 const { marktBasis } = m_ui_markt;
 const { marktErzeugen, wareZeichnen } = m_ui_markt_ansicht;
 const { flotteErzeugen, schiffZeichnen } = m_ui_flotte_ansicht;
+const { nameVon } = m_ui_schiffsnamen;
 const { reichErzeugen } = m_ui_reich_ansicht;
 const { ersetztLaufendesSpiel } = m_ui_import_regel;
 
@@ -3407,6 +3474,7 @@ function berichteAbholen(toastZeigen) {
 
 function schritte(n) {
   if (!bereit || sperre) return;
+  const umbenannt = state.queue.some((cmd) => cmd.type === 'shipRename');
   const stunde = RULES.economy.stunde;
   let rest = n;
   while (rest > 0) {
@@ -3419,7 +3487,7 @@ function schritte(n) {
   }
   berichteAbholen(true);
   seitSpeichern += n;
-  if (seitSpeichern >= OBERFLAECHE.autosaveAlleSchritte) speichern();
+  if (umbenannt || seitSpeichern >= OBERFLAECHE.autosaveAlleSchritte) speichern();
 }
 
 function kopfAktualisieren() {
@@ -3466,7 +3534,7 @@ function befehlAusfuehren(cmd) {
     berichtGelesen = berichtGemeldet = state.ereignisse.length;
     if (!erg.ok) return meldungZeigen(`Befehl abgelehnt: ${erg.reason}`, { schlecht: true });
     seitSpeichern += 1;
-    if (seitSpeichern >= OBERFLAECHE.autosaveAlleSchritte) speichern();
+    if (cmd.type === 'shipRename' || seitSpeichern >= OBERFLAECHE.autosaveAlleSchritte) speichern();
   } else {
     const r = submit(state, cmd, RULES);
     if (!r.ok) return meldungZeigen(`Befehl abgelehnt: ${r.reason}`, { schlecht: true });
@@ -3523,6 +3591,19 @@ const reichAnsicht = reichErzeugen(() => state, befehlAusfuehren);
 $('b-schiff-karte').addEventListener('click', () => {
   const system = $('b-schiff-karte').dataset.system;
   blattSchliessen(); ansichtWechseln('karte'); systemOeffnen(system);
+});
+$('b-schiff-umbenennen').addEventListener('click', () => {
+  const schiff = state.ships[aktuellesSchiff];
+  if (!schiff || schiff.owner !== RULES.economy.start.owner) return;
+  dialogZeigen({
+    titel: 'Schiff umbenennen',
+    text: `Aktuell: ${nameVon(state, schiff)}. Maximal 24 Zeichen; ein leeres Feld stellt den Standardnamen wieder her.`,
+    eingabe: { wert: schiff.rufname || '', platzhalter: nameVon(state, schiff) },
+    knoepfe: [
+      { text: 'Abbrechen', art: 'normal' },
+      { text: 'Speichern', art: 'primary', aktion: (name) => befehlAusfuehren({ type: 'shipRename', owner: RULES.economy.start.owner, schiff: schiff.id, name }) },
+    ],
+  });
 });
 
 for (const b of document.querySelectorAll('[data-stufe]')) b.addEventListener('click', () => stufeSetzen(b.dataset.stufe));

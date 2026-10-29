@@ -53,7 +53,9 @@ function environment() {
     'dirty: m_ui_dirty',
     'createMarket: m_ui_markt_ansicht.marktErzeugen',
     'drawShip: m_ui_flotte_ansicht.schiffZeichnen',
+    'createFleet: m_ui_flotte_ansicht.flotteErzeugen',
     'offers: m_ui_handelsangebot',
+    'shipNames: m_ui_schiffsnamen.namenVon',
   ].join(', ') + ' })', { document });
   const state = E.createState(42, E.rules);
   const own = Object.values(state.ships).filter(ship => ship.owner === E.rules.economy.start.owner);
@@ -62,11 +64,17 @@ function environment() {
   const commands = [];
   const shipCommands = [];
   const market = E.createMarket(() => {}, () => {}, () => state, cmd => commands.push(cmd));
+  const fleet = E.createFleet(() => {});
 
   function renderMarket() {
     E.dirty.bump();
     market.zeichnen(state);
     return elements.get('markt-preise').innerHTML;
+  }
+  function renderFleet() {
+    E.dirty.bump();
+    fleet.zeichnen(state);
+    return elements.get('flotte-schiffe').innerHTML;
   }
   function renderShip(id = freighter.id) {
     E.dirty.bump();
@@ -77,7 +85,7 @@ function environment() {
     for (const match of markup.matchAll(/<button\b([^>]*)>([^<]*)<\/button>/g)) {
       const data = Object.fromEntries([...match[1].matchAll(/data-([a-z-]+)="([^"]+)"/g)]
         .map(item => [item[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase()), item[2]]));
-      if (data[field] === side && data[field === 'trade' ? 'tradeWare' : 'ware'] === ware)
+      if (data[field] === side && (field === 'activate' || data[field === 'trade' ? 'tradeWare' : 'ware'] === ware))
         return { data, text: match[2] };
     }
     return null;
@@ -90,10 +98,15 @@ function environment() {
   }
   function clickMarket(b) {
     for (const callback of elements.get('markt-preise').events.click)
-      callback({ target: { closest: () => ({ dataset: b.data }) } });
+      callback({ target: { closest: selector => {
+        if (selector === 'button[data-trade]' && b.data.trade) return { dataset: b.data };
+        if (selector === 'button[data-activate]' && b.data.activate) return { dataset: b.data };
+        if (selector === 'button[data-ware]' && b.data.ware) return { dataset: b.data };
+        return null;
+      } } });
     return commands.at(-1);
   }
-  return { E, state, miner, freighter, elements, renderMarket, renderShip, button, clickShip, clickMarket };
+  return { E, state, miner, freighter, elements, renderMarket, renderShip, renderFleet, button, clickShip, clickMarket };
 }
 
 test('Gesamtes Inline-JavaScript bleibt syntaktisch gültig', () => {
@@ -233,4 +246,200 @@ test('Deterministische Drei-Tages-Simulation mit festen Referenz-Hashes', () => 
     assert.equal(a.E.hash(state), hash, 'Seed ' + seed);
     assert.ok(a.E.audit(state).ok, 'Erhaltung: Seed ' + seed);
   }
+});
+
+
+test('Schiffskauf im Markt: zunächst Fracht, danach direkte Inbetriebnahme', () => {
+  const a = environment();
+  const initial = Object.values(a.state.ships).filter(ship => ship.owner === 'house').length;
+  const before = a.renderMarket();
+  const purchase = a.button(before, 'buy', 'miner');
+  assert.ok(purchase);
+  assert.match(purchase.text, /Miner als Fracht/);
+  assert.equal(a.button(before, 'miner', null, 'activate'), null);
+  const bought = a.clickMarket(purchase);
+  assert.equal(bought.type, 'shipTrade');
+  assert.equal(bought.ware, 'miner');
+  assert.equal(bought.schiff, purchase.data.schiff);
+  assert.equal(bought.menge, 1);
+  assert.ok(a.E.execute(a.state, bought, a.E.rules).ok);
+  assert.equal(Object.values(a.state.ships).filter(ship => ship.owner === 'house').length, initial);
+  assert.equal(a.state.ships[bought.schiff].ladung.miner, 1);
+  const after = a.renderMarket();
+  const deploy = a.button(after, 'miner', null, 'activate');
+  assert.ok(deploy);
+  assert.equal(deploy.data.schiff, bought.schiff);
+  assert.match(deploy.text, /Miner in Dienst stellen/);
+  const command = a.clickMarket(deploy);
+  assert.equal(command.type, 'shipActivate');
+  assert.equal(command.schiff, bought.schiff);
+  assert.equal(command.klasse, 'miner');
+  assert.ok(a.E.execute(a.state, command, a.E.rules).ok);
+  assert.equal(Object.values(a.state.ships).filter(ship => ship.owner === 'house').length, initial + 1);
+  const neuerMiner = Object.values(a.state.ships).find(ship => ship.owner === 'house' && ship.klasse === 'miner' && ship.id !== a.miner.id);
+  assert.ok(neuerMiner, 'neuer Miner im Spielstand');
+  assert.match(a.renderFleet(), new RegExp('data-schiff="' + neuerMiner.id + '"'), 'neuer Miner in sichtbarer Flottenliste');
+  assert.equal(a.state.ships[bought.schiff].ladung.miner, undefined);
+  assert.equal(a.button(a.renderMarket(), 'miner', null, 'activate'), null);
+  assert.ok(a.E.audit(a.state).ok, 'Geld- und Warenerhaltung nach Aktivierung');
+  const back = a.E.load(a.E.save(a.state), undefined, a.E.rules);
+  assert.equal(a.E.hash(back), a.E.hash(a.state), 'Aktiviertes Schiff speicherbar');
+});
+
+test('Gekauftes Schiff kann auch bei leerer Stationskasse aktiviert werden', () => {
+  const a = environment();
+  assert.ok(a.E.trade(a.state, a.E.rules, a.freighter, 'st_aldera', 'miner', 1, true));
+  a.state.owners.st_aldera.cash = 0;
+  const view = a.renderMarket();
+  assert.equal(a.button(view, 'sell', 'miner'), null, 'Station kann nicht zurückkaufen');
+  const activation = a.button(view, 'miner', null, 'activate');
+  assert.ok(activation, 'Aktivierung benötigt keine Stationskasse');
+  assert.equal(activation.data.schiff, a.freighter.id);
+  assert.ok(a.E.execute(a.state, a.clickMarket(activation), a.E.rules).ok);
+});
+
+test('Inbetriebnahme in laufender Simulation: Kauf und Aktivierung in getrennten Ticks', () => {
+  const a = environment();
+  const buy = a.button(a.renderMarket(), 'buy', 'jaeger');
+  assert.ok(buy);
+  const command1 = a.clickMarket(buy);
+  assert.ok(a.E.submit(a.state, command1, a.E.rules).ok);
+  assert.ok(a.E.step(a.state, a.E.rules)[0].ok);
+  const activate = a.button(a.renderMarket(), 'jaeger', null, 'activate');
+  assert.ok(activate);
+  assert.equal(activate.data.schiff, buy.data.schiff);
+  const command2 = a.clickMarket(activate);
+  assert.ok(a.E.submit(a.state, command2, a.E.rules).ok);
+  assert.ok(a.E.step(a.state, a.E.rules)[0].ok);
+  assert.ok(Object.values(a.state.ships).some(ship => ship.owner === 'house' && ship.klasse === 'jaeger'));
+  assert.ok(a.E.audit(a.state).ok);
+});
+
+test('Veralteter Aktivieren-Button aktiviert weder verkaufte noch reisende Schiffe', () => {
+  const a = environment();
+  assert.ok(a.E.trade(a.state, a.E.rules, a.freighter, 'st_aldera', 'miner', 1, true));
+  const activation = a.button(a.renderMarket(), 'miner', null, 'activate');
+  assert.ok(activation);
+  // Nach Verkauf existiert die Fracht nicht mehr, daher kein Auftrag.
+  assert.ok(a.E.trade(a.state, a.E.rules, a.freighter, 'st_aldera', 'miner', 1, false));
+  assert.equal(a.clickMarket(activation), undefined);
+  // Auch bei Kurswechsel ist der alte Markt-Button nicht mehr gültig.
+  assert.ok(a.E.trade(a.state, a.E.rules, a.freighter, 'st_aldera', 'miner', 1, true));
+  const travelButton = a.button(a.renderMarket(), 'miner', null, 'activate');
+  a.freighter.phase = 'reise';
+  assert.equal(a.clickMarket(travelButton), undefined);
+});
+
+test('Schiffsdetail kennzeichnet gekaufte Schiffe ebenfalls als Fracht', () => {
+  const a = environment();
+  const buy = a.button(a.renderShip(a.freighter.id), 'buy', 'miner', 'befehl');
+  assert.ok(buy);
+  assert.match(buy.text, /Miner als Fracht/);
+  assert.ok(a.E.execute(a.state, a.clickShip(buy), a.E.rules).ok);
+  const view = a.renderShip(a.freighter.id);
+  assert.match(view, /Miner in Dienst stellen/);
+});
+
+
+test('Startschiffe heißen Miner und Frachter, interne IDs bleiben Datenattribute', () => {
+  const a = environment();
+  const names = a.E.shipNames(a.state);
+  assert.equal(names[a.miner.id], 'Miner');
+  assert.equal(names[a.freighter.id], 'Frachter');
+  const fleet = a.renderFleet();
+  assert.match(fleet, / Miner<\/span>/);
+  assert.match(fleet, / Frachter<\/span>/);
+  assert.doesNotMatch(fleet, />sh001</);
+  assert.match(fleet, /data-schiff="sh001"/);
+  a.renderShip(a.miner.id);
+  const sheet = a.elements.get('schiff-liste').innerHTML;
+  assert.match(sheet, /Name/);
+  assert.match(sheet, /Miner/);
+});
+
+test('Zweiter Miner heißt Miner 2, auch wenn der erste umbenannt ist', () => {
+  const a = environment();
+  const purchase = a.button(a.renderMarket(), 'buy', 'miner');
+  assert.ok(a.E.execute(a.state, a.clickMarket(purchase), a.E.rules).ok);
+  const activate = a.button(a.renderMarket(), 'miner', null, 'activate');
+  assert.ok(a.E.execute(a.state, a.clickMarket(activate), a.E.rules).ok);
+  const extra = Object.values(a.state.ships).find(ship =>
+    ship.owner === 'house' && ship.klasse === 'miner' && ship.id !== a.miner.id);
+  assert.ok(extra);
+  assert.equal(a.E.shipNames(a.state)[extra.id], 'Miner 2');
+  assert.match(a.renderFleet(), /Miner 2/);
+  assert.ok(a.E.execute(a.state, {
+    type: 'shipRename', owner: 'house', schiff: a.miner.id, name: 'Scout',
+  }, a.E.rules).ok);
+  assert.equal(a.E.shipNames(a.state)[a.miner.id], 'Scout');
+  assert.equal(a.E.shipNames(a.state)[extra.id], 'Miner 2');
+  assert.match(a.renderMarket(), /Scout/);
+});
+
+test('Rufname wird gespeichert, getrimmt und beim Zurücksetzen entfernt', () => {
+  const a = environment();
+  const cmd = { type: 'shipRename', owner: 'house', schiff: a.freighter.id, name: '  Sternenläufer  ' };
+  assert.ok(a.E.execute(a.state, cmd, a.E.rules).ok);
+  assert.equal(a.state.ships[a.freighter.id].rufname, 'Sternenläufer');
+  assert.equal(a.E.shipNames(a.state)[a.freighter.id], 'Sternenläufer');
+  const loaded = a.E.load(a.E.save(a.state), undefined, a.E.rules);
+  assert.equal(loaded.ships[a.freighter.id].rufname, 'Sternenläufer');
+  assert.equal(a.E.hash(a.state), a.E.hash(loaded));
+  assert.ok(a.E.audit(a.state).ok);
+  assert.ok(a.E.execute(a.state, { ...cmd, name: '  ' }, a.E.rules).ok);
+  assert.equal(a.state.ships[a.freighter.id].rufname, undefined);
+  assert.equal(a.E.shipNames(a.state)[a.freighter.id], 'Frachter');
+});
+
+test('Ungültige Schiffsnamen werden zurückgewiesen, Umbenennen auf Reise ist erlaubt', () => {
+  const a = environment();
+  const base = { type: 'shipRename', owner: 'house', schiff: a.miner.id };
+  for (const name of ['a'.repeat(25), 'Zeile\n2', null, 5]) {
+    const result = a.E.execute(a.state, { ...base, name }, a.E.rules);
+    assert.equal(result.ok, false);
+  }
+  assert.equal(a.state.ships[a.miner.id].rufname, undefined);
+  const move = { type: 'shipMove', owner: 'house', schiff: a.miner.id, ziel: 'st_dravos' };
+  assert.ok(a.E.execute(a.state, move, a.E.rules).ok);
+  assert.equal(a.miner.phase, 'reise');
+  assert.ok(a.E.submit(a.state, { ...base, name: 'Reisender' }, a.E.rules).ok);
+  assert.ok(a.E.step(a.state, a.E.rules)[0].ok);
+  assert.equal(a.state.ships[a.miner.id].rufname, 'Reisender');
+});
+
+test('HTML im Rufnamen wird bei der Darstellung maskiert', () => {
+  const a = environment();
+  const input = '<b>Foo</b>';
+  assert.ok(a.E.execute(a.state, {
+    type: 'shipRename', owner: 'house', schiff: a.miner.id, name: input,
+  }, a.E.rules).ok);
+  assert.equal(a.E.shipNames(a.state)[a.miner.id], input);
+  const markup = a.renderFleet();
+  assert.match(markup, /&lt;b&gt;Foo&lt;\/b&gt;/);
+  assert.doesNotMatch(markup, /<b>Foo<\/b>/);
+});
+
+test('Bisheriger Spielstand ohne Rufnamen bleibt ohne Migration nutzbar', () => {
+  const a = environment();
+  const saved = a.E.save(a.state);
+  assert.equal(a.E.shipNames(a.state)[a.miner.id], 'Miner');
+  const restored = a.E.load(saved, undefined, a.E.rules);
+  assert.equal(a.E.hash(a.state), a.E.hash(restored));
+  assert.equal(a.E.shipNames(restored)[a.freighter.id], 'Frachter');
+});
+
+
+test('Zweiter Frachter wird als Frachter 2 angezeigt', () => {
+  const a = environment();
+  const buy = a.button(a.renderMarket(), 'buy', 'frachter');
+  assert.ok(buy, 'Frachter an der Startwerft kaufbar');
+  assert.ok(a.E.execute(a.state, a.clickMarket(buy), a.E.rules).ok);
+  const activate = a.button(a.renderMarket(), 'frachter', null, 'activate');
+  assert.ok(activate);
+  assert.ok(a.E.execute(a.state, a.clickMarket(activate), a.E.rules).ok);
+  const newShip = Object.values(a.state.ships).find(ship =>
+    ship.owner === 'house' && ship.klasse === 'frachter' && ship.id !== a.freighter.id);
+  assert.ok(newShip);
+  assert.equal(a.E.shipNames(a.state)[newShip.id], 'Frachter 2');
+  assert.match(a.renderFleet(), /Frachter 2/);
 });

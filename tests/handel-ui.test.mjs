@@ -53,6 +53,7 @@ function environment() {
     'dirty: m_ui_dirty',
     'createMarket: m_ui_markt_ansicht.marktErzeugen',
     'drawShip: m_ui_flotte_ansicht.schiffZeichnen',
+    'createFleet: m_ui_flotte_ansicht.flotteErzeugen',
     'offers: m_ui_handelsangebot',
   ].join(', ') + ' })', { document });
   const state = E.createState(42, E.rules);
@@ -62,11 +63,17 @@ function environment() {
   const commands = [];
   const shipCommands = [];
   const market = E.createMarket(() => {}, () => {}, () => state, cmd => commands.push(cmd));
+  const fleet = E.createFleet(() => {});
 
   function renderMarket() {
     E.dirty.bump();
     market.zeichnen(state);
     return elements.get('markt-preise').innerHTML;
+  }
+  function renderFleet() {
+    E.dirty.bump();
+    fleet.zeichnen(state);
+    return elements.get('flotte-schiffe').innerHTML;
   }
   function renderShip(id = freighter.id) {
     E.dirty.bump();
@@ -98,7 +105,7 @@ function environment() {
       } } });
     return commands.at(-1);
   }
-  return { E, state, miner, freighter, elements, renderMarket, renderShip, button, clickShip, clickMarket };
+  return { E, state, miner, freighter, elements, renderMarket, renderShip, renderFleet, button, clickShip, clickMarket };
 }
 
 test('Gesamtes Inline-JavaScript bleibt syntaktisch gültig', () => {
@@ -268,6 +275,9 @@ test('Schiffskauf im Markt: zunächst Fracht, danach direkte Inbetriebnahme', ()
   assert.equal(command.klasse, 'miner');
   assert.ok(a.E.execute(a.state, command, a.E.rules).ok);
   assert.equal(Object.values(a.state.ships).filter(ship => ship.owner === 'house').length, initial + 1);
+  const neuerMiner = Object.values(a.state.ships).find(ship => ship.owner === 'house' && ship.klasse === 'miner' && ship.id !== a.miner.id);
+  assert.ok(neuerMiner, 'neuer Miner im Spielstand');
+  assert.match(a.renderFleet(), new RegExp('data-schiff="' + neuerMiner.id + '"'), 'neuer Miner in sichtbarer Flottenliste');
   assert.equal(a.state.ships[bought.schiff].ladung.miner, undefined);
   assert.equal(a.button(a.renderMarket(), 'miner', null, 'activate'), null);
   assert.ok(a.E.audit(a.state).ok, 'Geld- und Warenerhaltung nach Aktivierung');

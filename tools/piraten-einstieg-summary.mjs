@@ -44,8 +44,8 @@ const b1=MODES.map(mode=>{
  const selected=cases.map(x=>({scenario:x.scenario,...x.results.find(v=>v.mode===mode)}));
  return {mode,originalFreightersAlive:selected.filter(x=>x.firstDeath===null).length,
   firstDeaths: selected.map(x=>({scenario:x.scenario,death:x.firstDeath,lifeHours:x.firstLifeHours})),
-  npc3FreighterPurchases:summ(selected.map(x=>x.freighterTrade.buys)),
-  npc3FreighterSales:summ(selected.map(x=>x.freighterTrade.sells)),
+  npc3GoodsBuysByFreighters:summ(selected.map(x=>x.freighterTrade.buys)),
+  npc3GoodsSalesByFreighters:summ(selected.map(x=>x.freighterTrade.sells)),
   npc3FreightCosts:summ(selected.map(x=>x.freighterDue)),
   npc3UnpaidWork:summ(selected.map(x=>x.npc3CostsDue-x.npc3CostsPaid)),
   npc3PirateAttacks:summ(selected.map(x=>x.pirateAttacks.filter(a=>a.owner==='npc3').length)),
@@ -64,9 +64,9 @@ md+='## Standardwelt – 13 Seeds à 90 Tage\n\n';
 md+='| Versuch | Gesamt-Mangelstunden | Handelsvorgänge | Schiffsverluste | NPC-Frachter am Ende (Summe) | NPC3-Kasse Median (ISK) | Silizium Aldera Median | Bauteile Aldera Median |\n| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |\n';
 for(const x of standard)md+='| '+x.mode+' | '+x.sumShortage+' | '+x.sumTotalTrades+' | '+x.sumLosses+' | '+x.npcFreightersEnd+' | '+x.npc3CashMedian+' | '+x.medianSiliconAldera+' | '+x.medianPartsAldera+' |\n';
 md+='\n## Aktive B1-Spielerfälle – vier Fälle, je 275 Tage\n\n';
-md+='| Versuch | Erster Frachter am Tag 365 lebend | Bezahlte NPC3-Frachterkäufe/-verkäufe | NPC3-Frachterverluste | NPC3-Minerverluste | Piratenziel-Auswahl NPC3 | Ungedeckter NPC3-Betrieb (ISK) |\n| --- | ---: | --- | ---: | ---: | ---: | ---: |\n';
-for(const x of b1)md+='| '+x.mode+' | '+x.originalFreightersAlive+'/4 | '+x.npc3FreighterPurchases+' / '+x.npc3FreighterSales+' | '+x.npc3FreighterLosses+' | '+x.npc3MinerLosses+' | '+x.npc3PirateAttacks+' | '+x.npc3UnpaidWork+' |\n';
-md+='\n**Messgrenzen:** Dies sind vier deterministische B1-Stressfälle, kein allgemeiner Erfolgsanteil. B1-Frachtersales sind tatsächlich ausgeführte Transaktionen aller NPC3-Frachter und beweisen keine Profitabilität nach Hüllenersatz. Der Kapitalfilter ist durch Geldausgabe dynamisch abschaltbar; 20 Tage Schonfrist gewährt nicht grundsätzlich dauerhaften Schutz; Aktivität bedeutet im Versuch mindestens drei historische Verkäufe oder Frachtwert ab 500 ISK. Ein weniger angegriffener Frachter kann länger leben und trotzdem nie Ware ausliefern. Weitere 13×90-Spielerfälle und iPad/NAS sind nicht behauptet.\n';
+md+='| Versuch | Erster Frachter am Tag 365 lebend | Bezahlte Warenkäufe/-verkäufe durch NPC3-Frachter | NPC3-Frachterverluste | NPC3-Minerverluste | Piratenziel-Auswahl NPC3 | Ungedeckter NPC3-Betrieb (ISK) |\n| --- | ---: | --- | ---: | ---: | ---: | ---: |\n';
+for(const x of b1)md+='| '+x.mode+' | '+x.originalFreightersAlive+'/4 | '+x.npc3GoodsBuysByFreighters+' / '+x.npc3GoodsSalesByFreighters+' | '+x.npc3FreighterLosses+' | '+x.npc3MinerLosses+' | '+x.npc3PirateAttacks+' | '+x.npc3UnpaidWork+' |\n';
+md+='\n**Messgrenzen:** Dies sind vier deterministische B1-Stressfälle, kein allgemeiner Erfolgsanteil. B1-Warenkäufe/-verkäufe sind tatsächlich ausgeführte Geschäfte **durch** NPC3-Frachter, **keine Käufe/Verkäufe von Frachterhüllen**. Sie beweisen weder Gewinn nach Schiffskosten noch nachhaltige Versorgung. Der Kapitalfilter ist durch Geldausgabe dynamisch abschaltbar; 20 Tage Schonfrist gewährt nicht grundsätzlich dauerhaften Schutz; Aktivität bedeutet im Versuch mindestens drei historische Verkäufe oder Frachtwert ab 500 ISK. Ein weniger angegriffener Frachter kann länger leben und trotzdem nie Ware ausliefern. Weitere 13×90-Spielerfälle und iPad/NAS sind nicht behauptet.\n';
 fs.mkdirSync(dest,{recursive:true});
 fs.writeFileSync(path.join(dest,'PIRATEN_ERGEBNISSE.md'),md);
 fs.writeFileSync(path.join(dest,'piraten-entscheidung.json'),JSON.stringify({base:BASE,modes:MODES,standard,b1,standardRuns:52,b1Runs:16,

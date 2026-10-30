@@ -62,10 +62,12 @@ test('NPC-Ersatzfrachter wird bezahlt und darf ohne Treibstoff überführt werde
 
 test('Neue Regelversion lädt; alte Treibstoffökonomie wird klar abgelehnt',()=>{
  const s=c.createState(1),restored=c.load(c.save(s));
- assert.equal(r.rulesVersion,10);assert.equal(restored.rulesVersion,10);
+ assert.equal(r.rulesVersion,11);assert.equal(restored.rulesVersion,11);
  assert.equal(c.hash(s),c.hash(restored));
  const alt=structuredClone(s);alt.rulesVersion=8;
  assert.throws(()=>c.load(JSON.stringify(alt)),/keine Regelmigration vorhanden/);
+ const vorGeografie=structuredClone(s);vorGeografie.rulesVersion=10;
+ assert.throws(()=>c.load(JSON.stringify(vorGeografie)),/keine Regelmigration vorhanden/, 'Alte Welt darf nicht unbemerkt als Nadir-Welt laden');
 });
 
 test('Freie Reisen bleiben für mehrere Seeds deterministisch und bilanztreu',()=>{

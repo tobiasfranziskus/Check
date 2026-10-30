@@ -25,13 +25,34 @@ Unveränderte vier Tag-90-Saves aus den gepinnten #34-/#36-Commits: Miner/42, Ha
 
 Für die Ergebnisbewertung werden explizit getrennt: neu registrierte Frachterrollen, **tatsächlich bezahlte** neue Frachterhüllen und Minerersatz, aktuelle Miner- versus Frachter-Solllücken, echte NPC3-Kasse, ungedeckte Arbeit, verfügbarer Werftvorrat, Überleben und reale Handelsmengen. Solange ein Ersatzschiff nur gekauft und anschließend wieder verloren wird oder Förderplätze liegenbleiben, ist eine „Erfolgsquote“ nicht erreicht.
 
-**Noch kein Teststatus behauptet:** Reale Resultate, CI-Artfakte und Hashes erst nach bestätigten Ausführungen berichten. Diese vier Diagnosefälle ersetzen keine produktive 13-Seed-×90-Tage-Abnahme, vollständige Save-Migration oder iPad-/NAS-Tests.
+**[CI] Tatsächlich ausgeführt:** [GitHub Actions #41107138600](https://github.com/tobiasfranziskus/Check/actions/runs/41107138600), sechs Jobs erfolgreich, 4 × 4 × 275-Tage-Fortsetzungen, 4.400 Tageshashvergleiche mit unabhängigen Replays, stündliche Geld-/Waren-/Kassenaudits und Save/Load-Fortsetzungen (192 Roundtrips im Vergleichsrunner). Die vier ursprünglichen #37-Endhashes und die Tag-97-B1-Kontrollen wurden erneut erreicht. Zusätzlich Node.js 22: **7/7 isolierte Sollflotten-Tests** sowie **48/48 Standardtests**, 0 Fehler, 0 Skip, 0 Abbrüche. Diese vier Diagnosefälle ersetzen keine produktive 13-Seed-×90-Tage-Abnahme, vollständige Save-Migration oder iPad-/NAS-Tests.
 
 ## Datenqualität: erste Frachterrolle versus gesamte Frachterflotte
 
 **Messkorrektur vor Abschluss der CI:** Das übernommene B1-Folgewerkzeug gruppierte realisierte Handelsmargen nach Owner und Schiffsklasse (NPC3/Frachter), zog anschließend aber nur die Arbeitskosten und Frachtverluste des **ersten** B1-Frachters ab. Sobald die Sollplatzvarianten tatsächlich Ersatzfrachter erzeugen, wäre dieses Vorzeichen/Profit-Maß ungeeignet. B3 berechnet deshalb ausdrücklich zusätzlich den **vollständigen NPC3-Frachterflottenbetrieb vor Hüllenanschaffung**: sämtliche realisierten FIFO-Margen **abzüglich** sämtlicher tatsächlicher und ungedeckter Frachterarbeitskosten **und** verlorener FIFO-Frachtwerte aller NPC3-Frachter. Für den anfänglichen B1-Frachter wird das eigene Ergebnis zusätzlich gesondert ausgewiesen. Einzelne Kosten und Frachtverluste stehen im Diagnoseereignisprotokoll und werden in der Verdichtung gegen die Gesamtsummen abgeglichen. Bezahlte Ersatzhüllen werden separat als Anschaffungsinvestition erfasst; sie dürfen nicht nochmals als laufende Arbeit oder Warenmarge verrechnet werden.
 
 Der Bericht verwendet die erst nach dieser Korrektur erneut vollständig gelaufene CI. Die erste Testversion kann zwar korrekte Simulationshashes liefern, ist aber **kein akzeptierter P&L-Nachweis für Varianten mit mehreren Frachtern**. Kein Produktcode wurde dadurch geändert.
+
+## Verifizierte Ergebnisse bis Tag 365
+
+**Datenquelle:** Abschließende, nach P&L-Korrektur erfolgreich ausgeführte CI [#41107138600](https://github.com/tobiasfranziskus/Check/actions/runs/41107138600) mit erzeugtem `b3-gesamt`-Artefakt. Es handelt sich um **vier gezielt ausgewählte B1-Stressfälle**, keine statistische Aussage über alle Seeds.
+
+| Fall | Kontrolle: bezahlte Ersatz-Frachter / Miner | `register`: bezahlte Ersatz-Frachter / Miner | Alle NPC3-Frachter: Netto vor Hüllenkauf, Kontrolle → `register` | NPC3 ungedeckter Betrieb, Kontrolle → `register` |
+| --- | ---: | ---: | ---: | ---: |
+| Miner/42 | 0 / 0 | 0 / 0 | −549 → −549 ISK | 0 → 0 ISK |
+| Handelsflotte/42 | 0 / 8 | 0 / 8 | −4.853 → −4.853 ISK | 870 → 870 ISK |
+| Station/1234 | 0 / 7 | **1 / 6** | −93 → **−1.853 ISK** | 0 → **144 ISK** |
+| Jagd/98765 | 0 / 6 | **1 / 4** | +444 → **−54.133 ISK** | 0 → **38.401 ISK** |
+
+- **[BESTÄTIGT]** In Station und Jagd wird je **eine reale Frachterhülle** gekauft, mit Gebühren bezahlt (1.092 bzw. 780 ISK). Beide Investitionen führen zu keinem bis Tag 365 vorhandenen erfüllten Frachter-Sollplatz. Der erste B1-Frachter geht wie in der Kontrolle verloren; die Folgekosten und Warenverluste der zusätzlich aufgebauten Frachterklasse verschlechtern die Gesamtbilanz.
+- **[BESTÄTIGT]** Minerersatz wird tatsächlich verdrängt: 7 → 6 bezahlte Miner im Stationsfall, 6 → 4 im Jagdfall. Ein bloßer zusätzlich gespeicherter Sollplatz ist somit **keine** wirtschaftliche Stabilisierung.
+- **[BESTÄTIGT]** `priority` erreicht in allen vier untersuchten Fällen dieselben Endstände und Endhashes wie `register`. Der Vorrang von Frachter-Sollplätzen ist hier kein Lösungseffekt; daraus folgt nicht, dass Reihenfolge in anderen Zuständen irrelevant wäre.
+- **[BESTÄTIGT]** `funded` lässt in keinem der vier finanziell bereits überlasteten Fälle einen weiteren dauerhaften Sollplatz zu. Alle vier Endhashes bleiben exakt denen der Kontrolle gleich. Das verhindert zusätzliche **neue Ersatzverpflichtungen**, heilt aber den ursprünglichen, bereits ausgeführten B1-Hüllenkauf und Piratenverlust nicht.
+- **[GRENZE]** Beide Ersatzkäufe sind regulär bezahlt. Die gravierenden ungedeckten **Betriebskosten** des Jagdfalls sind nicht mit einem kostenlosen Hüllenkauf oder einem Ledgerfehler gleichzusetzen. Die Nettobilanz aller Frachter beinhaltet tatsächliche laufende und unbezahlte Sollkosten sowie Frachtverlust; Hülleninvestitionen werden zusätzlich separat erfasst.
+
+**Urteil [ANALYSE]:** Sollplatzregistrierung als alleinige Produktkorrektur klar **nicht empfehlen**. Ein bezahlter Schiffskauf ist keine ausreichende Voraussetzung für ein finanziertes Sollflottenversprechen. Die Zulassung muss wirtschaftliche Zweckbindung, bereits bestehende Förderpflichten, Kapital für erste und wiederkehrende Handelszyklen, real verfügbare Werftinputs, Risiken und ein klares Aufgaben-/Ersatzmodell berücksichtigen. Kein neues Geld, keine kostenlosen Rettungen, keine sofortige Insolvenzmechanik ohne eigenständige Entscheidung.
+
+**Kleines Folgepaket [OPTION]:** Vor neuer NPC-Expansion die noch vorhandenen elf Miner-Sollrollen gegen reale aktuelle Schiffe und beabsichtigte Aufgabenwechsel untersuchen. Eine Umleitung eines vorhandenen Miners zum Carrier darf nicht stillschweigend einen zu ersetzenden Förder-Sollplatz **und** einen kostenintensiven Frachterplan ohne ausreichende Kasse erzeugen. Danach erst die wirklich finanzierte NPC-Investitionsentscheidung isoliert prüfen.
 
 ## Grenzen und nächstes Gate
 

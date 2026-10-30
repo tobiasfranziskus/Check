@@ -1,0 +1,38 @@
+name: Aphros Void – B1 Handelszyklus
+on:
+  pull_request:
+    paths:
+      - tools/b1-handelszyklus.mjs
+      - docs/ANALYSE_B1_HANDELSZYKLUS.md
+      - docs/data/b1-handelszyklus-v12.json
+      - .github/workflows/b1-handelszyklus.yml
+permissions:
+  contents: read
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Gepinnte Diagnosewerkzeuge bereitstellen
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399
+          mkdir -p "$RUNNER_TEMP/b1-evidence"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/b1-evidence"
+      - name: Vier unveränderte Tag-90-Fundamente mit Replay rekonstruieren
+        env:
+          LONGTERM_SOURCE_COMMIT: 6855d76bb374dd777a1b7e30ea52c9a6eca36399
+        run: node "$RUNNER_TEMP/b1-evidence/tools/npc-restart-v12.mjs" --prepare --out="$RUNNER_TEMP/b1-start"
+      - name: Kontrolle und reale Befehlsbänder mit Einzelkassenbilanz
+        run: node tools/b1-handelszyklus.mjs --evidence="$RUNNER_TEMP/b1-evidence" --starts="$RUNNER_TEMP/b1-start" --out="$RUNNER_TEMP/b1-result.json"
+      - name: Bestehende Standardtests
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b1-vollstaendige-fluesse-und-zustaende
+          path: |
+            ${{ runner.temp }}/b1-result*.json
+            ${{ runner.temp }}/b1-start/*.json

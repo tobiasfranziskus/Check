@@ -1,3 +1,5 @@
+> **Aktualisierung 30.10.2026:** Der ursprünglich unten beschriebene Stand vom 29.10. ist inzwischen historisch: **`main` enthält v0.11.2 / Merge #15, Commit `f01fd57`**. Nachfolgende Arbeiten #16–#28 liegen in anderen offenen PRs/Entwicklungsbranches; darunter freie Reisen, Sicherheitszonen/Nadir, Wirtschaftsanalysen und Versorgungspriorisierung. **Keine davon ist allein wegen bestandener Tests in `main`.** Für langfristige Planung siehe [ROADMAP.md](ROADMAP.md), für die aktuelle Integration GitHub-PRs und Commits. Ältere Formulierungen „noch nicht gemergt“ beziehen sich auf den damaligen Zeitpunkt und sind keine aktuelle Statusaussage.
+
 # Aphros Void – Projektstatus
 
 Stand: 29. Oktober 2026. v0.11.2 auf `feat/v0.11.2-wirtschaft`, Basis main `d53bf14`. Noch nicht gemergt, veröffentlicht oder auf NAS/iPad abgenommen.

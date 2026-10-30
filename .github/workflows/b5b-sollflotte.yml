@@ -1,0 +1,90 @@
+name: Aphros Void – B5b stabile Miner-Sollflottenzuordnung
+on:
+  pull_request:
+    paths:
+      - tools/b5b-*.mjs
+      - tests/b5b-sollrolle.test.mjs
+      - docs/TEST_B5B_SOLLFLOTTENZUORDNUNG.md
+      - .github/workflows/b5b-sollflotte.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  start-b1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Historische B1-Tag-90-Spielstände aus gepinnter Quelle rekonstruieren
+        env:
+          LONGTERM_SOURCE_COMMIT: 6855d76bb374dd777a1b7e30ea52c9a6eca36399
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399
+          mkdir -p "$RUNNER_TEMP/pirat-evidence"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/pirat-evidence"
+          node "$RUNNER_TEMP/pirat-evidence/tools/npc-restart-v12.mjs" --prepare --out="$RUNNER_TEMP/pirat-start"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b5b-startb1
+          path: ${{ runner.temp }}/pirat-start
+  spieler-b1:
+    needs: start-b1
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        fall: [miner, handel-flotte, station, jagd]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: frieden-startb1
+          path: ${{ runner.temp }}/pirat-start
+      - name: Gepinnte v12-Belegarchive für die v13-Lademigration bereitstellen
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399 cec7f93758e4a499c238738ff50adac4416080d4
+          mkdir -p "$RUNNER_TEMP/pirat-evidence" "$RUNNER_TEMP/pirat-b1"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/pirat-evidence"
+          git archive cec7f93758e4a499c238738ff50adac4416080d4 | tar -x -C "$RUNNER_TEMP/pirat-b1"
+      - name: Alte Regel 13 gegen neue Sollzuordnung 14 bis Tag 365 mit B1-Spielerbefehlen
+        run: |
+          node tools/b5b-b1-vergleich.mjs --case=${{ matrix.fall }} --evidence="$RUNNER_TEMP/pirat-evidence" --b1="$RUNNER_TEMP/pirat-b1" --starts="$RUNNER_TEMP/pirat-start" --out="$RUNNER_TEMP/b5b-b1-daten"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b5b-fall-${{ matrix.fall }}
+          path: ${{ runner.temp }}/b5b-b1-daten/*.json
+  abnahme:
+    needs: [spieler-b1]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: b5b-fall-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/b5b-outputs
+      - name: Vier B1-Dateien mit echtem Geld-/Warenbeleg und Rollenstatus verdichten
+        run: node tools/b5b-summary.mjs "$RUNNER_TEMP/b5b-outputs" "$RUNNER_TEMP/b5b-bericht"
+      - name: Echte Zielberechtigungsgrenzen und Saves isoliert prüfen
+        run: node --test tests/b5b-sollrolle.test.mjs
+      - name: Vorhandene Standardtests (kein Produktcode verändert)
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b5b-gesamt
+          path: ${{ runner.temp }}/b5b-bericht

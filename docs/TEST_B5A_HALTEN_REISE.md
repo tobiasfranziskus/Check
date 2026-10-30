@@ -26,7 +26,7 @@ Die angepasste GitHub-Actions-Prüfung führt weiterhin die gesamte Node-22-Test
 - prüft alle **13 realen Wirtschaftsmesswerte gegen die unabhängig ermittelte Original-v12-Fixture**: Versorgung, Produktion/Verkäufe, Kassen, Kostendefizite, Schiffsverluste und Geldschöpfung/-vernichtung. Die Basisseeds enthalten keine absichtlich gehaltene Spielerschiffsreise. Die tatsächliche Wirkung der Korrektur wird **separat** über den zweifachen validierten Reise-Stresstest und die Regression geprüft;
 - verlangt unveränderte historische v11-/Geografietests, soweit die verwendeten Fixdaten ihrer jeweiligen historischen Regelbasis entsprechen.
 
-**Vor erfolgreicher CI sind diese Langzeit- und Standardprüfungen nicht als bestanden zu bezeichnen.** Es wird kein Goldenwert still neu berechnet oder überschrieben.
+**[TEST/CI #41113083339 – BESTANDEN]** Die tatsächlich ausgeführte Node-22-CI meldet 57/57 Standardtests, 13 Seeds × 90 Tage unter Regel 13, 1.170 Tageshashes, 28.080 stündliche Audits/Replay-Hashvergleiche, Save/Load an Tag 3/30/90 und alle 13 Wirtschaftskennzahlen je Seed identisch zur unveränderten historischen v12-Fixture. Die historische v12-Goldenprüfung wurde auf dem Originalcommit `906b797` separat bestanden; v11- und Geografietests ebenfalls. Der v10-Vergleich wurde unter Regel 13 erwartungsgemäß nicht durchgeführt, der alte gestapelte Sicherheitsgeografie-Job war bedingt übersprungen. Die Folgekosten-Demonstration zeigt den realen Fonds-Transfer von 241 ISK. Kein Goldenwert wurde überschrieben. Dokumentation und Testergebnis bedeuten weder Merge noch iPad-/NAS-Freigabe.
 
 ## Freigabegrenzen
 

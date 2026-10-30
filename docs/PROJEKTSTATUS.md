@@ -1,6 +1,12 @@
-> **Aktualisierung 30.10.2026:** Der ursprünglich unten beschriebene Stand vom 29.10. ist inzwischen historisch: **`main` enthält v0.11.2 / Merge #15, Commit `f01fd57`**. Nachfolgende Arbeiten #16–#28 liegen in anderen offenen PRs/Entwicklungsbranches; darunter freie Reisen, Sicherheitszonen/Nadir, Wirtschaftsanalysen und Versorgungspriorisierung. **Keine davon ist allein wegen bestandener Tests in `main`.** Für langfristige Planung siehe [ROADMAP.md](ROADMAP.md), für die aktuelle Integration GitHub-PRs und Commits. Ältere Formulierungen „noch nicht gemergt“ beziehen sich auf den damaligen Zeitpunkt und sind keine aktuelle Statusaussage.
-
 # Aphros Void – Projektstatus
+
+**Aktueller Überblick, 30. Oktober 2026:** `main` enthält **v0.11.2, Commit `f01fd57`** (PR #15 gemergt, Spielstandschema 8 und Regelversion 8). Der tatsächliche NAS-/iPad-Deploymentstand wurde nicht nachgewiesen. Technische Fakten sind gegen den aktuellen `main`-Commit, PR-Basen und CI zu prüfen.
+
+**Einzige verbindliche Produkt- und Phasenplanung:** [ROADMAP.md](ROADMAP.md). **Verbindliche Entwicklungsregeln:** [AGENTS.md](../AGENTS.md). Der Entwicklungs-PR-Stack **#18 → #19 → #20**, die QA-/Analyse-PRs **#22–#27** und die produktive Handelspriorität **#28** sind **nicht in `main`**; #28 benötigt vor einer Integration eine saubere Mechanikbasis, ohne Analyse-Commits versehentlich mitzunehmen. **#16** wegen Liquidität blockiert, **#24/#25** nur Experimente. Ein bestandener Simulationstest bedeutet keinen Merge und kein Deployment. Historische Regel- und Spielstandkompatibilität sowie Safari/NAS sind offene Freigabegates.
+
+## Archivierter Statusauszug vom 29. Oktober 2026
+
+**Der folgende Bericht ist historisch und darf nicht als aktueller `main`- oder Roadmap-Stand interpretiert werden.** Er wird zur Rückverfolgbarkeit aufbewahrt.
 
 Stand: 29. Oktober 2026. v0.11.2 auf `feat/v0.11.2-wirtschaft`, Basis main `d53bf14`. Noch nicht gemergt, veröffentlicht oder auf NAS/iPad abgenommen.
 

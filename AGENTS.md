@@ -1,6 +1,6 @@
 # Verbindliche Entwicklungsregeln für Aphros Void
 
-Diese Regeln gelten für das gesamte Repository. Konkrete Anweisungen des Nutzers haben Vorrang. Vor Änderungen [docs/PROJEKTSTATUS.md](docs/PROJEKTSTATUS.md), relevante Testberichte und den aktuellen Code lesen; historische PR-Berichte beschreiben ihren damaligen Stand.
+Diese Regeln gelten für das gesamte Repository. Konkrete Anweisungen des Nutzers haben Vorrang. **[docs/ROADMAP.md](docs/ROADMAP.md) ist die einzige verbindliche Produkt- und Prioritätsplanung**; [docs/PROJEKTSTATUS.md](docs/PROJEKTSTATUS.md) hält überprüfte technische Fakten fest. Vor Änderungen Roadmap, Projektstatus, relevante Testberichte und den aktuellen Code/PR-Stack lesen; historische Berichte beschreiben nur ihren damaligen Stand.
 
 ## Produkt und Technik
 

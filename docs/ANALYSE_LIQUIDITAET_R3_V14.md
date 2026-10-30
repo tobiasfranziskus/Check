@@ -23,8 +23,30 @@ Ein externer Reformvergleich auf Basis einer älteren Regel-13-Datei hat zwei in
 - **Leistung:** Kumulierte Rezeptproduktion, wirkliche Warenkäufe und Warenverkäufe nach Owner und Schiffsklasse, Begleitgebühren, Transaktionsfolgen gleicher Schiffs-ID. Ein beobachteter Kauf/Verkauf ist **kein** Gewinnbeweis, und Folgekäufe sind nicht automatisch gedeckt; fällige und bezahlte Arbeit wird getrennt gemessen.
 - **Krisen:** Gemessene Mangelstunden, tatsächliche Verluste, Geld-/Warenquellen und Senken, Kassen am Tag 365, unbezahlte NPC-Betriebskosten. Keine Verbesserung behaupten, wenn sich nur Lagerpreise, Handelsumsätze oder volle Frachträume verändern.
 
+## Gemessene Resultate und Entscheidung
+
+**[CI AUSGEFÜHRT]** [Erste vollständige Auswertung #41127883338](https://github.com/tobiasfranziskus/Check/actions/runs/41127883338): **28/28 Jobs erfolgreich**, darunter 5/5 neue isolierte Tests und 72/72 Node-Tests einschließlich der bisherigen 67. **25 Fallpaare, 50 vollständige Läufe, 5.980 Tageshashes, 143.520 stündliche unabhängige Replay- und Auditzeitpunkte, 616 Save/Load-Roundtrips**. Kontrollvariante reproduziert in allen 13 Standardseeds exakt die historischen v12/v14-Mangel- und NPC1/2-Frachterverkaufswerte. Der anschließend ergänzte 60-Tage-Auswertungsabschnitt ändert keine Simulatorquelle, löst aber eine neue CI für den aktuellen PR-Head aus; diese muss gesondert bestätigt werden.
+
+| Messung, kumuliert bis Tag 90, sofern nicht anders angegeben | Normalwelt Kontrolle | Normalwelt R3 | Spieler-Miner Kontrolle | Spieler-Miner R3 | Spieler-Miner+Auto-Frachter Kontrolle | Spieler-Miner+Auto-Frachter R3 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Welten | 13 | 13 | 4 | 4 | 4 | 4 |
+| Mangelstunden | 791 | **743** | 143.349 | **146.133** | 146.318 | **147.666** |
+| Fertige Rezepte | 1.285.074 | **1.293.994** | 29.183 | **22.000** | 21.200 | **18.067** |
+| Real bezahlte Warenverkäufe NPC1/2-Frachter | 310.058 | **316.289** | 7.004 | **5.460** | 4.941 | **4.430** |
+| Rohstoff-Lager/Stunden-Paare ab 95 % Obergrenze (Mittel) | 60,2 % | **11,2 %** | 41,7 % | **0,6 %** | 39,2 % | **0,5 %** |
+| Durchschnittlicher Erz-Preisfaktor Aldera (‰) | 807 | 1.007 | 803 | 1.003 | 802 | 1.002 |
+| Median Spielerkasse am Tag 90 (ISK) | 2.000 | 2.000 | 41.404 | **42.172** | 40.057 | **40.355** |
+
+**[BESTÄTIGT]** R3 vermindert Rohstoffstau und hebt lokale Rohstoffpreise in der **ungestörten Normalwelt**, verbessert dort 48 Mangelstunden und 6.231 NPC-Händler-Verkäufe über 13 Seeds. Der Preis-/Lagergewinn ist aber kein unabhängiger Stabilitätsnachweis. Unter den vier aktiven Minerfällen sinkt die tatsächliche Rezeptproduktion um **7.183 / 24,6 %** und die NPC-Händler-Verkaufszahl um **1.544 / 22,0 %**, während die kumulierten Mangelstunden zunehmen. Mit zusätzlichem Spieler-Autofrachter sinkt die Rezeptproduktion um **3.133 / 14,8 %** und die NPC-Verkaufszahl um **511 / 10,3 %**. Das höhere Spielerguthaben und die gestoppte Miner-Abgabe können die fehlende lokale Kaufkraft/Versorgung verschärfen. Ein konkreter Kausalanteil ist daraus allein nicht eindeutig ableitbar; er erfordert bezahlte Ein- und Auszahlungen über die Zeit.
+
+**B1-Krisenfälle:** In vier historischen Spielerfortsetzungen vom Tag 90 bis Tag 365 betragen die kumulierten Mangelstunden **620.550 → 620.518** (Unterschied 32 Stunden über vier Welten und 275 Tage), abgeschlossene Rezepte **24.356 → 24.425**, **NPC1/2-Warenverkäufe durch Frachter bleiben 0 → 0**. NPC3-Frachter verkaufen **80 → 69** mal Ware. In **allen vier** Fällen liegen Silizium und Bauteile in Aldera unter beiden Varianten am Ende weiterhin bei **0 / 0**. Die vom Beobachter erfasste NPC3-Arbeitskostenunterdeckung fällt **433 → 0 ISK**; das beweist ausdrücklich **nicht**, dass der ausgefallene Handel nun finanziert wäre oder die Produktion wieder läuft. Eine geringere Unterdeckung kann lediglich geringere geleistete Arbeit anzeigen.
+
+Die analysierten Rohstoffstau-Anteile sind als **Markt/Rohstoff/Stunden-Paare ab 95 % des jeweiligen realen Obergrenzenbestands** definiert. Claudes Prozentwerte nutzen möglicherweise andere Auswahl, Gewichtung und Laufdauer; sie sind deshalb **nicht als exakt replizierte 77→8 % zu zitieren**. Unsere Spielerbefehle, Simulation bis Tag 90 und aktuelle Regel 14 unterscheiden sich ebenfalls von der alten v13-Quelle.
+
+**Projekturteil [ANALYSE – negativ für R3 als Einzelmaßnahme]:** Die R3-Variante ist ein potenzielles *späteres Preis-/Lager-Balancing*, nicht die gesuchte Reparatur des Zahlungs- und Wiederanlaufkreislaufs. Wegen der messbaren aktiven Spielerregressionen **nicht zur Produktintegration empfehlen**. Die unmittelbar nächste sinnvolle Phase-B-Arbeit bleibt die engere zahlungsseitige Zyklusdiagnose: nach echtem Warenkauf den Waren-/Kassenpfad, bezahlte Crew-/Flugstunden, Käuferliquidität, Folgeinvestition und gesicherte Rohstoff-/Werftversorgung prüfen; keine pauschale Spielerabgabe, keine zusätzliche Geldquelle oder Insolvenzregel aus dieser Analyse ableiten.
+
 ### Schutz und Freigabe
 
 **[ANALYSE]** Der beobachtete alte Spieler-Kollaps ist bestätigt, aber keine pauschale Spieler-Abschöpfung zulässig: Die Roadmap erlaubt grundsätzlich unbegrenztes Sparen. Eine endliche NPC-Geldmenge und beliebig fortgesetzter Spieler-Nettoentzug sind ein strukturelles, nicht durch kosmetische Preispuffer lösbares Problem. Selbst ein wirtschaftlich nützlicher R3-Solo-Test wäre **keine** Freigabe der neuen Produktregel. Der nächste Produktschritt bleibt vollständige Zahlungsfähigkeit vom Warenkauf über Transport/Betrieb bis Folgegeschäft.
 
-**Status bei Anlage:** Neue Werkzeuge und Funktionstests erstellt; die vollständigen CI-/Wirtschaftsläufe sind **noch nicht ausgewertet**. `index.html`, Spielstände, Schemata, bestehende Goldendaten und ROADMAP bleiben unverändert. Kein Merge, kein Deployment und keine echte iPad-/NAS-Abnahme.
+**Status:** Erste vollständige Wirtschafts-CI erfolgreich; Dokumentation und der weitere 60-Tage-Tabellenabschnitt wurden anschließend ergänzt und werden auf dem aktuellen PR-Head erneut geprüft. `index.html`, Spielstände, Schemata, bestehende Goldendaten und ROADMAP bleiben unverändert. Kein Merge, kein Deployment und keine echte iPad-/NAS-Abnahme.

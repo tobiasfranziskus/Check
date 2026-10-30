@@ -59,7 +59,7 @@ function testHaltenReise(){
  const amount=Math.floor(plain.r.world.betriebskosten.frachter*58/60);
  assert.equal(legacy.before-legacy.after,0,'v12 tatsächliche Gratisreise');
  assert.equal(fixed.before-fixed.after,amount,'v13 tatsächliche Zahlung');
- assert.equal(fixed.fundAfter-fixed.fundBefore,amount,'reale Empfänger-Fondskasse');
+ assert.equal((fixed.fundAfter-fixed.fundBefore)-(legacy.fundAfter-legacy.fundBefore),amount,'zusätzliche Zahlung an den realen Fonds gegenüber Regel 12');
  const migrated=plain.c.load(old.c.save(legacy.s),undefined,plain.r);
  assert.equal(migrated.rulesVersion,13);
  const restored=plain.c.load(plain.c.save(migrated),undefined,plain.r);

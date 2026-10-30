@@ -33,6 +33,20 @@ node tools/b2a-warteentscheidung-summary.mjs /tmp/b2a-messung /tmp/b2a-bericht
 node --test tests/*.test.mjs
 ```
 
+
+## Ergänzender Belastungsvergleich
+
+Die erste CI des Zweiervergleichs bestand technisch (8 Läufe, 2.200 Tageshashes, 48/48 Standardtests), **ergab aber in allen vier Fällen null leere Abflüge und identische Verläufe**. Die Wartebedingung wurde vor dem Verlust der untersuchten Frachter nicht wirksam. Dieser Nullbefund ist kein Wirkungsnachweis.
+
+Deshalb werden zusätzlich zwei **separat erkennbare Sensitivitätsläufe** unter der bereits in [#37](https://github.com/tobiasfranziskus/Check/pull/37) untersuchten, ausschließlich für NPC3 im Testprozess eingeblendeten Betriebskosten- plus Hüllenreservenbewertung ausgeführt:
+
+- `reserve_control`: der exakte frühere #37-`replacement`-Ansatz, **ohne** Warteänderung. Dessen vier Tag-365-Hashes werden vor jeder Aussage gegen die veröffentlichten Referenzen geprüft.
+- `reserve_wait`: derselbe Ansatz **mit ausschließlich der B2a-Warteentscheidung zusätzlich**.
+
+Damit bestehen zwei faire Paarvergleiche: `control` gegen `wait`, und `reserve_control` gegen `reserve_wait`. Die Reserve ist weder ein neues Konto noch eine Änderung an produktiver Buchung oder Sollflotte. Ein Unterschied im zweiten Paar belegt nur die Wirkung **unter dieser experimentellen Kapitalbeschränkung**, nicht die Produktwirkung in der unveränderten Wirtschaft.
+
+Insgesamt 4 Fälle × 4 Varianten × 275 Tage = 16 Fortsetzungen; unabhängig auditierte Replays und 4.400 Tageshashes als CI-Gates. Keine vorhergesagten Ergebniswerte in den Bericht übernehmen.
+
 ## Grenzen
 
 Der Versuch reduziert ausschließlich zufällige Leerflüge. Er enthält noch keine risikobewusste Routenwahl, keine bezahlte Flottenersatzplanung und keinen Insolvenz-/Markteintrittsmechanismus. Eine separate produktionstaugliche Regeländerung wäre bei positiver Abnahme erforderlich, einschließlich Regelversion/Migration, 13×90-Seed-Gate und Spieler-/Langzeitfällen. Kein Merge oder Deployment.

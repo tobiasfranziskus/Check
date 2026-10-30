@@ -33,7 +33,10 @@ const id=expectedCommands.find(x=>x.cmd.type==='shipHandeln').cmd.schiff;
 
 class Watch extends Observer{
  constructor(initial){super(initial);this.s=initial;this.attacks=[];this.fleetLosses=[];this.freighterTrade={buys:0,sells:0,buyValue:0,sellValue:0};
-  this.freighterDue=0;this.freighterPaid=0;this.companyCostsDue=0;this.companyCostsPaid=0;}
+  this.freighterDue=0;this.freighterPaid=0;this.companyCostsDue=0;this.companyCostsPaid=0;
+  // Beobachtungsfenster beginnt an Tag 90: ältere Warenverbräuche separat vortragen.
+  for(const [ware,ledger] of Object.entries(initial.ledger))this.consumeRows['vor90/'+ware]=ledger.consumed;
+ }
  pirateTarget(state,ship,system){
   this.attacks.push({tick:state.tick,system,owner:ship.owner,klasse:ship.klasse,ship:ship.id,
    cash:state.owners[ship.owner].cash,cargo:Object.entries(ship.ladung).reduce((a,[k,n])=>a+n,0)});

@@ -1,6 +1,6 @@
 # Verbindliche Entwicklungsregeln für Aphros Void
 
-Diese Regeln gelten für das gesamte Repository. Konkrete Anweisungen des Nutzers haben Vorrang. Vor Änderungen [docs/PROJEKTSTATUS.md](docs/PROJEKTSTATUS.md), relevante Testberichte und den aktuellen Code lesen; historische PR-Berichte beschreiben ihren damaligen Stand.
+Diese Regeln gelten für das gesamte Repository. Konkrete Anweisungen des Nutzers haben Vorrang. **[docs/ROADMAP.md](docs/ROADMAP.md) ist die einzige verbindliche Produkt- und Prioritätsplanung**; [docs/PROJEKTSTATUS.md](docs/PROJEKTSTATUS.md) hält überprüfte technische Fakten fest. Vor Änderungen Roadmap, Projektstatus, relevante Testberichte und den aktuellen Code/PR-Stack lesen; historische Berichte beschreiben nur ihren damaligen Stand.
 
 ## Produkt und Technik
 
@@ -46,3 +46,12 @@ Diese Regeln gelten für das gesamte Repository. Konkrete Anweisungen des Nutzer
 6. Pull Request mit Problem, Änderung, Kompatibilität, Tests und Grenzen erstellen, wenn beauftragt. Kein Merge nach `main`, keine Veröffentlichung und kein Deployment ohne ausdrücklichen Auftrag. Ein erfolgreicher Testlauf beweist keine Veröffentlichung.
 
 Die bestehende GitHub-Actions-Prüfung verwendet Node.js 22 und reagiert nur auf `index.html`, `tests/**` und die Workflow-Datei. Bei reinen Markdown-Änderungen den Testbefehl trotzdem lokal ausführen; einen nicht gestarteten CI-Lauf nicht als bestanden melden.
+
+
+## Zentrale Roadmap und fortlaufende Dokumentationspflege
+
+- **Produktvision und Phasen:** vor der Planung `docs/ROADMAP.md` lesen; `docs/PROJEKTSTATUS.md` hält den kurzfristigen, überprüften technischen Stand. Bei Abweichung sind aktuelle `main`-Commits, PR-Basis, CI und Spielcode wichtiger als historische Statusbehauptungen. Aus einem Draft oder Analysewerkzeug nie „bereits integriert“ machen.
+- **Nach jedem substanziellen Feature-, UI-, Wirtschafts- oder Designauftrag** prüfen, ob Meilenstein, Priorität, Abhängigkeit, offene Produktentscheidung oder Integrationsstatus geändert wurden. Falls ja, `docs/ROADMAP.md` in demselben PR gezielt nachführen. Den technischen Projektstatus nur mit belegten Daten anpassen. Alle Änderungen mit PR-/Commit-Links und Statuskategorie (`MAIN`, `DRAFT`, `ANALYSE`, `BESCHLOSSEN`, `OPTION`) kennzeichnen.
+- **Automatischer Abgleich:** ein täglicher Projektbericht vergleicht GitHub und die Roadmap. Bei materieller Diskrepanz darf ein eigenständiger **reiner Dokumentations-PR** erstellt oder der vorhandene passende Dokumentations-PR aktualisiert werden; keine doppelten PRs. **Nie selbst mergen, deployen, bestehenden Produktcode oder Spielmechanik ändern.** Ohne Abweichung keine kosmetischen Schreibvorgänge. Blockierte Schreibzugriffe als offen melden.
+- **ChatGPT-Projektanweisungen:** `docs/CHATGPT_PROJEKTANWEISUNGEN.md` enthält die kurze, kopierbare Fassung; sie muss vom Nutzer in der ChatGPT-Projektoberfläche eingetragen werden. Das Repository kann ChatGPT-Projekteinstellungen nicht direkt editieren. Der Verweis auf die Roadmap hält die Anleitung langfristig aktuell, ohne sie bei jeder neuen Funktion umzuschreiben.
+- **Schutz der Vision:** Langfristig Konzernmanager **und** spielbarer Miner/Frachter/Jäger mit Spielerstandort, 2D-Flug, Station/Konzernbüro/Tablet/Cockpit, Module, weitere Systeme und ggf. Koop. Multiplayer bleibt optional; Wirtschaft, deterministischer Kern, iPad-Safari und Save-Schutz haben Vorrang.

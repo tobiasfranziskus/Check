@@ -66,3 +66,22 @@ jobs:
           node-version: '22'
       - name: 13 Seeds x 90 Tage Basis Tor Tor-plus-Nadir
         run: node tools/geography-three-way.mjs
+
+  wirtschaft-v10-referenz:
+    # Die v10-Fixwerte sind ausschließlich für die Sicherheitswelt von PR #19 gültig.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: V10-Referenzvergleich (13 Seeds x 90 Tage)
+        shell: bash
+        run: |
+          if grep -q 'schema: 8, rulesVersion: 10,' index.html; then
+            node tools/freeflight-simulation.mjs
+          else
+            echo 'V10-Referenzvergleich für andere Regelversion übersprungen; eine eigene Referenz ist erforderlich.'
+          fi

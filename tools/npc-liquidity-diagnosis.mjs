@@ -35,6 +35,7 @@ function emptyOwner(){
  return {buyCount:0,buyUnits:0,buySpend:0,buyFees:0,sellCount:0,sellUnits:0,
   sellIncome:0,sellFees:0,sellCostBasis:0,buyUnder250:0,buyUnder750:0,
   buyNoCash:0,unmatchedSellUnits:0,levies:0,levyCount:0,
+  replacementCount:0,replacementSpend:0,
   costDue:0,costPaid:0,costUnpaid:0,costEvents:0,unpaidEvents:0,unpaidWithCargo:0,
   samples:0,cashSum:0,cashMin:Infinity,cashZeroHours:0,
   cargoCostSum:0,cargoPeak:0,cargoHours:0,cargoAndNoCashHours:0,
@@ -56,6 +57,11 @@ function run(html,seed,variant) {
  function onTrade(s,ship,station,ware,amount,buy,p,fee) {
   const o=byOwner[ship.owner];if(!o)return;
   const value=amount*p;
+  // Ersatzschiffe werden unmittelbar nach dem Kauf aktiviert. Sie sind
+  // Anlageinvestitionen und keine zum Weiterverkauf bestimmte Handelsfracht.
+  if(buy&&ware===ship.klasse&&ship.klasse==='frachter'){
+   o.replacementCount++;o.replacementSpend+=value+fee;return;
+  }
   const shipLots=get(ship.id);
   if(buy){
    o.buyCount++;o.buyUnits+=amount;o.buySpend+=value+fee;o.buyFees+=fee;
@@ -148,7 +154,8 @@ for(const seed of seeds){
  console.log('LIQUIDITY_SEED '+JSON.stringify({seed,tor,nadir}));
 }
 const metrics=['buyCount','buyUnits','buySpend','buyFees','sellCount','sellIncome','sellGrossMargin',
- 'buyUnder250','buyUnder750','buyNoCash','levies','levyCount','costDue','costPaid',
+ 'buyUnder250','buyUnder750','buyNoCash','replacementCount','replacementSpend',
+ 'levies','levyCount','costDue','costPaid',
  'costUnpaid','costEvents','unpaidEvents','unpaidWithCargo','cashZeroHours','cashAvg',
  'cargoCostAvg','cargoPeak','cargoHours','cargoAndNoCashHours','cargoAndUnder750Hours',
  'lostCargoCost','lostCargoUnits','cargoRemaining','avgHoldHours'];
@@ -157,6 +164,7 @@ const summary={seeds:seeds.length,variant:{},meaning:{
  cargo:'Gebundenes Einkaufskapital von noch vorhandener bezahlter Handelsfracht, FIFO',
  cost:'Kostenlücke je Schiff und Kostenabrechnung, ohne Doppelzählung',
  profit:'Verkaufserlös nach Gebühren minus FIFO-Anschaffungskosten; Schiffsverluste und Unterhalt separat',
+ replacement:'Sofort aktivierte, bezahlte Ersatzfrachter getrennt von Handelsfracht gebucht',
  limit:'Abgabe oberhalb npcObergrenze, keine tatsächliche Liquiditätsreserve'}};
 for(const [name,rows] of Object.entries(variants)){
  const owners={};

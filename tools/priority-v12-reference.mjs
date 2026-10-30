@@ -9,21 +9,26 @@ const expected=JSON.parse(fs.readFileSync(new URL('../tests/fixtures/economy-pri
 assert.equal(expected.provenance.sourceRun,41026155660);
 const anchor="const n = Math.min(besitzer.cash, kosten);\n    if (n <= 0) continue;";
 assert.equal(source.split(anchor).length,2,'Kostenbeobachter nicht eindeutig');
+const tradeAnchor="buche(state, schiff.owner, 'kosten', fee);\n  return true;";
+assert.equal(source.split(tradeAnchor).length,2,'Handelsbeobachter nicht eindeutig');
 const observed=source.replace(anchor,
- "if(['npc1','npc2','npc3'].includes(s.owner))watchCost(s.owner,Math.max(0,kosten-besitzer.cash));\n    "+anchor);
-const engine=new Function('watchCost',observed+';return {c:m_core_index,r:m_data_rules.RULES};');
+ "if(['npc1','npc2','npc3'].includes(s.owner))watchCost(s.owner,Math.max(0,kosten-besitzer.cash));\n    "+anchor)
+ .replace(tradeAnchor,"buche(state, schiff.owner, 'kosten', fee);\n  watchTrade(state,schiff,kauf);\n  return true;");
+const engine=new Function('watchCost','watchTrade',observed+';return {c:m_core_index,r:m_data_rules.RULES};');
 const sum=a=>a.reduce((s,n)=>s+n,0);
 const fields=Object.keys(expected.results[0]).filter(k=>k!=='seed');
 const totals=Object.fromEntries(fields.map(k=>[k,0]));
 const results=[];
 for(const golden of expected.results){
  const debt={npc1:0,npc2:0,npc3:0};
- const {c,r}=engine((owner,n)=>{debt[owner]+=n;});
+ let traderSales=0;
+ const {c,r}=engine((owner,n)=>{debt[owner]+=n;},
+  (state,ship,buy)=>{if(!buy&&ship.klasse==='frachter'
+   && state.owners[ship.owner].kind==='trader')traderSales++;});
  assert.equal(r.rulesVersion,12);
  assert.equal(r.world.versorgungsPrioritaet,1000);
  assert.equal(r.economy.waren.nahrung.basis,30);
  const state=c.createState(golden.seed,r),points=[];
- let countSales=0;
  // Die Freigabereferenz beinhaltet alle v11-kompatiblen Goldwerte, aber bewertet v12.
  for(let t=1;t<=129600;t++){
   c.step(state,r);
@@ -46,19 +51,15 @@ for(const golden of expected.results){
   medicineShortage:shortage.medikamente||0,
   foodAldera:state.stats.mangel.st_aldera.nahrung,
   foodDravos:state.stats.mangel.st_dravos.nahrung,
-  // NPC-Frachterverkäufe sind ein anderes Maß als state.stats.handel.
-  traderSales:0,
+  // NPC-Frachter-Verkaufsvorgänge, nicht sämtliche Handelsaktionen.
+  traderSales,
   npc1Unpaid:debt.npc1,npc2Unpaid:debt.npc2,
   stationsCash:byKind.station,fundCash:byKind.fund,traderCash:byKind.trader,
   civilianLosses:sum(['npc1','npc2','npc3'].map(owner=>
     sum(Object.values(state.stats.verluste[owner]||{})))),
   minted:state.minted,burned:state.burned
  };
- // Händlerverkäufe aus bereits vorhandenen schiffbezogenen Verkaufskonten sind nicht
- // dauerhaft aggregiert. Für dieses Diagnosefeld einen Beobachter vorsehen.
- delete result.traderSales;
- const reference={...golden};delete reference.traderSales;
- assert.deepEqual(result,reference,'Unabhängige Preis-/Route-Messung Seed '+golden.seed);
+ assert.deepEqual(result,golden,'Unabhängige Preis-/Route-Messung Seed '+golden.seed);
  const restored=c.load(c.save(state),undefined,r);
  assert.equal(c.hash(restored),c.hash(state),'Save/Load '+golden.seed);
  const hashes=points;

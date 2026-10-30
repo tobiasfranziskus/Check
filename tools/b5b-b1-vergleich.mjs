@@ -97,11 +97,13 @@ for(const mode of MODES){
    const sh=state.ships[minerId];
    assert(sh,'Originalminer muss beim B1-Transport ankommen');
    afterDelivery={id:minerId,system:sh.system,ware:sh.ware,auftrag:sh.auftrag,
-    sollplatz:sh.sollplatz??null,fehlend:fehlend(state,'npc3').length};
+    sollplatz:sh.sollplatz??null,fehlend:fehlend(state,'npc3').length,
+    fehlendesNadirSilizium:fehlend(state,'npc3').filter(x=>x.klasse==='miner'&&x.heimat==='nadir'&&x.ware==='silizium').length};
    assert.equal(afterDelivery.system,'aldera');
    assert.equal(afterDelivery.auftrag,'halten');
    assert.equal(afterDelivery.ware,null);
-   if(mode==='v14')assert.equal(afterDelivery.fehlend,0,'kein Phantom-Minerersatz');
+   if(mode==='v14')assert.equal(afterDelivery.fehlendesNadirSilizium,0,'Nadir-Siliziumrolle durch bestehenden Miner belegt');
+   if(mode==='v13')assert.equal(afterDelivery.fehlendesNadirSilizium,1,'historischer Phantom-Sollplatz nach Verkauf');
   }
   if(tick%60===0){
    assert(instrumented.c.audit(state).ok,'instrumentiertes Geld/Warenaudit');

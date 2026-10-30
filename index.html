@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f5f5f7">
-<meta name="aphros-version" content="v0.12.1">
+<meta name="aphros-version" content="v0.12.2">
 <title>Aphros Void</title>
 <style>
 :root {
@@ -171,7 +171,7 @@ button.zeile .liste-links { color: var(--text); }
 
 <main id="ansicht-hq" class="ansicht" aria-label="HQ">
   <header class="kopf">
-    <p class="muted kopf-klein">HQ · v0.12.1</p>
+    <p class="muted kopf-klein">HQ · v0.12.2</p>
     <p class="kasse"><span id="hq-kasse" class="kasse-zahl">–</span></p>
     <p id="hq-trend" class="trend muted"><span class="trend-symbol" id="hq-trend-symbol"></span><span id="hq-trend-text">–</span> <span class="trend-bezug">zur letzten vollen Spielstunde</span></p>
   </header>
@@ -264,7 +264,7 @@ button.zeile .liste-links { color: var(--text); }
     <div class="blatt-inhalt">
 
       <div class="blatt-seite" id="blatt-pruefung" data-titel="Prüfung" hidden>
-        <p class="muted">Version v0.12.1</p>
+        <p class="muted">Version v0.12.2</p>
         <section class="card" aria-label="Zustand">
           <dl>
             <div><dt>Spielzeit</dt><dd id="zeit">–</dd></div>
@@ -621,7 +621,7 @@ return { COMBAT };
 
 const m_data_rules = (() => {
 const RULES = {
-  schema: 8, rulesVersion: 10, maxAdvanceSteps: 10000, startSeed: 1,
+  schema: 8, rulesVersion: 11, maxAdvanceSteps: 10000, startSeed: 1,
   owners: m_data_world.WORLD.owners, economy: m_data_economy.ECONOMY,
   world: m_data_world.WORLD, combat: m_data_combat.COMBAT,
 };

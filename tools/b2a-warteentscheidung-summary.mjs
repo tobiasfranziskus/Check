@@ -26,7 +26,7 @@ for(const v of cases){
   const leer=x.life.filter(e=>e.kind==='departure'&&Object.values(e.cargo||{}).reduce((a,b)=>a+b,0)===0).length;
   const row={mode:x.mode,birth:x.birth,death:x.death,aliveHours:x.aliveHours,emptyDepartures:leer,buy:x.totals?.buys??last.totals.buys,sales:last.totals.sales,netOperating:last.netOperating,unpaid:last.companyCosts.unpaid,cash:last.budget.cash,finalHash:last.hash,roundtrips:x.roundtrips,hashCount:x.hashes.length,life:x.life};
   list.push(row);
-  md+='| '+v.scenario+' | '+x.mode+' | '+((x.death??x.points.at(-1).day*1440)-(x.birth??0))/60+' | '+row.buy+' / '+row.sales+' | '+row.emptyDepartures+' | '+row.netOperating+' | '+row.unpaid+' | '+row.cash+' |\n';
+  md+='| '+v.scenario+' | '+x.mode+' | '+((x.death??(x.commands[0].tick-1+x.points.at(-1).day*1440))-(x.birth??0))/60+' | '+row.buy+' / '+row.sales+' | '+row.emptyDepartures+' | '+Math.round(row.netOperating)+' | '+row.unpaid+' | '+row.cash+' |\n';
  }
  results.push({scenario:v.scenario,seed:v.seed,initialHash:v.results[0].initialHash,variants:list});
 }

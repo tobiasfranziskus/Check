@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
-const source=html.slice(html.indexOf('<script>')+8,html.indexOf('const m_data_oberflaeche'));
+const source=html.slice(html.indexOf('<script>')+8,html.indexOf('const m_ui_main ='));
 const elements=new Map();
 const document={getElementById(id){if(!elements.has(id))elements.set(id,{dataset:{},innerHTML:'',textContent:''});return elements.get(id)}};
 const {core,rules,ui,karte,zeichnen,security}=new Function('document',source+

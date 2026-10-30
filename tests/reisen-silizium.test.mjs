@@ -68,13 +68,19 @@ test('Neue Regelversion lädt; alte Treibstoffökonomie wird klar abgelehnt',()=
  assert.throws(()=>c.load(JSON.stringify(alt)),/keine Regelmigration vorhanden/);
 });
 
-test('Freie Reisen bleiben für mehrere Seeds deterministisch und bilanztreu',()=>{
- // Neue Referenz-Hashes für die veränderte Sicherheitswelt folgen nach unabhängigem Langlauf.
+test('Sicherheitswelt-v10 bleibt auf festen Referenzhashes nach drei Tagen',()=>{
+ const fix=JSON.parse(fs.readFileSync(new URL('./fixtures/economy-security-v10.json',import.meta.url),'utf8'));
+ assert.equal(fix.sourceCommit,'3cff288aa75c2c072c210298e9f81fb7b92a4ec7');
+ assert.equal(fix.rulesVersion,10);
+ assert.equal(r.rulesVersion,fix.rulesVersion);
+ assert.equal(fix.results.length,13);
  for(const seed of [7,11,42]){
+  const ref=fix.results.find(x=>x.seed===seed);
+  assert(ref,'Referenz für Seed '+seed+' fehlt');
   const s=c.createState(seed),t=c.createState(seed);
   c.advance(s,4320);c.advance(t,4320);
-  assert.equal(c.hash(s),c.hash(t),'Seed '+seed);
-
+  assert.equal(c.hash(s),ref.points[0].hash,'fester v10-Hash Seed '+seed);
+  assert.equal(c.hash(t),ref.points[0].hash,'unabhängige Wiederholung Seed '+seed);
   assert(c.audit(s).ok);assert(c.audit(t).ok);
  }
 });

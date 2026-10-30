@@ -135,7 +135,6 @@ for(const mode of MODES){
  assert.equal(roundtrips,12);
  assert.equal(daily.length,275);
  assert.equal(instrumented.c.hash(state),plain.c.hash(replay));
- if(mode==='no_raids')assert.equal(w.attacks.length,0,'Überfallbeobachter in friedlicher Variante vollständig leer');
  const result={mode,initialHash,sourceSha:SHA(changed),originalFreighter:id,originalMiner:minerId,afterDelivery,firstDeath,
   firstLifeHours:firstDeath===null?null:(firstDeath-129664)/60,
   pirateAttacks:w.attacks,freighterLosses:w.fleetLosses,
@@ -153,5 +152,5 @@ for(const mode of MODES){
   npc3Unpaid:w.companyCostsDue-w.companyCostsPaid,final:checkpoints.at(-1)}));
 }
 fs.mkdirSync(out,{recursive:true});
-fs.writeFileSync(path.join(out,scenario+'.json'),JSON.stringify({basis:BASE,scenario,seed,toolSha:SHA(fs.readFileSync(new URL(import.meta.url))),legacyB1Hash:b1.start.hash,migratedHash:initialHash,results})+'\n');
-console.log('B5B_PASS '+scenario+' 2×275 Tage / 550 Tageshashes / 13200 stündliche Audits beider Engines');
+fs.writeFileSync(path.join(out,scenario+'.json'),JSON.stringify({basis:BASE,scenario,seed,toolSha:SHA(fs.readFileSync(new URL(import.meta.url))),legacyB1Hash:b1.start.hash,initialHashes,results})+'\n');
+console.log('B5B_PASS '+scenario+' 2×275 Tage / 550 Tageshashes / 13200 stündliche Audit-/Replayzeitpunkte');

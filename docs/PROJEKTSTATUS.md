@@ -1,14 +1,22 @@
 # Aphros Void – Projektstatus
 
-**Aktualisiert: 30. Oktober 2026. [MAIN]** `main` auf Spielversion **v0.12.2**, Commit **`172a086`** nach Merge von **#17 (Konzernnamen), #18 (freie Reisen/Silizium), #19 (Sicherheitszonen), #20 (Nadir/Tor) und #22 (v11-Geografie-Referenz-QA)**. Deterministische Node-CI, v10-/v11-Referenzen und Wirtschaftsaudits wurden auf den jeweils überprüften Integrationsbranches bestanden. Das ist **kein** reales iPad-/NAS-Deployment.
+## [MAIN] Integrierte Version
 
-**[DRAFT]** [PR #30](https://github.com/tobiasfranziskus/Check/pull/30) überführt die profitable, bedarfsorientierte Frachterroute als `v0.12.3`, Regelversion **12**, in einen bereinigten eigenständigen PR auf dem integrierten v11-Core. Der ältere gestapelte [PR #28](https://github.com/tobiasfranziskus/Check/pull/28) wird **nicht** direkt in `main` übernommen. Unabhängige 13-Seed-v12-Referenz und Migrations-/Waren-/Geldaudits sind im PR enthalten, aber der neue vollständige CI-Lauf muss vor Integration auf dem neu zusammengesetzten Branch erfolgreich sein.
+**30. Oktober 2026, GitHub `main`: v0.12.3, Merge-Commit `1ff556592b475082e58d2918a9c7f3b02abd0566`.** Enthalten sind die gemergten PRs **#17 (Asterion/Veldra-Konzernnamen), #18 (treibstofffreie Reisen/Silizium), #19 (Sicherheitszonen), #20 (Nadir und Meridian–Orion-Tor), #22 (Geografie-Referenz- und Wirtschaftstests)** und **#30 (bedarfsorientierte profitable Frachterrouten, Regelversion 12)**. `docs/ROADMAP.md` auf `main` ist die einzige verbindliche Produkt-Roadmap.
 
-**Spielstände – ausdrücklich genehmigte Inkompatibilität:** Die Projektleitung hat bestätigt, dass **keine aktiven Spieler oder Spielstände** existieren. Alte Regelstände 8–10 müssen nicht migriert werden; sie werden ausdrücklich abgewiesen. Keinesfalls still überschreiben oder löschen. #30 enthält dagegen eine 11→12-Regelmigration. Spielstandschema weiterhin **8**.
+**Technik:** weiterhin statische `index.html`, Vanilla JS/HTML/CSS, kein Build oder Backend. **Spielstandschema 8**, **Regelversion 12**. Die bisherigen v8-/v10-Entwicklungsspielstände sind ausdrücklich als inkompatibel genehmigt, weil keine aktiven Nutzer/Spielstände vorhanden sind. Der Lader muss sie klar zurückweisen und niemals Browserdaten still überschreiben oder löschen. Für Regelversion 11 existiert die geprüfte Migration 11→12.
 
-**[ARCHIVIERT]** PR #1 alter Audit, #16 nicht finanzierte Expansion, #24 Pilotengehaltsversuch und #25 Modulversuch geschlossen, nicht integriert. **[ANALYSE]** #23, #26, #27 lieferten Ursachen-/Preis-/Versorgungsergebnisse, keine Produktionssysteme; werden nach Ablösung von #28 als historische Nachweise geschlossen. Verbindliche Planung: [ROADMAP.md](ROADMAP.md). Entwicklungsregeln: [AGENTS.md](../AGENTS.md).
+**Nachgewiesene CI-Abnahme:** [PR #30, GitHub Actions #41036228202](https://github.com/tobiasfranziskus/Check/actions/runs/41036228202) mit **48/48 Standardtests**, v10-/v11-Referenzprüfungen, 13 Seeds × 90 Tage für produktive v12-Goldenwerte sowie 13×90-Tage-Weltgeografievergleich: alle ausgeführten Jobs erfolgreich. Ein historischer bedingt übersprungener Sicherheitsgeografie-Job zählt nicht als Test. Die v12-Wirtschaftsreproduktion bestätigt für 13 Seeds × 90 Tage den Rückgang der Mangelstunden **4.204→791** bei Erhaltung von Geld-/Warenbuchungen, Kassenprüfung und Save/Load. **Weder iPad-Safari-Abnahme noch NAS-Deployment** ist damit belegt.
 
-**Offen:** Die Versorgung ist trotz Nadir noch nicht vollständig stabil; #30 adressiert das ohne neue Preise, Personal- oder Reparaturmechaniken. Realer Safari-/Touch-/NAS-Test und weitere Langzeit-/Spielerfälle fehlen weiterhin. Weder bestandene Node-Tests noch ein Merge belegen Veröffentlichung.
+## [ANALYSE] Geschlossene Forschungs-/Alt-PRs
+
+Historischer Audit **#1**, nicht ausreichend finanzierte NPC1-Expansion **#16**, Liquiditäts-/Preis-/Routenanalysen **#23, #26, #27**, Pilotengehalt **#24**, Modulbau-Prototyp **#25** sowie der von #30 abgelöste gestapelte Entwurf **#28** sind **geschlossen und nicht nach `main` gemergt**. Ergebnisse sind in [ANALYSEARCHIV_WIRTSCHAFT_V11.md](ANALYSEARCHIV_WIRTSCHAFT_V11.md) zusammengefasst. Die alten PR- und Git-Branches bleiben als reproduzierbarer Nachweis erhalten. **Keine** Pilotengehalts-, Modul- oder pauschale Preisänderung ist dadurch produktiv geworden.
+
+## Offene Qualitäts-/Produktgates
+
+- Reale iPad Safari Touch-/Querformat-/Hochformat- und NAS-Datei-/Persistenzabnahme; kein Rollout behaupten.
+- Wirtschaft über längere Laufzeiten und echte Spieleraktionen testen; Stationskassen, NPC-Ersatzschiffe, Kostenunterdeckung, Waren-/Geldströme weiter gemeinsam untersuchen.
+- Erst nach Ursachenprüfung neue Geld-/Waren-Ausgaben, Piratenwirtschaft, Reparaturen, Module und NPC-Personal einführen. Phasen und Abhängigkeiten ausschließlich nach der [ROADMAP.md](ROADMAP.md).
 
 ## Archivierter Statusauszug vom 29. Oktober 2026
 

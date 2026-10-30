@@ -63,17 +63,23 @@ function instrument(text){
  return text;
 }
 class Watch extends Observer{
- constructor(s){super(s);this.s=s;this.events=[];this.life=[];this.id=null;this.paid=0;this.due=0;this.lostCost=0;this.birth=null;this.death=null;this.totals={buy:0,buyFees:0,sell:0,sellFees:0,buys:0,sales:0,unitsBuy:0,unitsSell:0};for(const [w,l]of Object.entries(s.ledger))this.consumeRows['vor90/'+w]=l.consumed;}
+ constructor(s){super(s);this.s=s;this.events=[];this.life=[];this.id=null;this.paid=0;this.due=0;this.lostCost=0;this.shipMargin={};this.freightCostDue=0;this.freightCostPaid=0;this.freightLostCost=0;this.freightTradeCount={buys:0,sales:0};this.birth=null;this.death=null;this.totals={buy:0,buyFees:0,sell:0,sellFees:0,buys:0,sales:0,unitsBuy:0,unitsSell:0};for(const [w,l]of Object.entries(s.ledger))this.consumeRows['vor90/'+w]=l.consumed;}
  flow(kind,from,to,n){super.flow(kind,from,to,n);if(n&&[from,to].includes('npc3'))this.events.push({tick:this.s.tick,kind,from,to,n});}
  trade(s,ship,station,ware,n,buy,value,fee,recipient){
+  const tradeKey=[ship.owner,ship.klasse,ware,buy?'kauf':'verkauf'].join('/');
+  const before=this.trades[tradeKey]?.realizedMargin||0;
   super.trade(s,ship,station,ware,n,buy,value,fee,recipient);
+  if(ship.owner==='npc3' && ship.klasse==='frachter'){
+   this.shipMargin[ship.id]=(this.shipMargin[ship.id]||0)+((this.trades[tradeKey]?.realizedMargin||0)-before);
+   this.freightTradeCount[buy?'buys':'sales']++;
+  }
   if(ship.owner==='npc3')this.events.push({tick:s.tick,kind:'trade',ship:ship.id,klasse:ship.klasse,station,ware,n,buy,value,fee,cash:s.owners.npc3.cash});
   if(ship.id===this.id){this.totals[buy?'buy':'sell']+=value;this.totals[buy?'buyFees':'sellFees']+=fee;this.totals[buy?'buys':'sales']++;this.totals[buy?'unitsBuy':'unitsSell']+=n;this.life.push({tick:s.tick,kind:'trade',station,ware,n,buy,value,fee,work:ship.arbeit,cash:s.owners.npc3.cash});}
  }
- cost(s,ship,due,paid,system,rules){super.cost(s,ship,due,paid,system,rules);if(ship.id===this.id&&due){this.due+=due;this.paid+=paid;this.life.push({tick:s.tick,kind:'cost',due,paid,system,cashBefore:s.owners.npc3.cash});}}
+ cost(s,ship,due,paid,system,rules){super.cost(s,ship,due,paid,system,rules);if(ship.owner==='npc3'&&ship.klasse==='frachter'){this.freightCostDue+=due;this.freightCostPaid+=paid;}if(ship.id===this.id&&due){this.due+=due;this.paid+=paid;this.life.push({tick:s.tick,kind:'cost',due,paid,system,cashBefore:s.owners.npc3.cash});}}
  depart(s,ship,station,ziel,route,ware,n){if(ship.id===this.id)this.life.push({tick:s.tick,kind:'departure',station,ziel,route:structuredClone(route),ware,n,cargo:structuredClone(ship.ladung),cash:s.owners.npc3.cash});}
  combat(s,ship,pirates,result){if(ship.id===this.id)this.life.push({tick:s.tick,kind:'combat',phase:ship.phase,originSystem:ship.system,target:ship.ziel,pirates:pirates.map(p=>({id:p.id,klasse:p.klasse})),cargo:structuredClone(ship.ladung),result:structuredClone(result),budget:budget(s,this.id)});}
- lost(ship){if(ship.id===this.id){this.death=this.s.tick;this.lostCost=sum([...this.inventory.entries()].filter(([k])=>k.startsWith(ship.id+'/')).flatMap(([,lots])=>lots.map(l=>l.n*l.unitCost)));this.life.push({tick:this.s.tick,kind:'loss',lostInventoryCost:this.lostCost,budget:budget(this.s,this.id)});}super.lost(ship);}
+ lost(ship){if(ship.owner==='npc3'&&ship.klasse==='frachter'){this.freightLostCost+=sum([...this.inventory.entries()].filter(([key])=>key.startsWith(ship.id+'/')).flatMap(([,lots])=>lots.map(l=>l.n*l.unitCost)));}if(ship.id===this.id){this.death=this.s.tick;this.lostCost=sum([...this.inventory.entries()].filter(([k])=>k.startsWith(ship.id+'/')).flatMap(([,lots])=>lots.map(l=>l.n*l.unitCost)));this.life.push({tick:this.s.tick,kind:'loss',lostInventoryCost:this.lostCost,budget:budget(this.s,this.id)});}super.lost(ship);}
 }
 function budget(s,id){
  const price=cl=>c.preis(s,r.world.werft,cl,r),allIn=cl=>price(cl)+c.gebuehr(s,r,r.world.werft,price(cl));
@@ -116,7 +122,9 @@ function run(mode){
   if([1,7,30,90,180,275].includes(t/1440)){
    assert.equal(observed.canonical(s),plain.canonical(replay));for(const st of [s,replay])assert.equal(plain.canonical(plain.load(plain.save(st))),plain.canonical(st));replay=plain.load(plain.save(replay));roundtrips+=2;
    const realizedMargin=sum(Object.entries(w.trades).filter(([k])=>k.startsWith('npc3/frachter/')).map(([,v])=>v.realizedMargin));
-   points.push({day:t/1440,hash:observed.hash(s),alive:!!s.ships[w.id],budget:budget(s,w.id),minCash,totals:structuredClone(w.totals),paid:w.paid,due:w.due,realizedMargin,lostInventoryCost:w.lostCost,netOperating:realizedMargin-w.due-w.lostCost,companyDelta:s.owners.npc3.cash-initialCash,companyCosts:structuredClone(w.costs.npc3),flows:structuredClone(w.flows),sollflotte:structuredClone(s.sollflotte.npc3),finalCargo:s.ships[w.id]?.ladung??null,realBuilds:{miner:(s.stats.indienst.npc3?.miner||0)-(initialBuilt.miner||0),frachter:(s.stats.indienst.npc3?.frachter||0)-(initialBuilt.frachter||0)},ownedFreighters:Object.values(s.ships).filter(sh=>sh.owner==='npc3'&&sh.klasse==='frachter').length});
+   const fleetOperating=realizedMargin-w.freightCostDue-w.freightLostCost;
+   const firstOperating=(w.shipMargin[w.id]||0)-w.due-w.lostCost;
+   points.push({day:t/1440,hash:observed.hash(s),alive:!!s.ships[w.id],budget:budget(s,w.id),minCash,totals:structuredClone(w.totals),paid:w.paid,due:w.due,realizedMargin,lostInventoryCost:w.lostCost,netOperating:fleetOperating,firstNetOperating:firstOperating,freightCostDue:w.freightCostDue,freightCostPaid:w.freightCostPaid,freightLostCost:w.freightLostCost,freightTrades:{...w.freightTradeCount},companyDelta:s.owners.npc3.cash-initialCash,companyCosts:structuredClone(w.costs.npc3),flows:structuredClone(w.flows),sollflotte:structuredClone(s.sollflotte.npc3),finalCargo:s.ships[w.id]?.ladung??null,realBuilds:{miner:(s.stats.indienst.npc3?.miner||0)-(initialBuilt.miner||0),frachter:(s.stats.indienst.npc3?.frachter||0)-(initialBuilt.frachter||0)},ownedFreighters:Object.values(s.ships).filter(sh=>sh.owner==='npc3'&&sh.klasse==='frachter').length});
   }
  }
  assert.equal(cmdIndex,commands.length);assert.equal(observed.canonical(s),plain.canonical(replay));

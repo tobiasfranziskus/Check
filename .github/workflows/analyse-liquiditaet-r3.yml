@@ -1,0 +1,140 @@
+name: Aphros Void – Diagnose Liquidität und Förderziel R3 (Analyse)
+on:
+  pull_request:
+    paths:
+      - tools/analyse-r3-*.mjs
+      - tests/analyse-r3-liquiditaet.test.mjs
+      - docs/ANALYSE_LIQUIDITAET_R3_V14.md
+      - .github/workflows/analyse-liquiditaet-r3.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Isolierten R3-Patch, Save/Load und unabhängige Auditbeobachter prüfen
+        run: node --test tests/analyse-r3-liquiditaet.test.mjs
+      - name: Alle bestehenden Produkt- und neuen Analysetests
+        run: node --test tests/*.test.mjs
+  standard:
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [7, 11, 1, 2, 65535, 42, 1234, 98765, 3, 99, 2024, 2025, 314159]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Historische Regel14-Standardwelt vs. isolierte Förderziel-Abgabe (90 Tage)
+        run: node tools/analyse-r3-liquiditaet-run.mjs --type=standard --seed=${{ matrix.seed }} --out="$RUNNER_TEMP/r3-cases"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r3-results-standard-${{ matrix.seed }}
+          path: ${{ runner.temp }}/r3-cases/*.json
+  player:
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        typ: [player-miner, player-auto]
+        seed: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Spieler-Miner und Auto-Frachter gegen R3 ohne Spielerabgaben (90 Tage)
+        run: node tools/analyse-r3-liquiditaet-run.mjs --type=${{ matrix.typ }} --seed=${{ matrix.seed }} --out="$RUNNER_TEMP/r3-cases"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r3-results-${{ matrix.typ }}-${{ matrix.seed }}
+          path: ${{ runner.temp }}/r3-cases/*.json
+  start-b1:
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Originale B1-Tag90-Saves im Regel12-Core rekonstruieren
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399
+          mkdir -p "$RUNNER_TEMP/r3-evidence"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/r3-evidence"
+          node "$RUNNER_TEMP/r3-evidence/tools/npc-restart-v12.mjs" --prepare --out="$RUNNER_TEMP/r3-start"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r3-b1-start
+          path: ${{ runner.temp }}/r3-start
+  b1:
+    needs: start-b1
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { fall: miner, seed: 42 }
+          - { fall: handel-flotte, seed: 42 }
+          - { fall: station, seed: 1234 }
+          - { fall: jagd, seed: 98765 }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: r3-b1-start
+          path: ${{ runner.temp }}/r3-start
+      - name: Alte R12-B1-Quelle und validierte unveränderte Spielerbefehle bereitstellen
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399 cec7f93758e4a499c238738ff50adac4416080d4
+          mkdir -p "$RUNNER_TEMP/r3-evidence" "$RUNNER_TEMP/r3-b1"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/r3-evidence"
+          git archive cec7f93758e4a499c238738ff50adac4416080d4 | tar -x -C "$RUNNER_TEMP/r3-b1"
+      - name: B1 bis Tag365 mit Kosten- und Handelsbeobachtung auf Regel14
+        run: |
+          node tools/analyse-r3-liquiditaet-run.mjs --type=b1 --scenario=${{ matrix.fall }} --seed=${{ matrix.seed }} --evidence="$RUNNER_TEMP/r3-evidence" --b1="$RUNNER_TEMP/r3-b1" --starts="$RUNNER_TEMP/r3-start" --out="$RUNNER_TEMP/r3-cases"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r3-results-b1-${{ matrix.fall }}
+          path: ${{ runner.temp }}/r3-cases/*.json
+  abnahme:
+    needs: [standard, player, b1]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: r3-results-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/r3-results
+      - name: Alle 25 Paarvergleiche auf Vollständigkeit und bilanzielle Kennzahlen prüfen
+        run: node tools/analyse-r3-liquiditaet-summary.mjs "$RUNNER_TEMP/r3-results" "$RUNNER_TEMP/r3-summary"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r3-liquiditaet-gesamt
+          path: ${{ runner.temp }}/r3-summary

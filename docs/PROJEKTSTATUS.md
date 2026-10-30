@@ -1,8 +1,14 @@
 # Aphros Void – Projektstatus
 
-**Aktueller Überblick, 30. Oktober 2026:** `main` enthält **v0.11.2, Commit `f01fd57`** (PR #15 gemergt, Spielstandschema 8 und Regelversion 8). Der tatsächliche NAS-/iPad-Deploymentstand wurde nicht nachgewiesen. Technische Fakten sind gegen den aktuellen `main`-Commit, PR-Basen und CI zu prüfen.
+**Aktualisiert: 30. Oktober 2026. [MAIN]** `main` auf Spielversion **v0.12.2**, Commit **`172a086`** nach Merge von **#17 (Konzernnamen), #18 (freie Reisen/Silizium), #19 (Sicherheitszonen), #20 (Nadir/Tor) und #22 (v11-Geografie-Referenz-QA)**. Deterministische Node-CI, v10-/v11-Referenzen und Wirtschaftsaudits wurden auf den jeweils überprüften Integrationsbranches bestanden. Das ist **kein** reales iPad-/NAS-Deployment.
 
-**Einzige verbindliche Produkt- und Phasenplanung:** [ROADMAP.md](ROADMAP.md). **Verbindliche Entwicklungsregeln:** [AGENTS.md](../AGENTS.md). Der Entwicklungs-PR-Stack **#18 → #19 → #20**, die QA-/Analyse-PRs **#22–#27** und die produktive Handelspriorität **#28** sind **nicht in `main`**; #28 benötigt vor einer Integration eine saubere Mechanikbasis, ohne Analyse-Commits versehentlich mitzunehmen. **#16** wegen Liquidität blockiert, **#24/#25** nur Experimente. Ein bestandener Simulationstest bedeutet keinen Merge und kein Deployment. Historische Regel- und Spielstandkompatibilität sowie Safari/NAS sind offene Freigabegates.
+**[DRAFT]** [PR #30](https://github.com/tobiasfranziskus/Check/pull/30) überführt die profitable, bedarfsorientierte Frachterroute als `v0.12.3`, Regelversion **12**, in einen bereinigten eigenständigen PR auf dem integrierten v11-Core. Der ältere gestapelte [PR #28](https://github.com/tobiasfranziskus/Check/pull/28) wird **nicht** direkt in `main` übernommen. Unabhängige 13-Seed-v12-Referenz und Migrations-/Waren-/Geldaudits sind im PR enthalten, aber der neue vollständige CI-Lauf muss vor Integration auf dem neu zusammengesetzten Branch erfolgreich sein.
+
+**Spielstände – ausdrücklich genehmigte Inkompatibilität:** Die Projektleitung hat bestätigt, dass **keine aktiven Spieler oder Spielstände** existieren. Alte Regelstände 8–10 müssen nicht migriert werden; sie werden ausdrücklich abgewiesen. Keinesfalls still überschreiben oder löschen. #30 enthält dagegen eine 11→12-Regelmigration. Spielstandschema weiterhin **8**.
+
+**[ARCHIVIERT]** PR #1 alter Audit, #16 nicht finanzierte Expansion, #24 Pilotengehaltsversuch und #25 Modulversuch geschlossen, nicht integriert. **[ANALYSE]** #23, #26, #27 lieferten Ursachen-/Preis-/Versorgungsergebnisse, keine Produktionssysteme; werden nach Ablösung von #28 als historische Nachweise geschlossen. Verbindliche Planung: [ROADMAP.md](ROADMAP.md). Entwicklungsregeln: [AGENTS.md](../AGENTS.md).
+
+**Offen:** Die Versorgung ist trotz Nadir noch nicht vollständig stabil; #30 adressiert das ohne neue Preise, Personal- oder Reparaturmechaniken. Realer Safari-/Touch-/NAS-Test und weitere Langzeit-/Spielerfälle fehlen weiterhin. Weder bestandene Node-Tests noch ein Merge belegen Veröffentlichung.
 
 ## Archivierter Statusauszug vom 29. Oktober 2026
 

@@ -2,6 +2,7 @@
 // Basis ist der unveränderte PR-#19-Commit 3cff288; nur Entwicklungswerkzeug.
 // Aufruf im Git-Checkout: node tools/sicherheitsgeografie-simulation.mjs
 import fs from 'node:fs';
+import { v11CoreSource } from './v11-core-source.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 
@@ -15,7 +16,7 @@ const costAnchor="const n = Math.min(besitzer.cash, kosten);\n    if (n <= 0) co
 function extract(html){
  const start=html.indexOf('<script>')+8, stop=html.indexOf('const m_data_oberflaeche');
  assert(start>7&&stop>start,'Engine-Schnittstelle');
- return html.slice(start,stop);
+ return v11CoreSource(html);
 }
 function engine(html,watchTrade=()=>{},watchCost=()=>{}){
  const text=extract(html);

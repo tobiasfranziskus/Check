@@ -1,0 +1,86 @@
+{
+  "sourceRun": 41015069671,
+  "sourceCommit": "500ad677a86751304a30c4302e1894e5661fa0d1",
+  "baseCommit": "3cff288aa75c2c072c210298e9f81fb7b92a4ec7",
+  "description": "Nur Meridian–Orion-Tor auf v10-Basis, Hash nach 129600 Ticks; unabhängig aus vorangegangenem Drei-Varianten-CI-Diagnoselauf fixiert.",
+  "results": [
+    {
+      "seed": 7,
+      "hash": "dfd41651ce39f20a",
+      "shortage": 287,
+      "unpaidNpc1": 598
+    },
+    {
+      "seed": 11,
+      "hash": "404e37615322f135",
+      "shortage": 345,
+      "unpaidNpc1": 1348
+    },
+    {
+      "seed": 1,
+      "hash": "1b22f08695e36ac1",
+      "shortage": 286,
+      "unpaidNpc1": 761
+    },
+    {
+      "seed": 2,
+      "hash": "268431a2ddd2bceb",
+      "shortage": 348,
+      "unpaidNpc1": 598
+    },
+    {
+      "seed": 65535,
+      "hash": "fd8d4f8c0bf6851c",
+      "shortage": 302,
+      "unpaidNpc1": 598
+    },
+    {
+      "seed": 42,
+      "hash": "6c42ca9387bd077d",
+      "shortage": 371,
+      "unpaidNpc1": 1068
+    },
+    {
+      "seed": 1234,
+      "hash": "0743654db9f9318c",
+      "shortage": 328,
+      "unpaidNpc1": 598
+    },
+    {
+      "seed": 98765,
+      "hash": "666c0a7d96c6c9d9",
+      "shortage": 301,
+      "unpaidNpc1": 598
+    },
+    {
+      "seed": 3,
+      "hash": "0a7f3b318f423a4a",
+      "shortage": 341,
+      "unpaidNpc1": 1334
+    },
+    {
+      "seed": 99,
+      "hash": "3883147b3f047402",
+      "shortage": 349,
+      "unpaidNpc1": 1586
+    },
+    {
+      "seed": 2024,
+      "hash": "c290ecf9ebf01b48",
+      "shortage": 284,
+      "unpaidNpc1": 598
+    },
+    {
+      "seed": 2025,
+      "hash": "385008098ce40f6f",
+      "shortage": 273,
+      "unpaidNpc1": 968
+    },
+    {
+      "seed": 314159,
+      "hash": "1c059043ccdfe4fe",
+      "shortage": 286,
+      "unpaidNpc1": 598
+    }
+  ]
+}

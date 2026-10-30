@@ -90,3 +90,14 @@ jobs:
           node-version: '22'
       - name: 13 Seeds 90 Tage je Kapitalobergrenze 6000 12000 unbegrenzt
         run: node tools/npc-cap-scenarios.mjs
+
+  wirtschaft-piloten-beteiligung:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pilotengehaelter und pilotfinanzierte Wartung 13 Seeds x 90 Tage
+        run: node tools/pilot-compensation-scenarios.mjs

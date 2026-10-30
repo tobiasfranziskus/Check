@@ -423,7 +423,7 @@ const m_data_systeme = (() => {
     {
       id: 'meridian', name: 'Meridian', sicherheit: 'gesetzlos',
       karte: { x: 880, y: 880 }, region: 1300,
-      gates: [{ to: 'veldra', time: 30 }],
+      gates: [{ to: 'veldra', time: 30 }, { to: 'orion', time: 26 }],
       station: {
         cash: 6000, fondsCash: 1000, gebuehr: 0,
         aussenhandel: true,
@@ -434,6 +434,23 @@ const m_data_systeme = (() => {
       fields: [],
       pirates: { pirat_mittel: 1, pirat_gross: 1 },
       security: false,
+      traders: [],
+    },
+    {
+      // Grenzversorgungsstation: Eis -> Nahrung, Silizium -> Bauteilindustrie anderswo.
+      // Weniger Grundverbrauch als große Industrieknoten; keine zusätzliche Werft.
+      id: 'nadir', name: 'Nadir', sicherheit: 'umkaempft',
+      karte: { x: 1080, y: 530 }, region: 1000,
+      gates: [{ to: 'orion', time: 18 }, { to: 'meridian', time: 21 }],
+      station: {
+        cash: 4000, fondsCash: 1000, gebuehr: 40,
+        linien: ['r_nahrung'],
+        verbrauch: { nahrung: 2, medikamente: 1, bauteil: 1 },
+        ziel: { eis: 100, silizium: 52, nahrung: 52, material: 60, medikamente: 18, bauteil: 18 },
+      },
+      fields: [{ ware: 'eis', miner: 1 }, { ware: 'silizium', miner: 1 }],
+      pirates: { pirat_klein: 1 },
+      security: true,
       traders: [],
     },
     {

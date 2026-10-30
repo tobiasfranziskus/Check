@@ -2,13 +2,15 @@
 
 Stand der Konsolidierung: **30. Oktober 2026**. Repository: https://github.com/tobiasfranziskus/Check
 
-> **Einzige verbindliche Produkt-Roadmap und Prioritätenquelle, kein Release-Bericht.** Diese Datei führt die ältere M0–M7+-Konzeption, Projektgespräche vom 29./30.10.2026 sowie GitHub-PRs bis einschließlich #28 zusammen. Technischer Ist-Stand und Tests: [PROJEKTSTATUS.md](PROJEKTSTATUS.md), [AGENTS.md](../AGENTS.md), aktuelle Commits/PRs. Ein Draft, bestandene Simulation oder eine Chat-Idee ist **nicht** automatisch in `main` oder im Browser veröffentlicht.
+> **Einzige verbindliche Produkt-Roadmap und Prioritätenquelle, kein Release-Bericht.** Diese Datei führt die ältere M0–M7+-Konzeption, Projektgespräche vom 29./30.10.2026, den integrierten Stand bis #30 und die Diagnose-Drafts #32–#34 zusammen. Technischer Ist-Stand und Tests: [PROJEKTSTATUS.md](PROJEKTSTATUS.md), [AGENTS.md](../AGENTS.md), aktuelle Commits/PRs. Ein Draft, bestandene Simulation oder eine Chat-Idee ist **nicht** automatisch in `main` oder im Browser veröffentlicht.
 
 ## 1. Spielvision
 
 Aphros Void ist ein offenes, deterministisches Weltraum-Wirtschafts- und Managementspiel. Vom kleinen Handelshaus entwickelt der Spieler ein Konzern- und Stationsnetz mit eigener Flotte, Produktion, Handelsrouten, Außenposten und später eigenen Systemen. Die Welt handelt, produziert und kämpft auch ohne Spielerbefehl. **Gleichzeitig ist der Spieler eine Figur mit Aufenthaltsort:** auf einer Station oder in einem Schiff, später als Miner-, Frachter- oder Jägerpilot unmittelbar spielbar. Konzernführung und persönliche 2D-Raumfahrt benutzen **denselben** Simulations- und Wirtschaftskern. Keine Pflichtkampagne.
 
 **Produktgrenzen:** HTML/CSS/Vanilla JS, statische `index.html`, iPad Safari/Touch und NAS-Webserver, kein Framework/WebGL/Build-/Backend-Zwang. Der Core bleibt befehlsbasiert, deterministisch (Seed, RNG, Tick-Reihenfolge, Hashes), Geld-/Warenerhaltung wird auditiert; vorhandene Spielstände und Migrationen werden überprüft, niemals still überschrieben. Gameplay-3D ist nicht Teil der Zielsetzung. Multiplayer allenfalls später und optional.
+
+**[BESCHLOSSEN] Wirtschaftsziele, Architekturauftrag vom 30.10.2026:** Der Spieler darf grundsätzlich unbegrenzt Geld sparen. Einzelne NPC-Konzerne dürfen wirtschaftlich scheitern; bestehende oder neue Akteure sollen ihre Aufgaben übernehmen können. Schiffe, Waren, Produktion und Betrieb brauchen reale Ressourcen und nachvollziehbare Zahlungen. Keine kostenlosen Rettungsschiffe, unbegrenzten Subventionen oder versteckten Geldquellen. Ein gemeinsamer Simulationskern ohne neue Laufzeitabhängigkeit; normale Raumflüge bleiben treibstofffrei. Die konkrete Insolvenz-, Markteintritts- und Geldquellenregel ist damit **nicht** beschlossen; [Architekturprüfung](ARCHITEKTUR_WIRTSCHAFT_V12.md) ist [ANALYSE/OPTION].
 
 ## 2. Statuslegende und tatsächlicher Basisstand
 
@@ -24,7 +26,7 @@ Aphros Void ist ein offenes, deterministisches Weltraum-Wirtschafts- und Managem
 
 **[ARCHIVIERT/NICHT INTEGRIERT]** [#1](https://github.com/tobiasfranziskus/Check/pull/1) historischer Audit; [#16](https://github.com/tobiasfranziskus/Check/pull/16) nicht finanzierte Expansion; [#23](https://github.com/tobiasfranziskus/Check/pull/23) NPC-Liquidität; [#24](https://github.com/tobiasfranziskus/Check/pull/24) Pilotengehalt; [#25](https://github.com/tobiasfranziskus/Check/pull/25) Module; [#26](https://github.com/tobiasfranziskus/Check/pull/26) Preiskette; [#27](https://github.com/tobiasfranziskus/Check/pull/27) Routenanalyse; [#28](https://github.com/tobiasfranziskus/Check/pull/28) durch #30 ersetzter Produktentwurf. Alle geschlossen, nicht gemergt; Nachweise zusammengefasst im [Analyse-Archiv](ANALYSEARCHIV_WIRTSCHAFT_V11.md).
 
-**Wirtschaftliche Lage:** Der integrierte Nadir-Stand hatte zuvor belegte Versorgungsnachteile. Die produktive Routenpriorisierung aus [#30](https://github.com/tobiasfranziskus/Check/pull/30) reproduziert die unabhängig von #27 gemessene Reduktion der Mangelstunden von **4.204 auf 791** (13 × 90 Tage), mit 48/48 bestandenen Standardtests und v10-/v11-/v12-Audits. Keine zusätzlichen Preise, Gehälter oder Module. Safari-/NAS-Abnahme und spätere Langzeitspielerfälle bleiben offen.
+**Wirtschaftliche Lage:** Der integrierte Nadir-Stand hatte zuvor belegte Versorgungsnachteile. Die produktive Routenpriorisierung aus [#30](https://github.com/tobiasfranziskus/Check/pull/30) reproduziert die unabhängig von #27 gemessene Reduktion der Mangelstunden von **4.204 auf 791** (13 × 90 Tage), mit 48/48 bestandenen Standardtests sowie ausgeführten v11-/v12-/Geografieprüfungen; der v10-Job unter Regel 12 überspringt seinen Vergleich. Keine zusätzlichen Preise, Gehälter oder Module. #32–#34 belegen inzwischen Langzeitspieler-Kollapse und unzureichenden Wiederanlauf; Produktkorrektur und Safari-/NAS-Abnahme bleiben offen.
 
 ### Integrationsfolge und Abhängigkeitsrisiko (aktualisiert 30.10.2026)
 
@@ -38,8 +40,8 @@ Aphros Void ist ein offenes, deterministisches Weltraum-Wirtschafts- und Managem
 | Phase | Ziel und Umfang | Kriterium zum Abschluss | Stand |
 | --- | --- | --- | --- |
 | **A – Geografie und Ressourcen** | Freie normale Sternentorreisen ohne Treibstoff, Silizium als Rohstoff, Sicherheitsstufen und Meridian–Orion/Nadir | Welt-/Regelversionen und Save-Kompatibilität bewusst behandelt; 13 Seeds × 90 Tage, unabhängige Hashes/Audits; iPad/NAS-Abnahme | [MAIN] #17–#22; Safari/NAS offen |
-| **B – Versorgung und Liquidität** | Bedarfsorientierte, weiterhin profitable NPC-Routen; zuverlässige Stationen-/Konzernkonten, Abgaben/Kapitalbindung, tatsächliche Unterhalts- und Zahlungsströme | Kein unbegründetes Geld/Waren-Minting; Versorgungs- und Liquiditätsvergleich sowie echte Pilot-/Stationskassenbalance | [MAIN] Routen #30; Liquiditätsarbeit offen |
-| **C – Selbstfinanzierte Konzerne** | Asterion Handelsunion (NPC1), Veldra Transit (NPC2), erkennbare Eigentums-/Flottengruppen, bezahlte Ersatzschiffe und spätere Expansion | Investitionen aus realen Kassen, dauerhaft tragfähige Kosten; #16 nicht ohne neuen Beleg übernehmen | [DRAFT/BESCHLOSSEN] #16/#17 |
+| **B – Versorgung und Liquidität** | Bedarfsorientierte profitable NPC-Routen; zuverlässige Stationen-/Konzernkonten, Kapitalbindung und tatsächliche Zahlungen bei unbegrenzt sparendem Spieler | Vollständige Quellen-/Senken-/Transferbilanz, finanzierbarer Handelszyklus und Wiederanlauf bei gewahrter Spieler-Sparfreiheit | [MAIN] Routen #30; [ANALYSE/DRAFT] #32–#34, Architekturentscheidung offen |
+| **C – Selbstfinanzierte Konzerne** | Asterion/Veldra, reale Eigentümer/Kassen, bezahlte Assets; mögliche Insolvenz und Übernahme rentabler Aufgaben durch andere Akteure | Reale Kapitalgeber, Waren und Schiffe sowie tragfähiger Folgezyklus; Ausfall-/Eintrittsregeln erst nach Freigabe | [MAIN] Namen #17; [BESCHLOSSEN] Ziel; [OPTION] Architekturprüfung; #16 geschlossen/blockiert |
 | **D – Piraten als Wirtschaftsakteure** | Bezahltes Meridian-Syndikat, zunächst begrenzter Schmuggelfrachter; Überfälle, Beute, Verkauf, Verluste, Sicherheitszonen | Piratenschiffe werden bezahlt, keine versteckte Geldquelle, stabile Waren-/Geldbilanz, Risiko/Ertrag geprüft | [BESCHLOSSEN] |
 | **E – Bergung/Kopfgeld/Reparatur** | Wracks und Frachtbergung, Kopfgeld nach belegtem Abschuss, Schiffsschäden, bezahlte Reparaturen und Materialbedarf | Geschlossener Wert- und Leistungskreislauf; Jäger/NPC-Piloten finanzierbar | [BESCHLOSSEN] |
 | **F – Gesamtwirtschaft/Reichsaufbau** | Pilotengehälter und eigene Kassen erst mit realen Ausgaben; Modulproduktion, Werften, Bauschiff, Außenposten, eigenes System (ursprünglicher Zielrahmen: max. drei), Verteidigung, weicher Bankrott | Langfristig stabiles Wirtschaftsmodell, keine unbilanzierten Konten, funktionierende Besitz-/Befehlslogik | [BESCHLOSSEN/ANALYSE] |
@@ -56,6 +58,12 @@ Aphros Void ist ein offenes, deterministisches Weltraum-Wirtschafts- und Managem
 5. **Keine Funktionsausweitung als Ersatz für Ursachenanalyse:** Pilotengehälter, Module, Reparaturwirtschaft, zusätzliche Konzerne und Piratensysteme nur in getrennten Arbeitspaketen nach wirtschaftlichem Nutzen und klarem Eigentümer-/Geld-/Warenfluss einführen.
 
 Die Phasen sind **Abhängigkeiten, keine Kalenderversprechen**. Die UI-Architektur der Phase G sollte früh *konzeptionell* festgelegt, ihre große visuelle Umsetzung aber nicht mit der laufenden Wirtschaftsreparatur vermischt werden. Modul-/Reparaturökonomie kann als eng begrenzter Vorversuch aus Phase E/F erfolgen, bevor die aktive Schiffsausrüstung in H/I integriert wird.
+
+### [ANALYSE/OPTION] Architekturprüfung für B/C (30.10.2026)
+
+Die offenen Drafts [#32](https://github.com/tobiasfranziskus/Check/pull/32) (`8cd8713`, Basis `main ed94b891`), [#33](https://github.com/tobiasfranziskus/Check/pull/33) (`4c55d4b`, Basis #32) und [#34](https://github.com/tobiasfranziskus/Check/pull/34) (`6855d76`, Basis #33) liefern Diagnosebelege, keine Produktintegration: Spielerförderung kann den Umlauf kollabieren lassen; pauschaler Spieler-Rückfluss beschränkt Sparen/Investition; vier einzelne Fondsvarianten stellen beide Handelsflotten nicht wieder her. Ein bezahlter Frachter ohne Handelskapital und räumlich entfernte Werftinputs genügen nicht.
+
+Der [Architekturbericht](ARCHITEKTUR_WIRTSCHAFT_V12.md) vergleicht A (bestehende Fonds/Routen/Ersatz), B (Insolvenz/Markteintritt) und C (bilanzierte Quellen/Senken). **[OPTION] Empfehlung:** C als Bilanzrahmen mit B kombinieren und geeignete A-Pfade weiterverwenden. Geldregime, Kapitalgeber, Ausfallabwicklung und Zugang zum letzten realen Transport-/Produktionsmittel bleiben freigabepflichtige Produktentscheidungen. Feste endliche Geldmenge und beliebige dauerhafte Spieler-Nettoakkumulation können keine positive NPC-Mindestliquidität gemeinsam garantieren; der heutige Core enthält bereits Kopfgeldquellen und echte Senken. Keine zusätzliche Quelle, Subvention oder Insolvenzmechanik ist hier freigegeben. Höchstens drei kleine Folgeaufträge und reproduzierbare Abnahmekriterien stehen im Bericht. Reale Safari-/NAS-Abnahme bleibt offen.
 
 ### Vorläufer-Meilensteine aus Konzept v0.10
 
@@ -94,9 +102,10 @@ Altes Konzept v0.10: ausdrücklich **kein Multiplayer**. Neuere Vereinbarung: **
 
 | Thema | Entscheidung/Prüffrage | Status |
 | --- | --- | --- |
-| Mechanik #17–#22 / Versorgung #30 | Mechanik-Stack und #30 sind auf `main`, keine Analyse-Experimente integriert; Langzeit-/Spieler-/Safari-/NAS-Prüfung weiterhin offen | Core integriert / reale Abnahme offen |
-| Versorgung | #27: bedarfsorientierte statt preislich inflationierte Handelsrouten; #28 ist Entwurf, nicht Produktivstand | Prüfen |
-| NPC-Liquidität | Kapitalabführungen stabilisieren Stationsfonds; unbedachte Obergrenzenänderung verschlechtert Versorgung | Analysiert #23 |
+| Mechanik #17–#22 / Versorgung #30 | Mechanik-Stack und #30 sind auf `main`, keine Analyse-Experimente integriert; Langzeitspieler-Gegenbeispiele in #32–#34, Safari-/NAS-Abnahme offen | Core integriert / wirtschaftliche und reale Abnahme offen |
+| Versorgung | Bedarfsorientierte profitable Routen aus #30 integriert; nachgewiesenen Spieler-/Wiederanlaufkollaps aus #32–#34 getrennt lösen | [MAIN] Routen; Korrektur offen |
+| NPC-Liquidität / Spielerfreiheit | Unbegrenztes Sparen ist beschlossen; #32–#34 belegen Kollaps-/Wiederanlaufgrenzen. Geldregime und vollständige Zyklusfinanzierung vor Produktänderung entscheiden | Ziel [BESCHLOSSEN]; Diagnose [ANALYSE/DRAFT]; Architektur [OPTION] |
+| Insolvenz / Markteintritt | Aufgabenübernahme durch andere Akteure ermöglichen; Kapitalgeber, reale Assets, Ausfallfolgen und physische Wiederaufbaugrenze ausdrücklich festlegen | Ziel [BESCHLOSSEN]; Regeln [OPTION], siehe Architekturbericht |
 | NPC-Expansion | PR #16 nicht integrieren bis finanzierte Betriebskosten und Kapitalbindung nachgewiesen | Blockiert |
 | Personal/Module | Pilotengehalt ohne echte Ausgaben und Reparaturen nicht integrieren; #24/#25 sind Experimente | Blockiert |
 | Spielerrolle/Interface | Konzernmanager **und** aktive Pilotentätigkeiten; zuerst System-/Bedienentwurf festlegen | Beschlossen |
@@ -113,6 +122,6 @@ Altes Konzept v0.10: ausdrücklich **kein Multiplayer**. Neuere Vereinbarung: **
 
 ## 7. Nächster sinnvoller Arbeitsauftrag
 
-**Zuerst** den integrierten v0.12.3-Stand real auf iPad Safari/Touch und NAS prüfen sowie passende längere Spieler-/Wirtschaftsfälle absichern. **Danach** die vorhandene Stations- und Konzernliquidität, Schiffsersatz und echte Kosten anhand der bestehenden Regeln weiter stabilisieren, **bevor** Reparatur-, Personal- oder zusätzliche Wirtschaftsmechaniken hinzukommen. **Parallel ausschließlich konzeptionell** das Spielerort-/Tablet-/Cockpit-Modell spezifizieren, damit spätere UI- und 2D-Arbeit nicht erneut die Kernarchitektur verändert.
+**Nächster Wirtschaftsschritt:** Auf Grundlage der [Architekturprüfung](ARCHITEKTUR_WIRTSCHAFT_V12.md) Geldregime und Umfang der Wiederaufbaugarantie entscheiden; zunächst den vollständigen Zyklusbedarf und reale Kapital-/Materialpfade messen. #32–#34 liefern bereits Langzeit-/Spielergegenbeispiele, aber keine wirtschaftliche Freigabe. Insolvenz, Markteintritt oder zusätzliche Geldquellen erst in getrennt beauftragten, kleinen Experimenten untersuchen; der Filterversuch aus #33 ist weiterhin keine freigegebene Produktlösung. Reparatur-, Personal- und zusätzliche Wirtschaftsmechaniken bleiben dahinter. **Reale iPad-Safari-/Touch-/NAS-Abnahme von v0.12.3 weiterhin durchführen. Parallel ausschließlich konzeptionell** das Spielerort-/Tablet-/Cockpit-Modell spezifizieren.
 
-**Referenzen:** [AGENTS.md](../AGENTS.md), [PROJEKTSTATUS.md](PROJEKTSTATUS.md), GitHub-PRs #16–#28; historischer Planungsstand `AV-PLANUNGSSTAND-2026-10-30.md` (in ChatGPT-Dateibibliothek), separate `void.html` als Konzeptreferenz. Das ursprüngliche Konzept v0.10 wird im historischen Plan genannt, liegt hier aber nicht vollständig als Referenz vor.
+**Referenzen:** [AGENTS.md](../AGENTS.md), [PROJEKTSTATUS.md](PROJEKTSTATUS.md), [Architekturprüfung](ARCHITEKTUR_WIRTSCHAFT_V12.md), GitHub-PRs #16–#30 und Diagnose-Drafts #32–#34; historischer Planungsstand `AV-PLANUNGSSTAND-2026-10-30.md` (in ChatGPT-Dateibibliothek), separate `void.html` als Konzeptreferenz. Das ursprüngliche Konzept v0.10 wird im historischen Plan genannt, liegt hier aber nicht vollständig als Referenz vor.

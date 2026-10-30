@@ -6,7 +6,16 @@
 
 **Technik:** weiterhin statische `index.html`, Vanilla JS/HTML/CSS, kein Build oder Backend. **Spielstandschema 8**, **Regelversion 12**. Die bisherigen v8-/v10-Entwicklungsspielstände sind ausdrücklich als inkompatibel genehmigt, weil keine aktiven Nutzer/Spielstände vorhanden sind. Der Lader muss sie klar zurückweisen und niemals Browserdaten still überschreiben oder löschen. Für Regelversion 11 existiert die geprüfte Migration 11→12.
 
-**Nachgewiesene CI-Abnahme:** [PR #30, GitHub Actions #41036228202](https://github.com/tobiasfranziskus/Check/actions/runs/41036228202) mit **48/48 Standardtests**, v10-/v11-Referenzprüfungen, 13 Seeds × 90 Tage für produktive v12-Goldenwerte sowie 13×90-Tage-Weltgeografievergleich: alle ausgeführten Jobs erfolgreich. Ein historischer bedingt übersprungener Sicherheitsgeografie-Job zählt nicht als Test. Die v12-Wirtschaftsreproduktion bestätigt für 13 Seeds × 90 Tage den Rückgang der Mangelstunden **4.204→791** bei Erhaltung von Geld-/Warenbuchungen, Kassenprüfung und Save/Load. **Weder iPad-Safari-Abnahme noch NAS-Deployment** ist damit belegt.
+**Nachgewiesene CI-Abnahme:** [PR #30, GitHub Actions #41036228202](https://github.com/tobiasfranziskus/Check/actions/runs/41036228202) mit **48/48 Standardtests**, historischer v11-Referenz, 13 Seeds × 90 Tage für produktive v12-Goldenwerte sowie 13×90-Tage-Weltgeografievergleich: alle ausgeführten Jobs erfolgreich. Am 30.10.2026 erneut geprüft: ein historischer Sicherheitsgeografie-Job ist bedingt übersprungen; der v10-Job führt unter Regel 12 nur seine dokumentierte Überspringen-Verzweigung aus und ist **kein neuer v10-Nachweis**. Die v12-Wirtschaftsreproduktion bestätigt für 13 Seeds × 90 Tage den Rückgang der Mangelstunden **4.204→791** bei Erhaltung von Geld-/Warenbuchungen, Kassenprüfung und Save/Load. **Weder iPad-Safari-Abnahme noch NAS-Deployment** ist damit belegt.
+
+## [ANALYSE/DRAFT] Langzeitdiagnose und Architekturprüfung (30.10.2026)
+
+GitHub `main` bei dieser Prüfung: [`ed94b8914e4ad2ad0c7980e9f3d84f6d549ef22f`](https://github.com/tobiasfranziskus/Check/commit/ed94b8914e4ad2ad0c7980e9f3d84f6d549ef22f), Produkt weiterhin v0.12.3. Offen und nicht gemergt: [#32](https://github.com/tobiasfranziskus/Check/pull/32) (`8cd8713`, Basis `main`), [#33](https://github.com/tobiasfranziskus/Check/pull/33) (`4c55d4b`, Basis #32), [#34](https://github.com/tobiasfranziskus/Check/pull/34) (`6855d76`, Basis #33).
+
+- **Übernommene bestehende Befunde:** #32 reproduziert aktive Spieler-Kollapsfälle trotz korrekter Geld-/Warenbilanz; #33 verhindert vier Startkollapse mit Spieler-Rückfluss, begrenzt dabei Sparen/Investition und heilt spätes Wiederanlaufen nicht dauerhaft. #34 erreicht in 16 Eingriffsfortsetzungen keinen Wiederanlauf beider Handelsflotten: zwei einzelne bezahlte Ersatzfrachter haben danach null Handelskapital, keinen Warenhandel und gehen erneut verloren. Aldera fehlen Bauteile/Silizium trotz vorhandener entfernter Bestände. Diese Langzeitversuche wurden im Architekturauftrag **nicht neu ausgeführt**.
+- **Jetzt geprüfte CI-Metadaten:** Regression und jeweilige Analyse erfolgreich an allen drei genannten Heads. Analyse-Läufe: [#32](https://github.com/tobiasfranziskus/Check/actions/runs/41067401643), [#33](https://github.com/tobiasfranziskus/Check/actions/runs/41076425687), [#34](https://github.com/tobiasfranziskus/Check/actions/runs/41083152586). Technischer Erfolg ist keine wirtschaftliche Freigabe.
+- **[ANALYSE/OPTION]** Der [Architekturbericht](ARCHITEKTUR_WIRTSCHAFT_V12.md) dokumentiert Ursachen, vorhandene Geld-/Warenpfade, drei Ansätze, mögliche Insolvenz-/Wiederaufbauabläufe und offene Entscheidungen. Die Empfehlung ist unimplementiert. Beschlossene Produktziele stehen ausschließlich in der [Roadmap](ROADMAP.md).
+- **Neu lokal geprüft im docs-only-Auftrag:** Node.js 22.23.4, Pflichtbefehl erfolgreich (sechs Dateisuiten); zusätzlich einzeln sichtbare **48/48 bestehende Tests**, 0 Fehler/Skip/Abbrüche. Keine neue Jahres-/Wiederanlaufsimulation oder Safari-/NAS-Abnahme. Produktdatei, Regeln 12, Schema 8, Tests, Goldenwerte und Workflow unverändert. Wegen des Markdown-Pfadfilters ist kein neuer CI-Lauf zu erwarten; kein Merge/Deployment.
 
 ## [ANALYSE] Geschlossene Forschungs-/Alt-PRs
 
@@ -15,7 +24,7 @@ Historischer Audit **#1**, nicht ausreichend finanzierte NPC1-Expansion **#16**,
 ## Offene Qualitäts-/Produktgates
 
 - Reale iPad Safari Touch-/Querformat-/Hochformat- und NAS-Datei-/Persistenzabnahme; kein Rollout behaupten.
-- Wirtschaft über längere Laufzeiten und echte Spieleraktionen testen; Stationskassen, NPC-Ersatzschiffe, Kostenunterdeckung, Waren-/Geldströme weiter gemeinsam untersuchen.
+- Die in #32–#34 belegten Langzeit-/Spielerkollapse und Wiederanlaufgrenzen lösen: vollständige Zyklusfinanzierung, reale Nachschubpfade und freizugebendes Geldregime gemeinsam beurteilen; Diagnose ist noch keine Produktkorrektur.
 - Erst nach Ursachenprüfung neue Geld-/Waren-Ausgaben, Piratenwirtschaft, Reparaturen, Module und NPC-Personal einführen. Phasen und Abhängigkeiten ausschließlich nach der [ROADMAP.md](ROADMAP.md).
 
 ## Archivierter Statusauszug vom 29. Oktober 2026

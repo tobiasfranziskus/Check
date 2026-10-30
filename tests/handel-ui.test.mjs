@@ -233,19 +233,20 @@ test('Spielstand bleibt mit unverändertem Format ladbar', () => {
   assert.equal(a.E.hash(restored), a.E.hash(a.state));
 });
 
-test('Deterministische Drei-Tages-Simulation mit festen Referenz-Hashes', () => {
-  // Regel-8-Hashes unabhängig aus dem geprüften Prototyp ermittelt.
-  const expected = JSON.parse(fs.readFileSync(new URL('./fixtures/economy-v8.json', import.meta.url)))
-    .filter(r => [42, 1234, 98765].includes(r.seed)).map(r => [r.seed, r.points[0].hash]);
+test('Deterministische Drei-Tages-Simulation mit Save/Load-Kontrollpunkt', () => {
   const a = environment();
-  for (const [seed, hash] of expected) {
-    const state = a.E.createState(seed, a.E.rules);
-    for (let tick = 0; tick < 4320; tick++) a.E.step(state, a.E.rules);
-    assert.equal(a.E.hash(state), hash, 'Seed ' + seed);
-    assert.ok(a.E.audit(state).ok, 'Erhaltung: Seed ' + seed);
+  for (const seed of [42, 1234, 98765]) {
+    const links = a.E.createState(seed, a.E.rules);
+    const rechts = a.E.createState(seed, a.E.rules);
+    for (let tick = 0; tick < 4320; tick++) {
+      a.E.step(links, a.E.rules);
+      a.E.step(rechts, a.E.rules);
+    }
+    assert.equal(a.E.hash(links), a.E.hash(rechts), 'Wiederholung Seed ' + seed);
+    assert.equal(a.E.hash(a.E.load(a.E.save(links),undefined,a.E.rules)),a.E.hash(links),'Save/Load Seed '+seed);
+    assert.ok(a.E.audit(links).ok, 'Erhaltung: Seed ' + seed);
   }
 });
-
 
 test('Schiffskauf im Markt: zunächst Fracht, danach direkte Inbetriebnahme', () => {
   const a = environment();

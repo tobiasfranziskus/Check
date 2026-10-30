@@ -43,15 +43,13 @@ test('Schema 7 wird nach Schema 8 migriert, NPC-Produktionslinien bleiben korrek
   assert.ok(e.audit(restored).ok);
 });
 
-test('Alte Regelversion 6 migriert auf 8 ohne Wirtschaftseinfluss', () => {
+test('Alte Treibstoff-Regelstände bleiben unverändert und werden eindeutig abgelehnt', () => {
   const e = engine();
   const current = e.create(42, e.rules);
   const old = JSON.parse(e.save(current));
-  old.rulesVersion = 6;
-  const restored = e.load(JSON.stringify(old), undefined, e.rules);
-  assert.equal(restored.rulesVersion, e.rules.rulesVersion);
-  assert.equal(e.hash(restored), e.hash(current));
-  assert.ok(e.audit(restored).ok);
+  old.rulesVersion = 8;
+  assert.throws(() => e.load(JSON.stringify(old), undefined, e.rules), /keine Regelmigration vorhanden/);
+  assert.equal(e.hash(current), e.hash(e.create(42,e.rules)));
 });
 
 test('Zukünftige Spielstandschemas werden zurückgewiesen statt überschrieben', () => {

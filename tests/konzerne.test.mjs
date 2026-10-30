@@ -29,7 +29,7 @@ test('Konzernnamen sind nur Anzeige-Daten; bestehende IDs bleiben erhalten', () 
   assert.equal(e.namen.npc2, 'Veldra Transit');
   assert.equal(s.owners.npc1.id, 'npc1');
   assert.equal(s.owners.npc2.id, 'npc2');
-  assert.equal(s.rulesVersion, 8);
+  assert.equal(s.rulesVersion, e.regeln.rulesVersion);
 });
 
 test('Systemansicht zeigt benannte Konzerne und korrekt zugeordnete Schiffe', () => {

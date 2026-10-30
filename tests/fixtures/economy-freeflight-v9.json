@@ -1,0 +1,418 @@
+[
+  {
+    "seed": 7,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "c8a973c0378f2d27",
+        "mangel": 10,
+        "sales": 730
+      },
+      {
+        "tick": 43200,
+        "hash": "2fefbbd375eb832a",
+        "mangel": 95,
+        "sales": 7322
+      },
+      {
+        "tick": 129600,
+        "hash": "e3299764c9da67d2",
+        "mangel": 313,
+        "sales": 21858
+      }
+    ],
+    "final": {
+      "mangel": 313,
+      "sales": 21858,
+      "weekZeroNpc1": 1,
+      "unpaidNpc1": 1154,
+      "siliconMined": 26341,
+      "siliconConsumed": 25481,
+      "bauteile": 24889
+    }
+  },
+  {
+    "seed": 11,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "51c9c1e83c6eae66",
+        "mangel": 9,
+        "sales": 712
+      },
+      {
+        "tick": 43200,
+        "hash": "44d654b0f5b0ce64",
+        "mangel": 107,
+        "sales": 7199
+      },
+      {
+        "tick": 129600,
+        "hash": "32c06f73eda908f9",
+        "mangel": 285,
+        "sales": 21636
+      }
+    ],
+    "final": {
+      "mangel": 285,
+      "sales": 21636,
+      "weekZeroNpc1": 2,
+      "unpaidNpc1": 1537,
+      "siliconMined": 25990,
+      "siliconConsumed": 24807,
+      "bauteile": 24269
+    }
+  },
+  {
+    "seed": 1,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "5047d399bf6a0a61",
+        "mangel": 9,
+        "sales": 698
+      },
+      {
+        "tick": 43200,
+        "hash": "f9414a94fa143713",
+        "mangel": 82,
+        "sales": 7216
+      },
+      {
+        "tick": 129600,
+        "hash": "f38af9d7aeeab8b8",
+        "mangel": 283,
+        "sales": 21887
+      }
+    ],
+    "final": {
+      "mangel": 283,
+      "sales": 21887,
+      "weekZeroNpc1": 0,
+      "unpaidNpc1": 598,
+      "siliconMined": 26095,
+      "siliconConsumed": 25062,
+      "bauteile": 24221
+    }
+  },
+  {
+    "seed": 2,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "d6e112216be7c1cb",
+        "mangel": 13,
+        "sales": 743
+      },
+      {
+        "tick": 43200,
+        "hash": "5e17ec99d8bef9e1",
+        "mangel": 92,
+        "sales": 7331
+      },
+      {
+        "tick": 129600,
+        "hash": "e07b42ac5cfa77de",
+        "mangel": 274,
+        "sales": 21851
+      }
+    ],
+    "final": {
+      "mangel": 274,
+      "sales": 21851,
+      "weekZeroNpc1": 0,
+      "unpaidNpc1": 598,
+      "siliconMined": 26218,
+      "siliconConsumed": 25178,
+      "bauteile": 24448
+    }
+  },
+  {
+    "seed": 65535,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "e9cd9d0542b648c3",
+        "mangel": 12,
+        "sales": 712
+      },
+      {
+        "tick": 43200,
+        "hash": "ea99441737c65810",
+        "mangel": 95,
+        "sales": 7306
+      },
+      {
+        "tick": 129600,
+        "hash": "347b3963aabdf901",
+        "mangel": 280,
+        "sales": 21797
+      }
+    ],
+    "final": {
+      "mangel": 280,
+      "sales": 21797,
+      "weekZeroNpc1": 3,
+      "unpaidNpc1": 2623,
+      "siliconMined": 25935,
+      "siliconConsumed": 24835,
+      "bauteile": 24079
+    }
+  },
+  {
+    "seed": 42,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "0070eef071ba2824",
+        "mangel": 13,
+        "sales": 676
+      },
+      {
+        "tick": 43200,
+        "hash": "dcfb51fb6700e1da",
+        "mangel": 106,
+        "sales": 7213
+      },
+      {
+        "tick": 129600,
+        "hash": "925cf01fcbd42ea2",
+        "mangel": 320,
+        "sales": 21719
+      }
+    ],
+    "final": {
+      "mangel": 320,
+      "sales": 21719,
+      "weekZeroNpc1": 0,
+      "unpaidNpc1": 1837,
+      "siliconMined": 26920,
+      "siliconConsumed": 26225,
+      "bauteile": 25247
+    }
+  },
+  {
+    "seed": 1234,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "c497114dbe5807e1",
+        "mangel": 8,
+        "sales": 706
+      },
+      {
+        "tick": 43200,
+        "hash": "daf033ab731f7f7e",
+        "mangel": 95,
+        "sales": 7186
+      },
+      {
+        "tick": 129600,
+        "hash": "900bb57bb971d9e8",
+        "mangel": 299,
+        "sales": 21721
+      }
+    ],
+    "final": {
+      "mangel": 299,
+      "sales": 21721,
+      "weekZeroNpc1": 0,
+      "unpaidNpc1": 1332,
+      "siliconMined": 26282,
+      "siliconConsumed": 25415,
+      "bauteile": 24665
+    }
+  },
+  {
+    "seed": 98765,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "de7350864cba9852",
+        "mangel": 13,
+        "sales": 700
+      },
+      {
+        "tick": 43200,
+        "hash": "aaf5ec2a126c8e7a",
+        "mangel": 106,
+        "sales": 7237
+      },
+      {
+        "tick": 129600,
+        "hash": "f194b134c5d4e5b5",
+        "mangel": 282,
+        "sales": 21842
+      }
+    ],
+    "final": {
+      "mangel": 282,
+      "sales": 21842,
+      "weekZeroNpc1": 1,
+      "unpaidNpc1": 870,
+      "siliconMined": 25321,
+      "siliconConsumed": 24479,
+      "bauteile": 24102
+    }
+  },
+  {
+    "seed": 3,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "151fac8ffa0122f2",
+        "mangel": 3,
+        "sales": 725
+      },
+      {
+        "tick": 43200,
+        "hash": "fed23079b61308ca",
+        "mangel": 111,
+        "sales": 7140
+      },
+      {
+        "tick": 129600,
+        "hash": "4ef1fc329563c197",
+        "mangel": 323,
+        "sales": 21621
+      }
+    ],
+    "final": {
+      "mangel": 323,
+      "sales": 21621,
+      "weekZeroNpc1": 0,
+      "unpaidNpc1": 1059,
+      "siliconMined": 25489,
+      "siliconConsumed": 24297,
+      "bauteile": 23967
+    }
+  },
+  {
+    "seed": 99,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "9b2934f649d10625",
+        "mangel": 9,
+        "sales": 724
+      },
+      {
+        "tick": 43200,
+        "hash": "d273deb14e636e97",
+        "mangel": 107,
+        "sales": 7245
+      },
+      {
+        "tick": 129600,
+        "hash": "5a073995a394c84f",
+        "mangel": 333,
+        "sales": 21632
+      }
+    ],
+    "final": {
+      "mangel": 333,
+      "sales": 21632,
+      "weekZeroNpc1": 1,
+      "unpaidNpc1": 916,
+      "siliconMined": 25764,
+      "siliconConsumed": 24738,
+      "bauteile": 24282
+    }
+  },
+  {
+    "seed": 2024,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "6cb566c53a2215e9",
+        "mangel": 12,
+        "sales": 751
+      },
+      {
+        "tick": 43200,
+        "hash": "f1585db0ee14944a",
+        "mangel": 109,
+        "sales": 7128
+      },
+      {
+        "tick": 129600,
+        "hash": "bf8ecf8b95560edc",
+        "mangel": 292,
+        "sales": 21727
+      }
+    ],
+    "final": {
+      "mangel": 292,
+      "sales": 21727,
+      "weekZeroNpc1": 0,
+      "unpaidNpc1": 598,
+      "siliconMined": 25670,
+      "siliconConsumed": 24719,
+      "bauteile": 24315
+    }
+  },
+  {
+    "seed": 2025,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "7302fc7932cf7c9e",
+        "mangel": 10,
+        "sales": 716
+      },
+      {
+        "tick": 43200,
+        "hash": "931db23a75d409e8",
+        "mangel": 120,
+        "sales": 7285
+      },
+      {
+        "tick": 129600,
+        "hash": "9c2e67944cc365e1",
+        "mangel": 339,
+        "sales": 21833
+      }
+    ],
+    "final": {
+      "mangel": 339,
+      "sales": 21833,
+      "weekZeroNpc1": 0,
+      "unpaidNpc1": 598,
+      "siliconMined": 25825,
+      "siliconConsumed": 24674,
+      "bauteile": 24351
+    }
+  },
+  {
+    "seed": 314159,
+    "points": [
+      {
+        "tick": 4320,
+        "hash": "3cc1738c257630dc",
+        "mangel": 13,
+        "sales": 740
+      },
+      {
+        "tick": 43200,
+        "hash": "4284a354ae1fdefb",
+        "mangel": 96,
+        "sales": 7340
+      },
+      {
+        "tick": 129600,
+        "hash": "f7ac050bb260558f",
+        "mangel": 293,
+        "sales": 21841
+      }
+    ],
+    "final": {
+      "mangel": 293,
+      "sales": 21841,
+      "weekZeroNpc1": 0,
+      "unpaidNpc1": 598,
+      "siliconMined": 26542,
+      "siliconConsumed": 25313,
+      "bauteile": 24869
+    }
+  }
+]

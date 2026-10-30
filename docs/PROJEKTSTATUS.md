@@ -2,11 +2,19 @@
 
 ## [MAIN] Integrierte Version
 
-**30. Oktober 2026, GitHub `main`: v0.12.3, Merge-Commit `1ff556592b475082e58d2918a9c7f3b02abd0566`.** Enthalten sind die gemergten PRs **#17 (Asterion/Veldra-Konzernnamen), #18 (treibstofffreie Reisen/Silizium), #19 (Sicherheitszonen), #20 (Nadir und Meridian–Orion-Tor), #22 (Geografie-Referenz- und Wirtschaftstests)** und **#30 (bedarfsorientierte profitable Frachterrouten, Regelversion 12)**. `docs/ROADMAP.md` auf `main` ist die einzige verbindliche Produkt-Roadmap.
+**30. Oktober 2026, GitHub `main`: v0.12.3, aktueller Commit `906b7978d388e9af960443a2b7f4835b1d2a15c0` (Produktkern weiterhin Regel 12; Architektur-Dokumentations-PR #35 integriert).** Enthalten sind die gemergten PRs **#17 (Asterion/Veldra-Konzernnamen), #18 (treibstofffreie Reisen/Silizium), #19 (Sicherheitszonen), #20 (Nadir und Meridian–Orion-Tor), #22 (Geografie-Referenz- und Wirtschaftstests)** und **#30 (bedarfsorientierte profitable Frachterrouten, Regelversion 12)**. `docs/ROADMAP.md` auf `main` ist die einzige verbindliche Produkt-Roadmap.
 
 **Technik:** weiterhin statische `index.html`, Vanilla JS/HTML/CSS, kein Build oder Backend. **Spielstandschema 8**, **Regelversion 12**. Die bisherigen v8-/v10-Entwicklungsspielstände sind ausdrücklich als inkompatibel genehmigt, weil keine aktiven Nutzer/Spielstände vorhanden sind. Der Lader muss sie klar zurückweisen und niemals Browserdaten still überschreiben oder löschen. Für Regelversion 11 existiert die geprüfte Migration 11→12.
 
 **Nachgewiesene CI-Abnahme:** [PR #30, GitHub Actions #41036228202](https://github.com/tobiasfranziskus/Check/actions/runs/41036228202) mit **48/48 Standardtests**, historischer v11-Referenz, 13 Seeds × 90 Tage für produktive v12-Goldenwerte sowie 13×90-Tage-Weltgeografievergleich: alle ausgeführten Jobs erfolgreich. Am 30.10.2026 erneut geprüft: ein historischer Sicherheitsgeografie-Job ist bedingt übersprungen; der v10-Job führt unter Regel 12 nur seine dokumentierte Überspringen-Verzweigung aus und ist **kein neuer v10-Nachweis**. Die v12-Wirtschaftsreproduktion bestätigt für 13 Seeds × 90 Tage den Rückgang der Mangelstunden **4.204→791** bei Erhaltung von Geld-/Warenbuchungen, Kassenprüfung und Save/Load. **Weder iPad-Safari-Abnahme noch NAS-Deployment** ist damit belegt.
+
+## [DRAFT] B5a – gehaltene Reise muss real bezahlt werden (30.10.2026)
+
+Auf eigenem PR-Branch `fix/b5a-halten-reise-kosten-v13`, **nicht** in `main`: enger Fix an `m_core_stunde.betriebskosten`, damit bereits geleistete Reiseminuten auch unter Auftrag `halten` regulär bezahlt werden. Wirklich untätiges Warten bleibt kostenfrei. Geplant als `v0.12.4` mit **Regel 13, Schema unverändert 8** und verlustfreier Regelmigration 12→13; ältere v11-Spielstände durchlaufen beide vorhandenen Schritte. Dokumentation und Abnahme: [TEST_B5A_HALTEN_REISE.md](TEST_B5A_HALTEN_REISE.md).
+
+**Bereits tatsächlich direkt geprüft:** 8/8 gezielte Regressionen bestanden; derselbe validierte Zweietappenflug bezahlt in Regel 12 wegen `halten` 0 ISK und in Regel 13 regulär 241 ISK, die zusätzlich beim zuständigen Fonds ankommen. Unabhängige Geld-/Warenaudits, gespeicherte Arbeitsminuten und Save/Load der 12→13-Migration geprüft. **Noch nicht daraus ableitbar:** bestandene vollständige Node-/GitHub-CI, 13 × 90 Tage, Merge, reale iPad-/NAS-Abnahme oder B5b. Die historische v12-Referenz bleibt unverändert auf dem ursprünglichen `main 906b797`; ein eigener neuer Regel-13-Wirtschaftstest ist im selben PR vorgesehen.
+
+**B5b [OPTION/FOLGEAUFTRAG]** behandelt separat die dauerhafte Miner-Sollrolle gegenüber vorübergehendem Transport. Ergebnisse und Draft-Quellen: [B3 #40](https://github.com/tobiasfranziskus/Check/pull/40), [B4 #41](https://github.com/tobiasfranziskus/Check/pull/41). Kein stilles Zusammenführen von Analyse-Prototypen.
 
 ## [ANALYSE/DRAFT] Langzeitdiagnose und Architekturprüfung (30.10.2026)
 

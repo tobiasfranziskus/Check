@@ -70,13 +70,19 @@ test('Neue Regelversion lädt; alte Treibstoffökonomie wird klar abgelehnt',()=
  assert.throws(()=>c.load(JSON.stringify(vorGeografie)),/keine Regelmigration vorhanden/, 'Alte Welt darf nicht unbemerkt als Nadir-Welt laden');
 });
 
-test('Freie Reisen bleiben für mehrere Seeds deterministisch und bilanztreu',()=>{
- // Neue Referenz-Hashes für die veränderte Sicherheitswelt folgen nach unabhängigem Langlauf.
+test('Geografiewelt-v11 bleibt auf festen 3-Tage-Referenzhashes',()=>{
+ const fixture=JSON.parse(fs.readFileSync(new URL('./fixtures/economy-geography-v11.json',import.meta.url),'utf8'));
+ assert.equal(fixture.sourceCommit,'f5fcde6380d66b2de0c73dc1fb7ef942f9971e8c');
+ assert.equal(fixture.rulesVersion,11);
+ assert.equal(r.rulesVersion,11);
+ assert.equal(fixture.results.length,13);
  for(const seed of [7,11,42]){
+  const ref=fixture.results.find(x=>x.seed===seed);
+  assert(ref);
   const s=c.createState(seed),t=c.createState(seed);
   c.advance(s,4320);c.advance(t,4320);
-  assert.equal(c.hash(s),c.hash(t),'Seed '+seed);
-
+  assert.equal(c.hash(s),ref.points[0].hash,'fester v11-Hash Seed '+seed);
+  assert.equal(c.hash(t),ref.points[0].hash,'Replay gegen festen v11-Hash Seed '+seed);
   assert(c.audit(s).ok);assert(c.audit(t).ok);
  }
 });

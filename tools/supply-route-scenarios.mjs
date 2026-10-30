@@ -11,8 +11,7 @@ const seeds=[7,11,1,2,65535,42,1234,98765,3,99,2024,2025,314159];
 assert.deepEqual(fixed.results.map(r=>r.seed),seeds);
 const sum=a=>a.reduce((s,v)=>s+v,0);
 const tradeAnchor="buche(state, schiff.owner, 'kosten', fee);\n  return true;";
-const routeAnchor="const bonus = rules.rulesVersion >= 12 && bedarf > 0 && zielbestand > 0
-        ? divVersorgung(w.versorgungsPrioritaet * knappheit, zielbestand) : 0;";
+const routeAnchor="const bonus = rules.rulesVersion >= 12 && bedarf > 0 && zielbestand > 0\n        ? divVersorgung(w.versorgungsPrioritaet * knappheit, zielbestand) : 0;";
 const costAnchor="const n = Math.min(besitzer.cash, kosten);\n    if (n <= 0) continue;";
 for(const anchor of [tradeAnchor,routeAnchor,costAnchor])
  assert.equal(original.split(anchor).length,2,'Core-Anker nicht eindeutig');

@@ -101,3 +101,14 @@ jobs:
           node-version: '22'
       - name: Pilotengehaelter und pilotfinanzierte Wartung 13 Seeds x 90 Tage
         run: node tools/pilot-compensation-scenarios.mjs
+
+  wirtschaft-module-piloten:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Minerbauteile Modulbau und Piloteneinkaeufe 13 Seeds je 90 Tage
+        run: node tools/module-production-scenarios.mjs

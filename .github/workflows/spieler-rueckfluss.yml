@@ -1,0 +1,82 @@
+name: Aphros Void – isolierter Spieler-Rückfluss v12
+on:
+  pull_request:
+    paths:
+      - index.html
+      - tools/player-reflux-v12*.mjs
+      - tools/longterm-v12-observer.mjs
+      - docs/data/wirtschaft-langzeit-v12*.json
+      - tests/fixtures/economy-priority-v12.json
+      - .github/workflows/spieler-rueckfluss.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  miner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/player-reflux-v12.mjs --case=miner
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rueckfluss-miner
+          path: work/rueckfluss/*.json
+          if-no-files-found: error
+  vergleich:
+    needs: miner
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: spieler
+            args: --case=players
+          - group: wiederanlauf
+            args: --case=recovery
+          - group: seeds-1
+            args: --case=baseline --seeds=7,11,1,2
+          - group: seeds-2
+            args: --case=baseline --seeds=65535,42,1234
+          - group: seeds-3
+            args: --case=baseline --seeds=98765,3,99
+          - group: seeds-4
+            args: --case=baseline --seeds=2024,2025,314159
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/player-reflux-v12.mjs ${{ matrix.args }}
+      - name: Reproduziere Ersatzkauf-Blockaden ohne Zustandsänderung
+        if: matrix.group == 'wiederanlauf'
+        run: node tools/player-reflux-v12-postmortem.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rueckfluss-${{ matrix.group }}
+          path: work/rueckfluss/*.json
+          if-no-files-found: error
+  vollstaendigkeit:
+    needs: [miner, vergleich]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rueckfluss-*
+          path: work/rueckfluss
+          merge-multiple: true
+      - run: node tools/player-reflux-v12-summary.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rueckfluss-gesamt
+          path: work/rueckfluss-summary.json
+          if-no-files-found: error

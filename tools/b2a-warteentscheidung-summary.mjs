@@ -9,12 +9,15 @@ const sha=createHash('sha256').update(source).digest('hex');
 const cases=['miner','handel-flotte','station','jagd'].map(x=>JSON.parse(fs.readFileSync(path.join(input,x+'.json'),'utf8')));
 let md='# B2a – Zufällige Leerfahrt versus Warten am Dock\n\n[ANALYSE] Aus realen Simulationsdaten dieser CI erzeugt; kein Produktstatus.\n\n';
 md+='| Fall | Modus | Leben (Stunden) | Handelskäufe/-verkäufe | Leere Abflüge | Netto Betrieb vor Hülle (ISK) | Ungedeckter Konzernbetrieb (ISK) | NPC3-Kasse Tag 365 |\n| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |\n';
+const expectedReserve={miner:'5d8219f0d9cc6e21','handel-flotte':'016211add41aff8e',station:'8613b35ecc413697',jagd:'4b5c2c433bb15d69'};
 const results=[];
 for(const v of cases){
  assert.equal(v.toolSha256,sha,'Tool-Hash');
- assert.deepEqual(v.results.map(x=>x.mode),['control','wait']);
- assert.equal(v.results[0].initialHash,v.results[1].initialHash);
+ assert.deepEqual(v.results.map(x=>x.mode),['control','wait','reserve_control','reserve_wait']);
+ assert(v.results.every(x=>x.initialHash===v.results[0].initialHash));
+ assert.equal(v.results[2].hashes.at(-1).hash,expectedReserve[v.scenario],'PR #37 Reserve-Referenz');
  assert.notEqual(v.results[0].sourceSha256,v.results[1].sourceSha256);
+ assert.notEqual(v.results[2].sourceSha256,v.results[3].sourceSha256);
  const list=[];
  for(const x of v.results){
   assert.equal(x.hashes.length,275);
@@ -28,5 +31,5 @@ for(const v of cases){
  results.push({scenario:v.scenario,seed:v.seed,initialHash:v.results[0].initialHash,variants:list});
 }
 fs.mkdirSync(dest,{recursive:true});fs.writeFileSync(path.join(dest,'B2A_ERGEBNISSE.md'),md);fs.writeFileSync(path.join(dest,'b2a-kurzfassung.json'),JSON.stringify({basis:cases[0].basis,toolSha256:sha,results},null,2)+'\n');
-console.log('B2A_SUMMARY_PASS '+cases.length+' Fälle, 8 reproduzierte Läufe, 2200 Tageshashes');
+console.log('B2A_SUMMARY_PASS '+cases.length+' Fälle, 16 reproduzierte Läufe, 4400 Tageshashes');
 console.log(md);

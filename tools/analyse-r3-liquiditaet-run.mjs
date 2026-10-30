@@ -46,7 +46,7 @@ const days=type==='b1'?275:90,results=[];
 for(const mode of MODES){
  const modified=variant(htmlSource,mode),observed=observedSource(modified);
  const watch=new Watch(),ins=engine(observed,watch),plain=engine(modified);
- const state=ins.c.load(initialSave,undefined,ins.r),replay=plain.c.load(initialSave,undefined,plain.r);
+ const state=ins.c.load(initialSave,undefined,ins.r);let replay=plain.c.load(initialSave,undefined,plain.r);
  assert.equal(ins.c.hash(state),initialHash);assert.equal(plain.c.hash(replay),initialHash);
  let cmdIdx=0,hours=0,roundtrips=0;const points=[],daily=[];
  const checkpoints=new Set(type==='b1'?[1,7,30,60,90,180,275]:[1,3,7,30,60,90]);

@@ -39,7 +39,7 @@ function simulate(seed,profile){
   else{
    id='pilot_'+ship.id;
    assert(!s.owners[id],'duplicate pilot');
-   s.owners[id]={id,kind:'pilot',cash:0};
+   s.owners[id]={id,kind:'pilot',employer:ship.owner,cash:0};
    s.stats.konto[id]={erloes:0,kosten:0};
    s.stats.abgabe[id]=0;
    d.pilotContracts++;
@@ -92,17 +92,9 @@ function simulate(seed,profile){
   const lab=state.moduleLab;
   for(const [shipId,pid] of Object.entries(lab.crew)){
    if(state.ships[shipId])continue;
-   const owner=state.owners[pid]?.employer||pid;
-   // Piloten bleiben als Personen mit bestehendem Geldkonto erhalten.
-   const from=owner.startsWith('pilot_')?null:owner;
-   if(from)(lab.idle[from] ||= []).push(pid);
-   else{
-    // Arbeitgeber ist aus der eindeutigen früheren Schiffszuordnung abzuleiten.
-    // Falls nicht vorhanden, bleibt der Pilot bis zu einem neuen Vertrag ungebunden.
-    for(const corp of active){
-     if(!lab.idle[corp])lab.idle[corp]=[];
-    }
-   }
+   const employer=state.owners[pid]?.employer;
+   assert(employer&&active.includes(employer),'Pilot ohne gültigen Arbeitgeber');
+   (lab.idle[employer] ||= []).push(pid);
    delete lab.crew[shipId];
   }
   for(const [shipId,lots] of Object.entries(lab.lots))if(!state.ships[shipId]){

@@ -56,7 +56,7 @@ jobs:
         run: node tools/b4-minerrolle.mjs --case=${{ matrix.fall }} --evidence="$RUNNER_TEMP/b1-evidence" --b1="$RUNNER_TEMP/follow-b1" --starts="$RUNNER_TEMP/follow-start" --out="$RUNNER_TEMP/dauer"
       - uses: actions/upload-artifact@v4
         with:
-          name: b3-${{ matrix.fall }}
+          name: b4-${{ matrix.fall }}
           path: ${{ runner.temp }}/dauer/*.json
   abnahme:
     needs: vergleich
@@ -69,7 +69,7 @@ jobs:
           node-version: '22'
       - uses: actions/download-artifact@v4
         with:
-          pattern: b3-*
+          pattern: b4-*
           path: ${{ runner.temp }}/dauer
           merge-multiple: true
       - name: Vier Fälle und sechzehn Minerrollenvarianten verdichten

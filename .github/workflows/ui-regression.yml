@@ -120,7 +120,8 @@ jobs:
           git fetch origin e0c27a3762d9d6e75d8bcc30ed47621eff2f152b
           mkdir -p "$RUNNER_TEMP/v13-original"
           git archive e0c27a3762d9d6e75d8bcc30ed47621eff2f152b | tar -x -C "$RUNNER_TEMP/v13-original"
-          (cd "$RUNNER_TEMP/v13-original" && node tools/b5a-kostenvergleich.mjs "$RUNNER_TEMP/b5a-v13-13seeds.json")
+          # Das historische Skript ruft git show auf: daher vom wirklichen Git-Checkout starten.
+          node "$RUNNER_TEMP/v13-original/tools/b5a-kostenvergleich.mjs" "$RUNNER_TEMP/b5a-v13-13seeds.json"
       - uses: actions/upload-artifact@v4
         with:
           name: b5a-v13-wirtschaftspruefung

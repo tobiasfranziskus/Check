@@ -79,10 +79,13 @@ test('Ein echtes Schiff geht verloren: genau sein Sollplatz wird real finanziert
  assert(c.audit(s).ok);
 });
 test('Zwei gleiche Minerrollen behalten trotzdem unterschiedliche Sollplatzidentitäten',()=>{
- const {s,sh}=setup();
+ const {s}=setup();
+ const sh=Object.values(s.ships).find(x=>x.owner==='npc3'&&x.klasse==='miner'
+  &&x.heimat==='aldera'&&x.ware==='erz');
+ assert(sh);
  const second=Object.values(s.ships).find(x=>x.id!==sh.id&&x.owner===sh.owner&&x.klasse==='miner'
   &&x.heimat===sh.heimat&&x.ware===sh.ware);
- assert(second,'mindestens zwei gleiche Nadir-Miner');
+ assert(second,'mindestens zwei gleiche Aldera-Erzminer');
  const firstSlot=sh.sollplatz,secondSlot=second.sollplatz;
  assert.notEqual(firstSlot,secondSlot);
  sh.ware=null;sh.auftrag='halten';

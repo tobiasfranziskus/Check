@@ -26,6 +26,13 @@ for(const testcase of cases){
   const p=x.points.at(-1),b=p.budget;
   const createdFrachter=x.events.filter(e=>e.kind==='trade'&&e.ware==='frachter'&&e.klasse==='frachter'&&e.buy);
   const paidFrachter=createdFrachter.reduce((n,e)=>n+e.value+e.fee,0);
+  const freightDue=x.events.filter(e=>e.kind==='freightCost').reduce((n,e)=>n+e.due,0);
+  const freightPaid=x.events.filter(e=>e.kind==='freightCost').reduce((n,e)=>n+e.paid,0);
+  const freightLoss=x.events.filter(e=>e.kind==='freightLoss').reduce((n,e)=>n+e.lostValue,0);
+  assert.equal(p.freightCostDue,freightDue,'vollständige Frachter-Betriebskosten');
+  assert.equal(p.freightCostPaid,freightPaid,'tatsächliche Frachter-Kostenbuchungen');
+  assert.equal(p.freightLostCost,freightLoss,'reale Frachtverluste der ganzen Frachterflotte');
+  assert.equal(p.netOperating,p.realizedMargin-freightDue-freightLoss,'Flotten-P&L vollständig');
   assert.equal(createdFrachter.length,p.realBuilds.frachter,'nur reale voll bezahlte Ersatzfrachter');
   const row={mode:x.mode,initialHash:x.initialHash,finalHash:p.hash,registered:b.registeredFreighters,
    firstFreighterLifeHours:x.death===null?null:(x.death-x.birth)/60,

@@ -43,18 +43,20 @@ function independentAudit(s){
 }
 function testHaltenReise(){
  const make=(e)=>{const s=e.c.createState(42,e.r),sh=Object.values(s.ships).find(x=>x.owner==='house'&&x.klasse==='frachter');
-  const dest=Object.keys(e.r.world.stations).map(id=>({id,trip:e.c.route(e.r.world,sh.system,e.r.world.stations[id].system)})).find(x=>x.trip?.zeit>60);
-  assert(dest);
-  assert(e.c.execute(s,{owner:'house',type:'shipMove',schiff:sh.id,ziel:dest.id},e.r).ok);
+  assert(e.c.execute(s,{owner:'house',type:'shipMove',schiff:sh.id,ziel:'st_cyris'},e.r).ok);
   assert(e.c.execute(s,{owner:'house',type:'shipWait',schiff:sh.id},e.r).ok);
-  e.c.advance(s,59,e.r);assert(sh.phase==='reise'&&sh.auftrag==='halten'&&sh.arbeit===59);
-  const before=s.owners.house.cash,fund=e.h.fondsIn(e.r,e.r.world.stations[dest.id].system),fundBefore=s.owners[fund].cash;
+  e.c.advance(s,25,e.r);
+  assert(sh.phase==='dock'&&sh.auftrag==='halten');
+  assert(e.c.execute(s,{owner:'house',type:'shipMove',schiff:sh.id,ziel:'st_dravos'},e.r).ok);
+  e.c.advance(s,34,e.r);
+  assert(sh.phase==='reise'&&sh.auftrag==='halten'&&sh.arbeit===58);
+  const before=s.owners.house.cash,fund=e.h.fondsIn(e.r,e.r.world.stations.st_dravos.system),fundBefore=s.owners[fund].cash;
   e.c.betriebskosten(s,e.r);
   assert(e.c.audit(s).ok);independentAudit(s);
   return {s,before,after:s.owners.house.cash,fundBefore,fundAfter:s.owners[fund].cash,shipId:sh.id};
  };
  const legacy=make(old),fixed=make(plain);
- const amount=Math.floor(plain.r.world.betriebskosten.frachter*59/60);
+ const amount=Math.floor(plain.r.world.betriebskosten.frachter*58/60);
  assert.equal(legacy.before-legacy.after,0,'v12 tatsächliche Gratisreise');
  assert.equal(fixed.before-fixed.after,amount,'v13 tatsächliche Zahlung');
  assert.equal(fixed.fundAfter-fixed.fundBefore,amount,'reale Empfänger-Fondskasse');

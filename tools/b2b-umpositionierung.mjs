@@ -33,21 +33,20 @@ function reserveSource(){
  assert.equal(result.replace(fn,bestOriginal),src,'nur bestesPaar in Reserve-Basis');
  return result;
 }
-function variant(mode){
- function wartendeQuelle(){
+function wartendeQuelle(){
  const current=reserveSource();
- const alt = \`else if (s.warten >= 2) {
+ const alt = `else if (s.warten >= 2) {
       const andere = ids(w.stations).filter((x) => x !== station && route(w, s.system, w.stations[x].system));
       if (andere.length > 0) abflug(state, rules, s, station, andere[rngInt(state, andere.length)], null, 0);
       else s.ankunft = state.tick + w.warteLeer;
-    }\`;
- const neu = \`else if (s.warten >= 2 && s.owner === 'npc3') {
+    }`;
+ const neu = `else if (s.warten >= 2 && s.owner === 'npc3') {
       s.ankunft = state.tick + w.warteLeer;
     } else if (s.warten >= 2) {
       const andere = ids(w.stations).filter((x) => x !== station && route(w, s.system, w.stations[x].system));
       if (andere.length > 0) abflug(state, rules, s, station, andere[rngInt(state, andere.length)], null, 0);
       else s.ankunft = state.tick + w.warteLeer;
-    }\`;
+    }`;
  assert.equal(original.split(alt).length,2,'Alter Leerfahrtzweig eindeutig');
  const fn=original.replace(alt,neu);
  assert.notEqual(fn,original);
@@ -60,16 +59,16 @@ function variant(mode){
  assert(modes.includes(mode));
  const current=wartendeQuelle();
  if(mode==='wait')return current;
- const anchor=\`else if (s.warten >= 2 && s.owner === 'npc3') {
+ const anchor=`else if (s.warten >= 2 && s.owner === 'npc3') {
       s.ankunft = state.tick + w.warteLeer;
-    }\`;
+    }`;
  assert.equal(current.split(anchor).length,2,'B2a-Warteanker eindeutig');
- const neuerZweig=\`else if (s.warten >= 2 && s.owner === 'npc3') {
+ const neuerZweig=`else if (s.warten >= 2 && s.owner === 'npc3') {
       const kandidat = sucheUmpositionierung(state, rules, s, station, MODE_RISK);
       if (kandidat) abflug(state, rules, s, station, kandidat.start, null, 0);
       else s.ankunft = state.tick + w.warteLeer;
-    }\`.replace('MODE_RISK',mode==='riskguard'?'true':'false');
- const helper=\`// B2b nur im Analyseprozess: echte Core-Angebote anderer Ausgangsstationen prüfen.
+    }`.replace('MODE_RISK',mode==='riskguard'?'true':'false');
+ const helper=`// B2b nur im Analyseprozess: echte Core-Angebote anderer Ausgangsstationen prüfen.
 function sucheUmpositionierung(state, rules, s, station, risiko){
  const w=rules.world, cash=state.owners[s.owner].cash;
  const pending=Object.values(state.ships).filter(x=>x.owner===s.owner && x.auftrag!=='halten')
@@ -103,7 +102,7 @@ function sucheUmpositionierung(state, rules, s, station, risiko){
  }
  return best;
 }
-\`;
+`;
  const modified=current.replace(anchor,neuerZweig);
  const at=modified.indexOf('function entscheidung(');
  assert(at>0 && modified.includes('sucheUmpositionierung(state, rules, s, station,'));

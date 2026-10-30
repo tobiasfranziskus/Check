@@ -1,8 +1,8 @@
 # Aphros Void – Projektstatus
 
-Stand: 29. Oktober 2026. v0.11.2 auf `feat/v0.11.2-wirtschaft`, Basis main `d53bf14`. Noch nicht gemergt, veröffentlicht oder auf NAS/iPad abgenommen.
+Stand: 30. Oktober 2026. **Veröffentlichter Spielstand unbekannt; `main` enthält v0.11.2** seit Merge von PR #15 (`f01fd57`). Kein bestätigtes NAS-/iPad-Deployment.
 
-Schutzgeld ist 0; automatische NPC-Frachter verwenden zwei regulär bezahlte Reserveeinheiten. Schema 8 bleibt erhalten, Regelmigration 7→8 ändert nur die Regelnummer. [Aktueller Testbericht und Risiken](TEST_WIRTSCHAFT_V0_11_2.md): 40 Node-22-Tests sowie 13 wiederholte 90-Tage-Simulationen, alle Audits und Referenzvergleiche korrekt.
+**Entwicklung:** PR #18 (Entwurf) implementiert v0.12.0 mit freien Sternentorreisen und Silizium statt Flugtreibstoff. Dieser Regelbruch ist noch nicht integriert oder wirtschaftlich abgenommen. PR #16 (NPC1-Expansion) bleibt wegen ungedeckter Betriebskosten ungemergt; PR #17 (Konzernnamen) ist davon unabhängig. Letzter abgeschlossener Hauptstand v0.11.2: 40 Node-22-Tests sowie 13 wiederholte 90-Tage-Simulationen, siehe [Wirtschaftsbericht](TEST_WIRTSCHAFT_V0_11_2.md).
 
 ## Version und Architektur
 

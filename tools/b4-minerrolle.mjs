@@ -18,7 +18,7 @@ const input=JSON.parse(fs.readFileSync(path.join(starts,'start-'+scenario+'-'+se
 assert.equal(c.hash(c.load(input.save)),b1.start.hash);
 const modes=['control','return_native','return_paid','release'];
 const moveneedle="s.phase = 'reise'; s.ziel = cmd.ziel; s.ankunft = state.tick + r.zeit; s.warten = 0; s.eskorte = null; break;";
-const activateNeedle="m_core_state.protokolliere(state, 'dienst',";
+const activateNeedle="const neu = m_core_state.neuesSchiff(state, { owner: cmd.owner, klasse: cmd.klasse, system: traeger.system, heimat: traeger.system, auftrag: 'halten', ware: null });";
 function variant(mode){
  assert(modes.includes(mode),'Mode nicht erkannt');
  if(mode==='control'||mode==='return_native')return src;
@@ -49,8 +49,8 @@ function variant(mode){
          soll.splice(i,1);
        }
        `;
- const text=src.replace(activateNeedle,injection+activateNeedle);
- assert.equal(text.replace(injection+activateNeedle,activateNeedle),src,'nur Förder-Sollplatz entfernt');
+ const text=src.replace(activateNeedle,activateNeedle+'\n       '+injection);
+ assert.equal(text.replace(activateNeedle+'\n       '+injection,activateNeedle),src,'nur Förder-Sollplatz entfernt');
  return text;
 }
 

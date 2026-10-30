@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f5f5f7">
-<meta name="aphros-version" content="v0.11.2">
+<meta name="aphros-version" content="v0.12.0">
 <title>Aphros Void</title>
 <style>
 :root {
@@ -171,7 +171,7 @@ button.zeile .liste-links { color: var(--text); }
 
 <main id="ansicht-hq" class="ansicht" aria-label="HQ">
   <header class="kopf">
-    <p class="muted kopf-klein">HQ · v0.11.2</p>
+    <p class="muted kopf-klein">HQ · v0.12.0</p>
     <p class="kasse"><span id="hq-kasse" class="kasse-zahl">–</span></p>
     <p id="hq-trend" class="trend muted"><span class="trend-symbol" id="hq-trend-symbol"></span><span id="hq-trend-text">–</span> <span class="trend-bezug">zur letzten vollen Spielstunde</span></p>
   </header>
@@ -264,7 +264,7 @@ button.zeile .liste-links { color: var(--text); }
     <div class="blatt-inhalt">
 
       <div class="blatt-seite" id="blatt-pruefung" data-titel="Prüfung" hidden>
-        <p class="muted">Version v0.11.2</p>
+        <p class="muted">Version v0.12.0</p>
         <section class="card" aria-label="Zustand">
           <dl>
             <div><dt>Spielzeit</dt><dd id="zeit">–</dd></div>
@@ -381,9 +381,9 @@ const m_data_systeme = (() => {
       gates: [{ to: 'cyris', time: 25 }, { to: 'dravos', time: 20 }],
       station: {
         cash: 4000, fondsCash: 1000, gebuehr: 40,
-        linien: ['r_material', 'r_bauteil', 'r_treibstoff', 'r_miner', 'r_frachter', 'r_jaeger', 'r_lager', 'r_bergbau', 'r_fabrik', 'r_dock', 'r_werft', 'r_verteidigung', 'r_bauschiff'],
-        verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
-        ziel: { erz: 240, material: 156, bauteil: 40, eis: 96, treibstoff: 52, nahrung: 20, medikamente: 20, miner: 2, frachter: 2, jaeger: 2, lager: 6, bergbau: 4, fabrik: 3, dock: 3, werft: 2, verteidigung: 4, bauschiff: 1 },
+        linien: ['r_material', 'r_bauteil', 'r_miner', 'r_frachter', 'r_jaeger', 'r_lager', 'r_bergbau', 'r_fabrik', 'r_dock', 'r_werft', 'r_verteidigung', 'r_bauschiff'],
+        verbrauch: { nahrung: 3, medikamente: 1, bauteil: 2 },
+        ziel: { erz: 240, material: 156, bauteil: 40, eis: 96, silizium: 52, nahrung: 20, medikamente: 20, miner: 2, frachter: 2, jaeger: 2, lager: 6, bergbau: 4, fabrik: 3, dock: 3, werft: 2, verteidigung: 4, bauschiff: 1 },
       },
       fields: [{ ware: 'erz', miner: 2 }],
       pirates: {},
@@ -397,8 +397,8 @@ const m_data_systeme = (() => {
       station: {
         cash: 4000, fondsCash: 1000, gebuehr: 40,
         linien: ['r_bauteil', 'r_medikamente', 'r_nahrung'],
-        verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
-        ziel: { material: 132, bauteil: 40, kristall: 36, medikamente: 40, eis: 80, nahrung: 52, treibstoff: 20 },
+        verbrauch: { nahrung: 3, medikamente: 1, bauteil: 2 },
+        ziel: { material: 132, bauteil: 40, kristall: 36, medikamente: 40, eis: 80, nahrung: 52, silizium: 20 },
       },
       fields: [{ ware: 'kristall', miner: 1 }, { ware: 'eis', miner: 1 }],
       pirates: { pirat_mittel: 1 },
@@ -411,11 +411,11 @@ const m_data_systeme = (() => {
       gates: [{ to: 'orion', time: 22 }, { to: 'veldra', time: 20 }],
       station: {
         cash: 4000, fondsCash: 1000, gebuehr: 40,
-        linien: ['r_material', 'r_treibstoff'],
-        verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
-        ziel: { erz: 240, material: 96, eis: 96, treibstoff: 52, nahrung: 20, medikamente: 20, bauteil: 20 },
+        linien: ['r_material'],
+        verbrauch: { nahrung: 3, medikamente: 1, bauteil: 2 },
+        ziel: { erz: 240, material: 96, eis: 96, silizium: 52, nahrung: 20, medikamente: 20, bauteil: 20 },
       },
-      fields: [{ ware: 'erz', miner: 1 }, { ware: 'eis', miner: 1 }],
+      fields: [{ ware: 'erz', miner: 1 }, { ware: 'silizium', miner: 1 }],
       pirates: { pirat_klein: 1 },
       security: true,
       traders: [{ owner: 'npc2', start: 5 }],
@@ -429,7 +429,7 @@ const m_data_systeme = (() => {
         aussenhandel: true,
         linien: [],
         verbrauch: {},
-        ziel: { erz: 100, eis: 100, kristall: 100, material: 100, bauteil: 100, treibstoff: 100, nahrung: 100, medikamente: 100 },
+        ziel: { erz: 100, eis: 100, kristall: 100, material: 100, bauteil: 100, silizium: 100, nahrung: 100, medikamente: 100 },
       },
       fields: [],
       pirates: { pirat_mittel: 1, pirat_gross: 1 },
@@ -443,8 +443,8 @@ const m_data_systeme = (() => {
       station: {
         cash: 4000, fondsCash: 1000, gebuehr: 40,
         linien: ['r_material'],
-        verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
-        ziel: { erz: 240, eis: 160, material: 120, bauteil: 30, nahrung: 30, treibstoff: 30, medikamente: 15 },
+        verbrauch: { nahrung: 3, medikamente: 1, bauteil: 2 },
+        ziel: { erz: 240, eis: 160, material: 120, bauteil: 30, nahrung: 30, silizium: 30, medikamente: 15 },
       },
       fields: [{ ware: 'erz', miner: 1 }, { ware: 'eis', miner: 1 }],
       pirates: { pirat_klein: 1 },
@@ -458,8 +458,8 @@ const m_data_systeme = (() => {
       station: {
         cash: 4000, fondsCash: 1000, gebuehr: 40,
         linien: ['r_material', 'r_nahrung'],
-        verbrauch: { nahrung: 3, treibstoff: 1, medikamente: 1, bauteil: 2 },
-        ziel: { erz: 240, material: 96, eis: 80, nahrung: 52, treibstoff: 20, medikamente: 20, bauteil: 20 },
+        verbrauch: { nahrung: 3, medikamente: 1, bauteil: 2 },
+        ziel: { erz: 240, material: 96, eis: 80, nahrung: 52, silizium: 20, medikamente: 20, bauteil: 20 },
       },
       fields: [{ ware: 'erz', miner: 1 }],
       pirates: { pirat_klein: 1 },
@@ -524,15 +524,14 @@ const ECONOMY = {
   waren: {
     erz: { stufe: 'rohstoff', basis: 10 }, eis: { stufe: 'rohstoff', basis: 12 }, kristall: { stufe: 'rohstoff', basis: 24 },
     material: { stufe: 'material', basis: 30 }, bauteil: { stufe: 'bauteil', basis: 75 },
-    treibstoff: { stufe: 'verbrauch', basis: 30 }, nahrung: { stufe: 'verbrauch', basis: 30 }, medikamente: { stufe: 'verbrauch', basis: 105 },
+    silizium: { stufe: 'rohstoff', basis: 24 }, nahrung: { stufe: 'verbrauch', basis: 30 }, medikamente: { stufe: 'verbrauch', basis: 105 },
     lager: { stufe: 'modul', basis: 180 }, bergbau: { stufe: 'modul', basis: 225 }, fabrik: { stufe: 'modul', basis: 300 },
     dock: { stufe: 'modul', basis: 360 }, werft: { stufe: 'modul', basis: 450 }, verteidigung: { stufe: 'modul', basis: 252 },
     miner: { stufe: 'schiff', basis: 600 }, frachter: { stufe: 'schiff', basis: 750 }, jaeger: { stufe: 'schiff', basis: 900 }, bauschiff: { stufe: 'schiff', basis: 1200 },
   },
   rezepte: {
     r_material: { ein: { erz: 10 }, aus: { material: 4 }, ort: 'fabrik', dauer: 10 },
-    r_bauteil: { ein: { material: 2 }, aus: { bauteil: 1 }, ort: 'fabrik', dauer: 8 },
-    r_treibstoff: { ein: { eis: 2 }, aus: { treibstoff: 1 }, ort: 'fabrik', dauer: 5 },
+    r_bauteil: { ein: { material: 2, silizium: 1 }, aus: { bauteil: 1 }, ort: 'fabrik', dauer: 8 },
     r_nahrung: { ein: { eis: 2 }, aus: { nahrung: 1 }, ort: 'fabrik', dauer: 6 },
     r_medikamente: { ein: { kristall: 1, material: 2 }, aus: { medikamente: 1 }, ort: 'fabrik', dauer: 7 },
     r_lager: { ein: { bauteil: 2 }, aus: { lager: 1 }, ort: 'fabrik', dauer: 12 },
@@ -559,7 +558,7 @@ const m_data_world = (() => {
 const WORLD = {
   systems: m_data_systeme.systems,
   gates: m_data_systeme.gates,
-  aktiveRezepte: ['r_bauteil', 'r_frachter', 'r_jaeger', 'r_material', 'r_medikamente', 'r_miner', 'r_nahrung', 'r_treibstoff', 'r_lager', 'r_bergbau', 'r_fabrik', 'r_dock', 'r_werft', 'r_verteidigung', 'r_bauschiff'],
+  aktiveRezepte: ['r_bauteil', 'r_frachter', 'r_jaeger', 'r_material', 'r_medikamente', 'r_miner', 'r_nahrung', 'r_lager', 'r_bergbau', 'r_fabrik', 'r_dock', 'r_werft', 'r_verteidigung', 'r_bauschiff'],
   werft: 'st_aldera', zielSchiff: 2, reichsgroesse: 3,
   // v0.11.0 / A3: dividendeFreibetrag von 2000 auf 3000 angehoben.
   // 3000 liegt bewusst über mindeststand (2500). In v0.10.0 (2000 < 2500) füllte
@@ -572,12 +571,12 @@ const WORLD = {
   fields: m_data_systeme.fields,
   minerOwner: 'npc3',
   traders: m_data_systeme.traders,
-  treibstoffJeSprung: 1, treibstoffReserve: 2, aussenhandelTeiler: 10,
+  aussenhandelTeiler: 10,
   betriebskosten: { miner: 150, frachter: 250, jaeger: 50 },
   senkeBesitzer: ['security'], mindeststand: 2500, fondsObergrenze: 1500, npcObergrenze: 6000, npcAusgabenArten: ['trader', 'miner'],
   sicherheit: { owner: 'security', jaeger: m_data_systeme.sicherheitJaeger, fokus: 'schwach', rueckzug: 30 },
   piraten: { owner: 'pirates', markt: 'st_meridian', soll: m_data_systeme.piratenSoll },
-  patrouilleChance: 600, ueberfallChance: 100, ersatzRuecklage: 250, warteLeer: 30, warteTreibstoff: 10, schutzgeldJeStunde: 0,
+  patrouilleChance: 600, ueberfallChance: 100, ersatzRuecklage: 250, warteLeer: 30, schutzgeldJeStunde: 0,
   owners: m_data_systeme.owners,
 };
 return { WORLD };
@@ -603,7 +602,7 @@ return { COMBAT };
 
 const m_data_rules = (() => {
 const RULES = {
-  schema: 8, rulesVersion: 8, maxAdvanceSteps: 10000, startSeed: 1,
+  schema: 8, rulesVersion: 9, maxAdvanceSteps: 10000, startSeed: 1,
   owners: m_data_world.WORLD.owners, economy: m_data_economy.ECONOMY,
   world: m_data_world.WORLD, combat: m_data_combat.COMBAT,
 };
@@ -883,7 +882,7 @@ function execute(state, cmd, rules) {
       st.module[cmd.modul] = (st.module[cmd.modul] || 0) + 1;
       if (cmd.modul === 'fabrik') {
         const vorhanden = new Set(st.linien.map((l) => l.rezept));
-        const rezept = ['r_material', 'r_treibstoff', 'r_nahrung', 'r_bauteil', 'r_medikamente'].find((r) => !vorhanden.has(r));
+        const rezept = ['r_material', 'r_nahrung', 'r_bauteil', 'r_medikamente'].find((r) => !vorhanden.has(r));
         if (rezept) st.linien.push({ rezept, rest: 0, herkunft: 'spieler' });
       }
       if (cmd.modul === 'werft') {
@@ -2217,7 +2216,7 @@ return { ZOOM_MIN, ZOOM_MAX, MIN_TIPP_PUNKT, startAnsicht, rasterZuBild, bildZuR
 const m_data_namen = (() => {
 const WAREN = {
   erz: 'Erz', eis: 'Eis', kristall: 'Kristall', material: 'Material', bauteil: 'Bauteil',
-  treibstoff: 'Treibstoff', nahrung: 'Nahrung', medikamente: 'Medikamente',
+  silizium: 'Silizium', nahrung: 'Nahrung', medikamente: 'Medikamente',
   lager: 'Lagermodul', bergbau: 'Bergbaumodul', fabrik: 'Fabrikmodul', dock: 'Dockmodul', werft: 'Werftmodul', verteidigung: 'Verteidigungsmodul',
   miner: 'Miner', frachter: 'Frachter', jaeger: 'Jäger', bauschiff: 'Bauschiff',
 };

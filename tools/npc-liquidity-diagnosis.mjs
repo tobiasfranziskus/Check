@@ -50,7 +50,7 @@ function run(html,seed,variant) {
  let maxUnpaidEvent=null;
  const get=(id)=>{if(!lots.has(id))lots.set(id,[]);return lots.get(id)};
  const stockCost=(owner)=>{
-  let value=0;for(const [id,entries] of lots)if(entries.owner===owner)for(const l of entries.items)value+=l.units*l.unitCost;
+  let value=0;for(const entries of lots.values())for(const l of entries)if(l.owner===owner)value+=l.units*l.unitCost;
   return value;
  };
  function onTrade(s,ship,station,ware,amount,buy,p,fee) {
@@ -121,6 +121,12 @@ function run(html,seed,variant) {
  const expected=variant==='tor'?torFixture.results.find(x=>x.seed===seed).hash
   :v11Fixture.results.find(x=>x.seed===seed).points.at(-1).hash;
  const actual=core.hash(s);
+ for(const id of watchers){
+  const o=byOwner[id];
+  const onHand=sum([...lots.values()].flatMap(ls=>ls).filter(l=>l.owner===id).map(l=>l.units));
+  assert.equal(o.buyUnits,o.sellUnits-o.unmatchedSellUnits+onHand+o.lostCargoUnits,
+   'FIFO-Stückbilanz '+variant+'/'+seed+'/'+id);
+ }
  assert.equal(actual,expected,'Fester Referenzhash '+variant+'/'+seed);
  assert.equal(core.hash(core.load(core.save(s))),actual,'Save/Load '+variant+'/'+seed);
  for(const id of watchers){

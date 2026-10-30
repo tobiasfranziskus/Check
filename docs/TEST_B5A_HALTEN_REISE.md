@@ -1,0 +1,37 @@
+# B5a – Betriebskosten bei „halten“ auf Reisen (Regelversion 13)
+
+**30.10.2026 · [DRAFT / NICHT IN MAIN]** Eigenständiger Produktkorrektur-PR auf `main 906b7978d388e9af960443a2b7f4835b1d2a15c0` (v0.12.3, Regel 12, Schema 8). Basis: [B4-Analyse #41](https://github.com/tobiasfranziskus/Check/pull/41), die nur als Quellenbeleg herangezogen wird, **nicht** in diesen PR mitgezogen. Die bindende Produktplanung bleibt [ROADMAP.md](ROADMAP.md).
+
+## Bestätigter Defekt
+
+In `m_core_ankunft.reise` werden die Arbeitsminuten während jedes Reisefluges auch dann aufsummiert, wenn der Auftrag `halten` lautet. `m_core_stunde.betriebskosten` setzt bisher die gesammelten Minuten auf null und überspringt anschließend jede Kostenbelastung bei `halten`. Dadurch wird eine beliebige manuell befohlene Fahrt im wartenden Zustand kostenlos, **auch wenn sie vor der nächsten vollen Stunde bereits angedockt hat**. Das betrifft grundsätzlich auch einen validierten `shipWait` während der Reise.
+
+## Engste Produktkorrektur
+
+Nur die bisherige Abkürzung `if (s.auftrag === 'halten') continue` wird durch `if (arbeit === 0) continue` ersetzt. **Wer gearbeitet hat, bezahlt nach unveränderter, bereits bestehender Stundenformel**, auch im Dock. **Wer wirklich nicht gearbeitet hat, bezahlt nichts**, auch mit Auftrag `halten`. Die Kasse zahlt weiterhin höchstens ihren wirklichen Bestand; dieselben Fonds, Gebühren und tatsächlichen Geldtransfers werden weiterverwendet. Kein Treibstoff, keine neue Geldquelle, keine neue Insolvenz, keine Änderungen an Piraten, Schiffersatz, Förderung oder UI-Auftragssemantik.
+
+**Version und Datenerhalt:** Patchversion `v0.12.4`, **Regelversion 13**, weiterhin **Schema 8**. Der neue `RULE_MIGRATIONS[12]` ändert ausschließlich die Regelversionsmarkierung; laufende Reise, angesammelte Arbeitsminuten, Schiffsziel, Kassen, Ladungen und Queue werden **nicht** neu initialisiert. Frühere erlaubte 11→12-Migration geht anschließend automatisch nach 13; in der Entwicklung ausdrücklich inkompatible Regelstände 8–10 bleiben unverändert abgewiesen, ebenso zukünftige Versionen. Bereits in Regel 12 kostenlos geflogene historische Minuten werden **nicht rückwirkend** belastet; aktuell gespeicherte noch nicht abgerechnete Arbeit wird beim nächsten regulären Abrechnungszeitpunkt erstmals nach Regel 13 fällig.
+
+## Durchgeführte gezielte Tests
+
+**[AUSGEFÜHRT, direkt]** Acht gezielte Kernregressionen bestanden: ruhiges Halten ohne Arbeit, volle/gebruchte Reiseminuten mit `halten`, Auflauf beim Andocken vor der Kostenstunde, mehrere validierte Reisen innerhalb einer Stunde, Kassenunterdeckung ohne Geldschöpfung, keine Doppelabrechnung, sowie Save/Load der offenen v12-Reisearbeit. Zusätzlich wurde der alte v12-Core mit dem geänderten Regel-13-Core anhand einer identischen validierten Zwei-Etappen-Reise bis Tick 59 **vorher/nachher ausgeführt**: v12 bezahlt für den wartenden Frachter 0 ISK; v13 bezahlt **241 ISK**, tatsächlich zusätzlich auf dem zuständigen Fonds verbucht. Die Geld-/Warenidentität blieb bei beiden korrekt; der v12→13-Roundtrip hat einen stabilen kanonischen Hash. Diese Funktionsausführung ist **keine** vollständige Node-CI oder 13-Seed-Abnahme.
+
+## Umfangreiche Abnahme – erforderliche CI-Gates
+
+Die angepasste GitHub-Actions-Prüfung führt weiterhin die gesamte Node-22-Testfamilie aus. Die **historischen v12-Goldenwerte bleiben unverändert** und werden fortan im ursprünglichen Produktcommit `906b7978` ausgeführt, statt sie unter Regelversion 13 umzudeuten. Ein separater neuer Wirtschaftsjob `wirtschaft-v13-kostenkorrektur`:
+
+- fährt dieselben **13 festen Seeds jeweils über 90 Tage** im produktiven Regel-13-Kern und unabhängig instrumentiert/uninstrumentiert;
+- kontrolliert **stündlich** sowohl die Core-Audits als auch einen separat berechneten vollständigen Geld- und Warenaudit einschließlich aller Konten, Lager und Frachträume;
+- vergleicht stündlich reproduzierte kanonische Hashes sowie Tageshashes; prüft Save/Load an Tag 3, 30 und 90 je Seed;
+- prüft alle **13 realen Wirtschaftsmesswerte gegen die unabhängig ermittelte Original-v12-Fixture**: Versorgung, Produktion/Verkäufe, Kassen, Kostendefizite, Schiffsverluste und Geldschöpfung/-vernichtung. Die Basisseeds enthalten keine absichtlich gehaltene Spielerschiffsreise. Die tatsächliche Wirkung der Korrektur wird **separat** über den zweifachen validierten Reise-Stresstest und die Regression geprüft;
+- verlangt unveränderte historische v11-/Geografietests, soweit die verwendeten Fixdaten ihrer jeweiligen historischen Regelbasis entsprechen.
+
+**Vor erfolgreicher CI sind diese Langzeit- und Standardprüfungen nicht als bestanden zu bezeichnen.** Es wird kein Goldenwert still neu berechnet oder überschrieben.
+
+## Freigabegrenzen
+
+Die Änderung ist eng begrenzt, aber **wirtschaftsrelevant**: Begonnene Reisen auf Auftrag `halten` können künftig im Spielverlauf mehr Zahlungen auslösen und bei zu wenig Geld ungedeckte Arbeit haben. Deshalb sind bei der PR-Abnahme alte Regel-12-Spielstände, Spielerbefehle, Wirtschaftsbilanzen und Langzeit-/Save-Fälle gemeinsam zu beurteilen. Eine bestandene CI ist kein Merge, keine iPad-Safari- oder NAS-Abnahme. Kein Deployment; `main` nur nach ausdrücklicher Freigabe verändern.
+
+## B5b nicht enthalten
+
+Die dauerhafte Nadir-Förder-Sollrolle wird **nicht** mit dem momentanen `auftrag/ware` des Schiffs neu gekoppelt. Das bleibt das **separate Folgepaket B5b**, damit Kostenkorrektur und Flottenidentität unabhängig messbar sind.

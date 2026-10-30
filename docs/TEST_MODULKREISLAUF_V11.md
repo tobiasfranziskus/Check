@@ -38,11 +38,29 @@ Jede Variante verwendet **denselben Kern** und denselben deterministischen RNG. 
 
 Die Bestellung von Schutzschilden und Lasern durch Kopfgeldjäger, echte Effekte auf Schiffswerte, Ausrüstungsslots, Größen S/M/L, Reparaturen/Verschleiß und laufende Materialnachfrage sind **noch nicht implementiert**; sie können nicht aus einer erfolgreichen Testproduktion abgeleitet werden. Einmalige MK-I–III-Käufe allein werden langfristig möglicherweise nicht ausreichend viel Geld zurückführen.
 
-## Status der Prüfung
+## Tatsächlich ausgeführte Prüfungen und Ergebnisse
 
-- Die Modul-Unit-Tests laufen zusammen mit den bestehenden Standardtests in GitHub Actions: v11-Warenproduktion, Rückverfolgbarkeit, Kauf, Stufenfolge und Versagen ohne Geld/Material.
-- Vorläufige Referenz: [Actions-Lauf #41020566676](https://github.com/tobiasfranziskus/Check/actions/runs/41020566676).
-- Wirtschaftszahlen werden nach tatsächlicher Ausführung ergänzt; **keine Wirtschaftsfreigabe aus der bloßen Existenz des Codes ableiten**.
+- [GitHub Actions #41020846651](https://github.com/tobiasfranziskus/Check/actions/runs/41020846651), Code-Commit `b7ec934`: **50/50 Standardtests** erfolgreich (5 neue Modultests). Modulversuch mit **39/39 90-Tage-Simulationen** erfolgreich; 13 feste Seeds × drei Varianten. Stündliche Geld-/Warenaudits, eigene Modulbestandskontrolle, Save-/Load-Roundtrip und feste v11-Basisreferenzen bestanden.
+- Der erste CI-Versuch hatte die nach der Herstellung geänderte Preisbewertung nicht berücksichtigt und einen erlaubten, nun korrekt verschobenen Kauf irrtümlich als Fehler behandelt. Fehler im **Versuchsablauf**, nicht in `index.html`; die Korrektur prüft die Kaufkraft nach der Materialentnahme neu. [Fehlversuch #41020566676](https://github.com/tobiasfranziskus/Check/actions/runs/41020566676) ist nicht als Erfolg gezählt.
+- Die alten v11-Wirtschaftstests laufen als separate CI-Jobs; ein planmäßig wegen abweichender PR-Basis übersprungener historischer Job wird nicht als ausgeführt bezeichnet.
+
+| Kennzahl, Summe aus 13 Seeds × 90 Tage | Original v11 | Mit Pilotengehalt | Gehalt + Modulherstellung und -kauf |
+| --- | ---: | ---: | ---: |
+| Gesamte Mangelstunden | 4.204 | 485.081 | 483.539 |
+| Pilotengeld am Ende (ISK) | 0 | 532.957 | 527.335 |
+| Stationsgeld am Ende (ISK) | 304.707 | 45.153 | 57.097 |
+| Fonds am Ende (ISK) | 89.840 | 524 | 688 |
+| Ausgezahlte Pilotengehälter (ISK) | 0 | 532.957 | 602.812 |
+| Module produziert | 0 | 0 | 281 |
+| Module verkauft | 0 | 0 | 280 |
+| Modulumsatz (ISK, Pilot → Station) | 0 | 0 | 75.477 |
+| Dabei eingesetzte Material-/Rohstoffeinheiten | 0 | 0 | 1.607 |
+
+Die Pilotengehaltsquoten sind wie im Vorversuch lediglich experimentell: 10 % des positiven realisierten Frachter-Nettogewinns und 20 % des Miner-Nettoerlöses. Die alte abstrakte Betriebskostenregel bleibt in beiden Gehaltsvarianten zunächst unverändert beim Konzern.
+
+**Befund:** Die moduleigenen Käufe transferieren reales Geld zurück an Stationen; das funktioniert ohne zusätzliche Geldschöpfung und ohne ausgedachte Waren. In **12/13 Seeds** sinkt die Gesamtmangelstundenzahl gegenüber Gehalt ohne Module (in einem steigt sie). Gesamtmangel sinkt um 1.542 Stunden; das sind nur etwa **0,32 %** des sehr großen Versorgungsdefizits. Die Einnahmen der Pilotenkonten steigen in der Modulsimulation zugleich, sodass 75.477 ISK Modulumsatz nicht mit einer gleich großen Reduzierung ihrer Schlussguthaben gleichgesetzt werden darf.
+
+**Keine Wirtschaftsfreigabe.** Einmalige MK-I–III-Käufe sind als Liquiditätsrückfluss viel zu schwach, um die Gehaltsökonomie zu tragen. Ein dauerhafter, materialgebundener Reparatur- und Ersatzbedarf mit echten Stationszahlungen und künftig wirksamen Ausrüstungswerten ist deshalb der nächste zu isolierende Entwicklungsbaustein.
 
 ## Weiteres unabhängiges Paket
 

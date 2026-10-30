@@ -65,7 +65,7 @@ test('Beschädigte Spielstände werden nicht als gültige Zustände übernommen'
   assert.throws(() => e.load('{"schema":8,"owners":', undefined, e.rules), /Unexpected end of JSON input/);
 });
 
-test('Regelversion 11 wird ohne Waren-, Kassen- oder Schiffsdatenverlust nach 12 migriert', () => {
+test('Regelversion 11 wird ohne Waren-, Kassen- oder Schiffsdatenverlust nach 13 migriert', () => {
   const e=engine();
   const htmlSource=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
   const legacy=new Function(v11CoreSource(htmlSource)+
@@ -76,13 +76,13 @@ test('Regelversion 11 wird ohne Waren-, Kassen- oder Schiffsdatenverlust nach 12
   assert.equal(oldSnapshot.rulesVersion,11);
   assert(legacy.core.audit(old).ok);
   const loaded=e.load(legacy.core.save(old),undefined,e.rules);
-  assert.equal(loaded.rulesVersion,12);
+  assert.equal(loaded.rulesVersion,13);
   assert.equal(loaded.schema,oldSnapshot.schema);
-  const expected={...oldSnapshot,rulesVersion:12};
+  const expected={...oldSnapshot,rulesVersion:13};
   assert.equal(e.hash(loaded),e.hash(expected),'Außer Regelversionsmarkierung bleibt alles erhalten');
   assert(e.audit(loaded).ok);
   const copy=e.load(e.save(loaded),undefined,e.rules);
-  assert.equal(e.hash(copy),e.hash(loaded),'v12 Save/Load nach Migration');
+  assert.equal(e.hash(copy),e.hash(loaded),'v13 Save/Load nach Migration');
   const c=new Function(htmlSource.slice(htmlSource.indexOf('<script>')+8,
     htmlSource.indexOf('const m_data_oberflaeche'))+
     ';return {core:m_core_index,rules:m_data_rules.RULES};')();
@@ -90,4 +90,27 @@ test('Regelversion 11 wird ohne Waren-, Kassen- oder Schiffsdatenverlust nach 12
   c.core.advance(copy,1440,c.rules);
   assert.equal(c.core.hash(loaded),c.core.hash(copy),'Deterministische Fortsetzung migrierter v11-Spielstände');
   assert(c.core.audit(loaded).ok);
+});
+
+
+test('Regelversion 12 wird ohne Buchungs- oder Arbeitsdatenverlust nach 13 migriert', () => {
+  const e=engine(),current=e.create(13,e.rules),alt=JSON.parse(e.save(current));
+  const s=Object.values(alt.ships).find(x=>x.owner==='house'&&x.klasse==='frachter');
+  assert(s);
+  s.auftrag='halten';s.phase='reise';s.ziel='st_cyris';s.ankunft=alt.tick+25;s.arbeit=17;
+  alt.rulesVersion=12;
+  const before=JSON.stringify(alt);
+  const restored=e.load(before,undefined,e.rules);
+  assert.equal(restored.rulesVersion,13);
+  assert.equal(restored.schema,8);
+  assert.equal(restored.ships[s.id].arbeit,17);
+  assert.equal(restored.ships[s.id].phase,'reise');
+  assert.equal(restored.ships[s.id].auftrag,'halten');
+  assert.equal(e.hash(restored),e.hash({...alt,rulesVersion:13}));
+  assert.equal(JSON.stringify(alt),before,'Eingangsdaten dürfen nicht verändert werden');
+  assert.ok(e.audit(restored).ok);
+  const copy=e.load(e.save(restored),undefined,e.rules);
+  assert.equal(e.hash(copy),e.hash(restored));
+  const future=structuredClone(restored);future.rulesVersion=14;
+  assert.throws(()=>e.load(JSON.stringify(future),undefined,e.rules),/neuer/);
 });

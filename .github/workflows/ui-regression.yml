@@ -87,12 +87,37 @@ jobs:
           fi
 
   wirtschaft-v12-versorgungsfreigabe:
+    # Historische Originalquelle und unveränderte Fixture nicht gegen Regel 13 umetikettieren.
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: v12-Haendlerentscheidung gegen 13 unabhaengige 90-Tage-Fixwerte
-        run: node tools/priority-v12-reference.mjs
+      - name: Historische Regel 12 am festgehaltenen Main-Commit prüfen
+        run: |
+          git fetch origin 906b7978d388e9af960443a2b7f4835b1d2a15c0
+          mkdir -p "$RUNNER_TEMP/v12-original"
+          git archive 906b7978d388e9af960443a2b7f4835b1d2a15c0 | tar -x -C "$RUNNER_TEMP/v12-original"
+          (cd "$RUNNER_TEMP/v12-original" && node tools/priority-v12-reference.mjs)
+
+  wirtschaft-v13-kostenkorrektur:
+    # Neuer Regel-13-Nachweis: unveränderte historische v12-Goldenwerte sind Vergleich, keine neue Fixture.
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 13 Seeds x 90 Tage mit stündlichen Einzel-Audits, Replay und Save/Load
+        run: node tools/b5a-kostenvergleich.mjs "$RUNNER_TEMP/b5a-v13-13seeds.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b5a-v13-wirtschaftspruefung
+          path: ${{ runner.temp }}/b5a-v13-13seeds.json

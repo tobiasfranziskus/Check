@@ -63,7 +63,7 @@ test('NPC-Ersatzfrachter wird bezahlt und darf ohne Treibstoff überführt werde
 
 test('Neue Regelversion lädt; alte Treibstoffökonomie wird klar abgelehnt',()=>{
  const s=c.createState(1),restored=c.load(c.save(s));
- assert.equal(r.rulesVersion,12);assert.equal(restored.rulesVersion,12);
+ assert.equal(r.rulesVersion,13);assert.equal(restored.rulesVersion,13);
  assert.equal(c.hash(s),c.hash(restored));
  const alt=structuredClone(s);alt.rulesVersion=8;
  assert.throws(()=>c.load(JSON.stringify(alt)),/keine Regelmigration vorhanden/);

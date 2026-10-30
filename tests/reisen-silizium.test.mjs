@@ -39,10 +39,12 @@ test('Autonome NPC-Frachter handeln auch ohne Flugtreibstoff weiter',()=>{
 
 test('Bauteilproduktion verbraucht Silizium als reales Industriegut',()=>{
  const s=c.createState(42),before=s.ledger.silizium.consumed;
+ const alderaVorher=s.stations.st_aldera.lager.silizium;
  const lin=s.stations.st_aldera.linien.find(l=>l.rezept==='r_bauteil');
  assert(lin);lin.rest=0;
  p.produktion(s,r);
- assert.equal(s.ledger.silizium.consumed,before+1);
+ assert.equal(s.stations.st_aldera.lager.silizium,alderaVorher-1);
+ assert(s.ledger.silizium.consumed>=before+1);
  assert(c.audit(s).ok);
 });
 

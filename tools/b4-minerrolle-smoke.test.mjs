@@ -93,7 +93,7 @@ test('Bewusste Aufgabe streicht genau den alten Miner-Sollplatz, aber keinen Kau
  const control=activate('control'),released=activate('release');
  assert.equal(control.sollflotte.npc3.length,1);
  assert.equal(released.sollflotte.npc3.length,0);
- assert.equal(released.ships.sh010.ladung.frachter,0);
+ assert.equal(Object.hasOwn(released.ships.sh010.ladung,'frachter'),false);
  assert.equal(released.ledger.frachter.consumed,1);
  assert.equal(released.owners.npc3.cash,control.owners.npc3.cash);
  assert.equal(released.nextShip,control.nextShip,'Hüllenaktivierung muss unverändert bleiben');

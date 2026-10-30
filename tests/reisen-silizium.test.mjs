@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { v11CoreSource } from '../tools/v11-core-source.mjs';
 
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const source=html.slice(html.indexOf('<script>')+8,html.indexOf('const m_data_oberflaeche'));
@@ -62,7 +63,7 @@ test('NPC-Ersatzfrachter wird bezahlt und darf ohne Treibstoff überführt werde
 
 test('Neue Regelversion lädt; alte Treibstoffökonomie wird klar abgelehnt',()=>{
  const s=c.createState(1),restored=c.load(c.save(s));
- assert.equal(r.rulesVersion,11);assert.equal(restored.rulesVersion,11);
+ assert.equal(r.rulesVersion,12);assert.equal(restored.rulesVersion,12);
  assert.equal(c.hash(s),c.hash(restored));
  const alt=structuredClone(s);alt.rulesVersion=8;
  assert.throws(()=>c.load(JSON.stringify(alt)),/keine Regelmigration vorhanden/);
@@ -74,15 +75,16 @@ test('Geografiewelt-v11 bleibt auf festen 3-Tage-Referenzhashes',()=>{
  const fixture=JSON.parse(fs.readFileSync(new URL('./fixtures/economy-geography-v11.json',import.meta.url),'utf8'));
  assert.equal(fixture.sourceCommit,'f5fcde6380d66b2de0c73dc1fb7ef942f9971e8c');
  assert.equal(fixture.rulesVersion,11);
- assert.equal(r.rulesVersion,11);
+ const v11=new Function(v11CoreSource(html)+';return {c:m_core_index,r:m_data_rules.RULES};')();
+ assert.equal(v11.r.rulesVersion,11);
  assert.equal(fixture.results.length,13);
  for(const seed of [7,11,42]){
   const ref=fixture.results.find(x=>x.seed===seed);
   assert(ref);
-  const s=c.createState(seed),t=c.createState(seed);
-  c.advance(s,4320);c.advance(t,4320);
-  assert.equal(c.hash(s),ref.points[0].hash,'fester v11-Hash Seed '+seed);
-  assert.equal(c.hash(t),ref.points[0].hash,'Replay gegen festen v11-Hash Seed '+seed);
-  assert(c.audit(s).ok);assert(c.audit(t).ok);
+  const s=v11.c.createState(seed),t=v11.c.createState(seed);
+  v11.c.advance(s,4320);v11.c.advance(t,4320);
+  assert.equal(v11.c.hash(s),ref.points[0].hash,'fester v11-Hash Seed '+seed);
+  assert.equal(v11.c.hash(t),ref.points[0].hash,'Replay gegen festen v11-Hash Seed '+seed);
+  assert(v11.c.audit(s).ok);assert(v11.c.audit(t).ok);
  }
 });

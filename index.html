@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f5f5f7">
-<meta name="aphros-version" content="v0.12.2">
+<meta name="aphros-version" content="v0.12.3">
 <title>Aphros Void</title>
 <style>
 :root {
@@ -171,7 +171,7 @@ button.zeile .liste-links { color: var(--text); }
 
 <main id="ansicht-hq" class="ansicht" aria-label="HQ">
   <header class="kopf">
-    <p class="muted kopf-klein">HQ · v0.12.2</p>
+    <p class="muted kopf-klein">HQ · v0.12.3</p>
     <p class="kasse"><span id="hq-kasse" class="kasse-zahl">–</span></p>
     <p id="hq-trend" class="trend muted"><span class="trend-symbol" id="hq-trend-symbol"></span><span id="hq-trend-text">–</span> <span class="trend-bezug">zur letzten vollen Spielstunde</span></p>
   </header>
@@ -264,7 +264,7 @@ button.zeile .liste-links { color: var(--text); }
     <div class="blatt-inhalt">
 
       <div class="blatt-seite" id="blatt-pruefung" data-titel="Prüfung" hidden>
-        <p class="muted">Version v0.12.2</p>
+        <p class="muted">Version v0.12.3</p>
         <section class="card" aria-label="Zustand">
           <dl>
             <div><dt>Spielzeit</dt><dd id="zeit">–</dd></div>
@@ -596,6 +596,7 @@ const WORLD = {
   sicherheit: { owner: 'security', jaeger: m_data_systeme.sicherheitJaeger, fokus: 'schwach', rueckzug: 30 },
   piraten: { owner: 'pirates', markt: 'st_meridian', soll: m_data_systeme.piratenSoll },
   patrouilleChance: 600, ueberfallChance: 100, ersatzRuecklage: 250, warteLeer: 30, schutzgeldJeStunde: 0,
+  versorgungsPrioritaet: 1000, // +100 % Score bei komplett fehlendem, tatsächlich verbrauchtem Gut
   owners: m_data_systeme.owners,
 };
 return { WORLD };
@@ -621,7 +622,7 @@ return { COMBAT };
 
 const m_data_rules = (() => {
 const RULES = {
-  schema: 8, rulesVersion: 11, maxAdvanceSteps: 10000, startSeed: 1,
+  schema: 8, rulesVersion: 12, maxAdvanceSteps: 10000, startSeed: 1,
   owners: m_data_world.WORLD.owners, economy: m_data_economy.ECONOMY,
   world: m_data_world.WORLD, combat: m_data_combat.COMBAT,
 };
@@ -1161,6 +1162,7 @@ const { route } = m_core_route;
 const { handel, verkaufbar, aufnehmbar, gebuehr, bezahlbar, stationIn } = m_core_handel;
 const { entladen } = m_core_ankunft;
 const besser = (a, za, b, zb) => a * zb > b * za;
+const divVersorgung = m_core_zahl.div;
 // Reisen benötigen keine Güter mehr; die Entscheidung bewertet Handel und Reisezeit.
 function bestesPaar(state, rules, s, station) {
   const w = rules.world, hier = w.stations[station], kasse = state.owners[s.owner].cash;
@@ -1181,7 +1183,17 @@ function bestesPaar(state, rules, s, station) {
       const gewinn = menge * (pDort - pHier) - gebuehr(state, rules, station, menge * pHier)
         - gebuehr(state, rules, ziel, menge * pDort);
       if (gewinn <= 0) continue;
-      if (!best || besser(gewinn, r.zeit, best.gewinn, best.zeit)) best = { ware, ziel, menge, gewinn, zeit: r.zeit };
+      // Nur die Rangfolge bereits profitabler Fahrten wird verändert.
+      // Ab Regelversion 12: Engpässe bei regulär verbrauchten Gütern bevorzugen;
+      // Version 11 bleibt für die unveränderten historischen Referenzen prüfbar.
+      const bedarf = anzahl(w.stations[ziel].verbrauch, ware);
+      const zielbestand = anzahl(w.stations[ziel].ziel, ware);
+      const knappheit = Math.max(0, zielbestand - anzahl(state.stations[ziel].lager, ware));
+      const bonus = rules.rulesVersion >= 12 && bedarf > 0 && zielbestand > 0
+        ? divVersorgung(w.versorgungsPrioritaet * knappheit, zielbestand) : 0;
+      const wertung = gewinn * (1000 + bonus);
+      if (!best || besser(wertung, r.zeit, best.wertung, best.zeit))
+        best = { ware, ziel, menge, gewinn, wertung, zeit: r.zeit };
     }
   }
   return best;
@@ -1818,6 +1830,8 @@ const RULE_MIGRATIONS = {
   5: migrationRegel5,
   6: migrationRegel6,
   7: migrationRegel7,
+  // 11→12: Nur die NPC-Handelspriorisierung ändert sich, kein gespeichertes Feld.
+  11: (s) => ({ ...s, rulesVersion: 12 }),
 };
 function migrate(state, from, to, table = MIGRATIONS) {
   let s = state;

@@ -1,6 +1,6 @@
 # B5a – Betriebskosten bei „halten“ auf Reisen (Regelversion 13)
 
-**30.10.2026 · [DRAFT / NICHT IN MAIN]** Eigenständiger Produktkorrektur-PR auf `main 906b7978d388e9af960443a2b7f4835b1d2a15c0` (v0.12.3, Regel 12, Schema 8). Basis: [B4-Analyse #41](https://github.com/tobiasfranziskus/Check/pull/41), die nur als Quellenbeleg herangezogen wird, **nicht** in diesen PR mitgezogen. Die bindende Produktplanung bleibt [ROADMAP.md](ROADMAP.md).
+**30.10.2026 · [MAIN] integriert durch [PR #42](https://github.com/tobiasfranziskus/Check/pull/42), Squash-Merge `9b155640d51d0e1f4022433391a0061dcd5be2ac` (v0.12.4, Regel 13, Schema 8). Ursprüngliche Testbasis `906b797` (v0.12.3, Regel 12). Basis: [B4-Analyse #41](https://github.com/tobiasfranziskus/Check/pull/41), die nur als Quellenbeleg herangezogen wird, **nicht** in diesen PR mitgezogen. Die bindende Produktplanung bleibt [ROADMAP.md](ROADMAP.md).
 
 ## Bestätigter Defekt
 
@@ -16,7 +16,7 @@ Nur die bisherige Abkürzung `if (s.auftrag === 'halten') continue` wird durch `
 
 **[AUSGEFÜHRT, direkt]** Acht gezielte Kernregressionen bestanden: ruhiges Halten ohne Arbeit, volle/gebruchte Reiseminuten mit `halten`, Auflauf beim Andocken vor der Kostenstunde, mehrere validierte Reisen innerhalb einer Stunde, Kassenunterdeckung ohne Geldschöpfung, keine Doppelabrechnung, sowie Save/Load der offenen v12-Reisearbeit. Zusätzlich wurde der alte v12-Core mit dem geänderten Regel-13-Core anhand einer identischen validierten Zwei-Etappen-Reise bis Tick 59 **vorher/nachher ausgeführt**: v12 bezahlt für den wartenden Frachter 0 ISK; v13 bezahlt **241 ISK**, tatsächlich zusätzlich auf dem zuständigen Fonds verbucht. Die Geld-/Warenidentität blieb bei beiden korrekt; der v12→13-Roundtrip hat einen stabilen kanonischen Hash. Diese Funktionsausführung ist **keine** vollständige Node-CI oder 13-Seed-Abnahme.
 
-## Umfangreiche Abnahme – erforderliche CI-Gates
+## Umfangreiche Abnahme – durchgeführte CI-Gates
 
 Die angepasste GitHub-Actions-Prüfung führt weiterhin die gesamte Node-22-Testfamilie aus. Die **historischen v12-Goldenwerte bleiben unverändert** und werden fortan im ursprünglichen Produktcommit `906b7978` ausgeführt, statt sie unter Regelversion 13 umzudeuten. Ein separater neuer Wirtschaftsjob `wirtschaft-v13-kostenkorrektur`:
 
@@ -26,11 +26,11 @@ Die angepasste GitHub-Actions-Prüfung führt weiterhin die gesamte Node-22-Test
 - prüft alle **13 realen Wirtschaftsmesswerte gegen die unabhängig ermittelte Original-v12-Fixture**: Versorgung, Produktion/Verkäufe, Kassen, Kostendefizite, Schiffsverluste und Geldschöpfung/-vernichtung. Die Basisseeds enthalten keine absichtlich gehaltene Spielerschiffsreise. Die tatsächliche Wirkung der Korrektur wird **separat** über den zweifachen validierten Reise-Stresstest und die Regression geprüft;
 - verlangt unveränderte historische v11-/Geografietests, soweit die verwendeten Fixdaten ihrer jeweiligen historischen Regelbasis entsprechen.
 
-**[TEST/CI #41113083339 – BESTANDEN]** Die tatsächlich ausgeführte Node-22-CI meldet 57/57 Standardtests, 13 Seeds × 90 Tage unter Regel 13, 1.170 Tageshashes, 28.080 stündliche Audits/Replay-Hashvergleiche, Save/Load an Tag 3/30/90 und alle 13 Wirtschaftskennzahlen je Seed identisch zur unveränderten historischen v12-Fixture. Die historische v12-Goldenprüfung wurde auf dem Originalcommit `906b797` separat bestanden; v11- und Geografietests ebenfalls. Der v10-Vergleich wurde unter Regel 13 erwartungsgemäß nicht durchgeführt, der alte gestapelte Sicherheitsgeografie-Job war bedingt übersprungen. Die Folgekosten-Demonstration zeigt den realen Fonds-Transfer von 241 ISK. Kein Goldenwert wurde überschrieben. Dokumentation und Testergebnis bedeuten weder Merge noch iPad-/NAS-Freigabe.
+**[TEST/CI #41113083339 und abschließender CI #41113681392 – BESTANDEN]** Die tatsächlich ausgeführte Node-22-CI meldet 57/57 Standardtests, 13 Seeds × 90 Tage unter Regel 13, 1.170 Tageshashes, 28.080 stündliche Audits/Replay-Hashvergleiche, Save/Load an Tag 3/30/90 und alle 13 Wirtschaftskennzahlen je Seed identisch zur unveränderten historischen v12-Fixture. Die historische v12-Goldenprüfung wurde auf dem Originalcommit `906b797` separat bestanden; v11- und Geografietests ebenfalls. Der v10-Vergleich wurde unter Regel 13 erwartungsgemäß nicht durchgeführt, der alte gestapelte Sicherheitsgeografie-Job war bedingt übersprungen. Die Folgekosten-Demonstration zeigt den realen Fonds-Transfer von 241 ISK. Kein Goldenwert wurde überschrieben. Dokumentation und Testergebnis bedeuten weder Merge noch iPad-/NAS-Freigabe.
 
 ## Freigabegrenzen
 
-Die Änderung ist eng begrenzt, aber **wirtschaftsrelevant**: Begonnene Reisen auf Auftrag `halten` können künftig im Spielverlauf mehr Zahlungen auslösen und bei zu wenig Geld ungedeckte Arbeit haben. Deshalb sind bei der PR-Abnahme alte Regel-12-Spielstände, Spielerbefehle, Wirtschaftsbilanzen und Langzeit-/Save-Fälle gemeinsam zu beurteilen. Eine bestandene CI ist kein Merge, keine iPad-Safari- oder NAS-Abnahme. Kein Deployment; `main` nur nach ausdrücklicher Freigabe verändern.
+**[MAIN] #42 ist nach ausdrücklicher Freigabe integriert.** Die Änderung ist eng begrenzt, aber wirtschaftsrelevant: Begonnene Reisen auf Auftrag `halten` können künftig zusätzliche echte Kosten auslösen und bei zu wenig Geld ungedeckte Arbeit haben. Kompatible Regel-12-Spielstände, Befehle, Bilanzen und Langzeit-/Save-Fälle wurden in der dokumentierten CI geprüft. **Ein Merge ist keine iPad-Safari- oder NAS-Abnahme und kein Deployment.** Die Browser- und Auslieferungsprüfung bleibt offen.
 
 ## B5b nicht enthalten
 

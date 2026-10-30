@@ -1,0 +1,117 @@
+name: Aphros Void – Piraten-Einstiegsrisiko (Analyse)
+on:
+  pull_request:
+    paths:
+      - tools/piraten-einstieg-*.mjs
+      - tools/piraten-einstieg-smoke.test.mjs
+      - docs/ANALYSE_PIRATEN_EINSTIEG.md
+      - .github/workflows/piraten-einstieg.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  start-b1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Historische B1-Tag-90-Spielstände aus gepinnter Quelle rekonstruieren
+        env:
+          LONGTERM_SOURCE_COMMIT: 6855d76bb374dd777a1b7e30ea52c9a6eca36399
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399
+          mkdir -p "$RUNNER_TEMP/pirat-evidence"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/pirat-evidence"
+          node "$RUNNER_TEMP/pirat-evidence/tools/npc-restart-v12.mjs" --prepare --out="$RUNNER_TEMP/pirat-start"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: piraten-startb1
+          path: ${{ runner.temp }}/pirat-start
+  standard-90:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [7, 11, 1, 2, 65535, 42, 1234, 98765, 3, 99, 2024, 2025, 314159]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Aktuellen main-Quellstand unabhängig bestätigen
+        run: git fetch origin e0c27a3762d9d6e75d8bcc30ed47621eff2f152b
+      - name: Vier Piraten-Varianten mal 90 Tage, stündliches Replay/Audit/Save
+        run: node tools/piraten-einstieg-90.mjs --seed=${{ matrix.seed }} --out="$RUNNER_TEMP/piraten-daten"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pirat-saat-${{ matrix.seed }}
+          path: ${{ runner.temp }}/piraten-daten/*.json
+  spieler-b1:
+    needs: start-b1
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        fall: [miner, handel-flotte, station, jagd]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: piraten-startb1
+          path: ${{ runner.temp }}/pirat-start
+      - name: Gepinnte v12-Belegarchive für die v13-Lademigration bereitstellen
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399 cec7f93758e4a499c238738ff50adac4416080d4
+          mkdir -p "$RUNNER_TEMP/pirat-evidence" "$RUNNER_TEMP/pirat-b1"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/pirat-evidence"
+          git archive cec7f93758e4a499c238738ff50adac4416080d4 | tar -x -C "$RUNNER_TEMP/pirat-b1"
+      - name: Vier Piraten-Varianten mal 275 Tage mit validierten B1-Spielerbefehlen
+        run: |
+          node tools/piraten-einstieg-b1.mjs --case=${{ matrix.fall }} --evidence="$RUNNER_TEMP/pirat-evidence" --b1="$RUNNER_TEMP/pirat-b1" --starts="$RUNNER_TEMP/pirat-start" --out="$RUNNER_TEMP/piraten-b1-daten"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pirat-fall-${{ matrix.fall }}
+          path: ${{ runner.temp }}/piraten-b1-daten/*.json
+  abnahme:
+    needs: [standard-90, spieler-b1]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pirat-saat-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/piraten-outputs
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pirat-fall-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/piraten-outputs
+      - name: Jede Variante gegen alle 17 ausgeführten Fall-Dateien prüfen
+        run: node tools/piraten-einstieg-summary.mjs "$RUNNER_TEMP/piraten-outputs" "$RUNNER_TEMP/piraten-bericht"
+      - name: Echte Zielberechtigungsgrenzen und Saves isoliert prüfen
+        run: node --test tools/piraten-einstieg-smoke.test.mjs
+      - name: Vorhandene Standardtests (kein Produktcode verändert)
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: piraten-auswertung-gesamt
+          path: ${{ runner.temp }}/piraten-bericht

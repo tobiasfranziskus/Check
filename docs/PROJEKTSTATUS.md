@@ -8,6 +8,15 @@
 
 **Nachgewiesene CI-Abnahme:** [PR #30, GitHub Actions #41036228202](https://github.com/tobiasfranziskus/Check/actions/runs/41036228202) mit **48/48 Standardtests**, v10-/v11-Referenzprüfungen, 13 Seeds × 90 Tage für produktive v12-Goldenwerte sowie 13×90-Tage-Weltgeografievergleich: alle ausgeführten Jobs erfolgreich. Ein historischer bedingt übersprungener Sicherheitsgeografie-Job zählt nicht als Test. Die v12-Wirtschaftsreproduktion bestätigt für 13 Seeds × 90 Tage den Rückgang der Mangelstunden **4.204→791** bei Erhaltung von Geld-/Warenbuchungen, Kassenprüfung und Save/Load. **Weder iPad-Safari-Abnahme noch NAS-Deployment** ist damit belegt.
 
+## [ANALYSE/DRAFT] Langzeitwirtschaft v12, 30. Oktober 2026
+
+Analysebranch [`analyse/wirtschaft-langzeit-v12`](https://github.com/tobiasfranziskus/Check/tree/analyse/wirtschaft-langzeit-v12), Basis [`ed94b89`](https://github.com/tobiasfranziskus/Check/commit/ed94b8914e4ad2ad0c7980e9f3d84f6d549ef22f). [Testbericht mit Methode und Messdaten](TEST_WIRTSCHAFT_LANGZEIT_V12.md). **Keine Änderung an `index.html`, Regeln, Rezepten, Preisen, KI, UI, Schema oder Roadmap; kein Merge/Deployment.**
+
+- Lokal mit Node.js 22.23.4: **48/48 Standardtests**, **13/13 Seeds × 365 Tage** mit Zwischenständen 90/180/365, unveränderte v12-90-Tage-Fixwerte, stündliche Geld-/Warenaudits und Einzelkassenflussprüfung, täglicher Replayhash und Save/Load mit deterministischer Fortsetzung. Zusätzlich **3/3 Jahres-Spielerfälle und 3/3 isolierende 90-Tage-Kontrollen technisch bestanden**. Neue CI wird in sechs Gruppen aufgeteilt; lokalen Erfolg nicht als GitHub-CI-Erfolg ausgeben.
+- Ohne Spieleraktionen Mangelstunden **791 / 1.582 / 3.142** nach 90/180/365 Tagen, Mangelquote etwa **0,15 %**. Alle **18.823** zivilen Jahresverluste aus vorhandenen Kassen/Werfthüllen ersetzt, ohne Fonds-Zuschüsse. Zivile Jahreskostenlücke **27.106 ISK**.
+- **Bestätigte wirtschaftliche Grenzen:** Sicherheit bezahlt nur **6.367.160 von 28.470.000 ISK** Jahres-Sollkosten, arbeitet aber weiter. Alle drei aktiven Jahres-Spielerfälle verlieren beide NPC-Handelsflotten und bleiben von Tag 90 bis 365 ohne Erholung von Handel/Förderung/Produktion; Spielerkapital bindet Umlaufmittel. Schon ein einzelner regulärer Start-Miner-Befehl reproduziert den Flottenausfall auf Seed 42 im 90-Tage-Kontrollfall. Bestandene Audits sind daher keine wirtschaftliche Freigabe für Expansion.
+- Kleinster zuerst zu untersuchender vorhandener Hebel: Owner-Geltung des bestehenden Überschussrückflusses `npcAusgaben`/`npcAusgabenArten`. **Ungetestete Reparaturhypothese, keine beschlossene Spielerabgabe oder Produktänderung.** Prioritäten bleiben in `ROADMAP.md`; weitere Wirtschaftsmechaniken und reale Safari-/NAS-Abnahme werden hier nicht freigegeben.
+
 ## [ANALYSE] Geschlossene Forschungs-/Alt-PRs
 
 Historischer Audit **#1**, nicht ausreichend finanzierte NPC1-Expansion **#16**, Liquiditäts-/Preis-/Routenanalysen **#23, #26, #27**, Pilotengehalt **#24**, Modulbau-Prototyp **#25** sowie der von #30 abgelöste gestapelte Entwurf **#28** sind **geschlossen und nicht nach `main` gemergt**. Ergebnisse sind in [ANALYSEARCHIV_WIRTSCHAFT_V11.md](ANALYSEARCHIV_WIRTSCHAFT_V11.md) zusammengefasst. Die alten PR- und Git-Branches bleiben als reproduzierbarer Nachweis erhalten. **Keine** Pilotengehalts-, Modul- oder pauschale Preisänderung ist dadurch produktiv geworden.
@@ -15,7 +24,7 @@ Historischer Audit **#1**, nicht ausreichend finanzierte NPC1-Expansion **#16**,
 ## Offene Qualitäts-/Produktgates
 
 - Reale iPad Safari Touch-/Querformat-/Hochformat- und NAS-Datei-/Persistenzabnahme; kein Rollout behaupten.
-- Wirtschaft über längere Laufzeiten und echte Spieleraktionen testen; Stationskassen, NPC-Ersatzschiffe, Kostenunterdeckung, Waren-/Geldströme weiter gemeinsam untersuchen.
+- Bestätigte Langzeit-Spieler-Kapitalbindung und Sicherheits-Kostenunterdeckung aus dem oben verlinkten Analysebericht beheben und mit denselben Jahres-/Spielerfällen erneut prüfen; vor einer Regeländerung deren Produktwirkung entscheiden.
 - Erst nach Ursachenprüfung neue Geld-/Waren-Ausgaben, Piratenwirtschaft, Reparaturen, Module und NPC-Personal einführen. Phasen und Abhängigkeiten ausschließlich nach der [ROADMAP.md](ROADMAP.md).
 
 ## Archivierter Statusauszug vom 29. Oktober 2026

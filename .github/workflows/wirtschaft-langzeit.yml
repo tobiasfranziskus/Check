@@ -1,0 +1,62 @@
+name: Aphros Void – Wirtschaft v12 Langzeit
+
+on:
+  pull_request:
+    paths:
+      - index.html
+      - tests/**
+      - tools/longterm-v12*.mjs
+      - .github/workflows/wirtschaft-langzeit.yml
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - tests/**
+      - tools/longterm-v12*.mjs
+      - .github/workflows/wirtschaft-langzeit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  langzeit:
+    name: Langzeit ${{ matrix.group }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: seeds-1
+            args: --seeds=7,11,1,2
+          - group: seeds-2
+            args: --seeds=65535,42,1234
+          - group: seeds-3
+            args: --seeds=98765,3,99
+          - group: seeds-4
+            args: --seeds=2024,2025,314159
+          - group: spieler
+            args: --players
+          - group: spieler-kontrollen
+            args: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 365 Tage, Zwischenmessungen, Audits, Replay und Save/Load
+        if: matrix.group != 'spieler-kontrollen'
+        run: node tools/longterm-v12.mjs ${{ matrix.args }} --out=work/langzeit
+      - name: Isolierende Spielerfälle über 90 Tage
+        if: matrix.group == 'spieler-kontrollen'
+        env:
+          LONGTERM_PROBE_OUT: work/langzeit
+        run: node tools/longterm-v12-player-probes.mjs
+      - name: Messwerte und Laufzeit sichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wirtschaft-v12-${{ matrix.group }}
+          path: work/langzeit/*.json
+          if-no-files-found: error

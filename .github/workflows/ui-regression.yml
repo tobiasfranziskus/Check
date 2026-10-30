@@ -5,12 +5,14 @@ on:
     paths:
       - index.html
       - tests/**
+      - tools/**
       - .github/workflows/ui-regression.yml
   push:
     branches: [main]
     paths:
       - index.html
       - tests/**
+      - tools/**
       - .github/workflows/ui-regression.yml
 
 permissions:

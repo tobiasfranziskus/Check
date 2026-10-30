@@ -43,6 +43,30 @@ jobs:
       - name: 13 Seeds über 90 Tage mit stündlichen Audits und Wiederholung
         run: node tools/sicherheitsgeografie-simulation.mjs
 
+  wirtschaft-v11-referenz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Referenz v11 13 Seeds x 90 Tage
+        run: node tools/geography-reference-v11.mjs
+
+  wirtschaft-geografie-drei-varianten:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 13 Seeds x 90 Tage Basis Tor Tor-plus-Nadir
+        run: node tools/geography-three-way.mjs
+
   wirtschaft-v10-referenz:
     # Die v10-Fixwerte sind ausschließlich für die Sicherheitswelt von PR #19 gültig.
     if: github.event_name == 'pull_request'

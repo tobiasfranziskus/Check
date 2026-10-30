@@ -79,3 +79,14 @@ jobs:
           node-version: '22'
       - name: NPC1/NPC2-Kapitalbindung, Verkäufe und Kostenlücken in 13 Seeds
         run: node tools/npc-liquidity-diagnosis.mjs
+
+  wirtschaft-npc-kapitalobergrenze-szenarien:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 13 Seeds 90 Tage je Kapitalobergrenze 6000 12000 unbegrenzt
+        run: node tools/npc-cap-scenarios.mjs

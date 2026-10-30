@@ -57,6 +57,7 @@ for(const type of ['standard','player-miner','player-auto','b1']){
    perCase:r.map((x,i)=>({seed:x.seed,scenario:x.scenario,house:end[i].cash.house,
     recipes:end[i].recipes,shortage:end[i].shortage,npc3Unpaid:x.extra.unpaid.npc3||0,
     npcTraderSales:(x.extra.trade.npc1?.byClass.frachter?.sells||0)+(x.extra.trade.npc2?.byClass.frachter?.sells||0),
+    npc3FreighterSales:(x.extra.trade.npc3?.byClass.frachter?.sells||0),
     pairs:x.extra.cycles.completed,followups:x.extra.cycles.repeatBuys,
     aldera:end[i].aldera,endHash:x.daily.at(-1).hash}))};
   summary.groups[type][mode]=compact;
@@ -74,10 +75,10 @@ for(const type of Object.keys(summary.groups))for(const mode of MODES){
 }
 md+='\nDie Rohstoffstauquote zählt alle Markt/Rohstoff/Stunden-Paare mit Lagerbestand von mindestens 95 % der tatsächlichen Obergrenze und ist nicht als identische Definition zu Claudes Quote belegt. Wareverkäufe sind **keine Schiffsverkäufe**. Die erfasste tatsächliche Kauf-Verkauf-Folge derselben Schiff-ID ist **kein** vollständiger Profit- oder Kostendeckungsbeweis. Zusätzliche NPC-/Stations-/Fonds-Kassen und fällige gegenüber bezahlten Schiffskosten stehen in den JSON-Rohbelegen.\n\n';
 md+='### Krisenfälle bis Spieltag 365\n\n';
-md+='| Fall | Regel | Ungedeckte NPC3-Kosten | Silizium / Bauteile Aldera | Nach tatsächlichem Verkauf erfolgte weitere Einkäufe aller Schiffe |\n';
-md+='| --- | --- | ---: | ---: | ---: |\n';
+md+='| Fall | Variante | Ungedeckte NPC3-Kosten | Warenverkäufe NPC3-Frachter | Silizium / Bauteile Aldera | Folgekäufe aller Schiffe nach einem Verkauf |\n';
+md+='| --- | --- | ---: | ---: | ---: | ---: |\n';
 for(const mode of MODES)for(const x of summary.groups.b1[mode].perCase)
- md+='| '+x.scenario+' | '+mode+' | '+fmt(x.npc3Unpaid)+' ISK | '+x.aldera.silizium+' / '+x.aldera.bauteil+' | '+x.followups+' |\n';
+ md+='| '+x.scenario+' | '+mode+' | '+fmt(x.npc3Unpaid)+' ISK | '+fmt(x.npc3FreighterSales)+' | '+x.aldera.silizium+' / '+x.aldera.bauteil+' | '+x.followups+' |\n';
 md+='\n**Bewertungsgrenze:** Die R3-Hypothese ist nur wirtschaftlich interessant, wenn die gesamte Versorgung, Spieler-Sparfreiheit, real bezahlte Waren-/Folgekäufe, Liquidität und Kostenunterdeckung zusammen besser werden. Eine bessere Lagerquote allein rechtfertigt keinen Merge. Noch keine Geld-/Insolvenz-/Piratenregel beschlossen.\n';
 fs.mkdirSync(outdir,{recursive:true});
 fs.writeFileSync(path.join(outdir,'R3_BEFUNDE.md'),md);

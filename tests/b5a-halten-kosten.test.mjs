@@ -47,19 +47,21 @@ test('Validierter shipWait unterwegs bleibt bei Ankunft kostenpflichtig',()=>{
  assert.equal(s.owners.house.cash,before-due);
  assert(c.audit(s).ok);
 });
-test('Lange validierte Reise mit shipWait zahlt am Stundenwechsel',()=>{
+test('Zwei validierte Reisen mit Halten zahlen gemeinsam beim Stundenwechsel',()=>{
  const {s,sh}=fixture();
- const routes=Object.keys(r.world.stations).map(id=>({id,trip:c.route(r.world,sh.system,r.world.stations[id].system)}))
-  .filter(x=>x.trip&&x.trip.zeit>60).sort((a,b)=>b.trip.zeit-a.trip.zeit);
- assert(routes.length>0,'Route über eine Stunde verfügbar');
- const move=c.execute(s,{type:'shipMove',owner:'house',schiff:sh.id,ziel:routes[0].id},r);
- assert(move.ok,move.reason);
+ const first=c.execute(s,{type:'shipMove',owner:'house',schiff:sh.id,ziel:'st_cyris'},r);
+ assert(first.ok,first.reason);
  const wait=c.execute(s,{type:'shipWait',owner:'house',schiff:sh.id},r);
  assert(wait.ok,wait.reason);
+ c.advance(s,25,r);
+ assert.equal(sh.phase,'dock');assert.equal(sh.auftrag,'halten');
+ const second=c.execute(s,{type:'shipMove',owner:'house',schiff:sh.id,ziel:'st_dravos'},r);
+ assert(second.ok,second.reason);
+ const costExpected=Math.floor(r.world.betriebskosten[sh.klasse]*59/r.economy.stunde);
  const before=s.owners.house.cash;
- c.advance(s,60,r);
+ c.advance(s,35,r);
  assert.equal(sh.phase,'reise');assert.equal(sh.auftrag,'halten');
  assert.equal(sh.arbeit,0);
- assert.equal(s.owners.house.cash,before-r.world.betriebskosten[sh.klasse]);
+ assert.equal(s.owners.house.cash,before-costExpected);
  assert(c.audit(s).ok);
 });

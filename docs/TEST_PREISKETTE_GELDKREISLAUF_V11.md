@@ -72,6 +72,44 @@ Interpretation:
 - **Schiff/Fracht-Verlust ist kein unmittelbares ISK-Burning.** In der Basis sind 225.049 verlorene Frachteinheiten (alle betroffenen Schiffe), 4.934 zivile NPC-Schiffsverluste und 13.695 Piratenschiffsverluste verbucht. Zivile Ersatzschiffe werden als realer Stationskauf aus bestehenden Waren bezahlt, Piratenschiffe hingegen über eine Geldzahlung an Meridian ohne zugeordnete materielle Schiffskomponenten erzeugt. Die beiden Prozesse dürfen bei der Wirtschaftsbetrachtung nicht verwechselt werden.
 - **Meridians Außenhandel ist ein materieller Import-/Exportausgleich ohne ISK-Zahlung.** Basis: 43.017 importierte, 232.416 exportierte Einheiten über alle Waren und Seeds. Das stabilisiert Bestände, ist aber keine geschlossene wertmäßige Handelsbuchung. Auch `npcObergrenze` ist momentan kein beliebiger Kontodeckel, sondern führt Handelsgewinne in Stationsfonds zurück.
 
+## Ursache lokalisiert: Nahrung, nicht allgemeine Rohstoffteuerung
+
+Der bereits im CI erfolgreich ausgeführte `tools/geography-three-way.mjs`-Vergleich liefert für die v11-Entwicklungswelt die unabhängige vollständige Mangelaufteilung: **3.981 der 4.204 Mangelstunden (94,7 %) sind Nahrung**, nur **204 Bauteile** und **19 Medikamente**. Davon entfallen **2.181 Nahrungsmangelstunden auf Aldera**, **1.795 auf Dravos** und 5 auf Orion; alle übrigen Stationen ohne Nahrungsausfall.
+
+Das Modell produziert bereits insgesamt 491.900 Nahrungseinheiten über 13 × 90 Tage. Rechnerischer regulärer Bedarf: 17 Einheiten je Spielstunde × 2.160 Spielstunden × 13 Welten = **477.360 Nahrungseinheiten**. Die reine Produktionsmenge wäre also ausreichend, aber Standort, Handelsrouten, Vorräte und Liquidität entscheiden über die **tatsächliche Belieferung**.
+
+### Gegenprobe: Nur Nahrungspreis variieren
+
+[GitHub Actions #41025210706](https://github.com/tobiasfranziskus/Check/actions/runs/41025210706), `tools/food-price-scenarios.mjs`: **52/52 Läufe** (13 Seeds × vier Preise × 90 Tage) erfolgreich; gleiche Welt, gleiche Anfangskassen, gleicher deterministischer Kern, stündlicher Geld-/Warenaudit, Save/Load und fixierter v11-Referenzhash im Ursprungsfall. **Nur `economy.waren.nahrung.basis` wird experimentell geändert**, keine geänderte KI, Produktionsmenge pro Rezept, Startkapital, Gebühren, sonstigen Preise oder neue Spielmechanik.
+
+| Kennzahl (Summe 13 × 90 Tage) | Nahrung 30 (Ist) | Nahrung 36 | Nahrung 42 | Nahrung 50 |
+| --- | ---: | ---: | ---: | ---: |
+| Alle Versorgungsmangelstunden | **4.204** | 2.791 | 1.730 | **1.120** |
+| Davon Nahrung | 3.981 | 2.509 | 1.488 | **826** |
+| Nahrung Aldera: Mangelstunden | 2.181 | 1.362 | 813 | 442 |
+| Nahrung Dravos: Mangelstunden | 1.795 | 1.143 | 675 | 384 |
+| Alle anderen Waren: Mangelstunden | 223 | 282 | 242 | 294 |
+| Nahrung produziert (Einheiten) | 491.900 | 498.772 | 504.161 | 508.646 |
+| Nahrung tatsächlich verbraucht (Einheiten) | 468.596 | 472.278 | 474.911 | 476.365 |
+| Stationskassen am Endtag (ISK) | 304.707 | 304.823 | 301.496 | 303.229 |
+| Fonds am Endtag (ISK) | 89.840 | 87.147 | 83.377 | 84.372 |
+| Händler-NPCs am Endtag (ISK) | 146.463 | 144.903 | 150.455 | 146.879 |
+
+Der Betrag **50 ISK** senkt die Gesamtversorgungsunterdeckung um **3.084 Mangelstunden (73,4 %)** gegenüber dem unveränderten Fall, ohne im geprüften 90-Tage-Lauf einen vergleichbaren Rückgang der Schlusskassen zu erzeugen. Schon 42 ISK senkt den Mangel um 58,8 %.
+
+Tatsächlich nachgewiesene Nahrungstransporte (13 Seeds, jeweils 90 Tage; nur Frachterhandel):
+
+| Zielstation | Bei Preis 30: gekauft durch Station / verkauft an Station | Bei Preis 50: gekauft durch Station / verkauft an Station |
+| --- | ---: | ---: |
+| Aldera | 97.047 / 18.165 | 114.521 / 31.323 |
+| Dravos | 91.945 / 12.080 | 115.302 / 31.984 |
+
+**Begriffspräzisierung:** `an Station verkauft` heißt, ein Frachter liefert Nahrung an die Station. Die Tabellenüberschrift oben ist in der Reihenfolge `Station kauft vom Frachter / Station verkauft an Frachter` zu lesen. Nettoeinfuhren (Lieferungen minus Abholungen): Aldera **78.882 → 83.198**, Dravos **79.865 → 83.318** Einheiten. Der fixe lokale Gesamtbedarf beträgt je Station 84.240 Einheiten über 13 × 90 Tage. Der Mehrtransport nähert sich also dem realen Verbrauch, statt die Produktion durch unbelegte Quellen aufzufüllen.
+
+**Mechanistische Erklärung als Hypothese mit Gegenprobe:** Die bestehende Handels-KI sortiert die Kandidaten nach erzielbarem Gewinn und Reisezeit. Ein höherer Nahrungspreis steigert den absoluten Gewinn auf örtliche Preisunterschiede und macht Nahrungsrouten attraktiver. Der Versuch belegt die stärkere Belieferung, aber keine isolierte Kausalzerlegung zwischen Produktionsanreiz, Stationsbeständen und Routenwahl.
+
+**Balancing-Risiko:** Bei Nahrung 50 und Eis 12 ist die Rohstoffwertspanne des Rezepts 2 Eis → 1 Nahrung bereits 50−24 = **26 ISK**, statt bisher 30−24 = 6 ISK, also rund 108 % statt 25 % Kalkulationsaufschlag vor Handelsgebühren. Das ist eine erhebliche, nicht durch verbuchte Produktionskosten begründete relative Preisverzerrung. Höhere Nachfrage nach Nahrung verdrängt zudem einzelne Lieferungen anderer Warengruppen (Mangel ohne Nahrung: 223 → 294). Eine dauerhafte Festlegung auf 50 ISK ist damit **nicht freigegeben**, aber eine eng begrenzte Anpassung der Nahrungsanreize (Preis oder Priorisierung nach vorhandener Handels-KI) ist jetzt der richtige nächste Untersuchungsgegenstand.
+
 ## Worauf Rohstoff- und Fertigungspreise tatsächlich beruhen sollten
 
 Frei förderbare Ressourcen benötigen **keinen absolut vorgeschriebenen Mindestpreis**. Der relevante Deckungsbeitrag für einen Miner hängt von Förderung × erzieltem Verkaufspreis × Anstellungsvertrag minus realer Auftragskosten, und zusätzlich von Stationsankaufskapazität ab. Beispiel nur für das frühere Testmodell: 60 Einheiten/Stunde × 20 % Pilotanteil × (1−4 % Gebühr) × 10 ISK Erz ≈115 ISK/Stunde; bei Eis zu 12 ≈138 ISK/Stunde. Das kann die heutige pauschale 150-ISK-Stundenkostenposition nicht decken, doch die **geplante** Piloteneigenfinanzierung soll genau diese abstrakte Kostenposition später ersetzen. Rohstoffpreise auf Grundlage dieser künftig entfallenden Kosten zu erzwingen wäre unzulässig. Dauerhafte Pilotengehälter ohne entsprechende Ausgaben akkumulieren außerdem Geld auf Pilotenkonten; dieser Effekt wurde bereits in #24 gemessen und kann durch nominelle Preissteigerung alleine nicht behoben werden.
@@ -80,6 +118,6 @@ Die tatsächlichen bereits vorhandenen Mechanismen müssen zunächst getrennt st
 
 ## Entscheidung und nächster Schritt
 
-**Alle getesteten Preiserhöhungen werden für eine wirtschaftliche Freigabe abgelehnt.** Die Materialwert-Inkonsistenz bei Bauteilen ist ein belegter Bilanzierungs-/Preiskalkulationsfehler, aber ein simples Hochsetzen eines oder aller Preise verschlechtert derzeit die Versorgung. Vor einer Änderung sollten die **Ursachen der 4.204 Basis-Mangelstunden je Ware und Station** ermittelt werden (Rohstoffförderung, Fabrikauslastung, Transport, Einkaufskasse, Vorratsgrenze). Parallel sollten die vorhandene Handels-/Stationsfondsliquidität und NPC-Ersatzinvestitionen untersucht werden, ohne weitere Geldquellen/-senken einzubauen.
+**Pauschale Rohstoff-/Produktpreiserhöhungen werden wirtschaftlich nicht freigegeben.** Die Materialwert-Inkonsistenz bei Bauteilen ist bestätigt, wird aber nicht durch isoliertes Hochsetzen behoben. Der bereits vorhandene Handelsalgorithmus reagiert auf **gezielte Nahrungsanreize** dagegen stark: von 4.204 auf 1.120 Mangelstunden bei Nahrung 50, wobei eine solche Preisänderung hohe Rohstoffmargen erzeugt. Bevor irgendeine Produktionsregel oder neue Funktion hinzukommt, sollte als nächstes die **bestehende Handelsroute-Priorisierung für Versorgung gegenüber reiner Gewinnmaximierung** isoliert gegen die Preisvariante 42/50 geprüft werden. Keine KI- oder Parameteränderung ohne unabhängigen Simulationserfolg und Integrationsfreigabe.
 
 Nur die Wirtschaftsanalyse ist abgeschlossen; keine Änderung an `index.html` oder an Spieler-/NPC-Werten. Kein Merge nach `main`, keine iPad- oder NAS-Abnahme.

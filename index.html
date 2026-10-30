@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f5f5f7">
-<meta name="aphros-version" content="v0.12.1">
+<meta name="aphros-version" content="v0.12.2">
 <title>Aphros Void</title>
 <style>
 :root {
@@ -171,7 +171,7 @@ button.zeile .liste-links { color: var(--text); }
 
 <main id="ansicht-hq" class="ansicht" aria-label="HQ">
   <header class="kopf">
-    <p class="muted kopf-klein">HQ · v0.12.1</p>
+    <p class="muted kopf-klein">HQ · v0.12.2</p>
     <p class="kasse"><span id="hq-kasse" class="kasse-zahl">–</span></p>
     <p id="hq-trend" class="trend muted"><span class="trend-symbol" id="hq-trend-symbol"></span><span id="hq-trend-text">–</span> <span class="trend-bezug">zur letzten vollen Spielstunde</span></p>
   </header>
@@ -264,7 +264,7 @@ button.zeile .liste-links { color: var(--text); }
     <div class="blatt-inhalt">
 
       <div class="blatt-seite" id="blatt-pruefung" data-titel="Prüfung" hidden>
-        <p class="muted">Version v0.12.1</p>
+        <p class="muted">Version v0.12.2</p>
         <section class="card" aria-label="Zustand">
           <dl>
             <div><dt>Spielzeit</dt><dd id="zeit">–</dd></div>
@@ -423,7 +423,7 @@ const m_data_systeme = (() => {
     {
       id: 'meridian', name: 'Meridian', sicherheit: 'gesetzlos',
       karte: { x: 880, y: 880 }, region: 1300,
-      gates: [{ to: 'veldra', time: 30 }],
+      gates: [{ to: 'veldra', time: 30 }, { to: 'orion', time: 26 }],
       station: {
         cash: 6000, fondsCash: 1000, gebuehr: 0,
         aussenhandel: true,
@@ -434,6 +434,23 @@ const m_data_systeme = (() => {
       fields: [],
       pirates: { pirat_mittel: 1, pirat_gross: 1 },
       security: false,
+      traders: [],
+    },
+    {
+      // Grenzversorgungsstation: Eis -> Nahrung, Silizium -> Bauteilindustrie anderswo.
+      // Weniger Grundverbrauch als große Industrieknoten; keine zusätzliche Werft.
+      id: 'nadir', name: 'Nadir', sicherheit: 'umkaempft',
+      karte: { x: 900, y: 540 }, region: 1000,
+      gates: [{ to: 'orion', time: 18 }, { to: 'meridian', time: 21 }],
+      station: {
+        cash: 4000, fondsCash: 1000, gebuehr: 40,
+        linien: ['r_nahrung'],
+        verbrauch: { nahrung: 2, medikamente: 1, bauteil: 1 },
+        ziel: { eis: 100, silizium: 52, nahrung: 52, material: 60, medikamente: 18, bauteil: 18 },
+      },
+      fields: [{ ware: 'eis', miner: 1 }, { ware: 'silizium', miner: 1 }],
+      pirates: { pirat_klein: 1 },
+      security: true,
       traders: [],
     },
     {
@@ -604,7 +621,7 @@ return { COMBAT };
 
 const m_data_rules = (() => {
 const RULES = {
-  schema: 8, rulesVersion: 10, maxAdvanceSteps: 10000, startSeed: 1,
+  schema: 8, rulesVersion: 11, maxAdvanceSteps: 10000, startSeed: 1,
   owners: m_data_world.WORLD.owners, economy: m_data_economy.ECONOMY,
   world: m_data_world.WORLD, combat: m_data_combat.COMBAT,
 };

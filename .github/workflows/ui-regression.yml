@@ -28,6 +28,21 @@ jobs:
       - name: Teste Spielstart, Handel und Simulationsdeterminismus
         run: node --test tests/*.test.mjs
 
+  sicherheitsgeografie-vergleich:
+    # Der historische Paarvergleich gilt für den Folge-PR auf PR #19.
+    if: github.event_name == 'pull_request' && github.base_ref == 'feat/sicherheitszonen'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 13 Seeds über 90 Tage mit stündlichen Audits und Wiederholung
+        run: node tools/sicherheitsgeografie-simulation.mjs
+
   wirtschaft-v10-referenz:
     # Die v10-Fixwerte sind ausschließlich für die Sicherheitswelt von PR #19 gültig.
     if: github.event_name == 'pull_request'

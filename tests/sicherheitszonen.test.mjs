@@ -8,10 +8,10 @@ const elements=new Map();
 const document={getElementById(id){if(!elements.has(id))elements.set(id,{dataset:{},innerHTML:'',textContent:''});return elements.get(id)}};
 const {core,rules,ui,karte,zeichnen,security}=new Function('document',source+
  ';return {core:m_core_index,rules:m_data_rules.RULES,ui:m_ui_sicht,karte:m_data_karte.KARTE,zeichnen:m_ui_hq.systemZeichnen,security:m_core_sicherheit};')(document);
-const expected={aldera:'sicher',cyris:'sicher',veldra:'sicher',orion:'umkaempft',dravos:'gesetzlos',meridian:'gesetzlos'};
-test('Sechs Sicherheitseinstufungen steuern Piratenvorkommen und Sicherheitsjäger',()=>{
+const expected={aldera:'sicher',cyris:'sicher',veldra:'sicher',orion:'umkaempft',nadir:'umkaempft',dravos:'gesetzlos',meridian:'gesetzlos'};
+test('Sieben Sicherheitseinstufungen steuern Piratenvorkommen und Sicherheitsjäger',()=>{
  const s=core.createState(7);
- assert.equal(rules.rulesVersion,10);
+ assert.equal(rules.rulesVersion,11);
  assert.deepEqual(Object.fromEntries(Object.entries(rules.world.systems).map(([id,o])=>[id,o.sicherheit])),expected);
  for(const [sys,level] of Object.entries(expected)){
   const pirates=Object.values(s.ships).filter(sh=>sh.owner==='pirates'&&sh.system===sys);
@@ -21,6 +21,7 @@ test('Sechs Sicherheitseinstufungen steuern Piratenvorkommen und Sicherheitsjäg
  assert(!rules.world.sicherheit.jaeger.includes('dravos'),'kein Staatsjäger in Gesetzlos-Zone');
  assert(!rules.world.sicherheit.jaeger.includes('meridian'));
  assert(rules.world.sicherheit.jaeger.includes('orion'));
+ assert(rules.world.sicherheit.jaeger.includes('nadir'));
  assert(core.audit(s).ok);
 });
 test('Auch ein nachträglich gesetzter Pirat darf in sicherem System niemanden angreifen',()=>{
@@ -58,4 +59,36 @@ test('Sicherheitsstufe und Piratenlage sind in Systemansicht getrennt sichtbar',
  assert.match(elements.get('sys-kopf').innerHTML,/Sicherheit/);
  assert.match(elements.get('sys-kopf').innerHTML,/Gesetzlos/);
  assert.equal(core.hash(s),before,'Anzeige ändert keinen Zustand');
+});
+
+test('Direktes Meridian–Orion-Tor und zwei Zugänge zum Nadir-Sektor',()=>{
+ const kanten=rules.world.gates;
+ const verbindung=(a,b)=>kanten.find(([x,y])=>(x===a&&y===b)||(x===b&&y===a));
+ const pos=karte.systeme.nadir;
+ assert(pos.x>60&&pos.x<karte.breite-60&&pos.y>60&&pos.y<karte.hoehe-60,'Nadir muss auf iPad-Karte mit Rand sichtbar sein');
+ assert.equal(verbindung('meridian','orion')?.[2],26);
+ assert.equal(verbindung('nadir','orion')?.[2],18);
+ assert.equal(verbindung('nadir','meridian')?.[2],21);
+ const direkt=core.route(rules.world,'meridian','orion');
+ assert.deepEqual(direkt.weg,['meridian','orion']);
+ assert.equal(direkt.zeit,26);
+ assert.equal(core.route(rules.world,'nadir','aldera')?.zeit>0,true);
+});
+
+test('Nadir liefert tatsächlich Silizium und Eis in umkämpfter Zone',()=>{
+ const s=core.createState(12);
+ const nadir=rules.world.stations.st_nadir;
+ assert.equal(rules.world.systems.nadir.sicherheit,'umkaempft');
+ assert.deepEqual(nadir.linien,['r_nahrung']);
+ assert.deepEqual(nadir.verbrauch,{nahrung:2,medikamente:1,bauteil:1});
+ assert.equal(s.stations.st_nadir.lager.silizium,52);
+ for(const ware of ['silizium','eis']){
+  assert(rules.world.fields.some(f=>f.system==='nadir'&&f.ware===ware&&f.miner===1));
+  assert(Object.values(s.ships).some(sh=>sh.owner==='npc3'&&sh.system==='nadir'&&sh.ware===ware));
+ }
+ const mined=s.ledger.silizium.mined;
+ core.advance(s,1440);
+ assert(s.ledger.silizium.mined>mined,'Silizium muss aus realem Minerbetrieb stammen');
+ assert(core.audit(s).ok);
+ assert.equal(core.hash(core.load(core.save(s))),core.hash(s));
 });

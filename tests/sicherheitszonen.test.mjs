@@ -11,7 +11,7 @@ const {core,rules,ui,karte,zeichnen,security}=new Function('document',source+
 const expected={aldera:'sicher',cyris:'sicher',veldra:'sicher',orion:'umkaempft',nadir:'umkaempft',dravos:'gesetzlos',meridian:'gesetzlos'};
 test('Sieben Sicherheitseinstufungen steuern Piratenvorkommen und Sicherheitsjäger',()=>{
  const s=core.createState(7);
- assert.equal(rules.rulesVersion,10);
+ assert.equal(rules.rulesVersion,11);
  assert.deepEqual(Object.fromEntries(Object.entries(rules.world.systems).map(([id,o])=>[id,o.sicherheit])),expected);
  for(const [sys,level] of Object.entries(expected)){
   const pirates=Object.values(s.ships).filter(sh=>sh.owner==='pirates'&&sh.system===sys);

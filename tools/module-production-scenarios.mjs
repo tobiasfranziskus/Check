@@ -123,7 +123,12 @@ function simulate(seed,profile){
     assert(craftModule(state,rule,station,mod));
     crafted.add(station);
    }
-   if(lab.stock[station]?.[mod]>0)assert(buyModule(state,rule,sim,station,pilotId,mod));
+   // Nach der Fertigung wird der Preis aus den real geänderten Beständen
+   // neu berechnet. Fehlende Liquidität ist ein regulärer, nichtfataler Fall.
+   if(lab.stock[station]?.[mod]>0 &&
+      pilot.cash>=priceModule(state,rule,sim,station,mod)){
+    assert(buyModule(state,rule,sim,station,pilotId,mod));
+   }
   }
  }
  const points=[];

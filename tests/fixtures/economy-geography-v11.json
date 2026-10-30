@@ -1,0 +1,541 @@
+{
+  "sourceCommit": "f5fcde6380d66b2de0c73dc1fb7ef942f9971e8c",
+  "sourceRun": 41012890333,
+  "rulesVersion": 11,
+  "provenance": "Feste v11-Fixture aus bereits abgeschlossenem CI-Geografievergleich, später mit uninstrumentierter advance-Ausführung gegenprüfen. Keine automatische Neugenerierung.",
+  "results": [
+    {
+      "seed": 7,
+      "points": [
+        {
+          "tick": 4320,
+          "hash": "e9674cf8dca6b341"
+        },
+        {
+          "tick": 43200,
+          "hash": "f892f934cbfcac6c"
+        },
+        {
+          "tick": 129600,
+          "hash": "3204bc42fa54930b"
+        }
+      ],
+      "final": {
+        "commonShortage": 331,
+        "totalShortage": 331,
+        "nadirShortage": 0,
+        "sales": 22948,
+        "unpaidNpc1": 598,
+        "unpaidNpc2": 351,
+        "unpaidNpc3": 0,
+        "zeroNpc1": 0,
+        "longNoSale": 0,
+        "lossNpc1": 101,
+        "lossNpc2": 70,
+        "lossNpc3": 238,
+        "lossPirates": 1172,
+        "lossSecurity": 0,
+        "siliconMined": 38019,
+        "siliconConsumed": 35537,
+        "foodProduced": 37872,
+        "cashNpc1": 6000,
+        "cashNpc3": 6000,
+        "minted": 140640,
+        "burned": 145520,
+        "initialSupply": 55000
+      }
+    },
+    {
+      "seed": 11,
+      "points": [
+        {
+          "tick": 4320,
+          "hash": "e5180479977a642f"
+        },
+        {
+          "tick": 43200,
+          "hash": "577942ef21b60af0"
+        },
+        {
+          "tick": 129600,
+          "hash": "4f53835ddfa8b035"
+        }
+      ],
+      "final": {
+        "commonShortage": 334,
+        "totalShortage": 334,
+        "nadirShortage": 0,
+        "sales": 23148,
+        "unpaidNpc1": 2682,
+        "unpaidNpc2": 832,
+        "unpaidNpc3": 0,
+        "zeroNpc1": 2,
+        "longNoSale": 0,
+        "lossNpc1": 96,
+        "lossNpc2": 66,
+        "lossNpc3": 221,
+        "lossPirates": 990,
+        "lossSecurity": 0,
+        "siliconMined": 37680,
+        "siliconConsumed": 34879,
+        "foodProduced": 37800,
+        "cashNpc1": 6000,
+        "cashNpc3": 6000,
+        "minted": 118800,
+        "burned": 123800,
+        "initialSupply": 55000
+      }
+    },
+    {
+      "seed": 1,
+      "points": [
+        {
+          "tick": 4320,
+          "hash": "5e138ca193e4163d"
+        },
+        {
+          "tick": 43200,
+          "hash": "c8b5b70a7f747e35"
+        },
+        {
+          "tick": 129600,
+          "hash": "50f3375832d3a73e"
+        }
+      ],
+      "final": {
+        "commonShortage": 312,
+        "totalShortage": 312,
+        "nadirShortage": 0,
+        "sales": 23037,
+        "unpaidNpc1": 1661,
+        "unpaidNpc2": 351,
+        "unpaidNpc3": 0,
+        "zeroNpc1": 2,
+        "longNoSale": 0,
+        "lossNpc1": 114,
+        "lossNpc2": 80,
+        "lossNpc3": 208,
+        "lossPirates": 1244,
+        "lossSecurity": 0,
+        "siliconMined": 36001,
+        "siliconConsumed": 33623,
+        "foodProduced": 37894,
+        "cashNpc1": 5799,
+        "cashNpc3": 6000,
+        "minted": 149280,
+        "burned": 154280,
+        "initialSupply": 55000
+      }
+    },
+    {
+      "seed": 2,
+      "points": [
+        {
+          "tick": 4320,
+          "hash": "02aaa804f10bbfd4"
+        },
+        {
+          "tick": 43200,
+          "hash": "35a81ac577e0b66c"
+        },
+        {
+          "tick": 129600,
+          "hash": "8b7d666bf606f18e"
+        }
+      ],
+      "final": {
+        "commonShortage": 326,
+        "totalShortage": 326,
+        "nadirShortage": 0,
+        "sales": 22968,
+        "unpaidNpc1": 1551,
+        "unpaidNpc2": 351,
+        "unpaidNpc3": 0,
+        "zeroNpc1": 2,
+        "longNoSale": 0,
+        "lossNpc1": 114,
+        "lossNpc2": 62,
+        "lossNpc3": 199,
+        "lossPirates": 1055,
+        "lossSecurity": 0,
+        "siliconMined": 35980,
+        "siliconConsumed": 33352,
+        "foodProduced": 37643,
+        "cashNpc1": 6000,
+        "cashNpc3": 6000,
+        "minted": 126600,
+        "burned": 131480,
+        "initialSupply": 55000
+      }
+    },
+    {
+      "seed": 65535,
+      "points": [
+        {
+          "tick": 4320,
+          "hash": "dfb59d809cfa9a78"
+        },
+        {
+          "tick": 43200,
+          "hash": "cea262a48ed237c9"
+        },
+        {
+          "tick": 129600,
+          "hash": "c660038a70f8be86"
+        }
+      ],
+      "final": {
+        "commonShortage": 352,
+        "totalShortage": 352,
+        "nadirShortage": 0,
+        "sales": 22809,
+        "unpaidNpc1": 1704,
+        "unpaidNpc2": 543,
+        "unpaidNpc3": 0,
+        "zeroNpc1": 3,
+        "longNoSale": 0,
+        "lossNpc1": 108,
+        "lossNpc2": 60,
+        "lossNpc3": 217,
+        "lossPirates": 1020,
+        "lossSecurity": 0,
+        "siliconMined": 35468,
+        "siliconConsumed": 32956,
+        "foodProduced": 37554,
+        "cashNpc1": 6000,
+        "cashNpc3": 6000,
+        "minted": 122400,
+        "burned": 127400,
+        "initialSupply": 55000
+      }
+    },
+    {
+      "seed": 42,
+      "points": [
+        {
+          "tick": 4320,
+          "hash": "d53e987cd71bb5df"
+        },
+        {
+          "tick": 43200,
+          "hash": "ec9b7d2f65fc6d69"
+        },
+        {
+          "tick": 129600,
+          "hash": "02b48755da949689"
+        }
+      ],
+      "final": {
+        "commonShortage": 332,
+        "totalShortage": 332,
+        "nadirShortage": 0,
+        "sales": 23004,
+        "unpaidNpc1": 1527,
+        "unpaidNpc2": 351,
+        "unpaidNpc3": 0,
+        "zeroNpc1": 2,
+        "longNoSale": 0,
+        "lossNpc1": 99,
+        "lossNpc2": 72,
+        "lossNpc3": 201,
+        "lossPirates": 1031,
+        "lossSecurity": 0,
+        "siliconMined": 36344,
+        "siliconConsumed": 33779,
+        "foodProduced": 37767,
+        "cashNpc1": 5658,
+        "cashNpc3": 6000,
+        "minted": 123720,
+        "burned": 128720,
+        "initialSupply": 55000
+      }
+    },
+    {
+      "seed": 1234,
+      "points": [
+        {
+          "tick": 4320,
+          "hash": "ea8ad536be69f499"
+        },
+        {
+          "tick": 43200,
+          "hash": "f147ddba6ca0039f"
+        },
+        {
+          "tick": 129600,
+          "hash": "5c452ef070d6e470"
+        }
+      ],
+      "final": {
+        "commonShortage": 332,
+        "totalShortage": 332,
+        "nadirShortage": 0,
+        "sales": 23048,
+        "unpaidNpc1": 869,
+        "unpaidNpc2": 351,
+        "unpaidNpc3": 0,
+        "zeroNpc1": 2,
+        "longNoSale": 0,
+        "lossNpc1": 102,
+        "lossNpc2": 80,
+        "lossNpc3": 203,
+        "lossPirates": 1130,
+        "lossSecurity": 0,
+        "siliconMined": 36472,
+        "siliconConsumed": 33914,
+        "foodProduced": 37878,
+        "cashNpc1": 6000,
+        "cashNpc3": 6000,
+        "minted": 135600,
+        "burned": 140360,
+        "initialSupply": 55000
+      }
+    },
+    {
+      "seed": 98765,
+      "points": [
+        {
+          "tick": 4320,
+          "hash": "2435de4bc1923623"
+        },
+        {
+          "tick": 43200,
+          "hash": "1eece6b13fa1f376"
+        },
+        {
+          "tick": 129600,
+          "hash": "7e94e57d62984580"
+        }
+      ],
+      "final": {
+        "commonShortage": 292,
+        "totalShortage": 292,
+        "nadirShortage": 0,
+        "sales": 23017,
+        "unpaidNpc1": 1667,
+        "unpaidNpc2": 351,
+        "unpaidNpc3": 0,
+        "zeroNpc1": 1,
+        "longNoSale": 0,
+        "lossNpc1": 101,
+        "lossNpc2": 66,
+        "lossNpc3": 205,
+        "lossPirates": 1002,
+        "lossSecurity": 0,
+        "siliconMined": 35966,
+        "siliconConsumed": 33433,
+        "foodProduced": 38083,
+        "cashNpc1": 3416,
+        "cashNpc3": 6000,
+        "minted": 120240,
+        "burned": 125000,
+        "initialSupply": 55000
+      }
+    },
+    {
+      "seed": 3,
+      "points": [
+        {
+          "tick": 4320,
+          "hash": "c78b024ec75fb744"
+        },
+        {
+          "tick": 43200,
+          "hash": "3bb7347d86f03ca6"
+        },
+        {
+          "tick": 129600,
+          "hash": "5f54408d8afa8434"
+        }
+      ],
+      "final": {
+        "commonShortage": 289,
+        "totalShortage": 289,
+        "nadirShortage": 0,
+        "sales": 22861,
+        "unpaidNpc1": 598,
+        "unpaidNpc2": 636,
+        "unpaidNpc3": 0,
+        "zeroNpc1": 0,
+        "longNoSale": 0,
+        "lossNpc1": 113,
+        "lossNpc2": 75,
+        "lossNpc3": 205,
+        "lossPirates": 1041,
+        "lossSecurity": 0,
+        "siliconMined": 35960,
+        "siliconConsumed": 33654,
+        "foodProduced": 37937,
+        "cashNpc1": 6000,
+        "cashNpc3": 6000,
+        "minted": 124920,
+        "burned": 129920,
+        "initialSupply": 55000
+      }
+    },
+    {
+      "seed": 99,
+      "points": [
+        {
+          "tick": 4320,
+          "hash": "4a7b33edbdbb4a89"
+        },
+        {
+          "tick": 43200,
+          "hash": "c39742af2bb64b4a"
+        },
+        {
+          "tick": 129600,
+          "hash": "dd61ab4628cd9df8"
+        }
+      ],
+      "final": {
+        "commonShortage": 308,
+        "totalShortage": 308,
+        "nadirShortage": 0,
+        "sales": 23042,
+        "unpaidNpc1": 2536,
+        "unpaidNpc2": 351,
+        "unpaidNpc3": 0,
+        "zeroNpc1": 3,
+        "longNoSale": 0,
+        "lossNpc1": 90,
+        "lossNpc2": 57,
+        "lossNpc3": 233,
+        "lossPirates": 983,
+        "lossSecurity": 0,
+        "siliconMined": 37112,
+        "siliconConsumed": 34536,
+        "foodProduced": 37820,
+        "cashNpc1": 4845,
+        "cashNpc3": 6000,
+        "minted": 117960,
+        "burned": 122960,
+        "initialSupply": 55000
+      }
+    },
+    {
+      "seed": 2024,
+      "points": [
+        {
+          "tick": 4320,
+          "hash": "c6fc25f95868a19e"
+        },
+        {
+          "tick": 43200,
+          "hash": "ff7820139f84101c"
+        },
+        {
+          "tick": 129600,
+          "hash": "9cbb495d16a25f29"
+        }
+      ],
+      "final": {
+        "commonShortage": 364,
+        "totalShortage": 364,
+        "nadirShortage": 0,
+        "sales": 22813,
+        "unpaidNpc1": 598,
+        "unpaidNpc2": 351,
+        "unpaidNpc3": 0,
+        "zeroNpc1": 0,
+        "longNoSale": 0,
+        "lossNpc1": 97,
+        "lossNpc2": 62,
+        "lossNpc3": 187,
+        "lossPirates": 960,
+        "lossSecurity": 0,
+        "siliconMined": 34909,
+        "siliconConsumed": 32568,
+        "foodProduced": 37799,
+        "cashNpc1": 6000,
+        "cashNpc3": 6000,
+        "minted": 115200,
+        "burned": 120200,
+        "initialSupply": 55000
+      }
+    },
+    {
+      "seed": 2025,
+      "points": [
+        {
+          "tick": 4320,
+          "hash": "8046dfb3ea822765"
+        },
+        {
+          "tick": 43200,
+          "hash": "cca8f536ed071c8f"
+        },
+        {
+          "tick": 129600,
+          "hash": "8013e86a3a4a264a"
+        }
+      ],
+      "final": {
+        "commonShortage": 325,
+        "totalShortage": 325,
+        "nadirShortage": 0,
+        "sales": 22964,
+        "unpaidNpc1": 598,
+        "unpaidNpc2": 1026,
+        "unpaidNpc3": 0,
+        "zeroNpc1": 0,
+        "longNoSale": 0,
+        "lossNpc1": 106,
+        "lossNpc2": 64,
+        "lossNpc3": 206,
+        "lossPirates": 1047,
+        "lossSecurity": 0,
+        "siliconMined": 36294,
+        "siliconConsumed": 33730,
+        "foodProduced": 37815,
+        "cashNpc1": 6000,
+        "cashNpc3": 6000,
+        "minted": 125640,
+        "burned": 130520,
+        "initialSupply": 55000
+      }
+    },
+    {
+      "seed": 314159,
+      "points": [
+        {
+          "tick": 4320,
+          "hash": "9c9b549792a78276"
+        },
+        {
+          "tick": 43200,
+          "hash": "ea4438879716254a"
+        },
+        {
+          "tick": 129600,
+          "hash": "c6b37a655300ab97"
+        }
+      ],
+      "final": {
+        "commonShortage": 307,
+        "totalShortage": 307,
+        "nadirShortage": 0,
+        "sales": 23084,
+        "unpaidNpc1": 598,
+        "unpaidNpc2": 699,
+        "unpaidNpc3": 0,
+        "zeroNpc1": 0,
+        "longNoSale": 0,
+        "lossNpc1": 120,
+        "lossNpc2": 44,
+        "lossNpc3": 192,
+        "lossPirates": 1020,
+        "lossSecurity": 0,
+        "siliconMined": 36132,
+        "siliconConsumed": 33642,
+        "foodProduced": 38038,
+        "cashNpc1": 5570,
+        "cashNpc3": 6000,
+        "minted": 122400,
+        "burned": 127280,
+        "initialSupply": 55000
+      }
+    }
+  ]
+}

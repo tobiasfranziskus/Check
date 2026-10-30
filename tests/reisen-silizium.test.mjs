@@ -69,10 +69,12 @@ test('Neue Regelversion lädt; alte Treibstoffökonomie wird klar abgelehnt',()=
 });
 
 test('Freie Reisen bleiben für mehrere Seeds deterministisch und bilanztreu',()=>{
+ const refs=JSON.parse(fs.readFileSync(new URL('./fixtures/economy-freeflight-v9.json',import.meta.url),'utf8'));
  for(const seed of [7,11,42]){
   const s=c.createState(seed),t=c.createState(seed);
   c.advance(s,4320);c.advance(t,4320);
   assert.equal(c.hash(s),c.hash(t),'Seed '+seed);
+  assert.equal(c.hash(s),refs.find(x=>x.seed===seed).points[0].hash,'fester Referenz-Hash Seed '+seed);
   assert(c.audit(s).ok);assert(c.audit(t).ok);
  }
 });

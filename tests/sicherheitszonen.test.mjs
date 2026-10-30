@@ -64,6 +64,8 @@ test('Sicherheitsstufe und Piratenlage sind in Systemansicht getrennt sichtbar',
 test('Direktes Meridian–Orion-Tor und zwei Zugänge zum Nadir-Sektor',()=>{
  const kanten=rules.world.gates;
  const verbindung=(a,b)=>kanten.find(([x,y])=>(x===a&&y===b)||(x===b&&y===a));
+ const pos=karte.systeme.nadir;
+ assert(pos.x>60&&pos.x<karte.breite-60&&pos.y>60&&pos.y<karte.hoehe-60,'Nadir muss auf iPad-Karte mit Rand sichtbar sein');
  assert.equal(verbindung('meridian','orion')?.[2],26);
  assert.equal(verbindung('nadir','orion')?.[2],18);
  assert.equal(verbindung('nadir','meridian')?.[2],21);

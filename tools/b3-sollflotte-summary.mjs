@@ -8,8 +8,8 @@ assert(args.length<=2);
 const cases=['miner','handel-flotte','station','jagd'].map(s=>JSON.parse(fs.readFileSync(path.join(input,s+'.json'),'utf8')));
 const toolHash=createHash('sha256').update(fs.readFileSync(new URL('./b3-sollflotte.mjs',import.meta.url))).digest('hex');
 const originalEnd={miner:'9b00de8697541ce5','handel-flotte':'b2f44fef99f3d49e',station:'7f71d2546a4febfd',jagd:'dc4c66ea46aa08bb'};
-let report='# B3 – neue Frachter und reale Ersatzpflichten\n\n[ANALYSE] Kontrollen sind bytegleich zum Produktkern, alle Varianten reine Testprozessänderungen. Die Kosten für fehlende Minerplätze und fehlende Frachterplätze werden getrennt bilanziert; die Addition ist kein gespeichertes Konto.\n\n';
-report+='| Fall | Variante | Registrierte Frachter | Tatsächliche Ersatz-Frachter / Miner | Miner-/Frachter-Soll-Lücken (Tag 365) | Gebauter Frachter-Kauf ISK | NPC3-Kasse Tag 365 | Gedeckte Kosten / ungedeckter Betrieb | Neuer Frachter bis Tag 365? |\n| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |\n';
+let report='# B3 – neue Frachter und reale Ersatzpflichten\n\n[ANALYSE] Kontrollen sind bytegleich zum Produktkern, alle Varianten reine Testprozessänderungen. Die Kosten für fehlende Minerplätze und fehlende Frachterplätze werden getrennt bilanziert; die Addition ist kein gespeichertes Konto. Die Frachter-Nettomarge erfasst die gesamte NPC3-Frachterklasse, einschließlich realer Kosten und Warenverluste aller Ersatzfrachter. Der erste B1-Frachter wird daneben separat ausgewiesen.\n\n';
+report+='| Fall | Variante | Registrierte Frachter | Tatsächliche Ersatz-Frachter / Miner | Miner-/Frachter-Soll-Lücken (Tag 365) | Gebauter Frachter-Kauf ISK | Frachter-Netto vor Hüllen (gesamte Flotte) | NPC3-Kasse Tag 365 | Gedeckte Kosten / ungedeckter Betrieb | Neuer Frachter bis Tag 365? |\n| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |\n';
 const compact=[];
 for(const testcase of cases){
  assert.equal(testcase.toolSha256,toolHash);
@@ -34,13 +34,13 @@ for(const testcase of cases){
    paidFrachter,missingMinerSlots:b.missingMinerSlots,missingFreighterSlots:b.missingFreighterSlots,
    cash:b.cash,minerReplacement:b.minerReplacement,freighterReplacement:b.freighterReplacement,
    freeAfterAll:b.freeAfterAllCommitments,freeAfterMiners:b.freeAfterCommitments,unpaid:p.companyCosts.unpaid,
-   paidOperating:p.companyCosts.paid,netOperating:p.netOperating,trades:p.totals,
+   paidOperating:p.companyCosts.paid,netOperating:p.netOperating,firstNetOperating:p.firstNetOperating,freightCostDue:p.freightCostDue,freightCostPaid:p.freightCostPaid,freightLostCost:p.freightLostCost,firstShipTrades:p.totals,allFreighterTrades:p.freightTrades,
    hoursUnderMinerCommitments:x.deficitHours,netMinted:x.netMinted,netBurned:x.netBurned,life:x.life,
    hourlyBudgetMin:Math.min(...x.balances.map(v=>v.freeAfterAllCommitments))};
   rows.push(row);
   report+='| '+testcase.scenario+' | '+x.mode+' | '+row.registered+' | '+row.replacementFrachter+' / '+row.replacementMiner+
    ' | '+row.missingMinerSlots+' / '+row.missingFreighterSlots+' | '+row.paidFrachter+
-   ' | '+row.cash+' | '+row.paidOperating+' / '+row.unpaid+' | '+(row.initialFrachterAlive?'ja':'nein')+' |\n';
+   ' | '+Math.round(row.netOperating)+' | '+row.cash+' | '+row.paidOperating+' / '+row.unpaid+' | '+(row.initialFrachterAlive?'ja':'nein')+' |\n';
  }
  compact.push({scenario:testcase.scenario,seed:testcase.seed,initialHash:initial,variants:rows});
 }

@@ -1136,44 +1136,32 @@ return { route };
 })();
 
 const m_core_entscheidung = (() => {
-const { npcAutomatik, handelsladung, treibstoffPlan, reserveErgaenzen, automatischTanken, weiterfahrtMoeglich } = m_core_treibstoff;
 const { ids, anzahl } = m_core_zahl;
 const { rngInt } = m_core_rng;
 const { preis } = m_core_preis;
 const { route } = m_core_route;
-const { handel, verkaufbar, aufnehmbar, gebuehr, bezahlbar, tanken, treibstoffkosten, stationIn } = m_core_handel;
+const { handel, verkaufbar, aufnehmbar, gebuehr, bezahlbar, stationIn } = m_core_handel;
 const { entladen } = m_core_ankunft;
 const besser = (a, za, b, zb) => a * zb > b * za;
-function weiterreise(state, rules, ziel, bringtTreibstoff, s = null, rest = 0) {
-  if (s && npcAutomatik(state, s)) return weiterfahrtMoeglich(state, rules, ziel, bringtTreibstoff, s, rest);
-  return bringtTreibstoff || anzahl(state.stations[ziel].lager, 'treibstoff') >= rules.world.treibstoffJeSprung;
-}
-
+// Reisen benötigen keine Güter mehr; die Entscheidung bewertet Handel und Reisezeit.
 function bestesPaar(state, rules, s, station) {
-  const w = rules.world; const hier = w.stations[station];
-  const kasse = state.owners[s.owner].cash; let best = null;
+  const w = rules.world, hier = w.stations[station], kasse = state.owners[s.owner].cash;
+  let best = null;
   for (const ware of ids(hier.ziel)) {
     const vorrat = verkaufbar(state, rules, station, ware);
     if (vorrat <= 0) continue;
-    let pHier = preis(state, station, ware, rules);
+    const pHier = preis(state, station, ware, rules);
     for (const ziel of ids(w.stations)) {
       if (ziel === station || anzahl(w.stations[ziel].ziel, ware) <= 0) continue;
-      if (!npcAutomatik(state, s) && !weiterreise(state, rules, ziel, ware === 'treibstoff')) continue;
       const r = route(w, hier.system, w.stations[ziel].system);
       if (!r || r.zeit <= 0) continue;
-      const q = npcAutomatik(state, s)?treibstoffPlan(state, rules, s, station, r.spruenge*w.treibstoffJeSprung):null;
-      if (npcAutomatik(state, s) && (!q.ok || !weiterreise(state, rules, ziel, ware==='treibstoff', s, q.post))) continue;
-      if (npcAutomatik(state, s)  &&  ware === 'treibstoff') pHier = q.priceAfter;
       const pDort = preis(state, ziel, ware, rules);
       if (pDort <= pHier) continue;
-      const sprit = r.spruenge * w.treibstoffJeSprung;
-      if (!npcAutomatik(state, s) && sprit > anzahl(state.stations[station].lager, 'treibstoff')) continue;
-      const fuel = treibstoffkosten(state, rules, station, sprit, s, q);
-      if (fuel === null) continue;
-      const menge = Math.min(npcAutomatik(state, s)?q.space:rules.economy.cargo, ware === 'treibstoff' ? vorrat - (npcAutomatik(state, s)?q.buy:sprit) : vorrat,
-        aufnehmbar(state, rules, ziel, ware), bezahlbar(rules, station, kasse - (npcAutomatik(state, s)?q.cash:fuel), pHier));
+      const menge = Math.min(rules.economy.cargo, vorrat, aufnehmbar(state, rules, ziel, ware),
+        bezahlbar(rules, station, kasse, pHier));
       if (menge <= 0) continue;
-      const gewinn = menge * (pDort - pHier) - gebuehr(state, rules, station, menge * pHier) - gebuehr(state, rules, ziel, menge * pDort) - fuel;
+      const gewinn = menge * (pDort - pHier) - gebuehr(state, rules, station, menge * pHier)
+        - gebuehr(state, rules, ziel, menge * pDort);
       if (gewinn <= 0) continue;
       if (!best || besser(gewinn, r.zeit, best.gewinn, best.zeit)) best = { ware, ziel, menge, gewinn, zeit: r.zeit };
     }
@@ -1181,20 +1169,15 @@ function bestesPaar(state, rules, s, station) {
   return best;
 }
 function besterAbsatz(state, rules, s, station) {
-  const w = rules.world; const system = w.stations[station].system; let best = null;
+  const w = rules.world, system = w.stations[station].system;
+  let best = null;
   for (const ziel of ids(w.stations)) {
-    if (ziel === station  ||  (!npcAutomatik(state, s) && !weiterreise(state, rules, ziel, anzahl(s.ladung, 'treibstoff') > 0))) continue;
+    if (ziel === station) continue;
     const r = route(w, system, w.stations[ziel].system);
     if (!r || r.zeit <= 0) continue;
-    const q = npcAutomatik(state, s)?treibstoffPlan(state, rules, s, station, r.spruenge*w.treibstoffJeSprung):null;
-    if (npcAutomatik(state, s)) {
-      if (!q.ok || !weiterreise(state, rules, ziel, handelsladung(s, 'treibstoff', rules) > 0, s, q.post)) continue;
-    } else if (r.spruenge * w.treibstoffJeSprung > anzahl(state.stations[station].lager, 'treibstoff')) continue;
-    const fuel = treibstoffkosten(state, rules, station, r.spruenge * w.treibstoffJeSprung, s, q);
-    if (fuel === null) continue;
-    let erloes = -fuel;
+    let erloes = 0;
     for (const ware of ids(s.ladung)) {
-      const m = Math.min(npcAutomatik(state, s)?handelsladung(s, ware, rules):s.ladung[ware], aufnehmbar(state, rules, ziel, ware));
+      const m = Math.min(anzahl(s.ladung, ware), aufnehmbar(state, rules, ziel, ware));
       if (m <= 0) continue;
       const wert = m * preis(state, ziel, ware, rules);
       erloes += wert - gebuehr(state, rules, ziel, wert);
@@ -1205,15 +1188,17 @@ function besterAbsatz(state, rules, s, station) {
   return best;
 }
 function abflug(state, rules, s, station, ziel, ware, menge) {
-  const w = rules.world;
-  const r = route(w, w.stations[station].system, w.stations[ziel].system);
-  if (!tanken(state, rules, s, station, r.spruenge * w.treibstoffJeSprung, true)) { s.ankunft = state.tick + w.warteTreibstoff; return false; }
+  const w = rules.world, r = route(w, w.stations[station].system, w.stations[ziel].system);
+  if (!r || r.zeit <= 0) return false;
   if (ware !== null) {
     const p = preis(state, station, ware, rules);
-    const m = Math.min(menge, npcAutomatik(state, s)?rules.economy.cargo-m_core_treibstoff.frachtmenge(s):rules.economy.cargo, verkaufbar(state, rules, station, ware), bezahlbar(rules, station, state.owners[s.owner].cash, p));
+    const fracht = Object.values(s.ladung).reduce((a, b) => a + b, 0);
+    const m = Math.min(menge, rules.economy.cargo - fracht, verkaufbar(state, rules, station, ware),
+      bezahlbar(rules, station, state.owners[s.owner].cash, p));
     if (m > 0 && handel(state, rules, s, station, ware, m, true)) state.stats.handel += 1;
   }
-  s.phase = 'reise'; s.ziel = ziel; s.ankunft = state.tick + r.zeit; s.warten = 0; return true;
+  s.phase = 'reise'; s.ziel = ziel; s.ankunft = state.tick + r.zeit; s.warten = 0;
+  return true;
 }
 function entscheidung(state, rules) {
   const w = rules.world;
@@ -1221,11 +1206,9 @@ function entscheidung(state, rules) {
     const s = state.ships[id];
     if (s.klasse !== 'frachter' || s.auftrag !== 'handeln' || s.phase !== 'dock' || s.ankunft > state.tick) continue;
     const station = stationIn(rules, s.system);
-    if (npcAutomatik(state, s)) reserveErgaenzen(state, rules, s, station);
-    if ((npcAutomatik(state, s)?ids(s.ladung).some(w=>handelsladung(s, w, rules)>0):ids(s.ladung).length>0)) {
+    if (ids(s.ladung).length > 0) {
       entladen(state, rules, s);
-      if (npcAutomatik(state, s)) reserveErgaenzen(state, rules, s, station);
-      if ((npcAutomatik(state, s)?ids(s.ladung).some(w=>handelsladung(s, w, rules)>0):ids(s.ladung).length>0)) {
+      if (ids(s.ladung).length > 0) {
         const z = besterAbsatz(state, rules, s, station);
         if (z) abflug(state, rules, s, station, z.ziel, null, 0);
         else s.ankunft = state.tick + w.warteLeer;
@@ -1235,16 +1218,7 @@ function entscheidung(state, rules) {
     const paar = bestesPaar(state, rules, s, station);
     if (paar) abflug(state, rules, s, station, paar.ziel, paar.ware, paar.menge);
     else if (s.warten >= 2) {
-      const treibstoff = anzahl(state.stations[station].lager, 'treibstoff');
-      const andere = ids(w.stations).filter((x) => {
-        const r = x !== station && route(w, s.system, w.stations[x].system);
-        if (!r) return false;
-        if (npcAutomatik(state, s)) {
-          const q = treibstoffPlan(state, rules, s, station, r.spruenge * w.treibstoffJeSprung);
-          return q.ok && weiterreise(state, rules, x, false, s, q.post);
-        }
-        return r.spruenge * w.treibstoffJeSprung <= treibstoff && weiterreise(state, rules, x, false);
-      });
+      const andere = ids(w.stations).filter((x) => x !== station && route(w, s.system, w.stations[x].system));
       if (andere.length > 0) abflug(state, rules, s, station, andere[rngInt(state, andere.length)], null, 0);
       else s.ankunft = state.tick + w.warteLeer;
     } else { s.warten += 1; s.ankunft = state.tick + w.warteLeer; }

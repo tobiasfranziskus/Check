@@ -99,12 +99,12 @@ Der Betrag **50 ISK** senkt die Gesamtversorgungsunterdeckung um **3.084 Mangels
 
 Tatsächlich nachgewiesene Nahrungstransporte (13 Seeds, jeweils 90 Tage; nur Frachterhandel):
 
-| Zielstation | Bei Preis 30: gekauft durch Station / verkauft an Station | Bei Preis 50: gekauft durch Station / verkauft an Station |
+| Zielstation | Bei Preis 30: an Station geliefert / von Station abgeholt | Bei Preis 50: an Station geliefert / von Station abgeholt |
 | --- | ---: | ---: |
 | Aldera | 97.047 / 18.165 | 114.521 / 31.323 |
 | Dravos | 91.945 / 12.080 | 115.302 / 31.984 |
 
-**Begriffspräzisierung:** `an Station verkauft` heißt, ein Frachter liefert Nahrung an die Station. Die Tabellenüberschrift oben ist in der Reihenfolge `Station kauft vom Frachter / Station verkauft an Frachter` zu lesen. Nettoeinfuhren (Lieferungen minus Abholungen): Aldera **78.882 → 83.198**, Dravos **79.865 → 83.318** Einheiten. Der fixe lokale Gesamtbedarf beträgt je Station 84.240 Einheiten über 13 × 90 Tage. Der Mehrtransport nähert sich also dem realen Verbrauch, statt die Produktion durch unbelegte Quellen aufzufüllen.
+Nettoeinfuhren (Lieferungen minus Abholungen): Aldera **78.882 → 83.198**, Dravos **79.865 → 83.318** Einheiten. Der fixe lokale Gesamtbedarf beträgt je Station 84.240 Einheiten über 13 × 90 Tage. Der Mehrtransport nähert sich also dem realen Verbrauch, statt die Produktion durch unbelegte Quellen aufzufüllen.
 
 **Mechanistische Erklärung als Hypothese mit Gegenprobe:** Die bestehende Handels-KI sortiert die Kandidaten nach erzielbarem Gewinn und Reisezeit. Ein höherer Nahrungspreis steigert den absoluten Gewinn auf örtliche Preisunterschiede und macht Nahrungsrouten attraktiver. Der Versuch belegt die stärkere Belieferung, aber keine isolierte Kausalzerlegung zwischen Produktionsanreiz, Stationsbeständen und Routenwahl.
 

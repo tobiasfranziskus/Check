@@ -2,12 +2,13 @@
 // Keine Änderung an index.html, Save-Schema oder den produktiven Regeln.
 // node tools/price-chain-scenarios.mjs
 import fs from 'node:fs';
+import { v11CoreSource } from './v11-core-source.mjs';
 import assert from 'node:assert/strict';
 
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const beg=html.indexOf('<script>')+8,end=html.indexOf('const m_data_oberflaeche');
 assert(beg>=8&&end>beg,'Core-Quelle fehlt');
-const orig=html.slice(beg,end);
+const orig=v11CoreSource(html);
 const tradeAnchor="buche(state, schiff.owner, 'kosten', fee);\n  return true;";
 assert.equal(orig.split(tradeAnchor).length,2,'Handelsbeobachter-Ausstieg verändert');
 const patched=orig.replace(tradeAnchor,

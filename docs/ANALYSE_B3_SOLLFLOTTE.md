@@ -27,6 +27,12 @@ Für die Ergebnisbewertung werden explizit getrennt: neu registrierte Frachterro
 
 **Noch kein Teststatus behauptet:** Reale Resultate, CI-Artfakte und Hashes erst nach bestätigten Ausführungen berichten. Diese vier Diagnosefälle ersetzen keine produktive 13-Seed-×90-Tage-Abnahme, vollständige Save-Migration oder iPad-/NAS-Tests.
 
+## Datenqualität: erste Frachterrolle versus gesamte Frachterflotte
+
+**Messkorrektur vor Abschluss der CI:** Das übernommene B1-Folgewerkzeug gruppierte realisierte Handelsmargen nach Owner und Schiffsklasse (NPC3/Frachter), zog anschließend aber nur die Arbeitskosten und Frachtverluste des **ersten** B1-Frachters ab. Sobald die Sollplatzvarianten tatsächlich Ersatzfrachter erzeugen, wäre dieses Vorzeichen/Profit-Maß ungeeignet. B3 berechnet deshalb ausdrücklich zusätzlich den **vollständigen NPC3-Frachterflottenbetrieb vor Hüllenanschaffung**: sämtliche realisierten FIFO-Margen **abzüglich** sämtlicher tatsächlicher und ungedeckter Frachterarbeitskosten **und** verlorener FIFO-Frachtwerte aller NPC3-Frachter. Für den anfänglichen B1-Frachter wird das eigene Ergebnis zusätzlich gesondert ausgewiesen. Einzelne Kosten und Frachtverluste stehen im Diagnoseereignisprotokoll und werden in der Verdichtung gegen die Gesamtsummen abgeglichen. Bezahlte Ersatzhüllen werden separat als Anschaffungsinvestition erfasst; sie dürfen nicht nochmals als laufende Arbeit oder Warenmarge verrechnet werden.
+
+Der Bericht verwendet die erst nach dieser Korrektur erneut vollständig gelaufene CI. Die erste Testversion kann zwar korrekte Simulationshashes liefern, ist aber **kein akzeptierter P&L-Nachweis für Varianten mit mehreren Frachtern**. Kein Produktcode wurde dadurch geändert.
+
 ## Grenzen und nächstes Gate
 
 Die vier Varianten implementieren weder eine autonome **erstmalige** NPC-Investitionsentscheidung noch eine Insolvenzabwicklung. Die bereits von B1 ausgeführten Befehle aktivieren ein Schiff unter dem nachweislich vorhandenen Minerersatzdruck; dieser Kauf wurde nicht unter der B3-Zulassungsregel verhindert. Die Varianten verändern keine Handelsrouten, Kampfregeln oder Kosten, weshalb ein durch Piraten vernichteter Frachter selbst mit bezahltem Sollplatz keine dauerhafte Versorgung garantiert. Einmalige Deckung am Aktivierungszeitpunkt garantiert keinen mehrjährigen Ersatz- oder Fortsetzungszyklus. Der erste Ersatzeinsatz kann außerdem wieder keine Finanzierung für die erste Ladung besitzen.

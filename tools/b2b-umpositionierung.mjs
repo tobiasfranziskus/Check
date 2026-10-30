@@ -150,7 +150,7 @@ function run(mode){
   minCash=Math.min(minCash,s.owners.npc3.cash);
   if(s.tick%60===0){for(const state of [s,replay]){assert(observed.audit(state).ok);independentAudit(state);audits++;}w.hourly(s,observed,r);assert.equal(observed.hash(s),plain.hash(replay));const b=budget(s,w.id);if(s.ships[w.id])aliveHours++;if(b.freeAfterCommitments<0)deficitHours++;if(b.extraHullGap>0)unfundedHullHours++;balances.push({tick:s.tick,...b});}
   if(t%1440===0)hashes.push({day:t/1440,hash:observed.hash(s)});
-  if(mode==='wait'&&t===7*1440 && false)assert.equal(observed.hash(s),b1.active.final.hash,'B1-Tag97 vollständig reproduziert');
+  // B2a-Wartebasis wird am Ende separat gegen den gepinnten #38-Hash geprüft.
   if([1,7,30,90,180,275].includes(t/1440)){
    assert.equal(observed.canonical(s),plain.canonical(replay));for(const st of [s,replay])assert.equal(plain.canonical(plain.load(plain.save(st))),plain.canonical(st));replay=plain.load(plain.save(replay));roundtrips+=2;
    const realizedMargin=sum(Object.entries(w.trades).filter(([k])=>k.startsWith('npc3/frachter/')).map(([,v])=>v.realizedMargin));

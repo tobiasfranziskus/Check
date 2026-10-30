@@ -49,9 +49,9 @@ jobs:
           node-version: '22'
       - uses: actions/download-artifact@v4
         with:
-          name: frieden-startb1
+          name: b5b-startb1
           path: ${{ runner.temp }}/pirat-start
-      - name: Gepinnte v12-Belegarchive für die v13-Lademigration bereitstellen
+      - name: Gepinnte v12-Belegarchive für v13/v14-Lademigration bereitstellen
         run: |
           git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399 cec7f93758e4a499c238738ff50adac4416080d4
           mkdir -p "$RUNNER_TEMP/pirat-evidence" "$RUNNER_TEMP/pirat-b1"
@@ -80,9 +80,9 @@ jobs:
           path: ${{ runner.temp }}/b5b-outputs
       - name: Vier B1-Dateien mit echtem Geld-/Warenbeleg und Rollenstatus verdichten
         run: node tools/b5b-summary.mjs "$RUNNER_TEMP/b5b-outputs" "$RUNNER_TEMP/b5b-bericht"
-      - name: Echte Zielberechtigungsgrenzen und Saves isoliert prüfen
+      - name: B5b-Sollplatz- und Save-Regressionsprüfungen
         run: node --test tests/b5b-sollrolle.test.mjs
-      - name: Vorhandene Standardtests (kein Produktcode verändert)
+      - name: Vollständige Standardtests mit neuer Sollrollen-Produktregel
         run: node --test tests/*.test.mjs
       - uses: actions/upload-artifact@v4
         with:

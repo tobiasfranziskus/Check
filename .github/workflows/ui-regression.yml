@@ -101,3 +101,14 @@ jobs:
           node-version: '22'
       - name: Vier Preisstufen mit identischen Seeds und echten Waren-/Geldaudits
         run: node tools/price-chain-scenarios.mjs
+
+  wirtschaft-nahrungs-preis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Nur Nahrungspreis 30/36/42/50 in 13 Seeds je 90 Tage
+        run: node tools/food-price-scenarios.mjs

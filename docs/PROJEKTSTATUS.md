@@ -2,6 +2,8 @@
 
 Stand: 30. Oktober 2026. **Veröffentlichter Spielstand unbekannt; `main` enthält v0.11.2** seit Merge von PR #15 (`f01fd57`). Kein bestätigtes NAS-/iPad-Deployment.
 
+**Aktueller Folge-Entwurf:** PR #20 (auf #19 auf #18) ergänzt das direkte Tor Meridian–Orion sowie Nadir als umkämpfte Silizium-/Eisversorgung. Stand der ersten 13-Seed-90-Tage-Auswertung: Mehr Förderung und Verkäufe, aber mehr Mangel in den bisherigen Stationen und höhere ungedeckte NPC1-Kosten. **Keine wirtschaftliche Freigabe.** Siehe [Versuchsbericht](TEST_SICHERHEITSGEOGRAFIE_V0_12_2.md). PR #20 verwendet Regelversion 11 (keine Migration 10→11); main bleibt bei v0.11.2.
+
 **Entwicklung:** PR #18 (Entwurf) implementiert v0.12.0 mit freien Sternentorreisen und Silizium statt Flugtreibstoff. Dieser Regelbruch ist noch nicht integriert oder wirtschaftlich abgenommen. PR #16 (NPC1-Expansion) bleibt wegen ungedeckter Betriebskosten ungemergt; PR #17 (Konzernnamen) ist davon unabhängig. Letzter abgeschlossener Hauptstand v0.11.2: 40 Node-22-Tests sowie 13 wiederholte 90-Tage-Simulationen, siehe [Wirtschaftsbericht](TEST_WIRTSCHAFT_V0_11_2.md).
 
 ## Version und Architektur

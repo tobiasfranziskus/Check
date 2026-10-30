@@ -17,7 +17,7 @@ const instrument=source.replace(costAnchor,
  .replace(tradeAnchor,
   "buche(state, schiff.owner, 'kosten', fee);\n  watchTrade(state,schiff,station,ware,menge,kauf);\n  return true;");
 const sum=a=>a.reduce((x,y)=>x+y,0);
-const med=a=>[...a].sort((x,y)=>x-y)[Math.floor(x.length/2)];
+const med=values=>[...values].sort((x,y)=>x-y)[Math.floor(values.length/2)];
 const variants=[
  {name:'baseline6000',limit:6000},
  {name:'limit12000',limit:12000},
@@ -68,7 +68,7 @@ for(const variant of variants){
   } else {
    const replay=engine.core.createState(seed,rules);
    for(const p of points){
-    engine.core.advance(replay,p.tick-replay.tick,rules);
+    while(replay.tick<p.tick)engine.core.advance(replay,Math.min(10000,p.tick-replay.tick),rules);
     assert.equal(engine.core.hash(replay),p.hash,'Deterministischer Gegenlauf '+variant.name+'/'+seed+'/'+p.tick);
    }
   }

@@ -42,6 +42,8 @@ for(const type of ['standard','player-miner','player-auto','b1']){
   const compact={
    count:r.length,mode,shortage:total(end,x=>x.shortage),recipes:total(end,x=>x.recipes),
    houseMedian:median(end.map(x=>x.cash.house)),houseMedian60:median(d60.map(x=>x.cash.house)),
+   recipes60:total(d60,x=>x.recipes),shortage60:total(d60,x=>x.shortage),
+   stationCash60:total(d60,x=>x.cashByKind.station||0),fundCash60:total(d60,x=>x.cashByKind.fund||0),
    npcCash:total(end,x=>(x.cash.npc1||0)+(x.cash.npc2||0)+(x.cash.npc3||0)),
    stationCash:total(end,x=>x.cashByKind.station||0),fundCash:total(end,x=>x.cashByKind.fund||0),
    zeroStationCases:end.filter(x=>x.zeroStations.length>0).length,
@@ -72,6 +74,13 @@ md+='| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |\n';
 for(const type of Object.keys(summary.groups))for(const mode of MODES){
  const a=summary.groups[type][mode];
  md+='| '+type+' ('+a.count+') | '+mode+' | '+fmt(a.shortage)+' | '+fmt(a.recipes)+' | '+fmt(a.houseMedian)+' | '+fmt(a.npc3Unpaid)+' | '+fmt(a.npcTraderSales)+' | '+fmt(a.rawNearCapMean)+' | '+fmt(a.alderaErzFactorMean)+' |\n';
+}
+md+='\n### Reproduktion der externen 60-Tage-Spielerfrage (aber heutiger Kern v14)\n\n';
+md+='| Seedgruppe | Variante | Rezepte je Tag und Welt (bis Tag 60) | Mangelstunden je Tag und Welt (bis Tag 60) | Spieler-Kasse Median Tag 60 | Stations-/Fondskassen über alle Welten Tag 60 |\n';
+md+='| --- | --- | ---: | ---: | ---: | ---: |\n';
+for(const type of ['standard','player-miner','player-auto'])for(const mode of MODES){
+ const a=summary.groups[type][mode];
+ md+='| '+type+' ('+a.count+') | '+mode+' | '+fmt(a.recipes60/(a.count*60))+' | '+fmt(a.shortage60/(a.count*60))+' | '+fmt(a.houseMedian60)+' ISK | '+fmt(a.stationCash60)+' / '+fmt(a.fundCash60)+' ISK |\n';
 }
 md+='\nDie Rohstoffstauquote zählt alle Markt/Rohstoff/Stunden-Paare mit Lagerbestand von mindestens 95 % der tatsächlichen Obergrenze und ist nicht als identische Definition zu Claudes Quote belegt. Wareverkäufe sind **keine Schiffsverkäufe**. Die erfasste tatsächliche Kauf-Verkauf-Folge derselben Schiff-ID ist **kein** vollständiger Profit- oder Kostendeckungsbeweis. Zusätzliche NPC-/Stations-/Fonds-Kassen und fällige gegenüber bezahlten Schiffskosten stehen in den JSON-Rohbelegen.\n\n';
 md+='### Krisenfälle bis Spieltag 365\n\n';

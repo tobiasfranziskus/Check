@@ -1,5 +1,8 @@
 # Aphros Void – Versorgungspriorität als produktiver Kernvorschlag (v0.12.3 / Regel 12)
 
+**Integrationshinweis, 30.10.2026:** Dieser Bericht wurde ursprünglich im gestapelten Analyse-Entwurf #28 angelegt. Die tatsächlich zur Integration vorgesehene bereinigte Umsetzung liegt in [PR #30](https://github.com/tobiasfranziskus/Check/pull/30) direkt auf dem integrierten v11-Core; **keine** vorherigen Pilot-, Modul-, Preis- oder Liquiditäts-Analysebranches werden dabei gemergt. Der unabhängig neu zusammengesetzte PR #30 hat in [GitHub Actions #41035813959](https://github.com/tobiasfranziskus/Check/actions/runs/41035813959) **48/48 Standardtests und 13/13 v12-Langläufe** mit identischen unabhängigen Referenzwerten bestanden. Die ursprünglichen #28-Messungen bleiben als Herkunftsnachweis bestehen; der Integrationsstatus ist anhand der tatsächlichen PR-Historie und `docs/PROJEKTSTATUS.md` zu lesen.
+
+
 Stand: 30.10.2026. **Draft-PR [#28](https://github.com/tobiasfranziskus/Check/pull/28), nicht in `main` gemergt, nicht veröffentlicht.** Basierend auf [wirtschaftlicher Analyse #27](https://github.com/tobiasfranziskus/Check/pull/27). Schema **8** unverändert.
 
 ## Problem und ursprünglicher Nachweis

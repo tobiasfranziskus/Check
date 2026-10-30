@@ -3,6 +3,7 @@
 // wird zur Ausführung ein einziger deklarativer gate-Eintrag im v10-Quelltext ergänzt.
 // node tools/geography-three-way.mjs (vollständiger Git-Checkout nötig)
 import fs from 'node:fs';
+import { v11CoreSource } from './v11-core-source.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 const sha='3cff288aa75c2c072c210298e9f81fb7b92a4ec7';
@@ -17,7 +18,7 @@ const sum=a=>a.reduce((x,y)=>x+y,0);
 const median=a=>[...a].sort((x,y)=>x-y)[Math.floor(a.length/2)];
 const trade="buche(state, schiff.owner, 'kosten', fee);\n  return true;";
 const cost="const n = Math.min(besitzer.cash, kosten);\n    if (n <= 0) continue;";
-const source=html=>html.slice(html.indexOf('<script>')+8,html.indexOf('const m_data_oberflaeche'));
+const source=html=>v11CoreSource(html);
 function engine(html,watchTrade,watchCost){
  const src=source(html);
  assert(src.includes(trade)&&src.includes(cost),'Instrumentierungsanker');

@@ -1,9 +1,10 @@
 // v11-Langlauf gegen fest hinterlegte Referenzwerte. Keine Fixture-Neugenerierung.
 // node tools/geography-reference-v11.mjs
 import fs from 'node:fs';
+import { v11CoreSource } from './v11-core-source.mjs';
 import assert from 'node:assert/strict';
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
-const text=html.slice(html.indexOf('<script>')+8,html.indexOf('const m_data_oberflaeche'));
+const text=v11CoreSource(html);
 const fixture=JSON.parse(fs.readFileSync(new URL('../tests/fixtures/economy-geography-v11.json',import.meta.url),'utf8'));
 const seeds=[7,11,1,2,65535,42,1234,98765,3,99,2024,2025,314159];
 const common=['st_aldera','st_cyris','st_dravos','st_meridian','st_orion','st_veldra'];

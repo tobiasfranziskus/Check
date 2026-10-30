@@ -2,6 +2,7 @@
 // Varianten: v10 + einziges Tor Meridian–Orion; v11 mit Tor + Nadir.
 // Aufruf im vollständigen Git-Checkout: node tools/npc-liquidity-diagnosis.mjs
 import fs from 'node:fs';
+import { v11CoreSource } from './v11-core-source.mjs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 
@@ -19,7 +20,7 @@ assert.deepEqual(torFixture.results.map(x=>x.seed),seeds);
 const watchers=['npc1','npc2'], sum=xs=>xs.reduce((a,b)=>a+b,0);
 const add=(map,k,n)=>map[k]=(map[k]||0)+n;
 const median=xs=>[...xs].sort((a,b)=>a-b)[Math.floor(xs.length/2)];
-const source=html=>html.slice(html.indexOf('<script>')+8,html.indexOf('const m_data_oberflaeche'));
+const source=html=>v11CoreSource(html);
 const tradeAnchor="buche(state, schiff.owner, 'kosten', fee);\n  return true;";
 const costAnchor="const n = Math.min(besitzer.cash, kosten);\n    if (n <= 0) continue;";
 const levyAnchor="const n = o[id].cash - w.npcObergrenze;\n    if (n <= 0) continue;\n    o[id].cash -= n; o[ziel].cash += n;";

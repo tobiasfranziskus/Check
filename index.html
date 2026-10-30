@@ -2092,9 +2092,11 @@ const KLASSEN = {
 const AUFTRAEGE = { halten: 'Wartet', foerdern: 'Fördert', handeln: 'Handelt', patrouille: 'Patrouilliert', pirat: 'Lauert', escorte: 'Eskortiert', jagd: 'Jagt Piraten' };
 const PHASEN = { dock: 'Im Dock', reise: 'Unterwegs' };
 const ROLLEN_NAMEN = { eigen: 'Eigene Schiffe', neutral: 'Neutrale Schiffe', sicherheit: 'Sicherheit', pirat: 'Piraten' };
+// Ausschließlich Anzeigenamen; Eigentümer-IDs bleiben unverändert.
+const KONZERNE = { npc1: 'Asterion Handelsunion', npc2: 'Veldra Transit' };
 const ORTE = { fabrik: 'Fabrik', werft: 'Werft' };
-m_data_systeme.tiefFrieren({ WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, ORTE });
-return { WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, ORTE };
+m_data_systeme.tiefFrieren({ WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, ORTE, KONZERNE });
+return { WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, ORTE, KONZERNE };
 })();
 
 // Sichtbare Namen für Spielerschiffe; IDs bleiben unveränderte technische Schlüssel.
@@ -2119,7 +2121,7 @@ const m_ui_sicht = (() => {
 const { route } = m_core_index;
 const { positionAufWeg, fortschritt } = m_ui_karte_geometrie;
 const { OBERFLAECHE } = m_data_oberflaeche;
-const { KLASSEN, AUFTRAEGE, PHASEN } = m_data_namen;
+const { KLASSEN, AUFTRAEGE, PHASEN, KONZERNE } = m_data_namen;
 const { namenVon } = m_ui_schiffsnamen;
 const ROLLE_NACH_ART = { player: 'eigen', trader: 'neutral', miner: 'neutral', authority: 'sicherheit', pirate: 'pirat' };
 const rolle = (state, schiff) => ROLLE_NACH_ART[state.owners[schiff.owner].kind] || 'neutral';
@@ -2140,11 +2142,12 @@ function lage(state, regeln, karte) {
     });
     const nachbarn = w.gates.filter(([a, b]) => a === id || b === id).map(([a, b, zeit]) => ({ id: a === id ? b : a, name: systemName(karte, a === id ? b : a), zeit }));
     const hafen = w.stations[w.systems[id].station].aussenhandel === true;
-    aus[id] = { id, name: systemName(karte, id), zustand: hafen ? 'piratenhafen' : 'normal', piraten: 0, rollen: { eigen: 0, neutral: 0, sicherheit: 0, pirat: 0 }, stationen, nachbarn };
+    aus[id] = { id, name: systemName(karte, id), zustand: hafen ? 'piratenhafen' : 'normal', piraten: 0, rollen: { eigen: 0, neutral: 0, sicherheit: 0, pirat: 0 }, konzerne: {}, stationen, nachbarn };
   }
   for (const s of schiffe(state)) {
     if (s.phase === 'reise' || !aus[s.system]) continue;
     aus[s.system].rollen[rolle(state, s)] += 1;
+    if (Object.hasOwn(KONZERNE, s.owner)) aus[s.system].konzerne[s.owner] = (aus[s.system].konzerne[s.owner] || 0) + 1;
   }
   for (const id of Object.keys(aus)) {
     aus[id].piraten = aus[id].rollen.pirat;
@@ -2241,7 +2244,7 @@ const { vorText, exportHinweis, spielzeitText } = m_ui_zeit;
 const { OBERFLAECHE } = m_data_oberflaeche;
 const { symbolSvg } = m_ui_symbole;
 const { $, text, html, esc, marke, rollenSymbol } = m_ui_zeichnen;
-const { ROLLEN_NAMEN } = m_data_namen;
+const { ROLLEN_NAMEN, KONZERNE } = m_data_namen;
 
 let hqLetzte = { state: null, tick: -1, kasse: null, dirty: -1 };
 let pruefungLetzte = { state: null, tick: -1, dirty: -1 };
@@ -2305,8 +2308,12 @@ function systemZeichnen(l) {
   const m = marke(lm.art, lm.symbol, lm.text);
   html($('sys-kopf'), `<li><span class="liste-links">Zustand</span><span class="liste-rechts">${m}</span></li>`);
   html($('sys-stationen'), l.stationen.map((s) => `<li><span class="liste-links">${esc(s.name)}</span><span class="liste-rechts muted">${esc(s.zusatz.join(', '))}</span></li>`).join(''));
-  html($('sys-schiffe'), ['eigen', 'neutral', 'sicherheit', 'pirat'].map((r) =>
-    `<li><span class="liste-links">${rollenSymbol(r)} ${esc(ROLLEN_NAMEN[r])}</span><span class="liste-rechts">${l.rollen[r]}</span></li>`).join(''));
+  html($('sys-schiffe'), [
+    ...['eigen', 'neutral', 'sicherheit', 'pirat'].map((r) =>
+      `<li><span class="liste-links">${rollenSymbol(r)} ${esc(ROLLEN_NAMEN[r])}</span><span class="liste-rechts">${l.rollen[r]}</span></li>`),
+    ...Object.keys(KONZERNE).filter((id) => l.konzerne[id] > 0).map((id) =>
+      `<li><span class="liste-links muted">↳ ${esc(KONZERNE[id])}</span><span class="liste-rechts">${l.konzerne[id]}</span></li>`),
+  ].join(''));
   html($('sys-nachbarn'), l.nachbarn.map((n) => `<li><span class="liste-links">${esc(n.name)}</span><span class="liste-rechts muted">${n.zeit} Min</span></li>`).join(''));
 }
 function tabelle(id, zeilen) {
@@ -2344,7 +2351,7 @@ function pruefungZeigen(state, force = false) {
   tabelle('preise', aldera
     ? Object.keys(RULES.world.stations.st_aldera.ziel).sort().map((w) => [w, `${preis(state, 'st_aldera', w)} ISK · Bestand ${aldera.lager[w] ?? 0}`])
     : []);
-  tabelle('owners', Object.values(state.owners).map((o) => [o.id, `${o.cash} ISK`]));
+  tabelle('owners', Object.values(state.owners).map((o) => [KONZERNE[o.id] ? `${KONZERNE[o.id]} (${o.id})` : o.id, `${o.cash} ISK`]));
 }
 function berichteZeichnen(ereignisse) {
   const symbol = (e) => (e.art === 'verlust' || e.art === 'befehl' || e.art === 'kosten' ? 'kreuz' : e.art === 'abschuss' ? 'schild' : e.art === 'dienst' ? 'plus' : 'uhr');

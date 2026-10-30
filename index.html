@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f5f5f7">
-<meta name="aphros-version" content="v0.12.0">
+<meta name="aphros-version" content="v0.12.1">
 <title>Aphros Void</title>
 <style>
 :root {
@@ -171,7 +171,7 @@ button.zeile .liste-links { color: var(--text); }
 
 <main id="ansicht-hq" class="ansicht" aria-label="HQ">
   <header class="kopf">
-    <p class="muted kopf-klein">HQ · v0.12.0</p>
+    <p class="muted kopf-klein">HQ · v0.12.1</p>
     <p class="kasse"><span id="hq-kasse" class="kasse-zahl">–</span></p>
     <p id="hq-trend" class="trend muted"><span class="trend-symbol" id="hq-trend-symbol"></span><span id="hq-trend-text">–</span> <span class="trend-bezug">zur letzten vollen Spielstunde</span></p>
   </header>
@@ -264,7 +264,7 @@ button.zeile .liste-links { color: var(--text); }
     <div class="blatt-inhalt">
 
       <div class="blatt-seite" id="blatt-pruefung" data-titel="Prüfung" hidden>
-        <p class="muted">Version v0.12.0</p>
+        <p class="muted">Version v0.12.1</p>
         <section class="card" aria-label="Zustand">
           <dl>
             <div><dt>Spielzeit</dt><dd id="zeit">–</dd></div>
@@ -376,7 +376,7 @@ const m_data_systeme = (() => {
 
   const SYSTEME = [
     {
-      id: 'aldera', name: 'Aldera',
+      id: 'aldera', name: 'Aldera', sicherheit: 'sicher',
       karte: { x: 140, y: 500 }, region: 1000,
       gates: [{ to: 'cyris', time: 25 }, { to: 'dravos', time: 20 }],
       station: {
@@ -391,7 +391,7 @@ const m_data_systeme = (() => {
       traders: [{ owner: 'npc1', start: 0 }],
     },
     {
-      id: 'cyris', name: 'Cyris',
+      id: 'cyris', name: 'Cyris', sicherheit: 'sicher',
       karte: { x: 400, y: 810 }, region: 1100,
       gates: [{ to: 'meridian', time: 30 }, { to: 'veldra', time: 25 }],
       station: {
@@ -401,12 +401,12 @@ const m_data_systeme = (() => {
         ziel: { material: 132, bauteil: 40, kristall: 36, medikamente: 40, eis: 80, nahrung: 52, silizium: 20 },
       },
       fields: [{ ware: 'kristall', miner: 1 }, { ware: 'eis', miner: 1 }],
-      pirates: { pirat_mittel: 1 },
+      pirates: {},
       security: true,
       traders: [{ owner: 'npc1', start: 10 }],
     },
     {
-      id: 'dravos', name: 'Dravos',
+      id: 'dravos', name: 'Dravos', sicherheit: 'gesetzlos',
       karte: { x: 400, y: 190 }, region: 900,
       gates: [{ to: 'orion', time: 22 }, { to: 'veldra', time: 20 }],
       station: {
@@ -417,11 +417,11 @@ const m_data_systeme = (() => {
       },
       fields: [{ ware: 'erz', miner: 1 }, { ware: 'silizium', miner: 1 }],
       pirates: { pirat_klein: 1 },
-      security: true,
+      security: false,
       traders: [{ owner: 'npc2', start: 5 }],
     },
     {
-      id: 'meridian', name: 'Meridian',
+      id: 'meridian', name: 'Meridian', sicherheit: 'gesetzlos',
       karte: { x: 880, y: 880 }, region: 1300,
       gates: [{ to: 'veldra', time: 30 }],
       station: {
@@ -437,7 +437,7 @@ const m_data_systeme = (() => {
       traders: [],
     },
     {
-      id: 'orion', name: 'Orion',
+      id: 'orion', name: 'Orion', sicherheit: 'umkaempft',
       karte: { x: 830, y: 220 }, region: 1050,
       gates: [{ to: 'veldra', time: 18 }],
       station: {
@@ -452,7 +452,7 @@ const m_data_systeme = (() => {
       traders: [{ owner: 'npc1', start: 8 }],
     },
     {
-      id: 'veldra', name: 'Veldra',
+      id: 'veldra', name: 'Veldra', sicherheit: 'sicher',
       karte: { x: 670, y: 500 }, region: 950,
       gates: [],
       station: {
@@ -462,7 +462,7 @@ const m_data_systeme = (() => {
         ziel: { erz: 240, material: 96, eis: 80, nahrung: 52, silizium: 20, medikamente: 20, bauteil: 20 },
       },
       fields: [{ ware: 'erz', miner: 1 }],
-      pirates: { pirat_klein: 1 },
+      pirates: {},
       security: true,
       traders: [{ owner: 'npc2', start: 15 }],
     },
@@ -489,7 +489,7 @@ const m_data_systeme = (() => {
   const gatesMap = new Map();
 
   for (const def of SYSTEME) {
-    systems[def.id] = { station: `st_${def.id}`, fonds: `fonds_${def.id}` };
+    systems[def.id] = { station: `st_${def.id}`, fonds: `fonds_${def.id}`, sicherheit: def.sicherheit };
     stations[`st_${def.id}`] = {
       system: def.id,
       linien: [...def.station.linien],
@@ -502,6 +502,8 @@ const m_data_systeme = (() => {
     karteSysteme[def.id] = { name: def.name, x: def.karte.x, y: def.karte.y };
     for (const f of (def.fields || [])) fields.push({ system: def.id, ware: f.ware, miner: f.miner });
     for (const t of (def.traders || [])) traders.push({ owner: t.owner, system: def.id, start: t.start });
+    if (!['sicher', 'umkaempft', 'gesetzlos'].includes(def.sicherheit)) throw new Error(`Unbekannte Sicherheitsstufe: ${def.id}`);
+    if (def.sicherheit === 'sicher' && Object.keys(def.pirates || {}).length) throw new Error(`Piraten im sicheren System: ${def.id}`);
     if (def.pirates && Object.keys(def.pirates).length > 0) piratenSoll[def.id] = { ...def.pirates };
     if (def.security) sicherheitJaeger.push(def.id);
     for (const g of def.gates) {
@@ -602,7 +604,7 @@ return { COMBAT };
 
 const m_data_rules = (() => {
 const RULES = {
-  schema: 8, rulesVersion: 9, maxAdvanceSteps: 10000, startSeed: 1,
+  schema: 8, rulesVersion: 10, maxAdvanceSteps: 10000, startSeed: 1,
   owners: m_data_world.WORLD.owners, economy: m_data_economy.ECONOMY,
   world: m_data_world.WORLD, combat: m_data_combat.COMBAT,
 };
@@ -1503,6 +1505,7 @@ function zivil(rules, s, system) {
 function ueberfall(state, rules) {
   const w = rules.world;
   for (const system of ids(w.systems)) {
+    if (w.systems[system].sicherheit === 'sicher') continue;
     const piraten = imSystem(state, w.piraten.owner, system, 'pirat');
     if (piraten.length === 0) continue;
     const verteidigung = anzahl(state.stations[w.systems[system].station].module, 'verteidigung');
@@ -1548,6 +1551,7 @@ function escorteBewegen(state, rules) {
 function piratenErsatz(state, rules) {
   const { owner, markt, soll } = rules.world.piraten;
   for (const system of ids(soll)) for (const klasse of ids(soll[system])) {
+    if (rules.world.systems[system].sicherheit === 'sicher') continue;
     const da = imSystem(state, owner, system, 'pirat').filter((p) => p.klasse === klasse).length;
     const p = rules.combat.ersatzpreis[klasse];
     if (da >= soll[system][klasse] || state.owners[owner].cash < p) continue;
@@ -2095,8 +2099,9 @@ const ROLLEN_NAMEN = { eigen: 'Eigene Schiffe', neutral: 'Neutrale Schiffe', sic
 // Ausschließlich Anzeigenamen; Eigentümer-IDs bleiben unverändert.
 const KONZERNE = { npc1: 'Asterion Handelsunion', npc2: 'Veldra Transit' };
 const ORTE = { fabrik: 'Fabrik', werft: 'Werft' };
-m_data_systeme.tiefFrieren({ WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, ORTE, KONZERNE });
-return { WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, ORTE, KONZERNE };
+const SICHERHEITS_NAMEN = { sicher: 'Sicher', umkaempft: 'Umkämpft', gesetzlos: 'Gesetzlos' };
+m_data_systeme.tiefFrieren({ WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, ORTE, KONZERNE, SICHERHEITS_NAMEN });
+return { WAREN, KLASSEN, AUFTRAEGE, PHASEN, ROLLEN_NAMEN, ORTE, KONZERNE, SICHERHEITS_NAMEN };
 })();
 
 // Sichtbare Namen für Spielerschiffe; IDs bleiben unveränderte technische Schlüssel.
@@ -2142,7 +2147,7 @@ function lage(state, regeln, karte) {
     });
     const nachbarn = w.gates.filter(([a, b]) => a === id || b === id).map(([a, b, zeit]) => ({ id: a === id ? b : a, name: systemName(karte, a === id ? b : a), zeit }));
     const hafen = w.stations[w.systems[id].station].aussenhandel === true;
-    aus[id] = { id, name: systemName(karte, id), zustand: hafen ? 'piratenhafen' : 'normal', piraten: 0, rollen: { eigen: 0, neutral: 0, sicherheit: 0, pirat: 0 }, konzerne: {}, stationen, nachbarn };
+    aus[id] = { id, name: systemName(karte, id), sicherheit: w.systems[id].sicherheit, zustand: hafen ? 'piratenhafen' : 'normal', piraten: 0, rollen: { eigen: 0, neutral: 0, sicherheit: 0, pirat: 0 }, konzerne: {}, stationen, nachbarn };
   }
   for (const s of schiffe(state)) {
     if (s.phase === 'reise' || !aus[s.system]) continue;
@@ -2159,7 +2164,9 @@ function lageMarke(l) {
   const zahl = l.piraten > 1 ? ` · ${l.piraten} Schiffe` : '';
   if (l.zustand === 'piratenhafen') return { art: 'pirat', symbol: 'kreuz', text: `Piratenhafen${zahl}`, kurz: 'Piratenhafen' };
   if (l.zustand === 'piratenplage') return { art: 'warn', symbol: 'dreieck', text: `Piratenplage${zahl}`, kurz: 'Piratenplage' };
-  return { art: 'gut', symbol: 'haken', text: 'Normal', kurz: 'Normal' };
+  if (l.sicherheit === 'sicher') return { art: 'gut', symbol: 'haken', text: 'Sicher', kurz: 'Sicher' };
+  if (l.sicherheit === 'gesetzlos') return { art: 'warn', symbol: 'dreieck', text: 'Gesetzlos', kurz: 'Gesetzlos' };
+  return { art: 'warn', symbol: 'dreieck', text: 'Umkämpft', kurz: 'Umkämpft' };
 }
 const SCHIFFSABSTAND = 50;
 function flotte(state, regeln, karte) {
@@ -2244,7 +2251,7 @@ const { vorText, exportHinweis, spielzeitText } = m_ui_zeit;
 const { OBERFLAECHE } = m_data_oberflaeche;
 const { symbolSvg } = m_ui_symbole;
 const { $, text, html, esc, marke, rollenSymbol } = m_ui_zeichnen;
-const { ROLLEN_NAMEN, KONZERNE } = m_data_namen;
+const { ROLLEN_NAMEN, KONZERNE, SICHERHEITS_NAMEN } = m_data_namen;
 
 let hqLetzte = { state: null, tick: -1, kasse: null, dirty: -1 };
 let pruefungLetzte = { state: null, tick: -1, dirty: -1 };
@@ -2306,7 +2313,7 @@ function wegZeichnen(zeilen) {
 function systemZeichnen(l) {
   const lm = lageMarke(l);
   const m = marke(lm.art, lm.symbol, lm.text);
-  html($('sys-kopf'), `<li><span class="liste-links">Zustand</span><span class="liste-rechts">${m}</span></li>`);
+  html($('sys-kopf'), `<li><span class="liste-links">Sicherheit</span><span class="liste-rechts">${esc(SICHERHEITS_NAMEN[l.sicherheit] || l.sicherheit)}</span></li><li><span class="liste-links">Lage</span><span class="liste-rechts">${m}</span></li>`);
   html($('sys-stationen'), l.stationen.map((s) => `<li><span class="liste-links">${esc(s.name)}</span><span class="liste-rechts muted">${esc(s.zusatz.join(', '))}</span></li>`).join(''));
   html($('sys-schiffe'), [
     ...['eigen', 'neutral', 'sicherheit', 'pirat'].map((r) =>

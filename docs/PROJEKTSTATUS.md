@@ -12,6 +12,12 @@
 
 **[ANALYSE/DRAFT] B1–B4 bleiben ungemergt:** [#36](https://github.com/tobiasfranziskus/Check/pull/36)–[#41](https://github.com/tobiasfranziskus/Check/pull/41) und [#32](https://github.com/tobiasfranziskus/Check/pull/32)–[#34](https://github.com/tobiasfranziskus/Check/pull/34) liefern reproduzierte wirtschaftliche Gegenbeispiele, aber keine freigegebenen Produktmechaniken. [B3 #40](https://github.com/tobiasfranziskus/Check/pull/40) belegte tatsächlich bezahlte, aber verlorene Ersatzfrachter samt verdrängtem Minerersatz und ungedecktem Betrieb; [B4 #41](https://github.com/tobiasfranziskus/Check/pull/41) belegte die vermischte Verwendung von `ware` als momentaner Auftrag und Sollrollenidentität. **B5b [OPTION]** muss diese Identitäten getrennt, mit Save-Schutz und Wirtschaftsvergleich behandeln. Über Kapitalgeber, Emissionsregel, Insolvenz, pauschale Spielerabgaben oder kostenlosen Wiederaufbau wurde keine neue Produktregel freigegeben.
 
+## [DRAFT] B5b – Eindeutige Sollplatzbindung (30.10.2026)
+
+**Produktbasis bleibt [MAIN] v0.12.4, Regel 13, Commit `e0c27a37`.** Der eigenständige Kandidat `fix/b5b-stabile-sollflottenzuordnung-v14` (`v0.12.5`, Regel 14, Schema 8) ist **nicht** integriert. Die Sollplatz-ID eines Schiffes bleibt auch bei vorübergehenden Transport-, Warte- oder Förderaufträgen erhalten; ein tatsächlich zerstörtes Schiff lässt genau diesen Platz frei, dessen Ersatz weiterhin real bezahlt werden muss. Alt-Spielstände erhalten eine deterministische Rekonstruktion bei eindeutigen Identitäten, eine sichtbare Ablehnung bei Mehrdeutigkeit. Weder Rückflug, neue NPC-Geldquelle noch Piraten-Schonfrist werden implementiert. **Prüfbericht:** [TEST_B5B_SOLLFLOTTENZUORDNUNG.md](TEST_B5B_SOLLFLOTTENZUORDNUNG.md).
+
+**[DIREKT GETESTET]** Zehn isolierte Kernfälle inklusive wirklichem Nadir–Aldera-Transport, Miner-Ersatz aus vorhandener Werft, Alt-Save-/Mehrdeutigkeitsfällen bestanden; alte v11-Seed-42-3-Tage-Referenz unverändert. **[CI AUSSTEHEND]** Die neue Regel 14 muss noch Node-Standardtests, historischen 11/12/13-Beleg, 13×90-Geld-/Warenaudits/Replays/Save/Load und vier 275-Tage-B1-Spielerstressfälle bestehen. Keine iPad-/NAS-Abnahme, kein Merge. Kostenunterdeckung und vollständiger Handels-Wiederanlauf bleiben offen.
+
 ## [ANALYSE/DRAFT] Langzeitdiagnose und Architekturprüfung (30.10.2026)
 
 **Historische Prüfbasis der folgenden #32–#34-Auswertung (nicht aktueller main-Stand):**

@@ -62,7 +62,7 @@ function unitEconomics(r){
  for(const [recipeId,recipe] of Object.entries(r.economy.rezepte)){
   const inputs=sum(Object.entries(recipe.ein).map(([w,n])=>r.economy.waren[w].basis*n));
   const output=sum(Object.entries(recipe.aus).map(([w,n])=>r.economy.waren[w].basis*n));
-  rows.push({recipe:recipeId,input:inputs,output,margin:output-input,
+  rows.push({recipe:recipeId,input:inputs,output,margin:output-inputs,
    netWithTwo4PctFees:Math.floor(output*.96)-Math.ceil(inputs*1.04),
    minutes:recipe.dauer});
  }

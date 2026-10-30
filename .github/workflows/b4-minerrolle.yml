@@ -1,0 +1,84 @@
+name: Aphros Void – B4 Minerrollen und Rueckkehr
+on:
+  pull_request:
+    paths:
+      - tools/b4-minerrolle*.mjs
+      - tools/b4-minerrolle-smoke.test.mjs
+      - docs/ANALYSE_B4_MINERROLLEN.md
+      - .github/workflows/b4-minerrolle.yml
+permissions:
+  contents: read
+jobs:
+  fundamente:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Gepinnte Diagnosebasis rekonstruieren
+        env:
+          LONGTERM_SOURCE_COMMIT: 6855d76bb374dd777a1b7e30ea52c9a6eca36399
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399
+          mkdir -p "$RUNNER_TEMP/b1-evidence"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/b1-evidence"
+          node "$RUNNER_TEMP/b1-evidence/tools/npc-restart-v12.mjs" --prepare --out="$RUNNER_TEMP/follow-start"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b4-fundamente
+          path: ${{ runner.temp }}/follow-start
+  vergleich:
+    needs: fundamente
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        fall: [miner, handel-flotte, station, jagd]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: b4-fundamente
+          path: ${{ runner.temp }}/follow-start
+      - name: Gepinnte Analysebelege bereitstellen
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399 cec7f93758e4a499c238738ff50adac4416080d4
+          mkdir -p "$RUNNER_TEMP/b1-evidence" "$RUNNER_TEMP/follow-b1"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/b1-evidence"
+          git archive cec7f93758e4a499c238738ff50adac4416080d4 | tar -x -C "$RUNNER_TEMP/follow-b1"
+      - name: Kontrolle, kostenlose vs bezahlte Rückreise, Sollrollenfreigabe bis Tag 365
+        run: node tools/b4-minerrolle.mjs --case=${{ matrix.fall }} --evidence="$RUNNER_TEMP/b1-evidence" --b1="$RUNNER_TEMP/follow-b1" --starts="$RUNNER_TEMP/follow-start" --out="$RUNNER_TEMP/dauer"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b3-${{ matrix.fall }}
+          path: ${{ runner.temp }}/dauer/*.json
+  abnahme:
+    needs: vergleich
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: b3-*
+          path: ${{ runner.temp }}/dauer
+          merge-multiple: true
+      - name: Vier Fälle und sechzehn Minerrollenvarianten verdichten
+        run: node tools/b4-minerrolle-summary.mjs "$RUNNER_TEMP/dauer" "$RUNNER_TEMP/bericht"
+      - name: Isolierte Minerrollen-Prüfungen
+        run: node --test tools/b4-minerrolle-smoke.test.mjs
+      - name: Vorhandene Standardtests
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b4-gesamt
+          path: ${{ runner.temp }}/bericht

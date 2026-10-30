@@ -110,7 +110,7 @@ function sucheUmpositionierung(state, rules, s, station, risiko){
  assert.notEqual(result,current);
  return result;
 }
-){
+function instrument(text){
  const hook=(anchor,extra)=>{assert.equal(text.split(anchor).length,2,anchor);text=text.replace(anchor,anchor+'\n'+extra);};
  hook("s.phase = 'reise'; s.ziel = ziel; s.ankunft = state.tick + r.zeit; s.warten = 0;",'watch.depart(state,s,station,ziel,r,ware,menge);');
  hook("const e = kampf(state, seite(rules, verteidiger, 'schwach', 0), seite(rules, piraten, 'erste', 0), rules);",'watch.combat(state,ziel,piraten,e);');

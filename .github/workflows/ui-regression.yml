@@ -112,3 +112,14 @@ jobs:
           node-version: '22'
       - name: Nur Nahrungspreis 30/36/42/50 in 13 Seeds je 90 Tage
         run: node tools/food-price-scenarios.mjs
+
+  wirtschaft-versorgungsrouten-v11:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Profitabler Frachterhandel mit Knappheitsprioritaet 9 x 13 x 90 Tage
+        run: node tools/supply-route-scenarios.mjs

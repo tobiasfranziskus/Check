@@ -1,8 +1,16 @@
 # Aphros Void – Projektstatus
 
-Stand: 30. Oktober 2026. **Veröffentlichter Spielstand unbekannt; `main` enthält v0.11.2** seit Merge von PR #15 (`f01fd57`). Kein bestätigtes NAS-/iPad-Deployment.
+**Aktueller Überblick, 30. Oktober 2026:** `main` enthält **v0.11.2, Commit `f01fd57`** (PR #15 gemergt, Spielstandschema 8 und Regelversion 8). Der tatsächliche NAS-/iPad-Deploymentstand wurde nicht nachgewiesen. Technische Fakten sind gegen den aktuellen `main`-Commit, PR-Basen und CI zu prüfen.
 
-**Entwicklung:** PR #18 (Entwurf) implementiert v0.12.0 mit freien Sternentorreisen und Silizium statt Flugtreibstoff. Dieser Regelbruch ist noch nicht integriert oder wirtschaftlich abgenommen. PR #16 (NPC1-Expansion) bleibt wegen ungedeckter Betriebskosten ungemergt; PR #17 (Konzernnamen) ist davon unabhängig. Letzter abgeschlossener Hauptstand v0.11.2: 40 Node-22-Tests sowie 13 wiederholte 90-Tage-Simulationen, siehe [Wirtschaftsbericht](TEST_WIRTSCHAFT_V0_11_2.md).
+**Einzige verbindliche Produkt- und Phasenplanung:** [ROADMAP.md](ROADMAP.md). **Verbindliche Entwicklungsregeln:** [AGENTS.md](../AGENTS.md). Der Entwicklungs-PR-Stack **#18 → #19 → #20**, die QA-/Analyse-PRs **#22–#27** und die produktive Handelspriorität **#28** sind **nicht in `main`**; #28 benötigt vor einer Integration eine saubere Mechanikbasis, ohne Analyse-Commits versehentlich mitzunehmen. **#16** wegen Liquidität blockiert, **#24/#25** nur Experimente. Ein bestandener Simulationstest bedeutet keinen Merge und kein Deployment. Historische Regel- und Spielstandkompatibilität sowie Safari/NAS sind offene Freigabegates.
+
+## Archivierter Statusauszug vom 29. Oktober 2026
+
+**Der folgende Bericht ist historisch und darf nicht als aktueller `main`- oder Roadmap-Stand interpretiert werden.** Er wird zur Rückverfolgbarkeit aufbewahrt.
+
+Stand: 29. Oktober 2026. v0.11.2 auf `feat/v0.11.2-wirtschaft`, Basis main `d53bf14`. Noch nicht gemergt, veröffentlicht oder auf NAS/iPad abgenommen.
+
+Schutzgeld ist 0; automatische NPC-Frachter verwenden zwei regulär bezahlte Reserveeinheiten. Schema 8 bleibt erhalten, Regelmigration 7→8 ändert nur die Regelnummer. [Aktueller Testbericht und Risiken](TEST_WIRTSCHAFT_V0_11_2.md): 40 Node-22-Tests sowie 13 wiederholte 90-Tage-Simulationen, alle Audits und Referenzvergleiche korrekt.
 
 ## Version und Architektur
 

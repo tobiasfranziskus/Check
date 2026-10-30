@@ -1,4 +1,4 @@
-// Ausschließlich Analyse: eine Entscheidungsfunktion im Testprozess, kein Produktpatch.
+// Ausschließlich Analyse: Entscheiden/Warten sowie bereits belegte Kapitalreserve als isolierter Belastungsvergleich. Kein Produktpatch.
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -17,10 +17,26 @@ const b1=JSON.parse(fs.readFileSync(path.join(b1dir,'docs/data/b1-handelszyklus-
 const input=JSON.parse(fs.readFileSync(path.join(starts,'start-'+scenario+'-'+seed+'.json'),'utf8'));
 assert.equal(c.hash(c.load(input.save)),b1.start.hash);
 const begin=src.indexOf('function entscheidung('),end=src.indexOf('return { entscheidung };',begin),original=src.slice(begin,end); assert(begin>0&&end>begin);
-const modes=['control','wait'];
+const modes=['control','wait','reserve_control','reserve_wait'];
+const bestBegin=src.indexOf('function bestesPaar('),bestEnd=src.indexOf('function besterAbsatz(',bestBegin),bestOriginal=src.slice(bestBegin,bestEnd);
+function reserveSource(){
+ let fn=bestOriginal.replace('let best = null;',`const pending = Object.values(state.ships).filter(x => x.owner === s.owner && x.auftrag !== 'halten').reduce((n,x) => n + Math.ceil((w.betriebskosten[x.klasse] || 0) * x.arbeit / rules.economy.stunde),0);
+  const hullPrice = preis(state, w.werft, 'frachter', rules);
+  const replacement = hullPrice + gebuehr(state, rules, w.werft, hullPrice);
+  let best = null;`);
+ fn=fn.replace('const pDort = preis(state, ziel, ware, rules);',`const pDort = preis(state, ziel, ware, rules);
+      const cost = s.owner === 'npc3' ? Math.ceil(w.betriebskosten.frachter * (r.zeit + 1) / rules.economy.stunde) : 0;`);
+ fn=fn.replace('bezahlbar(rules, station, kasse, pHier)',"bezahlbar(rules, station, s.owner === 'npc3' ? Math.max(0,kasse-pending-replacement-cost) : kasse, pHier)");
+ fn=fn.replace('- gebuehr(state, rules, ziel, menge * pDort);','- gebuehr(state, rules, ziel, menge * pDort) - cost;');
+ assert.notEqual(fn,bestOriginal);
+ const result=src.slice(0,bestBegin)+fn+src.slice(bestEnd);
+ assert.equal(result.replace(fn,bestOriginal),src,'nur bestesPaar in Reserve-Basis');
+ return result;
+}
 function variant(mode){
- if(mode==='control')return src;
- assert.equal(mode,'wait');
+ assert(modes.includes(mode));
+ const current=mode.startsWith('reserve_')?reserveSource():src;
+ if(mode==='control'||mode==='reserve_control')return current;
  const alt = `else if (s.warten >= 2) {
       const andere = ids(w.stations).filter((x) => x !== station && route(w, s.system, w.stations[x].system));
       if (andere.length > 0) abflug(state, rules, s, station, andere[rngInt(state, andere.length)], null, 0);
@@ -36,8 +52,8 @@ function variant(mode){
     }`;
  const fn=original.replace(alt,neu);
  assert.notEqual(fn,original);
- const result=src.slice(0,begin)+fn+src.slice(end);
- assert.equal(result.replace(fn,original),src,'nur Entscheidungsfunktion darf abweichen');
+ const result=current.slice(0,current.indexOf('function entscheidung('))+fn+current.slice(current.indexOf('return { entscheidung };',current.indexOf('function entscheidung(')));
+ assert.equal(result.replace(fn,original),current,'nur entscheidung zusätzlich in Wartevariante');
  return result;
 }
 function instrument(text){

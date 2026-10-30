@@ -2,7 +2,7 @@
 
 Stand der Konsolidierung: **30. Oktober 2026**. Repository: https://github.com/tobiasfranziskus/Check
 
-> **Verbindlicher Langfristplan, kein Release-Bericht.** Diese Datei führt die ältere M0–M7+-Konzeption, Projektgespräche vom 29./30.10.2026 sowie GitHub-PRs bis einschließlich #28 zusammen. Technischer Ist-Stand und Tests: [PROJEKTSTATUS.md](PROJEKTSTATUS.md), [AGENTS.md](../AGENTS.md), aktuelle Commits/PRs. Ein Draft, bestandene Simulation oder eine Chat-Idee ist **nicht** automatisch in `main` oder im Browser veröffentlicht.
+> **Einzige verbindliche Produkt-Roadmap und Prioritätenquelle, kein Release-Bericht.** Diese Datei führt die ältere M0–M7+-Konzeption, Projektgespräche vom 29./30.10.2026 sowie GitHub-PRs bis einschließlich #28 zusammen. Technischer Ist-Stand und Tests: [PROJEKTSTATUS.md](PROJEKTSTATUS.md), [AGENTS.md](../AGENTS.md), aktuelle Commits/PRs. Ein Draft, bestandene Simulation oder eine Chat-Idee ist **nicht** automatisch in `main` oder im Browser veröffentlicht.
 
 ## 1. Spielvision
 
@@ -22,9 +22,16 @@ Aphros Void ist ein offenes, deterministisches Weltraum-Wirtschafts- und Managem
 
 **[DRAFT]** PR [#17](https://github.com/tobiasfranziskus/Check/pull/17) Konzernnamen; [#18](https://github.com/tobiasfranziskus/Check/pull/18) treibstofffreie Tore/Silizium; [#19](https://github.com/tobiasfranziskus/Check/pull/19) Sicherheitszonen; [#20](https://github.com/tobiasfranziskus/Check/pull/20) Nadir/Tor; [#22](https://github.com/tobiasfranziskus/Check/pull/22) abgesicherter v11-Geografievergleich; [#28](https://github.com/tobiasfranziskus/Check/pull/28) produktive Versorgungspriorisierung **auf der gestapelten Entwicklungsbasis**, nicht auf `main`. [#21](https://github.com/tobiasfranziskus/Check/pull/21) ist in den #19-Entwicklungsbranch gemergt, nicht in `main`.
 
-**[ANALYSE]** [#16](https://github.com/tobiasfranziskus/Check/pull/16) NPC-Flottenexpansion **nicht integrieren** (Liquiditätsproblem); [#23](https://github.com/tobiasfranziskus/Check/pull/23) NPC-Liquidität; [#24](https://github.com/tobiasfranziskus/Check/pull/24) Pilotengehälter; [#25](https://github.com/tobiasfranziskus/Check/pull/25) Modulwirtschaft; [#26](https://github.com/tobiasfranziskus/Check/pull/26) Preisketten; [#27](https://github.com/tobiasfranziskus/Check/pull/27) Versorgungsrouten. Ergebnisse niemals als Produktfunktion ausgeben.
+**[DRAFT/BLOCKIERT]** [#16](https://github.com/tobiasfranziskus/Check/pull/16) NPC-Flottenexpansion **nicht integrieren** (Liquiditätsproblem). **[ANALYSE]** [#23](https://github.com/tobiasfranziskus/Check/pull/23) NPC-Liquidität; [#24](https://github.com/tobiasfranziskus/Check/pull/24) Pilotengehälter; [#25](https://github.com/tobiasfranziskus/Check/pull/25) Modulwirtschaft; [#26](https://github.com/tobiasfranziskus/Check/pull/26) Preisketten; [#27](https://github.com/tobiasfranziskus/Check/pull/27) Versorgungsrouten. Ergebnisse niemals als Produktfunktion ausgeben.
 
 **Offene Integrationsfrage:** #22 weist verschlechterte Versorgung/Kostendeckung mit Nadir gegenüber „nur Tor“ nach. #27 zeigt, dass gezielte Priorität auf tatsächlich benötigte Verbrauchsgüter Versorgungsengpässe ohne generelle Preiserhöhung senken kann; #28 setzt diese Priorität als Regelversion 12 in einem Draft um. Wirtschaftliche und technische Abnahme des gesamten PR-Stacks sowie Safari/NAS bleiben nötig.
+
+### Integrationsfolge und Abhängigkeitsrisiko
+
+- **Mechanik-Stack:** #18 → #19 → #20; die Geografie- und Referenzabsicherung aus #22 ist vor Freigabe zu berücksichtigen. Für jede Stufe tatsächliche PR-Basis, deterministische Referenzen, Wirtschaftsfolgen und Save-Kompatibilität prüfen. #17 (Konzernnamen) ist unabhängig.
+- **Analysen sind keine Produktabhängigkeiten:** #23 und #26–#27 liefern wichtige Messungen, dürfen aber **nicht allein wegen ihrer Stellung in einer gestapelten PR-Basis mit in den produktiven Code gemergt** werden. #24/#25 bleiben ausdrücklich experimentell; #16 ist blockiert.
+- **#28 neu aufsetzen, bevor es integriert wird:** Der produktive Versorgungsprioritäts-Patch liegt derzeit auf #27 und damit mittelbar auf Analysebranches. Die minimale Änderung (nur reale profitable Frachtrouten bevorzugen) auf eine zuvor freigegebene **saubere Mechanikbasis** übertragen oder geeignet rebasen; dabei gezielt alle relevanten Tests/Fixtures und die Migration 11→12 erhalten. Ergebnis als eigenständigen PR neu prüfen, statt den gesamten Analyse-Stack zum Release zu machen.
+- **Migrationen vor Integration klären:** Der ungemergte v11-Entwicklungsstand lehnt ältere Regelversionen derzeit teils ausdrücklich ab. Für produktive Freigabe bestehende Nutzer-Spielstände erhalten oder nur nach **ausdrücklicher Genehmigung** eine inkompatible Entwicklungsversion klar ablehnen. Niemals still überschreiben, rücksetzen oder Daten verlieren.
 
 ## 3. Verbindliche Phasen mit Abhängigkeiten
 
@@ -39,6 +46,14 @@ Aphros Void ist ein offenes, deterministisches Weltraum-Wirtschafts- und Managem
 | **G – Spielerort und Konzernoberfläche** | Spieler auf Station/Schiff; Konzernbüro bzw. Tablet/Terminal statt ortloser Reiter; HUD und Schiffsbedienung passend zum Ort | Alle bisherigen HQ/Flotte/Markt/Karte-Funktionen erreichbar, Touch/iPad stabil; Simulation bleibt unabhängig vom Rendering | [BESCHLOSSEN] |
 | **H – Direkt spielbare Schiffe in 2D** | Wechsel beim Docken; zuerst Miner (Abbau), dann Frachter (Handel/Transport), Jäger (Kampf/Kopfgeld); Navigation, Andocken, Ladung und Aufträge im selben Core | Spieleraktionen als validierte Core-Befehle, einheitliche Waren/Schiffe/Positionen, deterministische Replays | [BESCHLOSSEN] |
 | **I – Erweiterungen** | Fitting/Schiffsvarianten, weitere Systeme, Missionen, Fraktionen; bei tragfähiger Solo-Architektur optional Koop mit autoritativem Host | Einzelfreigaben; iPad-/NAS-Leistung und Save-Integrität gewahrt | [BESCHLOSSEN/OPTION] |
+
+### Phasenübergreifende Qualitäts- und Wirtschafts-Gates
+
+1. **Ökonomie zuerst erklären, dann ergänzen:** Reale Materialflüsse von freier Förderung über Produktion, Handel und Schiffsbau bis Verbrauch, Fracht-/Schiffsverlust und Ersatz nachweisen. Preisstaffel und Produktionsmargen inklusive Gebühren prüfen; **keine pauschalen Rohstoff- oder Produktpreiserhöhungen**, wenn die Ursache in vorhandenen Handelsrouten, Beständen oder Kassen liegt.
+2. **Geldkreislauf vollständig bilanzieren:** Geldschöpfung (beispielsweise Kopfgeld), echte Vernichtung (beispielsweise Sicherheitsbetriebskosten), bloße Transfers (Handel, Fonds, Gehälter), Stations-/Konzernliquidität und unerfüllte Kosten getrennt ausweisen. Piraterie zerstört Waren/Schiffswerte, aber nicht automatisch ISK. Außenhandel und Schiffersatz dürfen keine unbelegten Waren- oder Geldquellen verbergen.
+3. **Reproduzierbare Abnahme:** Für ökonomische Regeländerungen mindestens feste **13 Seeds × 90 Spieltage** als Referenz plus geeignete Belastungs-/Langzeit-/Spielerfalltests, unabhängige Vorher-Nachher-Messung, deterministische Wiederholung, Geld-/Warenaudits, Save/Load und Versionsmigration. **Mangelstunden allein sind kein hinreichendes Gütekriterium**: Preise, Kassen, Kostenunterdeckung, Produktion, Transport, Schiffsverluste und Ersatz mitbewerten. Nicht ausgeführte Tests ausdrücklich benennen.
+4. **Gleicher Kern, geschützte Nutzung:** Selbst fliegende Spieler, NPC-Piloten, Kämpfe und Wirtschaft bleiben ein deterministischer Core mit validierten Befehlen; normale Reisen benötigen keinen Treibstoff. iPad-Safari, NAS-Auslieferung und Datenexport vor Integrations-/Deploymentfreigabe tatsächlich prüfen, nicht aus Node-Tests ableiten.
+5. **Keine Funktionsausweitung als Ersatz für Ursachenanalyse:** Pilotengehälter, Module, Reparaturwirtschaft, zusätzliche Konzerne und Piratensysteme nur in getrennten Arbeitspaketen nach wirtschaftlichem Nutzen und klarem Eigentümer-/Geld-/Warenfluss einführen.
 
 Die Phasen sind **Abhängigkeiten, keine Kalenderversprechen**. Die UI-Architektur der Phase G sollte früh *konzeptionell* festgelegt, ihre große visuelle Umsetzung aber nicht mit der laufenden Wirtschaftsreparatur vermischt werden. Modul-/Reparaturökonomie kann als eng begrenzter Vorversuch aus Phase E/F erfolgen, bevor die aktive Schiffsausrüstung in H/I integriert wird.
 
@@ -79,7 +94,7 @@ Altes Konzept v0.10: ausdrücklich **kein Multiplayer**. Neuere Vereinbarung: **
 
 | Thema | Entscheidung/Prüffrage | Status |
 | --- | --- | --- |
-| PR-Stack #18–#22/#28 | Geografie, v10/v11-Referenzen, v11→12-Migration, Wirtschaft und UX gemeinsam abnehmen; gestapelte PRs in richtiger Reihenfolge behandeln | Offen |
+| PR-Stack #18–#22/#28 | Mechanik-Stack sauber integrieren; #28 **vom Analyse-Stack lösen**, alte Spielstände/Migration, Wirtschaft, Hashes und iPad/NAS abnehmen; Analyse-PRs nicht versehentlich mitmergen | Offen |
 | Versorgung | #27: bedarfsorientierte statt preislich inflationierte Handelsrouten; #28 ist Entwurf, nicht Produktivstand | Prüfen |
 | NPC-Liquidität | Kapitalabführungen stabilisieren Stationsfonds; unbedachte Obergrenzenänderung verschlechtert Versorgung | Analysiert #23 |
 | NPC-Expansion | PR #16 nicht integrieren bis finanzierte Betriebskosten und Kapitalbindung nachgewiesen | Blockiert |
@@ -98,6 +113,6 @@ Altes Konzept v0.10: ausdrücklich **kein Multiplayer**. Neuere Vereinbarung: **
 
 ## 7. Nächster sinnvoller Arbeitsauftrag
 
-**Zuerst** den offenen PR-Stack inklusive #28 hinsichtlich Wirtschaft/Hashes/Spielständen und der fehlenden iPad-/NAS-Abnahme abschließen, ohne #16/#24/#25 zu integrieren. **Danach** die kleinste reale, auditierbare Liquiditäts-/Reparatur-/Schiffsbetriebskostenverbesserung planen. **Parallel ausschließlich konzeptionell** das Spielerort-/Tablet-/Cockpit-Modell spezifizieren, damit spätere UI- und 2D-Arbeit nicht erneut die Kernarchitektur verändert.
+**Zuerst** den Mechanik-Stack #18–#22 sauber integrierbar machen, insbesondere ältere Spielstände, Wirtschaft, Hashes und die fehlende iPad-/NAS-Abnahme klären; danach #28 als **minimalen unabhängigen Produkt-Patch** ohne unbeabsichtigte Analyse-Commits prüfen. #16/#24/#25 nicht integrieren. **Danach** die vorhandene Stations- und Konzernliquidität einschließlich Schiffsersatz und realen Kosten stabilisieren, **bevor** Reparatur-, Personal- oder weitere Ausgabemechaniken hinzukommen. **Parallel ausschließlich konzeptionell** das Spielerort-/Tablet-/Cockpit-Modell spezifizieren, damit spätere UI- und 2D-Arbeit nicht erneut die Kernarchitektur verändert.
 
 **Referenzen:** [AGENTS.md](../AGENTS.md), [PROJEKTSTATUS.md](PROJEKTSTATUS.md), GitHub-PRs #16–#28; historischer Planungsstand `AV-PLANUNGSSTAND-2026-10-30.md` (in ChatGPT-Dateibibliothek), separate `void.html` als Konzeptreferenz. Das ursprüngliche Konzept v0.10 wird im historischen Plan genannt, liegt hier aber nicht vollständig als Referenz vor.

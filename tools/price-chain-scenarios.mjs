@@ -120,7 +120,7 @@ function run(seed,variant){
   assert.deepEqual(checkpoint,ref.points,'Referenz-Hashes '+seed);
   assert.equal(state.minted,ref.final.minted);
   assert.equal(state.burned,ref.final.burned);
-  assert.equal(state.stats.handel,ref.final.sales);
+  assert.equal(trade.traderSales,ref.final.sales,'NPC-Frachter-Verkaeufe');
   assert.equal(sum(Object.values(state.stats.mangel).flatMap(x=>Object.values(x))),ref.final.totalShortage);
  }
  const money=ownersMoney(state);

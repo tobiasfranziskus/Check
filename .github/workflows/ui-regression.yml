@@ -123,3 +123,14 @@ jobs:
           node-version: '22'
       - name: Profitabler Frachterhandel mit Knappheitsprioritaet 9 x 13 x 90 Tage
         run: node tools/supply-route-scenarios.mjs
+
+  wirtschaft-v12-versorgungsfreigabe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: v12-Haendlerentscheidung gegen 13 unabhaengige 90-Tage-Fixwerte
+        run: node tools/priority-v12-reference.mjs

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f5f5f7">
-<meta name="aphros-version" content="v0.12.4">
+<meta name="aphros-version" content="v0.12.5">
 <title>Aphros Void</title>
 <style>
 :root {
@@ -171,7 +171,7 @@ button.zeile .liste-links { color: var(--text); }
 
 <main id="ansicht-hq" class="ansicht" aria-label="HQ">
   <header class="kopf">
-    <p class="muted kopf-klein">HQ · v0.12.4</p>
+    <p class="muted kopf-klein">HQ · v0.12.5</p>
     <p class="kasse"><span id="hq-kasse" class="kasse-zahl">–</span></p>
     <p id="hq-trend" class="trend muted"><span class="trend-symbol" id="hq-trend-symbol"></span><span id="hq-trend-text">–</span> <span class="trend-bezug">zur letzten vollen Spielstunde</span></p>
   </header>
@@ -264,7 +264,7 @@ button.zeile .liste-links { color: var(--text); }
     <div class="blatt-inhalt">
 
       <div class="blatt-seite" id="blatt-pruefung" data-titel="Prüfung" hidden>
-        <p class="muted">Version v0.12.4</p>
+        <p class="muted">Version v0.12.5</p>
         <section class="card" aria-label="Zustand">
           <dl>
             <div><dt>Spielzeit</dt><dd id="zeit">–</dd></div>
@@ -622,7 +622,7 @@ return { COMBAT };
 
 const m_data_rules = (() => {
 const RULES = {
-  schema: 8, rulesVersion: 13, maxAdvanceSteps: 10000, startSeed: 1,
+  schema: 8, rulesVersion: 14, maxAdvanceSteps: 10000, startSeed: 1,
   owners: m_data_world.WORLD.owners, economy: m_data_economy.ECONOMY,
   world: m_data_world.WORLD, combat: m_data_combat.COMBAT,
 };
@@ -711,7 +711,11 @@ function createState(seed, rules) {
   };
   const soll = (felder) => {
     const s = neuesSchiff(state, { heimat: felder.system, ...felder });
-    (state.sollflotte[s.owner] ||= []).push({ klasse: s.klasse, heimat: s.heimat, ware: s.ware, auftrag: s.auftrag });
+    const plan = (state.sollflotte[s.owner] ||= []);
+    // B5b: numerischer, je Besitzer unveränderlicher Sollplatz; der aktuelle Arbeitsauftrag
+    // (s.ware/s.auftrag) darf die Ersatzzuordnung nicht versehentlich aufheben.
+    if (rules.rulesVersion >= 14) s.sollplatz = plan.length;
+    plan.push({ klasse: s.klasse, heimat: s.heimat, ware: s.ware, auftrag: s.auftrag });
   };
   for (const klasse of e.start.flotte) soll({ owner: e.start.owner, klasse, system: e.start.system, auftrag: e.start.auftrag });
   for (const f of w.fields) for (let i = 0; i < f.miner; i++) soll({ owner: w.minerOwner, klasse: 'miner', system: f.system, auftrag: 'foerdern', ware: f.ware });
@@ -1617,6 +1621,18 @@ const { handel, gebuehr, stationIn, fondsIn } = m_core_handel;
 const { neuesSchiff } = m_core_state;
 const schluessel = (x) => `${x.klasse}/${x.heimat}/${x.ware}`;
 function fehlend(state, owner) {
+  if (state.rulesVersion >= 14) {
+    const plan = state.sollflotte[owner] || [];
+    const belegt = new Set();
+    for (const id of ids(state.ships)) {
+      const s = state.ships[id], platz = s.sollplatz;
+      if (s.owner !== owner || !Number.isSafeInteger(platz) || platz < 0 || platz >= plan.length) continue;
+      const rolle = plan[platz];
+      if (rolle.klasse === s.klasse && rolle.heimat === s.heimat) belegt.add(platz);
+    }
+    return plan.flatMap((x, platz) => belegt.has(platz) ? [] : [{ ...x, platz }]);
+  }
+  // Alte Referenzkerne (Regel 11–13) behalten exakt ihre historische Slot-Zählung.
   const da = {};
   for (const id of ids(state.ships)) { const s = state.ships[id]; if (s.owner === owner) da[schluessel(s)] = anzahl(da, schluessel(s)) + 1; }
   return state.sollflotte[owner].filter((x) => { const k = schluessel(x); if (anzahl(da, k) === 0) return true; da[k] -= 1; return false; });
@@ -1640,7 +1656,8 @@ function ersatzkauf(state, rules) {
       if (state.owners[owner].cash < bedarf + (leer ? 0 : w.ersatzRuecklage)) continue;
       const von = state.stations[werft].system;
       const r = route(w, von, x.heimat);
-      const s = neuesSchiff(state, { owner, klasse: x.klasse, system: von, heimat: x.heimat, ware: x.ware, auftrag: x.auftrag });
+      const s = neuesSchiff(state, { owner, klasse: x.klasse, system: von, heimat: x.heimat, ware: x.ware, auftrag: x.auftrag,
+        ...(state.rulesVersion >= 14 ? { sollplatz: x.platz } : {}) });
       if (!handel(state, rules, s, werft, x.klasse, 1, true)) {
         delete state.ships[s.id];
         delete state.stats.verkaeufe[s.id];
@@ -1827,6 +1844,42 @@ function migrationRegel7(s) {
   return { ...s, rulesVersion: 8 };
 }
 
+// B5b (13→14): Bestehende Sollplätze bleiben unverändert. Nur die dauerhafte
+// Zuordnung zu überlebenden Hüllen wird aus der alten Identität rekonstruiert.
+function migrationRegel13(s) {
+  const neu = JSON.parse(JSON.stringify(s));
+  for (const owner of Object.keys(neu.sollflotte).sort()) {
+    const plan = neu.sollflotte[owner];
+    const schiffe = Object.keys(neu.ships).sort().map((id) => neu.ships[id]).filter((sh) => sh.owner === owner);
+    const frei = new Set(schiffe.map((sh) => sh.id)), belegt = new Set();
+    const zuweisen = (platz, sh) => { sh.sollplatz = platz; frei.delete(sh.id); belegt.add(platz); };
+    // Phase 1: Exakte alte Identität (auch identische Miner-Sollrollen) stabil zuordnen.
+    for (let platz = 0; platz < plan.length; platz++) {
+      const rolle = plan[platz];
+      const sh = schiffe.find((x) => frei.has(x.id) && x.klasse === rolle.klasse
+        && x.heimat === rolle.heimat && (x.ware ?? null) === (rolle.ware ?? null));
+      if (sh) zuweisen(platz, sh);
+    }
+    // Phase 2: Bei nur einer verbleibenden Rollenart pro Klasse/Heimat
+    // auch vorübergehend gestoppte oder transportierende Alt-Miner erkennen.
+    // Unterschiedliche Sollwaren am selben Ort sind ohne alte Schiffs-ID uneindeutig:
+    // hier abbrechen statt einen fremden Miner still falsch zuzuweisen.
+    for (let platz = 0; platz < plan.length; platz++) {
+      if (belegt.has(platz)) continue;
+      const rolle = plan[platz];
+      const kandidaten = schiffe.filter((x) => frei.has(x.id)
+        && x.klasse === rolle.klasse && x.heimat === rolle.heimat);
+      if (!kandidaten.length) continue; // echter Verlust: dieser Sollplatz bleibt frei.
+      const offen = plan.filter((x, i) => !belegt.has(i)
+        && x.klasse === rolle.klasse && x.heimat === rolle.heimat);
+      if (new Set(offen.map((x) => x.ware ?? null)).size !== 1)
+        throw new Error('Regelmigration 13→14: uneindeutige Sollrollen in '+owner+'/'+rolle.heimat);
+      zuweisen(platz, kandidaten[0]);
+    }
+  }
+  neu.rulesVersion = 14;
+  return neu;
+}
 const RULE_MIGRATIONS = {
   4: migrationRegel4,
   5: migrationRegel5,
@@ -1837,6 +1890,7 @@ const RULE_MIGRATIONS = {
   // 12→13: Angefallene Reise-Arbeit ist auch bei 'halten' zahlungspflichtig;
   // vorhandene Schiffe, Kassen, angefangene Fluege und Arbeit bleiben unveraendert.
   12: (s) => ({ ...s, rulesVersion: 13 }),
+  13: migrationRegel13,
 };
 function migrate(state, from, to, table = MIGRATIONS) {
   let s = state;

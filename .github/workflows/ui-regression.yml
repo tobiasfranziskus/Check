@@ -115,9 +115,34 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: 13 Seeds x 90 Tage mit stündlichen Einzel-Audits, Replay und Save/Load
-        run: node tools/b5a-kostenvergleich.mjs "$RUNNER_TEMP/b5a-v13-13seeds.json"
+      - name: Historischen Regel-13-Wirtschaftslauf auf dem Originalcommit reproduzieren
+        run: |
+          git fetch origin e0c27a3762d9d6e75d8bcc30ed47621eff2f152b
+          mkdir -p "$RUNNER_TEMP/v13-original"
+          git archive e0c27a3762d9d6e75d8bcc30ed47621eff2f152b | tar -x -C "$RUNNER_TEMP/v13-original"
+          # Das historische Skript ruft git show auf: daher vom wirklichen Git-Checkout starten.
+          node "$RUNNER_TEMP/v13-original/tools/b5a-kostenvergleich.mjs" "$RUNNER_TEMP/b5a-v13-13seeds.json"
       - uses: actions/upload-artifact@v4
         with:
           name: b5a-v13-wirtschaftspruefung
           path: ${{ runner.temp }}/b5a-v13-13seeds.json
+
+  wirtschaft-v14-sollflottenzuordnung:
+    # B5b: Neue Regeln an historischen, unveränderten 13-Seed-v12-Wirtschaftskennzahlen messen.
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Produktbasis von B5b festhalten
+        run: git fetch origin e0c27a3762d9d6e75d8bcc30ed47621eff2f152b
+      - name: 13 Seeds x 90 Tage Regel 14 mit unabhängigen Geld-/Warenaudits, Replays und Save/Load
+        run: node tools/b5b-wirtschaft-v14.mjs "$RUNNER_TEMP/b5b-v14-13seeds.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b5b-v14-wirtschaftspruefung
+          path: ${{ runner.temp }}/b5b-v14-13seeds.json

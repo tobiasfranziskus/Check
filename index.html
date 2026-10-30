@@ -634,7 +634,7 @@ return { div, clamp, ids, anzahl };
 const m_core_state = (() => {
 const { seedToState } = m_core_rng;
 const { ids } = m_core_zahl;
-const leereStats = () => ({ handel: 0, tanken: 0, rezepte: {}, verkaeufe: {}, mangel: {} });
+const leereStats = () => ({ handel: 0, rezepte: {}, verkaeufe: {}, mangel: {} });
 function kontoStats(owners) {
   const konto = {}; const abgabe = {};
   for (const id of ids(owners)) { konto[id] = { erloes: 0, kosten: 0 }; abgabe[id] = 0; }
@@ -823,7 +823,6 @@ function execute(state, cmd, rules) {
       const s = state.ships[cmd.schiff];
       const r = m_core_route.route(rules.world, s.system, rules.world.stations[cmd.ziel].system);
       if (!r || r.zeit <= 0) return { ok: false, type: cmd.type, reason: 'kein Weg' };
-      const station = rules.world.systems[s.system].station;
       s.phase = 'reise'; s.ziel = cmd.ziel; s.ankunft = state.tick + r.zeit; s.warten = 0; s.eskorte = null; break;
     }
     case 'shipTrade': {
@@ -1410,7 +1409,7 @@ const m_core_sicherheit = (() => {
 const { ids, anzahl, div } = m_core_zahl;
 const { rngInt } = m_core_rng;
 const { preis } = m_core_preis;
-const { aufnehmbar, buche, tanken, stationIn } = m_core_handel;
+const { aufnehmbar, buche, stationIn } = m_core_handel;
 const { route } = m_core_route;
 const { kampf } = m_core_kampf;
 const { neuesSchiff, protokolliere } = m_core_state;

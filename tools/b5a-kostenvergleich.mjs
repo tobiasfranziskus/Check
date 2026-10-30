@@ -24,7 +24,7 @@ const hooked=current.replace(cost,
  "if(['npc1','npc2','npc3'].includes(s.owner))watchCost(s.owner,Math.max(0,kosten-besitzer.cash));\n    "+cost)
  .replace(trade,"buche(state, schiff.owner, 'kosten', fee);\n  watchTrade(state,schiff,kauf);\n  return true;");
 const instrumented=new Function('watchCost','watchTrade',hooked+';return {c:m_core_index,r:m_data_rules.RULES};');
-const plain=new Function(current+';return {c:m_core_index,r:m_data_rules.RULES};')();
+const plain=new Function(current+';return {c:m_core_index,r:m_data_rules.RULES,h:m_core_handel};')();
 assert.equal(plain.r.rulesVersion,13);
 const seeds=[7,11,1,2,65535,42,1234,98765,3,99,2024,2025,314159];
 assert.deepEqual(golden.results.map(x=>x.seed),seeds);

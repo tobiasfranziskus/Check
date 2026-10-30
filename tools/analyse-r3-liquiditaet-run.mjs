@@ -6,7 +6,7 @@ import {SHA,BASE,MODES,SEEDS,source,readCore,variant,observedSource,engine,
  independentlyAudit,Watch,snapshot} from './analyse-r3-liquiditaet-common.mjs';
 
 const opts=Object.fromEntries(process.argv.slice(2).map(v=>{
- assert(/^--[a-z-]+=.*/.test(v));const i=v.indexOf('=');return [v.slice(2,i),v.slice(i+1)];
+ assert(/^--[a-z0-9-]+=.*/.test(v));const i=v.indexOf('=');return [v.slice(2,i),v.slice(i+1)];
 }));
 const type=opts.type||'standard',seed=Number(opts.seed||42),scenario=opts.scenario||'miner';
 assert(['standard','player-miner','player-auto','b1'].includes(type));

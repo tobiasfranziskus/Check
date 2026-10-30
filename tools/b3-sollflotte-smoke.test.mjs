@@ -33,7 +33,7 @@ const mockPrice={preis:(state,werft,klasse)=>klasse==='miner'?1123:1092};
 const mockTrade={gebuehr:()=>0};
 function execute(mode,state=st(),overrides={}){
  const fn=new Function('state','rules','neu','cmd','m_core_schiffbau','m_core_preis','m_core_handel',injection(mode));
- fn(state,rules,neu,cmd,overrides.build??mockBuild,overrides.prices??mockPrice,mockTrade);
+ fn(state,rules,neu,overrides.cmd??cmd,overrides.build??mockBuild,overrides.prices??mockPrice,mockTrade);
  return state;
 }
 test('Die Kontrolle bleibt der unveränderte Produktcode',()=>{
@@ -44,12 +44,14 @@ test('Sollregistrierung greift nur beim neuen eigenen Frachter, ohne Geldbuchung
  assert.deepEqual(s.sollflotte.npc3,[{klasse:'frachter',heimat:'aldera',ware:null,auftrag:'handeln'}]);
  assert.equal(s.owners.npc3.cash,1120);
  const noMatch=st();
- execute('register',noMatch); // isolierter eindeutiger eigener Eintritt
- assert.equal(noMatch.sollflotte.npc3.length,1);
+ execute('register',noMatch,{cmd:{owner:'npc2',klasse:'frachter'}});
+ assert.equal(noMatch.sollflotte.npc3.length,0);
+ const wrongClass=st();execute('register',wrongClass,{cmd:{owner:'npc3',klasse:'miner'}});
+ assert.equal(wrongClass.sollflotte.npc3.length,0);
  assert.equal(source.register.includes("cmd.owner === 'npc3' && cmd.klasse === 'frachter'"),true);
 });
 test('Registrierung lässt ursprüngliche Kauf- und Arbeitsregeln unangetastet',()=>{
- assert.equal(source.register.replace(injection('register'),''),html);
+ assert.equal(source.register.replace(activation+injection('register'),activation+'\n      '),html);
  assert.equal(source.funded.includes('m_core_schiffbau.fehlend'),true);
 });
 test('Finanzierungsprüfung verweigert bei drei ungedeckten Minerplätzen den Frachter-Sollplatz',()=>{

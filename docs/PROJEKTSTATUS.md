@@ -8,6 +8,15 @@
 
 **Nachgewiesene CI-Abnahme:** [PR #30, GitHub Actions #41036228202](https://github.com/tobiasfranziskus/Check/actions/runs/41036228202) mit **48/48 Standardtests**, v10-/v11-Referenzprüfungen, 13 Seeds × 90 Tage für produktive v12-Goldenwerte sowie 13×90-Tage-Weltgeografievergleich: alle ausgeführten Jobs erfolgreich. Ein historischer bedingt übersprungener Sicherheitsgeografie-Job zählt nicht als Test. Die v12-Wirtschaftsreproduktion bestätigt für 13 Seeds × 90 Tage den Rückgang der Mangelstunden **4.204→791** bei Erhaltung von Geld-/Warenbuchungen, Kassenprüfung und Save/Load. **Weder iPad-Safari-Abnahme noch NAS-Deployment** ist damit belegt.
 
+## [ANALYSE/DRAFT] NPC-Wiederanlauf nach Kollaps, 30. Oktober 2026
+
+Folgeanalyse zu [#32](https://github.com/tobiasfranziskus/Check/pull/32) und [#33](https://github.com/tobiasfranziskus/Check/pull/33), Produktbasis weiter `main ed94b89`; [Bericht, reproduzierbare Varianten und Messdaten](TEST_NPC_WIEDERANLAUF_V12.md), Branch [`analyse/npc-wiederanlauf-v12`](https://github.com/tobiasfranziskus/Check/tree/analyse/npc-wiederanlauf-v12). **Ohne Spielerfilter aus #33; keine Produktions-, Goldenwert- oder Roadmap-Änderung.**
+
+- Vier unveränderte Kollapsfälle an Tag 90, Kontrolle plus vier einzeln eingesetzte Fonds-/Zuschussvarianten bis Tag 365: **20/20 technische Replay-/Audit-/Save/Load-Prüfungen bestanden**, aber **0/16 Eingriffe** stellen beide Handelsflotten wieder her. Zusätzlich **48/48 Standardtests** und alle **13×90-Tage-v12-Goldenprofile** lokal erneut bestanden.
+- Fondsweiter Zuschuss bezahlt im Miner-/Flottenfall je eine vorhandene Frachterhülle aus realen Meridian-Fondsmitteln. Danach **0 ISK Handelskasse**, kein Warenkauf/-verkauf, erneuter Verlust nach 81/7 Stunden. Werftreserve, Umleitung bestehender Fondsüberschüsse und Zuschuss einschließlich vorhandener 250-ISK-Rücklage bleiben jeweils allein wirkungslos.
+- Aldera hat durchgehend **0 Bauteile und 0 Silizium**, während Meridian 91 Bauteile/100 Silizium hält. Die räumliche Produktions-/Transportblockade bleibt nach dem ersten bezahlten Ersatz bestehen; die Varianten erzeugen keine neuen Werfthüllen. Kein Erfolg aus bloßem Schiffbestand ableiten.
+- **Keine getestete Einzelvariante als Produktkorrektur freigeben.** Eine Kombination vorhandener Fondsdeckung/Betriebsreserve mit nachgewiesenem realem Materialtransport ist lediglich Empfehlung für einen gesonderten Analyseauftrag. Keine neuen Geldquellen, keine Spielerabgabe, kein Merge oder Deployment.
+
 ## [ANALYSE/DRAFT] Gegenversuch Spieler-Überschussrückfluss, 30. Oktober 2026
 
 Folgeanalyse auf den Werkzeugen aus [Draft-PR #32](https://github.com/tobiasfranziskus/Check/pull/32), Basis `main` [`ed94b89`](https://github.com/tobiasfranziskus/Check/commit/ed94b8914e4ad2ad0c7980e9f3d84f6d549ef22f), Analysebranch [`analyse/spieler-rueckfluss-v12`](https://github.com/tobiasfranziskus/Check/tree/analyse/spieler-rueckfluss-v12). [Bericht, Alternativen und Messdaten](TEST_SPIELER_RUECKFLUSS_V12.md). **Nur die Testregeln nehmen `player` zusätzlich in `npcAusgabenArten` auf; `index.html`, produktive Regeln, Goldenwerte und Roadmap bleiben unverändert.**

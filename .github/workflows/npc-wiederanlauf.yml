@@ -1,0 +1,84 @@
+name: Aphros Void – NPC-Wiederanlauf v12
+on:
+  pull_request:
+    paths:
+      - index.html
+      - tools/npc-restart-v12*.mjs
+      - tools/longterm-v12-observer.mjs
+      - docs/data/wirtschaft-langzeit-v12*.json
+      - docs/data/spieler-rueckfluss-v12.json
+      - .github/workflows/npc-wiederanlauf.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/npc-restart-v12.mjs --prepare
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npc-restart-start
+          path: work/npc-restart/start-*.json
+          if-no-files-found: error
+  vergleich:
+    needs: diagnose
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scenario: miner
+            seed: 42
+          - scenario: handel-flotte
+            seed: 42
+          - scenario: station
+            seed: 1234
+          - scenario: jagd
+            seed: 98765
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: npc-restart-start
+          path: work/npc-restart
+      - name: Kontrolle und vier getrennte Fonds-/Zuschussvarianten
+        shell: bash
+        run: |
+          for restart_variant in control fonds-pool werft-reserve ueberschuss-zur-werft zuschuss-mit-ruecklage; do
+            node tools/npc-restart-v12.mjs --case=${{ matrix.scenario }},${{ matrix.seed }} --variant="$restart_variant"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npc-restart-${{ matrix.scenario }}-${{ matrix.seed }}
+          path: work/npc-restart/${{ matrix.scenario }}-${{ matrix.seed }}-*.json
+          if-no-files-found: error
+  vollstaendigkeit:
+    needs: [diagnose, vergleich]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: npc-restart-*
+          path: work/npc-restart
+          merge-multiple: true
+      - run: node tools/npc-restart-v12-summary.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npc-restart-gesamt
+          path: work/npc-restart-summary.json
+          if-no-files-found: error

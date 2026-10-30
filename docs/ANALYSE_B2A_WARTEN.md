@@ -16,7 +16,7 @@ Die Vergleichsläufe verwenden identische vier Tag-90-Saves (Miner/42, Handelsfl
 
 **Abnahmekriterium:** Korrekte Replays, Audits und deterministische Saves sind notwendige technische Bedingungen. Wirtschaftlicher Erfolg verlangt zusätzlich reale bezahlte Geschäfte, keine Zunahme ungedeckter Kosten und aussagekräftige Überlebens-/Ersatzwerte. Eine bloß längere Lebensdauer, bloßer Dock-Stillstand oder ein verschobener RNG-Pfad ist keine Freigabe. Vier Diagnosefälle beweisen keine generelle Verlustwahrscheinlichkeit.
 
-Die vollständigen Messdaten entstehen im PR-CI-Artefakt `b2a-gesamt`. Vor tatsächlichem CI-Lauf ist **kein** Ergebnis oder wirtschaftlicher Verbesserungsnachweis behauptet.
+Die vollständigen Messdaten werden im PR-CI-Artefakt `b2a-gesamt` erzeugt. Die Ergebnisse und Grenzen der tatsächlich ausgeführten CI sind nachfolgend dokumentiert.
 
 ## Reproduktion (Node.js 22)
 
@@ -46,6 +46,27 @@ Deshalb werden zusätzlich zwei **separat erkennbare Sensitivitätsläufe** unte
 Damit bestehen zwei faire Paarvergleiche: `control` gegen `wait`, und `reserve_control` gegen `reserve_wait`. Die Reserve ist weder ein neues Konto noch eine Änderung an produktiver Buchung oder Sollflotte. Ein Unterschied im zweiten Paar belegt nur die Wirkung **unter dieser experimentellen Kapitalbeschränkung**, nicht die Produktwirkung in der unveränderten Wirtschaft.
 
 Insgesamt 4 Fälle × 4 Varianten × 275 Tage = 16 Fortsetzungen; unabhängig auditierte Replays und 4.400 Tageshashes als CI-Gates. Keine vorhergesagten Ergebniswerte in den Bericht übernehmen.
+
+## Ergebnisse der ausgeführten CI
+
+**GitHub Actions [Lauf 41098611476](https://github.com/tobiasfranziskus/Check/actions/runs/41098611476):** sechs erfolgreiche Jobs (Fundamente, vier Vergleiche, Abnahme); **16 × 275 Tage**, 4.400 Tageshashes zwischen instrumentierter Ausführung und unabhängigem Replay; Geld-/Warenaudits, gespeicherte Fortsetzungen und **48/48 Standardtests** ohne Fehler, Skip oder Abbruch. Der frühere Zweiervergleich hatte ebenfalls sechs erfolgreiche Jobs mit 8 × 275 Tagen und 2.200 Hashes. Das ist **keine** produktive 13-Seed-Regelabnahme und keine iPad-/NAS-Abnahme.
+
+**Unveränderte Wirtschaft:** In allen vier Fällen null Leerabflüge beim untersuchten NPC3-Frachter. `control` und `wait` sind bis Tag 365 zustandsidentisch; der geänderte Zweig wurde vor dem Tod der Frachter nicht benötigt. **Kein wirtschaftlicher Effekt nachgewiesen.**
+
+**Gezielte Belastung mit zuvor dokumentierter #37-Kapitalreserve:** Die vier `reserve_control`-Endhashes sind exakt die dokumentierten `replacement`-Hashes aus #37. Damit ist die Reserve-Kontrolle vollständig reproduziert. Nur der Unterschied zur jeweiligen `reserve_wait`-Fassung misst den zusätzlichen Warteentscheid unter dieser Kapitalregel.
+
+| Szenario | Reserve-Kontrolle: leere Abflüge / Verlust nach | Reserve + Warten: leere Abflüge / Schiff Ende Tag 365 | Netto-Betrieb vor Hülle, Kontroll- → Wartefassung | Ungedeckter gesamter NPC3-Betrieb, Kontroll- → Wartefassung |
+| --- | --- | --- | ---: | ---: |
+| Miner / 42 | 12 / 20,95 h | 0 / überlebt | −2.064 → 0 ISK | 1.393 → 0 ISK |
+| Handelsflotte / 42 | 4 / 9,95 h | 0 / überlebt | +880 → +234 ISK | 0 → 0 ISK |
+| Station / 1234 | 1 / 4,95 h | 0 / Verlust nach 12,95 h | −55 → −539 ISK | 0 → 0 ISK |
+| Jagd / 98765 | 121 / 189,95 h | 0 / Verlust nach 4,95 h | −15.860 → +570 ISK | 15.517 → 0 ISK |
+
+**Interpretation:** Warten vermeidet unter knapper verfügbaren Investitionsmitteln unnötige Leerflüge und kann riesige ungedeckte Betriebskosten verhindern. Es garantiert **keinen Handelsumsatz oder dauerhafte Versorgung**. Der im Minerfall überlebende Frachter wickelt keine Käufe/Verkäufe ab; im Handelsflottenfall sind es nur zwei Käufe und zwei Verkäufe über den gesamten Versuchszeitraum. Die +234 ISK sind **vor** Hüllenkauf (780 ISK) und kein positiver Investitionsrückfluss. Der Stationsfall verschlechtert sein Betriebsergebnis. Zwei überlebende Schiffe bei fast ausgefallenem Handel dürfen nicht als wirtschaftliche Robustheit oder Wiederaufbau gelten. Unterschiede im RNG-Verlauf nach divergierenden Entscheidungen erlauben keine allgemeine kausale Aussage über Piratenverlustwahrscheinlichkeiten.
+
+**QA-Korrektur:** In der ersten maschinellen Auswertungsfassung wurde die Lebensdauer noch aktiver Schiffe mit einem relativen Tag-365-Tick statt der absoluten Tickbasis berechnet. Die zugrundeliegenden Zustände, Audits, Tode und Hashes sind unverändert. Die Verdichtung berechnet die beobachtete Lebensdauer jetzt mit dem absoluten Endtick; für bis Tag 365 überlebende Frachter beträgt sie etwa 6.599 Stunden seit Aktivierung (beobachtungsbegrenzt).
+
+**Empfehlung:** Die Warteidee als mögliche lokale Korrektur behalten, aber **nicht isoliert als Produktänderung freigeben**. Erst die Integration von Kostenentscheidung, sicheren Warteorten, Ausweich-/Absatzlogik und finanziertem Flottenersatz in getrennten Versuchen bewerten. Insbesondere das kostenlose Weiterreisen bei `auftrag=halten` ist ein eigenständiger zu korrigierender Kostenpfad, nicht durch einen unbedachten Wechsel zu `halten` zu kaschieren.
 
 ## Grenzen
 

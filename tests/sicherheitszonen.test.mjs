@@ -29,9 +29,12 @@ test('Auch ein nachträglich gesetzter Pirat darf in sicherem System niemanden a
  r.world.ueberfallChance=1000;
  const id='test_pirat';s.ships[id]={id,owner:'pirates',klasse:'pirat_gross',system:'aldera',phase:'dock',auftrag:'pirat',ladung:{}};
  s.stats.verkaeufe[id]=0;
- const rng=s.rng,verlust=JSON.stringify(s.stats.verluste),total=Object.keys(s.ships).length;
+ const kontrollfall=structuredClone(s);
+ delete kontrollfall.ships[id];delete kontrollfall.stats.verkaeufe[id];
+ const verlust=JSON.stringify(s.stats.verluste),total=Object.keys(s.ships).length;
+ security.ueberfall(kontrollfall,r);
  security.ueberfall(s,r);
- assert.equal(s.rng,rng,'keine Piraten-RNG in sicheren Systemen');
+ assert.equal(s.rng,kontrollfall.rng,'sicherer Pirat darf RNG trotz anderer Piratengebiete nicht verändern');
  assert.equal(JSON.stringify(s.stats.verluste),verlust);
  assert.equal(Object.keys(s.ships).length,total);
  assert(core.audit(s).ok);

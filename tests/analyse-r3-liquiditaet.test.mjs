@@ -15,19 +15,26 @@ test('Nur die eine echte Miner-Abgabe wird bis zum Lagerziel begrenzt',()=>{
  assert.equal(changed.replace(TARGET,NEEDLE),src);
  assert.equal(changed.includes('rulesVersion: 14'),true);
 });
-test('Mengenlimit verhindert Überschreiten des Ziels ohne Eingriff in das Handelssystem',()=>{
- const control=engine(src),trial=engine(variant(src,'r3_target'));
- const s=trial.c.createState(42,trial.r),orig=control.c.createState(42,control.r);
- assert.equal(control.c.hash(orig),trial.c.hash(s),'identische Ausgangswelt');
- const miner=Object.values(s.ships).find(x=>x.klasse==='miner'&&x.owner==='npc3'&&x.heimat==='aldera'&&x.ware==='erz');
+test('R3 liefert aus voller Miner-Fracht nur bis zum Ziel und wahrt den Ledger',()=>{
+ const srcR3=variant(src,'r3_target');
+ const target=new Function(srcR3+';return {c:m_core_index,r:m_data_rules.RULES,m:m_core_foerderung};')();
+ const origin=new Function(src+';return {c:m_core_index,r:m_data_rules.RULES,m:m_core_foerderung};')();
+ const s=target.c.createState(42,target.r);
+ const miner=Object.values(s.ships).find(x=>x.klasse==='miner'&&x.owner==='npc3'
+  &&x.heimat==='aldera'&&x.ware==='erz');
  assert(miner);
- const station=trial.r.world.systems[miner.system].station,goal=trial.r.world.stations[station].ziel.erz;
- s.stations[station].lager.erz=goal-1;
- // Test nur direkt an der Abgabe durchführen, ohne manipulierte Lagerbestände zu auditieren.
- const selling=engine(variant(src,'r3_target')+';');
- assert.equal(s.stations[station].lager.erz<goal,true);
- assert.equal(trial.r.world.stations[station].ziel.erz-s.stations[station].lager.erz,1);
- assert.equal(variant(src,'r3_target').includes(TARGET),true);
+ const station=target.r.world.systems[miner.system].station,goal=target.r.world.stations[station].ziel.erz;
+ // Synthetische Warenbewegung mit eigenständiger korrekter Ledger-Gegenbuchung.
+ s.stations[station].lager.erz=goal-1;s.ledger.erz.consumed+=1;
+ miner.ladung.erz=100;s.ledger.erz.mined+=100;
+ independentlyAudit(s);
+ const old=origin.c.load(origin.c.save(s),undefined,origin.r);
+ target.m.foerderung(s,target.r);
+ origin.m.foerderung(old,origin.r);
+ assert.equal(s.stations[station].lager.erz,goal,'Miner nur bis zum Zielbestand');
+ assert.equal(s.ships[miner.id].ladung.erz,99,'übrige bezahlbare Ladung verbleibt auf Miner');
+ assert(old.stations[station].lager.erz>goal,'die Originalregel würde über das Ziel hinaus verkaufen');
+ independentlyAudit(s);independentlyAudit(old);
 });
 test('Beobachter verändern bei identischen Befehlen keine Simulation oder Geld-/Warenbilanz',()=>{
  for(const mode of MODES){

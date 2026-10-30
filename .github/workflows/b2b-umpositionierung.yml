@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - tools/b2b-umpositionierung*.mjs
+      - tools/b2b-entscheidung-smoke.test.mjs
       - docs/ANALYSE_B2B_UMPOSITIONIERUNG.md
       - .github/workflows/b2b-umpositionierung.yml
 permissions:
@@ -73,6 +74,8 @@ jobs:
           merge-multiple: true
       - name: Vier Fälle und zwölf Varianten vollständig verdichten
         run: node tools/b2b-umpositionierung-summary.mjs "$RUNNER_TEMP/dauer" "$RUNNER_TEMP/bericht"
+      - name: Isolierter B2b-Entscheidungstest
+        run: node --test tools/b2b-entscheidung-smoke.test.mjs
       - name: Vorhandene Standardtests
         run: node --test tests/*.test.mjs
       - uses: actions/upload-artifact@v4

@@ -11,21 +11,17 @@ const seeds=[7,11,1,2,65535,42,1234,98765,3,99,2024,2025,314159];
 assert.deepEqual(fixed.results.map(r=>r.seed),seeds);
 const sum=a=>a.reduce((s,v)=>s+v,0);
 const tradeAnchor="buche(state, schiff.owner, 'kosten', fee);\n  return true;";
-const routeAnchor="if (!best || besser(gewinn, r.zeit, best.gewinn, best.zeit)) best = { ware, ziel, menge, gewinn, zeit: r.zeit };";
+const routeAnchor="const bonus = rules.rulesVersion >= 12 && bedarf > 0 && zielbestand > 0
+        ? divVersorgung(w.versorgungsPrioritaet * knappheit, zielbestand) : 0;";
 const costAnchor="const n = Math.min(besitzer.cash, kosten);\n    if (n <= 0) continue;";
 for(const anchor of [tradeAnchor,routeAnchor,costAnchor])
  assert.equal(original.split(anchor).length,2,'Core-Anker nicht eindeutig');
 let instrumented=original.replace(tradeAnchor,
  "buche(state, schiff.owner, 'kosten', fee);\n  observeTrade(state,schiff,station,ware,menge,kauf,p,fee);\n  return true;");
-instrumented=instrumented.replace(routeAnchor,[
- "const bedarf=w.stations[ziel].verbrauch[ware]||0;",
- "      const zielbestand=w.stations[ziel].ziel[ware]||0;",
- "      const knapp=Math.max(0,zielbestand-(state.stations[ziel].lager[ware]||0));",
- "      const zulaessig=bedarf>0 && (priorityScope==='bedarf'||ware==='nahrung');",
- "      const bonus=zulaessig&&zielbestand>0?Math.floor(priorityBasis*knapp/zielbestand):0;",
- "      const score=gewinn*(1000+bonus);",
- "      if (!best || besser(score, r.zeit, best.score, best.zeit))",
- "        best = { ware, ziel, menge, gewinn, score, zeit: r.zeit };"
+instrumented=instrumented.replace(routeAnchor, [
+ "const bonus = bedarf > 0 && zielbestand > 0",
+ "        && (priorityScope==='bedarf'||ware==='nahrung')",
+ "        ? divVersorgung(priorityBasis * knappheit, zielbestand) : 0;"
 ].join("\n      "));
 // Original behavior when basis 0: exact same score and strict comparison/tie break.
 instrumented=instrumented.replace(costAnchor,

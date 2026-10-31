@@ -40,7 +40,7 @@ jobs:
             const passive=b.points.find(x=>x.day===14).cycleQuotes;
             assert.equal(active.length,4);assert.equal(passive.length,4);
             for(const q of active){
-              assert(q.quoteCount>0,"Gewinnangebote fuer Rohstoff "+q.dest+'/'+q.ware);
+              assert(q.quoteCount>0,"Gewinnangebote fuer Rohstoff "+q.dest+"/"+q.ware);
               assert.equal(q.possibleWithRealBuyerCash,0,"kein positiver Gesamtauftrag mit echter Kaueferkasse");
               assert(q.best.length>0);
               for(const p of q.best){

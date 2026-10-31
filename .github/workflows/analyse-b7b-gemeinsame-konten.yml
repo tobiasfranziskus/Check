@@ -319,6 +319,64 @@ jobs:
               autopilotState:x.b7fInvestment.stage
             }));
           '
+      - name: B7i Vollkosten- und Minerreserve-Entscheidungsprobe mit demselben bezahlten NPC3-Frachter
+        run: node tools/analyse-b7b-gemeinsame-konten.mjs --seed=42 --case=handel-flotte --mode=wallet --investment=npc3 --autotrade=on --fullcost=on --days=90 --b1="$RUNNER_TEMP/b7b-b1" --out="$RUNNER_TEMP/b7b-out"
+      - name: B7i bezahlte Folgefahrten, Minimalkapital und Kern-Hashes gegen B7f/B7h testen
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/b7b-out/";
+            const read=(v)=>JSON.parse(fs.readFileSync(dir+"b7"+v+"-handel-flotte-42-wallet-90d.json"));
+            const f=read("f"),h=read("h"),i=read("i");
+            assert.equal(f.final.hash,"23eb3796fb0b5ec3","B7f-Ref");
+            assert.equal(h.final.hash,"6573a3c1acc3d5a5","B7h-Ref");
+            assert.equal(i.days,90);assert.equal(i.hours,2160);assert.equal(i.daily.length,90);
+            assert.equal(i.roundtrips,14);assert.equal(i.initialHash,h.initialHash);
+            assert.equal(i.sourceSha256,h.sourceSha256);
+            assert.notEqual(i.variantSha256,h.variantSha256,"nur isolierte Core-Entscheidung variiert");
+            assert.deepEqual(i.daily.slice(0,15),h.daily.slice(0,15),"bis Tag15 genau gleicher Wirtschaftszustand");
+            assert.equal(i.b7fInvestment.onceOnly,1);
+            assert.equal(i.b7fInvestment.quantity,h.b7fInvestment.quantity);
+            assert.equal(i.b7fInvestment.soldAt,h.b7fInvestment.soldAt);
+            assert.equal(i.b7hAuto.activatedAt,h.b7hAuto.activatedAt);
+            assert.equal(i.b7iGate.enabled,true);
+            assert(i.b7iGate.choices.length>0,"tatsaechliche B7i-Einzelentscheidungen erfasst");
+            const c=i.b7iGate.counts;
+            assert.equal(Object.values(c).reduce((a,b)=>a+b,0),
+              i.b7iGate.choices.length,"bisher max 300 Entscheidungen; bei groesserer Menge Deckel melden");
+            for(const row of i.b7iGate.choices){
+              if(row.quote){
+                assert(row.quote.net>0);
+                assert(row.quote.cashNeeded<=row.ownerCash);
+                assert(row.quote.minerReserve>0);
+              }
+            }
+            assert.equal(55000+i.final.minted-i.final.burned,50000,"Weltgeldbilanz unveraendert");
+            const stat=(x)=>({hash:x.final.hash,npc3Cash:x.final.npc.npc3.cash,
+              npc3Frachter:x.final.npc.npc3.freighters,npc3Miners:x.final.npc.npc3.miners,
+              shortage:x.final.shortage,recipes:x.final.recipes,
+              parts:x.consumerAudit.aggregate.bauteil,
+              food:x.consumerAudit.aggregate.nahrung,meds:x.consumerAudit.aggregate.medikamente,
+              consumerDays:x.consumerAudit.aggregate.daysWithConsumption,
+              paid:x.paid,due:x.due,unpaid:x.unpaid,
+              npc3Owner:x.owners.npc3,losses:x.losses.filter(z=>z.owner==="npc3").length,
+              boughtHull:x.hulls.filter(z=>z.owner==="npc3"&&z.klasse==="frachter").length,
+              tradeEvents:x.b7hAuto?.tradeEvents.length||0});
+            const trades=i.b7hAuto.tradeEvents.filter(e=>e.tick>i.b7fInvestment.soldAt);
+            console.log("B7I_VOLLKOSTEN_GELD",JSON.stringify({
+              controls:{b7f:stat(f),b7h:stat(h)},experiment:stat(i),
+              b7i:{counts:i.b7iGate.counts,firstChoices:i.b7iGate.choices.slice(0,32),
+                lastChoices:i.b7iGate.choices.slice(-16)},
+              nextTradeCounts:{buys:trades.filter(e=>e.kauf).length,
+                sells:trades.filter(e=>!e.kauf).length},
+              samples:trades.slice(0,20),lastTrade:trades.slice(-10),
+              firstCashDays:i.daily.filter(x=>x.day>=15&&x.day<=30).map(x=>({
+                day:x.day,cash:x.npc.npc3.cash,freighters:x.npc.npc3.freighters,
+                shortage:x.shortage,production:x.recipes})),
+              end:i.final
+            }));
+          '
       - name: 67 Standardtests
         run: node --test tests/*.test.mjs
       - uses: actions/upload-artifact@v4

@@ -1,0 +1,79 @@
+name: "[ANALYSE] B8i reale Mehrstrecken-Margen und Kaeuferliquiditaet"
+on:
+  push:
+    branches: [analyse/b8i-echte-mehrstrecken-margen-20261031]
+    paths:
+      - 'tools/analyse-b8i-handelsrouten.mjs'
+      - '.github/workflows/analyse-b8i-handelsrouten.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'tools/analyse-b8i-handelsrouten.mjs'
+      - '.github/workflows/analyse-b8i-handelsrouten.yml'
+      - 'index.html'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Seed 42 - originale passive NPC-Handelswelt
+        run: node tools/analyse-b8i-handelsrouten.mjs --seed=42 --scenario=passive --days=90 --out="$RUNNER_TEMP/b8i"
+      - name: Seed 42 - historischer aktiver Spielercrash
+        run: node tools/analyse-b8i-handelsrouten.mjs --seed=42 --scenario=active --days=90 --out="$RUNNER_TEMP/b8i"
+      - name: Seed 7 - passive zweite Vergleichswelt
+        run: node tools/analyse-b8i-handelsrouten.mjs --seed=7 --scenario=passive --days=90 --out="$RUNNER_TEMP/b8i"
+      - name: Seed 7 - aktive zweite Vergleichswelt
+        run: node tools/analyse-b8i-handelsrouten.mjs --seed=7 --scenario=active --days=90 --out="$RUNNER_TEMP/b8i"
+      - name: Provenienz-Buchung, echte Routen und keine Modellueberinterpretation
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/b8i/";
+            const worlds=[];
+            for(const seed of [42,7])for(const scenario of ["passive","active"])
+              worlds.push(JSON.parse(fs.readFileSync(dir+scenario+"-"+seed+"-90d.json")));
+            const a=worlds.find(q=>q.seed===42&&q.scenario==="active"),
+              p=worlds.find(q=>q.seed===42&&q.scenario==="passive");
+            assert.equal(a.hash,"784047684dfe5c56");
+            assert.equal(p.hash,"adf155a018b94094");
+            for(const q of worlds){
+              assert.equal(q.hours,2160);assert.equal(q.roundtrips,8);
+              assert.equal(q.sourceSha256,a.sourceSha256);
+              const m=q.metrics;
+              assert.equal(m.travel.unpaid,0,"NPC frachter kein ungedeckter abrechenbarer Flug");
+              assert(m.travel.paid>=m.travel.emptyPaid);
+              assert.equal(m.arrivalFull+m.arrivalCashBlocked+m.arrivalStorageBlocked+
+                m.arrivalMixedBlocked+m.arrivalOtherBlocked,m.buyerArrivals);
+              assert(m.physicalSales>=0&&m.lotCount>=m.completedLots);
+              assert.equal(m.lostLots,0,"keine unerkannte verlustbehaftete offene Fracht");
+              for(const route of m.allRoutes){
+                assert(route.lots>=route.completedLots);
+                assert(route.unitsBought>=route.unitsSold);
+                assert(route.spent>=0&&route.saleFees>=0);
+              }
+            }
+            assert(p.metrics.tradeRoutes>=3,"mehr als zwei reale NPC-Handelsrouten");
+            console.log("B8I_GATE",JSON.stringify(worlds.map(x=>({
+              seed:x.seed,scenario:x.scenario,hash:x.hash,
+              routes:x.metrics.tradeRoutes,completedLots:x.metrics.completedLots,
+              arrivals:x.metrics.buyerArrivals,
+              cashBlocked:x.metrics.arrivalCashBlocked,
+              storageBlocked:x.metrics.arrivalStorageBlocked,
+              blockedUnits:x.metrics.blockedUnits,
+              loadedAndEmptyWork:x.metrics.travel,
+              topRoutes:x.metrics.topRoutes.slice(0,12),
+              stationFailure:x.metrics.stationFailure,
+              points:x.points
+            }))));
+          '
+      - name: Originale 67 Node-Standardtests
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b8i-vier-originalwelten-route-ledger
+          path: ${{ runner.temp }}/b8i/*.json

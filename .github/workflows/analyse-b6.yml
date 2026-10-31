@@ -1,0 +1,103 @@
+name: Aphros Void – B6a Handelszyklus-Finanzierung Diagnose
+on:
+  pull_request:
+    paths:
+      - tools/analyse-b6-*.mjs
+      - docs/ANALYSE_B6_ZYKLUS_V14.md
+      - .github/workflows/analyse-b6.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  standard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [7, 11, 1, 2, 65535, 42, 1234, 98765, 3, 99, 2024, 2025, 314159]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Regel 14 und historische 90-Tage-Goldenwerte read-only vergleichen
+        run: node tools/analyse-b6-zyklus.mjs --seed=${{ matrix.seed }} --out="$RUNNER_TEMP/b6-daten"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b6-seed-${{ matrix.seed }}
+          path: ${{ runner.temp }}/b6-daten/*.json
+  b1-start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vier historische v12-Tag-90-Starts exakt rekonstruieren
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399
+          mkdir -p "$RUNNER_TEMP/b6-legacy"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/b6-legacy"
+          node "$RUNNER_TEMP/b6-legacy/tools/npc-restart-v12.mjs" --prepare --out="$RUNNER_TEMP/b6-start"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b6-b1-starts
+          path: ${{ runner.temp }}/b6-start
+  crisis:
+    needs: b1-start
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        fall: [miner, handel-flotte, station, jagd]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: b6-b1-starts
+          path: ${{ runner.temp }}/b6-start
+      - name: Historische Kern-/Szenario-Quellen verifizieren
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399 cec7f93758e4a499c238738ff50adac4416080d4
+          mkdir -p "$RUNNER_TEMP/b6-legacy" "$RUNNER_TEMP/b6-b1"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/b6-legacy"
+          git archive cec7f93758e4a499c238738ff50adac4416080d4 | tar -x -C "$RUNNER_TEMP/b6-b1"
+      - name: Echte B1-Befehle und alle Zahlungen von Tag 90 bis 365 pruefen
+        run: |
+          node tools/analyse-b6-zyklus.mjs --case=${{ matrix.fall }} --starts="$RUNNER_TEMP/b6-start" --b1="$RUNNER_TEMP/b6-b1" --legacy="$RUNNER_TEMP/b6-legacy" --out="$RUNNER_TEMP/b6-daten"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b6-krise-${{ matrix.fall }}
+          path: ${{ runner.temp }}/b6-daten/*.json
+  synthese:
+    needs: [standard, crisis]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: b6-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/b6-daten
+      - name: Vollstaendige Kosten-, Erloes- und Nachkauf-Synthese
+        run: node tools/analyse-b6-summary.mjs "$RUNNER_TEMP/b6-daten" "$RUNNER_TEMP/b6-auswertung"
+      - name: Bestehende 67 Standardtests ausfuehren
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b6a-gesamt
+          path: ${{ runner.temp }}/b6-auswertung

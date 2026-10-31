@@ -202,6 +202,26 @@ const instrument=(code)=>{
     'watch.civilianConsume(state,id,ware,n,bedarf[ware]);');
   hook('state.owners[id].cash -= n; state.owners[spieler].cash += n;',
     'watch.dividendTransfer(state,id,spieler,n);');
+  hook('state.tick += 1;',
+    'watch.b7gCapture(state,"step-start");');
+  hook('const ergebnisse = wartend.map((cmd) => execute(state, cmd, rules));',
+    'watch.b7gCapture(state,"validated-commands");');
+  const phases=[
+    ['  ankunft(state, rules); foerderung(state, rules); entscheidung(state, rules); reise(state, rules); produktion(state, rules);',
+      ['ankunft','foerderung','entscheidung','reise','produktion']],
+    ['    verbrauch(state, rules); betriebskosten(state, rules); aussenhandel(state, rules);',
+      ['verbrauch','betriebskosten','aussenhandel']],
+    ['    patrouille(state, rules); ueberfall(state, rules); piratenErsatz(state, rules); schutzgeld(state, rules);',
+      ['patrouille','ueberfall','piratenErsatz','schutzgeld']],
+    ['    ersatzkauf(state, rules); m_pilot_accounts.settle(state); npcAusgaben(state, rules); fonds(state, rules); dividende(state, rules);',
+      ['ersatzkauf','m_pilot_accounts.settle','npcAusgaben','fonds','dividende']]
+  ];
+  for(const [sequence,fn] of phases){
+    assert.equal(s.split(sequence).length,2,'B7g Core-Schrittphase festgepinnt: '+sequence);
+    const ind=sequence.match(/^\s*/)[0];
+    s=s.replace(sequence,fn.map((name)=>ind+name+'(state, rules); watch.b7gCapture(state,"'+name+'");').join('\n'));
+  }
+  hook('  escorteBewegen(state, rules);','watch.b7gCapture(state,"escorteBewegen");');
   return s;
 };
 function engine(code,watch,probe=null,h1=null) {
@@ -416,6 +436,40 @@ watcher.dividendTransfer=(state,station,player,n)=>{
   d.dividendTransfers+=n;
   d.dividendByStation[station]=(d.dividendByStation[station]||0)+n;
   dividendEvents.push({tick:state.tick,station,player,amount:n});
+};
+
+
+// B7g monitors every Aldera cash movement with the exact executing Core phase.
+// Read-only: owner cash, station inventory and historical prices; never mutates.
+const b7gLedger={fromTick:15*1440,events:[],last:null,byPhase:{},byCounterparty:{},
+  firstLiquidityReturn:null,days:[],cashTimeline:[],notes:[]};
+watcher.b7gCapture=(world,phase)=>{
+  if(investment!=='npc3'||world.tick<b7gLedger.fromTick)return;
+  const a=world.owners.st_aldera.cash;
+  const after={aldera:a,npc3:world.owners.npc3.cash,house:world.owners.house.cash,
+    fund:world.owners.fonds_aldera.cash,others:Object.fromEntries(
+      Object.entries(world.owners).filter(([id,v])=>id!=='st_aldera'&&id!=='npc3'&&id!=='house'&&id!=='fonds_aldera')
+        .map(([id,v])=>[id,v.cash]))};
+  if(b7gLedger.last){
+    const was=b7gLedger.last;
+    const delta=a-was.aldera;
+    if(delta!==0){
+      const others={};
+      for(const [id,value] of Object.entries(after.others)){
+        const n=value-(was.others[id]||0);
+        if(n!==0)others[id]=n;
+      }
+      for(const id of ['npc3','house','fund'])if(after[id]!==was[id])others[id==='fund'?'fonds_aldera':id]=after[id]-was[id];
+      const event={tick:world.tick,phase,delta,from:was.aldera,to:a,
+        paired:others,systemInventory:world.stations.st_aldera.lager.silizium||0,
+        partInventory:world.stations.st_aldera.lager.bauteil||0};
+      b7gLedger.events.push(event);
+      const p=b7gLedger.byPhase[phase]||{income:0,outgo:0,events:0};
+      if(delta>0)p.income+=delta;else p.outgo-=delta;
+      p.events++;b7gLedger.byPhase[phase]=p;
+    }
+  }
+  b7gLedger.last=after;
 };
 
 const observed=engine(instrument(src),watcher,probeMain,h1Observed);
@@ -837,6 +891,25 @@ for(let minute=1;minute<=days*1440;minute++){
     const x=snapshot(state);daily.push(x);dayHashes.push(x.hash);
     if([10,11,12,15].includes(x.day))b7dDiagnostics.push(b7dSnapshot(state));
     if([10,11,12,15].includes(x.day))b7eDiagnostics.push(b7eMarketEntry(state));
+    if(investment==='npc3'&&x.day>=15){
+      const oldHash=observed.c.hash(state);
+      const quotes=['st_dravos','st_nadir','st_meridian'].map(src=>b7dQuote(state,src,'st_aldera','silizium'))
+        .map(q=>({src:q.origin,stock:q.originStock,sellable:q.available,
+          buy:q.priceBuy,sell:q.priceSell,qty:q.qty,margin:q.afterWork,
+          fundNeed:q.fundNeed,buyerCash:q.buyerCash,
+          reasons:q.reasons,shipsAtOrigin:q.emptyDockedSource}));
+      const ship=state.ships[b7f.ship];
+      b7gLedger.days.push({day:x.day,alderaCash:state.owners.st_aldera.cash,
+        fundCash:state.owners.fonds_aldera.cash,
+        npc3Cash:state.owners.npc3.cash,
+        alderaSilizium:state.stations.st_aldera.lager.silizium||0,
+        alderaBauteil:state.stations.st_aldera.lager.bauteil||0,
+        recipes:sum(Object.values(state.stats.rezepte)),
+        ship:ship?{system:ship.system,phase:ship.phase,cargo:{...ship.ladung},
+          task:ship.auftrag,work:ship.arbeit}:null,quotes});
+      assert.equal(observed.c.hash(state),oldHash,'B7g read-only Tagesmarkt darf State nie mutieren');
+    }
+
     dayRow(x.day);
     const day=minute/1440;
     if([1,3,7,10,30,60,90].includes(day)){
@@ -896,6 +969,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
   manualFlightProof,
   b7cDiagnostics,b7dDiagnostics,b7eDiagnostics,
   b7fInvestment:investment==='npc3'?b7f:null,
+  b7gMoneyFlow:investment==='npc3'?b7gLedger:null,
   credit:probeMain.stats,contracts:state.b6eContracts||{},
   initialHash,initialLegacyHash,days,hours,roundtrips,commands:cursor,
   paid:sum(Object.values(watcher.owners).map(x=>x.operatingPaid)),

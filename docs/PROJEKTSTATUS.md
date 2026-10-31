@@ -1,5 +1,11 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B8c – Cashbedarf rentabler Rohstoffzyklen (31.10.2026)
+
+Direkt auf `main 517728a9`, v0.12.5/Regel14/Schema8; ausschließlich read-only-Runner, CI und Dokumente, **keine neue Produktion, Preis-, ISK-, Händler- oder Spielstandregel**. [B8c-Analyse](ANALYSE_B8C_ZYKLUSFINANZIERUNG.md); erster echter [CI-Erfolg #41227724539](https://github.com/tobiasfranziskus/Check/actions/runs/41227724539): 67/67 Standardtests, unveränderter historischer Seed42/90d-Spielerhash `784047684dfe5c56`, passive 14d-Kontrolle, 2.496 stündliche unabhängige ISK-/Warenaudits und deterministische Replays, 12 Save/Load-Roundtrips. Der anfänglich **ungültige Workflow-YAML-Run #41227690676** enthielt keinen ausgeführten Job und wurde korrigiert; das später ergänzte Angebotsassertions-Gate braucht noch abschließende CI-Bestätigung.
+
+**[ROOT CAUSE]** An Tag14 aktive Spielerkrise sind nach Core-Preisen, Gebühren und kalkulierter Hin-/Rückfahrtarbeit positive Rohstoffangebote denkbar, aber die **Käuferkasse reicht für keines**: Eis Orion→Cyris 29 Einheiten, **687 ISK** Fehlbetrag, nur **+8 ISK** Rundfahrtüberschuss vor Hülle/Risiko; Material Veldra→Cyris 7 Einheiten, **404 ISK** fehlen, **+20 ISK**; Eis Orion→Nadir 14 Einheiten, **293 ISK** fehlen, **+1 ISK**; Eis Orion→Veldra 17 Einheiten, **193 ISK** fehlen, **+1 ISK**. NPC3 könnte rechnerisch die Erstinvestition vor Miner-/Ersatzreserve tragen, doch kein realer Investorauftrag wurde ausgeführt. **Positive Quote ≠ ausgeführte Lieferung oder tragfähige Folgefinanzierung**. Keine individuelle Rettung und kein Mod-B-Minting beschlossen. Keine iPad-/NAS-Abnahme, kein Merge.
+
 ## [ARCHIV/ANALYSE] Wirtschaftsdiagnose und GitHub-Bereinigung · 31.10.2026
 
 **Produktive Basis vor Dokumentations-Merge:** `main d454d0661dee48a7bfdb843d05096982d799e51f`, **v0.12.5 / Regel 14 / Schema 8**. Alle bisherigen Wirtschafts- und Eskortenanalysen enthalten **keine** neue produktive Preis-, Routen-, Piraten-, Jäger-, Geld-, Kredit-, Werft- oder Spielstandsregel. **B5a #42 und B5b #46 sind integriert**; die nachfolgenden B6-Tests wurden nur auf isolierten Analysebranches durchgeführt. Echte iPad-/NAS-Abnahme steht aus.

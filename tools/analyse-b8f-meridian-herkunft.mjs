@@ -100,9 +100,9 @@ class Observer{
      creditedAsImportFirst:t.origins[w]?.first?.imported||0,
      creditedAsImportLast:t.origins[w]?.last?.imported||0,
      remainderFirst:this.line(w).first,remainderLast:this.line(w).last}]));
-   return {provenance,imports:sum(Object.values(t.imports)),exports:sum(Object.values(t.exports)),
-     shipDelivered:sum(Object.values(t.delivered)),shipBought:sum(Object.values(t.shipBought)),
-     salvaged:sum(Object.values(t.salvaged)),originalStock:sum(all.map(w=>this.line(w).first.initial)),
+   return {provenance,totalImports:sum(Object.values(t.imports)),totalExports:sum(Object.values(t.exports)),
+     totalShipDelivered:sum(Object.values(t.delivered)),totalShipBought:sum(Object.values(t.shipBought)),
+     totalSalvaged:sum(Object.values(t.salvaged)),
      paidByHubTotal:sum(Object.values(t.paidByHub)),paidToHubTotal:sum(Object.values(t.paidToHub)),
      ...t,observedExternalAndTradeEvents:this.events};
  }

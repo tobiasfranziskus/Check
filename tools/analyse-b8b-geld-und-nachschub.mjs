@@ -18,13 +18,15 @@ const source=html.slice(a,b),sha=s=>createHash('sha256').update(s).digest('hex')
 assert.equal(sha(source),'035fe8b486ff2d515ca6379ad682b4b15d89d5d051866e287425ed425e1cbfc9');
 
 class Observer {
- constructor(){this.trades=[];this.dividends=[];this.houseSteps=[];}
+ constructor(){this.trades=[];this.dividends=[];this.houseSteps=[];this.work=[];this.bounties=[];}
  trade(tick,ship,station,ware,qty,buy,price,fee){
    if(tick>14*1440)return;
    const value=qty*price;
    this.trades.push({tick,ship:ship.id,owner:ship.owner,station,ware,qty,buy,
      value,fee,houseNet:ship.owner==='house'?(buy?-(value+fee):(value-fee)):0});
  }
+ workExpense(tick,owner,ship,paid){if(tick<=14*1440&&owner==='house')this.work.push({tick,ship,paid});}
+ bounty(tick,owner,amount){if(tick<=14*1440&&owner==='house')this.bounties.push({tick,amount});}
  dividend(tick,id,amount){
    if(tick<=14*1440)this.dividends.push({tick,station:id,amount});
  }
@@ -37,7 +39,13 @@ for(const [needle,insertion] of [
  ["buche(state, schiff.owner, 'kosten', fee);",
   "buche(state, schiff.owner, 'kosten', fee); obs.trade(state.tick,schiff,station,ware,menge,kauf,p,fee);"],
  ["buche(state, id, 'kosten', n); buche(state, spieler, 'erloes', n);",
-  "buche(state, id, 'kosten', n); buche(state, spieler, 'erloes', n); obs.dividend(state.tick,id,n);"]
+  "buche(state, id, 'kosten', n); buche(state, spieler, 'erloes', n); obs.dividend(state.tick,id,n);"],
+ ["buche(state, s.owner, 'kosten', n);",
+  "buche(state, s.owner, 'kosten', n); obs.workExpense(state.tick,s.owner,s.id,n);"],
+ ["state.owners[g.owner].cash += geld; state.minted += geld; state.stats.kopfgeld += geld;",
+  "state.owners[g.owner].cash += geld; state.minted += geld; state.stats.kopfgeld += geld; obs.bounty(state.tick,g.owner,geld);"],
+ ["state.owners[ziel.owner].cash += geld; state.minted += geld; state.stats.kopfgeld += geld;",
+  "state.owners[ziel.owner].cash += geld; state.minted += geld; state.stats.kopfgeld += geld; obs.bounty(state.tick,ziel.owner,geld);"]
 ]){
  assert.equal(instrumented.split(needle).length,2,'Instrumentierungsanker eindeutig: '+needle);
  instrumented=instrumented.replace(needle,insertion);
@@ -182,7 +190,10 @@ const outsidePlayerTrades=first14.filter(x=>x.owner!=='house');
 const inflowsFromStations=sum(playerTrades.filter(x=>!x.buy),x=>x.value);
 const outgoingToStations=sum(playerTrades.filter(x=>x.buy),x=>x.value);
 const feesFromPlayer=sum(playerTrades,x=>x.fee);
-const transfer={houseDelta,playerTradeNet,playerDividends,
+const playerWorkExpense=sum(observer.work,x=>x.paid);
+const playerBounty=sum(observer.bounties,x=>x.amount);
+const transfer={houseDelta,playerTradeNet,playerDividends,playerWorkExpense,playerBounty,
+ otherNet:houseDelta-playerTradeNet-playerDividends+playerWorkExpense-playerBounty,
  residual:houseDelta-playerTradeNet-playerDividends,
  inflowsFromStations,outgoingToStations,feesFromPlayer,
  byStation:Object.fromEntries([...new Set(playerTrades.map(x=>x.station))].sort().map(id=>[id,{
@@ -194,6 +205,7 @@ const transfer={houseDelta,playerTradeNet,playerDividends,
 const output={scenario,days,seed,sourceSha256:sha(source),instrumentedSha256:sha(instrumented),
  finalHash:c.hash(s),hours,roundtrips,commands:cursor,transfer,
  houseEvents:observer.houseSteps,dividendEvents:observer.dividends,
+ workEvents:observer.work,bountyEvents:observer.bounties,
  playerTradeEvents:playerTrades,points};
 const outDir=opt('out','/tmp/b8b');fs.mkdirSync(outDir,{recursive:true});
 fs.writeFileSync(path.join(outDir,'b8b-'+scenario+'-'+days+'d.json'),JSON.stringify(output,null,2)+'\n');

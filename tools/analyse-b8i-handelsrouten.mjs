@@ -44,7 +44,8 @@ const tradeOwner=new Set(['npc1','npc2']);
 class Observer {
  constructor(){
    this.lots=new Map();this.byShip=new Map();this.next=0;this.pending=new Map();
-   this.travel={paid:0,due:0,minutes:0,emptyPaid:0,emptyMinutes:0,unallocatedPaid:0,unpaid:0};
+   this.travel={paid:0,due:0,minutes:0,emptyPaid:0,emptyDue:0,
+     emptyMinutes:0,unallocatedPaid:0,unpaid:0};
    this.arrivals=[];this.tradeCount=0;this.salesCount=0;this.blockedCounts={};
    this.shipDeaths=[];this.routeFlights={};
  }
@@ -58,7 +59,8 @@ class Observer {
      const lot={id:'lot'+(++this.next),owner:ship.owner,ship:ship.id,
        ware,source:station,boughtAt:state.tick,qty,remaining:qty,
        spent:wert+fee,feesBuy:fee, revenue:0,saleFees:0,
-       sold:0,sales:[],cargoWork:0,firstDestination:null,sourceCash:state.owners[ship.owner].cash};
+       sold:0,sales:[],cargoWork:0,cargoWorkDue:0,
+       firstDestination:null,sourceCash:state.owners[ship.owner].cash};
      this.lots.set(lot.id,lot);
      this.byShip.set(ship.id,[...this.idsFor(ship.id),lot.id]);
    }else{
@@ -107,16 +109,22 @@ class Observer {
    const segments=allocate(paid,[{id:'cargo',weight:countCargo},{id:'empty',weight:countEmpty}].filter(x=>x.weight));
    const cargoExpense=segments.find(x=>x.id==='cargo')?.n||0;
    const emptyExpense=segments.find(x=>x.id==='empty')?.n||0;
+   const dueSeg=allocate(due,[{id:'cargo',weight:countCargo},{id:'empty',weight:countEmpty}].filter(x=>x.weight));
+   const cargoDue=dueSeg.find(x=>x.id==='cargo')?.n||0;
+   const emptyDue=dueSeg.find(x=>x.id==='empty')?.n||0;
    this.travel.emptyPaid+=emptyExpense;
-   if(cargoExpense>0){
+   this.travel.emptyDue+=emptyDue;
+   if(cargoExpense>0||cargoDue>0){
      const weights={};
      for(const minute of list.filter(x=>x.kind==='cargo')){
        const all=totals(minute.weights);
        for(let i=0;i<minute.ids.length;i++)weights[minute.ids[i]]=(weights[minute.ids[i]]||0)+minute.weights[i]/all;
      }
      // Divide actual paid hour among original purchase lots, independent of date of sale.
-     const distribution=allocate(cargoExpense,Object.entries(weights).map(([id,weight])=>({id,weight:Math.round(weight*1000000)})));
+     const w=Object.entries(weights).map(([id,weight])=>({id,weight:Math.round(weight*1000000)}));
+     const distribution=allocate(cargoExpense,w),dueDistribution=allocate(cargoDue,w);
      for(const p of distribution)this.lots.get(p.id).cargoWork+=p.n;
+     for(const p of dueDistribution)this.lots.get(p.id).cargoWorkDue+=p.n;
    }
  }
  beforeArrival(state,rules,ship,priceFn,maxFn){
@@ -156,6 +164,7 @@ class Observer {
    const shipRemaining=new Set(Object.keys(state.ships));
    const lots=[...this.lots.values()].map(l=>({...l,
       completed:l.remaining===0,netLoaded:l.revenue-l.saleFees-l.spent-l.cargoWork,
+      netDueLoaded:l.revenue-l.saleFees-l.spent-l.cargoWorkDue,
       netMerchandise:l.revenue-l.saleFees-l.spent,
       lost:!shipRemaining.has(l.ship)&&l.remaining>0}));
    const groups=new Map(),roundTrips=new Map();
@@ -164,7 +173,8 @@ class Observer {
        const key=l.source+'→'+sale.dest+' / '+l.ware;
        const g=groups.get(key)||{route:key,source:l.source,dest:sale.dest,ware:l.ware,
          lots:0,completedLots:0,unitsBought:0,unitsSold:0,spent:0,
-         saleGross:0,saleFees:0,loadedCost:0,completedNetLoaded:0,lateOrLost:0};
+         saleGross:0,saleFees:0,loadedCost:0,loadedDue:0,
+         completedNetLoaded:0,completedNetDueLoaded:0,lateOrLost:0};
        groups.set(key,g);
      }
      const dests=[...new Set(l.sales.map(x=>x.dest))];
@@ -172,7 +182,9 @@ class Observer {
        const g=groups.get(l.source+'→'+dests[0]+' / '+l.ware);
        g.lots++;g.unitsBought+=l.qty;g.unitsSold+=l.sold;g.spent+=l.spent;
        g.saleGross+=l.revenue;g.saleFees+=l.saleFees;g.loadedCost+=l.cargoWork;
-       if(l.completed){g.completedLots++;g.completedNetLoaded+=l.netLoaded;}
+       g.loadedDue+=l.cargoWorkDue;
+       if(l.completed){g.completedLots++;g.completedNetLoaded+=l.netLoaded;
+         g.completedNetDueLoaded+=l.netDueLoaded;}
        else g.lateOrLost++;
      }
    }
@@ -187,6 +199,20 @@ class Observer {
      other:rows.filter(r=>r.failure==='other').length,
      unpaidUnits:totals(rows.map(r=>r.unsold))})).sort((a,b)=>b.count-a.count);
    const count=v=>v.length;
+   const cutoff=14*1440;
+   const periods={};
+   for(const [name,pred] of [['days1to14',t=>t<=cutoff],['days15to90',t=>t>cutoff]]){
+     const arrivalsPeriod=arrivals.filter(a=>pred(a.tick));
+     const cash=arrivalsPeriod.filter(a=>a.failure==='cash');
+     const storage=arrivalsPeriod.filter(a=>a.failure==='storage');
+     const sold=lots.flatMap(l=>l.sales).filter(s=>pred(s.tick));
+     periods[name]={buyLots:lots.filter(l=>pred(l.boughtAt)).length,
+       arrivals:arrivalsPeriod.length,cashBlocked:cash.length,
+       storageBlocked:storage.length,mixedBlocked:arrivalsPeriod.filter(a=>a.failure==='mixed').length,
+       fullySold:arrivalsPeriod.filter(a=>a.failure==='filled').length,
+       salesEvents:sold.length,soldUnits:totals(sold.map(x=>x.qty)),
+       blockedArrivalUnits:totals(arrivalsPeriod.filter(a=>a.failure!=='filled').map(a=>a.unsold))};
+   }
    return {lotCount:count(lots),completedLots:count(lots.filter(l=>l.completed)),
      unsoldLots:count(lots.filter(l=>l.remaining>0)),lostLots:count(lots.filter(l=>l.lost)),
      trades:this.tradeCount,sales:this.salesCount,travel:this.travel,
@@ -203,6 +229,8 @@ class Observer {
      stationFailure,allRoutes:groupsArr,
      soldAndCompletedGross:totals(lots.filter(l=>l.completed).map(l=>l.revenue)),
      completedLotsCashNetLoaded:totals(lots.filter(l=>l.completed).map(l=>l.netLoaded)),
+     completedLotsDueNetLoaded:totals(lots.filter(l=>l.completed).map(l=>l.netDueLoaded)),
+     periods,
      arrivalsSamples:arrivals.filter(x=>x.failure!=='filled').slice(0,24),
      otherDestLots:lots.filter(l=>new Set(l.sales.map(x=>x.dest)).size>1).length,
      openCargo:lots.filter(x=>!x.completed).map(x=>({id:x.id,src:x.source,owner:x.owner,
@@ -281,6 +309,9 @@ if(seed===42&&scenario==='active')assert.equal(hash,'784047684dfe5c56');
 if(seed===42&&scenario==='passive')assert.equal(hash,'adf155a018b94094');
 assert.equal(aa.travel.paid,aa.travel.emptyPaid+
   [...observerA.lots.values()].reduce((s,l)=>s+l.cargoWork,0),'real all NPC freighter flight costs allocated');
+assert.equal(aa.travel.due,aa.travel.emptyDue+
+  [...observerA.lots.values()].reduce((s,l)=>s+l.cargoWorkDue,0),'all due NPC freighter flight costs allocated');
+assert.equal(aa.travel.due-aa.travel.paid,aa.travel.unpaid);
 assert.equal(aa.physicalSales,
   [...observerA.lots.values()].reduce((sum,l)=>sum+l.sold,0));
 const dir=opt('out','/tmp/b8i');fs.mkdirSync(dir,{recursive:true});
@@ -291,5 +322,6 @@ console.log('B8I_PASS '+JSON.stringify({seed,scenario,hash,hours:count,roundtrip
  routes:aa.tradeRoutes,lotCount:aa.lotCount,completedLots:aa.completedLots,
  arrivalFull:aa.arrivalFull,arrivalCashBlocked:aa.arrivalCashBlocked,
  arrivalStorageBlocked:aa.arrivalStorageBlocked,arrivalMixedBlocked:aa.arrivalMixedBlocked,
- blockedUnits:aa.blockedUnits,travel:aa.travel,
+ blockedUnits:aa.blockedUnits,travel:aa.travel,periods:aa.periods,
+ completeNetPaid:aa.completedLotsCashNetLoaded,completeNetDue:aa.completedLotsDueNetLoaded,
  topRoutes:aa.topRoutes.slice(0,13),stationFailure:aa.stationFailure,points}));

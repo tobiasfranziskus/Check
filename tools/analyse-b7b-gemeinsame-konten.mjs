@@ -304,6 +304,8 @@ const instrument=(code)=>{
     'watch.trade(state,schiff,station,ware,menge,kauf,wert,fee);');
   hook('const n = Math.min(besitzer.cash, kosten);',
     'watch.cost(state,s,kosten,n);');
+  hook("    if (e.a[0] <= 0) zerstoeren(state, rules, ziel);",
+    'watch.b7jAfterCombat(state,rules,system,ziel,piraten,eskorten,e);');
   hook('function entfernen(state, rules, s) {',
     'watch.lost(state,s);');
   hook('state.ledger[x.klasse].consumed += 1;',
@@ -455,6 +457,7 @@ const h1Observed=new H1Collector(),h1Replay=new H1Collector();
 const plain=engine(src,null,probeReplay,h1Replay);
 m_coreIndexer=plain.c;
 assert.equal(plain.r.rulesVersion,14);
+const b7j={enabled:fullcost==='on',events:[],movement:[],locationChecks:[],offersAtLastRisk:[]};
 const watcher=new class {
   constructor() {this.owners={};this.ship={};this.closeouts=[];this.lossEvents=[];this.hulls=[];this.traderSales=0;this.pauses={frachter:0,miner:0};}
   pause(owner,klasse){this.pauses[klasse]++;}
@@ -563,6 +566,12 @@ const b7gLedger={fromTick:15*1440,events:[],last:null,byPhase:{},byCounterparty:
   firstLiquidityReturn:null,days:[],cashTimeline:[],notes:[]};
 watcher.b7gCapture=(world,phase)=>{
   if(investment!=='npc3'||world.tick<b7gLedger.fromTick)return;
+  if(b7j.enabled && phase==='step-start' && world.tick>=21_680 && world.tick<=22_560 && world.tick%30===0){
+    const s=world.ships.sh131;
+    if(s)b7j.locationChecks.push({tick:world.tick,system:s.system,phase:s.phase,
+      target:s.ziel,eta:s.ankunft,auftrag:s.auftrag,cargo:{...s.ladung},
+      piratesHere:Object.values(world.ships).filter(p=>p.owner==='pirates'&&p.system===s.system&&p.phase==='dock').length});
+  }
   const a=world.owners.st_aldera.cash;
   const after={aldera:a,npc3:world.owners.npc3.cash,house:world.owners.house.cash,
     fund:world.owners.fonds_aldera.cash,others:Object.fromEntries(
@@ -590,9 +599,29 @@ watcher.b7gCapture=(world,phase)=>{
   b7gLedger.last=after;
 };
 
+watcher.b7jAfterCombat=(world,rules,system,target,pirates,escorts,result)=>{
+  if(!b7j.enabled || target.id!=='sh131')return;
+  const station=rules.world.systems[system].station;
+  b7j.events.push({tick:world.tick,ship:target.id,owner:target.owner,system,
+    security:rules.world.systems[system].sicherheit,activePirates:pirates.map(p=>({id:p.id,klasse:p.klasse})),
+    escortIds:escorts.map(e=>e.id),
+    defenderHpAfter:result.a[0],victory:result.sieger,rounds:result.runden,
+    target:{system:target.system,phase:target.phase,stationDestination:target.ziel||null,
+      departureOrArrival:target.ankunft,auftrag:target.auftrag,cargo:{...target.ladung}},
+    localStationDefense:world.stations[station].module.verteidigung||0,
+    attackRiskBase:rules.world.ueberfallChance});
+};
 watcher.b7iChoice=(world,kind,ship,quote)=>{
   if(!b7i.enabled||ship.owner!=='npc3')return;
   b7i.counts[kind]++;
+  if(b7j.enabled&&quote){
+    const r=observed.r;
+    const dest=r.world.stations[quote.ziel].system, origin=r.world.stations[quote.origin].system;
+    b7j.movement.push({tick:world.tick,kind,origin,destination:dest,securityAtDestination:r.world.systems[dest].sicherheit,
+      lastLeg:r.world.gates.length,ownerCash:world.owners.npc3.cash,plannedNet:quote.net,
+      target:quote.ziel,from:quote.origin,ware:quote.ware,
+      pirateCount:Object.values(world.ships).filter(p=>p.owner===r.world.piraten.owner&&p.system===dest&&p.auftrag==='pirat'&&p.phase==='dock').length});
+  }
   if(b7i.choices.length<300)b7i.choices.push({tick:world.tick,kind,ship:ship.id,ownerCash:world.owners.npc3.cash,quote});
 };
 const observed=engine(instrument(src),watcher,probeMain,h1Observed);
@@ -1113,6 +1142,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
   b7fInvestment:investment==='npc3'?b7f:null,
   b7hAuto:b7h.enabled?b7h:null,
   b7iGate:b7i.enabled?b7i:null,
+  b7jRisk:b7j.enabled?b7j:null,
   b7gMoneyFlow:investment==='npc3'?b7gLedger:null,
   credit:probeMain.stats,contracts:state.b6eContracts||{},
   initialHash,initialLegacyHash,days,hours,roundtrips,commands:cursor,

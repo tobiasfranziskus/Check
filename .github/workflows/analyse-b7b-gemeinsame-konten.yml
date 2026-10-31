@@ -343,8 +343,8 @@ jobs:
             assert.equal(i.b7iGate.enabled,true);
             assert(i.b7iGate.choices.length>0,"tatsaechliche B7i-Einzelentscheidungen erfasst");
             const c=i.b7iGate.counts;
-            assert.equal(Object.values(c).reduce((a,b)=>a+b,0),
-              i.b7iGate.choices.length,"bisher max 300 Entscheidungen; bei groesserer Menge Deckel melden");
+            assert(Object.values(c).reduce((a,b)=>a+b,0)>=i.b7iGate.choices.length,
+              "bis zu 300 dokumentierte Entscheidungen, alle weiteren summarisch gezaehlt");
             for(const row of i.b7iGate.choices){
               if(row.quote){
                 assert(row.quote.net>0);

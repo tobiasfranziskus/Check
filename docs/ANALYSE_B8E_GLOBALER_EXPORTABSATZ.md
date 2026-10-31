@@ -20,8 +20,29 @@ Vier Original-Seed42-**90-Tage**-Welten, jeweils mit unabhängigen deterministis
 
 **Eine theoretische globale Bedarfsschwelle ist kein ökonomischer Heilbeweis.** Das Qualitätsgate verlangt gleichzeitig nachweislich neu auftretenden Außenabsatz, physisch erhaltene Rohstoffe, tragfähige reale Händler-/Käufer-Folgegeschäfte, keine unnötige Emission in gesunder Welt und selbständige wirtschaftliche Erholung *ohne* individuelle Konkursrettung. Die vier Simulationen sind lediglich eine erste, klar begrenzte Gegenprobe und ersetzen 13 Seeds ×90 Tage plus vier historische 365-Tage-Spielerkrisen nicht.
 
-## [TEST] Ergebnis
+## [TEST] Tatsächlich ausgeführte B8e-Gegenproben
 
-Hier wird ausschließlich der tatsächlich abgeschlossene CI-Befund eingetragen.
+**[GitHub CI #41229663432](https://github.com/tobiasfranziskus/Check/actions/runs/41229663432)** vollständig erfolgreich (**1/1 Job**, **67/67 Standardtests**, 0 Fehler/Skips). Exakt vier Seed42-90d-Welten, Originalregel14-Quelltext SHA256 `035fe8b486ff2d515ca6379ad682b4b15d89d5d051866e287425ed425e1cbfc9`, jeweils doppelt unabhängig abgespielt: insgesamt **17.280 stündliche Geld-/Warenaudits und deterministische Replayhashes**, **32 Save/Load-Roundtrips**. Der aktive originale historische Endhash `784047684dfe5c56` blieb identisch; die passive Originalkontrolle `adf155a018b94094` war ebenfalls identisch mit der passiven B8e-Gegenprobe.
+
+| 90 Tage / Seed 42 | Aktive Spielerkrise original | Aktive Spielerkrise B8e | Passive Welt original | Passive Welt B8e |
+| --- | ---: | ---: | ---: | ---: |
+| Tatsächliche externe Warenexporte (Einheiten) | **1.578** | **1.578** | **15.482** | **15.482** |
+| Neu emittierte B8e-ISK | 0 | **578** | 0 | **0** |
+| Export-Stunden mit B8e-Auszahlung | — | **63** | — | 0 |
+| Ziviler Nahrungsverbrauch (Einheiten) | 2.541 | 2.552 | 36.602 | **36.602** |
+| Ziviler Medizinverbrauch (Einheiten) | 644 | **644** | 12.960 | **12.960** |
+| Spieler-ISK am Tag90 | 39.762 | **39.762** | 2.000 | **2.000** |
+| Gesamtkassen-ISK am Tag90 | 50.000 | **50.578** | 50.000 | **50.000** |
+| Weltweit kumulierte Mangellagen Nahrungs-/Medizinstunden | 24.376 | **24.371** | 56 | **56** |
+
+**[RECHNUNGSPRÜFUNG]** In der aktiven B8e-Welt insgesamt 2.015 Stunden mit erfüllten beiden *globalen* Mangelschwellen. Davon **1.952 Stunden ohne irgendeine wirkliche externe Warenausfuhr**; daher nur 63 Auszahlungsstunden und 578 zusätzliche ISK. Der einzige reale Empfänger ist die Exportstation **Meridian** (`st_meridian: +578 ISK`), kein notleidender ausgewählter Akteur. Exporte nach Warentyp: Material 429, Erz 324, Silizium 303, Eis 219, Nahrung 140, Kristall 78, Bauteile 53, Medikamente 32 Einheiten im Original; die Exportvergütung änderte diese physischen Summen nicht. Nach Tag14 bei beiden aktiven Welten **0 Nahrung und 0 Medizin** tatsächlich konsumiert, keine Wiederaufnahme bis Tag90. Die Variante steigert den gesamten Nahrungsverbrauch gegenüber der ursprünglichen Spielerkrise um **nur 11 Einheiten**, Medizin **um null**.
+
+**[POSITIVE TEILBEOBACHTUNG]** In einer gesund versorgten passiven Welt mit 15.482 realen Exporten sperrt die rein *aggregierte* Weltindikator-Grenze alle 2.160 Stunden: **0 unnötige Neuemission**, unveränderter Weltendhash. Das begrenzt B8as ungewollte gesunde Welt-Geldschöpfung unter den getesteten Bedingungen, ist **aber kein unabhängiger Beweis**, dass die willkürlichen Schwellen in allen Seeds oder Spielerwelten sinnvoll wären.
+
+**[NEGATIVES PRODUKTGATE]** Die Exportleistung selbst bricht mit dem Markt ein (**1.578 statt 15.482 Einheiten**). Exportgebundene Geldschöpfung an Meridian wird nicht hinreichend zu real zahlungsunfähigen Zivilstationen und potenziellen neuen Händlern weitertransportiert. Die echte monetäre Brücke **außenwirtschaftlicher Ertrag → reale Stationskäuferkasse → vollständig bezahlter Handel → wiederholbare Produktion** ist nicht geschlossen. Daher **keine Integration** von B8e. Vor weiterer Geldversuchsreihe die Exportherkunft (ursprünglicher Außenimport / heimische Produktion / Re-Export), tatsächliche Käufererträge und Wiederanlaufoptionen auditieren; die fehlende Verknüpfung darf nicht durch eine Insolvenz-spezifische Auszahlung kaschiert werden.
+
+**[SEPARAT OFFEN]** Es wurden **keine 13 Seeds ×90 Tage**, keine vier historischen 365d-Spielerbelastungen, keine Spielstandversion-/Migrationsänderung (nicht erforderlich für Analysedateien), keine echte iPad-Safari- oder NAS-Abnahme durchgeführt. Das Modell enthält bewusst unfreigegebene Parameter: 20 ISK/h, 2 ISK je ausgeführter Einheit, 20 % Stations-Cash-Schwelle und 50 % Weltverbrauchs-Schwelle. Die Ausfuhrmenge stammt ausschließlich aus dem bestehenden `aussenhandel`-Abgang; **eine unabhängige tatsächliche heimische Warenherkunft wird nicht nachgewiesen**. Auch wenn das Welt-Audit Erhaltung bestätigt, wäre bei automatischen Import-/Re-Export-Schleifen ein finanzieller Exploit möglich.
+
+**Fazit:** Externe Leistungsbezahlung ist spielerisch als Modell-B-Option plausibel, aber **dieser konkrete rein exportgebundene Mechanismus heilt den nachgewiesenen Marktstillstand nicht**. Nicht freigeben. Nächster enger Schritt **B8f (Vorschlag)**: ohne neuen Produktcode die Re-Export-Herkunft, Stations-Erzeugungs-/Exportketten sowie *wirklich finanzierte* wiederkehrende Käuferverträge und offene Kaufkrafttransferpfade identifizieren; neue Geldquelle erst nach belastbarer kausaler Verbindung zu Folgeumsätzen bewerten.
 
 **Freigabe:** Analyse/Draft, nicht integrieren oder deployen, keine iPad-/NAS-Abnahme.

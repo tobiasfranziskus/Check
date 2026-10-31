@@ -213,8 +213,11 @@ const instrument=(code)=>{
       ['verbrauch','betriebskosten','aussenhandel']],
     ['    patrouille(state, rules); ueberfall(state, rules); piratenErsatz(state, rules); schutzgeld(state, rules);',
       ['patrouille','ueberfall','piratenErsatz','schutzgeld']],
-    ['    ersatzkauf(state, rules); m_pilot_accounts.settle(state); npcAusgaben(state, rules); fonds(state, rules); dividende(state, rules);',
-      ['ersatzkauf','m_pilot_accounts.settle','npcAusgaben','fonds','dividende']]
+    ...(mode==='wallet'
+      ? [['    ersatzkauf(state, rules); m_pilot_accounts.settle(state); npcAusgaben(state, rules); fonds(state, rules); dividende(state, rules);',
+          ['ersatzkauf','m_pilot_accounts.settle','npcAusgaben','fonds','dividende']]]
+      : [['    ersatzkauf(state, rules); npcAusgaben(state, rules); fonds(state, rules); dividende(state, rules);',
+          ['ersatzkauf','npcAusgaben','fonds','dividende']]])
   ];
   for(const [sequence,fn] of phases){
     assert.equal(s.split(sequence).length,2,'B7g Core-Schrittphase festgepinnt: '+sequence);

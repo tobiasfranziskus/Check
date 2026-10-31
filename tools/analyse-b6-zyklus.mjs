@@ -47,7 +47,7 @@ function engine(code,watch) {
 const plain=engine(src,null);
 assert.equal(plain.r.rulesVersion,14);
 const watcher=new class {
-  constructor() {this.owners={};this.ship={};this.closeouts=[];this.lost=[];this.hulls=[];this.traderSales=0;}
+  constructor() {this.owners={};this.ship={};this.closeouts=[];this.lossEvents=[];this.hulls=[];this.traderSales=0;}
   owner(id) {
     return this.owners[id] ||= {buys:0,buyValue:0,buyFees:0,sells:0,sellValue:0,sellFees:0,
       operatingDue:0,operatingPaid:0,unpaidHours:0,firstUnpaidTick:null,losses:0,activated:0,
@@ -103,7 +103,7 @@ const watcher=new class {
   lost(state,s){
     if(!['npc1','npc2','npc3'].includes(s.owner))return;
     this.owner(s.owner).losses++;
-    this.lost.push({tick:state.tick,owner:s.owner,ship:s.id,klasse:s.klasse,cargo:{...s.ladung}});
+    this.lossEvents.push({tick:state.tick,owner:s.owner,ship:s.id,klasse:s.klasse,cargo:{...s.ladung}});
     delete this.ship[s.id];
   }
   hull(state,s,x,price){
@@ -208,7 +208,7 @@ const totals={scenario:scenario||'standard',seed,version:14,sourceSha256:sha(src
   traderSales,closeouts:watcher.closeouts.length,
   followUpPurchases:sum(Object.values(watcher.owners).map(x=>x.postSalePurchases)),
   originalFreighterAlive:scenario?Boolean(state.ships[expected.find(x=>x.cmd.type==='shipHandeln')?.cmd.schiff]):null,
-  final:daily.at(-1),owners:watcher.owners,hulls:watcher.hulls,losses:watcher.lost,
+  final:daily.at(-1),owners:watcher.owners,hulls:watcher.hulls,losses:watcher.lossEvents,
   closeoutSamples:watcher.closeouts.slice(0,30),daily};
 const out=opt('out','/tmp/b6-results');
 fs.mkdirSync(out,{recursive:true});

@@ -1,5 +1,13 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B8d – Echter Einmal-Liefervertrag, kein zweiter finanzierter Zyklus (31.10.2026)
+
+Direkt auf `main 517728a9` / v0.12.5, Regel14/Schema8, **nur separater Node-Runner/CI/Dokumentation**. [Vollbericht](ANALYSE_B8D_REALVERTRAG.md). **[TEST]** [finale GitHub-CI #41228816231](https://github.com/tobiasfranziskus/Check/actions/runs/41228816231) **1/1 Job grün, 67/67 Standardtests**; Originalfall Seed42/90d-Hash `784047684dfe5c56`, drei 90d-Weltvarianten mit deterministischem Doppel-Replay, **12.960** unabhängige Stunden-Geld-/Warenaudits/Replayhashes, **30** Save/Load-Prüfungen. Der erste CI-Versuch #41228732536 war allein wegen `8` statt tatsächlichen `10` erwarteten Save/Loads pro Variante rot; keine Produktänderung.
+
+**[ECHTE CORE-EVIDENZ]** Ab Tag14 NPC3 kauft **eine** Frachterhülle aus eigenem Cash für **780 ISK** und per validierten Befehlen 7 Material in Veldra für **167 ISK inklusive Gebühr**, fliegt nach Cyris. Ohne fremde Käuferfinanzierung **0/7 Verkauf**. Einmalige, offen instrumentierte **403 ISK** Überweisung aus neutraler Meridian-Kasse zur realen Bezahlung bei Cyris bewirkt **7/7 Original-Verkauf**, drei zusätzliche fertige und verbrauchte Medikamente (Produktion 472→475, Verbrauch 644→647). Derselbe echte Frachter transportiert 7 weitere Materialeinheiten zurück nach Cyris, jedoch **0/7 beim zweiten Original-Ankunftsverkauf** ohne erneute Rechnungsgutschrift. Der Geldtransfer emittiert **0 ISK**, ist aber **nur gezielte Ursachen-Gegenprobe, keine erlaubte individuelle Insolvenzrettungsregel**. NPC3-Endkasse mit Hülle 3.885 ISK (vor Eingriff 4.395), Spieler unverändert 39.762 ISK; keinesfalls ein nachgewiesener langfristig tragfähiger Markt.
+
+**[OFFEN]** Die zweite Ankunft vor der Fondsphase (Kasse vorher zu gering, danach 283 ISK) beweist keinen ausgeschlossenen späteren **Teilverkauf**: dieser wurde nicht zusätzlich befohlen. Kein autonomer NPC3-Markteintritt belegt; keine 13 Seeds ×90 Tage/365d, keine Safari-/NAS-Abnahme. **Keine neue Geldquelle, kein Preis- oder Handelsregelpatch, kein Merge.**
+
 ## [ARCHIV/ANALYSE] Wirtschaftsdiagnose und GitHub-Bereinigung · 31.10.2026
 
 **Produktive Basis vor Dokumentations-Merge:** `main d454d0661dee48a7bfdb843d05096982d799e51f`, **v0.12.5 / Regel 14 / Schema 8**. Alle bisherigen Wirtschafts- und Eskortenanalysen enthalten **keine** neue produktive Preis-, Routen-, Piraten-, Jäger-, Geld-, Kredit-, Werft- oder Spielstandsregel. **B5a #42 und B5b #46 sind integriert**; die nachfolgenden B6-Tests wurden nur auf isolierten Analysebranches durchgeführt. Echte iPad-/NAS-Abnahme steht aus.

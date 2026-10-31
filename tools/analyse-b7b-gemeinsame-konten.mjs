@@ -7,7 +7,7 @@ import {createHash} from 'node:crypto';
 
 const args=process.argv.slice(2);
 const opt=(k,d)=>args.find(x=>x.startsWith('--'+k+'='))?.slice(k.length+3)??d;
-assert(args.every(x=>/^--(seed|case|b1|out|mode|days|investment|autotrade|fullcost|risk)=/.test(x)),'unbekannter Parameter');
+assert(args.every(x=>/^--(seed|case|b1|out|mode|days|investment|autotrade|fullcost|risk|escape)=/.test(x)),'unbekannter Parameter');
 const days=Number(opt('days','10'));
 assert([10,90].includes(days),'B7b genau 10 oder 90 Spieltage');
 const mode=opt('mode','control');
@@ -15,6 +15,9 @@ const investment=opt('investment','none');
 const autotrade=opt('autotrade','off');
 const fullcost=opt('fullcost','off');
 const risk=opt('risk','off');
+const escape=opt('escape','off');
+assert(['off','on'].includes(escape),'B7k escape off/on');
+assert(escape==='off'||risk==='on','B7k nur B7j Vollkosten+Risikokosten');
 assert(['off','on'].includes(risk),'B7j risk off/on');
 assert(risk==='off'||fullcost==='on','B7j nur B7i Vollkostenvariante');
 assert(['off','on'].includes(fullcost),'B7i fullcost off/on');
@@ -315,7 +318,44 @@ function b7iBestEmpty(state,rules,s,station) {
         s.ankunft=state.tick+w.warteLeer;s.warten=0;
       }
     }else if (s.warten >= 2) {`;
-  replace(where,swap);
+  const safeEscape=escape==='on'?swap.replace(
+    "        if(watch?.b7iChoice)watch.b7iChoice(state,'wait-no-funded-margin',s,null);\n        s.ankunft=state.tick+w.warteLeer;s.warten=0;",
+    [
+    "        // B7k: nur nach negativem Folgehandels-/Positionierungs-Gate",
+    "        // in einem System mit wirklich vorhandenen Piraten.",
+    "        const unsafe=w.systems[s.system].sicherheit!=='sicher';",
+    "        const pirates=ids(state.ships).filter(id=>{",
+    "          const p=state.ships[id];",
+    "          return p.owner===w.piraten.owner&&p.phase==='dock'",
+    "            &&p.auftrag==='pirat'&&p.system===s.system;",
+    "        }).length;",
+    "        let safe=null;",
+    "        if(unsafe&&pirates>0&&ids(s.ladung).length===0){",
+    "          const reserve=b7iMinerReserve(state,rules,s);",
+    "          for(const dest of ids(w.stations)){",
+    "            if(dest===station||w.systems[w.stations[dest].system].sicherheit!=='sicher')continue;",
+    "            const path=route(w,s.system,w.stations[dest].system);",
+    "            if(!path||path.zeit<=0)continue;",
+    "            const work=b7iLabour(rules,path.zeit);",
+    "            if(state.owners[s.owner].cash<reserve+work)continue;",
+    "            if(!safe||path.zeit<safe.minutes||",
+    "              (path.zeit===safe.minutes&&dest<safe.station))",
+    "              safe={station:dest,minutes:path.zeit,conservativeWork:work,",
+    "                minerReserve:reserve,cash:state.owners[s.owner].cash,",
+    "                from:station,pirates};",
+    "          }",
+    "        }",
+    "        if(safe){",
+    "          if(watch?.b7kEscape)watch.b7kEscape(state,s,safe);",
+    "          abflug(state,rules,s,station,safe.station,null,0);",
+    "        }else{",
+    "          if(watch?.b7iChoice)watch.b7iChoice(state,'wait-no-funded-margin',s,null);",
+    "          s.ankunft=state.tick+w.warteLeer;s.warten=0;",
+    "        }"
+    ].join('\n')
+  ):swap;
+  if(escape==='on')assert.notEqual(safeEscape,swap,'B7k Variation aktiv');
+  replace(where,safeEscape);
   replace("    if (paar) abflug(state, rules, s, station, paar.ziel, paar.ware, paar.menge);",
     "    if(paar && s.owner==='npc3' && watch?.b7iChoice)watch.b7iChoice(state,'funded-loaded',s,paar);\n    if (paar) abflug(state, rules, s, station, paar.ziel, paar.ware, paar.menge);");
   return s;
@@ -498,6 +538,7 @@ const plain=engine(src,null,probeReplay,h1Replay);
 m_coreIndexer=plain.c;
 assert.equal(plain.r.rulesVersion,14);
 const b7j={enabled:fullcost==='on',riskAdjusted:risk==='on',events:[],movement:[],locationChecks:[],offersAtLastRisk:[]};
+const b7k={enabled:escape==='on',escapes:[],hits:0};
 const watcher=new class {
   constructor() {this.owners={};this.ship={};this.closeouts=[];this.lossEvents=[];this.hulls=[];this.traderSales=0;this.pauses={frachter:0,miner:0};}
   pause(owner,klasse){this.pauses[klasse]++;}
@@ -639,6 +680,13 @@ watcher.b7gCapture=(world,phase)=>{
   b7gLedger.last=after;
 };
 
+watcher.b7kEscape=(world,ship,plan)=>{
+  if(!b7k.enabled)return;
+  assert.equal(ship.id,'sh131');
+  b7k.hits++;
+  b7k.escapes.push({tick:world.tick,ship:ship.id,system:ship.system,
+    phase:ship.phase,cash:world.owners.npc3.cash,...plan});
+};
 watcher.b7jAfterCombat=(world,rules,system,target,pirates,escorts,result)=>{
   if(!b7j.enabled || target.id!=='sh131')return;
   const station=rules.world.systems[system].station;
@@ -1183,6 +1231,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
   b7hAuto:b7h.enabled?b7h:null,
   b7iGate:b7i.enabled?b7i:null,
   b7jRisk:b7j.enabled?b7j:null,
+  b7kSafeEscape:b7k.enabled?b7k:null,
   b7gMoneyFlow:investment==='npc3'?b7gLedger:null,
   credit:probeMain.stats,contracts:state.b6eContracts||{},
   initialHash,initialLegacyHash,days,hours,roundtrips,commands:cursor,
@@ -1196,7 +1245,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
   closeoutSamples:watcher.closeouts.slice(0,30),daily};
 const out=opt('out','/tmp/b7b-results');
 fs.mkdirSync(out,{recursive:true});
-const file=path.join(out,(b7j.riskAdjusted?'b7j-':b7i.enabled?'b7i-':b7h.enabled?'b7h-':investment==='npc3'?'b7f-':'b7b-')+scenario+'-'+seed+'-'+mode+'-'+days+'d.json');
+const file=path.join(out,(b7k.enabled?'b7k-':b7j.riskAdjusted?'b7j-':b7i.enabled?'b7i-':b7h.enabled?'b7h-':investment==='npc3'?'b7f-':'b7b-')+scenario+'-'+seed+'-'+mode+'-'+days+'d.json');
 fs.writeFileSync(file,JSON.stringify(totals,null,2)+'\n');
 console.log('B7B_SHARED_ACCOUNT_PASS '+JSON.stringify({scenario:totals.scenario,seed,mode,days,credit:totals.credit,contracts:totals.contracts,
   hourlyHashes:hours,dailyHashes:dayHashes.length,roundtrips,pauses:watcher.pauses,

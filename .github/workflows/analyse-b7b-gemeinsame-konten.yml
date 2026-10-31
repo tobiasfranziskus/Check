@@ -479,7 +479,9 @@ jobs:
               assert(e.pirates>0,"kein Sicherheits-Rueckzug ohne echte Piraten");
               assert(e.cash>=e.minerReserve+e.conservativeWork,
                 "keine unbezahlbare Sicherheitsflucht");
-              assert(e.conservativeWork>=250,"keine kostenlosen Leerfluege");
+              assert.equal(e.conservativeWork,Math.ceil(e.minutes*250/60),
+                "Leerflug kalkuliert echte bestehende Frachter-Minuten-Arbeit");
+              assert(e.conservativeWork>0,"kein kostenloser Flugbetrieb");
               assert(e.station!==e.from);
             }
             const paidHulls=x=>x.hulls.filter(h=>h.owner==="npc3"&&h.klasse==="frachter");

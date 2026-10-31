@@ -468,6 +468,77 @@ const dayHashes=[],daily=[];
 
 const b7cDiagnostics=[];
 const b7dDiagnostics=[];
+
+const b7eDiagnostics=[];
+function b7eMarketEntry(world){
+  const before=plain.c.hash(world),r=observed.r,core=observed.c;
+  const yard=r.world.werft,source='st_dravos',target='st_aldera',ware='silizium';
+  assert.equal(yard,target,'B7e nur reale Aldera-Schiffswerft');
+  const naked=b7dQuote(world,source,target,ware);
+  const hullStock=world.stations[yard].lager.frachter||0;
+  const hullSellable=core.verkaufbar(world,r,yard,'frachter');
+  const hullUnitPrice=core.preis(world,yard,'frachter',r);
+  const hullFee=core.gebuehr(world,r,yard,hullUnitPrice);
+  const hullTotal=hullUnitPrice+hullFee;
+  const ownerOfYard=world.stations[yard].eigentum||null;
+  const yardCashBefore=world.owners[yard].cash;
+  // m_core_handel.handel, Kauf eines fertigen Schiffs:
+  // Stationskonto bekommt den realen Warenpreis; bei Stationseigentum
+  // sogar die Gebuehr, sonst der regionale Fonds. Kein neues Geld.
+  const yardCashAfterRealShipSale=yardCashBefore+hullUnitPrice+
+    (ownerOfYard?hullFee:0);
+  const sourceStock=core.verkaufbar(world,r,source,ware);
+  const buyerSpace=Math.max(0,core.obergrenze(world,r,target,ware)-
+    (world.stations[target].lager[ware]||0));
+  const updatedAmount=Math.max(0,Math.min(r.economy.cargo,sourceStock,buyerSpace,
+    Math.floor(yardCashAfterRealShipSale/naked.priceSell)));
+  const purchaseBase=updatedAmount*naked.priceBuy, saleBase=updatedAmount*naked.priceSell;
+  const purchaseFee=core.gebuehr(world,r,source,purchaseBase);
+  const saleFee=core.gebuehr(world,r,target,saleBase);
+  const firstLeg=core.route(r.world,r.world.stations[yard].system,r.world.stations[source].system);
+  const secondLeg=core.route(r.world,r.world.stations[source].system,r.world.stations[target].system);
+  assert(firstLeg&&secondLeg,'beide Strecken verfuegbar');
+  const emptyCost=Math.ceil(firstLeg.zeit/r.economy.stunde)*r.world.betriebskosten.frachter;
+  const loadedCost=Math.ceil(secondLeg.zeit/r.economy.stunde)*r.world.betriebskosten.frachter;
+  const tradingMargin=saleBase-saleFee-purchaseBase-purchaseFee-loadedCost;
+  const totalCashAtEntry=hullTotal+emptyCost+purchaseBase+purchaseFee+loadedCost;
+  const cashRecovery=saleBase-saleFee;
+  const resultingBuyerCash=yardCashAfterRealShipSale-saleBase;
+  const corporate={};
+  for(const id of ['npc1','npc2','npc3','house']){
+    const ready=world.owners[id].cash;
+    const bound=Object.values(world.pilotAccounts||{}).filter(w=>w.owner===id).reduce((a,w)=>a+w.cash,0);
+    corporate[id]={free:ready,earmarkedShipWallets:bound,
+      canPurchaseHullFromFreeCash:ready>=hullTotal,
+      canPrefundWholeEntryFromFreeCash:ready>=totalCashAtEntry,
+      cashMissingForHull:Math.max(0,hullTotal-ready),
+      cashMissingForEntry:Math.max(0,totalCashAtEntry-ready)};
+  }
+  const snapshot={
+    day:world.tick/1440,shipyard:yard,shipyardOwner:ownerOfYard,
+    hullStock,hullSellable,hullUnitPrice,hullFee,hullTotal,
+    alderaFundCash:world.owners[r.world.systems.aldera.fonds].cash,
+    stationBefore:yardCashBefore,stationAfterShipSale:yardCashAfterRealShipSale,
+    unmodifiedOffer:{qty:naked.qty,profitAfterLoadedWork:naked.afterWork,preFunding:naked.fundNeed},
+    reQuotedAfterRealHullSale:{qty:updatedAmount,sourceStock,buyerSpace,
+      buyUnitPrice:naked.priceBuy,sellUnitPrice:naked.priceSell,
+      purchaseBase,purchaseFee,saleBase,saleFee,
+      emptyMinutes:firstLeg.zeit,loadedMinutes:secondLeg.zeit,
+      emptyCost,loadedCost,tradingMargin,totalCashAtEntry,
+      realizedFirstCycleCashDelta:cashRecovery-totalCashAtEntry,
+      shipRemainsOwned:true,
+      buyerCashAfterFullSale:resultingBuyerCash,
+      buyerCanAffordAnotherUnitAtCurrentPrice:resultingBuyerCash>=naked.priceSell},
+    corporate,
+    note:'B7e ausschliesslich hypothetische Kapitalrechnung, kein neuer Schiffskauf/Abflug, keine tatsaechliche Folgepreisvalidierung'
+  };
+  assert.equal(updatedAmount<=sourceStock,true);
+  assert.equal(resultingBuyerCash>=0,true);
+  assert.equal(cashRecovery-totalCashAtEntry,
+    tradingMargin-emptyCost-hullTotal,'keine doppelt gezaehlten Huelle/Betriebs-Ausgaben');
+  assert.equal(plain.c.hash(world),before,'B7e Quelle/Regelzustand vollstaendig unveraendert');
+  return snapshot;
+}
 const B7D_ROUTES=[
   ['st_meridian','st_aldera','nahrung'],
   ['st_meridian','st_cyris','nahrung'],
@@ -658,6 +729,7 @@ for(let minute=1;minute<=days*1440;minute++){
   if(state.tick%1440===0){
     const x=snapshot(state);daily.push(x);dayHashes.push(x.hash);
     if([10,11,12,15].includes(x.day))b7dDiagnostics.push(b7dSnapshot(state));
+    if([10,11,12,15].includes(x.day))b7eDiagnostics.push(b7eMarketEntry(state));
     dayRow(x.day);
     const day=minute/1440;
     if([1,3,7,10,30,60,90].includes(day)){
@@ -710,7 +782,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
     days:Object.values(h1Observed.daily).sort((a,b)=>a.day-b.day),
     payEvents:h1Observed.payEvents},
   manualFlightProof,
-  b7cDiagnostics,b7dDiagnostics,
+  b7cDiagnostics,b7dDiagnostics,b7eDiagnostics,
   credit:probeMain.stats,contracts:state.b6eContracts||{},
   initialHash,initialLegacyHash,days,hours,roundtrips,commands:cursor,
   paid:sum(Object.values(watcher.owners).map(x=>x.operatingPaid)),

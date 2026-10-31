@@ -61,7 +61,7 @@ const instrument=(code)=>{
   hook("buche(state, s.owner, 'kosten', n);",'watch.costAfter(state,s);');
   hook('function zerstoeren(state, rules, s) {','watch.preLoss(state,rules,s);');
   hook('function entfernen(state, rules, s) {',
-    'watch.lost(state,s); watch.postLoss(state,s);');
+    'watch.lost(state,s); watch.postLoss(state,rules,s);');
   hook('state.ledger[x.klasse].consumed += 1;',
     'watch.hull(state,s,x,bedarf);');
   const marker='  return ergebnisse;\n}\nfunction advance(state, n, rules)';
@@ -213,7 +213,7 @@ const watcher=new class {
 }();
 
 const WINDOW_FIRST=130620, WINDOW_LAST=132360;
-const focused=(state,s)=>s?.id==='sh112' && state.tick>=WINDOW_FIRST && state.tick<=WINDOW_LAST;
+const focused=(state,s)=>s?.id==='sh112' && s.owner==='npc1' && state.tick>=WINDOW_FIRST && state.tick<=WINDOW_LAST;
 watcher.trace=[]; watcher.pendingTrades={}; watcher.pendingCosts={}; watcher.beforeLoss={};
 watcher.preTrade=function(state,rules,s,station,ware,menge,kauf,wert,fee){
   if(!focused(state,s))return;
@@ -261,19 +261,31 @@ watcher.costAfter=function(state,s){
 watcher.preLoss=function(state,rules,s){
   if(!focused(state,s))return;
   const werft=rules.world.werft,p=plain.c.preis(state,werft,'frachter',rules);
+  const pirateMarket=rules.world.piraten.markt, pirateOwner=rules.world.piraten.owner;
+  const pirateStockBefore=Object.fromEntries(Object.keys(s.ladung).map(w=>[w,state.stations[pirateMarket].lager[w]||0]));
+  const consumedBefore=Object.fromEntries(Object.keys(s.ladung).map(w=>[w,state.ledger[w].consumed]));
   const fee=plain.c.gebuehr(state,rules,werft,p);
   const e={kind:'preLoss',tick:state.tick,ship:s.id,owner:s.owner,system:s.system,
     cargoBeforePirate:{...s.ladung},cashBefore:state.owners[s.owner].cash,
     creditOutstanding:state.b6eContracts?.[s.owner]?.outstanding??null,
     replacementHullInventory:state.stations[werft].lager.frachter||0,
-    replacementPriceIncludingFee:p+fee,werft};
+    replacementPriceIncludingFee:p+fee,werft,pirateMarket,pirateOwner,pirateStockBefore,consumedBefore,
+    pirateMarketCashBefore:state.owners[pirateMarket].cash,pirateOwnerCashBefore:state.owners[pirateOwner].cash};
   this.beforeLoss[s.id]=e;
   this.trace.push(e);
 };
-watcher.postLoss=function(state,s){
+watcher.postLoss=function(state,rules,s){
   if(!focused(state,s))return;
+  const pre=this.beforeLoss[s.id]; assert(pre,'Verlustbeobachtung vor Zerstoerung fehlt');
+  const disposition=Object.fromEntries(Object.keys(pre.cargoBeforePirate).map(w=>[w,{
+    before:pre.cargoBeforePirate[w],
+    transferredToPirateMarket:(state.stations[pre.pirateMarket].lager[w]||0)-pre.pirateStockBefore[w],
+    consumed:state.ledger[w].consumed-pre.consumedBefore[w]}]));
+  for(const x of Object.values(disposition)) assert.equal(x.transferredToPirateMarket+x.consumed,x.before,'Geld-/Warenverlusttrennung');
   this.trace.push({kind:'postPirateBeforeDeletion',tick:state.tick,ship:s.id,
-    cargoAfterPirate:{...s.ladung},ownerCash:state.owners[s.owner].cash});
+    cargoAfterPirate:{...s.ladung},ownerCash:state.owners[s.owner].cash,disposition,
+    pirateMarketCashAfter:state.owners[pre.pirateMarket].cash,
+    pirateOwnerCashAfter:state.owners[pre.pirateOwner].cash});
 };
 watcher.hour=function(state,rules){
   if(state.tick%60!==0 || state.tick<WINDOW_FIRST || state.tick>WINDOW_LAST)return;

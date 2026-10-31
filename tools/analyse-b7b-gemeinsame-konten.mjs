@@ -321,7 +321,18 @@ function b7iBestEmpty(state,rules,s,station) {
   return s;
 }
 
-const src=fullcost==='on'?fullCostSource(sharedSource(walletSource(original))):mode==='wallet'?sharedSource(walletSource(original)):original;
+function oneInvestmentHullSource(code){
+  // B7f–j: Ein einziger, wirklich bezahlter NPC3-Frachter.
+  // Ohne diesen engen Analyse-Guard wuerde der echte Stundenpfad nach
+  // dem Piratenverlust noch vor b7fAfterStep einen ZWEITEN Werftkauf ausloesen.
+  // Nur das Versuchsziel wird geaendert, NICHT Kampf/Geld-/Warenlogik.
+  const needle="    if (e.a[0] <= 0) zerstoeren(state, rules, ziel);";
+  assert.equal(code.split(needle).length,2,'B7j genau eine Piraten-Verluststelle');
+  return code.replace(needle,needle+`\n    if(e.a[0]<=0&&ziel.owner==='npc3'&&ziel.id==='sh131')
+      state.sollflotte.npc3=state.sollflotte.npc3.filter(x=>x.klasse!=='frachter');`);
+}
+const baseSrc=fullcost==='on'?fullCostSource(sharedSource(walletSource(original))):mode==='wallet'?sharedSource(walletSource(original)):original;
+const src=investment==='npc3'?oneInvestmentHullSource(baseSrc):baseSrc;
 
 const instrument=(code)=>{
   let s=code;

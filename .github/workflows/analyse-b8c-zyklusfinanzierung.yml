@@ -1,0 +1,50 @@
+name: "[ANALYSE] B8c Mindestkapital und vollstaendige Handelszyklen"
+on:
+  push:
+    branches: [analyse/b8c-mindestkapital-handelszyklus-seed42-20261031]
+    paths:
+      - 'tools/analyse-b8c-zyklusfinanzierung.mjs'
+      - '.github/workflows/analyse-b8c-zyklusfinanzierung.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'tools/analyse-b8c-zyklusfinanzierung.mjs'
+      - '.github/workflows/analyse-b8c-zyklusfinanzierung.yml'
+      - 'index.html'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Spielerkrise: Bedarf, Marktchancen und zwei Zyklen pruefen
+        run: node tools/analyse-b8c-zyklusfinanzierung.mjs --scenario=handel-flotte --days=90 --out="$RUNNER_TEMP/b8c"
+      - name: Passive Welt: Kontrollangebote vergleichen
+        run: node tools/analyse-b8c-zyklusfinanzierung.mjs --scenario=passiv --days=14 --out="$RUNNER_TEMP/b8c"
+      - name: Berichte strukturell pruefen
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const p=process.env.RUNNER_TEMP+"/b8c/";
+            const a=JSON.parse(fs.readFileSync(p+"b8c-handel-flotte-90d.json"));
+            const b=JSON.parse(fs.readFileSync(p+"b8c-passiv-14d.json"));
+            assert.equal(a.sourceSha256,b.sourceSha256);
+            assert.equal(a.hours,2160);assert.equal(b.hours,336);
+            assert.equal(a.finalHash,"784047684dfe5c56");
+            assert(a.points.some(x=>x.day===14));
+            assert(b.points.some(x=>x.day===14));
+            assert(a.transfer.houseDelta>=0);
+            assert.equal(a.transfer.inflowsFromStations-a.transfer.outgoingToStations-a.transfer.feesFromPlayer,
+              a.transfer.playerTradeNet);
+            console.log("B8C_GATE",JSON.stringify({active:a.transfer,passive:b.transfer}));
+          '
+      - name: Standardtests Originalkern
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b8c-geld-nachschub-seed42
+          path: ${{ runner.temp }}/b8c/*.json

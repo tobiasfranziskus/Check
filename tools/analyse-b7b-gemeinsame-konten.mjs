@@ -7,18 +7,22 @@ import {createHash} from 'node:crypto';
 
 const args=process.argv.slice(2);
 const opt=(k,d)=>args.find(x=>x.startsWith('--'+k+'='))?.slice(k.length+3)??d;
-assert(args.every(x=>/^--(seed|case|b1|out|mode|days|investment|autotrade)=/.test(x)),'unbekannter Parameter');
+assert(args.every(x=>/^--(seed|case|b1|out|mode|days|investment|autotrade|fullcost)=/.test(x)),'unbekannter Parameter');
 const days=Number(opt('days','10'));
 assert([10,90].includes(days),'B7b genau 10 oder 90 Spieltage');
 const mode=opt('mode','control');
 const investment=opt('investment','none');
 const autotrade=opt('autotrade','off');
+const fullcost=opt('fullcost','off');
+assert(['off','on'].includes(fullcost),'B7i fullcost off/on');
+assert(fullcost==='off'||autotrade==='on','B7i nur mit aktivem echtem NPC3-Autohandel');
 assert(['off','on'].includes(autotrade),'B7h on/off');
 assert(['none','npc3'].includes(investment),'B7f nur kein oder ein realer NPC3-Einstieg');
 assert(investment==='none'||(mode==='wallet'&&days===90),'B7f ausschliesslich B7b Wallet Seed42 90d');
 assert(autotrade==='off'||investment==='npc3','B7h nur nach genau einem real bezahlten NPC3-Frachter');
 const b7h={enabled:autotrade==='on',activatedAt:null,ship:null,owner:'npc3',
   command:null,initialSeller:null,firstSale:null,tradeEvents:[],activation:null};
+const b7i={enabled:fullcost==='on',choices:[],counts:{'planned-empty':0,'wait-no-funded-margin':0,'funded-loaded':0}};
 assert(['control','wallet'].includes(mode),'B7a nur Kontrollkern oder Schiffskonto-Gegenprobe');
 const scenario=opt('case',null), seed=scenario?{miner:42,'handel-flotte':42,station:1234,jagd:98765}[scenario]:Number(opt('seed','42'));
 assert.equal(seed,42,'H1-C1: ausschliesslich Seed 42');
@@ -187,7 +191,108 @@ function sharedSource(b7a){
   return s;
 }
 
-const src=mode==='wallet'?sharedSource(walletSource(original)):original;
+
+function fullCostSource(code){
+  // Only B7i's isolated copied Core source: same existing decision module,
+  // real prices/reserves/routes/fees and owner cash; no world or rule edit.
+  let s=code;
+  const replace=(a,b)=>{
+    assert.equal(s.split(a).length,2,'B7i core-anchor: '+a.slice(0,90));
+    s=s.replace(a,b);
+  };
+  const helper=String.raw`
+function b7iLabour(rules,minutes) {
+  return Math.ceil(minutes*rules.world.betriebskosten.frachter/rules.economy.stunde);
+}
+function b7iMinerReserve(state,rules,s) {
+  // Exactly one full hour of existing active miners, in the real owner ledger.
+  // Not a loan, money transfer, salary or permanent guaranteed survival.
+  return ids(state.ships).filter(id=>state.ships[id].owner===s.owner
+    &&state.ships[id].klasse==='miner').length*rules.world.betriebskosten.miner;
+}
+function b7iOpportunity(state,rules,s,origin,destination,ware,emptyMinutes) {
+  const w=rules.world, from=w.stations[origin],to=w.stations[destination];
+  const routeLoaded=route(w,from.system,to.system);
+  if(!routeLoaded||routeLoaded.zeit<=0||!to.ziel[ware])return null;
+  const available=verkaufbar(state,rules,origin,ware);
+  if(available<=0)return null;
+  const priceBuy=preis(state,origin,ware,rules), priceSell=preis(state,destination,ware,rules);
+  if(priceSell<=priceBuy)return null;
+  const loadedWork=b7iLabour(rules,routeLoaded.zeit);
+  const emptyWork=b7iLabour(rules,emptyMinutes);
+  // A next repositioning leg has to be affordable too; do not charge it
+  // as an actual expense yet. The ledger charges only real flown minutes.
+  const followingWork=loadedWork;
+  const reserve=b7iMinerReserve(state,rules,s);
+  const free=state.owners[s.owner].cash-reserve-emptyWork-loadedWork-followingWork;
+  if(free<=0)return null;
+  const maxAffordable=bezahlbar(rules,origin,free,priceBuy);
+  const qty=Math.min(rules.economy.cargo,available,
+    aufnehmbar(state,rules,destination,ware),maxAffordable);
+  if(qty<=0)return null;
+  const buyValue=qty*priceBuy,sellValue=qty*priceSell;
+  const buyFee=gebuehr(state,rules,origin,buyValue);
+  const sellFee=gebuehr(state,rules,destination,sellValue);
+  const nominal=sellValue-buyValue-buyFee-sellFee;
+  const travelWork=emptyWork+loadedWork+followingWork;
+  const net=nominal-travelWork;
+  const need=buyValue+buyFee+travelWork+reserve;
+  if(net<=0||need>state.owners[s.owner].cash)return null;
+  const bedarf=anzahl(to.verbrauch,ware);
+  const knappheit=Math.max(0,anzahl(to.ziel,ware)-anzahl(state.stations[destination].lager,ware));
+  const bonus=rules.rulesVersion>=12&&bedarf>0&&to.ziel[ware]>0
+    ?divVersorgung(w.versorgungsPrioritaet*knappheit,to.ziel[ware]):0;
+  return {origin,ware,ziel:destination,menge:qty,gewinn:nominal,net,
+    wertung:net*(1000+bonus),zeit:routeLoaded.zeit+emptyMinutes,
+    cashNeeded:need,minerReserve:reserve,loadedWork,emptyWork,followingWork};
+}
+function b7iBestPair(state,rules,s,station) {
+  const cfg=rules.world.stations[station];
+  let best=null;
+  for(const ware of ids(cfg.ziel))for(const target of ids(rules.world.stations)){
+    if(target===station)continue;
+    const q=b7iOpportunity(state,rules,s,station,target,ware,0);
+    if(q&&(!best||besser(q.wertung,q.zeit,best.wertung,best.zeit)))best=q;
+  }
+  return best;
+}
+function b7iBestEmpty(state,rules,s,station) {
+  const w=rules.world,from=w.stations[station];let best=null;
+  for(const origin of ids(w.stations)){
+    if(origin===station)continue;
+    const move=route(w,from.system,w.stations[origin].system);
+    if(!move||move.zeit<=0)continue;
+    for(const ware of ids(w.stations[origin].ziel))
+      for(const target of ids(w.stations)){
+        if(origin===target)continue;
+        const q=b7iOpportunity(state,rules,s,origin,target,ware,move.zeit);
+        if(q&&(!best||besser(q.wertung,q.zeit,best.wertung,best.zeit)))
+          best={...q,position:origin};
+      }
+  }
+  return best;
+}
+`;
+  replace('function bestesPaar(state, rules, s, station) {',
+    helper+"\nfunction bestesPaar(state, rules, s, station) {\n  if(s.owner==='npc3')return b7iBestPair(state,rules,s,station);");
+  const where="    else if (s.warten >= 2) {";
+  const swap=String.raw`    else if(s.owner==='npc3'){
+      const planned=b7iBestEmpty(state,rules,s,station);
+      if(planned){
+        if(watch?.b7iChoice)watch.b7iChoice(state,'planned-empty',s,planned);
+        abflug(state,rules,s,station,planned.position,null,0);
+      }else{
+        if(watch?.b7iChoice)watch.b7iChoice(state,'wait-no-funded-margin',s,null);
+        s.ankunft=state.tick+w.warteLeer;s.warten=0;
+      }
+    }else if (s.warten >= 2) {`;
+  replace(where,swap);
+  replace("    if (paar) abflug(state, rules, s, station, paar.ziel, paar.ware, paar.menge);",
+    "    if(paar && s.owner==='npc3' && watch?.b7iChoice)watch.b7iChoice(state,'funded-loaded',s,paar);\n    if (paar) abflug(state, rules, s, station, paar.ziel, paar.ware, paar.menge);");
+  return s;
+}
+
+const src=fullcost==='on'?fullCostSource(sharedSource(walletSource(original))):mode==='wallet'?sharedSource(walletSource(original)):original;
 
 const instrument=(code)=>{
   let s=code;
@@ -485,6 +590,11 @@ watcher.b7gCapture=(world,phase)=>{
   b7gLedger.last=after;
 };
 
+watcher.b7iChoice=(world,kind,ship,quote)=>{
+  if(!b7i.enabled||ship.owner!=='npc3')return;
+  b7i.counts[kind]++;
+  if(b7i.choices.length<300)b7i.choices.push({tick:world.tick,kind,ship:ship.id,ownerCash:world.owners.npc3.cash,quote});
+};
 const observed=engine(instrument(src),watcher,probeMain,h1Observed);
 assert.equal(observed.r.rulesVersion,14);
 
@@ -1002,6 +1112,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
   b7cDiagnostics,b7dDiagnostics,b7eDiagnostics,
   b7fInvestment:investment==='npc3'?b7f:null,
   b7hAuto:b7h.enabled?b7h:null,
+  b7iGate:b7i.enabled?b7i:null,
   b7gMoneyFlow:investment==='npc3'?b7gLedger:null,
   credit:probeMain.stats,contracts:state.b6eContracts||{},
   initialHash,initialLegacyHash,days,hours,roundtrips,commands:cursor,
@@ -1015,7 +1126,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
   closeoutSamples:watcher.closeouts.slice(0,30),daily};
 const out=opt('out','/tmp/b7b-results');
 fs.mkdirSync(out,{recursive:true});
-const file=path.join(out,(b7h.enabled?'b7h-':investment==='npc3'?'b7f-':'b7b-')+scenario+'-'+seed+'-'+mode+'-'+days+'d.json');
+const file=path.join(out,(b7i.enabled?'b7i-':b7h.enabled?'b7h-':investment==='npc3'?'b7f-':'b7b-')+scenario+'-'+seed+'-'+mode+'-'+days+'d.json');
 fs.writeFileSync(file,JSON.stringify(totals,null,2)+'\n');
 console.log('B7B_SHARED_ACCOUNT_PASS '+JSON.stringify({scenario:totals.scenario,seed,mode,days,credit:totals.credit,contracts:totals.contracts,
   hourlyHashes:hours,dailyHashes:dayHashes.length,roundtrips,pauses:watcher.pauses,

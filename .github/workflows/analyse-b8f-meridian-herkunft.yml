@@ -36,22 +36,26 @@ jobs:
             assert.equal(a.hours,2160);assert.equal(p.hours,2160);
             assert.equal(a.roundtrips,8);assert.equal(p.roundtrips,8);
             for(const q of [a,p]){
-              assert(q.observation.exports>0&&q.observation.imports>=0);
+              assert(q.observation.totalExports>0&&q.observation.totalImports>=0);
               assert.equal(q.observation.paidByHubTotal,
                 Object.values(q.observation.paidByHub).reduce((x,y)=>x+y,0));
               for(const [ware,v] of Object.entries(q.observation.provenance)){
                 assert(v.creditedAsImportFirst>=0&&v.creditedAsImportLast>=0);
                 assert(v.creditedAsImportFirst<=v.exported);
                 assert(v.creditedAsImportLast<=v.exported);
-                assert.equal(v.exported,q.observation.exports[ware]??v.exported);
+                assert.equal(v.exported,q.observation.exports[ware]||0);
+                const initial=q.meridianInitial[ware]||0;
+                assert.equal(initial+v.imports+v.shipDelivered+v.pirateSalvaged
+                  -v.shippedOut-v.exported,q.meridianFinal[ware]||0,
+                  "vollstaendige Original-Lagerbuchung "+ware);
               }
             }
             console.log("B8F_GATE",JSON.stringify({
-              crisis:{exports:a.observation.exports,imports:a.observation.imports,
-                shipDelivered:a.observation.shipDelivered,paidByHub:a.observation.paidByHubTotal,
+              crisis:{exports:a.observation.totalExports,imports:a.observation.totalImports,
+                shipDelivered:a.observation.totalShipDelivered,paidByHub:a.observation.paidByHubTotal,
                 paidToHub:a.observation.paidToHubTotal,origins:a.observation.provenance},
-              passive:{exports:p.observation.exports,imports:p.observation.imports,
-                shipDelivered:p.observation.shipDelivered,paidByHub:p.observation.paidByHubTotal,
+              passive:{exports:p.observation.totalExports,imports:p.observation.totalImports,
+                shipDelivered:p.observation.totalShipDelivered,paidByHub:p.observation.paidByHubTotal,
                 paidToHub:p.observation.paidToHubTotal,origins:p.observation.provenance}}));
           '
       - name: Originale Standardtests

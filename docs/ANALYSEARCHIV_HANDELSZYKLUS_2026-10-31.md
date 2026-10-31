@@ -108,3 +108,28 @@ An den B1-Krisenstarts lagen in Aldera **0 Bauteile und 0 Silizium**, während M
 **GitHub-Branch-Entfernung ist ein von PR-Schließung getrennter Vorgang:** Sie darf erst geschehen, wenn wesentliche Analyse-Heads/CI und nötige Rekonstruktionsgrundlagen weiterhin per Commit abrufbar sind. Keine Produktdateien, Test-Fixtures oder langzeitrelevanten Belege pauschal löschen. Falls der verwendete GitHub-Zugang keine Referenzlöschung anbietet, ist die **ausstehende Branchbereinigung als solche zu melden**, nicht als erledigt auszugeben.
 
 **Gültigkeitsgrenze:** Dieser Bericht stützt sich auf gelesene GitHub-PR-Dokumentationen, Berichte und existierende CI-Protokolle; es wurden *keine* frischen 365-Tage-Läufe, kein echter iPad-/NAS-Test und keine neue Geldregimeentscheidung durchgeführt. Die verlinkten CI-Resultate sind historisch und gelten nur für ihren jeweils geprüften Quellstand.
+
+
+## 7. Gepinnte Analyse-Heads für die Reproduktion
+
+Diese 17 **geschlossenen, nicht gemergten** PRs bleiben als Befundbelege referenziert. Ein Git-Branch kann veralten oder später gelöscht werden; der konkret geprüfte Commit und sein archivierter PR sind maßgeblich. Die beiden für alte Krisenstarts besonders wichtigen Heads sind **#34 (v12-Zustände)** und **#36 (B1-Befehlsband)**; für B6f **#54 (v14-Kreditversuch)**.
+
+| PR | Exakter Commit (Link) | Status |
+| --- | --- | --- |
+| [#32](https://github.com/tobiasfranziskus/Check/pull/32) | [`8cd87134c3c5`](https://github.com/tobiasfranziskus/Check/commit/8cd87134c3c5869319455b3670e92f3e42133027) | Archiviert, nicht gemergt |
+| [#33](https://github.com/tobiasfranziskus/Check/pull/33) | [`4c55d4b8ebf5`](https://github.com/tobiasfranziskus/Check/commit/4c55d4b8ebf5e14f818597815d1a9f3e004ed5d8) | Archiviert, nicht gemergt |
+| [#34](https://github.com/tobiasfranziskus/Check/pull/34) | [`6855d76bb374`](https://github.com/tobiasfranziskus/Check/commit/6855d76bb374dd777a1b7e30ea52c9a6eca36399) | Archiviert, nicht gemergt |
+| [#36](https://github.com/tobiasfranziskus/Check/pull/36) | [`cec7f93758e4`](https://github.com/tobiasfranziskus/Check/commit/cec7f93758e4a499c238738ff50adac4416080d4) | Archiviert, nicht gemergt |
+| [#37](https://github.com/tobiasfranziskus/Check/pull/37) | [`2ed7c0ad69a3`](https://github.com/tobiasfranziskus/Check/commit/2ed7c0ad69a3111be0a3e5da9dff86088d938c09) | Archiviert, nicht gemergt |
+| [#38](https://github.com/tobiasfranziskus/Check/pull/38) | [`9b4fe4348bcd`](https://github.com/tobiasfranziskus/Check/commit/9b4fe4348bcdb12499e470aa55796d93e1ccc88a) | Archiviert, nicht gemergt |
+| [#39](https://github.com/tobiasfranziskus/Check/pull/39) | [`5ac394c27c2b`](https://github.com/tobiasfranziskus/Check/commit/5ac394c27c2b9b7d1e309ed5f498bc1eb71bfbab) | Archiviert, nicht gemergt |
+| [#40](https://github.com/tobiasfranziskus/Check/pull/40) | [`653461759934`](https://github.com/tobiasfranziskus/Check/commit/653461759934610092c329290016421e022519ae) | Archiviert, nicht gemergt |
+| [#41](https://github.com/tobiasfranziskus/Check/pull/41) | [`48b4978e16bb`](https://github.com/tobiasfranziskus/Check/commit/48b4978e16bb7b73086747cb15f2b2edcc3d0fa0) | Archiviert, nicht gemergt |
+| [#44](https://github.com/tobiasfranziskus/Check/pull/44) | [`0428e8e1d4e1`](https://github.com/tobiasfranziskus/Check/commit/0428e8e1d4e189263a7903d87e981c740f3c7831) | Archiviert, nicht gemergt |
+| [#45](https://github.com/tobiasfranziskus/Check/pull/45) | [`6201d55f28c0`](https://github.com/tobiasfranziskus/Check/commit/6201d55f28c0ed643f3019569fd00d26d5cdf275) | Archiviert, nicht gemergt |
+| [#48](https://github.com/tobiasfranziskus/Check/pull/48) | [`f33aade7533b`](https://github.com/tobiasfranziskus/Check/commit/f33aade7533b4353d570ef84ee68a0658b8768e8) | Archiviert, nicht gemergt |
+| [#50](https://github.com/tobiasfranziskus/Check/pull/50) | [`4dd21fb2ee00`](https://github.com/tobiasfranziskus/Check/commit/4dd21fb2ee0004c6705d55bcb8d1f217f6e42393) | Archiviert, nicht gemergt |
+| [#51](https://github.com/tobiasfranziskus/Check/pull/51) | [`29b70de3218b`](https://github.com/tobiasfranziskus/Check/commit/29b70de3218bbd6ade2f75cf3888e345cd3ef5fc) | Archiviert, nicht gemergt |
+| [#52](https://github.com/tobiasfranziskus/Check/pull/52) | [`eb6c9e31018c`](https://github.com/tobiasfranziskus/Check/commit/eb6c9e31018c16160eea09ec126cd5dfe42bb663) | Archiviert, nicht gemergt |
+| [#53](https://github.com/tobiasfranziskus/Check/pull/53) | [`d40001fa24b6`](https://github.com/tobiasfranziskus/Check/commit/d40001fa24b6a33f2ed9c0e12a7ce4fedfbd3c22) | Archiviert, nicht gemergt |
+| [#54](https://github.com/tobiasfranziskus/Check/pull/54) | [`0113eb974d8a`](https://github.com/tobiasfranziskus/Check/commit/0113eb974d8a2e9fbc7f20f0f662730a91b17af7) | Archiviert, nicht gemergt |

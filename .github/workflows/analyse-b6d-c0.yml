@@ -1,0 +1,106 @@
+name: Aphros Void – B6d C0 Stationshonorar nach Lieferung (Analyse)
+on:
+  pull_request:
+    paths:
+      - tools/analyse-b6d-*.mjs
+      - docs/ANALYSE_B6D_C0_V14.md
+      - .github/workflows/analyse-b6d-c0.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  standard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [7, 11, 1, 2, 65535, 42, 1234, 98765, 3, 99, 2024, 2025, 314159]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Regel 14 vs C0 (13 Referenzseeds, je zweimal 90 Tage)
+        run: |
+          node tools/analyse-b6d-stationsfracht.mjs --seed=${{ matrix.seed }} --mode=control --out="$RUNNER_TEMP/b6d-c0-data"
+          node tools/analyse-b6d-stationsfracht.mjs --seed=${{ matrix.seed }} --mode=postpay --out="$RUNNER_TEMP/b6d-c0-data"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b6d-c0-seed-${{ matrix.seed }}
+          path: ${{ runner.temp }}/b6d-c0-data/*.json
+  b1-start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vier historische Tag-90-Spielerzustaende pinned rekonstruieren
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399
+          mkdir -p "$RUNNER_TEMP/b6b-legacy"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/b6b-legacy"
+          node "$RUNNER_TEMP/b6b-legacy/tools/npc-restart-v12.mjs" --prepare --out="$RUNNER_TEMP/b6b-start"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b6d-c0-starts
+          path: ${{ runner.temp }}/b6b-start
+  crisis:
+    needs: b1-start
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        fall: [miner, handel-flotte, station, jagd]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: b6d-c0-starts
+          path: ${{ runner.temp }}/b6b-start
+      - name: Historischen Regel-12-Kern und Original-B1-Fall pruefen
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399 cec7f93758e4a499c238738ff50adac4416080d4
+          mkdir -p "$RUNNER_TEMP/b6b-legacy" "$RUNNER_TEMP/b6b-b1"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/b6b-legacy"
+          git archive cec7f93758e4a499c238738ff50adac4416080d4 | tar -x -C "$RUNNER_TEMP/b6b-b1"
+      - name: Kontrollkern gegen C0 bis Tag 365 vergleichen
+        run: |
+          node tools/analyse-b6d-stationsfracht.mjs --case=${{ matrix.fall }} --mode=control --starts="$RUNNER_TEMP/b6b-start" --b1="$RUNNER_TEMP/b6b-b1" --legacy="$RUNNER_TEMP/b6b-legacy" --out="$RUNNER_TEMP/b6d-c0-data"
+          node tools/analyse-b6d-stationsfracht.mjs --case=${{ matrix.fall }} --mode=postpay --starts="$RUNNER_TEMP/b6b-start" --b1="$RUNNER_TEMP/b6b-b1" --legacy="$RUNNER_TEMP/b6b-legacy" --out="$RUNNER_TEMP/b6d-c0-data"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b6d-c0-fall-${{ matrix.fall }}
+          path: ${{ runner.temp }}/b6d-c0-data/*.json
+  synthese:
+    needs: [standard, crisis]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: b6d-c0-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/b6d-c0-data
+      - name: 34 Wirtschaftslaeufe mit unabhaengigen Goldenwerten zusammenfassen
+        run: node tools/analyse-b6d-summary.mjs "$RUNNER_TEMP/b6d-c0-data" "$RUNNER_TEMP/b6d-c0-results"
+      - name: Bestehende Produktregressionschecks
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b6d-c0-gesamt
+          path: ${{ runner.temp }}/b6d-c0-results

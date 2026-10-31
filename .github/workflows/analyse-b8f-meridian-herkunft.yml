@@ -1,0 +1,63 @@
+name: "[ANALYSE] B8f Meridian Warenein- und -ausfuhr / Geldbruecken"
+on:
+  push:
+    branches: [analyse/b8f-aussenhandel-herkunft-geldbruecken-20261031]
+    paths:
+      - 'tools/analyse-b8f-meridian-herkunft.mjs'
+      - '.github/workflows/analyse-b8f-meridian-herkunft.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'tools/analyse-b8f-meridian-herkunft.mjs'
+      - '.github/workflows/analyse-b8f-meridian-herkunft.yml'
+      - 'index.html'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Historische Spielerkrise - echte Meridian-Waren- und Geldbuchungen
+        run: node tools/analyse-b8f-meridian-herkunft.mjs --scenario=handel-flotte --days=90 --out="$RUNNER_TEMP/b8f"
+      - name: Passive Vergleichswelt - echte Meridian-Waren- und Geldbuchungen
+        run: node tools/analyse-b8f-meridian-herkunft.mjs --scenario=passiv --days=90 --out="$RUNNER_TEMP/b8f"
+      - name: Unabhaengige Kontroll- und Meridian-Buchungspruefung
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/b8f/";
+            const read=n=>JSON.parse(fs.readFileSync(dir+n+"-90d.json"));
+            const a=read("handel-flotte"),p=read("passiv");
+            assert.equal(a.hash,"784047684dfe5c56");
+            assert.equal(a.coreSha256,p.coreSha256);
+            assert.equal(a.hours,2160);assert.equal(p.hours,2160);
+            assert.equal(a.roundtrips,8);assert.equal(p.roundtrips,8);
+            for(const q of [a,p]){
+              assert(q.observation.exports>0&&q.observation.imports>=0);
+              assert.equal(q.observation.paidByHubTotal,
+                Object.values(q.observation.paidByHub).reduce((x,y)=>x+y,0));
+              for(const [ware,v] of Object.entries(q.observation.provenance)){
+                assert(v.creditedAsImportFirst>=0&&v.creditedAsImportLast>=0);
+                assert(v.creditedAsImportFirst<=v.exported);
+                assert(v.creditedAsImportLast<=v.exported);
+                assert.equal(v.exported,q.observation.exports[ware]??v.exported);
+              }
+            }
+            console.log("B8F_GATE",JSON.stringify({
+              crisis:{exports:a.observation.exports,imports:a.observation.imports,
+                shipDelivered:a.observation.shipDelivered,paidByHub:a.observation.paidByHubTotal,
+                paidToHub:a.observation.paidToHubTotal,origins:a.observation.provenance},
+              passive:{exports:p.observation.exports,imports:p.observation.imports,
+                shipDelivered:p.observation.shipDelivered,paidByHub:p.observation.paidByHubTotal,
+                paidToHub:p.observation.paidToHubTotal,origins:p.observation.provenance}}));
+          '
+      - name: Originale Standardtests
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b8f-meridian-seed42-90d
+          path: ${{ runner.temp }}/b8f/*.json

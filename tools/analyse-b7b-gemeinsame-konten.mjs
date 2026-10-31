@@ -465,6 +465,47 @@ const initialHash=plain.c.hash(replay);
 assert.equal(observed.c.hash(state),initialHash);
 let cursor=0,hours=0,roundtrips=0,manualFundExecuted=false,manualShipCashAtTick1=null;
 const dayHashes=[],daily=[];
+
+const b7cDiagnostics=[];
+function b7cSample(world) {
+  const before=plain.c.hash(world),rules=observed.r;
+  const stationRows=Object.keys(world.stations).sort().map(id=>{
+    const station=world.stations[id],cfg=rules.world.stations[id];
+    const inventory={...station.lager};
+    const recipes=station.linien.map((l,index)=>{
+      const r=rules.economy.rezepte[l.rezept];
+      const missing=Object.keys(r.ein).filter(w=>(station.lager[w]||0)<r.ein[w]);
+      const full=Object.keys(r.aus).filter(w=>(station.lager[w]||0)+r.aus[w]>observed.c.obergrenze(world,rules,id,w));
+      const why=l.rest>0?'running':missing.length?'input-shortage':full.length?'output-full':'ready';
+      return {index,recipe:l.rezept,rest:l.rest,status:why,missing,full,needed:Object.fromEntries(missing.map(w=>[w,r.ein[w]]))};
+    });
+    const consumer=Object.keys(cfg.verbrauch).sort().map(w=>({
+      ware:w,perHour:cfg.verbrauch[w],onHand:station.lager[w]||0,price:observed.c.preis(world,id,w,rules),
+      canBuyOne:world.owners[id].cash >= observed.c.preis(world,id,w,rules) &&
+        observed.c.aufnehmbar(world,rules,id,w)>=1
+    }));
+    return {id,cash:world.owners[id].cash,inventory,consumer,recipes,completed:world.stats.rezepte[id]};
+  });
+  const ships=Object.keys(world.ships).sort().map(id=>{
+    const x=world.ships[id];if(!['npc1','npc2','npc3'].includes(x.owner))return null;
+    return {id,owner:x.owner,klasse:x.klasse,system:x.system,phase:x.phase,auftrag:x.auftrag,
+      destination:x.ziel,arrival:x.ankunft,work:x.arbeit,cargo:{...x.ladung},
+      account:world.pilotAccounts?.[id]?.cash??null,ownerCash:world.owners[x.owner].cash};
+  }).filter(Boolean);
+  const active=stationRows.flatMap(s=>s.recipes).reduce((a,r)=>(a[r.status]=(a[r.status]||0)+1,a),{});
+  const totals={nahrung:0,medikamente:0,bauteil:0,erz:0,silizium:0,material:0,eis:0};
+  for(const z of stationRows)for(const w of Object.keys(totals))totals[w]+=z.inventory[w]||0;
+  const current={tick:world.tick,day:Math.ceil(world.tick/1440),hour:Math.ceil(world.tick/60), 
+    cash:{player:world.owners.house.cash,npc1:world.owners.npc1.cash,npc2:world.owners.npc2.cash,npc3:world.owners.npc3.cash,
+      npcWalletCash:Object.entries(world.pilotAccounts||{}).filter(([k,w])=>['npc1','npc2'].includes(w.owner)).reduce((a,[k,w])=>a+w.cash,0)},
+    totals,lines:active,stations:stationRows,ships, 
+    ledger:{mined:Object.fromEntries(Object.entries(world.ledger).map(([k,v])=>[k,v.mined])),
+      produced:Object.fromEntries(Object.entries(world.ledger).map(([k,v])=>[k,v.produced])),
+      consumed:Object.fromEntries(Object.entries(world.ledger).map(([k,v])=>[k,v.consumed]))}};
+  assert.equal(plain.c.hash(world),before,'B7c-Beobachtung darf simulierten Zustand nicht beeinflussen');
+  return current;
+}
+
 function audit(s){
   assert(plain.c.audit(s).ok,'Produkt-Geld-/Warenaudit');
   const cash=sum(Object.values(s.owners).map(o=>{assert(Number.isSafeInteger(o.cash)&&o.cash>=0);return o.cash;}))+
@@ -513,6 +554,8 @@ for(let minute=1;minute<=days*1440;minute++){
     audit(state);audit(replay);
     assert.equal(observed.c.hash(state),plain.c.hash(replay),'stundenweiser unveraenderter Hash');
     hours++;
+    if(state.tick>=9*1440 && state.tick<=15*1440)
+      b7cDiagnostics.push(b7cSample(state));
   }
   if(state.tick%1440===0){
     const x=snapshot(state);daily.push(x);dayHashes.push(x.hash);
@@ -568,6 +611,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
     days:Object.values(h1Observed.daily).sort((a,b)=>a.day-b.day),
     payEvents:h1Observed.payEvents},
   manualFlightProof,
+  b7cDiagnostics,
   credit:probeMain.stats,contracts:state.b6eContracts||{},
   initialHash,initialLegacyHash,days,hours,roundtrips,commands:cursor,
   paid:sum(Object.values(watcher.owners).map(x=>x.operatingPaid)),

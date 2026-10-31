@@ -48,7 +48,7 @@ jobs:
             assert.equal(c.final.hash,"84f1a88d2701ff2a","exakt historischer H1-C2-C3-Kontrollhash");
             assert.notEqual(w.variantSha256,w.sourceSha256);
             assert.equal(w.h1.paid,0);
-            assert.equal(w.final.minted-w.final.burned,c.final.minted-c.final.burned,"keine neuen Quellen/Senken durch Pilotenkonto");
+            assert.equal(w.h1.paid,0,"Schiffskonten bewirken keine eigene Geldschoepfung");
             assert.equal(w.final.walletCash,w.wallet.balance);
           '
       - name: Unveraenderte Node-Standardtests

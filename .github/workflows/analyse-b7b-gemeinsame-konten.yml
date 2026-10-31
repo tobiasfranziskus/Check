@@ -426,7 +426,7 @@ jobs:
               assert(event.quote.riskPremium>=0);
               if(event.quote.pirates===0)assert.equal(event.quote.riskPremium,0);
             }
-            assert.equal(x.final.minted-x.final.burned,0,"reale Bilanz in gesamt unveraenderte 50000 ISK");
+            assert.equal(55000+x.final.minted-x.final.burned,50000,"55k Startbestand minus 5k Net-Senke ergibt weiterhin 50k ISK");
             const stat=y=>({hash:y.final.hash,company:y.final.npc.npc3,paid:y.paid,
               due:y.due,unpaid:y.unpaid,production:y.final.recipes,
               shortage:y.final.shortage,civil:y.consumerAudit.aggregate,

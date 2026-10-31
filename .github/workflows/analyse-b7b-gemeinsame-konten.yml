@@ -131,8 +131,9 @@ jobs:
                 }));
               }
               if(days===90)assert.deepEqual(rows[0],read(mode,10).b7dDiagnostics[0],"stabile Tag10-Marktangebote in 10-/90-Tageswelt");
-              assert.equal(x.final.hash, mode==="control"? "784047684dfe5c56":"82f11deee8c7f566",
-                "read-only Preisberechnung darf deterministischen Endhash nicht aendern");
+              if(days===90)assert.equal(x.final.hash, mode==="control"? "784047684dfe5c56":"82f11deee8c7f566",
+                "read-only Preisberechnung darf deterministischen Tag90-Endhash nicht aendern");
+              else if(mode==="control")assert.equal(x.final.hash,"84f1a88d2701ff2a","gepinntes Tag10-Kontrollergebnis");
             }
           '
       - name: 67 Standardtests

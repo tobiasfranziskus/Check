@@ -62,6 +62,7 @@ const watcher=new class {
     if (!['npc1','npc2','npc3'].includes(s.owner) || s.klasse!=='frachter' ||
         ['miner','frachter','jaeger','bauschiff'].includes(ware)) return;
     const o=this.owner(s.owner),r=this.shiprow(s);
+    if(!kauf && state.owners[s.owner].kind==='trader')this.traderSales++;
     if(kauf) {
       o.buys++;o.buyValue+=wert;o.buyFees+=fee;
       r.buys++;r.buyValue+=wert;r.buyFees+=fee;
@@ -197,7 +198,7 @@ assert.equal(hours,days*24);
 if(!scenario){
   assert.equal(daily.at(-1).shortage,expectedGolden.totalShortage,'unveraenderte Mangel-Goldenwerte');
 }
-const traderSales=Object.values(watcher.owners).reduce((a,o)=>a+o.sells,0);
+const traderSales=watcher.traderSales;
 if(!scenario)assert.equal(traderSales,expectedGolden.traderSales,'unveraenderte Frachterverkaufs-Goldenwerte');
 const totals={scenario:scenario||'standard',seed,version:14,sourceSha256:sha(src),
   initialHash,initialLegacyHash,days,hours,roundtrips,commands:cursor,

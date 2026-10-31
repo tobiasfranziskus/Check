@@ -17,6 +17,8 @@ assert(['off','on'].includes(autotrade),'B7h on/off');
 assert(['none','npc3'].includes(investment),'B7f nur kein oder ein realer NPC3-Einstieg');
 assert(investment==='none'||(mode==='wallet'&&days===90),'B7f ausschliesslich B7b Wallet Seed42 90d');
 assert(autotrade==='off'||investment==='npc3','B7h nur nach genau einem real bezahlten NPC3-Frachter');
+const b7h={enabled:autotrade==='on',activatedAt:null,ship:null,owner:'npc3',
+  command:null,initialSeller:null,firstSale:null,tradeEvents:[],activation:null};
 assert(['control','wallet'].includes(mode),'B7a nur Kontrollkern oder Schiffskonto-Gegenprobe');
 const scenario=opt('case',null), seed=scenario?{miner:42,'handel-flotte':42,station:1234,jagd:98765}[scenario]:Number(opt('seed','42'));
 assert.equal(seed,42,'H1-C1: ausschliesslich Seed 42');
@@ -527,8 +529,6 @@ const expected=originalPlayer.commands.filter(x=>x.tick<=days*1440).map(({tick,.
 const b7f={enabled:investment==='npc3',stage:'not-started',ship:null,createdAt:null,
   purchasedAt:null,departedAt:null,soldAt:null,quantity:0,
   events:[],before:null,after:null,onceOnly:0,pendingCommand:null};
-const b7h={enabled:autotrade==='on',activatedAt:null,ship:null,owner:'npc3',
-  command:null,initialSeller:null,firstSale:null,tradeEvents:[],activation:null};
 const tradeSnapshot=(world)=>({
   tick:world.tick,ownerCash:world.owners.npc3.cash,
   alderaCash:world.owners.st_aldera.cash,alderaSilicon:world.stations.st_aldera.lager.silizium||0,

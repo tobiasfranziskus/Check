@@ -467,6 +467,104 @@ let cursor=0,hours=0,roundtrips=0,manualFundExecuted=false,manualShipCashAtTick1
 const dayHashes=[],daily=[];
 
 const b7cDiagnostics=[];
+const b7dDiagnostics=[];
+const B7D_ROUTES=[
+  ['st_meridian','st_aldera','nahrung'],
+  ['st_meridian','st_cyris','nahrung'],
+  ['st_meridian','st_dravos','nahrung'],
+  ['st_meridian','st_nadir','nahrung'],
+  ['st_meridian','st_orion','nahrung'],
+  ['st_meridian','st_veldra','nahrung'],
+  ['st_meridian','st_aldera','medikamente'],
+  ['st_meridian','st_cyris','medikamente'],
+  ['st_meridian','st_dravos','medikamente'],
+  ['st_meridian','st_nadir','medikamente'],
+  ['st_meridian','st_orion','medikamente'],
+  ['st_meridian','st_veldra','medikamente'],
+  ['st_meridian','st_aldera','silizium'],
+  ['st_dravos','st_aldera','silizium'],
+  ['st_nadir','st_aldera','silizium'],
+  ['st_orion','st_aldera','silizium']
+];
+function b7dQuote(world,origin,target,ware){
+  const core=observed.c, rules=observed.r;
+  const a=rules.world.stations[origin],b=rules.world.stations[target];
+  const route=core.route(rules.world,a.system,b.system);
+  assert(route&&route.zeit>0,'B7d: pruefbarer Weg');
+  const priceBuy=core.preis(world,origin,ware,rules);
+  const priceSell=core.preis(world,target,ware,rules);
+  const available=core.verkaufbar(world,rules,origin,ware);
+  const warehouseFree=Math.max(0,core.obergrenze(world,rules,target,ware)-(world.stations[target].lager[ware]||0));
+  const buyerCash=world.owners[target].cash;
+  const buyerCanTake=core.aufnehmbar(world,rules,target,ware);
+  const qty=Math.max(0,Math.min(rules.economy.cargo,available,buyerCanTake));
+  const buyTotal=qty*priceBuy,sellTotal=qty*priceSell;
+  const buyFee=core.gebuehr(world,rules,origin,buyTotal);
+  const sellFee=core.gebuehr(world,rules,target,sellTotal);
+  const workCost=Math.ceil(route.zeit/rules.economy.stunde)*rules.world.betriebskosten.frachter;
+  const netTrade=sellTotal-buyTotal-buyFee-sellFee;
+  const afterWork=netTrade-workCost;
+  const fundNeed=buyTotal+buyFee+workCost;
+  const atOrigin=Object.values(world.ships).filter(ship=>['npc1','npc2'].includes(ship.owner) &&
+    ship.klasse==='frachter'&&ship.system===a.system&&ship.phase==='dock');
+  const allFreighters=Object.values(world.ships).filter(ship=>['npc1','npc2'].includes(ship.owner)&&ship.klasse==='frachter');
+  const freeShips=atOrigin.filter(ship=>Object.values(ship.ladung).reduce((n,v)=>n+v,0)===0);
+  const financeable=freeShips.filter(ship=>(world.pilotAccounts?.[ship.id]?.cash||0)+world.owners[ship.owner].cash>=fundNeed &&
+    core.verkaufbar(world,rules,origin,ware)>0).map(ship=>ship.id);
+  const reasons=[];
+  if(available<1)reasons.push('no-seller-stock-after-reserve');
+  if(warehouseFree<1)reasons.push('buyer-warehouse-full');
+  if(buyerCash<priceSell)reasons.push('buyer-cash-below-one-unit-price');
+  if(qty<1)reasons.push('no-quantity-with-real-buyer');
+  if(qty>0&&netTrade<=0)reasons.push('negative-margin-after-fees');
+  if(qty>0&&netTrade>0&&afterWork<=0)reasons.push('not-profitable-after-travel-work');
+  if(qty>0&&afterWork>0&&freeShips.length===0)reasons.push('no-empty-docked-npc-trader-at-source');
+  if(qty>0&&afterWork>0&&freeShips.length>0&&financeable.length===0)reasons.push('npc-trader-cannot-prefund');
+  return {origin,target,ware,minutes:route.zeit,priceBuy,priceSell,available,
+    originStock:world.stations[origin].lager[ware]||0,targetStock:world.stations[target].lager[ware]||0,
+    targetTarget:b.ziel[ware]||0,warehouseFree,buyerCash,buyerCanTake,qty, 
+    buyFee,sellFee,workCost,netTrade,afterWork,fundNeed,
+    npcFreightersTotal:allFreighters.length,emptyDockedSource:freeShips.map(ship=>({
+      id:ship.id,owner:ship.owner,walletCash:world.pilotAccounts?.[ship.id]?.cash??null,
+      corporateCash:world.owners[ship.owner].cash
+    })),financeable,reasons};
+}
+function b7dSnapshot(world){
+  const prior=plain.c.hash(world);
+  const routes=B7D_ROUTES.map(([origin,target,ware])=>b7dQuote(world,origin,target,ware));
+  const generic=[];
+  for(const origin of Object.keys(observed.r.world.stations).sort())
+    for(const target of Object.keys(observed.r.world.stations).sort()){
+      if(origin===target)continue;
+      const originSystem=observed.r.world.stations[origin].system;
+      const targetSystem=observed.r.world.stations[target].system;
+      if(!observed.c.route(observed.r.world,originSystem,targetSystem))continue;
+      for(const ware of ['nahrung','medikamente','silizium']){
+        if(!(observed.r.world.stations[origin].ziel[ware]>0)||!(observed.r.world.stations[target].ziel[ware]>0))continue;
+        generic.push(b7dQuote(world,origin,target,ware));
+      }
+    }
+  const viable=generic.filter(q=>q.qty>0);
+  const profitable=viable.filter(q=>q.afterWork>0);
+  const withShip=profitable.filter(q=>q.emptyDockedSource.length>0);
+  const fundable=profitable.filter(q=>q.financeable.length>0);
+  const counts={
+    candidateQuotes:generic.length, withRealBuyer:viable.length,
+    nominalPositive:viable.filter(q=>q.netTrade>0).length,
+    afterWorkPositive:profitable.length,
+    withEmptyShipAtSource:withShip.length,
+    prefundedWithShipAtSource:fundable.length,
+    buyerCannotBuyOne:generic.filter(q=>q.buyerCash<q.priceSell).length,
+    noSupply:generic.filter(q=>q.available<1).length
+  };
+  const top=profitable.sort((a,b)=>b.afterWork-a.afterWork||a.origin.localeCompare(b.origin)||a.target.localeCompare(b.target))
+    .slice(0,8).map(q=>({origin:q.origin,target:q.target,ware:q.ware,qty:q.qty,
+      netTrade:q.netTrade,workCost:q.workCost,afterWork:q.afterWork,fundNeed:q.fundNeed,
+      financeable:q.financeable,shipCount:q.emptyDockedSource.length}));
+  assert.equal(plain.c.hash(world),prior,'B7d quotes must not mutate the world');
+  return {day:world.tick/1440,mode,counts,routes,top};
+}
+
 function b7cSample(world) {
   const before=plain.c.hash(world),rules=observed.r;
   const stationRows=Object.keys(world.stations).sort().map(id=>{
@@ -559,6 +657,7 @@ for(let minute=1;minute<=days*1440;minute++){
   }
   if(state.tick%1440===0){
     const x=snapshot(state);daily.push(x);dayHashes.push(x.hash);
+    if([10,11,12,15].includes(x.day))b7dDiagnostics.push(b7dSnapshot(state));
     dayRow(x.day);
     const day=minute/1440;
     if([1,3,7,10,30,60,90].includes(day)){
@@ -611,7 +710,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
     days:Object.values(h1Observed.daily).sort((a,b)=>a.day-b.day),
     payEvents:h1Observed.payEvents},
   manualFlightProof,
-  b7cDiagnostics,
+  b7cDiagnostics,b7dDiagnostics,
   credit:probeMain.stats,contracts:state.b6eContracts||{},
   initialHash,initialLegacyHash,days,hours,roundtrips,commands:cursor,
   paid:sum(Object.values(watcher.owners).map(x=>x.operatingPaid)),

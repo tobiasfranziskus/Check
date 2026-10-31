@@ -23,18 +23,21 @@ assert.equal(sha(source),'035fe8b486ff2d515ca6379ad682b4b15d89d5d051866e287425ed
 
 class DemandObserver {
  constructor(){this.hour=[];this.day=new Map();this.paid=0;this.paidHours=0;this.byStation={};this.current=[];}
- consume(state,id,ware,actual,need,stock) {
+ consume(state,id,ware,actual,need,stock,price) {
    if(!['nahrung','medikamente'].includes(ware))return;
    assert(actual>=0&&actual<=need);
    this.current.push({id,ware,actual,need,stock,cash:state.owners[id].cash});
    const day=Math.ceil(state.tick/1440);
    const key=day+'/'+id+'/'+ware;
    const r=this.day.get(key)||{day,id,ware,need:0,actual:0,shortageHours:0,zeroCashHours:0,
-     missingStockHours:0,firstCash:state.owners[id].cash};
+     missingStockHours:0,noStockButCouldBuyUnitHours:0,cashBelowOneUnitHours:0,
+     firstCash:state.owners[id].cash};
    r.need+=need;r.actual+=actual;
    if(actual<need)r.shortageHours++;
    if(stock===0)r.missingStockHours++;
    if(state.owners[id].cash===0)r.zeroCashHours++;
+   if(state.owners[id].cash<price)r.cashBelowOneUnitHours++;
+   if(stock===0&&state.owners[id].cash>=price)r.noStockButCouldBuyUnitHours++;
    this.day.set(key,r);
  }
  pay(state,rules){
@@ -69,7 +72,7 @@ const consumeNeedle='st.lager[ware] = da - n; state.ledger[ware].consumed += n;'
 const stepNeedle='verbrauch(state, rules); betriebskosten(state, rules); aussenhandel(state, rules);';
 assert.equal(source.split(consumeNeedle).length,2,'originalen Konsum nur beobachten');
 assert.equal(source.split(stepNeedle).length,2,'einzige Verbrauchs-/Betriebskosten-Phase');
-const instrumented=source.replace(consumeNeedle,consumeNeedle+'\n      observer.consume(state,id,ware,n,bedarf[ware],da);')
+const instrumented=source.replace(consumeNeedle,consumeNeedle+'\n      observer.consume(state,id,ware,n,bedarf[ware],da,m_core_preis.preis(state,id,ware,rules));')
  .replace(stepNeedle,'verbrauch(state, rules); observer.pay(state,rules); betriebskosten(state, rules); aussenhandel(state, rules);');
 const factory=new Function('observer',instrumented+';return {c:m_core_index,r:m_data_rules.RULES};');
 const plain=new Function(source+';return {c:m_core_index,r:m_data_rules.RULES};')();
@@ -126,7 +129,9 @@ for(let tick=1;tick<=days*1440;tick++){
        consumed:arr.reduce((a,x)=>a+x.actual,0),
        shortageHours:arr.reduce((a,x)=>a+x.shortageHours,0),
        zeroCashHours:arr.reduce((a,x)=>a+x.zeroCashHours,0),
-       missingStockHours:arr.reduce((a,x)=>a+x.missingStockHours,0)};
+       missingStockHours:arr.reduce((a,x)=>a+x.missingStockHours,0),
+       noStockButCouldBuyUnitHours:arr.reduce((a,x)=>a+x.noStockButCouldBuyUnitHours,0),
+       cashBelowOneUnitHours:arr.reduce((a,x)=>a+x.cashBelowOneUnitHours,0)};
    }
    const row={day,hash:observed.c.hash(s),cashHouse:s.owners.house.cash,
      stationCash:Object.values(s.owners).filter(x=>x.kind==='station').reduce((a,x)=>a+x.cash,0),
@@ -134,6 +139,16 @@ for(let tick=1;tick<=days*1440;tick++){
      minted:s.minted,burned:s.burned,
      stockFood:Object.values(s.stations).reduce((a,x)=>a+(x.lager.nahrung||0),0),
      stockMeds:Object.values(s.stations).reduce((a,x)=>a+(x.lager.medikamente||0),0),
+     foodProduced:s.ledger.nahrung.produced,medicineProduced:s.ledger.medikamente.produced,
+     foodImported:s.ledger.nahrung.imported,medicineImported:s.ledger.medikamente.imported,
+     foodExported:s.ledger.nahrung.exported,medicineExported:s.ledger.medikamente.exported,
+     stations:Object.fromEntries(Object.keys(s.stations).sort().map(id=>[id,{
+       cash:s.owners[id].cash,food:s.stations[id].lager.nahrung||0,
+       medicine:s.stations[id].lager.medikamente||0,
+       ice:s.stations[id].lager.eis||0,crystal:s.stations[id].lager.kristall||0,
+       materials:s.stations[id].lager.material||0,
+       foodRecipe:s.stations[id].linien.filter(x=>x.rezept==='r_nahrung').length,
+       medicineRecipe:s.stations[id].linien.filter(x=>x.rezept==='r_medikamente').length}])) ,
      ...totals};
    daily.push(row);
    if([3,15,30,90].includes(day)){
@@ -160,7 +175,9 @@ const consumption=Object.fromEntries(['nahrung','medikamente'].map(ware=>[ware,{
  consumed:daily.reduce((a,x)=>a+x[ware].consumed,0),
  shortageHours:daily.reduce((a,x)=>a+x[ware].shortageHours,0),
  zeroCashHours:daily.reduce((a,x)=>a+x[ware].zeroCashHours,0),
- missingStockHours:daily.reduce((a,x)=>a+x[ware].missingStockHours,0)
+ missingStockHours:daily.reduce((a,x)=>a+x[ware].missingStockHours,0),
+ noStockButCouldBuyUnitHours:daily.reduce((a,x)=>a+x[ware].noStockButCouldBuyUnitHours,0),
+ cashBelowOneUnitHours:daily.reduce((a,x)=>a+x[ware].cashBelowOneUnitHours,0)
 }]));
 const output={scenario,mode,seed,days,sourceSha256:sha(source),candidateSourceSha256:sha(instrumented),
  initialHash,finalHash:observed.c.hash(s),hours,dailyHashes:daily.length,roundtrips,

@@ -172,6 +172,46 @@ jobs:
               else if(mode==="control")assert.equal(x.final.hash,"84f1a88d2701ff2a");
             }
           '
+      - name: B7f echter NPC3-Einstieg 90 Tage, genau ein Kauf und reale Befehle
+        run: node tools/analyse-b7b-gemeinsame-konten.mjs --seed=42 --case=handel-flotte --mode=wallet --investment=npc3 --days=90 --b1="$RUNNER_TEMP/b7b-b1" --out="$RUNNER_TEMP/b7b-out"
+      - name: B7f Kausal- und Geld-/Waren-/Verbrauchervergleich mit unveraenderter B7b-Welt
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/b7b-out/";
+            const baseline=JSON.parse(fs.readFileSync(dir+"b7b-handel-flotte-42-wallet-90d.json"));
+            const x=JSON.parse(fs.readFileSync(dir+"b7f-handel-flotte-42-wallet-90d.json"));
+            assert.equal(baseline.final.hash,"82f11deee8c7f566","B7b eingefrorener Hash");
+            assert.equal(x.hours,90*24);assert.equal(x.daily.length,90);
+            assert.equal(x.roundtrips,14);
+            assert.equal(x.b7fInvestment.enabled,true);
+            assert.equal(x.b7fInvestment.stage,"completed");
+            assert.equal(x.b7fInvestment.onceOnly,1);
+            assert(x.b7fInvestment.quantity>0);
+            assert(x.b7fInvestment.soldAt>x.b7fInvestment.createdAt);
+            const events=x.b7fInvestment.events;
+            assert(events.some(z=>z.type==="real-hull-purchased"));
+            assert(events.some(z=>z.type==="silicon-purchase-submitted"));
+            assert(events.some(z=>z.type==="loaded-flight-submitted"));
+            assert(events.some(z=>z.type==="real-sale"&&z.qty>0));
+            assert.equal(x.sourceSha256,baseline.sourceSha256);
+            assert.equal(x.variantSha256,baseline.variantSha256);
+            assert.equal(x.daily[14].hash,baseline.daily[14].hash,"bis vor B7f-Start gleiche Welt");
+            console.log("B7F_REAL_INVESTMENT",JSON.stringify({
+              paid:x.paid, due:x.due,unpaid:x.unpaid, hashes:{baseline90:baseline.final.hash,investor90:x.final.hash},
+              investor:x.b7fInvestment,
+              baselineFinal:baseline.final,investorFinal:x.final,
+              baselineTrade:baseline.traderSales,investorTrade:x.traderSales,
+              baselineCivil:baseline.consumerAudit.aggregate,
+              investorCivil:x.consumerAudit.aggregate,
+              baselineNpc3:baseline.owners.npc3,
+              investorNpc3:x.owners.npc3,
+              baselineLosses:baseline.losses.filter(z=>z.owner==="npc3"),
+              investorLosses:x.losses.filter(z=>z.owner==="npc3"),
+              firstDays:x.daily.filter(z=>[14,15,16,17,18,19,20,30,60,90].includes(z.day)),
+            }));
+          '
       - name: 67 Standardtests
         run: node --test tests/*.test.mjs
       - uses: actions/upload-artifact@v4

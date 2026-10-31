@@ -1,0 +1,76 @@
+name: "[ANALYSE] B8j echte Piratenverluste und finanzierbarer NPC-Frachterersatz"
+on:
+  push:
+    branches: [analyse/b8j-echte-frachterverluste-ersatzblockaden-20261101]
+    paths:
+      - 'tools/analyse-b8j-frachterersatz.mjs'
+      - '.github/workflows/analyse-b8j-frachterersatz.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'tools/analyse-b8j-frachterersatz.mjs'
+      - '.github/workflows/analyse-b8j-frachterersatz.yml'
+      - 'index.html'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Seed42 original passive 90d
+        run: node tools/analyse-b8j-frachterersatz.mjs --seed=42 --scenario=passive --out="$RUNNER_TEMP/b8j"
+      - name: Seed42 original Spielerkrise 90d
+        run: node tools/analyse-b8j-frachterersatz.mjs --seed=42 --scenario=active --out="$RUNNER_TEMP/b8j"
+      - name: Seed7 original passive 90d
+        run: node tools/analyse-b8j-frachterersatz.mjs --seed=7 --scenario=passive --out="$RUNNER_TEMP/b8j"
+      - name: Seed7 original Spielerkrise 90d
+        run: node tools/analyse-b8j-frachterersatz.mjs --seed=7 --scenario=active --out="$RUNNER_TEMP/b8j"
+      - name: Ausgaben, wahre Werftbarrieren, Verlust-Events und Unveraendertheit
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/b8j/";
+            const worlds=[];
+            for(const seed of [42,7])for(const scenario of ["passive","active"])
+              worlds.push(JSON.parse(fs.readFileSync(dir+scenario+"-"+seed+"-90d.json")));
+            const active42=worlds.find(q=>q.seed===42&&q.scenario==="active"),
+              passive42=worlds.find(q=>q.seed===42&&q.scenario==="passive");
+            assert.equal(active42.hash,"784047684dfe5c56");
+            assert.equal(passive42.hash,"adf155a018b94094");
+            for(const q of worlds){
+              assert.equal(q.hours,2160);assert.equal(q.saves,8);
+              assert.equal(q.sourceSha256,active42.sourceSha256);
+              assert.equal(q.results.losses.length,q.summary.losses);
+              assert.equal(q.results.purchases.length,q.summary.purchases);
+              assert.equal(q.results.grants.length,q.summary.grants);
+              const day14=q.results.points.find(x=>x.day===14),day90=q.results.points.find(x=>x.day===90);
+              assert(day14&&day90);
+              if(q.scenario==="active"){
+                assert.equal(day14.fleets.npc1.frachter+day14.fleets.npc2.frachter,0);
+                assert.equal(day90.fleets.npc1.frachter+day90.fleets.npc2.frachter,0);
+                assert.equal(day90.fleets.npc1.cash+day90.fleets.npc2.cash,0);
+              }else{
+                assert.equal(day14.fleets.npc1.frachter+day14.fleets.npc2.frachter,5);
+                assert.equal(day90.fleets.npc1.frachter+day90.fleets.npc2.frachter,5);
+              }
+            }
+            console.log("B8J_GATE",JSON.stringify(worlds.map(q=>({
+              seed:q.seed,scenario:q.scenario,summary:q.summary,
+              losses:q.results.losses,purchases:q.results.purchases,
+              grants:q.results.grants,attemptStats:q.results.attemptStats,
+              firstZeroFrachter:q.results.firstZeroFrachter,
+              firstMissingWithOtherShips:q.results.firstMissingWithOtherShips,
+              firstRescueEligible:q.results.firstRescueEligible,
+              selectedPoints:q.results.points.filter(x=>[1,3,7,14,30,90].includes(x.day))
+            }))));
+          '
+      - name: Originale 67 Node-Standardtests
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b8j-actual-freighter-loss-and-funding-4x90d
+          path: ${{ runner.temp }}/b8j/*.json

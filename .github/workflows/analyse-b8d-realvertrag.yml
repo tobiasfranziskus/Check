@@ -38,8 +38,9 @@ jobs:
             assert.equal(b.sourceSha256,c.sourceSha256);
             for(const q of [a,b,c]){
               assert.equal(q.hours,2160);assert.equal(q.roundtrips,10);
-              assert.equal(q.final.minted-q.final.burned,
-                q.final.minted-q.final.burned);
+              assert.equal(q.final.minted,a.final.minted,"keine zusaetzliche ISK-Schöpfung");
+              assert.equal(q.final.burned,a.final.burned,"keine zusaetzliche ISK-Vernichtung");
+              assert.equal(q.final.playerCash,a.final.playerCash,"Spielerkasse nicht belastet");
             }
             assert.equal(b.contract.amount,0);
             assert.equal(b.contract.hulls,1);

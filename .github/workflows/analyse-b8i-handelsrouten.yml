@@ -63,6 +63,29 @@ jobs:
               }
             }
             assert(p.metrics.tradeRoutes>=3,"mehr als zwei reale NPC-Handelsrouten");
+            for(const q of worlds){
+              const p7=q.points.find(x=>x.day===7),p14=q.points.find(x=>x.day===14),
+                p90=q.points.find(x=>x.day===90);
+              assert(p7&&p14&&p90,"historische Flotten-Stichtage vorhanden");
+              if(q.scenario==="active"){
+                assert.equal(p14.traderFreighters,0,"real keine NPC-Frachter ab Tag14");
+                assert.equal(p90.traderFreighters,0,"keine Frachter-Rekonstruktion");
+                assert.equal(p7.npc1,0);assert.equal(p7.npc2,0);
+                assert.equal(q.metrics.periods.days15to90.buyLots,0);
+                assert.equal(q.metrics.periods.days15to90.salesEvents,0);
+                assert.equal(q.metrics.periods.days15to90.arrivals,0);
+                assert(q.metrics.travel.unpaid>0,
+                  "echte unbeglichene NPC-Arbeitskosten als Befund sichtbar");
+              }else{
+                assert.equal(p7.traderFreighters,5);
+                assert.equal(p14.traderFreighters,5);
+                assert.equal(p90.traderFreighters,5);
+                assert(q.metrics.periods.days15to90.salesEvents>10000);
+              }
+            }
+            const a7=worlds.find(q=>q.seed===7&&q.scenario==="active");
+            assert.equal(a7.points.find(x=>x.day===7).traderFreighters,0);
+            assert.equal(a.points.find(x=>x.day===7).traderFreighters,1);
             console.log("B8I_GATE",JSON.stringify(worlds.map(x=>({
               seed:x.seed,scenario:x.scenario,hash:x.hash,
               routes:x.metrics.tradeRoutes,completedLots:x.metrics.completedLots,

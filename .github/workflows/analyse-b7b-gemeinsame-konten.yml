@@ -268,6 +268,57 @@ jobs:
               referenceHash:w.final.hash
             }));
           '
+      - name: B7h vorhandenen NPC3-Frachter durch validierten Handelsbefehl autonom handeln lassen
+        run: node tools/analyse-b7b-gemeinsame-konten.mjs --seed=42 --case=handel-flotte --mode=wallet --investment=npc3 --autotrade=on --days=90 --b1="$RUNNER_TEMP/b7b-b1" --out="$RUNNER_TEMP/b7b-out"
+      - name: B7h echte Folgegeschaefte, vollstaendige Kosten und 90-Tage-Nachfrage gegen B7f vergleichen
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/b7b-out/";
+            const f=JSON.parse(fs.readFileSync(dir+"b7f-handel-flotte-42-wallet-90d.json"));
+            const x=JSON.parse(fs.readFileSync(dir+"b7h-handel-flotte-42-wallet-90d.json"));
+            assert.equal(f.final.hash,"23eb3796fb0b5ec3","B7f-Referenz-Hash");
+            assert.equal(x.days,90);assert.equal(x.hours,2160);assert.equal(x.daily.length,90);
+            assert.equal(x.roundtrips,14);
+            assert.equal(x.initialHash,f.initialHash);
+            assert.equal(x.sourceSha256,f.sourceSha256);
+            assert.equal(x.variantSha256,f.variantSha256,"keine weitere Produktkern-Aenderung");
+            assert.deepEqual(x.daily.slice(0,15),f.daily.slice(0,15),"bis Tag15 beide Welten identisch");
+            assert.equal(x.b7fInvestment.onceOnly,1,"kein zweites kostenloses Schiff");
+            assert.equal(x.b7fInvestment.ship,f.b7fInvestment.ship,"identischer gekaufter Frachter");
+            assert.equal(x.b7fInvestment.quantity,f.b7fInvestment.quantity,"dieselbe erste Lieferung");
+            assert.equal(x.b7fInvestment.soldAt,f.b7fInvestment.soldAt,"identischer erster Verkaufszeitpunkt");
+            assert.equal(x.b7hAuto.activatedAt,f.b7fInvestment.soldAt+1);
+            assert.equal(x.b7hAuto.ship,x.b7fInvestment.ship);
+            assert.equal(x.b7hAuto.command.type,"shipHandeln");
+            assert.deepEqual(x.b7hAuto.tradeEvents.slice(0,2).map(e=>({kauf:e.kauf,ware:e.ware,menge:e.menge})),
+              [{kauf:true,ware:"silizium",menge:55},{kauf:false,ware:"silizium",menge:55}],
+              "erste real bezahlte Lieferung bleibt gleich");
+            const latter=x.b7hAuto.tradeEvents.filter(e=>e.tick>x.b7fInvestment.soldAt);
+            const buys=latter.filter(e=>e.kauf),sells=latter.filter(e=>!e.kauf);
+            const aggregates=trades=>Object.groupBy(trades,e=>e.ware);
+            console.log("B7H_REAL_AUTOTRADING",JSON.stringify({
+              ship:x.b7hAuto.ship, activation:x.b7hAuto.activation,
+              tradeEventsTotal:x.b7hAuto.tradeEvents.length,
+              laterBuys:buys.length,laterSells:sells.length,
+              laterGoodsBuys:Object.fromEntries(Object.entries(aggregates(buys)).map(([k,v])=>[k,v.reduce((n,e)=>n+e.menge,0)])),
+              laterGoodsSells:Object.fromEntries(Object.entries(aggregates(sells)).map(([k,v])=>[k,v.reduce((n,e)=>n+e.menge,0)])),
+              sampleTrades:latter.slice(0,25),lastTrades:latter.slice(-8),
+              baseline:{endHash:f.final.hash,cash:f.final.npc,shortage:f.final.shortage,
+                recipes:f.final.recipes,consumption:f.consumerAudit.aggregate,
+                sold:f.owners.npc3?.sells,paid:f.paid,due:f.due,unpaid:f.unpaid,losses:f.losses.filter(z=>z.owner==="npc3").length,
+                endShipAlive:!!f.b7gMoneyFlow.days.at(-1).ship},
+              candidate:{endHash:x.final.hash,cash:x.final.npc,shortage:x.final.shortage,
+                recipes:x.final.recipes,consumption:x.consumerAudit.aggregate,
+                sold:x.owners.npc3?.sells,paid:x.paid,due:x.due,unpaid:x.unpaid,losses:x.losses.filter(z=>z.owner==="npc3").length,
+                endShip:x.b7gMoneyFlow.days.at(-1).ship},
+              closeouts:x.closeouts,followUpPurchases:x.followUpPurchases,
+              snapshots:x.daily.filter(z=>[15,16,17,18,19,20,25,30,60,90].includes(z.day)),
+              npc3:x.owners.npc3, tradePricesAtLastDay:x.b7gMoneyFlow.days.at(-1)?.quotes,
+              autopilotState:x.b7fInvestment.stage
+            }));
+          '
       - name: 67 Standardtests
         run: node --test tests/*.test.mjs
       - uses: actions/upload-artifact@v4

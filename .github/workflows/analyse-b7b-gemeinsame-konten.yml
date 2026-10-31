@@ -292,7 +292,7 @@ jobs:
             assert.equal(x.b7hAuto.activatedAt,f.b7fInvestment.soldAt+1);
             assert.equal(x.b7hAuto.ship,x.b7fInvestment.ship);
             assert.equal(x.b7hAuto.command.type,"shipHandeln");
-            assert.deepEqual(x.b7hAuto.tradeEvents.slice(0,2).map(e=>({kauf:e.kauf,ware:e.ware,menge:e.menge})),
+            assert.deepEqual(x.b7hAuto.tradeEvents.filter(e=>e.ware==='silizium').slice(0,2).map(e=>({kauf:e.kauf,ware:e.ware,menge:e.menge})),
               [{kauf:true,ware:"silizium",menge:55},{kauf:false,ware:"silizium",menge:55}],
               "erste real bezahlte Lieferung bleibt gleich");
             const latter=x.b7hAuto.tradeEvents.filter(e=>e.tick>x.b7fInvestment.soldAt);

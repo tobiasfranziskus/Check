@@ -120,7 +120,7 @@ jobs:
                   assert(q.qty>=0&&q.qty<=q.buyerCanTake);
                   assert(q.qty<=q.available);
                   assert(q.workCost>0&&q.fundNeed>=q.workCost);
-                  if(q.financeable.length)assert(q.qty>0 && q.afterWork>0);
+                  if(q.financeable.length)assert(q.qty>0 && q.emptyDockedSource.length>0);
                 }
                 const named=row.routes.filter(q=>
                   q.origin==="st_meridian"&&q.ware==="nahrung"&&["st_aldera","st_cyris","st_nadir","st_orion"].includes(q.target) ||

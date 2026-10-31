@@ -434,7 +434,7 @@ if(mode==='wallet'){
 const initialLegacyHash=null;
 const initialHash=plain.c.hash(replay);
 assert.equal(observed.c.hash(state),initialHash);
-let cursor=0,hours=0,roundtrips=0;
+let cursor=0,hours=0,roundtrips=0,manualFundExecuted=false,manualShipCashAtTick1=null;
 const days=10,dayHashes=[],daily=[];
 function audit(s){
   assert(plain.c.audit(s).ok,'Produkt-Geld-/Warenaudit');
@@ -471,6 +471,13 @@ for(let minute=1;minute<=days*1440;minute++){
   }
   const a=observed.c.step(state,observed.r),b=plain.c.step(replay,plain.r);
   assert.deepEqual(a,b,'Queue-Ergebnisse identisch');
+  if(mode==='wallet'&&state.tick===1){
+    assert.equal(a[0]?.type,'shipFund','Spieler-Finanzierungsbefehl wird im Kern ausgefuehrt');
+    assert.equal(a[0]?.ok,true,'Spieler-Finanzierung tatsaechlich erfolgreich');
+    assert.equal(state.pilotAccounts?.sh002?.owner,'house','Konto nach erster Buchung vorhanden');
+    manualShipCashAtTick1=state.pilotAccounts.sh002.cash;
+    manualFundExecuted=true;
+  }
   if(state.tick%60===0){
     audit(state);audit(replay);
     assert.equal(observed.c.hash(state),plain.c.hash(replay),'stundenweiser unveraenderter Hash');
@@ -492,7 +499,7 @@ for(let minute=1;minute<=days*1440;minute++){
   }
 }
 assert.equal(cursor,expected.length,'B1-Befehle vollstaendig');
-if(mode==='wallet')assert(state.pilotAccounts?.sh002?.owner==='house','Spieler nutzt gemeinsames Schiffsledger');
+if(mode==='wallet')assert(manualFundExecuted,'Spieler-Befehl unabhaengig von spaeterem Schiffsverlust verifiziert');
 assert.equal(hours,days*24);
 assert.deepEqual(probeMain.stats,probeReplay.stats,'Darlehens-/Tilgungsprotokoll muss im Replay identisch sein');
 assert.deepEqual(state.b6eContracts||{},replay.b6eContracts||{},'Darlehensbuch bei Replay gleich');
@@ -524,7 +531,7 @@ assert.equal(state.burned,replay.burned,'keine Veraenderung der Senken');
 const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sha(original),variantSha256:sha(src),pauses:watcher.pauses,
   consumerAudit:{aggregate:aggregateCivil,days:measuredDays,dividendEvents,nominalFullCoverageDaily:27360},
   wallet:{balance:Object.values(state.pilotAccounts||{}).reduce((a,w)=>a+w.cash,0),count:Object.keys(state.pilotAccounts||{}).length,
-    accounts:state.pilotAccounts||{},manualFund:mode==='wallet'?manualFund:null},
+    accounts:state.pilotAccounts||{},manualFund:mode==='wallet'?manualFund:null,manualFundExecuted,manualShipCashAtTick1},
   h1:{Btag:0,paid:h1Observed.paid,byStation:h1Observed.byStation,
     hoursWithPayment:h1Observed.hoursWithPayment,hoursWithoutGoods:h1Observed.hoursWithoutGoods,
     days:Object.values(h1Observed.daily).sort((a,b)=>a.day-b.day),

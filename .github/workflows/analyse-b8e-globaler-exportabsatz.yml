@@ -1,0 +1,65 @@
+name: "[ANALYSE] B8e globaler realer Exportabsatz"
+on:
+  push:
+    branches: [analyse/b8e-globaler-exportabsatz-seed42-20261031]
+    paths:
+      - 'tools/analyse-b8e-globaler-exportabsatz.mjs'
+      - '.github/workflows/analyse-b8e-globaler-exportabsatz.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'tools/analyse-b8e-globaler-exportabsatz.mjs'
+      - '.github/workflows/analyse-b8e-globaler-exportabsatz.yml'
+      - 'index.html'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Historischer aktiver Originalfall Seed42
+        run: node tools/analyse-b8e-globaler-exportabsatz.mjs --scenario=handel-flotte --mode=baseline --days=90 --out="$RUNNER_TEMP/b8e"
+      - name: Aktiver originaler Weltzustand und globaler Exportauftrag
+        run: node tools/analyse-b8e-globaler-exportabsatz.mjs --scenario=handel-flotte --mode=exportbudget --days=90 --out="$RUNNER_TEMP/b8e"
+      - name: Passive gesunde Originalwelt als Gegenprobe
+        run: node tools/analyse-b8e-globaler-exportabsatz.mjs --scenario=passiv --mode=baseline --days=90 --out="$RUNNER_TEMP/b8e"
+      - name: Passive Welt mit globalem Exportauftrag
+        run: node tools/analyse-b8e-globaler-exportabsatz.mjs --scenario=passiv --mode=exportbudget --days=90 --out="$RUNNER_TEMP/b8e"
+      - name: Unabhaengige Referenz-, Export- und Liquiditaetsgate-Pruefung
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/b8e/";
+            const read=(sc,mode)=>JSON.parse(fs.readFileSync(dir+"b8e-"+sc+"-"+mode+"-90d.json"));
+            const ab=read("handel-flotte","baseline"), av=read("handel-flotte","exportbudget");
+            const pb=read("passiv","baseline"),pv=read("passiv","exportbudget");
+            assert.equal(ab.finalHash,"784047684dfe5c56");
+            for(const x of [ab,av,pb,pv]){
+              assert.equal(x.hours,2160);assert.equal(x.dailyHashes,90);assert.equal(x.roundtrips,8);
+              assert.equal(x.sourceSha256,ab.sourceSha256);
+              assert.equal(x.payments.minted,Object.values(x.payments.byStation).reduce((a,n)=>a+n,0));
+              assert(x.payments.minted>=0&&x.payments.minted<=20*x.hours);
+              assert(x.money.worldCash===x.money.initial+x.money.minted-x.money.burned);
+            }
+            assert.equal(ab.payments.minted,0);assert.equal(pb.payments.minted,0);
+            console.log("B8E_GATE",JSON.stringify({
+              active:{control:ab.finalHash,variant:av.finalHash,
+                emitted:av.payments.minted,exportUnits:av.payments.exportUnits,
+                byStation:av.payments.byStation,globalGate:av.payments.gatedHours,
+                shortageHours:av.consumption.nahrung.shortageHours+av.consumption.medikamente.shortageHours,
+                player:av.money.playerCash},
+              passive:{control:pb.finalHash,variant:pv.finalHash,
+                emitted:pv.payments.minted,exportUnits:pv.payments.exportUnits,
+                globalGate:pv.payments.gatedHours,
+                shortageHours:pv.consumption.nahrung.shortageHours+pv.consumption.medikamente.shortageHours}}));
+          '
+      - name: Originale Standardtests
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b8e-global-export-seed42
+          path: ${{ runner.temp }}/b8e/*.json

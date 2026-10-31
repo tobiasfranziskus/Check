@@ -37,11 +37,19 @@ jobs:
             assert.equal(a.sourceSha256,b.sourceSha256);
             assert.equal(b.sourceSha256,c.sourceSha256);
             for(const q of [a,b,c]){
-              assert.equal(q.hours,2160);assert.equal(q.roundtrips,8);
+              assert.equal(q.hours,2160);assert.equal(q.roundtrips,10);
               assert.equal(q.final.minted-q.final.burned,
                 q.final.minted-q.final.burned);
             }
             assert.equal(b.contract.amount,0);
+            assert.equal(b.contract.hulls,1);
+            assert.equal(c.contract.hulls,1);
+            assert.equal(b.contract.firstSold,0,"ohne Kaeufercash kein Verkauf");
+            assert.equal(c.contract.firstSold,7,"erste wirklich bezahlte Liefermenge");
+            assert.equal(c.contract.secondSold,0,"zweite Liefermenge ohne erneuten Geldtransfer blockiert");
+            assert.equal(c.contract.amount,403);
+            assert.equal(c.contract.attemptedSecond,true);
+            assert.equal(c.final.medicinesProduced,a.final.medicinesProduced+3);
             assert(c.contract.invoices<=1);
             assert(c.contract.amount>=0);
             console.log("B8D_GATE",JSON.stringify({

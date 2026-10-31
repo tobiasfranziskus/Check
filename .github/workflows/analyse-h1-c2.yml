@@ -1,0 +1,105 @@
+name: Aphros Void H1-C2 - 480 ISK Grundverbrauch als Einzeltest
+on:
+  pull_request:
+    paths:
+      - tools/analyse-h1-c2-budget480.mjs
+      - tools/analyse-h1-c3-first10.mjs
+      - .github/workflows/analyse-h1-c2.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  h1-c2-only-seed42-case:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Originale Spielerbefehle aus historischer B1-Messung
+        shell: bash
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399
+          mkdir -p "$RUNNER_TEMP/h1-c2-b1" "$RUNNER_TEMP/h1-c2-results"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/h1-c2-b1"
+      - name: Kontrolle - Regel14 ab Tick 1, 365 Tage, Seed42
+        shell: bash
+        run: |
+          node tools/analyse-h1-c2-budget480.mjs --seed=42 --case=handel-flotte --mode=control --b1="$RUNNER_TEMP/h1-c2-b1" --out="$RUNNER_TEMP/h1-c2-results"
+      - name: Genau ein H1-Ansatz - 480 ISK pro Weltspieltag
+        shell: bash
+        run: |
+          node tools/analyse-h1-c2-budget480.mjs --seed=42 --case=handel-flotte --mode=h1 --b1="$RUNNER_TEMP/h1-c2-b1" --out="$RUNNER_TEMP/h1-c2-results"
+      - name: Ersten 10 Tage - Kontrolle und Geschaefte/Kassen/Kosten/Fonds
+        shell: bash
+        run: |
+          node tools/analyse-h1-c3-first10.mjs --seed=42 --case=handel-flotte --mode=control --b1="$RUNNER_TEMP/h1-c2-b1" --out="$RUNNER_TEMP/h1-c2-results"
+      - name: Ersten 10 Tage - dieselbe H1-Variante nur im Analysecore
+        shell: bash
+        run: |
+          node tools/analyse-h1-c3-first10.mjs --seed=42 --case=handel-flotte --mode=h1 --b1="$RUNNER_TEMP/h1-c2-b1" --out="$RUNNER_TEMP/h1-c2-results"
+      - name: Ereigniskonten bis Tag 10 exakt mit voller Langzeitreihe abgleichen
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import assert from "node:assert/strict";
+            const d=process.env.RUNNER_TEMP+"/h1-c2-results/";
+            for(const [mode,expected] of [["control","84f1a88d2701ff2a"],["h1","7f1795b5bde050ba"]]){
+              const x=JSON.parse(fs.readFileSync(d+"h1-c3-handel-flotte-42-"+mode+".json"));
+              const y=JSON.parse(fs.readFileSync(d+"h1-c2-handel-flotte-42-"+mode+".json"));
+              assert.equal(x.days,10);assert.equal(x.hours,240);assert.equal(x.roundtrips,8);
+              assert.equal(x.commands,7,"genau sieben B1-Befehle bis Tag10");
+              assert.equal(x.final.hash,expected,"gepinntes Tag10 aus Original H1-C2-CI-Artefakt");
+              assert.equal(x.final.hash,y.daily[9].hash,"100 Prozent unveraenderte Tag10-Trajektorie");
+              assert.equal(x.h1.paid,y.h1.days.slice(0,10).reduce((n,e)=>n+e.paid,0),"originales H1-Budget");
+              assert.equal(x.firstTenTrace.atDay10.npc1,y.daily[9].npc.npc1.cash);
+              assert.equal(x.firstTenTrace.atDay10.npc2,y.daily[9].npc.npc2.cash);
+              for(const owner of ["npc1","npc2"])assert.equal(x.firstTenTrace.accountReconciliation[owner].siphoned>=0,true);
+              console.log("H1_C3_TRACE_VERIFIED",JSON.stringify({mode,hash:x.final.hash,events:x.firstTenTrace.events.length,attribution:x.firstTenTrace.accountReconciliation}));
+            }
+          '
+      - name: Bilanzvergleich und Abbruchgrenzen - keinen Erfolg voraussetzen
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/h1-c2-results/";
+            const c=JSON.parse(fs.readFileSync(dir+"h1-c2-handel-flotte-42-control.json"));
+            const h=JSON.parse(fs.readFileSync(dir+"h1-c2-handel-flotte-42-h1.json"));
+            assert.equal(c.sourceSha256,"035fe8b486ff2d515ca6379ad682b4b15d89d5d051866e287425ed425e1cbfc9");
+            assert.equal(c.sourceSha256,h.sourceSha256);
+            assert.equal(c.initialHash,h.initialHash,"identische v14-Welt und Befehle ab Tick1");
+            assert.equal(c.variantSha256,c.sourceSha256);
+            assert.notEqual(h.variantSha256,c.sourceSha256);
+            for(const x of [c,h]){
+              assert.equal(x.commands,9);
+              assert.equal(x.days,365);
+              assert.equal(x.hours,8760);
+              assert.equal(x.roundtrips,18);
+              assert.equal(x.daily.length,365);
+              assert.equal(x.credit.loans,0,"kein B6e-Kredit");
+              assert.equal(x.consumerAudit.days.length,365);
+            }
+            assert.equal(c.h1.paid,0);
+            assert(h.h1.paid>=0&&h.h1.paid<=480*365);
+            assert(h.h1.days.every(x=>x.paid<=480&&x.paid>=0));
+            assert.equal(h.h1.payEvents.reduce((s,x)=>s+x.paid,0),h.h1.paid);
+            console.log("H1_C2_COMPARISON",JSON.stringify({
+              control:{shortage:c.final.shortage,npc:c.final.npc,playerCash:c.final.playerCash,tradeSales:c.traderSales,workingDue:c.due,workingPaid:c.paid,workingUnpaid:c.unpaid,consumption:c.consumerAudit.aggregate,minted:c.final.minted,burned:c.final.burned,alderaSi:c.final.siliconAldera,alderaParts:c.final.partsAldera},
+              h1:{shortage:h.final.shortage,npc:h.final.npc,playerCash:h.final.playerCash,tradeSales:h.traderSales,workingDue:h.due,workingPaid:h.paid,workingUnpaid:h.unpaid,consumption:h.consumerAudit.aggregate,minted:h.final.minted,burned:h.final.burned,alderaSi:h.final.siliconAldera,alderaParts:h.final.partsAldera},
+              h1Paid:h.h1.paid,receivers:h.h1.byStation,daysWithPayment:h.h1.days.filter(x=>x.paid>0).length,
+              firstPayment:h.h1.payEvents[0]?.tick??null,lastPayment:h.h1.payEvents.at(-1)?.tick??null
+            }));
+          '
+      - name: Standardtests des unveraenderten Produktkerns
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h1-c2-budget480-seed42
+          path: ${{ runner.temp }}/h1-c2-results/*.json

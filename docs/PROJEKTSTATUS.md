@@ -1,5 +1,9 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B8b – echte Spielertransfers und Fabrik-Nachschub (31.10.2026)
+
+Der isolierte B8b-Zweig auf `main 517728a9` beobachtet den ursprünglichen Regel14-Core ausschließlich lesend: tatsächlich ausgeführte Spielerhandelszahlungen und Stationsdividenden (Tage 1–14), Fabrik-Kassen, Eis-/Materialquellen, Handelsreserven, Originalpreise, Käuferkapazität und theoretische Fahrtvollkosten. Historischer Spielerfall Seed42/90d und passive Seed42/14d-Kontrolle samt Geld-/Warenaudits, Replayhashes und Save/Load sind als eigener CI-Lauf vorgesehen; **noch kein Ausführungsergebnis oder Produktfreigabe**. [B8b Prüfprotokoll](ANALYSE_B8B_GELD_UND_NACHSCHUB.md). Keine Regel-, Schema-, Code-, UI- oder Speicheränderung auf `main`; keine iPad-/NAS-Abnahme.
+
 ## [ARCHIV/ANALYSE] Wirtschaftsdiagnose und GitHub-Bereinigung · 31.10.2026
 
 **Produktive Basis vor Dokumentations-Merge:** `main d454d0661dee48a7bfdb843d05096982d799e51f`, **v0.12.5 / Regel 14 / Schema 8**. Alle bisherigen Wirtschafts- und Eskortenanalysen enthalten **keine** neue produktive Preis-, Routen-, Piraten-, Jäger-, Geld-, Kredit-, Werft- oder Spielstandsregel. **B5a #42 und B5b #46 sind integriert**; die nachfolgenden B6-Tests wurden nur auf isolierten Analysebranches durchgeführt. Echte iPad-/NAS-Abnahme steht aus.

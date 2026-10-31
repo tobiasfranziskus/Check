@@ -55,7 +55,7 @@ jobs:
               assert.equal(x.consumerAudit.aggregate.weightedClaim,x.consumerAudit.aggregate.nahrung*30+x.consumerAudit.aggregate.medikamente*105);
               console.log("H1_C1_VERIFIED",JSON.stringify({case:x.scenario,days:x.days,nominalWeighted:x.consumerAudit.aggregate.weightedClaim,consume:x.consumerAudit.aggregate,playerCashEnd:x.final.playerCash,mintedEnd:x.final.minted,burnedEnd:x.final.burned,hash:x.final.hash}));
             }
-            assert.equal(b.initialLegacyHash,"bb4b5db1d442541b","B1 historical hash"); 
+            assert.equal(b.initialLegacyHash,"bf5d35d6619d23d8","B1 Regel-12 historischer Hash"); 
           '
       - name: Bestehende Produkt-Regression (kein Safari-Test)
         run: node --test tests/*.test.mjs

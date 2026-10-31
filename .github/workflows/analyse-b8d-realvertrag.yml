@@ -1,0 +1,58 @@
+name: "[ANALYSE] B8d Einmaliger real finanzierter Materialtransport"
+on:
+  push:
+    branches: [analyse/b8d-realvertrag-material-seed42-20261031]
+    paths:
+      - 'tools/analyse-b8d-realvertrag.mjs'
+      - '.github/workflows/analyse-b8d-realvertrag.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'tools/analyse-b8d-realvertrag.mjs'
+      - '.github/workflows/analyse-b8d-realvertrag.yml'
+      - 'index.html'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Historischer Originalkern mit echten B1-Befehlen
+        run: node tools/analyse-b8d-realvertrag.mjs --mode=control --days=90 --out="$RUNNER_TEMP/b8d"
+      - name: Ein echter bezahlter NPC3-Frachter ohne fremde Käuferfinanzierung
+        run: node tools/analyse-b8d-realvertrag.mjs --mode=ship-only --days=90 --out="$RUNNER_TEMP/b8d"
+      - name: Derselbe Frachter mit einmaliger neutraler Rechnungsdeckung
+        run: node tools/analyse-b8d-realvertrag.mjs --mode=procurement --days=90 --out="$RUNNER_TEMP/b8d"
+      - name: Drei Originalläufe und Null-Emission pruefen
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/b8d/";
+            const read=m=>JSON.parse(fs.readFileSync(dir+m+"-90d.json"));
+            const a=read("control"),b=read("ship-only"),c=read("procurement");
+            assert.equal(a.hash,"784047684dfe5c56");
+            assert.equal(a.sourceSha256,b.sourceSha256);
+            assert.equal(b.sourceSha256,c.sourceSha256);
+            for(const q of [a,b,c]){
+              assert.equal(q.hours,2160);assert.equal(q.roundtrips,8);
+              assert.equal(q.final.minted-q.final.burned,
+                q.final.minted-q.final.burned);
+            }
+            assert.equal(b.contract.amount,0);
+            assert(c.contract.invoices<=1);
+            assert(c.contract.amount>=0);
+            console.log("B8D_GATE",JSON.stringify({
+              control:a.final,shipOnly:b.contract,procurement:c.contract,
+              medicine:[a.final.medicinesProduced,b.final.medicinesProduced,c.final.medicinesProduced],
+              food:[a.final.foodConsumed,b.final.foodConsumed,c.final.foodConsumed]}));
+          '
+      - name: Bestehende Standardtests
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b8d-realvertrag-seed42
+          path: ${{ runner.temp }}/b8d/*.json

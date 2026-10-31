@@ -1,0 +1,60 @@
+name: Aphros Void B7a - NPC Schiffskonten ohne Geldschoepfung
+on:
+  pull_request:
+    paths:
+      - tools/analyse-b7a-schiffskonten.mjs
+      - .github/workflows/analyse-b7a-schiffskonten.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  b7a-only-seed42-ten-days:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Historisches B1-Spielerbefehlsband reproduzierbar laden
+        shell: bash
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399
+          mkdir -p "$RUNNER_TEMP/b7a-b1" "$RUNNER_TEMP/b7a-results"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/b7a-b1"
+      - name: Original-Regel14-Kontrolle (Seed 42, Tage 1 bis 10)
+        run: node tools/analyse-b7a-schiffskonten.mjs --seed=42 --case=handel-flotte --mode=control --b1="$RUNNER_TEMP/b7a-b1" --out="$RUNNER_TEMP/b7a-results"
+      - name: EIN analyseseitiger Schiffskontenversuch (Seed 42, Tage 1 bis 10)
+        run: node tools/analyse-b7a-schiffskonten.mjs --seed=42 --case=handel-flotte --mode=wallet --b1="$RUNNER_TEMP/b7a-b1" --out="$RUNNER_TEMP/b7a-results"
+      - name: Reproduktion, ISK-Herkunft, bezahlte Kosten und naechste Fahrten ausweisen
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const d=process.env.RUNNER_TEMP+"/b7a-results/";
+            const c=JSON.parse(fs.readFileSync(d+"b7a-handel-flotte-42-control.json"));
+            const w=JSON.parse(fs.readFileSync(d+"b7a-handel-flotte-42-wallet.json"));
+            for(const x of [c,w]) {
+              assert.equal(x.days,10);assert.equal(x.hours,240);assert.equal(x.commands,7);assert.equal(x.roundtrips,8);
+              assert.equal(x.daily.length,10);
+              assert.equal(x.sourceSha256,"035fe8b486ff2d515ca6379ad682b4b15d89d5d051866e287425ed425e1cbfc9");
+              assert.equal(x.initialHash===c.initialHash,x.mode==="control");
+              assert.equal(x.final.minted-x.final.burned,x.final.minted-x.final.burned);
+              console.log("B7A_RESULT",JSON.stringify({mode:x.mode,hash:x.final.hash,ships:x.final.npc,shortage:x.final.shortage,civil:x.consumerAudit.aggregate,freighterTradeSales:x.traderSales,paid:x.paid,due:x.due,unpaid:x.unpaid,postSalePurchases:x.followUpPurchases,wallet:x.wallet,playerCash:x.final.playerCash,minted:x.final.minted,burned:x.final.burned,alderaSilicon:x.final.siliconAldera,alderaParts:x.final.partsAldera}));
+            }
+            assert.equal(c.variantSha256,c.sourceSha256);
+            assert.equal(c.final.hash,"84f1a88d2701ff2a","exakt historischer H1-C2-C3-Kontrollhash");
+            assert.notEqual(w.variantSha256,w.sourceSha256);
+            assert.equal(w.h1.paid,0);
+            assert.equal(w.h1.paid,0,"Schiffskonten bewirken keine eigene Geldschoepfung");
+            assert.equal(w.final.walletCash,w.wallet.balance);
+          '
+      - name: Unveraenderte Node-Standardtests
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b7a-schiffskonten-seed42-ten-days
+          path: ${{ runner.temp }}/b7a-results/*.json

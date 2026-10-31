@@ -59,6 +59,22 @@ jobs:
             assert.equal(two.contract.firstSold,7);
             assert.equal(two.contract.secondSold,7);
             assert(two.final.medicinesProduced>one.final.medicinesProduced);
+            assert.equal(two.contract.thirdSold,0,"dritter Transport ohne Geldfinanzierung");
+            assert.equal(two.contract.attemptedThird,true);
+            assert.equal(two.contract.amount,816);
+            assert.equal(two.contract.shipOperatingDue,682);
+            assert.equal(two.contract.shipOperatingPaid,682);
+            assert.equal(two.contract.shipTradeFees,50);
+            assert.equal(two.contract.sourceBuys.length,3);
+            const purchases=two.contract.sourceBuys.reduce((a,x)=>a+x.cost,0);
+            const purchaseFees=two.contract.sourceBuys.reduce((a,x)=>a+x.fee,0);
+            const realized=two.contract.goodsInvoice-purchases
+              -(two.contract.shipTradeFees-purchaseFees)-two.contract.shipOperatingPaid;
+            assert.equal(realized,-389,"keine Doppelzaehlung der Kaufgebuehren");
+            console.log("B8G_FULL_COST",JSON.stringify({
+              sales:two.contract.goodsInvoice,purchases,purchaseFees,
+              saleFees:two.contract.shipTradeFees-purchaseFees,
+              shipWork:two.contract.shipOperatingPaid,realized}));
             console.log("B8G_GATE",JSON.stringify({
               original:base.final,ship:ship.contract,once:one.contract,twice:two.contract,
               medical:{base:base.final.medicinesProduced,one:one.final.medicinesProduced,

@@ -24,31 +24,44 @@ jobs:
           mkdir -p "$RUNNER_TEMP/b7b-b1" "$RUNNER_TEMP/b7b-out"
           git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/b7b-b1"
       - name: Reine Regel14 Kontrolle Tag1-10
-        run: node tools/analyse-b7b-gemeinsame-konten.mjs --seed=42 --case=handel-flotte --mode=control --b1="$RUNNER_TEMP/b7b-b1" --out="$RUNNER_TEMP/b7b-out"
+        run: node tools/analyse-b7b-gemeinsame-konten.mjs --seed=42 --case=handel-flotte --mode=control --days=10 --b1="$RUNNER_TEMP/b7b-b1" --out="$RUNNER_TEMP/b7b-out"
       - name: B7b Einziger Finanzierungsversuch inklusive Spielerbefehl
-        run: node tools/analyse-b7b-gemeinsame-konten.mjs --seed=42 --case=handel-flotte --mode=wallet --b1="$RUNNER_TEMP/b7b-b1" --out="$RUNNER_TEMP/b7b-out"
+        run: node tools/analyse-b7b-gemeinsame-konten.mjs --seed=42 --case=handel-flotte --mode=wallet --days=10 --b1="$RUNNER_TEMP/b7b-b1" --out="$RUNNER_TEMP/b7b-out"
+      - name: Langlauf dieselbe unveraenderte Kontrolle 90 Tage
+        run: node tools/analyse-b7b-gemeinsame-konten.mjs --seed=42 --case=handel-flotte --mode=control --days=90 --b1="$RUNNER_TEMP/b7b-b1" --out="$RUNNER_TEMP/b7b-out"
+      - name: Langlauf dieselbe gemeinsame Walletregel 90 Tage
+        run: node tools/analyse-b7b-gemeinsame-konten.mjs --seed=42 --case=handel-flotte --mode=wallet --days=90 --b1="$RUNNER_TEMP/b7b-b1" --out="$RUNNER_TEMP/b7b-out"
       - name: Vergleich ueber unveraenderte Kontrolle und Geldquellen
         shell: bash
         run: |
           node --input-type=module -e '
             import fs from "node:fs";import assert from "node:assert/strict";
             const d=process.env.RUNNER_TEMP+"/b7b-out/";
-            const c=JSON.parse(fs.readFileSync(d+"b7b-handel-flotte-42-control.json"));
-            const w=JSON.parse(fs.readFileSync(d+"b7b-handel-flotte-42-wallet.json"));
-            for(const x of [c,w]){
-              assert.equal(x.days,10);assert.equal(x.hours,240);assert.equal(x.roundtrips,8);assert.equal(x.commands,7);
-              assert.equal(x.daily.length,10);assert.equal(x.h1.paid,0);
-              assert.equal(x.sourceSha256,"035fe8b486ff2d515ca6379ad682b4b15d89d5d051866e287425ed425e1cbfc9");
+            const read=(mode,days)=>JSON.parse(fs.readFileSync(d+"b7b-handel-flotte-42-"+mode+"-"+days+"d.json"));
+            for(const days of [10,90]){
+              const c=read("control",days),w=read("wallet",days);
+              for(const x of [c,w]){
+                assert.equal(x.days,days);assert.equal(x.hours,days*24);assert.equal(x.roundtrips,days===10?8:14);
+                assert.equal(x.commands,7);assert.equal(x.daily.length,days);assert.equal(x.h1.paid,0);
+                assert.equal(x.sourceSha256,"035fe8b486ff2d515ca6379ad682b4b15d89d5d051866e287425ed425e1cbfc9");
+                assert.equal(55000+x.final.minted-x.final.burned,50000,"Weltgeld-Summe muss alle vorhandenen Schiffs-/Konzernkassen enthalten");
+              }
+              assert.equal(c.variantSha256,c.sourceSha256);
+              assert.notEqual(w.variantSha256,w.sourceSha256);
+              assert.equal(w.wallet.manualFund.owner,"house");
+              assert.equal(w.wallet.manualFund.betrag,1000);
+              assert.equal(w.wallet.manualFundExecuted,true);
+              if(days===10)assert.equal(c.final.hash,"84f1a88d2701ff2a","gepinntes B7a/H1-C3-Kontrollhash");
+              if(days===90){
+                assert.equal(c.daily[9].hash,read("control",10).final.hash,"Kontrolle Tag10 identisch");
+                assert.equal(w.daily[9].hash,read("wallet",10).final.hash,"Wallet Tag10 identisch");
+              }
+              console.log("B7B_CAUSAL_COMPARISON",JSON.stringify({
+                days,
+                control:{cash:c.final.npc,shortage:c.final.shortage,sales:c.traderSales,unpaid:c.unpaid,paid:c.paid,due:c.due,consumption:c.consumerAudit.aggregate,playerCash:c.final.playerCash,minted:c.final.minted,burned:c.final.burned,alderaParts:c.final.partsAldera},
+                sharedWallet:{cash:w.final.npc,shortage:w.final.shortage,sales:w.traderSales,unpaid:w.unpaid,paid:w.paid,due:w.due,consumption:w.consumerAudit.aggregate,playerCash:w.final.playerCash,minted:w.final.minted,burned:w.final.burned,walletCash:w.final.walletCash,walletCount:w.final.walletCount,alderaParts:w.final.partsAldera},
+              }));
             }
-            assert.equal(c.final.hash,"84f1a88d2701ff2a","gepinntes B7a/H1-C3-Kontrollhash");
-            assert.equal(c.variantSha256,c.sourceSha256);
-            assert.notEqual(w.variantSha256,w.sourceSha256);
-            assert.equal(w.wallet.manualFund.owner,"house");
-            assert.equal(w.wallet.manualFund.betrag,1000);
-            console.log("B7B_CAUSAL_COMPARISON",JSON.stringify({
-              control:{cash:c.final.npc,shortage:c.final.shortage,sales:c.traderSales,unpaid:c.unpaid,paid:c.paid,due:c.due,consumption:c.consumerAudit.aggregate,playerCash:c.final.playerCash,minted:c.final.minted,burned:c.final.burned},
-              sharedWallet:{cash:w.final.npc,shortage:w.final.shortage,sales:w.traderSales,unpaid:w.unpaid,paid:w.paid,due:w.due,consumption:w.consumerAudit.aggregate,playerCash:w.final.playerCash,minted:w.final.minted,burned:w.final.burned,walletCash:w.final.walletCash,walletCount:w.final.walletCount,playerShip:w.wallet.accounts.sh002||null},
-            }));
           '
       - name: 67 Standardtests
         run: node --test tests/*.test.mjs

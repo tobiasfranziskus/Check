@@ -418,6 +418,33 @@ watcher.dividendTransfer=(state,station,player,n)=>{
 const observed=engine(instrument(src),watcher,probeMain,h1Observed);
 assert.equal(observed.r.rulesVersion,14);
 
+const manualFlightProof=mode==='wallet'?(()=>{
+  const test=observed.c.createState(42,observed.r);
+  const ship=test.ships.sh002;
+  assert(ship&&ship.owner==='house'&&ship.klasse==='frachter'&&ship.phase==='dock');
+  const routes=Object.keys(observed.r.world.stations).sort().map(station=>{
+    const r=observed.c.route(observed.r.world,ship.system,observed.r.world.stations[station].system);
+    return {station,time:r?.zeit??0};
+  }).filter(x=>x.time>0&&Math.ceil(x.time/60)*observed.r.world.betriebskosten.frachter<=test.owners.house.cash)
+    .sort((a,b)=>a.time-b.time||a.station.localeCompare(b.station));
+  assert(routes.length,'eine finanzierbare Spieler-Verbindung existiert');
+  const target=routes[0],fare=Math.ceil(target.time/60)*observed.r.world.betriebskosten.frachter;
+  const move={type:'shipMove',owner:'house',schiff:'sh002',ziel:target.station};
+  assert(observed.c.submit(test,move,observed.r).ok,'Spieler darf Bewegung versuchen');
+  const denied=observed.c.step(test,observed.r)[0];
+  assert(denied&&!denied.ok,'ungedeckte Spielerfahrt wird vor Start abgelehnt');
+  assert.equal(test.ships.sh002.phase,'dock');
+  const finance={type:'shipFund',owner:'house',schiff:'sh002',betrag:fare};
+  assert(observed.c.submit(test,finance,observed.r).ok,'Spieler finanziert aus eigenem existierenden Kapital');
+  const funded=observed.c.step(test,observed.r)[0];assert(funded?.ok);
+  assert.equal(test.pilotAccounts.sh002.cash,fare);
+  assert(observed.c.submit(test,move,observed.r).ok);
+  const departed=observed.c.step(test,observed.r)[0];assert(departed?.ok);
+  assert.equal(test.ships.sh002.phase,'reise');
+  assert.equal(test.pilotAccounts.sh002.cash,fare);
+  return {destination:target.station,minutes:target.time,fare,rejectedBeforeFunding:true,departedAfterFunding:true};
+})():null;
+
 const ref=JSON.parse(fs.readFileSync(path.join(opt('b1','/tmp/h1-c2-b1'),'docs/data/wirtschaft-langzeit-v12.json'),'utf8'));
 const originalPlayer=ref.players.find(p=>p.scenario===scenario&&p.seed===seed);
 assert(originalPlayer&&originalPlayer.commands.length===9,'exaktes historisches B1 Spielerbefehlsband (9 Befehle)');
@@ -540,6 +567,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
     hoursWithPayment:h1Observed.hoursWithPayment,hoursWithoutGoods:h1Observed.hoursWithoutGoods,
     days:Object.values(h1Observed.daily).sort((a,b)=>a.day-b.day),
     payEvents:h1Observed.payEvents},
+  manualFlightProof,
   credit:probeMain.stats,contracts:state.b6eContracts||{},
   initialHash,initialLegacyHash,days,hours,roundtrips,commands:cursor,
   paid:sum(Object.values(watcher.owners).map(x=>x.operatingPaid)),

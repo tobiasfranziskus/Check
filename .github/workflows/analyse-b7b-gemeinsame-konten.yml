@@ -413,6 +413,11 @@ jobs:
             assert.notEqual(x.variantSha256,old.variantSha256,"nur Risiko-Entscheidung variiert");
             assert.deepEqual(x.daily.slice(0,15),old.daily.slice(0,15));
             assert.equal(x.b7fInvestment.onceOnly,1);
+            for(const y of [old,x]){
+              const hulls=y.hulls.filter(h=>h.owner==="npc3"&&h.klasse==="frachter");
+              assert.equal(hulls.length,1,"B7i und B7j genau EIN bezahltes NPC3-Schiff, kein Ersatz im Verlust-Tick");
+              assert.equal(hulls[0].ship,"sh131");
+            }
             assert.equal(x.b7fInvestment.ship,old.b7fInvestment.ship);
             assert.equal(x.b7fInvestment.quantity,old.b7fInvestment.quantity);
             assert.equal(x.b7fInvestment.soldAt,old.b7fInvestment.soldAt);

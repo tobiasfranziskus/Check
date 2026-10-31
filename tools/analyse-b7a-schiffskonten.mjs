@@ -59,7 +59,7 @@ function walletSource(original){
    assert.equal(s.split(needle).length,2,'B7a eindeutiger Coreanker '+needle);
    s=s.replace(needle,withText);
  };
- const module=String.raw\`
+ const module=String.raw`
 const m_pilot_accounts = (() => {
 const eligible=s=> (s.owner==='npc1'||s.owner==='npc2') && s.klasse==='frachter';
 const asset=w=>['miner','frachter','jaeger','bauschiff'].includes(w);
@@ -115,7 +115,7 @@ function settle(state) {
 }
 return {eligible,get,account,init,newShip,retire,reserve,enough,available,settle};
 })();
-\`;
+`;
  replace('const m_core_handel = (() => {',module+'\nconst m_core_handel = (() => {');
  replace("  return state;\n}\nreturn { leereStats, kontoStats, kampfStats, zuschussStats, protokolliere, schiffId, neuesSchiff, createState };",
    "  m_pilot_accounts.init(state);\n  return state;\n}\nreturn { leereStats, kontoStats, kampfStats, zuschussStats, protokolliere, schiffId, neuesSchiff, createState };");

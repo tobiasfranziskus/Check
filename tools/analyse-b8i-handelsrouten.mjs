@@ -287,8 +287,15 @@ for(let tick=1;tick<=days*1440;tick++){
  if(tick%1440===0){
    const day=tick/1440;
    if(dates.has(day)){
+     const traderShips=Object.values(state.ships).filter(sh=>
+       sh.klasse==='frachter'&&(sh.owner==='npc1'||sh.owner==='npc2'));
      points.push({day,hash:a.core.hash(state),house:state.owners.house.cash,
        npc1:state.owners.npc1.cash,npc2:state.owners.npc2.cash,
+       npc1Freighters:traderShips.filter(sh=>sh.owner==='npc1').length,
+       npc2Freighters:traderShips.filter(sh=>sh.owner==='npc2').length,
+       traderFreighters:traderShips.length,
+       traderTravelling:traderShips.filter(sh=>sh.phase==='reise').length,
+       traderLoaded:traderShips.filter(sh=>Object.values(sh.ladung).some(q=>q>0)).length,
        physicalTrades:state.stats.handel,
        medical:state.ledger.medikamente.consumed,
        food:state.ledger.nahrung.consumed});

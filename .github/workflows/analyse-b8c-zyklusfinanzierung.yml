@@ -19,9 +19,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Spielerkrise: Bedarf, Marktchancen und zwei Zyklen pruefen
+      - name: 'Spielerkrise - Bedarf, Marktchancen und zwei Zyklen pruefen'
         run: node tools/analyse-b8c-zyklusfinanzierung.mjs --scenario=handel-flotte --days=90 --out="$RUNNER_TEMP/b8c"
-      - name: Passive Welt: Kontrollangebote vergleichen
+      - name: 'Passive Welt - Kontrollangebote vergleichen'
         run: node tools/analyse-b8c-zyklusfinanzierung.mjs --scenario=passiv --days=14 --out="$RUNNER_TEMP/b8c"
       - name: Berichte strukturell pruefen
         shell: bash

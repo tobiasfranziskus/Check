@@ -67,7 +67,7 @@ function observer(meta){
      assert.equal(qty,7);
      assert(!meta.proof,'keine unbelegte vorangegangene Ware im Frachter');
      meta.proof={ship:ship.id,owner:ship.owner,from:station,ware,qty,
-       cost:val+fee,boughtAt:world.tick,round:meta.round};
+       cost:val+fee,fee,boughtAt:world.tick,round:meta.round};
      meta.sourceBuys.push({...meta.proof});
    }
   },

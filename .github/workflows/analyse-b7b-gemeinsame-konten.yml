@@ -196,7 +196,10 @@ jobs:
             assert(events.some(z=>z.type==="loaded-flight-submitted"));
             assert(events.some(z=>z.type==="real-sale"&&z.qty>0));
             assert.equal(x.sourceSha256,baseline.sourceSha256);
-            assert.equal(x.variantSha256,baseline.variantSha256);
+            assert.notEqual(x.variantSha256,baseline.variantSha256,
+              "nur B7f–j analytischer Einmal-Frachter-Verlust-Sollslot-Guard, kein Produktpatch");
+            assert.equal(x.final.hash,"23eb3796fb0b5ec3",
+              "einmaliger Verlust-Guard darf historische B7f-Welt und 90d Hash nicht veraendern");
             assert.equal(x.daily[14].hash,baseline.daily[14].hash,"bis vor B7f-Start gleiche Welt");
             console.log("B7F_REAL_INVESTMENT",JSON.stringify({
               paid:x.paid, due:x.due,unpaid:x.unpaid, hashes:{baseline90:baseline.final.hash,investor90:x.final.hash},

@@ -7,10 +7,13 @@ import {createHash} from 'node:crypto';
 
 const args=process.argv.slice(2);
 const opt=(k,d)=>args.find(x=>x.startsWith('--'+k+'='))?.slice(k.length+3)??d;
-assert(args.every(x=>/^--(seed|case|b1|out|mode|days)=/.test(x)),'unbekannter Parameter');
+assert(args.every(x=>/^--(seed|case|b1|out|mode|days|investment)=/.test(x)),'unbekannter Parameter');
 const days=Number(opt('days','10'));
 assert([10,90].includes(days),'B7b genau 10 oder 90 Spieltage');
 const mode=opt('mode','control');
+const investment=opt('investment','none');
+assert(['none','npc3'].includes(investment),'B7f nur kein oder ein realer NPC3-Einstieg');
+assert(investment==='none'||(mode==='wallet'&&days===90),'B7f ausschliesslich B7b Wallet Seed42 90d');
 assert(['control','wallet'].includes(mode),'B7a nur Kontrollkern oder Schiffskonto-Gegenprobe');
 const scenario=opt('case',null), seed=scenario?{miner:42,'handel-flotte':42,station:1234,jagd:98765}[scenario]:Number(opt('seed','42'));
 assert.equal(seed,42,'H1-C1: ausschliesslich Seed 42');
@@ -451,6 +454,96 @@ assert(originalPlayer&&originalPlayer.commands.length===9,'exaktes historisches 
 assert.equal(originalPlayer.commands[0].tick,1);
 assert.equal(originalPlayer.commands.at(-1).tick,259201);
 const expected=originalPlayer.commands.filter(x=>x.tick<=days*1440).map(({tick,...cmd})=>({tick,cmd}));
+
+// B7f: ein EINMALIGER konzernfinanzierter Einstieg. Die einzige neue
+// Entscheidung ist das zeitlich fixierte Planen eines Frachter-Sollplatzes;
+// die Huelle kauft m_core_schiffbau.ersatzkauf ORIGINAL ueber handel(),
+// Bewegung/Kauf nutzen echte validierte NPC-Eigentumerbefehle und Ankunft().
+const b7f={enabled:investment==='npc3',stage:'not-started',ship:null,createdAt:null,
+  purchasedAt:null,departedAt:null,soldAt:null,quantity:0,
+  events:[],before:null,after:null,onceOnly:0};
+const tradeSnapshot=(world)=>({
+  tick:world.tick,ownerCash:world.owners.npc3.cash,
+  alderaCash:world.owners.st_aldera.cash,alderaSilicon:world.stations.st_aldera.lager.silizium||0,
+  alderaParts:world.stations.st_aldera.lager.bauteil||0,
+  dravosSilicon:world.stations.st_dravos.lager.silizium||0,
+  npc3Miners:Object.values(world.ships).filter(z=>z.owner==='npc3'&&z.klasse==='miner').length,
+  npc3Freighters:Object.values(world.ships).filter(z=>z.owner==='npc3'&&z.klasse==='frachter').length,
+  recipes:sum(Object.values(world.stats.rezepte)),
+  goodsProduced:world.ledger.bauteil.produced,
+  cashMinted:world.minted,cashBurned:world.burned
+});
+function b7fBeforeStep(world,core) {
+  if(!b7f.enabled)return null;
+  // Called twice, once observed then once replay; only observed records.
+  if(world.tick===15*1440&&b7f.stage==='not-started'){
+    if(core===observed.c){
+      b7f.before=tradeSnapshot(world);
+      const quote=b7dQuote(world,'st_dravos','st_aldera','silizium');
+      assert(quote.qty===37 && quote.afterWork===624,'fixierter echter B7d-Markt am Tag15');
+      assert.equal(world.owners.npc3.cash,4353,'bestehendes finanzierbares NPC3-Kapital');
+      b7f.events.push({type:'intent',...tradeSnapshot(world),quote});
+      b7f.stage='await-hull';
+    }
+  }
+  if(world.tick===15*1440){
+    assert(!world.sollflotte.npc3.some(x=>x.klasse==='frachter'),'NPC3 hatte vorher keine Frachter');
+    world.sollflotte.npc3.push({klasse:'frachter',heimat:'dravos',auftrag:'halten',ware:null});
+    // Kein Geld und keine Ware gebucht; echter Kauf beim naechsten Stunden-Tick.
+  }
+  if(world.tick<=15*1440)return;
+  const ship=b7f.ship&&world.ships[b7f.ship];
+  if(core===observed.c&&b7f.stage==='await-hull'){
+    const newShips=Object.values(world.ships).filter(x=>x.owner==='npc3'&&x.klasse==='frachter');
+    if(newShips.length===1){
+      const x=newShips[0];
+      b7f.ship=x.id;b7f.createdAt=world.tick;b7f.onceOnly++;
+      assert.equal(x.phase,'reise','Werftkauf setzt reale Leerpositionierung in Gang');
+      assert.equal(x.ziel,'st_dravos');
+      b7f.events.push({type:'real-hull-purchased',ship:x.id,...tradeSnapshot(world)});
+      b7f.stage='await-dravos';
+    }
+  }
+  if(core!==observed.c||!ship)return;
+  if(b7f.stage==='await-dravos'&&ship.phase==='dock'&&ship.system==='dravos'){
+    const q=b7dQuote(world,'st_dravos','st_aldera','silizium');
+    assert(q.qty>0,'nach leerem Schiffskauf real zahlender Siliziumkaeufer');
+    const buy={type:'shipTrade',owner:'npc3',schiff:ship.id,ware:'silizium',menge:q.qty,kauf:true};
+    assert(core.submit(world,buy,observed.r).ok,'NPC3 realer manueller Handelsauftrag');
+    b7f.quantity=q.qty;b7f.purchasedAt=world.tick+1;
+    b7f.events.push({type:'silicon-purchase-submitted',ship:ship.id,qty:q.qty,...tradeSnapshot(world),quote:q});
+    b7f.stage='await-buy';
+  }else if(b7f.stage==='await-buy'&&ship.phase==='dock'&&ship.system==='dravos'){
+    assert.equal(ship.ladung.silizium,b7f.quantity,'echter Warenkauf vor Abflug');
+    const move={type:'shipMove',owner:'npc3',schiff:ship.id,ziel:'st_aldera'};
+    assert(core.submit(world,move,observed.r).ok,'NPC3 validierter realer Handelsflug');
+    b7f.departedAt=world.tick+1;
+    b7f.events.push({type:'loaded-flight-submitted',ship:ship.id,...tradeSnapshot(world)});
+    b7f.stage='await-sale';
+  }else if(b7f.stage==='await-sale'&&ship.phase==='dock'&&ship.system==='aldera'){
+    const remaining=ship.ladung.silizium||0;
+    const sold=b7f.quantity-remaining;
+    assert(sold>0,'echter Siliziumverkauf durch Ankunft/entladen');
+    b7f.soldAt=world.tick;
+    b7f.events.push({type:'real-sale',ship:ship.id,qty:sold,remaining,...tradeSnapshot(world)});
+    b7f.stage='completed';b7f.after=tradeSnapshot(world);
+  }
+}
+function b7fAfterStep(world,core){
+  if(!b7f.enabled||core!==observed.c)return;
+  const ship=world.ships[b7f.ship];
+  if(b7f.stage==='await-hull'&&world.tick>=15*1440+60&&
+     Object.values(world.ships).some(x=>x.owner==='npc3'&&x.klasse==='frachter'))
+    b7f.events.push({type:'hourly-hull-visible',...tradeSnapshot(world)});
+  // Kein Ersatz bei einem tatsaechlich verlorenen B7f-Frachter;
+  // untersuchter Eingriff ist GENAU ein gekaufter Frachter.
+  if(b7f.onceOnly>0&&!ship && world.sollflotte.npc3.some(x=>x.klasse==='frachter')){
+    world.sollflotte.npc3=world.sollflotte.npc3.filter(x=>x.klasse!=='frachter');
+    b7f.events.push({type:'lost-no-free-replacement',...tradeSnapshot(world)});
+    b7f.stage='lost';
+  }
+}
+
 const manualFund={type:'shipFund',owner:'house',schiff:'sh002',betrag:1000};
 let state=observed.c.createState(seed,observed.r),replay=plain.c.createState(seed,plain.r);
 if(mode==='wallet'){
@@ -708,7 +801,11 @@ for(let minute=1;minute<=days*1440;minute++){
     const a=observed.c.submit(state,cmd,observed.r),b=plain.c.submit(replay,cmd,plain.r);
     assert(a.ok&&b.ok,'B1-Befehl abgelehnt: '+JSON.stringify({cmd,a,b}));
   }
+  b7fBeforeStep(state,observed.c);
+  b7fBeforeStep(replay,plain.c);
   const a=observed.c.step(state,observed.r),b=plain.c.step(replay,plain.r);
+  b7fAfterStep(state,observed.c);
+  b7fAfterStep(replay,plain.c);
   assert.deepEqual(a,b,'Queue-Ergebnisse identisch');
   if(mode==='wallet'&&state.tick===1)assert.equal(a[1]?.ok,true,'historischer manueller Handelsauftrag nach gemeinsamer Umbuchung gueltig');
   if(mode==='wallet'&&state.tick===2)assert.equal(a[0]?.ok,true,'historischer manueller Warenverkauf nach gemeinsamer Umbuchung gueltig');
@@ -761,6 +858,11 @@ for(const d of measuredDays){
   if(d.weightedClaim>0)aggregateCivil.daysWithConsumption++;
   else aggregateCivil.daysWithoutConsumption++;
 }
+if(investment==='npc3'){
+  assert.equal(b7f.onceOnly,1,'B7f exakt ein neuer Frachter, keine Ersatzkaufkaskade');
+  assert.equal(b7f.stage,'completed','B7f neue Handelsfahrt muss tatsaechlich verkauft sein');
+  assert(b7f.soldAt>b7f.purchasedAt&&b7f.purchasedAt>b7f.createdAt,'echte Sequenz');
+}
 if(mode==='control')assert.equal(src,original,'Kontrolle exakt unveraenderter Kern');
 else assert.notEqual(src,original,'wallet source isolated'); 
 assert.equal(h1Observed.paid,h1Replay.paid,'gepraegte ISK in Original/Replay gleich');
@@ -783,6 +885,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
     payEvents:h1Observed.payEvents},
   manualFlightProof,
   b7cDiagnostics,b7dDiagnostics,b7eDiagnostics,
+  b7fInvestment:investment==='npc3'?b7f:null,
   credit:probeMain.stats,contracts:state.b6eContracts||{},
   initialHash,initialLegacyHash,days,hours,roundtrips,commands:cursor,
   paid:sum(Object.values(watcher.owners).map(x=>x.operatingPaid)),
@@ -795,7 +898,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
   closeoutSamples:watcher.closeouts.slice(0,30),daily};
 const out=opt('out','/tmp/b7b-results');
 fs.mkdirSync(out,{recursive:true});
-const file=path.join(out,'b7b-'+scenario+'-'+seed+'-'+mode+'-'+days+'d.json');
+const file=path.join(out,(investment==='npc3'?'b7f-':'b7b-')+scenario+'-'+seed+'-'+mode+'-'+days+'d.json');
 fs.writeFileSync(file,JSON.stringify(totals,null,2)+'\n');
 console.log('B7B_SHARED_ACCOUNT_PASS '+JSON.stringify({scenario:totals.scenario,seed,mode,days,credit:totals.credit,contracts:totals.contracts,
   hourlyHashes:hours,dailyHashes:dayHashes.length,roundtrips,pauses:watcher.pauses,

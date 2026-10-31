@@ -51,6 +51,9 @@ jobs:
               assert.equal(w.wallet.manualFund.owner,"house");
               assert.equal(w.wallet.manualFund.betrag,1000);
               assert.equal(w.wallet.manualFundExecuted,true);
+              assert.equal(w.manualFlightProof.rejectedBeforeFunding,true);
+              assert.equal(w.manualFlightProof.departedAfterFunding,true);
+              assert(w.manualFlightProof.fare>0);
               if(days===10)assert.equal(c.final.hash,"84f1a88d2701ff2a","gepinntes B7a/H1-C3-Kontrollhash");
               if(days===90){
                 assert.equal(c.daily[9].hash,read("control",10).final.hash,"Kontrolle Tag10 identisch");

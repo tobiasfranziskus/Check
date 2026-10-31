@@ -45,8 +45,10 @@ jobs:
             assert.equal(d.initialHash,c.initialHash,"gleicher Original-B1-Start");
             assert.equal(d.traderSales,49,"Originalwert: 49 Warenverkaeufe");
             assert.equal(d.credit.loans,1); assert.equal(d.credit.lent,1380);
-            assert.equal(d.credit.repaid,0); assert.equal(c.credit.loans,0);
+            assert.equal(d.credit.repaid??0,0); assert.equal(c.credit.loans,0);
             assert.equal(d.b6fTrace.filter(x=>x.kind==="trade" && x.direction==="sell" && x.ware!=="frachter").length,49);
+            assert.equal(c.b6fTrace.filter(x=>x.kind==="trade").length,0,"Kontrolle darf kein NPC1-sh112-Geschaeft enthalten");
+            assert.equal(d.b6fTrace.find(x=>x.kind==="preLoss")?.cargoBeforePirate.material,5,"Ladung vor Piratenuebernahme");
             console.log("B6F_CREDIT_TRACE_VERIFIED",JSON.stringify({events:d.b6fTrace.length,loanEvents:d.b6fLoanTrace.length,sales:d.traderSales,cash:d.final.npc.npc1.cash,dayHashes:d.daily.length,hourlyAudits:d.hours,roundtrips:d.roundtrips,controlHash:c.initialHash}));
           '
       - name: Produktstandardtests - nur Entwicklung, keine Safari-Abnahme

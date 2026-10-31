@@ -57,6 +57,38 @@ jobs:
                 assert.equal(day90.fleets.npc1.frachter+day90.fleets.npc2.frachter,5);
               }
             }
+            const expected={
+              "42|passive":{losses:137,purchases:137},
+              "42|active":{losses:16,purchases:11},
+              "7|passive":{losses:150,purchases:150},
+              "7|active":{losses:8,purchases:3}
+            };
+            for(const q of worlds){
+              const exp=expected[q.seed+"|"+q.scenario];
+              assert.equal(q.summary.losses,exp.losses,"original pirate loss events");
+              assert.equal(q.summary.purchases,exp.purchases,"original paid ship replacements");
+              assert.equal(q.summary.grants,0,"kein Zuschuss an NPC1/2");
+              assert.equal(q.results.failedBuys.length,0,"kein still fehlgeschlagener Schiff-Handelskauf");
+              assert(q.results.losses.every(x=>x.cause==="pirate-raid"));
+              assert(q.results.removeEvents.length===q.results.losses.length,
+                "saemtliche NPC-Frachterentfernungen durch bezeugte Piratenkaempfe");
+              assert(q.initial.npc1.ships.length===3&&q.initial.npc2.ships.length===2);
+              assert(q.initial.npc1.ships.every(x=>x.klasse==="frachter"));
+              assert(q.initial.npc2.ships.every(x=>x.klasse==="frachter"));
+              assert.equal(Object.keys(q.results.firstMissingWithOtherShips).length,0,
+                "beide Konzerne haben in dieser Fallgruppe keine Miner/Jäger");
+              if(q.scenario==="active"){
+                assert(q.results.losses.length>q.results.purchases.length);
+                assert(q.results.firstRescueEligible.npc1.fund<780);
+                assert(q.results.firstRescueEligible.npc2.fund<780);
+                assert(q.results.points.find(x=>x.day===14).inventory.frachter>=1);
+                assert(q.results.points.find(x=>x.day===90).inventory.frachter>=1);
+                assert(!Object.keys(q.results.attemptStats).some(x=>x.includes("no-physical-hull")));
+                assert(!Object.keys(q.results.attemptStats).some(x=>x.includes("shipyard-reserve")));
+                assert(!Object.keys(q.results.attemptStats).some(x=>x.includes("eligible")&&
+                  q.results.attemptStats[x]<1));
+              }
+            }
             console.log("B8J_GATE",JSON.stringify(worlds.map(q=>({
               seed:q.seed,scenario:q.scenario,summary:q.summary,
               losses:q.results.losses,purchases:q.results.purchases,

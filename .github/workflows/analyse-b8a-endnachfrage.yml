@@ -1,0 +1,67 @@
+name: "[ANALYSE] B8a Zivile Endnachfrage und Modell-B-Geldfluss"
+on:
+  push:
+    branches: [analyse/b8a-ziviler-endverbrauch-seed42-20261031]
+    paths:
+      - 'tools/analyse-b8a-endnachfrage.mjs'
+      - '.github/workflows/analyse-b8a-endnachfrage.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'tools/analyse-b8a-endnachfrage.mjs'
+      - '.github/workflows/analyse-b8a-endnachfrage.yml'
+      - 'index.html'
+jobs:
+  wirtschaft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unveraenderter main Kontrollfall historischer Spielerhandel 90 Tage
+        run: node tools/analyse-b8a-endnachfrage.mjs --scenario=handel-flotte --mode=baseline --days=90 --out="$RUNNER_TEMP/b8a"
+      - name: Nur global an echten Verbrauch gebundener Modell-B-Zufluss 90 Tage
+        run: node tools/analyse-b8a-endnachfrage.mjs --scenario=handel-flotte --mode=verbrauchsbudget --days=90 --out="$RUNNER_TEMP/b8a"
+      - name: Unveraenderte passive Welt als zweite Kontrolle 90 Tage
+        run: node tools/analyse-b8a-endnachfrage.mjs --scenario=passiv --mode=baseline --days=90 --out="$RUNNER_TEMP/b8a"
+      - name: Passiver Endverbrauchsgeld-Test 90 Tage
+        run: node tools/analyse-b8a-endnachfrage.mjs --scenario=passiv --mode=verbrauchsbudget --days=90 --out="$RUNNER_TEMP/b8a"
+      - name: Zivile Endnachfrage, Geldbilanz und Sparfreiheit aus den vier Welten vergleichen
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/b8a/";
+            const get=(s,m)=>JSON.parse(fs.readFileSync(dir+"b8a-"+s+"-"+m+"-90d.json"));
+            for(const name of ["handel-flotte","passiv"]){
+              const a=get(name,"baseline"),b=get(name,"verbrauchsbudget");
+              assert.equal(a.sourceSha256,b.sourceSha256);
+              assert.equal(a.initialHash,b.initialHash);
+              assert.equal(a.hours,2160);assert.equal(b.hours,2160);
+              assert.equal(a.roundtrips,8);assert.equal(b.roundtrips,8);
+              assert.equal(a.payments.minted,0);
+              assert.equal(b.payments.minted,20*b.payments.paidHours);
+              assert.equal(b.money.worldCash,b.money.initial+b.money.minted-b.money.burned);
+              assert(b.money.playerCash>=0);
+              assert(b.payments.paidHours<=2160);
+              console.log("B8A_COMPARE",JSON.stringify({
+                scenario:name,
+                baseline:{hash:a.finalHash,consumption:a.consumption,playerCash:a.money.playerCash,
+                  cash:a.money.worldCash,dayPoints:a.dayPoints},
+                candidate:{hash:b.finalHash,consumption:b.consumption,
+                  payments:b.payments,playerCash:b.money.playerCash,
+                  cash:b.money.worldCash,dayPoints:b.dayPoints},
+                consumptionDelta:Object.fromEntries(["nahrung","medikamente"].map(w=>[w,
+                  b.consumption[w].consumed-a.consumption[w].consumed])),
+                playerCashDelta:b.money.playerCash-a.money.playerCash
+              }));
+            }
+          '
+      - name: 67 Standardtests unveraenderter produktiver Regel14
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b8a-endnachfrage-seed42
+          path: ${{ runner.temp }}/b8a/*.json

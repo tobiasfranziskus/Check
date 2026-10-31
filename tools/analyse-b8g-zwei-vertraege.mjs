@@ -25,7 +25,7 @@ for(const needle of [arrivalNeedle,tradeNeedle,costNeedle])
  assert.equal(source.split(needle).length,2,'genau ein Originalkern-Beobachtungspunkt');
 const instrumented=source.replace(arrivalNeedle,
  "    s.phase = 'dock'; s.ziel = null; s.ankunft = state.tick;\n"+
- "    const proof = observer.onArrival(state,rules,s);\n"+
+ "    const proof = observer.onArrival(state,rules,s,m_core_handel.obergrenze,m_core_preis.preis);\n"+
  "    entladen(state, rules, s);\n"+
  "    observer.afterArrival(state,rules,s,proof);")
  .replace(tradeNeedle,tradeNeedle+"\n  observer.onTrade(state,schiff,station,ware,menge,kauf,wert,fee);")
@@ -75,7 +75,7 @@ function observer(meta){
    if(ship.id!==meta.ship)return;
    meta.shipOperatingDue+=cost;meta.shipOperatingPaid+=paid;
   },
-  onArrival(world,rules,ship){
+  onArrival(world,rules,ship,capacityFn,priceFn){
    if(meta.stage!=='inbound'||ship.id!==meta.ship||meta.round>meta.contractMaxLoads)return null;
    // Echter Ankunftstick: Schiff ist nach urspruenglichem Reiseabschluss angedockt.
    if(!meta.target||ship.system!==world.stations[meta.target].system)return null;
@@ -84,10 +84,10 @@ function observer(meta){
      'keine Vertragszahlung ohne nachvollziehbaren Original-Core-Kauf und Fahrt');
    const qty=ship.ladung[cert.ware]||0;
    assert.equal(qty,cert.qty);
-   const space=m_core_handel.obergrenze(world,rules,meta.target,cert.ware)
+   const space=capacityFn(world,rules,meta.target,cert.ware)
       -(world.stations[meta.target].lager[cert.ware]||0);
    if(space<qty)return null; // Kein Geld bei nicht abnehmbarem Gut
-   const price=m_core_preis.preis(world,meta.target,cert.ware,rules);
+   const price=priceFn(world,meta.target,cert.ware,rules);
    const invoice=qty*price;
    const missing=Math.max(0,invoice-world.owners[meta.target].cash);
    if(missing+meta.transferred>meta.contractMaxISK)return null;

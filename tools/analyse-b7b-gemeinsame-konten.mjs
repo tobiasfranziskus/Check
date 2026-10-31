@@ -7,13 +7,16 @@ import {createHash} from 'node:crypto';
 
 const args=process.argv.slice(2);
 const opt=(k,d)=>args.find(x=>x.startsWith('--'+k+'='))?.slice(k.length+3)??d;
-assert(args.every(x=>/^--(seed|case|b1|out|mode|days|investment|autotrade|fullcost)=/.test(x)),'unbekannter Parameter');
+assert(args.every(x=>/^--(seed|case|b1|out|mode|days|investment|autotrade|fullcost|risk)=/.test(x)),'unbekannter Parameter');
 const days=Number(opt('days','10'));
 assert([10,90].includes(days),'B7b genau 10 oder 90 Spieltage');
 const mode=opt('mode','control');
 const investment=opt('investment','none');
 const autotrade=opt('autotrade','off');
 const fullcost=opt('fullcost','off');
+const risk=opt('risk','off');
+assert(['off','on'].includes(risk),'B7j risk off/on');
+assert(risk==='off'||fullcost==='on','B7j nur B7i Vollkostenvariante');
 assert(['off','on'].includes(fullcost),'B7i fullcost off/on');
 assert(fullcost==='off'||autotrade==='on','B7i nur mit aktivem echtem NPC3-Autohandel');
 assert(['off','on'].includes(autotrade),'B7h on/off');
@@ -273,8 +276,34 @@ function b7iBestEmpty(state,rules,s,station) {
   return best;
 }
 `;
+  const riskAdjusted=risk==='on'?helper.replace(
+    "  const net=nominal-travelWork;",
+    `  // B7j einzige Variation: Risiko bei konkret vorhandenen Piraten am ZIEL.
+  // Erwarteter Sachwertverlust als SCHÄTZUNG, keine reale Gebühren-/Preisbuchung.
+  const pirates=ids(state.ships).filter(id=>{
+    const p=state.ships[id];
+    return p.owner===w.piraten.owner&&p.phase==='dock'
+      &&p.auftrag==='pirat'&&p.system===to.system;
+  }).length;
+  const defence=anzahl(state.stations[destination].module,'verteidigung');
+  const chance=divVersorgung(w.ueberfallChance*1000,1000+500*defence);
+  const hull=preis(state,w.werft,'frachter',rules);
+  const hullFee=gebuehr(state,rules,w.werft,hull);
+  const riskPremium=pirates>0&&w.systems[to.system].sicherheit!=='sicher'
+    ? Math.ceil((hull+hullFee+buyValue)*chance*
+        Math.max(1,Math.ceil(routeLoaded.zeit/rules.economy.stunde))/1000)
+    :0;
+  const net=nominal-travelWork-riskPremium;`
+  ).replace(
+    "  const need=buyValue+buyFee+travelWork+reserve;",
+    "  const need=buyValue+buyFee+travelWork+reserve+riskPremium;"
+  ).replace(
+    "    cashNeeded:need,minerReserve:reserve,loadedWork,emptyWork,followingWork};",
+    "    cashNeeded:need,minerReserve:reserve,loadedWork,emptyWork,followingWork,riskPremium,pirates};"
+  ):helper;
+  if(risk==='on')assert.notEqual(riskAdjusted,helper,'Risikokosten sind im Core-Analysekopf vorhanden');
   replace('function bestesPaar(state, rules, s, station) {',
-    helper+"\nfunction bestesPaar(state, rules, s, station) {\n  if(s.owner==='npc3')return b7iBestPair(state,rules,s,station);");
+    riskAdjusted+"\nfunction bestesPaar(state, rules, s, station) {\n  if(s.owner==='npc3')return b7iBestPair(state,rules,s,station);");
   const where="    else if (s.warten >= 2) {";
   const swap=String.raw`    else if(s.owner==='npc3'){
       const planned=b7iBestEmpty(state,rules,s,station);
@@ -457,7 +486,7 @@ const h1Observed=new H1Collector(),h1Replay=new H1Collector();
 const plain=engine(src,null,probeReplay,h1Replay);
 m_coreIndexer=plain.c;
 assert.equal(plain.r.rulesVersion,14);
-const b7j={enabled:fullcost==='on',events:[],movement:[],locationChecks:[],offersAtLastRisk:[]};
+const b7j={enabled:fullcost==='on',riskAdjusted:risk==='on',events:[],movement:[],locationChecks:[],offersAtLastRisk:[]};
 const watcher=new class {
   constructor() {this.owners={};this.ship={};this.closeouts=[];this.lossEvents=[];this.hulls=[];this.traderSales=0;this.pauses={frachter:0,miner:0};}
   pause(owner,klasse){this.pauses[klasse]++;}
@@ -1156,7 +1185,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
   closeoutSamples:watcher.closeouts.slice(0,30),daily};
 const out=opt('out','/tmp/b7b-results');
 fs.mkdirSync(out,{recursive:true});
-const file=path.join(out,(b7i.enabled?'b7i-':b7h.enabled?'b7h-':investment==='npc3'?'b7f-':'b7b-')+scenario+'-'+seed+'-'+mode+'-'+days+'d.json');
+const file=path.join(out,(b7j.riskAdjusted?'b7j-':b7i.enabled?'b7i-':b7h.enabled?'b7h-':investment==='npc3'?'b7f-':'b7b-')+scenario+'-'+seed+'-'+mode+'-'+days+'d.json');
 fs.writeFileSync(file,JSON.stringify(totals,null,2)+'\n');
 console.log('B7B_SHARED_ACCOUNT_PASS '+JSON.stringify({scenario:totals.scenario,seed,mode,days,credit:totals.credit,contracts:totals.contracts,
   hourlyHashes:hours,dailyHashes:dayHashes.length,roundtrips,pauses:watcher.pauses,

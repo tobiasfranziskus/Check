@@ -1,0 +1,50 @@
+name: "[ANALYSE] B8b Geldtransfers und Fabrik-Nachschub"
+on:
+  push:
+    branches: [analyse/b8b-nachschub-und-geldfluesse-seed42-20261031]
+    paths:
+      - 'tools/analyse-b8b-geld-und-nachschub.mjs'
+      - '.github/workflows/analyse-b8b-geld-und-nachschub.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'tools/analyse-b8b-geld-und-nachschub.mjs'
+      - '.github/workflows/analyse-b8b-geld-und-nachschub.yml'
+      - 'index.html'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Spielerkrise original und read-only mit Replay ueber 90 Spieltage
+        run: node tools/analyse-b8b-geld-und-nachschub.mjs --scenario=handel-flotte --days=90 --out="$RUNNER_TEMP/b8b"
+      - name: Passive Kontrolle 14 Tage unveraendert
+        run: node tools/analyse-b8b-geld-und-nachschub.mjs --scenario=passiv --days=14 --out="$RUNNER_TEMP/b8b"
+      - name: Berichte strukturell pruefen
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const p=process.env.RUNNER_TEMP+"/b8b/";
+            const a=JSON.parse(fs.readFileSync(p+"b8b-handel-flotte-90d.json"));
+            const b=JSON.parse(fs.readFileSync(p+"b8b-passiv-14d.json"));
+            assert.equal(a.sourceSha256,b.sourceSha256);
+            assert.equal(a.hours,2160);assert.equal(b.hours,336);
+            assert.equal(a.finalHash,"784047684dfe5c56");
+            assert(a.points.some(x=>x.day===14));
+            assert(b.points.some(x=>x.day===14));
+            assert(a.transfer.houseDelta>=0);
+            assert.equal(a.transfer.inflowsFromStations-a.transfer.outgoingToStations-a.transfer.feesFromPlayer,
+              a.transfer.playerTradeNet);
+            console.log("B8B_GATE",JSON.stringify({active:a.transfer,passive:b.transfer}));
+          '
+      - name: Standardtests Originalkern
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b8b-geld-nachschub-seed42
+          path: ${{ runner.temp }}/b8b/*.json

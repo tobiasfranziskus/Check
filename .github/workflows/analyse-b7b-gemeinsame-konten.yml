@@ -1,0 +1,59 @@
+name: Aphros Void B7b - gemeinsame Schiffs-/Auftragskonten
+on:
+  pull_request:
+    paths:
+      - tools/analyse-b7b-gemeinsame-konten.mjs
+      - .github/workflows/analyse-b7b-gemeinsame-konten.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  b7b-seed42-10days:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Historische B1-Befehle fixieren
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399
+          mkdir -p "$RUNNER_TEMP/b7b-b1" "$RUNNER_TEMP/b7b-out"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/b7b-b1"
+      - name: Reine Regel14 Kontrolle Tag1-10
+        run: node tools/analyse-b7b-gemeinsame-konten.mjs --seed=42 --case=handel-flotte --mode=control --b1="$RUNNER_TEMP/b7b-b1" --out="$RUNNER_TEMP/b7b-out"
+      - name: B7b Einziger Finanzierungsversuch inklusive Spielerbefehl
+        run: node tools/analyse-b7b-gemeinsame-konten.mjs --seed=42 --case=handel-flotte --mode=wallet --b1="$RUNNER_TEMP/b7b-b1" --out="$RUNNER_TEMP/b7b-out"
+      - name: Vergleich ueber unveraenderte Kontrolle und Geldquellen
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const d=process.env.RUNNER_TEMP+"/b7b-out/";
+            const c=JSON.parse(fs.readFileSync(d+"b7b-handel-flotte-42-control.json"));
+            const w=JSON.parse(fs.readFileSync(d+"b7b-handel-flotte-42-wallet.json"));
+            for(const x of [c,w]){
+              assert.equal(x.days,10);assert.equal(x.hours,240);assert.equal(x.roundtrips,8);assert.equal(x.commands,7);
+              assert.equal(x.daily.length,10);assert.equal(x.h1.paid,0);
+              assert.equal(x.sourceSha256,"035fe8b486ff2d515ca6379ad682b4b15d89d5d051866e287425ed425e1cbfc9");
+            }
+            assert.equal(c.final.hash,"84f1a88d2701ff2a","gepinntes B7a/H1-C3-Kontrollhash");
+            assert.equal(c.variantSha256,c.sourceSha256);
+            assert.notEqual(w.variantSha256,w.sourceSha256);
+            assert.equal(w.wallet.manualFund.owner,"house");
+            assert.equal(w.wallet.manualFund.betrag,1000);
+            console.log("B7B_CAUSAL_COMPARISON",JSON.stringify({
+              control:{cash:c.final.npc,shortage:c.final.shortage,sales:c.traderSales,unpaid:c.unpaid,paid:c.paid,due:c.due,consumption:c.consumerAudit.aggregate,playerCash:c.final.playerCash,minted:c.final.minted,burned:c.final.burned},
+              sharedWallet:{cash:w.final.npc,shortage:w.final.shortage,sales:w.traderSales,unpaid:w.unpaid,paid:w.paid,due:w.due,consumption:w.consumerAudit.aggregate,playerCash:w.final.playerCash,minted:w.final.minted,burned:w.final.burned,walletCash:w.final.walletCash,walletCount:w.final.walletCount,playerShip:w.wallet.accounts.sh002||null},
+            }));
+          '
+      - name: 67 Standardtests
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b7b-shared-accounts-seed42
+          path: ${{ runner.temp }}/b7b-out/*.json

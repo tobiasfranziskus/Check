@@ -1,0 +1,60 @@
+name: Aphros Void B6f - gezielter sh112 Zahlungsfluss-Trace
+on:
+  pull_request:
+    paths:
+      - tools/analyse-b6f-trace.mjs
+      - .github/workflows/analyse-b6f-trace.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  b6f-seed42-sh112:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Gepinnte historische B1-Starts und Spielerbefehle
+        shell: bash
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399 cec7f93758e4a499c238738ff50adac4416080d4
+          mkdir -p "$RUNNER_TEMP/b6f-legacy" "$RUNNER_TEMP/b6f-b1" "$RUNNER_TEMP/b6f-start"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/b6f-legacy"
+          git archive cec7f93758e4a499c238738ff50adac4416080d4 | tar -x -C "$RUNNER_TEMP/b6f-b1"
+          node "$RUNNER_TEMP/b6f-legacy/tools/npc-restart-v12.mjs" --prepare --out="$RUNNER_TEMP/b6f-start"
+      - name: B6f NUR ein Fall - Seed 42, Sh112, Kontrolle
+        shell: bash
+        run: |
+          node tools/analyse-b6f-trace.mjs --case=handel-flotte --mode=control --starts="$RUNNER_TEMP/b6f-start" --b1="$RUNNER_TEMP/b6f-b1" --legacy="$RUNNER_TEMP/b6f-legacy" --out="$RUNNER_TEMP/b6f-results"
+      - name: B6f NUR ein Fall - Seed 42, Sh112, Kredit
+        shell: bash
+        run: |
+          node tools/analyse-b6f-trace.mjs --case=handel-flotte --mode=credit --starts="$RUNNER_TEMP/b6f-start" --b1="$RUNNER_TEMP/b6f-b1" --legacy="$RUNNER_TEMP/b6f-legacy" --out="$RUNNER_TEMP/b6f-results"
+      - name: Kumulierte Transaktionen, Uebereinstimmung und Export-Trace
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import assert from "node:assert/strict";
+            const d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/b6f-results/b6f-handel-flotte-42-credit.json"));
+            const c=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/b6f-results/b6f-handel-flotte-42-control.json"));
+            assert.equal(d.initialHash,c.initialHash,"gleicher Original-B1-Start");
+            assert.equal(d.traderSales,49,"Originalwert: 49 Warenverkaeufe");
+            assert.equal(d.credit.loans,1); assert.equal(d.credit.lent,1380);
+            assert.equal(d.credit.repaid??0,0); assert.equal(c.credit.loans,0);
+            assert.equal(d.b6fTrace.filter(x=>x.kind==="trade" && x.direction==="sell" && x.ware!=="frachter").length,49);
+            assert.equal(c.b6fTrace.filter(x=>x.kind==="trade").length,0,"Kontrolle darf kein NPC1-sh112-Geschaeft enthalten");
+            assert.equal(d.b6fTrace.find(x=>x.kind==="preLoss")?.cargoBeforePirate.material,5,"Ladung vor Piratenuebernahme");
+            console.log("B6F_CREDIT_TRACE_VERIFIED",JSON.stringify({events:d.b6fTrace.length,loanEvents:d.b6fLoanTrace.length,sales:d.traderSales,cash:d.final.npc.npc1.cash,dayHashes:d.daily.length,hourlyAudits:d.hours,roundtrips:d.roundtrips,controlHash:c.initialHash}));
+          '
+      - name: Produktstandardtests - nur Entwicklung, keine Safari-Abnahme
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b6f-seed42-sh112-eventtrace
+          path: ${{ runner.temp }}/b6f-results/*.json

@@ -175,7 +175,7 @@ assert.equal(a.rules.rulesVersion,14);
 const state=a.core.createState(seed,a.rules),replay=b.core.createState(seed,b.rules);
 const initial=Object.fromEntries(focus.map(owner=>[owner,{
   cash:state.owners[owner].cash,
-  ships:Object.values(state.ships).filter(x=>x.owner===owner).map(summarizeShip),
+  ships:Object.values(state.ships).filter(x=>x.owner===owner).map(x=>summarizeShip(state,x)),
   plan:state.sollflotte[owner]}]));
 let hours=0,saves=0;
 const points=[];

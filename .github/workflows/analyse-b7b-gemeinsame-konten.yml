@@ -212,6 +212,62 @@ jobs:
               firstDays:x.daily.filter(z=>[14,15,16,17,18,19,20,30,60,90].includes(z.day)),
             }));
           '
+      - name: B7g alle Aldera-Kassenveraenderungen in realen Kernphasen auditieren
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const file=process.env.RUNNER_TEMP+"/b7b-out/b7f-handel-flotte-42-wallet-90d.json";
+            const w=JSON.parse(fs.readFileSync(file)),f=w.b7fInvestment,g=w.b7gMoneyFlow;
+            assert(g&&Array.isArray(g.events)&&g.events.length>1);
+            assert.equal(g.fromTick,21600);
+            assert.equal(g.days.length,76,"Tage15 bis 90 inklusive");
+            assert.equal(g.days[0].day,15);
+            assert.equal(g.days.at(-1).day,90);
+            assert.equal(g.days[0].alderaCash,1603);
+            assert.equal(g.days.at(-1).alderaCash,w.final.stationCash.st_aldera);
+            let balance=g.events[0].from;
+            const totals={income:0,outgo:0,phases:{}};
+            for(const e of g.events){
+              assert.equal(e.from,balance,"lueckenloser echter Aldera-Kassenweg");
+              assert.equal(e.to-e.from,e.delta);
+              assert(e.tick>=21600);
+              assert(e.delta!==0);
+              balance=e.to;
+              if(e.delta>0)totals.income+=e.delta;else totals.outgo-=e.delta;
+              const p=totals.phases[e.phase]||{income:0,outgo:0,n:0};
+              if(e.delta>0)p.income+=e.delta;else p.outgo-=e.delta;
+              p.n++;
+              totals.phases[e.phase]=p;
+            }
+            assert.equal(balance,w.final.stationCash.st_aldera,"lueckenlose Kasse bis Ende90");
+            assert.equal(totals.income-totals.outgo,balance-g.events[0].from);
+            const onDay16=g.events.filter(e=>e.tick>=f.createdAt&&e.tick<=17*1440);
+            assert(onDay16.length>0);
+            const afterSale=g.events.filter(e=>e.tick>=f.soldAt);
+            assert(afterSale.length>0);
+            const profitableSnapshots=g.days.flatMap(d=>d.quotes
+              .filter(q=>q.qty>0&&q.margin>0).map(q=>({day:d.day,src:q.src,qty:q.qty,profit:q.margin,
+                buyerCash:d.alderaCash,available:q.sellable,ship:d.ship})));
+            const secondPotential=profitableSnapshots.filter(q=>q.day>=16);
+            console.log("B7G_ALDERA_LEDGER",JSON.stringify({
+              startCash:g.events[0].from,endCash:balance,
+              totals,events:g.events.length,
+              day16to18:g.events.filter(e=>e.tick>=15*1440&&e.tick<=18*1440),
+              firstAfterSale:afterSale.slice(0,20),
+              laterEvents:afterSale.filter(e=>e.tick>18*1440).slice(0,20),
+              allDays:g.days.filter(d=>[15,16,17,18,19,20,21,22,25,30,60,90].includes(d.day))
+                .map(d=>({day:d.day,cash:d.alderaCash,fundCash:d.fundCash,npc3Cash:d.npc3Cash,
+                  inventory:d.alderaSilizium,parts:d.alderaBauteil,
+                  production:d.recipes,ship:d.ship,
+                  quotes:d.quotes.map(q=>({src:q.src,sellable:q.sellable,qty:q.qty,margin:q.margin,
+                    funds:q.fundNeed,reasons:q.reasons}))})),
+              afterSaleProfitableCount:secondPotential.length,
+              afterSaleProfitableFirst:secondPotential.slice(0,10),
+              finalShortage:w.final.shortage,finalProduction:w.final.recipes,
+              referenceHash:w.final.hash
+            }));
+          '
       - name: 67 Standardtests
         run: node --test tests/*.test.mjs
       - uses: actions/upload-artifact@v4

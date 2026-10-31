@@ -1,0 +1,91 @@
+name: "[ANALYSE] B8h echte Frachter-Rundenkosten / Positionsfahrt"
+on:
+  push:
+    branches: [analyse/b8h-frachter-runden-vollkosten-20261031]
+    paths:
+      - 'tools/analyse-b8h-frachtrunden.mjs'
+      - '.github/workflows/analyse-b8h-frachtrunden.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'tools/analyse-b8h-frachtrunden.mjs'
+      - '.github/workflows/analyse-b8h-frachtrunden.yml'
+      - 'index.html'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Historischer Original-Seed42-Kontrolllauf
+        run: node tools/analyse-b8h-frachtrunden.mjs --mode=control --days=90 --out="$RUNNER_TEMP/b8h"
+      - name: Originalkosten ohne fremde Kaeuferfinanzierung
+        run: node tools/analyse-b8h-frachtrunden.mjs --mode=ship-only --days=90 --out="$RUNNER_TEMP/b8h"
+      - name: Originalkosten bei einer echten bezahlten Lieferung
+        run: node tools/analyse-b8h-frachtrunden.mjs --mode=one-contract --days=90 --out="$RUNNER_TEMP/b8h"
+      - name: Originalkosten bei zwei abgeschlossenen Lieferungen und dritter offener Ladung
+        run: node tools/analyse-b8h-frachtrunden.mjs --mode=two-contract --days=90 --out="$RUNNER_TEMP/b8h"
+      - name: Unabhaengige Einzelrunden-Geld- und Arbeitsminutengates
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/b8h/";
+            const read=m=>JSON.parse(fs.readFileSync(dir+m+"-90d.json"));
+            const base=read("control"),ship=read("ship-only"),
+              one=read("one-contract"),two=read("two-contract");
+            assert.equal(base.hash,"784047684dfe5c56");
+            for(const q of [base,ship,one,two]){
+              assert.equal(q.hours,2160);assert.equal(q.roundtrips,10);
+              assert.equal(q.sourceSha256,base.sourceSha256);
+              assert.equal(q.final.minted,base.final.minted);
+              assert.equal(q.final.burned,base.final.burned);
+              assert.equal(q.final.playerCash,base.final.playerCash);
+              assert.equal(q.accounting.allWork,q.contract.shipOperatingPaid);
+              assert.equal(q.accounting.allFees,q.contract.shipTradeFees);
+              assert.equal(q.accounting.realizedCash,
+                q.accounting.allSold-q.accounting.allBought-q.accounting.allWork);
+              assert.equal(q.accounting.realizedCash,
+                q.accounting.realizedExPositioning-q.accounting.positioning.paid);
+              assert.equal(q.accounting.chargedMinutes,
+                Object.values(q.accounting.minutesByLeg).reduce((a,x)=>a+x,0));
+              assert.equal(q.accounting.allWork,
+                Object.values(q.accounting.paidByLeg).reduce((a,x)=>a+x,0));
+              assert.equal(q.contract.shipOperatingUnpaid,0);
+            }
+            assert.equal(two.contract.invoices,2);
+            assert.equal(two.contract.amount,816);
+            assert.equal(two.contract.firstSold,7);
+            assert.equal(two.contract.secondSold,7);
+            assert.equal(two.contract.thirdSold,0);
+            assert.equal(two.accounting.hull.paid,780);
+            assert.equal(two.accounting.allWork,682);
+            assert.equal(two.accounting.allBought,501);
+            assert.equal(two.accounting.allSold,794);
+            assert.equal(two.accounting.realizedCash,-389);
+            assert.equal(two.accounting.rounds[0].actualSale.qty,7);
+            assert.equal(two.accounting.rounds[1].actualSale.qty,7);
+            assert.equal(two.accounting.rounds[2].actualSale,null);
+            assert.equal(two.accounting.rounds[2].unsoldCargo,7);
+            assert(two.accounting.rounds[0].loadedMinutes>0);
+            assert(two.accounting.rounds[0].emptyMinutes>0);
+            assert(two.accounting.rounds[1].loadedMinutes>0);
+            assert(two.accounting.rounds[1].emptyMinutes>0);
+            assert(two.accounting.rounds[2].loadedMinutes>0);
+            console.log("B8H_GATE",JSON.stringify({
+              hull:two.accounting.hull,positioning:two.accounting.positioning,
+              rounds:two.accounting.rounds,minutes:two.accounting.minutesByLeg,
+              paid:two.accounting.paidByLeg,work:two.accounting.allWork,
+              totalRealized:two.accounting.realizedCash,
+              finished:two.accounting.realizedExPositioning,
+              openCargo:two.accounting.heldCargoValueAtLastBuy}));
+          '
+      - name: Originale Node-Standardtests
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b8h-frachterkosten-4x90d
+          path: ${{ runner.temp }}/b8h/*.json

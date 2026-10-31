@@ -461,7 +461,7 @@ const expected=originalPlayer.commands.filter(x=>x.tick<=days*1440).map(({tick,.
 // Bewegung/Kauf nutzen echte validierte NPC-Eigentumerbefehle und Ankunft().
 const b7f={enabled:investment==='npc3',stage:'not-started',ship:null,createdAt:null,
   purchasedAt:null,departedAt:null,soldAt:null,quantity:0,
-  events:[],before:null,after:null,onceOnly:0};
+  events:[],before:null,after:null,onceOnly:0,pendingCommand:null};
 const tradeSnapshot=(world)=>({
   tick:world.tick,ownerCash:world.owners.npc3.cash,
   alderaCash:world.owners.st_aldera.cash,alderaSilicon:world.stations.st_aldera.lager.silizium||0,
@@ -492,6 +492,12 @@ function b7fBeforeStep(world,core) {
     // Kein Geld und keine Ware gebucht; echter Kauf beim naechsten Stunden-Tick.
   }
   if(world.tick<=15*1440)return;
+  // Spiegelwelt bekommt EXAKT denselben freigegebenen NPC3-Befehl,
+  // nicht einen getrennten Handler mit moeglicherweise anderem Marktzustand.
+  if(core!==observed.c&&b7f.pendingCommand){
+    assert(core.submit(world,b7f.pendingCommand,observed.r).ok,'NPC3 identischer validierter Replaybefehl');
+    b7f.pendingCommand=null;
+  }
   const ship=b7f.ship&&world.ships[b7f.ship];
   if(core===observed.c&&b7f.stage==='await-hull'){
     const newShips=Object.values(world.ships).filter(x=>x.owner==='npc3'&&x.klasse==='frachter');
@@ -510,6 +516,7 @@ function b7fBeforeStep(world,core) {
     assert(q.qty>0,'nach leerem Schiffskauf real zahlender Siliziumkaeufer');
     const buy={type:'shipTrade',owner:'npc3',schiff:ship.id,ware:'silizium',menge:q.qty,kauf:true};
     assert(core.submit(world,buy,observed.r).ok,'NPC3 realer manueller Handelsauftrag');
+    b7f.pendingCommand=buy;
     b7f.quantity=q.qty;b7f.purchasedAt=world.tick+1;
     b7f.events.push({type:'silicon-purchase-submitted',ship:ship.id,qty:q.qty,...tradeSnapshot(world),quote:q});
     b7f.stage='await-buy';
@@ -517,6 +524,7 @@ function b7fBeforeStep(world,core) {
     assert.equal(ship.ladung.silizium,b7f.quantity,'echter Warenkauf vor Abflug');
     const move={type:'shipMove',owner:'npc3',schiff:ship.id,ziel:'st_aldera'};
     assert(core.submit(world,move,observed.r).ok,'NPC3 validierter realer Handelsflug');
+    b7f.pendingCommand=move;
     b7f.departedAt=world.tick+1;
     b7f.events.push({type:'loaded-flight-submitted',ship:ship.id,...tradeSnapshot(world)});
     b7f.stage='await-sale';
@@ -530,17 +538,19 @@ function b7fBeforeStep(world,core) {
   }
 }
 function b7fAfterStep(world,core){
-  if(!b7f.enabled||core!==observed.c)return;
+  if(!b7f.enabled)return;
   const ship=world.ships[b7f.ship];
-  if(b7f.stage==='await-hull'&&world.tick>=15*1440+60&&
+  if(core===observed.c&&b7f.stage==='await-hull'&&world.tick>=15*1440+60&&
      Object.values(world.ships).some(x=>x.owner==='npc3'&&x.klasse==='frachter'))
     b7f.events.push({type:'hourly-hull-visible',...tradeSnapshot(world)});
-  // Kein Ersatz bei einem tatsaechlich verlorenen B7f-Frachter;
-  // untersuchter Eingriff ist GENAU ein gekaufter Frachter.
+  // Verlust nur in beiden Welten identisch behandeln, sonst entsteht ein
+  // kuenstlicher Replayunterschied statt eines nachvollziehbaren Investors.
   if(b7f.onceOnly>0&&!ship && world.sollflotte.npc3.some(x=>x.klasse==='frachter')){
     world.sollflotte.npc3=world.sollflotte.npc3.filter(x=>x.klasse!=='frachter');
-    b7f.events.push({type:'lost-no-free-replacement',...tradeSnapshot(world)});
-    b7f.stage='lost';
+    if(core===observed.c){
+      b7f.events.push({type:'lost-no-free-replacement',...tradeSnapshot(world)});
+      b7f.stage='lost';
+    }
   }
 }
 

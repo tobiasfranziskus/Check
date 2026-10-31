@@ -36,6 +36,22 @@ jobs:
             assert.equal(a.finalHash,"784047684dfe5c56");
             assert(a.points.some(x=>x.day===14));
             assert(b.points.some(x=>x.day===14));
+            const active=a.points.find(x=>x.day===14).cycleQuotes;
+            const passive=b.points.find(x=>x.day===14).cycleQuotes;
+            assert.equal(active.length,4);assert.equal(passive.length,4);
+            for(const q of active){
+              assert(q.quoteCount>0,'Gewinnangebote fuer Rohstoff '+q.dest+'/'+q.ware);
+              assert.equal(q.possibleWithRealBuyerCash,0,'kein positiver Gesamtauftrag mit echter Kaueferkasse');
+              assert(q.best.length>0);
+              for(const p of q.best){
+                assert(p.afterReturn>0&&p.buyerGap>0);
+                assert(p.twoCycleGap>=p.buyerGap);
+                assert(p.merchantCapital>=p.shipyardCost+p.purchaseCost+p.costRoundTrip);
+                assert(p.qty>0 && p.realBuyerCash>=0);
+              }
+            }
+            assert(passive.some(x=>x.quoteCount>0&&x.possibleWithRealBuyerCash>0),
+              'passive Welt hat mindestens ein bereits gedecktes Rohstoffangebot');
             assert(a.transfer.houseDelta>=0);
             assert.equal(a.transfer.inflowsFromStations-a.transfer.outgoingToStations-a.transfer.feesFromPlayer,
               a.transfer.playerTradeNet);

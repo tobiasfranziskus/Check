@@ -74,6 +74,35 @@ jobs:
             assert(two.accounting.rounds[1].loadedMinutes>0);
             assert(two.accounting.rounds[1].emptyMinutes>0);
             assert(two.accounting.rounds[2].loadedMinutes>0);
+            assert.deepEqual(two.accounting.positioning,{minutes:39,paid:162});
+            for(const r of two.accounting.rounds.slice(0,2)){
+              assert.equal(r.buyPaid,167);
+              assert.equal(r.saleNet,397);
+              assert.equal(r.loadedMinutes,25);
+              assert.equal(r.emptyMinutes,25);
+              assert.equal(r.loadedCost,104);
+              assert.equal(r.emptyReturnCost,104);
+              assert.equal(r.saleProfitBeforeReturn,126);
+              assert.equal(r.completedRoundCash,22);
+            }
+            assert.equal(two.accounting.rounds[2].loadedMinutes,25);
+            assert.equal(two.accounting.rounds[2].loadedCost,104);
+            assert.equal(two.accounting.rounds[2].buyPaid,167);
+            assert.equal(two.accounting.realizedExPositioning,-227);
+            const twoClosed=two.accounting.rounds.slice(0,2)
+              .reduce((a,r)=>a+r.completedRoundCash,0);
+            const openCargoOutlay=two.accounting.rounds[2].buyPaid
+              +two.accounting.rounds[2].loadedCost;
+            assert.equal(twoClosed,44);
+            assert.equal(openCargoOutlay,271);
+            assert.equal(twoClosed-two.accounting.positioning.paid-openCargoOutlay,
+              two.accounting.realizedCash);
+            assert.equal(one.accounting.rounds[0].completedRoundCash,22);
+            assert.equal(one.accounting.rounds[1].actualSale,null);
+            console.log("B8H_RECONCILED",JSON.stringify({
+              closedRounds:twoClosed,oneTimePosition:two.accounting.positioning.paid,
+              openCargoOutlay,realized:two.accounting.realizedCash,
+              initialCapitalOutlay:two.accounting.hull.paid+two.accounting.positioning.paid}));
             console.log("B8H_GATE",JSON.stringify({
               hull:two.accounting.hull,positioning:two.accounting.positioning,
               rounds:two.accounting.rounds,minutes:two.accounting.minutesByLeg,

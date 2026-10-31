@@ -7,13 +7,16 @@ import {createHash} from 'node:crypto';
 
 const args=process.argv.slice(2);
 const opt=(k,d)=>args.find(x=>x.startsWith('--'+k+'='))?.slice(k.length+3)??d;
-assert(args.every(x=>/^--(seed|case|b1|out|mode|days|investment)=/.test(x)),'unbekannter Parameter');
+assert(args.every(x=>/^--(seed|case|b1|out|mode|days|investment|autotrade)=/.test(x)),'unbekannter Parameter');
 const days=Number(opt('days','10'));
 assert([10,90].includes(days),'B7b genau 10 oder 90 Spieltage');
 const mode=opt('mode','control');
 const investment=opt('investment','none');
+const autotrade=opt('autotrade','off');
+assert(['off','on'].includes(autotrade),'B7h on/off');
 assert(['none','npc3'].includes(investment),'B7f nur kein oder ein realer NPC3-Einstieg');
 assert(investment==='none'||(mode==='wallet'&&days===90),'B7f ausschliesslich B7b Wallet Seed42 90d');
+assert(autotrade==='off'||investment==='npc3','B7h nur nach genau einem real bezahlten NPC3-Frachter');
 assert(['control','wallet'].includes(mode),'B7a nur Kontrollkern oder Schiffskonto-Gegenprobe');
 const scenario=opt('case',null), seed=scenario?{miner:42,'handel-flotte':42,station:1234,jagd:98765}[scenario]:Number(opt('seed','42'));
 assert.equal(seed,42,'H1-C1: ausschliesslich Seed 42');
@@ -359,6 +362,11 @@ const watcher=new class {
       afterSale:false,postSalePurchases:0};
   }
   trade(state,s,station,ware,menge,kauf,wert,fee) {
+    if(b7h.enabled&&s.owner==='npc3'&&s.klasse==='frachter'){
+      b7h.tradeEvents.push({tick:state.tick,ship:s.id,station,ware,menge,kauf,
+        value:wert,fee,shipSystem:s.system,ownerCash:state.owners.npc3.cash,
+        alderaCash:state.owners.st_aldera.cash});
+    }
     if (!['npc1','npc2','npc3'].includes(s.owner) || s.klasse!=='frachter' ||
         ['miner','frachter','jaeger','bauschiff'].includes(ware)) return;
     const o=this.owner(s.owner),r=this.shiprow(s);
@@ -519,6 +527,8 @@ const expected=originalPlayer.commands.filter(x=>x.tick<=days*1440).map(({tick,.
 const b7f={enabled:investment==='npc3',stage:'not-started',ship:null,createdAt:null,
   purchasedAt:null,departedAt:null,soldAt:null,quantity:0,
   events:[],before:null,after:null,onceOnly:0,pendingCommand:null};
+const b7h={enabled:autotrade==='on',activatedAt:null,ship:null,owner:'npc3',
+  command:null,initialSeller:null,firstSale:null,tradeEvents:[],activation:null};
 const tradeSnapshot=(world)=>({
   tick:world.tick,ownerCash:world.owners.npc3.cash,
   alderaCash:world.owners.st_aldera.cash,alderaSilicon:world.stations.st_aldera.lager.silizium||0,
@@ -592,6 +602,18 @@ function b7fBeforeStep(world,core) {
     b7f.soldAt=world.tick;
     b7f.events.push({type:'real-sale',ship:ship.id,qty:sold,remaining,...tradeSnapshot(world)});
     b7f.stage='completed';b7f.after=tradeSnapshot(world);
+    if(b7h.enabled){
+      const cmd={type:'shipHandeln',owner:'npc3',schiff:ship.id};
+      assert(core.submit(world,cmd,observed.r).ok,'B7h: bestehender Befehl fuer bezahlten Konzernfrachter');
+      b7f.pendingCommand=cmd;
+      b7h.activatedAt=world.tick+1;
+      b7h.ship=ship.id;
+      b7h.command=cmd;
+      b7h.initialSeller=world.owners.st_aldera.cash;
+      b7h.firstSale=sold;
+      b7h.activation=tradeSnapshot(world);
+      b7f.events.push({type:'b7h-existing-autotrade-submitted',ship:ship.id,at:world.tick,...tradeSnapshot(world)});
+    }
   }
 }
 function b7fAfterStep(world,core){
@@ -946,8 +968,15 @@ for(const d of measuredDays){
 }
 if(investment==='npc3'){
   assert.equal(b7f.onceOnly,1,'B7f exakt ein neuer Frachter, keine Ersatzkaufkaskade');
-  assert.equal(b7f.stage,'completed','B7f neue Handelsfahrt muss tatsaechlich verkauft sein');
+  assert(['completed',...(b7h.enabled?['lost']:[])].includes(b7f.stage),'B7f erste Handelsfahrt muss verkauft sein');
   assert(b7f.soldAt>b7f.purchasedAt&&b7f.purchasedAt>b7f.createdAt,'echte Sequenz');
+  if(b7h.enabled){
+    assert.equal(b7h.activatedAt,b7f.soldAt+1,'B7h Auftrag exakt nach erster Lieferung');
+    assert.equal(b7h.firstSale,b7f.quantity,'B7h Einstieg mit unveraenderter ersten Lieferung');
+    assert(b7h.tradeEvents.length>=2,'B7h erste echte Kauf- und Verkaufsbuchung');
+    assert(b7h.tradeEvents.some(e=>e.kauf&&e.ware==='silizium'));
+    assert(b7h.tradeEvents.some(e=>!e.kauf&&e.ware==='silizium'));
+  }
 }
 if(mode==='control')assert.equal(src,original,'Kontrolle exakt unveraenderter Kern');
 else assert.notEqual(src,original,'wallet source isolated'); 
@@ -972,6 +1001,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
   manualFlightProof,
   b7cDiagnostics,b7dDiagnostics,b7eDiagnostics,
   b7fInvestment:investment==='npc3'?b7f:null,
+  b7hAuto:b7h.enabled?b7h:null,
   b7gMoneyFlow:investment==='npc3'?b7gLedger:null,
   credit:probeMain.stats,contracts:state.b6eContracts||{},
   initialHash,initialLegacyHash,days,hours,roundtrips,commands:cursor,
@@ -985,7 +1015,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
   closeoutSamples:watcher.closeouts.slice(0,30),daily};
 const out=opt('out','/tmp/b7b-results');
 fs.mkdirSync(out,{recursive:true});
-const file=path.join(out,(investment==='npc3'?'b7f-':'b7b-')+scenario+'-'+seed+'-'+mode+'-'+days+'d.json');
+const file=path.join(out,(b7h.enabled?'b7h-':investment==='npc3'?'b7f-':'b7b-')+scenario+'-'+seed+'-'+mode+'-'+days+'d.json');
 fs.writeFileSync(file,JSON.stringify(totals,null,2)+'\n');
 console.log('B7B_SHARED_ACCOUNT_PASS '+JSON.stringify({scenario:totals.scenario,seed,mode,days,credit:totals.credit,contracts:totals.contracts,
   hourlyHashes:hours,dailyHashes:dayHashes.length,roundtrips,pauses:watcher.pauses,

@@ -451,6 +451,64 @@ jobs:
               trades:x.b7hAuto.tradeEvents.slice(0,26)
             }));
           '
+      - name: B7k gekauften NPC3-Frachter nach Zahlung und Piraten-Risikogate leer in sichere Station ausweichen lassen
+        run: node tools/analyse-b7b-gemeinsame-konten.mjs --seed=42 --case=handel-flotte --mode=wallet --investment=npc3 --autotrade=on --fullcost=on --risk=on --escape=on --days=90 --b1="$RUNNER_TEMP/b7b-b1" --out="$RUNNER_TEMP/b7b-out"
+      - name: B7k echter bezahlbarer Sicherheitsrueckzug gegen unveraendertes B7j beurteilen
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/b7b-out/";
+            const read=k=>JSON.parse(fs.readFileSync(dir+"b7"+k+"-handel-flotte-42-wallet-90d.json"));
+            const j=read("j"),k=read("k");
+            assert.equal(j.final.hash,"bacfb1cb1dc7ed8c","B7j-Referenzhash bleibt erhalten");
+            assert.equal(k.hours,2160);assert.equal(k.days,90);assert.equal(k.roundtrips,14);
+            assert.equal(k.initialHash,j.initialHash);assert.equal(k.sourceSha256,j.sourceSha256);
+            assert.notEqual(k.variantSha256,j.variantSha256,"nur analytische Ausweichentscheidung variiert");
+            assert.deepEqual(k.daily.slice(0,15),j.daily.slice(0,15),
+              "bis einschliesslich Tag15 gleiche Welt und derselbe 55er Erstverkauf");
+            assert.equal(k.b7fInvestment.onceOnly,1);
+            assert.equal(k.b7fInvestment.ship,j.b7fInvestment.ship);
+            assert.equal(k.b7fInvestment.soldAt,j.b7fInvestment.soldAt);
+            assert.equal(k.b7hAuto.activatedAt,j.b7hAuto.activatedAt);
+            assert.equal(k.b7jRisk.riskAdjusted,true);
+            assert.equal(k.b7kSafeEscape.enabled,true);
+            assert(k.b7kSafeEscape.hits>0,"mindestens ein echter freier Schutzflug pruefen");
+            assert.equal(k.b7kSafeEscape.escapes.length,k.b7kSafeEscape.hits);
+            for(const e of k.b7kSafeEscape.escapes){
+              assert(e.pirates>0,"kein Sicherheits-Rueckzug ohne echte Piraten");
+              assert(e.cash>=e.minerReserve+e.conservativeWork,
+                "keine unbezahlbare Sicherheitsflucht");
+              assert(e.conservativeWork>=250,"keine kostenlosen Leerfluege");
+              assert(e.station!==e.from);
+            }
+            const paidHulls=x=>x.hulls.filter(h=>h.owner==="npc3"&&h.klasse==="frachter");
+            assert.equal(paidHulls(j).length,1);
+            assert.equal(paidHulls(k).length,1);
+            assert.equal(paidHulls(k)[0].ship,"sh131");
+            for(const e of k.b7iGate.choices){
+              if(!e.quote)continue;
+              assert(e.quote.net>0);
+              assert(e.quote.cashNeeded<=e.ownerCash);
+              assert(e.quote.riskPremium>=0);
+            }
+            assert.equal(55000+k.final.minted-k.final.burned,50000);
+            const stat=x=>({hash:x.final.hash,company:x.final.npc.npc3,
+              paid:x.paid,due:x.due,unpaid:x.unpaid,production:x.final.recipes,
+              shortage:x.final.shortage,civil:x.consumerAudit.aggregate,
+              owner:x.owners.npc3,losses:x.losses.filter(y=>y.owner==="npc3").length,
+              sh131Loss:x.losses.find(y=>y.ship==="sh131")||null,
+              tradeEvents:x.b7hAuto.tradeEvents.length,choices:x.b7iGate.counts,
+              actualEscapes:x.b7kSafeEscape?.hits||0});
+            console.log("B7K_REAL_ESCAPE",JSON.stringify({
+              b7j:stat(j),b7k:stat(k),
+              allEscapes:k.b7kSafeEscape.escapes,
+              attacks:k.b7jRisk.events,
+              movements:k.b7jRisk.movement.slice(0,30),
+              trades:k.b7hAuto.tradeEvents.slice(0,30),
+              days:k.daily.filter(d=>[15,16,17,18,19,20,21,22,23,30,60,90].includes(d.day))
+            }));
+          '
       - name: 67 Standardtests
         run: node --test tests/*.test.mjs
       - uses: actions/upload-artifact@v4

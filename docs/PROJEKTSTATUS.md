@@ -1,5 +1,15 @@
 # Aphros Void – Projektstatus
 
+## [ARCHIV/ANALYSE] Wirtschaftsdiagnose und GitHub-Bereinigung · 31.10.2026
+
+**Produktive Basis vor Dokumentations-Merge:** `main d454d0661dee48a7bfdb843d05096982d799e51f`, **v0.12.5 / Regel 14 / Schema 8**. Alle bisherigen Wirtschafts- und Eskortenanalysen enthalten **keine** neue produktive Preis-, Routen-, Piraten-, Jäger-, Geld-, Kredit-, Werft- oder Spielstandsregel. **B5a #42 und B5b #46 sind integriert**; die nachfolgenden B6-Tests wurden nur auf isolierten Analysebranches durchgeführt. Echte iPad-/NAS-Abnahme steht aus.
+
+**[TATSÄCHLICH AUSGEFÜHRTE BEREINIGUNG]** Am 31.10.2026 wurden die **17** bislang offenen Forschungs-PRs **#32–#34, #36–#41, #44–#45, #48 und #50–#54** nach nachvollziehbarer Archivierung als `[ARCHIV/ANALYSE]` geschlossen, **kein Merge**. Der Dokumentations-PR #49 führt die verbindliche [Roadmap](ROADMAP.md), dieses Statusdokument und das neue [Handelszyklus-Evidenzarchiv](ANALYSEARCHIV_HANDELSZYKLUS_2026-10-31.md) zusammen. Hauptbelege sind die verifizierten GitHub-CI-Runs #41178667836 (B6c), #41179275120 (B6d) und **#41180157480 (B6e; letzter Head)** mit jeweils **19/19 erfolgreichen Jobs**, **67/67 Standardtests**; Wirtschaftsläufe/Hashes jeweils im Archiv und zugehörigen PR.
+
+**[WIRTSCHAFTLICH NICHT FREIGEGEBEN]** Die aus Meridian bezahlten 1.380 ISK aus B6e ermöglichten **49 echte NPC-Trader-Warenverkäufe**, aber **0 ISK Tilgung**, am Endtag **0 Händlerfrachter**, Aldera weiterhin **0 Silizium/0 Bauteile** und die vier Krisen **4.450→8.903 ISK** ungedeckte Arbeit. Einzelkredit, nachträgliches Frachthonorar, pauschaler Piratenschutz, R3-Lagerdeckel und Cashblockade P1 **nicht integrieren**. Die Endverbrauchernachfrage und langfristige NPC-Kaufkraft bei Spieler-Sparfreiheit sind eine **offene System-/Geldregimeentscheidung**, keine beschlossene Emissionsregel. Als nächste **[OPTION]** B6f ausschließlich den realen 49-Lieferungen-Zahlungspfad auditieren; keine neue Mechanik vor Ursachenklärung. Die **[BESCHLOSSENEN]** Ziele günstigerer leichter Jäger, verlässlicher risikogerechter Eskorten und langfristig global mehr Jäger als Frachter bleiben nachgeordnet und noch nicht implementiert.
+
+**[BRANCHBEREINIGUNG OFFEN]** PR-Schließung hat Git-Branches **nicht** entfernt. Die eingesetzte GitHub-Verbindung bietet keine Löschung von Branch-Refs; insbesondere historischen B1-Start `6855d76` und Testcode `cec7f93` für weitere Reproduktionen nicht ohne Ersatz vernichten. Eventuelle physische Löschung der verbleibenden Analyse-/Feature-Branches gesondert verifizieren; nicht als erledigt deklarieren. Kein Deployment.
+
 ## [ANALYSE/DRAFT] B6c/B6d und Jägereskorte-Konzept – 31.10.2026
 
 **[MAIN] weiter v0.12.5, Regel 14, Schema 8, Commit `d454d0661dee48a7bfdb843d05096982d799e51f`.** Keine Änderung am Produkt durch die folgenden Tests oder die Designentscheidung; der technische Status-Block unten bleibt historisch überprüfbar. Die einzige verbindliche Produktpriorität steht in [ROADMAP.md](ROADMAP.md).

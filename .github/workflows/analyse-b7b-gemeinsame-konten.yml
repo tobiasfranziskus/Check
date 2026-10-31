@@ -99,6 +99,42 @@ jobs:
               }
             }
           '
+      - name: B7d reale Handelsangebote und Ursache der Marktsperre ohne Kerneingriff
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/b7b-out/";
+            const read=(mode,days)=>JSON.parse(fs.readFileSync(dir+"b7b-handel-flotte-42-"+mode+"-"+days+"d.json"));
+            for(const mode of ["control","wallet"])for(const days of [10,90]){
+              const x=read(mode,days),rows=x.b7dDiagnostics;
+              assert.equal(rows.length,days===10?1:4,"Tag10 bzw 10,11,12,15");
+              assert.deepEqual(rows.map(x=>x.day),days===10?[10]:[10,11,12,15]);
+              for(const row of rows){
+                assert.equal(row.routes.length,16,"16 exakt definierte Marktpaare");
+                assert.equal(row.counts.candidateQuotes,7*6*3,"alle 126 gerichteten Paare fuer 3 Waren");
+                assert(row.counts.prefundedWithShipAtSource<=row.counts.withEmptyShipAtSource);
+                assert(row.counts.withEmptyShipAtSource<=row.counts.afterWorkPositive);
+                assert(row.counts.afterWorkPositive<=row.counts.nominalPositive);
+                for(const q of row.routes){
+                  assert(q.qty>=0&&q.qty<=q.buyerCanTake);
+                  assert(q.qty<=q.available);
+                  assert(q.workCost>0&&q.fundNeed>=q.workCost);
+                  if(q.financeable.length)assert(q.qty>0 && q.afterWork>0);
+                }
+                const named=row.routes.filter(q=>
+                  q.origin==="st_meridian"&&q.ware==="nahrung"&&["st_aldera","st_cyris","st_nadir","st_orion"].includes(q.target) ||
+                  q.ware==="silizium"&&q.target==="st_aldera");
+                console.log("B7D_VERIFIED_QUOTE",JSON.stringify({
+                  mode,day:row.day,count:row.counts,focus:named,
+                  top:row.top.slice(0,5)
+                }));
+              }
+              if(days===90)assert.deepEqual(rows[0],read(mode,10).b7dDiagnostics[0],"stabile Tag10-Marktangebote in 10-/90-Tageswelt");
+              assert.equal(x.final.hash, mode==="control"? "784047684dfe5c56":"82f11deee8c7f566",
+                "read-only Preisberechnung darf deterministischen Endhash nicht aendern");
+            }
+          '
       - name: 67 Standardtests
         run: node --test tests/*.test.mjs
       - uses: actions/upload-artifact@v4

@@ -1,0 +1,76 @@
+name: "[ANALYSE] B8g zwei leistungsgebundene Beschaffungsauftraege"
+on:
+  push:
+    branches: [analyse/b8g-zwei-bezahlte-versorgungsvertraege-20261031]
+    paths:
+      - 'tools/analyse-b8g-zwei-vertraege.mjs'
+      - '.github/workflows/analyse-b8g-zwei-vertraege.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'tools/analyse-b8g-zwei-vertraege.mjs'
+      - '.github/workflows/analyse-b8g-zwei-vertraege.yml'
+      - 'index.html'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unveraenderter historischer Regel14-Seed42-90d-Verlauf
+        run: node tools/analyse-b8g-zwei-vertraege.mjs --mode=control --days=90 --out="$RUNNER_TEMP/b8g"
+      - name: Real finanzierte NPC3-Huelle ohne Weltauftrag
+        run: node tools/analyse-b8g-zwei-vertraege.mjs --mode=ship-only --days=90 --out="$RUNNER_TEMP/b8g"
+      - name: Eine Lieferung leistungsgebunden bezahlt - B8d-Gegenprobe
+        run: node tools/analyse-b8g-zwei-vertraege.mjs --mode=one-contract --days=90 --out="$RUNNER_TEMP/b8g"
+      - name: Zwei Lieferungen aus global begrenztem Weltbudget - dritter Marktversuch
+        run: node tools/analyse-b8g-zwei-vertraege.mjs --mode=two-contract --days=90 --out="$RUNNER_TEMP/b8g"
+      - name: Finanzielle Deckung, Originalabrechnung und unabhaengige Gates
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/b8g/";
+            const read=m=>JSON.parse(fs.readFileSync(dir+m+"-90d.json"));
+            const base=read("control"),ship=read("ship-only"),
+              one=read("one-contract"),two=read("two-contract");
+            assert.equal(base.hash,"784047684dfe5c56");
+            for(const x of [base,ship,one,two]){
+              assert.equal(x.hours,2160);assert.equal(x.roundtrips,10);
+              assert.equal(x.sourceSha256,base.sourceSha256);
+              assert.equal(x.final.minted,base.final.minted,"keine zusaetzliche ISK-Schoepfung");
+              assert.equal(x.final.burned,base.final.burned,"keine zusaetzliche ISK-Vernichtung");
+              assert.equal(x.final.playerCash,base.final.playerCash,"Spieler-Sparfreiheit");
+              assert(x.contract.invoices<=x.contract.maxLoads);
+              assert(x.contract.amount<=x.contract.globalCeiling);
+              assert.equal(x.contract.amount,x.contract.receipts.reduce((a,y)=>a+y.covered,0));
+              assert(x.contract.shipOperatingUnpaid>=0);
+            }
+            assert.equal(ship.contract.hulls,1);
+            assert.equal(one.contract.hulls,1);
+            assert.equal(two.contract.hulls,1);
+            assert.equal(ship.contract.firstSold,0);
+            assert.equal(one.contract.firstSold,7);
+            assert.equal(one.contract.secondSold,0);
+            assert.equal(one.contract.invoices,1);
+            assert.equal(two.contract.invoices,2);
+            assert.equal(two.contract.firstSold,7);
+            assert.equal(two.contract.secondSold,7);
+            assert(two.final.medicinesProduced>one.final.medicinesProduced);
+            console.log("B8G_GATE",JSON.stringify({
+              original:base.final,ship:ship.contract,once:one.contract,twice:two.contract,
+              medical:{base:base.final.medicinesProduced,one:one.final.medicinesProduced,
+                two:two.final.medicinesProduced},cash:{
+                npc3:[base.final.npc3Cash,ship.final.npc3Cash,one.final.npc3Cash,two.final.npc3Cash],
+                meridian:[base.final.meridianCash,ship.final.meridianCash,
+                  one.final.meridianCash,two.final.meridianCash]}}));
+          '
+      - name: Bestehende Standardtests
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b8g-two-contracts-seed42-90d
+          path: ${{ runner.temp }}/b8g/*.json

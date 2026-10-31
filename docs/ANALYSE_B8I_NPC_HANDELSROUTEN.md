@@ -41,6 +41,21 @@ Vier Original-Core-Welten für Seed **42** und **7**, je aktive historische B1-7
 
 Die **Strecken-Kombinationen** zählen unterschiedliche `Quellstation→Verkaufsstation / Warenart`-Paare, **nicht** unabhängige direkt rückführende Rundfahrten, und Teilverkäufe an mehrere Stationen können vorkommen. Echte Käufer- und Lagerblockaden werden nur bei **Original-Ankunft mit noch restlicher Ladung** ausgewiesen, inklusive möglicher **Teilentladung**. `cash` ist eine nachweisbar finanzielle Begrenzung des Original-`aufnehmbar` zum Ankunftszeitpunkt, `storage` eine physische Lagerbeschränkung. Die Mengen dürfen nicht direkt zu weltweiten Endverbrauchsdefiziten addiert werden; dieselbe Ladung kann später mehrfach erneut anlaufen.
 
+### Tatsächlich vorhandene Konzernfrachter: Die Nullhandelsphase hat keine handelnden NPC-Hüllen mehr
+
+**[NACHGEREICHTER UNABHÄNGIGER CORE-STATE-BELEG]** Der Beobachter hat zusätzlich ab dem Originalzustand `state.ships` **jeden real noch vorhandenen NPC1-/NPC2-Frachter** pro Stichtag gezählt, getrennt von Besitzerkassen, Reiseauftrag und etwaigen alten Soll-Flottenplänen. Im letzten nachweislich erfolgreichen Testlauf [CI #41248517785](https://github.com/tobiasfranziskus/Check/actions/runs/41248517785) auf dem Runner mit Flotten-Zusatzdiagnostik ergibt sich:
+
+| Nach Originalzustand vorhandene NPC1/2-Frachter | 42 passiv | 42 aktiv | 7 passiv | 7 aktiv |
+| --- | ---: | ---: | ---: | ---: |
+| Tag 7 | 5 | **1** | 5 | **0** |
+| Tag 14 | 5 | **0** | 5 | **0** |
+| Tag 30 | 5 | **0** | 5 | **0** |
+| Tag 90 | 5 | **0** | 5 | **0** |
+
+Seed42 aktiv: Am Tag7 ist nur noch **ein** Frachter von NPC2 vorhanden, NPC1 besitzt **keinen**; am Tag14 besitzen beide **keinen**. Seed7 aktiv: Schon am Tag7 haben beide **keinen**. Zugleich sind NPC1 und NPC2 bei aktivem Seed42/7 bereits Tag7 **0 ISK**, und Original-`stats.handel` steigt danach noch kurz durch andere Akteure bis Tag14, aber ab Tag14 nie wieder. Beide passiven Welten haben im gleichen Zeitraum dauerhaft **drei NPC1- und zwei NPC2-Frachter** mit vorhandener Handelstätigkeit.
+
+**[KORRIGIERTE ENGPASSHIERARCHIE]** Damit ist die *unmittelbare* Nullhandelsursache **fehlende echte Händlerfrachterhüllen** nicht länger nur eine Hypothese, sondern für die beiden Seeds als Originalkern-Zustand **bewiesen**. Käuferkassen und mögliche Routenprofitabilität sind zusätzliche, getrennte Herausforderungen; ein neues Beschaffungsgeld für Wareneinkäufe allein erzeugt bei null vorhandenen Frachtern **keinen** physischen Handel. Nicht gezeigt ist in dieser Probe die konkrete Todesursache jeder einzelnen Hülle, die finanzielle oder materielle Blockade des genauen Ersatzkaufs oder ob eine wirtschaftlich rentable Hülle unter unveränderten Regeln neu aufgebaut werden könnte. **Nächster Prüfschritt muss den `m_core_kampf`-/`m_core_ersatzkauf`-Pfad pro Hülle, Originalwerft-/Fonds-Cash und Ressourcenvorrat rekonstruieren.**
+
 ### Kausal einschneidend: Ab Spieltag 15 keine autonomen Frachtergeschäfte mehr
 
 | Nach den ersten 14 Tagen: Tage 15–90 | 42 passiv | 42 aktiv | 7 passiv | 7 aktiv |

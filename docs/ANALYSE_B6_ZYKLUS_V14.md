@@ -1,6 +1,6 @@
 # B6a – Handelszyklus-Finanzierung, Zahlungsfähigkeit und ungedeckte Arbeit (Regel 14)
 
-**31. Oktober 2026 · [ANALYSE/DRAFT] – Messaufbau, vor Ausführung.**
+**31. Oktober 2026 · [ANALYSE/DRAFT] – Messaufbau und ausgeführte CI-Abnahme.**
 Basis ist der gepinnte GitHub-main-Commit `d454d0661dee48a7bfdb843d05096982d799e51f` (v0.12.5, Regel 14, Schema 8). Die verbindlichen Produktziele und Phasen stehen ausschließlich in [ROADMAP.md](ROADMAP.md). Kein neuer Wirtschaftsmechanismus wird durch diesen Analyse-PR freigegeben.
 
 ## Fragestellung
@@ -21,7 +21,20 @@ Ein positiver nomineller Waren-Spread nach Gebühren ist **keine** vollständige
 4. **Kassen- und Warenrechnungen:** Unabhängige Geld- und Lager-/Fracht-Audits je Stunde. Tatsächliche Ladungskäufe, Verkäufe, Gebühren, Soll-/Ist-Arbeitszahlung, Unterdeckungsereignisse, bezahlte Hüllenaktivierungen, Schiffsverluste, Folgekäufe derselben Schiff-ID und Aldera-Silizium/Bauteile je Fall dokumentieren.
 5. **Auswertung:** `tools/analyse-b6-summary.mjs` prüft die Vollständigkeit aller 17 Dateien und erstellt eine Tabelle und maschinenlesbare Daten. Auf GitHub Actions werden zusätzlich alle vorhandenen Standardtests ausgeführt.
 
-**Abnahme erst nach CI:** Kein Lauf, keine Zahl und keine bestandene Prüfung in diesem Dokument darf vor dem tatsächlich erfolgreichen Workflow als ausgeführt bezeichnet werden. Nach Abschluss CI-Link, Jobzahlen, Fehler, tatsächliche Wirtschaftskennzahlen und Grenzen ergänzen.
+**[TEST/CI]** Auf dem unveränderten Code-Head `1b5a0b6bfb28aae5c02b91d621ad3ade9ff181a8` erfolgreich abgeschlossen: [B6a-Workflow #41177182205](https://github.com/tobiasfranziskus/Check/actions/runs/41177182205), **19/19 Jobs erfolgreich**, davon 13 passive Seeds, historische B1-Startrekonstruktion, vier Krisenfälle und Synthese. In der Synthese **67/67 Node-Tests bestanden**, 0 Fehler/Skips; 2.270 Tageshashes, 54.480 stündliche unabhängige Audits/bit-identische Replay-Hashes, 220 Save/Load-Roundtrips. Die unveränderten historischen Regel-14-Referenzen ergeben 791 Mangelstunden und 310.058 reguläre NPC-Trader-Frachterverkäufe. Ein vorheriger Versuch auf dem ursprünglichen PR-Head scheiterte an einer Namenskollision der neuen Beobachter-Verlustliste; diese wurde vor dem erfolgreichen Prüflauf korrigiert. Der Produktcode blieb unverändert.
+
+### Gemessene Ergebnisse B6a
+
+| Gruppe | NPC-Trader-Frachter-Warenverkäufe | Folgekäufe nach Verkauf durch dieselbe Schiff-ID (alle NPCs) | Soll-Arbeitskosten (ISK, alle NPC1–3) | Real bezahlt | Nicht bezahlt |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Passiv, 13 × 90 Tage | 310.058 | 225.968 | 46.337.480 | 46.321.390 | **16.090** |
+| Vier B1-Spielerkrisen, 4 × 275 Tage | 0 | 72 | 21.813 | 17.363 | **4.450** |
+
+Die vier B1-Fälle (**miner, handel-flotte, station, jagd**) haben an Tag 365 jeweils **0 NPC1- und 0 NPC2-Frachter**. Auch NPC3 besitzt am Ende in allen vier Fällen **0 Frachter** und Aldera **0 Silizium / 0 Bauteile**. Von den vier ursprünglichen B1-Frachtern überlebt **keiner**. Die Folgekäufe verteilen sich auf 4 / 57 / 6 / 5; die ungedeckten Kosten auf 0 / 433 / 4.017 / 0 ISK. Das ist ein technisch reproduzierter **wirtschaftlicher Misserfolg**, keine Produktfreigabe.
+
+**Messgrenzen:** 0 NPC-Trader-Verkäufe bezieht sich auf die Handelskonzerne mit `kind='trader'`; die 72 protokollierten Folgekäufe schließen den separat betrachteten NPC3-Frachterhandel ein. Zyklen und Eigentümerkassen sind nicht austauschbar. Gezählt wird der erfolgte Kauf nach einem Verkauf derselben Schiff-ID; dies garantiert nicht, dass Verlust-, Leerfahrt- und Hüllenersatzkosten gedeckt wären. Die Artefakte `b6a-gesamt` enthalten vollständige Falltabellen und maschinenlesbare Ausgangsdaten. Dieser Erfolg prüft **keine** Insolvenz-, Pause- oder Schuldenregel und keine reale Safari-/NAS-Auslieferung.
+
+**Produkturteil:** Kostenunterdeckung und fehlender Wiederanlauf bleiben trotz bestandener Core-Prüfungen offen. Die einzige verbindliche Roadmap wird damit nicht um eine neue Produktregel erweitert.
 
 ## Grenzen dieser Stufe
 

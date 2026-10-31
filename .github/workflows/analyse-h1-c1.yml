@@ -1,0 +1,66 @@
+name: Aphros Void H1-C1 - nur ziviler Realverbrauch, Seed 42
+on:
+  pull_request:
+    paths:
+      - tools/analyse-h1-c1-consumption.mjs
+      - .github/workflows/analyse-h1-c1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  h1-c1-only-two-references:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Ein passiver Standard-Referenzseed 42 - 90 Tage
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/h1-c1-results"
+          node tools/analyse-h1-c1-consumption.mjs --seed=42 --mode=control --out="$RUNNER_TEMP/h1-c1-results"
+      - name: Historische B1-Referenz exakt pinnen
+        shell: bash
+        run: |
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399 cec7f93758e4a499c238738ff50adac4416080d4
+          mkdir -p "$RUNNER_TEMP/h1-c1-legacy" "$RUNNER_TEMP/h1-c1-b1" "$RUNNER_TEMP/h1-c1-start"
+          git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/h1-c1-legacy"
+          git archive cec7f93758e4a499c238738ff50adac4416080d4 | tar -x -C "$RUNNER_TEMP/h1-c1-b1"
+          node "$RUNNER_TEMP/h1-c1-legacy/tools/npc-restart-v12.mjs" --prepare --out="$RUNNER_TEMP/h1-c1-start"
+      - name: Ein aktiver Spielerfall handel-flotte 42 - Tage 91 bis 365
+        shell: bash
+        run: |
+          node tools/analyse-h1-c1-consumption.mjs --case=handel-flotte --mode=control --starts="$RUNNER_TEMP/h1-c1-start" --b1="$RUNNER_TEMP/h1-c1-b1" --legacy="$RUNNER_TEMP/h1-c1-legacy" --out="$RUNNER_TEMP/h1-c1-results"
+      - name: Unveraenderte Geld- und Warenreferenzen unabhaengig vergleichen
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import assert from "node:assert/strict";
+            const p=process.env.RUNNER_TEMP+"/h1-c1-results/";
+            const a=JSON.parse(fs.readFileSync(p+"h1-c1-standard-42.json"));
+            const b=JSON.parse(fs.readFileSync(p+"h1-c1-handel-flotte-42.json"));
+            assert.equal(a.days,90); assert.equal(b.days,275);
+            assert.equal(a.consumerAudit.days.length,90); assert.equal(b.consumerAudit.days.length,275);
+            assert.equal(a.consumerAudit.nominalFullCoverageDaily,27360);
+            assert.equal(b.consumerAudit.nominalFullCoverageDaily,27360);
+            for(const x of [a,b]){
+              assert.equal(x.credit.loans,0);
+              assert.equal(x.sourceSha256,x.variantSha256);
+              assert.equal(x.hours,x.days*24);
+              assert.equal(x.consumerAudit.aggregate.weightedClaim,x.consumerAudit.aggregate.nahrung*30+x.consumerAudit.aggregate.medikamente*105);
+              console.log("H1_C1_VERIFIED",JSON.stringify({case:x.scenario,days:x.days,nominalWeighted:x.consumerAudit.aggregate.weightedClaim,consume:x.consumerAudit.aggregate,playerCashEnd:x.final.playerCash,mintedEnd:x.final.minted,burnedEnd:x.final.burned,hash:x.final.hash}));
+            }
+            assert.equal(b.initialLegacyHash,"bf5d35d6619d23d8","B1 Regel-12 historischer Hash"); 
+          '
+      - name: Bestehende Produkt-Regression (kein Safari-Test)
+        run: node --test tests/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h1-c1-seed42-two-references
+          path: ${{ runner.temp }}/h1-c1-results/*.json

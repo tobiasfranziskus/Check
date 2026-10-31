@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - tools/analyse-h1-c2-budget480.mjs
+      - tools/analyse-h1-c3-first10.mjs
       - .github/workflows/analyse-h1-c2.yml
   workflow_dispatch:
 permissions:
@@ -32,6 +33,35 @@ jobs:
         shell: bash
         run: |
           node tools/analyse-h1-c2-budget480.mjs --seed=42 --case=handel-flotte --mode=h1 --b1="$RUNNER_TEMP/h1-c2-b1" --out="$RUNNER_TEMP/h1-c2-results"
+      - name: Ersten 10 Tage - Kontrolle und Geschaefte/Kassen/Kosten/Fonds
+        shell: bash
+        run: |
+          node tools/analyse-h1-c3-first10.mjs --seed=42 --case=handel-flotte --mode=control --b1="$RUNNER_TEMP/h1-c2-b1" --out="$RUNNER_TEMP/h1-c2-results"
+      - name: Ersten 10 Tage - dieselbe H1-Variante nur im Analysecore
+        shell: bash
+        run: |
+          node tools/analyse-h1-c3-first10.mjs --seed=42 --case=handel-flotte --mode=h1 --b1="$RUNNER_TEMP/h1-c2-b1" --out="$RUNNER_TEMP/h1-c2-results"
+      - name: Ereigniskonten bis Tag 10 exakt mit voller Langzeitreihe abgleichen
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import assert from "node:assert/strict";
+            const d=process.env.RUNNER_TEMP+"/h1-c2-results/";
+            for(const [mode,expected] of [["control","84f1a88d2701ff2a"],["h1","7f1795b5bde050ba"]]){
+              const x=JSON.parse(fs.readFileSync(d+"h1-c3-handel-flotte-42-"+mode+".json"));
+              const y=JSON.parse(fs.readFileSync(d+"h1-c2-handel-flotte-42-"+mode+".json"));
+              assert.equal(x.days,10);assert.equal(x.hours,240);assert.equal(x.roundtrips,8);
+              assert.equal(x.commands,7,"genau sieben B1-Befehle bis Tag10");
+              assert.equal(x.final.hash,expected,"gepinntes Tag10 aus Original H1-C2-CI-Artefakt");
+              assert.equal(x.final.hash,y.daily[9].hash,"100 Prozent unveraenderte Tag10-Trajektorie");
+              assert.equal(x.h1.paid,y.h1.days.slice(0,10).reduce((n,e)=>n+e.paid,0),"originales H1-Budget");
+              assert.equal(x.firstTenTrace.atDay10.npc1,y.daily[9].npc.npc1.cash);
+              assert.equal(x.firstTenTrace.atDay10.npc2,y.daily[9].npc.npc2.cash);
+              for(const owner of ["npc1","npc2"])assert.equal(x.firstTenTrace.accountReconciliation[owner].siphoned>=0,true);
+              console.log("H1_C3_TRACE_VERIFIED",JSON.stringify({mode,hash:x.final.hash,events:x.firstTenTrace.events.length,attribution:x.firstTenTrace.accountReconciliation}));
+            }
+          '
       - name: Bilanzvergleich und Abbruchgrenzen - keinen Erfolg voraussetzen
         shell: bash
         run: |

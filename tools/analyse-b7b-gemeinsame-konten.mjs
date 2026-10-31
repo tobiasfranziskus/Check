@@ -7,7 +7,9 @@ import {createHash} from 'node:crypto';
 
 const args=process.argv.slice(2);
 const opt=(k,d)=>args.find(x=>x.startsWith('--'+k+'='))?.slice(k.length+3)??d;
-assert(args.every(x=>/^--(seed|case|b1|out|mode)=/.test(x)),'unbekannter Parameter');
+assert(args.every(x=>/^--(seed|case|b1|out|mode|days)=/.test(x)),'unbekannter Parameter');
+const days=Number(opt('days','10'));
+assert([10,90].includes(days),'B7b genau 10 oder 90 Spieltage');
 const mode=opt('mode','control');
 assert(['control','wallet'].includes(mode),'B7a nur Kontrollkern oder Schiffskonto-Gegenprobe');
 const scenario=opt('case',null), seed=scenario?{miner:42,'handel-flotte':42,station:1234,jagd:98765}[scenario]:Number(opt('seed','42'));
@@ -421,7 +423,7 @@ const originalPlayer=ref.players.find(p=>p.scenario===scenario&&p.seed===seed);
 assert(originalPlayer&&originalPlayer.commands.length===9,'exaktes historisches B1 Spielerbefehlsband (9 Befehle)');
 assert.equal(originalPlayer.commands[0].tick,1);
 assert.equal(originalPlayer.commands.at(-1).tick,259201);
-const expected=originalPlayer.commands.filter(x=>x.tick<=14400).map(({tick,...cmd})=>({tick,cmd}));
+const expected=originalPlayer.commands.filter(x=>x.tick<=days*1440).map(({tick,...cmd})=>({tick,cmd}));
 const manualFund={type:'shipFund',owner:'house',schiff:'sh002',betrag:1000};
 let state=observed.c.createState(seed,observed.r),replay=plain.c.createState(seed,plain.r);
 if(mode==='wallet'){
@@ -435,7 +437,7 @@ const initialLegacyHash=null;
 const initialHash=plain.c.hash(replay);
 assert.equal(observed.c.hash(state),initialHash);
 let cursor=0,hours=0,roundtrips=0,manualFundExecuted=false,manualShipCashAtTick1=null;
-const days=10,dayHashes=[],daily=[];
+const dayHashes=[],daily=[];
 function audit(s){
   assert(plain.c.audit(s).ok,'Produkt-Geld-/Warenaudit');
   const cash=sum(Object.values(s.owners).map(o=>{assert(Number.isSafeInteger(o.cash)&&o.cash>=0);return o.cash;}))+
@@ -471,6 +473,8 @@ for(let minute=1;minute<=days*1440;minute++){
   }
   const a=observed.c.step(state,observed.r),b=plain.c.step(replay,plain.r);
   assert.deepEqual(a,b,'Queue-Ergebnisse identisch');
+  if(mode==='wallet'&&state.tick===1)assert.equal(a[1]?.ok,true,'historischer manueller Handelsauftrag nach gemeinsamer Umbuchung gueltig');
+  if(mode==='wallet'&&state.tick===2)assert.equal(a[0]?.ok,true,'historischer manueller Warenverkauf nach gemeinsamer Umbuchung gueltig');
   if(mode==='wallet'&&state.tick===1){
     assert.equal(a[0]?.type,'shipFund','Spieler-Finanzierungsbefehl wird im Kern ausgefuehrt');
     assert.equal(a[0]?.ok,true,'Spieler-Finanzierung tatsaechlich erfolgreich');
@@ -487,7 +491,7 @@ for(let minute=1;minute<=days*1440;minute++){
     const x=snapshot(state);daily.push(x);dayHashes.push(x.hash);
     dayRow(x.day);
     const day=minute/1440;
-    if([1,3,7,10].includes(day)){
+    if([1,3,7,10,30,60,90].includes(day)){
       const save=observed.c.save(state);
       assert.equal(observed.c.hash(observed.c.load(save,undefined,observed.r)),
         observed.c.hash(state),'Save/Load unveraendert');
@@ -548,7 +552,7 @@ const totals={scenario:scenario||'standard',seed,mode,version:14,sourceSha256:sh
   closeoutSamples:watcher.closeouts.slice(0,30),daily};
 const out=opt('out','/tmp/b7b-results');
 fs.mkdirSync(out,{recursive:true});
-const file=path.join(out,'b7b-'+scenario+'-'+seed+'-'+mode+'.json');
+const file=path.join(out,'b7b-'+scenario+'-'+seed+'-'+mode+'-'+days+'d.json');
 fs.writeFileSync(file,JSON.stringify(totals,null,2)+'\n');
 console.log('B7B_SHARED_ACCOUNT_PASS '+JSON.stringify({scenario:totals.scenario,seed,mode,days,credit:totals.credit,contracts:totals.contracts,
   hourlyHashes:hours,dailyHashes:dayHashes.length,roundtrips,pauses:watcher.pauses,

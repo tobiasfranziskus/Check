@@ -396,6 +396,53 @@ jobs:
               loss:x.losses.filter(e=>e.ship==="sh131"),hash:x.final.hash
             }));
           '
+      - name: B7j exakt eine Risikoaufschlag-Variante im vorhandenen B7i NPC3-Autohandel
+        run: node tools/analyse-b7b-gemeinsame-konten.mjs --seed=42 --case=handel-flotte --mode=wallet --investment=npc3 --autotrade=on --fullcost=on --risk=on --days=90 --b1="$RUNNER_TEMP/b7b-b1" --out="$RUNNER_TEMP/b7b-out"
+      - name: B7j Risikoaufpreis und echter 90-Tage-Kosten-/Schiffs-/Versorgungseffekt
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const dir=process.env.RUNNER_TEMP+"/b7b-out/";
+            const read=k=>JSON.parse(fs.readFileSync(dir+"b7"+k+"-handel-flotte-42-wallet-90d.json"));
+            const old=read("i"),x=read("j");
+            assert.equal(old.final.hash,"517f7d05d13dfaae","historischer B7i Referenzhash");
+            assert.equal(x.days,90);assert.equal(x.hours,2160);assert.equal(x.daily.length,90);
+            assert.equal(x.roundtrips,14);assert.equal(x.initialHash,old.initialHash);
+            assert.equal(x.sourceSha256,old.sourceSha256);
+            assert.notEqual(x.variantSha256,old.variantSha256,"nur Risiko-Entscheidung variiert");
+            assert.deepEqual(x.daily.slice(0,15),old.daily.slice(0,15));
+            assert.equal(x.b7fInvestment.onceOnly,1);
+            assert.equal(x.b7fInvestment.ship,old.b7fInvestment.ship);
+            assert.equal(x.b7fInvestment.quantity,old.b7fInvestment.quantity);
+            assert.equal(x.b7fInvestment.soldAt,old.b7fInvestment.soldAt);
+            assert.equal(x.b7hAuto.activatedAt,old.b7hAuto.activatedAt);
+            assert(x.b7jRisk?.riskAdjusted===true);
+            assert(x.b7iGate?.enabled===true);
+            for(const event of x.b7iGate.choices){
+              if(!event.quote)continue;
+              assert(event.quote.net>0);
+              assert(event.quote.cashNeeded<=event.ownerCash);
+              assert(event.quote.riskPremium>=0);
+              if(event.quote.pirates===0)assert.equal(event.quote.riskPremium,0);
+            }
+            assert.equal(x.final.minted-x.final.burned,0,"reale Bilanz in gesamt unveraenderte 50000 ISK");
+            const stat=y=>({hash:y.final.hash,company:y.final.npc.npc3,paid:y.paid,
+              due:y.due,unpaid:y.unpaid,production:y.final.recipes,
+              shortage:y.final.shortage,civil:y.consumerAudit.aggregate,
+              owner:y.owners.npc3,losses:y.losses.filter(v=>v.owner==="npc3"),
+              sh131Loss:y.losses.find(v=>v.ship==="sh131")||null,
+              tradeEvents:y.b7hAuto.tradeEvents.length,counts:y.b7iGate.counts});
+            console.log("B7J_RISK_CASE",JSON.stringify({
+              reference:stat(old),riskAware:stat(x),
+              accepted:x.b7iGate.choices.filter(e=>e.quote).slice(0,28),
+              last:x.b7iGate.choices.slice(-16),
+              riskAttack:x.b7jRisk.events,
+              movements:x.b7jRisk.movement.slice(-20),
+              firstDays:x.daily.filter(d=>[15,16,17,18,19,20,21,30,60,90].includes(d.day)),
+              trades:x.b7hAuto.tradeEvents.slice(0,26)
+            }));
+          '
       - name: 67 Standardtests
         run: node --test tests/*.test.mjs
       - uses: actions/upload-artifact@v4

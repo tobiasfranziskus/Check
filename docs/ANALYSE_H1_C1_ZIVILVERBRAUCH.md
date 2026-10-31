@@ -1,0 +1,40 @@
+# H1-C1 – Realer ziviler Endverbrauch und Geldverteilung (Referenz-Audit)
+
+**31.10.2026 · [ANALYSE/DRAFT] – vollständig ausgeführt; keine H1-Geldregel implementiert.** Verbindliche Produktprioritäten: [ROADMAP.md](ROADMAP.md); der H1-Vorschlag steht in [Konzeptions-PR #55](https://github.com/tobiasfranziskus/Check/pull/55), B6f-Vollkostenbeleg in [Analyse-PR #56](https://github.com/tobiasfranziskus/Check/pull/56). Produktbasis: `main 517728a958326e86751f09cd74d0c077edad9921`, **v0.12.5 / Regel 14 / Schema 8**.
+
+## Prüfmethode, Provenienz und CI
+
+- **[TEST] [GitHub-CI #41188555323](https://github.com/tobiasfranziskus/Check/actions/runs/41188555323): 1/1 Job erfolgreich**, **67/67 bestehende Node-Tests bestanden, 0 Fail/Skip**. Genau **zwei** unveränderte Simulationsreferenzen: eine Standardwelt **Seed 42 × 90 Tage**, der historisch gepinnte aktive B1-Spielerfall **`handel-flotte` / Seed 42 × 275 Folgetage ab Tag 90**. **8.760** stündliche unabhängige Hash-/Geld-/Warenaudits, **365** Tageshashes, **28** Save/Load-Roundtrips.
+- Kein neuer Wirtschaftsmechanismus: der `tools/analyse-h1-c1-consumption.mjs`-Beobachter liest ausschließlich originale, tatsächlich bei `m_core_stunde.verbrauch` entfernte Einheiten `nahrung`, `medikamente`, `bauteil` und den vorhandenen Stations-/Spieler-Cash, `minted`, `burned` und reale Dividenden. **0 neue ISK**, keine Budget-/Preise-/NPC-/Save-/Core-Regeländerung. Die ursprüngliche `index.html`-Quellchecksumme **`035fe8b486ff2d515ca6379ad682b4b15d89d5d051866e287425ed425e1cbfc9`** ist eingefroren, Historie B1/v12 vor Migration geprüft. Kein neuer Goldenwert.
+- Verifizierbare Original-GitHub-Artefakte: **`h1-c1-seed42-two-references`, Artefakt-ID `13037428805`**, mit `h1-c1-standard-42.json` und `h1-c1-handel-flotte-42.json`. Mengen sind reale Verbrauchsereignisse **nicht Verkäufe, nicht theoretischer Bedarf**, und `weightedClaim` ist **nur eine gedankliche Bewertung**, **kein realer Geldfluss**.
+- Die sechs Verbraucherstationen sind Aldera, Cyris, Dravos, Nadir, Orion, Veldra; der Außenhandelshafen Meridian verbraucht bisher keinen zivilen Grundbedarf. Wertgewichtung als reine Referenz: 30 ISK pro Nahrung, 105 ISK pro Medikament. Bauteile werden **mitgemessen**, sind aber **keine** zugelassene H1-Haushaltszahlung.
+
+## Messung
+
+| Kennzahl | Standard Seed 42, Tag 1–90 | B1 `handel-flotte`, Tag 91–365 |
+| --- | ---: | ---: |
+| Tatsächlich verbrauchte Nahrung | **36.602** | **103** |
+| Tatsächlich verbrauchte Medikamente | **12.960** | **12** |
+| Tatsächlich verbrauchte Bauteile (nicht H1) | 23.758 | 51 |
+| Nominales H1-Verbrauchsgewicht **ohne Auszahlung** | **2.458.860 ISK** | **4.350 ISK** |
+| Spieltage mit tatsächlich positivem zivilen Verbrauch | **90** | **2** |
+| Spieltage ohne solchen Verbrauch | **0** | **273** |
+| Bestehende `minted` am Laufende (kumuliert seit Weltstart) | **105.480 ISK** | **7.440 ISK** |
+| Bestehende `burned` am Laufende (kumuliert seit Weltstart) | **110.480 ISK** | **12.440 ISK** |
+| Weltgeldmenge am Laufende, Anfang `55.000` | **50.000 ISK** | **50.000 ISK** |
+| Spieler-Cash am Laufende | **2.000 ISK** | **42.444 ISK** |
+| NPC1/2-Frachter am Laufende | **5** | **0** |
+
+**Präzise Unterdeckung:** Die Vollversorgung könnte **408 Nahrung + 144 Medikamente je Spieltag** konsumieren (17 + 6 je Stunde), nominal **27.360 ISK/Tag**. Die passive Standardwelt erfüllt davon **2.458.860 / 2.462.400 = 99,856 % des nominalen Grundverbrauchs**; das ist kein tatsächlich bezahlter Endkundenumsatz. In der Spielerkrise fielen nur an **Tag 91 (3.240 ISK nominal, 66 Nahrung/12 Medikamente)** und **Tag 92 (1.110 ISK nominal, 37 Nahrung/0 Medikamente)** physische zivil konsumierte Güter an. **Ab Tag 93 bis Tag 365: 0 Nahrung/Medikamente im zivilen Verbrauch.** Es gab damit für einen rein verbrauchsabhängigen H1-Auszahlungsweg an **273 aufeinanderfolgenden Spieltagen keinerlei Leistung**.
+
+**Liquidität statt Geldgesamtmenge:** In der aktiven Welt beträgt an Tag 365 das Spieler-Cash **42.444 / 50.000 = 84,888 % der Weltgeldmenge**. Alle sechs regulären Verbraucherstationen zusammen besitzen nur noch **479 ISK** (Aldera 69, Cyris 18, Dravos 286, Nadir 21, Orion 45, Veldra 40). Meridian hat **4.833 ISK**, ist aber **kein** zivil konsumierender H1-Standort. NPC1/2 je **0 ISK, 0 Frachter**, NPC3 **665 ISK** und 9 Miner. Das gleichzeitige Vorhandensein von Geld an anderen Konten beweist keine Kaufkraft bei den tatsächlich benötigten Stationen/Händlern. An den gemessenen 275 Tagen gab es **0 Stations→Spieler-Dividenden**, da dieser B1-Fall keine entsprechende Spieler-Stationsausschüttung auslöste; der separat beauftragte Fall `station` bleibt für eine spätere Produktqualifizierung erforderlich.
+
+## Ökonomische Schlussfolgerung / nur ein Folgekandidat
+
+**[BESTÄTIGT für diese zwei Referenzen]** Ein zivil finanzierter Waren-Endabsatz ist eine plausible zusätzliche wiederkehrende Geldquelle, **solange physisch geliefert und verbraucht wird**. Er ist **keine alleinige Wiederanlaufregel** für einen bereits fast vollständig unterbrochenen Markt. In der vorhandenen Krise würde sogar die maximal ungekappte nominale Nachvergütung über alle weiteren 275 Tage **höchstens 4.350 ISK** auslösen, und **0 ISK nach Tag 92**, und zwar zugunsten der betreffenden Stationskassen, **nicht automatisch eines insolventen Händlers**. Dieser 4.350-ISK-Wert ist ein **ex-post theoretischer Höchstbetrag ohne Core-Rückwirkung**, keine Empfehlung, diesen ungekappte Betrag zu emittieren. Neue Einnahmen *ab Tag 0* könnten die folgenden realen Lieferungen beeinflussen: aus einer unveränderten Referenz kann kein kausaler Nutzen des noch nicht implementierten H1-Modells abgeleitet werden.
+
+**[OPTION – exakt ein begründbarer, explizit nicht beschlossener Testwert]** Um H1 als *präventive* Grundnachfrage zu prüfen, wäre `B_tag = 480 ISK pro Spieltag für die ganze Welt` ein einzelner falsifizierbarer Prüfwert: **20 ISK/Stunde** über alle sechs Stationen; das sind **41 %** der bisherigen täglichen Bruttoemission im passiven Seed 42 (105.480/90 = 1.172 ISK/Tag), nur **1,75 %** der nominal möglichen 27.360 ISK/Tag, aber bei vollständigem Konsum über 90 Tage bereits maximal **43.200 ISK zusätzliche Emission** bzw. **79 % des Startgeldes** – deshalb *keinesfalls ohne Markt-/Geldverteilungs-Audit als dauerhaftes Balancing übernehmen*. In der archivierten späten Krise könnten selbst bei gleicher Warenhistorie höchstens 2 × 480 = **960 ISK** in Tag 91/92 vergütet werden und danach 0. Die **480** sind **keine individuelle Insolvenzschwelle** und werden während eines Laufs nie an einzelne Kassen, Schulden oder Ausfälle angepasst.
+
+**Prüfvertrag vor einer möglichen isolierten H1-Implementierung:** Nur reell konsumierte Nahrung/Medikamente, ein einziges globales Tagesbudget mit deterministischer anteiliger Stunden-/Stationsverteilung und `minted`-Buchung, ungenutzte Mittel verfallen. Keine Zahlung für fehlende Güter, Meridian-Import oder Bauteilverbrauch. Ein Test `B_tag=480` müsste den **Original-Spielerfall bereits ab Spieltag 0**, nicht erst bei bereits kollabierter Tag-90-Welt, mit identischer Spielerbefehlsfolge durchlaufen; Vergleich Kontrollwelt, Einzelkonten, zyklisch gedeckte Frachterarbeit und Versorgung. **Abbruch**, wenn das Ergebnis nur eine höhere Geldmenge ohne finanzierten Handel, nicht bezahlte Arbeitszeit, alleinige Spielerakkumulation oder Doppelbuchung ist. Danach erst die größeren 13-Seed-/vier-Krisen-Gates. Ein weiterer regulärer physisch gedeckter Außenhandel (Meridian) oder zahlungskräftiger Marktneueintritt ist als separate **[OPTION]** zu prüfen, **kein** Gratisgeld/Schiff/individueller Rettungsautomatismus. Die bestehenden B6f-Transportvollkostenprobleme bleiben unabhängig bestehen.
+
+**Freigabegrenze:** Ausführung nur als Analyse-Branch [PR #57](https://github.com/tobiasfranziskus/Check/pull/57); kein `main`-Merge, kein neues Produktbudget, keine Regel- oder Spielstandmigration, kein iPad-/NAS-Deployment. Der Zahlenvorschlag für einen späteren begrenzten Versuch ist **nicht** vom Projektleiter als Mechanik freigegeben.

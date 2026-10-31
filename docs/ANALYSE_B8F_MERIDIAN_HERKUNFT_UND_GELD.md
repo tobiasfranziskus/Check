@@ -20,7 +20,7 @@ Zusätzlich zu Core-Audits/Hashes werden Meridian-Lagermengen für jede Ware una
 
 ## [TEST] Befunde (Seed42, 90 Spieltage)
 
-**Vorläufige Läufe:** Der ursprüngliche CI-Workflow lieferte reproduzierte Spielerhashes und Beobachterdaten, aber der zusätzliche Job zur strukturellen Ergebnisprüfung scheiterte an einer **falschen Feldtypannahme** (Waren-Tabelle statt Gesamtzahl). Nach Korrektur wird der gesamte Originalzustand erneut in CI geprüft; **nur der abschließend erfolgreiche Lauf gilt als bestanden**.
+**[CI #41232110908](https://github.com/tobiasfranziskus/Check/actions/runs/41232110908) vollständig erfolgreich:** **1/1 Job**, **67/67 Node-Standardtests**, 0 Fehler/Skips, zwei 90-Tage-Welten mit stündlich unabhängig kontrollierten Geld-, Waren- und Meridian-Herkunftskonten, deterministischen Doppel-Replays: **8.640 stündliche Audits/Hash-Vergleiche**, **16 Save/Load-Roundtrips**, historischer Original-Spieler-Endhash **`784047684dfe5c56`** und passive Referenz **`adf155a018b94094`** unverändert. Die **ersten zwei Vorläufe #41232036990/#41232101532** waren nach erfolgreicher Kernsimulation wegen falscher Typannahme in einer nachgelagerten Workflow-Assertion rot; dies war ein Beobachter-/Prüfskriptfehler, keine produktive Kernänderung. Die letzte CI hat die korrigierte Prüfung **inklusive exakter Lagergleichung pro Warenart** erfolgreich ausgeführt.
 
 | Nachgewiesener Vorgang bei Meridian | Aktive Spielerkrise | Passive Welt |
 | --- | ---: | ---: |

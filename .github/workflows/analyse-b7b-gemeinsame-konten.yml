@@ -377,6 +377,25 @@ jobs:
               end:i.final
             }));
           '
+      - name: B7j read-only echten Piratenverlust bei Tick22500 beweisen
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";import assert from "node:assert/strict";
+            const p=process.env.RUNNER_TEMP+"/b7b-out/b7i-handel-flotte-42-wallet-90d.json";
+            const x=JSON.parse(fs.readFileSync(p)),r=x.b7jRisk;
+            assert(r&&r.enabled);
+            assert(r.events.some(e=>e.tick===22500&&e.ship==="sh131"&&e.defenderHpAfter<=0),
+              "B7j echter Kampf + Schadensnachweis statt Verlustvermutung");
+            assert(x.losses.some(e=>e.tick===22500&&e.ship==="sh131"&&e.klasse==="frachter"));
+            assert(r.locationChecks.length>0);
+            assert(r.movement.length>0);
+            console.log("B7J_VERIFIED_ATTACK",JSON.stringify({
+              attack:r.events,priorMoves:r.movement.slice(-15),
+              lastKnownPositions:r.locationChecks.slice(-20),
+              loss:x.losses.filter(e=>e.ship==="sh131"),hash:x.final.hash
+            }));
+          '
       - name: 67 Standardtests
         run: node --test tests/*.test.mjs
       - uses: actions/upload-artifact@v4

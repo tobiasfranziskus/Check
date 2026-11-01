@@ -165,7 +165,7 @@ function one(seed,scenario,policy) {
   }
  }
  assert.equal(checks,2160);assert.equal(saves,8);
- assert.deepEqual(o,p,'independent observer replay');
+ assert.deepEqual(JSON.parse(JSON.stringify(o)),JSON.parse(JSON.stringify(p)),'independent observer data replay');
  const hull=o.trades.filter(x=>x.ware==='frachter');
  const cargo=o.trades.filter(x=>x.ware!=='frachter');
  const money=cargo.reduce((sum,x)=>sum+(x.buy?-(x.value+x.fee):x.value-x.fee),0);

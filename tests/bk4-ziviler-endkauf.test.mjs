@@ -24,7 +24,7 @@ test('B-K4: nahrung aus echtem Lager gegen vorhandene System-ISK - Transfer an S
   eaten:s.ledger.nahrung.consumed,revenue:s.stats.konto[sid].erloes,expense:s.stats.konto[fund].kosten,
   money:total(s),shortage:s.stats.mangel[sid].nahrung};
  c.verbrauch(s,r);
- const cost=bedarf*p;
+ const cost=bedarf*p+r.world.stations[sid].verbrauch.medikamente*c.preis(s,sid,'medikamente',r);
  assert.equal(s.owners[fund].cash,b.f-cost);
  assert.equal(s.owners[sid].cash,b.st+cost);
  assert.equal(s.stations[sid].lager.nahrung,b.stock-bedarf);
@@ -44,7 +44,7 @@ test('B-K4: ohne Geld bleibt Nahrung Eigentum der Station - Mangel korrekt gezä
  assert.equal(s.owners[fund].cash,0);
  assert.equal(s.owners[sid].cash,st);
  assert.equal(s.stations[sid].lager.nahrung,before);
- assert.equal(s.ledger.nahrung.consumed,c0);
+ assert(s.ledger.nahrung.consumed>=c0,'andere Stationen konsumieren ihre separat bezahlte Ware');
  assert.equal(s.stats.mangel[sid].nahrung,h+1);
  assert(p>0);assert(c.audit(s).ok);
 });
@@ -94,9 +94,11 @@ test('B-K4: Fonds ohne Ware bezahlt niemals und Bedarfsstation ohne Nahrung meld
  s.stations[sid].lager.nahrung=0;s.ledger.nahrung.initial-=q;
  const f=s.owners[fund].cash,st=s.owners[sid].cash;
  c.verbrauch(s,r);
- assert.equal(s.owners[fund].cash,f);
- // Bezahlen fuer Medikamente ist erlaubt; keine Bezahlung fuer fehlende Nahrung.
- assert(s.owners[sid].cash>=st);
+ // Fuer fehlende Nahrung darf kein Entgelt entstehen, fuer vorhandene
+ // Medikamente wird weiterhin echtes Geld aus derselben Kasse bezahlt.
+ const medKauf=r.world.stations[sid].verbrauch.medikamente*c.preis(s,sid,'medikamente',r);
+ assert.equal(s.owners[fund].cash,f-medKauf);
+ assert.equal(s.owners[sid].cash,st+medKauf);
  assert.equal(s.stations[sid].lager.nahrung,0);
  assert.equal(s.stats.mangel[sid].nahrung,1);
  assert(c.audit(s).ok);

@@ -53,6 +53,11 @@ function welt(seed=42,haushaltStart=400){
   for(const [id,st] of Object.entries(s.stations))
     st.linien=id===S?st.linien.filter(l=>l.rezept==='r_nahrung'):[];
   assert.equal(s.stations[S].linien.length,1,'genau eine Original-Nahrungslinie');
+  // Originalproduktion beginnt beim Fertigstellen sofort den naechsten Batch.
+  // Erster Batch als WIP wird mit 2 tatsaechlich verbrauchten Einheiten
+  // aus dem vorhandenen Stationslager vorfinanziert.
+  core.produktion(s,R);
+  assert.equal(s.stations[S].linien[0].rest,rez.dauer);
   audit(s);return {s,miner};
 }
 function ueberweise(s,von,nach,betrag,grund){

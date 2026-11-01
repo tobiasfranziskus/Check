@@ -1,0 +1,32 @@
+name: "[ANALYSE] E2a NPC3 risikobewusster Handel und Vollkosten"
+on:
+  push:
+    branches: [analyse/e2a-risikogate-handelsentscheidung-20261101]
+    paths:
+      - 'tools/analyse-e2a-risikogate.mjs'
+      - '.github/workflows/analyse-e2a-risikogate.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'tools/analyse-e2a-risikogate.mjs'
+      - '.github/workflows/analyse-e2a-risikogate.yml'
+      - 'index.html'
+jobs:
+  e2a:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Existing Node regressions
+        run: node --test tests/*.test.mjs
+      - name: 8 worlds x 90 days with independent replay, cash/goods audit and saves
+        run: node tools/analyse-e2a-risikogate.mjs --out="$RUNNER_TEMP/e2a"
+      - name: Audit reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2a-risk-economics
+          path: ${{ runner.temp }}/e2a/e2a-results.json
+          if-no-files-found: error

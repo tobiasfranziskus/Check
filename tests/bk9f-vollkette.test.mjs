@@ -183,7 +183,8 @@ test('B-K9f: Verlust des Frachters vor der Mine lässt vollständigen Kredit zur
  const buyer=s.owners.st_aldera.cash;
  const id=core.vertragProduktion(s,a,R);assert(id);
  destroy(s,R,freighter);
- assert.equal(s.vertrag.eintraege[id].status,'storniert');
+ assert.equal(s.vertrag.eintraege[id].status,'verloren');
+ assert.equal(s.vertrag.eintraege[id].huelle,39,'echter Hullverlust darf Rücklage nicht verschenken');
  assert.equal(s.owners.st_aldera.cash,buyer);
  assert.equal(s.vertrag.eintraege[id].escrow,0);
  assert(!s.ships[freighter.id]);
@@ -198,4 +199,26 @@ test('B-K9f: Verlust des Miners nach Rohübergabe darf keine offene gebundene Pr
  destroy(s,R,miner);
  check(s);saveHash(s);
  assert(['produktion','bereit','storniert'].includes(c.status));
+});
+
+test('B-K9f: Frachterverlust während laufender Rezeptfertigung zahlt Minerlohn, erstattet Käufer und bilanziert WIP-/Lagerverluste',()=>{
+ const {s,a,freighter}=fixture();
+ const buyer=s.owners.st_aldera.cash;
+ const id=core.vertragProduktion(s,a,R);assert(id);
+ for(let i=0;i<30;i++)core.step(s,R);
+ const c=s.vertrag.eintraege[id],p=c.produktion;
+ assert.equal(c.status,'produktion');
+ assert(p.wip>0,'Rezept ist tatsächlich angefahren');
+ const producedBefore=s.ledger.nahrung.produced;
+ destroy(s,R,freighter);
+ assert.equal(c.status,'verloren');
+ assert.equal(c.escrow,0);
+ assert.equal(c.huelle,39,'Ersatzrücklage wird nach echtem Frachterverlust nicht erstattet');
+ assert.equal(s.owners.st_aldera.cash,buyer,'Käufer bekommt seine komplette Vorauszahlung zurück');
+ assert.equal(p.rohLager,0);assert.equal(p.nahrungLager,0);
+ assert.equal(p.wip,0);
+ assert.equal(s.ledger.nahrung.produced,producedBefore,
+   'abgebrochene unfertige Ware darf nicht als Gratisware erscheinen');
+ assert(!s.ships[freighter.id]);
+ check(s);saveHash(s);
 });

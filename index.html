@@ -1354,7 +1354,7 @@ function pruefen(s) {
       const p=c.produktion;
       if(![p.rohBudget,p.minerBudget,p.fabrikLohn,p.frachtBudget,
         p.rohLager,p.nahrungLager,p.angefangen,p.fertig,p.wip,p.rohMenge,
-        p.rohPreis,p.minerArbeit].every(zahl) ||
+        p.rohPreis,p.minerArbeit,p.vorherWip].every(zahl) ||
         !s.owners[p.minerBesitzer] || !s.owners[p.fabrikBesitzer] ||
         !s.stations[c.quelle] || !Number.isSafeInteger(p.linie) ||
         p.linie<0 || s.stations[c.quelle].linien[p.linie]?.rezept!=='r_nahrung' ||
@@ -1446,11 +1446,12 @@ function beginnenProduktion(s,r,a) {
   const q=m_core_auftragskalkulation.nahrungsmarktangebot(s,r,a);
   if(!q.ok)return null;
   const miner=s.ships[a.miner],ship=s.ships[a.frachter];
-  const line=s.stations[a.quelle].linien.findIndex(x=>x.rezept==='r_nahrung'&&x.rest===0);
+  const line=s.stations[a.quelle].linien.findIndex(x=>x.rezept==='r_nahrung');
   if(line<0 || ship.auftrag!=='halten' || ship.arbeit!==0 || miner.arbeit!==0 ||
       aktivSchiff(s,miner.id)||aktivSchiff(s,ship.id) ||
       s.vertrag.next>=1000000)return null;
   const p={miner:miner.id,minerBesitzer:miner.owner,fabrikBesitzer:a.quelle,linie,
+    vorherWip:s.stations[a.quelle].linien[line].rest,
     rohMenge:2*a.menge,rohPreis:q.kosten.rohwert,
     rohBudget:q.kosten.rohwert,
     minerBudget:q.kosten.rohgebuehr+q.kosten.minerkosten,
@@ -1767,14 +1768,14 @@ function produktion(state, rules) {
       const r = rezepte[linie.rezept];
       const gebunden = state.schema===9
         ? m_core_vertrag.produktionsLinie(state,id,st.linien.indexOf(linie)) : null;
-      if(gebunden && gebunden.status!=='produktion')continue;
+      if(gebunden && gebunden.status!=='produktion' && linie.rest===0)continue;
       if (linie.rest > 0) {
         linie.rest -= 1;
         if (linie.rest === 0) {
           for (const ware of ids(r.aus)) {
             st.lager[ware] = anzahl(st.lager, ware) + r.aus[ware];
             state.ledger[ware].produced += r.aus[ware];
-            if(gebunden){
+            if(gebunden && gebunden.status==='produktion'){
               st.lager[ware]-=r.aus[ware];
               m_core_vertrag.produktionsFertig(state,gebunden,r.aus[ware],rules);
             }

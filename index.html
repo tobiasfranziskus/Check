@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f5f5f7">
-<meta name="aphros-version" content="v0.12.5">
+<meta name="aphros-version" content="v0.12.6">
 <title>Aphros Void</title>
 <style>
 :root {
@@ -171,7 +171,7 @@ button.zeile .liste-links { color: var(--text); }
 
 <main id="ansicht-hq" class="ansicht" aria-label="HQ">
   <header class="kopf">
-    <p class="muted kopf-klein">HQ · v0.12.5</p>
+    <p class="muted kopf-klein">HQ · v0.12.6</p>
     <p class="kasse"><span id="hq-kasse" class="kasse-zahl">–</span></p>
     <p id="hq-trend" class="trend muted"><span class="trend-symbol" id="hq-trend-symbol"></span><span id="hq-trend-text">–</span> <span class="trend-bezug">zur letzten vollen Spielstunde</span></p>
   </header>
@@ -264,7 +264,7 @@ button.zeile .liste-links { color: var(--text); }
     <div class="blatt-inhalt">
 
       <div class="blatt-seite" id="blatt-pruefung" data-titel="Prüfung" hidden>
-        <p class="muted">Version v0.12.5</p>
+        <p class="muted">Version v0.12.6</p>
         <section class="card" aria-label="Zustand">
           <dl>
             <div><dt>Spielzeit</dt><dd id="zeit">–</dd></div>
@@ -622,7 +622,7 @@ return { COMBAT };
 
 const m_data_rules = (() => {
 const RULES = {
-  schema: 8, rulesVersion: 14, maxAdvanceSteps: 10000, startSeed: 1,
+  schema: 8, rulesVersion: 15, maxAdvanceSteps: 10000, startSeed: 1,
   owners: m_data_world.WORLD.owners, economy: m_data_economy.ECONOMY,
   world: m_data_world.WORLD, combat: m_data_combat.COMBAT,
 };
@@ -1292,6 +1292,7 @@ return { produktion };
 const m_core_stunde = (() => {
 const { div, ids, anzahl } = m_core_zahl;
 const { fondsIn, buche } = m_core_handel;
+const { preis } = m_core_preis;
 const { protokolliere } = m_core_state;
 // v0.11.0 / A3: einziger Lesezugriff auf den Dividenden-Freibetrag.
 // Regel und UI ziehen beide über diese Funktion, damit Anzeige und
@@ -1302,9 +1303,25 @@ function verbrauch(state, rules) {
     const st = state.stations[id]; const bedarf = rules.world.stations[id].verbrauch;
     for (const ware of ids(bedarf)) {
       const da = anzahl(st.lager, ware);
-      const n = Math.min(da, bedarf[ware]);
+      let n = Math.min(da, bedarf[ware]);
+      // B-K4 / Regel 15: zivile Grundgueter werden nur gegen real
+      // vorhandene ISK aus dem regionalen Verbrauchsbudget abgenommen.
+      // Der Systemfonds ist hier vorlaeufig der zahlende Endabnehmer;
+      // kein neuer Haushalt, kein Minting, keine Insolvenzgarantie.
+      // Andere Bedarfe (z.B. industrielle Bauteile) bleiben unveraendert.
+      if (rules.rulesVersion >= 15 && (ware === 'nahrung' || ware === 'medikamente')) {
+        const kasse = state.owners[fondsIn(rules, st.system)];
+        const p = preis(state, id, ware, rules);
+        n = p > 0 ? Math.min(n, div(kasse.cash, p)) : 0;
+        const wert = n * p;
+        if (wert > 0) {
+          kasse.cash -= wert; state.owners[id].cash += wert;
+          buche(state, id, 'erloes', wert);
+          buche(state, kasse.id, 'kosten', wert);
+        }
+      }
       st.lager[ware] = da - n; state.ledger[ware].consumed += n;
-      if (da < bedarf[ware]) state.stats.mangel[id][ware] += 1;
+      if (n < bedarf[ware]) state.stats.mangel[id][ware] += 1;
     }
   }
 }
@@ -1891,6 +1908,9 @@ const RULE_MIGRATIONS = {
   // vorhandene Schiffe, Kassen, angefangene Fluege und Arbeit bleiben unveraendert.
   12: (s) => ({ ...s, rulesVersion: 13 }),
   13: migrationRegel13,
+  // 14→15: bezahlter ziviler Endabsatz aus vorhandenen Systemfonds.
+  // Keine neuen Felder, Kassen oder Waren bei der Migration.
+  14: (s) => ({ ...s, rulesVersion: 15 }),
 };
 function migrate(state, from, to, table = MIGRATIONS) {
   let s = state;

@@ -20,11 +20,12 @@ const total=s=>Object.values(s.owners).reduce((a,o)=>a+o.cash,0);
 test('B-K4: nahrung aus echtem Lager gegen vorhandene System-ISK - Transfer an Station',()=>{
  const s=make(),p=c.preis(s,sid,ware,r),bedarf=r.world.stations[sid].verbrauch.nahrung;
  assert(p>0&&bedarf>0&&s.stations[sid].lager.nahrung>=bedarf);
+ const medCost=r.world.stations[sid].verbrauch.medikamente*c.preis(s,sid,'medikamente',r);
  const b={f:s.owners[fund].cash,st:s.owners[sid].cash,stock:s.stations[sid].lager.nahrung,
   eaten:s.ledger.nahrung.consumed,revenue:s.stats.konto[sid].erloes,expense:s.stats.konto[fund].kosten,
   money:total(s),shortage:s.stats.mangel[sid].nahrung};
  c.verbrauch(s,r);
- const cost=bedarf*p+r.world.stations[sid].verbrauch.medikamente*c.preis(s,sid,'medikamente',r);
+ const cost=bedarf*p+medCost;
  assert.equal(s.owners[fund].cash,b.f-cost);
  assert.equal(s.owners[sid].cash,b.st+cost);
  assert.equal(s.stations[sid].lager.nahrung,b.stock-bedarf);
@@ -93,10 +94,10 @@ test('B-K4: Fonds ohne Ware bezahlt niemals und Bedarfsstation ohne Nahrung meld
  const s=make(),q=s.stations[sid].lager.nahrung;
  s.stations[sid].lager.nahrung=0;s.ledger.nahrung.initial-=q;
  const f=s.owners[fund].cash,st=s.owners[sid].cash;
+ const medKauf=r.world.stations[sid].verbrauch.medikamente*c.preis(s,sid,'medikamente',r);
  c.verbrauch(s,r);
  // Fuer fehlende Nahrung darf kein Entgelt entstehen, fuer vorhandene
  // Medikamente wird weiterhin echtes Geld aus derselben Kasse bezahlt.
- const medKauf=r.world.stations[sid].verbrauch.medikamente*c.preis(s,sid,'medikamente',r);
  assert.equal(s.owners[fund].cash,f-medKauf);
  assert.equal(s.owners[sid].cash,st+medKauf);
  assert.equal(s.stations[sid].lager.nahrung,0);

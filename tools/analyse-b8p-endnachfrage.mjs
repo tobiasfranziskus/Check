@@ -45,7 +45,7 @@ function observer(mode){
    // The optimistic consumption arm pays against any physical consumption,
    // including goods that existed when the world was created.
    const eligible=this.mode==='mint-all-consumption'?n:Math.min(n,this.credits[k]||0);
-   if(this.mode!=='mint-all-consumption')this.credits[k]-=eligible;
+   if(this.mode!=='mint-all-consumption')this.credits[k]=(this.credits[k]||0)-eligible;
    if(eligible<=0)return;
    this.eligibleUnits+=eligible;
    const day=Math.floor((state.tick-1)/1440);

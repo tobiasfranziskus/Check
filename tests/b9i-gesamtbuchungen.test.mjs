@@ -161,7 +161,7 @@ change('return { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewege
 
 function run(modified){
   return new Function(modified+
-    ';return {core:m_core_index,bridge:typeof m_core_vertrag==="undefined"?null:m_core_vertrag,rules:m_data_rules.RULES,destroy:m_core_sicherheit.zerstoeren};')();
+    ';return {core:m_core_index,bridge:typeof m_core_vertrag==="undefined"?null:m_core_vertrag,rules:m_data_rules.RULES,destroy:m_core_sicherheit.zerstoeren,produktion:m_core_produktion.produktion,aussenhandel:m_core_stunde.aussenhandel,verbrauch:m_core_stunde.verbrauch};')();
 }
 function setup(){
   const e=run(src),s=e.core.createState(42,e.rules),ship=
@@ -289,5 +289,61 @@ test('B9i-1: manipulierte Kasse oder Warenbindung scheitert geschlossen',()=>{
   const bad2=JSON.parse(e.core.save(s));
   bad2.ships[ship.id].ladung.material=1;
   assert.throws(()=>e.bridge.audit(bad2),/Fracht ueberreserviert/);
+  verify(e,s);
+});
+
+test('B9i-1: Produktionsrezepte duerfen gesperrtes Stationsmaterial nicht verbrauchen',()=>{
+  const {e,s,ship}=setup();
+  ship.ladung={};s.ledger.material.imported-=12;
+  const id=e.bridge.reserve(s,e.rules,ship.id,'st_aldera','material',6,'st_cyris');
+  assert(id);
+  const old=s.stations.st_cyris.lager.material;
+  const removed=old-6;
+  s.stations.st_cyris.lager.material=6;s.ledger.material.consumed+=removed;
+  e.produktion(s,e.rules);
+  assert.equal(s.stations.st_cyris.lager.material,6);
+  assert.equal(e.bridge.freeStock(s,'st_cyris','material'),0);
+  verify(e,s);
+});
+test('B9i-1: neutraler Aussenhandel darf keine schon reservierte Stationsware exportieren',()=>{
+  const {e,s,ship}=setup();
+  ship.system='meridian';ship.ladung={};s.ledger.material.imported-=12;
+  s.stations.st_meridian.lager.material+=150;s.ledger.material.imported+=150;
+  const id=e.bridge.reserve(s,e.rules,ship.id,'st_aldera','material',200,'st_meridian');
+  assert(id);
+  s.stations.st_meridian.lager.material=200;s.ledger.material.consumed+=50;
+  e.aussenhandel(s,e.rules);
+  assert.equal(s.stations.st_meridian.lager.material,200);
+  assert.equal(e.bridge.freeStock(s,'st_meridian','material'),0);
+  verify(e,s);
+});
+test('B9i-1: Schiffsaktivierung darf ausschliesslich freie Schiffsfracht verwenden',()=>{
+  const {e,s,ship,buyer}=setup();
+  ship.ladung.frachter=1;s.ledger.frachter.imported+=1;
+  const id=e.bridge.reserve(s,e.rules,ship.id,buyer,'frachter',1);
+  assert(id);
+  const cmd={type:'shipActivate',owner:ship.owner,schiff:ship.id,klasse:'frachter'};
+  const denied=e.core.execute(s,cmd,e.rules);
+  assert.equal(denied.ok,false);
+  assert.match(denied.reason,/nicht frei im Frachtraum/);
+  assert(e.bridge.cancel(s,id));
+  const success=e.core.execute(s,cmd,e.rules);
+  assert.equal(success.ok,true);
+  verify(e,s);
+});
+test('B9i-2: Gebuehrenbetrag und Zahlungsziel entsprechen dem regulaeren Core-Buchungspfad',()=>{
+  const {e,s,ship,buyer}=setup();
+  const seller='house',fond='fonds_cyris';
+  const buyerBefore=s.owners[buyer].cash,sellerBefore=s.owners[seller].cash;
+  const fundBefore=s.owners[fond].cash;
+  const id=e.bridge.reserve(s,e.rules,ship.id,buyer,'material',6);
+  assert(id);
+  const {escrow,fee}=s.vertrag.eintraege[id];
+  assert.equal(s.owners[buyer].cash,buyerBefore-escrow);
+  assert.equal(s.owners[seller].cash,sellerBefore-fee);
+  assert(e.bridge.deliver(s,e.rules,id));
+  assert.equal(s.owners[seller].cash,sellerBefore+escrow-fee);
+  assert.equal(s.owners[fond].cash,fundBefore+fee);
+  assert.equal(s.owners[buyer].cash,buyerBefore-escrow);
   verify(e,s);
 });

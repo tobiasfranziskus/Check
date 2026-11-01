@@ -6,12 +6,21 @@ const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const src=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
 const anchor="  besitzer.cash -= geld; kasse.cash += geld;";
 assert.equal(src.split(anchor).length,2,'original Handel bezahlt den Schiffeigner');
+const workAnchor="    const n = Math.min(besitzer.cash, kosten);\n    if (n <= 0) continue;";
+assert.equal(src.split(workAnchor).length,2);
 const instrumented=src.replace(anchor,
- "  besitzer.cash -= geld; kasse.cash += geld;\n  watch.record(state.tick, schiff.owner, station, ware, menge, kauf, wert, fee);");
+ "  besitzer.cash -= geld; kasse.cash += geld;\n  watch.record(state.tick, schiff.owner, station, ware, menge, kauf, wert, fee);")
+ .replace(workAnchor,
+ "    const n = Math.min(besitzer.cash, kosten);\n    watch.expense(s.owner,kosten,n);\n    if (n <= 0) continue;");
 const sum=a=>a.reduce((x,n)=>x+n,0);
 for(const seed of [7,42]){
  const sold=[];
- const watch={record:(tick,owner,station,ware,n,kauf,wert,fee)=>{
+ let playerWork=0,playerUnpaid=0;
+ const watch={
+  expense:(owner,due,paid)=>{
+   if(owner==='house'){playerWork+=paid;playerUnpaid+=Math.max(0,due-paid);}
+  },
+  record:(tick,owner,station,ware,n,kauf,wert,fee)=>{
   if(owner!=='house'||kauf)return;
   sold.push({tick,day:Math.floor(tick/1440)+1,station,ware,n,value:wert,fee});
  }};
@@ -38,7 +47,8 @@ for(const seed of [7,42]){
   const delta=s.owners.house.cash-initial;
   console.log('BK5_SPIELER_VERKAUFSQUELLE '+JSON.stringify({
    seed,day,playerCash:s.owners.house.cash,delta,gross,fees,net,
-   otherNetDelta:delta-net,stations:moneyByStation,
+   otherNetDelta:delta-net,playerWorkPaid:playerWork,playerWorkUnpaid:playerUnpaid,
+   stillUnclassified:delta-net+playerWork,stations:moneyByStation,
    stationTotalCash:sum(Object.values(s.owners).filter(o=>o.kind==='station').map(o=>o.cash)),
    npcTraders:s.owners.npc1.cash+s.owners.npc2.cash,
    npcTraderHulls:Object.values(s.ships).filter(x=>['npc1','npc2'].includes(x.owner)&&x.klasse==='frachter').length}));

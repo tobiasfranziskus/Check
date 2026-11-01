@@ -1,0 +1,32 @@
+name: "[ANALYSE] B8k NPC3 finanzierter Markteintritt (unveraenderter Core)"
+on:
+  push:
+    branches: [analyse/b8k-finanzierter-npc3-markteintritt-20261101]
+    paths:
+      - 'tools/analyse-b8k-markteintritt.mjs'
+      - '.github/workflows/analyse-b8k-markteintritt.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'tools/analyse-b8k-markteintritt.mjs'
+      - '.github/workflows/analyse-b8k-markteintritt.yml'
+      - 'index.html'
+jobs:
+  b8k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original Node regression tests
+        run: node --test tests/*.test.mjs
+      - name: Eight 90-day original-core worlds, hourly independent audits, replay and saves
+        run: node tools/analyse-b8k-markteintritt.mjs --out="$RUNNER_TEMP/b8k"
+      - name: Publish read-only diagnostic results
+        uses: actions/upload-artifact@v4
+        with:
+          name: b8k-original-financed-entry
+          path: ${{ runner.temp }}/b8k/b8k-results.json
+          if-no-files-found: error

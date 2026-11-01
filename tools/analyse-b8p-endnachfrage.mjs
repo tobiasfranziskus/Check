@@ -132,12 +132,13 @@ function run(seed,mode){
  assert.deepEqual(JSON.parse(JSON.stringify(aa)),JSON.parse(JSON.stringify(bb)));
  if(seed===42&&mode==='control')assert.equal(a.core.hash(s),'784047684dfe5c56','main original hash');
  if(seed===7&&mode==='control')assert.equal(a.core.hash(s),'84153573536268f2','original baseline seed7');
- if(mode==='control')assert.equal(s.minted,0);
- if(mode==='fund-delivery')assert.equal(s.minted,0);
- else if(mode!=='control')assert.equal(s.minted,aa.minted);
+ // The existing unchanged original core ALREADY mints audited pirate bounties.
+ // Keep that baseline issuance separate from the experimental consumer payment.
+ assert.equal(s.minted,s.stats.kopfgeld+aa.minted,'original bounty mint plus experimental payment only');
+ if(mode==='control'||mode==='fund-delivery')assert.equal(aa.minted,0);
  assert.equal(aa.payments,aa.funded+aa.minted);
  return {seed,mode,hash:a.core.hash(s),audits,saves,firstNoFreight,points,
-  issued:aa.minted,transferred:aa.funded,paid:aa.payments,eligibleUnits:aa.eligibleUnits,
+  existingBountyMint:s.stats.kopfgeld,issued:aa.minted,transferred:aa.funded,paid:aa.payments,eligibleUnits:aa.eligibleUnits,
   deliveredUnits:aa.deliveredUnits,consumedUnits:aa.consumedUnits,payoutSamples:aa.payoutSamples};
 }
 const all=[];
@@ -148,7 +149,7 @@ const folder=process.argv.find(x=>x.startsWith('--out='))?.slice(6);
 if(folder){fs.mkdirSync(folder,{recursive:true});
  fs.writeFileSync(path.join(folder,'b8p-results.json'),JSON.stringify(all,null,2)+'\n');}
 console.log('B8P_AUDIT_PASS '+JSON.stringify(all.map(x=>({
- seed:x.seed,mode:x.mode,hash:x.hash,issued:x.issued,transferred:x.transferred,
+ seed:x.seed,mode:x.mode,hash:x.hash,bountyMint:x.existingBountyMint,issued:x.issued,transferred:x.transferred,
  eligibleUnits:x.eligibleUnits,deliveredUnits:x.deliveredUnits,consumedUnits:x.consumedUnits,
  firstNoFreight:x.firstNoFreight,day14:x.points.find(p=>p.day===14),
  day90:x.points.at(-1)

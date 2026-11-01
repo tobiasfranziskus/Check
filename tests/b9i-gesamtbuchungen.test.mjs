@@ -132,8 +132,8 @@ change('const m_core_handel = (() => {',
   'const m_core_vertrag=('+createBridge.toString()+')();\nconst m_core_handel = (() => {');
 change('function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt = false) {',
   'function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt = false, fix = null) {');
-change('  const p = preis(state, station, ware, rules);',
-  "  const c = fix && state.vertrag?.eintraege[fix.id];\n  if (fix && (!c || c.status!=='abwicklung' || kauf || c.schiff!==schiff.id || c.kaeufer!==station || c.ware!==ware || c.menge!==menge)) return false;\n  const p = fix ? c.preis : preis(state, station, ware, rules);");
+change('  if (!Number.isSafeInteger(menge) || menge <= 0) return false;\n  const p = preis(state, station, ware, rules);',
+  "  if (!Number.isSafeInteger(menge) || menge <= 0) return false;\n  const c = fix && state.vertrag?.eintraege[fix.id];\n  if (fix && (!c || c.status!=='abwicklung' || kauf || c.schiff!==schiff.id || c.kaeufer!==station || c.ware!==ware || c.menge!==menge)) return false;\n  const p = fix ? c.preis : preis(state, station, ware, rules);");
 change('  const fee = gebuehr(state, rules, station, wert);',
   '  const fee = fix ? c.fee : gebuehr(state, rules, station, wert);');
 change('  if (!reicht) return false;',

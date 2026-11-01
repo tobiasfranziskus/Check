@@ -8,7 +8,7 @@ const b1=fs.readFileSync(new URL('./bk1-cyris-nahrungskreislauf.test.mjs',import
 const anchor="test('B-K1:";
 const marker=b1.indexOf(anchor);
 assert(marker>1000,'B-K1 fixture fehlt');
-const header=b1.slice(0,marker).replace("new URL('../index.html',import.meta.url)",
+const header=b1.slice(b1.indexOf('const html='),marker).replace("new URL('../index.html',import.meta.url)",
                                      "new URL('../index.html',referenceUrl)");
 const tools=new Function('fs','assert','referenceUrl',header+
  ';return {core,welt,audit,ueberweise};')(fs,assert,import.meta.url);

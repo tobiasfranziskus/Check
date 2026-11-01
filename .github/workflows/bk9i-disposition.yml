@@ -1,0 +1,22 @@
+name: B-K9i – NPC disposition 13x90 diagnostic
+
+on:
+  pull_request:
+    paths:
+      - tools/bk9i-npc-disposition-13x90.mjs
+      - .github/workflows/bk9i-disposition.yml
+
+permissions:
+  contents: read
+
+jobs:
+  bk9i-13x90:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 13 × 90d real-position miner/freighter and cost analysis
+        run: node tools/bk9i-npc-disposition-13x90.mjs

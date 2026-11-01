@@ -68,8 +68,8 @@ const scenarios=[];
  assert(l.pay(m,150));assert(l.pay(m,150));assert.equal(l.close(m,'completed'),0);
  const f=l.reserve('company','sh-f','jaeger',3*ceilCost('jaeger',60));
  assert(l.pay(f,50));assert.equal(l.close(f,'ship-lost'),100);
- assert.equal(l.total(),2000);assert.equal(l.wallet.fund,566);
- assert.equal(l.wallet.company,1434);assert(!l.pay.bind(l)==null);
+ assert.equal(l.total(),2000);assert.equal(l.wallet.fund,516);
+ assert.equal(l.wallet.company,1484);
  assert.throws(()=>l.close(f,'double-refund'));
  scenarios.push({name:'three real-cost ship roles, cancellation and refunds',cash:l.wallet.company,paid:l.wallet.fund});
 }

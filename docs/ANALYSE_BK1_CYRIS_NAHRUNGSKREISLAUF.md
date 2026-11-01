@@ -66,6 +66,7 @@ tragfähiges vollständiges Unternehmensmodell**.
 | Nur Miner-/Fabrikausschüttungen (27 ISK/Runde), **kein** Fondsrückfluss | 280 ISK | 720 ISK | 0 |
 | Zusätzlich **5 ISK** tatsächliche Bergbau-Arbeitszahlung aus Fonds an Haushalte | 380 ISK | 620 ISK | 0 |
 | Zusätzlich **alle 6 ISK** (5 Betrieb + 1 Gebühr) aus Fonds an Haushalte | 400 ISK | 600 ISK | 0 |
+| Wie vorstehend, aber Fabrik legt **2 ISK/Runde** zurück | 360 ISK | 600 ISK | 0 |
 
 **Bei fehlendem Fondsrückfluss:** Der nächste Nahrungsverbrauch wird
 nach **62 vollständig bezahlten Runden** abgelehnt; 28 ISK reichen
@@ -82,16 +83,24 @@ Unternehmensmehrwerte werden ausgeschüttet und es bleibt **kein**
 Kapital für Schiffsersatz, Reparatur oder echte Stationsinvestitionen.
 Der mittlere Fall hält 1 ISK Gebühr als Fondsumsatz zurück; ohne
 zusätzlichen echten Einkommenskanal werden Haushalte trotzdem ärmer.
+Im vierten Fall erhöhen sich bei vollständigem Fondsrückfluss die
+**real vorhandenen Fabrikmittel um 40 ISK**, während der Haushalt
+40 ISK weniger für künftige Nachfrage hält. Auch Rücklagen sind
+**kein verschwundenes oder erzeugtes Geld**, sie verschieben nur
+verfügbare Liquidität. Erforderliche Investitionsreserven und
+kontinuierliche Endnachfrage konkurrieren also selbst dann, wenn
+der einfache Warenkreislauf vollständig bilanziert wird.
 
 ## 4. Tatsächlich ausgeführte Testbelege
 
-**[CI #41320278101](https://github.com/tobiasfranziskus/Check/actions/runs/41320278101)**
-auf `1beefeff`: **75/75 Node-Tests** (67 bisherige + acht neue B-K1);
+**[CI #41320536122](https://github.com/tobiasfranziskus/Check/actions/runs/41320536122)**
+auf `570b4dfa`: **76/76 Node-Tests** (67 bisherige + neun neue B-K1);
 0 Fehler. Die Einzelproben enthalten eine vollständige reale
 Förderungs-/Handels-/Produktionsrunde, 20 wiederholte Runden in
 drei Verteilungsszenarien, die 62-Runden-Zahlungsgrenze,
-Geld-/Warenaudits, identische deterministische Hashes und
-**13 Seeds mit je 20 kontrollierten Runden**, nicht 13×90 Tage.
+Geld-/Warenaudits, identische deterministische Hashes,
+2-ISK-Fabrikrücklage und **13 Seeds mit je 20 kontrollierten Runden**,
+nicht 13×90 Tage.
 
 Die bisherigen v10–v14-Wirtschafts-CI-Jobs überprüfen **nur die
 unveränderte Produktwirtschaft**, nicht diese neue Testzelle.

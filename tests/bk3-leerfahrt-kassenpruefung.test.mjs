@@ -21,6 +21,16 @@ function fixture(seed=42,count=1){
  }
  return {s,ship};
 }
+function clearBuyers(s){
+ // Reale Kassenverschiebung zum Fonds, kein Veraendern der Warenbilanzen:
+ // ohne einen zahlungsfaehigen Zielmarkt sind nur Leerpositionierungen moeglich.
+ for(const station of Object.keys(s.stations)){
+  const n=s.owners[station].cash;
+  s.owners[station].cash=0;
+  s.owners.fonds_aldera.cash+=n;
+ }
+ assert(c.audit(s).ok);
+}
 function setCash(s,owner,n){
  assert(Number.isSafeInteger(n)&&n>=0);
  const difference=s.owners[owner].cash-n;
@@ -53,7 +63,7 @@ test('BK3: Regel-14-Kontrolle faehrt mit 0 ISK los (historisches Problem)',()=>{
 });
 test('BK3: 249 ISK decken keinen konservativen 250-ISK-Leerflugpuffer',()=>{
  const {s,ship:[sh]}=fixture();
- setCash(s,'npc1',249);
+ setCash(s,'npc1',249);clearBuyers(s);
  entscheidung(s,r);
  assert.equal(sh.phase,'dock');
  assert.equal(sh.ankunft,r.world.warteLeer);
@@ -61,7 +71,7 @@ test('BK3: 249 ISK decken keinen konservativen 250-ISK-Leerflugpuffer',()=>{
 });
 test('BK3: ein finanziertes Schiff kann weiterhin automatisch umpositionieren',()=>{
  const {s,ship:[sh]}=fixture();
- setCash(s,'npc1',500);
+ setCash(s,'npc1',500);clearBuyers(s);
  entscheidung(s,r);
  assert.equal(sh.phase,'reise');
  const target=sh.ziel;
@@ -72,7 +82,7 @@ test('BK3: ein finanziertes Schiff kann weiterhin automatisch umpositionieren',(
 });
 test('BK3: eine Kasse mit 250 ISK finanziert keine zwei parallelen Leerpositionierungen',()=>{
  const {s,ship}=fixture(42,2);
- setCash(s,'npc1',250);
+ setCash(s,'npc1',250);clearBuyers(s);
  entscheidung(s,r);
  assert.equal(ship.filter(x=>x.phase==='reise').length,1);
  assert.equal(ship.filter(x=>x.phase==='dock').length,1);

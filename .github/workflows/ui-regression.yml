@@ -138,10 +138,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Produktbasis von B5b festhalten
-        run: git fetch origin e0c27a3762d9d6e75d8bcc30ed47621eff2f152b
-      - name: 13 Seeds x 90 Tage Regel 14 mit unabhängigen Geld-/Warenaudits, Replays und Save/Load
-        run: node tools/b5b-wirtschaft-v14.mjs "$RUNNER_TEMP/b5b-v14-13seeds.json"
+      - name: Original-Regel-14-Langzeittest gepinnt laden
+        run: |
+          git fetch origin b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c e0c27a3762d9d6e75d8bcc30ed47621eff2f152b
+          mkdir -p "$RUNNER_TEMP/v14-original"
+          git archive b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c | tar -x -C "$RUNNER_TEMP/v14-original"
+      - name: Historische Regel 14 13 Seeds x 90 Tage (nicht neuer Regel15-Effekt)
+        run: node "$RUNNER_TEMP/v14-original/tools/b5b-wirtschaft-v14.mjs" "$RUNNER_TEMP/b5b-v14-13seeds.json"
       - uses: actions/upload-artifact@v4
         with:
           name: b5b-v14-wirtschaftspruefung

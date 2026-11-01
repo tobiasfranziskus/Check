@@ -239,14 +239,14 @@ test('B-K9f: Save/Load mitten im Erzabbau und mitten in Produktions-WIP läuft d
  for(let i=0;i<75;i++){core.step(s,R);core.step(productionClone,R);}
  assert.equal(core.hash(s),core.hash(productionClone));
  assert.equal(s.vertrag.eintraege[id].status,'bereit');
+ // mineClone wurde nur bis Tick55 gefahren: vorher bis Tick130 nachführen.
+ for(let i=0;i<75;i++)core.step(mineClone,R);
+ assert.equal(core.hash(s),core.hash(mineClone));
  assert(core.vertragFracht(s,id,R));
  assert(core.vertragFracht(mineClone,id,R));
  assert(core.vertragFracht(productionClone,id,R));
  // Ab jetzt wieder alle drei Kopien im identischen Originalsimulationstakt.
  assert.equal(core.hash(s),core.hash(productionClone));
- // mineClone wurde nur bis tick55 gefahren: vorher bis Tick130 nachführen.
- for(let i=0;i<75;i++)core.step(mineClone,R);
- assert.equal(core.hash(s),core.hash(mineClone));
  for(let i=0;i<60;i++){
    core.step(s,R);core.step(mineClone,R);core.step(productionClone,R);
  }

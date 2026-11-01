@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const src=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
-const {core,rules}=new Function(src+';return {core:m_core_index,rules:m_data_rules.RULES};')();
+const {core,rules,destroy}=new Function(src+';return {core:m_core_index,rules:m_data_rules.RULES,destroy:m_core_sicherheit.zerstoeren};')();
 const R={...rules,schema:9,rulesVersion:15};
 const sum=o=>Object.values(o).reduce((a,b)=>a+b,0);
 function check(s){
@@ -159,4 +159,43 @@ test('B-K9f: Der Original-Vertragshändler darf die neue Ware vor bestätigter P
    ware:'nahrung',menge:1,kauf:true},R);
  assert.equal(cmd.ok,false);
  assert.equal(core.hash(s),old);check(s);
+});
+
+test('B-K9f: Bei gemeinsamer Konzernkasse darf kein Käufer- oder Betriebsgeld zweimal reserviert werden',()=>{
+ const {s,a,miner,freighter}=fixture();
+ miner.owner=freighter.owner;
+ const q=core.nahrungsmarktangebot(s,R,a);
+ assert(q.ok);
+ const value=s.owners[miner.owner].cash;
+ const quoteNeed=q.benoetigt.miner+q.benoetigt.frachter;
+ // Formal reichen die *ursprünglichen* Einzelanforderungen, aber nicht
+ // die vorab fest zu bindenden Preispuffer beider Betreiberrollen.
+ const keep=quoteNeed+1;
+ assert(value>keep,'Testfall muss eine substanzielle Geldsenkung zulassen');
+ s.owners[miner.owner].cash=keep;s.owners.house.cash+=value-keep;
+ const hash=core.hash(s);
+ assert.equal(core.vertragProduktion(s,a,R),null);
+ assert.equal(core.hash(s),hash);
+ check(s);
+});
+test('B-K9f: Verlust des Frachters vor der Mine lässt vollständigen Kredit zurück und keine Ware entstehen',()=>{
+ const {s,a,freighter}=fixture();
+ const buyer=s.owners.st_aldera.cash;
+ const id=core.vertragProduktion(s,a,R);assert(id);
+ destroy(s,R,freighter);
+ assert.equal(s.vertrag.eintraege[id].status,'storniert');
+ assert.equal(s.owners.st_aldera.cash,buyer);
+ assert.equal(s.vertrag.eintraege[id].escrow,0);
+ assert(!s.ships[freighter.id]);
+ check(s);saveHash(s);
+});
+test('B-K9f: Verlust des Miners nach Rohübergabe darf keine offene gebundene Produktion beschädigen',()=>{
+ const {s,a,miner}=fixture();
+ const id=core.vertragProduktion(s,a,R);assert(id);
+ for(let i=0;i<45;i++)core.step(s,R);
+ const c=s.vertrag.eintraege[id];
+ assert(c.status==='produktion'||c.status==='bereit');
+ destroy(s,R,miner);
+ check(s);saveHash(s);
+ assert(['produktion','bereit','storniert'].includes(c.status));
 });

@@ -83,8 +83,6 @@ test('B-K9g: Echte Original-Werftbuchung darf bezahlte Reserve punktgenau verwen
  const werft=R.world.werft;
  const available=s.stations[werft].lager.frachter||0;
  const old=s.stats.indienst.npc1?.frachter||0;
- const p=core.preis(s,werft,'frachter',R),fee=core.gebuehr(s,R,werft,p);
- const wants=p+fee+(Object.values(s.ships).some(x=>x.owner==='npc1')?R.world.ersatzRuecklage:0);
  // Originalwerft fehlt entweder im Warenbestand oder beim Eigentümerkonto.
  s.stations[werft].lager.frachter=0;
  s.ledger.frachter.consumed+=available;
@@ -94,7 +92,11 @@ test('B-K9g: Echte Original-Werftbuchung darf bezahlte Reserve punktgenau verwen
  audit(s);
  // Ein Hüllenvorrat wird NUR in dieser Testfixture als importierte Ware
  // gebucht; kein reales dauerhaftes Wirtschaftsangebot behauptet.
- s.stations[werft].lager.frachter=1;s.ledger.frachter.imported+=1;
+ const shipyardSellable=core.reserve(R,werft,'frachter')+1;
+ s.stations[werft].lager.frachter=shipyardSellable;
+ s.ledger.frachter.imported+=shipyardSellable;
+ const p=core.preis(s,werft,'frachter',R),fee=core.gebuehr(s,R,werft,p);
+ const wants=p+fee+(Object.values(s.ships).some(x=>x.owner==='npc1')?R.world.ersatzRuecklage:0);
  const targetCash=wants-39;
  assert(targetCash>=0);
  if(s.owners.npc1.cash>targetCash){

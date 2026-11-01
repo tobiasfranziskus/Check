@@ -1327,13 +1327,22 @@ function pruefen(s) {
       throw Error('B-K9c Vertragsreferenz/Betrag ungültig');
     max=Math.max(max,Number(id.slice(1)));
     if (aktiv(c)) {
-      if (!s.ships[c.schiff] || s.ships[c.schiff].owner!==c.verkaeufer ||
-          schiffe.has(c.schiff)) throw Error('B-K9c gebundenes Schiff ungültig');
+      const sh=s.ships[c.schiff];
+      if (!sh || sh.owner!==c.verkaeufer || schiffe.has(c.schiff))
+        throw Error('B-K9c gebundenes Schiff ungültig');
       schiffe.add(c.schiff);
-      if (c.lohn+c.lohnBezahlt!==c.lohnStart) throw Error('B-K9c Arbeitsreserve ungültig');
+      if (c.lohn+c.lohnBezahlt!==c.lohnStart)
+        throw Error('B-K9c Arbeitsreserve ungültig');
+      if (c.status!=='geliefert' && ((sh.ladung.nahrung||0)<c.menge ||
+          c.escrow!==c.menge*c.preis || !Number.isSafeInteger(c.menge*c.preis) ||
+          c.fee!==c.zielgebuehr))
+        throw Error('B-K9c Rechnung oder reservierte Fracht manipuliert');
+      if (c.status==='geliefert' && (c.escrow!==0 || c.fee!==0))
+        throw Error('B-K9c schon geliefertes Geld erneut gebunden');
     }
-    if (c.status==='fahrt' && s.ships[c.schiff].phase!=='reise')
-      throw Error('B-K9c Reise fehlt');
+    if (c.status==='fahrt' && (s.ships[c.schiff].phase!=='reise' ||
+        s.ships[c.schiff].ziel!==c.ziel))
+      throw Error('B-K9c Reise oder Ziel fehlt');
     if (['erfuellt','storniert','verloren'].includes(c.status) &&
         (c.escrow!==0||c.fee!==0||c.lohn!==0))
       throw Error('B-K9c Abschlussgeld doppelt gebunden');

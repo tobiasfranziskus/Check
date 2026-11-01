@@ -1,0 +1,33 @@
+name: B-K8 – Originalliquidität bis Tag90
+
+on:
+  pull_request:
+    paths:
+      - tools/bk8-originalzahlungsweg-90d.mjs
+      - .github/workflows/bk8-originalcashflow.yml
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Historische Produktregression unverändert
+        run: node --test tests/*.test.mjs
+
+  bk8-realwelt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Zwei Seeds × passive und Spielerminer-90-Tage-Welten inklusive Originalhandel
+        run: node tools/bk8-originalzahlungsweg-90d.mjs

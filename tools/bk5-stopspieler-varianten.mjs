@@ -6,7 +6,7 @@ const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const src=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
 const {c,r}=new Function(src+';return {c:m_core_index,r:m_data_rules.RULES};')();
 assert.equal(r.rulesVersion,14);
-const seeds=[7,42],stops=[0,1,3,5,7,90];
+const seeds=[7,42],stops=[0,1,3,4,5,6,7,90];
 const sum=a=>a.reduce((n,x)=>n+x,0);
 function snap(s,day,stopAt){
  const tradeHull=Object.values(s.ships).filter(sh=>(sh.owner==='npc1'||sh.owner==='npc2')&&sh.klasse==='frachter').length;

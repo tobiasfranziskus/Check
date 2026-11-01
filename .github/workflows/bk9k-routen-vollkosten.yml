@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - tools/bk9k-warenrouten-vollkosten-13x90.mjs
+      - tools/bk9k-original-abfluege-vollkosten-3d.mjs
       - .github/workflows/bk9k-routen-vollkosten.yml
 
 permissions:
@@ -20,3 +21,5 @@ jobs:
           node-version: '22'
       - name: Check 13x90 all configured market routes against real liquidity and return flight costs
         run: node tools/bk9k-warenrouten-vollkosten-13x90.mjs
+      - name: Actual original NPC departures and conservative round-trip loss diagnosis
+        run: node tools/bk9k-original-abfluege-vollkosten-3d.mjs

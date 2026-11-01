@@ -309,6 +309,8 @@ test('B9i-1: neutraler Aussenhandel darf keine schon reservierte Stationsware ex
   const {e,s,ship}=setup();
   ship.system='meridian';ship.ladung={};s.ledger.material.imported-=12;
   s.stations.st_meridian.lager.material+=150;s.ledger.material.imported+=150;
+  // Kaufkraft nur per realem Transfer aus bestehender Sicherheitskasse auffuellen.
+  s.owners.security.cash-=5000;s.owners.st_aldera.cash+=5000;
   const id=e.bridge.reserve(s,e.rules,ship.id,'st_aldera','material',200,'st_meridian');
   assert(id);
   s.stations.st_meridian.lager.material=200;s.ledger.material.consumed+=50;
@@ -320,7 +322,7 @@ test('B9i-1: neutraler Aussenhandel darf keine schon reservierte Stationsware ex
 test('B9i-1: Schiffsaktivierung darf ausschliesslich freie Schiffsfracht verwenden',()=>{
   const {e,s,ship,buyer}=setup();
   ship.ladung.frachter=1;s.ledger.frachter.imported+=1;
-  const id=e.bridge.reserve(s,e.rules,ship.id,buyer,'frachter',1);
+  const id=e.bridge.reserve(s,e.rules,ship.id,'st_aldera','frachter',1);
   assert(id);
   const cmd={type:'shipActivate',owner:ship.owner,schiff:ship.id,klasse:'frachter'};
   const denied=e.core.execute(s,cmd,e.rules);

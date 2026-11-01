@@ -1450,7 +1450,7 @@ function beginnenProduktion(s,r,a) {
   if(line<0 || ship.auftrag!=='halten' || ship.arbeit!==0 || miner.arbeit!==0 ||
       aktivSchiff(s,miner.id)||aktivSchiff(s,ship.id) ||
       s.vertrag.next>=1000000)return null;
-  const p={miner:miner.id,minerBesitzer:miner.owner,fabrikBesitzer:a.quelle,linie,
+  const p={miner:miner.id,minerBesitzer:miner.owner,fabrikBesitzer:a.quelle,linie:line,
     vorherWip:s.stations[a.quelle].linien[line].rest,
     rohMenge:2*a.menge,rohPreis:q.kosten.rohwert,
     rohBudget:q.kosten.rohwert,

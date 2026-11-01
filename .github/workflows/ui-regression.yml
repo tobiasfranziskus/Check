@@ -182,3 +182,21 @@ jobs:
           else
             echo 'Nur B-K5-Analysezweig.'
           fi
+
+  analyse-bk5-zahlungsquellen:
+    # Originalwelt; echte Erzverkäufe des Spieler-Miners gegen
+    # regionale Stationskassen, keine Geld- oder Produktregeländerung.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Einnahmequelle des Spielers nach 1/3/5/7/14 Tagen buchungsgenau
+        run: |
+          if test -f tools/bk5-spielerminer-zahlungsquellen.mjs; then
+            node tools/bk5-spielerminer-zahlungsquellen.mjs
+          else
+            echo 'Nur B-K5-Analysezweig.'
+          fi

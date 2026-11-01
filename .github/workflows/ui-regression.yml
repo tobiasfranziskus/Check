@@ -146,3 +146,21 @@ jobs:
         with:
           name: b5b-v14-wirtschaftspruefung
           path: ${{ runner.temp }}/b5b-v14-13seeds.json
+
+  analyse-bk5-krisenverlauf:
+    # Nur auf dem B-K5-Analysebranch: historische Original-Regel14
+    # mit aktiv minendem Spieler, ohne irgendwelche neuen Produktregeln.
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tagesgenauer Original-Cashflow fuer Seed 7 und 42 je 90 Tage
+        run: |
+          if test -f tools/bk5-krisenverlauf-v14.mjs; then
+            node tools/bk5-krisenverlauf-v14.mjs
+          else
+            echo 'Krisenverlauf nur im isolierten B-K5-Analysestand.'
+          fi

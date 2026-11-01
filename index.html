@@ -1409,7 +1409,7 @@ function stornieren(s,id) {
 function verlust(s,r,sh) {
   const c=finden(s,sh.id);if(!c)return false;
   // Arbeiten, die seit dem letzten Stundenabschluss anfielen, bezahlen.
-  if(sh.arbeit>0)m_core_stunde.betriebskostenEinzeln(s,r,sh);
+  if(sh.arbeit>0)m_core_stunde.betriebskosten(s,r,sh.id);
   s.owners[c.kaeufer].cash+=c.escrow;
   s.owners[c.verkaeufer].cash+=c.fee+c.lohn;
   c.escrow=0;c.fee=0;c.lohn=0;c.status='verloren';
@@ -1577,12 +1577,14 @@ function verbrauch(state, rules) {
     }
   }
 }
-function betriebskostenEinzeln(state, rules, s) {
-  const w=rules.world;
-  { const arbeit=s.arbeit;s.arbeit=0;
+function betriebskosten(state, rules, einzig = null) {
+  const w = rules.world;
+  for (const id of ids(state.ships)) {
+    if(einzig && id !== einzig)continue;
+    const s = state.ships[id]; const arbeit = s.arbeit; s.arbeit = 0;
     // Auch bei Auftrag 'halten' muessen bereits erflogene Arbeitsminuten bezahlt werden.
     // Nur echte Untätigkeit (arbeit=0) ist kostenlos, auch nach Ankunft im Dock.
-    if (arbeit === 0) return;
+    if (arbeit === 0) continue;
     const kosten = div(anzahl(w.betriebskosten, s.klasse) * arbeit, rules.economy.stunde);
     const system = s.phase === 'reise' ? w.stations[s.ziel].system : s.system;
     const besitzer = state.owners[s.owner];
@@ -1593,15 +1595,12 @@ function betriebskostenEinzeln(state, rules, s) {
     }
     if(state.schema===9)m_core_vertrag.lohnFreigabe(state,s,kosten);
     const n = Math.min(besitzer.cash, kosten);
-    if (n <= 0) return;
+    if (n <= 0) continue;
     besitzer.cash -= n;
     if (w.senkeBesitzer.includes(s.owner)) state.burned += n;
     else state.owners[fondsIn(rules, system)].cash += n;
     buche(state, s.owner, 'kosten', n);
   }
-}
-function betriebskosten(state,rules) {
-  for(const id of ids(state.ships))betriebskostenEinzeln(state,rules,state.ships[id]);
   if(state.schema===9)m_core_vertrag.stundenAbschluss(state);
 }
 function aussenhandel(state, rules) {
@@ -1662,7 +1661,7 @@ function dividende(state, rules) {
     buche(state, id, 'kosten', n); buche(state, spieler, 'erloes', n);
   }
 }
-return { verbrauch, betriebskosten, betriebskostenEinzeln, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag };
+return { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag };
 })();
 
 const m_core_kampf = (() => {
@@ -1729,7 +1728,6 @@ const imSystem = (state, owner, system, auftrag) => ids(state.ships).map((id) =>
 const seite = (rules, schiffe, fokus, rueckzug) => ({ schiffe: schiffe.map((s) => ({ einheit: s.klasse, hp: rules.combat.einheiten[s.klasse].hp })), fokus, rueckzug });
 
 function entfernen(state, rules, s) {
-  if(state.schema===9)m_core_vertrag.verlust(state,rules,s);
   // Verbliebene Fracht beim Schiffverlust vollständig aus der Warenbilanz buchen.
   // zerstoeren() entfernt zuvor bereits verkaufte oder verbuchte Ladung.
   for (const ware of ids(s.ladung)) {
@@ -1748,7 +1746,6 @@ function entfernen(state, rules, s) {
   if (s.owner === rules.economy.start.owner) protokolliere(state, 'verlust', `${s.id} (${s.klasse}) verloren in ${s.system}`, s.owner);
 }
 function zerstoeren(state, rules, s) {
-  if(state.schema===9)m_core_vertrag.verlust(state,rules,s);
   const { markt, owner } = rules.world.piraten;
   for (const ware of ids(s.ladung)) {
     const m = Math.min(s.ladung[ware], aufnehmbar(state, rules, markt, ware));
@@ -1885,7 +1882,7 @@ function schutzgeld(state, rules) {
     buche(state, st, 'kosten', n); buche(state, w.piraten.owner, 'erloes', n);
   }
 }
-return { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewegen };
+return { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewegen, zerstoeren };
 })();
 
 const m_core_schiffbau = (() => {

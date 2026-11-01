@@ -197,3 +197,24 @@ test('BK6: replizierbare 20h-Kasse/Ware/Hash in Seed7 und Seed42',()=>{
     audit(a.s);audit(b.s);
   }
 });
+
+
+test('BK6: auch mit bezahlter Arbeit und Rücklagen endet der vorfinanzierte Zyklus ohne neuen Nachfragezufluss',()=>{
+  // Kein neues Einkommen: nur Rückverteilung der bereits erzielten Erlöse.
+  // 95 ISK Absatz minus 83 ISK vorfinanzierte Rückausschüttung = 12 ISK/h.
+  const x=run({hours:90,incomes:true});
+  assert.equal(x.log.length,66,'einmaliges Startkapital finanziert keinen Dauerbetrieb');
+  assert.equal(x.s.owners[H].cash,108);
+  assert.equal(x.s.owners[E].cash,0);
+  assert.equal(x.s.ledger.eis.mined-x.start.mined,66*6);
+  assert.equal(x.s.ledger.nahrung.consumed-x.start.consumed,66*3);
+  assert.equal(x.s.minted,0);
+  audit(x.s);
+  console.log('BK6_LANGFRISTIGE_GRENZE '+JSON.stringify({
+    completedHours:x.log.length,householdEnd:x.s.owners[H].cash,
+    minerReserve:x.s.owners[M].cash-x.start.miner,
+    factoryReserve:x.s.owners[S].cash-x.start.station,
+    fundSavings:x.s.owners[F].cash-x.start.fund,
+    refusedBeforeWork:true,minted:x.s.minted
+  }));
+});

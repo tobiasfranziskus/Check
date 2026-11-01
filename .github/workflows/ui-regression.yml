@@ -145,7 +145,7 @@ jobs:
           git archive b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c | tar -x -C "$RUNNER_TEMP/v14-original"
       - name: 13 Seeds x 90 Tage historische Regel 14 – unveränderte, gepinnte Quelle
         run: |
-          (cd "$RUNNER_TEMP/v14-original" && node tools/b5b-wirtschaft-v14.mjs "$RUNNER_TEMP/b5b-v14-13seeds.json")
+          node "$RUNNER_TEMP/v14-original/tools/b5b-wirtschaft-v14.mjs" "$RUNNER_TEMP/b5b-v14-13seeds.json"
       - uses: actions/upload-artifact@v4
         with:
           name: b5b-v14-wirtschaftspruefung

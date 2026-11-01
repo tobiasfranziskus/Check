@@ -21,12 +21,14 @@ const bank=(s)=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
 const lagerWert=(s,ware)=>Object.values(s.stations).reduce((n,x)=>n+(x.lager[ware]||0),0)+
   Object.values(s.ships).reduce((n,x)=>n+(x.ladung[ware]||0),0);
 function realZeit({seed=42,stunden=24,modus='original',fondsLohn=false,
-                   fabrikLohn=0,mindestReserve=0,dividende=false,haushaltStart=400}={}){
+                   fabrikLohn=0,mindestReserve=0,dividende=false,haushaltStart=400,leeresNahrungsLager=true}={}){
  const {s,miner}=welt(seed,haushaltStart),station=s.stations[S];
  // FIXTURE-Start: keine 52 Gratisvorratsrationen, sondern 0 Erzeugnis
  // bei schon laufender, korrekt aus Anfangseis bezahlter Original-Charge.
  const alt=station.lager.nahrung;
- station.lager.nahrung=0;s.ledger.nahrung.initial-=alt;
+ if(leeresNahrungsLager){
+   station.lager.nahrung=0;s.ledger.nahrung.initial-=alt;
+ }
  audit(s);
  const start={fonds:s.owners[F].cash,miner:s.owners[M].cash,station:s.owners[S].cash,
               haushalt:s.owners[H].cash,welt:bank(s)};
@@ -172,4 +174,21 @@ test('B-K2: deterministische Replay-Hashes und Bargeld-/Warenaudit',()=>{
  assert.equal(core.index.hash(a.s),core.index.hash(b.s));
  assert.deepEqual(a.stundenBuch,b.stundenBuch);
  audit(a.s);audit(b.s);
+});
+
+test('B-K2: keine Kuenstlichkeit durch leer gesetztes Eingangslager - Original-Cyris ebenfalls mit endlicher Kaufkraft',()=>{
+ const original=realZeit({stunden:24,modus:'original',leeresNahrungsLager:false});
+ const nullLager=realZeit({stunden:24,modus:'original',leeresNahrungsLager:true});
+ assert.equal(original.abbruch?.grund,'haushalt-ohne-kaufkraft');
+ assert.equal(nullLager.abbruch?.grund,'haushalt-ohne-kaufkraft');
+ assert(original.stundenBuch[0].entgelt<nullLager.stundenBuch[0].entgelt,
+   'tatsaechlicher Anfangsbestand reduziert Knappheitspreis');
+ assert.equal(original.s.ledger.nahrung.initial,
+   core.index.createState(42,core.rules).ledger.nahrung.initial);
+ assert(original.erfuellteStunden<24);
+ audit(original.s);audit(nullLager.s);
+ console.log('BK2_ECHTES_CYRIS_STARTLAGER '+JSON.stringify({
+   vollstunden:original.erfuellteStunden,abbruch:original.abbruch,
+   ersteStundeNahrung:original.stundenBuch[0].entgelt,
+   kontrollierteNullvorratErsteStunde:nullLager.stundenBuch[0].entgelt}));
 });

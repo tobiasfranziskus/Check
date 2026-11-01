@@ -112,7 +112,8 @@ for(const mode of ['passiv','spielerminer']){
   meds:[sum('old','medShortage'),sum('neu','medShortage')],
   sales:[sum('old','sales'),sum('neu','sales')],
   losses:[sum('old','losses'),sum('neu','losses')],
-  paidFood:sum('neu','spent')}));
+  paidFood:relevant.reduce((a,x)=>a+x.neu.spent.nahrung,0),
+  paidMed:relevant.reduce((a,x)=>a+x.neu.spent.medikamente,0)}));
 }
 assert.equal(rows.length,15);
 console.log('BK4_ACCOUNTING_PASS '+JSON.stringify({seeds:seeds.length,days:90,playerSeeds:[7,42],

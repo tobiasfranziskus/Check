@@ -8,7 +8,7 @@ const anchor='return { zuschuss, ersatzkauf };';
 assert.equal(source.split(anchor).length,2,'isoliert nur fehlend zur Prüfung exportieren');
 const {c,r,b}=new Function(source.replace(anchor,'return { zuschuss, ersatzkauf, fehlend };')
  +';return {c:m_core_index,r:m_data_rules.RULES,b:m_core_schiffbau};')();
-assert.equal(r.rulesVersion,14);assert.equal(r.schema,8);
+assert.equal(r.rulesVersion,15);assert.equal(r.schema,8);
 function setup(seed=42){
  const s=c.createState(seed,r);
  const sh=Object.values(s.ships).find(x=>x.owner==='npc3'&&x.klasse==='miner'
@@ -97,7 +97,7 @@ test('Regel-13-Save rekonstruiert gestoppten Nadir-Miner eindeutig ohne Waren-/G
  const {s,sh}=setup(),slot=sh.sollplatz;
  sh.auftrag='halten';sh.ware=null;sh.system='aldera';sh.arbeit=23;sh.ladung.silizium=0;
  const {old,loaded}=migrate(s);
- assert.equal(loaded.rulesVersion,14);assert.equal(loaded.schema,8);
+ assert.equal(loaded.rulesVersion,15);assert.equal(loaded.schema,8);
  assert.equal(loaded.ships[sh.id].sollplatz,slot);
  assert.equal(loaded.ships[sh.id].ware,null);
  assert.equal(loaded.ships[sh.id].arbeit,23);
@@ -143,17 +143,17 @@ test('Spieleraktivierte Hüllen erhalten keinen fremden oder erfundenen Sollplat
  assert.equal(newcomer.sollflotte.npc3.length,plans);
  assert(c.audit(newcomer).ok);
 });
-test('Regel 11/12 migriert weiter bis 14, alte Regel 8–10 und Zukunftsversion 15 nicht',()=>{
+test('Regel 11/12 migriert weiter bis 15, alte Regel 8–10 und Zukunftsversion 16 nicht',()=>{
  const {s}=setup();
  for(const oldVersion of [11,12,13]){
   const old=JSON.parse(c.save(s));old.rulesVersion=oldVersion;
   for(const x of Object.values(old.ships))delete x.sollplatz;
   const loaded=c.load(JSON.stringify(old),undefined,r);
-  assert.equal(loaded.rulesVersion,14);
+  assert.equal(loaded.rulesVersion,15);
   assert(c.audit(loaded).ok);
  }
- for(const version of [8,9,10,15]){
+ for(const version of [8,9,10,16]){
   const old=JSON.parse(c.save(s));old.rulesVersion=version;
-  assert.throws(()=>c.load(JSON.stringify(old),undefined,r),version===15?/neuer/:/keine Regelmigration vorhanden/);
+  assert.throws(()=>c.load(JSON.stringify(old),undefined,r),version===16?/neuer/:/keine Regelmigration vorhanden/);
  }
 });

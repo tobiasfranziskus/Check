@@ -196,6 +196,24 @@ for(const seed of [7,42]){
     originalFreightReceipts:check.shipSells,originalRawBuyerCosts:check.rawToPlayer}));
 }
 assert.equal(rows.length,4);
+const historicalActiveHashes={7:'0a4aaf6dad321984',42:'f733a993164a5e4f'};
+for(const seed of [7,42]){
+  const passive=rows.find(x=>x.seed===seed&&x.mode==='passiv');
+  const active=rows.find(x=>x.seed===seed&&x.mode==='spieler_mined_erz');
+  assert.equal(active.hash,historicalActiveHashes[seed],'historischer Original-Rule14-Hash');
+  assert.equal(passive.final.traderHulls,5);
+  assert.equal(active.final.traderHulls,0);
+  assert(active.final.traderCash<active.final.shipCost);
+  assert(active.final.unpaidTraderWork>passive.final.unpaidTraderWork);
+  assert(active.final.civilFoodConsumed<passive.final.civilFoodConsumed);
+  assert(active.firstMatchedDeliveries.some(x=>x.freightContributionAfterAccruedWork<0),
+    'wirklich abgewickelte verlustreiche Einwegfrachten trotz positiver Spotmarge');
+}
+console.log('BK8_FINANZIERUNGSGATE '+JSON.stringify({
+  seeds:[7,42],historicalHashes:historicalActiveHashes,
+  result:'passiv finanziert Frachterersatz, aktive Spielerkrise verliert Käufer-/Händlerkassen',
+  importance:'Arbeitspflicht auch vor Stundenabrechnung, realer Konsum ohne Cash-Endzahler',
+  noNewRules:true}));
 console.log('BK8_DONE '+JSON.stringify({worlds:rows.length,days:90,seeds:[7,42],
   hourlyIndependentAudits:4*90*24,replayDailyComparisons:2,
   note:'Original finanziert real den Rohstoff- und Frachterhandel, hat aber null Barzahlungen für zivilen Endverbrauch.'}));

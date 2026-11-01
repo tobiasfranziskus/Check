@@ -181,3 +181,26 @@ test('BK9c: In Regel14 bleiben Referenz-Hashes ohne Vertragsspur unverändert',(
     assert(!Object.hasOwn(orig,'vertrag'));
   }
 });
+
+
+test('BK9c: Auch bilanziell neutral umgebuchte gebundene Fracht wird beim Laden abgewiesen',()=>{
+  const {s,a,frachter}=fixture();
+  assert(core.vertragStarten(s,a,next));
+  const changed=JSON.parse(core.save(s));
+  // Güteraudit bleibt formal korrekt, doch das vertraglich gebundene Paket ist manipuliert.
+  changed.ships[frachter.id].ladung.nahrung-=1;
+  changed.stations.st_cyris.lager.nahrung+=1;
+  assert.throws(()=>core.load(JSON.stringify(changed),undefined,next),/reservierte Fracht/);
+  audit(s);
+});
+test('BK9c: Eine gleich hohe Schattenzahlung hebt das vertragliche Käufer-Escrow nicht auf',()=>{
+  const {s,a}=fixture();assert(core.vertragStarten(s,a,next));
+  const changed=JSON.parse(core.save(s)),c=changed.vertrag.eintraege.v1;
+  c.escrow-=1;changed.owners.st_aldera.cash+=1;
+  // Reine Gesamtsummen sind ausgeglichen, das feste Vertragssoll jedoch nicht.
+  assert.equal(Object.values(changed.owners).reduce((a,o)=>a+o.cash,0)+
+    Object.values(changed.vertrag.eintraege).reduce((a,c)=>a+c.escrow+c.fee+c.lohn+c.huelle,0),
+    changed.initialSupply+changed.minted-changed.burned);
+  assert.throws(()=>core.load(JSON.stringify(changed),undefined,next),/Rechnung/);
+  audit(s);
+});

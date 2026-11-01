@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - tools/bk9i-npc-disposition-13x90.mjs
+      - tools/bk9i-cyris-eis-absatzgate-14d.mjs
       - .github/workflows/bk9i-disposition.yml
 
 permissions:
@@ -20,3 +21,5 @@ jobs:
           node-version: '22'
       - name: 13 × 90d real-position miner/freighter and cost analysis
         run: node tools/bk9i-npc-disposition-13x90.mjs
+      - name: 13 × 14d original Cyris ice sale affordability vs storage cap
+        run: node tools/bk9i-cyris-eis-absatzgate-14d.mjs

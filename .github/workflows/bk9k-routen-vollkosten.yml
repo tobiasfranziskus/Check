@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Existing unmodified v14 Node regression tests
+        run: node --test tests/*.test.mjs
       - name: Check 13x90 all configured market routes against real liquidity and return flight costs
         run: node tools/bk9k-warenrouten-vollkosten-13x90.mjs
       - name: Actual original NPC departures and conservative round-trip loss diagnosis

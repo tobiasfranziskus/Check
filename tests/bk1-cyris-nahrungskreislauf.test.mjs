@@ -117,8 +117,13 @@ function runde(s,miner,{rueckfluss=false}={}){
   ueberweise(s,M,H,nettoMiner,'Minerarbeitslohn und Eigentuemerausschuettung');
   ueberweise(s,S,H,nettoStation,'Fabrikarbeitslohn und Eigentuemerausschuettung');
   const staatlicherRueckfluss=s.owners[F].cash-before.fonds;
-  if(rueckfluss)
-    ueberweise(s,F,H,staatlicherRueckfluss,'HYPOTHETISCHER transparent finanzierter Fondsrueckfluss');
+  const quellenGebuehr=core.gebuehr(s,R,S,quellKosten);
+  const echterMinerBetrieb=staatlicherRueckfluss-quellenGebuehr;
+  assert(echterMinerBetrieb>=0,'Fonds muss tatsaechlichen Minenbetrieb erhalten haben');
+  const auszahlung=rueckfluss===true?staatlicherRueckfluss:
+    rueckfluss==='arbeit'?echterMinerBetrieb:0;
+  if(auszahlung)
+    ueberweise(s,F,H,auszahlung,'HYPOTHETISCHER Rueckfluss bestehender Leistungs-/Gebuehrenzahlungen');
   assert.equal(s.ledger.nahrung.consumed,before.verbraucht+1);
   assert.equal(st.lager.eis,before.eis);
   assert.equal(st.lager.nahrung,before.food);
@@ -127,7 +132,7 @@ function runde(s,miner,{rueckfluss=false}={}){
   return {ok:true,preisEis,nahrPreis,quellKosten,arbeitKosten:Math.max(0,quellKosten-minedWageCost),
     minerNet:nettoMiner,stationNet:nettoStation,fondsNet,
     nettoHaushalt:hh.cash-before.haushalt,haushalt:hh.cash,
-    fonds:s.owners[F].cash,rueckfluss:staatlicherRueckfluss};
+    fonds:s.owners[F].cash,fondsEinnahmen:staatlicherRueckfluss,quellenGebuehr,echterMinerBetrieb,auszahlung};
 }
 function lauf({seed=42,runden=20,rueckfluss=false,haushaltStart=400}={}){
   const {s,miner}=welt(seed,haushaltStart),ergebnisse=[];
@@ -206,4 +211,18 @@ test('B-K1: Haushalte bekommen kein Gratisgut bei fehlendem Geld',()=>{
   assert.equal(x.ok,false);assert.equal(x.grund,'haushalt-ohne-kaufkraft');
   assert.equal(core.index.hash(s),h,'Ablehnung erfolgt vor Foerderung oder Produktion');
   audit(s);
+});
+
+test('B-K1: nur realer Arbeitskosten-Rueckfluss laesst die Gebuehr als Restleck sichtbar',()=>{
+  const a=lauf({runden:20,rueckfluss:'arbeit'});
+  assert.equal(a.abgeschlossen,20);
+  assert.equal(a.ergebnisse[0].echterMinerBetrieb,5);
+  assert.equal(a.ergebnisse[0].quellenGebuehr,1);
+  assert.equal(a.ergebnisse[0].auszahlung,5);
+  assert.equal(a.s.owners[H].cash,380);
+  assert.equal(a.s.owners[F].cash,620);
+  audit(a.s);
+  console.log('BK1_NUR_ARBEITSKOSTEN_RUECKFLUSS '+JSON.stringify({
+    zyklen:20,haushalt:a.s.owners[H].cash,fonds:a.s.owners[F].cash,
+    gebuehrenRestJeRunde:a.ergebnisse[0].quellenGebuehr}));
 });

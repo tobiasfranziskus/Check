@@ -6,8 +6,10 @@ import test from 'node:test';
 
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const source=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
-const {core,rules,angebot}=new Function(source+
-  ';return {core:m_core_index,rules:m_data_rules.RULES,angebot:m_core_auftragskalkulation.nahrungsangebot};')();
+const {core,rules}=new Function(source+
+  ';return {core:m_core_index,rules:m_data_rules.RULES};')();
+const angebot=core.nahrungsangebot;
+assert.equal(typeof angebot,'function','über offiziellen Core-Index nutzbar');
 assert.equal(rules.rulesVersion,14);assert.equal(rules.schema,8);
 function seedState(seed=42){
   const s=core.createState(seed,rules);
@@ -120,4 +122,39 @@ test('B-K9: Auch 1 voller passiver Tag ändert durch die nur lesbare neue Core-F
     assert.equal(core.hash(second),core.hash(s));
     assert(core.audit(s).ok);
   }
+});
+
+test('B-K9: Derselbe Konzern darf Miner und Frachter betreiben, aber 439 ISK nie zweimal zur Deckung zählen',()=>{
+  const {s,a,miner}=seedState();
+  miner.owner='npc1'; // künstliche Besitzerkombination, keine gratis Kasse
+  const offer=calc(s,a);
+  assert.equal(offer.ok,true,'Gemeinsamer Besitzer ist grundsätzlich zugelassen');
+  const minBalance=Math.max(offer.benoetigt.miner,offer.benoetigt.frachter);
+  transfer(s,'npc1','house',s.owners.npc1.cash-minBalance);
+  const insuff=calc(s,a);
+  assert.equal(insuff.haben.frachter,minBalance);
+  assert(!insuff.fehler.includes('KASSE_FRACHTER'));
+  assert(!insuff.fehler.includes('KASSE_MINER'));
+  assert(insuff.fehler.includes('KASSE_GEMEINSAM_npc1'));
+  assert.equal(insuff.ok,false);
+});
+test('B-K9: Der derzeitige Aldera-Spotpreis deckt den vollständigen sicheren Ferntransport nicht',()=>{
+  const {s,a}=seedState();
+  a.endpreis=core.preis(s,'st_aldera','nahrung');
+  const q=calc(s,a);
+  assert(!q.ok);
+  assert(q.fehler.includes('FRACHTER_VERLUST'));
+  console.log('BK9_SPOTPREIS_GRENZE '+JSON.stringify({
+    spotNahrung:a.endpreis,prognose:q.margen.frachter,
+    transportreserve:q.kosten.frachterlohn,
+    ersatzreserve:q.kosten.ersatzruecklage,
+    note:'400 ISK je Stück im positiven Test ist nur hypothetischer Festpreis, keine tatsächliche Marktnachfrage'
+  }));
+});
+test('B-K9: 2^53-Überlauf im Vertragswert kann weder Quote noch Budget schaffen',()=>{
+  const {s,a}=seedState();
+  a.endpreis=Number.MAX_SAFE_INTEGER;
+  const q=calc(s,a);
+  assert.equal(q.ok,false);
+  assert(q.fehler.includes('UEBERLAUF'));
 });

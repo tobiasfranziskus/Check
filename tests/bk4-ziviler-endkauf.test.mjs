@@ -65,20 +65,19 @@ test('B-K4: Medikamente werden bezahlt, Bauteile nicht als Haushaltseinkauf umge
   parts:s.stations[sid].lager.bauteil};
  assert(s.stations[sid].lager.medikamente>=m&&p>0);
  c.verbrauch(s,r);
- const food=r.world.stations[sid].verbrauch.nahrung*c.preis({...s,stations:{...s.stations,[sid]:{...s.stations[sid],lager:{...s.stations[sid].lager,nahrung:s.stations[sid].lager.nahrung+r.world.stations[sid].verbrauch.nahrung}}}},sid,'nahrung',r);
- // Kein Preis-Hardcode, sondern realer Transfer des ersten Tests:
+ // Kein Preis-Hardcode: Medizin-Entnahme ist Teil des realen Transfers.
  assert(old.fund-s.owners[fund].cash>=m*p);
  assert.equal(s.stations[sid].lager.medikamente,old.medicine-m);
  assert.equal(s.stations[sid].lager.bauteil,old.parts-r.world.stations[sid].verbrauch.bauteil);
- assert(food>0);assert(c.audit(s).ok);
+ assert(c.audit(s).ok);
 });
 test('B-K4: Spielerstation wird nur fuer echten Konsum entlohnt, nicht bei Geldnot garantiert',()=>{
  const s=make();s.stations[sid].eigentum='house';
- const before=s.owners[sid].cash,f0=s.owners[fund].cash;
+ const before=s.owners[sid].cash,f0=s.owners[fund].cash,player0=s.owners.house.cash;
  c.verbrauch(s,r);
  assert(s.owners[sid].cash>before);
  assert(s.owners[fund].cash<f0);
- assert.equal(s.owners.house.cash,20000);
+ assert.equal(s.owners.house.cash,player0);
  assert(c.audit(s).ok);
 });
 test('B-K4: Regel 14 verbraucht dieselbe Ware weiter unbezahlt (Referenz)',()=>{

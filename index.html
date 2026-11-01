@@ -1056,98 +1056,6 @@ function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt =
 return { stationIn, fondsIn, reserve, verkaufbar, obergrenze, aufnehmbar, buche, gebuehr, bezahlbar, handel, stationspreis };
 })();
 
-// B-K9: ein einziges, zustandsloses Finanzierungsangebot fuer die
-// vollstaendige Nahrungskette. Keine Geldbewegung, keine neue Spielregel.
-// Ein Vertrag darf spaeter erst nach erneuter Pruefung atomar reservieren.
-const m_core_auftragskalkulation = (() => {
-const { preis } = m_core_preis;
-const { route } = m_core_route;
-const { gebuehr, obergrenze } = m_core_handel;
-const ganz = (n) => Number.isSafeInteger(n) && n > 0;
-const istLeer = (ladung) => Object.values(ladung).every((n) => n === 0);
-
-function nahrungsangebot(state, rules, angabe) {
-  const fehler = [];
-  if (!angabe || typeof angabe !== 'object' || Array.isArray(angabe)) return { ok: false, fehler: ['ANGABE'] };
-  const { quelle, ziel, miner, frachter, menge, endpreis, fabriklohn, ersatzFahrten } = angabe;
-  if (!rules.world.stations[quelle] || !rules.world.stations[ziel] || quelle === ziel) fehler.push('STATION');
-  if (!state.ships[miner] || !state.ships[frachter]) fehler.push('SCHIFF');
-  if (![menge, endpreis, fabriklohn, ersatzFahrten].every(ganz)) fehler.push('PARAMETER');
-  if (fehler.length) return { ok: false, fehler };
-  const src = rules.world.stations[quelle], dst = rules.world.stations[ziel];
-  const a = state.ships[miner], f = state.ships[frachter];
-  const rezept = rules.economy.rezepte.r_nahrung;
-  if (!rezept || rezept.ein.eis !== 2 || rezept.aus.nahrung !== 1) fehler.push('REZEPT');
-  if (!state.stations[quelle].linien.some((l) => l.rezept === 'r_nahrung')) fehler.push('FABRIK');
-  if (!rules.world.fields.some((x) => x.system === src.system && x.ware === 'eis')) fehler.push('ROHSTOFFFELD');
-  if (a.klasse !== 'miner' || a.system !== src.system || a.phase !== 'dock'
-      || a.auftrag !== 'foerdern' || a.ware !== 'eis' || !istLeer(a.ladung)) fehler.push('MINER');
-  if (f.klasse !== 'frachter' || f.system !== src.system || f.phase !== 'dock'
-      || !istLeer(f.ladung) || f.owner === a.owner) fehler.push('FRACHTER');
-  const weg = route(rules.world, src.system, dst.system);
-  if (!weg || weg.zeit <= 0) fehler.push('ROUTE');
-  // Die erste vertikale Scheibe deckt Risiken nicht kostenlos: nur sichere Wege.
-  if (weg && weg.weg.some((x) => rules.world.systems[x].sicherheit !== 'sicher')) fehler.push('RISIKOROUTE');
-  const rawUnits = menge * 2;
-  if (!Number.isSafeInteger(rawUnits) || menge > rules.economy.cargo ||
-      rawUnits > rules.economy.cargo) fehler.push('MENGE');
-  if (menge + state.stations[quelle].lager.nahrung > obergrenze(state, rules, quelle, 'nahrung') ||
-      menge + state.stations[ziel].lager.nahrung > obergrenze(state, rules, ziel, 'nahrung')) fehler.push('LAGERPLATZ');
-  if (fehler.length) return { ok: false, fehler };
-
-  const rohwert = rawUnits * preis(state, quelle, 'eis', rules);
-  const rohgebuehr = gebuehr(state, rules, quelle, rohwert);
-  const rohminuten = Math.ceil(rawUnits /
-    (rules.economy.miningRate * (1 + (state.stations[quelle].module.bergbau || 0))));
-  const minerkosten = Math.floor(rules.world.betriebskosten.miner * rohminuten / rules.economy.stunde);
-  const quellenwert = menge * preis(state, quelle, 'nahrung', rules);
-  const quellgebuehr = gebuehr(state, rules, quelle, quellenwert);
-  const verkaufswert = menge * endpreis;
-  const zielgebuehr = gebuehr(state, rules, ziel, verkaufswert);
-  // Reserviere eine VOLLSTAENDIGE Stundenabrechnung, nicht nur die
-  // zum Ankunftstick schon gebuchten Teilminuten.
-  const frachterlohn = Math.ceil(weg.zeit / rules.economy.stunde) * rules.world.betriebskosten.frachter;
-  const hPreis = preis(state, rules.world.werft, 'frachter', rules);
-  const huellenpreis = hPreis + gebuehr(state, rules, rules.world.werft, hPreis);
-  const ersatzruecklage = Math.ceil(huellenpreis / ersatzFahrten);
-  const produktionsmarge = quellenwert - rohwert - fabriklohn;
-  const minermarge = rohwert - rohgebuehr - minerkosten;
-  const transportmarge = verkaufswert - quellenwert - quellgebuehr -
-    zielgebuehr - frachterlohn - ersatzruecklage;
-  const benoetigt = {
-    kunde: verkaufswert,
-    fabrik: rohwert + fabriklohn,
-    miner: rohgebuehr + minerkosten,
-    frachter: quellenwert + quellgebuehr + zielgebuehr + frachterlohn + ersatzruecklage,
-  };
-  const haben = {
-    kunde: state.owners[ziel].cash,
-    fabrik: state.owners[quelle].cash,
-    miner: state.owners[a.owner].cash,
-    frachter: state.owners[f.owner].cash,
-  };
-  for (const id of Object.keys(benoetigt)) if (haben[id] < benoetigt[id]) fehler.push('KASSE_' + id.toUpperCase());
-  if (minermarge < 0) fehler.push('MINER_VERLUST');
-  if (produktionsmarge < 0) fehler.push('FABRIK_VERLUST');
-  if (transportmarge < 0) fehler.push('FRACHTER_VERLUST');
-  // Keine doppelte Deckung aus zukuenftigen Einnahmen: alle vier Kassen
-  // muessen jede fuer sich schon VOR Auftrag ausreichend Geld besitzen.
-  return {
-    ok: fehler.length === 0, fehler, quelle, ziel, menge, endpreis,
-    konten: { kunde: ziel, fabrik: quelle, miner: a.owner, frachter: f.owner },
-    benoetigt, haben,
-    kosten: { rohwert, rohgebuehr, minerkosten, fabriklohn, quellenwert, quellgebuehr,
-      verkaufswert, zielgebuehr, frachterlohn, huellenpreis, ersatzruecklage },
-    margen: { miner: minermarge, fabrik: produktionsmarge, frachter: transportmarge },
-    zeit: { rohminuten, rezeptminuten: menge * rezept.dauer, flugminuten: weg.zeit },
-    // Ein Angebot ist KEINE Reservierung. Vor der wirklichen Ausfuehrung
-    // sind Kurse, Kapazitaet, Besitz und alle Kassen atomar erneut zu pruefen.
-    reserviert: false,
-  };
-}
-return { nahrungsangebot };
-})();
-
 const m_core_ankunft = (() => {
 const { ids, anzahl } = m_core_zahl;
 const { handel, aufnehmbar, stationIn } = m_core_handel;
@@ -1248,6 +1156,98 @@ function route(world, a, b) {
   return (alle[a] && alle[a][b]) || null;
 }
 return { route };
+})();
+
+// B-K9: ein einziges, zustandsloses Finanzierungsangebot fuer die
+// vollstaendige Nahrungskette. Keine Geldbewegung, keine neue Spielregel.
+// Ein Vertrag darf spaeter erst nach erneuter Pruefung atomar reservieren.
+const m_core_auftragskalkulation = (() => {
+const { preis } = m_core_preis;
+const { route } = m_core_route;
+const { gebuehr, obergrenze } = m_core_handel;
+const ganz = (n) => Number.isSafeInteger(n) && n > 0;
+const istLeer = (ladung) => Object.values(ladung).every((n) => n === 0);
+
+function nahrungsangebot(state, rules, angabe) {
+  const fehler = [];
+  if (!angabe || typeof angabe !== 'object' || Array.isArray(angabe)) return { ok: false, fehler: ['ANGABE'] };
+  const { quelle, ziel, miner, frachter, menge, endpreis, fabriklohn, ersatzFahrten } = angabe;
+  if (!rules.world.stations[quelle] || !rules.world.stations[ziel] || quelle === ziel) fehler.push('STATION');
+  if (!state.ships[miner] || !state.ships[frachter]) fehler.push('SCHIFF');
+  if (![menge, endpreis, fabriklohn, ersatzFahrten].every(ganz)) fehler.push('PARAMETER');
+  if (fehler.length) return { ok: false, fehler };
+  const src = rules.world.stations[quelle], dst = rules.world.stations[ziel];
+  const a = state.ships[miner], f = state.ships[frachter];
+  const rezept = rules.economy.rezepte.r_nahrung;
+  if (!rezept || rezept.ein.eis !== 2 || rezept.aus.nahrung !== 1) fehler.push('REZEPT');
+  if (!state.stations[quelle].linien.some((l) => l.rezept === 'r_nahrung')) fehler.push('FABRIK');
+  if (!rules.world.fields.some((x) => x.system === src.system && x.ware === 'eis')) fehler.push('ROHSTOFFFELD');
+  if (a.klasse !== 'miner' || a.system !== src.system || a.phase !== 'dock'
+      || a.auftrag !== 'foerdern' || a.ware !== 'eis' || !istLeer(a.ladung)) fehler.push('MINER');
+  if (f.klasse !== 'frachter' || f.system !== src.system || f.phase !== 'dock'
+      || !istLeer(f.ladung) || f.owner === a.owner) fehler.push('FRACHTER');
+  const weg = route(rules.world, src.system, dst.system);
+  if (!weg || weg.zeit <= 0) fehler.push('ROUTE');
+  // Die erste vertikale Scheibe deckt Risiken nicht kostenlos: nur sichere Wege.
+  if (weg && weg.weg.some((x) => rules.world.systems[x].sicherheit !== 'sicher')) fehler.push('RISIKOROUTE');
+  const rawUnits = menge * 2;
+  if (!Number.isSafeInteger(rawUnits) || menge > rules.economy.cargo ||
+      rawUnits > rules.economy.cargo) fehler.push('MENGE');
+  if (menge + state.stations[quelle].lager.nahrung > obergrenze(state, rules, quelle, 'nahrung') ||
+      menge + state.stations[ziel].lager.nahrung > obergrenze(state, rules, ziel, 'nahrung')) fehler.push('LAGERPLATZ');
+  if (fehler.length) return { ok: false, fehler };
+
+  const rohwert = rawUnits * preis(state, quelle, 'eis', rules);
+  const rohgebuehr = gebuehr(state, rules, quelle, rohwert);
+  const rohminuten = Math.ceil(rawUnits /
+    (rules.economy.miningRate * (1 + (state.stations[quelle].module.bergbau || 0))));
+  const minerkosten = Math.floor(rules.world.betriebskosten.miner * rohminuten / rules.economy.stunde);
+  const quellenwert = menge * preis(state, quelle, 'nahrung', rules);
+  const quellgebuehr = gebuehr(state, rules, quelle, quellenwert);
+  const verkaufswert = menge * endpreis;
+  const zielgebuehr = gebuehr(state, rules, ziel, verkaufswert);
+  // Reserviere eine VOLLSTAENDIGE Stundenabrechnung, nicht nur die
+  // zum Ankunftstick schon gebuchten Teilminuten.
+  const frachterlohn = Math.ceil(weg.zeit / rules.economy.stunde) * rules.world.betriebskosten.frachter;
+  const hPreis = preis(state, rules.world.werft, 'frachter', rules);
+  const huellenpreis = hPreis + gebuehr(state, rules, rules.world.werft, hPreis);
+  const ersatzruecklage = Math.ceil(huellenpreis / ersatzFahrten);
+  const produktionsmarge = quellenwert - rohwert - fabriklohn;
+  const minermarge = rohwert - rohgebuehr - minerkosten;
+  const transportmarge = verkaufswert - quellenwert - quellgebuehr -
+    zielgebuehr - frachterlohn - ersatzruecklage;
+  const benoetigt = {
+    kunde: verkaufswert,
+    fabrik: rohwert + fabriklohn,
+    miner: rohgebuehr + minerkosten,
+    frachter: quellenwert + quellgebuehr + zielgebuehr + frachterlohn + ersatzruecklage,
+  };
+  const haben = {
+    kunde: state.owners[ziel].cash,
+    fabrik: state.owners[quelle].cash,
+    miner: state.owners[a.owner].cash,
+    frachter: state.owners[f.owner].cash,
+  };
+  for (const id of Object.keys(benoetigt)) if (haben[id] < benoetigt[id]) fehler.push('KASSE_' + id.toUpperCase());
+  if (minermarge < 0) fehler.push('MINER_VERLUST');
+  if (produktionsmarge < 0) fehler.push('FABRIK_VERLUST');
+  if (transportmarge < 0) fehler.push('FRACHTER_VERLUST');
+  // Keine doppelte Deckung aus zukuenftigen Einnahmen: alle vier Kassen
+  // muessen jede fuer sich schon VOR Auftrag ausreichend Geld besitzen.
+  return {
+    ok: fehler.length === 0, fehler, quelle, ziel, menge, endpreis,
+    konten: { kunde: ziel, fabrik: quelle, miner: a.owner, frachter: f.owner },
+    benoetigt, haben,
+    kosten: { rohwert, rohgebuehr, minerkosten, fabriklohn, quellenwert, quellgebuehr,
+      verkaufswert, zielgebuehr, frachterlohn, huellenpreis, ersatzruecklage },
+    margen: { miner: minermarge, fabrik: produktionsmarge, frachter: transportmarge },
+    zeit: { rohminuten, rezeptminuten: menge * rezept.dauer, flugminuten: weg.zeit },
+    // Ein Angebot ist KEINE Reservierung. Vor der wirklichen Ausfuehrung
+    // sind Kurse, Kapazitaet, Besitz und alle Kassen atomar erneut zu pruefen.
+    reserviert: false,
+  };
+}
+return { nahrungsangebot };
 })();
 
 const m_core_entscheidung = (() => {

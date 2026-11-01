@@ -106,8 +106,10 @@ test('B-K9f: genau 26 neue Eis und 13 neue Nahrung bleiben im selben originalen 
  assert.equal(p.rohLager,0);
  assert.equal(s.ledger.eis.mined-start.mined,26);
  assert.equal(s.ledger.nahrung.produced-start.produced>=13,true);
- assert.equal(s.stations.st_cyris.lager.nahrung>=start.sourceFood,true,
-   'Altware darf parallel existieren, wird aber nie als Vertragscharge gezählt');
+ assert.equal(p.nahrungLager,p.fertig,
+   'nur durch den gemerkten Rezeptabschluss erzeugte Neuware ist gebunden');
+ // Das Zivilsystem darf parallel vorhandene Altware verbrauchen oder handeln;
+ // ihr Endlagerbestand darf sich deshalb auch verringern.
  assert.equal(p.fabrikLohn,0,'tatsächlich finanzierter Fertigungslohn ausgezahlt');
  assert.equal(s.minted,start.worldMint,'keine zusätzliche Emission während Produktionsphase');
  saveHash(s);

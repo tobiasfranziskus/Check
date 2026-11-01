@@ -79,10 +79,49 @@ Leerfahrten, ungedeckte NPC-Arbeit und Schiffsverluste zusammen.
 Die alte Regel-14-Welt wird durch den exakt versionierten
 Quelltextzweig reproduziert; v15 verwendet denselben Kern.
 
-**[OFFEN bis neuer CI-Run abgeschlossen]**: Die wirtschaftliche
-Wirkung der **endgültigen Nullkassen-Variante** darf nicht mit
-den Werten des verworfenen Vollkosten-Gates verwechselt werden.
-Historische v14-Referenzen beweisen keinen v15-Effekt.
+**[CI #41323602339](https://github.com/tobiasfranziskus/Check/actions/runs/41323602339)**
+auf Code-Commit `6457f303` vollständig erfolgreich: **76/76
+Node-Tests**, 13 passive ×90 Tage **und** zwei Spieler-Miner-
+Krisen ×90 Tage auf identischem Original-Core, mit
+stündlichem Core-Audit, unabhängigem täglichem Geld-/Warenaudit
+und Save-/Load-Kontrollen. Historische Regel-14-Belege sind
+zusätzlich separat aus ursprünglichem Main reproduziert
+([B5b CI #41323602438](https://github.com/tobiasfranziskus/Check/actions/runs/41323602438)).
+
+**[ERGEBNIS: TECHNISCH POSITIV, WIRTSCHAFTLICH GEMISCHT]**
+
+| 90-Tage-Vergleich | Regel 14 | Regel 15 | Wirkung |
+| --- | ---: | ---: | --- |
+| 13 passive Welten: sämtliche Mangelstunden | 791 | 791 | unverändert |
+| 13 passive Welten: NPC1/2-Frachterverkäufe | 310.058 | 310.058 | unverändert |
+| 13 passive Welten: zivile Schiffsverluste | 4.622 | 4.622 | unverändert |
+| Spielerminer Seed7: sämtliche Mangelstunden | 35.993 | 35.993 | unverändert |
+| Spielerminer Seed42: sämtliche Mangelstunden | 35.798 | 35.818 | **20 mehr** |
+| Spielerminer Seed42: Nahrungsmangel | 11.735 | 11.740 | **5 mehr** |
+| Spielerminer Seed42: NPC1/2-Frachterverkäufe | 1.919 | 1.890 | **29 weniger** |
+| Spielerminer Seed42: ungedeckte NPC1-Arbeit | 31.695 ISK | 27.901 ISK | **3.794 ISK weniger** |
+| Spielerminer Seed42: zivile Schiffsverluste | 45 | 43 | **2 weniger** |
+
+Der Zähler für automatisch gestartete Leerflüge
+beträgt im Seed42-Krisenlauf **1→2**, obwohl ein Nullkassenstart
+explizit verboten ist. Das ist kein Widerspruch: der erste
+gesperrte Start ändert die folgende Weltentwicklung; nach
+späteren Mittelzuflüssen können andere Leerflüge stattfinden.
+Deshalb darf man **nicht** eine reine Zahl der Leerflüge als
+Erfolg behaupten. Die passiven Welten sind in sämtlichen
+genannten Wirtschaftskennzahlen unverändert; das beweist
+nicht zwingend vollständige Zustands-Hashidentität, da die
+Regelversion 14→15 im Speicherzustand selbst abweicht.
+
+**[PROJEKTLEITUNGSENTSCHEIDUNGSEMPFEHLUNG]**
+Trotz sauberem Defektfix den PR **vorerst Draft / nicht mergen**
+lassen. Der Nutzen bezüglich Nichtzahlung und weniger Verlusten
+ist real, doch die geringere Warenversorgung und weniger
+Händlerverkäufe widersprechen einer uneingeschränkt positiven
+Wirtschaftsbewertung. Eine breitere Fahrtkostenregel benötigt
+zuerst **echte atomare Vorfinanzierung**; eine tragfähige
+Gesamtwirtschaft zusätzlich zahlungsfähige Endnachfrage.
+Kein künstliches Nachbalancieren von Referenzwerten.
 Reale iPad-Safari-/NAS-Abnahme ist weiterhin nicht erfolgt.
 
 ## 4. Folgeschritt innerhalb der verbindlichen Phase B

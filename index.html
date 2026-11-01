@@ -1611,20 +1611,42 @@ function frachtBereit(s,r,id) {
   c.status='fahrt';
   pruefen(s);return true;
 }
-function abbrechenProduktion(s,id) {
+function abbrechenProduktion(s,id,r=m_data_rules.RULES,force=false,verlorenesSchiff=null) {
   const c=s.vertrag?.eintraege[id];
   if(!c||!c.produktion||!['foerderung','roh-wartet','produktion','bereit'].includes(c.status))return false;
-  const p=c.produktion,miner=s.ships[p.miner],trader=s.ships[c.schiff];
-  if(p.wip!==0 || (miner && miner.arbeit>0))return false;
-  if(p.rohLager){s.stations[c.quelle].lager.eis+=p.rohLager;p.rohLager=0;}
-  if(p.nahrungLager){s.stations[c.quelle].lager.nahrung+=p.nahrungLager;p.nahrungLager=0;}
+  const p=c.produktion,miner=s.ships[p.miner];
+  if((p.wip!==0 || (miner && miner.arbeit>0)) && !force)return false;
+  if(miner && miner.arbeit>0)throw Error('B-K9f unbezahlte Minerarbeit bei Abbruch');
+  // Bei Schiffsverlust darf unfertiges, bereits bezahltes WIP nicht zu
+  // einer späteren ungebuchten Lieferung werden: Rezeptauftrag stilllegen,
+  // bereits verbrauchte Zutaten bleiben als echte Produktionskosten verbraucht.
+  if(force && p.wip){
+    const linie=s.stations[c.quelle].linien[p.linie];
+    if(linie && linie.rest>0)linie.rest=0;
+    p.wip=0;
+  }
+  // Physische Vertragsware ist endlich. Rückführung nur bis zum echten
+  // Stationslagerlimit, zusätzliche verlorene Restbestände sind reale
+  // Warensenken – keine erfundenen Verkäufe oder ISK.
+  for(const [ware,feld] of [['eis','rohLager'],['nahrung','nahrungLager']]){
+    const n=p[feld];if(n<=0)continue;
+    const st=s.stations[c.quelle];
+    const kap=m_core_handel.obergrenze(s,r,c.quelle,ware);
+    const rueck=Math.min(n,Math.max(0,kap-(st.lager[ware]||0)));
+    st.lager[ware]=(st.lager[ware]||0)+rueck;
+    s.ledger[ware].consumed+=n-rueck;
+    p[feld]=0;
+  }
   s.owners[c.kaeufer].cash+=c.escrow;
-  s.owners[c.verkaeufer].cash+=c.fee+c.lohn+c.huelle+p.frachtBudget;
+  const hullLost=verlorenesSchiff===c.schiff;
+  s.owners[c.verkaeufer].cash+=c.fee+c.lohn+p.frachtBudget+
+    (hullLost?0:c.huelle);
   s.owners[p.fabrikBesitzer].cash+=p.rohBudget+p.fabrikLohn;
   s.owners[p.minerBesitzer].cash+=p.minerBudget;
-  c.escrow=0;c.fee=0;c.lohn=0;c.huelle=0;
+  c.escrow=0;c.fee=0;c.lohn=0;
+  if(!hullLost)c.huelle=0;
   p.frachtBudget=0;p.rohBudget=0;p.fabrikLohn=0;p.minerBudget=0;
-  c.status='storniert';
+  c.status=hullLost?'verloren':'storniert';
   if(miner)miner.auftrag='halten';
   pruefen(s);return true;
 }
@@ -1677,7 +1699,9 @@ function verlust(s,r,sh) {
       // Nach Übergabe ist der einzelne Miner für die Fertigung nicht mehr nötig.
       return true;
     }
-    abbrechenProduktion(s,c.id);return true;
+    const miner=s.ships[c.produktion.miner];
+    if(miner && miner.arbeit>0)m_core_stunde.betriebskosten(s,r,miner.id);
+    abbrechenProduktion(s,c.id,r,true,sh.id);return true;
   }
   // Arbeiten, die seit dem letzten Stundenabschluss anfielen, bezahlen.
   if(sh.arbeit>0)m_core_stunde.betriebskosten(s,r,sh.id);
@@ -1691,6 +1715,10 @@ function stundenAbschluss(s) {
   for(const c of alle(s))if(c.status==='geliefert'&&
       (!s.ships[c.schiff]||s.ships[c.schiff].arbeit===0)) {
     s.owners[c.verkaeufer].cash+=c.lohn;
+    if(c.produktion){
+      s.owners[c.produktion.minerBesitzer].cash+=c.produktion.minerBudget;
+      c.produktion.minerBudget=0;
+    }
     c.lohn=0;c.status='erfuellt';
   }
 }

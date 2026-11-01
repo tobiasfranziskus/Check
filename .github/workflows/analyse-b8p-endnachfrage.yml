@@ -1,0 +1,26 @@
+name: "[ANALYSE] B8p Endnachfrage – Cashtransfer vs. begrenztes hypothetisches ISK"
+on:
+  push:
+    branches: [analyse/b8p-endnachfrage-budget-hypothese-20261101]
+    paths: ['tools/analyse-b8p-endnachfrage.mjs', '.github/workflows/analyse-b8p-endnachfrage.yml', 'index.html']
+  pull_request:
+    paths: ['tools/analyse-b8p-endnachfrage.mjs', '.github/workflows/analyse-b8p-endnachfrage.yml', 'index.html']
+jobs:
+  end-demand:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original Node regressions
+        run: node --test tests/*.test.mjs
+      - name: 8 90-day worlds, deterministic replay, independent ISK/goods audit, Save/Load
+        run: node tools/analyse-b8p-endnachfrage.mjs --out="$RUNNER_TEMP/b8p"
+      - name: Reproducible world evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: b8p-end-demand-pilot
+          path: ${{ runner.temp }}/b8p/b8p-results.json
+          if-no-files-found: error

@@ -8,6 +8,12 @@ const a=b9i.indexOf('const html='),b=b9i.indexOf("test('B9i-1:");
 assert(a>0&&b>a);
 let prelude=b9i.slice(a,b).replace("new URL('../index.html',import.meta.url)",
                                  "new URL('../index.html',baseUrl)");
+// B9j: Ein finanzierter Flug darf nicht durch einen direkten B9i-Storno
+// seine Reise-Lohnreserve verlieren. Abbruch nur nach Ankunft oder Verlust.
+const directCancel="if(!c||!active(c))return false;\n    s.owners[c.kaeufer].cash+=c.escrow;";
+assert.equal(prelude.split(directCancel).length,2);
+prelude=prelude.replace(directCancel,
+ "if(!c||!active(c)||s.fahrten?.[id]?.status==='fahrt')return false;\n    s.owners[c.kaeufer].cash+=c.escrow;");
 const env=new Function('fs','assert','baseUrl',prelude+
   ';return {src,run,kandidatLaden};')(fs,assert,import.meta.url);
 let src=env.src;
@@ -90,8 +96,8 @@ function fahrtKern(){
     if(!m_core_vertrag.pickup(s,r,id)){
       s.owners[sh.owner].cash-=quellKosten;
       s.owners[konto].cash+=quellKosten;
-      m_core_vertrag.cancel(s,id);
       beenden(s,schiff,'abbruch');
+      m_core_vertrag.cancel(s,id);
       return null;
     }
     sh.phase='reise';sh.ziel=kaeufer;sh.ankunft=s.tick+route.zeit;sh.warten=0;
@@ -105,7 +111,13 @@ function fahrtKern(){
     beenden(s,ticket.schiff,'beendet');pruefen(s);
     return true;
   }
-  return {starten,pruefen,arbeitsfreigabe,beenden,abschliessen};
+  function abbrechen(s,id){
+    const f=s.fahrten?.[id],sh=f&&s.ships[f.schiff];
+    if(!f||f.status!=='fahrt'||!sh||sh.phase!=='dock'||sh.arbeit!==0)return false;
+    beenden(s,sh.id,'abbruch');
+    return m_core_vertrag.cancel(s,id);
+  }
+  return {starten,pruefen,arbeitsfreigabe,beenden,abschliessen,abbrechen};
 }
 // Die Finanzierungs-Gates werden nur in dieser Kopie des Original-Cores eingeschaltet.
 patch('function betriebskosten(state, rules) {\n  const w = rules.world;\n  for (const id of ids(state.ships)) {\n    const s = state.ships[id]; const arbeit = s.arbeit; s.arbeit = 0;',
@@ -226,5 +238,22 @@ test('B9j: manipuliertes Budget erkannt, keine Doppelzahlung',()=>{
   dup.owners[dup.fahrten[id].konto].cash++;
   assert.throws(()=>e.fahrt.pruefen(dup));
   assert.equal(e.fahrt.pruefen(s),true);
+  audit(e,s);
+});
+
+test('B9j: freiwilliger Storno waehrend der Fahrt darf keinen ungedeckten Lohn erzeugen',()=>{
+  const {e,s,ship}=setup();
+  const id=e.fahrt.starten(s,e.rules,ship.id,'st_aldera','material',5,'st_cyris');
+  assert(id);
+  const original=e.core.hash(s);
+  assert.equal(e.bridge.cancel(s,id),false);
+  assert.equal(e.fahrt.abbrechen(s,id),false);
+  assert.equal(e.core.hash(s),original);
+  const ticks=Math.ceil((s.fahrten[id].routeZeit+1)/60)*60;
+  e.core.advance(s,ticks,e.rules);
+  assert.equal(e.fahrt.abbrechen(s,id),true);
+  assert.equal(s.vertrag.eintraege[id].status,'storniert');
+  assert.equal(s.owners[s.fahrten[id].konto].cash,0);
+  assert(!e.fahrt.abbrechen(s,id));
   audit(e,s);
 });

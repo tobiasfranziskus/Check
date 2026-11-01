@@ -1,0 +1,27 @@
+name: B-K9l – deterministic 13x90 NPC full-cost gate comparisons
+
+on:
+  pull_request:
+    paths:
+      - tools/bk9l-original-vollkostengate-13x90.mjs
+      - .github/workflows/bk9l-gate-13x90.yml
+  push:
+    branches:
+      - analyse/bk9l-original-disposition-vollkostengate
+
+permissions:
+  contents: read
+
+jobs:
+  bk9l-13x90:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Existing original-v14 Node test suite
+        run: node --test tests/*.test.mjs
+      - name: Three paired NPC cost gates over 13x90 worlds
+        run: node tools/bk9l-original-vollkostengate-13x90.mjs

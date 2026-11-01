@@ -1,0 +1,20 @@
+name: "[ANALYSE] B8o Auftragsbudget – Geld- und Escrow-Invarianten"
+on:
+  push:
+    branches: [analyse/b8o-auftragsbudget-escrow-20261101]
+    paths: ['tools/analyse-b8o-escrow-invarianten.mjs', '.github/workflows/analyse-b8o-escrow.yml', 'index.html']
+  pull_request:
+    paths: ['tools/analyse-b8o-escrow-invarianten.mjs', '.github/workflows/analyse-b8o-escrow.yml', 'index.html']
+jobs:
+  escrow-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original Core Regressionen
+        run: node --test tests/*.test.mjs
+      - name: Contract escrow accounting proof, 13 seeds
+        run: node tools/analyse-b8o-escrow-invarianten.mjs

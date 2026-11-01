@@ -45,7 +45,7 @@ function cases(){
   const l=new ShadowLedger(),one=cost(klass,60),reserve=one+600;
   const st=core.createState(42,rules);
   assert(l.reserve('npc3',klass+':A',reserve,st));
-  assert(!l.reserve('npc3',klass+':A',reserve,st)); // duplicate ID is invalid
+  assert.throws(()=>l.reserve('npc3',klass+':A',reserve,st)); // duplicate ID is invalid
  }
  // Case 1: Two paid merchant hulls from real NPC3 starting cash + one hour miner reserve.
  const l=new ShadowLedger();

@@ -37,27 +37,27 @@ test('B-K4: nahrung aus echtem Lager gegen vorhandene System-ISK - Transfer an S
  console.log('BK4_ECHTER_ENDEINKAUF '+JSON.stringify({preis:p,menge:bedarf,kosten:cost,
   zahlenderFonds:fund,station:sid,minted:s.minted}));
 });
-test('B-K4: ohne Geld bleibt Nahrung Eigentum der Station - Mangel korrekt gezählt',()=>{
+test('B-K4: ohne Fondsgeld bleibt bisheriger Verbrauch offen als unbezahlt bestehen',()=>{
  const s=make();setFund(s,0);
  const p=c.preis(s,sid,ware,r),before=s.stations[sid].lager.nahrung,
   c0=s.ledger.nahrung.consumed,h=s.stats.mangel[sid].nahrung,st=s.owners[sid].cash;
  c.verbrauch(s,r);
  assert.equal(s.owners[fund].cash,0);
  assert.equal(s.owners[sid].cash,st);
- assert.equal(s.stations[sid].lager.nahrung,before);
- assert(s.ledger.nahrung.consumed>=c0,'andere Stationen konsumieren ihre separat bezahlte Ware');
- assert.equal(s.stats.mangel[sid].nahrung,h+1);
+ assert.equal(s.stations[sid].lager.nahrung,before-r.world.stations[sid].verbrauch.nahrung);
+ assert(s.ledger.nahrung.consumed>=c0+r.world.stations[sid].verbrauch.nahrung);
+ assert.equal(s.stats.mangel[sid].nahrung,h,'kein kuenstlicher Mangel allein wegen leerer Kasse');
  assert(p>0);assert(c.audit(s).ok);
 });
-test('B-K4: Teilleistung aus echtem Budget, Rest bleibt physisch vorhanden',()=>{
+test('B-K4: Teilleistung aus echtem Budget zahlt nur zwei von drei verbrauchten Einheiten',()=>{
  const s=make(),p=c.preis(s,sid,ware,r),b=s.stations[sid].lager.nahrung,
   before=s.owners[sid].cash,h=s.stats.mangel[sid].nahrung;
  setFund(s,p*2);
  c.verbrauch(s,r);
- assert.equal(s.stations[sid].lager.nahrung,b-2);
+ assert.equal(s.stations[sid].lager.nahrung,b-3,'volle Legacy-Verbrauchsmenge, aber nur zwei bezahlt');
  assert.equal(s.owners[sid].cash,before+p*2);
  assert.equal(s.owners[fund].cash,0);
- assert.equal(s.stats.mangel[sid].nahrung,h+1);
+ assert.equal(s.stats.mangel[sid].nahrung,h,'kein Mangel allein durch Verbrauchsfonds-Engpass');
  assert(c.audit(s).ok);
 });
 test('B-K4: Medikamente werden bezahlt, Bauteile nicht als Haushaltseinkauf umgedeutet',()=>{

@@ -1304,16 +1304,21 @@ function verbrauch(state, rules) {
     for (const ware of ids(bedarf)) {
       const da = anzahl(st.lager, ware);
       let n = Math.min(da, bedarf[ware]);
-      // B-K4 / Regel 15: zivile Grundgueter werden nur gegen real
-      // vorhandene ISK aus dem regionalen Verbrauchsbudget abgenommen.
-      // Der Systemfonds ist hier vorlaeufig der zahlende Endabnehmer;
-      // kein neuer Haushalt, kein Minting, keine Insolvenzgarantie.
-      // Andere Bedarfe (z.B. industrielle Bauteile) bleiben unveraendert.
+      // B-K4 / Regel 15: reale Endverbraeuche erhalten eine teilweise
+      // gedeckte Geldgegenbuchung aus schon vorhandenen regionalen Fonds.
+      // Bewusst kein zahlungspflichtiges Rationierungsgate: B-K4-A/B
+      // zeigte bei striktem Gate katastrophale Versorgungsblockaden.
+      // Der nicht finanzierte Rest bleibt vorlaeufig Legacy-Verbrauch.
+      // Andere Bedarfe (z.B. Bauteile) bleiben unveraendert.
       if (rules.rulesVersion >= 15 && (ware === 'nahrung' || ware === 'medikamente')) {
         const kasse = state.owners[fondsIn(rules, st.system)];
         const p = preis(state, id, ware, rules);
-        n = p > 0 ? Math.min(n, div(kasse.cash, p)) : 0;
-        const wert = n * p;
+        // Ohne eigenstaendiges Haushaltseinkommen darf die neue
+        // Fondsabrechnung die bisherige Versorgung nicht blockieren.
+        // Nur die finanzierbare Teilmenge wird bezahlt; die restliche
+        // physisch verbrauchte Menge bleibt vorlaeufig UNBEZAHLT.
+        const bezahlt = p > 0 ? Math.min(n, div(kasse.cash, p)) : 0;
+        const wert = bezahlt * p;
         if (wert > 0) {
           kasse.cash -= wert; state.owners[id].cash += wert;
           buche(state, id, 'erloes', wert);

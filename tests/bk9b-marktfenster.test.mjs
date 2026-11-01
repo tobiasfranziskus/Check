@@ -14,12 +14,18 @@ const times=[0,1,2,3,4,5,6,7,10,14];
 function prepare(s){
   const miner=Object.values(s.ships).find(x=>x.klasse==='miner'&&x.owner==='npc3'&&x.ware==='eis');
   const trader=Object.values(s.ships).find(x=>x.klasse==='frachter'&&x.owner==='npc1');
-  assert(miner&&trader);
-  // Dies ist nur die Angebotsmessung des MARKTES: beide Fahrzeuge werden
-  // virtuell einsatzbereit angenommen. Kein ISK, keine neue Ware erzeugt.
-  // Die Originalkassen, Preise, vorhandene Lager, tatsächliche Nachfrage bleiben.
+  // Das ist eine absichtlich OPTIMISTISCHE Marktschranke:
+  // auch nach Hüllenverlust liegen in der Nur-Test-Kopie ideale Schiffe bereit,
+  // damit fehlende Flottenverfügbarkeit die PREIS-Frage nicht überdeckt.
+  // Kein Schiff wird der tatsächlichen Welt hinzugefügt oder dort bezahlt.
   const copy=core.load(core.save(s));
-  for(const id of [miner.id,trader.id]){
+  const basis=core.createState(42,rules);
+  const oldMiner=miner||Object.values(basis.ships).find(x=>x.klasse==='miner'&&x.owner==='npc3'&&x.ware==='eis');
+  const oldTrader=trader||Object.values(basis.ships).find(x=>x.klasse==='frachter'&&x.owner==='npc1');
+  assert(oldMiner&&oldTrader);
+  if(!miner)copy.ships[oldMiner.id]={...oldMiner,ladung:{},arbeit:0};
+  if(!trader)copy.ships[oldTrader.id]={...oldTrader,ladung:{},arbeit:0};
+  for(const id of [oldMiner.id,oldTrader.id]){
     const sh=copy.ships[id];
     for(const [w,n] of Object.entries(sh.ladung)){copy.ledger[w].consumed+=n;}
     sh.ladung={};sh.phase='dock';sh.system='cyris';sh.ziel=null;sh.ankunft=copy.tick;
@@ -27,7 +33,7 @@ function prepare(s){
     sh.arbeit=0;
   }
   assert(core.audit(copy).ok);
-  return {s:copy,miner:miner.id,trader:trader.id};
+  return {s:copy,miner:oldMiner.id,trader:oldTrader.id};
 }
 function evaluate(original,day){
   const {s,miner,trader}=prepare(original);

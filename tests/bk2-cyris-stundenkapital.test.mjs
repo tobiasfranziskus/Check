@@ -49,12 +49,14 @@ function realZeit({seed=42,stunden=24,modus='original',fondsLohn=false,
    }
    // Vollstundenabrechnung aus dem Original-Core. Nicht nach zwei Minenminuten
    // wie in B-K1. Keine eigene frei erfundene Stundenkostenformel.
+   const handelGebuehren=s.stats.konto[M].kosten-h0.kosten;
+   const arbeitsMinuten=miner.arbeit;
+   const minenSoll=Math.floor(core.rules.world.betriebskosten.miner*arbeitsMinuten/stunde);
    core.betriebskosten(s,core.rules);
-   const minenSoll=core.rules.world.betriebskosten.miner*
-       (s.ledger.eis.mined-h0.eis)/stunde; // nur Plausibilitaetswert
-   const originalKosten=s.stats.konto[M].kosten-h0.kosten;
+   const originalKosten=s.stats.konto[M].kosten-h0.kosten-handelGebuehren;
    const fondsPlus=s.owners[F].cash-h0.fonds;
-   assert(originalKosten>=0&&originalKosten<=Math.ceil(minenSoll));
+   assert(originalKosten>=0&&originalKosten<=minenSoll);
+   assert.equal(originalKosten,minenSoll,'voll gedeckte Original-Minerarbeit');
    if(fondsPlus<0)throw Error('Unkontrollierter Fremdfondsabfluss im Test');
    // Jedes Einkommen wird von einem EINDEUTIG belegten, bereits belasteten
    // Zahler abgezogen; Null-ISHK, Null-Geschenke, Null-Mint.

@@ -1,0 +1,22 @@
+name: B-K9j – Pre-existing ice original-market 13x14d analysis
+
+on:
+  pull_request:
+    paths:
+      - tools/bk9j-vorhandenes-eis-originalmarkt-14d.mjs
+      - .github/workflows/bk9j-eis-marktfenster.yml
+
+permissions:
+  contents: read
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify existing mined ice against real cash, source and destination spot over 13 x 14 days
+        run: node tools/bk9j-vorhandenes-eis-originalmarkt-14d.mjs

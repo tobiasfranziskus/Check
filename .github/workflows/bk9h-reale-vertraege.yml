@@ -1,0 +1,22 @@
+name: B-K9h – 13x90 real market contract scout
+
+on:
+  pull_request:
+    paths:
+      - tools/bk9h-reale-vertragsfenster-13x90.mjs
+      - .github/workflows/bk9h-reale-vertraege.yml
+
+permissions:
+  contents: read
+
+jobs:
+  bk9h-13x90:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 13 × 90 Tage paired original-core cash, cargo, saved contract audit
+        run: node tools/bk9h-reale-vertragsfenster-13x90.mjs

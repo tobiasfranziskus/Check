@@ -89,6 +89,13 @@ test('B-K9f: genau 26 neue Eis und 13 neue Nahrung bleiben im selben originalen 
    }
    if(c.status==='bereit'){readyStage=i+1;break;}
  }
+ if(!rawStage) console.log('BK9F_ROH_GATE_DEBUG '+JSON.stringify({
+   status:c.status,tick:s.tick,minerCargo:miner.ladung,
+   minerWork:miner.arbeit,minerMoney:s.owners.npc3.cash,
+   iceMined:s.ledger.eis.mined-start.mined,iceStation:s.stations.st_cyris.lager.eis,
+   icePrice:core.preis(s,'st_cyris','eis',R),
+   reservedRawCash:p.rohBudget,reservedMinerCash:p.minerBudget,
+   sourceCash:s.owners.st_cyris.cash,productLine:s.stations.st_cyris.linien[p.linie]}));
  assert(rawStage,'echte originale Eisproduktion muss starten');
  assert(readyStage,'echte originale Rezeptproduktion muss fertig werden');
  assert.equal(p.fertig,13);

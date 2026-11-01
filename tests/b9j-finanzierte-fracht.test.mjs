@@ -303,3 +303,29 @@ test('B9j: nach Ausbuchung der Zielkasse bleibt vereinbarter Treuhandverkauf zah
   assert.equal(s.vertrag.eintraege[id].status,'erfuellt');
   audit(e,s);
 });
+
+test('B9j: 13 Seeds mit echter finanziert gefahrener Lieferung und Geld-/Save-Audit',()=>{
+  const seeds=[1,2,3,7,11,13,42,73,101,1234,4444,65535,98765];
+  for(const seed of seeds){
+    const e=run(),s=env.kandidatLaden(e,e.core.save(e.core.createState(seed,e.rules)));
+    const ship=Object.values(s.ships).find(x=>x.owner==='house'&&x.klasse==='frachter');
+    assert(ship,'Seed '+seed+' hat einen Frachter');
+    ship.system='cyris';ship.phase='dock';ship.auftrag='halten';ship.arbeit=0;
+    const id=e.fahrt.starten(s,e.rules,ship.id,'st_aldera','material',5,'st_cyris');
+    assert(id,'Seed '+seed+' kann Route vorfinanzieren');
+    e.core.advance(s,30,e.rules);
+    const copy=env.kandidatLaden(e,e.core.save(s));
+    const remaining=Math.ceil((s.fahrten[id].routeZeit+1)/60)*60-30;
+    e.core.advance(s,remaining,e.rules);e.core.advance(copy,remaining,e.rules);
+    assert.equal(e.core.hash(s),e.core.hash(copy),'Seed '+seed+' Replay');
+    if(s.ships[ship.id]){
+      assert.equal(s.ships[ship.id].phase,'dock');
+      assert(e.fahrt.abschliessen(s,e.rules,id),'Seed '+seed+' Lieferung');
+      assert(e.fahrt.abschliessen(copy,e.rules,id));
+    }else{
+      assert.equal(s.vertrag.eintraege[id].status,'storniert','Seed '+seed+' Piratenverlust');
+    }
+    assert.equal(e.core.hash(s),e.core.hash(copy),'Seed '+seed+' Abschluss');
+    audit(e,s);
+  }
+});

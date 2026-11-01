@@ -10,8 +10,8 @@ function hook(original,replacement){
 }
 hook("  buche(state, schiff.owner, 'kosten', fee);\n  return true;",
      "  buche(state, schiff.owner, 'kosten', fee);\n  witness.trade(state, schiff, station, ware, menge, kauf, wert, fee);\n  return true;");
-hook("    buche(state, s.owner, 'kosten', n);\n  }\n}\nfunction aussenhandel",
-     "    buche(state, s.owner, 'kosten', n);\n    witness.work(state, s, kosten, n);\n  }\n}\nfunction aussenhandel");
+hook("    const n = Math.min(besitzer.cash, kosten);\n    if (n <= 0) continue;",
+     "    const n = Math.min(besitzer.cash, kosten);\n    witness.work(state, s, kosten, n);\n    if (n <= 0) continue;");
 hook("      st.lager[ware] = da - n; state.ledger[ware].consumed += n;",
      "      st.lager[ware] = da - n; state.ledger[ware].consumed += n;\n      witness.consume(state,id,ware,n);");
 hook("state.ledger[ware].produced += r.aus[ware]; }",
@@ -112,9 +112,9 @@ function audit(core,s){
 }
 const count=(s,owner,klass)=>Object.values(s.ships).filter(x=>x.owner===owner&&x.klasse===klass).length;
 const sum=o=>Object.values(o).reduce((a,b)=>a+b,0);
-function snapshot(core,s,w,day){
-  const shipCost=core.preis(s,'st_aldera','frachter')+
-    core.gebuehr(s,s.rulesVersion&&w? 'st_aldera':'st_aldera',core.preis(s,'st_aldera','frachter')); // original werft/fee
+function snapshot(core,s,w,day,rules){
+  const hullPrice=core.preis(s,'st_aldera','frachter',rules);
+  const shipCost=hullPrice+core.gebuehr(s,rules,'st_aldera',hullPrice); // Originalwerft mit Quellgebühr
   const t=w.transfer;
   const stationCash=Object.values(s.owners).filter(x=>x.kind==='station').reduce((a,x)=>a+x.cash,0);
   const traderCash=s.owners.npc1.cash+s.owners.npc2.cash;
@@ -141,14 +141,14 @@ function simulate(seed,active,days=90,hourly=true){
     assert(miner);
     assert(core.execute(s,{type:'shipMine',owner:'house',schiff:miner.id,ware:'erz'},rules).ok);
   }
-  const points=[0,1,3,5,7,14,30,60,90],timeline=[snapshot(core,s,w,0)];
+  const points=[0,1,3,5,7,14,30,60,90],timeline=[snapshot(core,s,w,0,rules)];
   let audits=0,saves=0;
   for(let day=1;day<=days;day++){
     for(let hour=0;hour<24;hour++){
       core.advance(s,60,rules);
       if(hourly){audit(core,s);audits++;}
     }
-    if(points.includes(day))timeline.push(snapshot(core,s,w,day));
+    if(points.includes(day))timeline.push(snapshot(core,s,w,day,rules));
     if([1,7,14,30,90].includes(day)){
       const copy=core.load(core.save(s));
       assert.equal(core.hash(s),core.hash(copy),'Original-Save-/Load');

@@ -1450,13 +1450,22 @@ function beginnenProduktion(s,r,a) {
   if(line<0 || ship.auftrag!=='halten' || ship.arbeit!==0 || miner.arbeit!==0 ||
       aktivSchiff(s,miner.id)||aktivSchiff(s,ship.id) ||
       s.vertrag.next>=1000000)return null;
+  const rawLimit=q.kosten.quellenwert-q.kosten.fabriklohn;
+  const freightLimit=q.kosten.verkaufswert-q.kosten.zielgebuehr-
+    q.kosten.frachterlohnFaellig-q.kosten.ersatzruecklage;
+  const rawNeeded=q.kosten.rohwert,frNeeded=q.kosten.quellenwert+q.kosten.quellgebuehr;
+  if(rawLimit<rawNeeded||freightLimit<frNeeded||
+     s.owners[a.quelle].cash<rawLimit+q.kosten.fabriklohn||
+     s.owners[ship.owner].cash<freightLimit+q.kosten.zielgebuehr+
+       q.kosten.frachterlohn+q.kosten.ersatzruecklage)
+    return null;
   const p={miner:miner.id,minerBesitzer:miner.owner,fabrikBesitzer:a.quelle,linie:line,
     vorherWip:s.stations[a.quelle].linien[line].rest,
     rohMenge:2*a.menge,rohPreis:q.kosten.rohwert,
-    rohBudget:q.kosten.rohwert,
+    rohBudget:rawLimit,
     minerBudget:q.kosten.rohgebuehr+q.kosten.minerkosten,
     fabrikLohn:q.kosten.fabriklohn,
-    frachtBudget:q.kosten.quellenwert+q.kosten.quellgebuehr,
+    frachtBudget:freightLimit,
     rohLager:0,nahrungLager:0,angefangen:0,fertig:0,wip:0,minerArbeit:0};
   const funds=q.kosten;
   // Eigentümerkassen sind im Quotencheck je Konto und aggregiert gedeckt.
@@ -1506,8 +1515,16 @@ function rohErnten(s,r,sh) {
   // Physisch aus der gemeinsamen Station in dasselbe Vertragsbuch.
   s.stations[c.quelle].lager.eis-=p.rohMenge;
   p.rohLager+=p.rohMenge;
+  s.owners[c.quelle].cash+=p.rohBudget;
+  p.rohBudget=0;
+  p.rohPreis=wert;
+  p.vorherWip=s.stations[c.quelle].linien[p.linie].rest;
   c.status='produktion';sh.auftrag='halten';
   return true;
+}
+function rohNachpruefen(s,r) {
+  for(const c of alle(s))if(c.produktion && c.status==='roh-wartet' && s.ships[c.produktion.miner])
+    rohErnten(s,r,s.ships[c.produktion.miner]);
 }
 function minenLimit(s,sh,n) {
   const c=finden(s,sh.id);
@@ -1650,7 +1667,7 @@ function stundenAbschluss(s) {
     c.lohn=0;c.status='erfuellt';
   }
 }
-return {starten,beginnenProduktion,rohErnten,minenLimit,produktionsLinie,produktionsStart,produktionsFertig,frachtBereit,abbrechenProduktion,liefern,stornieren,verlust,lohnFreigabe,
+return {starten,beginnenProduktion,rohErnten,rohNachpruefen,minenLimit,produktionsLinie,produktionsStart,produktionsFertig,frachtBereit,abbrechenProduktion,liefern,stornieren,verlust,lohnFreigabe,
         stundenAbschluss,aktivSchiff,pruefen,sperrgeld,waren};
 })();
 
@@ -1768,14 +1785,16 @@ function produktion(state, rules) {
       const r = rezepte[linie.rezept];
       const gebunden = state.schema===9
         ? m_core_vertrag.produktionsLinie(state,id,st.linien.indexOf(linie)) : null;
-      if(gebunden && gebunden.status!=='produktion' && linie.rest===0)continue;
+      const altWip=gebunden && gebunden.status==='produktion' &&
+        gebunden.produktion.vorherWip>0;
       if (linie.rest > 0) {
         linie.rest -= 1;
+        if(altWip)gebunden.produktion.vorherWip-=1;
         if (linie.rest === 0) {
           for (const ware of ids(r.aus)) {
             st.lager[ware] = anzahl(st.lager, ware) + r.aus[ware];
             state.ledger[ware].produced += r.aus[ware];
-            if(gebunden && gebunden.status==='produktion'){
+            if(gebunden && gebunden.status==='produktion' && !altWip){
               st.lager[ware]-=r.aus[ware];
               m_core_vertrag.produktionsFertig(state,gebunden,r.aus[ware],rules);
             }
@@ -1796,6 +1815,7 @@ function produktion(state, rules) {
       linie.rest = r.dauer;
     }
   }
+  if(state.schema===9)m_core_vertrag.rohNachpruefen(state,rules);
 }
 return { produktion };
 })();

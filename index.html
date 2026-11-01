@@ -1219,6 +1219,23 @@ function nahrungsangebot(state, rules, angabe) {
   const minermarge = rohwert - rohgebuehr - minerkosten;
   const transportmarge = verkaufswert - quellenwert - quellgebuehr -
     zielgebuehr - frachterlohn - ersatzruecklage;
+  const nettoFrachtMuss = quellenwert + quellgebuehr + frachterlohn + ersatzruecklage;
+  const decktFracht = (p) => {
+    const wert = menge * p;
+    return wert - gebuehr(state, rules, ziel, wert) >= nettoFrachtMuss;
+  };
+  // Der echte aktuelle Zielspotpreis ist kein frei erfundener Endkunde.
+  // Binärsuche nur im gefahrlosen ganzzahligen Prüfintervall.
+  let mindestEndpreis = null, unten = 1, oben = 100000;
+  if (decktFracht(oben)) {
+    while (unten < oben) {
+      const mitte = Math.floor((unten + oben) / 2);
+      if (decktFracht(mitte)) oben = mitte;
+      else unten = mitte + 1;
+    }
+    mindestEndpreis = unten;
+  }
+  const marktEndpreis = preis(state, ziel, 'nahrung', rules);
   const benoetigt = {
     kunde: verkaufswert,
     fabrik: rohwert + fabriklohn,
@@ -1250,6 +1267,7 @@ function nahrungsangebot(state, rules, angabe) {
     kosten: { rohwert, rohgebuehr, minerkosten, fabriklohn, quellenwert, quellgebuehr,
       verkaufswert, zielgebuehr, frachterlohn, huellenpreis, ersatzruecklage },
     margen: { miner: minermarge, fabrik: produktionsmarge, frachter: transportmarge },
+    markt: { aktuellerZielpreis: marktEndpreis, frachtKostendeckendAb: mindestEndpreis },
     zeit: { rohminuten, rezeptminuten: menge * rezept.dauer, flugminuten: weg.zeit },
     // Ein Angebot ist KEINE Reservierung. Vor der wirklichen Ausfuehrung
     // sind Kurse, Kapazitaet, Besitz und alle Kassen atomar erneut zu pruefen.

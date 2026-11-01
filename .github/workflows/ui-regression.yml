@@ -164,3 +164,21 @@ jobs:
           else
             echo 'Krisenverlauf nur im isolierten B-K5-Analysestand.'
           fi
+
+  analyse-bk5-spieler-stopvarianten:
+    # Isoliert die fruehen Sparabfluesse: aktiv minender Spieler stoppt
+    # freiwillig nach Tag 0/1/3/5/7; 2 Seeds mal 6 Faelle je 90 Tage.
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reale 90-Tage-Welt, Spieler beendet Mining an Kontrolltagen
+        run: |
+          if test -f tools/bk5-stopspieler-varianten.mjs; then
+            node tools/bk5-stopspieler-varianten.mjs
+          else
+            echo 'Nur B-K5-Analysezweig.'
+          fi

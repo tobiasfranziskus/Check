@@ -1,0 +1,22 @@
+name: B-K9e – 90d pilot contract and cash audit
+
+on:
+  pull_request:
+    paths:
+      - tools/bk9e-aktiver-vertrag-90d.mjs
+      - .github/workflows/bk9e-aktiver-vertrag.yml
+
+permissions:
+  contents: read
+
+jobs:
+  bk9e-90d:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Ein voll bezahlter v15-Nahrungsauftrag vs. Kontrollwelt, 4 ×90 Tage
+        run: node tools/bk9e-aktiver-vertrag-90d.mjs

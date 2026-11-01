@@ -51,15 +51,16 @@ jobs:
         with:
           name: b5b-startb1
           path: ${{ runner.temp }}/pirat-start
-      - name: Gepinnte v12-Belegarchive für v13/v14-Lademigration bereitstellen
+      - name: Originale v12-/v14-Archive fuer historischen B5b-Vergleich bereitstellen
         run: |
-          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399 cec7f93758e4a499c238738ff50adac4416080d4
-          mkdir -p "$RUNNER_TEMP/pirat-evidence" "$RUNNER_TEMP/pirat-b1"
+          git fetch origin 6855d76bb374dd777a1b7e30ea52c9a6eca36399 cec7f93758e4a499c238738ff50adac4416080d4 b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c
+          mkdir -p "$RUNNER_TEMP/pirat-evidence" "$RUNNER_TEMP/pirat-b1" "$RUNNER_TEMP/v14-original"
           git archive 6855d76bb374dd777a1b7e30ea52c9a6eca36399 | tar -x -C "$RUNNER_TEMP/pirat-evidence"
           git archive cec7f93758e4a499c238738ff50adac4416080d4 | tar -x -C "$RUNNER_TEMP/pirat-b1"
-      - name: Alte Regel 13 gegen neue Sollzuordnung 14 bis Tag 365 mit B1-Spielerbefehlen
+          git archive b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c | tar -x -C "$RUNNER_TEMP/v14-original"
+      - name: Historische Regel 13/14 statt aktiver Regel 15 bis Tag 365
         run: |
-          node tools/b5b-b1-vergleich.mjs --case=${{ matrix.fall }} --evidence="$RUNNER_TEMP/pirat-evidence" --b1="$RUNNER_TEMP/pirat-b1" --starts="$RUNNER_TEMP/pirat-start" --out="$RUNNER_TEMP/b5b-b1-daten"
+          node "$RUNNER_TEMP/v14-original/tools/b5b-b1-vergleich.mjs" --case=${{ matrix.fall }} --evidence="$RUNNER_TEMP/pirat-evidence" --b1="$RUNNER_TEMP/pirat-b1" --starts="$RUNNER_TEMP/pirat-start" --out="$RUNNER_TEMP/b5b-b1-daten"
       - uses: actions/upload-artifact@v4
         with:
           name: b5b-fall-${{ matrix.fall }}

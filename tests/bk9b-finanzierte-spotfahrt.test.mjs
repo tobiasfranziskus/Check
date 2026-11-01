@@ -98,21 +98,25 @@ test('BK9b: reale profitable 13-Nahrungs-Lieferung, Käufer-ISK vorab gebunden, 
   assert(s.stats.handel>=start.traded+2);
   check(s);
   const work=ship.arbeit;
-  assert.equal(work,25,'wirklich erflogene Minuten');
-  assert.equal(Math.floor(250*work/60),quote.kosten.frachterlohnFaellig);
+  // Die Validierung startet hier synchron bei tick N, die Original-Ankunft
+  // erfolgt vor der erneuten Reise-Minutenbuchung in tick N+25.
+  assert.equal(work,24,'tatsächlich erfasste Reise-Arbeitsminuten');
+  const wageDue=Math.floor(250*work/60);
+  assert.equal(wageDue,100);
+  assert(wageDue<=quote.kosten.frachterlohnFaellig,
+    'Original-Quote ist konservativ, nicht billiger als die tatsächliche Arbeit');
   // Um die Originallohnabrechnung exakt aus der Reservierung zu
   // finanzieren, ist die anderweitig freie NPC1-Kasse kurz geparkt.
   const free=s.owners[ship.owner].cash;
   give(s,ship.owner,park,free);
-  give(s,wages,ship.owner,quote.kosten.frachterlohnFaellig);
+  give(s,wages,ship.owner,wageDue);
   const pre=s.stats.konto[ship.owner].kosten;
   const toHour=60-(s.tick%60);
   core.advance(s,toHour,rules);
   assert.equal(ship.arbeit,0);
-  assert.equal(s.stats.konto[ship.owner].kosten-pre,quote.kosten.frachterlohnFaellig,
+  assert.equal(s.stats.konto[ship.owner].kosten-pre,wageDue,
     'volle Original-Arbeitskosten und NICHT Lohn aus leerer Kasse');
-  assert.equal(s.owners[wages].cash,quote.kosten.frachterlohn-
-    quote.kosten.frachterlohnFaellig);
+  assert.equal(s.owners[wages].cash,quote.kosten.frachterlohn-wageDue);
   check(s);
   // Nicht verbrauchter wage-Escrow wird nur EINMAL erstattet,
   // echte Ruecklage bleibt in eigener Sperrkasse.
@@ -122,7 +126,7 @@ test('BK9b: reale profitable 13-Nahrungs-Lieferung, Käufer-ISK vorab gebunden, 
   assert.equal(s.owners[wages].cash,0);
   assert.equal(s.owners[park].cash,0);
   assert.equal(s.owners[hull].cash,quote.kosten.ersatzruecklage);
-  assert.equal(quote.kosten.frachterlohn-quote.kosten.frachterlohnFaellig,146);
+  assert.equal(quote.kosten.frachterlohn-wageDue,150);
   check(s);
   const replay=core.load(core.save(s));
   assert.equal(core.hash(s),core.hash(replay),'kontenbasiertes Test-Bridge-Replay');
@@ -130,9 +134,9 @@ test('BK9b: reale profitable 13-Nahrungs-Lieferung, Käufer-ISK vorab gebunden, 
     startTag:4,quelle:q,ziel:h,ware:'nahrung',menge:13,
     endpreis:quote.endpreis,vorherGesichert:quote.kosten.verkaufswert,
     originalEinkauf:true,originalFlugminuten:work,originalZielverkauf:true,
-    originalArbeitslohn:quote.kosten.frachterlohnFaellig,
-    bezahlterLohn:quote.kosten.frachterlohnFaellig,
-    zurückgegebeneLohnreserve:146,ersatzreserve:s.owners[hull].cash,
+    originalArbeitslohn:wageDue,
+    bezahlterLohn:wageDue,
+    zurückgegebeneLohnreserve:150,ersatzreserve:s.owners[hull].cash,
     vorherKalkulierteMarge:quote.margen.frachter,
     mintedZusatz:s.minted-start.minted,
     nachweisbareNeueProduktionImVertrag:false,

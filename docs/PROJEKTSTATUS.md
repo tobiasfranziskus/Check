@@ -1,5 +1,8 @@
 # Aphros Void – Projektstatus
 
+> **[PRODUKT/DRAFT · 01.11.2026 · B-K3 PR #87 – Nullkassen-Leerfahrten, NICHT integriert]:** Auf dem weiterhin unveränderten [MAIN] `b4e604d` / v0.12.5 / Regel14 / Schema8 liegt ein **separater produktiver Draft v0.12.6 / Regel15 / Schema8** vor. Nur **zufällig automatisch gewählte Leerflüge bei 0 ISK Eigentümerkasse** bleiben ab Regel15 im Dock; normale Waren- und beladene Fahrten sowie manuelle Reisen bleiben unverändert. Es entstehen keine ISK oder Waren. Schema8 bleibt, vorhandene Regel14-Spielstände werden datenunverändert nach Regel15 migriert. **[NEGATIV VERWORFEN]** Ein breiteres Vollkosten-Gate steigerte im Seed42-Spielerfall die ungedeckte NPC1-Arbeit 31.695→37.020 ISK; deshalb ausdrücklich **nicht Produktbestandteil** ([CI #41323160939](https://github.com/tobiasfranziskus/Check/actions/runs/41323160939)). Die finale engere Version besitzt technische Nullkassen-/Reproduzierbarkeits-/Save-Prüfungen; **[OFFEN]** deren neuer 13×90d-Regel14/15-Gesamtvergleich ist für eine Integrationsentscheidung maßgeblich. Beide historische v14-Referenzpfade laufen unverändert aus gepinnter Originalquelle. [B-K3-Testbericht](TEST_BK3_NULLKASSE_LEERFAHRT.md), [Draft PR #87](https://github.com/tobiasfranziskus/Check/pull/87). **Kein Merge, keine Freigabe des Geldmodell-B-Endkundenbudgets.**
+
+
 ## [ANALYSE] B8o/B8p – bezahlte Aufträge und Endnachfrage · 01.11.2026
 
 **[MAIN]** Weiterhin `0d473e6`, v0.12.5/Regel14/Schema8 ohne Produktcodeänderung. Dokumentations-Draft #78 ist noch **nicht integriert**; dieser Abschnitt bezieht sich auf den vorgeschlagenen Docs-Stand.

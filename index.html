@@ -1049,7 +1049,10 @@ function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt =
       && (freigestellt || (fracht + menge <= rules.economy.cargo
         && anzahl(st.lager, ware) - menge >= reserve(rules, station, ware)))
     : anzahl(schiff.ladung, ware) >= menge && kasse.cash >= wert
-      && anzahl(st.lager, ware) + menge <= obergrenze(state, rules, station, ware);
+      && (raw
+        ? (c.produktion.rohLager===0 && menge===c.produktion.rohMenge &&
+           menge<=rules.economy.cargo)
+        : anzahl(st.lager, ware) + menge <= obergrenze(state, rules, station, ware));
   if (!reicht) return false;
   const d = kauf ? menge : -menge;
   st.lager[ware] -= d;

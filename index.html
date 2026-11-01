@@ -1342,7 +1342,7 @@ function pruefen(s) {
       !zahl(s.vertrag.next) || s.vertrag.next<1 ||
       !s.vertrag.eintraege || typeof s.vertrag.eintraege!=='object' ||
       Array.isArray(s.vertrag.eintraege)) throw Error('B-K9c Vertragsbuch ungültig');
-  let max=0;const schiffe=new Set(), produktionslinien=new Set();
+  let max=0;const schiffe=new Set(), produktionslinien=new Set(), docks={};
   for (const [id,c] of Object.entries(s.vertrag.eintraege)) {
     if (!/^v[1-9][0-9]*$/.test(id) || !c || c.id!==id ||
         !['foerderung','roh-wartet','produktion','bereit','fahrt','wartet','geliefert','erfuellt','storniert','verloren'].includes(c.status) ||
@@ -1372,6 +1372,13 @@ function pruefen(s) {
           (!s.ships[p.miner]||s.ships[p.miner].owner!==p.minerBesitzer)))
         throw Error('B-K9f Produktionscharge ungültig');
       const lineKey=c.quelle+'/'+p.linie;
+      if(['foerderung','roh-wartet','produktion','bereit'].includes(c.status)){
+        docks[c.quelle]=(docks[c.quelle]||0)+1;
+        const maxDocks=1+(s.stations[c.quelle].module.dock||0);
+        if(docks[c.quelle]>maxDocks || p.rohMenge>m_data_rules.RULES.economy.cargo ||
+           p.rohLager>p.rohMenge || p.nahrungLager>c.menge)
+          throw Error('B-K9g Dock-/Warenkapazität überschritten');
+      }
       if(['foerderung','roh-wartet','produktion'].includes(c.status)){
         if(produktionslinien.has(lineKey))
           throw Error('B-K9f eine Fabriklinie doppelt vertraglich gebunden');
@@ -1459,7 +1466,11 @@ function beginnenProduktion(s,r,a) {
   if(!q.ok)return null;
   const miner=s.ships[a.miner],ship=s.ships[a.frachter];
   const line=s.stations[a.quelle].linien.findIndex(x=>x.rezept==='r_nahrung');
-  if(line<0 || ship.auftrag!=='halten' || ship.arbeit!==0 || miner.arbeit!==0 ||
+  const existingDocks=alle(s).filter(c=>c.produktion && c.quelle===a.quelle &&
+    ['foerderung','roh-wartet','produktion','bereit'].includes(c.status)).length;
+  const maxDocks=1+(s.stations[a.quelle].module.dock||0);
+  if(line<0 || existingDocks>=maxDocks ||
+      ship.auftrag!=='halten' || ship.arbeit!==0 || miner.arbeit!==0 ||
       produktionsLinie(s,a.quelle,line) || aktivSchiff(s,miner.id)||aktivSchiff(s,ship.id) ||
       s.vertrag.next>=1000000)return null;
   const rawLimit=q.kosten.quellenwert-q.kosten.fabriklohn;
@@ -1651,6 +1662,39 @@ function abbrechenProduktion(s,id,r=m_data_rules.RULES,force=false,verlorenesSch
   pruefen(s);return true;
 }
 
+
+function werftBudget(s,owner) {
+  if(s.schema!==9||s.rulesVersion!==15)return 0;
+  return alle(s).filter(c=>c.verkaeufer===owner &&
+    ['erfuellt','verloren'].includes(c.status))
+    .reduce((sum,c)=>sum+c.huelle,0);
+}
+function werftEinloesen(s,owner,n) {
+  if(s.schema!==9||s.rulesVersion!==15||!zahl(n)||n>werftBudget(s,owner))
+    return null;
+  const entnahmen=[];
+  let rest=n;
+  for(const c of alle(s)){
+    if(rest===0)break;
+    if(c.verkaeufer!==owner||!['erfuellt','verloren'].includes(c.status))continue;
+    const teil=Math.min(rest,c.huelle);
+    if(teil){c.huelle-=teil;entnahmen.push({id:c.id,teil});rest-=teil;}
+  }
+  if(rest!==0)throw Error('B-K9g Werftfonds intern unterdeckt');
+  s.owners[owner].cash+=n;
+  return entnahmen;
+}
+function werftZurueck(s,owner,entnahmen) {
+  if(!Array.isArray(entnahmen))return false;
+  for(const {id,teil} of entnahmen){
+    const c=s.vertrag.eintraege[id];
+    if(!c||c.verkaeufer!==owner||!zahl(teil))
+      throw Error('B-K9g Werft-Rollback ungültig');
+    c.huelle+=teil;s.owners[owner].cash-=teil;
+  }
+  return true;
+}
+
 function lohnFreigabe(s,sh,n) {
   const c=finden(s,sh.id);if(!c)return;
   if(c.produktion && c.produktion.miner===sh.id &&
@@ -1723,7 +1767,7 @@ function stundenAbschluss(s) {
   }
 }
 return {starten,beginnenProduktion,rohErnten,rohNachpruefen,minenLimit,produktionsLinie,produktionsStart,produktionsFertig,frachtBereit,abbrechenProduktion,liefern,stornieren,verlust,lohnFreigabe,
-        stundenAbschluss,aktivSchiff,pruefen,sperrgeld,waren};
+        stundenAbschluss,aktivSchiff,pruefen,sperrgeld,waren,werftBudget,werftEinloesen,werftZurueck};
 })();
 
 const m_core_entscheidung = (() => {
@@ -2243,13 +2287,22 @@ function ersatzkauf(state, rules) {
       if (anzahl(state.stations[werft].lager, x.klasse) < 1) continue;
       const p = preis(state, werft, x.klasse, rules);
       const bedarf = p + gebuehr(state, rules, werft, p);
-      if (leer) zuschuss(state, rules, owner, bedarf);
-      if (state.owners[owner].cash < bedarf + (leer ? 0 : w.ersatzRuecklage)) continue;
+      // Regel15: vorfinanzierte originale Vertragshüllenrücklage statt
+      // pauschaler "leer"-Rettung. Alte Regel14 bleibt exakt unverändert.
+      if (leer && state.schema!==9) zuschuss(state, rules, owner, bedarf);
+      const minimum=bedarf+(leer?0:w.ersatzRuecklage);
+      const fehlen=Math.max(0,minimum-state.owners[owner].cash);
+      if(state.schema===9 &&
+        state.owners[owner].cash+m_core_vertrag.werftBudget(state,owner)<minimum)continue;
+      if(state.schema!==9 && state.owners[owner].cash<minimum)continue;
+      const entnahmen=state.schema===9
+        ? m_core_vertrag.werftEinloesen(state,owner,fehlen):[];
       const von = state.stations[werft].system;
       const r = route(w, von, x.heimat);
       const s = neuesSchiff(state, { owner, klasse: x.klasse, system: von, heimat: x.heimat, ware: x.ware, auftrag: x.auftrag,
         ...(state.rulesVersion >= 14 ? { sollplatz: x.platz } : {}) });
       if (!handel(state, rules, s, werft, x.klasse, 1, true)) {
+        if(state.schema===9)m_core_vertrag.werftZurueck(state,owner,entnahmen);
         delete state.ships[s.id];
         delete state.stats.verkaeufe[s.id];
         continue;

@@ -31,7 +31,7 @@ Zwei 90-Tage-Welten für **Seed 42 und Seed 7**, jeweils vollständig determinis
 | Original-Hash (risk-only) | `73785d4c405ba480` | – | `087efc37c2d74cee` | – |
 | Gegenversuch-Hash (parked) | – | `fe10455c347e9602` | – | `aa8f9255a91c705f` |
 
-*Die Tabelle beschreibt den im Chat tatsächlich ausgeführten direkten Core-Gegenversuch. PR-CI wird erst nach Abschluss gesondert belegt.*
+**[TEST/CI bestätigt am 01.11.2026]** [GitHub-Prüflauf #41285007103](https://github.com/tobiasfranziskus/Check/actions/runs/41285007103) auf dem unveränderten ausführbaren Runner sowie [Push-CI #41284955030](https://github.com/tobiasfranziskus/Check/actions/runs/41284955030) sind beide erfolgreich. **67/67 bestehende Node-Tests bestanden; 4 × 90 Spieltage, 8.640 stündliche unabhängige Geld-/Warenaudits und gepaarte deterministische Replays, 32 Save/Load-Roundtrips.** Historische E2a-Hashes auf beiden Krisenseeds sowie B8l-Gegenversuch-Hashes und echte Frachterkäufe/Arbeitsentgelte exakt reproduziert. Ein Artefakt mit detaillierten JSON-Ergebnissen wurde hochgeladen. Keine iPad-/NAS-Abnahme.
 
 **Interpretation:** Das unbezahlte Arbeitsvolumen wird um über 99 % reduziert, **ohne den Konzern wirtschaftlich zu retten**. Es werden keine zusätzlichen bezahlten Warenverkäufe erzielt. Diese Isolierung spricht für ein späteres konsequentes **Finanzierungs-Gate vor jeder Leerfahrt**, nicht für einen Gratisflug oder eine pauschale Zwangseskorte. Die weitere Wirtschaftsreparatur benötigt getrennte Analyse der Nachfrage-/Kaufkraft- und Miner-Einnahmekette.
 

@@ -116,7 +116,7 @@ function run(seed,mode){
     for(const [k,n] of Object.entries(l)){assert(Number.isSafeInteger(n)&&n>=0);goods[k]=(goods[k]||0)+n;}
    for(const [k,l] of Object.entries(s.ledger))
     assert.equal(goods[k]||0,l.initial+l.mined+l.produced+l.imported-l.consumed-l.exported,'independent goods');
-   assert(aa.payments<=LIFETIME_CAP&&aa.dayUsed[Math.floor((tick-1)/1440)]<=DAILY_CAP,'budget capped');
+   assert(aa.payments<=LIFETIME_CAP&&(aa.dayUsed[Math.floor((tick-1)/1440)]||0)<=DAILY_CAP,'budget capped');
    audits++;
   }
   if(tick%1440===0){

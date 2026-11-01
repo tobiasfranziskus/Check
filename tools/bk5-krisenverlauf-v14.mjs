@@ -37,7 +37,7 @@ function capture(s,c,label,event){
   shortageFood:shortage.nahrung||0,shortageMed:shortage.medikamente||0,
   unpaid:{...event.unpaid},paid:{...event.paid},
   consumedFood:s.ledger.nahrung.consumed,consumedMedicine:s.ledger.medikamente.consumed,
-  shipSales:sum(Object.values(s.stats.verkaeufe)),
+  tradeEvents:s.stats.handel,
   minted:s.minted,burned:s.burned,hash:c.hash(s)};
 }
 for(const seed of seeds){

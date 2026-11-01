@@ -18,7 +18,7 @@ function engine(source,watch){
  const code=source.replace(needle,
   "if(['npc1','npc2','npc3'].includes(s.owner)) watch.unpaid(s.owner,Math.max(0,kosten-besitzer.cash));\n    "+needle)
   .replace(trade,"buche(state, schiff.owner, 'kosten', fee);\n  watch.trade(schiff.owner,schiff.klasse,kauf);\n  return true;")
-  .replace(paid,"const wert = n * p;\n        if (wert > 0) watch.buy(id,ware,bezahlt,wert);\n        if (wert > 0) {");
+  .replace(paid,"const wert = bezahlt * p;\n        if (wert > 0) watch.buy(id,ware,bezahlt,wert);\n        if (wert > 0) {");
  return new Function('watch',code+';return {core:m_core_index,rules:m_data_rules.RULES};')(watch);
 }
 const seeds=[7,11,1,2,65535,42,1234,98765,3,99,2024,2025,314159];

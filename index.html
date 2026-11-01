@@ -1236,10 +1236,6 @@ function abflug(state, rules, s, station, ziel, ware, menge) {
 }
 function entscheidung(state, rules) {
   const w = rules.world;
-  // Bei Regel 15 reserviert die Disposition die kalkulierten Leerfahrtkosten
-  // innerhalb *dieses* Entscheidungsticks fuer andere Frachter derselben Kasse.
-  // Kein persistentes Escrow: spaetere fremde Ausgaben bleiben moeglich.
-  const geplanteLeerfahrtkosten = new Map();
   for (const id of ids(state.ships)) {
     const s = state.ships[id];
     if (s.klasse !== 'frachter' || s.auftrag !== 'handeln' || s.phase !== 'dock' || s.ankunft > state.tick) continue;
@@ -1257,24 +1253,13 @@ function entscheidung(state, rules) {
     if (paar) abflug(state, rules, s, station, paar.ziel, paar.ware, paar.menge);
     else if (s.warten >= 2) {
       const andere = ids(w.stations).filter((x) => x !== station && route(w, s.system, w.stations[x].system));
-      // Nur automatisch gewaehlte Leerpositionierungen. Warenfahrten,
-      // beladene Frachter und manuelle Spielerbefehle bleiben unveraendert.
-      // Ein voller Fahrtstundenpuffer ist absichtlich konservativer als
-      // die minutengenau spaeter faellige Original-Abrechnung.
-      const moeglich = rules.rulesVersion >= 15 ? andere.filter((ziel) => {
-        const r = route(w, s.system, w.stations[ziel].system);
-        const kosten = Math.ceil(r.zeit / rules.economy.stunde) * w.betriebskosten[s.klasse];
-        return state.owners[s.owner].cash - (geplanteLeerfahrtkosten.get(s.owner) || 0) >= kosten;
-      }) : andere;
-      if (moeglich.length > 0) {
-        const ziel = moeglich[rngInt(state, moeglich.length)];
-        if (rules.rulesVersion >= 15) {
-          const r = route(w, s.system, w.stations[ziel].system);
-          const kosten = Math.ceil(r.zeit / rules.economy.stunde) * w.betriebskosten[s.klasse];
-          geplanteLeerfahrtkosten.set(s.owner, (geplanteLeerfahrtkosten.get(s.owner) || 0) + kosten);
-        }
-        abflug(state, rules, s, station, ziel, null, 0);
-      } else s.ankunft = state.tick + w.warteLeer;
+      // Regel 15: Kein zufaelliger Leerflug aus der Nullkasse.
+      // Bei positiver Kasse bleiben die bisherigen Routen/Abfluege unveraendert:
+      // Ein Fahrkosten-Gate ohne atomare Reserve hatte in der aktiven
+      // Spielerkrise ungedeckte NPC-Arbeit erhoeht (BK3-A/B-Gegenprobe).
+      if (andere.length > 0 && (rules.rulesVersion < 15 || state.owners[s.owner].cash > 0))
+        abflug(state, rules, s, station, andere[rngInt(state, andere.length)], null, 0);
+      else s.ankunft = state.tick + w.warteLeer;
     } else { s.warten += 1; s.ankunft = state.tick + w.warteLeer; }
   }
 }
@@ -1911,8 +1896,8 @@ const RULE_MIGRATIONS = {
   // vorhandene Schiffe, Kassen, angefangene Fluege und Arbeit bleiben unveraendert.
   12: (s) => ({ ...s, rulesVersion: 13 }),
   13: migrationRegel13,
-  // 14→15: Automatische Leerpositionierung braucht vor Abflug eine
-  // gedeckte Stundenkostenprognose; keine neuen persistenten Felder.
+  // 14→15: Automatische Zufalls-Leerfluege beginnen nicht mehr bei 0 ISK.
+  // Keine neuen persistenten Felder.
   14: (s) => ({ ...s, rulesVersion: 15 }),
 };
 function migrate(state, from, to, table = MIGRATIONS) {

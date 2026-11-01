@@ -1278,7 +1278,18 @@ function nahrungsangebot(state, rules, angabe) {
     reserviert: false,
   };
 }
-return { nahrungsangebot };
+function nahrungsmarktangebot(state, rules, angabe) {
+  if (!angabe || typeof angabe !== 'object' || Array.isArray(angabe) ||
+      !rules.world.stations[angabe.ziel])
+    return { ok:false, fehler:['ANGABE'] };
+  // Keine willkuerliche frei erfundene NPC-Zahlungsbereitschaft:
+  // Ein Marktauftrag ist exakt zum Original-Zielspot zu kalkulieren.
+  const endpreis=preis(state,angabe.ziel,'nahrung',rules);
+  if (endpreis<=0) return {ok:false,fehler:['MARKT']};
+  const quote=nahrungsangebot(state,rules,{...angabe,endpreis});
+  return {...quote,marktvertrag:true};
+}
+return { nahrungsangebot, nahrungsmarktangebot };
 })();
 
 const m_core_entscheidung = (() => {
@@ -2096,10 +2107,10 @@ const { route } = m_core_route;
 const { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag } = m_core_stunde;
 const { reise } = m_core_ankunft;
 const { kampf } = m_core_kampf;
-const { nahrungsangebot } = m_core_auftragskalkulation;
+const { nahrungsangebot, nahrungsmarktangebot } = m_core_auftragskalkulation;
 const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
-return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, nahrungsangebot, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, createState, submit, execute, step, advance, load, preis, faktor };
+return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, nahrungsangebot, nahrungsmarktangebot, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, createState, submit, execute, step, advance, load, preis, faktor };
 })();
 
 const m_data_oberflaeche = (() => {

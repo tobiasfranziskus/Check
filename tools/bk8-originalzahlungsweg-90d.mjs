@@ -19,6 +19,8 @@ hook("state.ledger[ware].produced += r.aus[ware]; }",
 hook("  delete state.ships[s.id];\n  delete state.stats.verkaeufe[s.id];\n  zaehle(state.stats.verluste",
      "  witness.lost(state,s);\n  delete state.ships[s.id];\n  delete state.stats.verkaeufe[s.id];\n  zaehle(state.stats.verluste");
 
+hook("    if (s.phase === 'reise') { s.arbeit += 1; continue; }",
+     "    if (s.phase === 'reise') { s.arbeit += 1; witness.flightMinute(state,s); continue; }");
 function tracker(){
   const w={
     transfer:{rawToPlayer:0,rawToNpcMiner:0,shipSales:0,shipPurchases:0,
@@ -26,11 +28,13 @@ function tracker(){
       allTrades:0,freightCargoSales:0,freightCargoBought:0,unpaidWork:0},
     produced:{},consumed:{},losses:[],deliveries:[],buyLots:{},byShipLabor:{},
     paidCivilConsumption:0,
-    shipSnapshot:{},events:0,
+    shipSnapshot:{},events:0,flightMinutes:{},unpaidByOwner:{},
+    flightMinute(s,sh){w.flightMinutes[sh.id]=(w.flightMinutes[sh.id]||0)+1;},
     work(s,ship,due,paid){
       const t=w.transfer;
       w.byShipLabor[ship.id]=(w.byShipLabor[ship.id]||0)+paid;
-      if(due>paid)t.unpaidWork+=due-paid;
+      if(due>paid){t.unpaidWork+=due-paid;
+        w.unpaidByOwner[ship.owner]=(w.unpaidByOwner[ship.owner]||0)+due-paid;}
       if(ship.klasse==='frachter'&&['npc1','npc2'].includes(ship.owner))t.freightWages+=paid;
       if(ship.klasse==='miner'&&['npc3','house'].includes(ship.owner))t.minerWages+=paid;
     },
@@ -58,7 +62,8 @@ function tracker(){
         t.shipPurchases+=value;t.freightCargoBought+=qty;
         (w.buyLots[ship.id] ||= []).push({
           from:station,ware,qty,originalQty:qty,cost:value,originalCost:value,
-          fee,originalFee:fee,tick:s.tick,workStart:w.byShipLabor[ship.id]||0
+          fee,originalFee:fee,tick:s.tick,workStart:w.byShipLabor[ship.id]||0,
+          flightStart:w.flightMinutes[ship.id]||0
         });
       }else{
         t.shipSales+=value;t.freightCargoSales+=qty;
@@ -72,11 +77,14 @@ function tracker(){
         if(qty===used&&match.qty===0){
           const earned=value-allocatedCost-allocatedFee-fee;
           const worked=(w.byShipLabor[ship.id]||0)-match.workStart;
+          const actualFlightMinutes=(w.flightMinutes[ship.id]||0)-match.flightStart;
+          const accruedFlightWork=Math.floor(250*actualFlightMinutes/60);
           const d={ship:ship.id,owner,from:match.from,to:station,ware,
             qty:used,daysElapsed:(s.tick-match.tick)/1440,
             buy:allocatedCost,sourceFee:allocatedFee,sale:value,destFee:fee,
-            paidTravelWork:worked,
-            freightContributionAfterPaidWork:earned-worked};
+            paidWorkAlreadyBooked:worked,
+            flightMinutes:actualFlightMinutes,flightWorkDue:accruedFlightWork,
+            freightContributionAfterAccruedWork:earned-accruedFlightWork};
           w.deliveries.push(d);
         }
       }
@@ -130,6 +138,7 @@ function snapshot(core,s,w,day,rules){
     civilFoodConsumed:w.consumed.nahrung||0,civilFoodPayments:w.paidCivilConsumption,
     recipeFoodProduced:Object.entries(w.produced).reduce((a,[k,n])=>a+(k.endsWith('/nahrung')?n:0),0),
     freightLosses:w.losses.length,matchedCargoDeliveries:w.deliveries.length,
+    unpaidTraderWork:(w.unpaidByOwner.npc1||0)+(w.unpaidByOwner.npc2||0),
     money:s.initialSupply+s.minted-s.burned,minted:s.minted,burned:s.burned,
     shortages:sum(Object.fromEntries(Object.entries(s.stats.mangel).map(([id,v])=>[id,sum(v)])))};
 }
@@ -162,14 +171,14 @@ function simulate(seed,active,days=90,hourly=true){
   assert(w.deliveries.length>0,'mindestens eine reale bezahlte Frachter-Warenlieferung');
   const result={seed,mode:active?'spieler_mined_erz':'passiv',
     days,audits,saves,hash:core.hash(s),timeline,final:timeline.at(-1),
-    transfers:w.transfer,work:w.byShipLabor,
+    transfers:w.transfer,unpaidByOwner:w.unpaidByOwner,
     totalOriginalFoodProduced:Object.entries(w.produced).filter(([k])=>k.endsWith('/nahrung')).reduce((a,[_,n])=>a+n,0),
     originalCivilConsumption:w.consumed.nahrung||0,
     originalCivilPayments:w.paidCivilConsumption,
     lostMerchantShips:w.losses,matchedDeliveries:w.deliveries.length,
     firstMatchedDeliveries:w.deliveries.slice(0,5),
     lastMatchedDeliveries:w.deliveries.slice(-3),
-    note:'Deckungsbeitrag der voll gematchten Ladung erfasst echte bezahlte Arbeitskosten, nicht Hüllenersatz und Folgefahrt'};
+    note:'Einwegdeckungsbeitrag nach konkret angefallenen Flugminuten, nicht zwingend schon gezahltem Lohn; ohne Hüllenersatz, Rückfahrt, Lager-/Piratenrisiko'};
   return result;
 }
 const rows=[];

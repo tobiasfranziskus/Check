@@ -1209,17 +1209,21 @@ function nahrungsangebot(state, rules, angabe) {
   // Reserviere eine VOLLSTAENDIGE Stundenabrechnung, nicht nur die
   // zum Ankunftstick schon gebuchten Teilminuten.
   const frachterlohn = Math.ceil(weg.zeit / rules.economy.stunde) * rules.world.betriebskosten.frachter;
+  // Gebundene Lohnreserve != wirtschaftlich verbrauchte Arbeit.
+  // Der Original-Core rechnet mit ganzzahligen Minutenkosten ab. Die
+  // Restreserve bleibt gebunden, muss bei Lieferung aber rueckfliessend sein.
+  const frachterlohnFaellig = Math.floor(weg.zeit * rules.world.betriebskosten.frachter / rules.economy.stunde);
   const hPreis = preis(state, rules.world.werft, 'frachter', rules);
   const huellenpreis = hPreis + gebuehr(state, rules, rules.world.werft, hPreis);
   const ersatzruecklage = Math.ceil(huellenpreis / ersatzFahrten);
   if (![rohwert, rohgebuehr, minerkosten, quellenwert, quellgebuehr,
-    verkaufswert, zielgebuehr, frachterlohn, huellenpreis, ersatzruecklage].every(Number.isSafeInteger))
+    verkaufswert, zielgebuehr, frachterlohn, frachterlohnFaellig, huellenpreis, ersatzruecklage].every(Number.isSafeInteger))
     return { ok: false, fehler: ['UEBERLAUF'] };
   const produktionsmarge = quellenwert - rohwert - fabriklohn;
   const minermarge = rohwert - rohgebuehr - minerkosten;
   const transportmarge = verkaufswert - quellenwert - quellgebuehr -
-    zielgebuehr - frachterlohn - ersatzruecklage;
-  const nettoFrachtMuss = quellenwert + quellgebuehr + frachterlohn + ersatzruecklage;
+    zielgebuehr - frachterlohnFaellig - ersatzruecklage;
+  const nettoFrachtMuss = quellenwert + quellgebuehr + frachterlohnFaellig + ersatzruecklage;
   const decktFracht = (p) => {
     const wert = menge * p;
     return wert - gebuehr(state, rules, ziel, wert) >= nettoFrachtMuss;
@@ -1265,7 +1269,7 @@ function nahrungsangebot(state, rules, angabe) {
     ok: fehler.length === 0, fehler, quelle, ziel, menge, endpreis,
     konten, benoetigt, haben, gesamtdeckung,
     kosten: { rohwert, rohgebuehr, minerkosten, fabriklohn, quellenwert, quellgebuehr,
-      verkaufswert, zielgebuehr, frachterlohn, huellenpreis, ersatzruecklage },
+      verkaufswert, zielgebuehr, frachterlohn, frachterlohnFaellig, huellenpreis, ersatzruecklage },
     margen: { miner: minermarge, fabrik: produktionsmarge, frachter: transportmarge },
     markt: { aktuellerZielpreis: marktEndpreis, frachtKostendeckendAb: mindestEndpreis },
     zeit: { rohminuten, rezeptminuten: menge * rezept.dauer, flugminuten: weg.zeit },

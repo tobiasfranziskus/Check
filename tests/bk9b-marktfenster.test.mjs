@@ -38,17 +38,17 @@ function prepare(s){
 function evaluate(original,day){
   const {s,miner,trader}=prepare(original);
   const spot={};
-  let offers=0, positive=0, deals=0,best=null;
+  let offers=0, positive=0, deals=0,best=null;const feasible=[];
   for(const quelle of safeSources)for(const ziel of safeTargets){
     const targetSpot=core.preis(s,ziel,'nahrung',rules);
     spot[ziel]={spot:targetSpot,stock:s.stations[ziel].lager.nahrung,cash:s.owners[ziel].cash};
     for(let menge=1;menge<=25;menge++){
       const params={quelle,ziel,miner,frachter:trader,menge,
         endpreis:targetSpot,fabriklohn:Math.max(1,menge*3),ersatzFahrten:20};
-      const offer=core.nahrungsangebot(s,rules,params);
+      const offer=core.nahrungsmarktangebot(s,rules,params);
       offers++;
       if(offer.margen?.frachter>=0)positive++;
-      if(offer.ok)deals++;
+      if(offer.ok){deals++;feasible.push({ziel,menge,preis:offer.endpreis,marge:offer.margen.frachter});}
       if(offer.margen&&(!best||offer.margen.frachter>best.marge))
         best={menge,ziel,preis:targetSpot,marge:offer.margen.frachter,
           kostenSchwelle:offer.markt.frachtKostendeckendAb,
@@ -58,7 +58,7 @@ function evaluate(original,day){
           zahlerCash:s.owners[ziel].cash};
     }
   }
-  return {day,offers,positive,deals,best,spot,sourceFood:s.stations.st_cyris.lager.nahrung};
+  return {day,offers,positive,deals,feasible,best,spot,sourceFood:s.stations.st_cyris.lager.nahrung};
 }
 function run(seed,player){
   const s=core.createState(seed,rules);
@@ -92,9 +92,40 @@ test('BK9b: Produktkalkulation zahlt keinen beliebigen erfundenen Festpreis als 
   const spot=core.preis(s,'st_aldera','nahrung',rules);
   const a={quelle:'st_cyris',ziel:'st_aldera',miner,frachter:trader,menge:3,
     endpreis:spot,fabriklohn:9,ersatzFahrten:20};
-  const q=core.nahrungsangebot(s,rules,a);
+  const q=core.nahrungsmarktangebot(s,rules,a);
   assert(!q.ok);
   assert(q.fehler.includes('FRACHTER_VERLUST'));
+  assert.equal(q.endpreis,spot);
   assert.equal(q.markt.aktuellerZielpreis,spot);
   assert(q.markt.frachtKostendeckendAb>spot);
+});
+
+test('BK9b: reales, tatsächlich finanzierbares Marktfenster am Tag4 Seed7 (ohne erfundene Preise)',()=>{
+  const s=core.createState(7,rules);
+  const m=Object.values(s.ships).find(x=>x.owner==='house'&&x.klasse==='miner');
+  assert(core.execute(s,{type:'shipMine',owner:'house',schiff:m.id,ware:'erz'},rules).ok);
+  core.advance(s,4*1440,rules);
+  const x=prepare(s),a={quelle:'st_cyris',ziel:'st_aldera',miner:x.miner,
+    frachter:x.trader,menge:13,fabriklohn:39,ersatzFahrten:20};
+  const hash=core.hash(x.s),q=core.nahrungsmarktangebot(x.s,rules,a);
+  assert.equal(q.ok,true,JSON.stringify(q.fehler));
+  assert.equal(q.endpreis,53);
+  assert.equal(q.margen.frachter,73);
+  assert.equal(q.kosten.frachterlohn,250,'vorab wirklich gebundene Stundenreserve');
+  assert.equal(q.kosten.frachterlohnFaellig,104,'tatsächlich voraussichtlich angefallener Stundenlohn');
+  assert.equal(q.reserviert,false,'noch keine Bestellung gespeichert');
+  assert.equal(core.hash(x.s),hash,'marktgebundener Quote darf niemals reservieren');
+  // Der Endkunde kann noch immer vor echter Reservierung insolvent werden:
+  const funds=x.s.owners.st_aldera.cash;
+  x.s.owners.st_aldera.cash=0;x.s.owners.house.cash+=funds;
+  const refused=core.nahrungsmarktangebot(x.s,rules,a);
+  assert.equal(refused.ok,false);
+  assert(refused.fehler.includes('KASSE_KUNDE'));
+  console.log('BK9B_REALER_KAUFKANDIDAT '+JSON.stringify({
+    seed:7,day:4,preis:q.endpreis,menge:q.menge,bezahlbar:true,
+    kaufkasse:q.haben.kunde,liquiditaetNachAbfluss:0,
+    marge:q.margen.frachter,fliegenderMinutenlohn:q.kosten.frachterlohnFaellig,
+    lohnreserve:q.kosten.frachterlohn,
+    keinGeldErzeugt:true,tatsaechlicheLieferungNochNichtGetestet:true
+  }));
 });

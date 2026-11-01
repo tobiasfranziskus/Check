@@ -222,3 +222,36 @@ test('B-K9f: Frachterverlust während laufender Rezeptfertigung zahlt Minerlohn,
  assert(!s.ships[freighter.id]);
  check(s);saveHash(s);
 });
+
+
+test('B-K9f: Save/Load mitten im Erzabbau und mitten in Produktions-WIP läuft deterministisch bis zur Lieferung',()=>{
+ const {s,a}=fixture();
+ const id=core.vertragProduktion(s,a,R);assert(id);
+ for(let i=0;i<15;i++)core.step(s,R);
+ const mineClone=core.load(core.save(s),undefined,R);
+ assert.equal(core.hash(s),core.hash(mineClone));
+ for(let i=0;i<40;i++){core.step(s,R);core.step(mineClone,R);}
+ check(s);check(mineClone);
+ assert.equal(core.hash(s),core.hash(mineClone));
+ assert.equal(s.vertrag.eintraege[id].status,'produktion');
+ const productionClone=core.load(core.save(s),undefined,R);
+ assert.equal(core.hash(s),core.hash(productionClone));
+ for(let i=0;i<75;i++){core.step(s,R);core.step(productionClone,R);}
+ assert.equal(core.hash(s),core.hash(productionClone));
+ assert.equal(s.vertrag.eintraege[id].status,'bereit');
+ assert(core.vertragFracht(s,id,R));
+ assert(core.vertragFracht(mineClone,id,R));
+ assert(core.vertragFracht(productionClone,id,R));
+ // Ab jetzt wieder alle drei Kopien im identischen Originalsimulationstakt.
+ assert.equal(core.hash(s),core.hash(productionClone));
+ // mineClone wurde nur bis tick55 gefahren: vorher bis Tick130 nachführen.
+ for(let i=0;i<75;i++)core.step(mineClone,R);
+ assert.equal(core.hash(s),core.hash(mineClone));
+ for(let i=0;i<60;i++){
+   core.step(s,R);core.step(mineClone,R);core.step(productionClone,R);
+ }
+ assert.equal(core.hash(s),core.hash(mineClone));
+ assert.equal(core.hash(s),core.hash(productionClone));
+ assert.equal(s.vertrag.eintraege[id].status,'erfuellt');
+ check(s);saveHash(s);
+});

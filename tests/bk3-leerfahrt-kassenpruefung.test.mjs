@@ -61,12 +61,12 @@ test('BK3: Regel-14-Kontrolle faehrt mit 0 ISK los (historisches Problem)',()=>{
  assert.equal(s.owners.npc1.cash,0);
  assert(c.audit(s).ok);
 });
-test('BK3: 249 ISK decken keinen konservativen 250-ISK-Leerflugpuffer',()=>{
+test('BK3: positive Restkasse bleibt trotz nicht gesicherter Vollkosten frei disponierbar',()=>{
  const {s,ship:[sh]}=fixture();
  setCash(s,'npc1',249);clearBuyers(s);
  entscheidung(s,r);
- assert.equal(sh.phase,'dock');
- assert.equal(sh.ankunft,r.world.warteLeer);
+ assert.equal(sh.phase,'reise','die problematische Vollkostensperre ist zurueckgenommen');
+ assert.equal(s.owners.npc1.cash,249,'Leerfahrt entnimmt beim Abflug kein Geld');
  assert(c.audit(s).ok);
 });
 test('BK3: ein finanziertes Schiff kann weiterhin automatisch umpositionieren',()=>{
@@ -80,12 +80,12 @@ test('BK3: ein finanziertes Schiff kann weiterhin automatisch umpositionieren',(
  assert(cost<=500);
  assert(c.audit(s).ok);
 });
-test('BK3: eine Kasse mit 250 ISK finanziert keine zwei parallelen Leerpositionierungen',()=>{
+test('BK3: eine positive gemeinsame Kasse ist KEINE atomare Budgetreservierung',()=>{
  const {s,ship}=fixture(42,2);
  setCash(s,'npc1',250);clearBuyers(s);
  entscheidung(s,r);
- assert.equal(ship.filter(x=>x.phase==='reise').length,1);
- assert.equal(ship.filter(x=>x.phase==='dock').length,1);
+ assert.equal(ship.filter(x=>x.phase==='reise').length,2,
+   'die positive Kasse ist nur Freigabekriterium; NICHT als Full-Cost-Escrow deklarieren');
  assert(c.audit(s).ok);
 });
 test('BK3: gleiche Regeln/Seed -> identische Hashes und Geld-/Warenbuchungen im Original-Core',()=>{
@@ -115,4 +115,24 @@ test('BK3: v14 Save migriert ohne Waren- oder Kassenveraenderung nach Regel 15',
  assert(c.audit(next).ok);
  const future={...next,rulesVersion:16};
  assert.throws(()=>c.load(JSON.stringify(future),undefined,r),/neuer/);
+});
+
+test('BK3: zwei NPC-Frachter mit derselben Nullkasse bleiben beide am Dock',()=>{
+ const {s,ship}=fixture(42,2);
+ setCash(s,'npc1',0);clearBuyers(s);
+ entscheidung(s,r);
+ assert(ship.every(x=>x.phase==='dock'));
+ assert(ship.every(x=>x.ankunft===r.world.warteLeer));
+ assert(c.audit(s).ok);
+});
+test('BK3: Nullkassen-Frachter erzeugt im 60-Minuten-Original-Core keine neuen Arbeitskosten',()=>{
+ const {s,ship:[sh]}=fixture();
+ setCash(s,'npc1',0);clearBuyers(s);
+ const kosten=s.stats.konto.npc1.kosten;
+ c.advance(s,60,r);
+ assert.equal(sh.phase,'dock');
+ assert.equal(sh.auftrag,'handeln');
+ assert.equal(s.stats.konto.npc1.kosten,kosten);
+ assert.equal(s.owners.npc1.cash,0);
+ assert(c.audit(s).ok);
 });

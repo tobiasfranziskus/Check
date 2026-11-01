@@ -1,0 +1,42 @@
+# B8k – Finanzierung eines neuen NPC3-Händlers nach Ausfall von NPC1/NPC2
+
+**[ANALYSE/DRAFT · 01.11.2026] Nicht produktiv, kein Merge.**
+Basis ist die unveränderte `index.html` von **main 491f8e2a73ad7ae765ba15c686a25c3a55d638d9**, **v0.12.5 / Regel 14 / Schema 8**; originaler Core-SHA256 `035fe8b486ff2d515ca6379ad682b4b15d89d5d051866e287425ed425e1cbfc9`. Die einzigen Änderungen in diesem PR sind ein isolierter Test-Runner, sein CI-Workflow und dieses Analyseprotokoll. `AGENTS.md` und die **einzige verbindliche [Produkt-Roadmap](ROADMAP.md)** auf main gelten unverändert.
+
+## Frage und Eingriff
+
+Die B8j-Krisen [#70](https://github.com/tobiasfranziskus/Check/pull/70) haben an Tag 14 bei Seeds 42 und 7 keine NPC1-/NPC2-Frachter mehr, aber je **zwei fertige Frachter** in Aldera. Die Besitzerkassen sind erschöpft. Der weiterhin bergbauende NPC3 besitzt dagegen **4.395 / 4.242 ISK** und neun Miner. Test: Kann ein anderer **bestehender** Konzern einen Frachter aus *eigenem* Kapital kaufen und mit echten Original-Core-Handelsbefehlen wiederholt Lieferungen verkaufen?
+
+Einmaliger **analytischer Investitionsentschluss** unmittelbar nach Tag14: exakt einen neuen NPC3-Frachter-Sollplatz `frachter/dravos/halten` ans Ende des bestehenden Sollplans anfügen; anschließend **Original-**`ersatzkauf` mitsamt echtem `handel` und **780 ISK** Kaufpreis/Gebühr. Kein kostenloses Schiff, keine geschenkte Ware, kein neuer NPC-Eigentümer, keine Konten- oder Schemaänderung. Der analytische Dispatcher sendet gültige `shipTrade`/`shipMove`-Core-Befehle für **Dravos → Aldera, Silizium**, wartet auf realen Warenverkauf, verkauft gegebenenfalls eine bezahlbare Restfracht, und tritt eine neue Runde nur bei positiv kalkulierter Hin-/Rückfahrmarge und real verfügbarer Käuferkasse an. Es gibt bewusst **keine autonome neue Angebots-KI**, keine permanente Firmenneugründung und keine automatische Risiko-/Hüllenversicherung.
+
+Zwei strikt getrennte Dispatcher-Parameter: **fullcash** nutzt den beim Angebot tatsächlich finanzierbaren Käuferbetrag; **buffered** höchstens 80 % der aktuellen Käuferkasse. Beide prüfen echte Kaufgebühr, Verkaufsgebühr, **beide Fahrtrichtungen** und mindestens eine Stunde vorhandener Minerbetriebsreserve (`Anzahl Miner × 150 ISK`). Die Reserveschwelle ist eine **Testannahme**, keine neue Produktregel. Die Warenpreise werden vor jedem tatsächlichen Kauf neu berechnet; zwischen Kauf und Ankunft kann sich der Käuferzustand ändern.
+
+## Ergebnisse der direkt hier ausgeführten Erstsimulation
+
+Acht Original-Core-Welten (Seed42/7 jeweils aktiv und passiv als Kontrolle, sowie beide aktive 90-Tage-Investitionsvarianten), jeweils zwei deterministische Replays, pro Welt 2.160 stündliche Original-/unabhängige Geld- und Warenprüfungen, acht Save/Load-Roundtrips; historische Seed42-Endhashes aktiv `784047684dfe5c56`, passiv `adf155a018b94094` erhalten.
+
+| Aktive Welt · 90 Tage | Seed42 fullcash | Seed7 fullcash | Seed42 buffered | Seed7 buffered |
+| --- | ---: | ---: | ---: | ---: |
+| Bezahlt gekaufte NPC3-Frachter | 1 | 1 | 1 | 1 |
+| Komplett verkaufte Silizium-Chargen | 4 | 3 | 5 | 4 |
+| Erstes Schiff an Tag90 physisch vorhanden | ja | ja | ja | ja |
+| Echtes Frachter-Betriebskosten-Cash | 660 | 577 | 826 | 743 |
+| Warenhandelscash minus tatsächlich bezahlte Frachterarbeit | +987 | +1.860 | +842 | +1.622 |
+| Nach zusätzlicher Auszahlung der **780-ISK-Hülle** | **+207** | **+1.080** | **+62** | **+842** |
+| Gesamte NPC3-Endkasse | **428** | **1.009** | **0** | **7** |
+| Ungedeckte NPC3-Arbeit | 0 | 0 | **31** | 0 |
+| Varianten-Endhash | `ef6a05b90ddfdcc7` | `44f7f16e707d4a5c` | `952c829a22fa1ec3` | `04a00543329fb65d` |
+
+**Abgrenzung:** Der ausgewiesene Frachter-Netto-Cashflow berücksichtigt echte Warenbuchungen, beide Gebührenrichtungen und tatsächlich bezahlte Frachterarbeit; er misst **nicht** den Unternehmensgewinn inklusive aller Miner, weiterer Hüllen, entgangener Alternativerträge oder eines kalkulatorischen Risikopreises. Bei 31 ISK unbezahlter Minerarbeit ist der tatsächlich bezahlte Gesamtbetrieb nicht auskömmlich; die Rechnung verschleiert das nicht. Nach einem sehr kurzen Aktivitätsfenster erstarren alle Varianten bis Tag90: Das Handelsangebot ist nicht mehr gleichzeitig ausreichend finanziert durch Käufercash und freie NPC3-Mittel inklusive Minerreserve. **Die erreichten Folgegeschäfte beweisen keinen dauerhaften Wiederanlauf.**
+
+**Besondere Beobachtung:** Das geskriptete `halten`-Schiff wird beim Leerlauf in gefährlicher Umgebung anders als ein autonomer `handeln`-Frachter als Überfallziel klassifiziert. Kein Verlust in diesen vier Varianten beweist deshalb **nicht**, dass Piraterie allgemein kein Problem mehr wäre. Eine echte autonome Handels-KI und tatsächliche Eskortbegegnungen sind getrennt zu testen. Außerdem werden bei einem Kaufangebot geforderte Verkaufsmenge und künftige Käuferkasse nicht dauerhaft reserviert; Restladungen können später vollständig verkauft werden, in der Zwischenzeit ist Kapital gebunden.
+
+## Separater explorativer Escort-Vergleich (nicht Teil der B8k-Rechnung)
+
+Im selben unveränderten Originalkern wurde ergänzend jeweils ein eigener NPC3-Frachter automatisch auf `shipHandeln` gesetzt; ein zweiter Vergleich kaufte zusätzlich einen echten NPC3-Jäger für **900+36 ISK**, wies ihn per `shipEscort` dem Frachter zu und wartete vor dessen Start auf beide angedockten Schiffe. In Seed42/7 wurde der ursprüngliche neue Frachter **auch mit Escort-Zuweisung zerstört**. Bei allen so beobachteten Angriffen war **null Jäger tatsächlich als Verteidiger im richtigen System angedockt**. Später erscheinende Frachter in Seed7 sind **bezahlte Ersatzhüllen**, nicht der überlebende ursprüngliche Frachter. Das ist **kein Wirksamkeitstest einer korrekt synchronisierten Pflichteskorte**; die Ausgabe für den Jäger wurde real bezahlt. Diese Explorationsbefunde gehören in einen eigenen späteren Escort-Analyse-PR mit eigener CI und tatsächlicher Angriffsort-Zuordnung.
+
+## Qualitätsgate, CI und Freigabe
+
+`tools/analyse-b8k-markteintritt.mjs` bildet die hier gemessenen B8k-Ergebnisse als ausführbaren Test nach; `.github/workflows/analyse-b8k-markteintritt.yml` führt **67 bestehende Node-Regressionen** (soweit die aktuelle Anzahl unverändert ist) und die acht Wirtschaftsverläufe mit gesondertem Ergebnisartefakt aus. **CI zunächst ausstehend, bis GitHub Actions den PR-Head tatsächlich ausgeführt hat.** Ein grüner Runner beweist nicht, dass diese Wirtschaftsvariante wirtschaftlich tragfähig oder produktiv ist. Weitere Gates offen: 13 Seeds ×90 Tage, vier echte 365-Tage-Spielerkrisen, automatische Markteintrittsentscheidung, volle Miner-/Hüllen-/Gefahrenrendite, Save-/Regelmigration bei einer späteren Produktimplementierung sowie reale iPad-/NAS-Abnahme.
+
+**Vorläufiges Fazit [ANALYSE]:** Ein anderer bestehender Konzern kann das erste reale Handelsmittel bezahlen und mehrere Lieferungen in eine gescheiterte Handelsregion finanzieren, wenn eine externe Testentscheidung die Investition überhaupt auslöst. Die Welt wird dadurch **nicht** dauerhaft zahlungsfähig oder versorgt. Kein automatischer Merge und keine Produktregel freigegeben.

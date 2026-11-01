@@ -1728,6 +1728,7 @@ const imSystem = (state, owner, system, auftrag) => ids(state.ships).map((id) =>
 const seite = (rules, schiffe, fokus, rueckzug) => ({ schiffe: schiffe.map((s) => ({ einheit: s.klasse, hp: rules.combat.einheiten[s.klasse].hp })), fokus, rueckzug });
 
 function entfernen(state, rules, s) {
+  if(state.schema===9)m_core_vertrag.verlust(state,rules,s);
   // Verbliebene Fracht beim Schiffverlust vollständig aus der Warenbilanz buchen.
   // zerstoeren() entfernt zuvor bereits verkaufte oder verbuchte Ladung.
   for (const ware of ids(s.ladung)) {
@@ -1746,6 +1747,7 @@ function entfernen(state, rules, s) {
   if (s.owner === rules.economy.start.owner) protokolliere(state, 'verlust', `${s.id} (${s.klasse}) verloren in ${s.system}`, s.owner);
 }
 function zerstoeren(state, rules, s) {
+  if(state.schema===9)m_core_vertrag.verlust(state,rules,s);
   const { markt, owner } = rules.world.piraten;
   for (const ware of ids(s.ladung)) {
     const m = Math.min(s.ladung[ware], aufnehmbar(state, rules, markt, ware));

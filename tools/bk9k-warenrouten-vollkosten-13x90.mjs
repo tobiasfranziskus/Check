@@ -38,10 +38,10 @@ function quote(s,from,to,ware,shipSet){
  const rt=core.route(rules.world,src.system,dst.system);
  if(!rt||rt.zeit<=0)return null;
  const fromPrice=core.preis(s,from,ware),toPrice=core.preis(s,to,ware);
- const sellable=core.verkaufbar(s,from,ware);
- const toAffordable=core.aufnehmbar(s,to,ware);
+ const sellable=core.verkaufbar(s,rules,from,ware);
+ const toAffordable=core.aufnehmbar(s,rules,to,ware);
  const capacity=Math.min(rules.economy.cargo,sellable,toAffordable);
- const expectedDemand=Math.max(0,core.obergrenze(s,to,ware)-
+ const expectedDemand=Math.max(0,core.obergrenze(s,rules,to,ware)-
    (s.stations[to].lager[ware]||0));
  if(capacity<=0)return {from,to,ware,time:rt.zeit,capacity:0,
    sellable,toAffordable,expectedDemand,fromPrice,toPrice,sourceCash:s.owners[from].cash,

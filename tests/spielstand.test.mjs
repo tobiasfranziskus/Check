@@ -76,7 +76,7 @@ test('Regelversion 11 wird ohne Waren-, Kassen- oder Schiffsdatenverlust nach 14
   assert.equal(oldSnapshot.rulesVersion,11);
   assert(legacy.core.audit(old).ok);
   const loaded=e.load(legacy.core.save(old),undefined,e.rules);
-  assert.equal(loaded.rulesVersion,14);
+  assert.equal(loaded.rulesVersion,15);
   assert.equal(loaded.schema,oldSnapshot.schema);
   for (const [id, oldShip] of Object.entries(oldSnapshot.ships)) {
     const now=loaded.ships[id];
@@ -88,7 +88,7 @@ test('Regelversion 11 wird ohne Waren-, Kassen- oder Schiffsdatenverlust nach 14
   assert.deepEqual(JSON.parse(JSON.stringify(loaded.ledger)),oldSnapshot.ledger,'Warenbuchhaltung unverändert');
   assert(e.audit(loaded).ok);
   const copy=e.load(e.save(loaded),undefined,e.rules);
-  assert.equal(e.hash(copy),e.hash(loaded),'v14 Save/Load nach Migration');
+  assert.equal(e.hash(copy),e.hash(loaded),'v15 Save/Load nach Migration');
   const c=new Function(htmlSource.slice(htmlSource.indexOf('<script>')+8,
     htmlSource.indexOf('const m_data_oberflaeche'))+
     ';return {core:m_core_index,rules:m_data_rules.RULES};')();
@@ -108,7 +108,7 @@ test('Regelversion 12 wird ohne Buchungs- oder Arbeitsdatenverlust nach 13 migri
   alt.rulesVersion=12;
   const before=JSON.stringify(alt);
   const restored=e.load(before,undefined,e.rules);
-  assert.equal(restored.rulesVersion,14);
+  assert.equal(restored.rulesVersion,15);
   assert.equal(restored.schema,8);
   assert.equal(restored.ships[s.id].arbeit,17);
   assert.equal(restored.ships[s.id].phase,'reise');
@@ -120,6 +120,6 @@ test('Regelversion 12 wird ohne Buchungs- oder Arbeitsdatenverlust nach 13 migri
   assert.ok(e.audit(restored).ok);
   const copy=e.load(e.save(restored),undefined,e.rules);
   assert.equal(e.hash(copy),e.hash(restored));
-  const future=structuredClone(restored);future.rulesVersion=15;
+  const future=structuredClone(restored);future.rulesVersion=16;
   assert.throws(()=>e.load(JSON.stringify(future),undefined,e.rules),/neuer/);
 });

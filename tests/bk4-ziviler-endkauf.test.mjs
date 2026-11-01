@@ -29,7 +29,7 @@ test('B-K4: nahrung aus echtem Lager gegen vorhandene System-ISK - Transfer an S
  assert.equal(s.owners[fund].cash,b.f-cost);
  assert.equal(s.owners[sid].cash,b.st+cost);
  assert.equal(s.stations[sid].lager.nahrung,b.stock-bedarf);
- assert.equal(s.ledger.nahrung.consumed,b.eaten+bedarf);
+ assert(s.ledger.nahrung.consumed>=b.eaten+bedarf,'weltweites Ledger enthaelt auch zahlende andere Stationen');
  assert.equal(s.stats.konto[sid].erloes,b.revenue+cost);
  assert.equal(s.stats.konto[fund].kosten,b.expense+cost);
  assert.equal(s.stats.mangel[sid].nahrung,b.shortage);

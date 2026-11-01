@@ -1306,10 +1306,22 @@ return { nahrungsangebot, nahrungsmarktangebot };
 const m_core_vertrag = (() => {
 const zahl = n => Number.isSafeInteger(n) && n >= 0;
 const alle = s => Object.values(s.vertrag?.eintraege || {});
-const aktiv = c => ['fahrt','wartet','geliefert'].includes(c.status);
-const finden = (s,ship) => alle(s).find(c => c.schiff === ship && aktiv(c)) || null;
+const aktiv = c => ['foerderung','roh-wartet','produktion','bereit','fahrt','wartet','geliefert'].includes(c.status);
+const finden = (s,ship) => alle(s).find(c => aktiv(c) &&
+  (c.schiff===ship || (c.produktion && c.produktion.miner===ship))) || null;
 const aktivSchiff = (s,ship) => !!finden(s,ship);
-const sperrgeld = s => alle(s).reduce((n,c)=>n+c.escrow+c.fee+c.lohn+c.huelle,0);
+const produktgeld = c => c.produktion
+  ? c.produktion.rohBudget+c.produktion.minerBudget+
+    c.produktion.fabrikLohn+c.produktion.frachtBudget : 0;
+const sperrgeld = s => alle(s).reduce((n,c)=>n+c.escrow+c.fee+c.lohn+c.huelle+produktgeld(c),0);
+const waren = s => {
+  const b={};
+  for(const c of alle(s))if(c.produktion){
+    b.eis=(b.eis||0)+c.produktion.rohLager;
+    b.nahrung=(b.nahrung||0)+c.produktion.nahrungLager;
+  }
+  return b;
+};
 function pruefen(s) {
   if (s.schema!==9 || s.rulesVersion!==15 || !s.vertrag ||
       !zahl(s.vertrag.next) || s.vertrag.next<1 ||
@@ -1318,7 +1330,7 @@ function pruefen(s) {
   let max=0;const schiffe=new Set();
   for (const [id,c] of Object.entries(s.vertrag.eintraege)) {
     if (!/^v[1-9][0-9]*$/.test(id) || !c || c.id!==id ||
-        !['fahrt','wartet','geliefert','erfuellt','storniert','verloren'].includes(c.status) ||
+        !['foerderung','roh-wartet','produktion','bereit','fahrt','wartet','geliefert','erfuellt','storniert','verloren'].includes(c.status) ||
         ![c.escrow,c.fee,c.lohn,c.huelle,c.lohnStart,c.lohnBezahlt,
           c.preis,c.menge,c.zeit,c.zielgebuehr].every(zahl) ||
         c.preis<1 || c.menge<1 || c.lohnBezahlt>c.lohnStart ||
@@ -1326,17 +1338,47 @@ function pruefen(s) {
         !s.owners[c.verkaeufer] || !s.stations[c.quelle] || !s.stations[c.ziel])
       throw Error('B-K9c Vertragsreferenz/Betrag ungültig');
     max=Math.max(max,Number(id.slice(1)));
+    if(c.produktion){
+      const p=c.produktion;
+      if(![p.rohBudget,p.minerBudget,p.fabrikLohn,p.frachtBudget,
+        p.rohLager,p.nahrungLager,p.angefangen,p.fertig,p.wip,p.rohMenge,
+        p.rohPreis,p.minerArbeit].every(zahl) ||
+        !s.owners[p.minerBesitzer] || !s.owners[p.fabrikBesitzer] ||
+        !s.stations[c.quelle] || !Number.isSafeInteger(p.linie) ||
+        p.linie<0 || s.stations[c.quelle].linien[p.linie]?.rezept!=='r_nahrung' ||
+        p.rohMenge!==2*c.menge || p.angefangen>c.menge ||
+        p.fertig>p.angefangen || p.wip>1 ||
+        p.fertig+p.wip>p.angefangen ||
+        p.nahrungLager>p.fertig ||
+        (['foerderung','roh-wartet','produktion','bereit'].includes(c.status) &&
+          (!s.ships[p.miner]||s.ships[p.miner].owner!==p.minerBesitzer)))
+        throw Error('B-K9f Produktionscharge ungültig');
+      if(c.status==='bereit' && (p.fertig!==c.menge ||
+          p.nahrungLager!==c.menge || p.rohLager!==0 || p.wip!==0))
+        throw Error('B-K9f Fertigware nicht vollständig gebunden');
+      if(['fahrt','wartet','geliefert','erfuellt'].includes(c.status) &&
+          (p.rohLager!==0 || p.nahrungLager!==0 || p.fertig!==c.menge))
+        throw Error('B-K9f Charge nicht übergeben');
+    }
     if (aktiv(c)) {
       const sh=s.ships[c.schiff];
       if (!sh || sh.owner!==c.verkaeufer || schiffe.has(c.schiff))
         throw Error('B-K9c gebundenes Schiff ungültig');
       schiffe.add(c.schiff);
+      if(c.produktion && ['foerderung','roh-wartet','produktion','bereit'].includes(c.status)){
+        if(schiffe.has(c.produktion.miner))
+          throw Error('B-K9f Miner doppelt gebunden');
+        schiffe.add(c.produktion.miner);
+      }
       if (c.lohn+c.lohnBezahlt!==c.lohnStart)
         throw Error('B-K9c Arbeitsreserve ungültig');
-      if (c.status!=='geliefert' && ((sh.ladung.nahrung||0)<c.menge ||
+      if (['fahrt','wartet'].includes(c.status) && ((sh.ladung.nahrung||0)<c.menge ||
           c.escrow!==c.menge*c.preis || !Number.isSafeInteger(c.menge*c.preis) ||
           c.fee!==c.zielgebuehr))
         throw Error('B-K9c Rechnung oder reservierte Fracht manipuliert');
+      if(c.produktion && ['foerderung','roh-wartet','produktion','bereit'].includes(c.status) &&
+          (c.escrow!==c.menge*c.preis || c.fee!==c.zielgebuehr))
+        throw Error('B-K9f Käuferzahlung vor Übergabe manipuliert');
       if (c.status==='geliefert' && (c.escrow!==0 || c.fee!==0))
         throw Error('B-K9c schon geliefertes Geld erneut gebunden');
     }
@@ -1385,8 +1427,168 @@ function starten(s,r,a) {
   pruefen(s);
   return id;
 }
+
+function beginnenProduktion(s,r,a) {
+  if(s.schema!==9||s.rulesVersion!==15||r.schema!==9||r.rulesVersion!==15)return null;
+  pruefen(s);
+  const q=m_core_auftragskalkulation.nahrungsmarktangebot(s,r,a);
+  if(!q.ok)return null;
+  const miner=s.ships[a.miner],ship=s.ships[a.frachter];
+  const line=s.stations[a.quelle].linien.findIndex(x=>x.rezept==='r_nahrung'&&x.rest===0);
+  if(line<0 || ship.auftrag!=='halten' || ship.arbeit!==0 || miner.arbeit!==0 ||
+      aktivSchiff(s,miner.id)||aktivSchiff(s,ship.id) ||
+      s.vertrag.next>=1000000)return null;
+  const p={miner:miner.id,minerBesitzer:miner.owner,fabrikBesitzer:a.quelle,linie,
+    rohMenge:2*a.menge,rohPreis:q.kosten.rohwert,
+    rohBudget:q.kosten.rohwert,
+    minerBudget:q.kosten.rohgebuehr+q.kosten.minerkosten,
+    fabrikLohn:q.kosten.fabriklohn,
+    frachtBudget:q.kosten.quellenwert+q.kosten.quellgebuehr,
+    rohLager:0,nahrungLager:0,angefangen:0,fertig:0,wip:0,minerArbeit:0};
+  const funds=q.kosten;
+  // Eigentümerkassen sind im Quotencheck je Konto und aggregiert gedeckt.
+  // Keine Transaktion benutzt den künftig erwarteten Nahrungserlös.
+  s.owners[a.ziel].cash-=funds.verkaufswert;
+  s.owners[a.quelle].cash-=p.rohBudget+p.fabrikLohn;
+  s.owners[miner.owner].cash-=p.minerBudget;
+  s.owners[ship.owner].cash-=p.frachtBudget+
+    funds.zielgebuehr+funds.frachterlohn+funds.ersatzruecklage;
+  const id='v'+s.vertrag.next++;
+  s.vertrag.eintraege[id]={id,status:'foerderung',schiff:ship.id,
+    verkaeufer:ship.owner,kaeufer:a.ziel,quelle:a.quelle,ziel:a.ziel,
+    ware:'nahrung',menge:a.menge,preis:q.endpreis,
+    escrow:funds.verkaufswert,fee:funds.zielgebuehr,
+    zielgebuehr:funds.zielgebuehr,lohn:funds.frachterlohn,
+    lohnStart:funds.frachterlohn,lohnBezahlt:0,
+    huelle:funds.ersatzruecklage,zeit:q.zeit.flugminuten,
+    produktion:p};
+  miner.auftrag='foerdern';
+  miner.ware='eis';ship.auftrag='halten';
+  pruefen(s);return id;
+}
+function rohErnten(s,r,sh) {
+  const c=finden(s,sh.id);
+  if(!c||!c.produktion||c.produktion.miner!==sh.id ||
+      !['foerderung','roh-wartet'].includes(c.status))return false;
+  const p=c.produktion;
+  if((sh.ladung.eis||0)<p.rohMenge)return false;
+  const preis=m_core_preis.preis(s,c.quelle,'eis',r);
+  const wert=preis*p.rohMenge;
+  const geb=m_core_handel.gebuehr(s,r,c.quelle,wert);
+  if(wert>p.rohBudget||geb>p.minerBudget||
+      !Number.isSafeInteger(wert)||!Number.isSafeInteger(geb)){
+    c.status='roh-wartet';sh.auftrag='halten';return false;
+  }
+  // Original-Trade benutzt dieselben ISK und Buchungsregeln.
+  s.owners[c.quelle].cash+=wert;
+  s.owners[p.minerBesitzer].cash+=geb;
+  p.rohBudget-=wert;p.minerBudget-=geb;
+  const ok=m_core_handel.handel(s,r,sh,c.quelle,'eis',p.rohMenge,false,false,{id:c.id,roh:true});
+  if(!ok) {
+    s.owners[c.quelle].cash-=wert;
+    s.owners[p.minerBesitzer].cash-=geb;
+    p.rohBudget+=wert;p.minerBudget+=geb;
+    c.status='roh-wartet';sh.auftrag='halten';return false;
+  }
+  // Physisch aus der gemeinsamen Station in dasselbe Vertragsbuch.
+  s.stations[c.quelle].lager.eis-=p.rohMenge;
+  p.rohLager+=p.rohMenge;
+  c.status='produktion';sh.auftrag='halten';
+  return true;
+}
+function minenLimit(s,sh,n) {
+  const c=finden(s,sh.id);
+  return c?.produktion && c.produktion.miner===sh.id && c.status==='foerderung'
+    ? Math.min(n,Math.max(0,c.produktion.rohMenge-(sh.ladung.eis||0))) : n;
+}
+function produktionsLinie(s,station,index) {
+  return alle(s).find(c=>c.produktion && c.quelle===station &&
+    c.produktion.linie===index &&
+    ['foerderung','roh-wartet','produktion'].includes(c.status))||null;
+}
+function produktionsStart(s,c,r) {
+  const p=c.produktion;
+  if(p.angefangen>=c.menge||p.rohLager<r.ein.eis||p.wip!==0)return false;
+  p.rohLager-=r.ein.eis;
+  s.ledger.eis.consumed+=r.ein.eis;
+  p.wip++;p.angefangen++;
+  return true;
+}
+function produktionsFertig(s,c,n) {
+  const p=c.produktion;
+  if(!p.wip||n!==1)throw Error('B-K9f falsche Rezeptcharge');
+  p.wip--;p.fertig++;p.nahrungLager+=n;
+  if(p.fertig===c.menge){
+    c.status='bereit';
+    // Echter, finanzierter Fabriklohn an bestehenden regionalen Lohnfonds.
+    const fund=m_core_handel.fondsIn(s.vertragRegeln || m_data_rules.RULES,
+      s.stations[c.quelle].system);
+    s.owners[fund].cash+=p.fabrikLohn;
+    p.fabrikLohn=0;
+  }
+}
+function frachtBereit(s,r,id) {
+  const c=s.vertrag?.eintraege[id];
+  if(!c||c.status!=='bereit'||!c.produktion)return false;
+  const p=c.produktion,sh=s.ships[c.schiff];
+  if(!sh||sh.phase!=='dock'||sh.system!==s.stations[c.quelle].system||
+      sh.auftrag!=='halten'||sh.arbeit!==0||p.nahrungLager!==c.menge)return false;
+  const current=m_core_preis.preis(s,c.quelle,'nahrung',r);
+  const price=current*c.menge,fee=m_core_handel.gebuehr(s,r,c.quelle,price);
+  const zielFee=c.fee;
+  if(!Number.isSafeInteger(price)||price+fee>p.frachtBudget ||
+      c.escrow-zielFee<c.menge*current + fee +
+        Math.floor(c.zeit*r.world.betriebskosten.frachter/r.economy.stunde)+c.huelle)
+    return false;
+  // Physisch genau die neu produzierte Charge auf die Quellstation buchen,
+  // anschließend ausschließlich mit Original-handel sofort in Frachter umsetzen.
+  s.stations[c.quelle].lager.nahrung+=c.menge;
+  p.nahrungLager-=c.menge;
+  s.owners[c.verkaeufer].cash+=price+fee;
+  p.frachtBudget-=price+fee;
+  const ok=m_core_handel.handel(s,r,sh,c.quelle,'nahrung',c.menge,true,true,{id,charge:true});
+  if(!ok){
+    s.stations[c.quelle].lager.nahrung-=c.menge;
+    p.nahrungLager+=c.menge;
+    s.owners[c.verkaeufer].cash-=price+fee;
+    p.frachtBudget+=price+fee;return false;
+  }
+  s.owners[c.verkaeufer].cash+=p.frachtBudget;
+  p.frachtBudget=0;
+  sh.phase='reise';sh.ziel=c.ziel;sh.ankunft=s.tick+c.zeit;
+  sh.auftrag='halten';sh.warten=0;
+  c.status='fahrt';
+  pruefen(s);return true;
+}
+function abbrechenProduktion(s,id) {
+  const c=s.vertrag?.eintraege[id];
+  if(!c||!c.produktion||!['foerderung','roh-wartet','produktion','bereit'].includes(c.status))return false;
+  const p=c.produktion,miner=s.ships[p.miner],trader=s.ships[c.schiff];
+  if(p.wip!==0 || (miner && miner.arbeit>0))return false;
+  if(p.rohLager){s.stations[c.quelle].lager.eis+=p.rohLager;p.rohLager=0;}
+  if(p.nahrungLager){s.stations[c.quelle].lager.nahrung+=p.nahrungLager;p.nahrungLager=0;}
+  s.owners[c.kaeufer].cash+=c.escrow;
+  s.owners[c.verkaeufer].cash+=c.fee+c.lohn+c.huelle+p.frachtBudget;
+  s.owners[p.fabrikBesitzer].cash+=p.rohBudget+p.fabrikLohn;
+  s.owners[p.minerBesitzer].cash+=p.minerBudget;
+  c.escrow=0;c.fee=0;c.lohn=0;c.huelle=0;
+  p.frachtBudget=0;p.rohBudget=0;p.fabrikLohn=0;p.minerBudget=0;
+  c.status='storniert';
+  if(miner)miner.auftrag='halten';
+  pruefen(s);return true;
+}
+
 function lohnFreigabe(s,sh,n) {
   const c=finden(s,sh.id);if(!c)return;
+  if(c.produktion && c.produktion.miner===sh.id &&
+      ['foerderung','roh-wartet','produktion','bereit'].includes(c.status)){
+    if(!zahl(n)||n>c.produktion.minerBudget)
+      throw Error('B-K9f Miner ohne gedeckte Arbeit');
+    c.produktion.minerBudget-=n;
+    s.owners[c.produktion.minerBesitzer].cash+=n;
+    c.produktion.minerArbeit+=n;
+    return;
+  }
   if(!zahl(n)||n>c.lohn)throw Error('B-K9c ungedeckte Arbeitskosten');
   c.lohn-=n;c.lohnBezahlt+=n;s.owners[c.verkaeufer].cash+=n;
 }
@@ -1417,6 +1619,10 @@ function stornieren(s,id) {
 }
 function verlust(s,r,sh) {
   const c=finden(s,sh.id);if(!c)return false;
+  if(c.produktion && ['foerderung','roh-wartet','produktion','bereit'].includes(c.status)){
+    if(sh.arbeit>0)m_core_stunde.betriebskosten(s,r,sh.id);
+    abbrechenProduktion(s,c.id);return true;
+  }
   // Arbeiten, die seit dem letzten Stundenabschluss anfielen, bezahlen.
   if(sh.arbeit>0)m_core_stunde.betriebskosten(s,r,sh.id);
   s.owners[c.kaeufer].cash+=c.escrow;
@@ -1432,8 +1638,8 @@ function stundenAbschluss(s) {
     c.lohn=0;c.status='erfuellt';
   }
 }
-return {starten,liefern,stornieren,verlust,lohnFreigabe,
-        stundenAbschluss,aktivSchiff,pruefen,sperrgeld};
+return {starten,beginnenProduktion,rohErnten,minenLimit,produktionsLinie,produktionsStart,produktionsFertig,frachtBereit,abbrechenProduktion,liefern,stornieren,verlust,lohnFreigabe,
+        stundenAbschluss,aktivSchiff,pruefen,sperrgeld,waren};
 })();
 
 const m_core_entscheidung = (() => {
@@ -2228,6 +2434,7 @@ function audit(state) {
   const zaehle = (lager) => { for (const w of ids(lager)) ist[w] = anzahl(ist, w) + lager[w]; };
   for (const id of ids(state.stations || {})) zaehle(state.stations[id].lager);
   for (const id of ids(state.ships || {})) zaehle(state.ships[id].ladung);
+  if(state.schema===9&&state.rulesVersion===15)zaehle(m_core_vertrag.waren(state));
   const ledger = state.ledger || {};
   const goods = { ok: true, delta: {} };
   for (const w of [...new Set([...ids(ledger), ...ids(ist)])].sort()) {
@@ -2265,12 +2472,15 @@ const { reise } = m_core_ankunft;
 const { kampf } = m_core_kampf;
 const { nahrungsangebot, nahrungsmarktangebot } = m_core_auftragskalkulation;
 const vertragStarten=(s,a,r=RULES)=>m_core_vertrag.starten(s,r,a);
+const vertragProduktion=(s,a,r=RULES)=>m_core_vertrag.beginnenProduktion(s,r,a);
+const vertragFracht=(s,id,r=RULES)=>m_core_vertrag.frachtBereit(s,r,id);
+const vertragProduktionsAbbruch=(s,id)=>m_core_vertrag.abbrechenProduktion(s,id);
 const vertragLiefern=(s,ship,r=RULES)=>m_core_vertrag.liefern(s,r,ship);
 const vertragStornieren=(s,id)=>m_core_vertrag.stornieren(s,id);
 const vertragPruefen=(s)=>m_core_vertrag.pruefen(s);
 const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
-return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, nahrungsangebot, nahrungsmarktangebot, vertragStarten, vertragLiefern, vertragStornieren, vertragPruefen, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, createState, submit, execute, step, advance, load, preis, faktor };
+return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, nahrungsangebot, nahrungsmarktangebot, vertragStarten, vertragProduktion, vertragFracht, vertragProduktionsAbbruch, vertragLiefern, vertragStornieren, vertragPruefen, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, createState, submit, execute, step, advance, load, preis, faktor };
 })();
 
 const m_data_oberflaeche = (() => {

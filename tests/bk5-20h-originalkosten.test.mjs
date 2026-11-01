@@ -73,7 +73,8 @@ function setup(seed=42,householdStart=900){
  return {s,miner};
 }
 function simulate({seed=42,hours=20,householdStart=900,
-  minerReserve=6,factoryReserve=3,fundReturnsFees=false}={}){
+  minerReserve=6,factoryReserve=3,fundReturnsFees=false,
+  fundPaysWork=true,companyPaysIncome=true}={}){
  const {s,miner}=setup(seed,householdStart);
  const start={household:s.owners[H].cash,station:s.owners[S].cash,
   miner:s.owners[M].cash,fund:s.owners[F].cash,whole:total(s),
@@ -138,9 +139,11 @@ function simulate({seed=42,hours=20,householdStart=900,
   // Analystischer Eigentuemerlohn/Dividende: echte vorhandene Kassenmittel,
   // nie verborgene Kaufkraft. Bis auf Reserven alle realen Erloese
   // an Haushalt (keine reale Produktlohnregel).
-  pay(s,M,H,netM-minerReserve,'miner bezahlter Lohn/Ertrag');
-  pay(s,S,H,netS-factoryReserve,'fabrik bezahlter Lohn/Ertrag');
-  pay(s,F,H,fundIn+(fundReturnsFees?purchaseFee:0),
+  if(companyPaysIncome){
+   pay(s,M,H,netM-minerReserve,'miner beispielhafte Einkommensausschuettung');
+   pay(s,S,H,netS-factoryReserve,'fabrik beispielhafte Einkommensausschuettung');
+  }
+  pay(s,F,H,(fundPaysWork?fundIn:0)+(fundReturnsFees?purchaseFee:0),
     'eigene real zuvor bezahlte Minerarbeitsleistung / hypothetische Gebuehrenausgabe');
   s.tick+=stunde;
   const row={hour:h,produced:3,consumed:demand,iceMined:6,icePrice:pIce,
@@ -148,6 +151,8 @@ function simulate({seed=42,hours=20,householdStart=900,
    tradingFee:purchaseFee,netMinerBeforeDividend:netM,
    stationGrossMargin:netS,minerSaved:minerReserve,factorySaved:factoryReserve,
    feePaidToHousehold:fundReturnsFees?purchaseFee:0,
+   fundWageToHousehold:fundPaysWork?fundIn:0,
+   businessIncomeToHousehold:companyPaysIncome?netM-minerReserve+netS-factoryReserve:0,
    householdEnd:s.owners[H].cash,stationEnd:s.owners[S].cash,
    minerEnd:s.owners[M].cash,fundEnd:s.owners[F].cash};
   log.push(row);
@@ -251,4 +256,27 @@ test('BK5: echte Startup-Frachterpaare auch nach Reisearbeit auf Profitabilitaet
  console.log('BK5_TRANSPORT_VOLLKOSTEN '+JSON.stringify({startupTrades:inspect,
    routesNotCoveringOperatingLabor:underpriced,
    aggregateNegativeWorkingMargin:loss,examples}));
+});
+
+test('BK5: Rueckleitung von Betriebskosten ist eine notwendige Hypothese - ohne sie fehlen 27 ISK/Stunde',()=>{
+ const x=simulate({fundPaysWork:false});
+ assert.equal(x.completed,20);
+ assert.equal(x.s.owners[H].cash,900-27*20);
+ assert.equal(x.s.owners[F].cash-x.start.fund,(15+3)*20);
+ assert.equal(x.s.owners[M].cash-x.start.miner,120);
+ assert.equal(x.s.owners[S].cash-x.start.station,60);
+ audit(x.s);
+ console.log('BK5_OHNE_ARBEITSLOHN '+JSON.stringify({
+  hours:20,household: x.s.owners[H].cash,
+  fundSavings:x.s.owners[F].cash-x.start.fund,householdLossPerHour:27}));
+});
+test('BK5: main-Core hat keine Eigenlohnauszahlung - ohne zusaetzliche Haushaltseinkuenfte endet Konsum sofort bei endlichem Startgeld',()=>{
+ const x=simulate({fundPaysWork:false,companyPaysIncome:false,hours:20});
+ assert(x.completed<20);
+ assert.equal(x.stop?.reason,'kaufkraft');
+ assert(x.stop.hour>1);
+ assert(x.s.owners[H].cash<x.stop.price);
+ audit(x.s);
+ console.log('BK5_OHNE_JEDEN_HAUSHALTSLOHN '+JSON.stringify({
+  completed:x.completed,stop:x.stop,haushaltEnde:x.s.owners[H].cash}));
 });

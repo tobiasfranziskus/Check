@@ -1,0 +1,22 @@
+name: B-K7 – Analyse Provenienzexport 90 Tage
+
+on:
+  pull_request:
+    paths:
+      - tools/bk7-herkunft-export-90d.mjs
+      - .github/workflows/bk7-herkunft-export.yml
+
+permissions:
+  contents: read
+
+jobs:
+  bk7-wirtschaft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original-Regel14 – 8 Spielerkrisen-Welten à 90 Tage, Provenienz und unabhängige Audits
+        run: node tools/bk7-herkunft-export-90d.mjs

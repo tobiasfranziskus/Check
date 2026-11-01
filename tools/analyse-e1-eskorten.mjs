@@ -145,7 +145,7 @@ function run(seed,arm){
   medications:s.ledger.medikamente.consumed,
   ...o};
  assert(o.freightLosses.some(x=>x.id===startedFreighter),'first ship actually destroyed');
- assert(o.paidHulls.frachter>=1&&o.paidHulls.jaeger>=fightersNeeded,'really purchased');
+ assert(o.hulls.frachter>=1&&o.hulls.jaeger>=fightersNeeded,'really purchased');
  return result;
 }
 const all=[];

@@ -81,13 +81,16 @@ function snapshot(st,engine,r,obs,day){
  const cashClass={};
  for(const x of Object.values(st.owners))cashClass[x.kind]=(cashClass[x.kind]||0)+x.cash;
  const consumed=Object.fromEntries(keys.map(k=>[k,st.ledger[k].consumed]));
- const shortage={};
+ const shortage={},currentStockout={};
  for(const ware of keys){
   shortage[ware]=Object.entries(st.stations).filter(([id])=>r.world.stations[id].verbrauch[ware]>0
-    &&st.stats.mangel[id][ware]>0).length;
+    &&st.stats.mangel[id][ware]>0).length; // ever-shortage since world creation
+  currentStockout[ware]=Object.entries(st.stations).filter(([id,x])=>
+    (r.world.stations[id].verbrauch[ware]||0)>0 &&
+    (x.lager[ware]||0)<r.world.stations[id].verbrauch[ware]).length;
  }
  // Count shortage during last 24h (new additional shortages, not cumulative).
- return {day,tick:st.tick,cashClass,owners,consumed,shortage,
+ return {day,tick:st.tick,cashClass,owners,consumed,shortage,currentStockout,
   traded:st.stats.handel,freighters:Object.values(st.ships).filter(s=>s.klasse==='frachter'&&['npc1','npc2'].includes(s.owner)).length,
   paid:obs.payments,minted:st.minted,burned:st.burned,
   money:Object.values(st.owners).reduce((acc,x)=>acc+x.cash,0)};

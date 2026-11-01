@@ -144,10 +144,12 @@ test('BK9c: Zielstation voll → keine Doppelzahlung; Storno erst nach tatsächl
   assert.equal(core.vertragStornieren(s,id),false,'24 Minuten Arbeit unbezahlt');
   core.advance(s,35,next);
   assert.equal(s.vertrag.eintraege[id].lohnBezahlt,100);
+  const buyerBeforeCancel=s.owners.st_aldera.cash;
   assert(core.vertragStornieren(s,id));
   const c=s.vertrag.eintraege[id];
   assert.equal(c.status,'storniert');assert.equal(c.escrow,0);
-  assert.equal(s.owners.st_aldera.cash,buyer);
+  assert.equal(s.owners.st_aldera.cash,buyerBeforeCancel+689,
+    'Storno erstattet exakt das einmalig gesperrte Käufergeld; externe Fondsbewegungen bleiben echt');
   assert.equal(c.huelle,0);assert.equal(core.vertragStornieren(s,id),false);
   audit(s);
 });

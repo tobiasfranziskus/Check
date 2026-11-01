@@ -104,7 +104,14 @@ test('B-K9g: Echte Original-Werftbuchung darf bezahlte Reserve punktgenau verwen
    s.owners.house.cash-=n;s.owners.npc1.cash+=n;
  }
  audit(s);
+ console.log('BK9G_WERFT_VORHER '+JSON.stringify({wants,targetCash,fee,preis:p,
+    available:s.stations[werft].lager.frachter,
+    npc1Ships:Object.values(s.ships).filter(x=>x.owner==='npc1').map(x=>({id:x.id,klasse:x.klasse,sollplatz:x.sollplatz})),
+    npc1Plans:s.sollflotte.npc1,oldInService:old,cash:s.owners.npc1.cash}));
  core.ersatzkauf(s,R);
+ console.log('BK9G_WERFT_NACHHER '+JSON.stringify({escrow:c.huelle,avail:s.stations[werft].lager.frachter,
+   npc1Cash:s.owners.npc1.cash,npc1InService:s.stats.indienst.npc1,
+   npc1Ships:Object.values(s.ships).filter(x=>x.owner==='npc1').map(x=>({id:x.id,sollplatz:x.sollplatz}))}));
  assert.equal(c.huelle,0,'Genau diese 39 ISK sind im Original-Werftkauf aufgegangen');
  assert((s.stats.indienst.npc1?.frachter||0)>old);
  audit(s);

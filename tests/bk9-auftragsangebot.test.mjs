@@ -146,7 +146,7 @@ test('B-K9: Der derzeitige Aldera-Spotpreis deckt den vollständigen sicheren Fe
   assert(q.fehler.includes('FRACHTER_VERLUST'));
   console.log('BK9_SPOTPREIS_GRENZE '+JSON.stringify({
     spotNahrung:a.endpreis,prognose:q.margen.frachter,
-    transportreserve:q.kosten.frachterlohn,
+    transportreserve:q.kosten.frachterlohn, angefallenerFluglohn:q.kosten.frachterlohnFaellig,
     ersatzreserve:q.kosten.ersatzruecklage,
     note:'400 ISK je Stück im positiven Test ist nur hypothetischer Festpreis, keine tatsächliche Marktnachfrage'
   }));
@@ -166,7 +166,7 @@ test('B-K9: Marktpreis und tatsächlich kostendeckender Vertragsmindestpreis wer
   assert.equal(q.markt.aktuellerZielpreis,core.preis(s,'st_aldera','nahrung'));
   assert.equal(q.markt.aktuellerZielpreis,30);
   const floor=q.markt.frachtKostendeckendAb;
-  assert.equal(floor,136,'3 Nahrung Cyris–Aldera: voll gebundene 250 ISK Reise-/39 ISK Ersatzreserve');
+  assert.equal(floor,85,'3 Nahrung Cyris–Aldera: 104 ISK angefallener Lohn, aber 250 ISK tatsächlich zu sperren');
   assert(floor>q.markt.aktuellerZielpreis);
   const just=calc(s,{...a,endpreis:floor});
   assert(just.margen.frachter>=0);

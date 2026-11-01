@@ -1,0 +1,26 @@
+name: "[ANALYSE] B8o gemeinsame Mittelbindung und Krisenkontrolle"
+on:
+  push:
+    branches: [analyse/b8o-gemeinsame-mittelbindung-20261101]
+    paths: ['tools/analyse-b8o-mittelbindung.mjs', '.github/workflows/analyse-b8o-mittelbindung.yml', 'index.html']
+  pull_request:
+    paths: ['tools/analyse-b8o-mittelbindung.mjs', '.github/workflows/analyse-b8o-mittelbindung.yml', 'index.html']
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Existing Node regression tests
+        run: node --test tests/*.test.mjs
+      - name: Shared wallet shadow ledger and 4 original worlds
+        run: node tools/analyse-b8o-mittelbindung.mjs --out="$RUNNER_TEMP/b8o"
+      - name: Save evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: b8o-shadow-funding
+          path: ${{ runner.temp }}/b8o/b8o-results.json
+          if-no-files-found: error

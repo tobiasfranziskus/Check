@@ -37,7 +37,7 @@ Stand: 01.11.2026. Basis: `main b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c`, v0.12
 ## Fortsetzung B9i – zwei getrennte Kern-Gates (01.11.2026)
 
 **[ANALYSE/DRAFT]** Nach dem ersten synthetischen Vertragsversuch enthält
-\`tests/b9i-gesamtbuchungen.test.mjs\` eine **weitergehende Instrumentierung der unveränderten Produktquelle**.
+`tests/b9i-gesamtbuchungen.test.mjs` eine **weitergehende Instrumentierung der unveränderten Produktquelle**.
 Der zweite Testadapter ist eine alternative Architekturprobe und wird bewusst noch **nicht**
 mit dem ursprünglichen Adapter vereinheitlicht; alte Tests verifizieren das Verhalten
 »Preisabweichung ablehnen«, neue Tests das vorgeschlagene »vereinbarten Preis auch
@@ -50,18 +50,18 @@ gleichzeitig die vereinbarte Zielhandelsgebühr. Beide Beträge liegen als echte
 Treuhand-Position im Vertragsbuch, sind nicht anderweitig verfügbar und gehören
 in die unabhängige Gesamtgeldbilanz. Ware kann entweder (a) bereits im echten
 Schiff liegen oder (b) vor Abholung in einer realen Quellstation gebunden werden.
-Mit den Test-Hooks werden \`handel\`, \`produktion\`, \`verbrauch\`,
-\`aussenhandel\`, \`shipActivate\`, \`shipInstall\` und die
+Mit den Test-Hooks werden `handel`, `produktion`, `verbrauch`,
+`aussenhandel`, `shipActivate`, `shipInstall` und die
 Verlust-/Beutewege auf die freie Menge begrenzt. Die restlichen Geldpfade
-(\`betriebskosten\`, \`fonds\`, \`npcAusgaben\`, \`dividende\`,
-\`ersatzkauf\`, Piratenersatz) arbeiten ohnehin aus den tatsächlichen
-freien \`owners[*].cash\`-Konten; eine Doppelausgabe bereits entnommener
+(`betriebskosten`, `fonds`, `npcAusgaben`, `dividende`,
+`ersatzkauf`, Piratenersatz) arbeiten ohnehin aus den tatsächlichen
+freien `owners[*].cash`-Konten; eine Doppelausgabe bereits entnommener
 Treuhand ist dort nicht möglich. **Das ist ein Buchungsmodell-Nachweis,
 keine vollständige autonome Finanzierungs-/Fahrtkostenregel.**
 
 **Schritt 2: atomarer Festpreisabschluss.** Ein Quelllager-Vertrag muss
 zunächst **wirklich bezahlt** über das existierende
-\`m_core_handel.handel(...,kauf=true)\` in das Schiff geladen werden;
+`m_core_handel.handel(...,kauf=true)` in das Schiff geladen werden;
 die Ware bleibt dann als physische Fracht gebunden. Bei der Ankunft
 entsperrt der Adapter für genau eine synchrone Core-Handelsbuchung
 den festgesetzten Erlös und die bereits gebundene Verkäufergebühr.
@@ -84,10 +84,10 @@ Schiffsaktivierung, echte Quellabholung, Gebührenziel, Festpreisdrift,
 Abbruch, Schiffsverlust, Save/Load und unabhängige Geld-/Warenbilanz.
 
 **Noch nicht produktreif / Sicherheitsgrenze:**
-- \`index.html\` wurde **nicht** verändert; keine Codepfade dieses
+- `index.html` wurde **nicht** verändert; keine Codepfade dieses
   zweiten Testadapters sind beim regulären Spiel aktiv.
 - Neue Verträge würden zusätzliche persistente Werte erfordern:
-  Die reguläre \`load\`-Funktion validiert die Verträge noch nicht
+  Die reguläre `load`-Funktion validiert die Verträge noch nicht
   vollständig. Die Tests führen eine separate explizite Treuhandprüfung aus.
 - Quell- und Zielkapazität, Warenrechte/Stationseigentum, veränderte
   Vertragspartner, Vertragsablaufzeit, Reise-/Arbeitsbudgets, mehrere
@@ -98,4 +98,4 @@ Abbruch, Schiffsverlust, Save/Load und unabhängige Geld-/Warenbilanz.
   die Waren- und Geldabwicklung selbst erfolgt im Originalkern.
 - Für eine aktivierte Produktregel müssen Spielstandmigration,
   Hash-/Regelreferenzen und iPad-/NAS-Abnahme gesondert erfolgen.
-  Keine Integration in \`main\` ohne explizite Freigabe.
+  Keine Integration in `main` ohne explizite Freigabe.

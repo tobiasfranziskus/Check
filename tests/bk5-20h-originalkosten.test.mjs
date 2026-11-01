@@ -119,6 +119,18 @@ function simulate({seed=42,hours=20,householdStart=900,
    s.ledger.nahrung.consumed++;
    spent+=food;demand++;
   }
+  // Falls die Haushaltskasse mitten im dritten Kauf leer wird,
+  // stoppt der Kontrolllauf, statt durch hypothetische Dividenden
+  // eine bereits gescheiterte Runde nachtraeglich zu finanzieren.
+  // Erbrachte Minenarbeit und schon bezahlte Kauefe bleiben gebucht.
+  if(stop){
+   s.tick+=stunde;
+   log.push({hour:h,produced:3,consumed:demand,iceMined:6,
+     icePrice:pIce,icePurchase:rawPurchase,foodRevenue:spent,
+     minerWorkingCost:fundIn,tradingFee:purchaseFee,
+     householdEnd:s.owners[H].cash,stopped:stop.reason});
+   audit(s);break;
+  }
   const netM=s.owners[M].cash-before.m;
   const netS=s.owners[S].cash-before.station;
   assert(netM>=minerReserve,'minerkasse kann Ruecklage finanzieren');
@@ -215,7 +227,7 @@ test('BK5: deterministischer 20h-Kreislauf in Seed 7,42 mit exakter Geld-/Warene
   audit(a.s);audit(b.s);
  }
 });
-test('BK5: Startup-Routen sind nur scheinbar profitabel, wenn Arbeit nicht eingepreist wird',()=>{
+test('BK5: echte Startup-Frachterpaare auch nach Reisearbeit auf Profitabilitaet pruefen',()=>{
  const s=core.createState(42,r);
  let inspect=0,underpriced=0,loss=0;const examples=[];
  for(const ship of Object.values(s.ships)){

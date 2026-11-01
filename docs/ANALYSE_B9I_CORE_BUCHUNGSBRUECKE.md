@@ -1,101 +1,111 @@
-# B9i – Core-Buchungsbrücke (nichtproduktive Integrationsprobe)
+# B9i – vereinheitlichte Vertragsbuchhaltung und Save-Gate (Analyse)
 
-Stand: 01.11.2026. Basis: `main b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c`, v0.12.5 / Regel 14 / Schema 8.
+**Stand:** 01.11.2026. **[MAIN]** `b4e604d`, v0.12.5 / Regel 14 / Schema 8.
+**[ANALYSE/DRAFT]** PR #83, rein testbasierter Kandidat; **keine produktive Vertragsfunktion**.
 
-**Status [ANALYSE/DRAFT], keine neue Spielregel.** `index.html`, Standard-Referenzen, bestehende Spielstände, UI, Regeln und die globale Geldschöpfung bleiben unverändert. Der Test `tests/b9i-kernbruecke.test.mjs` instrumentiert den tatsächlichen Core **nur im Node-Testprozess**.
+## 1. Herkunft und Entscheidung der technischen Variante
 
-## Core-Anschlüsse
+B9i begann mit einer instrumentierten Core-Brücke (`b9i-kernbruecke.test.mjs`):
+bei verändertem Spotpreis wurde die Erfüllung verweigert. Der zweite Ansatz
+(`b9i-gesamtbuchungen.test.mjs`) rechnete zum **vereinbarten** Preis und mit
+bereits gebundener Gebühr ab, auch wenn sich der Spotpreis oder ein Dockmodul
+seit Vertragsabschluss geändert hat. Nach bestandener CI sind diese beiden
+konkurrierenden Testmodelle **in genau einen Kandidaten** überführt:
 
-| Buchungsweg | Integrationsanforderung |
-| --- | --- |
-| `m_core_handel.handel` (Spielerhandel, Auto-Handel, Miner-Verkauf, Ankunft, Werft) | Keine Ausgabe reservierter Schiffsfracht; Lieferabschluss muss den bisherigen Markt-/Gebührenweg benutzen, nicht eine zweite Handelsrechnung erzeugen. |
-| `m_core_stunde.betriebskosten`, `npcAusgaben`, `fonds`, `dividende`, `m_core_schiffbau.ersatzkauf`, `m_core_sicherheit.piratenErsatz` | Durch wirkliche Auszahlung der Käufer-Treuhand aus `owners[buyer].cash` kann das Geld sonst nicht noch einmal ausgegeben werden. Kosten- und Existenzprüfung auf reale freie Kasse. |
-| `m_core_sicherheit.zerstoeren/entfernen` | Schiffsverlust löst genau einmal die Rückzahlung aus; bereits erbeutete Fracht wird ausschließlich durch den Original-Kampf-/Warenpfad bilanziert. |
-| `m_core_audit.audit` | Treuhand-ISK ergänzen `sum(owners.cash)`; reservierte Waren liegen weiterhin physisch im Schiff und werden nicht doppelt summiert. |
-| `m_core_serialize.save/load`, `m_core_hash.hash` | Vertragsdaten müssen deterministisch serialisiert, beim Laden streng validiert und Altstände explizit weiter unterstützt werden. |
+- **Einzige aktuelle Testquelle:** `tests/b9i-vertragskern.test.mjs`
+- Historische Vorversuche sind über die Git-Commits von PR #83 rekonstruierbar;
+  die zwei zuvor divergierenden Testdateien wurden auf dem Draft-Branch entfernt.
+- Das neue Modell ist ein **Architekturtest, kein Freigabebeschluss** für einen
+  verbindlichen Preis, neue Börsen-/Endnachfrageregeln oder Vertragsgarantien.
 
-## Im Test durchgeführte Kopplung
+## 2. Die testweise durch den echten Core gerouteten Buchungen
 
-1. Käufer zahlt aus realer Core-Kasse in ein einzeln belegtes Vertrags-Escrow, ohne ISK-Erzeugung.
-2. Eine einmalige Warenbindung verhindert einen weiteren Verkauf derselben bereits im Schiff befindlichen Menge über den originalen `m_core_handel.handel`.
-3. Der Lieferabschluss gibt Escrow nur während der **synchronen** Original-Handelsbuchung frei; bei Ablehnung wird der Zustand zurückgesetzt. Ein geänderter Spotpreis blockiert ausdrücklich, statt still eine andere Zahlung zu akzeptieren.
-4. Der originale Piraten-Verlustweg stößt die Stornierung vor dem Entfernen der Schiffshülle an.
-5. Geld-/Warenaudit wird unabhängig nachgerechnet; vertragsfreie Simulation wird gegen unveränderten Quellcode auf Seed 7 und 42 jeweils 1.440 Ticks verglichen.
+Ein Vertrag reserviert (a) **Wert** aus der Käuferkasse, (b) die **Gebühr**
+aus der Verkäuferkasse und (c) konkrete physisch vorhandene Ware in Schiff
+oder Quellstation. Geld wird von den realen `owners[*].cash` abgezogen;
+es bleibt im dedizierten Treuhandfeld und muss im Geld-Audit mitgezählt werden.
+Quellware wird beim Abholen wirklich mit der originalen
+`m_core_handel.handel(...,kauf=true)`-Funktion bezahlt und ins Schiff geladen.
+Bei der Lieferung wird innerhalb einer synchronen Transaktion **einmal**
+über die bestehende Handelsfunktion verkauft; die dortige Statistik,
+Warenbuchung, Gebührenempfänger und Käufer-/Verkäuferkasse bleiben erhalten.
+Abschluss oder Storno können kein zweites Mal zahlen.
 
-## Klare Grenzen / Integrationsblocker
+Die im **Node-Testlauf** temporär instrumentierten Core-Gates berücksichtigen
+gebundene Mengen bei `handel`, `produktion`, `verbrauch`,
+`aussenhandel`, `shipActivate` und `shipInstall`; die
+Schiffsverlust-Funktion storniert vor dem Löschen der Hülle.
+Andere Ausgaben können die vorab aus den Kassen entfernte Treuhand nicht
+mehr ausgeben. Eine Änderung von Preis und Dockgebühr ändert die zugesagten
+Beträge nicht. Ein ungedeckter Zielverkauf (z. B. Kapazitätsmangel) ändert
+weder die Vertragssumme noch die Fracht.
 
-- **Noch keine Produktintegration:** Die Brücke ist Testinstrumentierung, kein neuer `m_core_`-Produktcode. Zusätzliche Core-Buchungswege sind noch nicht vollständig mit Vertrags-Gates verkabelt.
-- Reservierung betrifft hier physisch bereits im Schiff liegende Fracht, **nicht** noch in Stationen lagernde Lieferware, neue Produktion oder noch nicht geförderte Rohstoffe. Stations- und Kapazitätsreservierung separat lösen.
-- Der originale `handel` hat aktuell einen Marktpreis, während Verträge einen fest zugesagten Preis benötigen. Preisdrift wird in B9i bewusst abgewiesen; ein echter produktiver Festpreis-Abschluss muss explizit mit der bisherigen Gebühren- und Statistiklogik verbunden werden.
-- Das vorhandene `load` prüft zusätzliche Vertragsdaten aktuell nicht. Die Testbrücke hat nur eine unabhängige Prüffunktion; die spätere Produktumsetzung braucht Ladevalidierung, Schema-/Regelstrategie, Migration und Abweisung beschädigter Verpflichtungen.
-- `shipActivate` und Modulein-/ausbau ändern Schiffsladung direkt; automatische Entscheidungen, andere Ausgaben, Produktion, Piratenbeute und alle Verlustwege brauchen den vollständigen Buchungspfad-Nachweis. Zwischenzeitliche Warenänderungen dürfen die Frachtbindung nicht unterschreiten.
-- Die synthetischen Verträge sind noch **keine** selbstständigen NPC-Konzerne oder geldgedeckten Produktions-/Pilotenaufträge. Wirtschaftlicher Wiederanlauf, 13×90-Tage-/365-Tage-Krisen und echte iPad-/NAS-Abnahme sind **nicht** bewiesen.
+**Unabhängige Invarianten:** `sum(owners.cash)+sum(offene Escrowwerte)
+=initialSupply+minted-burned`; physische Bestände in Lagern und Schiffen
+entsprechen für jede Ware dem originalen `ledger`. Bei stillgelegtem
+Vertragsadapter bleiben die Originalzustände/Hashes erhalten.
 
-**Freigabegrenze:** Nur ein nachweislich vollständig zentralisierter, geladen und auditiert vertragsfester Core kann als gesonderter Produkt-PR vorgeschlagen werden. Kein Merge nach `main` ohne ausdrückliche Freigabe.
+## 3. Save-/Load- und Migrationsstrategie: ausdrücklich simuliert
 
+Für ein **zukünftiges Produktkonzept** werden zwei Versionsschritte
+vorgeschlagen, ohne diese in `index.html` zu ändern:
 
-## Fortsetzung B9i – zwei getrennte Kern-Gates (01.11.2026)
+- **Schema 8 → 9:** neues `vertrag={next:1,eintraege:{}}` als persistente
+  Buchhaltung. Bestehende Bestände, Schiffe, Kassen, RNG, Befehlswarteschlange
+  und Hash-Inhalte werden sonst unverändert weitergegeben.
+- **Regel 14 → 15:** kennzeichnet die neue Vertragstransaktion und die damit
+  geänderte Frei-Mengen-/Gebührenpolitik. Die alten unterstützten
+  11→12→13→14-Migrationen bleiben erhalten.
+- Der Kandidaten-Loader nutzt die vorhandene `m_core_serialize.load` mit
+  explizit ergänzten Migrationsfunktionen. **Nach** deren Abarbeitung wird
+  das Vertragsbuch streng geprüft, **bevor** der geladene Zustand angenommen
+  wird: IDs/Counter, Status, positive Ganzzahlmengen, Preis/Gebühr, bezahlte
+  Escrowwerte, existierender Schiff-/Verkäufer-/Käuferbezug,
+  überreservierte Lager/Fracht, nichtnegative Kassen und unabhängige
+  Gesamtsumme. Zukunftsschema/-regeln und Vertragsdaten in alten
+  Schema-8-Dateien werden abgelehnt.
+- Ein Vertragszustand wird durch `canonical` verlustfrei wieder geladen,
+  auditierbar fortgesetzt und liefert identische Hashes bei identischen
+  Befehlsfolgen.
 
-**[ANALYSE/DRAFT]** Nach dem ersten synthetischen Vertragsversuch enthält
-`tests/b9i-gesamtbuchungen.test.mjs` eine **weitergehende Instrumentierung der unveränderten Produktquelle**.
-Der zweite Testadapter ist eine alternative Architekturprobe und wird bewusst noch **nicht**
-mit dem ursprünglichen Adapter vereinheitlicht; alte Tests verifizieren das Verhalten
-»Preisabweichung ablehnen«, neue Tests das vorgeschlagene »vereinbarten Preis auch
-bei Spotpreisänderung korrekt abrechnen«. Nur das zweite Verhalten erfüllt den
-aktuellen B9i-Festpreisauftrag.
+**Wichtig:** Der echte Produkt-Loader auf `main` kennt Schema 9/Regel 15
+noch **nicht**. Weder alte Nutzerdaten noch Browser-IndexedDB wurden
+angetastet. Die aktuelle Regel 14 und das echte Saveformat bleiben erhalten.
 
-**Schritt 1: Reservierungs- und Buchungswege.** Die Käuferkasse verliert beim
-Vertragsabschluss sofort den vereinbarten Warenbetrag; die Verkäuferkasse verliert
-gleichzeitig die vereinbarte Zielhandelsgebühr. Beide Beträge liegen als echte
-Treuhand-Position im Vertragsbuch, sind nicht anderweitig verfügbar und gehören
-in die unabhängige Gesamtgeldbilanz. Ware kann entweder (a) bereits im echten
-Schiff liegen oder (b) vor Abholung in einer realen Quellstation gebunden werden.
-Mit den Test-Hooks werden `handel`, `produktion`, `verbrauch`,
-`aussenhandel`, `shipActivate`, `shipInstall` und die
-Verlust-/Beutewege auf die freie Menge begrenzt. Die restlichen Geldpfade
-(`betriebskosten`, `fonds`, `npcAusgaben`, `dividende`,
-`ersatzkauf`, Piratenersatz) arbeiten ohnehin aus den tatsächlichen
-freien `owners[*].cash`-Konten; eine Doppelausgabe bereits entnommener
-Treuhand ist dort nicht möglich. **Das ist ein Buchungsmodell-Nachweis,
-keine vollständige autonome Finanzierungs-/Fahrtkostenregel.**
+## 4. Testnachweis und Grenzen
 
-**Schritt 2: atomarer Festpreisabschluss.** Ein Quelllager-Vertrag muss
-zunächst **wirklich bezahlt** über das existierende
-`m_core_handel.handel(...,kauf=true)` in das Schiff geladen werden;
-die Ware bleibt dann als physische Fracht gebunden. Bei der Ankunft
-entsperrt der Adapter für genau eine synchrone Core-Handelsbuchung
-den festgesetzten Erlös und die bereits gebundene Verkäufergebühr.
-Der bestehende Marktweg bucht Eigentümerwechsel, Lagerbewegung,
-Statistik und Gebührenempfänger. Änderungen am aktuellen Spotpreis
-oder an Dockmodulen ändern **nicht rückwirkend** die beiden
-bei Vertragsschluss gebuchten Beträge. Scheitert die Händlerbuchung
-(z. B. Kapazitätsüberschreitung), werden alle Treuhandpositionen
-zurückgesetzt, ohne Waren zu bewegen; erfolgreicher Abschluss
-oder Stornierung sind idempotent. Keine ISK-Minting-Regel, keine
-individuelle Konkursgarantie und keine Gratiswaren.
+Der finale Kandidat enthält 19 neue Node-Tests. Die ursprünglichen 67
+Produktregressionen bleiben unverändert. Die GitHub-Action prüft außerdem
+die historischen Regelversionen und die 13×90-Tage-Referenzwirtschaft
+**des unmodifizierten Produkts**; dies darf nicht als neue Vertragssimulation
+gezählt werden. Für genaue Testzahl und erfolgreichen Gesamtworkflow ist der
+zuletzt abgeschlossene CI-Run des Heads von PR #83 maßgeblich.
 
-**Tests:** CI-Läufe sind erst bei tatsächlich vollständigem Ende als
-bestanden anzuführen. Nachfolgende Änderungen des Testadapters erfordern
-einen neuen Lauf; historische CI-Ergebnisse sind kein Nachweis des
-geänderten Heads. Der Vergleich ohne aktive Verträge prüft den
-originalen 1.440-Tick-Hash für Seed 7/42. Spezifische isolierte
-Gates prüfen Station/Verbrauch, Produktion, Außenexport,
-Schiffsaktivierung, echte Quellabholung, Gebührenziel, Festpreisdrift,
-Abbruch, Schiffsverlust, Save/Load und unabhängige Geld-/Warenbilanz.
+**Offene Blocker vor einer Produktimplementierung:**
 
-**Noch nicht produktreif / Sicherheitsgrenze:**
-- `index.html` wurde **nicht** verändert; keine Codepfade dieses
-  zweiten Testadapters sind beim regulären Spiel aktiv.
-- Neue Verträge würden zusätzliche persistente Werte erfordern:
-  Die reguläre `load`-Funktion validiert die Verträge noch nicht
-  vollständig. Die Tests führen eine separate explizite Treuhandprüfung aus.
-- Quell- und Zielkapazität, Warenrechte/Stationseigentum, veränderte
-  Vertragspartner, Vertragsablaufzeit, Reise-/Arbeitsbudgets, mehrere
-  konkurrierende Aufträge und echte 90-/365-Tage-Krisen müssen vor
-  einer Produktumsetzung vollständig spezifiziert und getestet werden.
-- Der Testadapter nutzt an einer Stelle einen **gezielten
-  Systemwechsel im Testsetup**, nicht eine bezahlte echte Frachterreise;
-  die Waren- und Geldabwicklung selbst erfolgt im Originalkern.
-- Für eine aktivierte Produktregel müssen Spielstandmigration,
-  Hash-/Regelreferenzen und iPad-/NAS-Abnahme gesondert erfolgen.
-  Keine Integration in `main` ohne explizite Freigabe.
+1. Gebühren und Festpreise sind prototypisch an *Lieferung* gebunden, aber
+   der Quellwarenkauf wird erst bei Abholung bezahlt. Dafür besteht noch
+   **keine vorab reservierte Einkaufs-/Fahrt-/Arbeitskasse**. Das Pilotbudget
+   aus B8o muss separat und ohne Doppelausgabe integriert werden.
+2. Das Vertragsmodell benötigt Rechte- und Eigentumsprüfung, Lieferfrist,
+   Untergangs-/Rücktrittsregeln, volle Ziel-Lagerkapazitätsbindung und
+   Regelung bei Quell-/Ziel-Eigentümerwechsel. Ein synchroner Core-Fehler
+   muss transaktional ohne Teilbuchung enden, nicht nur ein `false`-Rückgabewert.
+3. Für produktive Verträge müssen alle **direkten** Warenmutationen und
+   Ereignisse einschließlich Piratenbeute, Produktion und Module in einer
+   einzelnen zentralen Buchungsschicht abgesichert werden. Synthetische
+   Zustandsmanipulationen in Tests sind keine echte Reise-/Wirtschaftswelt.
+4. Die produktive Migrationskette benötigt Schema9-/Regel15-Quellcode,
+   Absicherung von beschädigten und inkompatiblen Daten, neue Referenz-Hashes
+   mit unabhängiger Begründung sowie Browser-AutoSave/Import-Abnahme.
+5. Es fehlen 13×90 Tage und 365 Tage **mit tatsächlich aktiven Verträgen**,
+   einschließlich Spielerkreisen, Konzerninsolvenzen, Versorgung, Geldverteilung,
+   Schiffverlusten und Betriebskosten. Ebenso fehlen reale iPad-/NAS-Tests.
+6. **Keine neue Geldmodell-B-Emission**, keine kostenlose Sonderversorgung,
+   kein Spieler-Sparlimit und keine individuelle Insolvenzrettung beschlossen.
+
+**[EMPFEHLUNG]** Nächster kleiner Schritt: verbindliches Vertrags-/Auftrags-
+Budgetmodell für Quellkauf, Reise und Arbeit als gemeinsame atomare
+Finanzierungsregel definieren und in getrennten Tests gegen Gegenfinanzierung,
+Insolvenz, Piratenverlust und Save/Load beweisen; erst dann produktiven
+Regel-15-/Schema-9-PR zur ausdrücklichen Entscheidung vorlegen.

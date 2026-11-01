@@ -1,15 +1,15 @@
 name: "[ANALYSE] B8m NPC3 gedeckte Reiseentscheidungen statt unbezahlter Leerflüge"
 on:
   push:
-    branches: [analyse/b8m-unfinanzierte-leerfahrten-20261101]
+    branches: [analyse/b8m-vorfinanzierte-frachterdisposition-20261101]
     paths:
       - 'tools/analyse-b8m-fahrtdeckung.mjs'
-      - '.github/workflows/analyse-b8m-leerfahrten.yml'
+      - '.github/workflows/analyse-b8m-fahrtdeckung.yml'
       - 'index.html'
   pull_request:
     paths:
       - 'tools/analyse-b8m-fahrtdeckung.mjs'
-      - '.github/workflows/analyse-b8m-leerfahrten.yml'
+      - '.github/workflows/analyse-b8m-fahrtdeckung.yml'
       - 'index.html'
 jobs:
   b8m:

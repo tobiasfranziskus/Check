@@ -1023,17 +1023,26 @@ function bezahlbar(rules, station, kasse, p) {
 function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt = false, fixed = null) {
   if(state.schema===9&&m_core_vertrag.aktivSchiff(state,schiff.id)&&!fixed)return false;
   const c=fixed&&state.vertrag?.eintraege[fixed.id];
-  if(fixed&&(!c||c.status!=='abwicklung'||kauf||c.schiff!==schiff.id||
-      c.kaeufer!==station||c.ware!==ware||c.menge!==menge))return false;
+  const raw=fixed?.roh===true, charge=fixed?.charge===true;
+  if(fixed&&(!c || (raw
+    ? !(c.produktion && c.status==='foerderung' && !kauf &&
+      c.produktion.miner===schiff.id && station===c.quelle &&
+      ware==='eis' && menge===c.produktion.rohMenge)
+    : charge
+      ? !(c.produktion && c.status==='bereit' && kauf &&
+        c.schiff===schiff.id && station===c.quelle &&
+        ware==='nahrung' && menge===c.menge)
+      : !(c.status==='abwicklung' && !kauf && c.schiff===schiff.id &&
+        c.kaeufer===station && c.ware===ware && c.menge===menge))))return false;
   if (!Number.isSafeInteger(menge) || menge <= 0) return false;
-  const p = fixed ? c.preis : preis(state, station, ware, rules);
+  const p = fixed && !raw && !charge ? c.preis : preis(state, station, ware, rules);
   if(p<=0)return false;
   const st = state.stations[station];
   const kasse = state.owners[station];
   const besitzer = state.owners[schiff.owner];
   const fondsId = fondsIn(rules, st.system);
   const wert = menge * p;
-  const fee = fixed ? c.zielgebuehr : gebuehr(state, rules, station, wert);
+  const fee = fixed && !raw && !charge ? c.zielgebuehr : gebuehr(state, rules, station, wert);
   const fracht = Object.values(schiff.ladung).reduce((a, b) => a + b, 0);
   const reicht = kauf
     ? anzahl(st.lager, ware) >= menge && besitzer.cash >= wert + fee
@@ -1122,10 +1131,13 @@ function foerderung(state, rules) {
     if (vorher < e.cargo) {
       const station = stationIn(rules, s.system);
       const rate = e.miningRate * (1 + anzahl(state.stations[station].module, 'bergbau'));
-      const n = Math.min(rate, e.cargo - vorher);
+      const n = state.schema===9 ? m_core_vertrag.minenLimit(state,s,Math.min(rate,e.cargo-vorher))
+        : Math.min(rate, e.cargo-vorher);
+      if(n===0)continue;
       s.ladung[ware] = vorher + n;
       state.ledger[ware].mined += n; s.arbeit += 1;
     }
+    if(state.schema===9 && m_core_vertrag.rohErnten(state,rules,s))continue;
     if (s.ladung[ware] < e.cargo) continue;
     const station = stationIn(rules, s.system);
     const m = Math.min(s.ladung[ware], aufnehmbar(state, rules, station, ware));
@@ -1514,15 +1526,14 @@ function produktionsStart(s,c,r) {
   p.wip++;p.angefangen++;
   return true;
 }
-function produktionsFertig(s,c,n) {
+function produktionsFertig(s,c,n,r) {
   const p=c.produktion;
   if(!p.wip||n!==1)throw Error('B-K9f falsche Rezeptcharge');
   p.wip--;p.fertig++;p.nahrungLager+=n;
   if(p.fertig===c.menge){
     c.status='bereit';
     // Echter, finanzierter Fabriklohn an bestehenden regionalen Lohnfonds.
-    const fund=m_core_handel.fondsIn(s.vertragRegeln || m_data_rules.RULES,
-      s.stations[c.quelle].system);
+    const fund=m_core_handel.fondsIn(r,s.stations[c.quelle].system);
     s.owners[fund].cash+=p.fabrikLohn;
     p.fabrikLohn=0;
   }
@@ -1754,14 +1765,29 @@ function produktion(state, rules) {
     const st = state.stations[id];
     for (const linie of st.linien) {
       const r = rezepte[linie.rezept];
+      const gebunden = state.schema===9
+        ? m_core_vertrag.produktionsLinie(state,id,st.linien.indexOf(linie)) : null;
+      if(gebunden && gebunden.status!=='produktion')continue;
       if (linie.rest > 0) {
         linie.rest -= 1;
         if (linie.rest === 0) {
-          for (const ware of ids(r.aus)) { st.lager[ware] = anzahl(st.lager, ware) + r.aus[ware]; state.ledger[ware].produced += r.aus[ware]; }
+          for (const ware of ids(r.aus)) {
+            st.lager[ware] = anzahl(st.lager, ware) + r.aus[ware];
+            state.ledger[ware].produced += r.aus[ware];
+            if(gebunden){
+              st.lager[ware]-=r.aus[ware];
+              m_core_vertrag.produktionsFertig(state,gebunden,r.aus[ware],rules);
+            }
+          }
           state.stats.rezepte[id] += 1;
         }
       }
       if (linie.rest > 0) continue;
+      if(gebunden){
+        if(gebunden.status==='produktion' && m_core_vertrag.produktionsStart(state,gebunden,r))
+          linie.rest=r.dauer;
+        continue;
+      }
       const eingaben = ids(r.ein).every((w) => anzahl(st.lager, w) >= r.ein[w]);
       const platz = ids(r.aus).every((w) => anzahl(st.lager, w) + r.aus[w] <= obergrenze(state, rules, id, w));
       if (!eingaben || !platz) continue;

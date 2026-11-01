@@ -257,3 +257,42 @@ test('B9j: freiwilliger Storno waehrend der Fahrt darf keinen ungedeckten Lohn e
   assert(!e.fahrt.abbrechen(s,id));
   audit(e,s);
 });
+
+test('B9j: auch ein NPC-Konzern zahlt Quellkauf, Lohn und Gebuehren selbst',()=>{
+  const {e,s}=setup();
+  const ship=Object.values(s.ships).find(x=>x.klasse==='frachter'&&x.owner!=='house'&&
+    x.owner!==e.rules.world.piraten.owner);
+  assert(ship,'mindestens ein NPC-Frachter');
+  for(const [ware,n] of Object.entries(ship.ladung)){
+    s.ledger[ware].consumed+=n;
+    delete ship.ladung[ware];
+  }
+  ship.system='cyris';ship.phase='dock';ship.auftrag='halten';ship.arbeit=0;
+  const owner=ship.owner;
+  const move=Math.max(0,10000-s.owners[owner].cash);
+  assert(s.owners.house.cash>=move);
+  s.owners.house.cash-=move;s.owners[owner].cash+=move; // nur existierendes Geld
+  const funds=s.owners[owner].cash;
+  const id=e.fahrt.starten(s,e.rules,ship.id,'st_aldera','material',5,'st_cyris');
+  assert(id);
+  assert(s.owners[owner].cash<funds);
+  const hours=Math.ceil((s.fahrten[id].routeZeit+1)/60)*60;
+  e.core.advance(s,hours,e.rules);
+  assert(s.ships[ship.id]);
+  assert(e.fahrt.abschliessen(s,e.rules,id));
+  assert(s.fahrten[id].arbeitskosten>0);
+  assert.equal(s.vertrag.eintraege[id].status,'erfuellt');
+  audit(e,s);
+});
+test('B9j: nach Ausbuchung der Zielkasse bleibt vereinbarter Treuhandverkauf zahlbar',()=>{
+  const {e,s,ship}=setup();
+  const id=e.fahrt.starten(s,e.rules,ship.id,'st_aldera','material',5,'st_cyris');
+  assert(id);
+  const ticks=Math.ceil((s.fahrten[id].routeZeit+1)/60)*60;
+  e.core.advance(s,ticks,e.rules);
+  const remaining=s.owners.st_aldera.cash;
+  s.owners.st_aldera.cash=0;s.owners.npc1.cash+=remaining;
+  assert(e.fahrt.abschliessen(s,e.rules,id));
+  assert.equal(s.vertrag.eintraege[id].status,'erfuellt');
+  audit(e,s);
+});

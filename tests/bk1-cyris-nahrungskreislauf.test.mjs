@@ -69,7 +69,7 @@ function ueberweise(s,von,nach,betrag,grund){
 // Eine Runde: 2 Eis tatsaechlich foerdern; bezahlt verkaufen; 1 Nahrung
 // mit dem Originalrezept herstellen; Haushalte bezahlen tatsaechlichen Verbrauch.
 // Die Entnahme/Bezahlung der neuen Endnachfrage ist der EINZIGE Konsum-Prototyp.
-function runde(s,miner,{rueckfluss=false}={}){
+function runde(s,miner,{rueckfluss=false,betriebsRuecklage=0}={}){
   const hh=s.owners[H],st=s.stations[S];
   const nahrPreis=core.preis(s,S,'nahrung',R);
   if(hh.cash<nahrPreis)return {ok:false,grund:'haushalt-ohne-kaufkraft',
@@ -114,8 +114,10 @@ function runde(s,miner,{rueckfluss=false}={}){
   const nettoMiner=s.owners[M].cash-before.miner;
   const nettoStation=s.owners[S].cash-before.station;
   assert(nettoMiner>=0&&nettoStation>=0,'kein Gewinn fuer Arbeit oder Eigentum');
+  if(!Number.isSafeInteger(betriebsRuecklage)||betriebsRuecklage<0||
+     betriebsRuecklage>nettoStation)throw Error('unfinanzierbare Ruecklage');
   ueberweise(s,M,H,nettoMiner,'Minerarbeitslohn und Eigentuemerausschuettung');
-  ueberweise(s,S,H,nettoStation,'Fabrikarbeitslohn und Eigentuemerausschuettung');
+  ueberweise(s,S,H,nettoStation-betriebsRuecklage,'Fabriklohn/Dividendenausschuettung NACH Ruecklage');
   const staatlicherRueckfluss=s.owners[F].cash-before.fonds;
   const quellenGebuehr=core.gebuehr(s,R,S,quellKosten);
   const echterMinerBetrieb=staatlicherRueckfluss-quellenGebuehr;
@@ -132,12 +134,12 @@ function runde(s,miner,{rueckfluss=false}={}){
   return {ok:true,preisEis,nahrPreis,quellKosten,arbeitKosten:Math.max(0,quellKosten-minedWageCost),
     minerNet:nettoMiner,stationNet:nettoStation,fondsNet,
     nettoHaushalt:hh.cash-before.haushalt,haushalt:hh.cash,
-    fonds:s.owners[F].cash,fondsEinnahmen:staatlicherRueckfluss,quellenGebuehr,echterMinerBetrieb,auszahlung};
+    fonds:s.owners[F].cash,fondsEinnahmen:staatlicherRueckfluss,quellenGebuehr,echterMinerBetrieb,auszahlung,betriebsRuecklage};
 }
-function lauf({seed=42,runden=20,rueckfluss=false,haushaltStart=400}={}){
+function lauf({seed=42,runden=20,rueckfluss=false,haushaltStart=400,betriebsRuecklage=0}={}){
   const {s,miner}=welt(seed,haushaltStart),ergebnisse=[];
   for(let i=0;i<runden;i++){
-    const ergebnis=runde(s,miner,{rueckfluss});
+    const ergebnis=runde(s,miner,{rueckfluss,betriebsRuecklage});
     ergebnisse.push(ergebnis);
     if(!ergebnis.ok)break;
   }
@@ -225,4 +227,19 @@ test('B-K1: nur realer Arbeitskosten-Rueckfluss laesst die Gebuehr als Restleck 
   console.log('BK1_NUR_ARBEITSKOSTEN_RUECKFLUSS '+JSON.stringify({
     zyklen:20,haushalt:a.s.owners[H].cash,fonds:a.s.owners[F].cash,
     gebuehrenRestJeRunde:a.ergebnisse[0].quellenGebuehr}));
+});
+
+test('B-K1: Unternehmensruecklage 2 ISK je Charge trotz vollem Fondsrueckfluss mindert Haushaltskaufkraft',()=>{
+  const a=lauf({runden:20,rueckfluss:true,betriebsRuecklage:2});
+  const b=lauf({runden:20,rueckfluss:true,betriebsRuecklage:0});
+  assert.equal(a.abgeschlossen,20);
+  assert.equal(a.s.owners[H].cash,360,'40 ISK in Fabrik gebunden');
+  assert.equal(a.s.owners[S].cash,b.s.owners[S].cash+40);
+  assert.equal(a.s.owners[F].cash,600);
+  assert.equal(summe(a.s),summe(b.s));
+  assert.equal(a.s.ledger.nahrung.consumed,b.s.ledger.nahrung.consumed);
+  audit(a.s);
+  console.log('BK1_RUECKLAGE_KAUFKRAFT '+JSON.stringify({zyklen:20,
+    firmaZusaetzlich:40,haushalt:a.s.owners[H].cash,liquiditaetsabflussJeRunde:2,
+    bemerkung:'Ruecklage ist transferiertes Bestandsgeld, nicht verbrannt'}));
 });

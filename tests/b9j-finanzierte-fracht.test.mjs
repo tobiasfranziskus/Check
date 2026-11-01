@@ -269,9 +269,16 @@ test('B9j: auch ein NPC-Konzern zahlt Quellkauf, Lohn und Gebuehren selbst',()=>
   }
   ship.system='cyris';ship.phase='dock';ship.auftrag='halten';ship.arbeit=0;
   const owner=ship.owner;
-  const move=Math.max(0,10000-s.owners[owner].cash);
-  assert(s.owners.house.cash>=move);
-  s.owners.house.cash-=move;s.owners[owner].cash+=move; // nur existierendes Geld
+  // Kontrolliertes Kapitalisierungsszenario: Bestands-ISK real umverteilen,
+  // nicht minten. So wird ausschliesslich die NPC/Spieler-Neutralitaet getestet.
+  let missing=Math.max(0,10000-s.owners[owner].cash);
+  for(const donor of Object.keys(s.owners).filter(x=>x!==owner)
+      .sort((a,b)=>s.owners[b].cash-s.owners[a].cash||a.localeCompare(b))){
+    const n=Math.min(missing,s.owners[donor].cash);
+    s.owners[donor].cash-=n;s.owners[owner].cash+=n;missing-=n;
+    if(missing===0)break;
+  }
+  assert.equal(missing,0,'vorhandenes Weltkapital reicht zur Test-Kapitalisierung');
   const funds=s.owners[owner].cash;
   const id=e.fahrt.starten(s,e.rules,ship.id,'st_aldera','material',5,'st_cyris');
   assert(id);

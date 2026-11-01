@@ -12,7 +12,7 @@ const sha=x=>createHash('sha256').update(x).digest('hex');
 assert.equal(sha(original),'035fe8b486ff2d515ca6379ad682b4b15d89d5d051866e287425ed425e1cbfc9');
 const hooks=[
  ["      if (gewinn <= 0) continue;",
-  "      if (gewinn <= 0) continue;\n      if (!probe.offer(state,rules,s,station,ziel,ware,menge,gewinn,r.zeit,pHier,pDort)) continue;"],
+  "      if (gewinn <= 0) continue;\n      if (!probe.offer(state,rules,s,station,ziel,ware,menge,gewinn,r.zeit,pHier,pDort,gebuehr(state,rules,station,menge*pHier))) continue;"],
  ["    if (erloes <= 0) continue;",
   "    if (erloes <= 0) continue;\n    if (!probe.disposal(state,rules,s,station,ziel,erloes,r.zeit)) continue;"],
  ["  if (!r || r.zeit <= 0) return false;\n  if (ware !== null) {",
@@ -47,7 +47,7 @@ function observer(mode){
  destroyed:[],
  isFocus(s){return s.owner==='npc3' && s.klasse==='frachter';},
  risky(rules,target){return rules.world.systems[rules.world.stations[target].system].sicherheit!=='sicher';},
- offer(state,rules,s,source,target,ware,qty,gross,minutes,pBuy,pSell){
+ offer(state,rules,s,source,target,ware,qty,gross,minutes,pBuy,pSell,actualBuyFee){
   if(!this.isFocus(s)||this.mode==='control'||this.mode==='autonomous')return true;
   this.offers.considered++;
   if(this.risky(rules,target)){
@@ -59,7 +59,7 @@ function observer(mode){
     const costOneLeg=Math.ceil(minutes*rules.world.betriebskosten.frachter/60);
     const fullTravel=2*costOneLeg;
     if(gross<=fullTravel){this.offers.blockedMargin++;return false;}
-    const purchase=qty*pBuy+Math.floor(qty*pBuy*rules.world.stations[source].gebuehr/1000);
+    const purchase=qty*pBuy+actualBuyFee;
     const miners=Object.values(state.ships).filter(x=>x.owner==='npc3'&&x.klasse==='miner').length;
     const reserve=miners*rules.world.betriebskosten.miner;
     if(state.owners.npc3.cash<purchase+fullTravel+reserve){

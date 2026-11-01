@@ -1358,6 +1358,7 @@ function pruefen(s) {
       if(![p.rohBudget,p.minerBudget,p.fabrikLohn,p.frachtBudget,
         p.rohLager,p.nahrungLager,p.angefangen,p.fertig,p.wip,p.rohMenge,
         p.rohPreis,p.minerArbeit,p.vorherWip].every(zahl) ||
+        typeof p.rohGeliefert!=='boolean' ||
         !s.owners[p.minerBesitzer] || !s.owners[p.fabrikBesitzer] ||
         !s.stations[c.quelle] || !Number.isSafeInteger(p.linie) ||
         p.linie<0 || s.stations[c.quelle].linien[p.linie]?.rezept!=='r_nahrung' ||
@@ -1366,7 +1367,8 @@ function pruefen(s) {
         p.fertig+p.wip>p.angefangen ||
         p.nahrungLager>p.fertig || p.nahrungLager>c.menge ||
         p.rohLager>p.rohMenge ||
-        (['foerderung','roh-wartet','produktion','bereit'].includes(c.status) &&
+        ((['foerderung','roh-wartet'].includes(c.status) ||
+          (['produktion','bereit'].includes(c.status) && !p.rohGeliefert)) &&
           (!s.ships[p.miner]||s.ships[p.miner].owner!==p.minerBesitzer)))
         throw Error('B-K9f Produktionscharge ungültig');
       const lineKey=c.quelle+'/'+p.linie;
@@ -1479,7 +1481,7 @@ function beginnenProduktion(s,r,a) {
   for(const [konto,wert] of Object.entries(braucht))
     if(s.owners[konto].cash<wert)return null;
   const p={miner:miner.id,minerBesitzer:miner.owner,fabrikBesitzer:a.quelle,linie:line,
-    vorherWip:s.stations[a.quelle].linien[line].rest,
+    vorherWip:s.stations[a.quelle].linien[line].rest,rohGeliefert:false,
     rohMenge:2*a.menge,rohPreis:q.kosten.rohwert,
     rohBudget:rawLimit,
     minerBudget:q.kosten.rohgebuehr+q.kosten.minerkosten,
@@ -1537,6 +1539,7 @@ function rohErnten(s,r,sh) {
   s.owners[c.quelle].cash+=p.rohBudget;
   p.rohBudget=0;
   p.rohPreis=wert;
+  p.rohGeliefert=true;
   p.vorherWip=s.stations[c.quelle].linien[p.linie].rest;
   c.status='produktion';sh.auftrag='halten';
   return true;
@@ -1669,6 +1672,11 @@ function verlust(s,r,sh) {
   const c=finden(s,sh.id);if(!c)return false;
   if(c.produktion && ['foerderung','roh-wartet','produktion','bereit'].includes(c.status)){
     if(sh.arbeit>0)m_core_stunde.betriebskosten(s,r,sh.id);
+    if(sh.id===c.produktion.miner && c.produktion.rohGeliefert){
+      // Die bereits bezahlte Rohstoffcharge gehört dem Vertrag.
+      // Nach Übergabe ist der einzelne Miner für die Fertigung nicht mehr nötig.
+      return true;
+    }
     abbrechenProduktion(s,c.id);return true;
   }
   // Arbeiten, die seit dem letzten Stundenabschluss anfielen, bezahlen.

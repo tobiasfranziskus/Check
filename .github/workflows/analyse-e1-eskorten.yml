@@ -1,0 +1,32 @@
+name: "[ANALYSE] E1 Pflichteskorte mit realen Jägerkosten und tatsächlichem Kampf"
+on:
+  push:
+    branches: [analyse/e1-realfinanzierte-pflichteskorte-20261101]
+    paths:
+      - 'tools/analyse-e1-eskorten.mjs'
+      - '.github/workflows/analyse-e1-eskorten.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'tools/analyse-e1-eskorten.mjs'
+      - '.github/workflows/analyse-e1-eskorten.yml'
+      - 'index.html'
+jobs:
+  escort:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original regression tests
+        run: node --test tests/*.test.mjs
+      - name: Eight paired original-core and escort counterfactual 90-day worlds
+        run: node tools/analyse-e1-eskorten.mjs --out="$RUNNER_TEMP/e1"
+      - name: Save report
+        uses: actions/upload-artifact@v4
+        with:
+          name: e1-paid-escort-risk-tests
+          path: ${{ runner.temp }}/e1/e1-results.json
+          if-no-files-found: error

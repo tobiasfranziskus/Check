@@ -17,7 +17,7 @@ function engine(src,watch){
  assert.equal(src.split(trade).length,2,'Original-Handelstransaktion');
  const audited=src.replace(cost,
    "if (['npc1','npc2','npc3'].includes(s.owner)) watch.unpaid(s.owner,Math.max(0,kosten-besitzer.cash));\n    "+cost)
-  .replace(fly,"        watch.empty(s.owner);\n"+fly)
+  .replace(fly,"        (watch.empty(s.owner), abflug(state, rules, s, station, andere[rngInt(state, andere.length)], null, 0));")
   .replace(trade,"buche(state, schiff.owner, 'kosten', fee);\n  watch.trade(schiff.owner,schiff.klasse,kauf);\n  return true;");
  return new Function('watch',audited+
   ';return {core:m_core_index,rules:m_data_rules.RULES};')(watch);

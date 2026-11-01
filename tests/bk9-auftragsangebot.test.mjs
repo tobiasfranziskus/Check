@@ -158,3 +158,24 @@ test('B-K9: 2^53-Überlauf im Vertragswert kann weder Quote noch Budget schaffen
   assert.equal(q.ok,false);
   assert(q.fehler.includes('UEBERLAUF'));
 });
+
+
+test('B-K9: Marktpreis und tatsächlich kostendeckender Vertragsmindestpreis werden exakt unterschieden',()=>{
+  const {s,a}=seedState();
+  const q=calc(s,a);
+  assert.equal(q.markt.aktuellerZielpreis,core.preis(s,'st_aldera','nahrung'));
+  assert.equal(q.markt.aktuellerZielpreis,30);
+  const floor=q.markt.frachtKostendeckendAb;
+  assert.equal(floor,136,'3 Nahrung Cyris–Aldera: voll gebundene 250 ISK Reise-/39 ISK Ersatzreserve');
+  assert(floor>q.markt.aktuellerZielpreis);
+  const just=calc(s,{...a,endpreis:floor});
+  assert(just.margen.frachter>=0);
+  const tooLow=calc(s,{...a,endpreis:floor-1});
+  assert(tooLow.margen.frachter<0);
+  assert(tooLow.fehler.includes('FRACHTER_VERLUST'));
+  console.log('BK9_MINDESTPREIS '+JSON.stringify({
+    aktuellerSpotpreis:q.markt.aktuellerZielpreis,
+    konservativerFrachtMindestpreis:floor,
+    verlustBeiSpot:calc(s,{...a,endpreis:q.markt.aktuellerZielpreis}).margen.frachter
+  }));
+});

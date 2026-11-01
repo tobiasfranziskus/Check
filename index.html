@@ -747,6 +747,8 @@ function checkShape(state, cmd, rules) {
   const erlaubt = new Set(['type', 'owner', ...FIELDS[cmd.type]]);
   for (const k of Object.keys(cmd)) if (!erlaubt.has(k)) return `unerlaubtes Feld: ${k}`;
   if (FIELDS[cmd.type].includes('schiff')) {
+    if (state.schema===9&&typeof cmd.schiff==='string'&&m_core_vertrag.aktivSchiff(state,cmd.schiff))
+      return 'Schiff durch Liefervertrag gebunden';
     if (typeof cmd.schiff !== 'string' || !Object.hasOwn(state.ships, cmd.schiff)) return 'unbekanntes Schiff';
     const s = state.ships[cmd.schiff];
     if (s.owner !== cmd.owner) return 'Schiff gehört nicht dem Besitzer';
@@ -1018,16 +1020,20 @@ function bezahlbar(rules, station, kasse, p) {
   return div(kasse * 1000, p * (1000 + rules.world.stations[station].gebuehr));
 }
 
-function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt = false) {
+function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt = false, fixed = null) {
+  if(state.schema===9&&m_core_vertrag.aktivSchiff(state,schiff.id)&&!fixed)return false;
+  const c=fixed&&state.vertrag?.eintraege[fixed.id];
+  if(fixed&&(!c||c.status!=='abwicklung'||kauf||c.schiff!==schiff.id||
+      c.kaeufer!==station||c.ware!==ware||c.menge!==menge))return false;
   if (!Number.isSafeInteger(menge) || menge <= 0) return false;
-  const p = preis(state, station, ware, rules);
-  if (p <= 0) return false;
+  const p = fixed ? c.preis : preis(state, station, ware, rules);
+  if(p<=0)return false;
   const st = state.stations[station];
   const kasse = state.owners[station];
   const besitzer = state.owners[schiff.owner];
   const fondsId = fondsIn(rules, st.system);
   const wert = menge * p;
-  const fee = gebuehr(state, rules, station, wert);
+  const fee = fixed ? c.zielgebuehr : gebuehr(state, rules, station, wert);
   const fracht = Object.values(schiff.ladung).reduce((a, b) => a + b, 0);
   const reicht = kauf
     ? anzahl(st.lager, ware) >= menge && besitzer.cash >= wert + fee
@@ -1060,6 +1066,9 @@ const m_core_ankunft = (() => {
 const { ids, anzahl } = m_core_zahl;
 const { handel, aufnehmbar, stationIn } = m_core_handel;
 function entladen(state, rules, s) {
+  if(state.schema===9&&m_core_vertrag.aktivSchiff(state,s.id)) {
+    m_core_vertrag.liefern(state,rules,s.id);return;
+  }
   const station = stationIn(rules, s.system);
   for (const ware of ids(s.ladung)) {
     const m = Math.min(anzahl(s.ladung, ware), aufnehmbar(state, rules, station, ware));
@@ -1292,6 +1301,132 @@ function nahrungsmarktangebot(state, rules, angabe) {
 return { nahrungsangebot, nahrungsmarktangebot };
 })();
 
+
+// B-K9c: expliziter Schema9/Regel15-Vertragskandidat. Regel14 bleibt inaktiv.
+const m_core_vertrag = (() => {
+const zahl = n => Number.isSafeInteger(n) && n >= 0;
+const alle = s => Object.values(s.vertrag?.eintraege || {});
+const aktiv = c => ['fahrt','wartet','geliefert'].includes(c.status);
+const finden = (s,ship) => alle(s).find(c => c.schiff === ship && aktiv(c)) || null;
+const aktivSchiff = (s,ship) => !!finden(s,ship);
+const sperrgeld = s => alle(s).reduce((n,c)=>n+c.escrow+c.fee+c.lohn+c.huelle,0);
+function pruefen(s) {
+  if (s.schema!==9 || s.rulesVersion!==15 || !s.vertrag ||
+      !zahl(s.vertrag.next) || s.vertrag.next<1 ||
+      !s.vertrag.eintraege || typeof s.vertrag.eintraege!=='object' ||
+      Array.isArray(s.vertrag.eintraege)) throw Error('B-K9c Vertragsbuch ungültig');
+  let max=0;const schiffe=new Set();
+  for (const [id,c] of Object.entries(s.vertrag.eintraege)) {
+    if (!/^v[1-9][0-9]*$/.test(id) || !c || c.id!==id ||
+        !['fahrt','wartet','geliefert','erfuellt','storniert','verloren'].includes(c.status) ||
+        ![c.escrow,c.fee,c.lohn,c.huelle,c.lohnStart,c.lohnBezahlt,
+          c.preis,c.menge,c.zeit,c.zielgebuehr].every(zahl) ||
+        c.preis<1 || c.menge<1 || c.lohnBezahlt>c.lohnStart ||
+        c.ware!=='nahrung' || !s.owners[c.kaeufer] ||
+        !s.owners[c.verkaeufer] || !s.stations[c.quelle] || !s.stations[c.ziel])
+      throw Error('B-K9c Vertragsreferenz/Betrag ungültig');
+    max=Math.max(max,Number(id.slice(1)));
+    if (aktiv(c)) {
+      if (!s.ships[c.schiff] || s.ships[c.schiff].owner!==c.verkaeufer ||
+          schiffe.has(c.schiff)) throw Error('B-K9c gebundenes Schiff ungültig');
+      schiffe.add(c.schiff);
+      if (c.lohn+c.lohnBezahlt!==c.lohnStart) throw Error('B-K9c Arbeitsreserve ungültig');
+    }
+    if (c.status==='fahrt' && s.ships[c.schiff].phase!=='reise')
+      throw Error('B-K9c Reise fehlt');
+    if (['erfuellt','storniert','verloren'].includes(c.status) &&
+        (c.escrow!==0||c.fee!==0||c.lohn!==0))
+      throw Error('B-K9c Abschlussgeld doppelt gebunden');
+  }
+  if(max>=s.vertrag.next)throw Error('B-K9c Zähler ungültig');
+  for(const o of Object.values(s.owners))if(!zahl(o.cash))throw Error('B-K9c negative Kasse');
+  const cash=Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
+  if(cash+sperrgeld(s)!==s.initialSupply+s.minted-s.burned)
+    throw Error('B-K9c Geldbilanz ungültig');
+  return true;
+}
+function starten(s,r,a) {
+  if (s.schema!==9||s.rulesVersion!==15||r.schema!==9||r.rulesVersion!==15)return null;
+  pruefen(s);
+  const quote=m_core_auftragskalkulation.nahrungsmarktangebot(s,r,a);
+  if(!quote.ok)return null;
+  const sh=s.ships[a.frachter],owner=s.owners[sh.owner];
+  if(sh.auftrag!=='halten'||sh.arbeit!==0||aktivSchiff(s,sh.id)||
+     sh.owner===a.ziel||sh.owner===a.quelle||
+     m_core_handel.verkaufbar(s,r,a.quelle,'nahrung')<a.menge||
+     s.vertrag.next>=1000000)return null;
+  // Quellkauf und sämtliche nachfolgende Reservierungen in einem JS-Aufruf.
+  // Vorherige Quote prüft auch die gemischte Konzernkasse aggregiert.
+  if(!m_core_handel.handel(s,r,sh,a.quelle,'nahrung',a.menge,true))return null;
+  const {verkaufswert,zielgebuehr,frachterlohn,ersatzruecklage}=quote.kosten;
+  if(s.owners[a.ziel].cash<verkaufswert||
+     owner.cash<zielgebuehr+frachterlohn+ersatzruecklage)
+    throw Error('B-K9c geänderte Kasse nach Quellkauf');
+  s.owners[a.ziel].cash-=verkaufswert;
+  owner.cash-=zielgebuehr+frachterlohn+ersatzruecklage;
+  const id='v'+s.vertrag.next++;
+  s.vertrag.eintraege[id]={id,status:'fahrt',schiff:sh.id,
+    verkaeufer:sh.owner,kaeufer:a.ziel,quelle:a.quelle,ziel:a.ziel,
+    ware:'nahrung',menge:a.menge,preis:quote.endpreis,
+    escrow:verkaufswert,fee:zielgebuehr,zielgebuehr,
+    lohn:frachterlohn,lohnStart:frachterlohn,lohnBezahlt:0,
+    huelle:ersatzruecklage,zeit:quote.zeit.flugminuten};
+  sh.phase='reise';sh.ziel=a.ziel;sh.ankunft=s.tick+quote.zeit.flugminuten;
+  sh.auftrag='halten';sh.warten=0;
+  pruefen(s);
+  return id;
+}
+function lohnFreigabe(s,sh,n) {
+  const c=finden(s,sh.id);if(!c)return;
+  if(!zahl(n)||n>c.lohn)throw Error('B-K9c ungedeckte Arbeitskosten');
+  c.lohn-=n;c.lohnBezahlt+=n;s.owners[c.verkaeufer].cash+=n;
+}
+function liefern(s,r,ship) {
+  const c=finden(s,ship);
+  if(!c||!['fahrt','wartet'].includes(c.status))return false;
+  const sh=s.ships[ship];
+  if(!sh||sh.phase!=='dock'||sh.system!==s.stations[c.ziel].system||
+     (sh.ladung[c.ware]||0)<c.menge) {c.status='wartet';return false;}
+  const geld=c.escrow,geb=c.fee;
+  s.owners[c.kaeufer].cash+=geld;s.owners[c.verkaeufer].cash+=geb;
+  c.escrow=0;c.fee=0;c.status='abwicklung';
+  const ok=m_core_handel.handel(s,r,sh,c.ziel,c.ware,c.menge,false,false,{id:c.id});
+  if(!ok) {
+    s.owners[c.kaeufer].cash-=geld;s.owners[c.verkaeufer].cash-=geb;
+    c.escrow=geld;c.fee=geb;c.status='wartet';return false;
+  }
+  c.status='geliefert';s.stats.handel+=1;s.stats.verkaeufe[ship]+=1;
+  return true;
+}
+function stornieren(s,id) {
+  const c=s.vertrag?.eintraege[id],sh=c&&s.ships[c.schiff];
+  if(!c||c.status!=='wartet'||!sh||sh.phase!=='dock'||sh.arbeit!==0)return false;
+  s.owners[c.kaeufer].cash+=c.escrow;
+  s.owners[c.verkaeufer].cash+=c.fee+c.lohn+c.huelle;
+  c.escrow=0;c.fee=0;c.lohn=0;c.huelle=0;c.status='storniert';
+  pruefen(s);return true;
+}
+function verlust(s,r,sh) {
+  const c=finden(s,sh.id);if(!c)return false;
+  // Arbeiten, die seit dem letzten Stundenabschluss anfielen, bezahlen.
+  if(sh.arbeit>0)m_core_stunde.betriebskostenEinzeln(s,r,sh);
+  s.owners[c.kaeufer].cash+=c.escrow;
+  s.owners[c.verkaeufer].cash+=c.fee+c.lohn;
+  c.escrow=0;c.fee=0;c.lohn=0;c.status='verloren';
+  // Hüllenersatzrücklage bleibt tatsächlich gesperrt.
+  return true;
+}
+function stundenAbschluss(s) {
+  for(const c of alle(s))if(c.status==='geliefert'&&
+      (!s.ships[c.schiff]||s.ships[c.schiff].arbeit===0)) {
+    s.owners[c.verkaeufer].cash+=c.lohn;
+    c.lohn=0;c.status='erfuellt';
+  }
+}
+return {starten,liefern,stornieren,verlust,lohnFreigabe,
+        stundenAbschluss,aktivSchiff,pruefen,sperrgeld};
+})();
+
 const m_core_entscheidung = (() => {
 const { ids, anzahl } = m_core_zahl;
 const { rngInt } = m_core_rng;
@@ -1442,13 +1577,12 @@ function verbrauch(state, rules) {
     }
   }
 }
-function betriebskosten(state, rules) {
-  const w = rules.world;
-  for (const id of ids(state.ships)) {
-    const s = state.ships[id]; const arbeit = s.arbeit; s.arbeit = 0;
+function betriebskostenEinzeln(state, rules, s) {
+  const w=rules.world;
+  { const arbeit=s.arbeit;s.arbeit=0;
     // Auch bei Auftrag 'halten' muessen bereits erflogene Arbeitsminuten bezahlt werden.
     // Nur echte Untätigkeit (arbeit=0) ist kostenlos, auch nach Ankunft im Dock.
-    if (arbeit === 0) continue;
+    if (arbeit === 0) return;
     const kosten = div(anzahl(w.betriebskosten, s.klasse) * arbeit, rules.economy.stunde);
     const system = s.phase === 'reise' ? w.stations[s.ziel].system : s.system;
     const besitzer = state.owners[s.owner];
@@ -1457,13 +1591,18 @@ function betriebskosten(state, rules) {
       s.auftrag = 'halten'; s.eskorte = null; s.ware = null;
       protokolliere(state, 'kosten', `${id} automatisch gestoppt – Kasse deckt die Betriebskosten (${kosten} ISK) nicht`, s.owner);
     }
+    if(state.schema===9)m_core_vertrag.lohnFreigabe(state,s,kosten);
     const n = Math.min(besitzer.cash, kosten);
-    if (n <= 0) continue;
+    if (n <= 0) return;
     besitzer.cash -= n;
     if (w.senkeBesitzer.includes(s.owner)) state.burned += n;
     else state.owners[fondsIn(rules, system)].cash += n;
     buche(state, s.owner, 'kosten', n);
   }
+}
+function betriebskosten(state,rules) {
+  for(const id of ids(state.ships))betriebskostenEinzeln(state,rules,state.ships[id]);
+  if(state.schema===9)m_core_vertrag.stundenAbschluss(state);
 }
 function aussenhandel(state, rules) {
   for (const id of ids(state.stations)) {
@@ -1523,7 +1662,7 @@ function dividende(state, rules) {
     buche(state, id, 'kosten', n); buche(state, spieler, 'erloes', n);
   }
 }
-return { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag };
+return { verbrauch, betriebskosten, betriebskostenEinzeln, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag };
 })();
 
 const m_core_kampf = (() => {
@@ -1590,6 +1729,7 @@ const imSystem = (state, owner, system, auftrag) => ids(state.ships).map((id) =>
 const seite = (rules, schiffe, fokus, rueckzug) => ({ schiffe: schiffe.map((s) => ({ einheit: s.klasse, hp: rules.combat.einheiten[s.klasse].hp })), fokus, rueckzug });
 
 function entfernen(state, rules, s) {
+  if(state.schema===9)m_core_vertrag.verlust(state,rules,s);
   // Verbliebene Fracht beim Schiffverlust vollständig aus der Warenbilanz buchen.
   // zerstoeren() entfernt zuvor bereits verkaufte oder verbuchte Ladung.
   for (const ware of ids(s.ladung)) {
@@ -1608,6 +1748,7 @@ function entfernen(state, rules, s) {
   if (s.owner === rules.economy.start.owner) protokolliere(state, 'verlust', `${s.id} (${s.klasse}) verloren in ${s.system}`, s.owner);
 }
 function zerstoeren(state, rules, s) {
+  if(state.schema===9)m_core_vertrag.verlust(state,rules,s);
   const { markt, owner } = rules.world.piraten;
   for (const ware of ids(s.ladung)) {
     const m = Math.min(s.ladung[ware], aufnehmbar(state, rules, markt, ware));
@@ -1889,6 +2030,10 @@ function migration3(s) {
   return { ...s, schema: 4, ships, sollflotte, nextShip: hoechste + 1, stats: { ...s.stats, ...kampfStats() } };
 }
 const MIGRATIONS = {
+  8: s => {
+    if(Object.hasOwn(s,'vertrag'))throw Error('B-K9c Vertragsfeld in Altschema');
+    return {...s,schema:9,vertrag:{next:1,eintraege:{}}};
+  },
   1: (s) => ({ ...s, schema: 2, rulesVersion: 0, stations: {}, ships: {}, ledger: {}, stats: leereStats() }),
   2: (s) => ({ ...s, schema: 3, ships: Object.fromEntries(Object.entries(s.ships).map(([id, x]) => [id, { ...x, arbeit: 0 }])), stats: { ...s.stats, ...kontoStats(s.owners) } }),
   3: migration3,
@@ -2015,6 +2160,7 @@ function migrationRegel13(s) {
   return neu;
 }
 const RULE_MIGRATIONS = {
+  14: s => ({...s,rulesVersion:15}),
   4: migrationRegel4,
   5: migrationRegel5,
   6: migrationRegel6,
@@ -2050,6 +2196,7 @@ function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, rule
     if (typeof ruleTable[r] !== 'function') throw new Error(`Regelversion ${v} ist älter als ${currentRulesVersion}, keine Regelmigration vorhanden`);
     neu = ruleTable[r](neu);
   }
+  if(currentSchema===9&&currentRulesVersion===15)m_core_vertrag.pruefen(neu);
   return neu;
 }
 return { MIGRATIONS, RULE_MIGRATIONS, migrate, save, load };
@@ -2066,6 +2213,7 @@ const { ids, anzahl } = m_core_zahl;
 function audit(state) {
   let total = 0;
   for (const o of Object.values(state.owners)) total += o.cash;
+  if(state.schema===9&&state.rulesVersion===15)total+=m_core_vertrag.sperrgeld(state);
   const expected = state.initialSupply + state.minted - (state.burned || 0);
   const isk = { ok: total === expected, total, expected, delta: total - expected };
   const ist = {};
@@ -2108,9 +2256,13 @@ const { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, 
 const { reise } = m_core_ankunft;
 const { kampf } = m_core_kampf;
 const { nahrungsangebot, nahrungsmarktangebot } = m_core_auftragskalkulation;
+const vertragStarten=(s,a,r=RULES)=>m_core_vertrag.starten(s,r,a);
+const vertragLiefern=(s,ship,r=RULES)=>m_core_vertrag.liefern(s,r,ship);
+const vertragStornieren=(s,id)=>m_core_vertrag.stornieren(s,id);
+const vertragPruefen=(s)=>m_core_vertrag.pruefen(s);
 const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
-return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, nahrungsangebot, nahrungsmarktangebot, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, createState, submit, execute, step, advance, load, preis, faktor };
+return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, nahrungsangebot, nahrungsmarktangebot, vertragStarten, vertragLiefern, vertragStornieren, vertragPruefen, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, createState, submit, execute, step, advance, load, preis, faktor };
 })();
 
 const m_data_oberflaeche = (() => {

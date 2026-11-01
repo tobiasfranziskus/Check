@@ -1,0 +1,22 @@
+name: B-K9k – Full-cost original trading route 13x90
+
+on:
+  pull_request:
+    paths:
+      - tools/bk9k-warenrouten-vollkosten-13x90.mjs
+      - .github/workflows/bk9k-routen-vollkosten.yml
+
+permissions:
+  contents: read
+
+jobs:
+  bk9k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check 13x90 all configured market routes against real liquidity and return flight costs
+        run: node tools/bk9k-warenrouten-vollkosten-13x90.mjs

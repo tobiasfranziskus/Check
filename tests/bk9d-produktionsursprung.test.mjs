@@ -94,7 +94,9 @@ function run(seed=42){
  // Eine wirkliche testseitige Fabriklohnzahlung an separates Arbeiterkonto.
  s.owners[QUELLE].cash-=foodWage;s.owners[W].cash+=foodWage;
  assert.equal(s.owners[W].cash-before.worker,foodWage);
- for(let i=0;i<foodUnits*rules.economy.rezepte.r_nahrung.dauer;i++){
+ // Originalrezept startet WIP bei erstem Aufruf; die erste Einheit
+ // wird daher erst im 7. Takt fertig, nicht schon im 6.
+ for(let i=0;i<foodUnits*rules.economy.rezepte.r_nahrung.dauer+1;i++){
    s.tick++;produktion(s,testingRules);
  }
  assert.equal(s.ledger.nahrung.produced-before.food,foodUnits);

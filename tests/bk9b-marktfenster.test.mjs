@@ -88,7 +88,7 @@ test('BK9b: tatsächliche stationäre Preise und verfügbare Käuferkassen gegen
   }
 });
 test('BK9b: Produktkalkulation zahlt keinen beliebigen erfundenen Festpreis als automatischen Marktpreis',()=>{
-  const s=core.createState(42,rules),{miner,trader}=prepare(s);
+  const start=core.createState(42,rules),{s,miner,trader}=prepare(start);
   const spot=core.preis(s,'st_aldera','nahrung',rules);
   const a={quelle:'st_cyris',ziel:'st_aldera',miner,frachter:trader,menge:3,
     endpreis:spot,fabriklohn:9,ersatzFahrten:20};

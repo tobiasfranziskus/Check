@@ -1,0 +1,26 @@
+name: "[ANALYSE] B8p globale Endnachfrage, Fonds vs Emission"
+on:
+  push:
+    branches: [analyse/b8p-endnachfrage-budgetvergleich-20261101]
+    paths: ['tools/analyse-b8p-endnachfrage.mjs', '.github/workflows/analyse-b8p-endnachfrage.yml', 'index.html']
+  pull_request:
+    paths: ['tools/analyse-b8p-endnachfrage.mjs', '.github/workflows/analyse-b8p-endnachfrage.yml', 'index.html']
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original regression suite
+        run: node --test tests/*.test.mjs
+      - name: Eight 90-day seeded economies and independent money/goods audits
+        run: node tools/analyse-b8p-endnachfrage.mjs --out="$RUNNER_TEMP/b8p"
+      - name: Publish audited consumption financing evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: b8p-demand-budget
+          path: ${{ runner.temp }}/b8p/b8p-results.json
+          if-no-files-found: error

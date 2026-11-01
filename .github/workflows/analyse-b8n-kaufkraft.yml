@@ -1,0 +1,26 @@
+name: "[ANALYSE] B8n Kaufkraft und Nachfrage im Originalkern"
+on:
+  push:
+    branches: [analyse/b8n-kaufkraft-nachfrage-provenienz-20261101]
+    paths: ['tools/analyse-b8n-kaufkraft.mjs', '.github/workflows/analyse-b8n-kaufkraft.yml', 'index.html']
+  pull_request:
+    paths: ['tools/analyse-b8n-kaufkraft.mjs', '.github/workflows/analyse-b8n-kaufkraft.yml', 'index.html']
+jobs:
+  demand-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original core Node regression tests
+        run: node --test tests/*.test.mjs
+      - name: Four 90-day economic worlds, money and goods audits, deterministic replay, save-load
+        run: node tools/analyse-b8n-kaufkraft.mjs --out="$RUNNER_TEMP/b8n"
+      - name: Buyer cash and demand evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: b8n-buyer-cash-evidence
+          path: ${{ runner.temp }}/b8n/b8n-results.json
+          if-no-files-found: error

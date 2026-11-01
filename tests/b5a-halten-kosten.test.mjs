@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const code=html.slice(html.indexOf('<script>')+8,html.indexOf('const m_data_oberflaeche'));
 const e=new Function(code+';return {c:m_core_index,r:m_data_rules.RULES,h:m_core_handel};')();
-const {c,r,h}=e;assert.equal(r.rulesVersion,14);
+const {c,r,h}=e;assert.equal(r.rulesVersion,15);
 function fixture(){const s=c.createState(42,r);const sh=Object.values(s.ships).find(x=>x.owner==='house'&&x.klasse==='frachter');assert(sh);return {s,sh};}
 function settle(n,phase='dock',cash=null){
  const {s,sh}=fixture();sh.auftrag='halten';sh.phase=phase;sh.arbeit=n;
@@ -27,7 +27,7 @@ test('Migration eines gehaltenen Flugs von Regel 12 nach 13 erhält den Zustand'
  const old=JSON.parse(c.save(s));old.rulesVersion=12;
  for(const x of Object.values(old.ships))delete x.sollplatz;
  const newer=c.load(JSON.stringify(old),undefined,r);
- assert.equal(newer.rulesVersion,14);assert.equal(newer.ships[sh.id].arbeit,17);
+ assert.equal(newer.rulesVersion,15);assert.equal(newer.ships[sh.id].arbeit,17);
  assert.equal(newer.ships[sh.id].sollplatz,sh.sollplatz);
  assert(c.audit(newer).ok);
  const before=newer.owners.house.cash;c.betriebskosten(newer,r);

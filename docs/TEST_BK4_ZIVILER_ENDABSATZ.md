@@ -86,14 +86,55 @@ sowie Save-/Load. Historische Regel14-B5b- und
 13×90d-Referenzen laufen getrennt aus ihrem gepinnten
 Original-main; sie dürfen nicht als Regel15-Ergebnis gelten.
 
-**[OFFEN bis zur finalen Gegenrechnung:]** Die zweite,
-*teilweise zahlende* Version darf **nicht** mit dem
-negativen vollständig verpflichtenden Kauf verwechselt
-werden. Insbesondere muss untersucht werden, ob
-Fonds→Stationen-Transfers etwaige Stationsauffüllungen
-nur zeitlich vorziehen, ob tatsächliche Händlerumsätze
-steigen und ob Minderleistungen an anderen Standorten
-auftreten.
+**[BELEGT – zweite, teilweise zahlende Version]**
+Die [CI #41326312135](https://github.com/tobiasfranziskus/Check/actions/runs/41326312135)
+hat die **76/76 Node-Tests** sowie die **13 × 90 Tage passive
+und zwei aktive Spieler-Miner-Welten × 90 Tage**
+mit originalem, nicht rationsgesperrtem Verbrauch und
+unabhängigen stündlichen/täglichen Geld-/Warenaudits
+sowie Save/Load erfolgreich ausgeführt. Die technische
+Abnahme ist **nicht** gleich einer wirtschaftlichen Freigabe.
+
+| A/B-Vergleich 90 Tage | Regel 14 | Regel 15 Teilzahlung | Differenz |
+| --- | ---: | ---: | ---: |
+| **13 passive Welten**, gesamter Mangel | 791 | **756** | −35 |
+| 13 passive Welten, Nahrungsmangel | 772 | **743** | −29 |
+| 13 passive Welten, NPC1/2-Frachterverkäufe | 310.058 | **311.699** | +1.641 |
+| 13 passive Welten, zivile Schiffsverluste | 4.622 | **4.719** | +97 |
+| **2 Spieler-Miner-Krisen**, gesamter Mangel | 71.791 | **71.824** | +33 |
+| 2 Spieler-Miner-Krisen, NPC-Frachterverkäufe | 3.579 | **3.334** | −245 |
+| 2 Spieler-Miner-Krisen, zivile Schiffsverluste | 95 | **87** | −8 |
+
+Die aktiven Fälle divergieren:
+**Seed7** Mangel 35.993→36.139, Frachterverkäufe
+1.660→1.485; **Seed42** Mangel 35.798→35.685,
+Frachterverkäufe 1.919→1.849. Das ist **kein**
+konsistenter Wiederanlauf der NPC-Handelswirtschaft.
+
+Die real bezahlten kumulierten Lebensmittel-/Medizinwerte
+der **13 passiven Welten zusammen** betragen
+**12.953.720 + 17.472.723 = 30.426.443 ISK**;
+das ist **mehrfach im Kreis übertragenes,
+bereits vorhandenes Geld**, keine Geldschöpfung und
+kein Beweis von 30 Mio. neuem Weltvermögen.
+Beide aktive Spielerfälle summieren sich auf
+82.068 ISK Nahrung + 85.515 ISK Medizin aus
+bestehenden Fonds; der verbleibende Verbrauch
+ist **weiterhin unbezahlt**.
+
+**[PROJEKTLEITUNGSBEWERTUNG: MIXED / NO MERGE]**
+Die technische Buchung ist korrekt und die
+passive Versorgung verbessert sich gering,
+aber **Schiffsverluste in Normalwelten** und
+**Händlerleistung in Krisen** verschlechtern sich.
+Eine eigenständige, nachhaltig finanzierte
+zivile Kaufkraft ist noch nicht entstanden.
+Diese reine Umverteilung **nicht als
+abgeschlossenen Endkundenkreislauf verkaufen**.
+PR #88 bleibt Draft, kein Merge, bis mindestens
+die Mittelherkunft/Haushaltslohn-/Betriebskapital-
+Abhängigkeit produktiv belastbar nachgewiesen
+und die Krisenverschlechterung beseitigt ist.
 
 ## 4. Projektschritt nach B-K4
 

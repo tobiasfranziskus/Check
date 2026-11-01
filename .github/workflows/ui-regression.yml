@@ -149,3 +149,21 @@ jobs:
         with:
           name: b5b-v14-wirtschaftspruefung
           path: ${{ runner.temp }}/b5b-v14-13seeds.json
+
+  wirtschaft-v15-endverbrauch:
+    # Neuer echter Wirtschaftslauf: 13×90d mit bezahltem Endverbrauch
+    # + 2 aktive Spielerkassen-Krisen; historische v14-Jobs bleiben separat.
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 13 Seeds ×90 Tage und aktive Spielerminer-Krisen mit Geld-/Warenaudits
+        run: |
+          if grep -q 'schema: 8, rulesVersion: 15,' index.html; then
+            node tools/bk4-wirtschaft-v15.mjs
+          else
+            echo 'B-K4-Wirtschaftsvergleich nur bei Produktregel 15 relevant.'
+          fi

@@ -1,5 +1,8 @@
 # Aphros Void – Projektstatus
 
+
+> **[ANALYSE/DRAFT · 01.11.2026 · B9i PR #83, NICHT in main]:** Der zunächst doppelt geführte Vertragsprototyp ist in **einer** Node-Testquelle (`tests/b9i-vertragskern.test.mjs`) konsolidiert. Festpreise und vorab gebundene Gebühren, Warenreservierungen in Station/Schiff, Original-Core-Abrechnung, Verlust/Storno und unveränderte Referenzhashes sind synthetisch geprüft. **Schema 9 / Regel 15 sind nur ein migrierbarer Testkandidat**, nicht das gültige Produktformat (weiterhin v0.12.5 / Regel 14 / Schema 8). Die Altformat-Migrationen, abgelehnten Korruptdaten und deterministischen Save/Load-Fortsetzungen sind ausschließlich im Testadapter belegt. **Node-CI 86/86** auf dem Bereinigungs-Head `d86e649`, [CI #41315246366](https://github.com/tobiasfranziskus/Check/actions/runs/41315246366); die separaten Langzeit-Referenzjobs prüfen unveränderte Produktwelten, **keine aktive Vertragswirtschaft**. **Nächstes Finanzierungs-Gate:** Quellwareneinkauf, Fahrt und Pilotenarbeit müssen vor Auftragsbeginn ausreichend und atomar gedeckt sein. Kein Produktcode, kein Merge, keine Modell-B-Emission, kein 13×90d-Erfolgsnachweis für neue Verträge. [Analysebericht](ANALYSE_B9I_CORE_BUCHUNGSBRUECKE.md).
+
 ## [ANALYSE] B8o/B8p – bezahlte Aufträge und Endnachfrage · 01.11.2026
 
 **[MAIN]** Weiterhin `0d473e6`, v0.12.5/Regel14/Schema8 ohne Produktcodeänderung. Dokumentations-Draft #78 ist noch **nicht integriert**; dieser Abschnitt bezieht sich auf den vorgeschlagenen Docs-Stand.

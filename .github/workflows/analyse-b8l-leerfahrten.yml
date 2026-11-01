@@ -1,0 +1,32 @@
+name: "[ANALYSE] B8l NPC3 risikobewusster Handel und Vollkosten"
+on:
+  push:
+    branches: [analyse/b8l-unfinanzierte-leerfahrten-20261101]
+    paths:
+      - 'tools/analyse-b8l-leerfahrten.mjs'
+      - '.github/workflows/analyse-b8l-leerfahrten.yml'
+      - 'index.html'
+  pull_request:
+    paths:
+      - 'tools/analyse-b8l-leerfahrten.mjs'
+      - '.github/workflows/analyse-b8l-leerfahrten.yml'
+      - 'index.html'
+jobs:
+  b8l:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Existing Node regressions
+        run: node --test tests/*.test.mjs
+      - name: 4 worlds x 90 days with independent replay, cash/goods audit and saves
+        run: node tools/analyse-b8l-leerfahrten.mjs --out="$RUNNER_TEMP/b8l"
+      - name: Audit reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: b8l-risk-economics
+          path: ${{ runner.temp }}/b8l/b8l-results.json
+          if-no-files-found: error

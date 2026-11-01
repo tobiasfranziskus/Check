@@ -113,7 +113,7 @@ patch('function betriebskosten(state, rules) {\n  const w = rules.world;\n  for 
 patch('    if (arbeit === 0) continue;', '    if (arbeit === 0) return;');
 patch('    const besitzer = state.owners[s.owner];',
       '    const besitzer = state.owners[s.owner];\n    m_b9j_fahrt.arbeitsfreigabe(state,s.id,kosten);');
-patch('    if (n <= 0) continue;', '    if (n <= 0) return;');
+patch('    const n = Math.min(besitzer.cash, kosten);\n    if (n <= 0) continue;', '    const n = Math.min(besitzer.cash, kosten);\n    if (n <= 0) return;');
 patch('  }\n}\nfunction aussenhandel(state, rules) {',
       '}\nfunction betriebskosten(state,rules) {\n  for(const id of ids(state.ships))betriebskostenEinzeln(state,rules,state.ships[id]);\n}\nfunction aussenhandel(state, rules) {');
 patch('return { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag };',

@@ -1342,7 +1342,7 @@ function pruefen(s) {
       !zahl(s.vertrag.next) || s.vertrag.next<1 ||
       !s.vertrag.eintraege || typeof s.vertrag.eintraege!=='object' ||
       Array.isArray(s.vertrag.eintraege)) throw Error('B-K9c Vertragsbuch ungültig');
-  let max=0;const schiffe=new Set();
+  let max=0;const schiffe=new Set(), produktionslinien=new Set();
   for (const [id,c] of Object.entries(s.vertrag.eintraege)) {
     if (!/^v[1-9][0-9]*$/.test(id) || !c || c.id!==id ||
         !['foerderung','roh-wartet','produktion','bereit','fahrt','wartet','geliefert','erfuellt','storniert','verloren'].includes(c.status) ||
@@ -1364,10 +1364,17 @@ function pruefen(s) {
         p.rohMenge!==2*c.menge || p.angefangen>c.menge ||
         p.fertig>p.angefangen || p.wip>1 ||
         p.fertig+p.wip>p.angefangen ||
-        p.nahrungLager>p.fertig ||
+        p.nahrungLager>p.fertig || p.nahrungLager>c.menge ||
+        p.rohLager>p.rohMenge ||
         (['foerderung','roh-wartet','produktion','bereit'].includes(c.status) &&
           (!s.ships[p.miner]||s.ships[p.miner].owner!==p.minerBesitzer)))
         throw Error('B-K9f Produktionscharge ungültig');
+      const lineKey=c.quelle+'/'+p.linie;
+      if(['foerderung','roh-wartet','produktion'].includes(c.status)){
+        if(produktionslinien.has(lineKey))
+          throw Error('B-K9f eine Fabriklinie doppelt vertraglich gebunden');
+        produktionslinien.add(lineKey);
+      }
       if(c.status==='bereit' && (p.fertig!==c.menge ||
           p.nahrungLager!==c.menge || p.rohLager!==0 || p.wip!==0))
         throw Error('B-K9f Fertigware nicht vollständig gebunden');
@@ -1451,17 +1458,26 @@ function beginnenProduktion(s,r,a) {
   const miner=s.ships[a.miner],ship=s.ships[a.frachter];
   const line=s.stations[a.quelle].linien.findIndex(x=>x.rezept==='r_nahrung');
   if(line<0 || ship.auftrag!=='halten' || ship.arbeit!==0 || miner.arbeit!==0 ||
-      aktivSchiff(s,miner.id)||aktivSchiff(s,ship.id) ||
+      produktionsLinie(s,a.quelle,line) || aktivSchiff(s,miner.id)||aktivSchiff(s,ship.id) ||
       s.vertrag.next>=1000000)return null;
   const rawLimit=q.kosten.quellenwert-q.kosten.fabriklohn;
   const freightLimit=q.kosten.verkaufswert-q.kosten.zielgebuehr-
     q.kosten.frachterlohnFaellig-q.kosten.ersatzruecklage;
   const rawNeeded=q.kosten.rohwert,frNeeded=q.kosten.quellenwert+q.kosten.quellgebuehr;
-  if(rawLimit<rawNeeded||freightLimit<frNeeded||
-     s.owners[a.quelle].cash<rawLimit+q.kosten.fabriklohn||
-     s.owners[ship.owner].cash<freightLimit+q.kosten.zielgebuehr+
-       q.kosten.frachterlohn+q.kosten.ersatzruecklage)
-    return null;
+  if(rawLimit<rawNeeded||freightLimit<frNeeded)return null;
+  const braucht={};
+  for(const [konto,wert] of [
+    [a.ziel,q.kosten.verkaufswert],
+    [a.quelle,rawLimit+q.kosten.fabriklohn],
+    [miner.owner,q.kosten.rohgebuehr+q.kosten.minerkosten],
+    [ship.owner,freightLimit+q.kosten.zielgebuehr+
+      q.kosten.frachterlohn+q.kosten.ersatzruecklage]
+  ]){
+    braucht[konto]=(braucht[konto]||0)+wert;
+    if(!Number.isSafeInteger(braucht[konto]))return null;
+  }
+  for(const [konto,wert] of Object.entries(braucht))
+    if(s.owners[konto].cash<wert)return null;
   const p={miner:miner.id,minerBesitzer:miner.owner,fabrikBesitzer:a.quelle,linie:line,
     vorherWip:s.stations[a.quelle].linien[line].rest,
     rohMenge:2*a.menge,rohPreis:q.kosten.rohwert,

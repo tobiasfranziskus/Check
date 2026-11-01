@@ -83,7 +83,9 @@ test('B-K9f: genau 26 neue Eis und 13 neue Nahrung bleiben im selben originalen 
    if(!rawStage&&c.status==='produktion'){
       rawStage={tick:i+1,raw:p.rohLager,iceOnShip:miner.ladung.eis||0,
         mined:s.ledger.eis.mined-start.mined};
-      assert.equal(p.rohLager,26);
+      // Im selben Originaltick wird die erste Rezeptcharge bereits begonnen:
+      // 24 Eis sind gesperrt, 2 Eis sind korrekt als WIP verbraucht.
+      assert.equal(p.rohLager+2*p.angefangen,26);
       assert.equal(miner.ladung.eis||0,0);
       saveHash(s);
    }

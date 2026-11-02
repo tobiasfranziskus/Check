@@ -124,6 +124,7 @@ function durchlauf(seed,tage,debug=true){
   const before=Object.fromEntries(actors.map(x=>[x,vermoegen(s,x)]));
   let laufende=before,offset=start, snapshots=[];
   let zuschuss=0,gekauftFrachter=0,gekauftMiner=0,ausgabenFahrt=0,rohEis=0;
+  const nachAkteur=Object.fromEntries(actors.map(id=>[id,{}]));
   for(let t=1;t<=tage*1440;t++){
     core.step(s,r);
     if(t%60)continue;
@@ -131,6 +132,14 @@ function durchlauf(seed,tage,debug=true){
     // Journaleinträge werden ausschließlich ab dem letzten tatsächlich abgenommenen Stundengrenzwert benutzt.
     const eintraege=buchungen.slice(offset);offset=buchungen.length;
     const {delta,proArt}=verteil(eintraege);
+    for(const ev of eintraege)for(const p of posten(ev)){
+      const art=p.art==='ware'?'ware:'+p.unterart:p.art;
+      for(const id of actors){
+        const buch=nachAkteur[id];const x=buch[art] ||= {ein:0,aus:0};
+        if(p.von===id)x.aus+=p.betrag;
+        if(p.an===id)x.ein+=p.betrag;
+      }
+    }
     for(const id of actors){
       const neu=vermoegen(s,id),erwartet=laufende[id]+(delta[id]||0);
       assert.equal(neu,erwartet,
@@ -162,8 +171,9 @@ function durchlauf(seed,tage,debug=true){
       snapshots.push(row);if(debug)console.log('B-K9v aktiv',JSON.stringify(row));
     }
   }
-  return {snapshots,hash:core.hash(s),anzahlEvents:offset-start,mittel:start,
-    actorEnd:laufende};
+  if(debug)console.log('B-K9v Akteure',JSON.stringify({seed,nachAkteur}));
+  return {snapshots,hash:core.hash(s),anzahlEvents:offset-start,
+    actorEnd:laufende,nachAkteur};
 }
 test('B-K9v: Original-Core und Test-Journal sind bei 120 aktiven R15-Ticks zustandsidentisch',()=>{
   for(const seed of [42,7]){
@@ -180,6 +190,13 @@ test('B-K9v: zwei aktive NPC-Welten je fünf Tage mit Echtbuchungen/Haushalts- u
     assert.equal(x.snapshots.length,5);
     assert(x.anzahlEvents>0);
     assert(x.snapshots.at(-1).eisVerkaufWeltISK>0,'echter Eis-Erlös statt fiktiver Schätzung');
+    assert.equal(x.snapshots.at(-1).flotteZuschussISK,seed===7?693:0,
+      'Historischer Flottenrettungs-Transfer wird nicht still verschwiegen');
+    const haushalt=x.nachAkteur.hh_st_cyris;
+    assert((haushalt.lohn?.ein||0)>0 && (haushalt.haushalt?.aus||0)>0,
+      'Haushaltskauf nur aus echtem Lohn');
+    const npc1=x.nachAkteur.npc1;
+    assert((npc1['ware:frachter']?.aus||0)>0,'echter Frachterersatz kostet ISK');
   }
 });
 test('B-K9v: deterministischer aktiver Seed42-Haushalt/Flotten-Replay über 2 Tage',()=>{

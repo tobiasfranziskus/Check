@@ -1,5 +1,13 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B-K10d – persistenter Neu-Nahrungstransit · 02.11.2026
+
+**[MAIN]** `b4e604d6` v0.12.5/Regel14/Schema8 unverändert. **[DRAFT #121](https://github.com/tobiasfranziskus/Check/pull/121)** auf #120–#108: nur für den expliziten Regel15-/Schema9-Testschalter `herkunftTransportNeu:true` führt der Core neue Nahrung mengenbilanziert in Stationslager, Frachter, Zielverkauf, Endverbrauch und Verlust mit gespeichertem `transit`-Zähler. V1 bleibt in der korrigierten Version unverändert; alte R15-Saves mit nicht mehr bestimmbarer Auslagerung werden beim optionalen Upgrade abgewiesen statt still fehlinterpretiert.
+
+**[TEST]** [CI #41449625448](https://github.com/tobiasfranziskus/Check/actions/runs/41449625448) vollständig erfolgreich, **145/145 Node-Tests** auf Code-Commit `9566712`, 0 Fehler. In den Seed42/7-Einzelprüfungen echter Core-Einkauf **46 ISK**, 43 Minuten bezahlter Frachterflug (**180 reserviert/178 bezahlt**), Zielverkauf **56 ISK** und tatsächlicher lokaler Haushaltskonsum **56 ISK** aus zuvor verdientem Geld. Save/Load, Geld-/Waren-/Herkunftsbilanz, deterministisches Replay, Teilverkauf, Verlust und manipulierte Speicherfälle geprüft. Die historische v10–v14-CI ist erfolgreich, ein gesonderter Vergleich planmäßig übersprungen. Erstes rotes B-K10d-CI (#41449367476, 126/145) hatte V1-Regression und wurde korrigiert, nicht als bestandener Nachweis gewertet.
+
+**[NEGATIV]** Händler-Cashflow eines Stücks bleibt `56−46−178=−168 ISK` **vor Handelsgebühren**. Kein Langzeit-Wirtschaftserfolg, keine vollständige individuelle Chargen-/Anschaffungskostenherkunft über Transporte, keine unabhängige Jägerfinanzierung. **[NÄCHSTES GATE]** größere gemischte Alt-/Neuladungen und Plünderung/Export separat prüfen, dann autonomen Händler- und Haushaltskreislauf über 13×14/90 Tage gegen die unveränderte V1-Baseline. Keine Lohn-/Preis-/Emissionsregel, kein Merge/Deploy; reale iPad-/NAS-Abnahme ausstehend.
+
 ## [ANALYSE] B8o/B8p – bezahlte Aufträge und Endnachfrage · 01.11.2026
 
 **[MAIN]** Weiterhin `0d473e6`, v0.12.5/Regel14/Schema8 ohne Produktcodeänderung. Dokumentations-Draft #78 ist noch **nicht integriert**; dieser Abschnitt bezieht sich auf den vorgeschlagenen Docs-Stand.

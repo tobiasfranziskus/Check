@@ -56,7 +56,7 @@ Alle Werte kumulativ bis Tag6 außer verfügbare Kassen und Anzahl physischer Sc
 ## Prüfprotokoll
 
 - Testdatei `tests/bk9x-routenkosten-gegenprobe.test.mjs`, Test-Head **0a293f7**: vier aktive Regel15/Schema9-Varianten je Seed42/7 ×6 Tage; stündlich unabhängige Summe freier ISK + vertraglich gebundener Restbeträge gegen `initialSupply + minted − burned`, Original-Core-Waren- und Herkunftsaudit; täglich Save/Load, 48h-Replay sowie 120-Tick-Hash-Gegenprobe des völlig unveränderten Instrumentierungs-Kerns.
-- Node.js-Testjob: **123/123 bestanden**. Der erste dreivariantige Stand `e87c210` erreichte ebenfalls 123/123; für den erweiterten Stand ist der CI-Workflow zu verlinken und sein Gesamtstatus getrennt zu prüfen.
+- [GitHub Actions #41434929485](https://github.com/tobiasfranziskus/Check/actions/runs/41434929485) für erweiterten Stand `0a293f7`: **Workflow erfolgreich vollständig abgeschlossen**; Node.js **123/123 bestanden**, 0 Fehler, alle ausgeführten historischen v10–v14-/Geografie-Jobs erfolgreich, geplanter Sicherheitsgeografie-Vergleich übersprungen. Der erste dreivariantige Stand `e87c210` hatte ebenfalls einen erfolgreichen Workflow [#41434625000](https://github.com/tobiasfranziskus/Check/actions/runs/41434625000) mit 123/123.
 - Keine reale iPad-/NAS-Abnahme. Die historischen v10–v14-Jobs sind keine R15-Stabilitätsbelege; **40 fortlaufende tragfähige Perioden und 13×90d/365d** stehen aus.
 
 ## Wirtschaftliche Empfehlung (noch kein Produktbeschluss)

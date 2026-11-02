@@ -237,7 +237,7 @@ function run(saved,seed,mode,ausgabe=true,angefragt=24){
   const echtNeu=s.stations[S].lokalNeuNahrung;
   const alt=s.stations[S].lager.nahrung-echtNeu;
   const menge=Math.min(angefragt,saleable,echtNeu,30);
-  assert(menge>=10,'beide Seeds haben wirklich verkaufbare Nahrung');
+  assert(menge>=Math.min(angefragt,10),'beide Seeds haben wirklich verkaufbare Nahrung');
   assert.equal(alt,0,'aus Nadir bezogene Nahrung ist nachweislich neu');
   r.menge=menge;r.quellpreis=core.preis(s,S,'nahrung',rules);
   // Testseitige Bestellung vor Warenkauf und vor dem beladenen Abflug.

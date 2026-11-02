@@ -12,8 +12,8 @@ const patches=[
   "    const n = Math.min(besitzer.cash, kosten); probe.wage(s,arbeit,kosten,n);"],
  ["  buche(state, schiff.owner, 'kosten', fee);\n  return true;",
   "  buche(state, schiff.owner, 'kosten', fee);\n  probe.trade(schiff,kauf,wert,fee,menge);\n  return true;"],
- ["  delete state.ships[s.id];",
-  "  probe.destroy(s); delete state.ships[s.id];"]
+ ["function entfernen(state, rules, s) {",
+  "function entfernen(state, rules, s) { probe.destroy(s);"]
 ];
 for(const [a,b] of patches){assert.equal(src.split(a).length,2,a);src=src.replace(a,b);}
 const cats=['new_cargo','onward_loaded','random_empty','failed_purchase','initial_or_yard','unknown'];

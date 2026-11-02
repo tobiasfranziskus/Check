@@ -55,7 +55,11 @@ const empty=()=>({
     extraOnDomestic:0,extraOnImportedOld:0,
     chargingImportedOld:0,importedOldActualSpend:0,
     shortageBaseline:0,originUnknown:0,chargeableInitial:0,
-    cashShortfallForFullDemandISK:0},
+    cashShortfallForFullDemandISK:0,
+    shadowCash:0,lastRealHHAfter:0,shadowIncomeISK:0,
+    shadowSpentISK:0,shadowUnits:0,shadowMissed:0,
+    shadowFailedHours:0,shadowFirstFailureTick:null,
+    shadowMinBalance:null},
   foodShipSales:{},iceOriginUnknownUsed:0,realTrades:0
 });
 let active=null;
@@ -145,6 +149,21 @@ function fertig(state,id,index){
   t.unfinished.delete(index);t.neu.push(l);
   t.production++;if(l.known)t.knownFoodProduced++;else t.unknownFoodProduced++;
 }
+function settleCumulative(t,pre){
+  const b=t.budget;
+  let left=b.shadowCash,hadFailure=false;
+  for(const l of pre.expected){
+    const price=floor(l,pre.market);
+    if(price>left){hadFailure=true;b.shadowMissed++;continue;}
+    left-=price;b.shadowSpentISK+=price;b.shadowUnits++;
+  }
+  b.shadowCash=left;
+  if(b.shadowMinBalance===null||left<b.shadowMinBalance)b.shadowMinBalance=left;
+  if(hadFailure){
+    b.shadowFailedHours++;
+    if(b.shadowFirstFailureTick===null)b.shadowFirstFailureTick=pre.minute;
+  }
+}
 function shadowNoSale(t){
   const pre=t.pre;if(!pre)return;
   const b=t.budget,expected=pre.expected;
@@ -162,6 +181,8 @@ function shadowNoSale(t){
   }
   b.instantAffordable+=affordable;b.instantUnfunded+=expected.length-affordable;
   if(all>pre.cash)b.unattainableHours++;else b.attainableHours++;
+  settleCumulative(t,pre);
+  b.lastRealHHAfter=pre.cash; // ohne echten Kauf gab es keinen Kassenabgang
   t.pre=null;
 }
 function preisVor(state,id,p){
@@ -171,6 +192,10 @@ function preisVor(state,id,p){
     assert(t.pre.minute<state.tick,'jede nicht ausgefuehrte Nachfrage nur einmal gezählt');
     shadowNoSale(t); // Original konnte auch bei vorhandenem Lager 0 Einheiten kaufen
   }
+  const b=t.budget,realBefore=state.owners['hh_'+id].cash;
+  const nonfoodIncome=realBefore-b.lastRealHHAfter;
+  assert(nonfoodIncome>=0,'nur echte seit Vorstunde erhaltene Mittel in Schattenkasse');
+  b.shadowCash+=nonfoodIncome;b.shadowIncomeISK+=nonfoodIncome;
   const need=rules.world.stations[id].verbrauch.nahrung;
   const have=Math.min(state.stations[id].lager.nahrung,need);
   const old=Math.min(t.old.length,have);
@@ -231,6 +256,8 @@ function shadow(state,id,n,paid,isk,alt){
   }
   b.instantAffordable+=affordable;
   b.instantUnfunded+=available-affordable;
+  settleCumulative(t,pre);
+  b.lastRealHHAfter=state.owners['hh_'+id].cash;
   t.pre=null;
 }
 function verzehr(state,id,n){
@@ -382,7 +409,15 @@ test('B-K10n: 13 autonome Seeds je 72h; 3 Hersteller und begrenzte reale Kaufkra
         totalDemand:sum(values.map(x=>x.budget.demand)),
         unaffordableOriginalHourCount:sum(values.map(x=>x.budget.unattainableHours)),
         instantCashGapISK:sum(values.map(x=>x.budget.cashShortfallForFullDemandISK)),
-        paidImportedOldToCharge:sum(values.map(x=>x.budget.chargingImportedOld))},
+        paidImportedOldToCharge:sum(values.map(x=>x.budget.chargingImportedOld)),
+        shadowFrozenIncomeISK:sum(values.map(x=>x.budget.shadowIncomeISK)),
+        shadowFloorPaidISK:sum(values.map(x=>x.budget.shadowSpentISK)),
+        shadowWouldConsume:sum(values.map(x=>x.budget.shadowUnits)),
+        shadowWouldMiss:sum(values.map(x=>x.budget.shadowMissed)),
+        shadowInsufficientHourCount:sum(values.map(x=>x.budget.shadowFailedHours)),
+        shadowEndCashAcrossSeparateWorlds:sum(values.map(x=>x.budget.shadowCash)),
+        firstFailureSeeds:values.filter(x=>x.budget.shadowFirstFailureTick!==null)
+          .map(x=>({seed:x.seed,tick:x.budget.shadowFirstFailureTick}))},
       noKnownCosts:values.filter(x=>x.knownProduction===0).map(x=>x.seed)};
     zusammen.stations[id]=acc;
     assert(acc.produced>0);
@@ -402,6 +437,13 @@ test('B-K10n: 13 autonome Seeds je 72h; 3 Hersteller und begrenzte reale Kaufkra
   assert(zusammen.stations.st_veldra.iceTraders>0,
     'Veldra muss wirklich Rohstoffe von Haendlern kaufen');
   for(const id of TARGETS){
+    assert.equal(zusammen.stations[id].budget.shadowWouldConsume+
+      zusammen.stations[id].budget.shadowWouldMiss,
+      zusammen.stations[id].budget.foodAvailable,
+      'alle im realen Warenangebot sichtbaren Stuecke in budgetierter Schattenrechnung erfasst');
+    assert(zusammen.stations[id].budget.shadowFloorPaidISK<=
+      zusammen.stations[id].budget.shadowFrozenIncomeISK,
+      'Schattenkasse nimmt keine Kredite und bekommt ausschliesslich wirklich verdiente Mittel');
     assert(zusammen.stations[id].unpaidImportedOldConsumed>0,
       id+': importierte alte Nahrung wird in der Original-Stundenregel unbezahlt gegessen');
     assert(zusammen.stations[id].unpaidImportedOldProcurementISK>0,

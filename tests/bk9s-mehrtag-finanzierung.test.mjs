@@ -38,7 +38,7 @@ function kassenPruefen(s){
   assert(core.audit(s).ok,'Core-Geld-/Warenaudit '+JSON.stringify(core.audit(s)));
   herkunft.pruefe(s);
 }
-function moment(s,tag){
+function moment(s,tag,rules){
   const st=s.stations[SID],h=s.stats.haushaltskauf[SID];
   const lohn=s.stats.konto[HH].erloes,lohnRaus=s.stats.konto[HH].kosten;
   const stationKosten=s.stats.konto[SID].kosten;
@@ -49,6 +49,10 @@ function moment(s,tag){
   const v=Object.values(s.vertraege.eintraege);
   return {
     tag,
+    eisPreis:core.preis(s,SID,'eis',rules),
+    nahrungPreis:core.preis(s,SID,'nahrung',rules),
+    rezeptVollkosten:2*core.preis(s,SID,'eis',rules)
+      +rules.economy.rezepte.r_nahrung.dauer*rules.world.produktionslohnJeMinute,
     stationISK:s.owners[SID].cash,haushaltISK:s.owners[HH].cash,
     lohnISK:lohn,haushaltKaufISK:h.isk,gezahlteNahrung:h.menge,
     bedarfFehlt:h.fehlend,alteNahrungKostenlos:h.alt,
@@ -68,7 +72,7 @@ function moment(s,tag){
 function rechnen(seed,lohn,isolate,tage){
   const rules=regeln(lohn),s=core.createState(seed,rules);
   einrichten(s,isolate);
-  const snapshots=[moment(s,0)];
+  const snapshots=[moment(s,0,rules)];
   let auditStunden=0;
   for(let i=0;i<tage*24*60;i++){
     core.step(s,rules);
@@ -77,7 +81,7 @@ function rechnen(seed,lohn,isolate,tage){
       const neu=core.load(core.save(s),undefined,rules);
       assert.equal(core.hash(neu),core.hash(s),'taeglicher Save/Load-Hash');
       kassenPruefen(neu);
-      snapshots.push(moment(s,s.tick/1440));
+      snapshots.push(moment(s,s.tick/1440,rules));
     }
   }
   assert.equal(auditStunden,tage*24);
@@ -102,6 +106,9 @@ function tageAusgeben(art,seed,lohn,werte){
       minerISK:y.minerISK,haendlerISK:y.npc1ISK+y.npc2ISK,
       frachterNPC:y.frachterNPC,zuschussISK:y.zuschussISK,
       offen:y.offenVertraege,archiv:y.archivAnzahl,
+      eisPreis:y.eisPreis,nahrungPreis:y.nahrungPreis,
+      rezeptVollkosten:y.rezeptVollkosten,
+      richtwertMarge:y.nahrungPreis-y.rezeptVollkosten,
     }));
   }
 }
@@ -117,6 +124,20 @@ test('B-K9s: 2 Seeds ×3 Testloehne ×7 Tage – isolierte Cyris-Kette ohne Fond
       assert(alle[i].stationISK>=0);
       assert(alle[i].haushaltISK>=0);
       assert(alle[i].offenVertraege>=0);
+    }
+    // Nachweis des bindenden dritten-Tages-Engpasses:
+    // Entweder ist das Nahrungsziel-Lager voll, oder die Station kann
+    // einen weiteren sechsminuetigen Produktionsauftrag nicht vorfinanzieren.
+    const d3=alle[3],kosten=lohn*baseline.economy.rezepte.r_nahrung.dauer;
+    assert.equal(d3.rezepte,alle[2].rezepte,'keine weiteren bezahlten Cyris-Rezepte an Tag 3');
+    assert.equal(d3.gezahlteNahrung,alle[2].gezahlteNahrung,'kein Nachfrage-Rueckfluss an Tag 3');
+    if(lohn===2){
+      const obergrenze=core.obergrenze(core.createState(seed,regeln(lohn)),regeln(lohn),SID,'nahrung');
+      assert.equal(d3.nahrungLager,obergrenze,'fehlende Nachfrage blockiert durch volles Lager');
+      assert(d3.stationISK>=kosten,'es liegt kein reiner Lohnkassenmangel vor');
+    }else{
+      assert(d3.stationISK<kosten,'die Station kann ihre eigene naechste Produktionsschicht nicht mehr bezahlen');
+      assert(d3.neueNahrungLager>0,'Waren bleiben trotz stationaerem Liquiditaetsausfall verfuegbar');
     }
     tageAusgeben('isoliert',seed,lohn,alle);
   }

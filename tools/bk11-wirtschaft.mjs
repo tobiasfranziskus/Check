@@ -39,6 +39,9 @@ function engine(src,watch=null,noRescue=false) {
     once("      traeger.ladung[cmd.klasse] -= 1;",
       "      watch.activate(traeger,cmd.klasse); traeger.ladung[cmd.klasse] -= 1;");
     if(src.includes('const m_core_vertrag =')) {
+      // B-K11a: reiner Beobachter, der Original-Core bleibt bitidentisch.
+      once('function fahrtStart(state, rules, s, ziel, zeit) {\n  if (state.schema !== 9',
+        'function fahrtStart(state, rules, s, ziel, zeit) {\n  if (s.phase === \'dock\' && (s.vertrag || s.arbeit !== 0)) watch.blocked(state,s,ziel,zeit,rules);\n  if (state.schema !== 9');
       once('  s.vertrag = id;\n  return true;',
         '  s.vertrag = id; watch.reserve(state,s,id);\n  return true;');
       once('  e.belege[beleg] = betrag;',
@@ -50,7 +53,44 @@ function engine(src,watch=null,noRescue=false) {
   return new Function('watch',src+';return {c:m_core_index,r:m_data_rules.RULES};')(watch);
 }
 class Watch {
-  constructor(){this.owners={};this.contracts={};this.events=[];this.maxEscrow=0;}
+  constructor(){
+    this.owners={};this.contracts={};this.events=[];this.maxEscrow=0;
+    this.timing={blockedAttempts:0,blockedWithCash:0,blockedWithCargo:0,
+      blockedWithCashAndCargo:0,lockedDockMinutes:0,lockedWithCargoMinutes:0,
+      dockMinutes:0,byOwner:{}};
+  }
+  timingRow(owner){return this.timing.byOwner[owner]??={
+    blockedAttempts:0,blockedWithCash:0,blockedWithCargo:0,
+    blockedWithCashAndCargo:0,lockedDockMinutes:0,lockedWithCargoMinutes:0,dockMinutes:0};}
+  blocked(state,sh,ziel,zeit,rules){
+    if(!['npc1','npc2','house'].includes(sh.owner))return;
+    // Eine versuchte Original-Fahrt, die allein wegen Restarbeit/offenem Vertrag
+    // schon vor der Finanzpruefung abgewiesen wird. Kein Nachweis von Absatz.
+    if(sh.phase!=='dock'||!Number.isSafeInteger(zeit)||zeit<=0||!rules.world.stations[ziel])return;
+    const x=this.timing,row=this.timingRow(sh.owner);
+    const cashOk=state.owners[sh.owner].cash >=
+      Math.ceil(zeit*rules.world.betriebskosten.frachter/rules.economy.stunde);
+    const loaded=Object.values(sh.ladung).some(n=>n>0);
+    x.blockedAttempts++;row.blockedAttempts++;
+    if(cashOk){x.blockedWithCash++;row.blockedWithCash++;}
+    if(loaded){x.blockedWithCargo++;row.blockedWithCargo++;}
+    if(cashOk&&loaded){x.blockedWithCashAndCargo++;row.blockedWithCashAndCargo++;}
+  }
+  sample(state,rules){
+    if(rules.schema!==9)return;
+    for(const sh of Object.values(state.ships)){
+      if(sh.klasse!=='frachter'||sh.phase!=='dock'
+        ||!['npc1','npc2','house'].includes(sh.owner))continue;
+      const x=this.timing,row=this.timingRow(sh.owner);
+      const loaded=Object.values(sh.ladung).some(n=>n>0);
+      const locked=!!sh.vertrag||sh.arbeit!==0;
+      x.dockMinutes++;row.dockMinutes++;
+      if(locked){
+        x.lockedDockMinutes++;row.lockedDockMinutes++;
+        if(loaded){x.lockedWithCargoMinutes++;row.lockedWithCargoMinutes++;}
+      }
+    }
+  }
   row(owner){return this.owners[owner]??=(
     {buys:0,sales:0,purchase:0,revenue:0,fees:0,hulls:0,hullCount:0,flightPaid:0,
       due:0,paid:0,rescue:0,soldBasis:0,lostBasis:0,activatedAssets:0,stock:{},losses:0});}
@@ -198,6 +238,7 @@ function run(seed,scenario,mode){
     const results=c.step(s,r),other=plain.c.step(replay,r);
     assert.deepEqual(results,other);
     assert(results.every(x=>x.ok),JSON.stringify(results));
+    w.sample(s,r); // ausschliesslich lesender Zeitbeobachter, Replay bleibt Original.
     if(r.schema===9)for(const sh of Object.values(s.ships))
       if(sh.klasse==='frachter'&&sh.phase==='reise'&&!sh.vertrag)unfundedNew++;
     if(s.tick%60===0){
@@ -219,7 +260,8 @@ function run(seed,scenario,mode){
       [x.traderEconomics.npc1.contribution,x.traderEconomics.npc2.contribution]),
     checkpoints:daily.filter(x=>[1,7,14,30,60,90,days].includes(x.tick/1440)),
     final:daily.at(-1),economics:w.summary(),maxEscrow:w.maxEscrow,meanHourlyEscrow:escrowHours/hours,
-    events:w.events.length,eventDigest:sha(JSON.stringify(w.events)),unfundedNew};
+    events:w.events.length,eventDigest:sha(JSON.stringify(w.events)),unfundedNew,
+    timing:w.timing};
   console.log('BK11_WORLD '+JSON.stringify({seed,scenario,mode,days,hash:result.final.hash,
     npc1:result.final.companies.npc1,npc2:result.final.companies.npc2,
     subsidies:result.final.subsidies,events:result.events}));
@@ -232,5 +274,13 @@ if(suite!=='standard')for(const [scenario,seed] of [['miner',42],['handel-flotte
   for(const mode of ['product','candidate','candidate-no-rescue'])results.push(run(seed,scenario,mode));
 fs.writeFileSync(out,JSON.stringify({base:BASE,coreSha256:sha(current),observerSha256:observerSha,
   node:process.version,days,suite,results},null,2)+'\n');
+// B-K11a: CI-Log enthaelt nur Zaehler, keine aufgeblasenen Einzel-Tick-Dumps.
+const cand=results.filter(x=>x.mode==='candidate');
+const timingTotals={};
+for(const key of ['blockedAttempts','blockedWithCash','blockedWithCargo',
+    'blockedWithCashAndCargo','lockedDockMinutes','lockedWithCargoMinutes','dockMinutes'])
+  timingTotals[key]=sum(cand.map(x=>x.timing[key]));
+console.log('BK11A_TIMING '+JSON.stringify({days,suite,worlds:cand.length,
+  totals:timingTotals,byWorld:cand.map(x=>({seed:x.seed,scenario:x.scenario,...x.timing}))}));
 console.log('BK11_AUDIT_PASS '+JSON.stringify({worlds:results.length,days,
   hourlyReplayAudits:sum(results.map(x=>x.hours)),saveLoads:sum(results.map(x=>x.roundtrips)),out}));

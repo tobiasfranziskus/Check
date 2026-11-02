@@ -31,6 +31,30 @@ Dies ist eine **technische Herkunfts-/Zahlungslücke im Regel15-Draft**, keine F
 - Vor produktivem Schluss sind Herkunfts-Transfers zwischen Station, Schiff, Transit, Teilentladung, Zwischenlager, Verlust, Außenhandel und Konsum als **speicherbare, mengenbilanzierte Original-Core-Fakten** erforderlich. Erst dann können Haushaltszahlungen und Rückfluss über mehrere Perioden ohne manuelle Gegenprobe geprüft werden.
 - Keine Preisanpassung, Lohnänderung, neue Emission, Individualrettung, Merge, Deployment oder iPad-/NAS-Abnahme.
 
-**CI-Nachweis:** Für den neuen Test-Head [GitHub Actions #41446392102](https://github.com/tobiasfranziskus/Check/actions/runs/41446392102); das tatsächlich abgeschlossene Ergebnis ist vor einer Freigabe separat zu prüfen. Nicht als bestanden werten, solange der Lauf nicht erfolgreich abgeschlossen ist.
+## Ausgeführte CI und konkreter Zahlungsnachweis
 
-**Testrevision:** [Erste CI #41446392102](https://github.com/tobiasfranziskus/Check/actions/runs/41446392102) **fehlgeschlagen: 137/139 Node-Tests grün, beide B-K10c-Tests rot**. Keine produktive Fehlfunktion: Die Testvoraussetzung verwechselte Alt- und Neuware bei FIFO. Der korrigierte Test-Head [`212e784`](https://github.com/tobiasfranziskus/Check/commit/212e784094c948285bd4ee3204c32643a511ea3a) wartet reale eigene Prüfung ab; die korrigierte Prüfkette darf vor grünem Lauf nicht als bestanden gelten.
+**[TEST BESTANDEN]** Der endgültige B-K10c-Test-Head [`df45ea6`](https://github.com/tobiasfranziskus/Check/commit/df45ea6245391d1a7b1699e53a6ef82749630db3) hat die [vollständige GitHub-Actions-CI #41447617718](https://github.com/tobiasfranziskus/Check/actions/runs/41447617718) erfolgreich abgeschlossen: **139/139 Node.js-22-Tests**, 0 Fehler, 0 übersprungen. Die übrigen historischen Regel-/Geografie-Jobs waren erfolgreich; der vorgesehene Sicherheitsgeografie-Vergleich wurde übersprungen (nicht als bestanden gewertet).
+
+Das Originalhandels- und Vertragsmodell enthält in **beiden Seeds 42 und 7** dieselben realen Einzelbelege:
+
+| Beleg | Original-Core | Synthetische, explizite Herkunfts-Gegenprobe |
+|---|---:|---:|
+| Vorher aus eigener Kasse tatsächlich gekaufte Nahrung in Cyris | **46 ISK / Einheit** | 46 ISK |
+| Station Orion bezahlt dem Händler bei Ankunft | **56 ISK / Einheit** | 56 ISK |
+| Flug Cyris→Orion, echte Route | **43 Minuten** | 43 Minuten |
+| Vor Start gebundenes Frachterbudget | **180 ISK** | 180 ISK |
+| Bis zum beobachteten Zielkonsum tatsächlich gezahlte Flugkosten | **178 ISK** | 178 ISK |
+| Orion-Haushaltsguthaben unmittelbar vor Essen | **280 ISK** | 280 ISK |
+| Endverbraucherzahlung | **0 ISK** | **56 ISK** |
+| Orion-Haushaltsguthaben danach | **280 ISK** | **224 ISK** |
+| Als Altware kostenlos verbraucht | **1 Einheit** | 0 |
+| Als Neuware bezahlt verbraucht | **0 Einheiten** | **1 Einheit** |
+| Weiter nur als `haushaltNeuLedger.ausgelagert` gezählt | 1 | 0 |
+
+Die künstliche Gegenprobe führt **keine zusätzlichen ISK** ein: Seed42 bleibt in beiden Varianten bei 840 ISK bereits im vorhandenen Kampf-/Sicherheitsmodell gemintet und 1.250 ISK verbrannt; Seed7 bei 600 / 1.250 ISK. Echte Core-Geld-/Warenaudits, unabhängige Bestandskassen plus Reserven, Herkunftsaudit, Save/Load und Replay wurden ausgeführt. Der synthetische Herkunftswechsel wurde bewusst ausschließlich *nach realem Kauf und Transport* im Testzustand vorgenommen; dies ist **keine gespeicherte Schiffsladung und kein produktionsreifer Herkunftsnachweis**.
+
+**[NEGATIVER WIRTSCHAFTSBEFUND]** Dem realen Warenverkauf von 56 ISK stehen 46 ISK Einkauf und **bereits 178 ISK bezahlte Flugkosten** gegenüber. Allein der Händlergeldstrom ist deshalb **56 − 46 − 178 = −168 ISK vor den zusätzlich anfallenden Handelsgebühren**, Hüllen-/Kapital-/Risiko-/Verwaltungskosten. Selbst ein behobener Provenienzfehler beweist **keinen profitablen oder wiederholbaren Nahrungstransport**. Die lokalen Haushaltszahlungen beim Ziel fließen an die Zielstation und werden nicht automatisch zur Produktionsstation zurückgeführt. Die bezeugten 1.176 ISK Löhne in Cyris sind die kumulierten Zahlungen vieler echter Chargen, **nicht** der Preis einer Charge; jede sechsminütige Charge kostete 24 ISK.
+
+**Testentwicklung transparent:** [Erste CI #41446392102](https://github.com/tobiasfranziskus/Check/actions/runs/41446392102) 137/139 grün, zwei neue Tests rot, da der Test beim Quellenlager fälschlich eine alte Einheit als neu identifizierte. [Zweite CI #41446948892](https://github.com/tobiasfranziskus/Check/actions/runs/41446948892) 137/139 grün, zwei neue Tests rot, da die Testschleife eine absolute Zeitschranke vor der tatsächlich späteren Abfahrt verwendete. Beide **Testaufbaufehler** wurden korrigiert; erst der dritte oben belegte CI-Lauf ist vollständig grün. Keine erwarteten Gold-/Referenzwerte umgeschrieben.
+
+**[NÄCHSTES GATE / OPTION B-K10d]** Ein winziger, save-kompatibler Herkunfts-Lifecycle für eine echte Fracht-Teilmenge: Original-Core beim Einkauf, Transit, Zahlung am Ziel, Teilentladung, Verlust, Reexport, Endverbrauch und Außenhandel; eine Herkunftseinheit darf weder verschwinden noch doppelt gezählt werden. Zunächst mit Seed42/7 und unabhängigem Chargen-/ISK-Audit und tatsächlich bezahltem Einzel-Endverbrauch demonstrieren. **Getrennt** die Ursache des negativen Handels-Nettoerlöses unter aktuellen Originalpreisen, Löhnen, bestehenden Risikokosten und finanzierten Fahrten prüfen. Keine neue ISK-Quelle, Lohn-/Preisreform, individuelles Überleben, unerlaubte Spielstandmigration, Merge oder Deployment. Keine reale iPad-/NAS-Abnahme.

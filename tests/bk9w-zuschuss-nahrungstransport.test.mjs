@@ -203,12 +203,28 @@ test('B-K9w: Seed7 mit/ohne Flottenrettung, 5 Tage; Ledger, Fahrtkosten, Herkunf
   assert(z.ersterZuschuss>0,'Ursache tritt in aktiver Originalwelt auf');
   assert(z.ersteAbweichung!==null,'echter kausaler Unterschied');
   assert.equal(z.snapshots.length,5);
+  const ende=z.snapshots.at(-1);
+  assert.equal(ende.mit.nahrungBezahlt,ende.ohne.nahrungBezahlt,
+    'Flottenzuschuss hat nicht einen weiteren bezahlten Cyris-Verbrauch finanziert');
+  assert.equal(ende.mit.nahrungFehlend,ende.ohne.nahrungFehlend);
+  assert.equal(z.mit.matchingMenge,39,'nur belegte reale Haendler-Nahrungs-Lose');
+  assert.equal(z.mit.matchingDeckungsbeitragISK,481);
+  assert.equal(z.mit.flugKostenNurNahrungISK,1184);
+  assert.equal(z.mit.matchingDeckungsbeitragISK-z.mit.flugKostenNurNahrungISK,-703,
+    'Nahrungshandel nach zuordenbaren Fahrtkosten negativ, ohne Leerfahrt/Zins/Huelle');
+  assert.equal(z.mit.fahrtAnzahl-z.ohne.fahrtAnzahl,13,
+    'Flottenrettung erzeugt zusaetzliche Fahrten, nicht neue bezahlte Nahrung');
 });
 test('B-K9w: Seed42 Negativkontrolle, 5 Tage, vor Zuschuss identische Replays',()=>{
   const z=lauf(42,5);
   assert.equal(z.mit.flottenzuschussISK,0,'Seed42 ohne historischen Flottenzuschuss');
   assert.equal(z.ohne.flottenzuschussISK,0);
   assert.equal(z.mitHash,z.ohneHash,'nur Zuschussweg deaktiviert; ohne Auslösung keine Änderung');
+  assert.equal(z.mit.matchingMenge,38);
+  assert.equal(z.mit.matchingDeckungsbeitragISK,474);
+  assert.equal(z.mit.flugKostenNurNahrungISK,602);
+  assert.equal(z.mit.matchingDeckungsbeitragISK-z.mit.flugKostenNurNahrungISK,-128,
+    'auch Seed42 ist nach realer Nahrungskauf-/Verkaufsmarge plus Fahrtkosten negativ');
 });
 test('B-K9w: Seed7-Replay, 48 Stunden, Varianten und Frachtherkunft deterministisch',()=>{
   const a=lauf(7,2,false),b=lauf(7,2,false);

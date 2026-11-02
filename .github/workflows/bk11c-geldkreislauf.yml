@@ -1,0 +1,43 @@
+name: Aphros Void – B-K11c Spieler-Sparabfluss (Analyse)
+on:
+  pull_request:
+    paths:
+      - 'tools/bk11c-sparabfluss.mjs'
+      - 'tests/bk11c-sparabfluss.test.mjs'
+      - 'docs/ANALYSE_BK11C_SPARABFLUSS.md'
+      - '.github/workflows/bk11c-geldkreislauf.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Ein-Tages-A/B/C-Originalcore-/Audit-Smoke
+        run: node --test tests/bk11c-sparabfluss.test.mjs
+  main90:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [miner, handel-flotte]
+        mode: [A, B, C]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Produkt Regel14 je 90 Tage mit unabhängigen Audits/Replays/Save-Load
+        run: node tools/bk11c-sparabfluss.mjs --scenario=${{ matrix.scenario }} --mode=${{ matrix.mode }} --days=90 --out="$RUNNER_TEMP/bk11c-${{ matrix.scenario }}-${{ matrix.mode }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bk11c-${{ matrix.scenario }}-${{ matrix.mode }}
+          path: ${{ runner.temp }}/bk11c-${{ matrix.scenario }}-${{ matrix.mode }}.json
+          if-no-files-found: warn

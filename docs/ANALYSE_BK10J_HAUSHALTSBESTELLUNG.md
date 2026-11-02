@@ -43,6 +43,24 @@ Ein weiterer getrennter Test verwendet einen originalen R15-/Schema9-Spielstand 
 
 **Testcode-Stand:** [Commit `332d3d4`](https://github.com/tobiasfranziskus/Check/commit/332d3d4ea6ca902c8be4b34f4d9ac2357fea3ec1) enthält drei direkt ohne Fehler ausgeführte B-K10j-Tests (Hauptvergleich, deterministischer Replay, Totalausfall-Storno). Die erste Vorgänger-[GitHub-CI #41468273943](https://github.com/tobiasfranziskus/Check/actions/runs/41468273943) am Stand `ba7d715` war vollständig erfolgreich mit **159/159** Node-Tests; die aktualisierte CI [#41468663347](https://github.com/tobiasfranziskus/Check/actions/runs/41468663347) für den zusätzlichen Stornotest ist bis zum tatsächlichen Abschluss **gesondert** zu bewerten.
 
+## Vorsicht: positiver Einzelhändler-Cashflow ist kein Vollkostenüberschuss
+
+Im unveränderten Testregelset `r_nahrung` benötigt jede **wirklich neue** Nahrungseinheit **2 Eis und 6 Minuten Fabrikproduktion**. Der explizite R15-Testlohn von **4 ISK/Minute** entspricht bereits **24 ISK pro gefertigter Einheit**. Die bestehende Marktpreisformel `preisFormel` und `preisgrenzen[0]=550` gewährleisten für Eis (`basis:12`) mindestens **7 ISK je Einheit** als **konservativen Marktwert-Wiederbeschaffungsmaßstab**, nicht unbedingt als tatsächlich verbuchte historische Zahlung des konkreten Rohstoffloses. Das sind mindestens **24 + 2×7 = 38 ISK** je Nahrungseinheit **vor Flügen, Gebühren, Schiffs-/Fabrikkapital, Schäden und anderen Kosten**. Der jeweils tatsächliche Quellverkaufspreis im B-K10j-Beleg ist **25/32 ISK je Einheit**, also **13/6 ISK darunter**. Die produktiv ausgeführten ursprünglichen Marktpreise und die Isolationsmethodik wurden dabei **nicht** geändert.
+
+Im bestellten B-Arm sind somit rechnerisch bei konservativer Eisbewertung folgende **obere Grenzen eines gesamten Lieferkettenbeitrags** feststellbar:
+
+| Bestandteile, keine neue ISK-Emission | Seed42, 24 Stück | Seed7, 22 Stück |
+|---|---:|---:|
+| Aus echten Haushaltsreserven bezahlte Endverkaufserlöse | +1.272 ISK | +1.188 ISK |
+| Konservativer Mindestansatz Fabriklohn + Eis zum niedrigsten Marktpreis | −912 ISK | −836 ISK |
+| Tatsächlich bezahlte Originalflugkosten | −499 ISK | −499 ISK |
+| Tatsächlich bezahlte Quell- und Zielmarktgebühren | −72 ISK | −72 ISK |
+| **Rechnerische Lieferkettengrenze** | **−211 ISK** | **−219 ISK** |
+
+Der tatsächliche Eis-Marktpreis in Nadir **am 72h-Ausgangsstichtag** war in beiden Seeds **10 ISK/Stück**, also über der für die Grenze angenommenen Minimalbewertung von 7 ISK. Die tatsächlichen Produktions- und Eis-FIFO-Einstandskosten der transportierten Lose sind damit **noch nicht einzeln nachgewiesen**; die Grenze ist **eine konservative Wiederbeschaffungskostenrechnung, kein unabhängiger Geldabflussaudit des Eisverkaufs**. Vorproduzierte Nahrung kann das aktuelle Schiff cashpositiv machen, während ihre Ersatzproduktion unrentabel bleibt. Diese Unterscheidung ist entscheidend, um keinen dauerhaft defizitären Kreislauf zur vermeintlich erfolgreichen Spielmechanik zu erklären.
+
+**[NÄCHSTE KONKRETE ANALYSE]** Ein reales Nadir-Eis→Fabrik-Los mit wirklich finanzierter Mining-/Rohstoff-Zufuhr und echtem Stationsankauf vor der bereits getesteten Lieferung chargengenau durchrechnen. Erst dann eine kombinierte Verbraucher-Bestell-/Beschaffungsregel zur **gesonderten** Produktentscheidung formulieren. Weder neue Emission noch pauschale Preis-/Lohnerhöhung ergibt sich aus der Gegenprobe.
+
 ## Entscheidung und offene Prüfungen
 
 **[ANALYSE POSITIV FÜR A-KAUFKRAFT-GATE]** In den beiden Sonderwelten kann **bereits existierende Verbraucher-Kaufkraft** eine echte Nahrungszustellung auslösen, auch wenn der Marktzwischenhändler nur 8/11 Einheiten vorfinanzieren würde. Die direkte Bestellung verhindert so **16/11** Einheiten zunächst unverkaufter Import-Fracht; sie macht den Frachter **nicht** immer profitabel. Eine allgemeine Nachfrage-, Lohn-, Emissions- oder Preisreform ist hieraus **nicht beschlossen**.

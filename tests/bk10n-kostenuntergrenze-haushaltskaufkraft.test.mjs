@@ -20,8 +20,8 @@ once("      for (const ware of ids(r.ein)) { st.lager[ware] -= r.ein[ware]; stat
 once("          if (r.aus.nahrung) m_core_herkunft.erzeugen(state, rules, id, r.aus.nahrung);",
   "          if (r.aus.nahrung) m_core_herkunft.erzeugen(state, rules, id, r.aus.nahrung);\n"+
   "          if (linie.rezept==='r_nahrung') __bk10n_fertig(state,id,index);");
-once("      const da = anzahl(st.lager, ware);",
-  "      const da = anzahl(st.lager, ware);\n"+
+once("    for (const ware of ids(bedarf)) {\n      const da = anzahl(st.lager, ware);",
+  "    for (const ware of ids(bedarf)) {\n      const da = anzahl(st.lager, ware);\n"+
   "      if(ware==='nahrung') __bk10n_preisVor(state,id,preis(state,id,ware,rules));");
 once("      st.lager[ware] = da - n; state.ledger[ware].consumed += n;",
   "      if (ware==='nahrung'&&n) __bk10n_verzehr(state,id,n);\n"+

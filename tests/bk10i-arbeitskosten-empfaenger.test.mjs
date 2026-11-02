@@ -41,7 +41,23 @@ function bilanz(s){
   const frei=sum(Object.values(s.owners).map(o=>o.cash));
   const reserviert=sum(Object.values(s.vertraege.eintraege).map(e=>e.rest));
   assert.equal(frei+reserviert,s.initialSupply+s.minted-s.burned,'Geldbilanz inklusive Vertragsreserven');
-  assert(core.audit(s).ok,'unabhaengiger Core-Warenaudit');
+  // Zweiter, test-eigener Warenaudit ohne core.audit zu delegieren.
+  for(const [ware,l] of Object.entries(s.ledger)){
+    const ist=sum(Object.values(s.stations).map(st=>st.lager[ware]||0))+
+      sum(Object.values(s.ships).map(sh=>sh.ladung[ware]||0));
+    const soll=l.initial+l.mined+l.produced+l.imported-l.consumed-l.exported;
+    assert.equal(ist,soll,'unabhaengiger Warenledger: '+ware);
+  }
+  // Herkunft wird auch fuer vorhandene Waren-/Frachtteilmengen geprueft.
+  const h=s.haushaltNeuLedger;
+  const stationNeu=sum(Object.values(s.stations).map(st=>st.lokalNeuNahrung||0));
+  const schiffNeu=sum(Object.values(s.ships).map(sh=>sh.neuLadungNahrung||0));
+  const verbrauchtNeu=sum(Object.values(s.stats.haushaltskauf).map(x=>x.menge));
+  assert.equal(schiffNeu,h.transit,'neue Frachteinheiten als echte Transitposition');
+  assert.equal(stationNeu+schiffNeu+h.ausgelagert+h.konsumiert,h.produziert,
+    'unabhaengige Nahrungshistorie neu erzeugt = lokal + unterwegs + ausgelagert + konsumiert');
+  assert.equal(verbrauchtNeu,h.konsumiert,'nur nachweislich neue Nahrung als bezahlter Konsum');
+  assert(core.audit(s).ok,'zusaetzlicher Original-Core-Warenaudit');
 }
 function geldgruppen(s){
   let haushalt=0,station=0,fonds=0,konzern=0,sonstige=0;

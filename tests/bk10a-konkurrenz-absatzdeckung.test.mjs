@@ -97,7 +97,7 @@ function build(modus){
       "      } else s.ankunft = state.tick + w.warteLeer;",
       "    }"
     ].join("\n");
-    const gezielt=[
+    let gezielt=[
       "    else if (s.warten >= 2) {",
       "      const ziel=zielposition(state,rules,s,station);",
       "      if (ziel && abflug(state,rules,s,station,ziel.ziel,null,0)) {",
@@ -108,8 +108,10 @@ function build(modus){
       "      } else s.ankunft = state.tick+w.warteLeer;",
       "    }"
     ].join("\n");
-    if(conflict)gezielt.splice(6,0,
-      "        __claims.push({schiff:s.id,ziel:ziel.ziel,ware:ziel.ware});");
+    if(conflict)gezielt=gezielt.replace(
+      "      } else s.ankunft = state.tick+w.warteLeer;",
+      "        __claims.push({schiff:s.id,ziel:ziel.ziel,ware:ziel.ware});\n"+
+      "      } else s.ankunft = state.tick+w.warteLeer;");
     js=unique(js,leerOriginal,gezielt);
     if(sale){
       // Nach dem WARENeinkauf darf der echte Verkauf nicht nur dem nominellen

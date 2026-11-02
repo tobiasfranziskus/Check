@@ -54,7 +54,7 @@ function probe(seed,crystalOff){
   const {s,r}=make(seed,crystalOff);
   let start=handelsbelege.length;
   const ergebnis=[];
-  let prevKonto=0,prevLohn=0,prevKauf=0,prevRezepte=0;
+  let prevKonto=0,prevLohn=0,prevKauf=0,prevRezepte=0,prevKasse=s.owners[id].cash;
   for(let t=0;t<3*1440;t++){
     core.step(s,r);
     if(s.tick%60===0)audit(s);
@@ -78,11 +78,14 @@ function probe(seed,crystalOff){
       protokolle:next-start,
     };
     assert(trace.weitereKostenISK>=0,'kein unterschlagener oder doppelt berechneter Stationsaufwand');
+    assert.equal(s.owners[id].cash,prevKasse+hhSpend-rawCost,
+      'tatsaechliche Cyris-Kasse schliesst ohne versteckte Einnahmen/Zuschuesse exakt');
     const loaded=core.load(core.save(s),undefined,r);
     assert.equal(core.hash(loaded),core.hash(s));
     audit(loaded);
     ergebnis.push(trace);
     start=next;prevKonto=s.stats.konto[id].kosten;
+    prevKasse=s.owners[id].cash;
     prevLohn=s.stats.konto['hh_'+id].erloes;
     prevKauf=s.stats.haushaltskauf[id].isk;prevRezepte=s.stats.rezepte[id];
     console.log('B-K9t Kassenursache',JSON.stringify(trace));

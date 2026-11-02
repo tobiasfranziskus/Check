@@ -49,7 +49,8 @@ Kumulierte Neu-Nahrungszahlungen/Fehlbedarf über **alle sechs** Verbrauchsstati
 | Nach positivem Markttest bezahlte Leerstarts | 14 | 12 |
 | Davon an der prognostizierten Ausgangsstation angekommen | 14 | 12 |
 | Anschließende reale, der Zielposition zugeordnete Warenkäufe | 9 | 9 |
-| Erster gefundener Kauf: Ware/Menge | instrumentiert | instrumentiert |
+| Davon Kauf der vorhergesagten Ware | 7 | 7 |
+| Kauf einer anderen Ware am vorhergesagten Markt | 2 | 2 |
 | Noch offene, nicht gekaufte Prognosen nach Tag6 | 2 | 2 |
 | Durch erneute Positionierung verdrängte frühere Prognosen | 3 | 1 |
 | Kumulierte voraussichtliche Leerflugbudgets | 1.255 ISK | 1.101 ISK |
@@ -59,7 +60,7 @@ Das sind **keine** 14/12 erfolgreichen Handelsreisen. Die vorhandenen Warenangeb
 ## Tests und Qualitätsgrenzen
 
 - `tests/bk9y-zielpositionierung-finanziert.test.mjs`: stündlich unabhängiger Audit für Bargeld plus aktive Vertragsreserven = `initialSupply + minted − burned`, Original-Core-Waren- und Herkunftsaudit; täglich Save/Load-Hash, 120-Tick neutrale Original-Core-Instrumentierung und zusätzlich 48h deterministischer Replay. Drei Varianten × zwei Seeds × sechs Spieltage.
-- [GitHub Actions #41437917820](https://github.com/tobiasfranziskus/Check/actions/runs/41437917820): erster vollständiger Lauf **126/126 Node-Tests bestanden**, Gesamtlauf erfolgreich. Ein zweiter Commit ergänzt strengere Assertions für die echte atomare Neuplatzierungsreserve und trennt Käufe der prognostizierten Ware von anderen Käufen; **dessen CI muss gesondert als erfolgreich geprüft werden**, bevor ein endgültiger Abschlussstatus beansprucht wird.
+- [GitHub Actions #41437917820](https://github.com/tobiasfranziskus/Check/actions/runs/41437917820): erster vollständiger Lauf **126/126 Node-Tests bestanden**, Gesamtlauf erfolgreich. Der nachfolgende Testcode-Commit `e58d12a` ergänzt und besteht **zusätzlich** Assertions für die atomar tatsächlich gebundene Neuplatzierungsreserve, ausdrücklich positive erwartete Marge und die Trennung der ursprünglich prognostizierten Ware (7 Käufe) von anderer dann gekaufter Ware (2 Käufe je Seed). [CI #41438237731](https://github.com/tobiasfranziskus/Check/actions/runs/41438237731): der **Node-22-Testjob ist 126/126 grün**; der vollständige Workflow-Status wird separat geprüft.
 - Die historischen v10–v14-CI-Jobs sind **keine** Regel15-Stabilitätsabnahme. Keine reale iPad-/NAS-Abnahme, keine 40 positiven Wiederholungsperioden, kein 13×90d-/365d-Langzeit- oder Spielerkrisentest.
 
 ## Entscheidungsempfehlung

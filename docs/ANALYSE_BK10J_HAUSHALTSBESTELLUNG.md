@@ -19,7 +19,7 @@ B-K10j fragt: Können **vorhandene, vorab wirklich gesperrte Verbraucher-ISK** d
 
 **Test-only Grenzen:** Diese B-Variante schreibt zur direkten Endabnahme die Waren- und Herkunfts- und Haushaltbuchungen **bewusst außerhalb einer schon existierenden Produkttransaktion**, weil es **keinen produktiven Direktkauf-Befehl** gibt. Das ist die **Hypothese**, deren Bilanzwirksamkeit geprüft wird – nicht die Behauptung, dass das Originalspiel den Vorgang bereits so beherrscht. Die Lieferung wird nicht vorschnell auf einmal konsumiert, sondern höchstens in stündlichen Bedarfsportionen. Das Versuchsmodell braucht später gesonderte Spezifikation von Vertragslebenszyklus, Ausfall-/Piratenverlust, Preisbindung und Spielersymmetrie.
 
-## Direkt ausgeführter Testbefund (GitHub-CI gesondert zu bestätigen)
+## [TEST BESTANDEN] Direkte Ergebnisse und vollständige GitHub-CI
 
 | Core-Tatsachenzahlung und Warenfluss | Seed42 Station A | Seed42 Bestellung B | Seed7 Station A | Seed7 Bestellung B |
 |---|---:|---:|---:|---:|
@@ -41,7 +41,7 @@ Im Vergleich werden Original-Stationsankäufe und Haushaltsendverbrauch untersch
 
 Ein weiterer getrennter Test verwendet einen originalen R15-/Schema9-Spielstand nach 24 Stunden mit **7.818 ISK tatsächlich verdientem Aldera-Haushaltsguthaben**. Ein vorhandener `m_core_vertrag.reservieren` sperrt davon **500 ISK** für eine hypothetische Bestellung, die **niemals** Nahrung erhält. Der originale `m_core_vertrag.abschliessen` erstattet diese **500 ISK vollständig**, sodass der Haushalt wieder **7.818 ISK** besitzt. Kein zusätzlicher Haushalt-Konsum, keine neuen ISK, keine Geldsenke. Audit vor Reserve, nach Reserve und nach Abschluss, Save/Load-/Hash bei offener Reserve und danach, jeweils Original-Core und unabhängige Ware-/Geldbilanz. Der Stornotest prüft **nicht** Piratenverlust oder Teilzerstörung eines bereits beladenen Frachters; das ist als eigener Fall offen.
 
-**Testcode-Stand:** [Commit `332d3d4`](https://github.com/tobiasfranziskus/Check/commit/332d3d4ea6ca902c8be4b34f4d9ac2357fea3ec1) enthält drei direkt ohne Fehler ausgeführte B-K10j-Tests (Hauptvergleich, deterministischer Replay, Totalausfall-Storno). Die erste Vorgänger-[GitHub-CI #41468273943](https://github.com/tobiasfranziskus/Check/actions/runs/41468273943) am Stand `ba7d715` war vollständig erfolgreich mit **159/159** Node-Tests; die aktualisierte CI [#41468663347](https://github.com/tobiasfranziskus/Check/actions/runs/41468663347) für den zusätzlichen Stornotest ist bis zum tatsächlichen Abschluss **gesondert** zu bewerten.
+**[TEST BESTANDEN]** [GitHub-CI #41468663347](https://github.com/tobiasfranziskus/Check/actions/runs/41468663347) auf Testcode-Commit [`332d3d4`](https://github.com/tobiasfranziskus/Check/commit/332d3d4ea6ca902c8be4b34f4d9ac2357fea3ec1): **vollständiger Workflow erfolgreich; 160/160 Node-Tests, 0 Fehler, 0 übersprungen**. Alle ausgeführten historischen v10–v14-/Geografie-Referenzjobs grün; gesonderter Sicherheitsgeografievergleich **planmäßig übersprungen**, nicht als bestanden gewertet. Hauptvergleich Seed42/7, vollständiger Seed42-Replay und der Test einer **500-ISK-Vollrückerstattung ohne Lieferung** bestätigt. Die erste Vorgänger-[CI #41468273943](https://github.com/tobiasfranziskus/Check/actions/runs/41468273943) auf `ba7d715` war bereits **159/159**, jedoch **ohne** den später ergänzten Stornotest. Nach dem erfolgreichen finalen Testcode erfolgten nur Dokumentationsänderungen. Keine iPad-/NAS-Abnahme.
 
 ## Vorsicht: positiver Einzelhändler-Cashflow ist kein Vollkostenüberschuss
 

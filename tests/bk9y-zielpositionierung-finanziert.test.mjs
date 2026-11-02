@@ -108,7 +108,7 @@ function build(modus){
     js=unique(js,anchor,
       "    entladen(state, rules, s);\n"+
       "    if(['npc1','npc2'].includes(s.owner)) __events.push({art:'ankunft',"+
-        "tick:state.tick,schiff:s.id,station:s.ziel,system:s.system});\n"+
+        "tick:state.tick,schiff:s.id,station:stationIn(rules,s.system),system:s.system});\n"+
       "  }\n}\nreturn { entladen, reise, ankunft };");
   }
   // Reiner passiver Beobachter: Jedes Handelsgeschaeft und die wirklichen Flugkosten

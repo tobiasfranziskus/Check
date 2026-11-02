@@ -1852,8 +1852,8 @@ function fahrtStart(state, rules, s, ziel, zeit) {
 function stornieren(state, s) {
   if (!s.vertrag || s.phase !== 'dock' || s.arbeit !== 0) throw new Error('Fahrt bereits begonnen');
   const id = s.vertrag;
-  delete s.vertrag;
   if (!abschliessen(state, id)) throw new Error('Storno ohne Rueckerstattung');
+  delete s.vertrag;
 }
 function fahrtStunde(state, rules, s, kosten, system) {
   const id = s.vertrag, v = state.vertraege.eintraege[id];
@@ -1867,8 +1867,8 @@ function fahrtStunde(state, rules, s, kosten, system) {
     m_core_handel.buche(state, s.owner, 'kosten', kosten);
   }
   if (s.phase === 'dock') {
-    delete s.vertrag;
     if (!abschliessen(state, id)) throw new Error('Fahrtabschluss ohne Rueckerstattung');
+    delete s.vertrag;
   }
 }
 function fahrtVerlust(state, rules, s) {
@@ -1884,8 +1884,8 @@ function fahrtVerlust(state, rules, s) {
       throw new Error('Verlustarbeit ohne Finanzierung: ' + s.id);
     m_core_handel.buche(state, s.owner, 'kosten', kosten);
   }
-  delete s.vertrag;
   if (!abschliessen(state, id)) throw new Error('Verlustabrechnung ohne Rueckerstattung');
+  delete s.vertrag;
 }
 return { bestand, reservieren, bezahlen, abschliessen,
   fahrtStart, fahrtStunde, fahrtVerlust, stornieren };

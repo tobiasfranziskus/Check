@@ -12,7 +12,9 @@ const sha=x=>createHash('sha256').update(x).digest('hex');
 const observerSha=sha(fs.readFileSync(new URL(import.meta.url)));
 const sum=a=>a.reduce((s,n)=>s+n,0);
 const args=process.argv.slice(2),opt=(k,d)=>args.find(x=>x.startsWith('--'+k+'='))?.slice(k.length+3)??d;
-assert(args.every(x=>/^--(days|seed|suite|out|baseline)=/.test(x)));
+assert(args.every(x=>/^--(days|seed|suite|out|baseline|probe)=/.test(x)));
+const probe=opt('probe','none');
+assert(['none','arrival'].includes(probe));
 const mainHtml=opt('baseline','')?fs.readFileSync(opt('baseline',''),'utf8'):
   execFileSync('git',['show',BASE+':index.html'],{encoding:'utf8',maxBuffer:1e7});
 const main=source(mainHtml);
@@ -22,7 +24,7 @@ assert(Number.isSafeInteger(days)&&days>0&&days<=365);
 assert(['all','standard','crises'].includes(suite));
 const seeds=opt('seed','')?[Number(opt('seed',''))]:SEEDS;
 assert(seeds.every(s=>SEEDS.includes(s)));
-function engine(src,watch=null,noRescue=false) {
+function engine(src,watch=null,noRescue=false,arrival=false) {
   const once=(a,b)=>{assert.equal(src.split(a).length,2,a);src=src.replace(a,b);};
   if(noRescue)once('if (leer) zuschuss(state, rules, owner, bedarf);','if (false) zuschuss(state, rules, owner, bedarf);');
   if(watch) {
@@ -49,6 +51,35 @@ function engine(src,watch=null,noRescue=false) {
       once("  e.status = 'geschlossen';",
         "  e.status = 'geschlossen'; watch.close(state,e);");
     }
+  }
+  if(arrival){
+    // ISOLIERTE TEST-GEGENPROBE. Kein index.html-/Produktcode-Eingriff.
+    // Ankunft: tatsächlich geleistete Flugminuten aus dem laufenden Escrow zahlen,
+    // kumulierte Stundenrundung erhalten, dann Vertrag schließen.
+    once("    entladen(state, rules, s);",
+      "    if (state.schema===9 && s.klasse==='frachter' && s.vertrag) {"
+      +" const vorher=s.d1Bereits||0, arbeit=s.arbeit;"
+      +" const tarif=rules.world.betriebskosten.frachter, stunde=rules.economy.stunde;"
+      +" const betrag=Math.floor((vorher+arbeit)*tarif/stunde)-Math.floor(vorher*tarif/stunde);"
+      +" if(watch)watch.work(s,arbeit,rules);"
+      +" m_core_vertrag.fahrtStunde(state,rules,s,betrag,s.system);"
+      +" s.d1Bereits=vorher+arbeit; s.arbeit=0; }"
+      +"\\n    entladen(state, rules, s);");
+    const arbeitNeedle=watch
+      ? 'const s = state.ships[id]; const arbeit = s.arbeit; watch.work(s,arbeit,rules); s.arbeit = 0;'
+      : 'const s = state.ships[id]; const arbeit = s.arbeit; s.arbeit = 0;';
+    once(arbeitNeedle,arbeitNeedle+
+      " const d1Vorher = s.klasse==='frachter' && state.schema===9 ? s.d1Bereits||0 : 0;"
+      +" if(s.klasse==='frachter' && state.schema===9) delete s.d1Bereits;");
+    once('const kosten = div(anzahl(w.betriebskosten, s.klasse) * arbeit, rules.economy.stunde);',
+      "const kosten = s.klasse==='frachter' && state.schema===9"
+      +" ? div(anzahl(w.betriebskosten,s.klasse)*(d1Vorher+arbeit),rules.economy.stunde)"
+      +" - div(anzahl(w.betriebskosten,s.klasse)*d1Vorher,rules.economy.stunde)"
+      +" : div(anzahl(w.betriebskosten,s.klasse)*arbeit,rules.economy.stunde);");
+    once('const kosten = Math.floor(rules.world.betriebskosten.frachter * s.arbeit / rules.economy.stunde);',
+      'const d1Vorher=s.d1Bereits||0;'
+      +' const kosten=Math.floor(rules.world.betriebskosten.frachter*(d1Vorher+s.arbeit)/rules.economy.stunde)'
+      +'-Math.floor(rules.world.betriebskosten.frachter*d1Vorher/rules.economy.stunde);');
   }
   return new Function('watch',src+';return {c:m_core_index,r:m_data_rules.RULES};')(watch);
 }
@@ -223,9 +254,10 @@ function snapshot(s,c,r,w){
 }
 function run(seed,scenario,mode){
   const w=new Watch(),noRescue=mode==='candidate-no-rescue';
-  const {c,r:base}=engine(current,w,noRescue);
+  const arrival=mode==='candidate-arrival';
+  const {c,r:base}=engine(current,w,noRescue,arrival);
   const r=mode==='product'?base:{...base,schema:9,rulesVersion:15};
-  const plain=engine(mode==='product'?main:current,null,noRescue);
+  const plain=engine(mode==='product'?main:current,null,noRescue,arrival);
   let s=c.createState(seed,r),replay=plain.c.createState(seed,r);
   assert.equal(c.hash(s),plain.c.hash(replay));
   const daily=[],executed=[];let roundtrips=0,hours=0,unfundedNew=0,escrowHours=0;
@@ -268,19 +300,19 @@ function run(seed,scenario,mode){
   return result;
 }
 const results=[];
-if(suite!=='crises')for(const seed of seeds)for(const mode of ['product','candidate','candidate-no-rescue'])
+if(suite!=='crises')for(const seed of seeds)for(const mode of (probe==='arrival'?['product','candidate','candidate-arrival']:['product','candidate','candidate-no-rescue']))
   results.push(run(seed,'passive',mode));
 if(suite!=='standard')for(const [scenario,seed] of [['miner',42],['handel-flotte',42],['station',1234],['jagd',98765]])
-  for(const mode of ['product','candidate','candidate-no-rescue'])results.push(run(seed,scenario,mode));
+  for(const mode of (probe==='arrival'?['product','candidate','candidate-arrival']:['product','candidate','candidate-no-rescue']))results.push(run(seed,scenario,mode));
 fs.writeFileSync(out,JSON.stringify({base:BASE,coreSha256:sha(current),observerSha256:observerSha,
   node:process.version,days,suite,results},null,2)+'\n');
 // B-K11a: CI-Log enthaelt nur Zaehler, keine aufgeblasenen Einzel-Tick-Dumps.
-const cand=results.filter(x=>x.mode==='candidate');
+const cand=results.filter(x=>x.mode===(probe==='arrival'?'candidate-arrival':'candidate'));
 const timingTotals={};
 for(const key of ['blockedAttempts','blockedWithCash','blockedWithCargo',
     'blockedWithCashAndCargo','lockedDockMinutes','lockedWithCargoMinutes','dockMinutes'])
   timingTotals[key]=sum(cand.map(x=>x.timing[key]));
-console.log('BK11A_TIMING '+JSON.stringify({days,suite,worlds:cand.length,
+console.log('BK11A_TIMING '+JSON.stringify({days,suite,probe,worlds:cand.length,
   totals:timingTotals,byWorld:cand.map(x=>({seed:x.seed,scenario:x.scenario,...x.timing}))}));
 console.log('BK11_AUDIT_PASS '+JSON.stringify({worlds:results.length,days,
   hourlyReplayAudits:sum(results.map(x=>x.hours)),saveLoads:sum(results.map(x=>x.roundtrips)),out}));

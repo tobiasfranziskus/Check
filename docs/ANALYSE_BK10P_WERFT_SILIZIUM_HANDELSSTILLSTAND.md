@@ -68,8 +68,29 @@ In einer zweiten, rein analytischen **Core-Kopie** wird nur die Vorauswahl von A
 
 **Interpretation:** Die bestehende Fehlentscheidung lässt sich ohne neue ISK im isolierten Gegenlauf eindeutig verhindern. **Eine bloße zusätzliche Budgetbedingung ist aber keine Wirtschaftssanierung**: Bei Seed42 wirkt der Filter auf NPC1-Absatz und Werftbestand sogar negativ; Seed7 verändert sich anders. Es fehlt weiterhin ein *nachfrageseitig finanzierter, praktisch ausführbarer Liefervertrag*, der echte Rohstoffbeschaffung und den nötigen Flug verbindlich verbindet. Ohne Käuferkasse, an beiden Standorten verfügbare Ware, finanzierte Fracht und Nachfolgekapital kann ein korrekt abgelehnter Auftrag nur weiteres Nichtstun sein.
 
+## Vorprüfung: ein kleines Siliziumlieferlos könnte finanziell überbrückbar sein
+
+**[ANALYSE / RECHNERISCHE MACHBARKEIT, KEIN ERFOLGREICHER SPIELAUFTRAG]** Aus den **tatsächlich am Tag14 beobachteten** Seed42-Preisen/Beständen und den Original-Rezepten lässt sich für den nächsten Test eine **einzige Charge von acht Siliziumeinheiten** abgrenzen. Aldera hat 1.374 ISK auf der Station, NPC2 hat 2.792 ISK aber keinen Frachter, NPC1 einen vorhandenen Frachter in Veldra mit nur 90 ISK. Dravos verkauft Silizium zum Originalmarktpreis 17 ISK je Einheit, Aldera kauft es bei eigenem Lagerbestand null für 43 ISK je Einheit.
+
+| Rein rechnerische B-K10q-Vorprüfung, 8 Silizium | Originalbetrag |
+|---|---:|
+| Materialkauf 8 × 17 ISK bei Dravos | 136 ISK |
+| Original-Dravos-Kaufgebühr zu diesem Block | 5 ISK |
+| Vorpositionierung des NPC1-Frachters Veldra→Dravos, 20 Minuten | 84 ISK |
+| Bezahlt beladene Fahrt Dravos→Aldera, 20 Minuten | 84 ISK |
+| Tatsächliche Ziel-Handelsgebühr für 8 × 43 ISK | 13 ISK |
+| **Betriebsauszahlungen des Frachtunternehmens vor Hüllenersatz** | **322 ISK** |
+| **Aldera zahlt nach vorhandenem Marktpreis** 8 × 43 ISK | **344 ISK** |
+| **Rechnerischer Frachter-Deckungsbeitrag vor Kapitalersatz** | **+22 ISK** |
+| Original-Rezept: acht Bauteile × 8 Minuten × 4 ISK Lohn | 256 ISK |
+| Original-Rezept: ein Frachter × 36 Minuten × 4 ISK Lohn | 144 ISK |
+| **Aldera: Materialankauf + diese beiden tatsächlichen Lohnregeln** | **744 ISK** |
+| Dafür vorhandenes Aldera-Guthaben, bevor andere Verpflichtungen abgehen | **1.374 ISK** |
+
+**Begrenzungen:** Die beiden Flugzeiten, Original-Händlergebühren und Original-Rezepte sind geprüft; das ist **noch kein real gebuchter achtteiliger End-to-End-Auftrag**. Dynamische Händlerpreise, weitere parallel arbeitende Werftlinien, die Marktpreisänderung bei neu fertigem Frachter, konkurrierender NPC-Handel, Frachtverlust und Kapitalersatz können die Beträge ändern. Wichtig ist außerdem, dass der vorhandene NPC1 mit **90 ISK** die erforderlichen **322 ISK** Zwischenzahlungen **nicht aus eigener Kasse vorstrecken kann**. Die Werft besitzt zwar rechnerisch genug Geld für den Ankauf und die genannten Löhne, müsste diese Finanzierung aber **vor der riskanten Positionierung** als echten beidseitigen Vertrag bereitstellen. Das ist genau das noch offene Gate, **kein Gratiszuschuss an NPC1** und keine Verpflichtung der Werft, ohne garantierte Vertragserfüllung zu zahlen. Dass NPC2 später einen tatsächlich fertigen Frachter kaufen und sinnvoll einsetzen würde, ist ebenfalls **nicht nachgewiesen**.
+
 ## 6. QA und nächstes kleines entscheidbares Gate
 
-**[TEST DIREKT BESTANDEN]** Vier neue B-K10p-Gruppen: je 14 Tage real autonom Seed42/7, Original-Replay Seed42 3 Tage samt unabhängigem Hash/Save, sowie paarweise 7-Tage-Routenbudget-Gegenproben Seed42/7 mit eindeutig belegter Nullzahl ungedeckter Routenauswahlen; alle gegen die jeweilige Original-Core-Kopie ausgeführt. **Gesamte GitHub-CI nach tatsächlichem Abschluss gesondert belegen.** Keine 13×90d-Gesamtwirtschaft oder reale iPad-/NAS-Abnahme.
+**[TEST DIREKT BESTANDEN]** Vier neue B-K10p-Gruppen: je 14 Tage real autonom Seed42/7, Original-Replay Seed42 3 Tage samt unabhängigem Hash/Save, sowie paarweise 7-Tage-Routenbudget-Gegenproben Seed42/7 mit eindeutig belegter Nullzahl ungedeckter Routenauswahlen; alle gegen die jeweilige Original-Core-Kopie ausgeführt. **[TEST BESTANDEN] Vollständige [GitHub-CI #41503027072](https://github.com/tobiasfranziskus/Check/actions/runs/41503027072) auf finalem Testcode-Commit [0663aa3f](https://github.com/tobiasfranziskus/Check/commit/0663aa3f1888439b605534d66813172aeda0a323): 182/182 Node-Tests erfolgreich, 0 Fehler.** Alle tatsächlich ausgeführten historischen v10–v14-/Geografie-Referenzjobs bestanden; der separate Sicherheitsgeografievergleich wurde **planmäßig übersprungen**, nicht als bestanden behauptet. Danach nur dokumentarische Änderungen. Keine iPad-/NAS-Abnahme. Keine 13×90d-Gesamtwirtschaft oder reale iPad-/NAS-Abnahme.
 
 **[OPTION B-K10q, ausdrücklich NICHT IMPLEMENTIERT]** Ein einziger vollständig finanzierter Bedarf der **bestehenden** Aldera-Werft: aus ihren tatsächlichen Mitteln eine kleine reale Siliziumcharge bei Dravos oder Nadir **vorfinanzieren**, einen existierenden Frachter **für die reale Positionierungs- und Frachtarbeit** beauftragen, Silizium einmalig gegen Lieferung physisch nach Aldera transferieren, acht Bauteile/den echten Frachter einschließlich Werft-Lohn auf Original-Rezepten herstellen und **nur gegen wirklich zahlungsfähigen NPC-Käufer** ausliefern. Für jede Zwischenbuchung müssen echtes Verkäufer-/Käuferkonto, vorhandene Waren, tatsächliche Kosten, Vertragsreserve und Rückerstattung bei Ausfall nachweisbar sein. Keine Gratisflüge, keine fremdfinanzierte NPC-Insolvenzgarantie, keine neue ISK-Emission, keine pauschalen Preis- oder Lohnreformen und kein Umbau der Produktspielmechanik ohne gesonderte Freigabe. Dieser **eine** geschlossen finanzierte Auftragsversuch wäre ein erreichbares, unabhängig auditiertes nächstes Teilziel; seine Langzeittragfähigkeit ist damit noch nicht bewiesen.

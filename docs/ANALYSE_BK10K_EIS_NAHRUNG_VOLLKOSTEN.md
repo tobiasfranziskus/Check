@@ -50,6 +50,20 @@ Die Gegenprobe mit nachgewiesener Ware und tatsächlich bezahlter 120-Minuten-Fa
 
 **Eine 24er-Lieferung erreicht erst eine schmale positive Obergrenze bei voller Bezahlung**, verliert sie aber mit realem Kapitalverschleiß leicht wieder. Gleichzeitig bleibt **jede Quellstation-Charge stark negativ**. Kleinere Frachten tragen die festen Fahrtkosten nicht. Die originale Stationskasse kaufte in diesem frühen Kontrollstand ebenfalls alle 24 Einheiten, weil sie anders als in der späteren B-K10j-Tag3-Welt ausnahmsweise über ausreichende ISK verfügte. Eine Haushaltsbestellung liefert hier **keinen nachgewiesenen Zusatzabsatz** – ihr Vorteil aus B-K10j trat unter später knapper Stationskasse auf. Das sind zwei **unterschiedliche, klar abgegrenzte Versuchslagen**, nicht widersprüchliche Testergebnisse.
 
+## Gegenprobe: normale aktive 72h-Welt ohne Bestandsänderung
+
+Um den kontrollierten, wegen des leeren Eislagers sehr hohen 22-ISK-Originalankauf **nicht** auf die gesamte Wirtschaft zu verallgemeinern, wurde derselbe unveränderte R15-Testcore zusätzlich mit Seed42 und Seed7 **ohne jegliche Startbestands- und Flottenmanipulation** 4.320 Ticks ausgeführt; beide Original-Core-Warenaudits waren korrekt. Die **aktuellen** Original-Marktpreise wurden an allen drei existierenden Nahrungsfabriken gegenüber dem **aktuellen** Eis-Marktpreis multipliziert mit dem echten Rezeptbedarf von 2 Eis plus 24 ISK/Nahrung Fabriklohn gestellt:
+
+| Original-Nahrungsfabrik nach 72h | Seed42 Eispreis / Nahrungspreis | Seed42 aktueller Rohstoff+Lohn-Abstand | Seed7 Eispreis / Nahrungspreis | Seed7 aktueller Rohstoff+Lohn-Abstand |
+|---|---|---:|---|---:|
+| Cyris | 11 / 53 ISK | **+7 ISK** | 14 / 59 ISK | **+7 ISK** |
+| Nadir | 10 / 26 ISK | **−18 ISK** | 10 / 36 ISK | **−8 ISK** |
+| Veldra | 13 / 46 ISK | **−4 ISK** | 14 / 40 ISK | **−12 ISK** |
+
+Der Original-`m_core_preis.preis` berechnet den Marktpreis über das **relative Lager zum Stationsziel, den Regionalfaktor und vorgegebene Grenzen**. **Tatsächlicher Eis-Einstand, Fabriklohn, Frachterflug und Abschreibung gehen nicht in diesen Preis ein.** Dieser Quellcodebefund erklärt, warum auch in der unmanipulierten Welt eine *negative kalkulatorische Ersatzproduktionsmarge* möglich ist – allerdings bei **Cyris nicht**, wo das momentane Preissignal positiv ist. Das sind **Momentaufnahmen**: Bei Produktion, Abnahme und anderem Lagerstand ändern sich die Preise. Sie belegen **nicht**, dass die historischen bezahlten Chargen in der unmanipulierten Welt jeweils exakt diese Einkaufspreise hatten, oder dass Produktionsstopp automatisch die Versorgung verbessert.
+
+**Produktkonsequenz nur als [OPTION]:** Eine kostendeckungsgeprüfte Produktions-/Beschaffungsdisposition darf keine Geld- oder Warenrettung sein; vor einer Freigabe müsste nachgewiesen werden, dass andere rentable Quellen tatsächlich die lokalen Nachfrage- und Versorgungslücken decken können und dass wegen Produktionsausfall keine dauerhaften Gesamtblockaden entstehen. Einzelne Unternehmen dürfen scheitern; andere Akteure müssen ihre Aufgaben übernehmen können. Ohne echte Flugkosten, vorhandene Haushaltskaufkraft und vollständige Schiffsersatzkosten ist eine einfache Preisuntergrenze noch keine Lösung.
+
 ## Fondsströme: reale Umverteilung, keine Gratisrettung
 
 Das Original-`m_core_stunde.fonds` wird ausschließlich im Test journalisiert, an seinen **unveränderten** echten Transferstellen für Stations-Mindeststand und Überschüsse. Die echte `fonds→st_nadir`-Mindeststand-Zahlung summiert sich im jeweiligen untersuchten **Gesamtszenario** aus Produktionsvorlauf, beiden Flugphasen und zehn weiteren Verbrauchsstunden auf:

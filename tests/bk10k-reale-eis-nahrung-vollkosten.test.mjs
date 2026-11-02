@@ -432,3 +432,57 @@ test('B-K10k: echte Mengenstaffel 8/16/24 zeigt Unterdeckung trotz bezahlter Bes
     haendlerISK:r.haendlerCashDelta,gesamtbeitragVorHullISK:
     r.kettenbeitragNachEchtenBetriebskostenISK}))));
 });
+
+
+test('B-K10k: ohne Fonds-Mindeststuetzung stoppt echte Nadir-Lieferkette vor verkaufbarer Charge',()=>{
+  const vorherMindest=rules.world.mindeststand;
+  const vorherObergrenze=rules.world.fondsObergrenze;
+  try{
+    for(const seed of seeds){
+      const werte=[];
+      for(const fondsAktiv of [true,false]){
+        // Explizit nur Versuch: beide Szenarien starten aus demselben
+        // Warenledger-abgeglichenen Zustand. Keine neuen ISK oder Waren.
+        rules.world.mindeststand=fondsAktiv?vorherMindest:0;
+        rules.world.fondsObergrenze=fondsAktiv?vorherObergrenze:1_000_000_000;
+        const start=snapshot(seed);
+        cfg.mode=null;cfg.ship=null;cfg.order=null;
+        cfg.delivered=0;cfg.trace=traceNeu();
+        const state=core.load(start.saved,undefined,rules);
+        ticks(state,480);
+        const x={
+          seed,fondsAktiv,produktionen:state.stats.rezepte[S],
+          freierNahrungsabsatz:core.verkaufbar(state,rules,S,'nahrung'),
+          stationsISK:state.owners[S].cash,
+          fondsMindestISK:cfg.trace.nadirFondsMindestISK,
+          fondsUeberschussISK:cfg.trace.nadirFondsUeberschussISK,
+          eisMinerVerkauft:cfg.trace.eisVonMiner,
+          eisMinerBezahlteISK:cfg.trace.eisAnkaufISK,
+          fabrikLohnISK:state.stats.konto['hh_'+S].erloes,
+          globaleISK:state.initialSupply+state.minted-state.burned,
+          hash:core.hash(state),
+        };
+        assert.equal(cfg.trace.minerArbeitSoll,cfg.trace.minerArbeitBezahlt,
+          'keine ungedeckte Minerarbeit in beiden Fondsvarianten');
+        assert.equal(core.hash(core.load(core.save(state),undefined,rules)),x.hash);
+        assert(x.eisMinerVerkauft>0&&x.eisMinerBezahlteISK>0);
+        werte.push(x);
+      }
+      const [mit,ohne]=werte;
+      assert.equal(mit.globaleISK,ohne.globaleISK,
+        'Fonds-Umverteilung schafft keine ISK; gleiche Anfangswelt und Seed');
+      assert.equal(ohne.fondsMindestISK,0);
+      assert.equal(ohne.fondsUeberschussISK,0);
+      assert(mit.fondsMindestISK>0,'tatsaechlicher Fonds-Uebertrag statt Annahme');
+      assert(mit.produktionen>ohne.produktionen,'ohne Mittel weniger echte Fabrikarbeit');
+      assert(mit.freierNahrungsabsatz>=24,
+        'originale Warenreserve erlaubt eine 24er-Lieferung');
+      assert.equal(ohne.freierNahrungsabsatz,0,
+        'ohne Fonds keine 24er-Charge nach 8h auf dem Markt');
+      console.log('B-K10k echter Fondsvergleich',JSON.stringify(werte));
+    }
+  }finally{
+    rules.world.mindeststand=vorherMindest;
+    rules.world.fondsObergrenze=vorherObergrenze;
+  }
+});

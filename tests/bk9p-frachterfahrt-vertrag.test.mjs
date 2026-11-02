@@ -8,9 +8,13 @@ const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const src = html.slice(html.indexOf('const m_data_systeme ='), html.indexOf('const m_data_oberflaeche ='));
 const anchor = 'return { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewegen };';
 assert.equal(src.split(anchor).length, 2, 'nur zum Test originalen Verlustpfad sichtbar machen');
-const {core,base,entfernen} = new Function(src.replace(anchor,
-  'return { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewegen, entfernen };')+
-  ';return {core:m_core_index,base:m_data_rules.RULES,entfernen:m_core_sicherheit.entfernen};')();
+const wahl = 'return { entscheidung };';
+assert.equal(src.split(wahl).length, 2, 'Original-Autodisposition exakt einmal vorhanden');
+const {core,base,entfernen,abflug} = new Function(src.replace(anchor,
+  'return { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewegen, entfernen };')
+  .replace(wahl,'return { entscheidung, abflug };')+
+  ';return {core:m_core_index,base:m_data_rules.RULES,'+
+  'entfernen:m_core_sicherheit.entfernen,abflug:m_core_entscheidung.abflug};')();
 const rules={...base,schema:9,rulesVersion:15};
 const SEEDS=[7,11,1,2,65535,42,1234,98765,3,99,2024,2025,314159];
 function frachter(s,owner='house'){
@@ -140,6 +144,38 @@ test('B-K9p: gekaufte Nahrung hat real bezahlten Hin-/Ruecktransport',()=>{
   assert.equal(flug.length,2);
   assert.equal(flug.reduce((a,e)=>a+e.gezahlt,0),200);
   bilanziere(s);roundtrip(s);
+});
+
+
+test('B-K9p: Original-NPC-Abflug bezahlt Betriebskosten vor und vermeidet leere Storno-Spamvertraege',()=>{
+  const s=core.createState(42,rules);
+  const sh=Object.values(s.ships).find(x=>x.klasse==='frachter'
+    && x.owner==='npc1' && x.system==='aldera');
+  assert(sh,'autonomer NPC1-Frachter am realen Startort');
+  const start=sh.system, station='st_'+start;
+  const former=s.owners.npc1.cash;
+  // Die echte Core-Entscheidungsfunktion wird direkt mit einer gueltigen Route
+  // aufgerufen; Handels- und Flugausfuehrung bleibt originale NPC-Mechanik.
+  assert(abflug(s,rules,sh,station,'st_cyris','eis',3));
+  const id=sh.vertrag;
+  assert(id);
+  assert.equal(s.vertraege.eintraege[id].budget,preisReise());
+  assert(s.owners.npc1.cash < former-preisReise(),'Ware und Fahrt sind getrennt bezahlt');
+  runTo(s,60);
+  assert.equal(s.vertraege.eintraege[id].gezahlt,100);
+  assert.equal(s.vertraege.eintraege[id].status,'geschlossen');
+  bilanziere(s);roundtrip(s);
+
+  const k=core.createState(42,rules);
+  const trader=Object.values(k.ships).find(x=>x.klasse==='frachter'
+    && x.owner==='npc1' && x.system==='aldera');
+  const moved=k.owners.npc1.cash-105;
+  k.owners.npc1.cash-=moved;k.owners.house.cash+=moved;
+  const old=core.hash(k);
+  for(let i=0;i<5;i++)assert.equal(abflug(k,rules,trader,'st_aldera','st_cyris','eis',3),false);
+  assert.equal(core.hash(k),old,'kein unbezahlbares Warenangebot erzeugt eine Contract-Leiche');
+  assert.equal(k.vertraege.naechster,1);
+  bilanziere(k);
 });
 
 test('B-K9p: gespeicherte Fahrtverknuepfungen und falsche Restbetraege werden abgewiesen',()=>{

@@ -224,7 +224,8 @@ test('B-K10j: Seed42/7 echte Fahrt, zwei Zahlungsmethoden, unveraenderte Warenbi
     assert.equal(d.stationsAbsatzMenge,0,'bestellte Lieferung verwendet keine Stationsankaufkasse');
     assert(d.direktAbsatzMenge>0,'keine imaginäre nur gebuchte Nachfrage');
     assert(d.direktAbsatzMenge<=d.menge,'keine Mehrfachware');
-    assert(d.endverbrauchNachAnkunft>=d.direktAbsatzMenge);
+    assert(d.endverbrauchSeitStart>=d.direktAbsatzMenge,
+      'auch der Zustell-Stundentick vor dem Ankunfts-Snapshot zaehlt');
     assert(d.nach10hFrachterRest+d.direktAbsatzMenge===d.menge);
     assert(b.stationsAbsatzMenge<=b.menge);
     assert(d.direktAbsatzMenge>b.stationsAbsatzMenge,

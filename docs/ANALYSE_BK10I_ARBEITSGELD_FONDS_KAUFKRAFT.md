@@ -23,9 +23,9 @@ Der Test instrumentiert ausschließlich seine **eigene JavaScript-Testkopie** an
 
 Die beiden Welten **Seed42 und Seed7 laufen 72 reale Simulationsstunden (je 4.320 Ticks)** mit **allen automatischen NPC-Händlern, Minern, Piraten, Sicherheitsjägern und den originalen Fondsauffüllungen**; Startlager bleiben **unverändert**. Nur bereits vorhandene, explizite R15-Versuchsschalter sind aktiv (`produktionslohnJeMinute:4`, `haushaltskaufNeu:true`, `herkunftTransportNeu:true`). Das ist eine **Preis-/Lohnregel des Testkandidaten**, keine auf main geltende Produktregel; kein Fonds-Mindeststand geändert. **Stündlich** unabhängige Geld- und Warenaudits, **täglich** Save/Load/Hash, zusätzlich deterministischer 24h-Seed42-Replay. Jede lokale Haushaltskasse wird gegen kumulierten realen Lohn minus kumulierten bezahlten Neu-Nahrungskonsum geprüft.
 
-## Direkte Testausführung; vollständige PR-CI separat kontrollieren
+## [TEST BESTANDEN] Vollständiger GitHub-CI-Nachweis
 
-Die direkte Ausführung des Testfiles gegen den GitHub-Test-Core ist ohne Abweichung beendet. Die neue CI auf dem zuletzt gepushten Code-Commit wird gesondert als vollständig erfolgreich oder fehlgeschlagen gekennzeichnet; bis dahin nur **[ANALYSE – direkt ausgeführter Test]**. Stundensummen sind **wiederholte Umläufe vorhandener ISK**, nicht neue Geldschöpfung.
+Die **vollständige [CI #41464083347](https://github.com/tobiasfranziskus/Check/actions/runs/41464083347)** auf geprüftem Test-Code-Commit [`4224443`](https://github.com/tobiasfranziskus/Check/commit/42244437541bf2605de65fa93f144e38b9272fc2) ist **erfolgreich abgeschlossen: 157/157 Node-Tests, 0 Fehler**. Sämtliche ausgeführten historischen v10–v14-/Geografie-Referenzjobs sind erfolgreich; ein eigenständiger Sicherheitsgeografievergleich war **planmäßig übersprungen**, nicht als bestandener Test gewertet. Die Tests umfassen unabhängige Geld-, Waren- und Neu-Nahrungshistorienbilanzen, das Original-Core-Audit, Vertragsreserven, tägliche Save/Load-/Hashprüfungen und einen deterministischen Seed42-Replay. **Keine reale iPad-/NAS-Abnahme.** Nach diesem Code-Commit erfolgten nur Bericht-/Projektstatusänderungen im Draft. Stundensummen sind **wiederholte Umläufe vorhandener ISK**, nicht neue Geldschöpfung.
 
 | Tatsächlicher Zahlungsstrom in 72h | Seed42 | Seed7 |
 |---|---:|---:|

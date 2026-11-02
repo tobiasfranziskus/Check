@@ -11,7 +11,6 @@ function unique(s,old,neu){
   assert.equal(s.split(old).length,2,'nicht eindeutiger Testanker: '+old.slice(0,75));
   return s.replace(old,neu);
 }
-const allEvents=[];
 function build(modus){
   let js=original,events=[];
   if(modus!=='original'){
@@ -23,7 +22,7 @@ function build(modus){
     const newCode=[
       "      if (menge <= 0) continue;",
       "      const vorwaerts = Math.ceil(r.zeit * w.betriebskosten.frachter / rules.economy.stunde);",
-      modus==='hinrueck'
+      modus.startsWith('hinrueck')
         ?"      const rueckweg = Math.ceil(r.zeit * w.betriebskosten.frachter / rules.economy.stunde);"
         :"      const rueckweg = 0;",
       "      const budgetFuerWare = kasse - vorwaerts - rueckweg;",
@@ -33,6 +32,19 @@ function build(modus){
       "        - gebuehr(state, rules, ziel, menge * pDort) - vorwaerts - rueckweg;"
     ].join("\n");
     js=unique(js,old,newCode);
+  }
+  if(modus==='hinrueck-ohne-leer'){
+    // Kontrollierte Einzelursache: zufaellige Leer-Umpositionierung unterbinden,
+    // NICHT Handelslieferungen oder spaetere echte Frachtabfluege.
+    js=unique(js,
+      "    else if (s.warten >= 2) {\n"+
+      "      const andere = ids(w.stations).filter((x) => x !== station && route(w, s.system, w.stations[x].system));\n"+
+      "      if (andere.length > 0) {\n"+
+      "        if (!abflug(state, rules, s, station, andere[rngInt(state, andere.length)], null, 0))\n"+
+      "          s.ankunft = state.tick + w.warteLeer;\n"+
+      "      } else s.ankunft = state.tick + w.warteLeer;\n"+
+      "    }",
+      "    else if (s.warten >= 2) { s.ankunft = state.tick + w.warteLeer; }");
   }
   // Reiner passiver Beobachter: Jedes Handelsgeschaeft und die wirklichen Flugkosten
   // bleiben immer unter Kontrolle des Original-Kerns.
@@ -125,7 +137,7 @@ function report(m,s,z,seed,day){
     minted:s.minted,burned:s.burned,hash:m.core.hash(s)};
 }
 function laufen(seed,tage=6,{write=true}={}){
-  const models=['original','hin','hinrueck'].map(build);
+  const models=['original','hin','hinrueck','hinrueck-ohne-leer'].map(build);
   const states=models.map(m=>m.core.createState(seed,m.rules));
   const counter=models.map(zahlen);
   const totals=[];
@@ -145,15 +157,16 @@ function laufen(seed,tage=6,{write=true}={}){
   }
   return totals;
 }
-test('B-K9x: zwei aktive Seeds × sechs Tage – Händlerkosten, echte Versorgung, Audits',()=>{
+test('B-K9x: zwei aktive Seeds × sechs Tage – drei Routenmodelle plus Leerflug-Ursachenprobe',()=>{
   for(const seed of [42,7]){
     const rows=laufen(seed,6);
     assert.equal(rows.length,6);
     for(const row of rows.flat()){
       assert(row.fracht.flugBezahlt>=0);
       assert(row.nahrungFehlendeEinheiten>=0);
-      assert.equal(row.fracht.zuschuss,row.modus==='original'||
-        row.modus==='hin'||row.modus==='hinrueck'?row.fracht.zuschuss:-1);
+      assert(row.fracht.zuschuss>=0);
+      if(row.modus==='hinrueck-ohne-leer')
+        assert.equal(row.fracht.leerfahrten,0,'nur die randomisierte Leerpositionierung ist gesperrt');
     }
     // Keine Ergebnisvorgabe, die einen möglichen negativen Befund grünfärbt.
     // Die Evaluationswerte werden im Log und Bericht verglichen.

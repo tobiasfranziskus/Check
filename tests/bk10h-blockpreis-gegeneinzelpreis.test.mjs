@@ -8,9 +8,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 let js=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
-const anker='    entladen(state, rules, s);';
-assert.equal(js.split(anker).length,2,'nur in dieser Testkopie automatische Entladung ausschalten');
-js=js.replace(anker,'    if (!__bk10h_deferUnload) entladen(state, rules, s);');
+const anker="    s.phase = 'dock'; s.ziel = null; s.ankunft = state.tick;\n    entladen(state, rules, s);";
+assert.equal(js.split(anker).length,2,'genau den echten Ankunfts-Entladepfad instrumentieren');
+js=js.replace(anker,"    s.phase = 'dock'; s.ziel = null; s.ankunft = state.tick;\n    if (!__bk10h_deferUnload) entladen(state, rules, s);");
 const {core,base,handel,route,herkunft}=new Function('const __bk10h_deferUnload=arguments[0];\n'+js+
   ';return {core:m_core_index,base:m_data_rules.RULES,handel:m_core_handel,'+
   'route:m_core_route.route,herkunft:m_core_herkunft};')(true);

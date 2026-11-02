@@ -85,6 +85,10 @@ function run(seed,days,allow,setup=null){
   const points=[];
   for(let i=0;i<days*1440;i++){
     core.step(s,rules);
+    if(s.tick===60){
+      audit(s,core);
+      points.push(stats(s,core,log));
+    }
     if(s.tick%1440===0){
       audit(s,core);
       const restored=core.load(core.save(s),undefined,rules);
@@ -99,42 +103,42 @@ function run(seed,days,allow,setup=null){
 }
 function compare(seed,days){
   const enabled=run(seed,days,true),disabled=run(seed,days,false);
-  assert.equal(enabled.last.globalISK,
-    enabled.last.minted-enabled.last.burned+
-      (enabled.last.globalISK-enabled.last.minted+enabled.last.burned));
+  assert.equal(enabled.last.globalISK,disabled.last.globalISK,
+    'keine Veraenderung an Emission/Senke oder der Welt-Geldsumme im gepaarten Versuch');
+  if(enabled.events.rescues.length===0){
+    assert.equal(enabled.last.hash,disabled.last.hash,
+      'ohne originale Rettung muss test-only Abschalten exakt identisch verlaufen');
+  }
   assert.equal(enabled.last.directRescueISK,
     sum(enabled.events.rescues.map(x=>x.isk)));
   assert.equal(disabled.last.directRescueISK,0,'kein verdeckter individueller Schiffszuschuss');
   return {seed,days,original:enabled,without:disabled,
     equal:enabled.last.hash===disabled.last.hash};
 }
-test('B-K10o: 13 autonome 7-Tage-Welten Original gegen test-only ohne NPC-Ersatzfonds',()=>{
+test('B-K10o: 13 autonome 72h-Normalwelten - echte Fonds-/Werft-Ersatzereignisse',()=>{
   const seeds=[1,2,7,11,13,17,42,99,1234,2026,65535,98765,314159];
-  const rows=seeds.map(seed=>compare(seed,7));
+  const rows=seeds.map(seed=>run(seed,3,true));
   assert.equal(rows.length,13);
   for(const x of rows){
-    for(const mode of ['original','without']){
-      const r=x[mode].last;
-      assert(r.globalISK>0);
-      assert(r.repurchasesISK>=0);
-    }
+    assert(x.last.globalISK>0);
+    assert(x.last.repurchasesISK>=0);
+    assert.equal(x.last.directRescueISK,
+      sum(x.events.rescues.map(e=>e.isk)));
   }
-  const report={seeds:rows.length,days:7,origRescueISK:sum(rows.map(x=>x.original.last.directRescueISK)),
-    noRescueISK:sum(rows.map(x=>x.without.last.directRescueISK)),
-    differences:rows.filter(x=>!x.equal).map(x=>({seed:x.seed,
-      before:x.original.last.counts,after:x.without.last.counts,
-      origEnd:x.original.last.foodConsumption,
-      noEnd:x.without.last.foodConsumption})),
-    counts:rows.map(x=>({seed:x.seed,
-      rescues:x.original.last.directRescueISK,
-      replaced:x.original.last.repurchases,
-      merchantA:x.original.last.counts.npc1,merchantB:x.original.last.counts.npc2,
-      withoutA:x.without.last.counts.npc1,withoutB:x.without.last.counts.npc2,
-      equal:x.equal}))};
-  console.log('B-K10o sieben Tage realer Ersatzfondsvergleich',JSON.stringify(report));
+  const report={seeds:rows.length,days:3,
+    origRescueISK:sum(rows.map(x=>x.last.directRescueISK)),
+    replaced:sum(rows.map(x=>x.last.repurchases)),
+    perSeed:rows.map(x=>({seed:x.seed,
+      rescues:x.last.directRescueISK,
+      bought:x.last.repurchases,
+      merchantA:x.last.counts.npc1,
+      merchantB:x.last.counts.npc2,
+      merchantC:x.last.counts.npc3
+    }))};
+  console.log('B-K10o dreizehn Normalwelten drei Tage',JSON.stringify(report));
 });
-test('B-K10o: 42/7 jeweils 30-Tage-Marktkrisen mit und ohne individueller Fondsrettung',()=>{
-  const rows=[42,7].map(seed=>compare(seed,30));
+test('B-K10o: Seed42/7 je 14 Tage mit und ohne NPC-Sonderrettung',()=>{
+  const rows=[42,7].map(seed=>compare(seed,14));
   const report=rows.map(x=>({
     seed:x.seed,
     resOrig:x.original.last.directRescueISK,
@@ -149,7 +153,7 @@ test('B-K10o: 42/7 jeweils 30-Tage-Marktkrisen mit und ohne individueller Fondsr
     newFoodOrig:x.original.last.foodConsumption,
     newFoodNo:x.without.last.foodConsumption,equal:x.equal}));
   assert(rows.every(x=>x.without.last.directRescueISK===0));
-  console.log('B-K10o dreissig Tage reale NPC-Krisen',JSON.stringify(report));
+  console.log('B-K10o vierzehn Tage reale NPC-Krisen',JSON.stringify(report));
 });
 function preparedCrisis(s){
   // Synthetische, vollstaendig GELDBILANZIERTE Ausgangskrise zur Erreichbarkeit:

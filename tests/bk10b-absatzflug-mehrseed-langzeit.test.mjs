@@ -182,13 +182,13 @@ function build(modus){
     "schiff:schiff.id,ware,menge,kauf,station,preis:p,wert,fee});\n"+
     "  if(schiff.owner==='npc3' && kauf && ware==='miner')"+
     " __events.push({art:'minerKauf',tick:state.tick,wert,fee});");
-  const {core,base,herkunft}=new Function('const __events=arguments[0];const __claims=arguments[1];\n'+js+
-    ';return {core:m_core_index,base:m_data_rules.RULES,herkunft:m_core_herkunft};')(events,claims);
+  const {core,base,herkunft,preis}=new Function('const __events=arguments[0];const __claims=arguments[1];\n'+js+
+    ';return {core:m_core_index,base:m_data_rules.RULES,herkunft:m_core_herkunft,preis:m_core_preis.preis};')(events,claims);
   const rules={...base,schema:9,rulesVersion:15,world:{...base.world,
     produktionslohnJeMinute:4,haushaltskaufNeu:true,mindeststand:0,
     fondsObergrenze:1_000_000_000}};
   assert.equal(base.rulesVersion,14);
-  return {core,rules,herkunft,events,modus};
+  return {core,rules,herkunft,preis,events,modus};
 }
 function zahlen(){return {nahrungEinkauf:0,nahrungVerkauf:0,nahrungMengeEinkauf:0,
   nahrungMengeVerkauf:0,wareEinkauf:0,wareVerkauf:0,gebuehr:0,
@@ -270,12 +270,25 @@ function report(m,s,z,seed,day){
   const ersatz=id=>Object.values(s.stats.indienst[id]||{}).reduce((v,x)=>v+x,0);
   const hhWages=Object.keys(s.stats.konto).filter(x=>x.startsWith('hh_'))
     .reduce((v,x)=>v+s.stats.konto[x].erloes,0);
+  const stationenAudit=(day===7 || day===14) && [42,7].includes(seed)
+    ? Object.fromEntries(Object.entries(s.stations).map(([id,st])=>{
+      const old=(st.lager.nahrung||0)-(st.lokalNeuNahrung||0);
+      const bedarf=m.rules.world.stations[id].verbrauch.nahrung||0;
+      const p=m.preis(s,id,'nahrung',m.rules);
+      const hh=s.owners['hh_'+id].cash;
+      return [id,{stationCash:s.owners[id].cash,haushaltCash:hh,
+        konsumBedarfJeStunde:bedarf,essenAlt:old,essenNeu:st.lokalNeuNahrung||0,
+        preis:p,hhTheoretischKaufbar:Math.floor(hh/p),
+        konsumNeuBezahlt:s.stats.haushaltskauf[id].menge,
+        konsumFehlend:s.stats.haushaltskauf[id].fehlend}];
+      })) : null;
   return {seed,modus:m.modus,tag:day,npcCash:s.owners.npc1.cash+s.owners.npc2.cash,
     npcReserve:reserved,npcFrachter:ships,stationsCash:stationKasse,haushalteCash:hKasse,
     nahrungBezahlt:bezahlt,nahrungBezahlungISK:isk,nahrungFehlendeEinheiten:bedarf,
     nahrungsmangelStationen:stationenMangel,
     nahrungBestandStationen:stationFood,neueNahrungImLager:neuerBestand,
     nahrungImFrachter:foodInShips,nahrungProduziert:foodProduced,
+    stationenAudit,
     neuerWarenNachweis:s.haushaltNeuLedger?.produziert||0,
     haushaltLohnISK:hhWages,
     npc3Cash:s.owners.npc3.cash,
@@ -331,7 +344,8 @@ function auswertung(seed){
       gezieltePositionen:f.zielwahl,davonGekauft:f.zielKauf,
       abgelehnteAbsatzKandidaten:f.absatzNichtDeckend,
       individuellerZuschuss:f.zuschuss,minted:r.minted,burned:r.burned,
-      betroffeneStationen:r.nahrungsmangelStationen
+      betroffeneStationen:r.nahrungsmangelStationen,
+      einzelstationen:r.stationenAudit
     };
   }
   const beides={seed,tag7:mitte.map(r=>({modus:r.modus,nahrung:r.nahrungBezahlt,

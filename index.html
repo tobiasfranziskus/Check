@@ -1843,10 +1843,10 @@ function bestand(state) {
       const linie = st && st.linien[p.linie];
       if (!objekt(p) || !Number.isSafeInteger(p.linie) || p.linie < 0
         || !Number.isSafeInteger(p.start) || p.start < 0
-        || !linie || p.rezept !== linie.rezept || e.zahlender !== p.station
-        || e.empfaenger !== 'hh_' + p.station
-        || (e.status === 'offen' && (linie.vertrag !== id || linie.rest <= 0))
-        || (e.status === 'geschlossen' && linie.vertrag === id))
+        || e.zahlender !== p.station || e.empfaenger !== 'hh_' + p.station
+        || (e.status === 'offen' && (!linie || p.rezept !== linie.rezept
+          || linie.vertrag !== id || linie.rest < 0))
+        || (e.status === 'geschlossen' && linie && linie.vertrag === id))
         throw new Error('Ungueltiger Produktionsvertrag: ' + id);
     }
     offen += e.rest;
@@ -2182,8 +2182,10 @@ function migrate(state, from, to, table = MIGRATIONS) {
   return s;
 }
 function save(state) { return canonical(state); }
-function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, ruleTable = RULE_MIGRATIONS) {
+function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, ruleTable = RULE_MIGRATIONS,
+    haushalteAktiv = false) {
   const s = JSON.parse(json);
+  const alteVersion = s && (s.schema < 9 || s.rulesVersion < 15);
   if (s === null || typeof s !== 'object' || !Number.isSafeInteger(s.schema)) throw new Error('Spielstand ohne Schema');
   if (s.schema > currentSchema) throw new Error(`Schema ${s.schema} ist neuer als ${currentSchema}`);
   let neu = s.schema < currentSchema ? migrate(s, s.schema, currentSchema, table) : s;
@@ -2195,6 +2197,16 @@ function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, rule
   for (let r = v; r < currentRulesVersion; r++) {
     if (typeof ruleTable[r] !== 'function') throw new Error(`Regelversion ${v} ist älter als ${currentRulesVersion}, keine Regelmigration vorhanden`);
     neu = ruleTable[r](neu);
+  }
+  if (neu.schema === 9 && haushalteAktiv) {
+    for (const id of Object.keys(neu.stations).sort()) {
+      const hh = 'hh_' + id;
+      if (Object.hasOwn(neu.owners, hh)) continue;
+      if (!alteVersion) throw new Error('Spielstand ohne Haushaltskonto: ' + hh);
+      neu.owners[hh] = { id: hh, kind: 'household', cash: 0 };
+      neu.stats.konto[hh] = { erloes: 0, kosten: 0 };
+      neu.stats.abgabe[hh] = 0;
+    }
   }
   if (neu.schema === 9) m_core_vertrag.bestand(neu);
   else if (Object.hasOwn(neu, 'vertraege')) throw new Error('Vertragsbuch in altem Schema');
@@ -2242,7 +2254,10 @@ const submit = (state, cmd, rules = RULES) => m_core_commands.submit(state, cmd,
 const execute = (state, cmd, rules = RULES) => m_core_commands.execute(state, cmd, rules);
 const step = (state, rules = RULES) => m_core_step.step(state, rules);
 const advance = (state, n, rules = RULES) => m_core_step.advance(state, n, rules);
-const load = (json, table, rules = RULES) => m_core_serialize.load(json, table, rules.schema, rules.rulesVersion);
+const load = (json, table, rules = RULES) => m_core_serialize.load(json, table,
+  rules.schema, rules.rulesVersion, m_core_serialize.RULE_MIGRATIONS,
+  rules.schema === 9 && rules.rulesVersion === 15
+    && rules.world.produktionslohnJeMinute > 0);
 const preis = (state, station, ware, rules = RULES) => m_core_preis.preis(state, station, ware, rules);
 const faktor = (state, station, ware, rules = RULES) => m_core_preis.faktor(state, station, ware, rules);
 const { hash, hashString, canonical } = m_core_hash;

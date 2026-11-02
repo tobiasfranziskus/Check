@@ -56,7 +56,7 @@ function engine(src,watch=null,noRescue=false,arrival=false) {
     // ISOLIERTE TEST-GEGENPROBE. Kein index.html-/Produktcode-Eingriff.
     // Ankunft: tatsächlich geleistete Flugminuten aus dem laufenden Escrow zahlen,
     // kumulierte Stundenrundung erhalten, dann Vertrag schließen.
-    once("    entladen(state, rules, s);",
+    once("    s.phase = 'dock'; s.ziel = null; s.ankunft = state.tick;\n    entladen(state, rules, s);",
       "    if (state.schema===9 && s.klasse==='frachter' && s.vertrag) {"
       +" const vorher=s.d1Bereits||0, arbeit=s.arbeit;"
       +" const tarif=rules.world.betriebskosten.frachter, stunde=rules.economy.stunde;"
@@ -64,7 +64,7 @@ function engine(src,watch=null,noRescue=false,arrival=false) {
       +" if(watch)watch.work(s,arbeit,rules);"
       +" m_core_vertrag.fahrtStunde(state,rules,s,betrag,s.system);"
       +" s.d1Bereits=vorher+arbeit; s.arbeit=0; }"
-      +"\n    entladen(state, rules, s);");
+      +"\n    s.phase = 'dock'; s.ziel = null; s.ankunft = state.tick;\n    entladen(state, rules, s);");
     const arbeitNeedle=watch
       ? 'const s = state.ships[id]; const arbeit = s.arbeit; watch.work(s,arbeit,rules); s.arbeit = 0;'
       : 'const s = state.ships[id]; const arbeit = s.arbeit; s.arbeit = 0;';

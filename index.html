@@ -708,6 +708,8 @@ function createState(seed, rules) {
     schema: rules.schema, rulesVersion: rules.rulesVersion, tick: 0, rng: seedToState(seed), queue: [], ereignisse: [],
     owners, systems, nextShip: 1, minted: 0, burned: 0, initialSupply,
     stations, ships: {}, sollflotte: {}, ledger, stats,
+    ...(rules.schema === 9 && rules.rulesVersion === 15
+      ? { vertraege: { naechster: 1, eintraege: {} } } : {}),
   };
   const soll = (felder) => {
     const s = neuesSchiff(state, { heimat: felder.system, ...felder });
@@ -1710,6 +1712,92 @@ function advance(state, n, rules) {
 return { step, advance };
 })();
 
+// B-K9o (Regel15-/Schema9-Kandidat): atomare ISK-Reserve fuer Core-Leistungen.
+// Das ist AUSSCHLIESSLICH das Kassen-/Belegbuch; Leistung und Preis muessen
+// spaeter von Bergbau/Produktion/Transport im selben Core verifiziert werden.
+const m_core_vertrag = (() => {
+const istBetrag = (x) => Number.isSafeInteger(x) && x >= 0;
+const objekt = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
+const gueltigerBeleg = (x) => typeof x === 'string'
+  && /^leistung:[a-zA-Z0-9._:-]{1,80}$/.test(x);
+
+function bestand(state) {
+  if (state.schema !== 9 || state.rulesVersion !== 15)
+    throw new Error('Vertragsreserve nur mit Schema 9 / Regel 15');
+  const v = state.vertraege;
+  if (!objekt(v) || !Number.isSafeInteger(v.naechster) || v.naechster < 1 || !objekt(v.eintraege))
+    throw new Error('Vertragsbuch fehlt oder ist ungueltig');
+  let offen = 0;
+  for (const id of Object.keys(v.eintraege).sort()) {
+    const e = v.eintraege[id], nummer = Number(id.slice(1));
+    if (!/^v[1-9][0-9]*$/.test(id) || !Number.isSafeInteger(nummer) || nummer >= v.naechster
+      || !objekt(e) || e.id !== id || !Object.hasOwn(state.owners, e.zahlender)
+      || !Object.hasOwn(state.owners, e.empfaenger) || e.zahlender === e.empfaenger
+      || !istBetrag(e.budget) || e.budget === 0
+      || !istBetrag(e.rest) || !istBetrag(e.gezahlt) || !istBetrag(e.erstattet)
+      || !Number.isSafeInteger(e.rest + e.gezahlt + e.erstattet)
+      || e.rest + e.gezahlt + e.erstattet !== e.budget
+      || !['offen', 'geschlossen'].includes(e.status)
+      || (e.status === 'geschlossen' && e.rest !== 0) || !objekt(e.belege))
+      throw new Error('Ungueltiger Vertrag: ' + id);
+    let summe = 0;
+    for (const beleg of Object.keys(e.belege)) {
+      const n = e.belege[beleg];
+      if (!gueltigerBeleg(beleg) || !istBetrag(n) || n <= 0
+        || !Number.isSafeInteger(summe + n))
+        throw new Error('Ungueltiger Leistungsbeleg: ' + id);
+      summe += n;
+    }
+    if (summe !== e.gezahlt || !Number.isSafeInteger(offen + e.rest))
+      throw new Error('Unstimmige Vertragsbilanz: ' + id);
+    offen += e.rest;
+  }
+  return offen;
+}
+function reservieren(state, zahlender, empfaenger, budget) {
+  bestand(state);
+  if (typeof zahlender !== 'string' || typeof empfaenger !== 'string'
+      || !Object.hasOwn(state.owners, zahlender) || !Object.hasOwn(state.owners, empfaenger)
+      || zahlender === empfaenger || !istBetrag(budget) || budget === 0
+      || state.owners[zahlender].cash < budget
+      || !Number.isSafeInteger(state.vertraege.naechster + 1))
+    return null;
+  const id = 'v' + state.vertraege.naechster;
+  state.vertraege.naechster += 1;
+  state.owners[zahlender].cash -= budget;
+  state.vertraege.eintraege[id] = {
+    id, zahlender, empfaenger, budget, rest: budget, gezahlt: 0,
+    erstattet: 0, status: 'offen', belege: {},
+  };
+  return id;
+}
+function bezahlen(state, id, beleg, betrag) {
+  bestand(state);
+  const e = state.vertraege.eintraege[id];
+  if (!e || e.status !== 'offen' || !gueltigerBeleg(beleg)
+      || Object.hasOwn(e.belege, beleg) || !istBetrag(betrag) || betrag === 0
+      || betrag > e.rest || !Number.isSafeInteger(state.owners[e.empfaenger].cash + betrag))
+    return false;
+  e.rest -= betrag;
+  e.gezahlt += betrag;
+  state.owners[e.empfaenger].cash += betrag;
+  e.belege[beleg] = betrag;
+  return true;
+}
+function abschliessen(state, id) {
+  bestand(state);
+  const e = state.vertraege.eintraege[id];
+  if (!e || e.status !== 'offen'
+      || !Number.isSafeInteger(state.owners[e.zahlender].cash + e.rest)) return false;
+  state.owners[e.zahlender].cash += e.rest;
+  e.erstattet += e.rest;
+  e.rest = 0;
+  e.status = 'geschlossen';
+  return true;
+}
+return { bestand, reservieren, bezahlen, abschliessen };
+})();
+
 const m_core_hash = (() => {
 function canonical(value) {
   if (value === null) return 'null';
@@ -1764,6 +1852,7 @@ const MIGRATIONS = {
   // v0.11.0 / B2: Schema 7→8. Jede bestehende Produktionslinie bekommt ein
   // herkunft-Feld; fehlt es (Bestand), gilt sie als 'npc'. Neue Linien aus
   // shipInstall werden ab v0.11.0 mit 'spieler' angelegt.
+  8: (s) => ({ ...s, schema: 9, vertraege: { naechster: 1, eintraege: {} } }),
   7: (s) => ({
     ...s,
     schema: 8,
@@ -1891,6 +1980,8 @@ const RULE_MIGRATIONS = {
   // vorhandene Schiffe, Kassen, angefangene Fluege und Arbeit bleiben unveraendert.
   12: (s) => ({ ...s, rulesVersion: 13 }),
   13: migrationRegel13,
+  // 14→15: reine Aktivierung der expliziten Schema-9-Vertragsverwaltung.
+  14: (s) => ({ ...s, rulesVersion: 15 }),
 };
 function migrate(state, from, to, table = MIGRATIONS) {
   let s = state;
@@ -1916,6 +2007,8 @@ function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, rule
     if (typeof ruleTable[r] !== 'function') throw new Error(`Regelversion ${v} ist älter als ${currentRulesVersion}, keine Regelmigration vorhanden`);
     neu = ruleTable[r](neu);
   }
+  if (neu.schema === 9) m_core_vertrag.bestand(neu);
+  else if (Object.hasOwn(neu, 'vertraege')) throw new Error('Vertragsbuch in altem Schema');
   return neu;
 }
 return { MIGRATIONS, RULE_MIGRATIONS, migrate, save, load };
@@ -1932,6 +2025,8 @@ const { ids, anzahl } = m_core_zahl;
 function audit(state) {
   let total = 0;
   for (const o of Object.values(state.owners)) total += o.cash;
+  // Reservierte ISK gehoeren weiterhin zum Geldbestand, sind aber nicht frei ausgebbar.
+  if (state.schema === 9) total += m_core_vertrag.bestand(state);
   const expected = state.initialSupply + state.minted - (state.burned || 0);
   const isk = { ok: total === expected, total, expected, delta: total - expected };
   const ist = {};
@@ -1964,6 +2059,7 @@ const faktor = (state, station, ware, rules = RULES) => m_core_preis.faktor(stat
 const { hash, hashString, canonical } = m_core_hash;
 const { save, migrate, MIGRATIONS, RULE_MIGRATIONS } = m_core_serialize;
 const { audit } = m_core_audit;
+const vertrag = m_core_vertrag;
 const { protokolliere } = m_core_state;
 const { rngNext, rngInt } = m_core_rng;
 const { div } = m_core_zahl;
@@ -1975,7 +2071,7 @@ const { reise } = m_core_ankunft;
 const { kampf } = m_core_kampf;
 const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
-return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, createState, submit, execute, step, advance, load, preis, faktor };
+return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, vertrag, CURRENT_SCHEMA: RULES.schema, createState, submit, execute, step, advance, load, preis, faktor };
 })();
 
 const m_data_oberflaeche = (() => {

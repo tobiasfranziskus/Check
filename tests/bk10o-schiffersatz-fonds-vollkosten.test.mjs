@@ -119,6 +119,10 @@ test('B-K10o: 13 autonome 72h-Normalwelten - echte Fonds-/Werft-Ersatzereignisse
   const seeds=[1,2,7,11,13,17,42,99,1234,2026,65535,98765,314159];
   const rows=seeds.map(seed=>run(seed,3,true));
   assert.equal(rows.length,13);
+  assert.equal(sum(rows.map(x=>x.last.directRescueISK)),0,
+    'im originalen 13×72h Normalmarkt keine individuelle NPC-Leerflottenrettung');
+  assert.equal(sum(rows.map(x=>x.last.repurchases)),160,
+    '160 mit echten Originalwaren und realen Werftkonten finanzierte Ersatzkaeufe');
   for(const x of rows){
     assert(x.last.globalISK>0);
     assert(x.last.repurchasesISK>=0);
@@ -153,6 +157,12 @@ test('B-K10o: Seed42/7 je 14 Tage mit und ohne NPC-Sonderrettung',()=>{
     newFoodOrig:x.original.last.foodConsumption,
     newFoodNo:x.without.last.foodConsumption,equal:x.equal}));
   assert(rows.every(x=>x.without.last.directRescueISK===0));
+  assert(rows.every(x=>x.original.last.directRescueISK===0));
+  assert(rows.every(x=>x.equal),'ohne Rescue-Ereignis sind alle Originalzustaende exakt gleich');
+  assert.equal(rows[0].original.last.counts.npc2,0,
+    'Seed42 NPC2 kann auch mit bestehender Fondsrettung komplett ausfallen');
+  assert.equal(rows[0].original.last.yardFrachter,0,
+    'Seed42 trotz Eigentuemerkasse ohne Werft-Neufrachter am Tag14');
   console.log('B-K10o vierzehn Tage reale NPC-Krisen',JSON.stringify(report));
 });
 function preparedCrisis(s){
@@ -181,6 +191,8 @@ test('B-K10o: finanzierte synthetische Vollflottenkrise aktiviert Original-Sonde
   assert.equal(a.events.rescues[0].owner,'npc2');
   assert.equal(a.events.rescues[0].isk,780);
   assert(a.events.buy.some(x=>x.owner==='npc2'&&x.fromEmpty&&x.total===780));
+  assert.equal(a.points[0].counts.npc2,1,'mit dem einmaligen Zuschuss ist im ersten Stundenendstand wirklich ein neues Schiff vorhanden');
+  assert.equal(b.points[0].counts.npc2,0,'ohne Zuschuss ist im ersten Stundenendstand kein Frachter vorhanden');
   assert.equal(b.events.rescues.length,0);
   assert.equal(b.events.buy.filter(x=>x.owner==='npc2').length,0);
   // Es wurde niemals ein Schiff erfunden: Originalwerft-Lager bezahlt.
@@ -189,6 +201,7 @@ test('B-K10o: finanzierte synthetische Vollflottenkrise aktiviert Original-Sonde
     crisis:'zwei anfangs leere Frachter und vorhandene NPC-ISK testweise umverteilt',
     origRescue:a.events.rescues,origPaidShips:a.events.buy.filter(x=>x.owner==='npc2'),
     withoutRescue:b.events.rescues,withoutPaidShips:b.events.buy.filter(x=>x.owner==='npc2'),
+    shipsAfterHourOne:[a.points[0].counts.npc2,b.points[0].counts.npc2],
     originalShips:a.last.counts,withoutShips:b.last.counts,
     cashA:a.last.ownerCash,cashB:b.last.ownerCash}));
 });
@@ -210,11 +223,19 @@ test('B-K10o: echte Werft-Listenpreise und Kapitalreserve der B-K10k-24er-Kette'
   assert.equal(margin,29);
   const minTripsForOneHull=Math.ceil(hulls.frachter.total/margin);
   const minTripsForPairedHull=Math.ceil((hulls.frachter.total+hulls.miner.total)/margin);
+  // Abbildung der in normalem Seed42 beobachteten spaeteren Marktpreise
+  // 1050+42 Frachter bzw. 840+33 Miner: ausschliesslich Sensitivitaet,
+  // kein Beweis gleicher Realmarge bei veraendertem Markt.
+  const latePair=1092+873;
+  const lateMinShipments=Math.ceil(latePair/margin);
   assert.equal(minTripsForOneHull,27);
   assert.equal(minTripsForPairedHull,49);
+  assert.equal(lateMinShipments,68);
   console.log('B-K10o originaler Werft-Ersatzpreis und 24er-Grenze',
     JSON.stringify({hulls,chain,margin,
       minCompleted24ShipmentsOnlyOneFreighter:minTripsForOneHull,
       minCompleted24ShipmentsForFreighterAndMiner:minTripsForPairedHull,
+      lateShipPrices:{freighter:1092,miner:873,combined:latePair},
+      lateMinShipmentsIfMarginUnchanged:lateMinShipments,
       caveat:'arithmetische Grenze in exakt einer Testkette, nicht reale Schiff-Lebensdauer oder normales Handelsvolumen'}));
 });

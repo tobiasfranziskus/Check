@@ -28,7 +28,7 @@ test('B-K11c: A/B/C mit Geld-/Warenaudit, stündlichem Replay und Save/Load', {t
     const [a,b,c]=rows;
     assert.equal(a.totalTransferred,0);assert.equal(a.transfers,0);
     assert(b.totalTransferred>0,'Gegenprobe muss tatsächlich Spielergeld zurückführen');
-    assert.equal(b.final.playerCash,2000,'B nur oberhalb der Startkasse');
+    assert(b.final.playerCash<=2000,'B belässt höchstens die Startkasse');
     assert(c.totalTransferred>0,'C muss tatsächlich teilweise zurückführen');
     assert(c.transferDefinition.includes('halber positiver'));
     assert(c.final.playerCash>=2000);

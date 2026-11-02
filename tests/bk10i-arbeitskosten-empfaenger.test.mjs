@@ -124,6 +124,11 @@ function analyse(seed,stunden=72,ausgabe=true){
   const stationKaufkraft=Object.keys(s.stations).sort().map(id=>{
     const h=s.owners['hh_'+id],hs=s.stats.haushaltskauf[id],
       st=s.stations[id],p=core.preis(s,id,'nahrung',rules);
+    const stationKaufmaxISK=s.owners[id].cash,
+      stationAnkaufMaxStueck=core.aufnehmbar(s,rules,id,'nahrung'),
+      haushaltKaufbarStueck=Math.floor(h.cash/p);
+    assert(stationAnkaufMaxStueck<=Math.floor(stationKaufmaxISK/p),
+      'Groessere Wareneinkaeufe sind nicht ohne echte Stationskasse moeglich');
     assert.equal(h.cash,s.stats.konto['hh_'+id].erloes-hs.isk,
       'stationaerer Haushalt darf nur echte lokale Loehne ausgeben: '+id);
     return {station:id,stationISK:s.owners[id].cash,
@@ -132,6 +137,8 @@ function analyse(seed,stunden=72,ausgabe=true){
       nahrungBezahltISK:hs.isk,nahrungBezahltMenge:hs.menge,
       mangelEinheiten:hs.fehlend,neuNahrung:st.lokalNeuNahrung,
       nahrungPreisISK:p,
+      haushaltKaufbarStueck,stationAnkaufMaxStueck,
+      nahrungLagerGesamt:st.lager.nahrung,
       haushaltKannEinStueckKaufen:h.cash>=p,
       stationKannNaechstenLohnVorfinanzieren:st.linien.some(l=>
         s.owners[id].cash>=rules.economy.rezepte[l.rezept].dauer*
@@ -161,6 +168,12 @@ test('B-K10i: echte aktive Welten, volle Zahlungsziele Seeds42/7 je 72h',()=>{
     assert(x.arbeitsEntgeltZiel.fonds>x.arbeitsEntgeltZiel.haushalt,
       'erwarteter Engpass: mehr Schiffsarbeit am Fonds als Fabrikloehne bei Haushalten');
     assert(x.ende.fonds>=0);
+    const a=x.stationKaufkraft.find(v=>v.station==='st_aldera');
+    const o=x.stationKaufkraft.find(v=>v.station==='st_orion');
+    assert(a.haushaltKaufbarStueck>a.stationAnkaufMaxStueck,
+      'Aldera hat effektive Verbraucher-ISK, aber geringeres Zwischenhandelskapital');
+    assert.equal(o.haushaltKaufbarStueck,0,
+      'Orion-Haushalt kann trotz vorhandener Neuware keine Einheit bezahlen');
   }
 });
 test('B-K10i: Seed42 24h Replay inklusive Geld-/Waren-/Vertrags-/Saveaudits',()=>{

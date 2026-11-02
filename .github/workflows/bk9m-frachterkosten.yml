@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - tools/bk9m-frachter-arbeitsursachen-13x90.mjs
+      - tools/bk9m-leerflug-gegenprobe-13x90.mjs
       - .github/workflows/bk9m-frachterkosten.yml
 
 permissions:
@@ -22,3 +23,5 @@ jobs:
         run: node --test tests/*.test.mjs
       - name: 13 active and 2 passive 90-day original-core freight purpose ledgers
         run: node tools/bk9m-frachter-arbeitsursachen-13x90.mjs
+      - name: Paired original-v14 random-empty-flight sensitivity across 13 x 90 days
+        run: node tools/bk9m-leerflug-gegenprobe-13x90.mjs

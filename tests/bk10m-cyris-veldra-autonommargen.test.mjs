@@ -39,7 +39,7 @@ const book=()=>({count:0,known:0,unknown:0,old:0,foreign:0,domesticUnknown:0,
   importedNewUnits:0,importedNewPaidISK:0,importedNewRevenueISK:0});
 const empty=()=>({
   ice:[],old:[],neu:[],unfinished:new Map(),
-  production:0,knownFoodProduced:0,unknownFoodProduced:0,
+  startedFood:0,production:0,knownFoodProduced:0,unknownFoodProduced:0,
   icePaid:{quantity:0,isk:0,minerQuantity:0,minerISK:0,traderQuantity:0,traderISK:0},
   foodInbound:{quantity:0,isk:0,neu:0},sold:book(),consumed:book(),
   localPrev:{quantity:0,isk:0,old:0},
@@ -122,6 +122,7 @@ function start(state,id,r,index){
   assert(input.every(Boolean),'Fabrik greift auf vorhandene Eislose zu');
   const known=input.every(x=>Number.isSafeInteger(x.price));
   t.iceOriginUnknownUsed+=input.filter(x=>x.price===undefined).length;
+  t.startedFood++;
   t.unfinished.set(index,{kind:'domestic',known,ice:known?sum(input.map(x=>x.price)):null,
     wages:r.dauer*4,minute:state.tick,origin:input.map(x=>x.kind)});
 }
@@ -176,8 +177,8 @@ function invariant(s){
     assert.equal(t.old.length+t.neu.length,st.lager.nahrung,id+': Nahrungsbestand FIFO');
     assert.equal(t.neu.length,st.lokalNeuNahrung,id+': Neunahrung laut Original');
     assert.equal(t.production,t.knownFoodProduced+t.unknownFoodProduced,id+': alle Produktionsabschluesse');
-    assert.equal(t.production+t.unfinished.size,t.knownFoodProduced+
-      t.unknownFoodProduced+t.unfinished.size);
+    assert.equal(t.startedFood,t.production+t.unfinished.size,
+      id+': jede gestartete Nahrungsproduktion entweder laufend oder bezahlt abgeschlossen');
     for(const b of [t.sold,t.consumed]){
       assert.equal(b.known+b.unknown,b.count,id+': jede Transaktion zugeordnet');
       assert.equal(b.knownReceipts-b.knownIce-b.knownWages,b.margin,id+': echte Einstandsrechnung');
@@ -272,5 +273,23 @@ test('B-K10m: 13 autonome Seeds je 72h; 2 Hersteller und wirklich bezahlte Einka
     assert(acc.produced>0);
   }
   assert.equal(rows.length,13);
+  assert.equal(zusammen.stations.st_cyris.soldLossSeedCount,13,
+    'Cyris 13/13 mit negativem belegten Exportbeitrag');
+  assert.equal(zusammen.stations.st_veldra.soldLossSeedCount,13,
+    'Veldra 13/13 mit negativem belegten Exportbeitrag');
+  assert.equal(zusammen.stations.st_veldra.localLossSeedCount,13);
+  assert(zusammen.stations.st_cyris.localLossSeedCount>=12);
+  assert(zusammen.stations.st_cyris.iceMiner>0,
+    'Cyris kauft direkt vom bezahlten Original-Miner');
+  assert.equal(zusammen.stations.st_veldra.iceMiner,0,
+    'Veldra verfuegt nicht ueber eigenes Original-Eisfeld');
+  assert(zusammen.stations.st_veldra.iceTraders>0,
+    'Veldra muss wirklich Rohstoffe von Haendlern kaufen');
+  for(const id of TARGETS){
+    assert(zusammen.stations[id].unpaidImportedOldConsumed>0,
+      id+': importierte alte Nahrung wird in der Original-Stundenregel unbezahlt gegessen');
+    assert(zusammen.stations[id].unpaidImportedOldProcurementISK>0,
+      id+': Station hat die kostenlos gegessene Importware wirklich bezahlt');
+  }
   console.log('B-K10m 13 Seed Herstellervergleich',JSON.stringify(zusammen));
 });

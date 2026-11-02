@@ -107,7 +107,8 @@ function lauf(seed,gegenprobe=false){
   // aber KEIN unterscheidbares Neuwaren-Attribut auf dem Schiff.
   assert.equal(s.ships[id].ladung.nahrung,1);
   assert.equal(s.ships[id].lokalNeuNahrung,undefined);
-  while(s.ships[id].phase==='reise' && s.tick<100){
+  const deadline=s.ships[id].ankunft+1;
+  while(s.ships[id].phase==='reise' && s.tick<=deadline){
     core.step(s,rules);
     if(s.tick%10===0)pruefe(s);
   }

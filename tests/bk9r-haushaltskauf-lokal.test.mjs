@@ -246,3 +246,28 @@ test('B-K9r: 24h-Lohn-/Preissensitivitaet ohne Produktfreigabe, 2 Seeds und 4 Te
     }
   }
 });
+
+
+test('B-K9r: 24h-Gegenprobe ohne Fondsauffuellung trennt Haushaltseinnahmen von Fondsrettung',()=>{
+  for(const lohnJeMinute of [2,4,6]){
+    for(const seed of [42,7]){
+      const r={...rules,world:{...rules.world,produktionslohnJeMinute:lohnJeMinute,
+        mindeststand:0,fondsObergrenze:1000000000}};
+      const s=core.createState(seed,r);
+      const st=nurNahrung(s,0);
+      for(let t=0;t<24*60;t++){
+        core.step(s,r);
+        if((t+1)%60===0){geld(s);assert(core.audit(s).ok);herkunft.pruefe(s);}
+      }
+      const h=s.stats.haushaltskauf.st_cyris;
+      const lohn=s.stats.konto.hh_st_cyris.erloes;
+      assert.equal(lohn-h.isk,s.owners.hh_st_cyris.cash);
+      assert.equal(core.hash(core.load(core.save(s),undefined,r)),core.hash(s));
+      console.log('B-K9r ohne Fondsauffuellung',JSON.stringify({
+        seed,lohnJeMinute,lohn,gekauft:h.isk,nahrung:h.menge,
+        bedarfFehlt:h.fehlend,neuLager:st.lokalNeuNahrung,
+        haushaltCash:s.owners.hh_st_cyris.cash,stationCash:s.owners.st_cyris.cash,
+      }));
+    }
+  }
+});

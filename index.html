@@ -694,6 +694,7 @@ function createState(seed, rules) {
       id, system: cfg.system, lager,
       linien: cfg.linien.map((rezept) => ({ rezept, rest: 0, herkunft: 'npc' })),
       eigentum: null, module: {},
+      ...(rules.schema === 9 && rules.rulesVersion === 15 && w.haushaltskaufNeu === true ? { lokalNeuNahrung: 0 } : {}),
     };
     stats.rezepte[id] = 0; stats.mangel[id] = {};
     for (const ware of ids(cfg.verbrauch)) stats.mangel[id][ware] = 0;
@@ -708,6 +709,10 @@ function createState(seed, rules) {
       stats.abgabe[hh] = 0;
     }
   }
+  if (rules.schema === 9 && rules.rulesVersion === 15 && w.haushaltskaufNeu === true) {
+    stats.haushaltskauf = {};
+    for (const id of ids(stations)) stats.haushaltskauf[id] = { menge: 0, isk: 0, alt: 0, fehlend: 0 };
+  }
   const ledger = {};
   for (const ware of ids(e.waren)) {
     let initial = 0;
@@ -720,6 +725,10 @@ function createState(seed, rules) {
     stations, ships: {}, sollflotte: {}, ledger, stats,
     ...(rules.schema === 9 && rules.rulesVersion === 15
       ? { vertraege: { naechster: 1, eintraege: {} } } : {}),
+    ...(rules.schema === 9 && rules.rulesVersion === 15 && w.haushaltskaufNeu === true ? {
+      haushaltModell: 'lokal-neu-v1',
+      haushaltNeuLedger: { produziert: 0, ausgelagert: 0, konsumiert: 0, altVerbraucht: 0 },
+    } : {}),
   };
   const soll = (felder) => {
     const s = neuesSchiff(state, { heimat: felder.system, ...felder });
@@ -1001,6 +1010,61 @@ function preis(state, station, ware, rules) {
 return { faktorFormel, preisFormel, faktor, preis };
 })();
 
+// B-K9r: bewusst nur lokale neue Nahrung, kein Nachweis fuer angelieferte
+// oder bestehende Vorratsware. Diese bleibt als Altbestand getrennt.
+const m_core_herkunft = (() => {
+const ganz = (n) => Number.isSafeInteger(n) && n >= 0;
+const aktiv = (state, rules) => state.schema === 9 && state.rulesVersion === 15
+  && rules.world.haushaltskaufNeu === true && state.haushaltModell === 'lokal-neu-v1';
+function pruefe(state) {
+  if (state.haushaltModell !== 'lokal-neu-v1' || !state.haushaltNeuLedger
+    || !state.stats.haushaltskauf) throw new Error('Haushaltsmodell fehlt');
+  const l = state.haushaltNeuLedger;
+  if (!['produziert','ausgelagert','konsumiert','altVerbraucht'].every(k => ganz(l[k])))
+    throw new Error('Ungueltiger Nahrungshistorienzaehler');
+  let lokal = 0, gekauft = 0, bezahlt = 0, alt = 0;
+  for (const id of Object.keys(state.stations).sort()) {
+    const st = state.stations[id], eintrag = state.stats.haushaltskauf[id];
+    if (!ganz(st.lokalNeuNahrung) || st.lokalNeuNahrung > (st.lager.nahrung || 0)
+      || !eintrag || !['menge','isk','alt','fehlend'].every(k => ganz(eintrag[k]))
+      || !state.owners['hh_' + id] || !ganz(state.owners['hh_' + id].cash))
+      throw new Error('Ungueltige Haushaltsprovenienz: ' + id);
+    lokal += st.lokalNeuNahrung;
+    gekauft += eintrag.menge;
+    bezahlt += eintrag.isk;
+    alt += eintrag.alt;
+  }
+  if (lokal + l.ausgelagert + l.konsumiert !== l.produziert
+    || gekauft !== l.konsumiert || alt !== l.altVerbraucht
+    || !ganz(lokal) || !ganz(gekauft) || !ganz(bezahlt))
+    throw new Error('Nahrungshistorie stimmt nicht');
+  return { lokal, gekauft, bezahlt, ausgelagert: l.ausgelagert };
+}
+function erzeugen(state, rules, station, menge) {
+  if (!aktiv(state, rules)) return;
+  const st = state.stations[station];
+  if (!ganz(menge) || !ganz(st.lokalNeuNahrung + menge)
+    || !ganz(state.haushaltNeuLedger.produziert + menge))
+    throw new Error('Ungueltige Nahrungserzeugung');
+  st.lokalNeuNahrung += menge;
+  state.haushaltNeuLedger.produziert += menge;
+}
+function entnehmen(state, rules, station, menge, zweck = 'ausgelagert') {
+  if (!aktiv(state, rules) || !menge) return 0;
+  if (!ganz(menge) || (zweck !== 'ausgelagert' && zweck !== 'konsumiert'))
+    throw new Error('Ungueltige Nahrungsentnahme');
+  const st = state.stations[station];
+  // FIFO: zuerst unbelegte Altware, dann nur lokal nachgewiesene Neuware.
+  const alt = st.lager.nahrung - st.lokalNeuNahrung;
+  if (alt < 0 || menge > st.lager.nahrung) throw new Error('Nahrungsbestand inkonsistent');
+  const neu = Math.max(0, menge - alt);
+  st.lokalNeuNahrung -= neu;
+  state.haushaltNeuLedger[zweck] += neu;
+  return neu;
+}
+return { aktiv, pruefe, erzeugen, entnehmen };
+})();
+
 const m_core_handel = (() => {
 const { div, anzahl } = m_core_zahl;
 const { preis } = m_core_preis;
@@ -1057,6 +1121,8 @@ function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt =
     : anzahl(schiff.ladung, ware) >= menge && kasse.cash >= wert
       && anzahl(st.lager, ware) + menge <= obergrenze(state, rules, station, ware);
   if (!reicht) return false;
+  if (kauf && ware === 'nahrung')
+    m_core_herkunft.entnehmen(state, rules, station, menge);
   const d = kauf ? menge : -menge;
   st.lager[ware] -= d;
   schiff.ladung[ware] = anzahl(schiff.ladung, ware) + d;
@@ -1326,6 +1392,7 @@ function produktion(state, rules) {
             delete linie.vertrag;
           }
           for (const ware of ids(r.aus)) { st.lager[ware] = anzahl(st.lager, ware) + r.aus[ware]; state.ledger[ware].produced += r.aus[ware]; }
+          if (r.aus.nahrung) m_core_herkunft.erzeugen(state, rules, id, r.aus.nahrung);
           state.stats.rezepte[id] += 1;
         }
       }
@@ -1355,6 +1422,7 @@ return { produktion };
 const m_core_stunde = (() => {
 const { div, ids, anzahl } = m_core_zahl;
 const { fondsIn, buche } = m_core_handel;
+const { preis } = m_core_preis;
 const { protokolliere } = m_core_state;
 // v0.11.0 / A3: einziger Lesezugriff auf den Dividenden-Freibetrag.
 // Regel und UI ziehen beide über diese Funktion, damit Anzeige und
@@ -1365,9 +1433,34 @@ function verbrauch(state, rules) {
     const st = state.stations[id]; const bedarf = rules.world.stations[id].verbrauch;
     for (const ware of ids(bedarf)) {
       const da = anzahl(st.lager, ware);
-      const n = Math.min(da, bedarf[ware]);
+      let n = Math.min(da, bedarf[ware]);
+      if (ware === 'nahrung' && m_core_herkunft.aktiv(state, rules)) {
+        const alt = da - st.lokalNeuNahrung;
+        const altEssen = Math.min(alt, n);
+        const neuBedarf = n - altEssen;
+        const hh = state.owners['hh_' + id];
+        const p = preis(state, id, ware, rules); // bestehender Marktpreis vor Verbrauch
+        if (p <= 0) throw new Error('Kein Nahrungsmarktpreis: ' + id);
+        const neuKauf = Math.min(neuBedarf, Math.floor(hh.cash / p));
+        n = altEssen + neuKauf; // ohne Haushaltseinkommen keine kostenlose Neuware
+        if (neuKauf > 0) {
+          const geld = neuKauf * p;
+          if (neuKauf > st.lokalNeuNahrung) throw new Error('Unbelegte Nahrung');
+          st.lokalNeuNahrung -= neuKauf;
+          state.haushaltNeuLedger.konsumiert += neuKauf;
+          hh.cash -= geld;
+          state.owners[id].cash += geld;
+          buche(state, 'hh_' + id, 'kosten', geld);
+          buche(state, id, 'erloes', geld);
+          state.stats.haushaltskauf[id].menge += neuKauf;
+          state.stats.haushaltskauf[id].isk += geld;
+        }
+        state.haushaltNeuLedger.altVerbraucht += altEssen;
+        state.stats.haushaltskauf[id].alt += altEssen;
+        state.stats.haushaltskauf[id].fehlend += bedarf[ware] - n;
+      }
       st.lager[ware] = da - n; state.ledger[ware].consumed += n;
-      if (da < bedarf[ware]) state.stats.mangel[id][ware] += 1;
+      if (n < bedarf[ware]) state.stats.mangel[id][ware] += 1;
     }
   }
 }
@@ -1409,6 +1502,8 @@ function aussenhandel(state, rules) {
     for (const ware of ids(cfg.ziel)) {
       const da = anzahl(st.lager, ware);
       const d = div(cfg.ziel[ware] - da, rules.world.aussenhandelTeiler);
+      if (ware === 'nahrung' && d < 0)
+        m_core_herkunft.entnehmen(state, rules, id, -d);
       st.lager[ware] = da + d;
       if (d > 0) state.ledger[ware].imported += d;
       if (d < 0) state.ledger[ware].exported -= d;
@@ -2183,7 +2278,7 @@ function migrate(state, from, to, table = MIGRATIONS) {
 }
 function save(state) { return canonical(state); }
 function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, ruleTable = RULE_MIGRATIONS,
-    haushalteAktiv = false) {
+    haushalteAktiv = false, haushaltNeuAktiv = false) {
   const s = JSON.parse(json);
   const alteVersion = s && (s.schema < 9 || s.rulesVersion < 15);
   if (s === null || typeof s !== 'object' || !Number.isSafeInteger(s.schema)) throw new Error('Spielstand ohne Schema');
@@ -2208,6 +2303,19 @@ function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, rule
       neu.stats.abgabe[hh] = 0;
     }
   }
+  if (neu.schema === 9 && haushaltNeuAktiv) {
+    if (alteVersion) {
+      neu.haushaltModell = 'lokal-neu-v1';
+      neu.haushaltNeuLedger = { produziert: 0, ausgelagert: 0, konsumiert: 0, altVerbraucht: 0 };
+      neu.stats.haushaltskauf = {};
+      for (const id of Object.keys(neu.stations).sort()) {
+        neu.stations[id].lokalNeuNahrung = 0;
+        neu.stats.haushaltskauf[id] = { menge: 0, isk: 0, alt: 0, fehlend: 0 };
+      }
+    }
+    m_core_herkunft.pruefe(neu);
+  } else if (Object.hasOwn(neu, 'haushaltModell'))
+    throw new Error('Spielstand mit nicht aktiviertem Haushaltsmodell');
   if (neu.schema === 9) m_core_vertrag.bestand(neu);
   else if (Object.hasOwn(neu, 'vertraege')) throw new Error('Vertragsbuch in altem Schema');
   return neu;
@@ -2236,6 +2344,7 @@ function audit(state) {
   for (const id of ids(state.ships || {})) zaehle(state.ships[id].ladung);
   const ledger = state.ledger || {};
   const goods = { ok: true, delta: {} };
+  if (state.haushaltModell === 'lokal-neu-v1') m_core_herkunft.pruefe(state);
   for (const w of [...new Set([...ids(ledger), ...ids(ist)])].sort()) {
     const l = ledger[w] || { initial: 0, mined: 0, produced: 0, consumed: 0, imported: 0, exported: 0 };
     const soll = l.initial + l.mined + l.produced + l.imported - l.consumed - l.exported;
@@ -2257,7 +2366,9 @@ const advance = (state, n, rules = RULES) => m_core_step.advance(state, n, rules
 const load = (json, table, rules = RULES) => m_core_serialize.load(json, table,
   rules.schema, rules.rulesVersion, m_core_serialize.RULE_MIGRATIONS,
   rules.schema === 9 && rules.rulesVersion === 15
-    && rules.world.produktionslohnJeMinute > 0);
+    && rules.world.produktionslohnJeMinute > 0,
+  rules.schema === 9 && rules.rulesVersion === 15
+    && rules.world.haushaltskaufNeu === true);
 const preis = (state, station, ware, rules = RULES) => m_core_preis.preis(state, station, ware, rules);
 const faktor = (state, station, ware, rules = RULES) => m_core_preis.faktor(state, station, ware, rules);
 const { hash, hashString, canonical } = m_core_hash;

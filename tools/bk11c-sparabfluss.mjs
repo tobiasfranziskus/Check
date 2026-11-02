@@ -102,7 +102,7 @@ for(let tick=1;tick<=days*1440;tick++){
       transfers++;totalTransferred+=n;
     }
     previousCash=state.owners.house.cash;
-    assert(state.owners.house.cash>=BASE_CASH);
+    assert(state.owners.house.cash>=0,'Originalspiel darf laufende Kosten bezahlen');
     independentlyAudit(state);independentlyAudit(replay);
     assert(core.audit(state).ok&&core.audit(replay).ok);
     assert.equal(core.hash(state),core.hash(replay),'stündlicher Replayhash');

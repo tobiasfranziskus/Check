@@ -92,6 +92,28 @@ test('B-K9p: nicht finanzierbarer Start bleibt atomar ohne Teilfahrt und ohne Be
   bilanziere(s);
 });
 
+test('B-K9p: Flug ueber eine Stundenkante bezahlt beide Teilrechnungen einmal',()=>{
+  const s=core.createState(42,rules),sh=frachter(s);
+  runTo(s,50);assert.equal(sh.arbeit,0);
+  const cash=s.owners.house.cash,before=s.stats.konto.house.kosten;
+  assert(move(s,sh,'st_cyris').ok);
+  const id=sh.vertrag;
+  runTo(s,60);
+  const e=s.vertraege.eintraege[id];
+  assert.equal(e.gezahlt,41,'erste 10 Minuten zur Stunde 60');
+  assert.equal(e.rest,preisReise()-41);
+  assert.equal(e.status,'offen');
+  const geladen=roundtrip(s);
+  runTo(geladen,120);
+  const end=geladen.vertraege.eintraege[id];
+  assert.equal(end.gezahlt,99,'10+14 Arbeitsminuten separat gerundet');
+  assert.equal(end.erstattet,6);
+  assert.equal(end.status,'geschlossen');
+  assert.equal(geladen.owners.house.cash,cash-99);
+  assert.equal(geladen.stats.konto.house.kosten-before,99);
+  bilanziere(geladen);
+});
+
 test('B-K9p: Haltebefehl waehrend Reise erlaesst keine erflogene Lohnminute',()=>{
   const s=core.createState(42,rules),sh=frachter(s);
   assert(move(s,sh,'st_cyris').ok);

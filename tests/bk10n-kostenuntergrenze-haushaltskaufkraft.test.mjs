@@ -145,13 +145,39 @@ function fertig(state,id,index){
   t.unfinished.delete(index);t.neu.push(l);
   t.production++;if(l.known)t.knownFoodProduced++;else t.unknownFoodProduced++;
 }
+function shadowNoSale(t){
+  const pre=t.pre;if(!pre)return;
+  const b=t.budget,expected=pre.expected;
+  b.hours++;b.foodAvailable+=expected.length;
+  b.demand+=pre.demand;b.shortageBaseline+=pre.demand;
+  const all=expected.reduce((n,l)=>n+floor(l,pre.market),0);
+  b.projectedFloorISK+=all;
+  b.projectedMarketISK+=expected.reduce(
+    (n,l)=>n+(l.kind==='initial'?0:pre.market),0);
+  b.cashShortfallForFullDemandISK+=Math.max(0,all-pre.cash);
+  let left=pre.cash,affordable=0;
+  for(const l of expected){
+    const p=floor(l,pre.market);if(p>left)break;
+    left-=p;affordable++;
+  }
+  b.instantAffordable+=affordable;b.instantUnfunded+=expected.length-affordable;
+  if(all>pre.cash)b.unattainableHours++;else b.attainableHours++;
+  t.pre=null;
+}
 function preisVor(state,id,p){
   const t=tracked(id);if(!t)return;
   assert(p>0&&Number.isSafeInteger(p));
-  assert(!t.pre,'nur einmal Preisvorschau je Original-Stunde');
+  if(t.pre){
+    assert(t.pre.minute<state.tick,'jede nicht ausgefuehrte Nachfrage nur einmal gezählt');
+    shadowNoSale(t); // Original konnte auch bei vorhandenem Lager 0 Einheiten kaufen
+  }
+  const need=rules.world.stations[id].verbrauch.nahrung;
+  const have=Math.min(state.stations[id].lager.nahrung,need);
+  const old=Math.min(t.old.length,have);
+  const expected=t.old.slice(0,old).concat(t.neu.slice(0,have-old));
+  assert.equal(expected.length,have);
   t.pre={market:p,cash:state.owners['hh_'+id].cash,
-    food:state.stations[id].lager.nahrung,
-    demand:rules.world.stations[id].verbrauch.nahrung,
+    food:state.stations[id].lager.nahrung,demand:need,expected,
     minute:state.tick};
 }
 function floor(l,market){
@@ -294,7 +320,8 @@ function run(seed,hours=72,output=true){
   const results={seed,hours,globalISK:s.initialSupply+s.minted-s.burned,
     minted:s.minted,burned:s.burned,hash:core.hash(s),stationen:{}};
   for(const id of TARGETS){
-    const t=active[id],st=s.stations[id],sold=t.sold,local=t.consumed;
+    const t=active[id];if(t.pre)shadowNoSale(t);
+    const st=s.stations[id],sold=t.sold,local=t.consumed;
     results.stationen[id]={
       originalStart: first[id],
       production:t.production,knownProduction:t.knownFoodProduced,

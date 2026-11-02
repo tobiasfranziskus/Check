@@ -77,6 +77,26 @@ Das Original-`m_core_stunde.fonds` wird ausschließlich im Test journalisiert, a
 
 **Das sind Brutto-Transfers des gesamten Original-Szenarios**, nicht eine gezielt für das FIFO-Los erzeugte Unterstützung und keine neue ISK-Emission. Die Originalstationsfondsregel gleicht bereits Stationen ohne Besitzer bis zum Mindeststand auf. Im Untersuchungszeitraum konnte Nadir trotz **−1.032 ISK reinem Chargenbeitrag** weiterproduzieren und aus bereits vorhandenen Systemfonds erhebliche zusätzliche Kassenmittel empfangen. Ein langfristig tragfähiger NPC-Betrieb ist damit **noch nicht belegt**, denn allgemeine Mittelverschiebungen können lokale Verluste verdecken.
 
+
+## B-K10k Zusatzgate: dieselbe Frühwelt ohne Fonds-Auffüllung
+
+**[TEST DIREKT BESTANDEN, finalen GitHub-CI-Abschluss gesondert prüfen]** Der fünfte Test aus Commit [ea54beb](https://github.com/tobiasfranziskus/Check/commit/ea54beb30c1e743bcdd906920992d99079882cfd) reproduziert jeweils bei Seed42 und Seed7 **denselben ledger-auditierten ursprünglichen Zustand**, einmal mit der unveränderten aktiven Stationsfondsauffüllung, einmal **ausschließlich in der Test-Regelkopie** mit Mindeststand 0 und Fondsobergrenze 1.000.000.000 (keine Mindeststand-/Überschusszahlungen an Stationen). Alle Preise, NPC-Kassen, Rohstoff- und Produktionsregeln bleiben identisch, keine Testgutschrift. Beide Zustände laufen bis Minute 480 mit stündlichen Geld-/Waren-/Herkunftsaudits und Save/Load-/Hash.
+
+| Nach 480 Minuten in Nadir | Original-Fonds | Ohne Fonds-Auffüllung |
+|---|---:|---:|
+| Original abgeschlossene Nahrungsproduktionszyklen | **63** | **32** |
+| Tatsächlich bezahlte Fabriklöhne | **1.512 ISK** | **768 ISK** |
+| Neu vom NPC-Miner verkaufte Eismenge | 253 | 189 |
+| Original-Core-Eisankaufszahlungen | 4.065 ISK | 3.417 ISK |
+| **Tatsächlicher Fonds→Nadir-Mindeststandtransfer** | **3.890 ISK** | **0 ISK** |
+| Nadir freie Stations-ISK | 2.500 | **94** |
+| Neues, nach lokalem Konsum lagerndes Essen | 50 | 19 |
+| **Nach Original-Core-Reserve für Export freigegebene Nahrung** | **24** | **0** |
+
+**Unabhängige Geldbilanz:** Innerhalb desselben Seeds besteht **in beiden Varianten dieselbe gesamte ISK-Menge** (Seed42 54.320; Seed7 53.840). Der Unterschied ist ausschließlich die Weiterleitung von **bereits vorhandenen** Fondsmitteln, nicht die Erzeugung von ISK. Direkter Kausalbefund: Im isolierten frühen Nadir-Testlauf ermöglicht die ursprüngliche Fondsauffüllung die 24er-Liefermenge; ohne diese Auffüllung sind die lokale Produktions- und Ankaufkasse bei 94 ISK und die über Originalreserve handelbare Nahrungsmenge bei null. **Das beweist keinen Dauerverlust oder Insolvenz in der normalen autonomen Gesamtwirtschaft.**
+
+**Wichtige Grenze:** Der zur Chargenidentifikation **entfernte Anfangs-Eisbestand** verursacht am Anfang außergewöhnlich hohe originale Eis-Knappheitspreise (**22 ISK** pro erstem attribuiertem Eisstück). Der reale normale Nadir-Bestand nach drei Tagen war in B-K10i viel höher, und der damalige Eispreis lag nur bei **10 ISK**. Die konkret beobachteten **−1.032 ISK** sind daher eine **Faktenrechnung für diesen Isolationstest**, **kein ungeprüfter allgemeiner Preisfehler in jeder normalen R15-Welt**. Der nächste Nachweis muss genau dies **in unveränderten aktiven Originalwelten** abgrenzen, mit sauberer Altbestandsbewertung. Ebenso sind 3.890 ISK Fondsaufstockung **nicht** die exakt zuordenbare Finanzierung nur der 24 exportierten Nahrungseinheiten: Nadir stellte bis Minute 480 63 Einheiten her, konsumierte weitere lokal und kaufte Eis für zusätzliche Produktion.
+
 ## Status und Nächstes
 
 **[ANALYSE – Tests direkt ausgeführt]** Die neu hinzugefügten B-K10k-Testfälle wurden direkt im gleichen GitHub-Quellstand gegen den Original-JavaScript-Core ausgeführt. **Die CI auf dem endgültigen Testcode ist gesondert nachzuweisen**; bis dahin keine gesamte CI als grün ausgeben. Noch **keine** 13 Seeds × 90 Spieltage, kein spielbare Spieler-/NPC-Bestellsystem-Design, keine vollständige echte Hull-/Werft-/Piratenverlustkostenaudit und keine iPad-/NAS-Abnahme.

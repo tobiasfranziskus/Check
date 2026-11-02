@@ -31,6 +31,9 @@ node tools/bk11-wirtschaft.mjs --suite=crises --days=14 --probe=arrival --out=/t
 
 **Bis zur erfolgreichen CI der aktuellen Commits sind alle Gegenproben offen.** Kein Merge, keine Veröffentlichung, kein Ersatz der verbindlichen Roadmap.
 
+
+**Ergänzung aus der inzwischen vollständig ausgeführten B-K11a-Standard-CI [#41521445768](https://github.com/tobiasfranziskus/Check/actions/runs/41521445768):** 13 passive Seeds ×90 Tage, 5.058.809 abgelehnte Abflugversuche wegen noch offener Stundenabrechnung, 4.921.785 gebundene Dockminuten von insgesamt 6.751.292 gezählten Dockminuten (72,9 %), 5.058.252 davon mit freier Kasse mindestens für den reinen Flug. Eine Ablehnung pro Minute ist kein eigenständiger Geschäftsauftrag. Dieser ausführliche D1-Befund wird **nicht** fälschlich als 13×90d-Nachweis der erst später getesteten `candidate-arrival`-Variante ausgegeben.
+
 ## Ausgeführt: B-K11b-CI nach D1-Vergleich (02.11.2026)
 
 **[TEST] [CI #41523480172](https://github.com/tobiasfranziskus/Check/actions/runs/41523480172) erfolgreich** am Test-/Runner-Code [`4fa9321f`](https://github.com/tobiasfranziskus/Check/commit/4fa9321f60b780cb72a86c697c36b140c3719d93): neuer Smoke-Test, zwei passive Seeds ×7 Tage ×3 Varianten und vier aktive Krisen ×14 Tage ×3 Varianten. Unabhängige stündliche Geld-/Waren-/Escrow-Audits und Hash-Replays, tägliche Save/Load-Fortsetzungen. Die explizite Variantenvergleichszeile `BK11B_COMPARE` ist im Job-Log und im zugrunde liegenden CI-Artefakt nachvollziehbar. Dies ist **kein 13×90d-Nachweis**. Die allgemeine Regressions-CI ist separat zu bewerten.

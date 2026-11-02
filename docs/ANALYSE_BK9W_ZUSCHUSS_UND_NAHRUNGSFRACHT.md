@@ -1,6 +1,6 @@
 # B-K9w – Flottenzuschuss-Gegenprobe und bezahlte Nahrungsfracht
 
-**[ANALYSE/DRAFT · 02.11.2026]** [PR #114](https://github.com/tobiasfranziskus/Check/pull/114) baut auf #113 → #112 → #111 → #110 → #109 → #108 auf. **[MAIN]** bleibt unverändert `b4e604d6` (Produkt v0.12.5, Regel14, Schema8). Ausschließlich analytischer Regel15-/Schema9-Test. Keine Lohn-, Preis-, Rezept- oder Emissionsentscheidung; keine Änderung an \`index.html\` oder produktivem Save.
+**[ANALYSE/DRAFT · 02.11.2026]** [PR #114](https://github.com/tobiasfranziskus/Check/pull/114) baut auf #113 → #112 → #111 → #110 → #109 → #108 auf. **[MAIN]** bleibt unverändert `b4e604d6` (Produkt v0.12.5, Regel14, Schema8). Ausschließlich analytischer Regel15-/Schema9-Test. Keine Lohn-, Preis-, Rezept- oder Emissionsentscheidung; keine Änderung an `index.html` oder produktivem Save.
 
 ## Fragestellung und Methode
 
@@ -32,7 +32,7 @@ Die beiden negativen Beträge sind **Händler-Teilergebnisse**, nicht gesamtwirt
 
 ## Kausale Werftfonds-Gegenprobe Seed7
 
-Bis einschließlich vor Tick **3060** sind die Ausführungen mit/ohne den Zuschuss hashidentisch. Der erste Zuschuss über **693 ISK** löst zu Tick3060 exakt die erste Zustandsabweichung aus. Es handelt sich um einen **Transfer aus vorhandenen Fonds-ISK** an NPC1, nicht um \`minted\`.
+Bis einschließlich vor Tick **3060** sind die Ausführungen mit/ohne den Zuschuss hashidentisch. Der erste Zuschuss über **693 ISK** löst zu Tick3060 exakt die erste Zustandsabweichung aus. Es handelt sich um einen **Transfer aus vorhandenen Fonds-ISK** an NPC1, nicht um `minted`.
 
 | Beobachtung an Tag5 | Zuschuss aktiv | Zuschuss nur im Test unterdrückt |
 | --- | ---: | ---: |
@@ -45,7 +45,7 @@ Bis einschließlich vor Tick **3060** sind die Ausführungen mit/ohne den Zuschu
 | Cyris: bezahlte neue Nahrung | 57 | 57 |
 | Cyris: kumulativer fehlender Nahrungsbedarf | 251 | 251 |
 | Cyris: Stationskasse | 5 ISK | 5 ISK |
-| \`minted\` / \`burned\` | 1.440 / 6.440 ISK | 1.440 / 6.440 ISK |
+| `minted` / `burned` | 1.440 / 6.440 ISK | 1.440 / 6.440 ISK |
 
 **Kausal interpretierbar:** Die gewährte Hilfe erzeugt in diesem Fall einen zusätzlichen vorhandenen Händlerfrachter und 41 zusätzliche Handelsbuchungen, während die zusätzlichen **2.157 ISK abgerechneten Flugkosten** vollständig auf Fahrten ohne Nahrungsladung entfallen. Der gemessene Cyris-Nahrungsverbrauch und die bezahlten Nahrungsfracht-Lose ändern sich nicht. Somit zeigt diese konkrete Probe **keine Versorgungsverbesserung gegen die 693-ISK-Individualhilfe**. Das ist kein allgemeiner Nachweis, dass alle Ersatzinvestitionen unnötig wären oder dass eine bestimmte andere Regel langfristig stabil wäre.
 

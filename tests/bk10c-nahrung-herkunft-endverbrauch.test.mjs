@@ -33,7 +33,7 @@ function aufsetzen(seed){
   const s=core.createState(seed,rules);
   // Isolation nur durch die Wegnahme belegter STARTWARE mit Ledger-Korrektur:
   // keine Gratisgutschrift, weder Ware noch Geld werden hinzuerfunden.
-  for(const [id,neu] of [[QUELLE,handel.reserve(rules,QUELLE,'nahrung')],[ZIEL,0]]){
+  for(const [id,neu] of [[QUELLE,0],[ZIEL,0]]){
     const st=s.stations[id],alt=st.lager.nahrung;
     assert(neu<=alt && st.lokalNeuNahrung===0);
     st.lager.nahrung=neu;s.ledger.nahrung.initial+=neu-alt;
@@ -58,15 +58,26 @@ function befehl(s,cmd){
 }
 function lauf(seed,gegenprobe=false){
   const s=aufsetzen(seed);
-  for(let t=0;t<10;t++)core.step(s,rules);
+  const mindest=handel.reserve(rules,QUELLE,'nahrung');
+  // Erst wenn die echte Produktion aus anfangs leerem Food-Lager ihren
+  // Vorrat selbst aufgebaut hat, ist die NAECHSTE Einheit handelbar.
+  // Altbestand wird also nicht als neue Handelsware fehlklassifiziert.
+  while(s.stations[QUELLE].lokalNeuNahrung<=mindest && s.tick<1440)
+    core.step(s,rules);
+  assert(s.tick<1440,'bezahlte Eigenproduktion baut einen veraesserbaren Neu-Bestand auf');
+  // Ankunft nicht exakt auf eine Stundenkante legen: Der Test muss die
+  // unveraenderte Herkunft VOR dem folgenden Verbrauch inspizieren koennen.
+  const reiseMin=route(rules.world,'cyris','orion').zeit;
+  if((s.tick+2+reiseMin)%60===0)core.step(s,rules);
   pruefe(s);
   const source=s.stations[QUELLE],target=s.stations[ZIEL];
-  assert.equal(s.tick,10);
-  assert.equal(source.lokalNeuNahrung,1,'erste tatsaechlich produzierte Neu-Charge');
-  assert.equal(source.lager.nahrung,handel.reserve(rules,QUELLE,'nahrung')+1,
-    'genau eine verkaufbare Neu-Charge nach echter Produktion');
+  assert(s.tick>10);
+  assert.equal(source.lager.nahrung,source.lokalNeuNahrung,
+    'der komplette Quellvorrat hat jetzt einen tatsaechlichen Neuware-Beleg');
+  assert(source.lokalNeuNahrung>mindest,'Neuwaren-Ueberschuss ueber Stationsreserve');
   assert.equal(target.lager.nahrung,0,'Verbrauchsstation hat echten Fehlbestand');
-  assert.equal(s.stats.konto.hh_st_cyris.erloes,24,'6 Minuten reale bezahlte Arbeit');
+  const lohnVor=s.stats.konto.hh_st_cyris.erloes;
+  assert(lohnVor>=24 && lohnVor%24===0,'aus echten bezahlten Sechsminutenchargen');
   const sh=Object.values(s.ships).find(x=>x.owner==='npc1'&&x.klasse==='frachter'
     && x.system==='cyris'&&x.phase==='dock');
   assert(sh,'vorhandener NPC1-Frachter in Cyris');
@@ -74,13 +85,15 @@ function lauf(seed,gegenprobe=false){
   const startKassen={produzent:s.owners[QUELLE].cash,haendler:s.owners.npc1.cash,
     zielStation:s.owners[ZIEL].cash,haushalt:s.owners.hh_st_orion.cash};
   const quellePreis=preis(s,QUELLE,'nahrung',rules);
+  const quelleErloesVor=s.stats.konto[QUELLE].erloes;
   befehl(s,{type:'shipTrade',owner:'npc1',schiff:id,
     ware:'nahrung',menge:1,kauf:true});
   assert.equal(s.ships[id].ladung.nahrung,1);
-  assert.equal(s.stations[QUELLE].lokalNeuNahrung,0);
+  assert.equal(s.stations[QUELLE].lokalNeuNahrung,
+    s.stations[QUELLE].lager.nahrung,'wirklich neue Nahrung entnommen, nicht alte');
   assert.equal(s.haushaltNeuLedger.ausgelagert,1);
-  assert.equal(s.owners[QUELLE].cash,startKassen.produzent+quellePreis,
-    'Produzent erhaelt Verkaufserloes direkt von bestehender Haendlerkasse');
+  assert.equal(s.stats.konto[QUELLE].erloes,quelleErloesVor+quellePreis,
+    'Quellstation erhaelt wirklichen Verkaufserloes; gleichzeitige Lohnbindung ist separat');
   const routeDaten=route(rules.world,'cyris','orion');
   assert(routeDaten && routeDaten.zeit>0 && routeDaten.zeit<48);
   const flugSoll=Math.ceil(routeDaten.zeit*rules.world.betriebskosten.frachter/rules.economy.stunde);
@@ -125,12 +138,13 @@ function lauf(seed,gegenprobe=false){
     s.stations[ZIEL].lokalNeuNahrung+=1;
     pruefe(s);
   }
-  while(s.tick<60)core.step(s,rules);
+  const konsumTick=Math.ceil((s.tick+1)/60)*60;
+  while(s.tick<konsumTick)core.step(s,rules);
   pruefe(s);
   const h=s.stats.haushaltskauf[ZIEL];
   const ausgabe={seed,gegenprobe,routeMin:routeDaten.zeit,flugReserveISK:flugSoll,
     quellePreisISK:quellePreis,zielPreisISK:konsPreis,
-    quelleLohnBelegtISK:24,
+    quelleLohnBelegtISK:s.stats.konto.hh_st_cyris.erloes,
     quelleErloesISC:s.stats.konto[QUELLE].erloes,
     zielWarenkaufISK:zielKauf,
     haendlerCashNachEntladung:haendlerNachVerkauf,
@@ -166,6 +180,6 @@ test('B-K10c: Seed42/7 – echter bezahlter Warenflug vs. verlorener Herkunftsna
     assert.equal(hypothese.burned,original.burned,'keine neue Geldsenke');
   }
 });
-test('B-K10c: identische Original-Buchung 120 Minuten Determinismus nicht vorausgesetzt – 60-Tick-Replay',()=>{
+test('B-K10c: deterministischer Original-Beleglauf und Save/Load-Replay',()=>{
   assert.deepEqual(lauf(42,false),lauf(42,false),'unveraenderter Seed reproduzierbar');
 });

@@ -152,9 +152,13 @@ function fertig(state,id,index){
 function settleCumulative(t,pre){
   const b=t.budget;
   let left=b.shadowCash,hadFailure=false;
-  for(const l of pre.expected){
-    const price=floor(l,pre.market);
-    if(price>left){hadFailure=true;b.shadowMissed++;continue;}
+  for(let i=0;i<pre.expected.length;i++){
+    const price=floor(pre.expected[i],pre.market);
+    if(price>left){
+      hadFailure=true;
+      b.shadowMissed+=pre.expected.length-i;
+      break; // Keine willkuerliche Ueberspringung teurer FIFO-Ware
+    }
     left-=price;b.shadowSpentISK+=price;b.shadowUnits++;
   }
   b.shadowCash=left;

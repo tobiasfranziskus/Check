@@ -139,6 +139,10 @@ function neueSpur(startbestandEis){
     const wipRohISK=offen.reduce((z,c)=>z+c.kostenBekannt,0);
     const lohnReserve=offen.reduce((z,c)=>z+c.lohn,0);
     const gebundenNachweisbar=rohEisInventarISK+nahrungInventarISK+wipRohISK+lohnReserve;
+    const coreFabrikReserve=Object.values(s.vertraege.eintraege)
+      .filter(v=>v.status==='offen' && v.produktion?.station===SID)
+      .reduce((z,v)=>z+v.rest,0);
+    assert.equal(coreFabrikReserve,lohnReserve,'Rohstoff-/Chargenjournal gegen reale Vertragsbindung');
     const bekannteVerkaufskosten=chargen.filter(c=>c.verkauft)
       .reduce((z,c)=>z+c.eisKostenBelegt+c.lohnISK,0);
     const exakteChargen=chargen.filter(c=>c.verkauft&&c.einstandVollstaendig);
@@ -149,9 +153,10 @@ function neueSpur(startbestandEis){
     assert.equal(weitere,0,'gesamte Cyris-Kasse ohne unsichtbare Ausgaben');
     const startISK=4000;
     assert.equal(s.owners[SID].cash,startISK+sums.absatzISK-
-      sums.rohEisISK-sums.kristallISK-sums.lohnFertig,'Cyris-Kassenbruecke');
+      sums.rohEisISK-sums.kristallISK-sums.lohnFertig-lohnReserve,
+      'Cyris-Kassenbruecke samt noch gebundener Lohnreserve');
     const lohnNaechste=rules.economy.rezepte.r_nahrung.dauer*rules.world.produktionslohnJeMinute;
-    const ausgabe={tag,seed:s.seed??null,lohnJeMinute:rules.world.produktionslohnJeMinute,
+    const ausgabe={tag,lohnJeMinute:rules.world.produktionslohnJeMinute,
       stationFreiISK:s.owners[SID].cash,haushaltFreiISK:s.owners[HH].cash,
       eisEingekauft:sums.rohEisMenge,eisISK:sums.rohEisISK,
       eisAltVerbraucht:sums.rohAltVerbraucht,eisNeuVerbraucht:sums.rohGekauftVerbraucht,
@@ -184,7 +189,7 @@ function lauf(seed,lohn,tage,log=true){
     const neu=belege.slice(anfang+lauf.versetzt,belege.length);
     for(const e of neu)spur.buchen(e);
     lauf.versetzt+=neu.length;
-    if(s.tick%60===0){pruefen(s,rules);}
+    if(s.tick%60===0){pruefen(s,rules);spur.stand(s,s.tick/1440,rules);}
     if(s.tick%1440===0){
       const tag=s.tick/1440,st=spur.stand(s,tag,rules);
       tageStand.push(st);
@@ -200,6 +205,18 @@ function lauf(seed,lohn,tage,log=true){
 }
 lauf.versetzt=0;
 
+test('B-K9u: laufender Auftrag bindet exakt seine Lohnreserve vor Fertigstellung',()=>{
+  const r=regeln(4),s=szenario(core,42,r),spur=neueSpur(s.stations[SID].lager.eis);
+  const start=belege.length;
+  core.step(s,r);
+  for(const e of belege.slice(start))spur.buchen(e);
+  const t=spur.stand(s,0,r);
+  assert.equal(t.produktion,0,'vor Rezeptende keine Fertigware');
+  assert.equal(t.produktionOffen,1,'ein Auftrag im Original-Core');
+  assert.equal(t.lohnReserviertISK,24,'sechs reale Arbeitsminuten vorfinanziert');
+  assert.equal(t.stationFreiISK,3976,'gebundener Lohn ist nicht frei ausgebbar');
+  pruefen(s,r);
+});
 test('B-K9u: zwei 4-Tage-Ketten, echte FIFO-Eiszugänge, Lohn, Chargen, Konsum und Kapital',()=>{
   for(const seed of [42,7]){
     const v=lauf(seed,4,4);

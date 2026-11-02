@@ -30,3 +30,34 @@ node tools/bk11-wirtschaft.mjs --suite=crises --days=14 --probe=arrival --out=/t
 ```
 
 **Bis zur erfolgreichen CI der aktuellen Commits sind alle Gegenproben offen.** Kein Merge, keine Veröffentlichung, kein Ersatz der verbindlichen Roadmap.
+
+## Ausgeführt: B-K11b-CI nach D1-Vergleich (02.11.2026)
+
+**[TEST] [CI #41523480172](https://github.com/tobiasfranziskus/Check/actions/runs/41523480172) erfolgreich** am Test-/Runner-Code [`4fa9321f`](https://github.com/tobiasfranziskus/Check/commit/4fa9321f60b780cb72a86c697c36b140c3719d93): neuer Smoke-Test, zwei passive Seeds ×7 Tage ×3 Varianten und vier aktive Krisen ×14 Tage ×3 Varianten. Unabhängige stündliche Geld-/Waren-/Escrow-Audits und Hash-Replays, tägliche Save/Load-Fortsetzungen. Die explizite Variantenvergleichszeile `BK11B_COMPARE` ist im Job-Log und im zugrunde liegenden CI-Artefakt nachvollziehbar. Dies ist **kein 13×90d-Nachweis**. Die allgemeine Regressions-CI ist separat zu bewerten.
+
+**[ANALYSE]** In `candidate-arrival` jeweils **0** wegen offenem Vertrag abgelehnte Fahrten bzw. dadurch gesperrte Dockminuten. Diese technische Beseitigung des D1-Leerlaufs ist kausal belegt. Der Vergleich schließt aber nicht alle Zahlungszeitpunkt- und Fondsverteilungseffekte aus.
+
+| Passive Welt, 7 Tage | Produkt R14 | Finanzierung B-K11 | Ankunft D1 |
+| --- | ---: | ---: | ---: |
+| Seed42: Mangelstunden | 0 | 29 | **3** |
+| Seed7: Mangelstunden | 2 | 41 | **4** |
+| Seed42: NPC-Frachterverluste | 8 | 9 | **16** |
+| Seed7: NPC-Frachterverluste | 13 | 8 | **15** |
+| Seed42: Händlerbeitrag nach bezahlten Flügen (ISK, gerundet) | 410.715 | 304.581 | 378.371 |
+| Seed7: Händlerbeitrag nach bezahlten Flügen (ISK, gerundet) | 396.441 | 316.465 | 403.785 |
+
+**[ANALYSE]** D1 behebbar, aber mehr gefahrene Routen erhöhen Frachtarbeit, Risikoexposition, Hüllenauszahlungen und können Kapital aufzehren. Der Beitrag ist **keine** volle Konzernrendite und enthält keine vollständig bezahlte Produktions-/Endnachfragekette.
+
+| Vier aktive Krisen, je 14 Tage: Mangelstunden | Produkt | Finanzierung | Ankunft D1 |
+| --- | ---: | ---: | ---: |
+| Miner42 | 2.966 | 3.192 | **3.254** |
+| Handel-Flotte42 | 3.561 | 4.235 | **3.928** |
+| Station1234 | 3.002 | 3.260 | **3.150** |
+| Jagd98765 | 2.691 | 2.298 | **2.610** |
+| **Summe** | **12.220** | **12.985** | **12.942** |
+
+Im aktiven **Jagd**-Fall sinkt die Zahl der NPC-Frachter von vier (B-K11) auf einen (D1); in der **Miner**-Krise steigt sie von zwei auf fünf. Aus dem Abbau der Abrechnungssperre folgt **keine robuste Verbesserung** über die vier aktiven Szenarien. In allen vier D1-Endständen sind die freien Händlerkassen (zusammen 132/107/78/127 ISK) unter den aktuellen Hüllenkaufkosten (780 ISK); ein dauerhafter Ersatzkreislauf ist nicht belegt.
+
+**Wichtig zur Kausalinterpretation:** Die testseitige Ankunftsauszahlung verändert neben der Freigabe für den nächsten Flug auch **Zeitpunkt und ggf. räumliche Verteilung der tatsächlichen Fondsbuchung**, verglichen mit dem Originalstundenabschluss. Hier wird daher **nicht** behauptet, dass 100 % des Versorgungsunterschieds allein auf verringerte Wartezeit zurückgehen. Ein späterer savefester Produktionsentwurf müsste mehrere Flugsegmente und die aufgeschobene stündliche Gesamtabrechnung getrennt modellieren, um diese Einflüsse noch sauberer zu isolieren.
+
+**[ENTSCHEIDUNGSGATE]** B-K11b ist **technisch positiv, gesamtwirtschaftlich gemischt/ungenügend**. Keine D1-Produktregelaktivierung, keine Merges. Nächster sinnvoller Schritt vor größerem Ausbau: die 90-Tage-Auswertung auf dem ursprünglichen B-K11a-Kandidaten vollständig sichern und danach Risiko-/Routenentscheidung und Ersatzfinanzierung kausal von Zeitabrechnung trennen; D2–D8 bleiben offen.

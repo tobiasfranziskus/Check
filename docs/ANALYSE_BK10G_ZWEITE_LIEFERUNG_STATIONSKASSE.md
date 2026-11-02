@@ -2,13 +2,13 @@
 
 **[ANALYSE/DRAFT, 02.11.2026]** [PR #124](https://github.com/tobiasfranziskus/Check/pull/124) auf #123 → #108. `main b4e604d6` weiterhin v0.12.5/Regel14/Schema8. Keine Produkt-, Preis-, Lohn-, Emissions-, Save- oder UI-Änderung; lediglich neuer Test-Runner und dieser Bericht. Anfangsbestände der beiden Nahrungsmärkte werden *einmalig* in einer explizit isolierten R15-/Schema9-Testwelt samt Warenledger-Gegenbuchung auf null gesetzt. Danach keine Testgutschrift und kein Reset.
 
-## Vorbefund und Testabgrenzung
+## Verifizierter Befund und Testabgrenzung
 
-Aus dem ersten [CI-Lauf #41455515978](https://github.com/tobiasfranziskus/Check/actions/runs/41455515978) sind die folgenden **tatsächlich protokollierten Seed42-Transaktionen** ablesbar. Der Gesamtworkflow war **rot: 153/154**, weil der neue Test am Ende einer abgewickelten zweiten Rückfahrt fälschlich **vollständig leeren Frachtraum** verlangte. Tatsächlich vorhandene, weiterhin bezahlte aber nicht erneut verkäufliche Rückfracht von **6 Einheiten** ist ein ökonomisch wichtiger Restbestand, kein fehlerhafter Buchungsausgang. Der Test wurde im Commit [`3353be7`](https://github.com/tobiasfranziskus/Check/commit/3353be7895076695ed82eef3ea10eae70420f63d) **nur** auf die echte Warenidentität `Zielverkauf + Quellrückverkauf + Restladung = 24` korrigiert. Die **korrigierte CI ist bis zum vollständigen Abschluss getrennt zu bewerten**; die erste rote CI gilt nicht als bestanden.
+Aus der [vollständig erfolgreichen korrigierten CI #41456258532](https://github.com/tobiasfranziskus/Check/actions/runs/41456258532), Code-Commit [`3353be7`](https://github.com/tobiasfranziskus/Check/commit/3353be7895076695ed82eef3ea10eae70420f63d), sind **154/154 Node-Tests, 0 Fehler, 0 übersprungen** belegt. Historische v10–v14-/Geografie-Referenzjobs waren erfolgreich, ein eigenständiger Sicherheitsgeografievergleich planmäßig übersprungen. **Die Ergebnisse sind für Seed42 und Seed7 identisch.** Ein vorangegangener erster [CI-Lauf #41455515978](https://github.com/tobiasfranziskus/Check/actions/runs/41455515978) sind die folgenden **tatsächlich protokollierten Seed42-Transaktionen** ablesbar. war **rot: 153/154**, weil der neue Test am Ende einer abgewickelten zweiten Rückfahrt fälschlich **vollständig leeren Frachtraum** verlangte. Tatsächlich vorhandene, weiterhin bezahlte aber nicht erneut verkäufliche Rückfracht von **6 Einheiten** ist ein ökonomisch wichtiger Restbestand, kein fehlerhafter Buchungsausgang. Der Test wurde im Commit [`3353be7`](https://github.com/tobiasfranziskus/Check/commit/3353be7895076695ed82eef3ea10eae70420f63d) **nur** auf die echte Warenidentität `Zielverkauf + Quellrückverkauf + Restladung = 24` korrigiert. Die **zweite korrigierte CI #41456258532** ist vollständig grün; der erste rote Lauf gilt ausdrücklich nicht als bestanden.
 
 **Beide 24er-Geschäfte erfolgen auf demselben, seit Weltstart laufenden Spielstand und über reale Core-Zahlungs-, Reise- und Verbrauchsabläufe.**
 
-| Seed42, Zeitpunkt/Beleg | Erste Lieferung | Zweite Lieferung |
+| Seed42 **und Seed7**, Zeitpunkt/Beleg | Erste Lieferung | Zweite Lieferung |
 |---|---:|---:|
 | Einkauf 24 Neu-Nahrung in Cyris | 816 ISK | 816 ISK |
 | Tatsächlich verkaufte Einheiten Orion | 24 | **12** |
@@ -28,7 +28,7 @@ Aus dem ersten [CI-Lauf #41455515978](https://github.com/tobiasfranziskus/Check/
 
 ## Zu prüfender Abschluss
 
-- Zweiter korrigierter vollständiger CI-Workflow und Seed7 müssen abgeschlossen werden, bevor der Test als **[TEST BESTANDEN]** bezeichnet werden darf.
+- **[TEST BESTANDEN]** Vollständiger korrigierter Workflow #41456258532 und beide Seeds 42/7 inklusive deterministischem Replay und Geld-/Waren-/Herkunfts-/Save-Audits. Zwei identische Seeds sind keine allgemeine statistische Marktsicherheit.
 - unabhängige ISK-, Waren- und Neuherkunftsaudits, Save/Load und deterministische Hashreplays bleiben Anforderungen. Stundengrenzen sind im Test enthalten.
 - Zwei kontrollierte 24er-Runden sind **keine** autonome NPC-/Spielerökonomie über 13 Seeds ×14/90 Tage; ungeschützte Piraten-/Schiffsersatz-/Jägerfinanzierung, reale iPad-/NAS-Abnahme und vollständige Chargen-/Produktionsvollkosten fehlen.
 - Die B-K10h-Schwesteranalyse [PR #125](https://github.com/tobiasfranziskus/Check/pull/125) testet isoliert, ob die positive erste Blockpreis-Marge mit echten kleinteiligen Preisbuchungen wiederholbar wäre. **Keine Preisregeländerung ohne ausdrückliche Freigabe.**

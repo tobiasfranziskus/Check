@@ -51,9 +51,10 @@ einmal("          if (r.aus.nahrung) m_core_herkunft.erzeugen(state, rules, id, 
 einmal("      st.lager[ware] = da - n; state.ledger[ware].consumed += n;",
   "      if (id==='st_nadir'&&ware==='nahrung'&&n>0) __bk10k_quelleKonsum(n);\n"+
   "      st.lager[ware] = da - n; state.ledger[ware].consumed += n;");
-einmal("    buche(state, s.owner, 'kosten', n);",
-  "    buche(state, s.owner, 'kosten', n);\n"+
-  "    __bk10k_minerKosten(s,kosten,n);");
+einmal("    const n = Math.min(besitzer.cash, kosten);\n    if (n <= 0) continue;",
+  "    const n = Math.min(besitzer.cash, kosten);\n"+
+  "    __bk10k_minerKosten(s,kosten,n);\n"+
+  "    if (n <= 0) continue;");
 einmal("    f.cash -= n; o[id].cash += n;",
   "    __bk10k_fondsZufluss(id,n,'mindest');\n"+
   "    f.cash -= n; o[id].cash += n;");

@@ -308,6 +308,12 @@ function run(saved,seed,mode,ausgabe=true,angefragt=24){
     'alle anteiligen Miner-Betriebskosten durch echten Miner bezahlt');
   assert.equal(r.verfolgteEisEinheiten,2*r.menge);
   assert.equal(r.quellFabriklohnISK,24*r.menge);
+  r.nadirFondsMindestISK=cfg.trace.nadirFondsMindestISK;
+  r.nadirFondsUeberschussISK=cfg.trace.nadirFondsUeberschussISK;
+  r.nadirFondsTransferGesamtISK=r.nadirFondsMindestISK+
+    r.nadirFondsUeberschussISK;
+  r.nadirEndKasse=s.owners[S].cash;
+  r.nadirFondsEndKasse=s.owners.fonds_nadir.cash;
   r.einkaufISK=sum(k.map(x=>x.wert));
   r.eisQuellstationDeckungISK=r.einkaufISK-r.quellEisIstAnkaufISK-
     r.quellFabriklohnISK;

@@ -34,7 +34,7 @@ unique("    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenz
 const sum=arr=>arr.reduce((n,x)=>n+x,0);
 const world={};
 let current=null;
-const rec=(type)=>({art:type,count:0,umsatz:0,iceCost:0,prodWage:0,margin:0,
+const rec=(type)=>({art:type,count:0,umsatz:0,knownCount:0,knownRevenue:0,knownWage:0,iceCost:0,prodWage:0,margin:0,
   loss:0,positive:0,negative:0,unknownCount:0,
   cashByOwner:{},prices:{}});
 function reportLot(aggregate,lot,receipt){
@@ -42,6 +42,8 @@ function reportLot(aggregate,lot,receipt){
   if(lot.typ==='produziert'){
     aggregate.prodWage+=lot.wage;
     if(lot.iceKnown){
+      aggregate.knownCount++;aggregate.knownRevenue+=receipt;
+      aggregate.knownWage+=lot.wage;
       aggregate.iceCost+=lot.iceCost;
       const m=receipt-lot.wage-lot.iceCost;aggregate.margin+=m;
       if(m<0){aggregate.negative++;aggregate.loss+=m}
@@ -179,6 +181,14 @@ function run(seed,durationHours=72,ausgabe=true){
     }
   }
   const sold=t.foodSold,cons=t.foodConsumed;
+  for(const x of [sold,cons]){
+    assert.equal(x.knownRevenue-x.iceCost-x.knownWage,x.margin,
+      'kontrollierbarer Zahlungsbeitrag nur tatsaechlich vollbelegter Lose');
+    assert.equal(x.knownCount+x.unknownCount,x.count,
+      'unbelegte Anfangswerte nicht als Nullkosten erfassen');
+    assert.equal(x.positive+x.negative,x.knownCount,
+      'jedes kostenbelegte Los ist entweder positiv oder negativ');
+  }
   const res={seed,hours:durationHours,iceStartOriginal:100,foodStartOriginal:52,
     firstIceMarketPrice:originalIcePreis,firstFoodMarketPrice:originalFoodPreis,
     lastIceMarketPrice:core.preis(s,'st_nadir','eis',rules),
@@ -212,4 +222,20 @@ test('B-K10l: originale vollautonome Welt mit Anfangsware und tatsaechlicher FIF
 });
 test('B-K10l: unveraenderte Seed42-Welt 24h reproduzierbar, Save-/Hash-/Geld-/Warenaudit',()=>{
   assert.deepEqual(run(42,24,false),run(42,24,false));
+});
+test('B-K10l: 13 unterschiedliche Seed-Welten je 72h ohne Lagermanipulation',()=>{
+  const seeds=[1,2,7,11,13,17,42,99,1234,2026,65535,98765,314159];
+  const ergebnisse=seeds.map(seed=>{
+    const x=run(seed,72,false);
+    return {seed,prod:x.foodProduced,
+      vBest:x.foodSold.knownCount,vMarge:x.foodSold.margin,
+      kBest:x.foodConsumed.knownCount,kMarge:x.foodConsumed.margin,
+      vPlus:x.foodSold.positive,kPlus:x.foodConsumed.positive,
+      fonds:x.originalFondsToNadir,haus:x.householdISK,
+      ware:x.foodStock};
+  });
+  assert.equal(ergebnisse.length,13);
+  assert(ergebnisse.every(x=>x.prod>0&&x.fonds>0));
+  const m=ergebnisse.filter(x=>x.vBest>0&&x.kBest>0&&x.vMarge<0&&x.kMarge<0).length;
+  console.log('B-K10l 13 autonome Seeds 72h',JSON.stringify({negativeBeide:m,werte:ergebnisse}));
 });

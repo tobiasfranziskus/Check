@@ -1,0 +1,35 @@
+name: Aphros Void – B-K11 Finanzierung und Wirtschaftsgrenzen
+on:
+  pull_request:
+    paths:
+      - index.html
+      - tests/bk11-*.test.mjs
+      - tests/helpers/bk11-audit.mjs
+      - tools/bk11-*.mjs
+      - .github/workflows/bk11-wirtschaft.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  wirtschaft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [standard, crises]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Standardtests mit Einzeltestzahl
+        run: node --test --experimental-test-isolation=none tests/*.test.mjs
+      - name: 90 Tage – Produkt, Finanzierungskandidat und Test-Gegenlauf ohne Individualstuetze
+        run: node tools/bk11-wirtschaft.mjs --suite=${{ matrix.suite }} --out=${{ runner.temp }}/bk11-${{ matrix.suite }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bk11-${{ matrix.suite }}-90d
+          path: ${{ runner.temp }}/bk11-${{ matrix.suite }}.json

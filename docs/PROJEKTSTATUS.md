@@ -1,5 +1,9 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT / ANALYSE] B-K11 – abgegrenzter Finanzierungskern · 02.11.2026
+
+Geprüfte Basis: `main b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c`, Produkt v0.12.5/Regel14/Schema8. #108–#111 offen/Draft, #112–#135 geschlossen ohne Merge. [B-K11-Architektur](BK11_WIRTSCHAFTSKERN.md) trennt Originalbuchungen von testseitiger Material-/Auftragssteuerung und benennt die Produktentscheidungen. Der unabhängige Kandidat übernimmt nur die deaktivierte Frachterfinanzierung mit Originaltarifen; keine Fabrik-/Haushalts-/Herkunftsmechanik aus dem Stack. Neue Werft-Heimflüge sind in der Testvariante ebenfalls finanziert. [Prüfstand und Grenzen](TEST_BK11.md); 90-Tage-Abnahme noch in Arbeit. Kein Merge, keine Veröffentlichung.
+
 ## [ANALYSE] B8o/B8p – bezahlte Aufträge und Endnachfrage · 01.11.2026
 
 **[MAIN]** Weiterhin `0d473e6`, v0.12.5/Regel14/Schema8 ohne Produktcodeänderung. Dokumentations-Draft #78 ist noch **nicht integriert**; dieser Abschnitt bezieht sich auf den vorgeschlagenen Docs-Stand.

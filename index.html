@@ -708,6 +708,8 @@ function createState(seed, rules) {
     schema: rules.schema, rulesVersion: rules.rulesVersion, tick: 0, rng: seedToState(seed), queue: [], ereignisse: [],
     owners, systems, nextShip: 1, minted: 0, burned: 0, initialSupply,
     stations, ships: {}, sollflotte: {}, ledger, stats,
+    ...(rules.schema === 9 && rules.rulesVersion === 15
+      ? { finanzModell: 'frachterflug-v1', vertraege: { naechster: 1, eintraege: {} } } : {}),
   };
   const soll = (felder) => {
     const s = neuesSchiff(state, { heimat: felder.system, ...felder });
@@ -847,6 +849,9 @@ function execute(state, cmd, rules) {
       const s = state.ships[cmd.schiff];
       const r = m_core_route.route(rules.world, s.system, rules.world.stations[cmd.ziel].system);
       if (!r || r.zeit <= 0) return { ok: false, type: cmd.type, reason: 'kein Weg' };
+      if (state.schema === 9 && s.klasse === 'frachter'
+        && !m_core_vertrag.fahrtStart(state, rules, s, cmd.ziel, r.zeit))
+        return { ok: false, type: cmd.type, reason: 'Frachterfahrt nicht vollstaendig vorfinanziert oder vorige Abrechnung offen' };
       s.phase = 'reise'; s.ziel = cmd.ziel; s.ankunft = state.tick + r.zeit; s.warten = 0; s.eskorte = null; break;
     }
     case 'shipTrade': {
@@ -1224,12 +1229,23 @@ function besterAbsatz(state, rules, s, station) {
 function abflug(state, rules, s, station, ziel, ware, menge) {
   const w = rules.world, r = route(w, w.stations[station].system, w.stations[ziel].system);
   if (!r || r.zeit <= 0) return false;
+  const finanziert = state.schema === 9 && s.klasse === 'frachter';
+  if (finanziert && ware !== null) {
+    // Ein Vertrag ohne mindestens eine real bezahlbare Ware ist kein Auftrag.
+    // Vorher pruefen, sonst wuerde jeder erfolglose NPC-Tick ein weiteres
+    // storniertes, gespeichertes Vertragsobjekt produzieren.
+    const budget = Math.ceil(r.zeit * w.betriebskosten.frachter / rules.economy.stunde);
+    if (bezahlbar(rules, station, state.owners[s.owner].cash - budget, preis(state, station, ware, rules)) <= 0)
+      return false;
+  }
+  if (finanziert && !m_core_vertrag.fahrtStart(state, rules, s, ziel, r.zeit)) return false;
   if (ware !== null) {
     const p = preis(state, station, ware, rules);
     const fracht = Object.values(s.ladung).reduce((a, b) => a + b, 0);
     const m = Math.min(menge, rules.economy.cargo - fracht, verkaufbar(state, rules, station, ware),
       bezahlbar(rules, station, state.owners[s.owner].cash, p));
     if (m > 0 && handel(state, rules, s, station, ware, m, true)) state.stats.handel += 1;
+    else if (finanziert) { m_core_vertrag.stornieren(state, s); return false; }
   }
   s.phase = 'reise'; s.ziel = ziel; s.ankunft = state.tick + r.zeit; s.warten = 0;
   return true;
@@ -1253,8 +1269,10 @@ function entscheidung(state, rules) {
     if (paar) abflug(state, rules, s, station, paar.ziel, paar.ware, paar.menge);
     else if (s.warten >= 2) {
       const andere = ids(w.stations).filter((x) => x !== station && route(w, s.system, w.stations[x].system));
-      if (andere.length > 0) abflug(state, rules, s, station, andere[rngInt(state, andere.length)], null, 0);
-      else s.ankunft = state.tick + w.warteLeer;
+      if (andere.length > 0) {
+        if (!abflug(state, rules, s, station, andere[rngInt(state, andere.length)], null, 0))
+          s.ankunft = state.tick + w.warteLeer;
+      } else s.ankunft = state.tick + w.warteLeer;
     } else { s.warten += 1; s.ankunft = state.tick + w.warteLeer; }
   }
 }
@@ -1314,9 +1332,17 @@ function betriebskosten(state, rules) {
     const s = state.ships[id]; const arbeit = s.arbeit; s.arbeit = 0;
     // Auch bei Auftrag 'halten' muessen bereits erflogene Arbeitsminuten bezahlt werden.
     // Nur echte Untätigkeit (arbeit=0) ist kostenlos, auch nach Ankunft im Dock.
-    if (arbeit === 0) continue;
+    if (arbeit === 0) {
+      if (s.vertrag && state.schema === 9 && s.phase === 'dock')
+        m_core_vertrag.fahrtStunde(state, rules, s, 0, s.system);
+      continue;
+    }
     const kosten = div(anzahl(w.betriebskosten, s.klasse) * arbeit, rules.economy.stunde);
     const system = s.phase === 'reise' ? w.stations[s.ziel].system : s.system;
+    if (s.vertrag && state.schema === 9) {
+      m_core_vertrag.fahrtStunde(state, rules, s, kosten, system);
+      continue; // Kosten kommen ausschliesslich aus der gebundenen Reserve.
+    }
     const besitzer = state.owners[s.owner];
     if (arbeit > 0 && s.owner === rules.economy.start.owner
       && (s.auftrag === 'jagd' || s.auftrag === 'eskorte' || s.auftrag === 'patrouille') && kosten > besitzer.cash) {
@@ -1456,6 +1482,7 @@ const imSystem = (state, owner, system, auftrag) => ids(state.ships).map((id) =>
 const seite = (rules, schiffe, fokus, rueckzug) => ({ schiffe: schiffe.map((s) => ({ einheit: s.klasse, hp: rules.combat.einheiten[s.klasse].hp })), fokus, rueckzug });
 
 function entfernen(state, rules, s) {
+  if (state.schema === 9 && s.vertrag) m_core_vertrag.fahrtVerlust(state, rules, s);
   // Verbliebene Fracht beim Schiffverlust vollständig aus der Warenbilanz buchen.
   // zerstoeren() entfernt zuvor bereits verkaufte oder verbuchte Ladung.
   for (const ware of ids(s.ladung)) {
@@ -1653,9 +1680,11 @@ function ersatzkauf(state, rules) {
       const p = preis(state, werft, x.klasse, rules);
       const bedarf = p + gebuehr(state, rules, werft, p);
       if (leer) zuschuss(state, rules, owner, bedarf);
-      if (state.owners[owner].cash < bedarf + (leer ? 0 : w.ersatzRuecklage)) continue;
       const von = state.stations[werft].system;
       const r = route(w, von, x.heimat);
+      const flugreserve = state.schema === 9 && x.klasse === 'frachter'
+        ? Math.ceil(r.zeit * w.betriebskosten.frachter / rules.economy.stunde) : 0;
+      if (state.owners[owner].cash < bedarf + Math.max(leer ? 0 : w.ersatzRuecklage, flugreserve)) continue;
       const s = neuesSchiff(state, { owner, klasse: x.klasse, system: von, heimat: x.heimat, ware: x.ware, auftrag: x.auftrag,
         ...(state.rulesVersion >= 14 ? { sollplatz: x.platz } : {}) });
       if (!handel(state, rules, s, werft, x.klasse, 1, true)) {
@@ -1667,7 +1696,13 @@ function ersatzkauf(state, rules) {
       state.stats.indienst[owner] ||= {};
       state.stats.indienst[owner][x.klasse] = anzahl(state.stats.indienst[owner], x.klasse) + 1;
       s.ankunft = state.tick + r.zeit;
-      if (r.zeit > 0) { s.phase = 'reise'; s.ziel = stationIn(rules, x.heimat); }
+      if (r.zeit > 0) {
+        const ziel = stationIn(rules, x.heimat);
+        if (state.schema === 9 && s.klasse === 'frachter'
+          && !m_core_vertrag.fahrtStart(state, rules, s, ziel, r.zeit))
+          throw new Error('Werft-Heimflug ohne vorher gepruefte Deckung');
+        s.phase = 'reise'; s.ziel = ziel;
+      }
       break;
     }
   }
@@ -1708,6 +1743,201 @@ function advance(state, n, rules) {
   for (let i = 0; i < n; i++) step(state, rules);
 }
 return { step, advance };
+})();
+
+// B-K11: aus #108/#109 isolierter, in RULES nicht aktivierter Finanzierungskern.
+// Bestehende Flugtarife und Rundung; keine Fabrik-/Konsum-/Materialregeln.
+const m_core_vertrag = (() => {
+const istBetrag = (x) => Number.isSafeInteger(x) && x >= 0;
+const objekt = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
+const gueltigerBeleg = (x) => typeof x === 'string'
+  && /^leistung:[a-zA-Z0-9._:-]{1,80}$/.test(x);
+
+function bestand(state, rules) {
+  if (state.schema !== 9 || state.rulesVersion !== 15 || state.finanzModell !== 'frachterflug-v1')
+    throw new Error('Vertragsreserve nur mit Schema 9 / Regel 15');
+  const v = state.vertraege;
+  if (!objekt(v) || !Number.isSafeInteger(v.naechster) || v.naechster < 1 || !objekt(v.eintraege))
+    throw new Error('Vertragsbuch fehlt oder ist ungueltig');
+  if (Object.values(state.owners).some(o => !istBetrag(o.cash)))
+    throw new Error('Ungueltige Vertragskasse');
+  const archiv = v.archiv ?? { anzahl: 0, budget: 0, gezahlt: 0, erstattet: 0 };
+  if (!['anzahl','budget','gezahlt','erstattet'].every((k) => istBetrag(archiv[k]))
+      || archiv.budget !== archiv.gezahlt + archiv.erstattet
+      || !Number.isSafeInteger(archiv.anzahl + Object.keys(v.eintraege).length)
+      || archiv.anzahl + Object.keys(v.eintraege).length !== v.naechster - 1)
+    throw new Error('Ungueltiges Vertragsarchiv');
+  let offen = 0;
+  for (const id of Object.keys(v.eintraege).sort()) {
+    const e = v.eintraege[id], nummer = Number(id.slice(1));
+    if (!/^v[1-9][0-9]*$/.test(id) || !Number.isSafeInteger(nummer) || nummer >= v.naechster
+      || !objekt(e) || e.id !== id || !Object.hasOwn(state.owners, e.zahlender)
+      || !Object.hasOwn(state.owners, e.empfaenger) || e.zahlender === e.empfaenger
+      || !istBetrag(e.budget) || e.budget === 0
+      || !istBetrag(e.rest) || !istBetrag(e.gezahlt) || !istBetrag(e.erstattet)
+      || !Number.isSafeInteger(e.rest + e.gezahlt + e.erstattet)
+      || e.rest + e.gezahlt + e.erstattet !== e.budget
+      || !['offen', 'geschlossen'].includes(e.status)
+      || (e.status === 'geschlossen' && e.rest !== 0) || !objekt(e.belege))
+      throw new Error('Ungueltiger Vertrag: ' + id);
+    let summe = 0;
+    for (const beleg of Object.keys(e.belege)) {
+      const n = e.belege[beleg];
+      if (!gueltigerBeleg(beleg) || !istBetrag(n) || n <= 0
+        || !Number.isSafeInteger(summe + n))
+        throw new Error('Ungueltiger Leistungsbeleg: ' + id);
+      summe += n;
+    }
+    if (summe !== e.gezahlt || !Number.isSafeInteger(offen + e.rest))
+      throw new Error('Unstimmige Vertragsbilanz: ' + id);
+    if (!objekt(e.fahrt) || e.produktion !== undefined) throw new Error('Kein Frachterflugvertrag: ' + id);
+    if (e.fahrt !== undefined) {
+      const f = e.fahrt, sh = state.ships[f.schiff];
+      if (!objekt(f) || typeof f.schiff !== 'string'
+        || !Number.isSafeInteger(f.start) || f.start < 0
+        || f.start > state.tick
+        || !Number.isSafeInteger(f.ende) || f.ende <= f.start
+        || !Object.hasOwn(state.stations, f.ziel)
+        || !Object.hasOwn(state.owners, e.empfaenger)
+        || (e.status === 'offen' && (!sh || sh.vertrag !== id
+          || sh.klasse !== 'frachter' || sh.owner !== e.zahlender
+          || !istBetrag(sh.arbeit)))
+        || (e.status === 'geschlossen' && sh?.vertrag === id))
+        throw new Error('Ungueltiger Fahrtvertrag: ' + id);
+      if (rules && (e.empfaenger !== rules.world.systems[rules.world.stations[f.ziel].system].fonds
+        || e.budget !== Math.ceil((f.ende-f.start) * rules.world.betriebskosten.frachter / rules.economy.stunde)
+        || (e.status === 'offen' && sh.phase === 'reise'
+          && (sh.ziel !== f.ziel || sh.ankunft !== f.ende))))
+        throw new Error('Fahrtvertrag passt nicht zu Regeln oder Reise: ' + id);
+    }
+    offen += e.rest;
+  }
+  for (const s of Object.values(state.ships)) {
+    if (!s.vertrag) continue;
+    const e = v.eintraege[s.vertrag];
+    if (!e || !e.fahrt || e.status !== 'offen' || e.fahrt.schiff !== s.id
+        || e.zahlender !== s.owner) throw new Error('Verwaister Schiffsvertrag: ' + s.id);
+  }
+  return offen;
+}
+function reservieren(state, zahlender, empfaenger, budget) {
+  bestand(state);
+  if (typeof zahlender !== 'string' || typeof empfaenger !== 'string'
+      || !Object.hasOwn(state.owners, zahlender) || !Object.hasOwn(state.owners, empfaenger)
+      || zahlender === empfaenger || !istBetrag(budget) || budget === 0
+      || state.owners[zahlender].cash < budget
+      || !Number.isSafeInteger(state.vertraege.naechster + 1))
+    return null;
+  const id = 'v' + state.vertraege.naechster;
+  state.vertraege.naechster += 1;
+  state.owners[zahlender].cash -= budget;
+  state.vertraege.eintraege[id] = {
+    id, zahlender, empfaenger, budget, rest: budget, gezahlt: 0,
+    erstattet: 0, status: 'offen', belege: {},
+  };
+  return id;
+}
+function bezahlen(state, id, beleg, betrag) {
+  bestand(state);
+  const e = state.vertraege.eintraege[id];
+  if (!e || e.status !== 'offen' || !gueltigerBeleg(beleg)
+      || Object.hasOwn(e.belege, beleg) || !istBetrag(betrag) || betrag === 0
+      || betrag > e.rest || !Number.isSafeInteger(state.owners[e.empfaenger].cash + betrag))
+    return false;
+  e.rest -= betrag;
+  e.gezahlt += betrag;
+  state.owners[e.empfaenger].cash += betrag;
+  e.belege[beleg] = betrag;
+  return true;
+}
+function abschliessen(state, id) {
+  bestand(state);
+  const e = state.vertraege.eintraege[id];
+  if (!e || e.status !== 'offen'
+      || !Number.isSafeInteger(state.owners[e.zahlender].cash + e.rest)) return false;
+  state.owners[e.zahlender].cash += e.rest;
+  e.erstattet += e.rest;
+  e.rest = 0;
+  e.status = 'geschlossen';
+  // Abgeschlossene historische Einzelbelege begrenzen: die ISK-Summe bleibt
+  // ueber ein separates, speicherbares Summenarchiv auditierbar.
+  const geschlossen = Object.keys(state.vertraege.eintraege).filter((k) =>
+    state.vertraege.eintraege[k].status === 'geschlossen');
+  if (geschlossen.length > 128) {
+    geschlossen.sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
+    const weg = geschlossen[0], alt = state.vertraege.eintraege[weg];
+    const archiv = state.vertraege.archiv ||= {
+      anzahl: 0, budget: 0, gezahlt: 0, erstattet: 0,
+    };
+    for (const [k, n] of [['anzahl', 1], ['budget', alt.budget],
+      ['gezahlt', alt.gezahlt], ['erstattet', alt.erstattet]]) {
+      if (!Number.isSafeInteger(archiv[k] + n))
+        throw new Error('Vertragsarchiv uebergelaufen');
+      archiv[k] += n;
+    }
+    delete state.vertraege.eintraege[weg];
+  }
+  return true;
+}
+// Die Basisreserve allein entscheidet nicht ueber einen Transport. Erst der
+// bestehende Core startet hier eine reale Fahrt mit originaler Routenzeit.
+function fahrtStart(state, rules, s, ziel, zeit) {
+  if (state.schema !== 9 || state.rulesVersion !== 15
+    || s.klasse !== 'frachter' || s.phase !== 'dock'
+    || s.vertrag || s.arbeit !== 0 || !Number.isSafeInteger(zeit) || zeit <= 0
+    || !Object.hasOwn(state.stations, ziel)
+    || !Number.isSafeInteger(state.tick + zeit)) return false;
+  const kosten = Math.ceil(zeit * rules.world.betriebskosten.frachter / rules.economy.stunde);
+  if (!istBetrag(kosten) || kosten <= 0) return false;
+  const system = rules.world.stations[ziel].system;
+  const empfaenger = rules.world.systems[system].fonds;
+  const id = reservieren(state, s.owner, empfaenger, kosten);
+  if (!id) return false;
+  state.vertraege.eintraege[id].fahrt = { schiff: s.id, start: state.tick, ende: state.tick + zeit, ziel };
+  s.vertrag = id;
+  return true;
+}
+// Nur unmittelbar vor erfolglosem Warenkauf: noch kein Tick und kein Lohn.
+function stornieren(state, s) {
+  if (!s.vertrag || s.phase !== 'dock' || s.arbeit !== 0) throw new Error('Fahrt bereits begonnen');
+  const id = s.vertrag;
+  if (!abschliessen(state, id)) throw new Error('Storno ohne Rueckerstattung');
+  delete s.vertrag;
+}
+function fahrtStunde(state, rules, s, kosten, system) {
+  const id = s.vertrag, v = state.vertraege.eintraege[id];
+  if (!v || v.status !== 'offen' || !v.fahrt || v.fahrt.schiff !== s.id
+      || !istBetrag(kosten) || v.empfaenger !== rules.world.systems[system].fonds)
+    throw new Error('Nicht gedeckte Frachterarbeit: ' + s.id);
+  if (kosten > 0) {
+    const beleg = 'leistung:flug:' + s.id + ':' + state.tick;
+    if (!bezahlen(state, id, beleg, kosten))
+      throw new Error('Frachterreserve zu gering: ' + s.id);
+    m_core_handel.buche(state, s.owner, 'kosten', kosten);
+  }
+  if (s.phase === 'dock') {
+    if (!abschliessen(state, id)) throw new Error('Fahrtabschluss ohne Rueckerstattung');
+    delete s.vertrag;
+  }
+}
+function fahrtVerlust(state, rules, s) {
+  // Noch nicht stundengenau verbuchte Minuten fallen sonst bei Zerstoerung weg.
+  const kosten = Math.floor(rules.world.betriebskosten.frachter * s.arbeit / rules.economy.stunde);
+  const system = s.phase === 'reise' ? rules.world.stations[s.ziel].system : s.system;
+  const id = s.vertrag;
+  // Keine automatische Erstattung der bereits geleisteten Arbeit.
+  if (kosten) {
+    const v = state.vertraege.eintraege[id];
+    if (!v || v.empfaenger !== rules.world.systems[system].fonds
+        || !bezahlen(state, id, 'leistung:verlust:' + s.id + ':' + state.tick, kosten))
+      throw new Error('Verlustarbeit ohne Finanzierung: ' + s.id);
+    m_core_handel.buche(state, s.owner, 'kosten', kosten);
+  }
+  if (!abschliessen(state, id)) throw new Error('Verlustabrechnung ohne Rueckerstattung');
+  delete s.vertrag;
+}
+// Kein frei aufrufbarer Zahlungs-/Erstattungsbefehl: nur reale Core-Fluege.
+return { bestand, fahrtStart, fahrtStunde, fahrtVerlust, stornieren };
 })();
 
 const m_core_hash = (() => {
@@ -1764,6 +1994,12 @@ const MIGRATIONS = {
   // v0.11.0 / B2: Schema 7→8. Jede bestehende Produktionslinie bekommt ein
   // herkunft-Feld; fehlt es (Bestand), gilt sie als 'npc'. Neue Linien aus
   // shipInstall werden ab v0.11.0 mit 'spieler' angelegt.
+  8: (s) => {
+    if (Object.hasOwn(s, 'vertraege') || Object.hasOwn(s, 'finanzModell')
+      || Object.values(s.ships).some(sh => Object.hasOwn(sh, 'vertrag')))
+      throw new Error('Vertragsdaten in altem Schema');
+    return { ...s, schema: 9, finanzModell: 'frachterflug-v1', vertraege: { naechster: 1, eintraege: {} } };
+  },
   7: (s) => ({
     ...s,
     schema: 8,
@@ -1891,6 +2127,8 @@ const RULE_MIGRATIONS = {
   // vorhandene Schiffe, Kassen, angefangene Fluege und Arbeit bleiben unveraendert.
   12: (s) => ({ ...s, rulesVersion: 13 }),
   13: migrationRegel13,
+  // 14→15: reine Aktivierung der expliziten Schema-9-Vertragsverwaltung.
+  14: (s) => ({ ...s, rulesVersion: 15 }),
 };
 function migrate(state, from, to, table = MIGRATIONS) {
   let s = state;
@@ -1916,6 +2154,11 @@ function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, rule
     if (typeof ruleTable[r] !== 'function') throw new Error(`Regelversion ${v} ist älter als ${currentRulesVersion}, keine Regelmigration vorhanden`);
     neu = ruleTable[r](neu);
   }
+  if (neu.schema === 9) m_core_vertrag.bestand(neu);
+  else if (Object.hasOwn(neu, 'vertraege') || Object.hasOwn(neu, 'finanzModell')
+    || Object.values(neu.ships).some(sh => sh.vertrag)) throw new Error('Vertragsbuch in altem Schema');
+  if (neu.schema === 9 && !m_core_audit.audit(neu).ok)
+    throw new Error('Finanzierter Spielstand mit Bilanzfehler');
   return neu;
 }
 return { MIGRATIONS, RULE_MIGRATIONS, migrate, save, load };
@@ -1932,6 +2175,8 @@ const { ids, anzahl } = m_core_zahl;
 function audit(state) {
   let total = 0;
   for (const o of Object.values(state.owners)) total += o.cash;
+  // Reservierte ISK gehoeren weiterhin zum Geldbestand, sind aber nicht frei ausgebbar.
+  if (state.schema === 9) total += m_core_vertrag.bestand(state);
   const expected = state.initialSupply + state.minted - (state.burned || 0);
   const isk = { ok: total === expected, total, expected, delta: total - expected };
   const ist = {};
@@ -1958,7 +2203,11 @@ const submit = (state, cmd, rules = RULES) => m_core_commands.submit(state, cmd,
 const execute = (state, cmd, rules = RULES) => m_core_commands.execute(state, cmd, rules);
 const step = (state, rules = RULES) => m_core_step.step(state, rules);
 const advance = (state, n, rules = RULES) => m_core_step.advance(state, n, rules);
-const load = (json, table, rules = RULES) => m_core_serialize.load(json, table, rules.schema, rules.rulesVersion);
+const load = (json, table, rules = RULES) => {
+  const s = m_core_serialize.load(json, table, rules.schema, rules.rulesVersion);
+  if (s.schema === 9) m_core_vertrag.bestand(s, rules);
+  return s;
+};
 const preis = (state, station, ware, rules = RULES) => m_core_preis.preis(state, station, ware, rules);
 const faktor = (state, station, ware, rules = RULES) => m_core_preis.faktor(state, station, ware, rules);
 const { hash, hashString, canonical } = m_core_hash;

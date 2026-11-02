@@ -121,6 +121,24 @@ function analyse(seed,stunden=72,ausgabe=true){
   const haushaltLohnSum=sum(Object.entries(s.stats.konto)
     .filter(([id])=>id.startsWith('hh_st_')).map(([,v])=>v.erloes));
   assert.equal(haushaltLohnSum,n.produktion);
+  const stationKaufkraft=Object.keys(s.stations).sort().map(id=>{
+    const h=s.owners['hh_'+id],hs=s.stats.haushaltskauf[id],
+      st=s.stations[id],p=core.preis(s,id,'nahrung',rules);
+    assert.equal(h.cash,s.stats.konto['hh_'+id].erloes-hs.isk,
+      'stationaerer Haushalt darf nur echte lokale Loehne ausgeben: '+id);
+    return {station:id,stationISK:s.owners[id].cash,
+      haushaltISK:h.cash,
+      lohnISK:s.stats.konto['hh_'+id].erloes,
+      nahrungBezahltISK:hs.isk,nahrungBezahltMenge:hs.menge,
+      mangelEinheiten:hs.fehlend,neuNahrung:st.lokalNeuNahrung,
+      nahrungPreisISK:p,
+      haushaltKannEinStueckKaufen:h.cash>=p,
+      stationKannNaechstenLohnVorfinanzieren:st.linien.some(l=>
+        s.owners[id].cash>=rules.economy.rezepte[l.rezept].dauer*
+        rules.world.produktionslohnJeMinute)};
+  });
+  assert.equal(sum(stationKaufkraft.map(x=>x.haushaltISK)),geldgruppen(s).haushalt);
+  assert.equal(sum(stationKaufkraft.map(x=>x.stationISK)),geldgruppen(s).station);
   const gesamtGeschaeftskosten=sum([
     n.produktion,n.flug,n.betriebMiner,n.betriebFrachter,
     n.betriebJaeger,n.betriebAndere]);
@@ -132,7 +150,7 @@ function analyse(seed,stunden=72,ausgabe=true){
       sum(Object.values(s.stats.haushaltskauf).map(x=>x.menge)),
     mangelfehlEinheiten:
       sum(Object.values(s.stats.haushaltskauf).map(x=>x.fehlend)),
-    tageswerte:proTag,
+    tageswerte:proTag,stationKaufkraft,
     cashSupply:s.initialSupply+s.minted-s.burned,hash:core.hash(s)};
   if(ausgabe)console.log('B-K10i Originalwelt Arbeitsempfaenger',JSON.stringify(summary));
   return summary;

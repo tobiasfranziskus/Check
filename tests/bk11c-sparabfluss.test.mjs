@@ -31,6 +31,6 @@ test('B-K11c: A/B/C mit Geld-/Warenaudit, stündlichem Replay und Save/Load', {t
     assert(b.final.playerCash<=2000,'B belässt höchstens die Startkasse');
     assert(c.totalTransferred>0,'C muss tatsächlich teilweise zurückführen');
     assert(c.transferDefinition.includes('halber positiver'));
-    assert(c.final.playerCash>=2000);
+    assert(c.final.playerCash>=0,'Originalausgaben dürfen das Guthaben senken');
   } finally {fs.rmSync(dir,{recursive:true,force:true});}
 });

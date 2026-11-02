@@ -163,10 +163,28 @@ function versuch(seed,menge,ausgabe=true){
 
 function gegenstand(s){
   const st=s.stations[Z],q=s.stations[Q],h=s.stats.haushaltskauf[Z];
+  const hh='hh_'+Z,lohn=s.stats.konto[hh].erloes,
+    haushaltAusgaben=s.stats.konto[hh].kosten;
+  assert.equal(s.owners[hh].cash+haushaltAusgaben,lohn,
+    'Orion-Haushalt: echte kumulierte Lohnzahlung minus belegten Konsum');
+  const produktionsHindernisse=st.linien.map(l=>{
+    const rezept=rules.economy.rezepte[l.rezept];
+    return {rezept:l.rezept,nochInArbeit:l.rest,
+      fehlendeRohstoffe:Object.entries(rezept.ein)
+        .filter(([w,n])=>(st.lager[w]||0)<n).map(([w,n])=>w),
+      lohnNeuISK:rezept.dauer*rules.world.produktionslohnJeMinute,
+      lohnAusFreikasseFinanzierbar:s.owners[Z].cash>=
+        rezept.dauer*rules.world.produktionslohnJeMinute};
+  });
   return {tick:s.tick,tag:Number((s.tick/1440).toFixed(3)),
     haendlerFrei:s.owners.npc1.cash,haendlerInklReserve:freieUndReserve(s,'npc1'),
     zielStationFrei:s.owners[Z].cash,zielStationInklReserve:freieUndReserve(s,Z),
-    zielHaushaltISK:s.owners['hh_'+Z].cash,haushaltKaufMenge:h.menge,
+    zielHaushaltISK:s.owners[hh].cash,
+    haushaltLohnKumuliertISK:lohn,
+    haushaltAusgabenKumuliertISK:haushaltAusgaben,
+    zielProduktionAbgeschlossen:s.stats.rezepte[Z],
+    zielProduktionsHindernisse:produktionsHindernisse,
+    haushaltKaufMenge:h.menge,
     haushaltKaufISK:h.isk,haushaltFehlmenge:h.fehlend,
     quelleBestand:q.lager.nahrung,quelleNeu:q.lokalNeuNahrung,
     quelleVerkaufbar:handel.verkaufbar(s,rules,Q,'nahrung'),
@@ -270,4 +288,32 @@ test('B-K10g: zweimal 24 Einheiten in demselben State; Realkassen vor zweiter Fa
 test('B-K10g: vollständiger Zwei-Runden-Seed42-Replay bleibt identisch',()=>{
   const a=gleicheWelt(42,false),b=gleicheWelt(42,false);
   assert.deepEqual(a,b);
+});
+
+test('B-K10g: bezahlter Haushaltslohn und Produktionshindernisse erklaeren ausbleibenden Zweitverbrauch',()=>{
+  for(const seed of SEEDS){
+    const r=gleicheWelt(seed,false);
+    const vor=r.vorZweiter,nach=r.nachZweiter12h;
+    assert.equal(nach.zielHaushaltISK+nach.haushaltAusgabenKumuliertISK,
+      nach.haushaltLohnKumuliertISK,'keine kostenlose Haushaltseinnahme');
+    assert.equal(nach.haushaltAusgabenKumuliertISK,nach.haushaltKaufISK);
+    assert(nach.zielNeu>0,'belegte Neuware am Ziel noch im Bestand');
+    assert(nach.zielHaushaltISK<nach.zielPreis,
+      'echt vorhandener Haushalt besitzt nicht einmal den Preis einer Nahrungseinheit');
+    assert.equal(r.zweitConsumption,0);
+    const pruef={seed,
+      stationISKVorZweiter:vor.zielStationFrei,
+      stationISKNachZweiter:nach.zielStationFrei,
+      haushaltLohnVorZweiter:vor.haushaltLohnKumuliertISK,
+      haushaltLohnNachZweiter:nach.haushaltLohnKumuliertISK,
+      haushaltAusgabenNachZweiter:nach.haushaltAusgabenKumuliertISK,
+      haushaltFreieISKNachZweiter:nach.zielHaushaltISK,
+      eineNahrungKostetISK:nach.zielPreis,
+      produzierteZielRezepte:nach.zielProduktionAbgeschlossen,
+      produktionsHindernisse:nach.zielProduktionsHindernisse,
+      nochBelegteNahrung:nach.zielNeu,
+      nochUnbezahlterBedarf:nach.haushaltFehlmenge,
+      keinZweiterVerbrauch:r.zweitConsumption};
+    console.log('B-K10g Orion Lohn- und Nachfrageursache',JSON.stringify(pruef));
+  }
 });

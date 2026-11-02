@@ -25,8 +25,12 @@ einfuegen("          buche(state, id, 'erloes', geld);",
 einfuegen("    besitzer.cash -= n;",
   "    __log.push({art:'betrieb',tick:state.tick,von:s.owner,an:w.senkeBesitzer.includes(s.owner)?null:fondsIn(rules,system),betrag:n,klasse:s.klasse,schiff:s.id,soll:kosten});");
 // Aus bezahlter Frachterreserve abgerechnete Flugstunden.
-einfuegen("    m_core_handel.buche(state, s.owner, 'kosten', kosten);",
-  "    __log.push({art:'flug',tick:state.tick,von:s.owner,an:v.empfaenger,betrag:kosten,schiff:s.id});");
+const flugMarker="    m_core_handel.buche(state, s.owner, 'kosten', kosten);\n  }\n  if (s.phase === 'dock') {";
+assert.equal(inj.split(flugMarker).length,2,'nur der normale Flugabschluss');
+inj=inj.replace(flugMarker,
+  "    m_core_handel.buche(state, s.owner, 'kosten', kosten);\n"+
+  "    __log.push({art:'flug',tick:state.tick,von:s.owner,an:v.empfaenger,betrag:kosten,schiff:s.id});\n"+
+  "  }\n  if (s.phase === 'dock') {");
 // Bisherige Sonderzuschüsse bei leerer Sollflotte.
 einfuegen("  f.cash -= n; state.owners[owner].cash += n; state.stats.zuschuss += n; return n;",
   "  __log.push({art:'flottenzuschuss',tick:state.tick,von:fondsIn(rules,state.stations[rules.world.werft].system),an:owner,betrag:n});");

@@ -51,3 +51,27 @@ Die Testassertions belegen beide Ursachen unabhängig: **2 ISK/min** hat an Tag3
 4. **40 wiederholte Perioden** nur nach (2)–(3), mit echtem Rohstoffnachschub, bezahlten Verbrauchern, Frachtern, Ersatz und ohne automatische Stützung. Danach 13×90 Tage, 365 Tage und Krisenfälle.
 
 Keine Änderung der produktiven Roadmap, von `main` oder der ISK-Emissionsregeln in diesem Test.
+
+## B-K9t – Transaktionsspur statt pauschaler Kostenvermutung
+
+**[ANALYSE/TEST]** `tests/bk9t-rohstoffeinkauf-transaktionsspur.test.mjs` zeichnet die **tatsächlich im Original-Core ausgeführten `m_core_handel.handel`-Buchungen** außerhalb des Spielzustands auf; das Test-Hook wird mit unverändertem 60-Tick-Core-Hash und kanonischem Save auf Gleichheit geprüft. 2 Seeds × 3 Tage, sowohl mit regulärem Kristallminer als auch mit **nur diesem einen Kristallminer angehalten**. Geld-/Warenaudit stündlich, Save/Load täglich. **[Node-22-Job: 110/110 bestanden, 0 Fehler](https://github.com/tobiasfranziskus/Check/actions/runs/41421792886)**, getesteter Commit `f0a166e`; andere historische Jobs wurden zu diesem Zeitpunkt noch ausgeführt.
+
+Seed42 und Seed7 liefern in der isolierten Cyris-Kette bei **4 ISK/min Testlohn** am ersten Tag identische Transaktionen:
+
+| Realer Kassenposten | ISK / Einheit |
+|---|---:|
+| Anfangs-Stationskasse | 4.000 ISK |
+| Haushalte bezahlen 72 Einheiten neue Nahrung | +2.454 ISK |
+| Miner verkaufen **258 Eis** an die Station | −3.252 ISK |
+| **119 echte `r_nahrung`-Rezeptzyklen** à 24 ISK Lohn | −2.856 ISK |
+| Miner verkaufen **9 Kristall** an die Station | −234 ISK |
+| Übrige Stationskosten (Belegsumme gegen Core-Kostenstatistik) | **0 ISK** |
+| **Stationskasse nach 24 h** | **112 ISK** |
+
+**Unabhängige Kassenidentität:** `4.000 + 2.454 − 3.252 − 2.856 − 234 = 112`. Die Testassertions bestätigen für **jeden der drei Tage** `Kasse(Tag) = Kasse(Vortag) + bezahlte Haushaltsnachfrage − sämtliche Core-gebuchten Stationskosten`. Die 47 bei Tag1 verbleibenden Neu-Nahrungseinheiten erklären die Differenz zwischen Produktion und verkauften Einheiten; ein bloßer Vergleich der Chargenkosten mit ausschließlich verkauften Waren wäre methodisch falsch.
+
+**Gegenprobe nur ohne Cyris-Kristallminer:** Tag1 123 Nahrungsrezepte, 2.952 ISK Lohn, 3.318 ISK Eis-Einkauf, 0 ISK Kristall-Einkauf, 2.370 ISK Haushaltszahlungen, **100 ISK Stationskasse**. Tag2 3 ISK, Tag3 0 Produktion. Die Kristallkosten sind damit *nicht* die Hauptursache; bei dieser Gegenprobe steigt die bezahlte Eis-/Fabrikarbeit sogar an und die Station bleibt ebenfalls insolvenzgefährdet.
+
+**Folgerung:** Die echte Kostenursache liegt nachweislich wesentlich in teurem, vom Miner an die Station bezahltem Eis und den vorfinanzierten Fabriklöhnen, während Endkunden lediglich tatsächlich verfügbare Lohn-ISK zum bestehenden Marktpreis ausgeben. Es ist **noch keine vollständige periodengerechte Gewinnrechnung**: Auch mit 47 unverkauften Nahrungseinheiten als Lagerwert kann die Station den nächsten Rohstoffbezug und die nächste Lohnreserve nicht beliebig finanzieren. Eine bloße Erhöhung des Lohns oder der Endverbraucher-Kasse würde das Kosten-/Absatz- und Kapitalbindungsproblem nicht lösen.
+
+**Nächstes kleines Gate:** eine **chargenbezogene Cash-/Vorratsrechnung** mit aktueller tatsächlicher Rohstoffbeschaffung, gebundenem Betriebskapital, realisierbarem Absatzwert und weiteren Schiffskosten, vor jeder freigegebenen Preis-, Rezept- oder Lohnreform. Alte Zuschüsse (`state.stats.zuschuss`) im aktiven NPC-Fall weiter separat prüfen, nicht mit Stationsauffüllung verwechseln.

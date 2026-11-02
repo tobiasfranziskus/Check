@@ -34,7 +34,9 @@ const TARGETS=['st_cyris','st_veldra'],SEEDS=[1,2,7,11,13,17,42,99,1234,2026,655
 const sum=arr=>arr.reduce((acc,x)=>acc+x,0);
 const book=()=>({count:0,known:0,unknown:0,old:0,foreign:0,domesticUnknown:0,
   receipts:0,knownReceipts:0,knownIce:0,knownWages:0,margin:0,
-  positive:0,negative:0,zero:0});
+  positive:0,negative:0,zero:0,
+  importedOldUnits:0,importedOldPaidISK:0,importedOldRevenueISK:0,
+  importedNewUnits:0,importedNewPaidISK:0,importedNewRevenueISK:0});
 const empty=()=>({
   ice:[],old:[],neu:[],unfinished:new Map(),
   production:0,knownFoodProduced:0,unknownFoodProduced:0,
@@ -48,6 +50,13 @@ let active=null;
 function tracked(st){return active&&active[st]||null;}
 function account(b,lot,receipt){
   b.count++;b.receipts+=receipt;
+  if(lot.kind==='importedOld'){
+    b.importedOldUnits++;b.importedOldPaidISK+=lot.paid;
+    b.importedOldRevenueISK+=receipt;
+  }else if(lot.kind==='importedNew'){
+    b.importedNewUnits++;b.importedNewPaidISK+=lot.paid;
+    b.importedNewRevenueISK+=receipt;
+  }
   if(lot.kind==='domestic'){
     if(lot.known){
       b.known++;b.knownReceipts+=receipt;b.knownIce+=lot.ice;
@@ -98,8 +107,8 @@ function handel(state,ship,station,ware,menge,kauf,wert,fee){
       const shouldNeu=state.stations[station].lokalNeuNahrung;
       const incomingNeu=shouldNeu-knownNeu;
       assert(incomingNeu>=0&&incomingNeu<=menge,'Original-New-Provenienz exakt abgeglichen');
-      for(let i=0;i<menge-incomingNeu;i++)t.old.push({kind:'importedOld'});
-      for(let i=0;i<incomingNeu;i++)t.neu.push({kind:'importedNew'});
+      for(let i=0;i<menge-incomingNeu;i++)t.old.push({kind:'importedOld',paid:p});
+      for(let i=0;i<incomingNeu;i++)t.neu.push({kind:'importedNew',paid:p});
       t.foodInbound.quantity+=menge;t.foodInbound.isk+=wert;
       t.foodInbound.neu+=incomingNeu;
     }
@@ -135,6 +144,8 @@ function verzehr(state,id,n){
   const unit=paid?isk/paid:0;
   for(let i=0;i<alt;i++)account(t.consumed,t.old.shift(),0);
   for(let i=0;i<paid;i++)account(t.consumed,t.neu.shift(),unit);
+  assert.equal(t.consumed.importedOldRevenueISK,0,
+    'Originalmodell verschenkt nur die tatsächlich als Altware klassifizierten Fremdimporte');
   t.localPrev={quantity:stat.menge,isk:stat.isk,old:stat.alt};
 }
 function fonds(_state,id,n,source){
@@ -244,6 +255,11 @@ test('B-K10m: 13 autonome Seeds je 72h; 2 Hersteller und wirklich bezahlte Einka
       iceMiner:sum(values.map(x=>x.icePurchases.minerQuantity)),
       iceTraders:sum(values.map(x=>x.icePurchases.traderQuantity)),
       foodFromOtherShips:sum(values.map(x=>x.foodInbound.quantity)),
+      unpaidImportedOldConsumed:sum(local.map(x=>x.importedOldUnits)),
+      unpaidImportedOldProcurementISK:sum(local.map(x=>x.importedOldPaidISK)),
+      importedOldResold:sum(sold.map(x=>x.importedOldUnits)),
+      importedNewConsumed:sum(local.map(x=>x.importedNewUnits)),
+      importedNewConsumerRevenueISK:sum(local.map(x=>x.importedNewRevenueISK)),
       knownSold:sum(sold.map(x=>x.known)),soldMargin:sum(sold.map(x=>x.margin)),
       soldLossSeedCount:sold.filter(x=>x.known>0&&x.margin<0).length,
       soldPositiveSeedCount:sold.filter(x=>x.known>0&&x.margin>0).length,

@@ -1167,9 +1167,10 @@ function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt =
       && anzahl(st.lager, ware) + menge <= obergrenze(state, rules, station, ware);
   if (!reicht) return false;
   if (kauf && ware === 'nahrung') {
+    const verfolgt = m_core_herkunft.transportAktiv(state, rules);
     const neu = m_core_herkunft.entnehmen(state, rules, station, menge,
-      m_core_herkunft.transportAktiv(state, rules) ? 'transit' : 'ausgelagert');
-    if (neu) schiff.neuLadungNahrung = (schiff.neuLadungNahrung || 0) + neu;
+      verfolgt ? 'transit' : 'ausgelagert');
+    if (verfolgt && neu) schiff.neuLadungNahrung = (schiff.neuLadungNahrung || 0) + neu;
   } else if (!kauf && ware === 'nahrung') {
     m_core_herkunft.einlagern(state, rules, station, schiff, menge);
   }

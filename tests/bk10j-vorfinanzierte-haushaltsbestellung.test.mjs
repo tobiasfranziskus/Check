@@ -139,6 +139,11 @@ function run(saved,seed,mode,ausgabe=true){
   assert(sh);assert.equal(sh.system,'aldera');
   cfg.mode=mode;cfg.ship=sh.id;cfg.order=null;cfg.delivered=0;cfg.pay=0;cfg.fees=0;
   journal.length=0;
+  // Gleicher ab Tag3 bestehender Markt, danach nur konkurrierende
+  // NPC-Frachterauftraege fuer beide kontrollierten Lieferungen anhalten.
+  for(const peer of Object.values(s.ships))
+    if(peer.owner!=='house'&&peer.klasse==='frachter'
+      && peer.auftrag==='handeln')peer.auftrag='halten';
   const t0=s.tick, cash0=s.owners.house.cash, hh0=s.owners[H].cash;
   const st0=s.owners[Z].cash,stats0={...s.stats.haushaltskauf[Z]};
   const r={seed,mode,routeZeit:route(rules.world,'aldera','nadir').zeit,

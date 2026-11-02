@@ -15,12 +15,23 @@ test('B-K11a: 1-Tag-Original-Replay und ausschliesslich lesende Abrechnungstakt-
     // verwendet fetch-depth:0. Fuer den kurzen Smoke-Test das gepinnte main
     // nur dann nachladen, wenn das Git-Objekt lokal wirklich fehlt.
     const baseline='b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c';
-    try {
-      execFileSync('git',['cat-file','-e',baseline+':index.html'],{stdio:'ignore'});
-    } catch {
-      execFileSync('git',['fetch','--no-tags','--depth=1','origin',baseline],
-        {stdio:'ignore',timeout:60000});
+    // Beide Audit-Smokes koennen bei flachem GitHub-Checkout parallel
+    // denselben Commit nachladen; Git-Fetch-Locks nur in dieser Testhuelle
+    // koordiniert erneut versuchen, niemals einen fehlenden Beleg uebergehen.
+    const hatBaseline=()=>{
+      try{execFileSync('git',['cat-file','-e',baseline+':index.html'],{stdio:'ignore'});return true;}
+      catch{return false;}
+    };
+    for(let versuch=0;versuch<12&&!hatBaseline();versuch++){
+      try{
+        execFileSync('git',['fetch','--no-tags','--depth=1','origin',baseline],
+          {stdio:'ignore',timeout:60000});
+      } catch(err){
+        if(versuch===11)throw err;
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,150*(versuch+1));
+      }
     }
+    assert(hatBaseline(),'historischer main-Beleg vorhanden');
     execFileSync(process.execPath,[
       new URL('../tools/bk11-wirtschaft.mjs',import.meta.url).pathname,
       '--suite=standard','--seed=42','--days=1','--out='+out

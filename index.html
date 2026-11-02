@@ -726,8 +726,9 @@ function createState(seed, rules) {
     ...(rules.schema === 9 && rules.rulesVersion === 15
       ? { vertraege: { naechster: 1, eintraege: {} } } : {}),
     ...(rules.schema === 9 && rules.rulesVersion === 15 && w.haushaltskaufNeu === true ? {
-      haushaltModell: 'lokal-neu-v1',
-      haushaltNeuLedger: { produziert: 0, ausgelagert: 0, konsumiert: 0, altVerbraucht: 0 },
+      haushaltModell: w.herkunftTransportNeu === true ? 'transport-neu-v2' : 'lokal-neu-v1',
+      haushaltNeuLedger: { produziert: 0, ausgelagert: 0, konsumiert: 0, altVerbraucht: 0,
+        ...(w.herkunftTransportNeu === true ? { transit: 0 } : {}) },
     } : {}),
   };
   const soll = (felder) => {
@@ -1010,19 +1011,26 @@ function preis(state, station, ware, rules) {
 return { faktorFormel, preisFormel, faktor, preis };
 })();
 
-// B-K9r: bewusst nur lokale neue Nahrung, kein Nachweis fuer angelieferte
-// oder bestehende Vorratsware. Diese bleibt als Altbestand getrennt.
+// B-K10d [ANALYSE/DRAFT]: getrennt aktivierbarer Herkunfts-Lifecycle fuer
+// wirklich neue Nahrung in Stationslagern UND Schiffen. v1 bleibt hashneutral.
+// Keine Lohn-, Preis-, Emissions- oder Warenmengenregel wird geaendert.
 const m_core_herkunft = (() => {
 const ganz = (n) => Number.isSafeInteger(n) && n >= 0;
+const v2 = (state) => state.haushaltModell === 'transport-neu-v2';
 const aktiv = (state, rules) => state.schema === 9 && state.rulesVersion === 15
-  && rules.world.haushaltskaufNeu === true && state.haushaltModell === 'lokal-neu-v1';
+  && rules.world.haushaltskaufNeu === true
+  && ['lokal-neu-v1','transport-neu-v2'].includes(state.haushaltModell);
+const transportAktiv = (state, rules) => aktiv(state, rules) && v2(state)
+  && rules.world.herkunftTransportNeu === true;
 function pruefe(state) {
-  if (state.haushaltModell !== 'lokal-neu-v1' || !state.haushaltNeuLedger
-    || !state.stats.haushaltskauf) throw new Error('Haushaltsmodell fehlt');
+  if (!['lokal-neu-v1','transport-neu-v2'].includes(state.haushaltModell)
+    || !state.haushaltNeuLedger || !state.stats.haushaltskauf)
+    throw new Error('Haushaltsmodell fehlt');
   const l = state.haushaltNeuLedger;
-  if (!['produziert','ausgelagert','konsumiert','altVerbraucht'].every(k => ganz(l[k])))
+  if (!['produziert','ausgelagert','konsumiert','altVerbraucht'].every(k => ganz(l[k]))
+    || (v2(state) && !ganz(l.transit)))
     throw new Error('Ungueltiger Nahrungshistorienzaehler');
-  let lokal = 0, gekauft = 0, bezahlt = 0, alt = 0;
+  let lokal = 0, gekauft = 0, bezahlt = 0, alt = 0, schiffNeu = 0;
   for (const id of Object.keys(state.stations).sort()) {
     const st = state.stations[id], eintrag = state.stats.haushaltskauf[id];
     if (!ganz(st.lokalNeuNahrung) || st.lokalNeuNahrung > (st.lager.nahrung || 0)
@@ -1034,11 +1042,20 @@ function pruefe(state) {
     bezahlt += eintrag.isk;
     alt += eintrag.alt;
   }
-  if (lokal + l.ausgelagert + l.konsumiert !== l.produziert
+  for (const id of Object.keys(state.ships).sort()) {
+    const sh = state.ships[id];
+    const neu = sh.neuLadungNahrung ?? 0;
+    if (!ganz(neu) || neu > (sh.ladung.nahrung || 0)
+      || (!v2(state) && neu !== 0))
+      throw new Error('Ungueltige Schiffsladungsherkunft: ' + id);
+    schiffNeu += neu;
+  }
+  const transit = v2(state) ? l.transit : 0;
+  if (schiffNeu !== transit || lokal + transit + l.ausgelagert + l.konsumiert !== l.produziert
     || gekauft !== l.konsumiert || alt !== l.altVerbraucht
     || !ganz(lokal) || !ganz(gekauft) || !ganz(bezahlt))
     throw new Error('Nahrungshistorie stimmt nicht');
-  return { lokal, gekauft, bezahlt, ausgelagert: l.ausgelagert };
+  return { lokal, transit, gekauft, bezahlt, ausgelagert: l.ausgelagert };
 }
 function erzeugen(state, rules, station, menge) {
   if (!aktiv(state, rules)) return;
@@ -1051,10 +1068,11 @@ function erzeugen(state, rules, station, menge) {
 }
 function entnehmen(state, rules, station, menge, zweck = 'ausgelagert') {
   if (!aktiv(state, rules) || !menge) return 0;
-  if (!ganz(menge) || (zweck !== 'ausgelagert' && zweck !== 'konsumiert'))
+  if (!ganz(menge) || !['ausgelagert','konsumiert','transit'].includes(zweck)
+      || (zweck === 'transit' && !transportAktiv(state, rules)))
     throw new Error('Ungueltige Nahrungsentnahme');
   const st = state.stations[station];
-  // FIFO: zuerst unbelegte Altware, dann nur lokal nachgewiesene Neuware.
+  // Bestehendes FIFO: erst unbelegte Altware, dann echte Neuware.
   const alt = st.lager.nahrung - st.lokalNeuNahrung;
   if (alt < 0 || menge > st.lager.nahrung) throw new Error('Nahrungsbestand inkonsistent');
   const neu = Math.max(0, menge - alt);
@@ -1062,7 +1080,34 @@ function entnehmen(state, rules, station, menge, zweck = 'ausgelagert') {
   state.haushaltNeuLedger[zweck] += neu;
   return neu;
 }
-return { aktiv, pruefe, erzeugen, entnehmen };
+function einlagern(state, rules, station, schiff, menge) {
+  if (!transportAktiv(state, rules) || !menge) return 0;
+  const anBord = schiff.ladung.nahrung || 0;
+  const neuAnBord = schiff.neuLadungNahrung || 0;
+  if (!ganz(menge) || menge > anBord || neuAnBord > anBord)
+    throw new Error('Ungueltiger Nahrungstransfer');
+  // Teilentladung: alte Ladung wird zuerst abgegeben; Neueinheiten bleiben
+  // im Schiff, bis ihre Menge wirklich in die Zielstation uebertragen wird.
+  const neu = Math.max(0, menge - (anBord - neuAnBord));
+  if (neu > state.haushaltNeuLedger.transit)
+    throw new Error('Nahrungstransit unterdeckt');
+  schiff.neuLadungNahrung = neuAnBord - neu;
+  state.stations[station].lokalNeuNahrung += neu;
+  state.haushaltNeuLedger.transit -= neu;
+  return neu;
+}
+function verlust(state, rules, schiff) {
+  if (!transportAktiv(state, rules)) return 0;
+  const neu = schiff.neuLadungNahrung || 0;
+  if (!ganz(neu) || neu > (schiff.ladung.nahrung || 0)
+    || neu > state.haushaltNeuLedger.transit)
+    throw new Error('Schiffverlust ohne Nahrungshistorie');
+  state.haushaltNeuLedger.transit -= neu;
+  state.haushaltNeuLedger.ausgelagert += neu;
+  schiff.neuLadungNahrung = 0;
+  return neu;
+}
+return { aktiv, transportAktiv, pruefe, erzeugen, entnehmen, einlagern, verlust };
 })();
 
 const m_core_handel = (() => {
@@ -1121,8 +1166,13 @@ function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt =
     : anzahl(schiff.ladung, ware) >= menge && kasse.cash >= wert
       && anzahl(st.lager, ware) + menge <= obergrenze(state, rules, station, ware);
   if (!reicht) return false;
-  if (kauf && ware === 'nahrung')
-    m_core_herkunft.entnehmen(state, rules, station, menge);
+  if (kauf && ware === 'nahrung') {
+    const neu = m_core_herkunft.entnehmen(state, rules, station, menge,
+      m_core_herkunft.transportAktiv(state, rules) ? 'transit' : 'ausgelagert');
+    if (neu) schiff.neuLadungNahrung = (schiff.neuLadungNahrung || 0) + neu;
+  } else if (!kauf && ware === 'nahrung') {
+    m_core_herkunft.einlagern(state, rules, station, schiff, menge);
+  }
   const d = kauf ? menge : -menge;
   st.lager[ware] -= d;
   schiff.ladung[ware] = anzahl(schiff.ladung, ware) + d;
@@ -1623,6 +1673,7 @@ const seite = (rules, schiffe, fokus, rueckzug) => ({ schiffe: schiffe.map((s) =
 
 function entfernen(state, rules, s) {
   if (state.schema === 9 && s.vertrag) m_core_vertrag.fahrtVerlust(state, rules, s);
+  m_core_herkunft.verlust(state, rules, s);
   // Verbliebene Fracht beim Schiffverlust vollständig aus der Warenbilanz buchen.
   // zerstoeren() entfernt zuvor bereits verkaufte oder verbuchte Ladung.
   for (const ware of ids(s.ladung)) {
@@ -1647,10 +1698,12 @@ function zerstoeren(state, rules, s) {
     if (m > 0) {
       const wert = m * preis(state, markt, ware, rules);
       state.owners[markt].cash -= wert; state.owners[owner].cash += wert;
+      if (ware === 'nahrung') m_core_herkunft.einlagern(state, rules, markt, s, m);
       state.stations[markt].lager[ware] = anzahl(state.stations[markt].lager, ware) + m;
       s.ladung[ware] -= m;
       buche(state, owner, 'erloes', wert); buche(state, markt, 'kosten', wert);
     }
+    if (ware === 'nahrung') m_core_herkunft.verlust(state, rules, s);
     const rest = s.ladung[ware];
     state.ledger[ware].consumed += rest; state.stats.vernichtet += rest;
     delete s.ladung[ware];
@@ -2278,7 +2331,7 @@ function migrate(state, from, to, table = MIGRATIONS) {
 }
 function save(state) { return canonical(state); }
 function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, ruleTable = RULE_MIGRATIONS,
-    haushalteAktiv = false, haushaltNeuAktiv = false) {
+    haushalteAktiv = false, haushaltNeuAktiv = false, transportNeuAktiv = false) {
   const s = JSON.parse(json);
   const alteVersion = s && (s.schema < 9 || s.rulesVersion < 15);
   if (s === null || typeof s !== 'object' || !Number.isSafeInteger(s.schema)) throw new Error('Spielstand ohne Schema');
@@ -2305,14 +2358,27 @@ function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, rule
   }
   if (neu.schema === 9 && haushaltNeuAktiv) {
     if (alteVersion) {
-      neu.haushaltModell = 'lokal-neu-v1';
-      neu.haushaltNeuLedger = { produziert: 0, ausgelagert: 0, konsumiert: 0, altVerbraucht: 0 };
+      neu.haushaltModell = transportNeuAktiv ? 'transport-neu-v2' : 'lokal-neu-v1';
+      neu.haushaltNeuLedger = { produziert: 0, ausgelagert: 0, konsumiert: 0, altVerbraucht: 0,
+        ...(transportNeuAktiv ? { transit: 0 } : {}) };
       neu.stats.haushaltskauf = {};
       for (const id of Object.keys(neu.stations).sort()) {
         neu.stations[id].lokalNeuNahrung = 0;
         neu.stats.haushaltskauf[id] = { menge: 0, isk: 0, alt: 0, fehlend: 0 };
       }
     }
+    if (transportNeuAktiv && neu.haushaltModell === 'lokal-neu-v1') {
+      // Alte R15-Draft-Saves mit bereits ausgelagerter Neuware koennen ihren
+      // Transitort nicht beweisen: explizit ablehnen statt Herkunft erfinden.
+      if (neu.haushaltNeuLedger?.ausgelagert !== 0)
+        throw new Error('Altspielstand mit ungeklaertem Nahrungstransit: Export erforderlich, kein stilles Upgrade');
+      neu.haushaltModell = 'transport-neu-v2';
+      neu.haushaltNeuLedger.transit = 0;
+    }
+    if (!transportNeuAktiv && neu.haushaltModell === 'transport-neu-v2')
+      throw new Error('Save benoetigt Herkunftsmodell transport-neu-v2');
+    if (transportNeuAktiv && neu.haushaltModell !== 'transport-neu-v2')
+      throw new Error('Fehlendes Herkunftsmodell transport-neu-v2');
     m_core_herkunft.pruefe(neu);
   } else if (Object.hasOwn(neu, 'haushaltModell'))
     throw new Error('Spielstand mit nicht aktiviertem Haushaltsmodell');
@@ -2368,7 +2434,9 @@ const load = (json, table, rules = RULES) => m_core_serialize.load(json, table,
   rules.schema === 9 && rules.rulesVersion === 15
     && rules.world.produktionslohnJeMinute > 0,
   rules.schema === 9 && rules.rulesVersion === 15
-    && rules.world.haushaltskaufNeu === true);
+    && rules.world.haushaltskaufNeu === true,
+  rules.schema === 9 && rules.rulesVersion === 15
+    && rules.world.haushaltskaufNeu === true && rules.world.herkunftTransportNeu === true);
 const preis = (state, station, ware, rules = RULES) => m_core_preis.preis(state, station, ware, rules);
 const faktor = (state, station, ware, rules = RULES) => m_core_preis.faktor(state, station, ware, rules);
 const { hash, hashString, canonical } = m_core_hash;

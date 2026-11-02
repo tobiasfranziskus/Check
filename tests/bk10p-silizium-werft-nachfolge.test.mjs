@@ -89,6 +89,7 @@ function snapshot(state,day,ev){
   const sources=Object.fromEntries(['st_nadir','st_dravos'].map(id=>[id,{
     silicon:state.stations[id].lager.silizium,
     siliconCap:core.obergrenze(state,rules,id,'silizium'),
+    siliconSellable:core.verkaufbar(state,rules,id,'silizium'),
     siliconPrice:core.preis(state,id,'silizium',rules),
     stationCash:state.owners[id].cash
   }]));
@@ -123,6 +124,8 @@ function snapshot(state,day,ev){
   }));
   return {day,warehouse:depot,yardCash:state.owners.st_aldera.cash,
     sources,merchants,prod:possible,
+    yardCanBuySilicon:core.aufnehmbar(state,rules,'st_aldera','silizium'),
+    yardSiliconPrice:core.preis(state,'st_aldera','silizium',rules),
     siliconInMiners:Object.values(state.ships).filter(x=>
       x.klasse==='miner'&&x.ware==='silizium'&&x.ladung.silizium)
       .map(x=>({owner:x.owner,at:x.system,qty:x.ladung.silizium})),
@@ -169,6 +172,12 @@ test('B-K10p: Seed42 Original-Werftketten-Stopp und ausbleibende Haendler-Nachfo
   assert(c.merchants.npc2.wallet>0,'nicht nur NPC-Bankrott, auch reale Werftluecke');
   assert(c.sources.st_nadir.silicon>=65&&c.sources.st_dravos.silicon>=65,
     'Silizium physisch vorhanden, aber nicht bei der Werft');
+  assert(c.sources.st_nadir.siliconSellable>0&&c.sources.st_dravos.siliconSellable>0,
+    'die Quellstationen haben tatsaechlich ueber Reserve kaufbares Silizium');
+  assert(c.yardCanBuySilicon>0,'die Werft hat wirklich freie Lagerkapazitaet und Ankauf-ISK');
+  assert(c.merchants.npc1.rejectedQuotedPairs>1000,
+    'Original-Routenwahl versucht wiederholt nicht voll finanzierte Transportgeschaefte');
+  assert(c.merchants.npc1.rejectedQuotedPairs<=c.merchants.npc1.attemptedQuotes);
   assert(c.siliconInMiners.some(x=>x.qty===100),'gefoerdertes Silizium steckt im Miner');
   assert.equal(c.prod.r_bauteil.finished,b.prod.r_bauteil.finished,
     'an Tag9 bereits stehende Bauteilherstellung bleibt bis Tag14 aus');
@@ -192,7 +201,10 @@ test('B-K10p: Seed7 Original-Haendler stehen trotz vorhandenen Schiffen und Sili
     assert.equal(c.merchants[o].sellDeals,x.records[5].merchants[o].sellDeals,
       'keine echten NPC-Lieferungen nach Spieltag 6');
   }
-  assert(c.sources.st_nadir.silicon>0&&c.sources.st_dravos.silicon>0);
+  assert(c.sources.st_nadir.siliconSellable>0&&c.sources.st_dravos.siliconSellable>0);
+  assert(c.yardCanBuySilicon>0,'Werft kann echtes Silizium bezahlen und aufnehmen');
+  assert(c.merchants.npc1.rejectedQuotedPairs>10000);
+  assert(c.merchants.npc2.rejectedQuotedPairs>10000);
   assert(c.siliconInMiners.some(x=>x.qty===100));
   console.log('B-K10p Handelsstillstand Seed7',JSON.stringify({
     day3:x.records[2],day6:x.records[5],day14:c,totals:x.totals}));

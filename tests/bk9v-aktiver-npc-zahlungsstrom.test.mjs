@@ -32,8 +32,12 @@ inj=inj.replace(flugMarker,
   "    __log.push({art:'flug',tick:state.tick,von:s.owner,an:v.empfaenger,betrag:kosten,schiff:s.id});\n"+
   "  }\n  if (s.phase === 'dock') {");
 // Bisherige Sonderzuschüsse bei leerer Sollflotte.
-einfuegen("  f.cash -= n; state.owners[owner].cash += n; state.stats.zuschuss += n; return n;",
-  "  __log.push({art:'flottenzuschuss',tick:state.tick,von:fondsIn(rules,state.stations[rules.world.werft].system),an:owner,betrag:n});");
+const zuschussMarker="  f.cash -= n; state.owners[owner].cash += n; state.stats.zuschuss += n; return n;";
+assert.equal(inj.split(zuschussMarker).length,2,'Zuschusspfad eindeutig');
+inj=inj.replace(zuschussMarker,
+  "  f.cash -= n; state.owners[owner].cash += n; state.stats.zuschuss += n;\n"+
+  "  __log.push({art:'flottenzuschuss',tick:state.tick,von:fondsIn(rules,state.stations[rules.world.werft].system),an:owner,betrag:n});\n"+
+  "  return n;");
 // Tatsächliche NPC-Abgabe an Fonds.
 einfuegen("    o[id].cash -= n; o[ziel].cash += n;",
   "    __log.push({art:'npcAbgabe',tick:state.tick,von:id,an:ziel,betrag:n});");

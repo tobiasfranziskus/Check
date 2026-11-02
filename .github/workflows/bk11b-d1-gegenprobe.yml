@@ -1,0 +1,35 @@
+name: Aphros Void – B-K11b isolierte D1-Gegenprobe
+on:
+  pull_request:
+    paths:
+      - 'tools/bk11-wirtschaft.mjs'
+      - 'tests/bk11b-d1-ankunft-gegenprobe.test.mjs'
+      - '.github/workflows/bk11b-d1-gegenprobe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  d1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original-Core-/Save-/Replay-Smoke
+        run: node --test tests/bk11b-d1-ankunft-gegenprobe.test.mjs
+      - name: Seed42 7 Tage – Original vs. Vertrag vs. Ankunft
+        run: node tools/bk11-wirtschaft.mjs --probe=arrival --suite=standard --seed=42 --days=7 --out="${{ runner.temp }}/bk11b-seed42.json"
+      - name: Seed7 7 Tage – Original vs. Vertrag vs. Ankunft
+        run: node tools/bk11-wirtschaft.mjs --probe=arrival --suite=standard --seed=7 --days=7 --out="${{ runner.temp }}/bk11b-seed7.json"
+      - name: Vier aktive Krisen je 14 Tage – realer Original-Core
+        run: node tools/bk11-wirtschaft.mjs --probe=arrival --suite=crises --days=14 --out="${{ runner.temp }}/bk11b-crises.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bk11b-d1-diagnose
+          path: ${{ runner.temp }}/bk11b-*.json
+          if-no-files-found: warn

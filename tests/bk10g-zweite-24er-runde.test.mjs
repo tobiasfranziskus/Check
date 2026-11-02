@@ -262,7 +262,8 @@ test('B-K10g: zweimal 24 Einheiten in demselben State; Realkassen vor zweiter Fa
     assert(r.zweite.status==='blocked'||r.zweite.status==='rundfahrt_abgeschlossen');
     if(r.zweite.status==='rundfahrt_abgeschlossen'){
       assert(r.zweite.verkaufZielMenge<=24);
-      assert(r.zweite.restLadung===0,'Rückflug inklusive ursprünglicher Ladung abgerechnet');
+      assert.equal(r.zweite.verkaufZielMenge+r.zweite.rueckverkaufMenge+r.zweite.restLadung,24,
+        'zweite Lieferung bleibt vollständig in echtem Verkauf oder belegter Restfracht');
     }
   }
 });

@@ -207,7 +207,7 @@ function snapshot(seed){
   assert.equal(core.hash(core.load(saved,undefined,rules)),core.hash(s));
   return {saved,sha:core.hash(s)};
 }
-function run(saved,seed,mode,ausgabe=true){
+function run(saved,seed,mode,ausgabe=true,angefragt=24){
   const s=core.load(saved,undefined,rules),sh=Object.values(s.ships)
     .find(x=>x.owner==='house'&&x.klasse==='frachter');
   assert(sh);assert.equal(sh.system,'aldera');
@@ -236,7 +236,7 @@ function run(saved,seed,mode,ausgabe=true){
   const saleable=core.verkaufbar(s,rules,S,'nahrung');
   const echtNeu=s.stations[S].lokalNeuNahrung;
   const alt=s.stations[S].lager.nahrung-echtNeu;
-  const menge=Math.min(24,saleable,echtNeu,30);
+  const menge=Math.min(angefragt,saleable,echtNeu,30);
   assert(menge>=10,'beide Seeds haben wirklich verkaufbare Nahrung');
   assert.equal(alt,0,'aus Nadir bezogene Nahrung ist nachweislich neu');
   r.menge=menge;r.quellpreis=core.preis(s,S,'nahrung',rules);
@@ -296,6 +296,10 @@ function run(saved,seed,mode,ausgabe=true){
   r.einkaufISK=sum(k.map(x=>x.wert));
   r.eisQuellstationDeckungISK=r.einkaufISK-r.quellEisIstAnkaufISK-
     r.quellFabriklohnISK;
+  assert(r.eisQuellstationDeckungISK<0,
+    'real bezahlte Eis- und Fabriklose sind in diesem Szenario nicht gedeckt');
+  r.minerDeckungNachBezahlterArbeitISK=r.quellEisIstAnkaufISK-
+    r.minerArbeitskostenAnteilISK;
   r.quellgebuehrISK=sum(k.map(x=>x.fee));
   r.stationsAbsatzMenge=sum(v.map(x=>x.menge));
   r.stationsAbsatzISK=sum(v.map(x=>x.wert));
@@ -382,4 +386,25 @@ test('B-K10k: vorfinanzierte, aber nie ausgelieferte Bestellung wird voll erstat
   console.log('B-K10k Bestellstorno ohne Lieferung',JSON.stringify({
     vorher:vor,reserviert:betrag,erstattet:betrag,nachher:s.owners[H].cash,
     neueISK:0,neuerBestellverbrauch:0}));
+});
+
+test('B-K10k: echte Mengenstaffel 8/16/24 zeigt Unterdeckung trotz bezahlter Bestellung',()=>{
+  const start=snapshot(42);
+  const werte=[8,16,24].map(n=>run(start.saved,42,'bestellung',false,n));
+  for(const r of werte){
+    assert.equal(r.menge,r.direktAbsatzMenge);
+    assert.equal(r.quellFabriklohnISK,24*r.menge);
+    assert.equal(r.verfolgteEisEinheiten,2*r.menge);
+    assert(r.eisQuellstationDeckungISK<0);
+    assert(r.minerDeckungNachBezahlterArbeitISK>0);
+  }
+  assert(werte[0].kettenbeitragNachEchtenBetriebskostenISK<
+    werte[2].kettenbeitragNachEchtenBetriebskostenISK,
+    'fixe reale Flugkosten nur ueber groessere Ladungen verteilbar');
+  console.log('B-K10k echte Mengenstaffel',JSON.stringify(werte.map(r=>({
+    n:r.menge,quelleEisISK:r.quellEisIstAnkaufISK,
+    fabriklohnISK:r.quellFabriklohnISK,quellverlustISK:r.eisQuellstationDeckungISK,
+    minerGewinnVorHullISK:r.minerDeckungNachBezahlterArbeitISK,
+    haendlerISK:r.haendlerCashDelta,gesamtbeitragVorHullISK:
+    r.kettenbeitragNachEchtenBetriebskostenISK}))));
 });

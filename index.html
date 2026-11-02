@@ -849,6 +849,9 @@ function execute(state, cmd, rules) {
       const s = state.ships[cmd.schiff];
       const r = m_core_route.route(rules.world, s.system, rules.world.stations[cmd.ziel].system);
       if (!r || r.zeit <= 0) return { ok: false, type: cmd.type, reason: 'kein Weg' };
+      if (state.schema === 9 && s.klasse === 'frachter'
+        && !m_core_vertrag.fahrtStart(state, rules, s, cmd.ziel, r.zeit))
+        return { ok: false, type: cmd.type, reason: 'Frachterfahrt nicht vollstaendig vorfinanziert oder vorige Abrechnung offen' };
       s.phase = 'reise'; s.ziel = cmd.ziel; s.ankunft = state.tick + r.zeit; s.warten = 0; s.eskorte = null; break;
     }
     case 'shipTrade': {
@@ -1226,12 +1229,15 @@ function besterAbsatz(state, rules, s, station) {
 function abflug(state, rules, s, station, ziel, ware, menge) {
   const w = rules.world, r = route(w, w.stations[station].system, w.stations[ziel].system);
   if (!r || r.zeit <= 0) return false;
+  const finanziert = state.schema === 9 && s.klasse === 'frachter';
+  if (finanziert && !m_core_vertrag.fahrtStart(state, rules, s, ziel, r.zeit)) return false;
   if (ware !== null) {
     const p = preis(state, station, ware, rules);
     const fracht = Object.values(s.ladung).reduce((a, b) => a + b, 0);
     const m = Math.min(menge, rules.economy.cargo - fracht, verkaufbar(state, rules, station, ware),
       bezahlbar(rules, station, state.owners[s.owner].cash, p));
     if (m > 0 && handel(state, rules, s, station, ware, m, true)) state.stats.handel += 1;
+    else if (finanziert) { m_core_vertrag.stornieren(state, s); return false; }
   }
   s.phase = 'reise'; s.ziel = ziel; s.ankunft = state.tick + r.zeit; s.warten = 0;
   return true;
@@ -1255,8 +1261,10 @@ function entscheidung(state, rules) {
     if (paar) abflug(state, rules, s, station, paar.ziel, paar.ware, paar.menge);
     else if (s.warten >= 2) {
       const andere = ids(w.stations).filter((x) => x !== station && route(w, s.system, w.stations[x].system));
-      if (andere.length > 0) abflug(state, rules, s, station, andere[rngInt(state, andere.length)], null, 0);
-      else s.ankunft = state.tick + w.warteLeer;
+      if (andere.length > 0) {
+        if (!abflug(state, rules, s, station, andere[rngInt(state, andere.length)], null, 0))
+          s.ankunft = state.tick + w.warteLeer;
+      } else s.ankunft = state.tick + w.warteLeer;
     } else { s.warten += 1; s.ankunft = state.tick + w.warteLeer; }
   }
 }
@@ -1316,9 +1324,17 @@ function betriebskosten(state, rules) {
     const s = state.ships[id]; const arbeit = s.arbeit; s.arbeit = 0;
     // Auch bei Auftrag 'halten' muessen bereits erflogene Arbeitsminuten bezahlt werden.
     // Nur echte Untätigkeit (arbeit=0) ist kostenlos, auch nach Ankunft im Dock.
-    if (arbeit === 0) continue;
+    if (arbeit === 0) {
+      if (s.vertrag && state.schema === 9 && s.phase === 'dock')
+        m_core_vertrag.fahrtStunde(state, rules, s, 0, s.system);
+      continue;
+    }
     const kosten = div(anzahl(w.betriebskosten, s.klasse) * arbeit, rules.economy.stunde);
     const system = s.phase === 'reise' ? w.stations[s.ziel].system : s.system;
+    if (s.vertrag && state.schema === 9) {
+      m_core_vertrag.fahrtStunde(state, rules, s, kosten, system);
+      continue; // Kosten kommen ausschliesslich aus der gebundenen Reserve.
+    }
     const besitzer = state.owners[s.owner];
     if (arbeit > 0 && s.owner === rules.economy.start.owner
       && (s.auftrag === 'jagd' || s.auftrag === 'eskorte' || s.auftrag === 'patrouille') && kosten > besitzer.cash) {
@@ -1458,6 +1474,7 @@ const imSystem = (state, owner, system, auftrag) => ids(state.ships).map((id) =>
 const seite = (rules, schiffe, fokus, rueckzug) => ({ schiffe: schiffe.map((s) => ({ einheit: s.klasse, hp: rules.combat.einheiten[s.klasse].hp })), fokus, rueckzug });
 
 function entfernen(state, rules, s) {
+  if (state.schema === 9 && s.vertrag) m_core_vertrag.fahrtVerlust(state, rules, s);
   // Verbliebene Fracht beim Schiffverlust vollständig aus der Warenbilanz buchen.
   // zerstoeren() entfernt zuvor bereits verkaufte oder verbuchte Ladung.
   for (const ware of ids(s.ladung)) {
@@ -1750,7 +1767,25 @@ function bestand(state) {
     }
     if (summe !== e.gezahlt || !Number.isSafeInteger(offen + e.rest))
       throw new Error('Unstimmige Vertragsbilanz: ' + id);
+    if (e.fahrt !== undefined) {
+      const f = e.fahrt, sh = state.ships[f.schiff];
+      if (!objekt(f) || typeof f.schiff !== 'string'
+        || !Number.isSafeInteger(f.start) || f.start < 0
+        || !Number.isSafeInteger(f.ende) || f.ende <= f.start
+        || !Object.hasOwn(state.stations, f.ziel)
+        || !Object.hasOwn(state.owners, e.empfaenger)
+        || (e.status === 'offen' && (!sh || sh.vertrag !== id
+          || sh.klasse !== 'frachter' || sh.owner !== e.zahlender))
+        || (e.status === 'geschlossen' && sh?.vertrag === id))
+        throw new Error('Ungueltiger Fahrtvertrag: ' + id);
+    }
     offen += e.rest;
+  }
+  for (const s of Object.values(state.ships)) {
+    if (!s.vertrag) continue;
+    const e = v.eintraege[s.vertrag];
+    if (!e || !e.fahrt || e.status !== 'offen' || e.fahrt.schiff !== s.id
+        || e.zahlender !== s.owner) throw new Error('Verwaister Schiffsvertrag: ' + s.id);
   }
   return offen;
 }
@@ -1795,7 +1830,65 @@ function abschliessen(state, id) {
   e.status = 'geschlossen';
   return true;
 }
-return { bestand, reservieren, bezahlen, abschliessen };
+// Die Basisreserve allein entscheidet nicht ueber einen Transport. Erst der
+// bestehende Core startet hier eine reale Fahrt mit originaler Routenzeit.
+function fahrtStart(state, rules, s, ziel, zeit) {
+  if (state.schema !== 9 || state.rulesVersion !== 15
+    || s.klasse !== 'frachter' || s.phase !== 'dock'
+    || s.vertrag || s.arbeit !== 0 || !Number.isSafeInteger(zeit) || zeit <= 0
+    || !Object.hasOwn(state.stations, ziel)
+    || !Number.isSafeInteger(state.tick + zeit)) return false;
+  const kosten = Math.ceil(zeit * rules.world.betriebskosten.frachter / rules.economy.stunde);
+  if (!istBetrag(kosten) || kosten <= 0) return false;
+  const system = rules.world.stations[ziel].system;
+  const empfaenger = rules.world.systems[system].fonds;
+  const id = reservieren(state, s.owner, empfaenger, kosten);
+  if (!id) return false;
+  state.vertraege.eintraege[id].fahrt = { schiff: s.id, start: state.tick, ende: state.tick + zeit, ziel };
+  s.vertrag = id;
+  return true;
+}
+// Nur unmittelbar vor erfolglosem Warenkauf: noch kein Tick und kein Lohn.
+function stornieren(state, s) {
+  if (!s.vertrag || s.phase !== 'dock' || s.arbeit !== 0) throw new Error('Fahrt bereits begonnen');
+  const id = s.vertrag;
+  delete s.vertrag;
+  if (!abschliessen(state, id)) throw new Error('Storno ohne Rueckerstattung');
+}
+function fahrtStunde(state, rules, s, kosten, system) {
+  const id = s.vertrag, v = state.vertraege.eintraege[id];
+  if (!v || v.status !== 'offen' || !v.fahrt || v.fahrt.schiff !== s.id
+      || !istBetrag(kosten) || v.empfaenger !== rules.world.systems[system].fonds)
+    throw new Error('Nicht gedeckte Frachterarbeit: ' + s.id);
+  if (kosten > 0) {
+    const beleg = 'leistung:flug:' + s.id + ':' + state.tick;
+    if (!bezahlen(state, id, beleg, kosten))
+      throw new Error('Frachterreserve zu gering: ' + s.id);
+    m_core_handel.buche(state, s.owner, 'kosten', kosten);
+  }
+  if (s.phase === 'dock') {
+    delete s.vertrag;
+    if (!abschliessen(state, id)) throw new Error('Fahrtabschluss ohne Rueckerstattung');
+  }
+}
+function fahrtVerlust(state, rules, s) {
+  // Noch nicht stundengenau verbuchte Minuten fallen sonst bei Zerstoerung weg.
+  const kosten = Math.floor(rules.world.betriebskosten.frachter * s.arbeit / rules.economy.stunde);
+  const system = s.phase === 'reise' ? rules.world.stations[s.ziel].system : s.system;
+  const id = s.vertrag;
+  // Keine automatische Erstattung der bereits geleisteten Arbeit.
+  if (kosten) {
+    const v = state.vertraege.eintraege[id];
+    if (!v || v.empfaenger !== rules.world.systems[system].fonds
+        || !bezahlen(state, id, 'leistung:verlust:' + s.id + ':' + state.tick, kosten))
+      throw new Error('Verlustarbeit ohne Finanzierung: ' + s.id);
+    m_core_handel.buche(state, s.owner, 'kosten', kosten);
+  }
+  delete s.vertrag;
+  if (!abschliessen(state, id)) throw new Error('Verlustabrechnung ohne Rueckerstattung');
+}
+return { bestand, reservieren, bezahlen, abschliessen,
+  fahrtStart, fahrtStunde, fahrtVerlust, stornieren };
 })();
 
 const m_core_hash = (() => {

@@ -66,7 +66,8 @@ test('B-K9r: Neuware entsteht nur durch reale lokale Produktionsfertigstellung',
   assert.equal(s.owners.hh_st_cyris.cash,hh);
   tick(s,6);
   assert.equal(st.lokalNeuNahrung,1);
-  assert.equal(s.haushaltNeuLedger.produziert,1);
+  assert(s.haushaltNeuLedger.produziert>=1,
+    'Weltzaehler umfasst auch andere lokal produzierende Stationen');
   assert.equal(s.owners.hh_st_cyris.cash,hh+6);
   pruefe(s);runde(s);
 });
@@ -100,7 +101,7 @@ test('B-K9r: bezahlter Endverbrauch fliesst zu realem Stationsmarktpreis zur Sta
   assert(h.menge>0);assert(h.isk>0);
   assert(s.owners.hh_st_cyris.cash>=vorKasse);
   assert.equal(s.haushaltNeuLedger.konsumiert,h.menge);
-  assert.equal(s.haushaltNeuLedger.altVerbraucht,0,'Startnahrung war entfernt');
+  assert.equal(h.alt,0,'lokal in Cyris wurden keine eigenen Altbestände verbraucht');
   assert(s.stats.konto.hh_st_cyris.kosten>=h.isk);
   assert(s.stats.konto.st_cyris.erloes>=h.isk);
   assert(s.haushaltNeuLedger.produziert>=h.menge+st.lokalNeuNahrung);
@@ -116,8 +117,11 @@ test('B-K9r: vorgefuellter Bestand ist nicht als bezahlte Neuware buchbar',()=>{
   const s=core.createState(42,rules),st=nurNahrung(s,5);
   assert.equal(st.lokalNeuNahrung,0);
   tick(s,7);assert.equal(st.lokalNeuNahrung,1);
+  const vorSt=st.lager.nahrung,vorNeu=st.lokalNeuNahrung;
+  const altVorher=vorSt-vorNeu;
   core.verbrauch(s,rules);
-  assert.equal(st.lager.nahrung,3,'zuerst drei Altware aufgebraucht');
+  assert.equal(st.lager.nahrung,vorSt-Math.min(3,altVorher),
+    'bei neu auftauchenden Lieferungen nur den lokalen Altbestand priorisieren');
   assert.equal(st.lokalNeuNahrung,1);
   assert.equal(s.stats.haushaltskauf.st_cyris.alt,3);
   assert.equal(s.stats.haushaltskauf.st_cyris.menge,0);

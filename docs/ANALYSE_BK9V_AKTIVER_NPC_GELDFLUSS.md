@@ -37,6 +37,42 @@ Die ursprünglichen 52 Nahrungseinheiten von Cyris werden im konservativen Herku
 
 **Engpass-Timing:** Seed42 erreicht am Tag 3 nur noch 23 ISK Stationsgeld und 53 fehlende Bedarfseinheiten am Tag; an Tag 5 fehlen kumulativ 197. Seed7 erreicht bereits Tag 2 nur 5 ISK, an Tag 3 werden 72 weitere Einheiten pro Tag nicht bedient; kumulativ bis Tag5 sind es 251. Das bedeutet keine auf Dauer finanzierte Versorgung trotz tatsächlicher Lieferungen, vorhandener Schiffe und ursprünglicher Startlager.
 
+## Akteursgenaue Kosten und Gegenkonten, Seed42/7 bis Tag5
+
+Die nachstehende Auswahl ist **nicht** die gesamte Weltbilanz, sondern eine nach Original-Konto und Zahlungsart getrennte Erklärung; alle Zahlen sind tatsächlich gebucht und kumuliert. Sie sind **keine einheitlichen Nahrungsvollkosten**.
+
+| Echte Buchung in ISK | Seed42 | Seed7 |
+|---|---:|---:|
+| NPC1: Frachterflugkosten aus gebundener Reserve | 5.305 | 5.873 |
+| NPC1: Handelsgebühren | 955 | 925 |
+| NPC1: zusätzlicher regulärer Schiffs-Betrieb | 270 | 100 |
+| NPC1: Kaufzahlungen für Frachterhüllen (ohne gesonderte Gebühren) | 1.500 | 2.250 |
+| NPC1: Werftfonds-Flottenzuschuss, **Einnahme** | 0 | 693 |
+| NPC2: Frachterflugkosten aus gebundener Reserve | 4.849 | 6.331 |
+| NPC2: Handelsgebühren | 792 | 817 |
+| NPC3: tatsächlich gezahlte Miner-Betriebskosten | 7.516 | 9.334 |
+| NPC3: tatsächlich gekaufte Minerhüllen | 1.440 | 5.640 |
+| NPC3: Handelsgebühren | 777 | 1.010 |
+| NPC3: NPC-Überschussabgabe an Fonds | 8.977 | 7.909 |
+
+Die **10.154/12.204 ISK** in den oben addierten NPC1-/NPC2-Flugkosten sind tatsächliche Flugleistungen und liegen bei den Händlerkonten als Aufwand und bei den jeweiligen Zielfonds als Einnahme. Darin enthaltene Leerfahrten werden nicht mit einer fiktiven verkauften Wareneinheit verrechnet. Kauf einer neuen Hülle ist **Investitionsabfluss**, nicht nochmals zusätzliche Lohnzahlung. Die Handelsgebühr besitzt ihr eigenes Empfängerkonto; sie ist nicht ohne Weiteres eine globale ISK-Senke. NPC3 erhält Erlöse aus an Stationen verkauftem Eis/Erz/Kristall/Silizium; seine **8.977/7.909 ISK** Überschussabgaben verschieben angesammelte ISK von NPC3 in Fonds und sind weder Rohstoffverbrauch noch neue Kaufkraft aus dem Nichts.
+
+### Cyris-Kassenidentität im aktiven Markt
+
+| Cyris, 5 Tage kumuliert, ISK | Seed42 | Seed7 |
+|---|---:|---:|
+| Anfangskasse | 4.000 | 4.000 |
+| Haushalte: **bezahlte neue Nahrung** | +5.737 | +3.094 |
+| Medizinverkäufe | +5.250 | +3.077 |
+| Sonstige Warenverkäufe (Bauteile, Eis, Kristall) | +1.467 | +1.401 |
+| Bezahlte Fabrikarbeit (alle originalen Cyris-Rezepte) | −5.776 | −3.380 |
+| Gekauftes Eis | −3.160 | −1.702 |
+| Gekaufte Kristalle | −2.744 | −2.262 |
+| Weitere Rohstoff-/Warenkäufe | −4.751 | −4.223 |
+| **Endkasse** | **23** | **5** |
+
+Kassenidentität: Seed42 `4.000 + 5.737 + 5.250 + 1.467 − 5.776 − 3.160 − 2.744 − 4.751 = 23`; Seed7 `4.000 + 3.094 + 3.077 + 1.401 − 3.380 − 1.702 − 2.262 − 4.223 = 5`. Damit ist die **aktive** Cyris-Station einschließlich Nicht-Nahrungs-Rezepten bezahlt abgerechnet. Diese Station ist wegen weiterer Warenströme nicht mit dem isolierten B-K9u-Rezeptbetrieb gleichzusetzen.
+
 ## Die 693-ISK-Finanzhilfe ist ein eigenständiger Regelblocker
 
 Der bestehende Original-Core-Pfad `m_core_schiffbau.zuschuss` überweist bei fehlender Hülle und unzureichender Eigentümerkasse nur bei ausreichendem Werftfondsbestand die Differenz in eine NPC-Eigentümerkasse. In Seed7 treten nach Tag2 **693 ISK** des alten Mechanismus auf; er verändert die Konten real, aber **nicht** `minted`. Er ist deshalb weder echte marktwirtschaftlich verdiente Einnahme noch freie neue ISK. Der neue Test hält einen eigenen Gegenbuchungsbeleg und stimmt dessen kumulierten Betrag mit `state.stats.zuschuss` ab. **Der Test ändert, sperrt oder ersetzt diesen Mechanismus nicht.**

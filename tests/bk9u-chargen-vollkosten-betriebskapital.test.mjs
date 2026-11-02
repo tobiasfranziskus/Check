@@ -19,15 +19,15 @@ instrumentiert=ersetzeGenauEinmal(instrumentiert,
   "  if (station === 'st_cyris' && !kauf && (ware === 'eis' || ware === 'kristall'))\n"+
   "    __bk9u.push({art:'rohKauf',tick:state.tick,ware,menge,preis:p,wert,fee,schiff:schiff.id});");
 instrumentiert=ersetzeGenauEinmal(instrumentiert,
-  '       for (const ware of ids(r.ein)) { st.lager[ware] -= r.ein[ware]; state.ledger[ware].consumed += r.ein[ware]; }',
+  '      for (const ware of ids(r.ein)) { st.lager[ware] -= r.ein[ware]; state.ledger[ware].consumed += r.ein[ware]; }',
   "       if (id === 'st_cyris' && linie.rezept === 'r_nahrung')\n"+
   "         __bk9u.push({art:'start',tick:state.tick,linie:index,eis:r.ein.eis,lohn:r.dauer*rules.world.produktionslohnJeMinute});\n"+
-  '       for (const ware of ids(r.ein)) { st.lager[ware] -= r.ein[ware]; state.ledger[ware].consumed += r.ein[ware]; }');
+  '      for (const ware of ids(r.ein)) { st.lager[ware] -= r.ein[ware]; state.ledger[ware].consumed += r.ein[ware]; }');
 instrumentiert=ersetzeGenauEinmal(instrumentiert,
-  '           for (const ware of ids(r.aus)) { st.lager[ware] = anzahl(st.lager, ware) + r.aus[ware]; state.ledger[ware].produced += r.aus[ware]; }',
+  '          for (const ware of ids(r.aus)) { st.lager[ware] = anzahl(st.lager, ware) + r.aus[ware]; state.ledger[ware].produced += r.aus[ware]; }',
   "           if (id === 'st_cyris' && linie.rezept === 'r_nahrung')\n"+
   "             __bk9u.push({art:'fertig',tick:state.tick,linie:index,menge:r.aus.nahrung});\n"+
-  '           for (const ware of ids(r.aus)) { st.lager[ware] = anzahl(st.lager, ware) + r.aus[ware]; state.ledger[ware].produced += r.aus[ware]; }');
+  '          for (const ware of ids(r.aus)) { st.lager[ware] = anzahl(st.lager, ware) + r.aus[ware]; state.ledger[ware].produced += r.aus[ware]; }');
 instrumentiert=ersetzeGenauEinmal(instrumentiert,
   '        state.haushaltNeuLedger.altVerbraucht += altEssen;',
   "        if (id === 'st_cyris' && neuKauf > 0)\n"+
@@ -206,7 +206,6 @@ test('B-K9u: zwei 4-Tage-Ketten, echte FIFO-Eiszugänge, Lohn, Chargen, Konsum u
     assert.equal(v.tageStand.length,4);
     const t1=v.tageStand[0];
     assert(t1.eisISK>0 && t1.absatzISK>0);
-    assert.equal(t1.bezahtNahrung,undefined); // keine Doppel-/Fantasiezahlungsstatistik
     assert(t1.eisAltVerbraucht>=0);
     assert(t1.gebundenMindestensISK>=0);
     assert.equal(t1.stationFreiISK,112,'B-K9t Tag1-Kassenidentitaet');

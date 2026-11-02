@@ -22,9 +22,8 @@ one("          if (r.aus.nahrung) m_core_herkunft.erzeugen(state, rules, id, r.a
 one("  buche(state, schiff.owner, 'kosten', fee);",
     "  buche(state, schiff.owner, 'kosten', fee);"+
     "  __bk10r_trade(state,schiff,station,ware,menge,kauf,wert,fee);");
-one("  delete state.ships[s.id];",
-    "  __bk10r_loss(state,s);"+
-    "  delete state.ships[s.id];");
+one("  delete state.ships[s.id];\n  delete state.stats.verkaeufe[s.id];\n  zaehle(state.stats.verluste",
+    "  __bk10r_loss(state,s);\n  delete state.ships[s.id];\n  delete state.stats.verkaeufe[s.id];\n  zaehle(state.stats.verluste");
 
 let active=null,core;
 function material(state,id,recipe,r,station) {

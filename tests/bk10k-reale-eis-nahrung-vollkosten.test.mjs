@@ -54,11 +54,18 @@ einmal("      st.lager[ware] = da - n; state.ledger[ware].consumed += n;",
 einmal("    buche(state, s.owner, 'kosten', n);",
   "    buche(state, s.owner, 'kosten', n);\n"+
   "    __bk10k_minerKosten(s,kosten,n);");
+einmal("    f.cash -= n; o[id].cash += n;",
+  "    __bk10k_fondsZufluss(id,n,'mindest');\n"+
+  "    f.cash -= n; o[id].cash += n;");
+einmal("    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;",
+  "    __bk10k_fondsZufluss(arm,f.cash-w.fondsObergrenze,'ueberschuss');\n"+
+  "    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;");
 const journal=[],cfg={mode:null,ship:null,order:null,delivered:0,pay:0,fees:0,trace:null};
 function traceNeu(){
   return {eisLots:[],foodLots:[],offen:new Map(),verkauft:[],
     eisVonMiner:0,eisAnkaufISK:0,produktion:0,lokalGegessen:0,
-    minerArbeitBezahlt:0,minerArbeitSoll:0,minerVerkaeufe:0};
+    minerArbeitBezahlt:0,minerArbeitSoll:0,minerVerkaeufe:0,
+    nadirFondsMindestISK:0,nadirFondsUeberschussISK:0};
 }
 const tiefKopie=(x)=>JSON.parse(JSON.stringify(x));
 function quelleTrade(state,schiff,station,ware,menge,kauf,wert){
@@ -97,6 +104,12 @@ function quelleKonsum(menge){
   const t=cfg.trace;
   for(let i=0;i<menge;i++)assert(t.foodLots.shift(),'Konsum nur aus fertig produzierter Ware');
   t.lokalGegessen+=menge;
+}
+function nadirFondsZufluss(id,isk,art){
+  if(!cfg.trace||id!=='st_nadir')return;
+  assert(Number.isSafeInteger(isk)&&isk>0);
+  if(art==='mindest')cfg.trace.nadirFondsMindestISK+=isk;
+  else cfg.trace.nadirFondsUeberschussISK+=isk;
 }
 function quelleMinerKosten(sh,kosten,gezahlt){
   if(!cfg.trace||sh.id!=='sh009')return;
@@ -138,8 +151,8 @@ function direkt(s,rules,id,ware,bedarf){
   cfg.delivered+=n;cfg.pay+=geld;cfg.fees+=fee;
   return n;
 }
-const modules=new Function('__bk10k_hold','__bk10k_direkt','__bk10k_journal','__bk10k_quelleTrade','__bk10k_quelleStart','__bk10k_quelleFertig','__bk10k_quelleKonsum','__bk10k_minerKosten',js+
-  ';return {core:m_core_index,base:m_data_rules.RULES,herkunft:m_core_herkunft,route:m_core_route.route};')(halten,direkt,journal,quelleTrade,quelleStart,quelleFertig,quelleKonsum,quelleMinerKosten);
+const modules=new Function('__bk10k_hold','__bk10k_direkt','__bk10k_journal','__bk10k_quelleTrade','__bk10k_quelleStart','__bk10k_quelleFertig','__bk10k_quelleKonsum','__bk10k_minerKosten','__bk10k_fondsZufluss',js+
+  ';return {core:m_core_index,base:m_data_rules.RULES,herkunft:m_core_herkunft,route:m_core_route.route};')(halten,direkt,journal,quelleTrade,quelleStart,quelleFertig,quelleKonsum,quelleMinerKosten,nadirFondsZufluss);
 core=modules.core;
 const {base,herkunft,route}=modules;
 assert.equal(base.schema,8);assert.equal(base.rulesVersion,14);
@@ -275,6 +288,8 @@ function run(saved,seed,mode,ausgabe=true,angefragt=24){
   const k=ev.filter(x=>x.art==='handel'&&x.kauf&&x.station===S&&x.ware==='nahrung');
   const v=ev.filter(x=>x.art==='handel'&&!x.kauf&&x.station===Z&&x.ware==='nahrung');
   const fl=ev.filter(x=>x.art==='flug');
+  r.fondsNadirErhaltenMinimumISK=cfg.trace.nadirFondsMindestISK;
+  r.fondsNadirErhaltenUeberschussISK=cfg.trace.nadirFondsUeberschussISK;
   r.eisVorverkaufMenge=cfg.trace.eisVonMiner;
   r.eisOriginalAnkaufISK=cfg.trace.eisAnkaufISK;
   r.eisOriginalVerkaeufe=cfg.trace.minerVerkaeufe;
@@ -338,6 +353,8 @@ test('B-K10k: neu gefördertes Eis und bezahlte Nahrung in echter Lieferung',()=
       'dieselben verbuchten Rohstoff- und Fabrikkosten fuer beide Arme');
     assert(d.quellEisIstAnkaufISK>0,'tatsaechlicher Eisankauf nicht nur angenommener Preis');
     assert(d.eisMinerOriginalGezahltISK>0,'Nadir-Miner wirklich bezahlt');
+    assert(d.fondsNadirErhaltenMinimumISK>0,
+      'Nadir erhaelt nachweisbar vorhandenes Systemfonds-Geld');
     assert.equal(b.einkaufISK,d.einkaufISK,'gleicher realer Quelleinkauf');
     assert.equal(b.flugGezahltISK,d.flugGezahltISK,'gleiche bezahlte Fahrt');
     assert.equal(d.stationsAbsatzMenge,0,'bestellte Lieferung verwendet keine Stationsankaufkasse');

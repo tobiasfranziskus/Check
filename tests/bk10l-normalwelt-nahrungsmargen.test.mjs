@@ -35,7 +35,7 @@ const sum=arr=>arr.reduce((n,x)=>n+x,0);
 const world={};
 let current=null;
 const rec=(type)=>({art:type,count:0,umsatz:0,knownCount:0,knownRevenue:0,knownWage:0,iceCost:0,prodWage:0,margin:0,
-  loss:0,positive:0,negative:0,unknownCount:0,
+  loss:0,positive:0,negative:0,zero:0,unknownCount:0,
   cashByOwner:{},prices:{}});
 function reportLot(aggregate,lot,receipt){
   aggregate.count++;aggregate.umsatz+=receipt;
@@ -48,6 +48,7 @@ function reportLot(aggregate,lot,receipt){
       const m=receipt-lot.wage-lot.iceCost;aggregate.margin+=m;
       if(m<0){aggregate.negative++;aggregate.loss+=m}
       else if(m>0)aggregate.positive++;
+      else aggregate.zero++;
     }else aggregate.unknownCount++;
   }else aggregate.unknownCount++;
 }
@@ -186,8 +187,8 @@ function run(seed,durationHours=72,ausgabe=true){
       'kontrollierbarer Zahlungsbeitrag nur tatsaechlich vollbelegter Lose');
     assert.equal(x.knownCount+x.unknownCount,x.count,
       'unbelegte Anfangswerte nicht als Nullkosten erfassen');
-    assert.equal(x.positive+x.negative,x.knownCount,
-      'jedes kostenbelegte Los ist entweder positiv oder negativ');
+    assert.equal(x.positive+x.negative+x.zero,x.knownCount,
+      'jedes kostenbelegte Los ist profitabel, verlustreich oder exakt ausgeglichen');
   }
   const res={seed,hours:durationHours,iceStartOriginal:100,foodStartOriginal:52,
     firstIceMarketPrice:originalIcePreis,firstFoodMarketPrice:originalFoodPreis,

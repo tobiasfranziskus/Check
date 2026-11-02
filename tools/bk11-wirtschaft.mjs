@@ -57,14 +57,14 @@ function engine(src,watch=null,noRescue=false,arrival=false) {
     // Ankunft: tatsächlich geleistete Flugminuten aus dem laufenden Escrow zahlen,
     // kumulierte Stundenrundung erhalten, dann Vertrag schließen.
     once("    s.phase = 'dock'; s.ziel = null; s.ankunft = state.tick;\n    entladen(state, rules, s);",
-      "    if (state.schema===9 && s.klasse==='frachter' && s.vertrag) {"
+      "    s.phase='dock'; s.ziel=null; s.ankunft=state.tick;\n    if (state.schema===9 && s.klasse==='frachter' && s.vertrag) {"
       +" const vorher=s.d1Bereits||0, arbeit=s.arbeit;"
       +" const tarif=rules.world.betriebskosten.frachter, stunde=rules.economy.stunde;"
       +" const betrag=Math.floor((vorher+arbeit)*tarif/stunde)-Math.floor(vorher*tarif/stunde);"
       +" if(watch)watch.work(s,arbeit,rules);"
       +" m_core_vertrag.fahrtStunde(state,rules,s,betrag,s.system);"
       +" s.d1Bereits=vorher+arbeit; s.arbeit=0; }"
-      +"\n    s.phase = 'dock'; s.ziel = null; s.ankunft = state.tick;\n    entladen(state, rules, s);");
+      +"\n    entladen(state, rules, s);");
     const arbeitNeedle=watch
       ? 'const s = state.ships[id]; const arbeit = s.arbeit; watch.work(s,arbeit,rules); s.arbeit = 0;'
       : 'const s = state.ships[id]; const arbeit = s.arbeit; s.arbeit = 0;';

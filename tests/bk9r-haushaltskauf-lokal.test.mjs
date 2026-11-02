@@ -190,3 +190,30 @@ test('B-K9r: 13 Seeds je vier Stunden, Audits, Hashes und Save/Load',()=>{
     assert.deepEqual(work(),work(),'gleicher Determinismus Seed '+seed);
   }
 });
+
+
+test('B-K9r: zwei 24-Stunden-Kassenlaeufe zeigen bezahlte Nachfrage und Fehlbedarf ungeschoent',()=>{
+  for(const seed of [42,7]){
+    const s=core.createState(seed,rules);
+    const st=nurNahrung(s,0);
+    for(let i=0;i<24;i++){
+      tick(s,60);
+      pruefe(s);
+      if(i%6===0)runde(s);
+    }
+    const h=s.stats.haushaltskauf.st_cyris;
+    const lohn=s.stats.konto.hh_st_cyris.erloes;
+    assert.equal(s.owners.hh_st_cyris.cash,lohn-h.isk,
+      'tatsaechliches Haushaltseinkommen minus Kaufzahlungen = freie Haushaltskasse');
+    assert(h.isk>0 && h.menge>0,'mindestens ein bezahlter echter Nahrungsverbrauch');
+    assert(st.lokalNeuNahrung>=0);
+    assert(h.fehlend>=0);
+    pruefe(s);runde(s);
+    console.log('B-K9r 24h Zahlungsbefund',JSON.stringify({
+      seed,lohn,haushaltAusgaben:h.isk,haushaltKasse:s.owners.hh_st_cyris.cash,
+      neuGekauft:h.menge,altVerbraucht:h.alt,nichtGedeckt:h.fehlend,
+      neuImLager:st.lokalNeuNahrung,stationKasse:s.owners.st_cyris.cash,
+      migriertVonStartlager:false,
+    }));
+  }
+});

@@ -28,7 +28,7 @@ B-K10p verfolgt deshalb die **originale, autonome Werftlieferkette**: gefördert
 | Aldera kann mit **vorhandenem** Stationsgeld und wirklichem Lagerplatz noch Silizium aufnehmen | **31** | **65** |
 | Aldera-Kasse | 1.374 ISK | 3.702 ISK |
 | An Dravos und Nadir real zum Verkauf stehendes Silizium | **je 65** | **je 65** |
-| Zusätzlich auf mindestens einem existierenden NPC-Siliziummier beladene Menge | **100** | **100** |
+| Zusätzlich auf mindestens einem existierenden NPC-Silizium-Miner beladene Menge | **100** | **100** |
 | Erfolgreich fertiggestellte Bauteile im ganzen Lauf | **480** | **347** |
 | Fertige neue Frachter im ganzen Lauf | **8** | **5** |
 | Fertige neue Miner im ganzen Lauf | **13** | **6** |

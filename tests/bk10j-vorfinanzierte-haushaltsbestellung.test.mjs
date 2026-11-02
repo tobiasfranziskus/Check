@@ -245,6 +245,7 @@ test('B-K10j: Seed42 identischer Ausgangsspielstand und deterministische Auftrag
 });
 
 test('B-K10j: vorfinanzierte, aber nie ausgelieferte Bestellung wird voll erstattet',()=>{
+  cfg.mode=null;cfg.ship=null;cfg.order=null;cfg.delivered=0;
   const s=core.createState(42,rules);
   const anfang=s.owners[H].cash;
   // Fuer diese negative Vertragsprobe stammt das Guthaben aus real bezahlter

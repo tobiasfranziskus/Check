@@ -7,13 +7,12 @@ import test from 'node:test';
 
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const original=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
-const marker='  if (!reicht) return false;\n  const d = kauf ? menge : -menge;';
+const marker='  if (!reicht) return false;';
 assert.equal(original.split(marker).length,2,'einziges Core-Handelsbuchungs-Gate');
 const instrument=original.replace(marker,[
   '  if (!reicht) return false;',
   '  __beobachtet.push({tick:state.tick,station,owner:schiff.owner,ware,menge,kauf,',
   '    preis:p,wert,fee});',
-  '  const d = kauf ? menge : -menge;',
 ].join('\n'));
 const {core,grund,handelsbelege}=new Function('const __beobachtet=[];\n'+instrument+
   ';return {core:m_core_index,grund:m_data_rules.RULES,handelsbelege:__beobachtet};')();

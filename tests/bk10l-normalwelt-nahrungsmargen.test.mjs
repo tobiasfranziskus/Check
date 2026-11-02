@@ -157,8 +157,8 @@ function audit(s,t){
   assert.equal(t.ice.length,s.stations.st_nadir.lager.eis,'Eis FIFO gleich Core');
   assert.equal(t.food.length,s.stations.st_nadir.lager.nahrung,'Nahrung FIFO gleich Core');
   assert.equal(t.production,s.stats.rezepte.st_nadir,'Original Nadir-Nahrungszyklen');
-  assert.equal(t.production,t.producedCostKnown+t.producedCostUnknown,
-    'alle Nahrungszyklen zugeordnet');
+  assert.equal(t.production+t.opened.size,t.producedCostKnown+t.producedCostUnknown,
+    'begonnene, noch offene und abgeschlossene Nahrungszyklen exakt zugeordnet');
   assert(core.audit(s).ok);
 }
 function run(seed,durationHours=72,ausgabe=true){

@@ -698,6 +698,16 @@ function createState(seed, rules) {
     stats.rezepte[id] = 0; stats.mangel[id] = {};
     for (const ware of ids(cfg.verbrauch)) stats.mangel[id][ware] = 0;
   }
+  // Explizite Regel15-Probe: stationaere Haushalte beginnen bei 0 ISK.
+  // Sie erhalten nur wirklich aus bestehenden Stationskassen bezahlte Arbeit.
+  if (rules.schema === 9 && rules.rulesVersion === 15 && w.produktionslohnJeMinute > 0) {
+    for (const id of ids(stations)) {
+      const hh = 'hh_' + id;
+      owners[hh] = { id: hh, kind: 'household', cash: 0 };
+      stats.konto[hh] = { erloes: 0, kosten: 0 };
+      stats.abgabe[hh] = 0;
+    }
+  }
   const ledger = {};
   for (const ware of ids(e.waren)) {
     let initial = 0;
@@ -922,6 +932,11 @@ function execute(state, cmd, rules) {
       const s = state.ships[cmd.schiff];
       const station = rules.world.systems[s.system].station;
       const st = state.stations[station];
+      if (state.schema === 9 && (cmd.modul === 'fabrik' || cmd.modul === 'werft')
+          && st.module[cmd.modul] === 1 && st.linien.some((l) =>
+            l.herkunft === 'spieler' && rules.economy.rezepte[l.rezept].ort === cmd.modul
+            && l.vertrag))
+        return { ok: false, type: cmd.type, reason: 'finanzierte Produktionslinie noch aktiv' };
       st.module[cmd.modul] -= 1;
       if (!st.module[cmd.modul]) delete st.module[cmd.modul];
       s.ladung[cmd.modul] = (s.ladung[cmd.modul] || 0) + 1;
@@ -944,6 +959,7 @@ function execute(state, cmd, rules) {
       const ort = rules.economy.rezepte[cmd.rezept].ort;
       const idx = st.linien.findIndex((l) => rules.economy.rezepte[l.rezept].ort === ort);
       if (idx < 0) return { ok: false, type: cmd.type, reason: 'keine passende Produktionslinie vorhanden' };
+      if (st.linien[idx].vertrag) return { ok: false, type: cmd.type, reason: 'finanzierter Produktionsauftrag noch aktiv' };
       st.linien[idx] = { rezept: cmd.rezept, rest: 0, herkunft: st.linien[idx].herkunft };
       m_core_state.protokolliere(state, 'dienst', `${cmd.station}: Rezept auf ${cmd.rezept} umgestellt`, cmd.owner, cmd.station);
       break;
@@ -1281,16 +1297,34 @@ return { entscheidung };
 
 const m_core_produktion = (() => {
 const { ids, anzahl } = m_core_zahl;
-const { obergrenze } = m_core_handel;
+const { obergrenze, buche } = m_core_handel;
 function produktion(state, rules) {
   const rezepte = rules.economy.rezepte;
+  const bezahlt = state.schema === 9 && state.rulesVersion === 15
+    && Number.isSafeInteger(rules.world.produktionslohnJeMinute)
+    && rules.world.produktionslohnJeMinute > 0;
   for (const id of ids(state.stations)) {
     const st = state.stations[id];
-    for (const linie of st.linien) {
+    for (let index = 0; index < st.linien.length; index++) {
+      const linie = st.linien[index];
       const r = rezepte[linie.rezept];
       if (linie.rest > 0) {
         linie.rest -= 1;
         if (linie.rest === 0) {
+          if (bezahlt) {
+            // Der Core bestaetigt hier den vollstaendig ausgefuehrten
+            // Produktionszyklus. Test/UI duerfen Lohn nicht frei auszahlen.
+            const vertrag = linie.vertrag;
+            const betrag = r.dauer * rules.world.produktionslohnJeMinute;
+            if (!vertrag || !m_core_vertrag.bezahlen(state, vertrag,
+                'leistung:produktion:' + id + ':' + index + ':' + state.tick, betrag))
+              throw new Error('Produktionsarbeit ohne finanzierte Leistung: ' + id);
+            buche(state, id, 'kosten', betrag);
+            buche(state, 'hh_' + id, 'erloes', betrag);
+            if (!m_core_vertrag.abschliessen(state, vertrag))
+              throw new Error('Produktionsauftrag kann nicht geschlossen werden: ' + id);
+            delete linie.vertrag;
+          }
           for (const ware of ids(r.aus)) { st.lager[ware] = anzahl(st.lager, ware) + r.aus[ware]; state.ledger[ware].produced += r.aus[ware]; }
           state.stats.rezepte[id] += 1;
         }
@@ -1299,6 +1333,17 @@ function produktion(state, rules) {
       const eingaben = ids(r.ein).every((w) => anzahl(st.lager, w) >= r.ein[w]);
       const platz = ids(r.aus).every((w) => anzahl(st.lager, w) + r.aus[w] <= obergrenze(state, rules, id, w));
       if (!eingaben || !platz) continue;
+      if (bezahlt) {
+        const lohn = r.dauer * rules.world.produktionslohnJeMinute;
+        if (!Number.isSafeInteger(lohn) || lohn <= 0)
+          throw new Error('Ungueltiger Produktionslohn: ' + id);
+        const idVertrag = m_core_vertrag.reservieren(state, id, 'hh_' + id, lohn);
+        if (!idVertrag) continue; // kein Geld: keine Arbeit und kein Rohstoffverbrauch
+        state.vertraege.eintraege[idVertrag].produktion = {
+          station: id, linie: index, rezept: linie.rezept, start: state.tick,
+        };
+        linie.vertrag = idVertrag;
+      }
       for (const ware of ids(r.ein)) { st.lager[ware] -= r.ein[ware]; state.ledger[ware].consumed += r.ein[ware]; }
       linie.rest = r.dauer;
     }
@@ -1752,6 +1797,12 @@ function bestand(state) {
   const v = state.vertraege;
   if (!objekt(v) || !Number.isSafeInteger(v.naechster) || v.naechster < 1 || !objekt(v.eintraege))
     throw new Error('Vertragsbuch fehlt oder ist ungueltig');
+  const archiv = v.archiv ?? { anzahl: 0, budget: 0, gezahlt: 0, erstattet: 0 };
+  if (!['anzahl','budget','gezahlt','erstattet'].every((k) => istBetrag(archiv[k]))
+      || archiv.budget !== archiv.gezahlt + archiv.erstattet
+      || !Number.isSafeInteger(archiv.anzahl + Object.keys(v.eintraege).length)
+      || archiv.anzahl + Object.keys(v.eintraege).length !== v.naechster - 1)
+    throw new Error('Ungueltiges Vertragsarchiv');
   let offen = 0;
   for (const id of Object.keys(v.eintraege).sort()) {
     const e = v.eintraege[id], nummer = Number(id.slice(1));
@@ -1787,7 +1838,26 @@ function bestand(state) {
         || (e.status === 'geschlossen' && sh?.vertrag === id))
         throw new Error('Ungueltiger Fahrtvertrag: ' + id);
     }
+    if (e.produktion !== undefined) {
+      const p = e.produktion, st = state.stations[p.station];
+      const linie = st && st.linien[p.linie];
+      if (!objekt(p) || !Number.isSafeInteger(p.linie) || p.linie < 0
+        || !Number.isSafeInteger(p.start) || p.start < 0
+        || !linie || p.rezept !== linie.rezept || e.zahlender !== p.station
+        || e.empfaenger !== 'hh_' + p.station
+        || (e.status === 'offen' && (linie.vertrag !== id || linie.rest <= 0))
+        || (e.status === 'geschlossen' && linie.vertrag === id))
+        throw new Error('Ungueltiger Produktionsvertrag: ' + id);
+    }
     offen += e.rest;
+  }
+  for (const st of Object.values(state.stations)) {
+    for (const l of st.linien) {
+      if (!l.vertrag) continue;
+      const e = v.eintraege[l.vertrag];
+      if (!e || !e.produktion || e.status !== 'offen')
+        throw new Error('Verwaister Produktionsvertrag');
+    }
   }
   for (const s of Object.values(state.ships)) {
     if (!s.vertrag) continue;
@@ -1836,6 +1906,24 @@ function abschliessen(state, id) {
   e.erstattet += e.rest;
   e.rest = 0;
   e.status = 'geschlossen';
+  // Abgeschlossene historische Einzelbelege begrenzen: die ISK-Summe bleibt
+  // ueber ein separates, speicherbares Summenarchiv auditierbar.
+  const geschlossen = Object.keys(state.vertraege.eintraege).filter((k) =>
+    state.vertraege.eintraege[k].status === 'geschlossen');
+  if (geschlossen.length > 128) {
+    geschlossen.sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
+    const weg = geschlossen[0], alt = state.vertraege.eintraege[weg];
+    const archiv = state.vertraege.archiv ||= {
+      anzahl: 0, budget: 0, gezahlt: 0, erstattet: 0,
+    };
+    for (const [k, n] of [['anzahl', 1], ['budget', alt.budget],
+      ['gezahlt', alt.gezahlt], ['erstattet', alt.erstattet]]) {
+      if (!Number.isSafeInteger(archiv[k] + n))
+        throw new Error('Vertragsarchiv uebergelaufen');
+      archiv[k] += n;
+    }
+    delete state.vertraege.eintraege[weg];
+  }
   return true;
 }
 // Die Basisreserve allein entscheidet nicht ueber einen Transport. Erst der

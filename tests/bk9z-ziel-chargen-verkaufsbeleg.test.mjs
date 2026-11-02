@@ -123,7 +123,7 @@ function build(modus){
   js=unique(js,startAnker,startAnker+"\n"+
     "  if (['npc1','npc2'].includes(s.owner))\n"+
     "    __events.push({art:'start',tick:state.tick,owner:s.owner,schiff:s.id,"+
-      "ware:cargoWert(s),ziel,zeit:r.zeit});");
+      "ware:cargoWert(s),ziel,zeit:r.zeit,vertrag:s.vertrag});");
   // Die kleine pure Testfunktion wird im selben Abschluss wie m_core_entscheidung bereitgestellt.
   js=unique(js,
     'const m_core_entscheidung = (() => {',
@@ -132,13 +132,13 @@ function build(modus){
   js=unique(js,flightAnker,
     "    m_core_handel.buche(state, s.owner, 'kosten', kosten);\n"+
     "    if (['npc1','npc2'].includes(s.owner)) __events.push({art:'flug',tick:state.tick,"+
-      "owner:s.owner,schiff:s.id,betrag:kosten});\n"+
+      "owner:s.owner,schiff:s.id,betrag:kosten,vertrag:id});\n"+
     "  }\n  if (s.phase === 'dock') {");
   const lossAnker="    m_core_handel.buche(state, s.owner, 'kosten', kosten);\n  }\n  if (!abschliessen(state, id))";
   js=unique(js,lossAnker,
     "    m_core_handel.buche(state, s.owner, 'kosten', kosten);\n"+
     "    if (['npc1','npc2'].includes(s.owner)) __events.push({art:'flug',tick:state.tick,"+
-      "owner:s.owner,schiff:s.id,betrag:kosten,verlust:true});\n"+
+      "owner:s.owner,schiff:s.id,betrag:kosten,vertrag:id,verlust:true});\n"+
     "  }\n  if (!abschliessen(state, id))");
   const subsidy="  f.cash -= n; state.owners[owner].cash += n; state.stats.zuschuss += n; return n;";
   js=unique(js,subsidy,
@@ -207,15 +207,24 @@ function zielBelege(){
   function losliste(s){if(!lose.has(s))lose.set(s,[]);return lose.get(s);}
   function erfassen(e){
     if(e.art==='start'){
-      fluege.set(e.schiff,{tick:e.tick,ware:e.ware,id:null});
+      assert(e.vertrag,'erfasster Original-Core-Flug hat echten Vertragsbeleg');
+      const raum=Object.fromEntries(e.ware);
+      const schnapp=[];
+      // Die Ladung beim Abflug ist fuer die Zuordnung massgeblich:
+      // Der Original-Core kann Ware VOR der spaeteren Stundenbuchung verkaufen.
+      for(const l of losliste(e.schiff)){
+        const n=Math.min(l.menge,raum[l.ware]||0);
+        if(n>0){schnapp.push({t:l.t,menge:n});raum[l.ware]-=n;}
+      }
+      fluege.set(e.vertrag,{tick:e.tick,ware:e.ware,id:null,lose:schnapp});
     }else if(e.art==='zielwahl'){
       const vor=offen.get(e.schiff);
       if(vor && !vor.gekauft)vor.ueberplant=true;
       const gleich=Array.from(offen.values()).filter(x=>x!==vor && !x.gekauft
         && !x.ueberplant && x.ziel===e.ziel && x.ware===e.ware);
       ueberlappung+=gleich.length;
-      const f=fluege.get(e.schiff);
-      assert(f && !f.ware.length && f.tick===e.tick,'Ziel nur mit echtem Leerflug');
+      const f=fluege.get(e.vertrag);
+      assert(f && !f.ware.length && f.tick===e.tick,'Ziel nur mit echtem Vertrag-Leerflug');
       const t={id:ziele.length+1,schiff:e.schiff,tick:e.tick,ziel:e.ziel,
         von:e.von,ware:e.ware,erwartet:e.menge,absatz:e.absatz,
         prognose:e.prognoseGewinn,budget:e.positionKosten,
@@ -256,22 +265,18 @@ function zielBelege(){
       }
     }else if(e.art==='flug'){
       gesamtFlug+=e.betrag;
-      const f=fluege.get(e.schiff);
-      if(f && f.id){
+      const f=fluege.get(e.vertrag);
+      assert(f,'jede Original-Flugstundenbuchung referenziert einen erfassten Vertragsstart');
+      if(f.id){
         const t=ziele[f.id-1];
         t.positionGezahlt+=e.betrag;zugeordnetFlug+=e.betrag;
-      }else if(f && f.ware.length){
+      }else if(f.ware.length){
         const gesamt=f.ware.reduce((n,p)=>n+p[1],0);
-        const verteilbar=losliste(e.schiff).filter(l=>l.menge>0);
-        const betragEinheiten=verteilbar.reduce((n,l)=>n+Math.min(l.menge,
-          (f.ware.find(p=>p[0]===l.ware)||[])[1]||0),0);
-        if(gesamt>0 && betragEinheiten){
-          for(const l of verteilbar){
-            const menge=Math.min(l.menge,(f.ware.find(p=>p[0]===l.ware)||[])[1]||0);
-            const kosten=e.betrag*menge/gesamt;
-            l.t.frachtGezahlt+=kosten;
-            zugeordnetFlug+=kosten;
-          }
+        assert(gesamt>0);
+        for(const l of f.lose){
+          const kosten=e.betrag*l.menge/gesamt;
+          l.t.frachtGezahlt+=kosten;
+          zugeordnetFlug+=kosten;
         }
       }
     }
@@ -305,6 +310,7 @@ function zielBelege(){
       bezahlterZielCashflow:cashNachBelegen,
       verkaufOhneZielLosen:verkaufsMengeOhneZiel};
     assert(v.davonZuordnungZuZielen<=v.gesamteFlugzahlungen+1e-6);
+    assert(v.davonZuordnungZuZielen>=v.positionGezahlt-1e-6);
     assert(v.verkaufteMenge<=v.gekaufteMenge);
     assert.equal(v.gekaufteZiele,v.passendeWare+v.andersGekauft);
     assert.equal(v.ziele,v.gekaufteZiele+v.ohneKauf);

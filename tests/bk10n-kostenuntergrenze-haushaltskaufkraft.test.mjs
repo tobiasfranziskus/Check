@@ -448,10 +448,23 @@ test('B-K10n: 13 autonome Seeds je 72h; 3 Hersteller und begrenzte reale Kaufkra
     assert(zusammen.stations[id].budget.shadowFloorPaidISK<=
       zusammen.stations[id].budget.shadowFrozenIncomeISK,
       'Schattenkasse nimmt keine Kredite und bekommt ausschliesslich wirklich verdiente Mittel');
+    assert.equal(zusammen.stations[id].budget.shadowFrozenIncomeISK,
+      zusammen.stations[id].budget.shadowFloorPaidISK+
+      zusammen.stations[id].budget.shadowEndCashAcrossSeparateWorlds,
+      'jedes Schattenguthaben stammt aus der realen Haushaltslohn-/Einkommensspur');
+    assert.equal(zusammen.stations[id].budget.estimatedInstantUnfundedUnits,0,
+      'isolierte aktuelle Walletpruefung reicht, aber nicht kumulierte Kaufkraft');
+    assert(zusammen.stations[id].budget.extraForActualFoodISK>=0);
+    assert(zusammen.stations[id].budget.floorForActualFoodISK>=
+      zusammen.stations[id].budget.factualPaidISK);
     assert(zusammen.stations[id].unpaidImportedOldConsumed>0,
       id+': importierte alte Nahrung wird in der Original-Stundenregel unbezahlt gegessen');
     assert(zusammen.stations[id].unpaidImportedOldProcurementISK>0,
       id+': Station hat die kostenlos gegessene Importware wirklich bezahlt');
   }
-  console.log('B-K10n 13 Seed Herstellervergleich',JSON.stringify(zusammen));
+  assert(zusammen.stations.st_veldra.budget.shadowWouldMiss>100,
+    'kostendeckende Untergrenze verlaesst unter realen Gehaeltern auch in der Schattenwelt Versorgung offen');
+  assert(zusammen.stations.st_veldra.budget.firstFailureSeeds.length>=9);
+  assert.equal(zusammen.stations.st_cyris.budget.shadowWouldMiss,0);
+    console.log('B-K10n 13 Seed Herstellervergleich',JSON.stringify(zusammen));
 });

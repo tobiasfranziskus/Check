@@ -1230,6 +1230,14 @@ function abflug(state, rules, s, station, ziel, ware, menge) {
   const w = rules.world, r = route(w, w.stations[station].system, w.stations[ziel].system);
   if (!r || r.zeit <= 0) return false;
   const finanziert = state.schema === 9 && s.klasse === 'frachter';
+  if (finanziert && ware !== null) {
+    // Ein Vertrag ohne mindestens eine real bezahlbare Ware ist kein Auftrag.
+    // Vorher pruefen, sonst wuerde jeder erfolglose NPC-Tick ein weiteres
+    // storniertes, gespeichertes Vertragsobjekt produzieren.
+    const budget = Math.ceil(r.zeit * w.betriebskosten.frachter / rules.economy.stunde);
+    if (bezahlbar(rules, station, state.owners[s.owner].cash - budget, preis(state, station, ware, rules)) <= 0)
+      return false;
+  }
   if (finanziert && !m_core_vertrag.fahrtStart(state, rules, s, ziel, r.zeit)) return false;
   if (ware !== null) {
     const p = preis(state, station, ware, rules);

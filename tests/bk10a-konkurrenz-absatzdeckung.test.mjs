@@ -293,8 +293,25 @@ test('B-K10a: Markt-Konkurrenz und deckende Absatzfluege separat und kombiniert,
           'tatsächlich finanzierte und anschließend gehandelte Zielpositionierung');
       }
     }
-    // Keine Ergebnisvorgabe, die einen möglichen negativen Befund grünfärbt.
-    // Die Evaluationswerte werden im Log und Bericht verglichen.
+    // Benannte Zwei-Seed-Referenz explizit festhalten, ohne daraus eine
+    // unbekannte 13x90-Tage-Stabilitaet abzuleiten.
+    const z=Object.fromEntries(rows.at(-1).map(x=>[x.modus,x]));
+    assert.equal(z['hinrueck-ziel'].nahrungBezahlt,234,
+      'unveraenderte B-K9y-Kontrolle muss reproduziert sein');
+    assert(z['hinrueck-ziel-absatz'].nahrungBezahlt>=z['hinrueck-ziel'].nahrungBezahlt,
+      'Absatzkosten sollen beobachtete bezahlte Nachfrage nicht verschlechtern');
+    assert(z['hinrueck-ziel-absatz'].npcCash>z['hinrueck-ziel'].npcCash,
+      'Händler müssen tatsächlich mehr Geld übrig behalten');
+    assert(z['hinrueck-ziel-absatz'].fracht.flugBezahlt<
+      z['hinrueck-ziel'].fracht.flugBezahlt,
+      'bezahlte Flugkosten im Test geringer');
+    assert(z['hinrueck-ziel-absatz'].fracht.absatzNichtDeckend>0,
+      'nicht gedeckte Absatzkandidaten sind tatsächlich abgewiesen worden');
+    if(seed===7) assert(z['hinrueck-ziel-konflikt'].nahrungBezahlt<
+      z['hinrueck-ziel'].nahrungBezahlt,
+      'Konkurrenzsperre verursacht nachgewiesenen Versorgungsrueckgang');
+    assert.equal(z['hinrueck-ziel-absatz'].nahrungsmangelStationen,6,
+      'kein positiver Wirtschaftsstabilitaetsnachweis');
   }
 });
 test('B-K10a: deterministische sechs Varianten, Seed7 × zwei Tage',()=>{

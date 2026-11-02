@@ -50,6 +50,7 @@ test('B-K9q: Ein echter Eis-Nahrungs-Zyklus reserviert vor Arbeitsbeginn und bez
   const s=core.createState(42,rules),st=isoliert(s);
   const l=line(s),startKasse=s.owners.st_cyris.cash,startHH=s.owners.hh_st_cyris.cash;
   const vorNahrung=s.ledger.nahrung.produced;
+  const cyrisNahrung=st.lager.nahrung;
   tick(s,1);
   assert.equal(l.rest,6);
   const id=l.vertrag;
@@ -65,7 +66,9 @@ test('B-K9q: Ein echter Eis-Nahrungs-Zyklus reserviert vor Arbeitsbeginn und bez
   assert.equal(geladen.vertraege.eintraege[id].gezahlt,6);
   assert.equal(geladen.vertraege.eintraege[id].erstattet,0);
   assert.equal(geladen.stations.st_cyris.lager.eis,0);
-  assert.equal(geladen.ledger.nahrung.produced,vorNahrung+1);
+  assert.equal(geladen.stations.st_cyris.lager.nahrung,cyrisNahrung+1,
+    'gezieltes Produktionslager statt globalen Mehrstationszaehlers pruefen');
+  assert(geladen.ledger.nahrung.produced>vorNahrung);
   assert.equal(geladen.owners.st_cyris.cash,startKasse-6);
   assert.equal(geladen.owners.hh_st_cyris.cash,startHH+6);
   assert.equal(geladen.stats.konto.st_cyris.kosten,6);
@@ -77,11 +80,9 @@ test('B-K9q: Ein echter Eis-Nahrungs-Zyklus reserviert vor Arbeitsbeginn und bez
 test('B-K9q: 0-ISK-Station kann Rohstoffe nicht gratis zu Nahrung verarbeiten',()=>{
   const s=core.createState(42,rules),st=isoliert(s);
   const k=s.owners.st_cyris.cash;s.owners.st_cyris.cash=0;s.owners.house.cash+=k;
-  const vor=s.ledger.eis.consumed;
   tick(s,10);
   assert.equal(st.lager.eis,2,'Input wird bei fehlender Reservierung nicht verbraucht');
   assert.equal(st.lager.nahrung,52);
-  assert.equal(s.ledger.eis.consumed,vor);
   assert.equal(line(s).rest,0);
   assert(!line(s).vertrag);
   assert.equal(s.owners.hh_st_cyris.cash,0);

@@ -32,3 +32,27 @@ Erfasst werden tatsächlich vorhandene ISK-Menge mit minted/burned, Spieler-, H�
     node tools/bk11c-sparabfluss.mjs --scenario=miner --mode=C --days=90 --out=/tmp/bk11c-miner-C.json
 
 Die CI-Matrix ergänzt Handel-Flotte/42. **Testergebnisse erst nach tatsächlicher Ausführung dokumentieren.** Die verbindliche Produkt-Roadmap bleibt docs/ROADMAP.md auf main. Kein Merge oder Deployment.
+
+## [TEST] Ausgeführte B-K11c-CI und Wirtschaftsbefund (02.11.2026)
+
+[CI #41532218615](https://github.com/tobiasfranziskus/Check/actions/runs/41532218615) **erfolgreich** auf Test-Commit 4311241c: 1/1 Ein-Tages-Smoke und **sechs Original-Core-Welten ×90 Tage**, je mit unabhängigem Replay. **12.960 stündliche Core- und unabhängige Geld-/Warenaudits/Hash-Replays; 1.080 Save/Load-Prüfungen.** Die beiden A-Endhashes entsprechen exakt der gepinnten Originalreferenz. Vollständige Tages-Hashes, Konten und Transferbelege liegen in den sechs CI-Artefakten; die zusätzliche Standard-Regressions-CI ist separat zu bewerten.
+
+| Seed42 / 90 Tage | Miner A | Miner B | Miner C | Handel A | Handel B | Handel C |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Mangelstunden | 35.798 | **44** | 33.333 | 36.393 | **60** | 33.479 |
+| Nahrung tatsächlich verbraucht | 3.474 | **36.648** | 6.198 | 2.577 | **36.658** | 6.120 |
+| Medizin tatsächlich verbraucht | 880 | **12.972** | 1.608 | 751 | **12.960** | 1.564 |
+| Spieler-Endkasse ISK | 42.795 | **2.000** | 39.865 | 42.254 | **2.000** | 40.760 |
+| Stationskassen ISK | 5.238 | **25.065** | 5.778 | 4.317 | **24.942** | 3.669 |
+| NPC1/2-Kassen ISK | 132 | **10.059** | 0 | 0 | **10.561** | 0 |
+| NPC1/2-Frachter am Ende | 0 | **5** | 0 | 0 | **5** | 0 |
+| NPC1/2-Frachterverluste | 18 | 167 | 31 | 18 | 140 | 23 |
+| Aktivierte Ersatzfrachter | 13 | **167** | 26 | 13 | **140** | 18 |
+| Aldera Silizium / Bauteile | 0/0 | **28/16** | 0/0 | 0/0 | **34/44** | 0/0 |
+| Summe wiederholter ISK-Transfers | 0 | **503.834** | 38.140 | 0 | **521.439** | 49.726 |
+
+**[ANALYSE – kausal starke Evidenz]:** In den zwei geprüften aktiven Produktwelten erhält der fortlaufende Rückfluss vorhandener Kaufkraft die Händlerflotten und die Versorgung mit real bezahlten Ersatzhüllen. Die nur halbierte Abgabe des marginalen Spieler-Stundenüberschusses lässt die Händler später dennoch ausfallen. Mehr Geldumlauf ermöglicht zugleich **mehr reale Flüge und Verluste**; 167 und 140 Ersatzhüllen sind kein Gratisersatz.
+
+**Kein Emissionsbudget ableiten:** 503.834/521.439 ISK sind über 90 Tage mehrfach zirkulierte **gleiche** ISK, keine neue Geldmenge. Sie entsprechen ungefähr 5.598/5.794 ISK wiederholten Transfers pro Spieltag, nicht notwendiger Geldschöpfung. Der Versuch gibt gezielt Mittel an den Aldera-Fonds und ändert deshalb nicht nur die Geldverteilung, sondern die lokale Kaufkraft. Ein universelles Geldmodell-B-Zahlungsmodell ist damit weder berechnet noch beschlossen.
+
+**[ENTSCHEIDUNGSGATE]:** Geldkreislauf/zahlungsfähige reale Endnachfrage vor Routenrisiko priorisieren. Als nächste getrennte Analyse den tatsächlichen neu produzierten Nahrung-/Medizinlieferungen einen vollständig belegten Auftrag, Empfänger und begrenzten Geldkanal zuordnen. Keine produktive Spargrenze, keine pauschale Rettung einzelner NPCs, keine ungenehmigte Emissionsregel. B/C bleiben ausdrücklich ausschließlich Analysevarianten. 13-Seed-/275-Tage-/iPad-/NAS-Abnahme ist nicht durchgeführt.

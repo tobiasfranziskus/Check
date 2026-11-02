@@ -314,5 +314,30 @@ for(const key of ['blockedAttempts','blockedWithCash','blockedWithCargo',
   timingTotals[key]=sum(cand.map(x=>x.timing[key]));
 console.log('BK11A_TIMING '+JSON.stringify({days,suite,probe,worlds:cand.length,
   totals:timingTotals,byWorld:cand.map(x=>({seed:x.seed,scenario:x.scenario,...x.timing}))}));
+if(probe==='arrival'){
+  const tiefSumme=v=>typeof v==='number'?v:v&&typeof v==='object'
+    ?sum(Object.values(v).map(tiefSumme)):0;
+  const vergleich=results.map(x=>{
+    const npc1=x.economics.npc1||{},npc2=x.economics.npc2||{};
+    return {
+      seed:x.seed,scenario:x.scenario,mode:x.mode,days:x.days,
+      shortageHours:tiefSumme(x.final.shortages),
+      foodConsumed:x.final.foodConsumed,medicineConsumed:x.final.medicineConsumed,
+      npcContribution:(npc1.contribution||0)+(npc2.contribution||0),
+      npcAfterHullCash:(npc1.afterHullCash||0)+(npc2.afterHullCash||0),
+      npcFlightPaid:(npc1.flightPaid||0)+(npc2.flightPaid||0),
+      npcHullPayments:(npc1.hulls||0)+(npc2.hulls||0),
+      npcHullBuys:(npc1.hullCount||0)+(npc2.hullCount||0),
+      npcFreighters:x.final.companies.npc1.freighters+x.final.companies.npc2.freighters,
+      npcCash:x.final.companies.npc1.cash+x.final.companies.npc2.cash,
+      npcCargoLost:(npc1.lostBasis||0)+(npc2.lostBasis||0),
+      npcLosses:(npc1.losses||0)+(npc2.losses||0),
+      unmetNPCWork:(npc1.due||0)+(npc2.due||0)-(npc1.paid||0)-(npc2.paid||0),
+      meanEscrow:x.meanHourlyEscrow,
+      blockedAttempts:x.timing.blockedAttempts
+    };
+  });
+  console.log('BK11B_COMPARE '+JSON.stringify({days,suite,worlds:vergleich}));
+}
 console.log('BK11_AUDIT_PASS '+JSON.stringify({worlds:results.length,days,
   hourlyReplayAudits:sum(results.map(x=>x.hours)),saveLoads:sum(results.map(x=>x.roundtrips)),out}));

@@ -69,6 +69,21 @@ const modules=new Function('__bk10p_trade','__bk10p_production','__bk10p_choice'
     trade,production,choice);
 core=modules.core;
 const base=modules.base,route=modules.route;
+// [ANALYSE] Nur eine Gegenhypothese in einer zweiten Test-Core-Kopie:
+// Warenbudget erst NACH echter Flugreservierung fuer die gewaehlte Route
+// aus dem bestehenden Eigentuemergeld pruefen, keine Kasse manipulieren.
+const finanzanker='bezahlbar(rules, station, kasse, pHier)';
+assert.equal(src.split(finanzanker).length,2);
+const alternativeSource=src.replace(finanzanker,
+  'bezahlbar(rules, station, kasse - Math.ceil(r.zeit * w.betriebskosten.frachter / rules.economy.stunde), pHier)');
+const altModules=new Function('__bk10p_trade','__bk10p_production','__bk10p_choice',
+  alternativeSource+';return {core:m_core_index,base:m_data_rules.RULES,route:m_core_route.route};')(
+    trade,production,choice);
+assert.equal(altModules.base.rulesVersion,base.rulesVersion);
+function alternative(seed,days){
+  core=altModules.core;
+  try{return run(seed,days);}finally{core=modules.core;}
+}
 assert.equal(base.schema,8);assert.equal(base.rulesVersion,14);
 const rules={...base,schema:9,rulesVersion:15,world:{...base.world,
   produktionslohnJeMinute:4,haushaltskaufNeu:true,herkunftTransportNeu:true}};
@@ -216,4 +231,30 @@ test('B-K10p: Determinismus/Original-Kern plus fruehe Original-Werftproduktion',
   assert(a.final.prod.r_frachter.finished>0);
   assert(a.totals.sold.npc1.siliconAtYard+
     a.totals.sold.npc2.siliconAtYard>0,'tatsaechlicher Silizium-NPC-Handel vor dem Stillstand');
+});
+
+
+test('B-K10p: allein testseitige Vorflug-Kaufkraftpruefung behebt ungedeckte Routenzusagen',()=>{
+  const seedResults=[];
+  for(const seed of [42,7]){
+    const normal=run(seed,7),gated=alternative(seed,7);
+    assert.equal(normal.globalMoney,gated.globalMoney,
+      'keine testseitige Emission oder Geldvernichtung');
+    assert.equal(gated.totals.selection.npc1.rejectMin,0,
+      'mit Vorflug-Kassenabzug waehlt NPC1 nie eine unfinanzierbare Warenfahrt');
+    assert.equal(gated.totals.selection.npc2.rejectMin,0,
+      'mit Vorflug-Kassenabzug waehlt NPC2 nie eine unfinanzierbare Warenfahrt');
+    seedResults.push({seed,original:{
+      yard:normal.final.warehouse,owner1:normal.final.merchants.npc1,
+      owner2:normal.final.merchants.npc2,
+      choices:normal.totals.selection,
+      silica:normal.final.sources
+    },preflight:{yard:gated.final.warehouse,
+      owner1:gated.final.merchants.npc1,owner2:gated.final.merchants.npc2,
+      choices:gated.totals.selection,
+      silica:gated.final.sources},
+      sameStateHash:normal.final.hash===gated.final.hash});
+  }
+  console.log('B-K10p Vorflug-Kassenfilter nur Analysegegenprobe',
+    JSON.stringify(seedResults));
 });

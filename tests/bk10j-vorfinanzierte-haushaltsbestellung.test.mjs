@@ -179,8 +179,14 @@ function run(saved,seed,mode,ausgabe=true){
   const konsumStart=s.stats.haushaltskauf[Z].menge;
   ticks(s,10*60);
   if(cfg.order){
-    const id=cfg.order.id;
+    const id=cfg.order.id,e=s.vertraege.eintraege[id];
+    assert(e,'Bestellvertrag muss noch existieren');
+    assert.equal(e.gezahlt,cfg.pay,'nur wirklich erhaltene Nahrung wird bezahlt');
+    assert.equal(e.gezahlt+e.rest,e.budget,'Reservierung deckt Auszahlung und Storno');
+    r.vorStornoRestISK=e.rest;
     assert(core.vertrag.abschliessen(s,id),'unverbrauchte Haushaltsreserve voll erstatten');
+    r.erstattetISK=e.erstattet;
+    assert.equal(e.gezahlt+e.erstattet,e.budget,'kein verlorenes Haushaltgeld');
   }
   audit(s);
   assert.equal(core.hash(core.load(core.save(s),undefined,rules)),core.hash(s));
@@ -236,4 +242,32 @@ test('B-K10j: Seed42 identischer Ausgangsspielstand und deterministische Auftrag
   const start=snapshot(42);
   assert.deepEqual(run(start.saved,42,'bestellung',false),
     run(start.saved,42,'bestellung',false));
+});
+
+test('B-K10j: vorfinanzierte, aber nie ausgelieferte Bestellung wird voll erstattet',()=>{
+  const s=core.createState(42,rules);
+  const anfang=s.owners[H].cash;
+  // Fuer diese negative Vertragsprobe stammt das Guthaben aus real bezahlter
+  // Original-Fabrikarbeit; keine Testgutschrift und keine neue ISK.
+  ticks(s,24*60);
+  assert(s.owners[H].cash>0);
+  const vor=s.owners[H].cash,minted=s.minted,burned=s.burned,
+    bezahlt=s.stats.haushaltskauf[Z].isk;
+  const betrag=Math.min(500,vor);
+  const id=core.vertrag.reservieren(s,H,'house',betrag);
+  assert(id);
+  assert.equal(s.owners[H].cash,vor-betrag);
+  assert.equal(s.vertraege.eintraege[id].rest,betrag);
+  audit(s);
+  assert.equal(core.hash(core.load(core.save(s),undefined,rules)),core.hash(s));
+  assert(core.vertrag.abschliessen(s,id),'Storno ohne Leistung');
+  assert.equal(s.vertraege.eintraege[id]?.erstattet,betrag);
+  assert.equal(s.owners[H].cash,vor,'Haushalt erhaelt vollen Rest zurueck');
+  assert.equal(s.stats.haushaltskauf[Z].isk,bezahlt);
+  assert.equal(s.minted,minted);assert.equal(s.burned,burned);
+  audit(s);
+  assert.equal(core.hash(core.load(core.save(s),undefined,rules)),core.hash(s));
+  console.log('B-K10j Bestellstorno ohne Lieferung',JSON.stringify({
+    vorher:vor,reserviert:betrag,erstattet:betrag,nachher:s.owners[H].cash,
+    neueISK:0,neuerBestellverbrauch:0}));
 });

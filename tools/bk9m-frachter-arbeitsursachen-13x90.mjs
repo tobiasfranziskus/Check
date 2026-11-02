@@ -57,9 +57,13 @@ function createProbe(){
   assert(missing>=0);
   if(missing){weights.unknown=(weights.unknown||0)+missing;p.unknownMinutes+=missing;}
   for(const [k,v] of Object.entries(weights))p.chargedMinutes[k]+=v;
-  for(const [k,v] of Object.entries(distribute(due,weights)))p.wagesDue[k]+=v;
-  for(const [k,v] of Object.entries(distribute(paid,weights)))p.wagesPaid[k]+=v;
-  for(const [k,v] of Object.entries(distribute(due-paid,weights)))p.wagesUnpaid[k]+=v;
+  const paidParts=distribute(paid,weights);
+  const unpaidParts=distribute(due-paid,weights);
+  for(const k of cats){
+    p.wagesPaid[k]+=paidParts[k]||0;
+    p.wagesUnpaid[k]+=unpaidParts[k]||0;
+    p.wagesDue[k]+=(paidParts[k]||0)+(unpaidParts[k]||0);
+  }
   p.minuteBuckets[s.id]={};
  };
  p.trade=(s,buy,value,fee,quantity)=>{

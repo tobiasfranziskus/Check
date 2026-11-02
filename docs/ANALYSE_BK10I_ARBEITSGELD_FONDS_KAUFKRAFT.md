@@ -83,6 +83,18 @@ In Seed7: Aldera **16.522 Haushalts-ISK / 305 rechnerisch zahlbare Stück**, abe
 
 **[OPTION / Gegenprobe, nicht produktiv]** Bei gleicher echter Ware und gleichem vorhandenen ISK-Bestand kann eine aus Haushaltbudgets tatsächlich **vorfinanzierte Bestellung** statt ungesichertem Stations-Vorratsankauf als kontrastierender Testfall geprüft werden. Haushaltszahlung und Eigentumsübertragung müssen im selben Core stattfinden; keine unsichtbare Vorschuss- oder Kredit-ISK, keine doppelte Erfassung von Stationsumsatz, keine automatische Nachfrage über tatsächlichen Bedarf. Vor jeder Produktentscheidung mit Spieler-NPC-Parität, Waren- und Geldbilanz, realen Kosten und langfristiger Versorgung auditieren.
 
+## Zusätzlich im unveränderten Händlercode sichtbar: kalkulatorische Scheinmarge
+
+In `m_core_entscheidung.bestesPaar` berechnet die autonome Route
+
+```js
+gewinn = menge * (pDort - pHier) - gebuehrQuelle - gebuehrZiel;
+```
+
+Die bezahlte Frachterfahrt ist in dieser **Gewinnschätzung nicht als Kostenposition enthalten**. Die Bewertung teilt die daraus abgeleitete Wertung anschließend zwar durch die Reisezeit, rechnet aber nicht den tatsächlichen Aufwand `ceil(route.zeit * betriebskosten.frachter / stunde)` als Fahrtkosten ab. `abflug` verlangt für die Fahrt im R15-Kandidaten nur **echte Mittelbindung und Deckung**, nicht einen positiven **Nettoertrag nach Flugkosten**. Eine voll finanzierte, tatsächlich durchgeführte Reise kann daher weiterhin betriebswirtschaftlich negativ sein.
+
+**[CODE-ANALYSE / noch kein eigenständiger Wirtschaftsgate-Test]** Dies ist unabhängig vom Blockpreiseffekt B-K10h: Schon ohne Preisreaktion in der Laufzeit kann die bestehende Disposition einen positiven `gewinn` vor Flügen sehen, obwohl Handelsmarge abzüglich real bezahlter Reisekosten negativ wäre. Ob und wie stark das den Gesamtzyklus beeinflusst, sollte **separat anhand wirklich autonom ausgeführter Schiffsfahrten** getestet werden. Keine automatische Dispositions-/Lohn-/Preisregeländerung aus diesem Befund.
+
 ## Bedeutung, Einschränkungen und nächstes Gate
 
 1. Die **bloße Umleitung vorhandener Kosten an den Fonds** erzeugt **keinen direkten Haushaltslohn**. Selbst das bestehende tatsächliche Fabrikentgelt genügt nicht für überall bezahlte Endnachfrage.

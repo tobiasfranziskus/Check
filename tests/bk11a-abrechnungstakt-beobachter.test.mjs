@@ -11,6 +11,16 @@ test('B-K11a: 1-Tag-Original-Replay und ausschliesslich lesende Abrechnungstakt-
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'bk11a-'));
   const out=path.join(dir,'timing.json');
   try {
+    // ui-regression.yml checkt nur den PR-Head flach aus; der Wirtschaftslauf
+    // verwendet fetch-depth:0. Fuer den kurzen Smoke-Test das gepinnte main
+    // nur dann nachladen, wenn das Git-Objekt lokal wirklich fehlt.
+    const baseline='b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c';
+    try {
+      execFileSync('git',['cat-file','-e',baseline+':index.html'],{stdio:'ignore'});
+    } catch {
+      execFileSync('git',['fetch','--no-tags','--depth=1','origin',baseline],
+        {stdio:'ignore',timeout:60000});
+    }
     execFileSync(process.execPath,[
       new URL('../tools/bk11-wirtschaft.mjs',import.meta.url).pathname,
       '--suite=standard','--seed=42','--days=1','--out='+out

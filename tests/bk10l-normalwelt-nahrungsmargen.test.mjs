@@ -237,6 +237,20 @@ test('B-K10l: 13 unterschiedliche Seed-Welten je 72h ohne Lagermanipulation',()=
   });
   assert.equal(ergebnisse.length,13);
   assert(ergebnisse.every(x=>x.prod>0&&x.fonds>0));
+  const mitBelegtemAusfuhrverkauf=ergebnisse.filter(x=>x.vBest>0);
   const m=ergebnisse.filter(x=>x.vBest>0&&x.kBest>0&&x.vMarge<0&&x.kMarge<0).length;
-  console.log('B-K10l 13 autonome Seeds 72h',JSON.stringify({negativeBeide:m,werte:ergebnisse}));
+  assert.equal(mitBelegtemAusfuhrverkauf.length,12,
+    'ein Seed hat keine exportierte Nahrung mit vollbekannten Eis-Einstandskosten');
+  assert.equal(m,12,'alle belegten Ausfuhrchargen und alle lokalen Summen im Minus');
+  assert(ergebnisse.every(x=>x.kBest>0&&x.kMarge<0),
+    'alle 13 lokalen bezahlten Nahrungssummen nach Ist-Eis/Fabriklohn negativ');
+  assert(ergebnisse.every(x=>x.vPlus===0),
+    'keine vollbelegte exportierte Nahrung in diesen 13 Normalwelten mit Gewinn');
+  const aggregate={knownExport:sum(ergebnisse.map(x=>x.vBest)),
+    exportMargin:sum(ergebnisse.map(x=>x.vMarge)),
+    knownLocal:sum(ergebnisse.map(x=>x.kBest)),
+    localMargin:sum(ergebnisse.map(x=>x.kMarge)),
+    fondsZufluss:sum(ergebnisse.map(x=>x.fonds))};
+  console.log('B-K10l 13 autonome Seeds 72h',
+    JSON.stringify({negativeBeide:m,mitBekannterAusfuhr:12,aggregate,werte:ergebnisse}));
 });

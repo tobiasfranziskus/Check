@@ -1,0 +1,24 @@
+name: B-K9m – Original NPC freight costs by flight purpose
+
+on:
+  pull_request:
+    paths:
+      - tools/bk9m-frachter-arbeitsursachen-13x90.mjs
+      - .github/workflows/bk9m-frachterkosten.yml
+
+permissions:
+  contents: read
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: All existing original 14-rule regressions
+        run: node --test tests/*.test.mjs
+      - name: 13 active and 2 passive 90-day original-core freight purpose ledgers
+        run: node tools/bk9m-frachter-arbeitsursachen-13x90.mjs

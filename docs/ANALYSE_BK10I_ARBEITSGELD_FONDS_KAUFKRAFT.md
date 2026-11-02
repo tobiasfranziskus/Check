@@ -64,6 +64,25 @@ Die direkte Ausführung des Testfiles gegen den GitHub-Test-Core ist ohne Abweic
 
 Meridian besitzt im bestehenden Datensatz **keinen lokalen Verbrauch** und **keine Produktionslinie**: Sein Haushalt beginnt daher bei 0 ISK, ist aber keine zu versorgende Nachfrage in dieser Tabelle. Orion zeigt **Warenbestand ohne kaufkräftigen Haushalt**; Aldera dagegen **reiche Haushalte ohne hinreichende lokale Warenversorgung**. In Seed7 sind Aldera 16.522 Haushalts-ISK/0 Neu-Nahrung/70 Mangel und Orion 41 ISK/8 Neu-Nahrung/85 Mangel bei Preis 50 ISK. **Dieser Unterschied ist trotz realer Fonds-Stations-Rückflüsse vorhanden.**
 
+## B-K10i Ankaufgeld-Gate: Station als Zwischenfinanzierer
+
+Der Core stellt in `m_core_handel.aufnehmbar` auf die **freie Stationskasse** und die Lagerkapazität ab; Geld auf dem `hh_st_...`-Haushaltskonto ist **kein** automatisches Kaufbudget der Station. Eine Station darf bei einem Schiffseingang also nur Ware kaufen, die **sie selbst** bei aktuellem Stationspreis bezahlen kann. Die lokale Endkundennachfrage darf nicht mit der Stations-Zwischenhandelsliquidität gleichgesetzt werden.
+
+Der im selben Test vollständig original berechnete, unabhängige Gegencheck protokolliert je Standort sowohl `aufnehmbar(state,rules,station,'nahrung')` als auch `Math.floor(haushaltISK/preis)` zum gleichen Endzeitpunkt. Die Haushaltszahl ist nur **rechnerisch finanzierbare Stückzahl zum konstanten aktuellen Stückpreis**, nicht die tatsächlich benötigte oder verkaufbare Menge.
+
+| Seed42 nach 72h | Haushalt cash | theoretisch zahlbar (aktuellem Preis) | Stationscash | wirkliche Core-Ankaufmenge | Nahrung im Stationslager |
+|---|---:|---:|---:|---:|---:|
+| Aldera | 17.325 ISK | 326 Stück | **203 ISK** | **3 Stück** | 1 |
+| Cyris | 5.700 ISK | 107 Stück | 610 ISK | 11 Stück | 12 |
+| Nadir | 3.874 ISK | 149 Stück | 433 ISK | 5 Stück | 60 |
+| Orion | **44 ISK** | **0 Stück** | 151 ISK | 3 Stück | **13** |
+
+In Seed7: Aldera **16.522 Haushalts-ISK / 305 rechnerisch zahlbare Stück**, aber nur **716 Stations-ISK / 13 Stück tatsächliche Ankaufkapazität**, Anfangsbestand in der letzten Stunde **0**. Orion **41 Haushalts-ISK / 0 kaufbare Stück**, aber **862 Stations-ISK / 17 Stück Core-Ankaufkapazität**, obwohl **8** Neu-Nahrungseinheiten vorhanden sind.
+
+**Die Gegensätze sind fundamental:** In Aldera fehlen **frei verfügbare Zwischenhandels-ISK**, obwohl Endkunden kaufkräftig sind; in Orion fehlt **Endkundenkaufkraft**, obwohl der Zwischenhändler weitere Ware ankaufen könnte. Eine Preis- oder Lohnerhöhung allein löst diese verschiedenen Verteilungen nicht, eine vom Standort unabhängige Geldobergrenze wäre kontraproduktiv.
+
+**[OPTION / Gegenprobe, nicht produktiv]** Bei gleicher echter Ware und gleichem vorhandenen ISK-Bestand kann eine aus Haushaltbudgets tatsächlich **vorfinanzierte Bestellung** statt ungesichertem Stations-Vorratsankauf als kontrastierender Testfall geprüft werden. Haushaltszahlung und Eigentumsübertragung müssen im selben Core stattfinden; keine unsichtbare Vorschuss- oder Kredit-ISK, keine doppelte Erfassung von Stationsumsatz, keine automatische Nachfrage über tatsächlichen Bedarf. Vor jeder Produktentscheidung mit Spieler-NPC-Parität, Waren- und Geldbilanz, realen Kosten und langfristiger Versorgung auditieren.
+
 ## Bedeutung, Einschränkungen und nächstes Gate
 
 1. Die **bloße Umleitung vorhandener Kosten an den Fonds** erzeugt **keinen direkten Haushaltslohn**. Selbst das bestehende tatsächliche Fabrikentgelt genügt nicht für überall bezahlte Endnachfrage.

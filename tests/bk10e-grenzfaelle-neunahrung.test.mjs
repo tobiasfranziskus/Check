@@ -204,12 +204,23 @@ test('B-K10e: Aussenhandelsimport bleibt nachweislich unbelegte Altware',()=>{
 });
 test('B-K10e: zwei echte Frachterfahrten und bezahlte Endverbrauchsmengen',()=>{
   for(const seed of SEEDS){
-    const {s,r,sh}=init(seed,{marktStart:100});
+    const {s,r,sh}=init(seed);
+    // Wie in B-K10d: Orion hat fuer diese Konsumprobe keine kostenlose
+    // Alt-Nahrung, sonst konsumiert FIFO den Startbestand statt Lieferung.
+    const orion=s.stations[O],alt=orion.lager.nahrung;
+    orion.lager.nahrung=0;s.ledger.nahrung.initial-=alt;
+    ueberpruefe(s,r);
     bis(s,r,()=>neuBereit(s,r,6));
     for(let i=0;i<2;i++){
       assert(handel.verkaufbar(s,r,Q,'nahrung')>=1,'Quelle verkauft nur ueber Vorratsreserve');
       befehl(s,r,sh,'shipTrade',{ware:'nahrung',menge:1,kauf:true});
       assert.equal(sh.neuLadungNahrung,1);
+      // Ein vorheriger Rueckflug kann noch eine gebundene Vertragsreserve
+      // bis zum naechsten echten Stundenabschluss tragen.
+      if(sh.vertrag){
+        const lim=Math.ceil((s.tick+1)/60)*60;
+        bis(s,r,()=>!sh.vertrag,lim+1);
+      }
       befehl(s,r,sh,'shipMove',{ziel:O});
       ankunft(s,r,sh);
       assert.equal(sh.neuLadungNahrung,0); assert.equal(s.haushaltNeuLedger.transit,0);

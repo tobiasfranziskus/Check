@@ -98,7 +98,8 @@ function build(modus){
       "      if (ziel && abflug(state,rules,s,station,ziel.ziel,null,0)) {",
       "        __events.push({art:'zielwahl',tick:state.tick,owner:s.owner,schiff:s.id,",
       "          von:station,ziel:ziel.ziel,absatz:ziel.absatz,ware:ziel.ware,",
-      "          menge:ziel.menge,prognoseGewinn:ziel.gewinn,positionKosten:ziel.positionKosten});",
+      "          menge:ziel.menge,prognoseGewinn:ziel.gewinn,positionKosten:ziel.positionKosten,\n"+
+      "          vertrag:s.vertrag,gesperrt:state.vertraege.eintraege[s.vertrag].rest});",
       "      } else s.ankunft = state.tick+w.warteLeer;",
       "    }"
     ].join("\n");
@@ -157,11 +158,14 @@ function zahlen(){return {nahrungEinkauf:0,nahrungVerkauf:0,nahrungMengeEinkauf:
   frachterKauf:0,flugBezahlt:0,fluege:0,fluegeMitNahrung:0,
   leerfahrten:0,flugVerlust:0,zuschuss:0,
   zielwahl:0,zielAnkunft:0,zielKauf:0,prognosePositionISK:0,
-  zielOffen:{},zielKaufMenge:0,fehlPrognose:0};}
+  zielOffen:{},zielKaufMenge:0,zielKaufErwarteteWare:0,
+  zielKaufAndereWare:0,fehlPrognose:0};}
 function verarbeite(z,ev){
   if(ev.art==='ware'){
     if(ev.kauf && z.zielOffen[ev.schiff] && ev.station===z.zielOffen[ev.schiff].ziel) {
       z.zielKauf++;z.zielKaufMenge+=ev.menge;
+      if(z.zielOffen[ev.schiff].ware===ev.ware)z.zielKaufErwarteteWare++;
+      else z.zielKaufAndereWare++;
       delete z.zielOffen[ev.schiff];
     }
     if(ev.kauf){z.wareEinkauf+=ev.wert; if(ev.ware==='frachter')z.frachterKauf+=ev.wert;}
@@ -172,6 +176,11 @@ function verarbeite(z,ev){
       else {z.nahrungVerkauf+=ev.wert;z.nahrungMengeVerkauf+=ev.menge;}
     }
   }else if(ev.art==='zielwahl'){
+    assert(/^v[1-9][0-9]*$/.test(ev.vertrag),'jede Zielpositionierung hat echten Vertrag');
+    assert.equal(ev.gesperrt,ev.positionKosten,
+      'Neuplatzierung vor Abflug vollständig und atomar aus Eigentümerkasse reserviert');
+    assert(ev.prognoseGewinn>0 && ev.positionKosten>0,
+      'reale Marktschance nach allen kalkulierten Fahrtkosten');
     z.zielwahl++;
     z.prognosePositionISK+=ev.positionKosten;
     if(z.zielOffen[ev.schiff])z.fehlPrognose++;
@@ -252,6 +261,11 @@ test('B-K9y: echte Zielpositionierung vs Stillstand und Original, Seed42/7 x6 Ta
           'nur nach belegtem positiven Zieltest sind leere Fahrten gestattet');
         assert(row.fracht.zielKauf<=row.fracht.zielAnkunft,
           'keine gezielt erreichte Station darf mehrere Erstkaeufe doppelt zaehlen');
+        assert.equal(row.fracht.zielKauf,
+          row.fracht.zielKaufErwarteteWare+row.fracht.zielKaufAndereWare,
+          'keine erfolgreiche Zielankunft ohne passende Warenklassifizierung');
+        if(row.tag===6)assert(row.fracht.zielwahl>0 && row.fracht.zielKauf>0,
+          'tatsächlich finanzierte und anschließend gehandelte Zielpositionierung');
       }
     }
     // Keine Ergebnisvorgabe, die einen möglichen negativen Befund grünfärbt.

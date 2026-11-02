@@ -125,7 +125,9 @@ test('B-K9r: vorgefuellter Bestand ist nicht als bezahlte Neuware buchbar',()=>{
   assert.equal(st.lokalNeuNahrung,1);
   assert.equal(s.stats.haushaltskauf.st_cyris.alt,3);
   assert.equal(s.stats.haushaltskauf.st_cyris.menge,0);
-  assert.equal(s.haushaltNeuLedger.altVerbraucht,3);
+  assert.equal(s.haushaltNeuLedger.altVerbraucht,
+    Object.values(s.stats.haushaltskauf).reduce((sum,x)=>sum+x.alt,0),
+    'weltweiter Altverbrauch wird aus den einzelnen Stationskonten abgeglichen');
   pruefe(s);runde(s);
 });
 

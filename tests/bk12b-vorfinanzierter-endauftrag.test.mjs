@@ -74,7 +74,11 @@ function run(seed,policy,minutes,traceMiner=false) {
   function preorder() {
     if(order || s.stations[NADIR].lokalNeuNahrung || q().pending.length)return;
     const sourcePrice=m.core.preis(s,NADIR,'eis',m.rules);
-    const budget=Math.max(128,CHARGE*sourcePrice+WAGE+24);
+    // Only a test sensitivity: exact known worst-case 2-ice+work cost,
+    // rather than B-K12b's 128-ISK reserve cushion.
+    const budget=policy==='cofinance-tight'
+      ? CHARGE*sourcePrice+WAGE
+      : Math.max(128,CHARGE*sourcePrice+WAGE+24);
     if(policy==='earned-only'&&allOrders()>0&&feeIncome()-feeUsed<budget) {
       if(rejections.length<20)rejections.push({tick:s.tick,reason:'no verified new fee income',
         feeIncome:feeIncome(),feeUsed,budget,freeCash:s.owners[fund].cash});
@@ -158,7 +162,7 @@ function run(seed,policy,minutes,traceMiner=false) {
     // (up to the unchanged spot price). The pre-funded fund covers the
     // remaining actual FIFO cost. No loan, grant, mint or forced full-spot sale.
     const hh=state.owners['hh_'+id];
-    const householdPaid=policy==='cofinance'?Math.min(hh.cash,spot,lot.cost):0;
+    const householdPaid=['cofinance','cofinance-tight'].includes(policy)?Math.min(hh.cash,spot,lot.cost):0;
     if(householdPaid){
       hh.cash-=householdPaid;
       state.owners[id].cash+=householdPaid;
@@ -480,6 +484,32 @@ test('B-K12d: Nadir miner cash chain and unpaid work exposed, not mistaken for g
     console.log('BK12D_MINER_CASH_CHAIN '+JSON.stringify({
       seed,hash:r.hash,delivered:r.delivered,realInputISK:r.inputISK,
       realFundEnd:r.fundEnd,serviceDays:r.serviceIncomeDays,miner:d
+    }));
+  }
+});
+
+test('B-K12d: tighter 68-ISK prior reserve delays but does not cure exhausted buyer income',()=>{
+  for(const seed of [42,7]){
+    const reference=run(seed,'cofinance',10080);
+    const tight=run(seed,'cofinance-tight',10080);
+    assert(tight.delivered>reference.delivered,
+      '128-ISK cushion causes a separate early stop, must not be called insolvency');
+    assert(tight.fundEnd<68,'even real fully cost-covered 68-ISK reserve eventually fails');
+    assert.equal(tight.householdPaidISK+tight.fundPaidISK,tight.paidISK);
+    assert.equal(tight.householdPaidISK,tight.wageISK);
+    assert.equal(tight.fundPaidISK,tight.inputISK);
+    assert.equal(tight.pending,null,'no unfinished contract confounds the comparison');
+    assert.equal(tight.outstandingFood,0);
+    assert.equal(tight.outstandingIce,0);
+    assert.equal(tight.minted,reference.minted,'no test-side money creation');
+    assert.equal(tight.dayHashes.length,7);
+    console.log('BK12D_TIGHT_RESERVE '+JSON.stringify({
+      seed,reference:{delivered:reference.delivered,finalFund:reference.fundEnd},
+      tight:{delivered:tight.delivered,finalFund:tight.fundEnd,
+        spentByFund:tight.fundPaidISK,paidByHouseholds:tight.householdPaidISK,
+        verifiedServiceIncome:tight.verifiedServiceIncome,
+        serviceDays:tight.serviceIncomeDays,hash:tight.hash,
+        shortageHours:tight.shortageHours}
     }));
   }
 });

@@ -1,0 +1,42 @@
+name: Aphros Void – B-K11d Endverbrauch und Herkunft (Analyse)
+on:
+  pull_request:
+    paths:
+      - 'tools/bk11d-endverbrauch.mjs'
+      - 'tests/bk11d-endverbrauch.test.mjs'
+      - 'docs/ANALYSE_BK11D_ENDVERBRAUCH.md'
+      - '.github/workflows/bk11d-endverbrauch.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original-Core Endverbrauch-Audit-Smoketest
+        run: node --test tests/bk11d-endverbrauch.test.mjs
+  endverbrauch90:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [passive, miner, handel-flotte]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Originalprodukt mit unabhaengigem Replay und Geld-/Warenaudits
+        run: node tools/bk11d-endverbrauch.mjs --scenario=${{ matrix.scenario }} --seed=42 --days=90 --out="$RUNNER_TEMP/bk11d-${{ matrix.scenario }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bk11d-${{ matrix.scenario }}
+          path: ${{ runner.temp }}/bk11d-${{ matrix.scenario }}.json
+          if-no-files-found: warn

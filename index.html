@@ -4200,6 +4200,7 @@ const m_ui_erzpilot = (() => {
   const SLOT = 'aphros-void-erzpilot-regel15-v1';
   let state = createErzState();
   let gesperrt = false;
+  let ladebereit = false;
   let speicherKette = Promise.resolve();
   const geld = (n) => `${n.toLocaleString('de-DE')} ISK`;
   function nachricht(t, fehler = false) {
@@ -4224,11 +4225,11 @@ const m_ui_erzpilot = (() => {
     $('pilot-hash').style.fontFamily = 'ui-monospace, monospace';
     if (!a.ok) { gesperrt = true; nachricht('Bilanzabweichung. Änderungen gesperrt; Daten exportieren.', true); }
     for (const id of ['pilot-kauf', 'pilot-abbau', 'pilot-stopp', 'pilot-stunde', 'pilot-tag', 'pilot-sichern'])
-      $(id).disabled = gesperrt;
-    $('pilot-kauf').disabled = gesperrt || state.owners.house.cash < 600 || state.stations.st_aldera.lager.miner < 1;
+      $(id).disabled = gesperrt || !ladebereit;
+    $('pilot-kauf').disabled = gesperrt || !ladebereit || state.owners.house.cash < 600 || state.stations.st_aldera.lager.miner < 1;
   }
   function sichern() {
-    if (gesperrt) return Promise.resolve(false);
+    if (gesperrt || !ladebereit) return Promise.resolve(false);
     const snapshot = save(state);
     // Sequenziert: auch bei schnellen Touch-Eingaben gewinnt immer der letzte Stand.
     speicherKette = speicherKette.catch(() => {}).then(() => dbPut(SLOT, snapshot));
@@ -4238,7 +4239,7 @@ const m_ui_erzpilot = (() => {
     });
   }
   function befehl(cmd) {
-    if (gesperrt) return;
+    if (gesperrt || !ladebereit) return;
     const result = execute(state, cmd, rules);
     if (!result.ok) return nachricht(result.reason, true);
     anzeigen();
@@ -4248,7 +4249,7 @@ const m_ui_erzpilot = (() => {
     befehl({ type: 'shipBuy', owner: 'house', klasse: 'miner', station: 'st_aldera' });
   });
   function auftrag(typ) {
-    if (gesperrt) return;
+    if (gesperrt || !ladebereit) return;
     const eigene = Object.values(state.ships).filter((sh) => sh.owner === 'house' && sh.klasse === 'miner');
     let erfolgreich = 0;
     for (const sh of eigene) {
@@ -4264,7 +4265,7 @@ const m_ui_erzpilot = (() => {
   $('pilot-stopp').addEventListener('click', () => auftrag('shipWait'));
   for (const [id, n] of [['pilot-stunde', 60], ['pilot-tag', 1440]]) {
     $(id).addEventListener('click', () => {
-      if (gesperrt) return;
+      if (gesperrt || !ladebereit) return;
       advance(state, n, rules);
       anzeigen(); sichern();
       if (!gesperrt) nachricht(`${n} Minuten gespielt. Endliches Exportbudget: ${geld(state.owners.export.cash)} verbleiben.`);
@@ -4280,10 +4281,16 @@ const m_ui_erzpilot = (() => {
   $('pilot-datei').addEventListener('click', exportieren);
   $('pilot-laden').addEventListener('click', () => $('pilot-datei-input').click());
   async function archivieren() {
-    // Nicht nur Browser-Download: vorhandener Pilotstand bleibt unter eindeutigem Schluessel erhalten.
+    // Der aktuelle Snapshot muss zuerst sicher sein; alle anstehenden Saves serialisieren.
+    if (ladebereit && !gesperrt && !(await sichern()))
+      throw Error('Aktueller Spielstand konnte nicht vor dem Archivieren gesichert werden');
+    await speicherKette.catch(() => {});
     const bisher = await dbGet(SLOT);
     if (bisher === undefined) return;
-    await dbPut(`${SLOT}-archiv-${Date.now()}`, bisher);
+    const basis = `${SLOT}-archiv-${Date.now()}`;
+    let key = basis, nummer = 1;
+    while (await dbGet(key) !== undefined) key = `${basis}-${nummer++}`;
+    await dbPut(key, bisher);
   }
   $('pilot-datei-input').addEventListener('change', async (e) => {
     const file = e.target.files[0];
@@ -4294,9 +4301,9 @@ const m_ui_erzpilot = (() => {
       if (!audit(neu).ok) throw Error('Geld- oder Warenbilanz stimmt nicht');
       if (!confirm('Pilot-Spielstand ersetzen? Der bisherige Pilot wird vorher archiviert.')) return;
       await archivieren();
-      state = neu; gesperrt = false;
+      state = neu; gesperrt = false; ladebereit = true;
       anzeigen();
-      await sichern();
+      if (!await sichern()) throw Error('Importstand nur im Arbeitsspeicher; bitte JSON exportieren');
       nachricht('Pilot-Spielstand geprüft und importiert.');
     } catch (err) {
       nachricht('Import abgelehnt: ' + err.message + '. Der bestehende Stand bleibt erhalten.', true);
@@ -4306,9 +4313,9 @@ const m_ui_erzpilot = (() => {
     if (!confirm('Neuen Erzpilot starten? Der bisherige Pilot wird zuerst archiviert.')) return;
     try {
       await archivieren();
-      state = createErzState(); gesperrt = false;
+      state = createErzState(); gesperrt = false; ladebereit = true;
       anzeigen();
-      await sichern();
+      if (!await sichern()) throw Error('Neuer Stand nur im Arbeitsspeicher; bitte JSON exportieren');
       nachricht('Neuer Erzpilot gestartet. Vorheriger Stand archiviert.');
     } catch (err) {
       nachricht('Neustart abgebrochen, Archivierung fehlgeschlagen: ' + err.message, true);
@@ -4327,6 +4334,7 @@ const m_ui_erzpilot = (() => {
       gesperrt = true;
       nachricht('Vorhandener Pilotstand nicht lesbar (' + e.message + '). Nicht überschrieben; Neuer Pilot archiviert ihn zuerst.', true);
     }
+    ladebereit = true;
     anzeigen();
   }
   anzeigen();

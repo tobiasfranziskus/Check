@@ -28,6 +28,8 @@ test('B-K11d: genau echte verbrauchte Einheiten und paid purchases, keinerlei En
         assert(a.guaranteedNewConsumptionLower<=a.possibleNewConsumptionUpper);
         assert(a.possibleNewConsumptionUpper<=a.consumed);
         assert.equal(a.actualConsumerPayments,0,'Original-Endverbrauch zahlt nichts');
+        assert.equal(a.ledgerConsumption,a.consumed+a.cargoDestroyed,
+          'originales Warenledger trennt Stationsverbrauch und Frachtverlust');
         assert(a.paidRealStationPurchases>=0,'separate bezahlte Warenankaeufe');
         const byStation=Object.values(result.byStation);
         assert.equal(byStation.reduce((n,x)=>n+x.consumed[good],0),a.consumed);

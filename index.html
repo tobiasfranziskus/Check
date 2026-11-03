@@ -4201,6 +4201,7 @@ const m_ui_erzpilot = (() => {
   let state = createErzState();
   let gesperrt = false;
   let ladebereit = false;
+  let defekterStand = null;
   let speicherKette = Promise.resolve();
   const geld = (n) => `${n.toLocaleString('de-DE')} ISK`;
   function nachricht(t, fehler = false) {
@@ -4227,6 +4228,7 @@ const m_ui_erzpilot = (() => {
     for (const id of ['pilot-kauf', 'pilot-abbau', 'pilot-stopp', 'pilot-stunde', 'pilot-tag', 'pilot-sichern'])
       $(id).disabled = gesperrt || !ladebereit;
     $('pilot-kauf').disabled = gesperrt || !ladebereit || state.owners.house.cash < 600 || state.stations.st_aldera.lager.miner < 1;
+    for (const id of ['pilot-datei', 'pilot-laden', 'pilot-neu']) $(id).disabled = !ladebereit;
   }
   function sichern() {
     if (gesperrt || !ladebereit) return Promise.resolve(false);
@@ -4275,11 +4277,16 @@ const m_ui_erzpilot = (() => {
     sichern().then((ok) => { if (ok) nachricht('Pilot-Spielstand im getrennten Speicher gesichert.'); });
   });
   function exportieren() {
+    if (!ladebereit) return;
+    if (defekterStand !== null) {
+      dateiSichern(defekterStand, 'aphros-erzpilot-regel15-beschaedigt.json');
+      return nachricht('Original des beschädigten Pilotstands unverändert als JSON gesichert.');
+    }
     dateiSichern(save(state), `aphros-erzpilot-regel15-tick-${state.tick}.json`);
     nachricht('Pilot-Spielstand als JSON exportiert.');
   }
   $('pilot-datei').addEventListener('click', exportieren);
-  $('pilot-laden').addEventListener('click', () => $('pilot-datei-input').click());
+  $('pilot-laden').addEventListener('click', () => { if (ladebereit) $('pilot-datei-input').click(); });
   async function archivieren() {
     // Der aktuelle Snapshot muss zuerst sicher sein; alle anstehenden Saves serialisieren.
     if (ladebereit && !gesperrt && !(await sichern()))
@@ -4295,13 +4302,13 @@ const m_ui_erzpilot = (() => {
   $('pilot-datei-input').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     e.target.value = '';
-    if (!file) return;
+    if (!file || !ladebereit) return;
     try {
       const neu = loadErz(await file.text());
       if (!audit(neu).ok) throw Error('Geld- oder Warenbilanz stimmt nicht');
       if (!confirm('Pilot-Spielstand ersetzen? Der bisherige Pilot wird vorher archiviert.')) return;
       await archivieren();
-      state = neu; gesperrt = false; ladebereit = true;
+      state = neu; gesperrt = false; ladebereit = true; defekterStand = null;
       anzeigen();
       if (!await sichern()) throw Error('Importstand nur im Arbeitsspeicher; bitte JSON exportieren');
       nachricht('Pilot-Spielstand geprüft und importiert.');
@@ -4310,10 +4317,11 @@ const m_ui_erzpilot = (() => {
     }
   });
   $('pilot-neu').addEventListener('click', async () => {
+    if (!ladebereit) return;
     if (!confirm('Neuen Erzpilot starten? Der bisherige Pilot wird zuerst archiviert.')) return;
     try {
       await archivieren();
-      state = createErzState(); gesperrt = false; ladebereit = true;
+      state = createErzState(); gesperrt = false; ladebereit = true; defekterStand = null;
       anzeigen();
       if (!await sichern()) throw Error('Neuer Stand nur im Arbeitsspeicher; bitte JSON exportieren');
       nachricht('Neuer Erzpilot gestartet. Vorheriger Stand archiviert.');
@@ -4332,7 +4340,8 @@ const m_ui_erzpilot = (() => {
       } else nachricht('Neuer Erzpilot. Starte mit einem Miner-Kauf.');
     } catch (e) {
       gesperrt = true;
-      nachricht('Vorhandener Pilotstand nicht lesbar (' + e.message + '). Nicht überschrieben; Neuer Pilot archiviert ihn zuerst.', true);
+      try { defekterStand = (await dbGet(SLOT)) ?? null; } catch { defekterStand = null; }
+      nachricht('Vorhandener Pilotstand nicht lesbar (' + e.message + '). Nicht überschrieben; JSON-Export sichert die Rohdaten.', true);
     }
     ladebereit = true;
     anzeigen();

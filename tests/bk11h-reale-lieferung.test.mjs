@@ -337,7 +337,9 @@ function bk11pDelivered(state,ship,station,newCount,total){
   t.allNew+=newCount;t.allOld+=total-newCount;
   if(ship.id===t.ship){t.shipOld+=total-newCount;t.shipNew+=newCount;t.shipTotal+=total;}
   t.shipments.push({tick:state.tick,ship:ship.id,qty:total,
-    newQty:newCount,oldQty:total-newCount});
+    newQty:newCount,oldQty:total-newCount,
+    stationCashBefore:state.owners[station].cash,
+    shipOwnerCashBefore:state.owners[ship.owner].cash});
 }
 function bk11pPaid(state,station,qty,isk){
   const t=cfg.p16;if(!t||station!==t.station)return;
@@ -1864,6 +1866,19 @@ test('B-K11p: sh015-Dravos-Nahrungsverkauf gegen original bezahlten Haushalt-End
         w.traceDravos.paidFromOtherFIFO+
         w.traceDravos.paidFromStartFIFO+
         w.traceDravos.paidFromLocalFIFO,w.traceDravos.paidNew);
+      // Anders als sonstige gemischte Warenlager ist hier jede einzelne
+      // bezahlte Neuware beim Verbrauch nachweisbar aus sh015.
+      assert.equal(w.traceDravos.shipNew,9);
+      assert.equal(w.traceDravos.paidFromShipFIFO,target.paid);
+      assert.equal(w.traceDravos.paidFromOtherFIFO,0);
+      assert.equal(w.traceDravos.paidFromStartFIFO,0);
+      assert.equal(w.traceDravos.paidFromLocalFIFO,0);
+      for(const event of w.traceDravos.payments){
+        assert.equal(event.minimumAtThisHour,event.qty,
+          'kein konkurrierender Neu-Lieferant: die Herkunft ist diesmal eindeutig');
+        assert.equal(event.maximumAtThisHour,event.qty);
+        assert.equal(event.attributedShipByFIFO,event.qty);
+      }
       assert.equal(w.traceDravos.shipNew+w.traceDravos.shipOld,
         w.traceDravos.shipTotal);
       assert(w.traceDravos.paidFromShipFIFO<=w.traceDravos.shipNew);
@@ -1871,8 +1886,28 @@ test('B-K11p: sh015-Dravos-Nahrungsverkauf gegen original bezahlten Haushalt-End
       assert.equal(receipt.unmatchedSales,0);
       assert(receipt.completeLots>=2);
       assert.equal(receipt.lossTick,target.name==='48h'?null:9420);
+      const sell=cfg.l11.trades.filter(t=>t.ship==='sh015'&&t.station==='st_dravos'&&
+        t.ware==='nahrung'&&!t.kauf);
+      const wages=cfg.l11.events.filter(e=>e.art==='produktionslohn'&&e.von==='st_dravos');
+      const noOtherSales=sell.reduce((x,t)=>x+t.menge,0);
+      assert.equal(noOtherSales,target.sale);
+      const depart=cfg.l11.departures.filter(d=>d.schiff==='sh015');
+      const fareFor=id=>sum(journal.filter(j=>j.art==='flug'&&j.vertrag===id).map(j=>j.betrag));
+      const firstFoodArrival=w.traceDravos.shipments.find(e=>e.ship==='sh015');
+      const nextDepart=depart.find(d=>d.tick>firstFoodArrival.tick)||
+        depart.find(d=>d.tick===firstFoodArrival.tick);
+      const flightAfterSale=nextDepart?{
+        tick:nextDepart.tick,ship:nextDepart.schiff,from:nextDepart.station,
+        to:nextDepart.ziel,contract:nextDepart.vertrag,
+        paidFlightISK:fareFor(nextDepart.vertrag),
+        firstHouseholdPaymentTick:w.traceDravos.payments[0]?.tick
+      }:null;
       console.log('BK11P_DRAVOS_FOOD_ORIGIN '+JSON.stringify({
         name:target.name,seed:7,hash:w.hash,origin:w.traceDravos,
+        realStationFoodPurchases:sell.map(t=>({tick:t.tick,qty:t.menge,
+          isk:t.wert,shipFee:t.fee})),
+        realDravosWages:wages.map(e=>({tick:e.tick,isk:e.isk,rezept:e.rezept})),
+        nextDepartureAfterFoodSale:flightAfterSale,
         producerDravosWage:w.civil.stations.st_dravos.hhIncome,
         buyerDravosCash:w.civil.stations.st_dravos.householdCash,
         stationDravosCash:w.civil.stations.st_dravos.stationCash,

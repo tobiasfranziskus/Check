@@ -45,7 +45,8 @@ einmal("  buche(state, schiff.owner, 'kosten', fee);",
   "  __bk10k_quelleTrade(state,schiff,station,ware,menge,kauf,wert);");
 const anchor="    m_core_handel.buche(state, s.owner, 'kosten', kosten);\n  }\n  if (s.phase === 'dock') {";
 einmal(anchor,"    m_core_handel.buche(state, s.owner, 'kosten', kosten);\n"+
-  "    __bk10k_journal.push({art:'flug',tick:state.tick,schiff:s.id,betrag:kosten});\n"+
+  "    __bk10k_journal.push({art:'flug',tick:state.tick,schiff:s.id,owner:s.owner,"+
+  "empfaenger:rules.world.systems[system].fonds,betrag:kosten});\n"+
   "  }\n  if (s.phase === 'dock') {");
 
 // B-K10k: Historische FIFO-Belege fuer tatsaechlich am Nadir-Markt bezahltes Eis,
@@ -1121,4 +1122,107 @@ test('B-K11k: tatsaechliche Haushaltslohn-Konten und bestehende NPC-Handelswege 
     }
   }finally{cfg.accountOnly=false;cfg.gateLog=null;
     rules.world.mindeststand=min;rules.world.fondsObergrenze=max;}
+});
+
+
+// B-K11l: unabhängig nachvollzogene Cash- und noch gesperrte
+// Vertragsreserve-Salden; keine Buchung wird durch diese Rechnungen ausgelöst.
+function bk11lOffeneReserve(s,owner){
+  return sum(Object.values(s.vertraege.eintraege)
+    .filter(v=>v.status==='offen'&&v.zahlender===owner)
+    .map(v=>v.rest));
+}
+test('B-K11l: erste Finanzierungssperren und echte Gegenbuchungen im wiederbelebten NPC-Handel',()=>{
+  const min=rules.world.mindeststand,max=rules.world.fondsObergrenze;
+  const ids=['st_aldera','npc1','npc2','hh_st_aldera','fonds_aldera','st_nadir','fonds_nadir'];
+  try{
+    for(const seed of [42,7]){
+      rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+      const third=bk11kNachDrittemTeilauftrag(seed);
+      assert.equal(rules.world.mindeststand,0);
+      const s=core.load(third.saved,undefined,rules);
+      const startCash=Object.fromEntries(ids.map(id=>[id,{
+        cash:s.owners[id].cash,reserve:bk11lOffeneReserve(s,id)}]));
+      cfg.accountOnly=true;cfg.mode=null;cfg.ship=null;cfg.order=null;cfg.gateLog=null;
+      cfg.l11={trades:[],events:[],firstPayroll:null,firstFlight:{}};
+      journal.length=0;
+      let release=0;
+      for(const sh of Object.values(s.ships)){
+        if(sh.owner!=='house'&&sh.owner.startsWith('npc')
+          && sh.klasse==='frachter'&&sh.auftrag==='halten'){
+          sh.auftrag='handeln';release++;
+        }
+      }
+      assert.equal(release,5);
+      for(let t=0;t<2880;t++){
+        core.step(s,rules);
+        if(s.tick%60===0)audit(s);
+        if(s.tick%1440===0)assert.equal(
+          core.hash(core.load(core.save(s),undefined,rules)),core.hash(s));
+      }
+      const endHash=core.hash(s);
+      assert.equal(endHash,seed===42?'0d47d35f43f1bac6':'e18524faeb778a7c',
+        'B-K11l beobachtet Original-Core ohne Tick-/Hash-Veraenderung');
+      const flights=journal.filter(e=>e.art==='flug');
+      const trade=cfg.l11.trades,ev=cfg.l11.events;
+      const net={};const posten={};
+      for(const id of ids){net[id]=0;posten[id]={};}
+      function buchen(id,art,v){
+        if(!Object.hasOwn(net,id)||v===0)return;
+        net[id]+=v;posten[id][art]=(posten[id][art]||0)+v;
+      }
+      for(const t of trade){
+        buchen(t.owner,t.kauf?'warenankauf':'warenabsatz',
+          t.wert*(t.kauf?-1:1));
+        buchen(t.station,t.kauf?'stationsverkauf':'stationseinkauf',
+          t.wert*(t.kauf?1:-1));
+        buchen(t.owner,'marktgebuehren',-t.fee);
+        buchen(t.feeEmpfaenger,'gebuehrenempfang',t.fee);
+      }
+      for(const x of flights){
+        assert(x.owner&&x.empfaenger,'Originalfluege mit realen Eigentuemern/Fonds');
+        buchen(x.owner,'bezahlte-flugkosten',-x.betrag);
+        buchen(x.empfaenger,'flugkostenempfang',x.betrag);
+      }
+      for(const e of ev){
+        buchen(e.von,e.art,-e.isk);buchen(e.an,e.art,e.isk);
+      }
+      const actor={};
+      for(const id of ids){
+        const now=s.owners[id].cash,old=startCash[id].cash;
+        const reserveAlt=startCash[id].reserve, reserveNeu=bk11lOffeneReserve(s,id);
+        const liquidDelta=now-old;
+        const kapDelta=liquidDelta+reserveNeu-reserveAlt;
+        actor[id]={start:old,end:now,liquidDelta,
+          reserveStart:reserveAlt,reserveEnd:reserveNeu,
+          kapitalDelta:kapDelta,gebuchteFluesse:net[id],
+          ungeklärt:kapDelta-net[id],posten:posten[id]};
+      }
+      const gates={firstPayroll:cfg.l11.firstPayroll,
+        firstFlight:cfg.l11.firstFlight};
+      const nachfrage=core.preis(s,'st_aldera','nahrung',rules)*24;
+      assert.equal(nachfrage,1296);
+      assert.equal(s.owners['hh_st_aldera'].cash>=nachfrage,true);
+      assert(actor.npc1.end<150&&actor.npc2.end<150);
+      assert(actor.st_aldera.end<10);
+      assert(cfg.l11.firstPayroll||Object.keys(cfg.l11.firstFlight).length>0,
+        'mindestens eine wirklich erreichte Finanzierungssperre statt nur Kassen-Naehe');
+      assert(trade.some(x=>x.owner==='npc1'&&x.kauf));
+      assert(trade.some(x=>x.owner==='npc2'&&x.kauf));
+      console.log('BK11L_ACCOUNT_RECONCILIATION '+JSON.stringify({
+        seed,base:third.hash,finalHash:endHash,gates,
+        actor,tradeCount:trade.length,flightCount:flights.length,
+        payrollEvents:ev.filter(x=>x.art==='produktionslohn').length,
+        fundTransfers:ev.filter(x=>x.art.startsWith('fonds-')).length,
+        npcTransfers:ev.filter(x=>x.art==='npc-abgabe').length,
+        newMinted:s.minted,newBurned:s.burned
+      }));
+      // Unterdeckt ein weiterer Wertungseffekt die Einnahmen, offen ausweisen
+      // statt einen Transfer in Test/Dokumentation zu erfinden.
+      cfg.l11=null;
+    }
+  }finally{
+    cfg.l11=null;cfg.accountOnly=false;cfg.gateLog=null;
+    rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+  }
 });

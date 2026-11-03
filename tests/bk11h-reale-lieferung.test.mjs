@@ -61,7 +61,7 @@ einmal("      st.lager[ware] = da - n; state.ledger[ware].consumed += n;",
   "      st.lager[ware] = da - n; state.ledger[ware].consumed += n;");
 einmal("    const n = Math.min(besitzer.cash, kosten);\n    if (n <= 0) continue;",
   "    const n = Math.min(besitzer.cash, kosten);\n"+
-  "    __bk10k_minerKosten(s,kosten,n);\n"+
+  "    __bk10k_minerKosten(state,s,kosten,n);\n"+
   "    if (n <= 0) continue;");
 einmal("    f.cash -= n; o[id].cash += n;",
   "    __bk10k_fondsZufluss(id,n,'mindest');\n"+
@@ -69,7 +69,7 @@ einmal("    f.cash -= n; o[id].cash += n;",
 einmal("    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;",
   "    __bk10k_fondsZufluss(arm,f.cash-w.fondsObergrenze,'ueberschuss');\n"+
   "    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;");
-const journal=[],cfg={mode:null,ship:null,order:null,delivered:0,pay:0,fees:0,trace:null};
+const journal=[],cfg={mode:null,ship:null,order:null,delivered:0,pay:0,fees:0,trace:null,gateLog:null};
 function traceNeu(){
   return {eisLots:[],foodLots:[],offen:new Map(),verkauft:[],
     eisVonMiner:0,eisAnkaufISK:0,produktion:0,lokalGegessen:0,
@@ -120,7 +120,11 @@ function nadirFondsZufluss(id,isk,art){
   if(art==='mindest')cfg.trace.nadirFondsMindestISK+=isk;
   else cfg.trace.nadirFondsUeberschussISK+=isk;
 }
-function quelleMinerKosten(sh,kosten,gezahlt){
+function quelleMinerKosten(state,sh,kosten,gezahlt){
+  if(sh.id==='sh009' && cfg.gateLog && gezahlt<kosten)
+    cfg.gateLog.push({art:'miner-betrieb',tick:state.tick,akteur:sh.owner,schiff:sh.id,
+      brauchtISK:kosten,vorhandenISK:state.owners[sh.owner].cash,
+      bezahltISK:gezahlt,fehlbetragISK:kosten-gezahlt});
   if(!cfg.trace||sh.id!=='sh009')return;
   cfg.trace.minerArbeitSoll+=kosten;
   cfg.trace.minerArbeitBezahlt+=gezahlt;
@@ -160,8 +164,24 @@ function direkt(s,rules,id,ware,bedarf){
   cfg.delivered+=n;cfg.pay+=geld;cfg.fees+=fee;
   return n;
 }
-const modules=new Function('__bk10k_hold','__bk10k_direkt','__bk10k_journal','__bk10k_quelleTrade','__bk10k_quelleStart','__bk10k_quelleFertig','__bk10k_quelleKonsum','__bk10k_minerKosten','__bk10k_fondsZufluss',js+
-  ';return {core:m_core_index,base:m_data_rules.RULES,herkunft:m_core_herkunft,route:m_core_route.route};')(halten,direkt,journal,quelleTrade,quelleStart,quelleFertig,quelleKonsum,quelleMinerKosten,nadirFondsZufluss);
+// B-K11j: ausschliesslich beobachtender Hook an der echten fehlgeschlagenen
+// Produktionsmittelbindung; keine Buchung, kein Retry und keine Sonderzahlung.
+function bk11jProduktionsGate(state,id,index,linie,rezept,lohn){
+  if(id!=='st_nadir'||!cfg.gateLog)return;
+  const cash=state.owners[id].cash;
+  cfg.gateLog.push({art:'produktion-escrow',tick:state.tick,akteur:id,
+    linie:index,rezept:linie.rezept,brauchtISK:lohn,vorhandenISK:cash,
+    fehlbetragISK:Math.max(0,lohn-cash),eisLager:state.stations[id].lager.eis,
+    nahrungLager:state.stations[id].lager.nahrung,
+    haushaltISK:state.owners['hh_'+id].cash,
+    fondsISK:state.owners.fonds_nadir.cash});
+}
+einmal("        const idVertrag = m_core_vertrag.reservieren(state, id, 'hh_' + id, lohn);\n        if (!idVertrag) continue;",
+  "        const idVertrag = m_core_vertrag.reservieren(state, id, 'hh_' + id, lohn);\n"+
+  "        if (!idVertrag) __bk11j_prodGate(state,id,index,linie,r,lohn);\n"+
+  "        if (!idVertrag) continue;");
+const modules=new Function('__bk10k_hold','__bk10k_direkt','__bk10k_journal','__bk10k_quelleTrade','__bk10k_quelleStart','__bk10k_quelleFertig','__bk10k_quelleKonsum','__bk10k_minerKosten','__bk10k_fondsZufluss','__bk11j_prodGate',js+
+  ';return {core:m_core_index,base:m_data_rules.RULES,herkunft:m_core_herkunft,route:m_core_route.route};')(halten,direkt,journal,quelleTrade,quelleStart,quelleFertig,quelleKonsum,quelleMinerKosten,nadirFondsZufluss,bk11jProduktionsGate);
 core=modules.core;
 const {base,herkunft,route}=modules;
 assert.equal(base.schema,8);assert.equal(base.rulesVersion,14);
@@ -597,4 +617,82 @@ test('B-K11i: Fonds AUS erst NACH identischer erster bezahlter Lieferung, zweite
    }
   }
  }finally{rules.world.mindeststand=min;rules.world.fondsObergrenze=max;}
+});
+
+test('B-K11j: erster realer Finanzierungsgate nach zwei voll bezahlten Lieferungen ohne Fonds',()=>{
+  const min=rules.world.mindeststand,max=rules.world.fondsObergrenze;
+  try {
+    for(const [seed,secondHash,secondSource] of [
+      [42,'fecad114e0b10608',917],[7,'1bd24ad0814a5dc1',1041]
+    ]){
+      rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+      cfg.gateLog=null;
+      const start=snapshot(seed);
+      const first=run(start.saved,seed,'bestellung',false,24,{returnSave:true});
+      rules.world.mindeststand=0;rules.world.fondsObergrenze=1_000_000_000;
+      const second=run(first.finalSaved,seed,'bestellung',false,24,
+        {continueTrace:true,returnSave:true,allowBlocked:true});
+      assert.equal(second.blocked,undefined,'zweite reale Lieferung muss erfolgen');
+      assert.equal(second.hash,secondHash,'identischer zweiter Save wie B-K11i');
+      assert.equal(second.nadirEndKasse,secondSource);
+      const s=core.load(second.finalSaved,undefined,rules);
+      audit(s);
+      const kassen=state=>{
+        const miner=state.ships.sh009.owner;
+        return Object.fromEntries([S,'hh_'+S,H,'house',miner,'fonds_nadir','fonds_aldera']
+          .filter((x,i,a)=>a.indexOf(x)===i&&state.owners[x])
+          .map(id=>[id,state.owners[id].cash]));
+      };
+      const kontenStart=kassen(s),nachZweiter=s.tick;
+      const traceStart={
+        eisVonMiner:cfg.trace.eisVonMiner,
+        minerVerkaeufe:cfg.trace.minerVerkaeufe,
+        eisAnkaufISK:cfg.trace.eisAnkaufISK,
+        produktion:cfg.trace.produktion,
+        minerArbeitBezahlt:cfg.trace.minerArbeitBezahlt,
+        minerArbeitSoll:cfg.trace.minerArbeitSoll,
+        fondsMindest:cfg.trace.nadirFondsMindestISK
+      };
+      cfg.mode=null;cfg.order=null;cfg.ship=null;
+      cfg.gateLog=[];
+      // Original-Core: Miner verkörpern wirkliche Folgegeschaefte, Fabrik
+      // versucht die naechsten realen Vorfinanzierungen, ohne Geldinjektion.
+      for(let i=0;i<2880&&cfg.gateLog.length===0;i++){
+        core.step(s,rules);
+        if(s.tick%60===0)audit(s);
+      }
+      assert(cfg.gateLog.length>0,'in 48h muss ein wirklicher Kontogate erreicht werden');
+      const erster=cfg.gateLog[0];
+      assert(erster.tick>=nachZweiter,'kein historisches Event wiederverwendet');
+      assert(erster.fehlbetragISK>0,'tatsaechlich nicht gedeckte Mittelbindung');
+      assert(erster.vorhandenISK<erster.brauchtISK,'kein bloßer Buchungs-/Lagerfehler');
+      assert.equal(cfg.trace.nadirFondsMindestISK,traceStart.fondsMindest,
+        'Fonds hat nach erster Lieferung kein Mindestkapital neu eingespeist');
+      audit(s);
+      const endHash=core.hash(s),save=core.save(s);
+      assert.equal(core.hash(core.load(save,undefined,rules)),endHash);
+      const kassenEnde=kassen(s),kontodifferenz=Object.fromEntries(
+        Object.keys(kontenStart).map(id=>[id,kassenEnde[id]-kontenStart[id]]));
+      const belege={
+        seed,ausgangspunkt:secondHash,tickNachZweiter:nachZweiter,
+        ersterFinanzierungsGate:erster,tickEnde:s.tick,minutenSeitZweiter:s.tick-nachZweiter,
+        kassenVorher:kontenStart,kassenNachher:kassenEnde,kassenDelta:kontodifferenz,
+        neuerEisAnkauf:cfg.trace.eisAnkaufISK-traceStart.eisAnkaufISK,
+        neueEisMenge:cfg.trace.eisVonMiner-traceStart.eisVonMiner,
+        neueEisVerkaeufe:cfg.trace.minerVerkaeufe-traceStart.minerVerkaeufe,
+        neueNahrung:cfg.trace.produktion-traceStart.produktion,
+        minerGeleisteteKosten:cfg.trace.minerArbeitSoll-traceStart.minerArbeitSoll,
+        minerTatsaechlichBezahlt:cfg.trace.minerArbeitBezahlt-traceStart.minerArbeitBezahlt,
+        fondsNeu:cfg.trace.nadirFondsMindestISK-traceStart.fondsMindest,
+        nahrungLager:s.stations[S].lager.nahrung,eisLager:s.stations[S].lager.eis,
+        offenesEscrowISK:sum(Object.values(s.vertraege.eintraege).map(x=>x.rest)),
+        supply:s.initialSupply+s.minted-s.burned,
+        hash:endHash
+      };
+      console.log('BK11J_FIRST_GATE '+JSON.stringify(belege));
+      cfg.gateLog=null;
+    }
+  } finally {
+    cfg.gateLog=null;rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+  }
 });

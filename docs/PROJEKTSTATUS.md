@@ -1,5 +1,16 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B-K12b – vorab gesperrter Endauftrag und echte Käuferzuflüsse · 03.11.2026
+
+**[MAIN]** `b4e604d6` / Regel14 / Schema8 unverändert. **[DRAFT]** [PR #157](https://github.com/tobiasfranziskus/Check/pull/157), auf #156/#155 gestapelt. Historischer R15-/Schema9-**Testkern**; keine Änderungen an Produktcode, Originalpreisen, Testlohn 4 ISK/Minute, Fonds-/Emissionsregeln, Spielständen oder `main`. [Vollständiger B-K12b-Bericht](ANALYSE_BK12B_VORFINANZIERTE_ENDABNAHME.md).
+
+**[TEST]** [Gezielte CI #41693650546](https://github.com/tobiasfranziskus/Check/actions/runs/41693650546) am Analyse-Head `6f90605b`: **2/2 Tests erfolgreich**, null Fehler/Skip. Seeds 42/7 je 24h und 7d (7d je 3 Fondsbudgets), echte R15-Vertragsreserve **vor** Rohstoffkauf/Produktion, Nadir 2 echte Eis + 24 ISK echter historischer Testlohn → 1 tatsächlicher Neu-Nahrungsverbrauch; genau 68 ISK Erstauszahlung, Restbudget erstattet. Stündliche unabhängige Geld-/Waren-/Herkunftsaudits, tägliche Save-/Load-Hashes. Keine neue Emission.
+
+**[ERGEBNIS, NICHT STABIL]** Verfügbares Anfangsfondsvermögen plus echte Originalzahlungen finanziert Seed42 **23** Endabnahmen/1.564 ISK, Fondskasse 118 ISK; Seed7 **30**/2.040 ISK, Fondskasse 81 ISK. Streng nur aus neuen Gebühren nach dem Erstauftrag finanziert: je **1** bezahlte Einheit, weil die ersten 13 Gebühren-ISK nicht einmal 68 reale Stückkosten decken. Einschließlich echt gezahlter Betriebsleistungen aus Original-Core-Phasen finanzieren die neuen Eingänge **8** (Seed42) bzw. **15** (Seed7) vollständige reale Abnahmen, aber **nur an Tag1** bzw. **Tag1–2** sind solche Fonds-Zuflüsse zu beobachten. Der anschließende Einnahmestrom fehlt; Geld ist verschoben, nicht neu verdient. Die Testbegrenzung auf eine Einheit pro Stunde bei zwei Nahrungseinheiten Originalbedarf bedeutet außerdem **168/168 teilweise mangelhafte Stunden** in allen Szenarien – kein Weltversorgungs-Gate und keine vollen Schiff-/Transportkosten.
+
+**[ENTSCHEIDUNG OFFEN]** Kein Kandidat für Integration. Ein wiederkehrender zahlender Endabnehmer muss aus unabhängig bezahlten fortgesetzten Leistungen bewiesen werden; zusätzliche Service-, Preis-, Lohn- oder Modell-B-Emissionsregeln bedürfen gesonderter Freigabe. `main` und zentrale Roadmap bleiben unverändert.
+
+
 ## [ANALYSE/DRAFT] B-K12a – reale Stückkostendeckung gegen endliche Käuferbudgets · 03.11.2026
 
 **[MAIN]** `b4e604d6` / v0.12.5 Regel14/Schema8 unverändert. **[DRAFT]** [PR #156](https://github.com/tobiasfranziskus/Check/pull/156), auf B-K12 #155 gestapelt. Nur isolierter historischer R15-/Schema9-Nadir-Testkern mit unbeschlossenem Produktionslohn 4 ISK/min, **keine Produktcode-, Preis-/Lohnsatz-, Fonds-, Emissions- oder Save-Regeländerung**, kein Merge/Deployment. [Detailbericht B-K12a](ANALYSE_BK12A_NADIR_KOSTENDECKUNG.md).

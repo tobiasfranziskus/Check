@@ -472,3 +472,71 @@ test('B-K11h: erneute echte Endkunden-Vorfinanzierung moeglich, jedoch KEIN zwei
     sourceFundTransfer:r.fondsNadirErhaltenMinimumISK}));
  }
 });
+
+
+test('B-K11i: ZWEI tatsaechliche R15-Lieferungen im selben Save, jede neu vorfinanziert und auditiert',()=>{
+ for(const seed of [42,7]){
+  const start=snapshot(seed);
+  const first=run(start.saved,seed,'bestellung',false,24,{returnSave:true});
+  assert.equal(first.direktAbsatzMenge,24);
+  const initialSecondHash=core.hash(core.load(first.finalSaved,undefined,rules));
+  const firstSourceCash=first.nadirEndKasse;
+  const firstBuyerCash=first.haushaltCashEnde;
+  assert(firstBuyerCash>=1296,'echte Haushaltseinnahmen decken zweite Bestellung');
+  const second=run(first.finalSaved,seed,'bestellung',false,24,
+    {continueTrace:true,returnSave:true});
+  const after=core.load(second.finalSaved,undefined,rules);
+  assert.notEqual(second.hash,initialSecondHash,'zweiter echter Durchlauf statt Kopie');
+  assert.equal(second.menge,24);
+  assert.equal(second.direktAbsatzMenge,24,'zweite Lieferung tatsaechlich konsumiert');
+  assert.equal(second.direktAbsatzISK,24*second.preisZielBeiBestellung);
+  assert(second.verfolgteEisEinheiten===48);
+  assert(second.eisOriginalAnkaufISK>0,'auch im zweiten Zeitraum kauft die Station echtes Eis');
+  assert(second.nahrungOriginalProduziert>0,'auch im zweiten Zeitraum produziert die Station echt');
+  assert(second.quellFabriklohnISK===576);
+  assert(second.flugGezahltISK>0);
+  assert(second.fondsNadirErhaltenMinimumISK>=0);
+  assert(second.konsumKontozahlungISK>=second.direktAbsatzISK);
+  assert.equal(second.erstattetISK,0);
+  audit(after);assert.equal(core.hash(after),second.hash);
+  assert.equal(core.hash(core.load(core.save(after),undefined,rules)),second.hash);
+  console.log('BK11I_TWO_REAL '+JSON.stringify({seed,firstHash:first.hash,secondHash:second.hash,
+    firstDelivery:first.direktAbsatzMenge,secondDelivery:second.direktAbsatzMenge,
+    firstBuyerISK:first.startHaushaltCash,afterFirstBuyerISK:firstBuyerCash,
+    secondBuyerAtStart:second.startHaushaltCash,
+    firstSourceCash,secondSourceCash:second.nadirEndKasse,
+    firstFundMinimum:first.nadirFondsMindestISK,secondFundMinimum:second.nadirFondsMindestISK,
+    firstSourceContribution:first.eisQuellstationDeckungISK,
+    secondSourceContribution:second.eisQuellstationDeckungISK,
+    secondNewIceBought:second.eisVorverkaufMenge,
+    secondNewProduction:second.nahrungOriginalProduziert,
+    secondFreightCost:second.flugGezahltISK,secondPaidOrderISK:second.direktAbsatzISK}));
+ }
+});
+test('B-K11i: ohne regionale Fonds-Mindestzahlung kann reale Source-Fabrik keine 24er-Charge finanzieren',()=>{
+ const min=rules.world.mindeststand,max=rules.world.fondsObergrenze;
+ try{
+  for(const seed of [42,7]){
+   const start=snapshot(seed);
+   rules.world.mindeststand=0;
+   rules.world.fondsObergrenze=1_000_000_000;
+   cfg.mode=null;cfg.order=null;cfg.ship=null;
+   cfg.trace=traceNeu();journal.length=0;
+   const state=core.load(start.saved,undefined,rules);
+   ticks(state,480);
+   audit(state);
+   const available=core.verkaufbar(state,rules,S,'nahrung');
+   const realCash=state.owners[S].cash;
+   const produced=state.stats.rezepte[S];
+   assert(available<24,'ohne Mindeststand-Fonds keine tatsaechlich verkaufbare volle Charge');
+   assert.equal(cfg.trace.nadirFondsMindestISK,0);
+   assert.equal(cfg.trace.nadirFondsUeberschussISK,0);
+   assert.equal(core.hash(core.load(core.save(state),undefined,rules)),core.hash(state));
+   console.log('BK11I_NO_FUND '+JSON.stringify({seed,available,stationCash:realCash,
+     actualProduction:produced,canStartFirstFullDelivery:available>=24,
+     canCompleteTwoFullDeliveries:false,minimumFundISK:0,hash:core.hash(state)}));
+  }
+ } finally {
+   rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+ }
+});

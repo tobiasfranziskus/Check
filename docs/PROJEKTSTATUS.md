@@ -1,5 +1,14 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B-K11d – ziviler Endverbrauch und Warenherkunft · 03.11.2026
+
+**[MAIN]** `b4e604d6`, v0.12.5 / Regel14 / Schema8, **unverändert**. **[DRAFT]** [PR #141](https://github.com/tobiasfranziskus/Check/pull/141), direkt auf main, ausschließlich Node-Prüfwerkzeug/CI und Dokumentation. Keine ISK-Emission, Preis-/Lohn- oder Produktregeländerung.
+
+**[TEST CI #41582136747](https://github.com/tobiasfranziskus/Check/actions/runs/41582136747) erfolgreich (Codecommit `019c667c`):** 1/1 analytischer Smoketest; drei Produktwelten Seed42 ×90 Tage, jeweils mit Original-Core-H Hash-Replay, insgesamt 6.480 stündliche unabhängige Geld-/Warenaudits, 540 Save/Load. Produkt-Endhashes der beiden Krisen reproduziert. Echte zivile Verbrauchsmengen (Nahrung/Medizin): passiv **36.602/12.960**, Spieler-Miner **3.473/879**, Miner+Auto-Handel **2.573/751**; gezahlter Endverbrauch stets **0 ISK**. Bereits aus Stationskassen bezahlte Warenankäufe sind ausdrücklich **nicht** noch einmal unbezahlte Leistungen. Originales `ledger.consumed` enthält zusätzlich Frachtverlust: 10/0, 1/1, 4/0. Die saubere Unterscheidung wurde erst nach korrekt fehlgeschlagenem ersten CI-Lauf ergänzt.
+
+**[ANALYSE]** In beiden aktiven Welten liegt schon **an Tag 14** der endgültige 90-Tage-Verbrauch vor; NPC1/2 haben 0 Händlerfrachter und Aldera ohne Silizium/Bauteile. Nur nach tatsächlichem Verbrauch vergütete Leistung kann daher bei völliger Versorgungsblockade keinen selbsttätigen Wiederanlauf auslösen. **[BESCHLOSSEN]** Unbegrenzte Spieler-Sparfreiheit und zulässige NPC-Insolvenz bleiben. Konkrete Geldmodell-B-Emissionsregeln bedürfen gesonderter Freigabe. [Vollständige B-K11d-Belege](ANALYSE_BK11D_ENDVERBRAUCH.md). B-K11c [#140](https://github.com/tobiasfranziskus/Check/pull/140) bleibt nicht integriert; auch B-K11d ist keine Produktregel. iPad-/NAS-Abnahme sowie 13-Seed-Wirtschaftsabnahme nicht durchgeführt.
+
+
 ## [ANALYSE] B8o/B8p – bezahlte Aufträge und Endnachfrage · 01.11.2026
 
 **[MAIN]** Weiterhin `0d473e6`, v0.12.5/Regel14/Schema8 ohne Produktcodeänderung. Dokumentations-Draft #78 ist noch **nicht integriert**; dieser Abschnitt bezieht sich auf den vorgeschlagenen Docs-Stand.

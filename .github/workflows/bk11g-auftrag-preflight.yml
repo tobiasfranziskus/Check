@@ -1,0 +1,37 @@
+name: Aphros Void – B-K11g Originalmarkt-Auftrags-Gate (Analyse)
+on:
+  pull_request:
+    paths:
+      - 'tools/bk11g-auftrag-preflight.mjs'
+      - 'tests/bk11g-auftrag-preflight.test.mjs'
+      - 'docs/ANALYSE_BK11G_AUFTRAG_PRECHECK.md'
+      - '.github/workflows/bk11g-auftrag-preflight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ansprueche:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: B-K11g echte Original-Preise, Geld-/Warenclaims, Storno, Save/Load
+        run: node --test tests/bk11g-auftrag-preflight.test.mjs
+  angebote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [passive, miner, handel-flotte]
+        seed: [7, 42]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original-Core Marktangebot, 1d mit Originalhashes/Geld- und Warenaudit
+        run: node tools/bk11g-auftrag-preflight.mjs --seed=${{ matrix.seed }} --scenario=${{ matrix.scenario }} --days=1

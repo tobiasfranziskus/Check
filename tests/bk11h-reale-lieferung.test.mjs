@@ -70,7 +70,7 @@ einmal("    f.cash -= n; o[id].cash += n;",
 einmal("    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;",
   "    __bk10k_fondsZufluss(arm,f.cash-w.fondsObergrenze,'ueberschuss');\n"+
   "    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;");
-const journal=[],cfg={mode:null,ship:null,order:null,delivered:0,pay:0,fees:0,trace:null,gateLog:null,accountOnly:false,l11:null,routeMode:null,routeStats:null};
+const journal=[],cfg={mode:null,ship:null,order:null,delivered:0,pay:0,fees:0,trace:null,gateLog:null,accountOnly:false,l11:null,routeMode:null,routeStats:null,p16:null};
 function traceNeu(){
   return {eisLots:[],foodLots:[],offen:new Map(),verkauft:[],
     eisVonMiner:0,eisAnkaufISK:0,produktion:0,lokalGegessen:0,
@@ -299,8 +299,118 @@ einmal("      if (gewinn <= 0) continue;",
 einmal("      const wertung = gewinn * (1000 + bonus);",
   "      const wertung = __bk11m_routeWertung(gewinn,netto) * (1000 + bonus);");
 function bk11mRouteWertung(brutto,netto){return cfg.routeMode==='vollkosten'?netto:brutto;}
-const modules=new Function('__bk10k_hold','__bk10k_direkt','__bk10k_journal','__bk10k_quelleTrade','__bk10k_quelleStart','__bk10k_quelleFertig','__bk10k_quelleKonsum','__bk10k_minerKosten','__bk10k_fondsZufluss','__bk11j_prodGate','__bk11l_event','__bk11l_flightGate','__bk11l_depart','__bk11m_route','__bk11m_routeWertung',js+
-  ';return {core:m_core_index,base:m_data_rules.RULES,herkunft:m_core_herkunft,route:m_core_route.route};')(halten,direkt,journal,quelleTrade,quelleStart,quelleFertig,quelleKonsum,quelleMinerKosten,nadirFondsZufluss,bk11jProduktionsGate,bk11lEvent,bk11lFlightGate,bk11lDeparture,bk11mRouteNetto,bk11mRouteWertung);
+
+// B-K11p: beobachtendes Dravos-FIFO. Core unterscheidet ALT/NEU, aber
+// NICHT die Identitaet einzelner NEU-Teilmengen. Bei mehrfacher Herkunft
+// ist FIFO Attribution *eine Konvention*, keine eindeutige Waren-ID.
+function bk11pInit(s){
+  const station='st_dravos',n=s.stations[station].lokalNeuNahrung||0;
+  return {station,ship:'sh015',
+    newQueue:Array.from({length:n},()=>({origin:'start'})),
+    initialNew:n,produced:0,outboundNew:0,exportedNew:0,
+    shipOld:0,shipNew:0,shipTotal:0,allOld:0,allNew:0,
+    paidQty:0,paidISK:0,paidFromShipFIFO:0,
+    paidFromOtherFIFO:0,paidFromStartFIFO:0,paidFromLocalFIFO:0,
+    shipments:[],payments:[]};
+}
+function bk11pTake(t,n,action){
+  assert(Number.isSafeInteger(n)&&n>=0);
+  assert(t.newQueue.length>=n,'Test-FIFO Buchungsunterdeckung '+action);
+  return t.newQueue.splice(0,n);
+}
+function bk11pProduction(state,station,n){
+  const t=cfg.p16;if(!t||station!==t.station)return;
+  for(let i=0;i<n;i++)t.newQueue.push({origin:'lokal'});
+  t.produced+=n;
+}
+function bk11pBuy(state,ship,station,newCount,total){
+  const t=cfg.p16;if(!t||station!==t.station)return;
+  assert(total>=newCount);
+  bk11pTake(t,newCount,'externer Schiffskauf');
+  t.outboundNew+=newCount;
+}
+function bk11pDelivered(state,ship,station,newCount,total){
+  const t=cfg.p16;if(!t||station!==t.station)return;
+  assert(total>=newCount&&newCount>=0);
+  const origin=ship.id===t.ship?'sh015':'other';
+  for(let i=0;i<newCount;i++)t.newQueue.push({origin});
+  t.allNew+=newCount;t.allOld+=total-newCount;
+  if(ship.id===t.ship){t.shipOld+=total-newCount;t.shipNew+=newCount;t.shipTotal+=total;}
+  t.shipments.push({tick:state.tick,ship:ship.id,qty:total,
+    newQty:newCount,oldQty:total-newCount});
+}
+function bk11pPaid(state,station,qty,isk){
+  const t=cfg.p16;if(!t||station!==t.station)return;
+  assert(qty>0&&isk>0&&isk%qty===0);
+  const before=t.newQueue.length;
+  const qtyShip=t.newQueue.filter(x=>x.origin==='sh015').length;
+  const bought=bk11pTake(t,qty,'bezahlter Endverbrauch');
+  const origins={sh015:0,other:0,start:0,lokal:0};
+  for(const lot of bought){origins[lot.origin]++;}
+  t.paidFromShipFIFO+=origins.sh015;
+  t.paidFromOtherFIFO+=origins.other;
+  t.paidFromStartFIFO+=origins.start;
+  t.paidFromLocalFIFO+=origins.lokal;
+  t.paidQty+=qty;t.paidISK+=isk;
+  t.payments.push({tick:state.tick,qty,isk,
+    price:isk/qty,availableNew:before,availableFromShip:qtyShip,
+    attributedShipByFIFO:origins.sh015,
+    minimumAtThisHour:Math.max(0,qty-(before-qtyShip)),
+    maximumAtThisHour:Math.min(qty,qtyShip),
+    hhCashBefore:state.owners['hh_'+station].cash,
+    stationCashBefore:state.owners[station].cash});
+}
+function bk11pExport(state,station,newCount){
+  const t=cfg.p16;if(!t||station!==t.station)return;
+  bk11pTake(t,newCount,'Aussenhandel');
+  t.exportedNew+=newCount;
+}
+function bk11pCheck(s){
+  const t=cfg.p16;if(!t)return;
+  assert.equal(t.newQueue.length,s.stations[t.station].lokalNeuNahrung,
+    'Test FIFO stimmt mit echtem Nahrungs-NEU-Bestand ueberein');
+  assert.equal(t.initialNew+t.produced+t.allNew-t.outboundNew-
+    t.exportedNew-t.paidQty,t.newQueue.length);
+  assert(t.paidQty<=s.stats.haushaltskauf[t.station].menge);
+  assert(t.paidISK<=s.stats.haushaltskauf[t.station].isk);
+}
+function bk11pSummary(s){
+  const t=cfg.p16;if(!t)return null;
+  bk11pCheck(s);
+  return {initialNew:t.initialNew,producedLocalNew:t.produced,
+    shipTotal:t.shipTotal,shipNew:t.shipNew,shipOld:t.shipOld,
+    otherNew:t.allNew-t.shipNew,otherOld:t.allOld-t.shipOld,
+    paidNew:t.paidQty,paidISK:t.paidISK,
+    paidFromShipFIFO:t.paidFromShipFIFO,
+    paidFromOtherFIFO:t.paidFromOtherFIFO,
+    paidFromStartFIFO:t.paidFromStartFIFO,
+    paidFromLocalFIFO:t.paidFromLocalFIFO,
+    outboundNew:t.outboundNew,exportedNew:t.exportedNew,
+    finalNew:t.newQueue.length,
+    shipments:t.shipments,payments:t.payments};
+}
+// Beobachter sind NUR an bereits erfolgreich verifizierten Original-Core
+// Waren-/Produktions-/Verbrauchs-Zahlungsstellen und nie in der Routenauswahl.
+einmal("          if (r.aus.nahrung) m_core_herkunft.erzeugen(state, rules, id, r.aus.nahrung);",
+ "          if (r.aus.nahrung) m_core_herkunft.erzeugen(state, rules, id, r.aus.nahrung);\n"+
+ "          if (r.aus.nahrung) __bk11p_production(state,id,r.aus.nahrung);");
+einmal("    if (verfolgt && neu) schiff.neuLadungNahrung = (schiff.neuLadungNahrung || 0) + neu;",
+ "    if (verfolgt && neu) schiff.neuLadungNahrung = (schiff.neuLadungNahrung || 0) + neu;\n"+
+ "    __bk11p_buy(state,schiff,station,neu,menge);");
+einmal("    m_core_herkunft.einlagern(state, rules, station, schiff, menge);",
+ "    const vorNeu=schiff.neuLadungNahrung||0;\n"+
+ "    m_core_herkunft.einlagern(state, rules, station, schiff, menge);\n"+
+ "    __bk11p_delivery(state,schiff,station,vorNeu-(schiff.neuLadungNahrung||0),menge);");
+einmal("          st.lokalNeuNahrung -= neuKauf;",
+ "          __bk11p_paid(state,id,neuKauf,geld);\n"+
+ "          st.lokalNeuNahrung -= neuKauf;");
+einmal("      if (ware === 'nahrung' && d < 0)\n        m_core_herkunft.entnehmen(state, rules, id, -d);",
+ "      if (ware === 'nahrung' && d < 0) {\n"+
+ "        const neuAus=m_core_herkunft.entnehmen(state,rules,id,-d);\n"+
+ "        __bk11p_export(state,id,neuAus);\n"+
+ "      }");
+const modules=new Function('__bk10k_hold','__bk10k_direkt','__bk10k_journal','__bk10k_quelleTrade','__bk10k_quelleStart','__bk10k_quelleFertig','__bk10k_quelleKonsum','__bk10k_minerKosten','__bk10k_fondsZufluss','__bk11j_prodGate','__bk11l_event','__bk11l_flightGate','__bk11l_depart','__bk11m_route','__bk11m_routeWertung','__bk11p_production','__bk11p_buy','__bk11p_delivery','__bk11p_paid','__bk11p_export',js+
+  ';return {core:m_core_index,base:m_data_rules.RULES,herkunft:m_core_herkunft,route:m_core_route.route};')(halten,direkt,journal,quelleTrade,quelleStart,quelleFertig,quelleKonsum,quelleMinerKosten,nadirFondsZufluss,bk11jProduktionsGate,bk11lEvent,bk11lFlightGate,bk11lDeparture,bk11mRouteNetto,bk11mRouteWertung,bk11pProduction,bk11pBuy,bk11pDelivered,bk11pPaid,bk11pExport);
 core=modules.core;
 const {base,herkunft,route}=modules;
 assert.equal(base.schema,8);assert.equal(base.rulesVersion,14);
@@ -1333,9 +1443,10 @@ test('B-K11l: erste Finanzierungssperren und echte Gegenbuchungen im wiederbeleb
 
 // B-K11m: A/B-Route aus identischem drittem Echtlieferungs-Save.
 // Eine hypothetische Planmarge wird niemals als gezahlter Umsatz ausgegeben.
-function bk11mVergleich(seed,saved,modus,minutes=2880,onlyShip=null){
+function bk11mVergleich(seed,saved,modus,minutes=2880,onlyShip=null,trackDravos=false){
   const s=core.load(saved,undefined,rules);
   const initialHash=core.hash(s);
+  cfg.p16=trackDravos?bk11pInit(s):null;
   cfg.routeMode=modus==='vollkosten'?'vollkosten':null;
   cfg.routeStats={geprueft:0,abgewiesen:0,auskoemmlich:0};
   cfg.accountOnly=true;cfg.mode=null;cfg.ship=null;cfg.order=null;cfg.gateLog=null;
@@ -1378,6 +1489,7 @@ function bk11mVergleich(seed,saved,modus,minutes=2880,onlyShip=null){
     if(onlyShip&&selectedLossTick===null&&!s.ships[onlyShip])selectedLossTick=s.tick;
     if(s.tick%60===0){
       audit(s);
+      bk11pCheck(s);
       if(s.tick%1440===0)
         assert.equal(core.hash(core.load(core.save(s),undefined,rules)),core.hash(s));
     }
@@ -1386,6 +1498,8 @@ function bk11mVergleich(seed,saved,modus,minutes=2880,onlyShip=null){
     }
   }
   audit(s);
+  bk11pCheck(s);
+  const traceDravos=bk11pSummary(s);
   const hash=core.hash(s);
   assert.equal(core.hash(core.load(core.save(s),undefined,rules)),hash);
   const ships=Object.values(s.ships);
@@ -1424,7 +1538,7 @@ function bk11mVergleich(seed,saved,modus,minutes=2880,onlyShip=null){
   };
   const isolated=onlyShip?bk11oAuswertung(onlyShip,initialShipOwner,initialCargo,cfg.l11.trades,
     journal,cfg.l11.events,s,old,selectedLossTick):null;
-  return {seed,modus,minutes,base:initialHash,hash,released,civil,isolated,
+  return {seed,modus,minutes,base:initialHash,hash,released,civil,isolated,traceDravos,
     routeStats:cfg.routeStats,
     npc:{npc1:s.owners.npc1.cash,npc2:s.owners.npc2.cash,
       npc1Delta:s.owners.npc1.cash-old.cashNPC1,

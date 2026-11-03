@@ -89,3 +89,28 @@ test('Save/Load und Replay deterministisch; klassische Regel-14-Welt unveränder
   assert.equal(api.hash(alt), '866776f7d84ef15e');
   assert.equal(api.audit(alt).ok, true);
 });
+
+
+test('13 Seeds x 90 Tage: taegliche unabhaengige Bilanz und Save/Load, aber kein Dauerumsatz', () => {
+  const seeds = [1, 2, 7, 11, 13, 42, 99, 123, 777, 1234, 4096, 65535, 98765];
+  for (const seed of seeds) {
+    const s = api.createErzState(seed);
+    for (let tag = 1; tag <= 90; tag++) {
+      api.advance(s, 24 * 60, rules);
+      const kassen = Object.values(s.owners).reduce((sum, owner) => sum + owner.cash, 0);
+      assert.equal(kassen, s.initialSupply + s.minted - s.burned, 'ISK-Bilanz ' + seed + '/' + tag);
+      for (const [ware, ledger] of Object.entries(s.ledger)) {
+        const lager = Object.values(s.stations).reduce((n, st) => n + (st.lager[ware] || 0), 0);
+        const fracht = Object.values(s.ships).reduce((n, sh) => n + (sh.ladung[ware] || 0), 0);
+        const erzeugt = ledger.initial + ledger.mined + ledger.produced + ledger.imported;
+        const verbraucht = ledger.consumed + ledger.exported;
+        assert.equal(lager + fracht, erzeugt - verbraucht, 'Warenbilanz ' + ware + '/' + seed + '/' + tag);
+      }
+      assert.ok(Object.values(s.owners).every((owner) => owner.cash >= 0));
+    }
+    assert.equal(s.minted, 0);
+    assert.equal(s.owners.export.cash, 0);
+    assert.equal(s.ledger.erz.exported, 2000);
+    assert.equal(api.hash(api.loadErz(api.save(s))), api.hash(s));
+  }
+});

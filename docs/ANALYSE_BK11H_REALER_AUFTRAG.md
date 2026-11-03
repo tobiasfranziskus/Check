@@ -24,4 +24,28 @@ Nur bei wirklich bestandenem Test auswerten, ob **einmaliger bezahlter Auftrag +
 
 ## Tatsächliche CI-Ergebnisse
 
-**Erst nach erfolgreicher Ausführung ergänzen; alte CI-Belege gelten nicht automatisch als neuer Test.**
+**[TEST] [B-K11h-CI #41633584760](https://github.com/tobiasfranziskus/Check/actions/runs/41633584760) auf Codecommit `374a25fe` erfolgreich:** 3/3 neue Tests; jeder testet Seeds 42 und 7. Der gesamte historische, unverändert aus [PR #128](https://github.com/tobiasfranziskus/Check/pull/128) extrahierte R15-Core-Quellabschnitt ist als **test-only Archiv-Fixpunkt** unter `tests/fixtures/bk11h-r15-core-snapshot.txt` abgelegt. Gepinnter SHA-256: `e5e2c5092fda778b38064dcda2692004889635639ff56dc5c0c61b2377dd7680`. **Die Fixture ist ausdrücklich keine neue Produktionsimplementierung** und darf nicht in `index.html` gelangen.
+
+| Echt ausgeführte R15/Schema9-Simulation | Seed 42 | Seed 7 |
+| --- | ---: | ---: |
+| Erfolgreiche 24er-Endabnahme: Hash | `7f65cee9b1330747` | `f2f8983d53c26e3d` |
+| Real bezahlter Eiseinkauf für zugeordnete FIFO-Charge | 1.056 ISK | 1.056 ISK |
+| Bezahlter testweiser Fabriklohn, 24 Stück | 576 ISK | 576 ISK |
+| Echte Flugkosten | 499 ISK | 499 ISK |
+| Aus echtem Haushaltsvertragsrest bezahlt | 1.296 ISK | 1.296 ISK |
+| Quellstations-Beitrag vor sonstigen Risiken | **−1.032 ISK** | **−1.032 ISK** |
+| Konsolidierter Beitrag vor Hülle | **+29 ISK** | **+29 ISK** |
+| Reale Nadir-Fonds-Mindeststandsumme im ganzen Lauf | **5.135 ISK** | **5.259 ISK** |
+| Während echtem Flug kontrolliert zerstörte Neuware | 24 | 24 |
+| Verlustfall: deterministischer Core-State-Hash | `7f628068dedb1aea` | `b84997113b084206` |
+| Verlustfall: unverdiente Vertrags-ISK erstattet | **1.296 ISK** | **1.296 ISK** |
+| Verlustfall: zivil tatsächlich geliefert | **0** | **0** |
+| Verlustfall: Händler-Kassenänderung | **−1.123 ISK** | **−1.123 ISK** |
+| Tatsächliche Haushaltskasse nach erfolgreicher Lieferung | **1.972 ISK** | **2.252 ISK** |
+| Zweites **nur reserviertes**, anschließend storniertes Käuferbudget | **1.296 ISK** | **1.296 ISK** |
+
+**Warum B-K11f damit präzisiert werden muss:** Der Endkunde wird im echten R15-Testkern durch *fortlaufend bezahlte* Fabrikarbeit mit Einkommen versorgt; im isolierten B-K11f-Kontoreplay war sein Anfangsbudget absichtlich auf exakt 1.296 ISK beschränkt. Aus diesem formalen Null-Endstand darf man **keine generelle Zahlungsunfähigkeit nach einer echten Lieferung** ableiten. Umgekehrt entstehen die bisherigen Fabriklöhne nicht aus dauerhaft rentabler Quellproduktion: Nadir erhält in derselben kontrollierten Laufzeit **5.135/5.259 ISK echte regionale Fondsüberweisungen**, während die einzelne 24er-Charge bei Nadir rechnerisch −1.032 ISK beiträgt. Das Budget für **einen zweiten Endkundenauftrag** ist belegt; **ein zweiter wirklicher Herstellungs-/Transport-/Verbrauchszyklus** und dessen kontinuierliche Deckung bleiben unbewiesen.
+
+**Kausalgrenze des Verlustfalls:** Die Testintervention zerstört die echten physischen neu produzierten Güter **auf einer normalen Core-Schiffsreise**, aber sie ist kein natürlich entstandener Piratenangriff und vernichtet **keine Schiffshülle**. Insbesondere sind damit weder Piratenkosten noch eine reale 780-ISK-Hüllenersatzbeschaffung oder Schiffskapitaldeckung belegt. Die im Originalledger als Verbrauch gebuchte Frachtvernichtung ist **kein ziviler Konsum** und darf niemals zusätzliche Endverbrauchserlöse auslösen.
+
+**Abnahmegrenze:** Der vom Test verwendete R15-Quellkern liegt nur als historische Fixture vor; `main b4e604d6` läuft weiter auf Regel14/Schema8. 13 Seeds ×90 Tage, echte Save-Migration, NPC-Marktnachfolge sowie iPad-/NAS-Abnahme wurden **nicht** durchgeführt. Die separaten Standard-Regressionen für den neuen PR werden unabhängig geprüft.

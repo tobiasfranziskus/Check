@@ -748,7 +748,7 @@ test('B-K11j: aktive echte Folgelieferungen ab identischem zweitem Save bis zum 
         const outcome=run(save,seed,'bestellung',false,24,
           {continueTrace:true,returnSave:true,allowBlocked:true});
         auftraege.push({
-          lieferung,blocked:!!outcome.blocked,reason:outcome.reason||null,
+          lieferung,tick:outcome.tick??null,blocked:!!outcome.blocked,reason:outcome.reason||null,
           gate:outcome.gate||null,requiredBudgetISK:outcome.requiredBudgetISK??null,
           buyerISK:outcome.buyerCash??null,shortfallISK:outcome.shortfallISK??null,
           buyerCashDelta:outcome.buyerCashDelta??null,

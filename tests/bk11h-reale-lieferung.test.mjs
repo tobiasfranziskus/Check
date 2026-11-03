@@ -213,12 +213,20 @@ function bk11lEvent(state,art,id,gegen,n,info={}){
 function bk11lFlightGate(state,schiff,station,ziel,ware,budget,art){
   if(!cfg.l11||!['npc1','npc2'].includes(schiff.owner))return;
   const id=schiff.owner;
-  if(cfg.l11.firstFlight[id])return;
-  cfg.l11.firstFlight[id]={tick:state.tick,owner:id,schiff:schiff.id,
-    art,station,ziel,ware,cash:state.owners[id].cash,
-    flightBudget:budget,
+  const cash=state.owners[id].cash;
+  // Ein fahrtStart=false trotz voller Kasse ist NICHT automatisch Geldnot:
+  // etwa s.arbeit !== 0 nach einer noch nicht abgerechneten Reisestunde.
+  const echtCashGate=art==='handel-vorlauf'||cash<budget;
+  const event={tick:state.tick,owner:id,schiff:schiff.id,art,
+    station,ziel,ware,cash,flightBudget:budget,
     priceUnit:ware?core.preis(state,station,ware,rules):null,
-    cargo:Object.fromEntries(Object.entries(schiff.ladung))};
+    schonGearbeitet:schiff.arbeit,offenerVertrag:schiff.vertrag||null,
+    phase:schiff.phase,cargo:Object.fromEntries(Object.entries(schiff.ladung))};
+  if(!echtCashGate){
+    if(!cfg.l11.firstOtherFlight[id])cfg.l11.firstOtherFlight[id]=event;
+    return;
+  }
+  if(!cfg.l11.firstFlight[id])cfg.l11.firstFlight[id]=event;
 }
 einmal("            buche(state, id, 'kosten', betrag);",
   "            __bk11l_event(state,'produktionslohn',id,'hh_'+id,betrag,"+
@@ -236,6 +244,13 @@ einmal("          hh.cash -= geld;",
 einmal("    f.cash -= n; o[id].cash += n;",
   "    __bk11l_event(state,'fonds-mindest',fondsIn(rules,state.stations[id].system),id,n);\n"+
   "    f.cash -= n; o[id].cash += n;");
+einmal("    if (w.senkeBesitzer.includes(s.owner)) state.burned += n;\n    else state.owners[fondsIn(rules, system)].cash += n;",
+  "    if (w.senkeBesitzer.includes(s.owner)) state.burned += n;\n"+
+  "    else {\n"+
+  "      __bk11l_event(state,'betriebsfonds',s.owner,fondsIn(rules,system),n,"+
+  "{schiff:s.id,klasse:s.klasse});\n"+
+  "      state.owners[fondsIn(rules, system)].cash += n;\n"+
+  "    }");
 einmal("    if (bezahlbar(rules, station, state.owners[s.owner].cash - budget, preis(state, station, ware, rules)) <= 0)\n      return false;",
   "    if (bezahlbar(rules, station, state.owners[s.owner].cash - budget, preis(state, station, ware, rules)) <= 0) {\n"+
   "      __bk11l_flightGate(state,s,station,ziel,ware,budget,'handel-vorlauf');\n"+
@@ -1144,7 +1159,7 @@ test('B-K11l: erste Finanzierungssperren und echte Gegenbuchungen im wiederbeleb
       const startCash=Object.fromEntries(ids.map(id=>[id,{
         cash:s.owners[id].cash,reserve:bk11lOffeneReserve(s,id)}]));
       cfg.accountOnly=true;cfg.mode=null;cfg.ship=null;cfg.order=null;cfg.gateLog=null;
-      cfg.l11={trades:[],events:[],firstPayroll:null,firstFlight:{}};
+      cfg.l11={trades:[],events:[],firstPayroll:null,firstFlight:{},firstOtherFlight:{}};
       journal.length=0;
       let release=0;
       for(const sh of Object.values(s.ships)){
@@ -1199,7 +1214,7 @@ test('B-K11l: erste Finanzierungssperren und echte Gegenbuchungen im wiederbeleb
           ungeklärt:kapDelta-net[id],posten:posten[id]};
       }
       const gates={firstPayroll:cfg.l11.firstPayroll,
-        firstFlight:cfg.l11.firstFlight};
+        firstFlight:cfg.l11.firstFlight,firstOtherFlight:cfg.l11.firstOtherFlight};
       const nachfrage=core.preis(s,'st_aldera','nahrung',rules)*24;
       assert.equal(nachfrage,1296);
       assert.equal(s.owners['hh_st_aldera'].cash>=nachfrage,true);
@@ -1207,6 +1222,10 @@ test('B-K11l: erste Finanzierungssperren und echte Gegenbuchungen im wiederbeleb
       assert(actor.st_aldera.end<10);
       assert(cfg.l11.firstPayroll||Object.keys(cfg.l11.firstFlight).length>0,
         'mindestens eine wirklich erreichte Finanzierungssperre statt nur Kassen-Naehe');
+      if(cfg.l11.firstPayroll){
+        assert(cfg.l11.firstPayroll.liquid<cfg.l11.firstPayroll.bedarf);
+        assert(cfg.l11.firstPayroll.fehlbetrag>0);
+      }
       assert(trade.some(x=>x.owner==='npc1'&&x.kauf));
       assert(trade.some(x=>x.owner==='npc2'&&x.kauf));
       console.log('BK11L_ACCOUNT_RECONCILIATION '+JSON.stringify({

@@ -1,5 +1,16 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B-K12c – realer Lohnrückfluss finanziert mehr Nahrungsabnahmen, noch keinen Dauerbetrieb · 03.11.2026
+
+**[MAIN]** `b4e604d6` / Regel14 / Schema8 unverändert. **[DRAFT]** [PR #158](https://github.com/tobiasfranziskus/Check/pull/158) gestapelt auf #157/#156/#155, nur isolierte historische R15-/Schema9-Analyse mit unbeschlossenem **4-ISK/Minute**-Testlohn. Kein neuer Preis-/Lohn-/Emissions-/Spielstand-/Produktcode, kein Merge/Deployment. [Bericht B-K12c](ANALYSE_BK12C_HAUSHALTSRUECKFLUSS.md).
+
+**[TEST]** [Gezielte CI #41695759667](https://github.com/tobiasfranziskus/Check/actions/runs/41695759667) am korrigierten Head `6b0b9402`: **3/3 Testfälle erfolgreich**, 0 Fehler/Skip; Seed42/7 je 7 Tage plus B-K12b-Kontrollen, unabhängige stündliche Geld-/Waren-/Herkunftsaudits, echte Original-R15-Vertragsbelege und tägliche Save-/Load-Hashes. Zusätzliche Hash-/Kassenidentitäts-Pins sind im nachfolgenden Head `1fcfddc1` enthalten; finale CI separat zu bestätigen. Vorheriger Lauf scheiterte ausschließlich an einer widerlegten, zu strengen Gesamtfonds-Ausgaben-Testannahme; danach je Stück statt Gesamtbetrag verglichen, Originalbuchungen unverändert.
+
+**[ERGEBNIS/TEILERFOLG]** Testseitiger Nadir-Haushalt beteiligt sich aus **tatsächlich vorhandenem** Produktionslohn mit **24 ISK pro neu konsumierter Nahrungseinheit**, Fonds zahlt aus schon vor Beschaffung gesperrten echten ISK die restlichen **44 von 68 FIFO-ISK**. Seed42: **38 statt 23** bezahlte Einheiten, 912 ISK Haushaltsrückfluss, Fonds-Endcash 100 ISK; Seed7: **48 statt 30**, 1.152 ISK Haushaltsrückfluss, Fonds-Endcash 117 ISK. Keine zusätzlichen ISK, keine fiktiven Chargen, keine Kostennichtdeckung. **[NEGATIV]** Echte neue Fonds-Einnahmen enden in diesen Mikrowelten nach Tag2/3, die teilweise Nahrungsunterversorgung bleibt **168/168 h**, auch wegen bewusst auf maximal eine Einheit je Stunde beschränkter Testabnahme bei Originalbedarf zwei. Kein stabiler, eigenfinanzierter Endabnehmer nachgewiesen.
+
+**[ENTSCHEIDUNG OFFEN]** Teilzahlung trotz fehlender voller Spot-Kaufkraft ist **ausschließlich testseitig**, eine produktive Verbrauchs-/Geldverteilungsregel wäre freigabepflichtig. Nächste enge Ursache: Miner-Einkommen, tatsächlich bezahlte Betriebskosten und durch Verkäufe erneut gesicherte Käuferbudgets kontengenau prüfen. Keine Integration und kein 13×90d-Gate.
+
+
 ## [ANALYSE/DRAFT] B-K12b – vorab gesperrter Endauftrag und echte Käuferzuflüsse · 03.11.2026
 
 **[MAIN]** `b4e604d6` / Regel14 / Schema8 unverändert. **[DRAFT]** [PR #157](https://github.com/tobiasfranziskus/Check/pull/157), auf #156/#155 gestapelt. Historischer R15-/Schema9-**Testkern**; keine Änderungen an Produktcode, Originalpreisen, Testlohn 4 ISK/Minute, Fonds-/Emissionsregeln, Spielständen oder `main`. [Vollständiger B-K12b-Bericht](ANALYSE_BK12B_VORFINANZIERTE_ENDABNAHME.md).

@@ -1,5 +1,16 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B-K11j – erster Folgefinanzierungsblocker nach zweiter Lieferung · 03.11.2026
+
+**[MAIN]** Weiter b4e604d6 / Regel14/Schema8. **[DRAFT]** [#148](https://github.com/tobiasfranziskus/Check/pull/148) gestapelt auf #147 → #146, historischer isolierter R15-/Schema9-Testkern; nur Test- und Analysecode, keine geänderte Wirtschaftsregel, Emission, Preis, Lohn, Save, Deployment oder Merge.
+
+**[TEST, gezielte CI #41658072168](https://github.com/tobiasfranziskus/Check/actions/runs/41658072168) erfolgreich (8/8):** Echte B-K11i-Referenz-Saves nach zwei 24er-Lieferungen mit Fonds-Mindeststand **ab Lieferung eins aus** bleiben für Seeds 42/7 unverändert (`fecad114e0b10608`/`1bd24ad0814a5dc1`). Bei echter dritter Händlerpositionierung nach 480 weiteren Original-Core-Minuten und 37 verkaufbaren Nahrungsstücken verweigert der R15-Kern die **dritte 24er-Haushaltsreservierung von 1.296 ISK**: Aldera-Haushalt besitzt nur **796/956 ISK**, fehlen **500/340 ISK**. Nadir hat noch **517/641 ISK**, der Spielerhändler **2.000 ISK**, es werden keine dritten Waren verkauft oder Zahlungen verdient. Unveränderte Ablehnungshashes `14f991547a41737c`/`28a52381e2b2561e`. **Erster aktiver Blocker ist Käufergeld, nicht Quellware oder Quellinsolvenz**. Vorlauf: je 400 ISK echtes Eis gekauft, 20 neue Nahrung hergestellt; HH Aldera erhält keine weiteren ISK.
+
+**Getrennter Stillstands-Gegenpfad:** Ohne weitere Spielerbestellung arbeitet Nadir weiter, bis erst nach **1.327/1.507 Core-Minuten** ein echter Produktionslohn-Escrow von 24 ISK an **3/7 ISK** Quellkasse scheitert (21/17 ISK fehlen). Trotz 124 Eis und 64 Nahrung im Lager; 89/101 weitere echte Miner-Eiseinkäufe seit zweiter Lieferung; Nadir-Haushalt hat 2.425 ISK, Nadir-Fonds 829/999 ISK, weiterhin **0 ISK** neue Fonds-Mindeststandsüberweisungen. Hashes `1785218fe1f52a0f`/`53ad5d748c2ad56f`. Das ist **nicht** identisch mit dem früheren Käuferblocker im aktiven Verlauf.
+
+**[RISIKEN]** Der bisherige Testkern isoliert NPC-Händler und nutzt eine testweise Haushaltsdirektabnahme; kein dritter bezahlter Auftrag, keine Selbstfinanzierung der Welt, keine 13×90d-Freigabe oder iPad-/NAS-Abnahme. Folgeschritt erst nach Prüfung der D2-Einkommens-/Nachfrageorte und D3-Vertragsdisposition; Geldmodell B/D6 gesondert entscheiden. Keine Kapitalabschöpfung beim Spieler oder individuelle Rettung. [Vollständiger Bericht](ANALYSE_BK11J_FINANZIERUNGSAUSFALL.md).
+
+
 ## [ANALYSE/DRAFT] B-K11i – Zwei echte Folgelieferungen mit/ohne Fonds-Mindeststand · 03.11.2026
 
 **[MAIN]** b4e604d6 / v0.12.5 Regel14/Schema8 unverändert. **[DRAFT]** [PR #147](https://github.com/tobiasfranziskus/Check/pull/147), bewusst auf den isolierten R15-/Schema9-Fixture- und Test-PR #146 gestapelt. Ausschließlich Node-Test-/Analyse-Änderung; keine Produktregel, Preis-, Lohn-, Geld-/Save-Migration, keine Emission, kein Merge.

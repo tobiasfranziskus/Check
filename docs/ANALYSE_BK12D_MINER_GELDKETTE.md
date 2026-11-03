@@ -74,7 +74,27 @@ Ab **Tag4 bis Tag7** gibt es in diesen beobachteten Mikrowelten weder weitere ec
 
 **Wirtschaftlicher Kernbefund:** Die reale Arbeit und die Handelsgebühren können den Fonds zu einem Teil auffüllen, aber bei diesem Kosten-/Lohn-/Nachfrage-Design wird pro weiterem Auftrag netto **38 ISK vom Käuferfonds zum Miner-Eigentümer** verschoben. Dass NPC3 sein Gesamtvermögen behält, hilft einem einzelnen, vertraglich zahlenden Fonds nicht, sobald dessen freies Geld unter die Vorabreserve fällt. Es fehlen ein **tatsächlicher, begründeter Gegenleistungs- und Geldrückfluss** aus den übrigen NPC3-Einnahmen an den Endabnehmer, nicht Waren- oder Geldbilanzierung.
 
-## 4. Qualität und Grenzen
+## 4. [TEST] Sicherheitsreserve ist eine zweite, kleinere Ursache – der strukturelle Abfluss bleibt
+
+Der ursprüngliche B-K12b/-c-Auftrag bindet **128 ISK**, obwohl die zuerst nachgewiesene Charge **68 ISK** tatsächlich kosten kann (44 Eis + 24 Lohn) und der Fonds nach realer Haushaltsbeteiligung letztlich **44 ISK** bezahlt. Die Stopps bei 100/117 ISK freiem Fondscash sind deshalb **nicht** gleichbedeutend mit einer Insolvenz und dürfen nicht ausschließlich als struktureller Geldmangel interpretiert werden: Das ursprünglich bewusst konservative Vertragsbudget ist größer als die bisherigen Istkosten.
+
+Die gesondert ausgeführte **B-K12d-Reservesensitivität** verwendet rein testseitig, ohne Änderung von Rohstoff-, Preis- oder Fabrikregeln, nur die vor Produktionsbeginn tatsächlich gedeckten **68 ISK** (vollständige belegte Erstkosten, vor dem späteren Haushaltslohnbeitrag). Die echten 44 ISK Fonds-Restzahlung und 24 ISK Haushaltszahlung werden weiterhin nur nach wahrhaftigem Konsum gebucht; ungenutzte 24 ISK Reserve gehen beim Abschluss zurück.
+
+| 7 Tage | Seed42, Reserve 128 | Seed42, Reserve 68 | Seed7, Reserve 128 | Seed7, Reserve 68 |
+|---|---:|---:|---:|---:|
+| Echtes Neu-Nahrungs-Endkaufvolumen | 38 | **39** | 48 | **50** |
+| Freier Nadir-Fonds-Cash am Ende | 100 ISK | **62 ISK** | 117 ISK | **41 ISK** |
+| Wirkliche Gesamtkostenzahlung des Fonds | 1.672 ISK | **1.716 ISK** | 2.112 ISK | **2.200 ISK** |
+| Bezahlter Haushaltsanteil aus echtem Lohn | 912 ISK | **936 ISK** | 1.152 ISK | **1.200 ISK** |
+| Nadir-Fonds-Einnahmen aus echtem Schiffsbetrieb + Gebühren | 772 ISK | **778 ISK** | 1.229 ISK | **1.241 ISK** |
+| Letzter Tag mit solchen laufenden Einnahmen | 2 | **2** | 3 | **3** |
+| Gepinnter 7d-Testhash | `3461775aeb999c23` | `4a5857e57dd26942` | `4848efbdd3a93e18` | `1932cd8001738da1` |
+
+**[POSITIV/KLEIN]** Weniger unnötig gebundener Cash ermöglicht **eine** zusätzliche bezahlte Einheit bei Seed42 und **zwei** bei Seed7. **[NEGATIV]** Auch mit der vollständig vorfinanzierten 68-ISK-Reserve sinkt das frei verfügbare Käuferbudget auf **62/41 ISK**, also unter die zum erneuten Auftragsstart nötigen 68 ISK. **Der echte marginale 38-ISK-Rückflussfehler bleibt nachweisbar.** Das Vertragsbudget ist daher ein eigener, aber **nicht hinreichender** Liquiditätshebel. Ein produktives Modell muss außerdem Preisänderung/Risiko, echten Betriebs-Vorschuss und mögliche gemeinsame Kostenträger behandeln; diese Gegenprobe ist keine Produktionsfreigabe.
+
+**[TEST]** [Gezielte B-K12d-Sensitivitäts-CI #41699715440](https://github.com/tobiasfranziskus/Check/actions/runs/41699715440), Ausgangshead `b67ff4c9`: **5/5 erfolgreich**, 0 Fehler, beide Seeds×7d mit alter und enger Reserve, Original-Core-Ausgaben, unabhängige stündliche Geld-/Waren-/Herkunftsaudits, tägliche Save-/Load-Hashes, keine neue Geldquelle. Nachfolgender Codecommit `08bd002b` pinnt auch die beiden neuen deterministischen Endzustände; finale CI gesondert prüfen.
+
+## 5. Qualität und Grenzen
 
 - **[TEST]** [B-K12d gezielte CI](https://github.com/tobiasfranziskus/Check/actions/runs/41698366671) am ersten Analyse-Head `09e19a63`: **4/4 Tests erfolgreich**, 0 Fehler. Samen 42 und 7 je sieben Tage in der unveränderten B-K12c-Kofinanzierungswelt; alle vorbestehenden B-K12b/-c-Gegenproben erneut. Zusätzlich Nadir-Miner-ID, reale Verkaufs-/Gebührenbelege, getrennte fällige/bezahlte Betriebskosten, Fondspayer, NPC3-Phasenkassenidentität, tägliche Minervorräte und cash, volle unabhängige stündliche Waren-/Geld-/Herkunftsaudits und tägliche originale Save-/Load-/Hashes.
 - **[TEST, FINAL AUSSTEHEND]** Ein nachfolgender kleiner Prüfcommit `2b7a5886` pinnt die eigentlichen Grenzbeträge `44/5/1/38`, real bezahlte Minerarbeit, Eigentümer-/Fondsendkassen und Auftragsstopp. Finale CI nach den Dokumentationsänderungen separat prüfen.

@@ -1,5 +1,16 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B-K12e – NPC3-Abgaben an Aldera, kein Rückfluss an Nadir · 03.11.2026
+
+**[MAIN]** `b4e604d6` / Regel14 / Schema8 unverändert. **[DRAFT]** [PR #160](https://github.com/tobiasfranziskus/Check/pull/160) auf #159/#158/#157/#156/#155. Nur historische R15-/Schema9-Testwelt mit nicht freigegebenem 4-ISK/Minute-Testproduktionslohn und 68-ISK-Vorabreserve. Kein `index.html`-/Fixture-/Wirtschaftsregel-/Save-Diff, kein Merge. [Vollständiger Bericht B-K12e](ANALYSE_BK12E_NPC_ABGABEEMPFAENGER.md).
+
+**[TEST]** [Erste gezielte CI #41702858259](https://github.com/tobiasfranziskus/Check/actions/runs/41702858259): **6/6 Node-Tests erfolgreich** auf `3c1b1dbf`, Seeds42/7×7d mit stündlichen unabhängigen Geld-/Waren-/Herkunftsaudits, täglich originalem Save/Load/Hash, vollständiger Beobachtung aller echten NPC-Abgabesender/-empfänger und Kassenidentität sämtlicher sieben Systemfonds. Nachfolge-Testcommit `a6dd6c7a` pinnt exakte Abgaben- und Fondsbeträge; finale CI nach Dokumentation separat prüfen.
+
+**[URSACHE / WIDERLEGUNG]** `npcAusgaben` wählt die **ärmere Station** und leitet NPC-Überschusszahlungen zum Fonds ihres Systems; es honoriert weder die Eislieferung noch den Nadir-Endauftrag. In **allen 39/13 realen Abgabeereignissen** ist die ärmste Station **`st_aldera`**. Die gesamten nachweislichen NPC3-Abgaben **3.067/1.427 ISK** gehen daher ausschließlich an **`fonds_aldera`**, **0 ISK** an **`fonds_nadir`**. Aldera hat an Tag7 **5.531/4.332 ISK**, Nadir **62/41 ISK**; letzterer kann die 68-ISK-Vorabbestellung nicht erneut reservieren. NPC3 bleibt mit **5.249/3.487 ISK** liquide. Alle phasenweise original verbuchten Fonds-Kassenänderungen und ursprünglichen ISK-Emissionen (**2.040/2.880** aus dem historischen Kern, keine zusätzlichen) sind kontrolliert. Kein einziger Test hat den Empfänger geändert oder neues Geld erzeugt.
+
+**[GRENZE]** Der Mikrovergleich deaktiviert die bisherigen individuellen Gratiszuschüsse und über `mindeststand=0` / `fondsObergrenze=1e9` die Fonds-Ausgleichsmechanik; Alderas Geld bleibt daher hier ungenutzt. Das erklärt den isolierten Fall, aber beweist **keine** automatische Verbesserung durch anderes Routing, weder langfristige Finanzierung noch Versorgung von 2 Einheiten je Stunde bei auf 1 Einheit gedeckeltem Testauftrag. Keine 13×90d-Gesamt-/Spielerkrisenwelt, kein Safari-/NAS-Test. **[OPTION] B-K12f:** nachweisbare, dauerhaft finanzierte Endnachfrage aus echten Gegenleistungen bestimmen, ohne neue ISK, neue Lohn-/Preisregel, kostenlose Fondsrettung oder Produktentscheidung.
+
+
 ## [ANALYSE/DRAFT] B-K12d – Nadir-Miner voll bezahlt, Käuferfonds nicht regeneriert · 03.11.2026
 
 **[MAIN]** `b4e604d6` / Regel14 / Schema8 unverändert. **[DRAFT]** [PR #159](https://github.com/tobiasfranziskus/Check/pull/159), gestapelt auf #158/#157/#156/#155. Nur historischer R15-/Schema9-Testkern mit unbeschlossenem 4-ISK/Minute-Fabriklohn; **kein** `index.html`-, Referenz-Fixture-, Preis-, Lohn-, Emissions- oder Save-Regeldiff. [Vollständiger B-K12d-Bericht](ANALYSE_BK12D_MINER_GELDKETTE.md).

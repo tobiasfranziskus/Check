@@ -144,6 +144,7 @@ function runMicro(seed,mode,minutes){
   }else assert.equal(additional,0);
   const first=realized[0];
   return {seed,mode,days:minutes/1440,hash:m.core.hash(s),
+    demandPerHour:m.rules.world.stations[NADIR].verbrauch.nahrung,
     initialSupply:initial.initialSupply,
     initialMoney:initial.initialSupply+initial.minted-initial.burned,
     first:first&&{tick:first.tick,paid:first.paid,cost:first.cost,qty:first.qty},
@@ -180,7 +181,8 @@ test('B-K12a: zwei rein testseitige voll aus Bestandskonten bezahlte Endabnahmen
     assert(v.netAgainstCosts>=0,'nur voll finanzierte tatsaechliche HH-Endkaeufe');
     assert.equal(v.money,v.initialMoney+v.minted-v.burned,
       'Weltgeld muss gemessenem Ursprungsbestand plus echten Core-Quellen minus Senken entsprechen');
-    assert(v.actualNewFoodPaid<=24,'eine Ortswelt mit einem Tagesbedarf ohne Gratisverbrauch');
+    assert(v.actualNewFoodPaid<=24*v.demandPerHour,
+      'real bezahlter Verbrauch darf tatsaechlichen Nadir-Stundenbedarf nicht uebersteigen');
     console.log('BK12A_FUNDED_ONE_DAY '+JSON.stringify(v));
   }
 });

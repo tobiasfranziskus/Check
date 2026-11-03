@@ -623,10 +623,8 @@ test('B-K12e: exact original NPC surplus levy recipients, fund account audits (4
       'new demand must be fully paid, not gifted');
     assert.equal(r.fundPaidISK,r.inputISK,
       'actual funded food must trace back to sold mineral inputs');
-    assert.equal(r.minted,[42,7].includes(seed)?r.minted:NaN,
-      'do not manipulate existing emissions');
-    const expected={42:{hash:'4a5857e57dd26942',delivered:39,levy:0},
-      7:{hash:'1932cd8001738da1',delivered:50,levy:0}}[seed];
+    const expected={42:{hash:'4a5857e57dd26942',delivered:39},
+      7:{hash:'1932cd8001738da1',delivered:50}}[seed];
     assert.equal(r.hash,expected.hash,'observer must preserve deterministic core outcome');
     assert.equal(r.delivered,expected.delivered);
     console.log('BK12E_REAL_LEVY '+JSON.stringify({

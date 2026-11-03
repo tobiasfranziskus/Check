@@ -115,6 +115,20 @@ export function quote(state,qty=8,{trader='house'}={}){
    readyForRealCore:false,reason:'nicht als Produktauftrag ausfuehrbar',
    caveat:'Historische Eis-Einstandskosten sind NICHT aktuelle Spotpreise; kein Ist-Deckungsbeitrag, keine qualifizierte Neuware'};
 }
+export function dryMaterialClaims(state,quantities){
+ // Nur materielle Konkurrenzprobe; kein Auftrag, keine Kasse und keine Ware veraendert.
+ const stock=state.stations[sourceStation].lager.eis||0;
+ let held=0;
+ const decisions=[];
+ for(const amount of quantities){
+   assert(Number.isSafeInteger(amount)&&amount>0);
+   const accepted=amount<=stock-held;
+   if(accepted)held+=amount;
+   decisions.push({amount,accepted,held,free:stock-held});
+ }
+ assert(held<=stock);
+ return {stock,held,decisions};
+}
 function sum(a){return Object.values(a).reduce((n,b)=>n+b,0);}
 export function claims(state){
  const originalHash=core.hash(state),originalSupply=state.initialSupply+state.minted-state.burned;

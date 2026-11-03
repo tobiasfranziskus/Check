@@ -1,5 +1,22 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B-K11l – nachweisbare Frachter-Vollkostenverluste und erste Kontoausfälle · 03.11.2026
+
+**[MAIN]** `b4e604d6`, Regel14/Schema8 unverändert. **[DRAFT]** [PR #150](https://github.com/tobiasfranziskus/Check/pull/150) testseitig auf #149 → #148 → #147 → #146 gestapelt, historischer isolierter R15-/Schema9-Kern; keinerlei Produkt-/Preis-/Lohn-/Geld-/Save-Regeländerung, keine Emission, kein Merge/Deployment.
+
+**[TEST] [Gezielte CI #41665282421](https://github.com/tobiasfranziskus/Check/actions/runs/41665282421), 11/11 bestanden:** Aus den exakt gepinnten B-K11j-Endspielständen nach dritter realer Teilbelieferung (Seed42/7, Tick3960) fünf zuvor künstlich angehaltene NPC-Frachter lediglich wieder auf ihren vorhandenen Auftrag `handeln` gestellt und jeweils 48h realen R15-Core simuliert. Echte Markt-/Gebühren-/Lohn-/Flug-/Minerarbeit-/Fonds-Transfers mit **0 ISK ungeklärter Abweichung** bei **Aldera-/Nadir-Station, NPC1, NPC2, Aldera-Haushalt, Aldera-/Nadir-Fonds**; stündliche unabhängige Geld-/Waren-/Herkunftsaudits, Save/Load und unveränderte Hashes (`0d47d35f43f1bac6`/`e18524faeb778a7c`). Kein Beispiel aus der laufenden `main`-Normalwelt.
+
+**[URSACHE]** NPC1/2 verkaufen original mehr Warenwert als sie einkaufen, aber die **echten Frachterarbeitskosten** fressen den vermeintlichen Margengewinn auf: Seed42 NPC1 **+4.917 Handelsmarge –753 Gebühren –7.099 Flugkosten = −2.935 ISK**, NPC2 **+1.685 –205 –4.356 = −2.876 ISK**; Seed7 NPC1 **+5.454 –1.079 –7.309 = −2.934 ISK**, NPC2 **+5.418 –617 –7.736 = −2.935 ISK**. Nur **124/0** bzw. **318/1.053 ISK** der Seed42-/Seed7-NPC1/NPC2-Flugkosten gehören *wirklich leeren* Flügen – **der Großteil entsteht bei beladener Fahrt**. Original-`m_core_entscheidung.bestesPaar` bewertet Preisunterschied minus Gebühren, **nicht** den tatsächlichen durch R15 vorfinanzierten Flugaufwand; das ist ein enger, testbar korrigierbarer Auswahlfehler, kein Beleg der gesamten wirtschaftlichen Stabilität.
+
+**[STATION]** Aldera-Kasse **4.137→2 / 3.940→7 ISK**: Original-Warenverkauf +4.392/+7.653; Original-Warenkauf −6.703/−8.880; echte Löhne −1.824/−2.856; bezahlter lokaler Endverbrauch 0/+150; **Saldo −4.135/−3.933 ISK**. Erste im untersuchten Akteursfenster **wirklich abgewiesene** Core-Lohnvorfinanzierung für `r_bauteil` (2 Material +1 Silizium vorhanden) bei Tick **4101/4077**: Bedarf 32 ISK, nur 6/3 ISK verfügbar, Fehlbetrag **26/29 ISK**, während Haushalt und Fonds eigene, nicht automatisch zugängliche Guthaben halten.
+
+**[HANDELS-GATES]** Erst nach abgewickelten Vorfahrten tatsächlich belegte NPC-Deckungssperren: Seed42 NPC2 Tick4801 **25 ISK** für **125 ISK** Fahrtreserve mit 12 Material an Bord, NPC1 Tick5161 **178 ISK** für 125 ISK Flugreserve plus 103 ISK erste Bauteileinheit; Seed7 NPC1 Tick5101 **127 ISK** für 125 ISK Flugreserve plus 29 ISK erste Materialeinheit, NPC2 erst Tick6001 operativ abflugbereit, aber **65 ISK für 200 ISK** Flugreserve. Frühere `fahrtStart`-Ablehnungen bei offener alter Flugvertragsreserve oder noch zu verbuchender Arbeit werden explizit **nicht als reines Geldproblem** deklariert.
+
+**[FONDS]** Aldera-Systemfonds steigt trotz Sperre der Fonds-Mindeststände von 655→5.764 / 1.015→7.044 ISK durch Marktgebühren **435/641**, Flugzahlungen **2.057/1.787**, Miner-/sonstige Schiffsarbeit **523/737** und NPC-Abgaben **2.094/2.864**. Keine verlorenen ISK; regional vorhandene ISK sind jedoch nicht als freies Betriebsbudget verfügbar.
+
+**[NÄCHSTER KLEINER SCHRITT, OPTION]** B-K11m als **nur testseitigen** Gegenarm mit allgemeiner **Vollkostenprüfung der Route vor NPC-Beladung/Abflug** (vorhandene Preise, Gebühren und tatsächliche reservierte Flugkosten) testen. Reale Verkäufe, NPC-Finanzierung, verlorene Transporte, Station-/Haushaltsversorgung, Geld-/Warenaudits und Save-Hashes gemeinsam auswerten. Bei Nullhandel keine erfolgreiche Wirtschaft behaupten! 13×90d und echte iPad-/NAS-Abnahme fehlen; Preis-/Lohn-/Emissions-/Produktregeländerungen nicht freigegeben. [Vollständige Kontentabelle](ANALYSE_BK11L_KONTENFLUESSE.md).
+
+
 ## [ANALYSE/DRAFT] B-K11k – lokale Haushaltsloehne durch NPC-Handel, Finanzierung jedoch instabil · 03.11.2026
 
 **[MAIN]** Weiter `b4e604d6` / v0.12.5 Regel14/Schema8. **[DRAFT]** [#149](https://github.com/tobiasfranziskus/Check/pull/149) gestapelt auf #148 → #147 → #146; ausschließlich Node-Analyse des historischen isolierten R15-/Schema9-Kerns, keine Produkt-/Preis-/Lohn-/Save-/Emissionsregel, kein Merge oder Deployment.

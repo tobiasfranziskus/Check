@@ -134,16 +134,30 @@ function run(seed,policy,minutes) {
     assert(order.tick<order.startTick,'buyer budget locked before production');
     assert(order.tick<lot.inputs[0].tick,'buyer budget locked before first input sale');
     assert(order.tick<lot.inputs[1].tick,'buyer budget locked before second input sale');
+    // B-K12c test arm: Household first pays ONLY money it really has
+    // (up to the unchanged spot price). The pre-funded fund covers the
+    // remaining actual FIFO cost. No loan, grant, mint or forced full-spot sale.
+    const hh=state.owners['hh_'+id];
+    const householdPaid=policy==='cofinance'?Math.min(hh.cash,spot,lot.cost):0;
+    if(householdPaid){
+      hh.cash-=householdPaid;
+      state.owners[id].cash+=householdPaid;
+      state.stats.konto['hh_'+id].kosten+=householdPaid;
+      state.stats.konto[id].erloes+=householdPaid;
+    }
+    const fundPaid=lot.cost-householdPaid;
+    assert(fundPaid>0&&fundPaid<=c.rest);
     const receipt='leistung:bk12b:nadir:'+state.tick;
-    assert(m.core.vertrag.bezahlen(state,order.id,receipt,lot.cost),
-      'existing contract pays only actually delivered verified costs');
+    assert(m.core.vertrag.bezahlen(state,order.id,receipt,fundPaid),
+      'existing contract pays only the unpaid actual FIFO cost');
     assert(m.core.vertrag.abschliessen(state,order.id));
-    state.stats.konto[fund].kosten+=lot.cost;
-    state.stats.konto[id].erloes+=lot.cost;
+    state.stats.konto[fund].kosten+=fundPaid;
+    state.stats.konto[id].erloes+=fundPaid;
     deliveries.push({tick:state.tick,contract:order.id,cost:lot.cost,
-      inputISK:order.inputISK,wageISK:WAGE,spot,refund:order.budget-lot.cost,
+      householdPaid,fundPaid,
+      inputISK:order.inputISK,wageISK:WAGE,spot,refund:order.budget-fundPaid,
       feeIncomeAtDelivery:feeIncome(),fundCashAfter:state.owners[fund].cash,
-      actualBuyer:fund,qty:1});
+      householdAfter:hh.cash,actualBuyer:fund,qty:1});
     order=null;
   };
   // Measure ORIGINAL fund cash flows, phase by phase; the order settlement is
@@ -179,9 +193,15 @@ function run(seed,policy,minutes) {
   const realized=q().realized.filter(x=>x.qty>0);
   assert.equal(deliveries.length,sum(realized.map(x=>x.qty)));
   assert.equal(totalPaid(),sum(realized.map(x=>x.cost)));
-  assert(deliveries.every(x=>x.cost===x.inputISK+x.wageISK));
+  assert(deliveries.every(x=>x.cost===x.inputISK+x.wageISK&&
+    x.householdPaid+x.fundPaid===x.cost&&x.householdPaid<=x.spot),
+    'one actual, fully paid FIFO charge per delivery and no invented co-pay');
   assert.equal(s.initialSupply+s.minted-s.burned,
     sum(Object.values(capital(s))));
+  const fundPayments=sum(deliveries.map(x=>x.fundPaid));
+  const householdPayments=sum(deliveries.map(x=>x.householdPaid));
+  assert.equal(fundPayments+householdPayments,totalPaid(),
+    'production costs paid by exactly two existing buyer accounts');
   const feeRows=fees();
   const phaseByDay={};
   for(const f of fundPhaseFlow){
@@ -197,15 +217,22 @@ function run(seed,policy,minutes) {
   return {seed,policy,days:minutes/1440,hash:m.core.hash(s),openingFund,
     fundEnd:s.owners[fund].cash,stationEnd:s.owners[NADIR].cash,
     totalOrders:orders.length,delivered:deliveries.length,
-    paidISK:totalPaid(),refundedISK:sum(deliveries.map(x=>x.refund)),
+    paidISK:totalPaid(),fundPaidISK:fundPayments,
+    householdPaidISK:householdPayments,
+    refundedISK:sum(deliveries.map(x=>x.refund)),
     inputISK:sum(deliveries.map(x=>x.inputISK)),
     wageISK:sum(deliveries.map(x=>x.wageISK)),
     consumerSpotReferenceISK:sum(deliveries.map(x=>x.spot)),
     feeIncome:feeIncome(),feeEvents:feeRows.length,
     verifiedServiceIncome:actualServiceIncome(),
     actualCostsAfterFirst:postFirstActualCost(),
-    otherFundChanges:capital(s)[fund]-openingFund+totalPaid()-feeIncome(),
+    otherFundChanges:capital(s)[fund]-openingFund+fundPayments-feeIncome(),
     fundNetByDay:phaseByDay,serviceIncomeDays,
+    buyerCashIdentity:openingFund+actualServiceIncome()-fundPayments,
+    stationCashAtStart:initial.owners[NADIR].cash,
+    householdCashAtStart:initial.owners['hh_'+NADIR].cash,
+    householdCashAtEnd:s.owners['hh_'+NADIR].cash,
+    localBuyerStats:s.stats.haushaltskauf[NADIR].menge,
     minerWorkDue:sum(minerCosts.map(x=>x.due)),
     minerWorkPaid:sum(minerCosts.map(x=>x.paid)),
     shortageHours:s.stats.mangel[NADIR].nahrung-initial.stats.mangel[NADIR].nahrung,
@@ -254,5 +281,36 @@ test('B-K12b: two seven-day worlds separate inherited cash from recurring earned
         'all subsequent paid lots must be backed by truly received service transfers');
     } else assert(r.delivered>1,'inherited fund cash can fund repeated real purchases');
     console.log('BK12B_SEVEN_DAYS '+JSON.stringify(r));
+  }
+});
+
+test('B-K12c: actual wage-funded household contribution recycles ISK before fund pays the gap',()=>{
+  for(const seed of [42,7]) {
+    const baseline=run(seed,'stock',10080),co=run(seed,'cofinance',10080);
+    assert.equal(baseline.householdPaidISK,0,'unchanged B-K12b buyer solely pays');
+    assert(co.householdPaidISK>0,'only genuinely available local production wages pay');
+    assert(co.delivered>=baseline.delivered,'no loss of funded consumption');
+    assert(co.fundPaidISK<baseline.fundPaidISK,
+      'the local fund genuinely pays less, not just locks less escrow');
+    assert.equal(co.householdPaidISK+co.fundPaidISK,co.paidISK);
+    assert.equal(co.householdCashAtStart,0);
+    assert.equal(co.householdCashAtEnd,0,
+      'household contribution never exceeds verified available wages');
+    assert(co.deliveries.every(x=>x.householdPaid<=x.spot&&
+      x.householdPaid<=x.wageISK));
+    assert.equal(co.localBuyerStats,co.delivered);
+    assert.equal(co.pending,null,'no unpaid unfinished order at 7-day endpoint');
+    assert.equal(co.outstandingFood,0);
+    assert.equal(co.outstandingIce,0);
+    assert.equal(co.dayHashes.length,7);
+    assert.equal(co.minted,baseline.minted,
+      'co-payment must not introduce new emission');
+    console.log('BK12C_COFINANCE '+JSON.stringify({
+      seed,baseline:{delivered:baseline.delivered,
+        fundPaid:baseline.fundPaidISK,householdPaid:baseline.householdPaidISK,
+        fundEnd:baseline.fundEnd,householdEnd:baseline.householdCashAtEnd,
+        serviceIncome:baseline.verifiedServiceIncome},
+      cofinanced:co
+    }));
   }
 });

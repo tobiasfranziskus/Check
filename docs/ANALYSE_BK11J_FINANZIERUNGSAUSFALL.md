@@ -39,12 +39,13 @@ Der Verkäufer ist zu diesem Zeitpunkt **nicht zahlungsunfähig** und hat **genu
 | Käuferkasse nach dritter Teilbelieferung | **40 ISK** | **38 ISK** |
 | Nadir Quellkasse nach bezahlter Teillieferung | **61 ISK** | **58 ISK** |
 | Spieler-Händlerkasse nach Flug und Verkauf | 2.115 ISK | 2.193 ISK |
+| **Spieler-Netto seit zweiter Lieferung inklusive 250-ISK-Leerpositionierung** | **−135 ISK** | **−57 ISK** |
 | Nadir-Fonds danach (ohne Mindeststandsweitergabe) | 1.137 ISK | 1.314 ISK |
 | **Nächster 1-Stück-Auftrag, 54 ISK reservierbar?** | **Nein** | **Nein** |
 | Weiterer tatsächlich reservierter oder ausgezahlter Betrag | 0 ISK | 0 ISK |
 | Finaler deterministischer Save-Hash | `ed0151cdaa03a8a1` | `61c198365462ede4` |
 
-Am Spiel-Tick **3960** wird selbst eine **einzelne** weitere Nahrungsbestellung aus der vorhandenen Aldera-Haushaltskasse abgewiesen. Das ist die erste **vollständige aktuelle Nachfragesperre bei der Mindestmenge eins** im aktiv weitergeführten Testweg. Es wird ausdrücklich **keine Aussage über alle künftigen Einkommen** getroffen: Ein späterer realer Lohnzufluss könnte neue Käufermittel liefern. Gleichzeitig sind die Quellkassen mit 61/58 ISK erneut gefährlich niedrig, obwohl Waren gehandelt wurden; der Spielerhändler behält real verdienten Gewinn. Die Käufer-/Quellprobleme müssen deshalb **gemeinsam** untersucht werden.
+Am Spiel-Tick **3960** wird selbst eine **einzelne** weitere Nahrungsbestellung aus der vorhandenen Aldera-Haushaltskasse abgewiesen. Das ist die erste **vollständige aktuelle Nachfragesperre bei der Mindestmenge eins** im aktiv weitergeführten Testweg. Es wird ausdrücklich **keine Aussage über alle künftigen Einkommen** getroffen: Ein späterer realer Lohnzufluss könnte neue Käufermittel liefern. Gleichzeitig sind die Quellkassen mit 61/58 ISK erneut gefährlich niedrig, obwohl Waren gehandelt wurden; die Teilfracht bringt dem Händler seit der bereits bezahlten Positionierung zwar +115/+193 ISK, **einschließlich der 250-ISK-Leerpositionierung bleibt die gesamte dritte Fahrt aber bei −135/−57 ISK**. Die Käufer-/Quellprobleme müssen deshalb **gemeinsam** untersucht werden.
 
 ### B. Gegenpfad **ohne** weitere Spielerbestellung
 

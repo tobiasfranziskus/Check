@@ -190,6 +190,10 @@ function run(seed,policy,minutes) {
     row[f.phase]=(row[f.phase]||0)+f.delta;
   }
   const minerCosts=m.log.costs.filter(x=>x.klasse==='miner');
+  assert.equal(sum(Object.values(phaseByDay).flatMap(Object.values)),
+    capital(s)[fund]-openingFund,'original buyer-account cash-flow identity');
+  const serviceIncomeDays=Object.keys(phaseByDay).map(Number).filter(day=>
+    (phaseByDay[day].betriebskosten||0)+(phaseByDay[day].foerderung||0)>0);
   return {seed,policy,days:minutes/1440,hash:m.core.hash(s),openingFund,
     fundEnd:s.owners[fund].cash,stationEnd:s.owners[NADIR].cash,
     totalOrders:orders.length,delivered:deliveries.length,
@@ -201,7 +205,7 @@ function run(seed,policy,minutes) {
     verifiedServiceIncome:actualServiceIncome(),
     actualCostsAfterFirst:postFirstActualCost(),
     otherFundChanges:capital(s)[fund]-openingFund+totalPaid()-feeIncome(),
-    fundNetByDay:phaseByDay,
+    fundNetByDay:phaseByDay,serviceIncomeDays,
     minerWorkDue:sum(minerCosts.map(x=>x.due)),
     minerWorkPaid:sum(minerCosts.map(x=>x.paid)),
     shortageHours:s.stats.mangel[NADIR].nahrung-initial.stats.mangel[NADIR].nahrung,
@@ -230,6 +234,13 @@ test('B-K12b: two seven-day worlds separate inherited cash from recurring earned
   for(const seed of [42,7])for(const policy of ['stock','earned-only','earned-all']){
     const r=run(seed,policy,10080);
     assert.equal(r.dayHashes.length,7);
+    const pinned={42:{stock:'a1001b69ad6d11af',
+      'earned-only':'c23c0afd71039d70','earned-all':'cc0c5f7714a90433'},
+      7:{stock:'4bfab4527db048c9','earned-only':'b58c1626e1a499bd',
+        'earned-all':'0d71f7793b28e591'}};
+    assert.equal(r.hash,pinned[seed][policy],'historical deterministic outcome');
+    assert(r.serviceIncomeDays.every(day=>day<=2),
+      'these genuine receipts end after day 1/2; no perpetual income');
     assert(r.delivered>0);
     assert(r.delivered<=r.totalOrders);
     if(policy==='earned-only') {

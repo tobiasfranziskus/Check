@@ -1,5 +1,19 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W1 – bedienbarer Erzpilot und Zielarchitektur Reparaturen · 03.11.2026
+
+**[MAIN]** `b4e604d6` weiterhin ohne Integration des Piloten. **[DRAFT]** [PR #161](https://github.com/tobiasfranziskus/Check/pull/161) enthält nun zusätzlich eine browserseitig anwählbare Pilotansicht (`?modus=erzpilot`; Link im HQ) mit Miner-Komplettkauf, Bergbau-Befehl, Stop, +1 Stunde/+1 Tag, Kassen-, Waren-, Audit- und Hashanzeige. Gleicher `m_core_index`, **kein** zweiter Simulationskern, keine automatische Weiterrechnung im Hintergrund. Die reguläre Regel-14-UI startet in diesem Modus nicht.
+
+Der Pilot verwendet den **eigenen** IndexedDB-Slot `aphros-void-erzpilot-regel15-v1` sowie separate JSON-Importe/-Exporte. Pilot-Neustart/Import archiviert vor dem Überschreiben den letzten Pilotstand; inkompatible/defekte Stände werden nicht still überschrieben. Der Regel-14-Standard-Slot bleibt unverändert. Für die Pilotansicht existiert ein eigener simuliertes-DOM-Node-Test (`tests/erzpilot-ui.test.mjs`). **Reale iPad-Safari-/NAS-Prüfung steht weiterhin aus.**
+
+**[BESCHLOSSEN]** Industrie-Endverbrauch künftig durch Schiffe/Module: Erweiterungsinvestitionen, nachweislich betriebsabhängigen Verschleiß und Reparaturen sowie echte Kampfverluste mit kostenpflichtigem Ersatz. Keine Treibstoff-/Energiezellenpflicht, keine künstlichen Kosten für abgestellte Schiffe. Konkrete Raten/Rezepte bleiben offen bis W5/W6, keine vorzeitige Implementierung in W1. Piratenzerstörung ist eine Waren-, **keine Geldquelle**.
+
+**[TESTBELEG]** [CI #41718985105](https://github.com/tobiasfranziskus/Check/actions/runs/41718985105) auf vorherigem PR-Stand **erfolgreich abgeschlossen**; 73/73 Node-Tests und historischer Referenz-Workflow. Direkter W1-Langlauf: 13 Seeds × 90 Tage (1.170 tägliche Geld-/Warenaudits und 13 Save/Load-Prüfungen) ohne Auditabweichung; das Exportbudget erschöpft sich dennoch in allen Welten. **Die neue UI-Änderung und die UI-Tests sind damit noch nicht belegt**: vollständige neueste CI separat abwarten. Kein produktiver W1-Nachweis für dauerhaften Geldrückfluss.
+
+**[NÄCHSTER SCHRITT]** Einen wiederkehrend finanzierbaren Erz-Endabnahmevertrag mit tatsächlicher Budgetquelle entwerfen und prüfen. Keine neue ISK-Emissionsregel ohne explizite Freigabe. Danach UI/iPad-Abnahme und erst dann separater Merge-Entscheid.
+
+---
+
 ## [DRAFT] Wirtschaftlicher Vertikalaufbau – erster Erzpilot · 03.11.2026
 
 **[MAIN]** Letzter vor diesem Auftrag abgeglichener Stand: `b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c`, v0.12.5, Regel 14, Schema 8. Historische B-K12-Forschungs-PRs #155–#160 sind ohne Merge geschlossen. Keine offenen PRs vor Beginn dieses Branches.

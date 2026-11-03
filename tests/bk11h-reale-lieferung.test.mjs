@@ -16,7 +16,10 @@ let js=html;
 assert(js.startsWith('const m_data_systeme ='));
 assert(js.includes('const m_core_vertrag =')&&js.includes('const m_core_herkunft ='));
 assert(js.includes('const m_core_index ='));
-console.log('BK11H_R15_FIXTURE_SHA256 '+(await import('node:crypto')).createHash('sha256').update(js).digest('hex'));
+const fixtureSHA=(await import('node:crypto')).createHash('sha256').update(js).digest('hex');
+assert.equal(fixtureSHA,'e5e2c5092fda778b38064dcda2692004889635639ff56dc5c0c61b2377dd7680',
+  'test-only Core-Quelle muss exakt dem erfolgreich geprueften PR #128 entsprechen');
+console.log('BK11H_R15_FIXTURE_SHA256 '+fixtureSHA);
 function einmal(alt,neu){
   assert.equal(js.split(alt).length,2,'eindeutiger Testanker: '+alt.slice(0,60));
   js=js.replace(alt,neu);
@@ -400,6 +403,8 @@ test('B-K11h: auf realem Flug vernichtete Neuware niemals als zivilen Verbrauch 
   const success=run(start.saved,seed,'bestellung',false,24);
   const lost=run(start.saved,seed,'bestellung',false,24,{lossInTransit:true,returnSave:true});
   assert.equal(lost.menge,24);
+  assert.equal(lost.hash,seed===42?'7f628068dedb1aea':'b84997113b084206',
+    'Testverlust reproduziert seinen eigenstaendigen festen Seed-Hash');
   assert.equal(lost.verlorenImTest,24);
   assert.equal(lost.beladen,24);
   assert.equal(lost.nach10hFrachterRest,0);

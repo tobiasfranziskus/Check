@@ -107,7 +107,15 @@ function run(seed,policy,minutes) {
     return need>=1&&order.productionStarted&&lot.cost<=state.vertraege.eintraege[order.id].rest?1:0;
   };
   m.api.settle=(state,id,qty,spot)=>{
-    if(id!==NADIR)throw new Error('unexpected household payment replacement');
+    if(id!==NADIR) {
+      // Unmodified R15 household transfers everywhere outside test-only Nadir.
+      const cash=qty*spot,hh=state.owners['hh_'+id];
+      assert(hh.cash>=cash);
+      hh.cash-=cash;state.owners[id].cash+=cash;
+      state.stats.konto['hh_'+id].kosten+=cash;
+      state.stats.konto[id].erloes+=cash;
+      return;
+    }
     assert.equal(qty,1);
     const lot=q().food[0],c=state.vertraege.eintraege[order.id];
     assert(lot&&c&&c.status==='offen');

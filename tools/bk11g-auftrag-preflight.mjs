@@ -129,6 +129,23 @@ export function dryMaterialClaims(state,quantities){
  assert(held<=stock);
  return {stock,held,decisions};
 }
+export function dryOutputClaims(state,quantities){
+ // Zweifacher Platzbedarf: Produktion an Quelle, physische Ankunft am Ziel.
+ // Nur Original-Ware/Lagermodule; keine Kasse und kein Core-Zustand geaendert.
+ const capacity=Math.min(
+   core.obergrenze(state,rules,sourceStation,'nahrung')-(state.stations[sourceStation].lager.nahrung||0),
+   core.obergrenze(state,rules,buyerStation,'nahrung')-(state.stations[buyerStation].lager.nahrung||0));
+ let held=0;
+ const decisions=[];
+ for(const qty of quantities){
+   assert(Number.isSafeInteger(qty)&&qty>0);
+   const accepted=qty<=capacity-held;
+   if(accepted)held+=qty;
+   decisions.push({qty,accepted,held,free:capacity-held});
+ }
+ assert(held<=capacity);
+ return {capacity,held,decisions};
+}
 function sum(a){return Object.values(a).reduce((n,b)=>n+b,0);}
 export function claims(state){
  const originalHash=core.hash(state),originalSupply=state.initialSupply+state.minted-state.burned;

@@ -69,7 +69,7 @@ einmal("    f.cash -= n; o[id].cash += n;",
 einmal("    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;",
   "    __bk10k_fondsZufluss(arm,f.cash-w.fondsObergrenze,'ueberschuss');\n"+
   "    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;");
-const journal=[],cfg={mode:null,ship:null,order:null,delivered:0,pay:0,fees:0,trace:null,gateLog:null};
+const journal=[],cfg={mode:null,ship:null,order:null,delivered:0,pay:0,fees:0,trace:null,gateLog:null,accountOnly:false};
 function traceNeu(){
   return {eisLots:[],foodLots:[],offen:new Map(),verkauft:[],
     eisVonMiner:0,eisAnkaufISK:0,produktion:0,lokalGegessen:0,
@@ -78,6 +78,7 @@ function traceNeu(){
 }
 const tiefKopie=(x)=>JSON.parse(JSON.stringify(x));
 function quelleTrade(state,schiff,station,ware,menge,kauf,wert){
+  if(cfg.accountOnly)return; // nur B-K11k: aggregierte echte Core-Konten statt strengem Ein-Miner-FIFO
   const t=cfg.trace;
   if(!t||station!=='st_nadir')return;
   if(ware==='eis'&&!kauf){
@@ -92,6 +93,7 @@ function quelleTrade(state,schiff,station,ware,menge,kauf,wert){
   }
 }
 function quelleStart(state,r,index){
+  if(cfg.accountOnly)return;
   const t=cfg.trace;
   assert(t,'Quelle immer mit Produktions-Herkunft');
   assert(!t.offen.has(index),'pro Linie nur eine begonnene Charge');
@@ -104,24 +106,28 @@ function quelleStart(state,r,index){
     eisAnzahl:ice.length,lohnISK:r.dauer*4,started:state.tick});
 }
 function quelleFertig(state,index){
+  if(cfg.accountOnly)return;
   const t=cfg.trace,ein=t.offen.get(index);
   assert(ein&&ein.started<state.tick,'bezahlte Fabrikcharge abgeschlossen');
   assert.equal(ein.lohnISK,24);
   t.offen.delete(index);t.foodLots.push(ein);t.produktion++;
 }
 function quelleKonsum(menge){
+  if(cfg.accountOnly)return;
   const t=cfg.trace;
   for(let i=0;i<menge;i++)assert(t.foodLots.shift(),'Konsum nur aus fertig produzierter Ware');
   t.lokalGegessen+=menge;
 }
 function nadirFondsZufluss(id,isk,art){
+  if(cfg.accountOnly)return;
   if(!cfg.trace||id!=='st_nadir')return;
   assert(Number.isSafeInteger(isk)&&isk>0);
   if(art==='mindest')cfg.trace.nadirFondsMindestISK+=isk;
   else cfg.trace.nadirFondsUeberschussISK+=isk;
 }
 function quelleMinerKosten(state,sh,kosten,gezahlt){
-  if(sh.id==='sh009' && cfg.gateLog && gezahlt<kosten)
+  if(cfg.accountOnly)return;
+  if(sh.id==='sh009 && cfg.gateLog && gezahlt<kosten)
     cfg.gateLog.push({art:'miner-betrieb',tick:state.tick,akteur:sh.owner,schiff:sh.id,
       brauchtISK:kosten,vorhandenISK:state.owners[sh.owner].cash,
       bezahltISK:gezahlt,fehlbetragISK:kosten-gezahlt});
@@ -876,4 +882,143 @@ test('B-K11j: nach abgewiesenem 24er-Auftrag echten kleineren Drittauftrag im SE
       cfg.gateLog=null;
     }
   }finally{cfg.gateLog=null;rules.world.mindeststand=min;rules.world.fondsObergrenze=max;}
+});
+
+
+// B-K11k: nur aus den tatsaechlich durchlaufenen B-K11j-Auftraegen
+// einen identischen Save nach der TEILWEISEN dritten Lieferung herstellen.
+function bk11kNachDrittemTeilauftrag(seed){
+  cfg.accountOnly=false;cfg.gateLog=null;
+  const initial=snapshot(seed);
+  const first=run(initial.saved,seed,'bestellung',false,24,{returnSave:true});
+  const min=rules.world.mindeststand,max=rules.world.fondsObergrenze;
+  rules.world.mindeststand=0;rules.world.fondsObergrenze=1_000_000_000;
+  assert(min>0 && max<1_000_000_000,'B-K11k setzt nach realem erstem Fondsstart ein');
+  const second=run(first.finalSaved,seed,'bestellung',false,24,
+    {continueTrace:true,returnSave:true,allowBlocked:true});
+  assert.equal(second.direktAbsatzMenge,24);
+  const rejected=run(second.finalSaved,seed,'bestellung',false,24,
+    {continueTrace:true,returnSave:true,allowBlocked:true});
+  assert.equal(rejected.gate,'haushalt-bestellung');
+  const s=core.load(rejected.finalSaved,undefined,rules);
+  const sh=Object.values(s.ships).find(x=>x.owner==='house'&&x.klasse==='frachter');
+  const p=core.preis(s,Z,'nahrung',rules),cash=s.owners[H].cash;
+  const menge=Math.min(24,core.verkaufbar(s,rules,S,'nahrung'),Math.floor(cash/p));
+  assert.equal(menge,seed===42?14:17);
+  const id=core.vertrag.reservieren(s,H,'house',menge*p);
+  assert(id,'reale Teilbestellung finanziert');
+  cfg.mode='bestellung';cfg.ship=sh.id;cfg.order={id,menge,preis:p};
+  cfg.delivered=0;cfg.pay=0;cfg.fees=0;
+  command(s,sh,'shipTrade',{ware:'nahrung',menge,kauf:true});
+  command(s,sh,'shipMove',{ziel:Z});
+  angekommen(s,sh,'aldera');complete(s,sh);ticks(s,600);
+  assert.equal(cfg.delivered,menge);assert.equal(cfg.pay,menge*p);
+  assert(core.vertrag.abschliessen(s,id));
+  audit(s);
+  const h=core.hash(s);
+  assert.equal(h,seed===42?'ed0151cdaa03a8a1':'61c198365462ede4');
+  assert.equal(s.tick,3960);
+  assert.equal(s.owners[H].cash,seed===42?40:38);
+  return {saved:core.save(s),hash:h,partial:menge};
+}
+
+// Nur vorhandene Zahlungen/Buchungen, keine Eingriffe in Preise, Geld, Lohn.
+// Zwei Gegenwelten aus DEMSELBEN echten Save; die experimentell angehaltenen
+// NPC-Haendler werden allein durch Umstellen ihres schon vorhandenen
+// auftrag-Felds freigegeben. Dies ist KEIN globaler Normalweltvergleich.
+function bk11kKontopfad(save,seed,freigabe,minuten=2880){
+  const s=core.load(save,undefined,rules);
+  const startHash=core.hash(s),before={};
+  const beobachtete=[H,'hh_'+S,Z,S,'house','npc1','npc2','npc3','fonds_aldera','fonds_nadir'];
+  for(const id of beobachtete){
+    const k=s.stats.konto[id]||{erloes:0,kosten:0};
+    before[id]={cash:s.owners[id].cash,erloes:k.erloes,kosten:k.kosten};
+  }
+  const startMenge=s.stats.haushaltskauf[Z].menge;
+  const startSupply=s.initialSupply+s.minted-s.burned;
+  const baselineShips=Object.fromEntries(Object.values(s.ships).map(sh=>[sh.id,sh.owner]));
+  cfg.accountOnly=true;cfg.mode=null;cfg.ship=null;cfg.order=null;cfg.gateLog=null;
+  journal.length=0;
+  let released=0;
+  if(freigabe){
+    for(const sh of Object.values(s.ships)){
+      if(sh.owner!=='house'&&sh.owner.startsWith('npc')
+        && sh.klasse==='frachter'&&sh.auftrag==='halten'){
+        sh.auftrag='handeln';released++;
+      }
+    }
+    assert(released>0,'nur fuer Gegenarm echte vorher angehaltene NPC-Haendler freigegeben');
+  }
+  const firstAffordable=()=>s.owners[H].cash>=core.preis(s,Z,'nahrung',rules);
+  assert.equal(firstAffordable(),false,'Start nach Teilauftrag unter Einheitskosten');
+  let firstEarned=null,firstAble=null,firstFull=null;
+  for(let i=0;i<minuten;i++){
+    core.step(s,rules);
+    if(s.tick%60===0){
+      audit(s);
+      if(s.tick%1440===0){
+        const loaded=core.load(core.save(s),undefined,rules);
+        assert.equal(core.hash(loaded),core.hash(s),'regel15 Save/Load des Markt-Gegenarms');
+      }
+    }
+    if(firstEarned===null&&s.stats.konto[H].erloes>before[H].erloes)firstEarned=s.tick;
+    if(firstAble===null&&firstAffordable())firstAble=s.tick;
+    if(firstFull===null&&s.owners[H].cash>=core.preis(s,Z,'nahrung',rules)*24)firstFull=s.tick;
+  }
+  audit(s);
+  const konten={};
+  for(const id of beobachtete){
+    const k=s.stats.konto[id]||{erloes:0,kosten:0};
+    konten[id]={anfang:before[id].cash,ende:s.owners[id].cash,
+      delta:s.owners[id].cash-before[id].cash,
+      erloese:k.erloes-before[id].erloes,kosten:k.kosten-before[id].kosten};
+    assert.equal(konten[id].ende,konten[id].anfang+konten[id].delta);
+  }
+  const tradelist=journal.filter(x=>x.art==='handel'&&baselineShips[x.schiff]?.startsWith('npc'));
+  const npcSales=tradelist.filter(x=>!x.kauf);
+  const npcBuys=tradelist.filter(x=>x.kauf);
+  const traderMoves=journal.filter(x=>x.art==='flug'&&baselineShips[x.schiff]?.startsWith('npc'));
+  const hash=core.hash(s),saved=core.save(s);
+  assert.equal(core.hash(core.load(saved,undefined,rules)),hash);
+  return {seed,freigabe,baseline:startHash,released,
+    minuten,tick:s.tick,firstEarned,firstAble,firstFull,
+    HH_aldera:konten[H],HH_nadir:konten['hh_'+S],
+    station_aldera:konten[Z],station_nadir:konten[S],
+    spieler:konten.house,npc1:konten.npc1,npc2:konten.npc2,npc3:konten.npc3,
+    fonds_aldera:konten.fonds_aldera,fonds_nadir:konten.fonds_nadir,
+    ncTradeBuys:npcBuys.length,ncTradeSales:npcSales.length,
+    ncFlights:traderMoves.length,
+    foodConsumedAldera:s.stats.haushaltskauf[Z].menge-startMenge,
+    priceFood:core.preis(s,Z,'nahrung',rules),
+    liquid:s.owners[H].cash,
+    totalMoneyBefore:startSupply,totalMoneyAfter:s.initialSupply+s.minted-s.burned,
+    mintedDelta:s.minted, burnedDelta:s.burned,
+    hash};
+}
+
+test('B-K11k: tatsaechliche Haushaltslohn-Konten und bestehende NPC-Handelswege kausal abgleichen',()=>{
+  const min=rules.world.mindeststand,max=rules.world.fondsObergrenze;
+  try {
+    for(const seed of [42,7]){
+      rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+      const start=bk11kNachDrittemTeilauftrag(seed);
+      assert.equal(rules.world.mindeststand,0);
+      const still=bk11kKontopfad(start.saved,seed,false);
+      const npc=bk11kKontopfad(start.saved,seed,true);
+      assert.equal(still.baseline,start.hash);
+      assert.equal(npc.baseline,start.hash);
+      assert.equal(still.released,0);
+      assert(npc.released>0);
+      // *Wirklich* nur das Aktivieren der zuvor gehaltenen NPC-Haendler
+      // trennt beide Vergleichswelten; globale Geldbilanz unabhaengig pruefen.
+      assert(still.HH_aldera.anfang===npc.HH_aldera.anfang);
+      assert(still.HH_nadir.anfang===npc.HH_nadir.anfang);
+      assert(still.HH_aldera.anfang<54);
+      assert(still.HH_nadir.anfang>1000);
+      console.log('BK11K_ACCOUNT_FLOW '+JSON.stringify({seed,startHash:start.hash,
+        still,npc,deltaHHAldera:npc.HH_aldera.delta-still.HH_aldera.delta,
+        deltaHHNadir:npc.HH_nadir.delta-still.HH_nadir.delta}));
+    }
+  }finally{cfg.accountOnly=false;cfg.gateLog=null;
+    rules.world.mindeststand=min;rules.world.fondsObergrenze=max;}
 });

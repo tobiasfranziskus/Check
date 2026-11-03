@@ -111,7 +111,7 @@ const snap=(s,day)=>({
   npcFreighters:Object.values(s.ships).filter(x=>x.klasse==='frachter'&&['npc1','npc2'].includes(x.owner)).length,
   siliconAldera:s.stations.st_aldera.lager.silizium||0,
   partsAldera:s.stations.st_aldera.lager.bauteil||0,
-  cashReceipts:watcher.purchasePaid
+  cashReceipts:{...watcher.purchasePaid}
 });
 let hourlyAudits=0,roundtrips=0;
 const daily=[],checkpoints=[];

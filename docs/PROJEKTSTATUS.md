@@ -1,5 +1,16 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B-K11i – Zwei echte Folgelieferungen mit/ohne Fonds-Mindeststand · 03.11.2026
+
+**[MAIN]** b4e604d6 / v0.12.5 Regel14/Schema8 unverändert. **[DRAFT]** [PR #147](https://github.com/tobiasfranziskus/Check/pull/147), bewusst auf den isolierten R15-/Schema9-Fixture- und Test-PR #146 gestapelt. Ausschließlich Node-Test-/Analyse-Änderung; keine Produktregel, Preis-, Lohn-, Geld-/Save-Migration, keine Emission, kein Merge.
+
+**[TEST, CI #41635717867](https://github.com/tobiasfranziskus/Check/actions/runs/41635717867) erfolgreich (Codecommit 08e9ebce):** 6/6 gezielte Node-Tests (3 vorherige B-K11h plus 3 neue B-K11i), Seeds 42/7: **zwei wirkliche 24er-Eis→Nahrung→Haushalt-Lieferungen im fortgeführten selben Core-Save**, mit tatsächlichem Lohn, Kundenvertrag, 499 ISK realen zweiten Flugkosten und 1.296 ISK zweiter Endverbrauchszahlung. Original-B-K11h-Erstlieferhashes reproduziert, zweite Hashes fa3c99f7b4bbff6e / 0f00c433f4e43452. Zweite Produktionsperiode 136 neu eingekauftes Eis, 68 neu hergestellte Nahrung; Quellstations-Chargenbeitrag erneut **negativ (−474 ISK)**. Regionaler Fonds-Mindesttransfer zweiter Zeitraum 958/614 ISK.
+
+**Gegenprobe Fonds AUS:** Von Anfang an kein voll verkaufbarer 24er-Erstauftrag nach acht Stunden (0 freie Nahrung, nur 94 ISK Quellkasse). Wenn der **erste** 24er-Auftrag noch mit Fonds finanziert war, funktioniert anschließend **ein echter zweiter 24er-Auftrag auch ohne weitere Mindestfondsüberweisung**. Quellkassen danach nur **917/1.041 ISK** statt 1.875/1.655 ISK mit Fonds. Dies belegt Liquiditätspuffer aus der ersten finanzierten Runde, **keine** langfristige Rentabilität und keine Notwendigkeit einer neuen individuellen NPC-Rettung. Kein zweiter Kern; R15 ist historische Entwicklungs-Fixure, nicht integriert. [Detailbericht](ANALYSE_BK11I_FOLGELIEFERUNGEN.md).
+
+**[NÄCHSTER SCHRITT]** Präziser erster Finanzierungsblocker beim dritten/folgenden realen Auftrag aus demselben Save ohne Fonds, danach gesonderte Produktentscheidung D2/D3/D6 und Geldmodell B. Keine 13×90d-Produktfreigabe, echte Schiffshüllen-/Piraterie-Folgekosten, Save-Migration, iPad-/NAS-Abnahme oder Deployment belegt.
+
+
 ## [ANALYSE/DRAFT] B-K11h – echte isolierte Core-Lieferung, Frachtverlust, Folgekäuferbudget · 03.11.2026
 
 **[MAIN]** `b4e604d6`, v0.12.5 / Regel14 / Schema8, unverändert. **[DRAFT]** [PR #146](https://github.com/tobiasfranziskus/Check/pull/146), direkt auf main, enthält **nur** Node-Tests, test-only historisch gepinnten R15-Core aus [PR #128](https://github.com/tobiasfranziskus/Check/pull/128), Dokumentation und Actions. Kein produktiver Regel-/Geld-/Preis-/Save-/Lohnwechsel.

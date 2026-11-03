@@ -1,5 +1,13 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B-K12 – Gesamtzyklus, negative Gegenproben und reale Stückkosten · 03.11.2026
+
+**[MAIN]** `b4e604d6`, Regel14/Schema8 unverändert. **[DRAFT]** Branch `analyse/bk12-kreislauf-pruefung` auf #154; nur getrennte Testvarianten, CI und [Ursachen-/Entscheidungsbericht](ANALYSE_BK12_WIRTSCHAFTSKREISLAUF.md), [vollständige Kontenmesswerte](analysen/BK12_MESSWERTE.json). Drei Ansätze (vollständig zahlender Haushalt, konservative Hin-/Rückfahrtkalkulation, Endabnahme aus bestehenden Fonds) sowie A+B/C+B scheitern am Versorgung-/Finanzierungsgate. Seeds42/7 jeweils sieben Tage, passive und aktive Spieler sowie getrennte unveränderte MAIN-/R15-Kontrollen; keine 13×90d-Freigabe eines Kandidaten.
+
+**[ANALYSE] Neuer Originalbeleg:** Nadir kauft bei Tick100 echtes Miner-Eis für 22 ISK/Stück, verarbeitet zwei davon mit 24 ISK tatsächlich bezahltem Testfabriklohn; Haushalt konsumiert diese erste Einheit bei Tick120 für 53 ISK. **68 ISK belegte Kosten, 53 ISK Erlös, −15 ISK**, ohne Fernfracht. Testlohn4 bleibt historische, nicht beschlossene R15-Annahme. Am Tag1 bis Tag7: 6 ISK Stationscash, 125 Eis/21 Nahrung auf Lager; verbleibendes Warenvermögen und realisierter Verlust werden getrennt bewertet. R15 mit originalen Fondsregeln besitzt nach sieben Tagen rund 30.000 ISK Haushaltcash, ist aber weiter unterversorgt. Eine neue Umverteilung allein ist keine Lösung; Preis-/Lohn-/Emissionsentscheidung bleibt gesondert.
+
+**[TEST] Lokal Node22:** Pflichtbefehl 10/10 Dateisuiten, 0 Fehler/Skip/TODO; detaillierte Läufe decken alle acht neuen Testfälle ab. Stundenweise unabhängige Geld-/Waren-/Herkunftsaudits, unveränderte historische B-K11h–p-Tests, MAIN/Fixture-Default-Hashes und instrumentierungsneutrale Save-/Load-Fortsetzungen. CI-Nachweise stehen im zugehörigen Draft-PR. **[OPTION]** Nächster Produktkandidat erst nach ausdrücklich entschiedener Kostendeckung: vorfinanzierter gesamter Endabnahmeauftrag einschließlich Folgefahrt und Ersatz, auf sauberem main-Branch. Keine Integration des historischen Stacks, kein Merge/Deployment, keine Änderung bestehender Spielstände.
+
 ## [ANALYSE/DRAFT] B-K11p – Dravos: neun neue sh015-Einheiten wirklich bezahlt verbraucht · 03.11.2026
 
 **[MAIN]** `b4e604d6` (v0.12.5, Regel14/Schema8) unverändert. **[DRAFT]** [PR #154](https://github.com/tobiasfranziskus/Check/pull/154) auf #153 → #152 → #151 → #150 → #149 → #148 → #147 → #146. Ausschließlich Analyse-/Beobachtungstest des historischen isolierten R15-/Schema9-Kerns, keine neue Produkt-, Preis-, Lohn-, Steuer-, Fonds-, Emissions- oder Save-Regel; kein Merge/Deployment.

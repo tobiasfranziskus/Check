@@ -1483,6 +1483,20 @@ test('B-K11n: 7 Tage Vollkosten-Route gegen Original auf ALLEN Verbraucherstatio
       const checked=bk11mVergleich(seed,third.saved,'vollkosten',sevenDays);
       assert.equal(original.base,third.hash);
       assert.equal(checked.base,third.hash);
+      // Gepinnte sieben Tage sind NICHT die vorigen 48h-Hashes.
+      const pinned=seed===42
+        ?{original:'71d881f80dc7608c',checked:'d70efdefcd455898',
+          foodShort:[881,869],medShort:[978,987],paidFood:[273,323]}
+        :{original:'bf688f630cfdc86d',checked:'a4ffb5f908631659',
+          foodShort:[885,897],medShort:[982,983],paidFood:[273,252]};
+      assert.equal(original.hash,pinned.original,'Sieben-Tage-Originalhash');
+      assert.equal(checked.hash,pinned.checked,'Sieben-Tage-Gegenhash');
+      assert.deepEqual([original.civil.foodShortageHours,checked.civil.foodShortageHours],
+        pinned.foodShort,'realer Nahrungsausfall an sechs Stationen');
+      assert.deepEqual([original.civil.medShortageHours,checked.civil.medShortageHours],
+        pinned.medShort,'Medizin-Ausfall an sechs Stationen');
+      assert.deepEqual([original.civil.totalPaidNewFood,checked.civil.totalPaidNewFood],
+        pinned.paidFood,'wirklich bezahlte neue Nahrung');
       assert.equal(checked.released,5);
       assert.equal(original.released,5);
       assert.equal(original.minutes,sevenDays);

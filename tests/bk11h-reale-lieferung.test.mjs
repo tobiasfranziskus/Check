@@ -805,3 +805,64 @@ test('B-K11j: aktive echte Folgelieferungen ab identischem zweitem Save bis zum 
     cfg.gateLog=null;rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
   }
 });
+
+test('B-K11j: nach abgewiesenem 24er-Auftrag echten kleineren Drittauftrag im SELBEN Save ausfuehren',()=>{
+  const min=rules.world.mindeststand,max=rules.world.fondsObergrenze;
+  try {
+    for(const seed of [42,7]){
+      cfg.gateLog=null;rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+      const initial=snapshot(seed);
+      const first=run(initial.saved,seed,'bestellung',false,24,{returnSave:true});
+      rules.world.mindeststand=0;rules.world.fondsObergrenze=1_000_000_000;
+      const second=run(first.finalSaved,seed,'bestellung',false,24,
+        {continueTrace:true,returnSave:true,allowBlocked:true});
+      assert.equal(second.direktAbsatzMenge,24);
+      cfg.gateLog=[];
+      const third=run(second.finalSaved,seed,'bestellung',false,24,
+        {continueTrace:true,returnSave:true,allowBlocked:true});
+      assert.equal(third.gate,'haushalt-bestellung');
+      const s=core.load(third.finalSaved,undefined,rules);
+      audit(s);
+      const sh=Object.values(s.ships).find(x=>x.owner==='house'&&x.klasse==='frachter');
+      assert(sh&&sh.system==='nadir'&&sh.phase==='dock');
+      const p=core.preis(s,Z,'nahrung',rules),buyer0=s.owners[H].cash;
+      const source0=s.owners[S].cash,trader0=s.owners.house.cash;
+      const verfuegbar=core.verkaufbar(s,rules,S,'nahrung');
+      const menge=Math.min(verfuegbar,Math.floor(buyer0/p),24);
+      assert(menge>0&&menge<24,'kleinere Lieferung als Gegenprobe zu teurer 24er-Charge');
+      const budget=menge*p;
+      const id=core.vertrag.reservieren(s,H,'house',budget);
+      assert(id,'wirklich finanzierter kleinerer Haushaltvertrag');
+      cfg.mode='bestellung';cfg.ship=sh.id;cfg.order={id,menge,preis:p};
+      cfg.delivered=0;cfg.pay=0;cfg.fees=0;
+      audit(s);
+      command(s,sh,'shipTrade',{ware:'nahrung',menge,kauf:true});
+      assert.equal(sh.neuLadungNahrung,menge,'tatsaechliche Neuware auf bezahltem Frachter');
+      command(s,sh,'shipMove',{ziel:Z});
+      angekommen(s,sh,'aldera');complete(s,sh);
+      ticks(s,600);
+      const e=s.vertraege.eintraege[id];
+      assert.equal(cfg.delivered,menge,'echter Endverbrauch von kleinerer neuer Fracht');
+      assert.equal(cfg.pay,budget,'genau vertraglich zugesagte ISK, kein Gratisgeld');
+      assert.equal(e.gezahlt,budget);
+      assert.equal(e.rest,0);
+      assert(core.vertrag.abschliessen(s,id));
+      audit(s);
+      const hash=core.hash(s);
+      assert.equal(core.hash(core.load(core.save(s),undefined,rules)),hash);
+      assert.equal(cfg.trace.nadirFondsMindestISK-second.nadirFondsMindestISK-first.nadirFondsMindestISK,0,
+        'auch bei Drittlieferung kein neuer Nadir-Mindesttransfer');
+      console.log('BK11J_PARTIAL_REAL_THIRD '+JSON.stringify({
+        seed,tick:s.tick,fullOrderRejected:true,asked:24,
+        affordable:menge,buyerStart:buyer0,priceEach:p,paidOrderISK:budget,
+        realDelivered:cfg.delivered,unpaidRemainingCapacity:24-menge,
+        sourceCashBefore:source0,sourceCashAfter:s.owners[S].cash,
+        traderCashBefore:trader0,traderCashAfter:s.owners.house.cash,
+        buyerCashAfter:s.owners[H].cash,
+        fundNadir:s.owners.fonds_nadir.cash,
+        addedFundMin:0,hash
+      }));
+      cfg.gateLog=null;
+    }
+  }finally{cfg.gateLog=null;rules.world.mindeststand=min;rules.world.fondsObergrenze=max;}
+});

@@ -222,7 +222,11 @@ function bk11lFlightGate(state,schiff,station,ziel,ware,budget,art){
     priceUnit:ware?core.preis(state,station,ware,rules):null,
     schonGearbeitet:schiff.arbeit,offenerVertrag:schiff.vertrag||null,
     phase:schiff.phase,cargo:Object.fromEntries(Object.entries(schiff.ladung))};
-  if(!echtCashGate){
+  // Fahrtstart ist zusaetzlich an abgeschlossene vorherige Fahrt/Arbeit
+  // gebunden. Ein Liquiditaetsmangel in dieser Phase ist kein isolierter
+  // Vertrags-Finanzierungsausfall, sondern ein kombiniertes Hindernis.
+  const darfAbfliegen=schiff.phase==='dock'&&!schiff.vertrag&&schiff.arbeit===0;
+  if(!echtCashGate||!darfAbfliegen){
     if(!cfg.l11.firstOtherFlight[id])cfg.l11.firstOtherFlight[id]=event;
     return;
   }

@@ -1251,6 +1251,34 @@ test('B-K11l: erste Finanzierungssperren und echte Gegenbuchungen im wiederbeleb
       }
       const gates={firstPayroll:cfg.l11.firstPayroll,
         firstFlight:cfg.l11.firstFlight,firstOtherFlight:cfg.l11.firstOtherFlight};
+      // Jetzt sind auch nicht vertraglich gesperrte Minerarbeiten und
+      // systeminterne Fondsfluesse erfasst: KEIN residualer Geldkanal.
+      for(const id of ids){
+        assert.equal(actor[id].ungeklärt,0,
+          'B-K11l Belegsumme muss Liquidity+offene-Escrow-Aenderung decken: '+id);
+      }
+      assert.deepEqual(gates.firstPayroll&&[
+        gates.firstPayroll.tick,gates.firstPayroll.bedarf,
+        gates.firstPayroll.liquid,gates.firstPayroll.fehlbetrag],
+        seed===42?[4101,32,6,26]:[4077,32,3,29],
+        'erste real blockierte Aldera-Produktion deterministisch');
+      assert.equal(gates.firstPayroll.rezept,'r_bauteil');
+      assert.equal(gates.firstFlight.npc1?.tick,seed===42?5161:5101,
+        'erster echter NPC1-Vollkosten-Kassengate nach operativ abschliessbarer Fahrt');
+      if(seed===42){
+        assert.equal(gates.firstFlight.npc2?.tick,4801,
+          'NPC2 kann beladene Weiterfahrt mangels 125 ISK Reserve nicht starten');
+      }
+      for(const owner of ['npc1','npc2']){
+        const netto=actor[owner].posten;
+        const buy=-(netto.warenankauf||0),sale=netto.warenabsatz||0;
+        const fare=-(netto['bezahlte-flugkosten']||0),fees=-(netto.marktgebuehren||0);
+        assert.equal(actor[owner].kapitalDelta,sale-buy-fare-fees);
+        assert.equal(positions[owner].paidEmptyFlightISK+
+          positions[owner].paidLoadedFlightISK,fare);
+        assert(positions[owner].paidLoadedFlightISK>positions[owner].paidEmptyFlightISK,
+          'die grosse reale Verlustursache sind beladene Fluege');
+      }
       const nachfrage=core.preis(s,'st_aldera','nahrung',rules)*24;
       assert.equal(nachfrage,1296);
       assert.equal(s.owners['hh_st_aldera'].cash>=nachfrage,true);

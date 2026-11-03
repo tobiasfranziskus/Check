@@ -1906,6 +1906,22 @@ test('B-K11p: sh015-Dravos-Nahrungsverkauf gegen original bezahlten Haushalt-End
       assert.equal(sell.length,target.name==='48h'?1:2);
       assert.equal(sell[0].tick,5161);
       assert.equal(sell[0].wert,441);
+      assert.equal(w.traceDravos.initialOld,0);
+      assert.equal(w.traceDravos.oldConsumedFree,target.name==='48h'?0:13);
+      assert.deepEqual(foodBuys[0]&&[
+        foodBuys[0].tick,foodBuys[0].station,foodBuys[0].menge,
+        foodBuys[0].wert,foodBuys[0].fee],
+        [5141,'st_veldra',9,324,12],
+        'sh015 finanziert echte NEU-Nahrung vor der Zustellung in Dravos');
+      if(target.name==='7d'){
+        assert.deepEqual(foodBuys.slice(1).map(x=>[
+          x.tick,x.station,x.menge,x.wert,x.fee]),
+          [[8821,'st_meridian',25,975,0],[8881,'st_dravos',12,300,12]]);
+        assert.equal(w.traceDravos.shipOld,25);
+        assert.equal(w.traceDravos.oldConsumedFree,13,
+          'von 25 Alt-Einheiten nach 12 Rueckkaeufen nur 13 kostenlos verzehrt');
+        assert.equal(w.traceDravos.finalNew,0);
+      }
       assert.equal(sell[0].fee,17);
       assert.equal(firstFoodArrival.stationCashBefore,644);
       assert.equal(firstFoodArrival.shipOwnerCashBefore,4813);

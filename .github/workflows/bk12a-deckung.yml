@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'tests/bk12a-deckung-und-kaufkraft.test.mjs'
+      - 'docs/ANALYSE_BK12A_NADIR_KOSTENDECKUNG.md'
+      - 'docs/PROJEKTSTATUS.md'
       - 'tests/lib/bk12-analyse.mjs'
       - 'tests/fixtures/bk11h-r15-core-snapshot.txt'
       - '.github/workflows/bk12a-deckung.yml'

@@ -1,5 +1,16 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B-K11h – echte isolierte Core-Lieferung, Frachtverlust, Folgekäuferbudget · 03.11.2026
+
+**[MAIN]** `b4e604d6`, v0.12.5 / Regel14 / Schema8, unverändert. **[DRAFT]** [PR #146](https://github.com/tobiasfranziskus/Check/pull/146), direkt auf main, enthält **nur** Node-Tests, test-only historisch gepinnten R15-Core aus [PR #128](https://github.com/tobiasfranziskus/Check/pull/128), Dokumentation und Actions. Kein produktiver Regel-/Geld-/Preis-/Save-/Lohnwechsel.
+
+**[TEST] [B-K11h-CI #41633584760](https://github.com/tobiasfranziskus/Check/actions/runs/41633584760)** auf geprüftem Testcode `374a25fe` erfolgreich, 3/3 neue Tests je Seeds 42/7. Erfolgreiche **echte** R15-24er-Chargenlieferung inkl. real bezahltem ursprünglichem Eis 1.056 ISK, Testfabriklohn 576 ISK, Originalflug 499 ISK, Auftragserlös 1.296 ISK und vollständigem Audit; Endhashes `7f65cee9b1330747` / `f2f8983d53c26e3d` stimmen mit historischer B-K10k-Referenz. Testweise **während des echten Schiffsflugs** zerstörte 24 neue Nahrung werden **nicht** als zivile Lieferung bezahlt; 1.296 ISK unverdiente Haushaltsreserve werden vollständig erstattet. Verlusthashes `7f628068dedb1aea` / `b84997113b084206`; Händler bezahlt Flug/Einkauf trotzdem, −1.123 ISK. **Kein natürlicher Piratenangriff, keine Hüllenvernichtung oder Gratis-Hülle.**
+
+**[NEUER WICHTIGER BEFUND]** Nach der realen erfolgreichen Lieferung besitzen die testweisen R15-Haushalte 1.972/2.252 ISK und können einen **zweiten** 1.296-ISK-Auftrag tatsächlich reservieren (und ohne Lieferung stornieren). Der isolierte B-K11f-Käufer-Endstand 0 ISK ist damit **keine** allgemeine Aussage über den R15-Core: Reale Haushaltslöhne führen laufend Geld zu. Allerdings erhalten die Quellstationen während derselben Läufe **5.135/5.259 ISK regionale Fonds-Mindeststandsüberweisungen** und sind chargenbezogen mit **−1.032 ISK** unterdeckt. Ein zweiter vollständiger Warenzyklus ohne Fondsstütze ist **nicht** nachgewiesen.
+
+**[NÄCHSTES GATE]** D2/D3/D6 (echte Produktionslöhne und Kostenempfänger, globale persistente Verträge/Claims, nachhaltig bezahlte Endkunden plus gesonderte Geldmodell-B-Freigabe) bleiben offen. 13×90d-Wirtschaft, echte Regel15-/Schema9-Spielstandmigration und reale iPad-/NAS-Abnahme nicht durchgeführt. [Vollständiger Bericht](ANALYSE_BK11H_REALER_AUFTRAG.md). **Kein Merge/Deploy.**
+
+
 ## [ANALYSE] B8o/B8p – bezahlte Aufträge und Endnachfrage · 01.11.2026
 
 **[MAIN]** Weiterhin `0d473e6`, v0.12.5/Regel14/Schema8 ohne Produktcodeänderung. Dokumentations-Draft #78 ist noch **nicht integriert**; dieser Abschnitt bezieht sich auf den vorgeschlagenen Docs-Stand.

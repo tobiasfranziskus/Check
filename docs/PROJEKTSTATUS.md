@@ -1,5 +1,25 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] Wirtschaftlicher Vertikalaufbau – erster Erzpilot · 03.11.2026
+
+**[MAIN]** Letzter vor diesem Auftrag abgeglichener Stand: `b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c`, v0.12.5, Regel 14, Schema 8. Historische B-K12-Forschungs-PRs #155–#160 sind ohne Merge geschlossen. Keine offenen PRs vor Beginn dieses Branches.
+
+**[BESCHLOSSEN]** Die Projektleitung hat am 03.11.2026 den kontrollierten wirtschaftlichen Neuaufbau W0–W6 statt weiterer umfassender Reparaturen beauftragt (einziger Plan: `docs/ROADMAP.md`). Bestehende Spielmechaniken, Technik und Spielstände werden nicht gelöscht oder automatisch konvertiert.
+
+**[DRAFT]** Branch `feature/erzpilot-vertikalschnitt-20261103`:
+- Neue **Core-only**-Pilotregel 15 neben dem unveränderten regulären Regel-14-Einstieg; `m_core_index.createErzState(seed)`, `ERZ_RULES`, `loadErz(json)`. Noch keine Browser-UI zum Start des Piloten, keine Migration zwischen den Modi.
+- Ausschließlich `erz` als Förderware und `miner` als vollständige, lagerbegrenzte Hülle. NPC3 kauft beim Start einen Miner für 600 ISK; Spieler kann einen Miner über `shipBuy` kaufen. Das Geld geht an den expliziten Verkäufer.
+- Förderung erst nach vorab bezahlten 2 ISK je Arbeitsminute. Erz wird im bestehenden Ledger gebucht, echte Chargen an die Station verkauft und erst aus vorhandenem Stationslager nach außen exportiert. Exportkäufer besitzt zu Beginn 20.000 ISK; 10 ISK pro Erz; keine Emission/Gratisnachfüllung.
+- In der Pilotwelt werden Produktion, Piraten, Kopfgeld, Zivilverbrauch, Funds-Nachfüllung, Händler-KI und alte Ersatzkaufregeln nicht ausgeführt. Die alte Regel-14-Spielwelt benutzt unverändert ihren bisherigen Pfad; keine zwei parallelen Ticks.
+- Der reguläre Spielstart, UI und Legacy-Spielstände sind nicht geändert; Pilotregel 15 ist kein freigegebenes Release.
+
+**[BISHER DIREKT GEPRÜFT]** JavaScript-Kern über die tatsächlich aus `index.html` extrahierten Core-Module ausgeführt (Seed 42, 600 Minuten): 1.059 Erz gefördert, 900 Erz real gegen 9.000 ISK Exportbudget abgenommen, Geld-/Warenaudit `ok`, NPC und Spieler mit bezahltem Miner. Gleichlauf gleicher Befehle/Seed war hashgleich; historischer Regel-14-Seed42-60-Minuten-Hash `866776f7d84ef15e` unverändert. Weitere 60-Stunden-Probe: Exportbudget geht exakt auf 0 ISK, nach Ausschöpfung keine weiteren Exportzahlungen, keine ISK-Emission, Geld-/Warenbilanz `ok`, Miner stehen bei vollem Frachtraum still. **Diese lokalen Prüfungen ersetzen keine vollständige Node-Suite, CI oder echte iPad-/NAS-Abnahme.** Neuer Node-Test `tests/erzpilot.test.mjs` ist hinzugefügt; CI-Ergebnis zum Zeitpunkt dieser Dokumentation noch offen.
+
+**[OFFENES GATE]** 13 Seeds × 90 Tage und Krisen-/365-Tage-Fälle, UI-Zugänglichkeit/Touch, Gesamtkosten einschließlich langfristigem Kapitalersatz, dauerhaft finanzierter Käufergeldrückfluss sowie eine etwaige Geldmodell-B-Emissionsregel sind **nicht** nachgewiesen bzw. nicht genehmigt. Die vorfinanzierten 20.000 ISK sind ausdrücklich endlich. W0/W1 ist deshalb ein geprüfter Einzelkreislauf-Prototyp, noch keine dauerhaft tragfähige Gesamtwirtschaft. Kein Merge/Deployment.
+
+---
+
+
 ## [ANALYSE] B8o/B8p – bezahlte Aufträge und Endnachfrage · 01.11.2026
 
 **[MAIN]** Weiterhin `0d473e6`, v0.12.5/Regel14/Schema8 ohne Produktcodeänderung. Dokumentations-Draft #78 ist noch **nicht integriert**; dieser Abschnitt bezieht sich auf den vorgeschlagenen Docs-Stand.

@@ -307,7 +307,9 @@ function bk11pInit(s){
   const station='st_dravos',n=s.stations[station].lokalNeuNahrung||0;
   return {station,ship:'sh015',
     newQueue:Array.from({length:n},()=>({origin:'start'})),
-    initialNew:n,produced:0,outboundNew:0,exportedNew:0,
+    initialNew:n,initialOld:(s.stations[station].lager.nahrung||0)-n,
+    initialOldConsumed:s.stats.haushaltskauf[station].alt,
+    produced:0,outboundNew:0,exportedNew:0,
     shipOld:0,shipNew:0,shipTotal:0,allOld:0,allNew:0,
     paidQty:0,paidISK:0,paidFromShipFIFO:0,
     paidFromOtherFIFO:0,paidFromStartFIFO:0,paidFromLocalFIFO:0,
@@ -379,7 +381,9 @@ function bk11pCheck(s){
 function bk11pSummary(s){
   const t=cfg.p16;if(!t)return null;
   bk11pCheck(s);
-  return {initialNew:t.initialNew,producedLocalNew:t.produced,
+  return {initialNew:t.initialNew,initialOld:t.initialOld,
+    oldConsumedFree:s.stats.haushaltskauf[t.station].alt-t.initialOldConsumed,
+    producedLocalNew:t.produced,
     shipTotal:t.shipTotal,shipNew:t.shipNew,shipOld:t.shipOld,
     otherNew:t.allNew-t.shipNew,otherOld:t.allOld-t.shipOld,
     paidNew:t.paidQty,paidISK:t.paidISK,
@@ -1896,6 +1900,33 @@ test('B-K11p: sh015-Dravos-Nahrungsverkauf gegen original bezahlten Haushalt-End
       const firstFoodArrival=w.traceDravos.shipments.find(e=>e.ship==='sh015');
       const nextDepart=depart.find(d=>d.tick>firstFoodArrival.tick)||
         depart.find(d=>d.tick===firstFoodArrival.tick);
+      const foodBuys=cfg.l11.trades.filter(t=>t.ship==='sh015'&&
+        t.kauf&&t.ware==='nahrung');
+      const wagesISK=sum(wages.map(w=>w.isk));
+      assert.equal(sell.length,target.name==='48h'?1:2);
+      assert.equal(sell[0].tick,5161);
+      assert.equal(sell[0].wert,441);
+      assert.equal(sell[0].fee,17);
+      assert.equal(firstFoodArrival.stationCashBefore,644);
+      assert.equal(firstFoodArrival.shipOwnerCashBefore,4813);
+      assert.equal(w.traceDravos.paidISK,target.name==='48h'?201:381);
+      assert.equal(wagesISK,target.name==='48h'?0:160);
+      assert(nextDepart&&nextDepart.tick===5221);
+      assert.equal(fareFor(nextDepart.vertrag),83);
+      assert.equal(nextDepart.station,'st_dravos');
+      assert.equal(nextDepart.ziel,'st_aldera');
+      if(target.name==='7d'){
+        assert.equal(w.traceDravos.shipOld,25);
+        assert.equal(w.traceDravos.shipNew,9);
+        assert.equal(sell[1].wert,1225);
+        assert.equal(sell[1].tick,8869);
+        assert.deepEqual(wages.map(e=>[e.tick,e.isk]),
+          [[8411,40],[8421,40],[8431,40],[8441,40]]);
+        assert.equal(w.traceDravos.paidISK,117+84+132+48);
+        assert.equal(w.isolated.cashFinal,926);
+        assert.equal(w.isolated.traderNetISK,-942);
+        assert.equal(w.isolated.lossTick,9420);
+      }
       const flightAfterSale=nextDepart?{
         tick:nextDepart.tick,ship:nextDepart.schiff,from:nextDepart.station,
         to:nextDepart.ziel,contract:nextDepart.vertrag,
@@ -1906,6 +1937,8 @@ test('B-K11p: sh015-Dravos-Nahrungsverkauf gegen original bezahlten Haushalt-End
         name:target.name,seed:7,hash:w.hash,origin:w.traceDravos,
         realStationFoodPurchases:sell.map(t=>({tick:t.tick,qty:t.menge,
           isk:t.wert,shipFee:t.fee})),
+        originalShipFoodBuys:foodBuys.map(t=>({tick:t.tick,station:t.station,
+          qty:t.menge,isk:t.wert,shipFee:t.fee})),
         realDravosWages:wages.map(e=>({tick:e.tick,isk:e.isk,rezept:e.rezept})),
         nextDepartureAfterFoodSale:flightAfterSale,
         producerDravosWage:w.civil.stations.st_dravos.hhIncome,

@@ -234,7 +234,16 @@ function run(saved,seed,mode,ausgabe=true,angefragt=24,extras={}){
     .find(x=>x.owner==='house'&&x.klasse==='frachter');
   assert(sh);assert.equal(sh.system,'aldera');
   cfg.mode=mode;cfg.ship=sh.id;cfg.order=null;cfg.delivered=0;cfg.pay=0;cfg.fees=0;
-  cfg.trace=traceNeu();journal.length=0;
+  // B-K11i: gleicher Original-Core-Spielstand und durchgaengiger FIFO-Testtrace.
+  // Alte belegte Eis-/Nahrungs-Lots duerfen nicht bei Charge zwei vergessen werden.
+  if(!extras.continueTrace)cfg.trace=traceNeu();
+  assert(cfg.trace,'FIFO-Trace muss vorhanden sein');
+  const traceStart=Object.fromEntries([
+    'eisVonMiner','eisAnkaufISK','minerVerkaeufe','produktion','lokalGegessen',
+    'minerArbeitBezahlt','minerArbeitSoll','nadirFondsMindestISK','nadirFondsUeberschussISK'
+  ].map(key=>[key,cfg.trace[key]]));
+  const soldAtStart=cfg.trace.verkauft.length;
+  journal.length=0;
   ticks(s,480); // real finanzierte Eis-Foerderung -> originaler Ankauf -> Original-Fabrik
   assert.equal(cfg.trace.eisLots.length,s.stations[S].lager.eis);
   assert.equal(cfg.trace.foodLots.length,s.stations[S].lager.nahrung);
@@ -313,19 +322,20 @@ function run(saved,seed,mode,ausgabe=true,angefragt=24,extras={}){
   const k=ev.filter(x=>x.art==='handel'&&x.kauf&&x.station===S&&x.ware==='nahrung');
   const v=ev.filter(x=>x.art==='handel'&&!x.kauf&&x.station===Z&&x.ware==='nahrung');
   const fl=ev.filter(x=>x.art==='flug');
-  r.fondsNadirErhaltenMinimumISK=cfg.trace.nadirFondsMindestISK;
-  r.fondsNadirErhaltenUeberschussISK=cfg.trace.nadirFondsUeberschussISK;
-  r.eisVorverkaufMenge=cfg.trace.eisVonMiner;
-  r.eisOriginalAnkaufISK=cfg.trace.eisAnkaufISK;
-  r.eisOriginalVerkaeufe=cfg.trace.minerVerkaeufe;
-  r.eisMinerOriginalGezahltISK=cfg.trace.minerArbeitBezahlt;
-  r.eisMinerOriginalSollISK=cfg.trace.minerArbeitSoll;
-  r.nahrungOriginalProduziert=cfg.trace.produktion;
-  r.nahrungOriginalLokalVerbraucht=cfg.trace.lokalGegessen;
-  assert.equal(cfg.trace.verkauft.length,r.menge);
-  r.verfolgteEisEinheiten=sum(cfg.trace.verkauft.map(x=>x.eisAnzahl));
-  r.quellEisIstAnkaufISK=sum(cfg.trace.verkauft.map(x=>x.eisAnkaufISK));
-  r.quellFabriklohnISK=sum(cfg.trace.verkauft.map(x=>x.lohnISK));
+  r.fondsNadirErhaltenMinimumISK=(cfg.trace.nadirFondsMindestISK-traceStart.nadirFondsMindestISK);
+  r.fondsNadirErhaltenUeberschussISK=(cfg.trace.nadirFondsUeberschussISK-traceStart.nadirFondsUeberschussISK);
+  r.eisVorverkaufMenge=(cfg.trace.eisVonMiner-traceStart.eisVonMiner);
+  r.eisOriginalAnkaufISK=(cfg.trace.eisAnkaufISK-traceStart.eisAnkaufISK);
+  r.eisOriginalVerkaeufe=(cfg.trace.minerVerkaeufe-traceStart.minerVerkaeufe);
+  r.eisMinerOriginalGezahltISK=(cfg.trace.minerArbeitBezahlt-traceStart.minerArbeitBezahlt);
+  r.eisMinerOriginalSollISK=(cfg.trace.minerArbeitSoll-traceStart.minerArbeitSoll);
+  r.nahrungOriginalProduziert=(cfg.trace.produktion-traceStart.produktion);
+  r.nahrungOriginalLokalVerbraucht=(cfg.trace.lokalGegessen-traceStart.lokalGegessen);
+  const newlySold=cfg.trace.verkauft.slice(soldAtStart);
+  assert.equal(newlySold.length,r.menge,'nur aktuelle reale FIFO-Charge');
+  r.verfolgteEisEinheiten=sum(newlySold.map(x=>x.eisAnzahl));
+  r.quellEisIstAnkaufISK=sum(newlySold.map(x=>x.eisAnkaufISK));
+  r.quellFabriklohnISK=sum(newlySold.map(x=>x.lohnISK));
   r.minerArbeitskostenAnteilISK=r.verfolgteEisEinheiten*
     rules.world.betriebskosten.miner/rules.economy.stunde;
   assert(Number.isSafeInteger(r.minerArbeitskostenAnteilISK));
@@ -333,8 +343,8 @@ function run(saved,seed,mode,ausgabe=true,angefragt=24,extras={}){
     'alle anteiligen Miner-Betriebskosten durch echten Miner bezahlt');
   assert.equal(r.verfolgteEisEinheiten,2*r.menge);
   assert.equal(r.quellFabriklohnISK,24*r.menge);
-  r.nadirFondsMindestISK=cfg.trace.nadirFondsMindestISK;
-  r.nadirFondsUeberschussISK=cfg.trace.nadirFondsUeberschussISK;
+  r.nadirFondsMindestISK=(cfg.trace.nadirFondsMindestISK-traceStart.nadirFondsMindestISK);
+  r.nadirFondsUeberschussISK=(cfg.trace.nadirFondsUeberschussISK-traceStart.nadirFondsUeberschussISK);
   r.nadirFondsTransferGesamtISK=r.nadirFondsMindestISK+
     r.nadirFondsUeberschussISK;
   r.nadirEndKasse=s.owners[S].cash;
@@ -371,6 +381,9 @@ function run(saved,seed,mode,ausgabe=true,angefragt=24,extras={}){
   r.supply=s.initialSupply+s.minted-s.burned;
   r.hash=core.hash(s);
   if(extras.returnSave)r.finalSaved=core.save(s);
+  if(extras.continueTrace||extras.returnSave)r.remainingTrace={
+    eisLots:cfg.trace.eisLots.length,foodLots:cfg.trace.foodLots.length,
+    active:cfg.trace.offen.size};
   if(ausgabe)console.log('B-K10k echte Bergbau-Fabrik-Transport- und Bestellrechnung',JSON.stringify(r));
   return r;
 }

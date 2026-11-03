@@ -1,5 +1,18 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B-K11k – lokale Haushaltsloehne durch NPC-Handel, Finanzierung jedoch instabil · 03.11.2026
+
+**[MAIN]** Weiter `b4e604d6` / v0.12.5 Regel14/Schema8. **[DRAFT]** [#149](https://github.com/tobiasfranziskus/Check/pull/149) gestapelt auf #148 → #147 → #146; ausschließlich Node-Analyse des historischen isolierten R15-/Schema9-Kerns, keine Produkt-/Preis-/Lohn-/Save-/Emissionsregel, kein Merge oder Deployment.
+
+**[TEST] [gezielte CI #41662484687](https://github.com/tobiasfranziskus/Check/actions/runs/41662484687), 10/10 bestanden:** Identische R15-Spielstände nach zwei vollen bezahlten 24er-Lieferungen und einer echten dritten 14er/17er-Teillieferung. Bei Tick3960 Haushaltskassen Aldera nur **40/38 ISK**, 1 weitere Nahrungseinheit für 54 ISK nicht finanzierbar (B-K11j-Hashes unverändert). Je Seed danach zwei unabhängige 48h-Fortsetzungen: die zuvor künstlich angehaltenen NPC-Frachter bleiben angehalten (A) oder **fünf** vorhandene NPC-Frachter erhalten nur ihren bereits existierenden Originalauftrag `handeln` zurück (B). Keine Waren-/ISK-Injektion, R15-Lohnregel unverändert; stündliche Geld-/Waren-/Herkunftsaudits und täglicher Save/Load.
+
+**[KAUSAL POSITIV]** Ohne NPC-Frachter hat `hh_st_aldera` in beiden Seeds **0 ISK neue Einnahmen**, Endkasse **40/38 ISK**, keine 24er-Vertragsreserve. Mit NPC-Frachtern: **29/62** bzw. **75/103** echte Frachterkäufe/-verkäufe und **74/114** originale Flugkostenbuchungen; Aldera bezahlte tatsächlich **1.824/2.856 ISK lokalen Produktionslohn**. Haushaltskassen dann **1.864/2.744 ISK**; 24×54=**1.296 ISK** können in einer separaten echten Core-Vertragsreserve gebunden und ohne Scheinlieferung storniert werden. Erste Lohnzahlung Tick **3989**; erste 24er-Finanzierbarkeit Tick **4351/4141**. Geldgesamtmenge jeweils 50.000 ISK; vorhandene Kopfgeldemissionen und Senken im Gegenarm **480/480** bzw. **240/240 ISK**.
+
+**[KAUSAL NEGATIV]** Gleichzeitig verliert Aldera die Stationskassenliquidität (**4.137→2/3.940→7 ISK**; Erlöse **4.392/7.803**, Kosten **8.527/11.736 ISK**). NPC1 endet mit **65/66 ISK**, NPC2 mit **124/65 ISK** aus jeweils 3.000 ISK Startkasse; Aldera-Systemfonds wächst auf **5.764/7.044 ISK**. Das lokale Käuferbudget ist also **kurzfristig wiederherstellbar, aber durch real bezahlte und für beteiligte Akteure offenbar nicht selbsttragende Leistungen finanziert**. **Kein** Beleg langfristiger Gesamtstabilität, automatischer normaler NPC-Handel war zuvor künstlich isoliert. Hashes B `0d47d35f43f1bac6` / `e18524faeb778a7c`, Kontrolle A `39a8ef0e72def48d` / `cc55753322483e85`.
+
+**[NÄCHSTES GATE]** Genaue erste Betriebskapitalunterdeckung von Aldera/NPC1/NPC2 im wieder eingeschalteten Händlerpfad, mit realen Waren-, Vertrags-, Gebühren- und Fondsbelegen, ohne individuelle NPC-Rettung oder Spieler-Sparlimit. Dann D2/D3-Kausalkorrekturen getrennt prüfen; Geldmodell B/D6 nur nach gesonderter Freigabe. Keine neue Produktregel und keine 13×90d-/iPad-/NAS-Freigabe. [Detailbericht](ANALYSE_BK11K_NACHFRAGE_KONTEN.md).
+
+
 ## [ANALYSE/DRAFT] B-K11j – erster Folgefinanzierungsblocker nach zweiter Lieferung · 03.11.2026
 
 **[MAIN]** Weiter b4e604d6 / Regel14/Schema8. **[DRAFT]** [#148](https://github.com/tobiasfranziskus/Check/pull/148) gestapelt auf #147 → #146, historischer isolierter R15-/Schema9-Testkern; nur Test- und Analysecode, keine geänderte Wirtschaftsregel, Emission, Preis, Lohn, Save, Deployment oder Merge.

@@ -18,6 +18,8 @@ Drei **unveränderte Produktwelten** mit Seed42: passiv, Spieler Miner, Spieler 
 
 Das Entwicklungswerkzeug `tools/bk11d-endverbrauch.mjs` hängt **nur lesende** Beobachter an die vorhandenen erfolgreich durchlaufenen Produktions-, Stationskauf- und Verbrauchsoperationen. Der unabhängig und ohne Beobachter ausgeführte Original-Core muss stündlich denselben Zustand und Hash ergeben. Zusätzlich: unabhängige Geld- und Warenbilanz, native Auditprüfung und tägliche Save/Load-Roundtrips.
 
+**Audit-Falle im Originalledger:** `state.ledger[ware].consumed` umfasst bei `nahrung`/`medikamente` außer dem **zivilen Stationsverbrauch** auch **beim Schiffverlust vernichtete Fracht** (`m_core_sicherheit.entfernen/zerstoeren`). Diese darf niemals als geleistete zivile Endnachfrage vergütet werden. Der Beobachter zählt die beiden konkreten Vernichtungsstellen getrennt und fordert stündlich `ledger.consumed = zivil_verbraucht + fracht_vernichtet`. Der erste 90-Tage-CI-Anlauf scheiterte korrekt an dieser zuvor nicht erkannten Unterscheidung und war **kein bestandener Test**.
+
 **Warenherkunft wird nicht erfunden:** Altbestände, Importe und neu produzierte Waren sind im echten `state.stations.lager` fungibel, es existiert **kein chargenscharfer Herkunftsbeleg**. Für jede Ware gilt deshalb als strikt globale Untergrenze der später tatsächlich verbrauchten neuen Produktion:
 
 `garantiert_neu_verbraucht_min = max(0, tatsächlich_verbraucht - Anfangsbestand - importiert)`

@@ -25,7 +25,7 @@ const injected=withoutGrants
     '\n      if (!__bk12.productionPermit(state,id,linie.rezept)) continue;');
 assert.notEqual(injected,withoutGrants);
 
-function run(seed,policy,minutes,traceMiner=false) {
+function run(seed,policy,minutes,traceMiner=false,traceAbgabe=false) {
   const m=model({source:injected,traceSource:true});
   strictRules(m);
   const s=m.core.createState(seed,m.rules);
@@ -38,6 +38,10 @@ function run(seed,policy,minutes,traceMiner=false) {
     if(sh.klasse==='frachter'&&sh.auftrag==='handeln')sh.auftrag='halten';
   const fund=m.rules.world.systems[s.stations[NADIR].system].fonds;
   const initial=structuredClone(s);
+  // B-K12e only: source-to-recipient receipts for original NPC surplus levies.
+  const abgabeEvents=[],fundDaily=[];
+  const fundIDs=[...new Set(Object.values(m.rules.world.systems).map(x=>x.fonds))].sort();
+  const initialFunds=Object.fromEntries(fundIDs.map(id=>[id,s.owners[id].cash]));
   // B-K12d diagnostic observer only: actual Nadir ice miners.
   const nadirSystem=s.stations[NADIR].system;
   const minerIDs=Object.values(s.ships).filter(sh=>sh.klasse==='miner'&&
@@ -189,8 +193,43 @@ function run(seed,policy,minutes,traceMiner=false) {
   const basePhase=m.api.phase.bind(m.api);
   m.api.phase=(name,state,fn,args)=>{
     const beforeCaps=capital(state);
+    let npcBefore=null;
+    if(traceAbgabe&&name==='npcAusgaben'){
+      const ids=Object.keys(state.stations).sort();
+      let poorest=ids[0];
+      for(const id of ids)if(state.owners[id].cash<state.owners[poorest].cash)poorest=id;
+      const sys=state.stations[poorest].system;
+      npcBefore={cash:Object.fromEntries(Object.entries(state.owners).map(
+          ([id,o])=>[id,o.cash])),
+        stats:{...state.stats.abgabe},poorest,system:sys,
+        recipient:m.rules.world.systems[sys].fonds,
+        poorestCash:state.owners[poorest].cash};
+    }
     const result=basePhase(name,state,fn,args);
     const afterCaps=capital(state);
+    if(npcBefore) {
+      const donors=Object.entries(state.stats.abgabe).map(([owner,all])=>({
+        owner,amount:all-(npcBefore.stats[owner]||0)
+      })).filter(x=>x.amount>0).sort((a,b)=>a.owner.localeCompare(b.owner));
+      const total=sum(donors.map(x=>x.amount));
+      for(const d of donors){
+        assert.equal(npcBefore.cash[d.owner]-state.owners[d.owner].cash,d.amount,
+          'NPC levy must be a real, fully deducted donor cash transfer');
+      }
+      assert.equal(state.owners[npcBefore.recipient].cash-
+        npcBefore.cash[npcBefore.recipient],total,
+        'poorest station system fund receives exactly real NPC contributions');
+      assert.equal(sum(Object.values(state.owners).map(x=>x.cash)),
+        sum(Object.values(npcBefore.cash)),
+        'NPC levy conserves all existing owner money');
+      if(total)abgabeEvents.push({
+        tick:state.tick,day:1+Math.floor((state.tick-1)/1440),
+        ...Object.fromEntries(['poorest','system','recipient','poorestCash']
+          .map(k=>[k,npcBefore[k]])),
+        donors,total,recipientBefore:npcBefore.cash[npcBefore.recipient],
+        recipientAfter:state.owners[npcBefore.recipient].cash,
+        nadirFund:m.rules.world.systems[state.stations[NADIR].system].fonds});
+    }
     const delta=afterCaps[fund]-beforeCaps[fund];
     if(traceMiner)for(const owner of minerOwners) {
       const change=afterCaps[owner]-beforeCaps[owner];
@@ -228,6 +267,13 @@ function run(seed,policy,minutes,traceMiner=false) {
       const save=m.core.save(s),restored=m.core.load(save,undefined,m.rules);
       assert.equal(m.core.hash(restored),m.core.hash(s));
       dayHashes.push(m.core.hash(s));
+      if(traceAbgabe)fundDaily.push({
+        day:s.tick/1440,
+        funds:Object.fromEntries(fundIDs.map(id=>[id,s.owners[id].cash])),
+        npc3:s.owners.npc3.cash,
+        nadirFund:s.owners[fund].cash,
+        delivered:deliveries.length
+      });
     }
   }
   audit(s,m.core,m.provenance);
@@ -317,6 +363,41 @@ function run(seed,policy,minutes,traceMiner=false) {
       firstOwnerZero:minerHours.find(x=>minerOwners.some(id=>x.owners[id]===0))||null,
       lastTwoHours:minerHours.slice(-2)};
   }
+  let redistributionDiagnostic=null;
+  if(traceAbgabe){
+    const allDonors=Object.entries(s.stats.abgabe).map(([owner,cumulative])=>({
+      owner,paid:cumulative-(initial.stats.abgabe[owner]||0)
+    })).filter(x=>x.paid>0).sort((a,b)=>a.owner.localeCompare(b.owner));
+    const npc3Paid=sum(abgabeEvents.flatMap(x=>x.donors)
+      .filter(x=>x.owner==='npc3').map(x=>x.amount));
+    assert.equal(npc3Paid,(s.stats.abgabe.npc3||0)-(initial.stats.abgabe.npc3||0),
+      'original cumulative NPC3 surplus levy must match identified recipients');
+    for(const d of allDonors)
+      assert.equal(sum(abgabeEvents.flatMap(x=>x.donors)
+        .filter(x=>x.owner===d.owner).map(x=>x.amount)),d.paid,
+        'all original NPC surplus levy senders must be independently identified');
+    const allReceived=sum(abgabeEvents.map(x=>x.total));
+    assert.equal(allReceived,sum(allDonors.map(x=>x.paid)),
+      'all non-minted NPC levy money arrives at precisely one recipient');
+    const fundNetByPhase=Object.fromEntries(fundIDs.map(id=>[id,
+      Object.fromEntries(Object.entries(m.log.net).filter(([,row])=>row[id])
+        .map(([phase,row])=>[phase,row[id]]))]));
+    const fundEnd=Object.fromEntries(fundIDs.map(id=>[id,capital(s)[id]]));
+    for(const id of fundIDs){
+      assert.equal(initialFunds[id]+sum(Object.values(fundNetByPhase[id])),
+        fundEnd[id],'all original Core phase flows reconcile with recipient fund');
+      assert.equal(fundDaily.at(-1).funds[id],s.owners[id].cash);
+    }
+    redistributionDiagnostic={initialFunds,fundEnd,fundNetByPhase,
+      originalNPC3Levy:npc3Paid,allDonors,allReceived,
+      npc3Targets:Object.fromEntries(fundIDs.map(id=>[id,
+        sum(abgabeEvents.filter(x=>x.recipient===id).flatMap(x=>x.donors)
+          .filter(x=>x.owner==='npc3').map(x=>x.amount))])),
+      allTargets:Object.fromEntries(fundIDs.map(id=>[id,
+        sum(abgabeEvents.filter(x=>x.recipient===id).map(x=>x.total))])),
+      nadirFund:fund,abgabeEvents,dayEnd:fundDaily,
+      npc3End:capital(s).npc3};
+  }
   return {seed,policy,days:minutes/1440,hash:m.core.hash(s),openingFund,
     fundEnd:s.owners[fund].cash,stationEnd:s.owners[NADIR].cash,
     totalOrders:orders.length,delivered:deliveries.length,
@@ -339,6 +420,7 @@ function run(seed,policy,minutes,traceMiner=false) {
     minerWorkDue:sum(minerCosts.map(x=>x.due)),
     minerWorkPaid:sum(minerCosts.map(x=>x.paid)),
     ...(traceMiner?{minerDiagnostic}:{}) ,
+    ...(traceAbgabe?{redistributionDiagnostic}:{}) ,
     shortageHours:s.stats.mangel[NADIR].nahrung-initial.stats.mangel[NADIR].nahrung,
     buyerFreeAtEnd:s.owners[fund].cash,
     outstandingFood:q().food.length,outstandingIce:q().ice.length,
@@ -518,6 +600,40 @@ test('B-K12d: tighter 68-ISK prior reserve delays but does not cure exhausted bu
         verifiedServiceIncome:tight.verifiedServiceIncome,
         serviceDays:tight.serviceIncomeDays,hash:tight.hash,
         shortageHours:tight.shortageHours}
+    }));
+  }
+});
+
+
+test('B-K12e: exact original NPC surplus levy recipients, fund account audits (42/7)',()=>{
+  for(const seed of [42,7]){
+    // Only real R15/Schema9 payments, no reassignment of a single ISK.
+    const r=run(seed,'cofinance-tight',10080,false,true);
+    const d=r.redistributionDiagnostic;
+    assert.equal(d.dayEnd.length,7);
+    assert(d.originalNPC3Levy>0,'NPC3 truly paid surplus levies');
+    assert(d.abgabeEvents.length>0,'each surplus levy has a grounded target');
+    assert.equal(sum(Object.values(d.npc3Targets)),d.originalNPC3Levy);
+    assert.equal(sum(Object.values(d.allTargets)),d.allReceived);
+    assert.equal(d.dayEnd[6].nadirFund,r.fundEnd);
+    assert.equal(d.npc3End>r.fundEnd,true,
+      'end consumer and material vendor have different live budgets');
+    assert(r.fundEnd<68,'even exact full-cost prior reservation cannot repeat');
+    assert.equal(r.householdPaidISK,r.wageISK,
+      'new demand must be fully paid, not gifted');
+    assert.equal(r.fundPaidISK,r.inputISK,
+      'actual funded food must trace back to sold mineral inputs');
+    assert.equal(r.minted,[42,7].includes(seed)?r.minted:NaN,
+      'do not manipulate existing emissions');
+    const expected={42:{hash:'4a5857e57dd26942',delivered:39,levy:0},
+      7:{hash:'1932cd8001738da1',delivered:50,levy:0}}[seed];
+    assert.equal(r.hash,expected.hash,'observer must preserve deterministic core outcome');
+    assert.equal(r.delivered,expected.delivered);
+    console.log('BK12E_REAL_LEVY '+JSON.stringify({
+      seed,hash:r.hash,delivered:r.delivered,openingNadirFund:r.openingFund,
+      finalNadirFund:r.fundEnd,realFundPaid:r.fundPaidISK,
+      originalMint:r.minted,
+      redistribution:d
     }));
   }
 });

@@ -1,5 +1,18 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B-K12d – Nadir-Miner voll bezahlt, Käuferfonds nicht regeneriert · 03.11.2026
+
+**[MAIN]** `b4e604d6` / Regel14 / Schema8 unverändert. **[DRAFT]** [PR #159](https://github.com/tobiasfranziskus/Check/pull/159), gestapelt auf #158/#157/#156/#155. Nur historischer R15-/Schema9-Testkern mit unbeschlossenem 4-ISK/Minute-Fabriklohn; **kein** `index.html`-, Referenz-Fixture-, Preis-, Lohn-, Emissions- oder Save-Regeldiff. [Vollständiger B-K12d-Bericht](ANALYSE_BK12D_MINER_GELDKETTE.md).
+
+**[TEST]** [Gezielte CI #41698366671](https://github.com/tobiasfranziskus/Check/actions/runs/41698366671) am ersten Analysehead `09e19a63`: **4/4 Tests erfolgreich**, Seeds42/7×7d mit echten B-K12c-Vorabaufträgen, stündliche unabhängige Geld-/Waren-/Herkunftsaudits, echte Core-Minerverkäufe/-Arbeitskosten/-Zahlungsbelege, komplette NPC3-Phasen-Kassenidentität und tägliche Save-/Load-Hashes. Im anschließenden Prüfcommit `2b7a5886` werden die gemessenen Einzelbelege und Endkassen zusätzlich gepinnt; finale CI am Dokumentationshead noch separat zu prüfen.
+
+**[ERGEBNIS]** Der echte Nadir-Eislieferant `sh009` gehört `npc3` und verkauft Seed42 **76 Eis für 1.672 ISK**, Seed7 **96 Eis für 2.112 ISK**. Seine wirklichen fälligen und bezahlten Betriebskosten sind **440/440** bzw. **490/490 ISK** – **keine ungedeckte Nadir-Minerarbeit in diesen Gegenwelten**. NPC3-Endvermögen **5.249/3.411 ISK**, Nadir-Station **3.688/3.688 ISK**, Schiff weiterhin voller **100-Eis-Frachtraum**; trotzdem kann der lokale Fonds mit nur **100/117 ISK** den notwendigen nächsten Vertrag von **128 ISK** nicht neu reservieren.
+
+**[KAUSALE ZAHLUNGSKETTE]** Alle echten Nadir-Schiffsbetriebskosten-Eingänge des Fonds kommen aus `npc3`: Seed42 **722 ISK**, Seed7 **1.169 ISK**, einschließlich `sh009` **440/490 ISK**; zusätzliche wirkliche Handelsgebühren **50/60 ISK**. Am erneuten marginalen Tages-2-Nahrungslos kosten **zwei Eis genau 44 ISK Fondszahlung**, während der Miner durch Arbeit **5 ISK** und die Gebühr **1 ISK** zum Fonds zurückführt; **netto 38 ISK je Einheit werden vom Käuferfonds zu NPC3 verschoben**. Seed42 15 solche Lieferungen an Tag2 ⇒ 570 ISK Netto-Fondsabfluss; Seed7 24 ⇒ 912 ISK. Ab Tag4–7 keine neuen lokalen Eisverkäufe/Fonds-Betriebskosteneingänge. Ursache ist hier **fehlender Käufer-Cash-Rückfluss**; weder neues Eis noch Minerrettung lösen sie. Nur isolierte Mikro-Analyse, weiterhin 168/168 teilweise mangelnde Versorgungsstunden wegen Testkapazität 1/h statt Originalbedarf 2/h. Keine 13×90d-Welt-/Spielerkrisen-/iPad-/NAS-Abnahme.
+
+**[OPTION/KEIN PRODUKTENTSCHEID]** Vor neuen Mechaniken zunächst überprüfen, welche **tatsächlich bezahlten** existierenden Gegenleistungen wieder ISK vom wirtschaftlich zahlungsfähigen NPC3 zum Endkäufer zurückbringen könnten (B-K12e); keine automatische Fondsrettung, neue Emission, Preis-/Lohnreform oder Spieler-Spargrenze. Die Roadmap-Priorität auf `main` bleibt unverändert.
+
+
 ## [ANALYSE/DRAFT] B-K12c – realer Lohnrückfluss finanziert mehr Nahrungsabnahmen, noch keinen Dauerbetrieb · 03.11.2026
 
 **[MAIN]** `b4e604d6` / Regel14 / Schema8 unverändert. **[DRAFT]** [PR #158](https://github.com/tobiasfranziskus/Check/pull/158) gestapelt auf #157/#156/#155, nur isolierte historische R15-/Schema9-Analyse mit unbeschlossenem **4-ISK/Minute**-Testlohn. Kein neuer Preis-/Lohn-/Emissions-/Spielstand-/Produktcode, kein Merge/Deployment. [Bericht B-K12c](ANALYSE_BK12C_HAUSHALTSRUECKFLUSS.md).

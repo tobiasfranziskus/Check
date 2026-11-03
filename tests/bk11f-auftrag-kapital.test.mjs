@@ -102,7 +102,7 @@ test('B-K11f: Quelle und Auftragnehmer sind beim Originalpreis unterschiedlich r
  assert.equal(x.fixedFeeCustomerMinWithHistoricalIceISK,2203);
  assert.equal(x.additionalCustomerISKLowerBoundAtFixedFees,907,
    'Mindestens 907 ISK MEHR Kundenumsatz bei unveraendert hohen Eis-Preisen / fixen Gebuehren');
- assert(x.note.includes('keine'));
+ assert(x.note.includes('nicht Original-Core-Preise'));
  const proof=order({q:24});
  assert.equal(proof.groupBusiness,29);
  assert(proof.groupBusiness<780,'ein Ersatz-Frachter kostenpflichtig und nicht durch einen 29-ISK-Beitrag bezahlt');

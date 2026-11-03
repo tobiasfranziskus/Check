@@ -1660,12 +1660,16 @@ test('B-K11o: jeden einzelnen vorhandenen NPC-Frachter ohne Kreuzsubvention aus 
             assert.equal(world.isolated.unexplainedOwnerISK,0);
             assert(world.isolated.trueRepeatedFullyPaid,
               'mehrfach selbstfinanzierter Einzelhaendler mit echten Core-Flugzahlungen');
+            assert.equal(world.isolated.foodSoldToStations.st_dravos,9,
+              'auch der profitable Einzelhaendler lieferte echte Ware nach Dravos');
           }
           console.log('BK11O_SINGLE_SHIP '+JSON.stringify({
             seed,mode,hash:world.hash,foodPaid:world.civil.totalPaidNewFood,
             foodShort:world.civil.foodShortageHours,
             alderaFood:world.isolated.suppliedAlderaFood,
             alderaHH:world.aldera.hh,alderaStation:world.aldera.cash,
+            dravosPaidNewFood:world.civil.stations.st_dravos.paidNewFood,
+            dravosFoodShortage:world.civil.stations.st_dravos.foodShortageHours,
             single:world.isolated}));
         }
       }
@@ -1693,6 +1697,16 @@ test('B-K11o: echten profitablen Seed7-Einzelfrachter ueber sieben Tage weiterpr
       assert.equal(world.isolated.ship,'sh015');
       assert(world.isolated.completeLots>0);
       assert.equal(world.isolated.unmatchedSales,0);
+      const original=mode==='original';
+      assert.equal(world.hash,original?'84f43afea49bf8e2':'00920e2a5507b371',
+        'Sieben-Tage-Einzelfrachterhash aus tatsaechlich ausgefuehrtem CI');
+      assert.equal(world.isolated.lossTick,original?5220:9420,
+        'wirklicher schiffgebundener Verlusttick, kein erfundener Ersatz');
+      assert.equal(world.isolated.completeLots,original?21:35);
+      assert.equal(world.isolated.traderNetISK,original?2528:-942);
+      assert.equal(world.isolated.foodSoldToStations.st_dravos,original?21:34);
+      assert.equal(world.civil.stations.st_dravos.paidNewFood,original?7:9);
+      assert(!world.isolated.trueRepeatedFullyPaid,'7d kein nachhaltiger selbstfinanzierter NPC');
       console.log('BK11O_SEVEN_DAY_CANDIDATE '+JSON.stringify({
         seed:7,mode,hash:world.hash,ship:world.isolated,
         foodByStation:world.civil.stations,globalFoodPaid:world.civil.totalPaidNewFood,

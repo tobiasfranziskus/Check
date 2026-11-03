@@ -442,6 +442,37 @@ test('B-K12d: Nadir miner cash chain and unpaid work exposed, not mistaken for g
       'every raw-input cost credited to real miner receipts');
     assert(d.focusCosts.due>=d.focusCosts.paid);
     assert.equal(d.focusCosts.unpaid,d.focusCosts.due-d.focusCosts.paid);
+    assert.equal(d.focusCosts.unpaid,0,
+      'in these actual worlds, sh009 is fully paid; do not misdiagnose unpaid work');
+    assert(d.ownerEnding.npc3>r.fundEnd&&r.fundEnd<128,
+      'working-capital bottleneck is real buyer fund, not npc3 insolvency');
+    assert.equal(d.byDay[7].minerShips[0].cargo,100,
+      'full physical miner cargo remains available although no funded order');
+    assert.equal(d.byDay[7].minerShips[0].auftrag,'foerdern',
+      'miner is not bankrupt or halted by its command');
+    assert(r.stationEnd>=128,'producer still has liquid working capital');
+    const second=d.byDay[2];
+    assert(second.sales>0,'verify actual day-two repeat flow');
+    assert.equal(second.iceRevenue,44*second.sales,
+      'actual per-food raw material transfer from station to miner owner');
+    assert.equal(second.miningPaid,5*second.sales,
+      'true, fully paid marginal mining service fee');
+    assert.equal(second.minerFees,second.sales,
+      'exact original fee credited to fund per food batch');
+    assert.equal(second.receiptsFromShips,second.miningPaid,
+      'no hidden second service funder in marginal day-two flow');
+    assert.equal(44*second.sales-second.receiptsFromShips-second.minerFees,
+      38*second.sales,'marginal 38 ISK per unit accumulate outside buyer fund');
+    for(const day of [4,5,6,7]){
+      assert.equal(d.byDay[day].sales,0);
+      assert.equal(d.byDay[day].receiptsFromShips,0);
+    }
+    const pinned={42:{owner:5249,fund:100,units:38,costs:440},
+      7:{owner:3411,fund:117,units:48,costs:490}}[seed];
+    assert.equal(d.ownerEnding.npc3,pinned.owner);
+    assert.equal(r.fundEnd,pinned.fund);
+    assert.equal(r.delivered,pinned.units);
+    assert.equal(d.focusCosts.due,pinned.costs);
     assert.equal(d.fundOperating+d.allFundFees,r.verifiedServiceIncome,
       'no unassigned source of real system-fund income');
     assert.equal(Object.keys(d.byDay).length,7);

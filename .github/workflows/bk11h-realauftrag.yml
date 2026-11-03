@@ -17,5 +17,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Original-Core R15 Test-only: echte Lieferung, bezahlte Arbeit und Verlust
+      - name: "Original-Core R15 Test-only: echte Lieferung, bezahlte Arbeit und Verlust"
         run: node --test tests/bk11h-reale-lieferung.test.mjs

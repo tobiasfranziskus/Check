@@ -492,6 +492,14 @@ test('B-K12d: tighter 68-ISK prior reserve delays but does not cure exhausted bu
   for(const seed of [42,7]){
     const reference=run(seed,'cofinance',10080);
     const tight=run(seed,'cofinance-tight',10080);
+    const expected={42:{delivered:39,finalFund:62,hash:'4a5857e57dd26942'},
+      7:{delivered:50,finalFund:41,hash:'1932cd8001738da1'}}[seed];
+    assert.equal(tight.delivered,expected.delivered,
+      'tight-reserve output must reproduce exact real paid deliveries');
+    assert.equal(tight.fundEnd,expected.finalFund);
+    assert.equal(tight.hash,expected.hash,'tight reserve deterministic 7-day hash');
+    assert(tight.orders.every(x=>x.budget===68),
+      'locked amount must be the genuine first-lot full production cost');
     assert(tight.delivered>reference.delivered,
       '128-ISK cushion causes a separate early stop, must not be called insolvency');
     assert(tight.fundEnd<68,'even real fully cost-covered 68-ISK reserve eventually fails');

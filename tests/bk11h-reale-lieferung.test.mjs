@@ -1584,6 +1584,14 @@ function bk11oAuswertung(shipId,ownerAtStart,startingCargo,allTrades,allJournal,
   const buy=trades.filter(x=>x.kauf),sale=trades.filter(x=>!x.kauf);
   const fee=sum(trades.map(x=>x.fee)),buyISK=sum(buy.map(x=>x.wert)),
     sellISK=sum(sale.map(x=>x.wert)),fare=sum(flights.map(x=>x.betrag));
+  const otherDeals=allTrades.filter(x=>x.owner===name&&x.ship!==shipId);
+  const otherFare=allJournal.filter(x=>x.art==='flug'&&x.owner===name&&x.schiff!==shipId);
+  const otherBuyISK=sum(otherDeals.filter(x=>x.kauf).map(x=>x.wert));
+  const otherSellISK=sum(otherDeals.filter(x=>!x.kauf).map(x=>x.wert));
+  const otherFees=sum(otherDeals.map(x=>x.fee));
+  const otherFlightISK=sum(otherFare.map(x=>x.betrag));
+  const ownerReplacements=otherDeals.filter(x=>x.kauf&&x.ware==='frachter');
+  const otherNetISK=otherSellISK-otherBuyISK-otherFees-otherFlightISK;
   const transfer=events.filter(x=>x.art==='npc-abgabe'&&x.von===name)
     .reduce((n,x)=>n+x.isk,0);
   const realizedMargin=complete.reduce((n,x)=>n+x.revenue-x.cost-
@@ -1600,11 +1608,18 @@ function bk11oAuswertung(shipId,ownerAtStart,startingCargo,allTrades,allJournal,
     unmatchedSales,initialSales,matchedSaleISK,realizedMarginBeforeFlights:realizedMargin,
     boughtISK:buyISK,soldISK:sellISK,feesISK:fee,flightISK:fare,
     traderNetISK:netTrades,ownerCashDelta:ownerDelta,
-    otherCashDelta:ownerDelta-netTrades+transfer,npcLeviesISK:transfer,
+    otherCashDelta:ownerDelta-netTrades+transfer,
+    otherOwnerNetISK:otherNetISK,otherOwnerDeals:otherDeals.length,
+    otherOwnerFlightISK:otherFlightISK,
+    replacementPurchases:ownerReplacements.map(x=>({
+      ship:x.ship,tick:x.tick,cost:x.wert,fee:x.fee})),
+    unexplainedOwnerISK:ownerDelta-netTrades-otherNetISK+transfer,
+    npcLeviesISK:transfer,
     cashFinal:s.owners[name].cash,heldReserves:bk11lOffeneReserve(s,name),
     suppliedAlderaFood:sum(sale.filter(x=>x.station===Z&&x.ware==='nahrung').map(x=>x.menge)),
-    trueRepeatedFullyPaid:complete.length>=2&&
-      ownerDelta>=0&&transfer===0&&ownerDelta===netTrades};
+    trueRepeatedFullyPaid:complete.length>=2&&!!ship&&
+      ownerDelta>=0&&transfer===0&&otherDeals.length===0&&otherFare.length===0&&
+      ownerDelta===netTrades};
 }
 
 test('B-K11o: jeden einzelnen vorhandenen NPC-Frachter ohne Kreuzsubvention aus anderen aktiven Handelsfluegen pruefen',()=>{
@@ -1624,7 +1639,8 @@ test('B-K11o: jeden einzelnen vorhandenen NPC-Frachter ohne Kreuzsubvention aus 
           assert(world.isolated&&world.isolated.ship===onlyShip);
           assert(world.isolated.unmatchedSales===0,
             'Original-Core-Verkauf muss aus vorhandener Anfangsladung oder echtem Kauf kommen');
-          assert.equal(world.system.totalMoney,50000);
+          assert.equal(world.system.totalMoney,50000+world.system.mintedDelta-
+            world.system.burnedDelta,'Global audit accounts for existing real bounty emissions and sinks');
           assert(world.isolated.completeLots<=world.isolated.uniqueLots);
           if(world.isolated.trueRepeatedFullyPaid)successful++;
           console.log('BK11O_SINGLE_SHIP '+JSON.stringify({

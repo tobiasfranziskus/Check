@@ -1833,3 +1833,58 @@ test('B-K11o: echten profitablen Seed7-Einzelfrachter ueber sieben Tage weiterpr
   }finally{cfg.l11=null;cfg.accountOnly=false;cfg.routeMode=null;cfg.routeStats=null;
     rules.world.mindeststand=min;rules.world.fondsObergrenze=max;}
 });
+
+
+// B-K11p: Original-Core verrechnet die Station-zu-Haushalt-Zahlung selbst.
+// Dieser Test beobachtet ausschliesslich bestaetigte, bezahlt verbrauchte
+// NEU-Einheiten; innerhalb der NEU-Mischung ist unsere FIFO-Zuordnung
+// ausdrücklich eine Konvention, kein vom Produkt gespeicherter Chargencode.
+test('B-K11p: sh015-Dravos-Nahrungsverkauf gegen original bezahlten Haushalt-Endverbrauch',()=>{
+  const min=rules.world.mindeststand,max=rules.world.fondsObergrenze;
+  try {
+    rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+    cfg.p16=null;cfg.l11=null;cfg.routeMode=null;cfg.routeStats=null;
+    const third=bk11kNachDrittemTeilauftrag(7);
+    const cases=[
+      {name:'48h',minuten:2880,hash:'64644f6b43a2e824',sale:9,paid:5},
+      {name:'7d',minuten:7*1440,hash:'00920e2a5507b371',sale:34,paid:9}
+    ];
+    for(const target of cases){
+      const w=bk11mVergleich(7,third.saved,'vollkosten',target.minuten,'sh015',true);
+      assert.equal(w.base,third.hash);
+      assert.equal(w.hash,target.hash,
+        'Beobachter duerfen den R15-Zustand nicht veraendern');
+      assert.equal(w.isolated.foodSoldToStations.st_dravos,target.sale);
+      assert.equal(w.civil.stations.st_dravos.paidNewFood,target.paid);
+      assert(w.traceDravos,'Dravos NEU-Transport und HH-Kauf wurden aufgezeichnet');
+      assert.equal(w.traceDravos.shipTotal,target.sale);
+      assert.equal(w.traceDravos.paidNew,target.paid);
+      assert.equal(w.traceDravos.paidISK,w.civil.stations.st_dravos.paidFoodISK);
+      assert.equal(w.traceDravos.paidFromShipFIFO+
+        w.traceDravos.paidFromOtherFIFO+
+        w.traceDravos.paidFromStartFIFO+
+        w.traceDravos.paidFromLocalFIFO,w.traceDravos.paidNew);
+      assert.equal(w.traceDravos.shipNew+w.traceDravos.shipOld,
+        w.traceDravos.shipTotal);
+      assert(w.traceDravos.paidFromShipFIFO<=w.traceDravos.shipNew);
+      const receipt=w.isolated;
+      assert.equal(receipt.unmatchedSales,0);
+      assert(receipt.completeLots>=2);
+      assert.equal(receipt.lossTick,target.name==='48h'?null:9420);
+      console.log('BK11P_DRAVOS_FOOD_ORIGIN '+JSON.stringify({
+        name:target.name,seed:7,hash:w.hash,origin:w.traceDravos,
+        producerDravosWage:w.civil.stations.st_dravos.hhIncome,
+        buyerDravosCash:w.civil.stations.st_dravos.householdCash,
+        stationDravosCash:w.civil.stations.st_dravos.stationCash,
+        soldDravosByShip:receipt.foodSoldToStations.st_dravos,
+        ownerCash:receipt.cashFinal,ownerNetISK:receipt.ownerCashDelta,
+        traderNetISK:receipt.traderNetISK,originalShipAlive:receipt.alive,
+        originalShipLostAt:receipt.lossTick,
+        replacementPurchases:receipt.replacementPurchases,
+        reportedFoodShortageHours:w.civil.stations.st_dravos.foodShortageHours}));
+    }
+  }finally{
+    cfg.p16=null;cfg.l11=null;cfg.accountOnly=false;cfg.routeMode=null;cfg.routeStats=null;
+    rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+  }
+});

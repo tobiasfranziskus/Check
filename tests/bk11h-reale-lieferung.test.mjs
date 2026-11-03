@@ -307,6 +307,26 @@ function run(saved,seed,mode,ausgabe=true,angefragt=24,extras={}){
   if(mode==='bestellung'){
     const max=r.preisZielBeiBestellung*menge;
     const id=core.vertrag.reservieren(s,H,'house',max);
+    if(!id&&extras.allowBlocked){
+      // Kein Testtrick: Der Original-Core hat die Vertragsreservierung
+      // ohne Zahlung/Buchung abgewiesen. Keine Ware kaufen/transferieren.
+      audit(s);
+      const buyerCash=s.owners[H].cash;
+      assert(buyerCash<max,'erster echter Käufer-Finanzierungsgate');
+      const blocked={blocked:true,reason:'Haushalt kann 24er-Bestellung nicht vorfinanzieren',
+        gate:'haushalt-bestellung',seed,tick:s.tick,requested:angefragt,
+        saleable,realNew:echtNeu,nahrungLager:s.stations[S].lager.nahrung,
+        eisLager:s.stations[S].lager.eis,requiredBudgetISK:max,
+        buyerCash,shortfallISK:max-buyerCash,
+        stationCash:s.owners[S].cash,traderCash:s.owners.house.cash,
+        minerCash:s.owners[s.ships.sh009.owner].cash,
+        fondsCash:s.owners.fonds_nadir.cash,
+        fondsMinimumSinceStart:cfg.trace.nadirFondsMindestISK-traceStart.nadirFondsMindestISK,
+        produktionSinceStart:cfg.trace.produktion-traceStart.produktion,
+        hash:core.hash(s),finalSaved:core.save(s)};
+      assert.equal(core.hash(core.load(blocked.finalSaved,undefined,rules)),blocked.hash);
+      return blocked;
+    }
     assert(id,'Bestellung aus zuvor vorhandenem Haushaltgeld gesperrt');
     cfg.order={id,menge,preis:r.preisZielBeiBestellung};
     r.gesichertISK=max;
@@ -717,6 +737,9 @@ test('B-K11j: aktive echte Folgelieferungen ab identischem zweitem Save bis zum 
           {continueTrace:true,returnSave:true,allowBlocked:true});
         auftraege.push({
           lieferung,blocked:!!outcome.blocked,reason:outcome.reason||null,
+          gate:outcome.gate||null,requiredBudgetISK:outcome.requiredBudgetISK??null,
+          buyerISK:outcome.buyerCash??null,shortfallISK:outcome.shortfallISK??null,
+          saleableFood:outcome.saleable??null,
           geliefert:outcome.direktAbsatzMenge||0,
           bezahltISK:outcome.direktAbsatzISK||0,
           quellKasse:outcome.nadirEndKasse??outcome.stationCash,

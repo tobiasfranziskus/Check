@@ -304,6 +304,20 @@ test('B-K12c: actual wage-funded household contribution recycles ISK before fund
     assert.equal(co.outstandingFood,0);
     assert.equal(co.outstandingIce,0);
     assert.equal(co.dayHashes.length,7);
+    const expected={42:{hash:'3461775aeb999c23',units:38,days:[1,2],
+      fundEnd:100},7:{hash:'4848efbdd3a93e18',units:48,days:[1,2,3],
+      fundEnd:117}}[seed];
+    assert.equal(co.hash,expected.hash,'deterministic co-payment world hash');
+    assert.equal(co.delivered,expected.units,'exact seven-day real purchase count');
+    assert.equal(co.fundEnd,expected.fundEnd,'actual cash conservation');
+    assert.deepEqual(co.serviceIncomeDays,expected.days,
+      'no continuing original service revenue beyond day 2/3');
+    assert.equal(co.householdPaidISK,co.wageISK,
+      'exactly earned and paid factory wages re-enter food purchases');
+    assert.equal(co.fundPaidISK,co.inputISK,
+      'fund pays exactly paid ice, no uncovered factory wage');
+    assert.equal(co.buyerCashIdentity,co.fundEnd,
+      'opening cash plus true service receipts minus real buyer payments');
     assert.equal(co.minted,baseline.minted,
       'co-payment must not introduce new emission');
     console.log('BK12C_COFINANCE '+JSON.stringify({

@@ -69,7 +69,7 @@ einmal("    f.cash -= n; o[id].cash += n;",
 einmal("    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;",
   "    __bk10k_fondsZufluss(arm,f.cash-w.fondsObergrenze,'ueberschuss');\n"+
   "    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;");
-const journal=[],cfg={mode:null,ship:null,order:null,delivered:0,pay:0,fees:0,trace:null,gateLog:null,accountOnly:false};
+const journal=[],cfg={mode:null,ship:null,order:null,delivered:0,pay:0,fees:0,trace:null,gateLog:null,accountOnly:false,l11:null};
 function traceNeu(){
   return {eisLots:[],foodLots:[],offen:new Map(),verkauft:[],
     eisVonMiner:0,eisAnkaufISK:0,produktion:0,lokalGegessen:0,
@@ -78,6 +78,14 @@ function traceNeu(){
 }
 const tiefKopie=(x)=>JSON.parse(JSON.stringify(x));
 function quelleTrade(state,schiff,station,ware,menge,kauf,wert){
+  if(cfg.l11){
+    const original=journal.at(-1);
+    assert(original&&original.art==='handel'&&original.schiff===schiff.id);
+    cfg.l11.trades.push({tick:state.tick,owner:schiff.owner,
+      klasse:schiff.klasse,station,ware,menge,kauf,wert,fee:original.fee,
+      feeEmpfaenger:state.stations[station].eigentum
+        ?station:rules.world.systems[state.stations[station].system].fonds});
+  }
   if(cfg.accountOnly)return; // nur B-K11k: aggregierte echte Core-Konten statt strengem Ein-Miner-FIFO
   const t=cfg.trace;
   if(!t||station!=='st_nadir')return;
@@ -173,6 +181,13 @@ function direkt(s,rules,id,ware,bedarf){
 // B-K11j: ausschliesslich beobachtender Hook an der echten fehlgeschlagenen
 // Produktionsmittelbindung; keine Buchung, kein Retry und keine Sonderzahlung.
 function bk11jProduktionsGate(state,id,index,linie,rezept,lohn){
+  if(cfg.l11&&id==='st_aldera'&&!cfg.l11.firstPayroll)
+    cfg.l11.firstPayroll={tick:state.tick,station:id,rezept:linie.rezept,
+      linie:index,bedarf:lohn,liquid:state.owners[id].cash,
+      fehlbetrag:lohn-state.owners[id].cash,
+      inputs:rezept.ein,outputs:rezept.aus,
+      hhCash:state.owners['hh_'+id].cash,
+      localFonds:state.owners.fonds_aldera.cash};
   if(id!=='st_nadir'||!cfg.gateLog)return;
   const cash=state.owners[id].cash;
   cfg.gateLog.push({art:'produktion-escrow',tick:state.tick,akteur:id,
@@ -186,8 +201,51 @@ einmal("        const idVertrag = m_core_vertrag.reservieren(state, id, 'hh_' + 
   "        const idVertrag = m_core_vertrag.reservieren(state, id, 'hh_' + id, lohn);\n"+
   "        if (!idVertrag) __bk11j_prodGate(state,id,index,linie,r,lohn);\n"+
   "        if (!idVertrag) continue;");
-const modules=new Function('__bk10k_hold','__bk10k_direkt','__bk10k_journal','__bk10k_quelleTrade','__bk10k_quelleStart','__bk10k_quelleFertig','__bk10k_quelleKonsum','__bk10k_minerKosten','__bk10k_fondsZufluss','__bk11j_prodGate',js+
-  ';return {core:m_core_index,base:m_data_rules.RULES,herkunft:m_core_herkunft,route:m_core_route.route};')(halten,direkt,journal,quelleTrade,quelleStart,quelleFertig,quelleKonsum,quelleMinerKosten,nadirFondsZufluss,bk11jProduktionsGate);
+
+// B-K11l: ungeschriebene, rein testseitige Kontoereignisse. Die Hooks stehen
+// an realen, vom Original-Core erreichten Zahlungs- bzw. Ablehnungsstellen.
+function bk11lEvent(state,art,id,gegen,n,info={}){
+  if(!cfg.l11)return;
+  assert(Number.isSafeInteger(n)&&n>0,'B-K11l beobachtet reale ISK-Betraege');
+  cfg.l11.events.push({tick:state.tick,art,von:id,an:gegen,isk:n,...info});
+}
+function bk11lFlightGate(state,schiff,station,ziel,ware,budget,art){
+  if(!cfg.l11||!['npc1','npc2'].includes(schiff.owner))return;
+  const id=schiff.owner;
+  if(cfg.l11.firstFlight[id])return;
+  cfg.l11.firstFlight[id]={tick:state.tick,owner:id,schiff:schiff.id,
+    art,station,ziel,ware,cash:state.owners[id].cash,
+    flightBudget:budget,
+    priceUnit:ware?core.preis(state,station,ware,rules):null,
+    cargo:Object.fromEntries(Object.entries(schiff.ladung))};
+}
+einmal("            buche(state, id, 'kosten', betrag);",
+  "            __bk11l_event(state,'produktionslohn',id,'hh_'+id,betrag,"+
+  "{rezept:linie.rezept});\n            buche(state, id, 'kosten', betrag);");
+einmal("    o[id].cash -= n; o[ziel].cash += n;",
+  "    __bk11l_event(state,'npc-abgabe',id,ziel,n);\n"+
+  "    o[id].cash -= n; o[ziel].cash += n;");
+einmal("    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;",
+  "    __bk11l_event(state,'fonds-ueberschuss',fondsIn(rules,system),arm,"+
+  "f.cash-w.fondsObergrenze);\n"+
+  "    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;");
+einmal("          hh.cash -= geld;",
+  "          __bk11l_event(state,'lokaler-endverbrauch','hh_'+id,id,geld,"+
+  "{ware});\n          hh.cash -= geld;");
+einmal("    f.cash -= n; o[id].cash += n;",
+  "    __bk11l_event(state,'fonds-mindest',fondsIn(rules,state.stations[id].system),id,n);\n"+
+  "    f.cash -= n; o[id].cash += n;");
+einmal("    if (bezahlbar(rules, station, state.owners[s.owner].cash - budget, preis(state, station, ware, rules)) <= 0)\n      return false;",
+  "    if (bezahlbar(rules, station, state.owners[s.owner].cash - budget, preis(state, station, ware, rules)) <= 0) {\n"+
+  "      __bk11l_flightGate(state,s,station,ziel,ware,budget,'handel-vorlauf');\n"+
+  "      return false;\n    }");
+einmal("  if (finanziert && !m_core_vertrag.fahrtStart(state, rules, s, ziel, r.zeit)) return false;",
+  "  if (finanziert && !m_core_vertrag.fahrtStart(state, rules, s, ziel, r.zeit)) {\n"+
+  "    __bk11l_flightGate(state,s,station,ziel,ware,"+
+  "Math.ceil(r.zeit*w.betriebskosten.frachter/rules.economy.stunde),'fahrt-escrow');\n"+
+  "    return false;\n  }");
+const modules=new Function('__bk10k_hold','__bk10k_direkt','__bk10k_journal','__bk10k_quelleTrade','__bk10k_quelleStart','__bk10k_quelleFertig','__bk10k_quelleKonsum','__bk10k_minerKosten','__bk10k_fondsZufluss','__bk11j_prodGate','__bk11l_event','__bk11l_flightGate',js+
+  ';return {core:m_core_index,base:m_data_rules.RULES,herkunft:m_core_herkunft,route:m_core_route.route};')(halten,direkt,journal,quelleTrade,quelleStart,quelleFertig,quelleKonsum,quelleMinerKosten,nadirFondsZufluss,bk11jProduktionsGate,bk11lEvent,bk11lFlightGate);
 core=modules.core;
 const {base,herkunft,route}=modules;
 assert.equal(base.schema,8);assert.equal(base.rulesVersion,14);

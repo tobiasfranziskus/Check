@@ -277,6 +277,8 @@ function run(saved,seed,mode,ausgabe=true,angefragt=24,extras={}){
     if(peer.owner!=='house'&&peer.klasse==='frachter'
       && peer.auftrag==='handeln')peer.auftrag='halten';
   const t0=s.tick, cash0=s.owners.house.cash, hh0=s.owners[H].cash;
+  const nadirCash0=s.owners[S].cash,nadirHH0=s.owners['hh_'+S].cash;
+  const nadirStats0={...s.stats.konto[S]};
   const st0=s.owners[Z].cash,stats0={...s.stats.haushaltskauf[Z]};
   const r={seed,mode,routeZeit:route(rules.world,'aldera','nadir').zeit,
     startHaendlerCash:cash0,startHaushaltCash:hh0,startStationsCash:st0,
@@ -317,8 +319,18 @@ function run(saved,seed,mode,ausgabe=true,angefragt=24,extras={}){
         gate:'haushalt-bestellung',seed,tick:s.tick,requested:angefragt,
         saleable,realNew:echtNeu,nahrungLager:s.stations[S].lager.nahrung,
         eisLager:s.stations[S].lager.eis,requiredBudgetISK:max,
-        buyerCash,shortfallISK:max-buyerCash,
-        stationCash:s.owners[S].cash,traderCash:s.owners.house.cash,
+        buyerCash,shortfallISK:max-buyerCash,buyerCashDelta:buyerCash-hh0,
+        stationCash:s.owners[S].cash,stationCashDelta:s.owners[S].cash-nadirCash0,
+        nadirErloeseDelta:s.stats.konto[S].erloes-nadirStats0.erloes,
+        nadirKostenDelta:s.stats.konto[S].kosten-nadirStats0.kosten,
+        nadirHaushaltCash:s.owners['hh_'+S].cash,
+        nadirHaushaltCashDelta:s.owners['hh_'+S].cash-nadirHH0,
+        neuerEisAnkaufISK:cfg.trace.eisAnkaufISK-traceStart.eisAnkaufISK,
+        neueEisMenge:cfg.trace.eisVonMiner-traceStart.eisVonMiner,
+        neueNahrung:cfg.trace.produktion-traceStart.produktion,
+        minerArbeitISK:cfg.trace.minerArbeitBezahlt-traceStart.minerArbeitBezahlt,
+        stationVerkaufbar:core.verkaufbar(s,rules,S,'nahrung'),
+        traderCash:s.owners.house.cash,
         minerCash:s.owners[s.ships.sh009.owner].cash,
         fondsCash:s.owners.fonds_nadir.cash,
         fondsMinimumSinceStart:cfg.trace.nadirFondsMindestISK-traceStart.nadirFondsMindestISK,
@@ -739,6 +751,13 @@ test('B-K11j: aktive echte Folgelieferungen ab identischem zweitem Save bis zum 
           lieferung,blocked:!!outcome.blocked,reason:outcome.reason||null,
           gate:outcome.gate||null,requiredBudgetISK:outcome.requiredBudgetISK??null,
           buyerISK:outcome.buyerCash??null,shortfallISK:outcome.shortfallISK??null,
+          buyerCashDelta:outcome.buyerCashDelta??null,
+          stationCashDelta:outcome.stationCashDelta??null,
+          stationRevenues:outcome.nadirErloeseDelta??null,
+          stationCosts:outcome.nadirKostenDelta??null,
+          nadirHHDelta:outcome.nadirHaushaltCashDelta??null,
+          newerEiskaufISK:outcome.neuerEisAnkaufISK??null,
+          neueNahrung:outcome.neueNahrung??null,
           saleableFood:outcome.saleable??null,
           geliefert:outcome.direktAbsatzMenge||0,
           bezahltISK:outcome.direktAbsatzISK||0,
@@ -751,10 +770,23 @@ test('B-K11j: aktive echte Folgelieferungen ab identischem zweitem Save bis zum 
         save=outcome.finalSaved;
         if(outcome.blocked || cfg.gateLog.length)break;
       }
+      assert.equal(auftraege.length,1,'exakt die dritte reale Bestellung ist das erste aktive Blocker-Gate');
+      assert.equal(auftraege[0].lieferung,3);
+      assert.equal(auftraege[0].gate,'haushalt-bestellung');
+      assert.equal(auftraege[0].geliefert,0);
+      assert.equal(auftraege[0].requiredBudgetISK,1296);
+      assert.equal(auftraege[0].buyerISK,seed===42?796:956);
+      assert.equal(auftraege[0].shortfallISK,seed===42?500:340);
+      assert.equal(auftraege[0].saleableFood,37);
       const s=core.load(save,undefined,rules);
       audit(s);
       const firstGate=cfg.gateLog[0]??null;
+      assert.equal(firstGate,null,'vor dem dritten Bestellungsversuch war noch kein Nadir-Lohn-Escrow blockiert');
       assert.equal(core.hash(s),auftraege.at(-1).hash);
+      assert.equal(core.hash(s),seed===42?'14f991547a41737c':'28a52381e2b2561e',
+        'dritter abgewiesener Core-Geschäftsabschluss ist deterministisch gepinnt');
+      assert.equal(s.ships[Object.keys(s.ships).find(id=>s.ships[id].owner==='house'&&s.ships[id].klasse==='frachter')].neuLadungNahrung||0,0,
+        'keine dritte Nahrung durch abgewiesene Bestellung an den Spieler verschenkt');
       assert.equal(core.hash(core.load(core.save(s),undefined,rules)),core.hash(s));
       console.log('BK11J_ACTIVE_CONTINUATION '+JSON.stringify({
         seed,secondHash:expected,auftraege,firstGate,

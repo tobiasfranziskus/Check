@@ -25,6 +25,12 @@ observed=replaceOnce(observed,
 observed=replaceOnce(observed,
   'if (!reicht) return false;\n  const d = kauf ? menge : -menge;',
   'if (!reicht) return false;\n  if(watch&&!kauf)watch.delivery(state,schiff,station,ware,menge,wert,fee);\n  const d = kauf ? menge : -menge;');
+observed=replaceOnce(observed,
+  'const n = s.ladung[ware];\n    state.ledger[ware].consumed += n;\n    state.stats.vernichtet += n;',
+  'const n = s.ladung[ware];\n    state.ledger[ware].consumed += n;\n    state.stats.vernichtet += n;\n    if(watch)watch.destroy(s,ware,n);');
+observed=replaceOnce(observed,
+  'const rest = s.ladung[ware];\n    state.ledger[ware].consumed += rest; state.stats.vernichtet += rest;',
+  'const rest = s.ladung[ware];\n    state.ledger[ware].consumed += rest; state.stats.vernichtet += rest;\n    if(watch)watch.destroy(s,ware,rest);');
 const create=(src,watch)=>new Function('watch',src+';return {core:m_core_index,rules:m_data_rules.RULES};')(watch);
 const pure=create(original,null);
 assert.equal(pure.rules.schema,8);assert.equal(pure.rules.rulesVersion,14);
@@ -42,6 +48,7 @@ const stationKeys=Object.keys(pure.rules.world.stations).sort();
 class Observer {
   constructor(){
     this.consumed={nahrung:0,medikamente:0};
+    this.frachtverlust={nahrung:0,medikamente:0};
     this.produced={nahrung:0,medikamente:0};
     this.delivered={nahrung:0,medikamente:0};
     this.purchasePaid={nahrung:0,medikamente:0};
@@ -73,6 +80,11 @@ class Observer {
     assert(n>0&&Number.isSafeInteger(n));
     this.produced[ware]+=n;
     this.stations[id].produced[ware]+=n;
+  }
+  destroy(sh,ware,n){
+    if(!TYPES.includes(ware))return;
+    assert(Number.isSafeInteger(n) && n>=0,'Frachtverluste nicht negativ');
+    this.frachtverlust[ware]+=n;
   }
   delivery(s,sh,station,ware,n,price,fee){
     if(!TYPES.includes(ware))return;
@@ -127,8 +139,8 @@ for(let t=1;t<=days*1440;t++){
     independentlyAudit(state);independentlyAudit(reference);
     assert.equal(core.hash(state),pure.core.hash(reference),'unveränderter Core-Hash mit Beobachter');
     for(const ware of TYPES){
-      assert.equal(watcher.consumed[ware],state.ledger[ware].consumed,
-        'nur zivil tatsächlich verbrauchtes '+ware+' wird gezählt');
+      assert.equal(watcher.consumed[ware]+watcher.frachtverlust[ware],state.ledger[ware].consumed,
+        'Ledgerverbrauch aus zivilen Verbrauch UND verlorener Fracht '+ware);
       assert.equal(watcher.produced[ware],state.ledger[ware].produced,
         'Produktion aller Erzeugnisse '+ware+' vollständig belegt');
       assert(watcher.delivered[ware]>=0);
@@ -159,7 +171,8 @@ for(const ware of TYPES){
   assert(lower<=upper,'garantierte neu produzierte Verbrauchs-Untergrenze');
   bounds[ware]={
     initial:l.initial,produced:l.produced,imported:l.imported,exported:l.exported,
-    consumed:n,delivered:watcher.delivered[ware],
+    consumed:n,ledgerConsumption:l.consumed,cargoDestroyed:watcher.frachtverlust[ware],
+    delivered:watcher.delivered[ware],
     paidRealStationPurchases:watcher.purchasePaid[ware],
     realSalesFees:watcher.deliveryFees[ware],
     guaranteedNewConsumptionLower:lower,possibleNewConsumptionUpper:upper,

@@ -1,5 +1,14 @@
 # Aphros Void – Projektstatus
 
+## [ANALYSE/DRAFT] B-K11g – originaler Markt-/Material-/Geld-Auftrags-Preflight · 03.11.2026
+
+**[MAIN]** `b4e604d6`, v0.12.5 / Regel14 / Schema8 unverändert. **[DRAFT]** [PR #145](https://github.com/tobiasfranziskus/Check/pull/145) enthält ausschließlich separaten Original-Core-Preflight, testseitige atomare Cash-/Eis-/Doppel-Lageransprüche, Tests und Dokumentation; weder produktiver Auftrag noch neuer Geldzufluss/Produktionslohn/Save-Regeländerung. Die verbindliche Produkt-Roadmap bleibt `docs/ROADMAP.md`.
+
+**[TEST] [B-K11g-CI #41616871995](https://github.com/tobiasfranziskus/Check/actions/runs/41616871995)** auf geprüftem Codecommit `f48d8ec8`: 6/6 gezielte Tests bestanden; Seed 7/42 × passive Welt / Miner / Miner+Autohandel je 24h, **144 stündliche unabhängige ISK-/Warenaudits und Originalhash-Replays** erfolgreich, Save/Load der Anfangszustände geprüft. In **fünf von sechs** realen 24h-Welten verhindert der volle Fertigwaren-Quelllagerplatz schon das hypothetische Acht-Nahrung-Angebot; nur Seed7/passiv ist mit verfügbarem Echtgeld testseitig vorfinanzierbar, aber **nicht rentabel**. Über alle sechs beträgt der indikative 8er-Gesamt-Spotabstand (mit unbeschlossenem 4-ISK/min-Fabriklohn) zwischen **−242 und −471 ISK**; das sind **keine realisierten Verluste oder erforderlichen neuen ISK**. Alle sechs 24er-Angebote scheitern an vorhandenen Kassen-/Lagerbedingungen.
+
+**[NÄCHSTES FREIGABEGATE]** Für einen tatsächlich integrierten allgemeinen Auftrag müssten D3-Konkurrenzclaims an jeder relevanten Waren-/Geldbuchung gespeichert, D2-Fabrikarbeit mit legitimiertem Empfänger/Tarif bezahlt und D6 eine kaufkräftige zivile Endabnahme geregelt sein. Kern-/Save-/Preis-/Geldmodell-B-Änderungen brauchen getrennte Nutzerfreigabe. Geldmodell B ist als Zielrahmen beschlossen, konkrete Emission noch nicht. **Kein Merge/Deployment**. Vollständiger [Analysebericht](ANALYSE_BK11G_AUFTRAG_PRECHECK.md); die B-K11c–f-Drafts bleiben nicht integriert. 13×90d und iPad-/NAS-Produktabnahme noch nicht durchgeführt.
+
+
 ## [ANALYSE] B8o/B8p – bezahlte Aufträge und Endnachfrage · 01.11.2026
 
 **[MAIN]** Weiterhin `0d473e6`, v0.12.5/Regel14/Schema8 ohne Produktcodeänderung. Dokumentations-Draft #78 ist noch **nicht integriert**; dieser Abschnitt bezieht sich auf den vorgeschlagenen Docs-Stand.

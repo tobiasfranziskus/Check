@@ -144,6 +144,8 @@ function runMicro(seed,mode,minutes){
   }else assert.equal(additional,0);
   const first=realized[0];
   return {seed,mode,days:minutes/1440,hash:m.core.hash(s),
+    initialSupply:initial.initialSupply,
+    initialMoney:initial.initialSupply+initial.minted-initial.burned,
     first:first&&{tick:first.tick,paid:first.paid,cost:first.cost,qty:first.qty},
     actualNewFoodPaid:byHH,spotPaidISK:hhBase,
     extraPaidISK:additional,realizedCostISK:cost,fullPaidISK:hhBase+additional,
@@ -176,7 +178,8 @@ test('B-K12a: zwei rein testseitige voll aus Bestandskonten bezahlte Endabnahmen
     const v=runMicro(seed,mode,1440);
     assert(v.first===undefined||v.first.cost<=v.first.paid+v.extraPaidISK);
     assert(v.netAgainstCosts>=0,'nur voll finanzierte tatsaechliche HH-Endkaeufe');
-    assert.equal(v.money,50000+v.minted-v.burned);
+    assert.equal(v.money,v.initialMoney+v.minted-v.burned,
+      'Weltgeld muss gemessenem Ursprungsbestand plus echten Core-Quellen minus Senken entsprechen');
     assert(v.actualNewFoodPaid<=24,'eine Ortswelt mit einem Tagesbedarf ohne Gratisverbrauch');
     console.log('BK12A_FUNDED_ONE_DAY '+JSON.stringify(v));
   }
@@ -188,6 +191,21 @@ test('B-K12a: sieben Tage Nachfinanzierung und Haushaltsnachfrage in derselben R
     assert.equal(s.dayHashes.length,7);
     assert(s.shortageHours>=0&&s.shortageHours<=168);
     if(mode!=='reference')assert(s.netAgainstCosts>=0);
+    const pinned={
+      reference:{hash:'5554f722d40b92b6',paid:23,
+        shortage:158,station:6,fund:2207,margin:-533},
+      haushalt:{hash:'d7f658627d41237a',paid:14,
+        shortage:162,station:7,fund:2199,margin:0},
+      fonds:{hash:'9aa487944d9f4aa5',paid:125,
+        shortage:107,station:18,fund:11,margin:0}
+    }[mode];
+    assert.equal(s.hash,pinned.hash,'Determinismus und Buchungsfolgerungen unveraendert');
+    assert.equal(s.actualNewFoodPaid,pinned.paid,'wirklicher bezahlter Endkauf');
+    assert.equal(s.shortageHours,pinned.shortage,'wirklicher lokaler Versorgungsmangel');
+    assert.equal(s.stationCash,pinned.station);
+    assert.equal(s.fundCash,pinned.fund);
+    assert.equal(s.netAgainstCosts,pinned.margin,'wirkliche FIFO-Kostendeckung');
+    assert.equal(s.money,s.initialMoney+s.minted-s.burned);
     console.log('BK12A_SEVEN_DAY_FINANCING '+JSON.stringify(s));
   }
 });

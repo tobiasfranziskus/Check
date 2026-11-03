@@ -138,6 +138,18 @@ button.zeile .liste-links { color: var(--text); }
 .befehle-gruppe summary { min-height: 48px; padding: 12px 14px; cursor: pointer; color: var(--accent); font-weight: 600; }
 .befehle-gruppe[open] summary { border-bottom: 1px solid var(--line); }
 .befehle-gruppe > .befehle-leiste { padding: 12px; margin-top: 0; }
+/* Pilotmodus: Nur eine Welt ist aktiv; Standard-UI und deren Autosave bleiben unberuehrt. */
+body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important; }
+#erzpilot-app { max-width: 820px; padding-bottom: 36px; }
+#erzpilot-app .card { margin-top: 14px; padding: 12px 16px; }
+#erzpilot-app .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; }
+#erzpilot-app .actions > * { min-width: 0; }
+#erzpilot-app .pilot-schiffe { display: grid; gap: 8px; }
+#erzpilot-app a { color: var(--accent); }
+@media (min-width: 700px) {
+  #erzpilot-app .pilot-spalten { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  #erzpilot-app .pilot-spalten .card { margin-top: 14px; }
+}
 /* iPad-Querformat: freie Breite für parallele Informationen statt lange Seiten nutzen. */
 @media (min-width: 900px) and (orientation: landscape) {
   .ansicht:not(.ansicht-karte) { max-width: 1100px; padding: 16px 28px calc(var(--unten) + 20px); }
@@ -164,6 +176,62 @@ button.zeile .liste-links { color: var(--text); }
 </style>
 </head>
 <body>
+<section id="erzpilot-app" class="ansicht" aria-label="Erzpilot – Forschungsmodus" hidden>
+  <header class="kopf">
+    <p class="muted kopf-klein">Aphros Void · W1 Forschungsmodus · Regel 15</p>
+    <h1>Erzpilot</h1>
+    <p class="muted">Erz abbauen, Miner kaufen und bezahlte Verkäufe prüfen. Kein fertiges Wirtschaftsspiel: Das Exportbudget ist endlich.</p>
+    <p><a href="./">Zum bisherigen Spiel (Regel 14)</a></p>
+  </header>
+  <div class="pilot-spalten">
+    <section class="card" aria-label="Spielerkonzern">
+      <h2>Mein Bergbaukonzern</h2>
+      <dl>
+        <div><dt>Kasse</dt><dd id="pilot-kasse">–</dd></div>
+        <div><dt>Miner</dt><dd id="pilot-miner">–</dd></div>
+        <div><dt>NPC-Kasse</dt><dd id="pilot-npc">–</dd></div>
+        <div><dt>Arbeitsaufträge</dt><dd id="pilot-auftraege">–</dd></div>
+      </dl>
+      <div class="actions">
+        <button type="button" class="primary wide" id="pilot-kauf">Miner komplett kaufen (600 ISK)</button>
+        <button type="button" id="pilot-abbau">Meine Miner: Erz fördern</button>
+        <button type="button" id="pilot-stopp">Meine Miner: Stoppen</button>
+      </div>
+    </section>
+    <section class="card" aria-label="Erzmarkt">
+      <h2>Markt und Arbeit</h2>
+      <dl>
+        <div><dt>Station: Erz</dt><dd id="pilot-lager">–</dd></div>
+        <div><dt>Station: Geld</dt><dd id="pilot-station">–</dd></div>
+        <div><dt>Exportbudget</dt><dd id="pilot-exportbudget">–</dd></div>
+        <div><dt>Gefördert / exportiert</dt><dd id="pilot-mengen">–</dd></div>
+        <div><dt>Spielzeit</dt><dd id="pilot-zeit">–</dd></div>
+      </dl>
+      <div class="actions">
+        <button type="button" class="primary" id="pilot-stunde">+1 Stunde</button>
+        <button type="button" id="pilot-tag">+1 Tag</button>
+      </div>
+      <p class="muted">Erzverkauf bei voller Ladung. Export höchstens 200 Erz pro Stunde, solange das externe Budget reicht.</p>
+    </section>
+  </div>
+  <section class="card" aria-label="Kontrollen und Spielstand">
+    <h2>Prüfung und Spielstand</h2>
+    <dl>
+      <div><dt>ISK- und Warenaudit</dt><dd id="pilot-audit">–</dd></div>
+      <div><dt>Prüfhash</dt><dd id="pilot-hash">–</dd></div>
+    </dl>
+    <p id="pilot-meldung" class="muted" role="status" aria-live="polite">Erzpilot lädt.</p>
+    <p class="muted">Eigener Speicherplatz, keine Übernahme des bisherigen Spielstands. Die Simulation läuft ausschließlich auf Knopfdruck.</p>
+    <div class="actions">
+      <button type="button" id="pilot-sichern">Jetzt sichern</button>
+      <button type="button" id="pilot-datei">JSON exportieren</button>
+      <button type="button" id="pilot-laden">JSON importieren</button>
+      <button type="button" id="pilot-neu">Neuer Pilot (mit Sicherung)</button>
+    </div>
+    <input type="file" id="pilot-datei-input" accept=".json,application/json" hidden aria-label="Erzpilot-Spielstand importieren">
+  </section>
+</section>
+
 <div id="meldung-zeile" class="meldung-zeile" role="status" aria-live="polite" hidden>
   <span id="meldung-text"></span>
   <span class="meldung-knoepfe"><button type="button" id="meldung-knopf" hidden></button><button type="button" id="meldung-zu">OK</button></span>
@@ -187,6 +255,7 @@ button.zeile .liste-links { color: var(--text); }
   </section>
   <section class="card" aria-label="Spielstand">
     <ul class="liste">
+      <li><span class="liste-links">Wirtschafts-Neuaufbau</span><span class="liste-rechts"><a href="?modus=erzpilot">Erzpilot testen</a></span></li>
       <li class="zeile-knopf"><button type="button" class="zeile" id="b-spielstand"><span class="liste-links">Spielstand</span><span class="liste-rechts muted" id="hq-gespeichert">–</span></button></li>
       <li id="hq-hinweis-zeile" class="hinweis-zeile" hidden><span class="marke marke-warn" id="hq-hinweis"></span></li>
       <li class="zeile-knopf"><button type="button" class="zeile" id="b-bericht"><span class="liste-links">Berichte</span><span class="liste-rechts muted" id="bericht-zahl">–</span></button></li>
@@ -3609,6 +3678,8 @@ return { ersetztLaufendesSpiel };
 })();
 
 const m_ui_main = (() => {
+// In der Pilotansicht darf der alte Welt-Ticker bzw. sein Speicherplatz nicht starten.
+if (new URLSearchParams(location.search).get('modus') === 'erzpilot') return { pilot: true };
 const { createState, advance, save, load, submit, execute } = m_core_index;
 const { RULES } = m_data_rules;
 const { OBERFLAECHE } = m_data_oberflaeche;
@@ -4114,6 +4185,153 @@ anzeigen();
 starten();
 
 return {};
+})();
+
+// W1-UI nutzt dieselben Core-Commands wie die Simulation und einen getrennten Slot.
+// Aus Sicherheitsgruenden nie automatische Migration/Schreibzugriffe auf Regel-14-Spielstaende.
+const m_ui_erzpilot = (() => {
+  if (new URLSearchParams(location.search).get('modus') !== 'erzpilot') return {};
+  document.body.classList.add('erzpilot-modus');
+  const app = document.getElementById('erzpilot-app');
+  app.hidden = false;
+  const $ = (id) => document.getElementById(id);
+  const { createErzState, loadErz, ERZ_RULES: rules, execute, advance, save, audit, hash } = m_core_index;
+  const { dbPut, dbGet, dateiSichern } = m_ui_speicher;
+  const SLOT = 'aphros-void-erzpilot-regel15-v1';
+  let state = createErzState();
+  let gesperrt = false;
+  let speicherKette = Promise.resolve();
+  const geld = (n) => `${n.toLocaleString('de-DE')} ISK`;
+  function nachricht(t, fehler = false) {
+    $('pilot-meldung').textContent = t;
+    $('pilot-meldung').classList.toggle('bad', fehler);
+  }
+  function anzeigen() {
+    const sh = Object.values(state.ships).filter((s) => s.owner === 'house');
+    const a = audit(state);
+    $('pilot-kasse').textContent = geld(state.owners.house.cash);
+    $('pilot-npc').textContent = geld(state.owners.npc3.cash);
+    $('pilot-miner').textContent = String(sh.length);
+    $('pilot-auftraege').textContent = `${sh.filter((s) => s.auftrag === 'foerdern').length} aktiv`;
+    $('pilot-lager').textContent = String(state.stations.st_aldera.lager.erz);
+    $('pilot-station').textContent = geld(state.owners.st_aldera.cash);
+    $('pilot-exportbudget').textContent = geld(state.owners.export.cash);
+    $('pilot-mengen').textContent = `${state.ledger.erz.mined} / ${state.ledger.erz.exported}`;
+    $('pilot-zeit').textContent = `Tag ${Math.floor(state.tick / 1440) + 1}, Minute ${state.tick % 1440}`;
+    $('pilot-audit').textContent = a.ok ? 'ISK + Waren OK' : 'FEHLER – gesperrt';
+    $('pilot-audit').className = a.ok ? 'good' : 'bad';
+    $('pilot-hash').textContent = hash(state);
+    $('pilot-hash').style.fontFamily = 'ui-monospace, monospace';
+    if (!a.ok) { gesperrt = true; nachricht('Bilanzabweichung. Änderungen gesperrt; Daten exportieren.', true); }
+    for (const id of ['pilot-kauf', 'pilot-abbau', 'pilot-stopp', 'pilot-stunde', 'pilot-tag', 'pilot-sichern'])
+      $(id).disabled = gesperrt;
+    $('pilot-kauf').disabled = gesperrt || state.owners.house.cash < 600 || state.stations.st_aldera.lager.miner < 1;
+  }
+  function sichern() {
+    if (gesperrt) return Promise.resolve(false);
+    const snapshot = save(state);
+    // Sequenziert: auch bei schnellen Touch-Eingaben gewinnt immer der letzte Stand.
+    speicherKette = speicherKette.catch(() => {}).then(() => dbPut(SLOT, snapshot));
+    return speicherKette.then(() => true, (e) => {
+      nachricht('Speichern fehlgeschlagen: ' + e.message + '. Bitte JSON exportieren.', true);
+      return false;
+    });
+  }
+  function befehl(cmd) {
+    if (gesperrt) return;
+    const result = execute(state, cmd, rules);
+    if (!result.ok) return nachricht(result.reason, true);
+    anzeigen();
+    sichern();
+  }
+  $('pilot-kauf').addEventListener('click', () => {
+    befehl({ type: 'shipBuy', owner: 'house', klasse: 'miner', station: 'st_aldera' });
+  });
+  function auftrag(typ) {
+    if (gesperrt) return;
+    const eigene = Object.values(state.ships).filter((sh) => sh.owner === 'house' && sh.klasse === 'miner');
+    let erfolgreich = 0;
+    for (const sh of eigene) {
+      const cmd = { owner: 'house', schiff: sh.id, type: typ };
+      if (typ === 'shipMine') cmd.ware = 'erz';
+      const erg = execute(state, cmd, rules);
+      if (erg.ok) erfolgreich++;
+    }
+    nachricht(`${erfolgreich} von ${eigene.length} Minern: ${typ === 'shipMine' ? 'Förderung' : 'Stop'}`);
+    anzeigen(); sichern();
+  }
+  $('pilot-abbau').addEventListener('click', () => auftrag('shipMine'));
+  $('pilot-stopp').addEventListener('click', () => auftrag('shipWait'));
+  for (const [id, n] of [['pilot-stunde', 60], ['pilot-tag', 1440]]) {
+    $(id).addEventListener('click', () => {
+      if (gesperrt) return;
+      advance(state, n, rules);
+      anzeigen(); sichern();
+      if (!gesperrt) nachricht(`${n} Minuten gespielt. Endliches Exportbudget: ${geld(state.owners.export.cash)} verbleiben.`);
+    });
+  }
+  $('pilot-sichern').addEventListener('click', () => {
+    sichern().then((ok) => { if (ok) nachricht('Pilot-Spielstand im getrennten Speicher gesichert.'); });
+  });
+  function exportieren() {
+    dateiSichern(save(state), `aphros-erzpilot-regel15-tick-${state.tick}.json`);
+    nachricht('Pilot-Spielstand als JSON exportiert.');
+  }
+  $('pilot-datei').addEventListener('click', exportieren);
+  $('pilot-laden').addEventListener('click', () => $('pilot-datei-input').click());
+  async function archivieren() {
+    // Nicht nur Browser-Download: vorhandener Pilotstand bleibt unter eindeutigem Schluessel erhalten.
+    const bisher = await dbGet(SLOT);
+    if (bisher === undefined) return;
+    await dbPut(`${SLOT}-archiv-${Date.now()}`, bisher);
+  }
+  $('pilot-datei-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const neu = loadErz(await file.text());
+      if (!audit(neu).ok) throw Error('Geld- oder Warenbilanz stimmt nicht');
+      if (!confirm('Pilot-Spielstand ersetzen? Der bisherige Pilot wird vorher archiviert.')) return;
+      await archivieren();
+      state = neu; gesperrt = false;
+      anzeigen();
+      await sichern();
+      nachricht('Pilot-Spielstand geprüft und importiert.');
+    } catch (err) {
+      nachricht('Import abgelehnt: ' + err.message + '. Der bestehende Stand bleibt erhalten.', true);
+    }
+  });
+  $('pilot-neu').addEventListener('click', async () => {
+    if (!confirm('Neuen Erzpilot starten? Der bisherige Pilot wird zuerst archiviert.')) return;
+    try {
+      await archivieren();
+      state = createErzState(); gesperrt = false;
+      anzeigen();
+      await sichern();
+      nachricht('Neuer Erzpilot gestartet. Vorheriger Stand archiviert.');
+    } catch (err) {
+      nachricht('Neustart abgebrochen, Archivierung fehlgeschlagen: ' + err.message, true);
+    }
+  });
+  async function starten() {
+    try {
+      const text = await dbGet(SLOT);
+      if (text !== undefined) {
+        const s = loadErz(text);
+        if (!audit(s).ok) throw Error('Bilanzfehler im gespeicherten Pilotstand');
+        state = s;
+        nachricht('Gespeicherter Pilotstand geladen.');
+      } else nachricht('Neuer Erzpilot. Starte mit einem Miner-Kauf.');
+    } catch (e) {
+      gesperrt = true;
+      nachricht('Vorhandener Pilotstand nicht lesbar (' + e.message + '). Nicht überschrieben; Neuer Pilot archiviert ihn zuerst.', true);
+    }
+    anzeigen();
+  }
+  anzeigen();
+  starten();
+  return { modus: 'erzpilot' };
 })();
 </script>
 </body>

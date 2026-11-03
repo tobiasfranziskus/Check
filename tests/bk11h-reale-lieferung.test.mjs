@@ -985,7 +985,25 @@ function bk11kKontopfad(save,seed,freigabe,minuten=2880){
     baselineShips[x.schiff]?.owner.startsWith('npc')&&baselineShips[x.schiff]?.klasse==='frachter');
   const hash=core.hash(s),saved=core.save(s);
   assert.equal(core.hash(core.load(saved,undefined,rules)),hash);
-  return {seed,freigabe,baseline:startHash,released,
+  const budget=24*core.preis(s,Z,'nahrung',rules);
+  // Unabhaengige Original-Core-Gegenprobe auf einer Save-KOPIE:
+  // ein echter 24er-Budgetvertrag ist verfuegbar, wenn und nur wenn
+  // das lokale Haushaltskonto ausreichend ISK hat. Er wird wieder
+  // geschlossen, ohne Lieferung oder Auszahlung zu fingieren.
+  const pruef=core.load(saved,undefined,rules);
+  const id=core.vertrag.reservieren(pruef,H,'house',budget);
+  const reservierbar=id!==null;
+  assert.equal(reservierbar,s.owners[H].cash>=budget);
+  if(id){
+    assert.equal(pruef.vertraege.eintraege[id].rest,budget);
+    assert.equal(pruef.owners[H].cash,s.owners[H].cash-budget);
+    audit(pruef);
+    assert(core.vertrag.abschliessen(pruef,id));
+    assert.equal(pruef.owners[H].cash,s.owners[H].cash);
+  }else assert.equal(core.hash(pruef),hash);
+  audit(pruef);
+  return {seed,freigabe,baseline:startHash,released,fullOrderBudgetISK:budget,
+    fullOrderReservierbar:reservierbar,
     minuten,tick:s.tick,firstEarned,firstAble,firstFull,
     HH_aldera:konten[H],HH_nadir:konten['hh_'+S],
     station_aldera:konten[Z],station_nadir:konten[S],
@@ -1028,6 +1046,9 @@ test('B-K11k: tatsaechliche Haushaltslohn-Konten und bestehende NPC-Handelswege 
       assert(npc.HH_aldera.delta>0,'lokale Kaufkraft kommt durch reale Lohngeschaefte');
       assert(npc.firstEarned!==null&&npc.firstAble!==null);
       assert(npc.firstFull!==null,'24er Auftragsbudget nach bezahlter lokaler Produktion moeglich');
+      assert.equal(still.fullOrderReservierbar,false);
+      assert.equal(npc.fullOrderReservierbar,true);
+      assert.equal(npc.fullOrderBudgetISK,1296);
       assert(npc.station_aldera.ende<10,'Aldera-Station finanziert Lohn und laeuft fast leer');
       assert(npc.npc1.ende<150&&npc.npc2.ende<150,
         'wiederbelebter NPC-Handel kostet den beiden Haendlerkonzernen Liquiditaet');

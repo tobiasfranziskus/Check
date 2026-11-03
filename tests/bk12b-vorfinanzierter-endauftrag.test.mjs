@@ -214,14 +214,18 @@ test('B-K12b: first funded food order precedes raw ice acquisition and actual pa
     console.log('BK12B_STOCK_24H '+JSON.stringify(r));
   }
 });
-test('B-K12b: seven-day repeated reservations separate inherited cash from recurring earned buyer income',()=>{
-  for(const policy of ['stock','earned-only']){
-    const r=run(42,policy,10080);
+test('B-K12b: two seven-day worlds separate inherited cash from recurring earned buyer income',()=>{
+  for(const seed of [42,7])for(const policy of ['stock','earned-only']){
+    const r=run(seed,policy,10080);
     assert.equal(r.dayHashes.length,7);
     assert(r.delivered>0);
     assert(r.delivered<=r.totalOrders);
-    if(policy==='earned-only')assert(r.totalOrders<=2,
-      'without independent recurring buyer income, no unbacked orders');
+    if(policy==='earned-only') {
+      assert.equal(r.totalOrders,1,
+        'no second 128-ISK reserve justified by actually earned trading fees');
+      assert(r.feeIncome<68,
+        'even the actual first-lot cost exceeds the proven new fee revenue');
+    } else assert(r.delivered>1,'inherited fund cash can fund repeated real purchases');
     console.log('BK12B_SEVEN_DAYS '+JSON.stringify(r));
   }
 });

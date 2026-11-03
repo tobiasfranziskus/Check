@@ -1355,6 +1355,7 @@ function bk11mVergleich(seed,saved,modus,minutes=2880,onlyShip=null){
     foodStock:s.stations[id].lager.nahrung||0
   }]));
   const initialCargo=onlyShip&&s.ships[onlyShip]?{...s.ships[onlyShip].ladung}:null;
+  const initialShipOwner=onlyShip&&s.ships[onlyShip]?.owner;
   const oldHulls=Object.values(s.ships).filter(sh=>sh.klasse==='frachter'&&
     ['npc1','npc2'].includes(sh.owner)).map(sh=>sh.id);
   const old={
@@ -1419,7 +1420,7 @@ function bk11mVergleich(seed,saved,modus,minutes=2880,onlyShip=null){
     foodStationsCompletelyShort:Object.values(consumerStations).filter(x=>x.foodShortageHours>=minutes/60).length,
     lostHullIds,newHullIds
   };
-  const isolated=onlyShip?bk11oAuswertung(onlyShip,initialCargo,cfg.l11.trades,
+  const isolated=onlyShip?bk11oAuswertung(onlyShip,initialShipOwner,initialCargo,cfg.l11.trades,
     journal,cfg.l11.events,s,old):null;
   return {seed,modus,minutes,base:initialHash,hash,released,civil,isolated,
     routeStats:cfg.routeStats,
@@ -1541,11 +1542,12 @@ test('B-K11n: 7 Tage Vollkosten-Route gegen Original auf ALLEN Verbraucherstatio
 // Fuer jedes gekaufte Warenstueck verfolgen wir genau die tatsaechlich spaeter
 // verkaufte Ware (FIFO); vorhandene Anfangsladung wird nie als neue Kaufcharge
 // behauptet. Die Konzernkasse bleibt eine reale, gemeinsame Core-Kasse.
-function bk11oAuswertung(shipId,startingCargo,allTrades,allJournal,events,s,old){
+function bk11oAuswertung(shipId,ownerAtStart,startingCargo,allTrades,allJournal,events,s,old){
   const ship=s.ships[shipId];
   const trades=allTrades.filter(x=>x.ship===shipId);
   const flights=allJournal.filter(x=>x.art==='flug'&&x.schiff===shipId);
-  const name=trades[0]?.owner||ship?.owner;
+  const name=ownerAtStart;
+  assert(!trades.length||trades.every(t=>t.owner===name));
   assert(['npc1','npc2'].includes(name));
   const initial={};
   for(const [ware,m] of Object.entries(startingCargo||{}))

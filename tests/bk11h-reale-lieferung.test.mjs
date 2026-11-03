@@ -127,7 +127,7 @@ function nadirFondsZufluss(id,isk,art){
 }
 function quelleMinerKosten(state,sh,kosten,gezahlt){
   if(cfg.accountOnly)return;
-  if(sh.id==='sh009 && cfg.gateLog && gezahlt<kosten)
+  if(sh.id==='sh009' && cfg.gateLog && gezahlt<kosten)
     cfg.gateLog.push({art:'miner-betrieb',tick:state.tick,akteur:sh.owner,schiff:sh.id,
       brauchtISK:kosten,vorhandenISK:state.owners[sh.owner].cash,
       bezahltISK:gezahlt,fehlbetragISK:kosten-gezahlt});

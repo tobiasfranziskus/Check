@@ -70,7 +70,7 @@ einmal("    f.cash -= n; o[id].cash += n;",
 einmal("    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;",
   "    __bk10k_fondsZufluss(arm,f.cash-w.fondsObergrenze,'ueberschuss');\n"+
   "    o[arm].cash += f.cash - w.fondsObergrenze; f.cash = w.fondsObergrenze;");
-const journal=[],cfg={mode:null,ship:null,order:null,delivered:0,pay:0,fees:0,trace:null,gateLog:null,accountOnly:false,l11:null};
+const journal=[],cfg={mode:null,ship:null,order:null,delivered:0,pay:0,fees:0,trace:null,gateLog:null,accountOnly:false,l11:null,routeMode:null,routeStats:null};
 function traceNeu(){
   return {eisLots:[],foodLots:[],offen:new Map(),verkauft:[],
     eisVonMiner:0,eisAnkaufISK:0,produktion:0,lokalGegessen:0,
@@ -279,8 +279,28 @@ einmal("  s.phase = 'reise'; s.ziel = ziel; s.ankunft = state.tick + r.zeit; s.w
   "  s.phase = 'reise'; s.ziel = ziel; s.ankunft = state.tick + r.zeit; s.warten = 0;\n"+
   "  __bk11l_depart(state,s,station,ziel,ware,menge,r.zeit);\n"+
   "  return true;");
-const modules=new Function('__bk10k_hold','__bk10k_direkt','__bk10k_journal','__bk10k_quelleTrade','__bk10k_quelleStart','__bk10k_quelleFertig','__bk10k_quelleKonsum','__bk10k_minerKosten','__bk10k_fondsZufluss','__bk11j_prodGate','__bk11l_event','__bk11l_flightGate','__bk11l_depart',js+
-  ';return {core:m_core_index,base:m_data_rules.RULES,herkunft:m_core_herkunft,route:m_core_route.route};')(halten,direkt,journal,quelleTrade,quelleStart,quelleFertig,quelleKonsum,quelleMinerKosten,nadirFondsZufluss,bk11jProduktionsGate,bk11lEvent,bk11lFlightGate,bk11lDeparture);
+// B-K11m: nur in einem markierten Gegenarm geht der wirklich im Core
+// fahrtStart reservierte einfache Flugaufwand in die Route-Wertung ein.
+// Positive Marktspanne bleibt in Kontrolllaeufen exakt unveraendert.
+function bk11mRouteNetto(state,rules,schiff,station,ziel,ware,menge,brutto,zeit){
+  if(cfg.routeMode!=='vollkosten'||!['npc1','npc2'].includes(schiff.owner))return brutto;
+  const fahrt=Math.ceil(zeit*rules.world.betriebskosten.frachter/rules.economy.stunde);
+  const netto=brutto-fahrt;
+  if(cfg.routeStats){
+    cfg.routeStats.geprueft++;
+    if(brutto>0&&netto<=0)cfg.routeStats.abgewiesen++;
+    if(brutto>0&&netto>0)cfg.routeStats.auskoemmlich++;
+  }
+  return netto;
+}
+einmal("      if (gewinn <= 0) continue;",
+  "      const netto=__bk11m_route(state,rules,s,station,ziel,ware,menge,gewinn,r.zeit);\n"+
+  "      if (netto <= 0) continue;");
+einmal("      const wertung = gewinn * (1000 + bonus);",
+  "      const wertung = __bk11m_routeWertung(gewinn,netto) * (1000 + bonus);");
+function bk11mRouteWertung(brutto,netto){return cfg.routeMode==='vollkosten'?netto:brutto;}
+const modules=new Function('__bk10k_hold','__bk10k_direkt','__bk10k_journal','__bk10k_quelleTrade','__bk10k_quelleStart','__bk10k_quelleFertig','__bk10k_quelleKonsum','__bk10k_minerKosten','__bk10k_fondsZufluss','__bk11j_prodGate','__bk11l_event','__bk11l_flightGate','__bk11l_depart','__bk11m_route','__bk11m_routeWertung',js+
+  ';return {core:m_core_index,base:m_data_rules.RULES,herkunft:m_core_herkunft,route:m_core_route.route};')(halten,direkt,journal,quelleTrade,quelleStart,quelleFertig,quelleKonsum,quelleMinerKosten,nadirFondsZufluss,bk11jProduktionsGate,bk11lEvent,bk11lFlightGate,bk11lDeparture,bk11mRouteNetto,bk11mRouteWertung);
 core=modules.core;
 const {base,herkunft,route}=modules;
 assert.equal(base.schema,8);assert.equal(base.rulesVersion,14);
@@ -1308,4 +1328,103 @@ test('B-K11l: erste Finanzierungssperren und echte Gegenbuchungen im wiederbeleb
     cfg.l11=null;cfg.accountOnly=false;cfg.gateLog=null;
     rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
   }
+});
+
+
+// B-K11m: A/B-Route aus identischem drittem Echtlieferungs-Save.
+// Eine hypothetische Planmarge wird niemals als gezahlter Umsatz ausgegeben.
+function bk11mVergleich(seed,saved,modus,minutes=2880){
+  const s=core.load(saved,undefined,rules);
+  const initialHash=core.hash(s);
+  cfg.routeMode=modus==='vollkosten'?'vollkosten':null;
+  cfg.routeStats={geprueft:0,abgewiesen:0,auskoemmlich:0};
+  cfg.accountOnly=true;cfg.mode=null;cfg.ship=null;cfg.order=null;cfg.gateLog=null;
+  cfg.l11={trades:[],events:[],departures:[],firstPayroll:null,
+    firstFlight:{},firstOtherFlight:{}};
+  journal.length=0;
+  const old={
+    kaufAldera:s.stats.haushaltskauf[Z].menge,
+    fehlFood:s.stats.mangel[Z].nahrung,
+    kaufAndere:Object.values(s.stats.haushaltskauf).reduce((n,x)=>n+x.menge,0),
+    haushaltISK:s.owners[H].cash,
+    mint:s.minted,burn:s.burned,
+    cashNPC1:s.owners.npc1.cash,cashNPC2:s.owners.npc2.cash
+  };
+  let released=0;
+  for(const sh of Object.values(s.ships))
+    if(sh.owner!=='house'&&sh.owner.startsWith('npc')&&sh.klasse==='frachter'
+      && sh.auftrag==='halten'){sh.auftrag='handeln';released++;}
+  assert.equal(released,5,'gleich viele NPC-Frachter in beiden Vergleichswelten');
+  const bankruptcy={npc1:null,npc2:null,aldera:null};
+  for(let i=0;i<minutes;i++){
+    core.step(s,rules);
+    if(s.tick%60===0){
+      audit(s);
+      if(s.tick%1440===0)
+        assert.equal(core.hash(core.load(core.save(s),undefined,rules)),core.hash(s));
+    }
+    for(const [id,acct] of [['npc1','npc1'],['npc2','npc2'],['aldera',Z]]){
+      if(bankruptcy[id]===null&&s.owners[acct].cash<32)bankruptcy[id]=s.tick;
+    }
+  }
+  audit(s);
+  const hash=core.hash(s);
+  assert.equal(core.hash(core.load(core.save(s),undefined,rules)),hash);
+  const ships=Object.values(s.ships);
+  const npcFreight=cfg.l11.trades.filter(x=>x.klasse==='frachter'&&['npc1','npc2'].includes(x.owner));
+  const sales=npcFreight.filter(x=>!x.kauf);
+  const buys=npcFreight.filter(x=>x.kauf);
+  const soldAldera=sales.filter(x=>x.station===Z);
+  const foodAldera=soldAldera.filter(x=>x.ware==='nahrung');
+  const count=x=>x.length;
+  return {seed,modus,minutes,base:initialHash,hash,released,
+    routeStats:cfg.routeStats,
+    npc:{npc1:s.owners.npc1.cash,npc2:s.owners.npc2.cash,
+      npc1Delta:s.owners.npc1.cash-old.cashNPC1,
+      npc2Delta:s.owners.npc2.cash-old.cashNPC2,
+      flights:cfg.l11.departures.length,
+      buyDeals:count(buys),salesDeals:count(sales),
+      buysISK:sum(buys.map(x=>x.wert)),salesISK:sum(sales.map(x=>x.wert)),
+      sellingAldera:count(soldAldera),foodSoldAldera:sum(foodAldera.map(x=>x.menge)),
+      tradeVolume:sum(sales.map(x=>x.menge)),
+      freightHulls:ships.filter(x=>x.klasse==='frachter'&&['npc1','npc2'].includes(x.owner)).length},
+    aldera:{cash:s.owners[Z].cash,hh:s.owners[H].cash,
+      hhDelta:s.owners[H].cash-old.haushaltISK,
+      full24Affordable:s.owners[H].cash>=24*core.preis(s,Z,'nahrung',rules),
+      localFoodStock:s.stations[Z].lager.nahrung,
+      newFoodStock:s.stations[Z].lokalNeuNahrung,
+      newFoodPaid:s.stats.haushaltskauf[Z].menge-old.kaufAldera,
+      foodShortageHours:s.stats.mangel[Z].nahrung-old.fehlFood,
+      producedWage:s.stats.konto[H].erloes,
+      stationFoodDemand:rules.world.stations[Z].verbrauch.nahrung},
+    system:{paidNewFood:Object.values(s.stats.haushaltskauf)
+      .reduce((n,x)=>n+x.menge,0)-old.kaufAndere,
+      goodsCreated:s.ledger.nahrung.produced,
+      goodsConsumed:s.ledger.nahrung.consumed,
+      fondsAldera:s.owners.fonds_aldera.cash,fondsNadir:s.owners.fonds_nadir.cash,
+      mintedDelta:s.minted-old.mint,burnedDelta:s.burned-old.burn,
+      totalMoney:s.initialSupply+s.minted-s.burned},
+    firstCashLow:bankruptcy,firstAlPayrollBlock:cfg.l11.firstPayroll};
+}
+test('B-K11m: Originalroute und reale Einweg-Flugvollkosten aus identischem dritten Liefersave',()=>{
+  const min=rules.world.mindeststand,max=rules.world.fondsObergrenze;
+  try {
+    for(const seed of [42,7]){
+      cfg.routeMode=null;cfg.routeStats=null;cfg.l11=null;
+      rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+      const third=bk11kNachDrittemTeilauftrag(seed);
+      const original=bk11mVergleich(seed,third.saved,'original');
+      assert.equal(original.hash,seed===42?'0d47d35f43f1bac6':'e18524faeb778a7c',
+        'B-K11l Original-Autohandel muss mit identischem Save reproduzierbar bleiben');
+      const checked=bk11mVergleich(seed,third.saved,'vollkosten');
+      assert.equal(original.base,checked.base);
+      assert(checked.routeStats.geprueft>0,'Core hat echte NPC-Kandidaten geprueft');
+      assert(checked.routeStats.abgewiesen>0,'Kontrolle filtert tatsaechlich nominal profitable, nach Flugkosten negative Routen');
+      assert.equal(checked.system.totalMoney,original.system.totalMoney);
+      assert.equal(checked.system.totalMoney,50000);
+      assert.equal(original.released,checked.released);
+      console.log('BK11M_FULL_COST_PAIRS '+JSON.stringify({seed,original,checked}));
+    }
+  }finally{cfg.routeMode=null;cfg.routeStats=null;cfg.l11=null;cfg.accountOnly=false;
+    rules.world.mindeststand=min;rules.world.fondsObergrenze=max;}
 });

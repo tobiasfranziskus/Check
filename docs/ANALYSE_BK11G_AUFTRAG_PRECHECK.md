@@ -37,3 +37,24 @@ Zum Vergleich einer Nahrungsproduktion in Nadir mit einem realen Stationsein- **
 - **D6/H1:** Nur aus tatsächlich vorhandenen Käufer-ISK kann der Original-Stationsankauf bezahlt werden; ein eigener ziviler Endverbraucher braucht eine **gesonderte Entscheidung** über Einkommen/Finanzierungsquelle und gegebenenfalls konkrete global begrenzte Modell-B-Ausgabe. **Kein Abziehen von Spielerersparnissen, kein individuelles NPC-Rettungsbudget.**
 
 **[TEST]** Ergebnisse, Node-Testzahl, Seeds und CI-Erfolg erst nach Ausführung ergänzen. Keine 13×90d-Abnahme eines veränderten Produkts, keine iPad-/NAS-Abnahme, keine Produktionsfreigabe.
+
+## [TEST] B-K11g ausgeführt – tatsächliche Originalmarkt-Angebote
+
+**[CI #41616871995](https://github.com/tobiasfranziskus/Check/actions/runs/41616871995)** auf Codecommit `f48d8ec8` **erfolgreich**: 6/6 gezielte Node-Tests (0 Fehler) für Originalpreis-/Gebührenbezug, echtes Eigentümerguthaben, Storno und Doppelreservierung, 100-Eis-Überzeichnung, doppelte Quelle-/Ziellagerbelegung, Tick-Invalidierung, Original-Core-Save/Load; 6/6 ausgeführte Originalwelten **Seed 7/42 × (passiv/Miner/Miner+Handel) × 1 Spieltag**, insgesamt **144 stündliche unabhängige Geld-/Waren-Audits und Original-Hash-Replays**. Original-`index.html` ist per SHA256 gepinnt. Der neue Vertragsanalyzer hat **keine** Spielbuchung oder Emission ausgelöst. Die Standard-Regressions-CI [#41616872017](https://github.com/tobiasfranziskus/Check/actions/runs/41616872017) wird separat bewertet, wenn abgeschlossen.
+
+**Wichtiger absichtlich NEGATIVER Befund:** Die ersten beiden CI-Versuche des neuen Tests waren **fehlgeschlagen**, weil die Testvoraussetzung „acht neue Nahrungseinheiten sind bereits am Tag 0 an beiden Stationen lagerfähig“ nicht stimmte. Das Originalprodukt begrenzt die Quell-/Endstationslagerkapazität. **Wir haben keine Lagerware gelöscht und keine Startkasse künstlich verändert.** Der positive Claims-Test verwendet deshalb den tatsächlich nach einem Tag bestehenden Originalzustand **Seed7/passiv**, in dem genau dieses kleine Angebot zulässig wird. Die übrigen unzulässigen Angebote bleiben negative Daten.
+
+| Originalprodukt nach 24h | 8er-Angebot Lager/Geld | Spotquelle je Nahrung | Spot-Händlerbeitrag über 8 Stück vor Hülle | Gemeinsam über 8 Stück vor Hülle/Risiko |
+| --- | --- | ---: | ---: | ---: |
+| Seed42 passiv | gesperrt: Quell-Fertiglager | −19 ISK | −439 ISK | **−471 ISK** |
+| Seed42 Miner | gesperrt: Quell-Fertiglager | −23 ISK | −432 ISK | **−448 ISK** |
+| Seed42 Miner+Auto-Handel | gesperrt: Quell-Fertiglager | −19 ISK | −210 ISK | **−242 ISK** |
+| Seed7 passiv | **testseitig vorfinanzierbar**, aber verlustträchtig | −9 ISK | −437 ISK | **−389 ISK** |
+| Seed7 Miner | gesperrt: Quell-Fertiglager | −19 ISK | −354 ISK | **−386 ISK** |
+| Seed7 Miner+Auto-Handel | gesperrt: Quell-Fertiglager | −19 ISK | −402 ISK | **−434 ISK** |
+
+Die Quelle-/Gesamtspalten sind rein **indikative Brutto-Angebotsmargen zum Original-Spotpreis**, einschließlich des nicht freigegebenen 4-ISK/min-Fabriklohnansatzes, Eis-Wiederbeschaffungswert und konservativer Reiseaufwendungen. **Keine realen 8er-Produktions-/Lohn-/Endkunden-Lieferkosten, keine realisierten Verluste und kein Emissionsbudget.** Selbst in der einzigen rechnerisch vorfinanzierbaren Seed7-Welt könnte ein Auftrag ohne Nachweis neuer Eis-/Nahrungschargen, echte gebuchte Löhne, persistente Materialclaims und bezahlten zivilen Endabnehmer **nicht als vollständiger Wirtschaftskreislauf ausgebucht werden**.
+
+**24er-Auftrag:** Alle sechs Original-Welten scheitern an mindestens einer unveränderten Lager- oder Kassenvoraussetzung, zum Teil an mehreren. Die vereinzelte positive Händler-Spotmarge (Seed42/Auto-Handel) wäre auch dort **keine** positive Gesamtkette.
+
+**[ANALYSE, Entscheidungsfolge]** Die sachlich kleinste produktive Grenze ist **nicht** ein weiterer isolierter Testfonds oder eine komplizierte neue Simulation. Zuerst D3: Was heißt ein eindeutiger Core-gültiger Auftrag mit über Konkurrenz und Save/Load dauerhaft geschütztem Eis/Fertigware/ISK, und wie verhindert ein Lager-/Kassen-Gate negative Folgeproduktion? D2 und D6 müssen die tatsächlichen Löhne/Empfänger sowie eine **bereits finanzierte** zivile Abnahme zuordnen. Ein rentabler Vertrag darf nicht durch fehlende Käufer oder gleichzeitig verplantes Lager auf Kosten anderer fortgesetzt werden. Preis- und Leistungsquoten müssen beim Auftrag und an der tatsächlichen Buchung mit klar definierten Höchstwerten erneuert werden. **Noch keine Freigabe** von Produktions-/Preis-/Emissionsregeln.

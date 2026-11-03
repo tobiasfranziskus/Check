@@ -623,10 +623,33 @@ test('B-K12e: exact original NPC surplus levy recipients, fund account audits (4
       'new demand must be fully paid, not gifted');
     assert.equal(r.fundPaidISK,r.inputISK,
       'actual funded food must trace back to sold mineral inputs');
-    const expected={42:{hash:'4a5857e57dd26942',delivered:39},
-      7:{hash:'1932cd8001738da1',delivered:50}}[seed];
+    const expected={
+      42:{hash:'4a5857e57dd26942',delivered:39,levy:3067,events:39,
+        alderaEnd:5531,nadirEnd:62,npc3End:5249,minted:2040},
+      7:{hash:'1932cd8001738da1',delivered:50,levy:1427,events:13,
+        alderaEnd:4332,nadirEnd:41,npc3End:3487,minted:2880}
+    }[seed];
     assert.equal(r.hash,expected.hash,'observer must preserve deterministic core outcome');
     assert.equal(r.delivered,expected.delivered);
+    assert.equal(r.minted,expected.minted,'no additional minted cash in observed world');
+    assert.equal(d.originalNPC3Levy,expected.levy);
+    assert.equal(d.abgabeEvents.length,expected.events);
+    assert(d.abgabeEvents.every(x=>x.poorest==='st_aldera'&&
+      x.system==='aldera'&&x.recipient==='fonds_aldera'),
+      'actual least-cash station is always Aldera, not Nadir');
+    assert.deepEqual(d.allDonors,[{owner:'npc3',paid:expected.levy}],
+      'no manufactured or incorrectly attributed third-party funds');
+    assert.equal(d.npc3Targets.fonds_aldera,expected.levy);
+    assert.equal(d.npc3Targets.fonds_nadir,0,
+      'none of NPC3 surplus levy returns to real Nadir food end buyer');
+    assert.equal(d.fundNetByPhase.fonds_aldera.npcAusgaben,expected.levy);
+    assert.equal(d.fundNetByPhase.fonds_nadir.npcAusgaben||0,0);
+    assert.equal(d.fundNetByPhase.fonds_aldera.fonds||0,0,
+      'strict reference comparison disables fund-grant redistribution');
+    assert.equal(d.fundEnd.fonds_aldera,expected.alderaEnd);
+    assert.equal(d.fundEnd.fonds_nadir,expected.nadirEnd);
+    assert.equal(d.npc3End,expected.npc3End);
+    assert.equal(r.fundEnd,expected.nadirEnd);
     console.log('BK12E_REAL_LEVY '+JSON.stringify({
       seed,hash:r.hash,delivered:r.delivered,openingNadirFund:r.openingFund,
       finalNadirFund:r.fundEnd,realFundPaid:r.fundPaidISK,

@@ -46,7 +46,7 @@ einmal("  buche(state, schiff.owner, 'kosten', fee);",
 const anchor="    m_core_handel.buche(state, s.owner, 'kosten', kosten);\n  }\n  if (s.phase === 'dock') {";
 einmal(anchor,"    m_core_handel.buche(state, s.owner, 'kosten', kosten);\n"+
   "    __bk10k_journal.push({art:'flug',tick:state.tick,schiff:s.id,owner:s.owner,"+
-  "empfaenger:rules.world.systems[system].fonds,betrag:kosten});\n"+
+  "empfaenger:rules.world.systems[system].fonds,vertrag:id,betrag:kosten});\n"+
   "  }\n  if (s.phase === 'dock') {");
 
 // B-K10k: Historische FIFO-Belege fuer tatsaechlich am Nadir-Markt bezahltes Eis,
@@ -260,8 +260,23 @@ einmal("  if (finanziert && !m_core_vertrag.fahrtStart(state, rules, s, ziel, r.
   "    __bk11l_flightGate(state,s,station,ziel,ware,"+
   "Math.ceil(r.zeit*w.betriebskosten.frachter/rules.economy.stunde),'fahrt-escrow');\n"+
   "    return false;\n  }");
-const modules=new Function('__bk10k_hold','__bk10k_direkt','__bk10k_journal','__bk10k_quelleTrade','__bk10k_quelleStart','__bk10k_quelleFertig','__bk10k_quelleKonsum','__bk10k_minerKosten','__bk10k_fondsZufluss','__bk11j_prodGate','__bk11l_event','__bk11l_flightGate',js+
-  ';return {core:m_core_index,base:m_data_rules.RULES,herkunft:m_core_herkunft,route:m_core_route.route};')(halten,direkt,journal,quelleTrade,quelleStart,quelleFertig,quelleKonsum,quelleMinerKosten,nadirFondsZufluss,bk11jProduktionsGate,bk11lEvent,bk11lFlightGate);
+
+// Tatsächlich gestartete NPC-Fluege, inklusive erkennbar leerer
+// Repositionierungen; Kosten werden aus echten fahrtStunde-Belegen zugeordnet.
+function bk11lDeparture(state,schiff,station,ziel,ware,menge,zeit){
+  if(!cfg.l11||!['npc1','npc2'].includes(schiff.owner))return;
+  assert(schiff.phase==='reise'&&schiff.vertrag&&zeit>0);
+  const laden=sum(Object.values(schiff.ladung));
+  cfg.l11.departures.push({tick:state.tick,owner:schiff.owner,
+    schiff:schiff.id,vertrag:schiff.vertrag,station,ziel,
+    ware,angebotMenge:menge,geladen:laden,leer:laden===0,zeit});
+}
+einmal("  s.phase = 'reise'; s.ziel = ziel; s.ankunft = state.tick + r.zeit; s.warten = 0;\n  return true;",
+  "  s.phase = 'reise'; s.ziel = ziel; s.ankunft = state.tick + r.zeit; s.warten = 0;\n"+
+  "  __bk11l_depart(state,s,station,ziel,ware,menge,r.zeit);\n"+
+  "  return true;");
+const modules=new Function('__bk10k_hold','__bk10k_direkt','__bk10k_journal','__bk10k_quelleTrade','__bk10k_quelleStart','__bk10k_quelleFertig','__bk10k_quelleKonsum','__bk10k_minerKosten','__bk10k_fondsZufluss','__bk11j_prodGate','__bk11l_event','__bk11l_flightGate','__bk11l_depart',js+
+  ';return {core:m_core_index,base:m_data_rules.RULES,herkunft:m_core_herkunft,route:m_core_route.route};')(halten,direkt,journal,quelleTrade,quelleStart,quelleFertig,quelleKonsum,quelleMinerKosten,nadirFondsZufluss,bk11jProduktionsGate,bk11lEvent,bk11lFlightGate,bk11lDeparture);
 core=modules.core;
 const {base,herkunft,route}=modules;
 assert.equal(base.schema,8);assert.equal(base.rulesVersion,14);
@@ -1159,7 +1174,7 @@ test('B-K11l: erste Finanzierungssperren und echte Gegenbuchungen im wiederbeleb
       const startCash=Object.fromEntries(ids.map(id=>[id,{
         cash:s.owners[id].cash,reserve:bk11lOffeneReserve(s,id)}]));
       cfg.accountOnly=true;cfg.mode=null;cfg.ship=null;cfg.order=null;cfg.gateLog=null;
-      cfg.l11={trades:[],events:[],firstPayroll:null,firstFlight:{},firstOtherFlight:{}};
+      cfg.l11={trades:[],events:[],departures:[],firstPayroll:null,firstFlight:{},firstOtherFlight:{}};
       journal.length=0;
       let release=0;
       for(const sh of Object.values(s.ships)){
@@ -1179,6 +1194,23 @@ test('B-K11l: erste Finanzierungssperren und echte Gegenbuchungen im wiederbeleb
       assert.equal(endHash,seed===42?'0d47d35f43f1bac6':'e18524faeb778a7c',
         'B-K11l beobachtet Original-Core ohne Tick-/Hash-Veraenderung');
       const flights=journal.filter(e=>e.art==='flug');
+      const flightsPerTrip=new Map();
+      for(const x of flights)flightsPerTrip.set(x.vertrag,
+        (flightsPerTrip.get(x.vertrag)||0)+x.betrag);
+      const liveTrips=cfg.l11.departures;
+      const costsForTrips=(a)=>sum(a.map(x=>flightsPerTrip.get(x.vertrag)||0));
+      const positions={};
+      for(const owner of ['npc1','npc2']){
+        const owned=liveTrips.filter(x=>x.owner===owner);
+        positions[owner]={departures:owned.length,
+          emptyDepartures:owned.filter(x=>x.leer).length,
+          loadedDepartures:owned.filter(x=>!x.leer).length,
+          paidEmptyFlightISK:costsForTrips(owned.filter(x=>x.leer)),
+          paidLoadedFlightISK:costsForTrips(owned.filter(x=>!x.leer)),
+          examples:owned.slice(0,2)};
+        assert.equal(positions[owner].departures,
+          positions[owner].emptyDepartures+positions[owner].loadedDepartures);
+      }
       const trade=cfg.l11.trades,ev=cfg.l11.events;
       const net={};const posten={};
       for(const id of ids){net[id]=0;posten[id]={};}
@@ -1230,7 +1262,7 @@ test('B-K11l: erste Finanzierungssperren und echte Gegenbuchungen im wiederbeleb
       assert(trade.some(x=>x.owner==='npc2'&&x.kauf));
       console.log('BK11L_ACCOUNT_RECONCILIATION '+JSON.stringify({
         seed,base:third.hash,finalHash:endHash,gates,
-        actor,tradeCount:trade.length,flightCount:flights.length,
+        positions,actor,tradeCount:trade.length,flightCount:flights.length,
         payrollEvents:ev.filter(x=>x.art==='produktionslohn').length,
         fundTransfers:ev.filter(x=>x.art.startsWith('fonds-')).length,
         npcTransfers:ev.filter(x=>x.art==='npc-abgabe').length,

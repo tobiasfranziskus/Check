@@ -3679,7 +3679,7 @@ return { ersetztLaufendesSpiel };
 
 const m_ui_main = (() => {
 // In der Pilotansicht darf der alte Welt-Ticker bzw. sein Speicherplatz nicht starten.
-if (new URLSearchParams(location.search).get('modus') === 'erzpilot') return { pilot: true };
+if (typeof location !== 'undefined' && /(?:^\\?|&)modus=erzpilot(?:&|$)/.test(location.search || '')) return { pilot: true };
 const { createState, advance, save, load, submit, execute } = m_core_index;
 const { RULES } = m_data_rules;
 const { OBERFLAECHE } = m_data_oberflaeche;
@@ -4190,7 +4190,7 @@ return {};
 // W1-UI nutzt dieselben Core-Commands wie die Simulation und einen getrennten Slot.
 // Aus Sicherheitsgruenden nie automatische Migration/Schreibzugriffe auf Regel-14-Spielstaende.
 const m_ui_erzpilot = (() => {
-  if (new URLSearchParams(location.search).get('modus') !== 'erzpilot') return {};
+  if (typeof location === 'undefined' || !/(?:^\\?|&)modus=erzpilot(?:&|$)/.test(location.search || '')) return {};
   document.body.classList.add('erzpilot-modus');
   const app = document.getElementById('erzpilot-app');
   app.hidden = false;

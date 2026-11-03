@@ -26,6 +26,26 @@ Die Welt läuft reale 480 Core-Minuten mit Original-Minerverkauf/-Produktion wei
 
 Der Verkäufer ist zu diesem Zeitpunkt **nicht zahlungsunfähig** und hat **genug Ware**; der Käufer erzielt seit der zweiten Lieferung **keinen neuen Aldera-Haushaltskassen-Zufluss**. Nadir-Fabriklohn fließt an **`hh_st_nadir`**, nicht automatisch an **`hh_st_aldera`**. Das in der Quelle oder beim Spieler vorhandene ISK finanziert keine Käuferbestellung, solange es keine echte Zahlungskette dorthin gibt. Das ist eine belegte Konten- und Verteilungsgrenze, **kein** Beweis, dass eine bestimmte zusätzliche Geldmenge fehlt. Der Spieler darf Geld sparen; eine Rückführung seines Guthabens ist nicht vorgesehen.
 
+### A2. Tatsächliche Teilmenge nach der abgewiesenen Bestellung
+
+**Wichtige Gegenprobe:** Eine abgelehnte **24er-Charge** ist **noch keine generelle Handelsunfähigkeit**. Aus exakt dem unveränderten Original-Save nach Ablehnung der vollen Bestellung (Spielerschiff ist inzwischen an Nadir) wird ohne Geld- oder Wareninjektion ein **kleinerer echter Vertrag** reserviert, Nadir-Neuware über den Original-`shipTrade` gekauft, auf bezahltem Original-`shipMove` zurückgebracht und in Aldera per bestehendem R15-Vertrag wirklich verbraucht und vergütet.
+
+| Fortsetzung nach vollem Drittauftrags-Gate | Seed42 | Seed7 |
+| --- | ---: | ---: |
+| Käuferkasse am Anfang | 796 ISK | 956 ISK |
+| Preis pro Einheit laut Core | 54 ISK | 54 ISK |
+| **Wirklich neu geliefert und verbraucht** | **14** | **17** |
+| Echte volle Zahlung für diese Teillieferung | 756 ISK | 918 ISK |
+| Käuferkasse nach dritter Teilbelieferung | **40 ISK** | **38 ISK** |
+| Nadir Quellkasse nach bezahlter Teillieferung | **61 ISK** | **58 ISK** |
+| Spieler-Händlerkasse nach Flug und Verkauf | 2.115 ISK | 2.193 ISK |
+| Nadir-Fonds danach (ohne Mindeststandsweitergabe) | 1.137 ISK | 1.314 ISK |
+| **Nächster 1-Stück-Auftrag, 54 ISK reservierbar?** | **Nein** | **Nein** |
+| Weiterer tatsächlich reservierter oder ausgezahlter Betrag | 0 ISK | 0 ISK |
+| Finaler deterministischer Save-Hash | `ed0151cdaa03a8a1` | `61c198365462ede4` |
+
+Am Spiel-Tick **3960** wird selbst eine **einzelne** weitere Nahrungsbestellung aus der vorhandenen Aldera-Haushaltskasse abgewiesen. Das ist die erste **vollständige aktuelle Nachfragesperre bei der Mindestmenge eins** im aktiv weitergeführten Testweg. Es wird ausdrücklich **keine Aussage über alle künftigen Einkommen** getroffen: Ein späterer realer Lohnzufluss könnte neue Käufermittel liefern. Gleichzeitig sind die Quellkassen mit 61/58 ISK erneut gefährlich niedrig, obwohl Waren gehandelt wurden; der Spielerhändler behält real verdienten Gewinn. Die Käufer-/Quellprobleme müssen deshalb **gemeinsam** untersucht werden.
+
 ### B. Gegenpfad **ohne** weitere Spielerbestellung
 
 Getrennt davon läuft die gleiche Welt nach der zweiten Lieferung ohne neue Spieler-Handelsbefehle weiter; die Original-Miner, Fabriken und Haushalte arbeiten weiterhin. Ein **nur beobachtender** Hook registriert die erste vom Original-R15-Core tatsächlich verweigerte `m_core_vertrag.reservieren`-Mittelbindung nach bestätigter Rohstoff- und Lagerplatzprüfung.
@@ -49,8 +69,8 @@ Getrennt davon läuft die gleiche Welt nach der zweiten Lieferung ohne neue Spie
 
 ## Prüfnachweise, Schutzgrenzen und Entscheidung
 
-**[TEST]** Gezielte Node-CI [#41657897755](https://github.com/tobiasfranziskus/Check/actions/runs/41657897755) auf `b815c00f`: **8/8 bestanden**, 0 Fehltests; beide R15-B-K11h-Basishashes und B-K11i-Hash nach zweiter Lieferung reproduziert; der dritte fehlgeschlagene Vertragsabschluss bleibt ohne Zahlung/Neuware. Die anschließende zusätzliche reine Tick-Protokolländerung muss im nächsten CI-Lauf separat bestätigt werden. Geld-/Waren-Audit stündlich und beim Gate, Save-/Load-Hash geprüft; die Standard-CI ist gesondert auszuweisen.
+**[TEST]** Gezielte Node-CI [#41658980271](https://github.com/tobiasfranziskus/Check/actions/runs/41658980271) auf `a32a6808`: **9/9 bestanden**, 0 Fehltests; beide R15-B-K11h-Basishashes und B-K11i-Hash nach zweiter Lieferung reproduziert; die volle 24er-Reservierung scheitert ohne Nebenwirkung, die danach wirklich bezahlten 14/17 Stück gelangen hingegen korrekt in den Endverbrauch. Die unmittelbar folgende 1-Stück-Reservierung wird ohne Nebenwirkung abgewiesen. Geld-/Waren-Audit stündlich und beim Gate, Save-/Load-Hash geprüft; die Standard-CI ist gesondert auszuweisen.
 
-**Nicht bewiesen:** dritter finanzierter Abschluss, dauerhaft belastbare NPC-Sektornachfrage, reale dynamische NPC-Handelsdisposition (in diesem Experiment isoliert), Hüllenersatz, langfristige Weltstabilität, Regel15-Save-Migration, Safari-/NAS-Abnahme. Keine Produktfreigabe.
+**Nicht bewiesen:** eine dritte vollständige 24er-Lieferung oder dauerhaft belastbare NPC-Sektornachfrage, reale dynamische NPC-Handelsdisposition (in diesem Experiment isoliert), Hüllenersatz, langfristige Weltstabilität, Regel15-Save-Migration, Safari-/NAS-Abnahme. Keine Produktfreigabe.
 
 **Offene Produktfragen:** D2 (wer verdient Einkommen und *wo* kann es für echte Nachfrage ausgegeben werden?), D3 (globaler kontraktgedeckter Auftrag und lokaler Preflight), D6 (real finanzierter Verlust/Schutz) und getrennt Geldmodell B. **Keine** Emission, Spargrenze, Subvention, Preis-/Lohnänderung oder Individualrettung aus diesem Einzelversuch ableiten.

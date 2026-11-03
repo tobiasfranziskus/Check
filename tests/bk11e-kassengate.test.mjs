@@ -26,7 +26,7 @@ test('B-K11e: echte Core-Buchungen, Spotkosten und Zahlungsgaenge bleiben read-o
      assert(f.workingCapitalSpotMissing>=0 && f.workingCapitalSpotMissing<=f.begun);
      assert.equal(f.counterfactualWageCashFlow,
        f.factualIceFoodCashFlow-24*f.begun);
-     assert(f.actualFoodSoldISK===undefined,'keine erfundenen Summen');
+     assert(Number.isInteger(f.spotProfitSum),'Spotabstand je echtem Produktionsstart');
      assert(f.realFundTransfers>=0,'keine negative Geldumlagerung');
    }
    assert(starts>0,'Original-Nahrungsproduktion muss stattfinden');

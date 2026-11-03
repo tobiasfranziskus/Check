@@ -25,7 +25,7 @@ const injected=withoutGrants
     '\n      if (!__bk12.productionPermit(state,id,linie.rezept)) continue;');
 assert.notEqual(injected,withoutGrants);
 
-function run(seed,policy,minutes) {
+function run(seed,policy,minutes,traceMiner=false) {
   const m=model({source:injected,traceSource:true});
   strictRules(m);
   const s=m.core.createState(seed,m.rules);
@@ -38,6 +38,26 @@ function run(seed,policy,minutes) {
     if(sh.klasse==='frachter'&&sh.auftrag==='handeln')sh.auftrag='halten';
   const fund=m.rules.world.systems[s.stations[NADIR].system].fonds;
   const initial=structuredClone(s);
+  // B-K12d diagnostic observer only: actual Nadir ice miners.
+  const nadirSystem=s.stations[NADIR].system;
+  const minerIDs=Object.values(s.ships).filter(sh=>sh.klasse==='miner'&&
+    sh.system===nadirSystem&&sh.ware==='eis').map(sh=>sh.id).sort();
+  const minerSet=new Set(minerIDs);
+  const minerOwners=[...new Set(minerIDs.map(id=>s.ships[id].owner))].sort();
+  if(traceMiner)assert(minerIDs.length>0,'actual Nadir ice miner required');
+  const minerPhase=[],minerHours=[],serviceToNadir=[];
+  const originalCost=m.api.cost.bind(m.api);
+  m.api.cost=(state,sh,due,paid)=>{
+    originalCost(state,sh,due,paid);
+    if(!traceMiner)return;
+    const costSystem=sh.phase==='reise'?
+      m.rules.world.stations[sh.ziel].system:sh.system;
+    if(costSystem!==nadirSystem)return;
+    serviceToNadir.push({tick:state.tick,ship:sh.id,owner:sh.owner,
+      type:sh.klasse,due,paid,
+      to:m.rules.world.senkeBesitzer.includes(sh.owner)?'burn':fund,
+      cashBefore:state.owners[sh.owner].cash});
+  };
   const openingFund=s.owners[fund].cash;
   let order=null,feeUsed=0;
   const orders=[],deliveries=[],rejections=[],fundPhaseFlow=[];
@@ -164,9 +184,14 @@ function run(seed,policy,minutes) {
   // a negative consumption flow, never a new buyer revenue.
   const basePhase=m.api.phase.bind(m.api);
   m.api.phase=(name,state,fn,args)=>{
-    const before=capital(state)[fund];
+    const beforeCaps=capital(state);
     const result=basePhase(name,state,fn,args);
-    const delta=capital(state)[fund]-before;
+    const afterCaps=capital(state);
+    const delta=afterCaps[fund]-beforeCaps[fund];
+    if(traceMiner)for(const owner of minerOwners) {
+      const change=afterCaps[owner]-beforeCaps[owner];
+      if(change)minerPhase.push({tick:state.tick,owner,phase:name,delta:change});
+    }
     if(delta)fundPhaseFlow.push({tick:state.tick,phase:name,delta});
     return result;
   };
@@ -182,6 +207,18 @@ function run(seed,policy,minutes) {
       assert(q().food.length<=1,'cannot produce against nonexistent end order');
       assert(q().ice.length<=2,'cannot stockpile input for uncovered order');
       if(order)assert.equal(s.vertraege.eintraege[order.id]?.status,'offen');
+      if(traceMiner) {
+        const caps=capital(s);
+        minerHours.push({tick:s.tick,day:1+Math.floor((s.tick-1)/1440),
+          owners:Object.fromEntries(minerOwners.map(id=>[id,caps[id]])),
+          stationCash:s.owners[NADIR].cash,stationIce:s.stations[NADIR].lager.eis,
+          buyerCash:caps[fund],orders:orders.length,delivered:deliveries.length,
+          miners:minerIDs.map(id=>{
+            const sh=s.ships[id];
+            return {id,exists:!!sh,auftrag:sh?.auftrag||null,
+              cargo:sh?.ladung.eis||0,work:sh?.arbeit||0};
+          })});
+      }
     }
     if(s.tick%1440===0) {
       const save=m.core.save(s),restored=m.core.load(save,undefined,m.rules);

@@ -40,7 +40,7 @@ function run(seed,policy,minutes) {
   const initial=structuredClone(s);
   const openingFund=s.owners[fund].cash;
   let order=null,feeUsed=0;
-  const orders=[],deliveries=[],rejections=[];
+  const orders=[],deliveries=[],rejections=[],fundPhaseFlow=[];
   const q=()=>m.api.sourceTrace();
   const fees=()=>m.log.payments.filter(x=>x.kind==='fee'&&x.to===fund);
   const feeIncome=()=>sum(fees().map(x=>x.isk));
@@ -136,6 +136,16 @@ function run(seed,policy,minutes) {
       actualBuyer:fund,qty:1});
     order=null;
   };
+  // Measure ORIGINAL fund cash flows, phase by phase; the order settlement is
+  // a negative consumption flow, never a new buyer revenue.
+  const basePhase=m.api.phase.bind(m.api);
+  m.api.phase=(name,state,fn,args)=>{
+    const before=capital(state)[fund];
+    const result=basePhase(name,state,fn,args);
+    const delta=capital(state)[fund]-before;
+    if(delta)fundPhaseFlow.push({tick:state.tick,phase:name,delta});
+    return result;
+  };
   preorder();
   const dayHashes=[];
   for(let i=0;i<minutes;i++) {
@@ -163,6 +173,13 @@ function run(seed,policy,minutes) {
   assert.equal(s.initialSupply+s.minted-s.burned,
     sum(Object.values(capital(s))));
   const feeRows=fees();
+  const phaseByDay={};
+  for(const f of fundPhaseFlow){
+    const day=1+Math.floor((f.tick-1)/1440);
+    const row=phaseByDay[day]||=(Object.create(null));
+    row[f.phase]=(row[f.phase]||0)+f.delta;
+  }
+  const minerCosts=m.log.costs.filter(x=>x.klasse==='miner');
   return {seed,policy,days:minutes/1440,hash:m.core.hash(s),openingFund,
     fundEnd:s.owners[fund].cash,stationEnd:s.owners[NADIR].cash,
     totalOrders:orders.length,delivered:deliveries.length,
@@ -172,6 +189,9 @@ function run(seed,policy,minutes) {
     consumerSpotReferenceISK:sum(deliveries.map(x=>x.spot)),
     feeIncome:feeIncome(),feeEvents:feeRows.length,
     otherFundChanges:capital(s)[fund]-openingFund+totalPaid()-feeIncome(),
+    fundNetByDay:phaseByDay,
+    minerWorkDue:sum(minerCosts.map(x=>x.due)),
+    minerWorkPaid:sum(minerCosts.map(x=>x.paid)),
     shortageHours:s.stats.mangel[NADIR].nahrung-initial.stats.mangel[NADIR].nahrung,
     buyerFreeAtEnd:s.owners[fund].cash,
     pending:order&&{id:order.id,tick:order.tick,budget:order.budget,rest:s.vertraege.eintraege[order.id]?.rest},

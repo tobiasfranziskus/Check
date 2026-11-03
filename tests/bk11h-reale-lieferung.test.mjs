@@ -268,6 +268,18 @@ function run(saved,seed,mode,ausgabe=true,angefragt=24,extras={}){
   const echtNeu=s.stations[S].lokalNeuNahrung;
   const alt=s.stations[S].lager.nahrung-echtNeu;
   const menge=Math.min(angefragt,saleable,echtNeu,30);
+  if(extras.allowBlocked && menge<angefragt){
+    audit(s);
+    const blocked={blocked:true,reason:'nicht genuegend verkaufbare echte Neuware',
+      seed,tick:s.tick,requested:angefragt,saleable,realNew:echtNeu,
+      nahrungLager:s.stations[S].lager.nahrung,
+      stationCash:s.owners[S].cash,buyerCash:s.owners[H].cash,
+      fondstransfersSinceFirst:cfg.trace.nadirFondsMindestISK-traceStart.nadirFondsMindestISK,
+      producedSinceFirst:cfg.trace.produktion-traceStart.produktion,
+      hash:core.hash(s),finalSaved:core.save(s)};
+    assert.equal(core.hash(core.load(blocked.finalSaved,undefined,rules)),blocked.hash);
+    return blocked;
+  }
   assert(menge>=Math.min(angefragt,10),'beide Seeds haben wirklich verkaufbare Nahrung');
   assert.equal(alt,0,'aus Nadir bezogene Nahrung ist nachweislich neu');
   r.menge=menge;r.quellpreis=core.preis(s,S,'nahrung',rules);
@@ -539,4 +551,48 @@ test('B-K11i: ohne regionale Fonds-Mindestzahlung kann reale Source-Fabrik keine
  } finally {
    rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
  }
+});
+
+
+test('B-K11i: Fonds AUS erst NACH identischer erster bezahlter Lieferung, zweite reale Charge nur falls gedeckt',()=>{
+ const min=rules.world.mindeststand,max=rules.world.fondsObergrenze;
+ try{
+  for(const seed of [42,7]){
+   const start=snapshot(seed);
+   const first=run(start.saved,seed,'bestellung',false,24,{returnSave:true});
+   const afterFirstHash=first.hash;
+   const sourceAfterFirst=first.nadirEndKasse;
+   const realFirstBuyerCash=first.haushaltCashEnde;
+   rules.world.mindeststand=0;
+   rules.world.fondsObergrenze=1_000_000_000;
+   const second=run(first.finalSaved,seed,'bestellung',false,24,
+     {continueTrace:true,returnSave:true,allowBlocked:true});
+   assert.equal(second.blocked?second.fondstransfersSinceFirst:
+     second.nadirFondsMindestISK,0,'zweiter Versuch erhielt kein regionales Fonds-Mindestgeld');
+   assert.notEqual(second.hash,afterFirstHash,'wirklich weitergelaufene gleiche Welt');
+   const state=core.load(second.finalSaved,undefined,rules);
+   audit(state);
+   assert.equal(core.hash(core.load(core.save(state),undefined,rules)),second.hash);
+   if(second.blocked){
+     assert(second.saleable<24,'keine volle zweite Charge ohne ausgeglichenes Material');
+     console.log('BK11I_AFTER_FIRST_FUND_OFF '+JSON.stringify({
+       seed,firstSourceCash:sourceAfterFirst,buyerCash:realFirstBuyerCash,
+       secondDelivered:0,reason:second.reason,firstHash:afterFirstHash,
+       laterHash:second.hash,available:second.saleable,
+       secondNewProduction:second.producedSinceFirst,sourceCash:second.stationCash,
+       fundMinimumPaid:0
+     }));
+   }else{
+     assert.equal(second.direktAbsatzMenge,24);
+     console.log('BK11I_AFTER_FIRST_FUND_OFF '+JSON.stringify({
+       seed,firstSourceCash:sourceAfterFirst,buyerCash:realFirstBuyerCash,
+       secondDelivered:second.direktAbsatzMenge,firstHash:afterFirstHash,
+       laterHash:second.hash,sourceCash:second.nadirEndKasse,
+       secondNewProduction:second.nahrungOriginalProduziert,
+       secondSourceContribution:second.eisQuellstationDeckungISK,
+       fundMinimumPaid:0
+     }));
+   }
+  }
+ }finally{rules.world.mindeststand=min;rules.world.fondsObergrenze=max;}
 });

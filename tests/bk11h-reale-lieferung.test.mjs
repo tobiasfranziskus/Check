@@ -1372,8 +1372,10 @@ function bk11mVergleich(seed,saved,modus,minutes=2880,onlyShip=null){
       && sh.auftrag==='halten'&&(!onlyShip||sh.id===onlyShip)){sh.auftrag='handeln';released++;}
   assert.equal(released,onlyShip?1:5,'gleich viele echte NPC-Frachter in Vergleichswelten');
   const bankruptcy={npc1:null,npc2:null,aldera:null};
+  let selectedLossTick=null;
   for(let i=0;i<minutes;i++){
     core.step(s,rules);
+    if(onlyShip&&selectedLossTick===null&&!s.ships[onlyShip])selectedLossTick=s.tick;
     if(s.tick%60===0){
       audit(s);
       if(s.tick%1440===0)
@@ -1421,7 +1423,7 @@ function bk11mVergleich(seed,saved,modus,minutes=2880,onlyShip=null){
     lostHullIds,newHullIds
   };
   const isolated=onlyShip?bk11oAuswertung(onlyShip,initialShipOwner,initialCargo,cfg.l11.trades,
-    journal,cfg.l11.events,s,old):null;
+    journal,cfg.l11.events,s,old,selectedLossTick):null;
   return {seed,modus,minutes,base:initialHash,hash,released,civil,isolated,
     routeStats:cfg.routeStats,
     npc:{npc1:s.owners.npc1.cash,npc2:s.owners.npc2.cash,
@@ -1542,7 +1544,7 @@ test('B-K11n: 7 Tage Vollkosten-Route gegen Original auf ALLEN Verbraucherstatio
 // Fuer jedes gekaufte Warenstueck verfolgen wir genau die tatsaechlich spaeter
 // verkaufte Ware (FIFO); vorhandene Anfangsladung wird nie als neue Kaufcharge
 // behauptet. Die Konzernkasse bleibt eine reale, gemeinsame Core-Kasse.
-function bk11oAuswertung(shipId,ownerAtStart,startingCargo,allTrades,allJournal,events,s,old){
+function bk11oAuswertung(shipId,ownerAtStart,startingCargo,allTrades,allJournal,events,s,old,selectedLossTick){
   const ship=s.ships[shipId];
   const trades=allTrades.filter(x=>x.ship===shipId);
   const flights=allJournal.filter(x=>x.art==='flug'&&x.schiff===shipId);
@@ -1591,7 +1593,9 @@ function bk11oAuswertung(shipId,ownerAtStart,startingCargo,allTrades,allJournal,
   const otherFees=sum(otherDeals.map(x=>x.fee));
   const otherFlightISK=sum(otherFare.map(x=>x.betrag));
   const ownerReplacements=otherDeals.filter(x=>x.kauf&&x.ware==='frachter');
-  const otherNetISK=otherSellISK-otherBuyISK-otherFees-otherFlightISK;
+  const nonContractShipWork=events.filter(x=>x.art==='betriebsfonds'&&x.von===name)
+    .reduce((n,x)=>n+x.isk,0);
+  const otherNetISK=otherSellISK-otherBuyISK-otherFees-otherFlightISK-nonContractShipWork;
   const transfer=events.filter(x=>x.art==='npc-abgabe'&&x.von===name)
     .reduce((n,x)=>n+x.isk,0);
   const realizedMargin=complete.reduce((n,x)=>n+x.revenue-x.cost-
@@ -1601,7 +1605,7 @@ function bk11oAuswertung(shipId,ownerAtStart,startingCargo,allTrades,allJournal,
   for(const x of sale.filter(x=>x.ware==='nahrung'))
     foodShipments[x.station]=(foodShipments[x.station]||0)+x.menge;
   return {ship:shipId,owner:name,initialCargo:startingCargo||{},
-    alive:!!ship,loadedAtEnd:ship?{...ship.ladung}:null,
+    alive:!!ship,lossTick:selectedLossTick,loadedAtEnd:ship?{...ship.ladung}:null,
     buys:buy.length,sales:sale.length,flights:flights.length,
     uniqueLots:lots.length,completeLots:complete.length,
     completeFoodLots:complete.filter(x=>x.ware==='nahrung').length,
@@ -1612,7 +1616,8 @@ function bk11oAuswertung(shipId,ownerAtStart,startingCargo,allTrades,allJournal,
     boughtISK:buyISK,soldISK:sellISK,feesISK:fee,flightISK:fare,
     traderNetISK:netTrades,ownerCashDelta:ownerDelta,
     otherCashDelta:ownerDelta-netTrades+transfer,
-    otherOwnerNetISK:otherNetISK,otherOwnerDeals:otherDeals.length,
+    otherOwnerNetISK:otherNetISK,nonContractShipWorkISK:nonContractShipWork,
+    otherOwnerDeals:otherDeals.length,
     otherOwnerFlightISK:otherFlightISK,
     replacementPurchases:ownerReplacements.map(x=>({
       ship:x.ship,tick:x.tick,cost:x.wert,fee:x.fee})),

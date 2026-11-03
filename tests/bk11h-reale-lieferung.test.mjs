@@ -1597,6 +1597,9 @@ function bk11oAuswertung(shipId,ownerAtStart,startingCargo,allTrades,allJournal,
   const realizedMargin=complete.reduce((n,x)=>n+x.revenue-x.cost-
     x.buyFee-x.salesFee,0);
   const netTrades=sellISK-buyISK-fee-fare;
+  const foodShipments={};
+  for(const x of sale.filter(x=>x.ware==='nahrung'))
+    foodShipments[x.station]=(foodShipments[x.station]||0)+x.menge;
   return {ship:shipId,owner:name,initialCargo:startingCargo||{},
     alive:!!ship,loadedAtEnd:ship?{...ship.ladung}:null,
     buys:buy.length,sales:sale.length,flights:flights.length,
@@ -1617,6 +1620,7 @@ function bk11oAuswertung(shipId,ownerAtStart,startingCargo,allTrades,allJournal,
     npcLeviesISK:transfer,
     cashFinal:s.owners[name].cash,heldReserves:bk11lOffeneReserve(s,name),
     suppliedAlderaFood:sum(sale.filter(x=>x.station===Z&&x.ware==='nahrung').map(x=>x.menge)),
+    foodSoldToStations:foodShipments,
     trueRepeatedFullyPaid:complete.length>=2&&!!ship&&
       ownerDelta>=0&&transfer===0&&otherDeals.length===0&&otherFare.length===0&&
       ownerDelta===netTrades};
@@ -1643,6 +1647,15 @@ test('B-K11o: jeden einzelnen vorhandenen NPC-Frachter ohne Kreuzsubvention aus 
             world.system.burnedDelta,'Global audit accounts for existing real bounty emissions and sinks');
           assert(world.isolated.completeLots<=world.isolated.uniqueLots);
           if(world.isolated.trueRepeatedFullyPaid)successful++;
+          if(seed===7&&mode==='vollkosten'&&onlyShip==='sh015'){
+            assert.equal(world.hash,'64644f6b43a2e824');
+            assert.equal(world.isolated.completeLots,23);
+            assert.equal(world.isolated.ownerCashDelta,1747);
+            assert.equal(world.isolated.cashFinal,4747);
+            assert.equal(world.isolated.unexplainedOwnerISK,0);
+            assert(world.isolated.trueRepeatedFullyPaid,
+              'mehrfach selbstfinanzierter Einzelhaendler mit echten Core-Flugzahlungen');
+          }
           console.log('BK11O_SINGLE_SHIP '+JSON.stringify({
             seed,mode,hash:world.hash,foodPaid:world.civil.totalPaidNewFood,
             foodShort:world.civil.foodShortageHours,
@@ -1658,4 +1671,32 @@ test('B-K11o: jeden einzelnen vorhandenen NPC-Frachter ohne Kreuzsubvention aus 
     cfg.l11=null;cfg.accountOnly=false;cfg.routeMode=null;cfg.routeStats=null;
     rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
   }
+});
+
+
+test('B-K11o: echten profitablen Seed7-Einzelfrachter ueber sieben Tage weiterpruefen',()=>{
+  const min=rules.world.mindeststand,max=rules.world.fondsObergrenze;
+  try {
+    rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+    const third=bk11kNachDrittemTeilauftrag(7);
+    for(const mode of ['original','vollkosten']){
+      const world=bk11mVergleich(7,third.saved,mode,7*1440,'sh015');
+      assert.equal(world.released,1);
+      assert.equal(world.base,third.hash);
+      assert.equal(world.system.totalMoney,50000+world.system.mintedDelta-
+        world.system.burnedDelta);
+      assert.equal(world.isolated.ship,'sh015');
+      assert(world.isolated.completeLots>0);
+      assert.equal(world.isolated.unmatchedSales,0);
+      console.log('BK11O_SEVEN_DAY_CANDIDATE '+JSON.stringify({
+        seed:7,mode,hash:world.hash,ship:world.isolated,
+        foodByStation:world.civil.stations,globalFoodPaid:world.civil.totalPaidNewFood,
+        globalShort:world.civil.foodShortageHours,
+        alderaCash:world.aldera.cash,alderaHH:world.aldera.hh,
+        npc1:world.npc.npc1,npc2:world.npc.npc2,
+        lostHulls:world.civil.lostHullIds,
+        newHulls:world.civil.newHullIds}));
+    }
+  }finally{cfg.l11=null;cfg.accountOnly=false;cfg.routeMode=null;cfg.routeStats=null;
+    rules.world.mindeststand=min;rules.world.fondsObergrenze=max;}
 });

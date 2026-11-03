@@ -9,9 +9,14 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
-let js=html.slice(html.indexOf('const m_data_systeme ='),
-  html.indexOf('const m_data_oberflaeche ='));
+// Gepinnter, historisch ausgefuehrter R15/Schema9-Kern aus PR #128;
+ // NICHT main R14, keine Produktdatei und kein neues Laufzeitmodul.
+const html=fs.readFileSync(new URL('./fixtures/bk11h-r15-core-snapshot.txt',import.meta.url),'utf8');
+let js=html;
+assert(js.startsWith('const m_data_systeme ='));
+assert(js.includes('const m_core_vertrag =')&&js.includes('const m_core_herkunft ='));
+assert(js.includes('const m_core_index ='));
+console.log('BK11H_R15_FIXTURE_SHA256 '+(await import('node:crypto')).createHash('sha256').update(js).digest('hex'));
 function einmal(alt,neu){
   assert.equal(js.split(alt).length,2,'eindeutiger Testanker: '+alt.slice(0,60));
   js=js.replace(alt,neu);

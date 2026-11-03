@@ -251,6 +251,68 @@ function run(seed,policy,minutes,traceMiner=false) {
     capital(s)[fund]-openingFund,'original buyer-account cash-flow identity');
   const serviceIncomeDays=Object.keys(phaseByDay).map(Number).filter(day=>
     (phaseByDay[day].betriebskosten||0)+(phaseByDay[day].foerderung||0)>0);
+  let minerDiagnostic=null;
+  if(traceMiner) {
+    const sourceSales=m.log.trades.filter(x=>minerSet.has(x.ship)&&
+      x.station===NADIR&&x.ware==='eis'&&!x.buy);
+    const focusCosts=m.log.costs.filter(x=>minerSet.has(x.ship));
+    const fundOperatingPayments=serviceToNadir.filter(x=>x.to===fund);
+    const feesFromMiner=m.log.payments.filter(x=>x.kind==='fee'&&
+      minerSet.has(x.ship)&&x.to===fund);
+    const fundCosts=sum(fundOperatingPayments.map(x=>x.paid));
+    assert.equal(fundCosts,
+      sum(fundPhaseFlow.filter(x=>x.phase==='betriebskosten').map(x=>x.delta)),
+      'every original fund operating-cost receipt has a paying ship');
+    const capsOpen=capital(initial),capsEnd=capital(s);
+    const ownerOpening=Object.fromEntries(minerOwners.map(id=>[id,capsOpen[id]]));
+    const ownerEnding=Object.fromEntries(minerOwners.map(id=>[id,capsEnd[id]]));
+    for(const owner of minerOwners)assert.equal(ownerOpening[owner]+
+      sum(minerPhase.filter(x=>x.owner===owner).map(x=>x.delta)),ownerEnding[owner],
+      'owner final capital must equal ALL original phased transactions');
+    const byDay={};
+    for(let day=1;day<=minutes/1440;day++) {
+      const from=(day-1)*1440,to=day*1440;
+      const mcost=focusCosts.filter(x=>x.tick>from&&x.tick<=to);
+      const sale=sourceSales.filter(x=>x.tick>from&&x.tick<=to);
+      const fees=feesFromMiner.filter(x=>x.tick>from&&x.tick<=to);
+      const income=fundOperatingPayments.filter(x=>x.tick>from&&x.tick<=to);
+      const snap=minerHours.find(x=>x.tick===to);
+      byDay[day]={sales:sale.length,ice:sum(sale.map(x=>x.qty)),
+        iceRevenue:sum(sale.map(x=>x.value)),
+        miningDue:sum(mcost.map(x=>x.due)),
+        miningPaid:sum(mcost.map(x=>x.paid)),
+        miningUnpaid:sum(mcost.map(x=>x.due-x.paid)),
+        receiptsFromShips:sum(income.map(x=>x.paid)),
+        ofWhichFocusMiners:sum(income.filter(x=>minerSet.has(x.ship)).map(x=>x.paid)),
+        minerFees:sum(fees.map(x=>x.isk)),
+        minerOwnerCapital:snap?.owners,
+        stationCash:snap?.stationCash,stationIce:snap?.stationIce,
+        fundCash:snap?.buyerCash,
+        minerShips:snap?.miners};
+    }
+    const phaseByOwner=Object.fromEntries(minerOwners.map(owner=>[owner,
+      Object.fromEntries([...new Set(minerPhase.filter(x=>x.owner===owner).map(x=>x.phase))]
+        .sort().map(phase=>[phase,sum(minerPhase.filter(x=>x.owner===owner&&
+          x.phase===phase).map(x=>x.delta))]))]));
+    const allFundFees=m.log.payments.filter(x=>x.kind==='fee'&&x.to===fund);
+    minerDiagnostic={minerIDs,minerOwners,ownerOpening,ownerEnding,
+      sourceSales:{count:sourceSales.length,ice:sum(sourceSales.map(x=>x.qty)),
+        gross:sum(sourceSales.map(x=>x.value)),fee:sum(sourceSales.map(x=>x.fee)),
+        first:sourceSales[0]||null,last:sourceSales.at(-1)||null},
+      focusCosts:{due:sum(focusCosts.map(x=>x.due)),
+        paid:sum(focusCosts.map(x=>x.paid)),
+        unpaid:sum(focusCosts.map(x=>x.due-x.paid)),
+        firstUnpaid:focusCosts.find(x=>x.due>x.paid)||null,
+        last:focusCosts.at(-1)||null},
+      fundOperating:fundCosts,allFundFees:sum(allFundFees.map(x=>x.isk)),
+      focusMinerFees:sum(feesFromMiner.map(x=>x.isk)),
+      byPayer:Object.fromEntries([...new Set(fundOperatingPayments.map(x=>x.owner))]
+        .sort().map(owner=>[owner,sum(fundOperatingPayments.filter(x=>x.owner===owner)
+          .map(x=>x.paid))])),
+      ownerPhase:phaseByOwner,byDay,
+      firstOwnerZero:minerHours.find(x=>minerOwners.some(id=>x.owners[id]===0))||null,
+      lastTwoHours:minerHours.slice(-2)};
+  }
   return {seed,policy,days:minutes/1440,hash:m.core.hash(s),openingFund,
     fundEnd:s.owners[fund].cash,stationEnd:s.owners[NADIR].cash,
     totalOrders:orders.length,delivered:deliveries.length,
@@ -272,6 +334,7 @@ function run(seed,policy,minutes,traceMiner=false) {
     localBuyerStats:s.stats.haushaltskauf[NADIR].menge,
     minerWorkDue:sum(minerCosts.map(x=>x.due)),
     minerWorkPaid:sum(minerCosts.map(x=>x.paid)),
+    ...(traceMiner?{minerDiagnostic}:{}) ,
     shortageHours:s.stats.mangel[NADIR].nahrung-initial.stats.mangel[NADIR].nahrung,
     buyerFreeAtEnd:s.owners[fund].cash,
     outstandingFood:q().food.length,outstandingIce:q().ice.length,
@@ -363,6 +426,29 @@ test('B-K12c: actual wage-funded household contribution recycles ISK before fund
         fundEnd:baseline.fundEnd,householdEnd:baseline.householdCashAtEnd,
         serviceIncome:baseline.verifiedServiceIncome},
       cofinanced:co
+    }));
+  }
+});
+
+test('B-K12d: Nadir miner cash chain and unpaid work exposed, not mistaken for genuine fund income',()=>{
+  for(const seed of [42,7]) {
+    const r=run(seed,'cofinance',10080,true),d=r.minerDiagnostic;
+    assert.equal(r.dayHashes.length,7);
+    assert(d.minerIDs.length>0);
+    assert(d.sourceSales.count>0);
+    assert.equal(d.sourceSales.ice,2*r.delivered,
+      'only actual sold ice appears in true consumed food provenance');
+    assert.equal(d.sourceSales.gross,r.inputISK,
+      'every raw-input cost credited to real miner receipts');
+    assert(d.focusCosts.due>=d.focusCosts.paid);
+    assert.equal(d.focusCosts.unpaid,d.focusCosts.due-d.focusCosts.paid);
+    assert.equal(d.fundOperating+d.allFundFees,r.verifiedServiceIncome,
+      'no unassigned source of real system-fund income');
+    assert.equal(Object.keys(d.byDay).length,7);
+    assert.equal(d.lastTwoHours.length,2);
+    console.log('BK12D_MINER_CASH_CHAIN '+JSON.stringify({
+      seed,hash:r.hash,delivered:r.delivered,realInputISK:r.inputISK,
+      realFundEnd:r.fundEnd,serviceDays:r.serviceIncomeDays,miner:d
     }));
   }
 });

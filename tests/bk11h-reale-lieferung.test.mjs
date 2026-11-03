@@ -558,6 +558,8 @@ test('B-K11i: Fonds AUS erst NACH identischer erster bezahlter Lieferung, zweite
  const min=rules.world.mindeststand,max=rules.world.fondsObergrenze;
  try{
   for(const seed of [42,7]){
+   // Gleicher erster Fonds-Aktiv-Lauf in beiden Seeds, erst danach Ausschaltung.
+   rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
    const start=snapshot(seed);
    const first=run(start.saved,seed,'bestellung',false,24,{returnSave:true});
    const afterFirstHash=first.hash;

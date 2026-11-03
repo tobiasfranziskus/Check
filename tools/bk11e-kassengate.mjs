@@ -169,6 +169,7 @@ console.log('BK11E_RESULT '+JSON.stringify({
  factories:Object.fromEntries(FACTORIES.map(id=>{
    const f=byFactory[id];return [id,{
      started:f.begun,finished:f.finished,negativeSpot:f.negativeSpot,
+     spotProfitSum:f.spotProfitSum,spotIcePriceSum:f.spotIcePriceSum,spotFoodPriceSum:f.spotFoodPriceSum,
      wageGateMissing:f.wageGateMissing,workingCapitalSpotMissing:f.workingCapitalSpotMissing,
      actualIcePurchasedISK:f.iceBoughtISK,actualFoodSoldISK:f.foodSoldISK,
      actualFoodSoldUnits:f.foodSoldUnits,realFundTransfers:f.realFundTransfers,

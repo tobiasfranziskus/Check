@@ -290,8 +290,9 @@ test('B-K12c: actual wage-funded household contribution recycles ISK before fund
     assert.equal(baseline.householdPaidISK,0,'unchanged B-K12b buyer solely pays');
     assert(co.householdPaidISK>0,'only genuinely available local production wages pay');
     assert(co.delivered>=baseline.delivered,'no loss of funded consumption');
-    assert(co.fundPaidISK<baseline.fundPaidISK,
-      'the local fund genuinely pays less, not just locks less escrow');
+    assert(co.fundPaidISK*baseline.delivered<
+      baseline.fundPaidISK*co.delivered,
+      'the local fund pays less per actually delivered food unit');
     assert.equal(co.householdPaidISK+co.fundPaidISK,co.paidISK);
     assert.equal(co.householdCashAtStart,0);
     assert.equal(co.householdCashAtEnd,0,

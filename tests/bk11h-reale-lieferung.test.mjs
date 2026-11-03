@@ -1342,6 +1342,20 @@ function bk11mVergleich(seed,saved,modus,minutes=2880){
   cfg.l11={trades:[],events:[],departures:[],firstPayroll:null,
     firstFlight:{},firstOtherFlight:{}};
   journal.length=0;
+  // B-K11n erfasst fuer alle zivilen Verbraucherstationen unabhaengig
+  // vom positiven Ergebnis einzelner NPC-Kassen die kumulierte Versorgung.
+  const consumerIds=Object.keys(rules.world.stations).filter(id=>
+    (rules.world.stations[id].verbrauch.nahrung||0)>0).sort();
+  const beforeWorld=Object.fromEntries(consumerIds.map(id=>[id,{
+    foodMissing:s.stats.mangel[id]?.nahrung||0,
+    medMissing:s.stats.mangel[id]?.medikamente||0,
+    paidNewFood:s.stats.haushaltskauf[id]?.menge||0,
+    paidISK:s.stats.haushaltskauf[id]?.isk||0,
+    hhIncome:s.stats.konto['hh_'+id]?.erloes||0,
+    foodStock:s.stations[id].lager.nahrung||0
+  }]));
+  const oldHulls=Object.values(s.ships).filter(sh=>sh.klasse==='frachter'&&
+    ['npc1','npc2'].includes(sh.owner)).map(sh=>sh.id);
   const old={
     kaufAldera:s.stats.haushaltskauf[Z].menge,
     fehlFood:s.stats.mangel[Z].nahrung,
@@ -1377,7 +1391,34 @@ function bk11mVergleich(seed,saved,modus,minutes=2880){
   const soldAldera=sales.filter(x=>x.station===Z);
   const foodAldera=soldAldera.filter(x=>x.ware==='nahrung');
   const count=x=>x.length;
-  return {seed,modus,minutes,base:initialHash,hash,released,
+  const consumerStations=Object.fromEntries(consumerIds.map(id=>[id,{
+    foodDemandPerHour:rules.world.stations[id].verbrauch.nahrung,
+    medicineDemandPerHour:rules.world.stations[id].verbrauch.medikamente||0,
+    foodShortageHours:(s.stats.mangel[id]?.nahrung||0)-beforeWorld[id].foodMissing,
+    medicineShortageHours:(s.stats.mangel[id]?.medikamente||0)-beforeWorld[id].medMissing,
+    paidNewFood:(s.stats.haushaltskauf[id]?.menge||0)-beforeWorld[id].paidNewFood,
+    paidFoodISK:(s.stats.haushaltskauf[id]?.isk||0)-beforeWorld[id].paidISK,
+    hhIncome:(s.stats.konto['hh_'+id]?.erloes||0)-beforeWorld[id].hhIncome,
+    householdCash:s.owners['hh_'+id].cash,
+    stationCash:s.owners[id].cash,
+    foodInventory:s.stations[id].lager.nahrung||0
+  }]));
+  const returnedHulls=Object.values(s.ships).filter(sh=>sh.klasse==='frachter'&&
+    ['npc1','npc2'].includes(sh.owner)).map(sh=>sh.id);
+  const lostHullIds=oldHulls.filter(id=>!returnedHulls.includes(id));
+  const newHullIds=returnedHulls.filter(id=>!oldHulls.includes(id));
+  const nConsumer=consumerIds.length;
+  const civil={stations:consumerStations,nConsumer,
+    foodShortageHours:sum(Object.values(consumerStations).map(x=>x.foodShortageHours)),
+    medShortageHours:sum(Object.values(consumerStations).map(x=>x.medicineShortageHours)),
+    totalPaidNewFood:sum(Object.values(consumerStations).map(x=>x.paidNewFood)),
+    totalPaidFoodISK:sum(Object.values(consumerStations).map(x=>x.paidFoodISK)),
+    totalHouseholdWages:sum(Object.values(consumerStations).map(x=>x.hhIncome)),
+    foodStationsWithShortage:Object.values(consumerStations).filter(x=>x.foodShortageHours>0).length,
+    foodStationsCompletelyShort:Object.values(consumerStations).filter(x=>x.foodShortageHours>=minutes/60).length,
+    lostHullIds,newHullIds
+  };
+  return {seed,modus,minutes,base:initialHash,hash,released,civil,
     routeStats:cfg.routeStats,
     npc:{npc1:s.owners.npc1.cash,npc2:s.owners.npc2.cash,
       npc1Delta:s.owners.npc1.cash-old.cashNPC1,
@@ -1424,6 +1465,55 @@ test('B-K11m: Originalroute und reale Einweg-Flugvollkosten aus identischem drit
       assert.equal(checked.system.totalMoney,50000);
       assert.equal(original.released,checked.released);
       console.log('BK11M_FULL_COST_PAIRS '+JSON.stringify({seed,original,checked}));
+    }
+  }finally{cfg.routeMode=null;cfg.routeStats=null;cfg.l11=null;cfg.accountOnly=false;
+    rules.world.mindeststand=min;rules.world.fondsObergrenze=max;}
+});
+
+
+test('B-K11n: 7 Tage Vollkosten-Route gegen Original auf ALLEN Verbraucherstationen und NPC-Krisen',()=>{
+  const min=rules.world.mindeststand,max=rules.world.fondsObergrenze;
+  const sevenDays=7*24*60;
+  try {
+    for(const seed of [42,7]){
+      cfg.routeMode=null;cfg.routeStats=null;cfg.l11=null;
+      rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+      const third=bk11kNachDrittemTeilauftrag(seed);
+      const original=bk11mVergleich(seed,third.saved,'original',sevenDays);
+      const checked=bk11mVergleich(seed,third.saved,'vollkosten',sevenDays);
+      assert.equal(original.base,third.hash);
+      assert.equal(checked.base,third.hash);
+      assert.equal(checked.released,5);
+      assert.equal(original.released,5);
+      assert.equal(original.minutes,sevenDays);
+      assert.equal(checked.minutes,sevenDays);
+      assert.equal(original.civil.nConsumer,6,
+        'sechs tatasaechliche Nahrung verbrauchende Stationen');
+      assert.equal(checked.civil.nConsumer,original.civil.nConsumer);
+      assert(checked.routeStats.abgewiesen>0);
+      for(const r of [original,checked]){
+        assert.equal(r.system.totalMoney,50000);
+        assert.equal(r.civil.totalPaidNewFood,r.system.paidNewFood);
+        assert(r.civil.foodShortageHours<=r.civil.nConsumer*sevenDays/60);
+        assert(r.civil.medShortageHours<=r.civil.nConsumer*sevenDays/60);
+        assert(r.civil.totalPaidFoodISK>=0);
+        assert(r.civil.totalHouseholdWages>=0);
+        assert(r.civil.lostHullIds.length>=0);
+      }
+      const delta={
+        foodShortageHours:checked.civil.foodShortageHours-original.civil.foodShortageHours,
+        medShortageHours:checked.civil.medShortageHours-original.civil.medShortageHours,
+        paidNewFood:checked.civil.totalPaidNewFood-original.civil.totalPaidNewFood,
+        paidFoodISK:checked.civil.totalPaidFoodISK-original.civil.totalPaidFoodISK,
+        npc1Cash:checked.npc.npc1-original.npc.npc1,
+        npc2Cash:checked.npc.npc2-original.npc.npc2,
+        alderaCash:checked.aldera.cash-original.aldera.cash,
+        alderaHouseholdCash:checked.aldera.hh-original.aldera.hh,
+        npcFreighterSales:checked.npc.salesDeals-original.npc.salesDeals,
+        lostHulls:checked.civil.lostHullIds.length-original.civil.lostHullIds.length
+      };
+      console.log('BK11N_SEVEN_DAY_SYSTEM_GATE '+JSON.stringify({
+        seed,startHash:third.hash,original,checked,delta}));
     }
   }finally{cfg.routeMode=null;cfg.routeStats=null;cfg.l11=null;cfg.accountOnly=false;
     rules.world.mindeststand=min;rules.world.fondsObergrenze=max;}

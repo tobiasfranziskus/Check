@@ -1,0 +1,64 @@
+name: Aphros Void – B-K11e kaufkraeftige Eis-Nahrung-Quellstation (Analyse)
+on:
+  pull_request:
+    paths:
+      - 'tools/bk11e-kassengate.mjs'
+      - 'tests/bk11e-kassengate.test.mjs'
+      - 'docs/ANALYSE_BK11E_KASSENGATE.md'
+      - '.github/workflows/bk11e-kassengate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: B-K11e Original-Core Cashgate Smoketest
+        run: node --test tests/bk11e-kassengate.test.mjs
+  passive13:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 13 Originalwelten je 72h mit stündlichen Audits und Cashgate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/bk11e"
+          for seed in 7 11 1 2 65535 42 1234 98765 3 99 2024 2025 314159; do
+            node tools/bk11e-kassengate.mjs --scenario=passive --seed="$seed" --days=3 --out="$RUNNER_TEMP/bk11e/passive-$seed.json"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bk11e-passive13
+          path: ${{ runner.temp }}/bk11e/*.json
+          if-no-files-found: warn
+  crisis14:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [miner, handel-flotte]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Spielerkrisen original Seed42 je 14d mit Audit und gepinntem Tag14-Hash
+        run: node tools/bk11e-kassengate.mjs --scenario=${{ matrix.scenario }} --seed=42 --days=14 --out="$RUNNER_TEMP/bk11e-${{ matrix.scenario }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bk11e-${{ matrix.scenario }}
+          path: ${{ runner.temp }}/bk11e-${{ matrix.scenario }}.json
+          if-no-files-found: warn

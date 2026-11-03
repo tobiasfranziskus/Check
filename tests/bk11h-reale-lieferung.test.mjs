@@ -82,7 +82,7 @@ function quelleTrade(state,schiff,station,ware,menge,kauf,wert){
   if(cfg.l11){
     const original=journal.at(-1);
     assert(original&&original.art==='handel'&&original.schiff===schiff.id);
-    cfg.l11.trades.push({tick:state.tick,owner:schiff.owner,
+    cfg.l11.trades.push({tick:state.tick,ship:schiff.id,owner:schiff.owner,
       klasse:schiff.klasse,station,ware,menge,kauf,wert,fee:original.fee,
       feeEmpfaenger:state.stations[station].eigentum
         ?station:rules.world.systems[state.stations[station].system].fonds});
@@ -1333,7 +1333,7 @@ test('B-K11l: erste Finanzierungssperren und echte Gegenbuchungen im wiederbeleb
 
 // B-K11m: A/B-Route aus identischem drittem Echtlieferungs-Save.
 // Eine hypothetische Planmarge wird niemals als gezahlter Umsatz ausgegeben.
-function bk11mVergleich(seed,saved,modus,minutes=2880){
+function bk11mVergleich(seed,saved,modus,minutes=2880,onlyShip=null){
   const s=core.load(saved,undefined,rules);
   const initialHash=core.hash(s);
   cfg.routeMode=modus==='vollkosten'?'vollkosten':null;
@@ -1354,6 +1354,7 @@ function bk11mVergleich(seed,saved,modus,minutes=2880){
     hhIncome:s.stats.konto['hh_'+id]?.erloes||0,
     foodStock:s.stations[id].lager.nahrung||0
   }]));
+  const initialCargo=onlyShip&&s.ships[onlyShip]?{...s.ships[onlyShip].ladung}:null;
   const oldHulls=Object.values(s.ships).filter(sh=>sh.klasse==='frachter'&&
     ['npc1','npc2'].includes(sh.owner)).map(sh=>sh.id);
   const old={
@@ -1367,8 +1368,8 @@ function bk11mVergleich(seed,saved,modus,minutes=2880){
   let released=0;
   for(const sh of Object.values(s.ships))
     if(sh.owner!=='house'&&sh.owner.startsWith('npc')&&sh.klasse==='frachter'
-      && sh.auftrag==='halten'){sh.auftrag='handeln';released++;}
-  assert.equal(released,5,'gleich viele NPC-Frachter in beiden Vergleichswelten');
+      && sh.auftrag==='halten'&&(!onlyShip||sh.id===onlyShip)){sh.auftrag='handeln';released++;}
+  assert.equal(released,onlyShip?1:5,'gleich viele echte NPC-Frachter in Vergleichswelten');
   const bankruptcy={npc1:null,npc2:null,aldera:null};
   for(let i=0;i<minutes;i++){
     core.step(s,rules);
@@ -1418,7 +1419,9 @@ function bk11mVergleich(seed,saved,modus,minutes=2880){
     foodStationsCompletelyShort:Object.values(consumerStations).filter(x=>x.foodShortageHours>=minutes/60).length,
     lostHullIds,newHullIds
   };
-  return {seed,modus,minutes,base:initialHash,hash,released,civil,
+  const isolated=onlyShip?bk11oAuswertung(onlyShip,initialCargo,cfg.l11.trades,
+    journal,cfg.l11.events,s,old):null;
+  return {seed,modus,minutes,base:initialHash,hash,released,civil,isolated,
     routeStats:cfg.routeStats,
     npc:{npc1:s.owners.npc1.cash,npc2:s.owners.npc2.cash,
       npc1Delta:s.owners.npc1.cash-old.cashNPC1,
@@ -1531,4 +1534,110 @@ test('B-K11n: 7 Tage Vollkosten-Route gegen Original auf ALLEN Verbraucherstatio
     }
   }finally{cfg.routeMode=null;cfg.routeStats=null;cfg.l11=null;cfg.accountOnly=false;
     rules.world.mindeststand=min;rules.world.fondsObergrenze=max;}
+});
+
+
+// B-K11o: Ein NPC-Haendler auf Original-Core-Rechnungen (KEIN Schatten-Geld).
+// Fuer jedes gekaufte Warenstueck verfolgen wir genau die tatsaechlich spaeter
+// verkaufte Ware (FIFO); vorhandene Anfangsladung wird nie als neue Kaufcharge
+// behauptet. Die Konzernkasse bleibt eine reale, gemeinsame Core-Kasse.
+function bk11oAuswertung(shipId,startingCargo,allTrades,allJournal,events,s,old){
+  const ship=s.ships[shipId];
+  const trades=allTrades.filter(x=>x.ship===shipId);
+  const flights=allJournal.filter(x=>x.art==='flug'&&x.schiff===shipId);
+  const name=trades[0]?.owner||ship?.owner;
+  assert(['npc1','npc2'].includes(name));
+  const initial={};
+  for(const [ware,m] of Object.entries(startingCargo||{}))
+    initial[ware]=Array.from({length:m},()=>({initial:true}));
+  const goods=new Map(Object.entries(initial));
+  const lots=[];let unmatchedSales=0,initialSales=0,matchedSaleISK=0;
+  for(const t of trades){
+    assert.equal(t.wert%t.menge,0,'Warenblock nur mit ganzzahligem Einzelpreis');
+    let queue=goods.get(t.ware);
+    if(!queue){queue=[];goods.set(t.ware,queue);}
+    if(t.kauf){
+      const lot={tickBuy:t.tick,source:t.station,ware:t.ware,
+        qty:t.menge,cost:t.wert,buyFee:t.fee,remaining:t.menge,
+        revenue:0,salesFee:0,tickLastSell:null};
+      lots.push(lot);
+      for(let i=0;i<t.menge;i++)queue.push({lot});
+    }else{
+      for(let i=0;i<t.menge;i++){
+        const unit=queue.shift();
+        if(!unit){unmatchedSales++;continue;}
+        if(unit.initial){initialSales++;continue;}
+        unit.lot.remaining--;
+        unit.lot.revenue+=t.wert/t.menge;
+        unit.lot.salesFee+=Math.floor((i+1)*t.fee/t.menge)-
+          Math.floor(i*t.fee/t.menge);
+        unit.lot.tickLastSell=t.tick;
+        matchedSaleISK+=t.wert/t.menge;
+      }
+    }
+  }
+  const complete=lots.filter(x=>x.remaining===0&&x.tickLastSell>x.tickBuy);
+  const ownerDelta=name==='npc1'?s.owners.npc1.cash-old.cashNPC1
+    :s.owners.npc2.cash-old.cashNPC2;
+  const buy=trades.filter(x=>x.kauf),sale=trades.filter(x=>!x.kauf);
+  const fee=sum(trades.map(x=>x.fee)),buyISK=sum(buy.map(x=>x.wert)),
+    sellISK=sum(sale.map(x=>x.wert)),fare=sum(flights.map(x=>x.betrag));
+  const transfer=events.filter(x=>x.art==='npc-abgabe'&&x.von===name)
+    .reduce((n,x)=>n+x.isk,0);
+  const realizedMargin=complete.reduce((n,x)=>n+x.revenue-x.cost-
+    x.buyFee-x.salesFee,0);
+  const netTrades=sellISK-buyISK-fee-fare;
+  return {ship:shipId,owner:name,initialCargo:startingCargo||{},
+    alive:!!ship,loadedAtEnd:ship?{...ship.ladung}:null,
+    buys:buy.length,sales:sale.length,flights:flights.length,
+    uniqueLots:lots.length,completeLots:complete.length,
+    completeFoodLots:complete.filter(x=>x.ware==='nahrung').length,
+    firstThreeComplete:complete.slice(0,3),
+    unsoldLots:lots.filter(x=>x.remaining>0).length,
+    unsoldBoughtUnits:sum(lots.map(x=>x.remaining)),
+    unmatchedSales,initialSales,matchedSaleISK,realizedMarginBeforeFlights:realizedMargin,
+    boughtISK:buyISK,soldISK:sellISK,feesISK:fee,flightISK:fare,
+    traderNetISK:netTrades,ownerCashDelta:ownerDelta,
+    otherCashDelta:ownerDelta-netTrades+transfer,npcLeviesISK:transfer,
+    cashFinal:s.owners[name].cash,heldReserves:bk11lOffeneReserve(s,name),
+    suppliedAlderaFood:sum(sale.filter(x=>x.station===Z&&x.ware==='nahrung').map(x=>x.menge)),
+    trueRepeatedFullyPaid:complete.length>=2&&
+      ownerDelta>=0&&transfer===0&&ownerDelta===netTrades};
+}
+
+test('B-K11o: jeden einzelnen vorhandenen NPC-Frachter ohne Kreuzsubvention aus anderen aktiven Handelsfluegen pruefen',()=>{
+  const min=rules.world.mindeststand,max=rules.world.fondsObergrenze;
+  try {
+    for(const seed of [42,7]){
+      cfg.l11=null;cfg.accountOnly=false;cfg.routeMode=null;
+      rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+      const third=bk11kNachDrittemTeilauftrag(seed);
+      const ships=['sh014','sh015','sh016','sh017','sh018'];
+      let successful=0;
+      for(const onlyShip of ships){
+        for(const mode of ['original','vollkosten']){
+          const world=bk11mVergleich(seed,third.saved,mode,2880,onlyShip);
+          assert.equal(world.released,1);
+          assert.equal(world.base,third.hash);
+          assert(world.isolated&&world.isolated.ship===onlyShip);
+          assert(world.isolated.unmatchedSales===0,
+            'Original-Core-Verkauf muss aus vorhandener Anfangsladung oder echtem Kauf kommen');
+          assert.equal(world.system.totalMoney,50000);
+          assert(world.isolated.completeLots<=world.isolated.uniqueLots);
+          if(world.isolated.trueRepeatedFullyPaid)successful++;
+          console.log('BK11O_SINGLE_SHIP '+JSON.stringify({
+            seed,mode,hash:world.hash,foodPaid:world.civil.totalPaidNewFood,
+            foodShort:world.civil.foodShortageHours,
+            alderaFood:world.isolated.suppliedAlderaFood,
+            alderaHH:world.aldera.hh,alderaStation:world.aldera.cash,
+            single:world.isolated}));
+        }
+      }
+      console.log('BK11O_SUMMARY '+JSON.stringify({
+        seed,worlds:10,positiveRepeatCandidates:successful}));
+    }
+  }finally{
+    cfg.l11=null;cfg.accountOnly=false;cfg.routeMode=null;cfg.routeStats=null;
+    rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+  }
 });

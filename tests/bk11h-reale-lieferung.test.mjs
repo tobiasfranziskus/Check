@@ -696,3 +696,57 @@ test('B-K11j: erster realer Finanzierungsgate nach zwei voll bezahlten Lieferung
     cfg.gateLog=null;rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
   }
 });
+
+test('B-K11j: aktive echte Folgelieferungen ab identischem zweitem Save bis zum ersten Kontogate',()=>{
+  const min=rules.world.mindeststand,max=rules.world.fondsObergrenze;
+  try {
+    for(const [seed,expected] of [[42,'fecad114e0b10608'],[7,'1bd24ad0814a5dc1']]){
+      cfg.gateLog=null;
+      rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+      const start=snapshot(seed);
+      const first=run(start.saved,seed,'bestellung',false,24,{returnSave:true});
+      rules.world.mindeststand=0;rules.world.fondsObergrenze=1_000_000_000;
+      const second=run(first.finalSaved,seed,'bestellung',false,24,
+        {continueTrace:true,returnSave:true,allowBlocked:true});
+      assert.equal(second.hash,expected);
+      let save=second.finalSaved;
+      const auftraege=[];
+      cfg.gateLog=[];
+      for(let lieferung=3;lieferung<=8;lieferung++){
+        const outcome=run(save,seed,'bestellung',false,24,
+          {continueTrace:true,returnSave:true,allowBlocked:true});
+        auftraege.push({
+          lieferung,blocked:!!outcome.blocked,reason:outcome.reason||null,
+          geliefert:outcome.direktAbsatzMenge||0,
+          bezahltISK:outcome.direktAbsatzISK||0,
+          quellKasse:outcome.nadirEndKasse??outcome.stationCash,
+          haushaltKasse:outcome.haushaltCashEnde??outcome.buyerCash,
+          produktionsmenge:outcome.nahrungOriginalProduziert??outcome.producedSinceFirst,
+          fondsMinimumISK:outcome.nadirFondsMindestISK??outcome.fondstransfersSinceFirst,
+          hash:outcome.hash
+        });
+        save=outcome.finalSaved;
+        if(outcome.blocked || cfg.gateLog.length)break;
+      }
+      const s=core.load(save,undefined,rules);
+      audit(s);
+      const firstGate=cfg.gateLog[0]??null;
+      assert.equal(core.hash(s),auftraege.at(-1).hash);
+      assert.equal(core.hash(core.load(core.save(s),undefined,rules)),core.hash(s));
+      console.log('BK11J_ACTIVE_CONTINUATION '+JSON.stringify({
+        seed,secondHash:expected,auftraege,firstGate,
+        nadirCash:s.owners[S].cash,
+        buyerCash:s.owners[H].cash,
+        traderCash:s.owners.house.cash,
+        minerCash:s.owners[s.ships.sh009.owner].cash,
+        fondNadir:s.owners.fonds_nadir.cash,
+        foodStock:s.stations[S].lager.nahrung,
+        saleableFood:core.verkaufbar(s,rules,S,'nahrung'),
+        finalHash:core.hash(s)
+      }));
+      cfg.gateLog=null;
+    }
+  }finally{
+    cfg.gateLog=null;rules.world.mindeststand=min;rules.world.fondsObergrenze=max;
+  }
+});

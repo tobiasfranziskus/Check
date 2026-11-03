@@ -848,6 +848,16 @@ test('B-K11j: nach abgewiesenem 24er-Auftrag echten kleineren Drittauftrag im SE
       assert.equal(e.rest,0);
       assert(core.vertrag.abschliessen(s,id));
       audit(s);
+      // Nach wirklich bezahlter kleiner Lieferung: naechster kleinster
+      // Kundenauftrag ist JETZT ebenfalls nicht gedeckt (ohne Zukunftseinkommen zu behaupten).
+      const preisEinzel=core.preis(s,Z,'nahrung',rules);
+      const restKunde=s.owners[H].cash;
+      assert(restKunde<preisEinzel,'kein einziges neues Stueck aus aktueller Haushaltskasse');
+      const vorEinzelversuch=core.hash(s);
+      assert.equal(core.vertrag.reservieren(s,H,'house',preisEinzel),null,
+        'Original-Core verweigert wirklich die naechste kleinste Reservierung');
+      assert.equal(core.hash(s),vorEinzelversuch,'fehlgeschlagene Reservierung ohne Seiteneffekt');
+      audit(s);
       const hash=core.hash(s);
       assert.equal(core.hash(core.load(core.save(s),undefined,rules)),hash);
       assert.equal(cfg.trace.nadirFondsMindestISK-second.nadirFondsMindestISK-first.nadirFondsMindestISK,0,
@@ -859,6 +869,7 @@ test('B-K11j: nach abgewiesenem 24er-Auftrag echten kleineren Drittauftrag im SE
         sourceCashBefore:source0,sourceCashAfter:s.owners[S].cash,
         traderCashBefore:trader0,traderCashAfter:s.owners.house.cash,
         buyerCashAfter:s.owners[H].cash,
+        nextSinglePrice:preisEinzel,nextSingleOrderRejected:true,
         fundNadir:s.owners.fonds_nadir.cash,
         addedFundMin:0,hash
       }));

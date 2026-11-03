@@ -65,7 +65,7 @@ test('Erzpilot ist explizit anwaehlbar und besitzt eigenen Browser-Speicher', as
   assert.match(el['pilot-mengen'].textContent, /\d+ \/ \d+/);
   const slot = 'aphros-void-erzpilot-regel15-v1';
   assert.ok(store.has(slot), 'Erzpilot-Zustand separat gespeichert');
-  assert.ok(!store.has('spielstand'), 'kein regulärer Speicher angelegt');
+  assert.ok(!store.has('slot1'), 'regulärer Spielstand-Slot unberührt');
   const stand = JSON.parse(store.get(slot));
   assert.equal(stand.rulesVersion, 15);
   assert.equal(stand.ships.sh002.owner, 'house');
@@ -87,7 +87,7 @@ test('Erzpilot verweigert inkonsistente vorhandene Daten ohne Ueberschreiben', a
 
 test('Neustart archiviert zuerst und ersetzt niemals bestehende Regel-14-Daten', async () => {
   const { elements: el, store } = startPilot();
-  store.set('aphros-void-save', 'LEGACY-UNVERAENDERT');
+  store.set('slot1', 'LEGACY-UNVERAENDERT');
   await tick();
   el['pilot-kauf'].click();
   await tick();
@@ -97,6 +97,17 @@ test('Neustart archiviert zuerst und ersetzt niemals bestehende Regel-14-Daten',
   const archive = [...store.keys()].filter((key) => key.startsWith('aphros-void-erzpilot-regel15-v1-archiv-'));
   assert.equal(archive.length, 1);
   assert.equal(store.get(archive[0]), vorher);
-  assert.equal(store.get('aphros-void-save'), 'LEGACY-UNVERAENDERT');
+  assert.equal(store.get('slot1'), 'LEGACY-UNVERAENDERT');
   assert.equal(JSON.parse(store.get('aphros-void-erzpilot-regel15-v1')).tick, 0);
+});
+
+test('Beschaedigter Pilotstand kann als Rohtext exportiert werden', async () => {
+  const kaputt = '{"schema":8,"rulesVersion":15,"test":"kaputt"}';
+  const { elements: el, downloads, store } = startPilot(kaputt);
+  await tick();
+  el['pilot-datei'].click();
+  assert.equal(downloads.length, 1);
+  assert.equal(downloads[0].text, kaputt);
+  assert.equal(downloads[0].name, 'aphros-erzpilot-regel15-beschaedigt.json');
+  assert.equal(store.get('aphros-void-erzpilot-regel15-v1'), kaputt);
 });

@@ -44,6 +44,9 @@ function run(seed,policy,minutes) {
   const q=()=>m.api.sourceTrace();
   const fees=()=>m.log.payments.filter(x=>x.kind==='fee'&&x.to===fund);
   const feeIncome=()=>sum(fees().map(x=>x.isk));
+  const actualServiceIncome=()=>sum(fundPhaseFlow.filter(x=>x.delta>0&&
+    ['foerderung','betriebskosten'].includes(x.phase)).map(x=>x.delta));
+  const postFirstActualCost=()=>sum(deliveries.slice(1).map(x=>x.cost));
   const totalPaid=()=>sum(deliveries.map(x=>x.cost));
   const allOrders=()=>orders.length;
   // Genuine escrow: a real, conserved R15 contract, locked BEFORE either
@@ -55,6 +58,13 @@ function run(seed,policy,minutes) {
     if(policy==='earned-only'&&allOrders()>0&&feeIncome()-feeUsed<budget) {
       if(rejections.length<20)rejections.push({tick:s.tick,reason:'no verified new fee income',
         feeIncome:feeIncome(),feeUsed,budget,freeCash:s.owners[fund].cash});
+      return;
+    }
+    if(policy==='earned-all'&&allOrders()>0&&
+      actualServiceIncome()-postFirstActualCost()<budget) {
+      if(rejections.length<20)rejections.push({tick:s.tick,reason:'no verified remaining service-income budget',
+        actualServiceIncome:actualServiceIncome(),spentAfterFirst:postFirstActualCost(),budget,
+        freeCash:s.owners[fund].cash});
       return;
     }
     const opening=s.owners[fund].cash;
@@ -188,6 +198,8 @@ function run(seed,policy,minutes) {
     wageISK:sum(deliveries.map(x=>x.wageISK)),
     consumerSpotReferenceISK:sum(deliveries.map(x=>x.spot)),
     feeIncome:feeIncome(),feeEvents:feeRows.length,
+    verifiedServiceIncome:actualServiceIncome(),
+    actualCostsAfterFirst:postFirstActualCost(),
     otherFundChanges:capital(s)[fund]-openingFund+totalPaid()-feeIncome(),
     fundNetByDay:phaseByDay,
     minerWorkDue:sum(minerCosts.map(x=>x.due)),
@@ -215,7 +227,7 @@ test('B-K12b: first funded food order precedes raw ice acquisition and actual pa
   }
 });
 test('B-K12b: two seven-day worlds separate inherited cash from recurring earned buyer income',()=>{
-  for(const seed of [42,7])for(const policy of ['stock','earned-only']){
+  for(const seed of [42,7])for(const policy of ['stock','earned-only','earned-all']){
     const r=run(seed,policy,10080);
     assert.equal(r.dayHashes.length,7);
     assert(r.delivered>0);
@@ -225,6 +237,10 @@ test('B-K12b: two seven-day worlds separate inherited cash from recurring earned
         'no second 128-ISK reserve justified by actually earned trading fees');
       assert(r.feeIncome<68,
         'even the actual first-lot cost exceeds the proven new fee revenue');
+    } else if(policy==='earned-all') {
+      assert(r.delivered>1,'genuinely paid original service receipts can fund some repeat orders');
+      assert(r.actualCostsAfterFirst<=r.verifiedServiceIncome,
+        'all subsequent paid lots must be backed by truly received service transfers');
     } else assert(r.delivered>1,'inherited fund cash can fund repeated real purchases');
     console.log('BK12B_SEVEN_DAYS '+JSON.stringify(r));
   }

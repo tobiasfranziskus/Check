@@ -1,0 +1,21 @@
+name: Aphros Void – B-K11h echte R15-Einzelcharge, Verlust und Wiederbuchung (Analyse)
+on:
+  pull_request:
+    paths:
+      - 'tests/bk11h-reale-lieferung.test.mjs'
+      - 'docs/ANALYSE_BK11H_REALER_AUFTRAG.md'
+      - '.github/workflows/bk11h-realauftrag.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  echter-einzelauftrag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original-Core R15 Test-only: echte Lieferung, bezahlte Arbeit und Verlust
+        run: node --test tests/bk11h-reale-lieferung.test.mjs

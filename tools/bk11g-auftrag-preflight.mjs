@@ -118,7 +118,7 @@ export function quote(state,qty=8,{trader='house'}={}){
 function sum(a){return Object.values(a).reduce((n,b)=>n+b,0);}
 export function claims(state){
  const originalHash=core.hash(state),originalSupply=state.initialSupply+state.minted-state.burned;
- const reservedMoney={},reservedIce={ [sourceStation]:0},orders=new Map();
+ const reservedMoney={},reservedIce={ [sourceStation]:0},reservedOutput={ [sourceStation]:0, [buyerStation]:0},orders=new Map();
  let nextId=1;
  const availableMoney=id=>(state.owners[id]?.cash??0)-(reservedMoney[id]||0);
  const iceAvailable=()=> (state.stations[sourceStation].lager.eis||0)-reservedIce[sourceStation];
@@ -130,6 +130,10 @@ export function claims(state){
    }
    assert(Number.isSafeInteger(reservedIce[sourceStation]));
    assert(iceAvailable()>=0);
+   for(const id of [sourceStation,buyerStation])
+     assert(reservedOutput[id]>=0&&
+       (state.stations[id].lager.nahrung||0)+reservedOutput[id] <= core.obergrenze(state,rules,id,'nahrung'),
+       'kein mehrfach an verschiedene Auftraege verkaufter Produktions-/Ankunfts-Lagerplatz');
    const cashFromClaims={},iceFromClaims={};
    for(const o of orders.values()){
      if(o.status!=='reserviert')continue;
@@ -140,6 +144,10 @@ export function claims(state){
    for(const [id,amount]of Object.entries(reservedMoney))
      assert.equal(amount,cashFromClaims[id]||0,'kein doppeltes Geld-Claim '+id);
    assert.equal(reservedIce[sourceStation],iceFromClaims[sourceStation]||0);
+   for(const station of [sourceStation,buyerStation])
+     assert.equal(reservedOutput[station],
+       [...orders.values()].filter(o=>o.status==='reserviert')
+         .reduce((n,o)=>n+o.qty,0));
  }
  function reserve(spec){
    check();
@@ -148,14 +156,19 @@ export function claims(state){
      .filter(([id,amount])=>amount>availableMoney(id))
      .map(([id,amount])=>({owner:id,available:availableMoney(id),needed:amount}));
    const physical=iceAvailable()<q.requiredIce;
-   if(q.blockers.some(x=>!x.startsWith('ISKfehlen:'))||absent.length||physical)
-     return {ok:false,missingCash:absent,missingIce:physical,blockers:q.blockers};
+   const output=[sourceStation,buyerStation].some(id=>
+     (state.stations[id].lager.nahrung||0)+reservedOutput[id]+q.qty >
+       core.obergrenze(state,rules,id,'nahrung'));
+   if(q.blockers.some(x=>!x.startsWith('ISKfehlen:'))||absent.length||physical||output)
+     return {ok:false,missingCash:absent,missingIce:physical,missingOutputCapacity:output,blockers:q.blockers};
    const id='analyse-'+String(nextId++).padStart(4,'0');
    const order={id,qty:q.qty,trader:q.trader,money:q.requiredCash,ice:q.requiredIce,
      status:'reserviert',worldTick:state.tick,worldHash:originalHash};
    for(const [owner,amount]of Object.entries(order.money))
      reservedMoney[owner]=(reservedMoney[owner]||0)+amount;
-   reservedIce[sourceStation]+=order.ice;orders.set(id,order);
+   reservedIce[sourceStation]+=order.ice;
+   reservedOutput[sourceStation]+=q.qty;reservedOutput[buyerStation]+=q.qty;
+   orders.set(id,order);
    check();return {ok:true,id,order:JSON.parse(JSON.stringify(order))};
  }
  function cancel(id){
@@ -164,10 +177,16 @@ export function claims(state){
    o.status='storniert';
    for(const [owner,amount]of Object.entries(o.money))reservedMoney[owner]-=amount;
    reservedIce[sourceStation]-=o.ice;
+   reservedOutput[sourceStation]-=o.qty;reservedOutput[buyerStation]-=o.qty;
    check();return true;
  }
  function inspect(){check();return {worldHash:originalHash,worldTick:state.tick,
-   supply:originalSupply,material:{reserved:reservedIce[sourceStation],free:iceAvailable()},
+   supply:originalSupply,
+   material:{reserved:reservedIce[sourceStation],free:iceAvailable()},
+   outputCapacity:{sourceFree:core.obergrenze(state,rules,sourceStation,'nahrung')-
+     (state.stations[sourceStation].lager.nahrung||0)-reservedOutput[sourceStation],
+     destinationFree:core.obergrenze(state,rules,buyerStation,'nahrung')-
+     (state.stations[buyerStation].lager.nahrung||0)-reservedOutput[buyerStation]},
    money:{reserved:{...reservedMoney},
      free:Object.fromEntries(Object.keys(reservedMoney).map(id=>[id,availableMoney(id)]))},
    orders:[...orders.values()].map(o=>JSON.parse(JSON.stringify(o)))};}

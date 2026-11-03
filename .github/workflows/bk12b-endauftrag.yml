@@ -1,0 +1,23 @@
+name: Aphros Void – B-K12b vorfinanzierte Endabnahme (Analyse)
+on:
+  pull_request:
+    paths:
+      - 'tests/bk12b-vorfinanzierter-endauftrag.test.mjs'
+      - 'tests/lib/bk12-analyse.mjs'
+      - 'tests/fixtures/bk11h-r15-core-snapshot.txt'
+      - 'docs/ANALYSE_BK12B_VORFINANZIERTE_ENDABNAHME.md'
+      - '.github/workflows/bk12b-endauftrag.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  endabnahme:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Echter Endabnahme-Escrow, FIFO, wiederkehrender Käufercash, Core-Audit und Save-Load
+        run: node --test --experimental-test-isolation=none tests/bk12b-vorfinanzierter-endauftrag.test.mjs

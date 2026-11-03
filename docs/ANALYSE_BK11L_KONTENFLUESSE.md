@@ -48,10 +48,12 @@ Das Geld der neuen Aldera-Kaufkraft stammt damit real aus **dem vorhandenen Stat
 Anschließend sind auch echte Händler-Finanzierungssperren beobachtbar, von bloß betriebsbedingten Fahrtstart-Ablehnungen getrennt:
 
 - Seed42 NPC2 **Tick4801**: beladener Frachter `sh018` mit **12 Material** in Cyris will nach Meridian, benötigt **125 ISK Fahrtreserve**, Eigentümer hat **25 ISK**. **100 ISK fehlen**; keinerlei kostenlose Fahrt.
-- Seed42 NPC1 **Tick5161**: Frachter `sh017` in Meridian, freie Kasse **178 ISK**, Fahrtreserve **125 ISK**, erster Material-/Bauteilkauf hier `bauteil` **103 ISK pro Stück**. Schon nach Flugreserve verbleiben **53 ISK**, die erste Einheit ist im Original-Core-Preflight nicht finanzierbar (ohne Marktgebühr).
+- Seed42 NPC1 **Tick5161**: Frachter `sh017` in Meridian, freie Kasse **178 ISK**, Fahrtreserve **125 ISK**, möglicher Kauf der Ware `bauteil` **103 ISK pro Stück**. Schon nach Flugreserve verbleiben **53 ISK**, die erste Einheit ist im Original-Core-Preflight nicht finanzierbar (ohne Marktgebühr).
 - Seed7 NPC1 **Tick5101**: Frachter `sh057` in Veldra, Kasse **127 ISK**, Fahrtreserve **125 ISK**, Material **29 ISK je Einheit**: nach Flugreserve nur **2 ISK** übrig.
 
-**Wichtige Negativkontrolle:** Ein fehlgeschlagener `fahrtStart` bei Tick3979/3981 wird **ausdrücklich nicht** als Liquiditätskrise gewertet: Die vorherige Fahrt ist noch nicht vollständig abgerechnet (`schiff.arbeit > 0` / `schiff.vertrag` offen), obwohl genügend ISK vorhanden sind. Ebenso darf bei noch offenem Vertrag keine bloße zu niedrige Kasse als *isolierter* Finanzierungsgrund etikettiert werden. Bei Seed7 wird deshalb für NPC2 aus der ersten gemischten Ablehnung **kein alleiniger Geldmangel nachgewiesen**.
+- Seed7 NPC2 **Tick6001**: Frachter `sh016` ist nach tatsächlichem Abschluss der vorherigen Fahrt wieder abflugbereit. In Dravos sollen Erz und 200 ISK Flugreserve für Meridian finanziert werden; Kasse **65 ISK**, **135 ISK fehlen allein für den Flug**. Der frühere Versuch bei Tick5989 war wegen noch gebundener Vorfahrt **kein isolierter Geldmangel**.
+
+**Wichtige Negativkontrolle:** Ein fehlgeschlagener `fahrtStart` bei Tick3979/3981 wird **ausdrücklich nicht** als Liquiditätskrise gewertet: Die vorherige Fahrt ist noch nicht vollständig abgerechnet (`schiff.arbeit > 0` / `schiff.vertrag` offen), obwohl genügend ISK vorhanden sind. Ebenso darf bei noch offenem Vertrag keine bloße zu niedrige Kasse als *isolierter* Finanzierungsgrund etikettiert werden. Bei Seed7 ergibt erst die spätere tatsächlich abflugbereite, aber finanziell blockierte Entscheidung bei **Tick6001** einen solchen Nachweis.
 
 ## [TEST] Beladene vs. leere Fahrtkosten
 
@@ -67,7 +69,7 @@ Aus dem Original-Core-`abflug` wird jede tatsächlich begonnene Route mit neuer 
 
 **Vorherrschende Verlustursache ist in diesen vier Fällen NICHT die zufällige Leerpositionierung, sondern die bezahlte Arbeit auch der beladenen Transporte.** Das erklärt, warum ein bloßes Verbot leerer Flüge diesen Handel nicht tragfähig macht.
 
-**Beleg am unveränderten Core:** `m_core_haendler.bestesPaar` (Bezeichnung des entsprechenden internen Handelsalgorithmus im Original) bewertet `gewinn = menge * (pDort - pHier) - gebuehrQuell - gebuehrZiel`, **ohne die echte Fahrtkostenreserve**. `besterAbsatz` bewertet ebenfalls potenzielle Verkaufserlöse/Marktgebühren, nicht den zusätzlichen Flugaufwand. Der spätere R15-`abflug` verlangt zwar die **reale** Fahrtkostenreserve und rechnet sie wirklich ab, seine Wahlentscheidung wurde aber bereits anhand eines unvollständigen Deckungsbeitrags getroffen. **Positiver Marktgewinn der Route ≠ positiver betrieblicher Gewinn nach Flugkosten.** Dies ist eine begründete Ursache für den beobachteten Geldverlust, noch **keine Freigabe** einer neuen Handelsstrategie.
+**Beleg am unveränderten Core:** `m_core_entscheidung.bestesPaar` bewertet `gewinn = menge * (pDort - pHier) - gebuehrQuell - gebuehrZiel`, **ohne die echte Fahrtkostenreserve**. `besterAbsatz` bewertet ebenfalls potenzielle Verkaufserlöse/Marktgebühren, nicht den zusätzlichen Flugaufwand. Der spätere R15-`abflug` verlangt zwar die **reale** Fahrtkostenreserve und rechnet sie wirklich ab, seine Wahlentscheidung wurde aber bereits anhand eines unvollständigen Deckungsbeitrags getroffen. **Positiver Marktgewinn der Route ≠ positiver betrieblicher Gewinn nach Flugkosten.** Dies ist eine begründete Ursache für den beobachteten Geldverlust, noch **keine Freigabe** einer neuen Handelsstrategie.
 
 ## [TEST] Regionalfonds – kein verschwundenes Geld
 
@@ -86,7 +88,7 @@ Die Fonds nehmen tatsächlich Gebühren, Fahrkosten, laufende Miner-Betriebskost
 
 ## Prüfstatus und Grenzen
 
-**[TEST]** Gezielte GitHub-CI der Instrumentierungsstufen [#41664863190](https://github.com/tobiasfranziskus/Check/actions/runs/41664863190) und [#41665044137](https://github.com/tobiasfranziskus/Check/actions/runs/41665044137): **11/11 Node-Tests, 0 fehlgeschlagen**, Seeds42/7 × 48h, echte Geld-/Waren-/Herkunftsaudits, Save/Load und feste historische B-K11j/k-Hashes; hier gezeigte Grunddaten und Fahrkostensummen ausgeführt. Die letzte verschärfte Prüfung mit **0 ungeklärten Kassen-Salden** und genauer Finanzierungsgate-Abgrenzung ist gesondert gegen neueste CI zu prüfen.
+**[TEST]** Gezielte GitHub-CI der Instrumentierungsstufen [#41664863190](https://github.com/tobiasfranziskus/Check/actions/runs/41664863190) und [#41665044137](https://github.com/tobiasfranziskus/Check/actions/runs/41665044137): **11/11 Node-Tests, 0 fehlgeschlagen**, Seeds42/7 × 48h, echte Geld-/Waren-/Herkunftsaudits, Save/Load und feste historische B-K11j/k-Hashes; hier gezeigte Grunddaten und Fahrkostensummen ausgeführt. Die verschärfte Prüfung [#41665282421](https://github.com/tobiasfranziskus/Check/actions/runs/41665282421) hat **11/11 Tests bestanden**: für **alle sieben überprüften Kassen in beiden Seeds 0 ISK ungeklärte Geldflüsse** und exakt die gemeldeten Aldera- und echten Frachter-Finanzierungsblockaden. Spätere Dokumentationsheads sind getrennt in CI zu prüfen.
 
 Die am Tick3960 reaktivierten NPC-Frachter stammen aus **einer künstlich isolierten Einzelauftragswelt**; kein natürlicher NPC-Handel von Beginn an, kein automatischer Beweis für 13×90d-Langzeitstabilität, Schiffswiederaufbau, Weltgeld-Balancing, produktive R15-/Schema9-Save-Migration oder reale iPad-/NAS-Abnahme.
 

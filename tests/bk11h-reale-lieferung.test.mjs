@@ -936,7 +936,8 @@ function bk11kKontopfad(save,seed,freigabe,minuten=2880){
   }
   const startMenge=s.stats.haushaltskauf[Z].menge;
   const startSupply=s.initialSupply+s.minted-s.burned;
-  const baselineShips=Object.fromEntries(Object.values(s.ships).map(sh=>[sh.id,sh.owner]));
+  const startMinted=s.minted,startBurned=s.burned;
+  const baselineShips=Object.fromEntries(Object.values(s.ships).map(sh=>[sh.id,{owner:sh.owner,klasse:sh.klasse}]));
   cfg.accountOnly=true;cfg.mode=null;cfg.ship=null;cfg.order=null;cfg.gateLog=null;
   journal.length=0;
   let released=0;
@@ -974,10 +975,14 @@ function bk11kKontopfad(save,seed,freigabe,minuten=2880){
       erloese:k.erloes-before[id].erloes,kosten:k.kosten-before[id].kosten};
     assert.equal(konten[id].ende,konten[id].anfang+konten[id].delta);
   }
-  const tradelist=journal.filter(x=>x.art==='handel'&&baselineShips[x.schiff]?.startsWith('npc'));
-  const npcSales=tradelist.filter(x=>!x.kauf);
-  const npcBuys=tradelist.filter(x=>x.kauf);
-  const traderMoves=journal.filter(x=>x.art==='flug'&&baselineShips[x.schiff]?.startsWith('npc'));
+  const handelFrachter=journal.filter(x=>x.art==='handel' &&
+    baselineShips[x.schiff]?.owner.startsWith('npc')&&baselineShips[x.schiff]?.klasse==='frachter');
+  const npcSales=handelFrachter.filter(x=>!x.kauf);
+  const npcBuys=handelFrachter.filter(x=>x.kauf);
+  const npcMinerSales=journal.filter(x=>x.art==='handel'&&!x.kauf &&
+    baselineShips[x.schiff]?.owner.startsWith('npc')&&baselineShips[x.schiff]?.klasse==='miner');
+  const traderMoves=journal.filter(x=>x.art==='flug'&&
+    baselineShips[x.schiff]?.owner.startsWith('npc')&&baselineShips[x.schiff]?.klasse==='frachter');
   const hash=core.hash(s),saved=core.save(s);
   assert.equal(core.hash(core.load(saved,undefined,rules)),hash);
   return {seed,freigabe,baseline:startHash,released,
@@ -986,13 +991,13 @@ function bk11kKontopfad(save,seed,freigabe,minuten=2880){
     station_aldera:konten[Z],station_nadir:konten[S],
     spieler:konten.house,npc1:konten.npc1,npc2:konten.npc2,npc3:konten.npc3,
     fonds_aldera:konten.fonds_aldera,fonds_nadir:konten.fonds_nadir,
-    ncTradeBuys:npcBuys.length,ncTradeSales:npcSales.length,
-    ncFlights:traderMoves.length,
+    npcFreighterBuys:npcBuys.length,npcFreighterSales:npcSales.length,
+    npcMinerSales:npcMinerSales.length,npcFreighterFlights:traderMoves.length,
     foodConsumedAldera:s.stats.haushaltskauf[Z].menge-startMenge,
     priceFood:core.preis(s,Z,'nahrung',rules),
     liquid:s.owners[H].cash,
     totalMoneyBefore:startSupply,totalMoneyAfter:s.initialSupply+s.minted-s.burned,
-    mintedDelta:s.minted, burnedDelta:s.burned,
+    mintedDelta:s.minted-startMinted,burnedDelta:s.burned-startBurned,
     hash};
 }
 
@@ -1015,6 +1020,22 @@ test('B-K11k: tatsaechliche Haushaltslohn-Konten und bestehende NPC-Handelswege 
       assert(still.HH_nadir.anfang===npc.HH_nadir.anfang);
       assert(still.HH_aldera.anfang<54);
       assert(still.HH_nadir.anfang>1000);
+      assert.equal(still.npcFreighterBuys,0);
+      assert.equal(still.npcFreighterSales,0);
+      assert(npc.npcFreighterBuys>0&&npc.npcFreighterSales>0);
+      assert.equal(still.HH_aldera.erloese,0,'ohne NPC-Lieferung kein neuer Aldera-Lohn');
+      assert(npc.HH_aldera.erloese>0,'neue reale Aldera-Produktion ist von Station bezahlt');
+      assert(npc.HH_aldera.delta>0,'lokale Kaufkraft kommt durch reale Lohngeschaefte');
+      assert(npc.firstEarned!==null&&npc.firstAble!==null);
+      assert(npc.firstFull!==null,'24er Auftragsbudget nach bezahlter lokaler Produktion moeglich');
+      assert(npc.station_aldera.ende<10,'Aldera-Station finanziert Lohn und laeuft fast leer');
+      assert(npc.npc1.ende<150&&npc.npc2.ende<150,
+        'wiederbelebter NPC-Handel kostet den beiden Haendlerkonzernen Liquiditaet');
+      const reference=seed===42
+        ?{held:'39a8ef0e72def48d',npc:'0d47d35f43f1bac6'}
+        :{held:'cc55753322483e85',npc:'e18524faeb778a7c'};
+      assert.equal(still.hash,reference.held,'Kontrollhash aus ausgefuehrtem R15-Kontolauf');
+      assert.equal(npc.hash,reference.npc,'NPC-Gegenhash aus ausgefuehrtem R15-Kontolauf');
       console.log('BK11K_ACCOUNT_FLOW '+JSON.stringify({seed,startHash:start.hash,
         still,npc,deltaHHAldera:npc.HH_aldera.delta-still.HH_aldera.delta,
         deltaHHNadir:npc.HH_nadir.delta-still.HH_nadir.delta}));

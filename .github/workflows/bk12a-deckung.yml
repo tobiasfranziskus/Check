@@ -1,0 +1,22 @@
+name: Aphros Void – B-K12a lokale Vollkostendeckung (Analyse)
+on:
+  pull_request:
+    paths:
+      - 'tests/bk12a-deckung-und-kaufkraft.test.mjs'
+      - 'tests/lib/bk12-analyse.mjs'
+      - 'tests/fixtures/bk11h-r15-core-snapshot.txt'
+      - '.github/workflows/bk12a-deckung.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lokale-vollkostendeckung:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Echtes Nadir-Mikrolos, Kaufkraft, Fondsbudget, Save und Geld-/Warenaudit
+        run: node --test --experimental-test-isolation=none tests/bk12a-deckung-und-kaufkraft.test.mjs

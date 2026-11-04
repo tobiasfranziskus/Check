@@ -1,5 +1,19 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W1 – bezahlte Miner-Vollkosten, Stationsliquidität und Amortisation · 04.11.2026
+
+**[MAIN]** `b4e604d6` unverändert. **[DRAFT]** [PR #161](https://github.com/tobiasfranziskus/Check/pull/161) erweitert im bestehenden Core die *rein lesende* Prüffunktion `pilotWirtschaftsStand` und den W1-Audit um tatsächliche Kassenüberschüsse beider Miner-Konzerne, Kosten einschließlich vollständig bezahlter Minerhüllen, noch gebundenes Arbeits-/Abnahmegeld, Stationsliquidität, Fonds-Einnahmen und stationären Erzbestand. Der Bericht erzeugt weder neue Geldflüsse noch Produktionsrezepte oder Spielstandsfelder.
+
+**[GEMESSEN]** Seed42, Spieler und NPC kaufen je einen Miner und fördern parallel: je 10.500 ISK vereinnahmte Erzverkäufe, 2.100 ISK tatsächliche Förderarbeit, 600 ISK Schiffanschaffung; **je +7.800 ISK** Überschuss nach beiden Kostenblöcken. Ein Miner benötigt bei 10 ISK Verkaufspreis und 2 ISK Miningkosten rechnerisch **75 verkaufte Erz** bis zur Amortisation. Die Station erwirbt 2.100 Erz für 21.000 ISK, exportiert 2.000 für 20.000 und hält 100 Erz (kalkulatorisch 1.000 ISK Warenwert, **kein freies Geld**); ihre Liquidität sinkt um 1.000 ISK auf 0. Endkäuferkasse ebenfalls 0, Gesamtbestand 27.000 ISK. Das ist ein **positiver, aber endlicher Miner-Cashflow**, keine wirtschaftliche Dauerschleife.
+
+**[NEUER AUDIT]** Für beide Firmen, Station, Verkäufer und Endkäufer wird `anfängliche Kasse + Erlöse − bezahlte Kosten = freie Kasse + noch gebundene Mittel` unabhängig gegen die echten Stats-Gegenkonten geprüft. Mining-Löhne müssen exakt dem Systemfonds-Zuwachs entsprechen, Schiffkäufe exakt den Einnahmen des Verkäufers, Stationskäufe/Exporte den realen Warenbewegungen. Fehlbuchungen werden auch bei erhaltener Gesamt-ISK-Summe erkannt; solche manipulierten Daten dürfen nicht importiert werden. Ältere Krisentests, die mit manuellen Umbuchungen arbeiten, prüfen jetzt korrekt **nur** deren ISK-Erhaltung, nicht einen tatsächlich gebuchten Geldfluss.
+
+**[TEST]** [CI #41785898616](https://github.com/tobiasfranziskus/Check/actions/runs/41785898616): **97 von 97 Node-Tests bestanden**, inklusive der bisherigen 13 Seeds × 90 Tage und zusätzlich unabhängiger Vollkostenrechnung an allen 1.170 Tagesgrenzen, Manipulationskontrolle, Save/Load und Hash-Referenz Regel14 (`866776f7d84ef15e`). Die zusätzlichen historischen CI-Referenzjobs waren bei der letzten Prüfung noch nicht abgeschlossen. **Keine iPad-Safari-/NAS-Abnahme; kein Merge nach main.**
+
+**[NÄCHSTE STUFE]** W1-Wirtschaftsrechnung als **endlichen, finanzierten** Piloten abnehmen; W2-Konkurrenz/Unternehmenskassen mit echten Kaufentscheidungen vorbereiten. Das langfristige Endkunden-Budget bleibt offen bis echte materielle Verwendungen (W4/W5) und separat beschlossene Geldregeln. Keine automatische Auffüllung aus Fonds oder Konzernvermögen.
+
+---
+
 ## [DRAFT] W1 – Endabnahme-Kassenherkunft unabhängig auditiert · 04.11.2026
 
 **[MAIN]** `b4e604d6` unverändert. **[DRAFT]** [PR #161](https://github.com/tobiasfranziskus/Check/pull/161) ergänzt eine read-only Finanzierungsprüfung des Regel-15-Exportkäufers: Die anfänglichen 20.000 ISK müssen zu jedem Tick exakt der verbleibenden Käuferkasse plus den tatsächlich gebuchten und bezahlten Erzexporten entsprechen. Jede zusätzliche, nicht über einen bewilligten echten Käufererlös belegte Einzahlung wird als `finanzierung.differenz` kenntlich; der Gesamt-Audit wird rot, selbst bei ansonsten ausgeglichener Geld-/Warenbilanz. Der Regel-14-Pfad bleibt unverändert. Spielstandsimporte mit dieser Abweichung werden zurückgewiesen.

@@ -122,8 +122,15 @@ test('W4: Reale Fracht- und Raffinerie-Umsaetze bleiben im selben Save begrenzt'
   assert.equal(api.hash(s),before);
   // Auch die zweite Fracht muss erst aus weiteren echten NPC-Foerderminuten
   // stammen; es gibt keine automatisch nachgefuellte Erzcharge.
-  if(s.stations.st_aldera.lager.erz<50) api.advance(s,50,r);
-  assert.ok(s.stations.st_aldera.lager.erz>=50);
+  // Der Exportkunde kann frisch gefoerdertes Quellerz stündlich abholen:
+  // den echten Bestand minütlich beobachten statt einen 50-Minuten-Sprung
+  // fälschlich mit garantiertem Lagerbestand gleichzusetzen.
+  let warteminuten=0;
+  while(s.stations.st_aldera.lager.erz<50 && warteminuten<240){
+    api.advance(s,1,r);warteminuten++;
+  }
+  assert.ok(s.stations.st_aldera.lager.erz>=50,
+    'zweiter Frachtvertrag wartet auf tatsächlich vorhandenes, von Minern bezahltes Erz');
   const next=api.execute(s,{type:'shipFreight',owner:'transport',schiff:carrier.id},r);
   assert.equal(next.ok,true,next.reason);
   api.advance(s,120,r);

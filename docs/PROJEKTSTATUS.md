@@ -1,5 +1,20 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W5a – materialgebundener Werftauftrag und realer Frachterverkauf · 04.11.2026
+
+**[MAIN]** `b4e604d6`, Regel14/Schema8 unverändert. **[DRAFT]** [PR #170](https://github.com/tobiasfranziskus/Check/pull/170) auf W4 #169, eigene Regel19-Welt. Keine Produktionsfreigabe oder Veröffentlichung.
+
+**[PRODUKTFORTSCHRITT]** W0/W1 Bergbau → W2 NPC-Investition → W3 reale vorfinanzierte Frachtroute → W4 echte Erzraffinerie → **W5 erstmals physischer Schiffbau**. Die vorhandene externe Werft `werft_extern` verwendet reale Einnahmen aus bezahlten Miner-/Frachterverkäufen; sie zahlt der Station Nadir 500 ISK für 5 tatsächlich vorhandene Materialeinheiten und hinterlegt 30 ISK für Arbeitskraft. Nach 30 Core-Minuten werden 30 ISK an die Werftarbeit ausgezahlt und genau **ein Frachter** dem Nadir-Lager hinzugefügt (`ledger.frachter.produced += 1`). Der separate Verkauf für 750 ISK entfernt die Ware aus dem Lager, bucht sie als in Dienst gestellten Frachter und erstellt eine eindeutige Schiff-ID im Besitz der zahlenden Spedition. Der neue Frachter befindet sich **noch in Nadir**; es gibt keinen unfinanzierten Transfer nach Aldera. Kein zweiter Kern, kein neuer Zeitgeber, keine neue ISK-Summe; `initialSupply = 33.000`.
+
+**[RELEVANTER GELDRÜCKFLUSS]** Die bisher allein zahlende Station Nadir erhält durch den echten Materialverkauf 500 ISK zusätzliche **verbuchte** Kaufkraft. W3-/W4-Audits prüfen `anfängliche Kasse − Waren/Frachtkosten − Raffineriearbeit + Materialerlöse = neue Kasse`. W5 prüft unabhängig Werftkosten/-erlöse, physisches und verbrauchtes Material, 30 Minuten Treuhandlohn, fertige und verkaufte Frachter sowie die Eigentümer-IDs. Dieser Vorgang ist ein kleiner geschlossener **Teilkreislauf**, nicht schon eine dauerhaft selbstfinanzierte Gesamtwirtschaft.
+
+**[UI/SPEICHERSCHUTZ]** `?modus=w5werft` und `?modus=w5konten` nutzen denselben Core sowie `aphros-void-w5-regel19-v1`; die bisherigen Speicherplätze `slot1` und Regel15–18 bleiben unberührt, kein stiller Import inkompatibler Regeln. Browser-/Spielstandstests ergänzen die W0–W4-Regressionen. Echte iPad-Safari-/NAS-Abnahme auf Wunsch verschoben.
+
+**[PRÜFGATE]** W5-Tests einschließlich voller Zahlungskette, 13 Seeds ×90 Tagen, unabhängigen Manipulations- und Save-/Load-Prüfungen; CI erst nach Abschluss als bestanden bezeichnen. W5-Modulbau, Lieferung/Überführung des gebauten Schiffes und nachhaltiger W6-Nachfragekreis sind **offen**. Kein Merge, kein Deployment.
+
+---
+
+
 ## [DRAFT] W4 – Raffinerie in Nadir, nur bezahlte Materialproduktion · 04.11.2026
 
 **[MAIN]** `b4e604d6`, Regel14/Schema8 unverändert. **[DRAFT]** [PR #169](https://github.com/tobiasfranziskus/Check/pull/169) auf W3 #168; isolierter Regel18-Core und neue Pilot-UI. W1-Erzförderung, W2-NPC-Investitionen und W3-Erzfrachter verwenden weiterhin denselben Core-Tick; keine eigene Raffinerie-Uhr.

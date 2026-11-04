@@ -1,5 +1,17 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] W2-Konzernstatus auf dem aktuellen W5-Gesamtstand · 04.11.2026
+
+**Basis:** Der W0–W5-Forschungsstack bis Draft [#170](https://github.com/tobiasfranziskus/Check/pull/170) wird nicht dupliziert. Ein klein gehaltener **Folge-Draft** ergänzt einen *rein lesenden* Firmenstatus für die zwei Bergbaukonzerne in den Forschungsversionen Regel16–19. Keine Änderung an Preisen, Arbeitsregeln, NPC-Investitionen, Transport, Raffinerie, Schiffproduktion oder Hauptspiel-Regel14.
+
+Für jeden Konzern werden **freie Kasse**, separat gebundenes **bereits bezahltes Arbeitskapital**, tatsächlich gebuchte Einnahmen und Kosten sowie der zahlungswirksame Saldo gezeigt. Unabhängiger Abgleich: `Anfangsgeld + gebuchte Einnahmen − gebuchte Kosten = freies Kapital + noch gebundene Arbeits-ISK`. Offen finanzierte Arbeitsminuten müssen exakt zur realen Arbeits-Treuhand passen. Der Status unterscheidet fehlende Miner, ausstehende Auftragsfinanzierung, laufende bezahlte Arbeit und *fehlende Exportabnahme*; die spätere W3–W5-Nadir-Nachfrage wird nicht fälschlich als identisch mit dem W1-Exportkäufer bezeichnet.
+
+**Insolvenzgates:** Das Pilotmodell kennt noch **kein belastbares Fälligkeits-/Gläubigerbuch für ungedeckte Verbindlichkeiten**. Deshalb wird Insolvenz ausdrücklich als `nicht_belegbar` angezeigt. Eine leere Kasse, gebundene Liquidität, fehlende Exportabnahme oder ein negativer historischer Kassenüberschuss sind *keine erfundene Insolvenz*. Weder Zwangsliquidation noch Schiffsenteignung, Gratisrettung, versteckter Transfer oder neue ISK eingeführt. Kontrolle/Übernahme bei **tatsächlich** belegten Gläubigerforderungen und realen Schiffsverlusten bleiben separate, nicht vorgezogene Produktentscheidungen.
+
+Die UI-Statusanzeige nutzt die bestehende W2-Konzernkarte auch in W3–W5, speichert **keine** neuen Felder und kann so keine alten Pilot-Spielstände überschreiben. Automatische Seed-/Hash-/Save-/Audit-Tests inklusive 13 × 90 W5-Tage sind das Entwicklungsgate; echte iPad-/NAS-Abnahme bleibt auf Nutzerwunsch verschoben und soll später über den bestehenden Hauptlink nach gesonderter Freigabe erfolgen.
+
+---
+
 ## [DRAFT] W5a – erster echter Frachter aus bezahltem Material · 04.11.2026
 
 **[DRAFT PR #170](https://github.com/tobiasfranziskus/Check/pull/170)** stapelt auf dem W0–W4-Branch #169. Der bisherige `main` (Regel14/Schema8) wird weder geändert noch veröffentlicht. W5 beginnt in einer **isolierten Regel19-Welt**, die vollständig die W1–W4-Ticker, Ledger, Kauf-/Transport-/Raffinerie-Kernfunktionen und das Speicher-/Auditprinzip weiterverwendet. Kein paralleler Simulationskern oder neue Laufzeitabhängigkeit.

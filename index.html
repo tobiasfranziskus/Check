@@ -256,6 +256,13 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
       <div><dt>Fehlende Käufermittel für eine weitere Erzcharge (ab 1 Erz)</dt><dd id="pilot-w2-kundenluecke">–</dd></div>
       <div><dt>Käuferfinanzierung belegt</dt><dd id="pilot-w2-nachweis">–</dd></div>
       <div><dt>Verfügbares NPC-Kapital</dt><dd id="pilot-w2-kapital">–</dd></div>
+      <div><dt>Spieler: zahlungswirksamer Saldo</dt><dd id="pilot-w2-spielersaldo">–</dd></div>
+      <div><dt>NPC: zahlungswirksamer Saldo</dt><dd id="pilot-w2-npcsaldo">–</dd></div>
+      <div><dt>Spieler: freie / gebundene Arbeits-ISK</dt><dd id="pilot-w2-spielerkapital">–</dd></div>
+      <div><dt>NPC: freie / gebundene Arbeits-ISK</dt><dd id="pilot-w2-npckapital">–</dd></div>
+      <div><dt>NPC-Betrieb</dt><dd id="pilot-w2-betrieb">–</dd></div>
+      <div><dt>Bilanzbeleg der Konzerne</dt><dd id="pilot-w2-kassenbeleg">–</dd></div>
+      <div><dt>Insolvenz</dt><dd id="pilot-w2-insolvenz">–</dd></div>
     </dl>
     <p class="muted" id="pilot-w2-erklaerung">NPC investiert nur aus vorhandenen Mitteln. Ohne Absatz werden neue Aufträge gestoppt; bereits bezahlte Arbeiten bleiben gültig. Ein Absatzstopp ist keine Insolvenz.</p>
   </section>
@@ -2785,6 +2792,64 @@ const m_core_w1_vollkosten = (() => {
   return { pruefen };
 })();
 
+// W2–W5: lesender Firmenstatus aus echten Konten und vorfinanzierter Arbeit.
+// Keine zweiten Kassen, erfundenen Schiffsrestwerte oder Forderungsbuchungen.
+const m_core_w2_konzernstatus = (() => {
+  function pruefen(state, rules) {
+    if (!rules.erzpilot?.npcInvestor || state.rulesVersion !== rules.rulesVersion) return null;
+    const buch = state.erzpilotVertraege || {};
+    const markt = m_core_erzpilot.krisenLage(state, rules);
+    function firma(owner) {
+      const freieKasse = state.owners[owner]?.cash;
+      const anfang = rules.owners.find((o) => o.id === owner)?.cash;
+      const erloese = state.stats.konto[owner]?.erloes;
+      const ausgaben = state.stats.konto[owner]?.kosten;
+      const schiffe = Object.values(state.ships).filter((sh) => sh.owner === owner && sh.klasse === 'miner');
+      const vertraege = schiffe.filter((sh) => !!buch[sh.id]);
+      const arbeitsReserve = vertraege.reduce((sum, sh) => {
+        const v = buch[sh.id];
+        return sum + (v.arbeitsKonto ? (state.owners[v.arbeitsKonto]?.cash ?? NaN) : 0);
+      }, 0);
+      const bereitsBeauftragt = schiffe.filter((sh) => sh.auftrag === 'foerdern').length;
+      const saldiert = anfang + erloese - ausgaben;
+      const freiUndGebunden = freieKasse + arbeitsReserve;
+      const kontoOk = [anfang, freieKasse, erloese, ausgaben, arbeitsReserve, saldiert, freiUndGebunden]
+        .every(Number.isSafeInteger) && anfang >= 0 && freieKasse >= 0
+        && erloese >= 0 && ausgaben >= 0 && arbeitsReserve >= 0
+        && saldiert === freiUndGebunden;
+      const offeneFoerderkosten = vertraege.reduce((sum, sh) => {
+        const v = buch[sh.id];
+        return sum + (v.menge - (sh.ladung.erz || 0)) * v.arbeitsPreis;
+      }, 0);
+      const reserveOk = Number.isSafeInteger(offeneFoerderkosten)
+        && offeneFoerderkosten >= 0 && offeneFoerderkosten === arbeitsReserve;
+      const keinFreierExport = markt.kaeuferMenge === 0;
+      const betrieb = schiffe.length === 0 ? 'ohne_miner'
+        : vertraege.length > 0 ? 'finanzierte_arbeit'
+          : keinFreierExport ? 'exportpause'
+            : freieKasse < rules.erzpilot.minerJeMinute ? 'arbeitskapital_fehlt'
+              : bereitsBeauftragt > 0 ? 'auftrag_wartet' : 'freiwillige_ruhe';
+      return {
+        owner, betrieb, freieKasse, arbeitsReserve, freiUndGebunden,
+        anfang, erloese, ausgaben, kassenwirksamerSaldo: erloese - ausgaben,
+        schiffe: schiffe.length, beauftragt: bereitsBeauftragt,
+        finanzierteVertraege: vertraege.length, offeneFoerderkosten,
+        naechsteArbeitBezahlbar: freieKasse >= rules.erzpilot.minerJeMinute,
+        kassenbelegOk: kontoOk && reserveOk,
+        // Das Modell kennt keine faelligen, ungedeckten Gläubigerforderungen.
+        // Kein Absatz oder freie Kasse 0 belegt keine juristische Insolvenz.
+        insolvenz: 'nicht_belegbar',
+        unbezahlteFaelligeSchulden: null,
+      };
+    }
+    const house = firma('house'), npc3 = firma('npc3');
+    return { ok: house.kassenbelegOk && npc3.kassenbelegOk,
+      house, npc3, exportmarkt: markt.status, freieKaeuferMenge: markt.kaeuferMenge,
+      insolvenzmodell: 'kein_forderungsbuch_im_piloten' };
+  }
+  return { pruefen };
+})();
+
 const m_core_step = (() => {
 const { execute } = m_core_commands;
 const { protokolliere } = m_core_state;
@@ -3176,6 +3241,10 @@ const { RULES } = m_data_rules;
 const { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES } = m_data_erzpilot;
 const pilotAuftragsStand = (state) => m_core_erzpilot.auftragsStand(state, ERZ_RULES);
 const pilotNpcInvestition = (state) => m_core_erzpilot.investitionsPruefung(state, W2_RULES);
+const pilotKonzernStatus = (state) => m_core_w2_konzernstatus.pruefen(state,
+  state.rulesVersion === W5_RULES.rulesVersion ? W5_RULES
+    : state.rulesVersion === W4_RULES.rulesVersion ? W4_RULES
+      : state.rulesVersion === W3_RULES.rulesVersion ? W3_RULES : W2_RULES);
 const pilotNpcKrisenLage = (state) => m_core_erzpilot.krisenLage(state,
   state.rulesVersion === W5_RULES.rulesVersion ? W5_RULES
     : state.rulesVersion === W4_RULES.rulesVersion ? W4_RULES
@@ -3289,7 +3358,7 @@ const { kampf } = m_core_kampf;
 const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
 return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES,
-  pilotAuftragsStand, pilotWirtschaftsStand, pilotNpcInvestition, pilotNpcKrisenLage,
+  pilotAuftragsStand, pilotWirtschaftsStand, pilotNpcInvestition, pilotNpcKrisenLage, pilotKonzernStatus,
   pilotW3Stand, pilotW3Kalkulation, pilotW4Stand, pilotW4Kalkulation,
   pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf,
   createErzState, createW2State, createW3State, createW4State, createW5State,
@@ -5446,7 +5515,7 @@ const m_ui_erzpilot = (() => {
   const { createErzState, createW2State, createW3State, createW4State, createW5State,
     loadErz, loadW2, loadW3, loadW4, loadW5,
     ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES,
-    pilotAuftragsStand, pilotNpcKrisenLage, pilotWirtschaftsStand,
+    pilotAuftragsStand, pilotNpcKrisenLage, pilotKonzernStatus, pilotWirtschaftsStand,
     pilotW3Stand, pilotW3Kalkulation, pilotW4Stand, pilotW4Kalkulation,
     pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf,
     execute, advance, save, audit, hash } = m_core_index;
@@ -5521,6 +5590,19 @@ const m_ui_erzpilot = (() => {
       $('pilot-w2-kundenluecke').textContent = geld(lage.kundenlueckeISK);
       $('pilot-w2-nachweis').textContent = lage.kaeuferNachweisOk ? 'Ja (endlicher Etat)' : 'Nein – gesperrt';
       $('pilot-w2-kapital').textContent = geld(lage.unternehmenCash);
+      const konzerne = pilotKonzernStatus(state);
+      $('pilot-w2-spielersaldo').textContent = geld(konzerne.house.kassenwirksamerSaldo);
+      $('pilot-w2-npcsaldo').textContent = geld(konzerne.npc3.kassenwirksamerSaldo);
+      $('pilot-w2-spielerkapital').textContent = `${geld(konzerne.house.freieKasse)} / ${geld(konzerne.house.arbeitsReserve)}`;
+      $('pilot-w2-npckapital').textContent = `${geld(konzerne.npc3.freieKasse)} / ${geld(konzerne.npc3.arbeitsReserve)}`;
+      const betriebsart = { finanzierte_arbeit:'Finanzierte Arbeit',
+        exportpause:'Ruhe wegen fehlender Exportabnahme',
+        arbeitskapital_fehlt:'Kein frei finanzierbares Arbeitskapital',
+        auftrag_wartet:'Auftrag wartet auf Finanzierung',
+        freiwillige_ruhe:'Ruhend', ohne_miner:'Keine Miner' };
+      $('pilot-w2-betrieb').textContent = betriebsart[konzerne.npc3.betrieb] || konzerne.npc3.betrieb;
+      $('pilot-w2-kassenbeleg').textContent = konzerne.ok ? 'Frei + Treuhand = gebuchte Kasse' : 'FEHLER – Kassenabweichung';
+      $('pilot-w2-insolvenz').textContent = 'Nicht belegt: keine fälligen Schulden im Pilot modelliert';
     }
     if (istW3 || istW4 || istW5) {
       const st = pilotW3Stand(state);

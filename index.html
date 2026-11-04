@@ -2044,6 +2044,75 @@ const m_core_erzpilot = (() => {
       `${owner}: ${neu} fuer ${pruefung.kaufpreis} ISK gekauft (finanzierter W2-Auftrag)`, owner);
     return true;
   }
+  // W2-Krise: reine Bestandsrechnung. Vorfinanzierte Vertraege laufen weiter,
+  // aber freies Erz darf nicht mit bereits gebundenem Absatzbudget konkurrieren.
+  function krisenLage(state, rules) {
+    const cfg = rules.erzpilot;
+    if (!cfg?.npcInvestor) return { aktiv: false, status: 'nicht_aktiv' };
+    const owner = cfg.npcInvestor, eigene = ids(state.ships)
+      .map((id) => state.ships[id])
+      .filter((sh) => sh.owner === owner && sh.klasse === 'miner');
+    const buch = vertragsbuch(state), lager = state.stations[cfg.station].lager;
+    const reservierteMenge = reserviert(state);
+    const fremdeFracht = ids(state.ships).reduce((n, id) => {
+      const sh = state.ships[id];
+      return n + (buch[id] ? 0 : anzahl(sh.ladung, 'erz'));
+    }, 0);
+    const kaeuferMenge = Math.max(0,
+      Math.floor(state.owners[cfg.exportOwner].cash / cfg.preis)
+      - anzahl(lager, 'erz') - reservierteMenge - fremdeFracht);
+    const freiePlaetze = Math.max(0, obergrenze(state, rules, cfg.station, 'erz')
+      - anzahl(lager, 'erz') - reservierteMenge);
+    const stationsMenge = Math.max(0, Math.floor(state.owners[cfg.station].cash / cfg.preis));
+    const arbeitsMenge = Math.max(0, Math.floor(state.owners[owner].cash / cfg.minerJeMinute));
+    const planbar = Math.min(cfg.auftragsMenge, rules.economy.cargo,
+      kaeuferMenge, freiePlaetze, stationsMenge, arbeitsMenge);
+    const finanzierte = eigene.filter((sh) => !!buch[sh.id]).length;
+    // Fehlender Absatz ist keine Insolvenz: ein wohlhabender Konzern pausiert.
+    const status = planbar > 0 ? 'arbeitsbereit'
+      : kaeuferMenge === 0 ? 'absatzstopp'
+      : freiePlaetze === 0 ? 'lagerengpass'
+      : stationsMenge === 0 ? 'abnahmeengpass'
+      : 'betriebskapitalengpass';
+    return { aktiv: true, status, planbar, eigene: eigene.length,
+      finanzierte, ruhend: eigene.filter((sh) => sh.auftrag === 'halten').length,
+      unternehmenCash: state.owners[owner].cash,
+      kaeuferCash: state.owners[cfg.exportOwner].cash,
+      freiePlaetze, stationsMenge, kaeuferMenge, arbeitsMenge };
+  }
+  function krisenSteuern(state, rules) {
+    const info = krisenLage(state, rules);
+    if (!info.aktiv) return info;
+    const owner = rules.erzpilot.npcInvestor, buch = vertragsbuch(state);
+    const eigene = ids(state.ships).map((id) => state.ships[id])
+      .filter((sh) => sh.owner === owner && sh.klasse === 'miner' && sh.phase === 'dock');
+    if (info.planbar === 0) {
+      // Kein kostenloses Weiterfördern: Stop ausschließlich bei unbelegter Zukunft.
+      // Ein schon bezahlter, noch nicht fertiggestellter Auftrag bleibt unangetastet.
+      for (const sh of eigene) {
+        if (sh.auftrag !== 'foerdern' || buch[sh.id]) continue;
+        const res = m_core_commands.execute(state,
+          { type: 'shipWait', owner, schiff: sh.id }, rules);
+        if (!res.ok) throw Error('W2: Unfinanzierte Betriebsruhe abgelehnt: ' + res.reason);
+        protokolliere(state, 'auftrag',
+          `${sh.id}: NPC-Betriebsruhe (${info.status}), keine neue Finanzierung`, owner);
+      }
+    } else {
+      // Ein bezahlbarer Auftrag darf wieder anlaufen; nie zwei ungeprüfte
+      // Neustarts gleichzeitig auf dasselbe noch nicht gesperrte Budget.
+      if (!eigene.some((sh) => sh.auftrag === 'foerdern' && !buch[sh.id])) {
+        const frei = eigene.find((sh) => sh.auftrag === 'halten');
+        if (frei) {
+          const res = m_core_commands.execute(state,
+            { type: 'shipMine', owner, schiff: frei.id, ware: 'erz' }, rules);
+          if (!res.ok) throw Error('W2: Finanzierter Wiederanlauf abgelehnt: ' + res.reason);
+          protokolliere(state, 'auftrag',
+            `${frei.id}: NPC-Bergbau nach Finanzierungsprüfung wieder angefordert`, owner);
+        }
+      }
+    }
+    return krisenLage(state, rules);
+  }
   function auftragsStand(state, rules) {
     const buch = vertragsbuch(state);
     const frei = state.owners[rules.erzpilot.station].cash;
@@ -2053,7 +2122,7 @@ const m_core_erzpilot = (() => {
     return { auftraege: ids(buch).length, gebunden, arbeitsGebunden, frei, reserviert: reserviert(state) };
   }
   return { beauftragen, stornieren, foerdern, exportiere, auftragsStand,
-    investitionsPruefung, npcInvestieren };
+    investitionsPruefung, npcInvestieren, krisenLage, krisenSteuern };
 })();
 
 // W1: rein lesende Vollkosten-/Liquiditaetsrechnung aus gebuchten Originalkonten.
@@ -2143,7 +2212,10 @@ function step(state, rules) {
     foerderung(state, rules);
     if (state.tick % rules.economy.stunde === 0) {
       m_core_erzpilot.exportiere(state, rules);
-      if (rules.erzpilot.npcInvestor) m_core_erzpilot.npcInvestieren(state, rules);
+      if (rules.erzpilot.npcInvestor) {
+        m_core_erzpilot.krisenSteuern(state, rules);
+        m_core_erzpilot.npcInvestieren(state, rules);
+      }
     }
     return ergebnisse;
   }
@@ -2479,6 +2551,7 @@ const { RULES } = m_data_rules;
 const { ERZ_RULES, W2_RULES } = m_data_erzpilot;
 const pilotAuftragsStand = (state) => m_core_erzpilot.auftragsStand(state, ERZ_RULES);
 const pilotNpcInvestition = (state) => m_core_erzpilot.investitionsPruefung(state, W2_RULES);
+const pilotNpcKrisenLage = (state) => m_core_erzpilot.krisenLage(state, W2_RULES);
 const pilotWirtschaftsStand = (state) => m_core_w1_vollkosten.pruefen(state, ERZ_RULES);
 function createErzState(seed = ERZ_RULES.startSeed, rules = ERZ_RULES) {
   const state = m_core_state.createState(seed, rules);
@@ -2537,7 +2610,7 @@ const { kampf } = m_core_kampf;
 const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
 return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, W2_RULES, pilotAuftragsStand, pilotWirtschaftsStand,
-  pilotNpcInvestition, createErzState, createW2State, loadErz, loadW2, createState, submit, execute, step, advance, load, preis, faktor };
+  pilotNpcInvestition, pilotNpcKrisenLage, createErzState, createW2State, loadErz, loadW2, createState, submit, execute, step, advance, load, preis, faktor };
 })();
 
 const m_data_oberflaeche = (() => {

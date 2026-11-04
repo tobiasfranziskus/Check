@@ -32,7 +32,7 @@ Direkt auf dem echten Regel23-Kern ausgeführt, unabhängig von GitHub-CI:
 - **Anti-Farming:** 100 Start/Abbrüche bei Nullminuten → Pilot 0 ISK, NPC-Kasse und Fonds unverändert, beide Reserven rückerstattet; mehrfaches Kopfgeld, Doppelmodule, fremde Saves, manipulierter Waren- oder Geldbeleg, unfinanzierter Fabrikauftrag und leere Käufertasche werden abgewiesen bzw. durch Audit erkannt.
 - Kein Neuzuweisen eines bereits piloten-ausgerüsteten Jägers an Piraten; Kampfboni ausschließlich für wirklich montierte Module. Bestehende Regel22-Kampftests und historischer Regel14-Golden bleiben als Regressionen erhalten.
 
-**GitHub CI:** Der finale Stand wird mit `node --test tests/*.test.mjs` geprüft; das konkrete Gesamtresultat nur nach abgeschlossenem Runner berichten. Reale iPad-/NAS-Abnahme offen.
+**[GitHub-CI #41925076369](https://github.com/tobiasfranziskus/Check/actions/runs/41925076369)** auf Code-Commit `a0b4a29` ist **completed/success**: `node --test` **207/207 bestanden**, 0 Fehler, 0 übersprungen; sieben Workflow-Jobs erfolgreich und ein bedingter Vergleich planmäßig übersprungen. Neuerer reiner Dokumentationscommit hat keine Codeänderung. Reale iPad-/NAS-Abnahme offen.
 
 ### Bewertung und Grenzen
 

@@ -1,5 +1,16 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] Frachter-/Jäger-Gesamtstack – kombinierte CI und Save-Trennung · 04.11.2026
+
+**[Integrations-Draft #179](https://github.com/tobiasfranziskus/Check/pull/179)** stapelt auf dem industriell finanzierten Jäger-/Kampf-Draft #178; die **acht vollständig unveränderten Codex-Dateien** aus dem eigenständigen [2D-Frachter-Draft #177](https://github.com/tobiasfranziskus/Check/pull/177) sind ergänzend enthalten. Unveränderte Jäger- und Frachter-Originalbranches; der produktive `main` bleibt unverändert.
+
+**[TECHNISCHER SCHRITT]** Der Frachterprototyp erhält seine echte `W3_RULES`-Sitzung aus dem **selben** vorhandenen Core, während der Jäger-/Piratenkern real in isolierter `W5D_RULES`-Welt existiert. Ein neu ergänzter Integrationstest prüft getrennte Hashes, echte Frachterbefehle, mindestens 100 unveränderliche Projektionen, getrennte Simulationszeiten, ausgeglichene Geld-/Warenaudits und strikte Save-/Load-Ablehnung zwischen Regel17 und Regel22. **Noch kein einheitlich gespeicherter W5d-Spielmodus** und keine direkt steuerbare industrielle Nadir-Frachterüberführung; diese Produktintegration bleibt eigener Schritt.
+
+**[QUELL-CI]** #177: 180/180 Node grün, 7 CI-Jobs erfolgreich; #178: 185/185 Node grün, 7 CI-Jobs erfolgreich. **[KOMBINIERTE CI]** getrennt in [Workflow #41870340337](https://github.com/tobiasfranziskus/Check/actions/runs/41870340337), bei Erstellung dieses Eintrags noch laufend; keine vorzeitige Abnahme. Reale Safari-/NAS-Abnahme sowie CSP-kompatible Integration des vom Codex-Prototyp benutzten dynamischen Inline-Core-Loaders stehen aus. Keine neuen ISK-/Kampf-/Warenregeln, kein Merge oder Deployment. [Beleg und Grenzen](W5D_FRACHTER_INTEGRATION.md).
+
+---
+
+
 ## [DRAFT] W5d – zweiter finanziert hergestellter Jäger, echter Kampf und Ersatzbedarf · 04.11.2026
 
 **[DRAFT PR #178](https://github.com/tobiasfranziskus/Check/pull/178)** ist auf W5c #176 gestapelt und behält Codex' eigenständigen Frachterauftrag unberührt. In isolierter **Forschungsregel22** gibt es zwei statt einer endlichen, vollständig finanzierten Silizium-/Bauteil-/Jägercharge. Die notwendige zweite Produktionsfinanzierung stammt aus regulärer, bezahlter **W1-Erzförderung eines zusätzlich vom Spieler erworbenen Aldera-Miners**, nicht aus Startgelderhöhung oder Rettung. Zwei reale W3-Frachtlieferungen, acht W4-Chargen und 192 tatsächlich ausgezahlte Werkarbeitsminuten ergeben **zwei bezahlte Jäger**: der erste wird nach Konzernkauf an Piraten verkauft, der zweite bleibt NPC-Jäger. Die gemeinsamen bestehenden Kampffunktionen ermöglichen bei bezahltem Jagdeinsatz reale Kampfverluste, die eindeutige Schiff-ID und die Hülle werden als vernichtet dokumentiert. Keine Kopfgeldemission, keine XP, kein automatisch erzeugtes Piratenschiff.

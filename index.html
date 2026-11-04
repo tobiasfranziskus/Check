@@ -207,6 +207,8 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
         <div><dt>Arbeitskapital gebunden</dt><dd id="pilot-arbeitsgeld">–</dd></div>
         <div><dt>Aufträge / reserviertes Erz</dt><dd id="pilot-vertraege">–</dd></div>
         <div><dt>Exportbudget</dt><dd id="pilot-exportbudget">–</dd></div>
+        <div><dt>Bezahlte Endabnahme</dt><dd id="pilot-exportausgaben">–</dd></div>
+        <div><dt>Unbelegter Käuferzufluss</dt><dd id="pilot-finanzdelta">–</dd></div>
         <div><dt>Gefördert / exportiert</dt><dd id="pilot-mengen">–</dd></div>
         <div><dt>Spielzeit</dt><dd id="pilot-zeit">–</dd></div>
       </dl>
@@ -2231,6 +2233,23 @@ function audit(state) {
     if (d !== 0) { goods.ok = false; goods.delta[w] = d; }
   }
   const extra = {};
+  let finanzierungsOk = true;
+  if (state.rulesVersion === m_data_erzpilot.ERZ_RULES.rulesVersion) {
+    const cfg = m_data_erzpilot.ERZ_RULES.erzpilot;
+    const start = m_data_erzpilot.ERZ_RULES.owners.find((o) => o.id === cfg.exportOwner).cash;
+    const exportiert = state.ledger?.erz?.exported;
+    const rest = state.owners?.[cfg.exportOwner]?.cash;
+    const ausgegeben = exportiert * cfg.preis;
+    const differenz = rest + ausgegeben - start;
+    // Ohne belegte Endkunden-Einnahmen darf ein blosses Verschieben vorhandener ISK
+    // nicht als wiederkehrend finanziertes Exportgeschaeft gelten.
+    finanzierungsOk = Number.isSafeInteger(rest) && rest >= 0
+      && Number.isSafeInteger(exportiert) && exportiert >= 0
+      && Number.isSafeInteger(ausgegeben) && Number.isSafeInteger(differenz)
+      && differenz === 0;
+    extra.finanzierung = { ok: finanzierungsOk, start, ausgegeben, rest,
+      differenz, exportiert };
+  }
   let vertragsOk = true;
   if (state.erzpilotVertraege) {
     const errors = {};
@@ -2272,7 +2291,7 @@ function audit(state) {
     vertragsOk = Object.keys(errors).length === 0;
     extra.contracts = { ok: vertragsOk, errors, reserved: reservierteMenge };
   }
-  return { ok: isk.ok && goods.ok && vertragsOk, total, expected, delta: total - expected, isk, goods, ...extra };
+  return { ok: isk.ok && goods.ok && vertragsOk && finanzierungsOk, total, expected, delta: total - expected, isk, goods, ...extra };
 }
 return { audit };
 })();
@@ -4381,10 +4400,14 @@ const m_ui_erzpilot = (() => {
     $('pilot-gebunden').textContent = geld(vertrag.gebunden);
     $('pilot-arbeitsgeld').textContent = geld(vertrag.arbeitsGebunden);
     $('pilot-vertraege').textContent = `${vertrag.auftraege} / ${vertrag.reserviert} Erz`;
-    $('pilot-finanzlage').textContent = state.owners.export.cash === 0
-      ? 'Exportbudget aufgebraucht: Ohne neue finanzierte Nachfrage keine dauerhafte Produktion.'
-      : `Vorfinanzierter Exportkäufer: ${geld(state.owners.export.cash)} verfügbar.`;
+    $('pilot-finanzlage').textContent = !a.finanzierung.ok
+      ? 'Unbelegte Käuferfinanzierung erkannt. Kein Nachweis für neuen Endverbrauch.'
+      : state.owners.export.cash === 0
+        ? 'Exportbudget aufgebraucht: Ohne neue belegte Einnahme keine dauerhafte Produktion.'
+        : `Anfangsbudget ${geld(a.finanzierung.start)}; bezahlt ${geld(a.finanzierung.ausgegeben)}; Rest ${geld(a.finanzierung.rest)}.`;
     $('pilot-exportbudget').textContent = geld(state.owners.export.cash);
+    $('pilot-exportausgaben').textContent = geld(a.finanzierung.ausgegeben);
+    $('pilot-finanzdelta').textContent = geld(a.finanzierung.differenz);
     $('pilot-mengen').textContent = `${state.ledger.erz.mined} / ${state.ledger.erz.exported}`;
     $('pilot-zeit').textContent = `Tag ${Math.floor(state.tick / 1440) + 1}, Minute ${state.tick % 1440}`;
     $('pilot-audit').textContent = a.ok ? 'ISK + Waren OK' : 'FEHLER – gesperrt';

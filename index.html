@@ -1881,6 +1881,18 @@ const m_core_erzpilot = (() => {
   function reserviert(state) {
     return Object.values(vertragsbuch(state)).reduce((sum, v) => sum + v.menge, 0);
   }
+  // Frei finanzierbare Endabnahme: Ware im Stationslager, laufende Vertraege
+  // und unverkaufte Fracht ohne Vertrag sind bereits vom Käuferetat gedeckt.
+  function freieEndnachfrage(state, rules, ausnahmeSchiff = '') {
+    const cfg = rules.erzpilot, buch = vertragsbuch(state);
+    const bestand = anzahl(state.stations[cfg.station].lager, 'erz');
+    const fremdeFracht = ids(state.ships).reduce((sum, id) => {
+      if (id === ausnahmeSchiff || buch[id]) return sum;
+      return sum + anzahl(state.ships[id].ladung, 'erz');
+    }, 0);
+    return Math.max(0, Math.floor(state.owners[cfg.exportOwner].cash / cfg.preis)
+      - bestand - reserviert(state) - fremdeFracht);
+  }
   function beauftragen(state, rules, schiff) {
     const cfg = rules.erzpilot, buch = (state.erzpilotVertraege ||= {});
     if (buch[schiff.id]) return buch[schiff.id];
@@ -1890,9 +1902,12 @@ const m_core_erzpilot = (() => {
       - anzahl(lager, 'erz') - reserviert(state);
     const vorhandenesErz = anzahl(schiff.ladung, 'erz');
     const verfuengbareArbeit = Math.floor(state.owners[schiff.owner].cash / cfg.minerJeMinute);
-    const menge = Math.max(0, Math.min(cfg.auftragsMenge, rules.economy.cargo,
+    let menge = Math.max(0, Math.min(cfg.auftragsMenge, rules.economy.cargo,
       Math.floor(station.cash / cfg.preis), freiePlaetze,
       Math.max(vorhandenesErz, verfuengbareArbeit)));
+    // Regel16: Endverbraucher muss auch diese neue Charge nachvollziehbar
+    // bezahlen koennen, nicht nur die lokale Station. Gilt fuer Spieler UND NPC.
+    if (cfg.npcInvestor) menge = Math.min(menge, freieEndnachfrage(state, rules, schiff.id));
     if (menge <= 0) return null;
     const wert = menge * cfg.preis, konto = `erz_treuhand_${schiff.id}`;
     const arbeitsKonto = `erz_arbeit_${schiff.id}`;
@@ -2055,13 +2070,7 @@ const m_core_erzpilot = (() => {
       .filter((sh) => sh.owner === owner && sh.klasse === 'miner');
     const buch = vertragsbuch(state), lager = state.stations[cfg.station].lager;
     const reservierteMenge = reserviert(state);
-    const fremdeFracht = ids(state.ships).reduce((n, id) => {
-      const sh = state.ships[id];
-      return n + (buch[id] ? 0 : anzahl(sh.ladung, 'erz'));
-    }, 0);
-    const kaeuferMenge = Math.max(0,
-      Math.floor(state.owners[cfg.exportOwner].cash / cfg.preis)
-      - anzahl(lager, 'erz') - reservierteMenge - fremdeFracht);
+    const kaeuferMenge = freieEndnachfrage(state, rules);
     const freiePlaetze = Math.max(0, obergrenze(state, rules, cfg.station, 'erz')
       - anzahl(lager, 'erz') - reservierteMenge);
     const stationsMenge = Math.max(0, Math.floor(state.owners[cfg.station].cash / cfg.preis));

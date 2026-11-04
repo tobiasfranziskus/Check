@@ -183,9 +183,11 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
 <body>
 <section id="erzpilot-app" class="ansicht" aria-label="Erzpilot – Forschungsmodus" hidden>
   <header class="kopf">
-    <p class="muted kopf-klein">Aphros Void · W1 Forschungsmodus · Regel 15</p>
-    <h1>Erzpilot · W1</h1><p><a id="pilot-2d" href="?modus=miner2d">2D-Miner öffnen</a> · <a id="pilot-konten" href="?modus=erzpilot">Kontenansicht</a> (derselbe W1-Spielstand)</p>
-    <p class="muted">Erz abbauen, Miner kaufen und bezahlte Verkäufe prüfen. Kein fertiges Wirtschaftsspiel: Das Exportbudget ist endlich.</p>
+    <p id="pilot-version" class="muted kopf-klein">Aphros Void · W1 Forschungsmodus · Regel 15</p>
+    <h1 id="pilot-titel">Erzpilot · W1</h1>
+    <p><a id="pilot-2d" href="?modus=miner2d">2D-Miner öffnen</a> · <a id="pilot-konten" href="?modus=erzpilot">Kontenansicht</a> (derselbe Spielstand)</p>
+    <p><a id="pilot-w2-link" href="?modus=w2miner2d">W2-Konzernvorschau (eigener Spielstand)</a><a id="pilot-w1-link" href="?modus=miner2d" hidden>W1-Miner (anderer Spielstand)</a></p>
+    <p id="pilot-erklaerung" class="muted">Erz abbauen, Miner kaufen und bezahlte Verkäufe prüfen. Kein fertiges Wirtschaftsspiel: Das Exportbudget ist endlich.</p>
     <p><a href="./">Zum bisherigen Spiel (Regel 14)</a></p>
   </header>
   <section id="miner2d" class="card" hidden>
@@ -242,6 +244,21 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
       <p id="pilot-finanzlage" class="hinweis-text muted" role="status">Käuferfinanzierung wird geprüft.</p>
     </section>
   </div>
+  <section id="pilot-w2-panel" class="card" aria-label="W2-Konzern- und Absatzkontrolle" hidden>
+    <h2>W2 · NPC-Bergbaukonzern</h2>
+    <dl>
+      <div><dt>Marktlage</dt><dd id="pilot-w2-status">–</dd></div>
+      <div><dt>NPC-Miner / ruhend</dt><dd id="pilot-w2-miner">–</dd></div>
+      <div><dt>Bereits finanzierte NPC-Verträge</dt><dd id="pilot-w2-finanzierte">–</dd></div>
+      <div><dt>Nächste finanzierbare Erzmenge</dt><dd id="pilot-w2-planbar">–</dd></div>
+      <div><dt>Noch freie Endkunden-Abnahme</dt><dd id="pilot-w2-kaeufer">–</dd></div>
+      <div><dt>Vorhandenes Erz mit vorrangigem Käuferbedarf</dt><dd id="pilot-w2-vorbestand">–</dd></div>
+      <div><dt>Fehlende Käufermittel für eine weitere Erzcharge (ab 1 Erz)</dt><dd id="pilot-w2-kundenluecke">–</dd></div>
+      <div><dt>Käuferfinanzierung belegt</dt><dd id="pilot-w2-nachweis">–</dd></div>
+      <div><dt>Verfügbares NPC-Kapital</dt><dd id="pilot-w2-kapital">–</dd></div>
+    </dl>
+    <p class="muted" id="pilot-w2-erklaerung">NPC investiert nur aus vorhandenen Mitteln. Ohne Absatz werden neue Aufträge gestoppt; bereits bezahlte Arbeiten bleiben gültig. Ein Absatzstopp ist keine Insolvenz.</p>
+  </section>
   <section class="card" aria-label="W1-Vollkosten und Zahlungsfähigkeit">
     <h2>W1 – tatsächliche Vollkosten</h2>
     <dl>
@@ -297,7 +314,7 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
   </section>
   <section class="card" aria-label="Spielstand">
     <ul class="liste">
-      <li><span class="liste-links">Wirtschafts-Neuaufbau</span><span class="liste-rechts"><a href="?modus=erzpilot">Erzpilot testen</a></span></li>
+      <li><span class="liste-links">Wirtschafts-Neuaufbau</span><span class="liste-rechts"><a href="?modus=erzpilot">W1-Erzpilot</a> · <a href="?modus=w2miner2d">W2-Vorschau</a></span></li>
       <li class="zeile-knopf"><button type="button" class="zeile" id="b-spielstand"><span class="liste-links">Spielstand</span><span class="liste-rechts muted" id="hq-gespeichert">–</span></button></li>
       <li id="hq-hinweis-zeile" class="hinweis-zeile" hidden><span class="marke marke-warn" id="hq-hinweis"></span></li>
       <li class="zeile-knopf"><button type="button" class="zeile" id="b-bericht"><span class="liste-links">Berichte</span><span class="liste-rechts muted" id="bericht-zahl">–</span></button></li>
@@ -1895,6 +1912,7 @@ const m_core_erzpilot = (() => {
   }
   function beauftragen(state, rules, schiff) {
     const cfg = rules.erzpilot, buch = (state.erzpilotVertraege ||= {});
+    if (cfg.npcInvestor && !m_core_audit.audit(state).finanzierung?.ok) return null;
     if (buch[schiff.id]) return buch[schiff.id];
     const station = state.owners[cfg.station];
     const lager = state.stations[cfg.station].lager;
@@ -1983,6 +2001,10 @@ const m_core_erzpilot = (() => {
   // Export: nur nachweislich gelagertes Erz gegen reales endliches Kaeuferbudget.
   function exportiere(state, rules) {
     if (!rules.erzpilot) return 0;
+    // W2 darf auch bei direkter Core-Nutzung keine unbelegte Aufstockung
+    // des Endkundenkontos als neuen realen Absatz behandeln.
+    if (rules.erzpilot.npcInvestor && !m_core_audit.audit(state).finanzierung?.ok)
+      throw Error('W2: Endkundenkonto ohne belegte Einnahme; kein weiterer Erzexport');
     const cfg = rules.erzpilot;
     const lager = state.stations[cfg.station].lager;
     const kaeufer = state.owners[cfg.exportOwner];
@@ -2071,15 +2093,27 @@ const m_core_erzpilot = (() => {
     const buch = vertragsbuch(state), lager = state.stations[cfg.station].lager;
     const reservierteMenge = reserviert(state);
     const kaeuferMenge = freieEndnachfrage(state, rules);
+    const kaeuferNachweisOk = m_core_audit.audit(state).finanzierung?.ok === true;
+    // Bereits erzeugtes/zugesagtes Erz verbraucht den naechsten vorhandenen
+    // Kaufetat zuerst. So ist der benoetigte Betrag ohne neue Preistabelle
+    // aus dem einzigen R16-Preis und dem bestehenden Core-Bestand hergeleitet.
+    const fremdeFracht = ids(state.ships).reduce((sum, id) => {
+      if (buch[id]) return sum;
+      return sum + anzahl(state.ships[id].ladung, 'erz');
+    }, 0);
+    const vorbestand = anzahl(lager, 'erz') + reservierteMenge + fremdeFracht;
+    const kundenlueckeISK = Math.max(0,
+      (vorbestand + 1) * cfg.preis - state.owners[cfg.exportOwner].cash);
     const freiePlaetze = Math.max(0, obergrenze(state, rules, cfg.station, 'erz')
       - anzahl(lager, 'erz') - reservierteMenge);
     const stationsMenge = Math.max(0, Math.floor(state.owners[cfg.station].cash / cfg.preis));
     const arbeitsMenge = Math.max(0, Math.floor(state.owners[owner].cash / cfg.minerJeMinute));
-    const planbar = Math.min(cfg.auftragsMenge, rules.economy.cargo,
-      kaeuferMenge, freiePlaetze, stationsMenge, arbeitsMenge);
+    const planbar = kaeuferNachweisOk ? Math.min(cfg.auftragsMenge, rules.economy.cargo,
+      kaeuferMenge, freiePlaetze, stationsMenge, arbeitsMenge) : 0;
     const finanzierte = eigene.filter((sh) => !!buch[sh.id]).length;
     // Fehlender Absatz ist keine Insolvenz: ein wohlhabender Konzern pausiert.
-    const status = planbar > 0 ? 'arbeitsbereit'
+    const status = !kaeuferNachweisOk ? 'finanzierungsfehler'
+      : planbar > 0 ? 'arbeitsbereit'
       : kaeuferMenge === 0 ? 'absatzstopp'
       : freiePlaetze === 0 ? 'lagerengpass'
       : stationsMenge === 0 ? 'abnahmeengpass'
@@ -2088,6 +2122,7 @@ const m_core_erzpilot = (() => {
       finanzierte, ruhend: eigene.filter((sh) => sh.auftrag === 'halten').length,
       unternehmenCash: state.owners[owner].cash,
       kaeuferCash: state.owners[cfg.exportOwner].cash,
+      kaeuferNachweisOk, vorbestand, kundenlueckeISK,
       freiePlaetze, stationsMenge, kaeuferMenge, arbeitsMenge };
   }
   function krisenSteuern(state, rules) {
@@ -4254,7 +4289,7 @@ return {zustand,befehl,grafik,treffer,eingabe};
 
 const m_ui_main = (() => {
 // In der Pilotansicht darf der alte Welt-Ticker bzw. sein Speicherplatz nicht starten.
-if (typeof location !== 'undefined' && /(?:^\?|&)modus=(?:erzpilot|miner2d)(?:&|$)/.test(location.search || '')) return { pilot: true };
+if (typeof location !== 'undefined' && /(?:^\?|&)modus=(?:erzpilot|miner2d|w2konzern|w2miner2d)(?:&|$)/.test(location.search || '')) return { pilot: true };
 const { createState, advance, save, load, submit, execute } = m_core_index;
 const { RULES } = m_data_rules;
 const { OBERFLAECHE } = m_data_oberflaeche;
@@ -4765,20 +4800,37 @@ return {};
 // W1-UI nutzt dieselben Core-Commands wie die Simulation und einen getrennten Slot.
 // Aus Sicherheitsgruenden nie automatische Migration/Schreibzugriffe auf Regel-14-Spielstaende.
 const m_ui_erzpilot = (() => {
-  if (typeof location === 'undefined' || !/(?:^\?|&)modus=(?:erzpilot|miner2d)(?:&|$)/.test(location.search || '')) return {};
+  if (typeof location === 'undefined' || !/(?:^\?|&)modus=(?:erzpilot|miner2d|w2konzern|w2miner2d)(?:&|$)/.test(location.search || '')) return {};
   document.body.classList.add('erzpilot-modus');
   const app = document.getElementById('erzpilot-app');
   app.hidden = false;
   const $ = (id) => document.getElementById(id);
-  const { createErzState, loadErz, ERZ_RULES: rules, pilotAuftragsStand, pilotWirtschaftsStand, execute, advance, save, audit, hash } = m_core_index;
+  const { createErzState, createW2State, loadErz, loadW2, ERZ_RULES, W2_RULES,
+    pilotAuftragsStand, pilotNpcKrisenLage, pilotWirtschaftsStand, execute, advance, save, audit, hash } = m_core_index;
   const { dbPut, dbGet, dateiSichern } = m_ui_speicher;
-  const SLOT = 'aphros-void-erzpilot-regel15-v1';
-  let state = createErzState();
+  const istW2 = /(?:^\?|&)modus=(?:w2konzern|w2miner2d)(?:&|$)/.test(location.search || '');
+  const rules = istW2 ? W2_RULES : ERZ_RULES;
+  const neuerStand = istW2 ? createW2State : createErzState;
+  const laden = istW2 ? loadW2 : loadErz;
+  // Regel15 und Regel16 haben eigene IndexedDB-Slots; keiner beruehrt slot1.
+  const SLOT = istW2 ? 'aphros-void-w2-regel16-v1' : 'aphros-void-erzpilot-regel15-v1';
+  const DATEI_REGEL = istW2 ? 'regel16' : 'regel15';
+  let state = neuerStand();
   let gesperrt = false;
   let ladebereit = false;
   let defekterStand = null;
   let speicherKette = Promise.resolve();
-  const ist2d = /(?:^\?|&)modus=miner2d(?:&|$)/.test(location.search || '');
+  const ist2d = /(?:^\?|&)modus=(?:miner2d|w2miner2d)(?:&|$)/.test(location.search || '');
+  $('pilot-version').textContent = istW2 ? 'Aphros Void · W2 Forschungsmodus · Regel 16' : 'Aphros Void · W1 Forschungsmodus · Regel 15';
+  $('pilot-titel').textContent = istW2 ? 'Bergbaukonzerne · W2' : 'Erzpilot · W1';
+  $('pilot-erklaerung').textContent = istW2
+    ? 'Spieler und NPC bauen Erz mit demselben Core ab. Der NPC investiert nach belegtem Umsatz und ruht bei fehlender bezahlter Nachfrage. Eigenes Regel-16-Experiment ohne neue ISK.'
+    : 'Erz abbauen, Miner kaufen und bezahlte Verkäufe prüfen. Kein fertiges Wirtschaftsspiel: Das Exportbudget ist endlich.';
+  $('pilot-2d').href = istW2 ? '?modus=w2miner2d' : '?modus=miner2d';
+  $('pilot-konten').href = istW2 ? '?modus=w2konzern' : '?modus=erzpilot';
+  $('pilot-w2-link').hidden = istW2;
+  $('pilot-w1-link').hidden = !istW2;
+  $('pilot-w2-panel').hidden = !istW2;
   let minerAnsicht = null;
   const geld = (n) => `${n.toLocaleString('de-DE')} ISK`;
   function nachricht(t, fehler = false) {
@@ -4791,6 +4843,21 @@ const m_ui_erzpilot = (() => {
     minerAnsicht?.anzeigen(state, gesperrt || !ladebereit);
     $('pilot-kasse').textContent = geld(state.owners.house.cash);
     $('pilot-npc').textContent = geld(state.owners.npc3.cash);
+    if (istW2) {
+      const lage = pilotNpcKrisenLage(state);
+      const status = { arbeitsbereit:'Arbeitsbereit', absatzstopp:'Kein finanzierter Absatz',
+        lagerengpass:'Lager belegt', abnahmeengpass:'Stationskasse reicht nicht',
+        betriebskapitalengpass:'Arbeitskapital fehlt', finanzierungsfehler:'Käufergeld ohne gültigen Zahlungsbeleg' };
+      $('pilot-w2-status').textContent = status[lage.status] || lage.status;
+      $('pilot-w2-miner').textContent = `${lage.eigene} / ${lage.ruhend}`;
+      $('pilot-w2-finanzierte').textContent = String(lage.finanzierte);
+      $('pilot-w2-planbar').textContent = `${lage.planbar} Erz`;
+      $('pilot-w2-kaeufer').textContent = `${lage.kaeuferMenge} Erz`;
+      $('pilot-w2-vorbestand').textContent = `${lage.vorbestand} Erz`;
+      $('pilot-w2-kundenluecke').textContent = geld(lage.kundenlueckeISK);
+      $('pilot-w2-nachweis').textContent = lage.kaeuferNachweisOk ? 'Ja (endlicher Etat)' : 'Nein – gesperrt';
+      $('pilot-w2-kapital').textContent = geld(lage.unternehmenCash);
+    }
     $('pilot-miner').textContent = String(sh.length);
     $('pilot-huellen').textContent = String(state.stations.st_aldera.lager.miner);
     $('pilot-eigen-gebunden').textContent = geld(voll.konzerne.house.gebunden);
@@ -4850,7 +4917,7 @@ const m_ui_erzpilot = (() => {
     anzeigen();
     sichern();
   }
-  for (const id of ['pilot-2d', 'pilot-konten']) $(id).addEventListener('click', async (e) => {
+  for (const id of ['pilot-2d', 'pilot-konten', 'pilot-w2-link', 'pilot-w1-link']) $(id).addEventListener('click', async (e) => {
     e.preventDefault();
     if (!ladebereit) return;
     if (!gesperrt && !await sichern()) return;
@@ -4888,10 +4955,10 @@ const m_ui_erzpilot = (() => {
   function exportieren() {
     if (!ladebereit) return;
     if (defekterStand !== null) {
-      dateiSichern(defekterStand, 'aphros-erzpilot-regel15-beschaedigt.json');
+      dateiSichern(defekterStand, `aphros-erzpilot-${DATEI_REGEL}-beschaedigt.json`);
       return nachricht('Original des beschädigten Pilotstands unverändert als JSON gesichert.');
     }
-    dateiSichern(save(state), `aphros-erzpilot-regel15-tick-${state.tick}.json`);
+    dateiSichern(save(state), `aphros-erzpilot-${DATEI_REGEL}-tick-${state.tick}.json`);
     nachricht('Pilot-Spielstand als JSON exportiert.');
   }
   $('pilot-datei').addEventListener('click', exportieren);
@@ -4913,7 +4980,7 @@ const m_ui_erzpilot = (() => {
     e.target.value = '';
     if (!file || !ladebereit) return;
     try {
-      const neu = loadErz(await file.text());
+      const neu = laden(await file.text());
       if (!audit(neu).ok) throw Error('Geld- oder Warenbilanz stimmt nicht');
       if (!confirm('Pilot-Spielstand ersetzen? Der bisherige Pilot wird vorher archiviert.')) return;
       await archivieren();
@@ -4930,7 +4997,7 @@ const m_ui_erzpilot = (() => {
     if (!confirm('Neuen Erzpilot starten? Der bisherige Pilot wird zuerst archiviert.')) return;
     try {
       await archivieren();
-      state = createErzState(); gesperrt = false; ladebereit = true; defekterStand = null;
+      state = neuerStand(); gesperrt = false; ladebereit = true; defekterStand = null;
       anzeigen();
       if (!await sichern()) throw Error('Neuer Stand nur im Arbeitsspeicher; bitte JSON exportieren');
       nachricht('Neuer Erzpilot gestartet. Vorheriger Stand archiviert.');
@@ -4988,7 +5055,7 @@ const m_ui_erzpilot = (() => {
     try {
       const text = await dbGet(SLOT);
       if (text !== undefined) {
-        const s = loadErz(text);
+        const s = laden(text);
         if (!audit(s).ok) throw Error('Bilanzfehler im gespeicherten Pilotstand');
         state = s;
         nachricht('Gespeicherter Pilotstand geladen.');
@@ -5004,7 +5071,7 @@ const m_ui_erzpilot = (() => {
   if (ist2d) minerAnsicht = minerStart();
   anzeigen();
   starten();
-  return { modus: 'erzpilot' };
+  return { modus: istW2 ? 'w2konzern' : 'erzpilot' };
 })();
 </script>
 </body>

@@ -1,5 +1,27 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] W2-Käuferkasse: Wiederanlauf nur nach belegtem Geldzufluss · 04.11.2026
+
+**[ANALYSE → DRAFT-Codehärtung, PR #167]** Der W2-Krisencontroller besitzt bereits die automatische Wiederaufnahme ruhender NPC-Miner, sobald eine *tatsächlich finanzierbare* zusätzliche Charge vorhanden ist. Im gegenwärtigen W2-Modell hat der externe Exportkäufer aber ausschließlich 20.000 ISK Anfangsgeld und **keine freigegebene Einnahmequelle**. Er darf nicht aus NPC-, Spieler-, Fonds- oder Werftkasse ohne wirtschaftliche Gegenleistung aufgefüllt werden: Schon der vorhandene Käuferherkunfts-Audit sperrt solche Überweisungen. Ein echter positiver Wiederanlauf nach erneuter Endkundeneinnahme ist somit **noch nicht vorführbar**, ohne eine neue, ausdrücklich finanzierte Waren-/Leistungskette zu bauen.
+
+Kleine Verbesserung auf #167: Regel16 prüft bei neuer Förderauftragsbindung sowie unmittelbar vor dem tatsächlichen Erzexport die bestehende Käuferherkunft; unverbuchte Aufladungen werden nicht in neue Leistungen umgewandelt. `pilotNpcKrisenLage` bleibt rein lesend und weist vorhandenes Lager, gebundenes Erz, Käufernachweis und den **minimal zusätzlich benötigten ISK-Betrag für eine weitere Erzmenge** getrennt aus. In der W2-Ansicht wird der fehlende Kaufetat nicht mit allgemeinem ISK-Mangel oder einer Firmeninsolvenz verwechselt. Keine neue Käufer-, Geld-, Preis-, Lohn-, Emissions- oder Save-Regel.
+
+**[NÄCHSTES ECHTES PRODUKTGATE]** Eine Gegenleistung/Einkommensquelle des Käufers benötigt ihren eigenen Auftrag nach W3/W4/W5 oder eine separat genehmigte Geldmodell-B-Regel. Erst damit kann ein positiver Käuferzufluss gegen tatsächlichen Gegenwert auditiert und danach die Wiederaufnahme mit denselben Verträgen und Seeds geprüft werden. Keine neue Gratis-Nachfrage, kein Merge oder Deployment. **[TEST] [CI #41820349319](https://github.com/tobiasfranziskus/Check/actions/runs/41820349319):** 131/131 Node-Einzeltests bestanden (0 Fehltests/Skips) auf `603cb942`, einschließlich Seeds42/7 und bilanzneutraler, aber unbelegter Käufergeldtransfer-Gegenprobe. Die längeren historischen CI-Jobs sind hiervon getrennt zu beurteilen.
+
+---
+
+
+## [DRAFT] W2 als bedienbare Forschungsansicht mit getrenntem Spielstand · 04.11.2026
+
+Auf dem gestapelten W2-Krisen-Branch #166 baut ein neuer, **nicht integrierter** UI-Schritt: `?modus=w2konzern` für Konto-/Absatzlage und `?modus=w2miner2d` für die bereits vorhandene 2D-Mineransicht mit derselben echten Regel-16-Welt. Spieler- und NPC-Aufträge, eigenfinanzierte Schiffsanschaffung und Absatzstopp laufen ausschließlich über den gemeinsamen Core. Die reine Kontenanzeige liest `pilotNpcKrisenLage`; sie erzeugt kein zusätzliches Geld, keine Nachfrage und keinen zweiten Simulations-Ticker.
+
+**Schutzgrenze:** W1-Regel15 (`?modus=erzpilot` / `?modus=miner2d`) behält den Slot `aphros-void-erzpilot-regel15-v1`; die W2-Vorschau hat ausdrücklich `aphros-void-w2-regel16-v1`. `slot1`, Hauptlink-Standard, alte Spielstände und der normale Release bleiben unverändert. W2-Import/Neustart mit Archiv und JSON-Export laufen im separaten Slot; Regel15↔16 wird nicht automatisch migriert. Dies ist ein **Entwicklungs-Draft, keine Veröffentlichung**.
+
+**[OFFEN]** Neue W2-/UI-/Speicher-Regressionen und GitHub-CI abschließen; echte iPad-Safari-/NAS-Abnahme gemäß Nutzerwunsch zurückstellen und später bevorzugt nach gesondertem Merge-/Deploymentauftrag über den bestehenden Hauptlink durchführen. W2-Insolvenz/Markteintritt, dauerhafte Endkaufkraft und W3-Transport bleiben eigene wirtschaftliche Freigabegates. Kein Merge, keine Emission, keine stillen Produktentscheidungen.
+
+---
+
+
 ## [DRAFT] W2-NPC-Betriebsruhe bei Absatzkrise · 04.11.2026
 
 **Fortschritt auf dem gestapelten W1-/2D-/W2-Branch:** Ein eigenfinanzierter NPC-Bergbaukonzern nimmt **keine unfinanzierte Arbeit** mehr an, nur weil sein alter Auftragstext noch "foerdern" lautet. Ausschließlich in der getrennten Regel-16-Forschungswelt prüft der Core stündlich nach bezahlten Exporten, ob *wirklich freie* Aufträge durch Kundenrestbudget, bereits gebundenes Erz, Lagerplätze, Stations- und Unternehmensmittel vollständig gedeckt sind. Wenn nicht, stellt er den nicht finanzierten NPC-Miner durch das **bestehende validierte `shipWait`** auf "halten"; laufende vollständig vorfinanzierte Verträge laufen ausdrücklich bis zur tatsächlichen Bezahlung weiter. Eine rechnerische spätere Auftragsmöglichkeit nutzt dieselbe validierte `shipMine`-Anforderung, ohne eine neue Betriebsart, kostenlose Leistung oder Geldschöpfung einzuführen.

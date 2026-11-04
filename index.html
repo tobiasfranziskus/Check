@@ -1833,12 +1833,13 @@ const m_core_erzpilot = (() => {
   const { anzahl, ids } = m_core_zahl;
   const { buche, handel, obergrenze } = m_core_handel;
   const { protokolliere } = m_core_state;
-  function vertragsbuch(state) { return (state.erzpilotVertraege ||= {}); }
+  // Anzeigen und Audits duerfen alte Regel-15-Spielstaende ohne Auftragsbuch nicht mutieren.
+  function vertragsbuch(state) { return state.erzpilotVertraege || {}; }
   function reserviert(state) {
     return Object.values(vertragsbuch(state)).reduce((sum, v) => sum + v.menge, 0);
   }
   function beauftragen(state, rules, schiff) {
-    const cfg = rules.erzpilot, buch = vertragsbuch(state);
+    const cfg = rules.erzpilot, buch = (state.erzpilotVertraege ||= {});
     if (buch[schiff.id]) return buch[schiff.id];
     const station = state.owners[cfg.station];
     const lager = state.stations[cfg.station].lager;
@@ -2233,8 +2234,12 @@ function audit(state) {
       if (o.kind === 'escrow' && o.cash !== 0 && !active.has(id))
         errors[id] = 'Treuhandgeld ohne aktiven Auftrag';
     }
-    // In Regel 15 ist die freie Erzlagerkapazitaet 125; Auftraege duerfen sie nicht doppelt binden.
-    if (state.stations.st_aldera.lager.erz + reservierteMenge > 125)
+    // Kapazitaet aus der einzigen Core-Preis-/Lagerformel berechnen, nicht duplizieren.
+    const cfg = m_data_erzpilot.ERZ_RULES;
+    const mengeImLager = state.stations[cfg.erzpilot.station]?.lager?.erz;
+    const kapazitaet = m_core_handel.obergrenze(state, cfg, cfg.erzpilot.station, 'erz');
+    if (!Number.isSafeInteger(mengeImLager) || mengeImLager < 0
+      || mengeImLager + reservierteMenge > kapazitaet)
       errors.lager = 'Auftragsvolumen uebersteigt Lagerkapazitaet';
     vertragsOk = Object.keys(errors).length === 0;
     extra.contracts = { ok: vertragsOk, errors, reserved: reservierteMenge };
@@ -2268,7 +2273,17 @@ function loadErz(json) {
   const s = JSON.parse(json);
   if (!s || s.rulesVersion !== ERZ_RULES.rulesVersion || s.schema !== ERZ_RULES.schema)
     throw new Error('Erzpilot-Spielstand inkompatibel; kein stilles Migrieren');
-  return m_core_serialize.load(json, m_core_serialize.MIGRATIONS, ERZ_RULES.schema, ERZ_RULES.rulesVersion);
+  const geladen = m_core_serialize.load(json, m_core_serialize.MIGRATIONS, ERZ_RULES.schema, ERZ_RULES.rulesVersion);
+  for (const konto of ['house', 'npc3', 'st_aldera', 'fonds_aldera', 'export', 'werft_extern']) {
+    if (!Number.isSafeInteger(geladen.owners?.[konto]?.cash) || geladen.owners[konto].cash < 0)
+      throw new Error('Erzpilot-Spielstand: ungueltiges Konto ' + konto);
+  }
+  if (!Number.isSafeInteger(geladen.stations?.st_aldera?.lager?.erz)
+    || !Number.isSafeInteger(geladen.stations.st_aldera.lager.miner))
+    throw new Error('Erzpilot-Spielstand: ungueltiges Lager');
+  if (!m_core_audit.audit(geladen).ok)
+    throw new Error('Erzpilot-Spielstand: Geld-, Waren- oder Vertragsbilanz fehlerhaft');
+  return geladen;
 }
 const createState = (seed = RULES.startSeed, rules = RULES) => m_core_state.createState(seed, rules);
 const submit = (state, cmd, rules = RULES) => m_core_commands.submit(state, cmd, rules);

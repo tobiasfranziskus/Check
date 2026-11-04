@@ -1,5 +1,16 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W2-Konzern- und 2D-Ansicht mit isoliertem Regel16-Slot · 04.11.2026
+
+**[MAIN]** weiterhin `b4e604d6`, Regel14/Schema8. Der neue gestapelte Entwicklungsbranch `feature/w2-npc-ui-save-20261104` setzt auf W2-Krisensteuerung #166 auf. Zusätzlich zu den W1-Modi `erzpilot` und `miner2d` gibt es ausschließlich im Draft `?modus=w2konzern` und `?modus=w2miner2d`. Beide nutzen den **existierenden**, autoritativen Regel16-Core und dieselben `shipBuy`-/`shipMine`-/`shipWait`-Befehle sowie Stunden-/Tagesfortschritt. Die 2D-Darstellung zeigt echte NPC-Flotten; der Konzernbericht zeigt Absatz, bereits finanzierte Aufträge, verfügbares Kapital und Betriebsruhe.
+
+**[SPEICHERSCHUTZ]** W1: `aphros-void-erzpilot-regel15-v1`; W2: `aphros-void-w2-regel16-v1`; Regel14: `slot1`. Keine gegenseitige Überschreibung, keine stillschweigende Regelmigration. Vor Import/Neustart wird nur der *eigene* Pilotstand archiviert; JSON-Export ist versionsklar; fehlerhafte Saves bleiben gesperrt und exportierbar. Der reguläre Startmodus `./` bleibt Regel14. Diese UI-Änderung beinhaltet keine Wirtschaftskern-/Kassen-/Preis-/Lohnänderung.
+
+**[TESTGATE]** Neue `tests/w2-npc-ui-save.test.mjs` für Konto-/Marktanzeige, 2D-Ansicht, zahlungsechten NPC-Kauf, Umsatzstopp, Speichertrennung, Inkompatibilitäts-Import, Archiv und beschädigte Daten. Vor CI-Abschluss noch **nicht** als bestanden werten. Echte Safari-/NAS-Abnahme auf Wunsch verschoben; öffentliche Hauptadresse nicht verändert. **Kein Merge/Deployment.**
+
+---
+
+
 ## [DRAFT] W2 – finanzierte Aufträge beenden, NPC bei echter Absatzkrise stilllegen · 04.11.2026
 
 **[MAIN]** weiterhin `b4e604d6`. **[DRAFT]** Neuer Folgebranch `feature/w2-npc-krisensteuerung-20261104` auf dem W1-/2D-/W2-Integrations-Draft #165. Der Core von Regel16 erhält die deterministische `krisenLage` (rein lesend) und `krisenSteuern` (stündliche Validierung im bestehenden `m_core_step`), ohne zusätzliche Simulationsschleife und ohne neue Save-Felder. Regel14/15, unveränderter W1-/2D-Modus, reguläre Speicherslots und der öffentliche Hauptlink bleiben unverändert.

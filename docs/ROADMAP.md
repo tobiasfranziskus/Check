@@ -1,5 +1,16 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] W2-Käuferkasse: Wiederanlauf nur nach belegtem Geldzufluss · 04.11.2026
+
+**[ANALYSE → DRAFT-Codehärtung, PR #167]** Der W2-Krisencontroller besitzt bereits die automatische Wiederaufnahme ruhender NPC-Miner, sobald eine *tatsächlich finanzierbare* zusätzliche Charge vorhanden ist. Im gegenwärtigen W2-Modell hat der externe Exportkäufer aber ausschließlich 20.000 ISK Anfangsgeld und **keine freigegebene Einnahmequelle**. Er darf nicht aus NPC-, Spieler-, Fonds- oder Werftkasse ohne wirtschaftliche Gegenleistung aufgefüllt werden: Schon der vorhandene Käuferherkunfts-Audit sperrt solche Überweisungen. Ein echter positiver Wiederanlauf nach erneuter Endkundeneinnahme ist somit **noch nicht vorführbar**, ohne eine neue, ausdrücklich finanzierte Waren-/Leistungskette zu bauen.
+
+Kleine Verbesserung auf #167: Regel16 prüft bei neuer Förderauftragsbindung sowie unmittelbar vor dem tatsächlichen Erzexport die bestehende Käuferherkunft; unverbuchte Aufladungen werden nicht in neue Leistungen umgewandelt. `pilotNpcKrisenLage` bleibt rein lesend und weist vorhandenes Lager, gebundenes Erz, Käufernachweis und den **minimal zusätzlich benötigten ISK-Betrag für eine weitere Erzmenge** getrennt aus. In der W2-Ansicht wird der fehlende Kaufetat nicht mit allgemeinem ISK-Mangel oder einer Firmeninsolvenz verwechselt. Keine neue Käufer-, Geld-, Preis-, Lohn-, Emissions- oder Save-Regel.
+
+**[NÄCHSTES ECHTES PRODUKTGATE]** Eine Gegenleistung/Einkommensquelle des Käufers benötigt ihren eigenen Auftrag nach W3/W4/W5 oder eine separat genehmigte Geldmodell-B-Regel. Erst damit kann ein positiver Käuferzufluss gegen tatsächlichen Gegenwert auditiert und danach die Wiederaufnahme mit denselben Verträgen und Seeds geprüft werden. Keine neue Gratis-Nachfrage, kein Merge oder Deployment. Tests und CI gelten erst nach tatsächlich abgeschlossenem Lauf.
+
+---
+
+
 ## [DRAFT] W2 als bedienbare Forschungsansicht mit getrenntem Spielstand · 04.11.2026
 
 Auf dem gestapelten W2-Krisen-Branch #166 baut ein neuer, **nicht integrierter** UI-Schritt: `?modus=w2konzern` für Konto-/Absatzlage und `?modus=w2miner2d` für die bereits vorhandene 2D-Mineransicht mit derselben echten Regel-16-Welt. Spieler- und NPC-Aufträge, eigenfinanzierte Schiffsanschaffung und Absatzstopp laufen ausschließlich über den gemeinsamen Core. Die reine Kontenanzeige liest `pilotNpcKrisenLage`; sie erzeugt kein zusätzliches Geld, keine Nachfrage und keinen zweiten Simulations-Ticker.

@@ -1958,6 +1958,70 @@ const m_core_erzpilot = (() => {
   return { beauftragen, stornieren, foerdern, exportiere, auftragsStand };
 })();
 
+// W1: rein lesende Vollkosten-/Liquiditaetsrechnung aus gebuchten Originalkonten.
+// Kein eigener Wirtschaftskern, kein weiterer Geld- oder Warenfluss.
+const m_core_w1_vollkosten = (() => {
+  const { anzahl } = m_core_zahl;
+  function pruefen(state, rules) {
+    const cfg = rules.erzpilot;
+    if (!cfg) return null;
+    const vertraege = state.erzpilotVertraege || {};
+    const startCash = (id) => rules.owners.find((o) => o.id === id)?.cash ?? null;
+    function saldo(id, gebunden = 0) {
+      const konto = state.owners[id], statistik = state.stats.konto[id];
+      const anfang = startCash(id);
+      const erloese = statistik?.erloes, kosten = statistik?.kosten, frei = konto?.cash;
+      const netto = erloese - kosten;
+      const kassenDelta = frei + gebunden - anfang;
+      const ok = [anfang, erloese, kosten, frei, gebunden, netto, kassenDelta]
+        .every(Number.isSafeInteger) && anfang >= 0 && erloese >= 0 && kosten >= 0
+        && frei >= 0 && gebunden >= 0 && netto === kassenDelta;
+      return { anfang, frei, gebunden, erloese, kosten, netto, kassenDelta, ok };
+    }
+    const arbeitsGebunden = (id) => Object.entries(vertraege).reduce((sum, [schiffId, v]) => {
+      const schiff = state.ships[schiffId];
+      if (schiff?.owner !== id || !v.arbeitsKonto) return sum;
+      return sum + (state.owners[v.arbeitsKonto]?.cash ?? NaN);
+    }, 0);
+    const abnahmeGebunden = Object.values(vertraege).reduce((sum, v) =>
+      sum + (state.owners[v.konto]?.cash ?? NaN), 0);
+    const haus = saldo('house', arbeitsGebunden('house'));
+    const npc = saldo('npc3', arbeitsGebunden('npc3'));
+    const station = saldo(cfg.station, abnahmeGebunden);
+    const verkauf = saldo(cfg.werftOwner);
+    const kaeufer = saldo(cfg.exportOwner);
+    const minerKaeufe = anzahl(state.ledger.miner, 'consumed');
+    const bezahlteHuelle = minerKaeufe * rules.economy.waren.miner.basis;
+    const foerderArbeit = state.ledger.erz.mined * cfg.minerJeMinute;
+    const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle;
+    const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
+    const fonds = state.owners[fondsId].cash - startCash(fondsId);
+    const stationErz = state.stations[cfg.station].lager.erz;
+    const wertUnverkauft = stationErz * cfg.preis; // Nur kalkulatorischer Wert, KEIN Geld.
+    const beschaffung = station.kosten;
+    const abnahme = station.erloese;
+    const ketteOk = [minerKaeufe, bezahlteHuelle, foerderArbeit, belegteArbeit, fonds,
+      stationErz, wertUnverkauft, beschaffung, abnahme].every(Number.isSafeInteger)
+      && minerKaeufe >= 0 && stationErz >= 0
+      && belegteArbeit === foerderArbeit && fonds === foerderArbeit
+      && verkauf.erloese === bezahlteHuelle
+      && beschaffung === (state.ledger.erz.mined
+        - Object.values(state.ships).reduce((sum, sh) => sum + anzahl(sh.ladung, 'erz'), 0)) * cfg.preis
+      && abnahme === state.ledger.erz.exported * cfg.preis;
+    return {
+      ok: haus.ok && npc.ok && station.ok && verkauf.ok && kaeufer.ok && ketteOk,
+      konzerne: { house: haus, npc3: npc },
+      station, verkauf, kaeufer,
+      minerKaeufe, bezahlteHuelle, foerderArbeit, belegteArbeit, fonds,
+      stationErz, wertUnverkauft, beschaffung, abnahme, ketteOk,
+      // Statischer Rechenwert für EIN vollständig bezahltes Schiff, kein Gewinnerhalt-Versprechen.
+      amortisationErz: Math.ceil(rules.economy.waren.miner.basis /
+        (cfg.preis - cfg.minerJeMinute)),
+    };
+  }
+  return { pruefen };
+})();
+
 const m_core_step = (() => {
 const { execute } = m_core_commands;
 const { protokolliere } = m_core_state;
@@ -2253,6 +2317,14 @@ function audit(state) {
     extra.finanzierung = { ok: finanzierungsOk, start, ausgegeben, rest,
       differenz, exportiert };
   }
+  let wirtschaftOk = true;
+  if (state.rulesVersion === m_data_erzpilot.ERZ_RULES.rulesVersion) {
+    const bericht = m_core_w1_vollkosten.pruefen(state, m_data_erzpilot.ERZ_RULES);
+    wirtschaftOk = bericht.ok;
+    extra.vollkosten = { ok: wirtschaftOk, ketteOk: bericht.ketteOk,
+      house: bericht.konzerne.house.ok, npc3: bericht.konzerne.npc3.ok,
+      station: bericht.station.ok, werft: bericht.verkauf.ok, kaeufer: bericht.kaeufer.ok };
+  }
   let vertragsOk = true;
   if (state.erzpilotVertraege) {
     const errors = {};
@@ -2294,7 +2366,7 @@ function audit(state) {
     vertragsOk = Object.keys(errors).length === 0;
     extra.contracts = { ok: vertragsOk, errors, reserved: reservierteMenge };
   }
-  return { ok: isk.ok && goods.ok && vertragsOk && finanzierungsOk, total, expected, delta: total - expected, isk, goods, ...extra };
+  return { ok: isk.ok && goods.ok && vertragsOk && finanzierungsOk && wirtschaftOk, total, expected, delta: total - expected, isk, goods, ...extra };
 }
 return { audit };
 })();
@@ -2303,6 +2375,7 @@ const m_core_index = (() => {
 const { RULES } = m_data_rules;
 const { ERZ_RULES } = m_data_erzpilot;
 const pilotAuftragsStand = (state) => m_core_erzpilot.auftragsStand(state, ERZ_RULES);
+const pilotWirtschaftsStand = (state) => m_core_w1_vollkosten.pruefen(state, ERZ_RULES);
 function createErzState(seed = ERZ_RULES.startSeed) {
   const state = m_core_state.createState(seed, ERZ_RULES);
   // Erz stammt nur aus echter Foerderung, nicht aus vorausgefuellten Zielbestaenden.
@@ -2357,7 +2430,7 @@ const { reise } = m_core_ankunft;
 const { kampf } = m_core_kampf;
 const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
-return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, pilotAuftragsStand, createErzState, loadErz, createState, submit, execute, step, advance, load, preis, faktor };
+return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, pilotAuftragsStand, pilotWirtschaftsStand, createErzState, loadErz, createState, submit, execute, step, advance, load, preis, faktor };
 })();
 
 const m_data_oberflaeche = (() => {

@@ -1,5 +1,16 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W5d – zwei reale Jäger und physische Abschussbelege · 04.11.2026
+
+**[MAIN]** weiterhin `b4e604d6` (Regel14/Schema8). **[DRAFT]** [PR #178](https://github.com/tobiasfranziskus/Check/pull/178) auf #176, isolierte Regel22. **Echter Warenbeleg:** zweimal Erztransport, acht Raffineriechargen, zweimal acht Silizium, zweimal acht Bauteile, zweimal bezahlter Jägerbau; zusätzliche echte W1-Hauserlöse aus einem bezahlten Aldera-Erzminer finanzierten die zweite Charge. Zwei physische IDs, zweimal 900-ISK-Konzernkauf und einmalige 900-ISK-Piratenübernahme. `ledger.jaeger.produced=2`, `consumed=2`, `minted=0`.
+
+**[KAMPF]** Vorfinanzierter NPC-Jagddienst trifft Piraten am selben Nadir-Ort. Der vorhandene deterministische Kampf reduziert Schiffsbestand und schreibt `w5b.zerstoerteIds` und `w5d.verluste[{id,owner,tick}]` sowie statistische Verluste. Kein künstliches Kopfgeld, keine neue ISK, keine XP. `piratenErsatzbedarf` wird aus realem Verlust abgeleitet, **noch kein finanzierter Ersatz**; Piratenkasse und neuer Warenbestand reichen nicht für Nachschub.
+
+**[TATSAECHLICH DIREKT GEPRUEFT]** 13 Seeds × 90 Tage, pro Tag Core-Audit, Hashgleichheit mit separat geladenem Replay und Save/Load-Test: alle bestanden. In 13/13 Piratenverlust, in 1/13 zusätzlich Konzernjäger verloren; jeweils 0 Kopfgeld und 0 Ersatzschiffe. Seed42 Tag90 Hash `2fce717d7fd452e1`. **[CI]** Standard-Node/Workflow ausstehend, nicht als grün bezeichnet. Browser/iPad/NAS und Main-Link unverändert; kein Merge. [Bericht](W5D_ZWEI_JAEGER_KAMPF.md).
+
+---
+
+
 ## [DRAFT] W5c – bezahlter Eigentumsuebergang zum Piraten und Jagdkostenvorauszahlung · 04.11.2026
 
 **[MAIN]** `b4e604d6` Regel14/Schema8 weiterhin unveraendert. **[DRAFT]** [PR #176](https://github.com/tobiasfranziskus/Check/pull/176) auf #175 nutzt eine neue, isolierte Forschungsregel21. Reale Baukette von W3/W4/W5b bleibt derselbe Core. Piraten erwerben **keine gratis generierte Huelle**, sondern das fuer 900 ISK von `npc3` zuerst gekaufte W5b-Industrieschiff als identische `sh...`-ID gegen weitere 900 ISK; verbuchte Hüllenmenge bleibt exakt 1. Start-ISK `st_nadir` um 900 geringer, `pirates` um 900 hoeher – die Gesamtmenge **33.000 ISK**, `minted=0`.

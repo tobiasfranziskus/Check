@@ -121,3 +121,33 @@ test('W2-Krise: Regel14 und Regel15 bleiben getrennt und Save-kompatibel',()=>{
   assert.throws(()=>api.loadErz(api.save(w2)),/inkompatibel/);
   assert.throws(()=>api.loadW2(api.save(w1)),/inkompatibel/);
 });
+
+test('W2-Krise: neuer Auftrag darf den noch freien Endkundenetat nicht ueberziehen',()=>{
+  const s=api.createW2State(42);
+  api.advance(s,1249,rules);
+  assert.equal(s.owners.export.cash,1000);
+  const npc=npcShips(s);
+  assert.equal(npc.length,2);
+  for(const sh of npc){
+    assert.equal(s.erzpilotVertraege[sh.id]?.menge,50);
+    assert.equal(sh.ladung.erz,49);
+    assert.equal(api.execute(s,{type:'shipWait',owner:'npc3',schiff:sh.id},rules).ok,true);
+  }
+  assert.equal(api.audit(s).ok,true);
+  api.advance(s,11,rules);
+  assert.equal(s.owners.export.cash,20,'nach 98 verkauften Erz bleiben exakt 2 finanzierbar');
+  assert.equal(api.pilotNpcKrisenLage(s).kaeuferMenge,2);
+  api.advance(s,1,rules);
+  const aktiv=Object.entries(s.erzpilotVertraege);
+  assert.equal(aktiv.length,1);
+  assert.equal(aktiv[0][1].menge,2,'nicht 50 Erz vom Stationsgeld ohne zahlenden Endkunden');
+  assert.equal(s.owners[aktiv[0][1].konto].cash,20);
+  assert.equal(s.owners[aktiv[0][1].arbeitsKonto].cash,2);
+  assert.equal(api.audit(s).ok,true);
+  api.advance(s,59,rules);
+  assert.equal(s.owners.export.cash,0);
+  assert.equal(s.ledger.erz.exported,2000);
+  assert.equal(s.ledger.erz.mined,2000);
+  assert.equal(api.audit(s).ok,true);
+  assert.equal(api.hash(api.loadW2(api.save(s))),api.hash(s));
+});

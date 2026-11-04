@@ -10,7 +10,7 @@
 
 **[UI/SPEICHERSCHUTZ]** `?modus=w5werft` und `?modus=w5konten` nutzen denselben Core sowie `aphros-void-w5-regel19-v1`; die bisherigen Speicherplätze `slot1` und Regel15–18 bleiben unberührt, kein stiller Import inkompatibler Regeln. Browser-/Spielstandstests ergänzen die W0–W4-Regressionen. Echte iPad-Safari-/NAS-Abnahme auf Wunsch verschoben.
 
-**[PRÜFGATE]** W5-Tests einschließlich voller Zahlungskette, 13 Seeds ×90 Tagen, unabhängigen Manipulations- und Save-/Load-Prüfungen; CI erst nach Abschluss als bestanden bezeichnen. W5-Modulbau, Lieferung/Überführung des gebauten Schiffes und nachhaltiger W6-Nachfragekreis sind **offen**. Kein Merge, kein Deployment.
+**[PRÜFGATE / GEMESSEN]** [CI #41848351931](https://github.com/tobiasfranziskus/Check/actions/runs/41848351931) am Core-/UI-Commit `b6101b46`: **159/159 Node-Tests bestanden**, darunter echte Materialzahlung, Werftarbeit, 13 Seeds ×90 Spieltage, Save/Load und unabhängige Manipulationsproben. Die zusätzliche Wiederholung erzeugt ein **zweites echtes Schiff** nach weiterem bezahltem W3-/W4-Betrieb. Die Spedition besitzt dann aber nur **740 von benötigten 750 ISK**; der zweite Schiffverkauf wird ohne Seiteneffekt korrekt abgelehnt, das Schiff verbleibt als echte Lagerware. Der vollständige Workflow muss gesondert grün sein. W5-Modulbau, Lieferung/Überführung des gebauten Schiffes und nachhaltiger W6-Nachfragekreis sind **offen**. Kein Merge, kein Deployment.
 
 ---
 

@@ -1,5 +1,22 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W0 – beidseitig vorfinanzierte Erzaufträge · 04.11.2026
+
+**[MAIN]** unverändert `b4e604d6`, Version v0.12.5 / Regel14 / Schema8. **[DRAFT]** [PR #161](https://github.com/tobiasfranziskus/Check/pull/161) ergänzt den separaten Regel-15-Erzpilot, ohne `main` und den regulären Spielstand-Slot `slot1` anzutasten.
+
+**Implementierung:** Der bestehende deterministische Core bindet jetzt vor Förderbeginn jeweils (1) Stationsgeld für die tatsächlich abnehmbare Erzcharge und entsprechende Lagerplätze sowie (2) die vollständigen Minerbetriebskosten für die noch zu fördernde Charge auf unabhängigen Arbeits-Treuhandkonten. Das Erz wird erst bei nachgewiesener Lieferung aus dem Stations-Treuhand bezahlt. Bei Stop/Abbruch werden Teillieferung und ungenutztes Erwerbs-/Betriebsbudget auseinandergebucht und erstattet. Spieler und NPC unterliegen denselben Regeln. Ohne finanzierten Auftrag: keine Förderung, keine Kosten. Keine ISK-Emission und kein neuer Waren-/Produktionszweig.
+
+**Audit und Save:** Geld- und Warenaudit erweitert um unabhängigen Vertrags-Audit (Gegenprüfung beider Treuhandkonten, Besitzschiff, reservierte Menge, Kapazität); auch gezielte Falschbuchungen mit insgesamt bilanzierendem ISK werden erkannt. Regel-15-Saves ohne die neuen Felder bleiben ladbar und beim reinen Anzeigen hashgleich; Import mit Vertrags-/Warenfehlern wird abgewiesen. Alt-Aufträge aus dem Forschungs-Draft ohne Arbeits-Treuhand werden kontrolliert abgewickelt, neue Aufträge sind beidseitig vorfinanziert. UI zeigt freie Stationskasse, reserviertes Abnahmegeld und vorfinanziertes Arbeitskapital.
+
+**Direkt geprüft:** Seed42, zwei Miner: zu Beginn 100 Erz abnahmegebunden (1.000 ISK) und zusätzlich 200 ISK Arbeit reserviert, je Förderminute buchungssicher reduziert; 13-Erz-Abbruch mit Zahlung von 130 ISK, Erstattung 370 ISK Abnahmegeld und 74 ISK Arbeitsbudget. Regel-14-Seed42-60-Minuten-Referenzhash weiterhin `866776f7d84ef15e`. Ein weiterer direkter Seed42-90-Tage-Lauf ergab bei zwei Minern 2.100 geförderte Erz, 2.000 exportiert und danach keinen weiteren Absatz. **Das ist bewusst kein Langzeit-Finanzierungsnachweis.**
+
+**Tests im Draft:** `tests/erzpilot.test.mjs` prüft u.a. Treuhandbindung, Invarianz gegen Falschbuchung, Stop/Erstattung, liquide Käufer, Rückkehr externer Finanzierung aus vorhandenen Guthaben, Save/Load alter/neuer Verträge sowie **13 Seeds × 90 Tage mit aktivem Spieler- und NPC-Miner**. Browser-UI-Test prüft Käufe, Zeitsprung, separaten Pilot-Slot, Archiv und JSON-Sicherung. Die letzte vor diesem Arbeitspaket vollständig erfolgreiche CI war [#41722964221](https://github.com/tobiasfranziskus/Check/actions/runs/41722964221) mit 77/77 Node-Tests. Im aktuellen Arbeitspaket wurden **84/84 Node-Tests** bereits separat erfolgreich ausgeführt ([CI #41777805816](https://github.com/tobiasfranziskus/Check/actions/runs/41777805816), Testjob). **Neueste vollständige CI inklusive der zusätzlichen Tests sowie reale iPad-/NAS-Abnahme noch offen; nicht als bestanden erklären.**
+
+**Nächstes Gate:** Das externe Exportbudget von 20.000 ISK endet nach 2.000 Erz. Ein dauerhafter Budgetrückfluss benötigt nachweisbar finanzierte Endnachfrage und/oder eine gesondert zu genehmigende Modell-B-Geldregel. Keine kostenlosen Fondsfüllungen. W2–W6 und Wartungs-/Ersatzverbrauch bleiben nachgelagert.
+
+---
+
+
 ## [DRAFT] W1 – bedienbarer Erzpilot und Zielarchitektur Reparaturen · 03.11.2026
 
 **[MAIN]** `b4e604d6` weiterhin ohne Integration des Piloten. **[DRAFT]** [PR #161](https://github.com/tobiasfranziskus/Check/pull/161) enthält nun zusätzlich eine browserseitig anwählbare Pilotansicht (`?modus=erzpilot`; Link im HQ) mit Miner-Komplettkauf, Bergbau-Befehl, Stop, +1 Stunde/+1 Tag, Kassen-, Waren-, Audit- und Hashanzeige. Gleicher `m_core_index`, **kein** zweiter Simulationskern, keine automatische Weiterrechnung im Hintergrund. Die reguläre Regel-14-UI startet in diesem Modus nicht.

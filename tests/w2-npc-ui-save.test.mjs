@@ -157,6 +157,29 @@ test('W2-Save: JSON-Export, Restart mit Archiv und W1-Importabweisung', async ()
   assert.equal(store.get(W1_SLOT),'W1-GESCHUETZT');
 });
 
+test('W2: Konten und 2D laden exakt denselben gespeicherten Regel16-Stand', async () => {
+  const a=boot('w2konzern');
+  await settle();
+  a.el['pilot-stunde'].click();
+  a.el['pilot-stunde'].click();
+  await settle();
+  const before=a.store.get(W2_SLOT), hash=a.el['pilot-hash'].textContent;
+  const b=boot('w2miner2d',Object.fromEntries(a.store));
+  await settle();
+  assert.equal(b.el['pilot-hash'].textContent,hash);
+  assert.equal(b.el['pilot-w2-miner'].textContent,'2 / 0');
+  assert.equal(b.store.get(W2_SLOT),before,'nur Anzeigenwechsel, keine versteckte Weltstunde');
+  b.el['m2-step'].click();
+  await settle();
+  const after=b.store.get(W2_SLOT);
+  assert.equal(JSON.parse(after).tick,121);
+  const c=boot('w2konzern',Object.fromEntries(b.store));
+  await settle();
+  assert.equal(c.el['pilot-hash'].textContent,b.el['pilot-hash'].textContent);
+  assert.equal(c.store.get(W2_SLOT),after);
+  assert.equal(c.el['pilot-audit'].textContent,'ISK + Waren + Vollkosten OK');
+});
+
 test('W2-Save: beschaedigten eigenen Slot niemals still ersetzen', async () => {
   const bad='{"rulesVersion":16,"korrupt":true}';
   const {el,store,downloads}=boot('w2konzern',{[W2_SLOT]:bad});

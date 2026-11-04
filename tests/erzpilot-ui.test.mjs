@@ -60,10 +60,10 @@ test('Erzpilot ist explizit anwaehlbar und besitzt eigenen Browser-Speicher', as
   el['pilot-abbau'].click();
   el['pilot-stunde'].click();
   await tick();
-  assert.match(el['pilot-audit'].textContent, /ISK \\+ Waren \\+ Vollkosten OK/);
+  assert.equal(el['pilot-audit'].textContent, 'ISK + Waren + Vollkosten OK');
   assert.match(el['pilot-voll-spieler'].textContent, /-200 ISK/);
   assert.match(el['pilot-voll-grenze'].textContent, /75 verkauften Erz/);
-  assert.match(el['pilot-voll-audit'].textContent, /Vollkosten \\+ Konten OK/);
+  assert.equal(el['pilot-voll-audit'].textContent, 'Vollkosten + Konten OK');
   assert.equal(el['pilot-miner'].textContent, '1');
   assert.match(el['pilot-mengen'].textContent, /\d+ \/ \d+/);
   const slot = 'aphros-void-erzpilot-regel15-v1';

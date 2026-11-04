@@ -1,5 +1,20 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] W1-Wirtschaft und 2D-Miner verbunden · 04.11.2026
+
+Der [Integrations-Draft #164](https://github.com/tobiasfranziskus/Check/pull/164)
+(`feature/w1-miner2d-integration`, gegen den W1-Branch) stapelt gezielt Grafik und
+Touch aus [#162](https://github.com/tobiasfranziskus/Check/pull/162) auf den
+unveränderten Regel-15-Core aus [#161](https://github.com/tobiasfranziskus/Check/pull/161).
+`?modus=miner2d` bedient denselben W1-Zustand und Speicherplatz wie die Kontenansicht:
+bezahlter Komplettkauf, eigene Schiffsauswahl, Förderung, Teil-/Volllieferung und
+Stop/Erstattung. Keine zweite Wirtschaft oder Uhr; Regel-14-Standard bleibt bestehen.
+**106/106 Node-Einzeltests** und Chromium-Touchprüfung in drei Viewports erfolgreich;
+**reale iPad-Safari-/NAS-Abnahme bleibt offen**. Herkunft, Bedienweg und Grenzen:
+[W1_2D_INTEGRATION.md](W1_2D_INTEGRATION.md). W1 bleibt endlich finanziert;
+W2–W6 und neue Geldregeln werden dadurch nicht vorgezogen. Kein Merge/Deployment.
+
+
 ## [BESCHLOSSEN] Kurswechsel: wirtschaftlicher Vertikalaufbau · 03.11.2026
 
 **Entscheidung:** Die Projektleitung hat einen kontrollierten Neuaufbau der Wirtschaft in kleinen, unabhängig auditierbaren Stufen genehmigt. Wir **ersetzen nicht das gesamte Spiel**: deterministischer Simulationskern, Karte, Kommandoarchitektur, iPad-/NAS-Ziel und Save-Schutz bleiben. Die frühere B–F-Wirtschaft wird vorerst nicht durch weitere Einzelreparaturen erweitert. Die Phasen A–I bleiben die verbindliche **Produktvision**; diese Reihenfolge präzisiert die **neue Implementierungsstrategie für Wirtschaft B–F**. Niemand leitet eine zweite Roadmap daraus ab.

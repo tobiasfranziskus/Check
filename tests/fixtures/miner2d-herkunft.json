@@ -1,0 +1,234 @@
+{
+  "repository": "https://github.com/tobiasfranziskus/void-echoes",
+  "commit": "a8e2e36faf8257ac2cc47780d12ea9e8e1f58b9f",
+  "sources": [
+    {
+      "path": "src/script/080-ve08g-02-sprites.js",
+      "sha256": "cc0af7c7ecb336974836d0541c1f95c9374c9a893f1e8be305a18c0cbc331c3f",
+      "verbatimLines": [
+        {
+          "line": 1,
+          "sha256": "28f9ba12a3366e897293ae9b0e84544a4767651cd79d1501cf00b724d10fe242"
+        },
+        {
+          "line": 2,
+          "sha256": "cede3f468f7f97a1d213d1f18106ae934113ffdd44724fa9469cc4cf7f038e33"
+        },
+        {
+          "line": 4,
+          "sha256": "8354c7458cfff7a9ecbc182abd823c76f5b3176cdd2bd6ffba8e5ec5fe3d0fae"
+        },
+        {
+          "line": 5,
+          "sha256": "1dd24f274dfdc962d9e87670938450422ae5d9bb349b264d9e68d59de61803ae"
+        },
+        {
+          "line": 6,
+          "sha256": "3764bafedb0eb9fb16a0fb4ce3fe61e8d97640da9ce58b1f375055b5fab322d3"
+        },
+        {
+          "line": 7,
+          "sha256": "1cad3ad3d1e2b0de74361d03aaee29d6a0ddd588ad197a85a2d2dcb3313576ce"
+        },
+        {
+          "line": 8,
+          "sha256": "b6ab047dd5014c11a7b69214c9ef9ee4ea50aeff181226695ceea228a15020a6"
+        },
+        {
+          "line": 9,
+          "sha256": "7deeb581d0b90b308a238a7538beaef83a15dc991e791366adb7e16c15ed62fe"
+        },
+        {
+          "line": 10,
+          "sha256": "cc65f122cad88b6626dd51a68e532b734052e8ba4ab5ed6aa831af5e61ae3639"
+        },
+        {
+          "line": 11,
+          "sha256": "642d5da2ae71990f55a1abdf6906c087ecf636def863e5cac80368420a61198e"
+        },
+        {
+          "line": 12,
+          "sha256": "8cc20a18e13009f4d5354650f254a17df4b89e65b0e4d497ad36079c1b7def1b"
+        },
+        {
+          "line": 13,
+          "sha256": "47591144e853821823211f5098f21cab587476d784b5047f96dfffacabbce047"
+        },
+        {
+          "line": 14,
+          "sha256": "8cd3097a3e2ccb1660b33b6acb0139381f282073d2c913bdd79ab34b03326007"
+        },
+        {
+          "line": 16,
+          "sha256": "edec4b0321900f45cfa6c997e6bc34d28d696727db088c06b38519b1b6b3dfa9"
+        },
+        {
+          "line": 17,
+          "sha256": "606fc5dcf97eec8435108f3846d0602e56defbbaf8ec20fe62935170fefdbc9b"
+        },
+        {
+          "line": 18,
+          "sha256": "37d9058b3eb62a99dcc68f47eed50711443c1331495472d4e1aafd2860cf973f"
+        },
+        {
+          "line": 19,
+          "sha256": "f739c9a2ab7a7a361efaa90e6c36d41442aa89107dd4c4ab89c13c7d16ab1b54"
+        },
+        {
+          "line": 20,
+          "sha256": "5e6811a2f6beb7a079be9e7e194f94afb67505d53a23505331eefe65776723ff"
+        },
+        {
+          "line": 21,
+          "sha256": "91fb34c38e957889716608ed4cb89fb2b396e86a0d47b0c98bc59aaf3e716a81"
+        },
+        {
+          "line": 22,
+          "sha256": "65ff4c84947d562763681c161a101b137cc2023fcf297d43ab96443342fc692f"
+        },
+        {
+          "line": 23,
+          "sha256": "6d7f4bcae63d3068a37568fb008f35d69a1c4ef36091daec074d1074500ff4fc"
+        },
+        {
+          "line": 24,
+          "sha256": "83f39149c8f2d33ba8a71d8c8fdc36cd37a4ae341038282a62b803ce755183d2"
+        },
+        {
+          "line": 25,
+          "sha256": "1df6b18e631bf42bb7cc78cc8bcc6b4379c7028ef938a24a81aec8640bf5ac23"
+        },
+        {
+          "line": 26,
+          "sha256": "bf89e9c5745e2339682add838c2e5335073893ce42eb246b1bedba94e1ab9389"
+        }
+      ]
+    },
+    {
+      "path": "src/script/085-kern-zeichnen-hud.js",
+      "sha256": "350c6672832b7b9a736cd019e97b8cf0b693c8859ed63e67dcb0f932a3f49669",
+      "verbatimLines": []
+    },
+    {
+      "path": "src/script/390-ux08-vektorgrafik.js",
+      "sha256": "b8385f16f57a85dc1705f2d06380bf65e7c66309b32f0dfc91ad53755a87684b",
+      "verbatimLines": [
+        {
+          "line": 1,
+          "sha256": "f06cfc02698b9392806de5bc302dd4bbbf31ff25ebb54b195f73641414f41f15"
+        },
+        {
+          "line": 2,
+          "sha256": "643f055ae448647dc4bc29aad97a4a436776fea1c5568127fda97b3a453830d5"
+        },
+        {
+          "line": 4,
+          "sha256": "34cf9eb6b73448cd38cd0317c539be5734add139f01d2de516ba84c234ca8f68"
+        },
+        {
+          "line": 5,
+          "sha256": "ff2e4b0f1f69bcec4ad8583bd1ccaca0a430ac2f93bb9656eaa756becfb8e4a0"
+        },
+        {
+          "line": 6,
+          "sha256": "f30c22210119abfdffcdec3a58c673fcda7a547f586445db469ae7f081934e42"
+        },
+        {
+          "line": 7,
+          "sha256": "a4ae2c412ade46a708e1a97f8755f983e259e9381f5e2ef8a9c0d2ca604e44b9"
+        },
+        {
+          "line": 8,
+          "sha256": "ea7bf14cb3671bc9be68b416bda389d9e870901bcec7aae4d3be2b719286211e"
+        },
+        {
+          "line": 9,
+          "sha256": "16d2826b199b9a5883c2f84f3786f6846e8b6294cf2a51581c8b52c7dd77150c"
+        },
+        {
+          "line": 10,
+          "sha256": "c40a595061bd6e555ef8f379d20d05522af21676171aabea8fe99163c0345f31"
+        },
+        {
+          "line": 11,
+          "sha256": "f9702e2bd97ab4df73895e8880d4456be38e9a9d408300f504500312ba250496"
+        },
+        {
+          "line": 12,
+          "sha256": "7ac57e81f3aff0fd048b61d46914ac62810d5d72585c1ccba5b5b297177580ba"
+        },
+        {
+          "line": 13,
+          "sha256": "4b16ccf7110e74bd99d000f8db355db76d05623a596b47370552cbf7d88d1ddf"
+        },
+        {
+          "line": 14,
+          "sha256": "f95b9d554c7438ab424f0920a4c900dda362f39ff0a891ab3ace0234ad1378b1"
+        },
+        {
+          "line": 16,
+          "sha256": "714225f7ab03f8fbb80c3eff311723285bf13e4d909db44b8f2ed0ffaa0bb605"
+        },
+        {
+          "line": 17,
+          "sha256": "2ee50406f32aebb5fa0db59d154932a8bc589593f5bd3f65f821a4c643cd2f3b"
+        },
+        {
+          "line": 18,
+          "sha256": "9d14021c47303621c8981db9860a1bc4e34eb7796a2ab216e97429123a614145"
+        },
+        {
+          "line": 19,
+          "sha256": "517f2685907d201593185155a32b17292d79696c66f5cd7fe98ef7270cdc1ca5"
+        },
+        {
+          "line": 20,
+          "sha256": "da5d86fb583638d556a503162a7f7149aa3667a451a36f953c5585d9f2fa8037"
+        },
+        {
+          "line": 21,
+          "sha256": "fb7b7fd19cbe99e26795b285b816e9857b78ff7ab4067787602e56121de8e2c0"
+        },
+        {
+          "line": 22,
+          "sha256": "f47d8a3a8c3c64c460bc7ff4ae7c4caafec53a08bad5243e5e26c1c45814dc9b"
+        },
+        {
+          "line": 26,
+          "sha256": "1b93cffd7be22c11a165f50013ad4784a8fec4d6e489fe9b4280e7fb22c34427"
+        },
+        {
+          "line": 27,
+          "sha256": "6d278d9e5e96207143defcd87f349c9afd9ca355b400c80ad818ffa336354936"
+        },
+        {
+          "line": 28,
+          "sha256": "be9a103bbbb93575d66655c225993e22c4b95f4a6554d0958ad4aa09d252632c"
+        },
+        {
+          "line": 29,
+          "sha256": "5fbcc2b9502a45969934d2f1d91662f2731a8ff974df79a61f28302ecd9212b7"
+        },
+        {
+          "line": 30,
+          "sha256": "af6b1af1903c57d20d386eb2457ed6756c2d9b6696c8e85a9f0be5f604da1bd9"
+        }
+      ]
+    },
+    {
+      "path": "src/script/370-ux06-auswahl.js",
+      "sha256": "b3a2c11cdea0deb5efb491e664de2a0fac9683b24aedbfd40e5d7fa6bdb75826",
+      "verbatimLines": []
+    },
+    {
+      "path": "src/script/580-ux01-erweiterung.js",
+      "sha256": "00ad49d26acbeb4dc91648e749298deb3a3994fcda4031728a652a67a730af85",
+      "verbatimLines": []
+    },
+    {
+      "path": "src/script/075-kern-simulation.js",
+      "sha256": "48f09d49430794905fad6917b1ec91fa0fec44c4f378737bd93566b6d92bcac9",
+      "verbatimLines": []
+    }
+  ]
+}

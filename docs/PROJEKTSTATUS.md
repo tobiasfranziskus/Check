@@ -1,5 +1,20 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W1-Wirtschaft und 2D-Miner verbunden · 04.11.2026
+
+Der [Integrations-Draft #164](https://github.com/tobiasfranziskus/Check/pull/164)
+(`feature/w1-miner2d-integration`, gegen den W1-Branch) stapelt gezielt Grafik und
+Touch aus [#162](https://github.com/tobiasfranziskus/Check/pull/162) auf den
+unveränderten Regel-15-Core aus [#161](https://github.com/tobiasfranziskus/Check/pull/161).
+`?modus=miner2d` bedient denselben W1-Zustand und Speicherplatz wie die Kontenansicht:
+bezahlter Komplettkauf, eigene Schiffsauswahl, Förderung, Teil-/Volllieferung und
+Stop/Erstattung. Keine zweite Wirtschaft oder Uhr; Regel-14-Standard bleibt bestehen.
+**106/106 Node-Einzeltests** und Chromium-Touchprüfung in drei Viewports erfolgreich;
+**reale iPad-Safari-/NAS-Abnahme bleibt offen**. Herkunft, Bedienweg und Grenzen:
+[W1_2D_INTEGRATION.md](W1_2D_INTEGRATION.md). W1 bleibt endlich finanziert;
+W2–W6 und neue Geldregeln werden dadurch nicht vorgezogen. Kein Merge/Deployment.
+
+
 ## [DRAFT] W1 – bezahlte Miner-Vollkosten, Stationsliquidität und Amortisation · 04.11.2026
 
 **[MAIN]** `b4e604d6` unverändert. **[DRAFT]** [PR #161](https://github.com/tobiasfranziskus/Check/pull/161) erweitert im bestehenden Core die *rein lesende* Prüffunktion `pilotWirtschaftsStand` und den W1-Audit um tatsächliche Kassenüberschüsse beider Miner-Konzerne, Kosten einschließlich vollständig bezahlter Minerhüllen, noch gebundenes Arbeits-/Abnahmegeld, Stationsliquidität, Fonds-Einnahmen und stationären Erzbestand. Der Bericht erzeugt weder neue Geldflüsse noch Produktionsrezepte oder Spielstandsfelder.

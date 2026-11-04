@@ -10,7 +10,7 @@
 
 **[BEDIENUNG/SAVES]** `?modus=w4raffinerie` (Raffinerie + 2D-Forschungsansicht), `?modus=w4konten` (Kontenansicht), beide mit eigenem `aphros-void-w4-regel18-v1`-Slot. Export, Archiv vor Import/Neustart, strikte Versionsprüfung; R14-/R15-/R16-/R17-Slots werden nicht überschrieben. Echte iPad-Safari-/NAS-Abnahme später über den vorhandenen Hauptlink.
 
-**[PRÜFGATE NOCH AUSSTEHEND]** Node-Suite einschließlich neuer W4-/UI-/Save-Tests, deterministische 13×90 und GitHub-CI vollständig prüfen; erst dann „bestanden“. Noch kein realer Endverbrauch von Material, keine zusätzliche Käuferkasse, kein W5-Schiffbau und keine Regel für dauerhaftes Einkommen, Insolvenz oder Emission. **Kein Merge, kein Deployment.**
+**[PRÜFGATE]** [CI #41833705400](https://github.com/tobiasfranziskus/Check/actions/runs/41833705400), Code-Commit `6865316f`: **149/149 Node-Tests erfolgreich**, darunter echtes W1→W2→W3→W4, bezahlte Einzel-/Mehrfachchargen, 13 Seeds ×90 Tage, Save/Load und UI-Pfade. Zusätzliche negative Gegenproben haben bilanzneutrale Fremdzahlung auf Arbeitstreuhand sowie erfundenes Material trotz nachgezogenem Waren-Ledger unabhängig erkannt. Die länger laufenden historischen CI-Jobs bleiben bis zu ihrem tatsächlichen Abschluss gesondert auszuweisen. Noch kein realer Endverbrauch von Material, keine zusätzliche Käuferkasse, kein W5-Schiffbau und keine Regel für dauerhaftes Einkommen, Insolvenz oder Emission. **Kein Merge, kein Deployment.**
 
 ---
 

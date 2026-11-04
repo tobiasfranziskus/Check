@@ -138,6 +138,18 @@ button.zeile .liste-links { color: var(--text); }
 .befehle-gruppe summary { min-height: 48px; padding: 12px 14px; cursor: pointer; color: var(--accent); font-weight: 600; }
 .befehle-gruppe[open] summary { border-bottom: 1px solid var(--line); }
 .befehle-gruppe > .befehle-leiste { padding: 12px; margin-top: 0; }
+/* Pilotmodus: Nur eine Welt ist aktiv; Standard-UI und deren Autosave bleiben unberuehrt. */
+body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important; }
+#erzpilot-app { max-width: 820px; padding-bottom: 36px; }
+#erzpilot-app .card { margin-top: 14px; padding: 12px 16px; }
+#erzpilot-app .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; }
+#erzpilot-app .actions > * { min-width: 0; }
+#erzpilot-app .pilot-schiffe { display: grid; gap: 8px; }
+#erzpilot-app a { color: var(--accent); }
+@media (min-width: 700px) {
+  #erzpilot-app .pilot-spalten { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  #erzpilot-app .pilot-spalten .card { margin-top: 14px; }
+}
 /* iPad-Querformat: freie Breite für parallele Informationen statt lange Seiten nutzen. */
 @media (min-width: 900px) and (orientation: landscape) {
   .ansicht:not(.ansicht-karte) { max-width: 1100px; padding: 16px 28px calc(var(--unten) + 20px); }
@@ -164,6 +176,85 @@ button.zeile .liste-links { color: var(--text); }
 </style>
 </head>
 <body>
+<section id="erzpilot-app" class="ansicht" aria-label="Erzpilot – Forschungsmodus" hidden>
+  <header class="kopf">
+    <p class="muted kopf-klein">Aphros Void · W1 Forschungsmodus · Regel 15</p>
+    <h1>Erzpilot</h1>
+    <p class="muted">Erz abbauen, Miner kaufen und bezahlte Verkäufe prüfen. Kein fertiges Wirtschaftsspiel: Das Exportbudget ist endlich.</p>
+    <p><a href="./">Zum bisherigen Spiel (Regel 14)</a></p>
+  </header>
+  <div class="pilot-spalten">
+    <section class="card" aria-label="Spielerkonzern">
+      <h2>Mein Bergbaukonzern</h2>
+      <dl>
+        <div><dt>Kasse</dt><dd id="pilot-kasse">–</dd></div>
+        <div><dt>Miner</dt><dd id="pilot-miner">–</dd></div>
+        <div><dt>NPC-Kasse</dt><dd id="pilot-npc">–</dd></div>
+        <div><dt>Arbeitsaufträge</dt><dd id="pilot-auftraege">–</dd></div>
+      </dl>
+      <div class="actions">
+        <button type="button" class="primary wide" id="pilot-kauf">Miner komplett kaufen (600 ISK)</button>
+        <button type="button" id="pilot-abbau">Meine Miner: Erz fördern</button>
+        <button type="button" id="pilot-stopp">Meine Miner: Stoppen</button>
+      </div>
+    </section>
+    <section class="card" aria-label="Erzmarkt">
+      <h2>Markt und Arbeit</h2>
+      <dl>
+        <div><dt>Station: Erz</dt><dd id="pilot-lager">–</dd></div>
+        <div><dt>Station: frei verfügbar</dt><dd id="pilot-station">–</dd></div>
+        <div><dt>Arbeitsfonds</dt><dd id="pilot-fonds">–</dd></div>
+        <div><dt>Schiffsverkäufer</dt><dd id="pilot-werft">–</dd></div>
+        <div><dt>ISK-Gesamtbestand</dt><dd id="pilot-geldsumme">–</dd></div>
+        <div><dt>Für Erzaufträge reserviert</dt><dd id="pilot-gebunden">–</dd></div>
+        <div><dt>Arbeitskapital gebunden</dt><dd id="pilot-arbeitsgeld">–</dd></div>
+        <div><dt>Aufträge / reserviertes Erz</dt><dd id="pilot-vertraege">–</dd></div>
+        <div><dt>Exportbudget</dt><dd id="pilot-exportbudget">–</dd></div>
+        <div><dt>Bezahlte Endabnahme</dt><dd id="pilot-exportausgaben">–</dd></div>
+        <div><dt>Unbelegter Käuferzufluss</dt><dd id="pilot-finanzdelta">–</dd></div>
+        <div><dt>Gefördert / exportiert</dt><dd id="pilot-mengen">–</dd></div>
+        <div><dt>Spielzeit</dt><dd id="pilot-zeit">–</dd></div>
+      </dl>
+      <div class="actions">
+        <button type="button" class="primary" id="pilot-stunde">+1 Stunde</button>
+        <button type="button" id="pilot-tag">+1 Tag</button>
+      </div>
+      <p class="muted">Station und Miner sichern vor Förderbeginn Abnahmegeld und Arbeitskapital ab. Bei Abbruch werden nur gelieferte Waren und ausgeführte Arbeit bezahlt; Restbeträge fließen zurück. Export höchstens 200 Erz pro Stunde.</p>
+      <p id="pilot-finanzlage" class="hinweis-text muted" role="status">Käuferfinanzierung wird geprüft.</p>
+    </section>
+  </div>
+  <section class="card" aria-label="W1-Vollkosten und Zahlungsfähigkeit">
+    <h2>W1 – tatsächliche Vollkosten</h2>
+    <dl>
+      <div><dt>Spieler: Erzumsatz</dt><dd id="pilot-voll-umsatz">–</dd></div>
+      <div><dt>Spieler: Kosten einschließlich Mineranschaffung</dt><dd id="pilot-voll-kosten">–</dd></div>
+      <div><dt>Spieler: Ergebnis nach Auszahlungen</dt><dd id="pilot-voll-spieler">–</dd></div>
+      <div><dt>NPC: Ergebnis nach Auszahlungen</dt><dd id="pilot-voll-npc">–</dd></div>
+      <div><dt>Station: Liquiditätsveränderung inklusive Reservierungen</dt><dd id="pilot-voll-station">–</dd></div>
+      <div><dt>Station: unverkauftes Erz (kalkulatorischer Wert)</dt><dd id="pilot-voll-lager">–</dd></div>
+      <div><dt>Rückgewinnung des Miner-Kaufpreises ab</dt><dd id="pilot-voll-grenze">–</dd></div>
+      <div><dt>Vollkosten-Audit</dt><dd id="pilot-voll-audit">–</dd></div>
+    </dl>
+    <p class="muted">Ein angeschaffter Miner zählt zunächst mit vollem Kaufpreis als Ausgabe. Erz im Stationslager ist kein ISK und garantiert keinen späteren Verkauf. Positive Konzernergebnisse allein finanzieren keinen neuen Endkäufer.</p>
+  </section>
+  <section class="card" aria-label="Kontrollen und Spielstand">
+    <h2>Prüfung und Spielstand</h2>
+    <dl>
+      <div><dt>ISK- und Warenaudit</dt><dd id="pilot-audit">–</dd></div>
+      <div><dt>Prüfhash</dt><dd id="pilot-hash">–</dd></div>
+    </dl>
+    <p id="pilot-meldung" class="muted" role="status" aria-live="polite">Erzpilot lädt.</p>
+    <p class="muted">Eigener Speicherplatz, keine Übernahme des bisherigen Spielstands. Die Simulation läuft ausschließlich auf Knopfdruck.</p>
+    <div class="actions">
+      <button type="button" id="pilot-sichern">Jetzt sichern</button>
+      <button type="button" id="pilot-datei">JSON exportieren</button>
+      <button type="button" id="pilot-laden">JSON importieren</button>
+      <button type="button" id="pilot-neu">Neuer Pilot (mit Sicherung)</button>
+    </div>
+    <input type="file" id="pilot-datei-input" accept=".json,application/json" hidden aria-label="Erzpilot-Spielstand importieren">
+  </section>
+</section>
+
 <div id="meldung-zeile" class="meldung-zeile" role="status" aria-live="polite" hidden>
   <span id="meldung-text"></span>
   <span class="meldung-knoepfe"><button type="button" id="meldung-knopf" hidden></button><button type="button" id="meldung-zu">OK</button></span>
@@ -187,6 +278,7 @@ button.zeile .liste-links { color: var(--text); }
   </section>
   <section class="card" aria-label="Spielstand">
     <ul class="liste">
+      <li><span class="liste-links">Wirtschafts-Neuaufbau</span><span class="liste-rechts"><a href="?modus=erzpilot">Erzpilot testen</a></span></li>
       <li class="zeile-knopf"><button type="button" class="zeile" id="b-spielstand"><span class="liste-links">Spielstand</span><span class="liste-rechts muted" id="hq-gespeichert">–</span></button></li>
       <li id="hq-hinweis-zeile" class="hinweis-zeile" hidden><span class="marke marke-warn" id="hq-hinweis"></span></li>
       <li class="zeile-knopf"><button type="button" class="zeile" id="b-bericht"><span class="liste-links">Berichte</span><span class="liste-rechts muted" id="bericht-zahl">–</span></button></li>
@@ -630,6 +722,48 @@ m_data_systeme.tiefFrieren(RULES);
 return { RULES };
 })();
 
+// Erzpilot: Regel-15-Forschungsmodus im bestehenden Core, keine parallele Weltuhr.
+const m_data_erzpilot = (() => {
+  const basis = m_data_rules.RULES;
+  const world = {
+    ...basis.world,
+    systems: { aldera: { station: 'st_aldera', fonds: 'fonds_aldera', sicherheit: 'sicher' } },
+    stations: { st_aldera: {
+      system: 'aldera', linien: [], verbrauch: {}, ziel: { erz: 100, miner: 4 }, gebuehr: 0,
+    } },
+    fields: [{ system: 'aldera', ware: 'erz', miner: 0 }],
+    gates: [], traders: [],
+    sicherheit: { owner: 'security', jaeger: [], fokus: 'schwach', rueckzug: 30 },
+    piraten: { owner: 'pirates', markt: 'st_aldera', soll: {} },
+    werft: 'st_aldera', zielSchiff: 0, reichsgroesse: 0,
+    betriebskosten: { miner: 120 }, npcAusgabenArten: [], senkeBesitzer: [],
+    mindeststand: 0, fondsObergrenze: 1000000, npcObergrenze: 1000000,
+  };
+  const economy = {
+    ...basis.economy,
+    waren: { erz: { stufe: 'rohstoff', basis: 10 }, miner: { stufe: 'schiff', basis: 600 } },
+    rezepte: {}, s: 0, preisgrenzen: [1000, 1000], region: { aldera: 1000 },
+    start: { owner: 'house', flotte: [], system: 'aldera', auftrag: 'halten' },
+    miningRate: 1, cargo: 100,
+  };
+  const owners = [
+    { id: 'house', kind: 'player', cash: 3000 },
+    { id: 'npc3', kind: 'miner', cash: 3000 },
+    { id: 'st_aldera', kind: 'station', cash: 1000 },
+    { id: 'fonds_aldera', kind: 'fund', cash: 0 },
+    { id: 'export', kind: 'buyer', cash: 20000 },
+    { id: 'werft_extern', kind: 'vendor', cash: 0 },
+  ];
+  // Endliches, vorfinanziertes Exportbudget: keine neue ISK, keine stillen Nachfuellungen.
+  const ERZ_RULES = { schema: 8, rulesVersion: 15, maxAdvanceSteps: 10000, startSeed: 1,
+    economy, world, owners, combat: basis.combat,
+    erzpilot: { station: 'st_aldera', exportOwner: 'export',
+      werftOwner: 'werft_extern', preis: 10, maximalJeStunde: 200, minerJeMinute: 2, auftragsMenge: 50 },
+  };
+  m_data_systeme.tiefFrieren(ERZ_RULES);
+  return { ERZ_RULES };
+})();
+
 const m_core_rng = (() => {
 function seedToState(seed) { if (!Number.isSafeInteger(seed)) throw new TypeError('Startwert muss eine ganze Zahl sein'); return seed >>> 0; }
 function rngNext(state) {
@@ -737,7 +871,7 @@ const FIELDS = {
   shipMine: ['schiff', 'ware'], shipWait: ['schiff'],
   shipActivate: ['schiff', 'klasse'], shipHandeln: ['schiff'], shipRename: ['schiff', 'name'],
   shipEscort: ['schiff', 'ziel'], shipHunt: ['schiff'],
-  shipInstall: ['schiff', 'modul'], stationBuy: ['schiff'],
+  shipInstall: ['schiff', 'modul'], stationBuy: ['schiff'], shipBuy: ['klasse', 'station'],
   stationRecipe: ['station', 'rezept'], shipRemoveModule: ['schiff', 'modul'],
 };
 function checkShape(state, cmd, rules) {
@@ -821,6 +955,15 @@ function checkShape(state, cmd, rules) {
       if (state.owners[cmd.owner].cash < m_core_handel.stationspreis(state, rules, station)) return 'zu wenig ISK für den Stationskauf';
     }
   }
+  if (rules.erzpilot && !['shipBuy', 'shipMine', 'shipWait', 'shipRename'].includes(cmd.type))
+    return 'Im Erzpilot derzeit nicht freigeschaltet';
+  if (cmd.type === 'shipBuy') {
+    if (!rules.erzpilot || cmd.klasse !== 'miner' || cmd.station !== rules.erzpilot.station)
+      return 'Komplettkauf nur fuer Miner am Erzpilot-Handelsplatz';
+    if (cmd.owner !== 'house' && cmd.owner !== 'npc3') return 'kein berechtigter Konzern';
+    if ((state.stations[cmd.station].lager.miner || 0) < 1) return 'kein Komplettschiff auf Lager';
+    if (state.owners[cmd.owner].cash < rules.economy.waren.miner.basis) return 'zu wenig ISK';
+  }
   if (cmd.type === 'stationRecipe') {
     if (typeof cmd.station !== 'string' || !Object.hasOwn(state.stations, cmd.station)) return 'unbekannte Station';
     if (state.stations[cmd.station].eigentum !== cmd.owner) return 'Station gehört nicht dem Besitzer';
@@ -843,6 +986,21 @@ function execute(state, cmd, rules) {
   const fehler = checkShape(state, cmd, rules);
   if (fehler) return { ok: false, type: cmd && cmd.type, reason: fehler };
   switch (cmd.type) {
+    case 'shipBuy': {
+      const p = rules.economy.waren.miner.basis;
+      state.owners[cmd.owner].cash -= p;
+      state.owners[rules.erzpilot.werftOwner].cash += p;
+      state.stations[cmd.station].lager.miner -= 1;
+      state.ledger.miner.consumed += 1;
+      const sh = m_core_state.neuesSchiff(state, {
+        owner: cmd.owner, klasse: 'miner', system: 'aldera',
+        heimat: 'aldera', auftrag: 'halten', ware: null,
+      });
+      m_core_handel.buche(state, cmd.owner, 'kosten', p);
+      m_core_handel.buche(state, rules.erzpilot.werftOwner, 'erloes', p);
+      m_core_state.protokolliere(state, 'dienst', `${sh.id} als Komplettschiff fuer ${p} ISK gekauft`, cmd.owner);
+      break;
+    }
     case 'shipMove': {
       const s = state.ships[cmd.schiff];
       const r = m_core_route.route(rules.world, s.system, rules.world.stations[cmd.ziel].system);
@@ -857,7 +1015,12 @@ function execute(state, cmd, rules) {
       state.stats.handel += 1; state.stats.verkaeufe[s.id] += 1; break;
     }
     case 'shipMine': { const s = state.ships[cmd.schiff]; s.auftrag = 'foerdern'; s.ware = cmd.ware; s.eskorte = null; break; }
-    case 'shipWait': { const s = state.ships[cmd.schiff]; s.auftrag = 'halten'; s.eskorte = null; break; }
+    case 'shipWait': {
+      const s = state.ships[cmd.schiff];
+      s.auftrag = 'halten'; s.eskorte = null;
+      if (rules.erzpilot) m_core_erzpilot.stornieren(state, rules, s);
+      break;
+    }
     case 'shipRename': {
       const s = state.ships[cmd.schiff];
       const name = cmd.name.trim();
@@ -1024,6 +1187,10 @@ function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt =
   if (p <= 0) return false;
   const st = state.stations[station];
   const kasse = state.owners[station];
+  const vertrag = rules.erzpilot && !kauf && ware === 'erz'
+    ? state.erzpilotVertraege?.[schiff.id] : null;
+  if (rules.erzpilot && !kauf && ware === 'erz' && !vertrag) return false;
+  const zahlkonto = vertrag ? state.owners[vertrag.konto] : kasse;
   const besitzer = state.owners[schiff.owner];
   const fondsId = fondsIn(rules, st.system);
   const wert = menge * p;
@@ -1033,7 +1200,8 @@ function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt =
     ? anzahl(st.lager, ware) >= menge && besitzer.cash >= wert + fee
       && (freigestellt || (fracht + menge <= rules.economy.cargo
         && anzahl(st.lager, ware) - menge >= reserve(rules, station, ware)))
-    : anzahl(schiff.ladung, ware) >= menge && kasse.cash >= wert
+    : anzahl(schiff.ladung, ware) >= menge && zahlkonto.cash >= wert
+      && (!vertrag || (menge <= vertrag.menge && vertrag.preis === p))
       && anzahl(st.lager, ware) + menge <= obergrenze(state, rules, station, ware);
   if (!reicht) return false;
   const d = kauf ? menge : -menge;
@@ -1041,7 +1209,7 @@ function handel(state, rules, schiff, station, ware, menge, kauf, freigestellt =
   schiff.ladung[ware] = anzahl(schiff.ladung, ware) + d;
   if (schiff.ladung[ware] === 0) delete schiff.ladung[ware];
   const geld = kauf ? wert : -wert;
-  besitzer.cash -= geld; kasse.cash += geld;
+  besitzer.cash -= geld; zahlkonto.cash += geld;
   // v0.11.0 / A1: Gebühren gehen an die Stationskasse, wenn die Station einen
   // Besitzer hat (st.eigentum ist die Owner-ID, nicht die Stations-ID).
   // Sonst — bei besitzerlosen NPC-Stationen — an den Fonds des Systems.
@@ -1107,6 +1275,10 @@ function foerderung(state, rules) {
     if (!rules.world.fields.some((f) => f.system === s.system && f.ware === ware)) {
       protokolliere(state, 'auftrag', `${id}: ${ware} kommt in ${s.system} nicht vor – Förderung gestoppt`, s.owner);
       s.auftrag = 'halten'; s.ware = null;
+      continue;
+    }
+    if (rules.erzpilot) {
+      m_core_erzpilot.foerdern(state, rules, s);
       continue;
     }
     const vorher = anzahl(s.ladung, ware);
@@ -1675,6 +1847,195 @@ function ersatzkauf(state, rules) {
 return { zuschuss, ersatzkauf };
 })();
 
+// W0/W1: Vorfinanzierte Erzauftraege und echte Abnahme im vorhandenen Core.
+// Die Station sperrt Geld und Lagerkapazitaet vor Arbeitsbeginn; kein Minting.
+const m_core_erzpilot = (() => {
+  const { anzahl, ids } = m_core_zahl;
+  const { buche, handel, obergrenze } = m_core_handel;
+  const { protokolliere } = m_core_state;
+  // Anzeigen und Audits duerfen alte Regel-15-Spielstaende ohne Auftragsbuch nicht mutieren.
+  function vertragsbuch(state) { return state.erzpilotVertraege || {}; }
+  function reserviert(state) {
+    return Object.values(vertragsbuch(state)).reduce((sum, v) => sum + v.menge, 0);
+  }
+  function beauftragen(state, rules, schiff) {
+    const cfg = rules.erzpilot, buch = (state.erzpilotVertraege ||= {});
+    if (buch[schiff.id]) return buch[schiff.id];
+    const station = state.owners[cfg.station];
+    const lager = state.stations[cfg.station].lager;
+    const freiePlaetze = obergrenze(state, rules, cfg.station, 'erz')
+      - anzahl(lager, 'erz') - reserviert(state);
+    const vorhandenesErz = anzahl(schiff.ladung, 'erz');
+    const verfuengbareArbeit = Math.floor(state.owners[schiff.owner].cash / cfg.minerJeMinute);
+    const menge = Math.max(0, Math.min(cfg.auftragsMenge, rules.economy.cargo,
+      Math.floor(station.cash / cfg.preis), freiePlaetze,
+      Math.max(vorhandenesErz, verfuengbareArbeit)));
+    if (menge <= 0) return null;
+    const wert = menge * cfg.preis, konto = `erz_treuhand_${schiff.id}`;
+    const arbeitsKonto = `erz_arbeit_${schiff.id}`;
+    const arbeitsBudget = Math.max(0, menge - vorhandenesErz) * cfg.minerJeMinute;
+    if (state.owners[schiff.owner].cash < arbeitsBudget) throw Error('Bergbauauftrag ohne Arbeitskapital');
+    if (!state.owners[konto]) state.owners[konto] = { id: konto, kind: 'escrow', cash: 0 };
+    if (!state.owners[arbeitsKonto]) state.owners[arbeitsKonto] = { id: arbeitsKonto, kind: 'escrow', cash: 0 };
+    if (state.owners[konto].cash !== 0 || state.owners[arbeitsKonto].cash !== 0)
+      throw Error('Doppelt gebundenes Auftragskapital');
+    station.cash -= wert;
+    state.owners[konto].cash += wert;
+    state.owners[schiff.owner].cash -= arbeitsBudget;
+    state.owners[arbeitsKonto].cash += arbeitsBudget;
+    buch[schiff.id] = { konto, arbeitsKonto, menge, preis: cfg.preis, arbeitsPreis: cfg.minerJeMinute };
+    return buch[schiff.id];
+  }
+  function abschliessen(state, rules, schiff, stornierung = false) {
+    const cfg = rules.erzpilot, buch = vertragsbuch(state);
+    const v = buch[schiff.id];
+    if (!v) return 0;
+    const menge = Math.min(v.menge, anzahl(schiff.ladung, 'erz'));
+    if (!stornierung && menge < v.menge) return 0;
+    if (menge > 0) {
+      if (!handel(state, rules, schiff, cfg.station, 'erz', menge, false))
+        throw Error('Reservierter Erzauftrag kann nicht bezahlt werden');
+      state.stats.handel += 1;
+      state.stats.verkaeufe[schiff.id] += 1;
+    }
+    const treuhand = state.owners[v.konto];
+    if (treuhand.cash > 0) {
+      state.owners[cfg.station].cash += treuhand.cash;
+      treuhand.cash = 0;
+    }
+    // Betriebsmittel waren ebenfalls reserviert; beim Abbruch ungenutzten Rest zurueckgeben.
+    if (v.arbeitsKonto) {
+      const arbeit = state.owners[v.arbeitsKonto];
+      state.owners[schiff.owner].cash += arbeit.cash;
+      arbeit.cash = 0;
+    }
+    delete buch[schiff.id];
+    return menge;
+  }
+  function stornieren(state, rules, schiff) {
+    if (!rules.erzpilot) return 0;
+    return abschliessen(state, rules, schiff, true);
+  }
+  function foerdern(state, rules, schiff) {
+    const cfg = rules.erzpilot;
+    const v = beauftragen(state, rules, schiff);
+    if (!v) return 0; // kein Auftrag: keine unbezahlte oder spekulative Produktion.
+    const vorher = anzahl(schiff.ladung, 'erz');
+    if (vorher >= v.menge) return abschliessen(state, rules, schiff);
+    const n = Math.min(rules.economy.miningRate, v.menge - vorher, rules.economy.cargo - vorher);
+    const kosten = n * cfg.minerJeMinute;
+    // Alte Regel-15-Draft-Saves ohne Arbeits-Treuhand weiter abwickeln,
+    // neue Auftraege sind dagegen beidseitig voll vorfinanziert.
+    const kasse = v.arbeitsKonto ? state.owners[v.arbeitsKonto] : state.owners[schiff.owner];
+    if (n <= 0 || kasse.cash < kosten) {
+      schiff.auftrag = 'halten';
+      stornieren(state, rules, schiff);
+      protokolliere(state, 'kosten',
+        `${schiff.id}: Förderung mangels eigener Betriebsmittel gestoppt`, schiff.owner);
+      return 0;
+    }
+    kasse.cash -= kosten;
+    state.owners[rules.world.systems[schiff.system].fonds].cash += kosten;
+    buche(state, schiff.owner, 'kosten', kosten);
+    schiff.ladung.erz = vorher + n;
+    state.ledger.erz.mined += n;
+    if (schiff.ladung.erz >= v.menge) abschliessen(state, rules, schiff);
+    return n;
+  }
+  // Export: nur nachweislich gelagertes Erz gegen reales endliches Kaeuferbudget.
+  function exportiere(state, rules) {
+    if (!rules.erzpilot) return 0;
+    const cfg = rules.erzpilot;
+    const lager = state.stations[cfg.station].lager;
+    const kaeufer = state.owners[cfg.exportOwner];
+    const station = state.owners[cfg.station];
+    const menge = Math.min(anzahl(lager, 'erz'),
+      Math.floor(kaeufer.cash / cfg.preis), cfg.maximalJeStunde);
+    if (menge <= 0) return 0;
+    const wert = menge * cfg.preis;
+    lager.erz -= menge;
+    state.ledger.erz.exported += menge;
+    kaeufer.cash -= wert;
+    station.cash += wert;
+    buche(state, cfg.exportOwner, 'kosten', wert);
+    buche(state, cfg.station, 'erloes', wert);
+    return menge;
+  }
+  function auftragsStand(state, rules) {
+    const buch = vertragsbuch(state);
+    const frei = state.owners[rules.erzpilot.station].cash;
+    const gebunden = Object.values(buch).reduce((n, v) => n + state.owners[v.konto].cash, 0);
+    const arbeitsGebunden = Object.values(buch).reduce((n, v) =>
+      n + (v.arbeitsKonto ? state.owners[v.arbeitsKonto].cash : 0), 0);
+    return { auftraege: ids(buch).length, gebunden, arbeitsGebunden, frei, reserviert: reserviert(state) };
+  }
+  return { beauftragen, stornieren, foerdern, exportiere, auftragsStand };
+})();
+
+// W1: rein lesende Vollkosten-/Liquiditaetsrechnung aus gebuchten Originalkonten.
+// Kein eigener Wirtschaftskern, kein weiterer Geld- oder Warenfluss.
+const m_core_w1_vollkosten = (() => {
+  const { anzahl } = m_core_zahl;
+  function pruefen(state, rules) {
+    const cfg = rules.erzpilot;
+    if (!cfg) return null;
+    const vertraege = state.erzpilotVertraege || {};
+    const startCash = (id) => rules.owners.find((o) => o.id === id)?.cash ?? null;
+    function saldo(id, gebunden = 0) {
+      const konto = state.owners[id], statistik = state.stats.konto[id];
+      const anfang = startCash(id);
+      const erloese = statistik?.erloes, kosten = statistik?.kosten, frei = konto?.cash;
+      const netto = erloese - kosten;
+      const kassenDelta = frei + gebunden - anfang;
+      const ok = [anfang, erloese, kosten, frei, gebunden, netto, kassenDelta]
+        .every(Number.isSafeInteger) && anfang >= 0 && erloese >= 0 && kosten >= 0
+        && frei >= 0 && gebunden >= 0 && netto === kassenDelta;
+      return { anfang, frei, gebunden, erloese, kosten, netto, kassenDelta, ok };
+    }
+    const arbeitsGebunden = (id) => Object.entries(vertraege).reduce((sum, [schiffId, v]) => {
+      const schiff = state.ships[schiffId];
+      if (schiff?.owner !== id || !v.arbeitsKonto) return sum;
+      return sum + (state.owners[v.arbeitsKonto]?.cash ?? NaN);
+    }, 0);
+    const abnahmeGebunden = Object.values(vertraege).reduce((sum, v) =>
+      sum + (state.owners[v.konto]?.cash ?? NaN), 0);
+    const haus = saldo('house', arbeitsGebunden('house'));
+    const npc = saldo('npc3', arbeitsGebunden('npc3'));
+    const station = saldo(cfg.station, abnahmeGebunden);
+    const verkauf = saldo(cfg.werftOwner);
+    const kaeufer = saldo(cfg.exportOwner);
+    const minerKaeufe = anzahl(state.ledger.miner, 'consumed');
+    const bezahlteHuelle = minerKaeufe * rules.economy.waren.miner.basis;
+    const foerderArbeit = state.ledger.erz.mined * cfg.minerJeMinute;
+    const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle;
+    const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
+    const fonds = state.owners[fondsId].cash - startCash(fondsId);
+    const stationErz = state.stations[cfg.station].lager.erz;
+    const wertUnverkauft = stationErz * cfg.preis; // Nur kalkulatorischer Wert, KEIN Geld.
+    const beschaffung = station.kosten;
+    const abnahme = station.erloese;
+    const ketteOk = [minerKaeufe, bezahlteHuelle, foerderArbeit, belegteArbeit, fonds,
+      stationErz, wertUnverkauft, beschaffung, abnahme].every(Number.isSafeInteger)
+      && minerKaeufe >= 0 && stationErz >= 0
+      && belegteArbeit === foerderArbeit && fonds === foerderArbeit
+      && verkauf.erloese === bezahlteHuelle
+      && beschaffung === (state.ledger.erz.mined
+        - Object.values(state.ships).reduce((sum, sh) => sum + anzahl(sh.ladung, 'erz'), 0)) * cfg.preis
+      && abnahme === state.ledger.erz.exported * cfg.preis;
+    return {
+      ok: haus.ok && npc.ok && station.ok && verkauf.ok && kaeufer.ok && ketteOk,
+      konzerne: { house: haus, npc3: npc },
+      station, verkauf, kaeufer,
+      minerKaeufe, bezahlteHuelle, foerderArbeit, belegteArbeit, fonds,
+      stationErz, wertUnverkauft, beschaffung, abnahme, ketteOk,
+      // Statischer Rechenwert für EIN vollständig bezahltes Schiff, kein Gewinnerhalt-Versprechen.
+      amortisationErz: Math.ceil(rules.economy.waren.miner.basis /
+        (cfg.preis - cfg.minerJeMinute)),
+    };
+  }
+  return { pruefen };
+})();
+
 const m_core_step = (() => {
 const { execute } = m_core_commands;
 const { protokolliere } = m_core_state;
@@ -1693,6 +2054,12 @@ function step(state, rules) {
   wartend.forEach((cmd, i) => {
     if (!ergebnisse[i].ok) protokolliere(state, 'befehl', `${cmd.schiff ? `${cmd.schiff}: ` : ''}Befehl abgelehnt: ${ergebnisse[i].reason}`, cmd.owner);
   });
+  if (rules.erzpilot) {
+    ankunft(state, rules);
+    foerderung(state, rules);
+    if (state.tick % rules.economy.stunde === 0) m_core_erzpilot.exportiere(state, rules);
+    return ergebnisse;
+  }
   ankunft(state, rules); foerderung(state, rules); entscheidung(state, rules); reise(state, rules); produktion(state, rules);
   escorteBewegen(state, rules);
   if (state.tick % rules.economy.stunde === 0) {
@@ -1946,13 +2313,115 @@ function audit(state) {
     const d = anzahl(ist, w) - soll;
     if (d !== 0) { goods.ok = false; goods.delta[w] = d; }
   }
-  return { ok: isk.ok && goods.ok, total, expected, delta: total - expected, isk, goods };
+  const extra = {};
+  let finanzierungsOk = true;
+  if (state.rulesVersion === m_data_erzpilot.ERZ_RULES.rulesVersion) {
+    const cfg = m_data_erzpilot.ERZ_RULES.erzpilot;
+    const start = m_data_erzpilot.ERZ_RULES.owners.find((o) => o.id === cfg.exportOwner).cash;
+    const exportiert = state.ledger?.erz?.exported;
+    const rest = state.owners?.[cfg.exportOwner]?.cash;
+    const ausgegeben = exportiert * cfg.preis;
+    const differenz = rest + ausgegeben - start;
+    // Ohne belegte Endkunden-Einnahmen darf ein blosses Verschieben vorhandener ISK
+    // nicht als wiederkehrend finanziertes Exportgeschaeft gelten.
+    finanzierungsOk = Number.isSafeInteger(rest) && rest >= 0
+      && Number.isSafeInteger(exportiert) && exportiert >= 0
+      && Number.isSafeInteger(ausgegeben) && Number.isSafeInteger(differenz)
+      && differenz === 0;
+    extra.finanzierung = { ok: finanzierungsOk, start, ausgegeben, rest,
+      differenz, exportiert };
+  }
+  let wirtschaftOk = true;
+  if (state.rulesVersion === m_data_erzpilot.ERZ_RULES.rulesVersion) {
+    const bericht = m_core_w1_vollkosten.pruefen(state, m_data_erzpilot.ERZ_RULES);
+    wirtschaftOk = bericht.ok;
+    extra.vollkosten = { ok: wirtschaftOk, ketteOk: bericht.ketteOk,
+      house: bericht.konzerne.house.ok, npc3: bericht.konzerne.npc3.ok,
+      station: bericht.station.ok, werft: bericht.verkauf.ok, kaeufer: bericht.kaeufer.ok };
+  }
+  let vertragsOk = true;
+  if (state.erzpilotVertraege) {
+    const errors = {};
+    const active = new Set();
+    let reservierteMenge = 0;
+    for (const id of ids(state.erzpilotVertraege)) {
+      const v = state.erzpilotVertraege[id], konto = state.owners[v.konto], sh = state.ships[id];
+      if (!sh || !konto || !Number.isSafeInteger(v.menge) || !(v.menge > 0)
+        || !Number.isSafeInteger(v.preis) || !(v.preis > 0)
+        || konto.cash !== v.menge * v.preis || active.has(v.konto)) {
+        errors[id] = 'ungueltige Auftragsbindung';
+        continue;
+      }
+      active.add(v.konto);
+      if (v.arbeitsKonto) {
+        const arbeit = state.owners[v.arbeitsKonto];
+        const kostenJeEinheit = m_data_erzpilot.ERZ_RULES.erzpilot.minerJeMinute;
+        const verbleibend = Math.max(0, v.menge - (sh.ladung.erz || 0));
+        if (!arbeit || !Number.isSafeInteger(arbeit.cash)
+          || arbeit.cash !== verbleibend * kostenJeEinheit
+          || active.has(v.arbeitsKonto) || v.arbeitsPreis !== kostenJeEinheit)
+          errors[id] = 'ungueltige Arbeitskapitalbindung';
+        else active.add(v.arbeitsKonto);
+      }
+      reservierteMenge += v.menge;
+    }
+    for (const id of ids(state.owners)) {
+      const o = state.owners[id];
+      if (o.kind === 'escrow' && o.cash !== 0 && !active.has(id))
+        errors[id] = 'Treuhandgeld ohne aktiven Auftrag';
+    }
+    // Kapazitaet aus der einzigen Core-Preis-/Lagerformel berechnen, nicht duplizieren.
+    const cfg = m_data_erzpilot.ERZ_RULES;
+    const mengeImLager = state.stations[cfg.erzpilot.station]?.lager?.erz;
+    const kapazitaet = m_core_handel.obergrenze(state, cfg, cfg.erzpilot.station, 'erz');
+    if (!Number.isSafeInteger(mengeImLager) || mengeImLager < 0
+      || mengeImLager + reservierteMenge > kapazitaet)
+      errors.lager = 'Auftragsvolumen uebersteigt Lagerkapazitaet';
+    vertragsOk = Object.keys(errors).length === 0;
+    extra.contracts = { ok: vertragsOk, errors, reserved: reservierteMenge };
+  }
+  return { ok: isk.ok && goods.ok && vertragsOk && finanzierungsOk && wirtschaftOk, total, expected, delta: total - expected, isk, goods, ...extra };
 }
 return { audit };
 })();
 
 const m_core_index = (() => {
 const { RULES } = m_data_rules;
+const { ERZ_RULES } = m_data_erzpilot;
+const pilotAuftragsStand = (state) => m_core_erzpilot.auftragsStand(state, ERZ_RULES);
+const pilotWirtschaftsStand = (state) => m_core_w1_vollkosten.pruefen(state, ERZ_RULES);
+function createErzState(seed = ERZ_RULES.startSeed) {
+  const state = m_core_state.createState(seed, ERZ_RULES);
+  // Erz stammt nur aus echter Foerderung, nicht aus vorausgefuellten Zielbestaenden.
+  const startErz = state.stations.st_aldera.lager.erz;
+  state.stations.st_aldera.lager.erz = 0;
+  state.ledger.erz.initial -= startErz;
+  state.erzpilotVertraege = {};
+  const kauf = m_core_commands.execute(state,
+    { type: 'shipBuy', owner: 'npc3', klasse: 'miner', station: 'st_aldera' }, ERZ_RULES);
+  if (!kauf.ok) throw new Error('NPC-Erstinvestition fehlgeschlagen: ' + kauf.reason);
+  const miner = Object.values(state.ships).find((sh) => sh.owner === 'npc3');
+  const abbauen = m_core_commands.execute(state,
+    { type: 'shipMine', owner: 'npc3', schiff: miner.id, ware: 'erz' }, ERZ_RULES);
+  if (!abbauen.ok) throw new Error('NPC-Erzauftrag fehlgeschlagen: ' + abbauen.reason);
+  return state;
+}
+function loadErz(json) {
+  const s = JSON.parse(json);
+  if (!s || s.rulesVersion !== ERZ_RULES.rulesVersion || s.schema !== ERZ_RULES.schema)
+    throw new Error('Erzpilot-Spielstand inkompatibel; kein stilles Migrieren');
+  const geladen = m_core_serialize.load(json, m_core_serialize.MIGRATIONS, ERZ_RULES.schema, ERZ_RULES.rulesVersion);
+  for (const konto of ['house', 'npc3', 'st_aldera', 'fonds_aldera', 'export', 'werft_extern']) {
+    if (!Number.isSafeInteger(geladen.owners?.[konto]?.cash) || geladen.owners[konto].cash < 0)
+      throw new Error('Erzpilot-Spielstand: ungueltiges Konto ' + konto);
+  }
+  if (!Number.isSafeInteger(geladen.stations?.st_aldera?.lager?.erz)
+    || !Number.isSafeInteger(geladen.stations.st_aldera.lager.miner))
+    throw new Error('Erzpilot-Spielstand: ungueltiges Lager');
+  if (!m_core_audit.audit(geladen).ok)
+    throw new Error('Erzpilot-Spielstand: Geld-, Waren- oder Vertragsbilanz fehlerhaft (Käuferfinanzierung eingeschlossen)');
+  return geladen;
+}
 const createState = (seed = RULES.startSeed, rules = RULES) => m_core_state.createState(seed, rules);
 const submit = (state, cmd, rules = RULES) => m_core_commands.submit(state, cmd, rules);
 const execute = (state, cmd, rules = RULES) => m_core_commands.execute(state, cmd, rules);
@@ -1975,7 +2444,7 @@ const { reise } = m_core_ankunft;
 const { kampf } = m_core_kampf;
 const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
-return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, createState, submit, execute, step, advance, load, preis, faktor };
+return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, pilotAuftragsStand, pilotWirtschaftsStand, createErzState, loadErz, createState, submit, execute, step, advance, load, preis, faktor };
 })();
 
 const m_data_oberflaeche = (() => {
@@ -3479,6 +3948,8 @@ return { ersetztLaufendesSpiel };
 })();
 
 const m_ui_main = (() => {
+// In der Pilotansicht darf der alte Welt-Ticker bzw. sein Speicherplatz nicht starten.
+if (typeof location !== 'undefined' && /(?:^\?|&)modus=erzpilot(?:&|$)/.test(location.search || '')) return { pilot: true };
 const { createState, advance, save, load, submit, execute } = m_core_index;
 const { RULES } = m_data_rules;
 const { OBERFLAECHE } = m_data_oberflaeche;
@@ -3984,6 +4455,192 @@ anzeigen();
 starten();
 
 return {};
+})();
+
+// W1-UI nutzt dieselben Core-Commands wie die Simulation und einen getrennten Slot.
+// Aus Sicherheitsgruenden nie automatische Migration/Schreibzugriffe auf Regel-14-Spielstaende.
+const m_ui_erzpilot = (() => {
+  if (typeof location === 'undefined' || !/(?:^\?|&)modus=erzpilot(?:&|$)/.test(location.search || '')) return {};
+  document.body.classList.add('erzpilot-modus');
+  const app = document.getElementById('erzpilot-app');
+  app.hidden = false;
+  const $ = (id) => document.getElementById(id);
+  const { createErzState, loadErz, ERZ_RULES: rules, pilotAuftragsStand, pilotWirtschaftsStand, execute, advance, save, audit, hash } = m_core_index;
+  const { dbPut, dbGet, dateiSichern } = m_ui_speicher;
+  const SLOT = 'aphros-void-erzpilot-regel15-v1';
+  let state = createErzState();
+  let gesperrt = false;
+  let ladebereit = false;
+  let defekterStand = null;
+  let speicherKette = Promise.resolve();
+  const geld = (n) => `${n.toLocaleString('de-DE')} ISK`;
+  function nachricht(t, fehler = false) {
+    $('pilot-meldung').textContent = t;
+    $('pilot-meldung').classList.toggle('bad', fehler);
+  }
+  function anzeigen() {
+    const sh = Object.values(state.ships).filter((s) => s.owner === 'house');
+    const a = audit(state), vertrag = pilotAuftragsStand(state), voll = pilotWirtschaftsStand(state);
+    $('pilot-kasse').textContent = geld(state.owners.house.cash);
+    $('pilot-npc').textContent = geld(state.owners.npc3.cash);
+    $('pilot-miner').textContent = String(sh.length);
+    $('pilot-auftraege').textContent = `${sh.filter((s) => s.auftrag === 'foerdern').length} aktiv`;
+    $('pilot-lager').textContent = String(state.stations.st_aldera.lager.erz);
+    $('pilot-station').textContent = geld(state.owners.st_aldera.cash);
+    $('pilot-fonds').textContent = geld(state.owners.fonds_aldera.cash);
+    $('pilot-werft').textContent = geld(state.owners.werft_extern.cash);
+    $('pilot-geldsumme').textContent = geld(a.isk.total);
+    $('pilot-voll-umsatz').textContent = geld(voll.konzerne.house.erloese);
+    $('pilot-voll-kosten').textContent = geld(voll.konzerne.house.kosten);
+    $('pilot-voll-spieler').textContent = geld(voll.konzerne.house.netto);
+    $('pilot-voll-npc').textContent = geld(voll.konzerne.npc3.netto);
+    $('pilot-voll-station').textContent = geld(voll.station.netto);
+    $('pilot-voll-lager').textContent = `${voll.stationErz} Erz · ${geld(voll.wertUnverkauft)} (nicht liquide)`;
+    $('pilot-voll-grenze').textContent = `${voll.amortisationErz} verkauften Erz pro Miner`;
+    $('pilot-voll-audit').textContent = voll.ok ? 'Vollkosten + Konten OK' : 'Vollkosten FEHLER';
+    $('pilot-voll-audit').className = voll.ok ? 'good' : 'bad';
+    $('pilot-gebunden').textContent = geld(vertrag.gebunden);
+    $('pilot-arbeitsgeld').textContent = geld(vertrag.arbeitsGebunden);
+    $('pilot-vertraege').textContent = `${vertrag.auftraege} / ${vertrag.reserviert} Erz`;
+    $('pilot-finanzlage').textContent = !a.finanzierung.ok
+      ? 'Unbelegte Käuferfinanzierung erkannt. Kein Nachweis für neuen Endverbrauch.'
+      : state.owners.export.cash === 0
+        ? `Exportbudget aufgebraucht: ${geld(a.isk.total)} existieren weiterhin, aber nicht als Budget des Endkäufers. Ohne echte Einnahme keine dauerhafte Nachfrage.`
+        : `Anfangsbudget ${geld(a.finanzierung.start)}; bezahlt ${geld(a.finanzierung.ausgegeben)}; Rest ${geld(a.finanzierung.rest)}.`;
+    $('pilot-exportbudget').textContent = geld(state.owners.export.cash);
+    $('pilot-exportausgaben').textContent = geld(a.finanzierung.ausgegeben);
+    $('pilot-finanzdelta').textContent = geld(a.finanzierung.differenz);
+    $('pilot-mengen').textContent = `${state.ledger.erz.mined} / ${state.ledger.erz.exported}`;
+    $('pilot-zeit').textContent = `Tag ${Math.floor(state.tick / 1440) + 1}, Minute ${state.tick % 1440}`;
+    $('pilot-audit').textContent = a.ok ? 'ISK + Waren + Vollkosten OK' : 'FEHLER – gesperrt';
+    $('pilot-audit').className = a.ok ? 'good' : 'bad';
+    $('pilot-hash').textContent = hash(state);
+    $('pilot-hash').style.fontFamily = 'ui-monospace, monospace';
+    if (!a.ok) { gesperrt = true; nachricht('Bilanzabweichung. Änderungen gesperrt; Daten exportieren.', true); }
+    for (const id of ['pilot-kauf', 'pilot-abbau', 'pilot-stopp', 'pilot-stunde', 'pilot-tag', 'pilot-sichern'])
+      $(id).disabled = gesperrt || !ladebereit;
+    $('pilot-kauf').disabled = gesperrt || !ladebereit || state.owners.house.cash < 600 || state.stations.st_aldera.lager.miner < 1;
+    for (const id of ['pilot-datei', 'pilot-laden', 'pilot-neu']) $(id).disabled = !ladebereit;
+  }
+  function sichern() {
+    if (gesperrt || !ladebereit) return Promise.resolve(false);
+    const snapshot = save(state);
+    // Sequenziert: auch bei schnellen Touch-Eingaben gewinnt immer der letzte Stand.
+    speicherKette = speicherKette.catch(() => {}).then(() => dbPut(SLOT, snapshot));
+    return speicherKette.then(() => true, (e) => {
+      nachricht('Speichern fehlgeschlagen: ' + e.message + '. Bitte JSON exportieren.', true);
+      return false;
+    });
+  }
+  function befehl(cmd) {
+    if (gesperrt || !ladebereit) return;
+    const result = execute(state, cmd, rules);
+    if (!result.ok) return nachricht(result.reason, true);
+    anzeigen();
+    sichern();
+  }
+  $('pilot-kauf').addEventListener('click', () => {
+    befehl({ type: 'shipBuy', owner: 'house', klasse: 'miner', station: 'st_aldera' });
+  });
+  function auftrag(typ) {
+    if (gesperrt || !ladebereit) return;
+    const eigene = Object.values(state.ships).filter((sh) => sh.owner === 'house' && sh.klasse === 'miner');
+    let erfolgreich = 0;
+    for (const sh of eigene) {
+      const cmd = { owner: 'house', schiff: sh.id, type: typ };
+      if (typ === 'shipMine') cmd.ware = 'erz';
+      const erg = execute(state, cmd, rules);
+      if (erg.ok) erfolgreich++;
+    }
+    nachricht(`${erfolgreich} von ${eigene.length} Minern: ${typ === 'shipMine' ? 'Förderung' : 'Stop'}`);
+    anzeigen(); sichern();
+  }
+  $('pilot-abbau').addEventListener('click', () => auftrag('shipMine'));
+  $('pilot-stopp').addEventListener('click', () => auftrag('shipWait'));
+  for (const [id, n] of [['pilot-stunde', 60], ['pilot-tag', 1440]]) {
+    $(id).addEventListener('click', () => {
+      if (gesperrt || !ladebereit) return;
+      advance(state, n, rules);
+      anzeigen(); sichern();
+      if (!gesperrt) nachricht(`${n} Minuten gespielt. Endliches Exportbudget: ${geld(state.owners.export.cash)} verbleiben.`);
+    });
+  }
+  $('pilot-sichern').addEventListener('click', () => {
+    sichern().then((ok) => { if (ok) nachricht('Pilot-Spielstand im getrennten Speicher gesichert.'); });
+  });
+  function exportieren() {
+    if (!ladebereit) return;
+    if (defekterStand !== null) {
+      dateiSichern(defekterStand, 'aphros-erzpilot-regel15-beschaedigt.json');
+      return nachricht('Original des beschädigten Pilotstands unverändert als JSON gesichert.');
+    }
+    dateiSichern(save(state), `aphros-erzpilot-regel15-tick-${state.tick}.json`);
+    nachricht('Pilot-Spielstand als JSON exportiert.');
+  }
+  $('pilot-datei').addEventListener('click', exportieren);
+  $('pilot-laden').addEventListener('click', () => { if (ladebereit) $('pilot-datei-input').click(); });
+  async function archivieren() {
+    // Der aktuelle Snapshot muss zuerst sicher sein; alle anstehenden Saves serialisieren.
+    if (ladebereit && !gesperrt && !(await sichern()))
+      throw Error('Aktueller Spielstand konnte nicht vor dem Archivieren gesichert werden');
+    await speicherKette.catch(() => {});
+    const bisher = await dbGet(SLOT);
+    if (bisher === undefined) return;
+    const basis = `${SLOT}-archiv-${Date.now()}`;
+    let key = basis, nummer = 1;
+    while (await dbGet(key) !== undefined) key = `${basis}-${nummer++}`;
+    await dbPut(key, bisher);
+  }
+  $('pilot-datei-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file || !ladebereit) return;
+    try {
+      const neu = loadErz(await file.text());
+      if (!audit(neu).ok) throw Error('Geld- oder Warenbilanz stimmt nicht');
+      if (!confirm('Pilot-Spielstand ersetzen? Der bisherige Pilot wird vorher archiviert.')) return;
+      await archivieren();
+      state = neu; gesperrt = false; ladebereit = true; defekterStand = null;
+      anzeigen();
+      if (!await sichern()) throw Error('Importstand nur im Arbeitsspeicher; bitte JSON exportieren');
+      nachricht('Pilot-Spielstand geprüft und importiert.');
+    } catch (err) {
+      nachricht('Import abgelehnt: ' + err.message + '. Der bestehende Stand bleibt erhalten.', true);
+    }
+  });
+  $('pilot-neu').addEventListener('click', async () => {
+    if (!ladebereit) return;
+    if (!confirm('Neuen Erzpilot starten? Der bisherige Pilot wird zuerst archiviert.')) return;
+    try {
+      await archivieren();
+      state = createErzState(); gesperrt = false; ladebereit = true; defekterStand = null;
+      anzeigen();
+      if (!await sichern()) throw Error('Neuer Stand nur im Arbeitsspeicher; bitte JSON exportieren');
+      nachricht('Neuer Erzpilot gestartet. Vorheriger Stand archiviert.');
+    } catch (err) {
+      nachricht('Neustart abgebrochen, Archivierung fehlgeschlagen: ' + err.message, true);
+    }
+  });
+  async function starten() {
+    try {
+      const text = await dbGet(SLOT);
+      if (text !== undefined) {
+        const s = loadErz(text);
+        if (!audit(s).ok) throw Error('Bilanzfehler im gespeicherten Pilotstand');
+        state = s;
+        nachricht('Gespeicherter Pilotstand geladen.');
+      } else nachricht('Neuer Erzpilot. Starte mit einem Miner-Kauf.');
+    } catch (e) {
+      gesperrt = true;
+      try { defekterStand = (await dbGet(SLOT)) ?? null; } catch { defekterStand = null; }
+      nachricht('Vorhandener Pilotstand nicht lesbar (' + e.message + '). Nicht überschrieben; JSON-Export sichert die Rohdaten.', true);
+    }
+    ladebereit = true;
+    anzeigen();
+  }
+  anzeigen();
+  starten();
+  return { modus: 'erzpilot' };
 })();
 </script>
 </body>

@@ -1,5 +1,20 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W4 – Raffinerie in Nadir, nur bezahlte Materialproduktion · 04.11.2026
+
+**[MAIN]** `b4e604d6`, Regel14/Schema8 unverändert. **[DRAFT]** [PR #169](https://github.com/tobiasfranziskus/Check/pull/169) auf W3 #168; isolierter Regel18-Core und neue Pilot-UI. W1-Erzförderung, W2-NPC-Investitionen und W3-Erzfrachter verwenden weiterhin denselben Core-Tick; keine eigene Raffinerie-Uhr.
+
+**[ECHTER PROZESS]** Nur bei mindestens 10 real aus Aldera geliefertem Erz in Nadir und 20 ISK Arbeitskapital kann `stationRefine` eine Charge reservieren. 20 reale Core-Minuten vergüten `arbeitskraefte_nadir` je 1 ISK aus dem eigens vorfinanzierten Arbeits-Treuhandkonto. Erst danach werden 10 physische Erz sowie 10 Erz aus dem Ledger abgebucht und 5 Material produziert. Nadir besitzt anfangs 0 Material. Aktive W3-Rückfahrt und W4-Produktion dürfen gleichzeitig im einzigen Tick erfolgen; ISK-Weltbestand bleibt 33.000, `minted=0`.
+
+**[NEUES AUDIT]** W4 vergleicht gebuchte Arbeitskosten mit Lohnkonto, Treuhandrest, vertraglichen Produktionsminuten, tatsächlichem Erzverbrauch, fertiggestelltem Material und Materiallager. Der bestehende W3-Käuferetat berücksichtigt W4-Aufwendungen, damit kein ungebuchter Zuschuss neue Transporte oder unbezahlte Arbeit finanziert. Bei 5 bezahlten 50er-Erztransporten verbleiben Nadir 300 ISK und 250 Erz; davon können 15 Raffineriechargen ×20 ISK bezahlt werden. Bei 0 ISK muss die 16. Charge trotz verbliebener 100 Erz abgelehnt werden. Dies ist ein gezielter Testfall, kein bewiesener dauerhaft tragfähiger Endmarkt.
+
+**[BEDIENUNG/SAVES]** `?modus=w4raffinerie` (Raffinerie + 2D-Forschungsansicht), `?modus=w4konten` (Kontenansicht), beide mit eigenem `aphros-void-w4-regel18-v1`-Slot. Export, Archiv vor Import/Neustart, strikte Versionsprüfung; R14-/R15-/R16-/R17-Slots werden nicht überschrieben. Echte iPad-Safari-/NAS-Abnahme später über den vorhandenen Hauptlink.
+
+**[PRÜFGATE]** [CI #41833705400](https://github.com/tobiasfranziskus/Check/actions/runs/41833705400), Code-Commit `6865316f`: **149/149 Node-Tests erfolgreich**, darunter echtes W1→W2→W3→W4, bezahlte Einzel-/Mehrfachchargen, 13 Seeds ×90 Tage, Save/Load und UI-Pfade. Zusätzliche negative Gegenproben haben bilanzneutrale Fremdzahlung auf Arbeitstreuhand sowie erfundenes Material trotz nachgezogenem Waren-Ledger unabhängig erkannt. Die länger laufenden historischen CI-Jobs bleiben bis zu ihrem tatsächlichen Abschluss gesondert auszuweisen. Noch kein realer Endverbrauch von Material, keine zusätzliche Käuferkasse, kein W5-Schiffbau und keine Regel für dauerhaftes Einkommen, Insolvenz oder Emission. **Kein Merge, kein Deployment.**
+
+---
+
+
 ## [DRAFT] W3 – finanzierter Aldera–Nadir-Frachtauftrag und UI · 04.11.2026
 
 **[MAIN]** weiterhin `b4e604d6`, Regel14/Schema8. **[DRAFT]** [PR #168](https://github.com/tobiasfranziskus/Check/pull/168) auf #167; isolierter Regel17-Modus mit zwei Stationen, derselben Core-Tickfunktion und echtem 750-ISK-Frachterkauf. W2-Mining und NPC-Investition bleiben vorhanden; Frachterreise und Warenkonto besitzen keinen zweiten Simulationstakt.

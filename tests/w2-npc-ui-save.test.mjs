@@ -286,3 +286,101 @@ test('W3 UI: inkompatibler W2-Import scheitert, Neustart archiviert nur Regel17'
   assert.equal(store.get(W1_SLOT),'W1');
   assert.equal(store.get(W2_SLOT),'W2');
 });
+
+test('W4 UI: echte Fracht zuerst, dann 10 Erz zu 5 Material und 20 ISK Lohn',async()=>{
+  const W3_SLOT='aphros-void-w3-regel17-v1', W4_SLOT='aphros-void-w4-regel18-v1';
+  const old={slot1:'MAIN-ALT',[W1_SLOT]:'W1-ALT',[W2_SLOT]:'W2-ALT',[W3_SLOT]:'W3-ALT'};
+  const {el,store}=boot('w4raffinerie',old);
+  await settle();
+  assert.match(el['pilot-version'].textContent,/Regel 18/);
+  assert.equal(el['pilot-w4-panel'].hidden,false);
+  assert.equal(el['pilot-w3-panel'].hidden,false);
+  assert.equal(el.miner2d.hidden,false);
+  assert.equal(el['pilot-w4-start'].disabled,true,'ohne W3-Transport keine Erzverarbeitung');
+  assert.equal(el['pilot-w3-kauf'].disabled,false);
+  el['pilot-w3-kauf'].click();await settle();
+  el['pilot-w3-50'].click();await settle();
+  el['pilot-w3-start'].click();await settle();
+  assert.equal(JSON.parse(store.get(W4_SLOT)).rulesVersion,18);
+  assert.equal(el['pilot-w4-start'].disabled,true,'Erz nur an Bord, noch nicht in Nadir');
+  el['pilot-stunde'].click();await settle();
+  assert.equal(el['pilot-w4-erz'].textContent,'50 Erz');
+  assert.equal(el['pilot-w4-material'].textContent,'0 Material');
+  assert.equal(el['pilot-w4-start'].disabled,false);
+  el['pilot-w4-start'].click();await settle();
+  let s=JSON.parse(store.get(W4_SLOT));
+  assert.equal(s.owners.st_nadir.cash,3240);
+  assert.equal(s.owners.w4_arbeit_treuhand.cash,20);
+  assert.equal(s.w4.auftrag.gearbeitet,0);
+  assert.match(el['pilot-w4-status'].textContent,/20 Minuten/);
+  assert.equal(el['pilot-w4-start'].disabled,true);
+  assert.equal(el['pilot-w4-audit'].textContent,'Material + Arbeitslohn OK');
+  el['pilot-w4-20'].click();await settle();
+  s=JSON.parse(store.get(W4_SLOT));
+  assert.equal(s.stations.st_nadir.lager.erz,40);
+  assert.equal(s.stations.st_nadir.lager.material,5);
+  assert.equal(s.w4.auftrag,null);
+  assert.equal(s.ledger.material.produced,5);
+  assert.equal(s.owners.arbeitskraefte_nadir.cash,20);
+  assert.equal(s.owners.w4_arbeit_treuhand.cash,0);
+  assert.equal(el['pilot-w4-material'].textContent,'5 Material');
+  assert.equal(el['pilot-w4-lohn'].textContent,'20 ISK');
+  assert.equal(el['pilot-w4-audit'].textContent,'Material + Arbeitslohn OK');
+  assert.equal(el['pilot-audit'].textContent,'ISK + Waren + Vollkosten OK');
+  assert.equal(s.minted,0);
+  for(const [key,value] of Object.entries(old))assert.equal(store.get(key),value);
+});
+
+test('W4 UI: Konto-/2D-Wechsel liest denselben Hash, archiviert nur eigenen Save',async()=>{
+  const W3_SLOT='aphros-void-w3-regel17-v1', W4_SLOT='aphros-void-w4-regel18-v1';
+  const old={slot1:'ALTMAIN',[W1_SLOT]:'ALT15',[W2_SLOT]:'ALT16',[W3_SLOT]:'ALT17'};
+  const a=boot('w4raffinerie',old);
+  await settle();
+  a.el['pilot-w3-kauf'].click();await settle();
+  a.el['pilot-w3-50'].click();await settle();
+  a.el['pilot-w3-start'].click();await settle();
+  a.el['pilot-stunde'].click();await settle();
+  a.el['pilot-w4-start'].click();await settle();
+  const before=a.store.get(W4_SLOT),hash=a.el['pilot-hash'].textContent;
+  const b=boot('w4konten',Object.fromEntries(a.store));await settle();
+  assert.equal(b.el['pilot-w4-panel'].hidden,false);
+  assert.equal(b.el.miner2d.hidden,true);
+  assert.equal(b.el['pilot-hash'].textContent,hash);
+  assert.equal(b.store.get(W4_SLOT),before);
+  b.el['pilot-w4-20'].click();await settle();
+  const processed=b.store.get(W4_SLOT);
+  assert.equal(JSON.parse(processed).w4.abgeschlossen,1);
+  const c=boot('w4raffinerie',Object.fromEntries(b.store));await settle();
+  assert.equal(c.el['pilot-hash'].textContent,b.el['pilot-hash'].textContent);
+  assert.equal(c.store.get(W4_SLOT),processed);
+  assert.equal(c.el['pilot-w4-audit'].textContent,'Material + Arbeitslohn OK');
+  // Inkompatible andere Regel wird nicht still in Regel18 umgewandelt.
+  const invalid=JSON.parse(processed);invalid.rulesVersion=17;
+  await c.el['pilot-datei-input'].listeners.change({target:{
+    files:[{text:async()=>JSON.stringify(invalid)}],value:'bad'
+  }});await settle();
+  assert.equal(c.store.get(W4_SLOT),processed);
+  assert.match(c.el['pilot-meldung'].textContent,/Import abgelehnt/);
+  c.el['pilot-datei'].click();
+  assert.match(c.downloads[0].name,/regel18/);
+  await c.el['pilot-neu'].click();await settle();
+  const archives=[...c.store.keys()].filter(k=>k.startsWith(W4_SLOT+'-archiv-'));
+  assert.equal(archives.length,1);
+  assert.equal(c.store.get(archives[0]),processed);
+  assert.equal(JSON.parse(c.store.get(W4_SLOT)).rulesVersion,18);
+  for(const [key,value] of Object.entries(old))assert.equal(c.store.get(key),value);
+});
+
+test('W4 UI: beschädigter Regel18-Slot bleibt gesperrt und als Original exportierbar',async()=>{
+  const W4_SLOT='aphros-void-w4-regel18-v1';
+  const broken='{"rulesVersion":18,"fake":true}';
+  const {el,store,downloads}=boot('w4konten',{[W4_SLOT]:broken});
+  await settle();
+  assert.equal(el['pilot-w4-start'].disabled,true);
+  assert.equal(el['pilot-w3-start'].disabled,true);
+  assert.equal(el['pilot-stunde'].disabled,true);
+  assert.equal(store.get(W4_SLOT),broken);
+  el['pilot-datei'].click();
+  assert.equal(downloads[0].text,broken);
+  assert.match(downloads[0].name,/regel18-beschaedigt/);
+});

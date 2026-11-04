@@ -1,5 +1,20 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] W4 – echte Nadir-Raffinerie aus angeliefertem Erz · 04.11.2026
+
+**[DRAFT PR #169](https://github.com/tobiasfranziskus/Check/pull/169)** stapelt auf dem mit vollständiger CI erfolgreich getesteten W3-Frachtauftrag #168. Die isolierte Regel18-Welt baut auf derselben Core-Uhr und der gemeinsamen W0–W3-Kontobuchung auf. Es gibt **keinen** neuen Simulationskern, keinen separaten Raffinerieticker, keine ISK-Emission und keine neuen Produktregeln für Regel14–17.
+
+**Echter Waren-/Geldfluss:** Ein aus vorhandenen Mitteln bezahlter Frachter liefert bereits tatsächlich gefördertes Erz nach Nadir. Das neue W4-Gate erlaubt dort eine Produktionscharge nur bei mindestens **10 wirklichen Erz im Lager**, freiem Materiallager und **20 ISK komplett vorhandenem Arbeitskapital** der Nadir-Station. `stationRefine` reserviert 20 ISK im eigenen Arbeits-Treuhandkonto. Erst nach **20 tatsächlich gespielten Minuten à 1 ISK** an das neue Arbeitskräfte-Konto werden 10 Erz aus dem Nadir-Bestand und aus dem Waren-Ledger verbraucht sowie **5 Material** als echte Ware erzeugt und dem Lager gutgeschrieben. Kein vorgefülltes Startmaterial; keine Gratisarbeit, Warenverdopplung, Gratisstation oder Papiergewinn.
+
+**Wirtschaftsgrenze:** Nadir bezahlt bereits Warenkauf und beide Frachterstrecken aus endlichen 4.000 ISK. Raffineriearbeit vermindert **dieselbe**, prüfbare Kasse; die vorhandene W3-Käuferherkunftsrechnung wurde um vollständig gebuchte W4-Arbeit erweitert. Ohne genügend Erz bzw. Arbeitsgeld startet kein neuer Auftrag, obwohl andere Firmen noch Kapital halten dürfen. Produktion ist **keine zusätzliche Einnahmequelle**: Material bleibt unverkauftes Lagergut. Reale Materialabnehmer und bezahlter industrieller Verbrauch sind erst im W5-Schiff-/Modulbau nachzuweisen, ohne neue automatische Nachfrage zu erfinden. Die Parameter 10:5, 20 Minuten, 1 ISK/Minute gelten nur als W4-Pilotregel und sind keine endgültige Balancing-Entscheidung.
+
+**Spielbarkeit ohne Hauptlink-Eingriff:** `?modus=w4raffinerie` zeigt die bereits vorhandene 2D-Ansicht und Konten, W4-Chargen und Material; `?modus=w4konten` dieselbe gespeicherte Welt ohne Canvas. Ein eigener Slot `aphros-void-w4-regel18-v1` mit geprüftem JSON-Import, Export und Archivierung schützt die Hauptwelt (`slot1`) sowie W1-/W2-/W3-Spielstände. Echte iPad-Safari-/NAS-Abnahme auf Nutzerwunsch später nach gesonderter Freigabe.
+
+**[TESTGATE]** `tests/w4-raffinerie-finanziert.test.mjs` für reale W3-Lieferung, bezahlte Einzelcharge, 15-Chargen-Kassenstopp trotz 100 verbliebenen Erzes, 13 Seeds ×90 Tage, Replay/Save/Load, Konten-/Waren-Audits; UI-/Save-Tests in `tests/w2-npc-ui-save.test.mjs`. **[TEST] [CI #41833705400](https://github.com/tobiasfranziskus/Check/actions/runs/41833705400), `6865316f`: 149/149 Node-Tests erfolgreich, 0 fehlgeschlagen oder übersprungen.** Darin: zwei unabhängige Manipulationsproben (unbezahlte Fremd-ISK auf Arbeitstreuhand und erfundenes Material samt gefälschtem Waren-Ledger), reale Kunden- und Produktionsstopps, Save/Load, 13×90-Replay. Historische Workflow-Jobs separat erst bei Abschluss freigeben. Kein Merge oder Deployment.
+
+---
+
+
 ## [DRAFT] W3 – erster echter und bezahlter Transport Aldera → Nadir → Aldera · 04.11.2026
 
 **[DRAFT PR #168](https://github.com/tobiasfranziskus/Check/pull/168)** auf dem W1/W2-Stack #161/#164/#165/#166/#167, **nicht** in `main`. Regel17 ergänzt den gemeinsamen deterministischen Core um einen zweiten Handelsort Nadir mit **0 Start-Erz**, eine echte 60-Minuten-Torroute und einen aus bestehender Speditionskasse für **750 ISK** gekauften fertigen Frachter. Es gibt keine parallele Wirtschaft oder freie Schiffserzeugung.

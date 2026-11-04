@@ -120,7 +120,10 @@ test('W4: Reale Fracht- und Raffinerie-Umsaetze bleiben im selben Save begrenzt'
   const before=api.hash(s);
   assert.equal(api.execute(s,refine,r).ok,false,'ohne neues Erz keine weitere Produktion');
   assert.equal(api.hash(s),before);
-  // Die reale Folgelieferung bleibt durch gebuchte Arbeit finanzierbar.
+  // Auch die zweite Fracht muss erst aus weiteren echten NPC-Foerderminuten
+  // stammen; es gibt keine automatisch nachgefuellte Erzcharge.
+  if(s.stations.st_aldera.lager.erz<50) api.advance(s,50,r);
+  assert.ok(s.stations.st_aldera.lager.erz>=50);
   const next=api.execute(s,{type:'shipFreight',owner:'transport',schiff:carrier.id},r);
   assert.equal(next.ok,true,next.reason);
   api.advance(s,120,r);

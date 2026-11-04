@@ -204,6 +204,7 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
         <div><dt>Station: Erz</dt><dd id="pilot-lager">–</dd></div>
         <div><dt>Station: frei verfügbar</dt><dd id="pilot-station">–</dd></div>
         <div><dt>Für Erzaufträge reserviert</dt><dd id="pilot-gebunden">–</dd></div>
+        <div><dt>Arbeitskapital gebunden</dt><dd id="pilot-arbeitsgeld">–</dd></div>
         <div><dt>Aufträge / reserviertes Erz</dt><dd id="pilot-vertraege">–</dd></div>
         <div><dt>Exportbudget</dt><dd id="pilot-exportbudget">–</dd></div>
         <div><dt>Gefördert / exportiert</dt><dd id="pilot-mengen">–</dd></div>
@@ -213,7 +214,7 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
         <button type="button" class="primary" id="pilot-stunde">+1 Stunde</button>
         <button type="button" id="pilot-tag">+1 Tag</button>
       </div>
-      <p class="muted">Die Station sichert jeden Erzauftrag vor Förderbeginn ab. Bei Abbruch wird nur gelieferte Ware bezahlt; ungenutztes Geld fließt zurück. Export höchstens 200 Erz pro Stunde.</p>
+      <p class="muted">Station und Miner sichern vor Förderbeginn Abnahmegeld und Arbeitskapital ab. Bei Abbruch werden nur gelieferte Waren und ausgeführte Arbeit bezahlt; Restbeträge fließen zurück. Export höchstens 200 Erz pro Stunde.</p>
       <p id="pilot-finanzlage" class="hinweis-text muted" role="status">Käuferfinanzierung wird geprüft.</p>
     </section>
   </div>
@@ -1852,11 +1853,18 @@ const m_core_erzpilot = (() => {
       Math.max(vorhandenesErz, verfuengbareArbeit)));
     if (menge <= 0) return null;
     const wert = menge * cfg.preis, konto = `erz_treuhand_${schiff.id}`;
+    const arbeitsKonto = `erz_arbeit_${schiff.id}`;
+    const arbeitsBudget = Math.max(0, menge - vorhandenesErz) * cfg.minerJeMinute;
+    if (state.owners[schiff.owner].cash < arbeitsBudget) throw Error('Bergbauauftrag ohne Arbeitskapital');
     if (!state.owners[konto]) state.owners[konto] = { id: konto, kind: 'escrow', cash: 0 };
-    if (state.owners[konto].cash !== 0) throw Error('Doppelt gebundene Erzgelder');
+    if (!state.owners[arbeitsKonto]) state.owners[arbeitsKonto] = { id: arbeitsKonto, kind: 'escrow', cash: 0 };
+    if (state.owners[konto].cash !== 0 || state.owners[arbeitsKonto].cash !== 0)
+      throw Error('Doppelt gebundenes Auftragskapital');
     station.cash -= wert;
     state.owners[konto].cash += wert;
-    buch[schiff.id] = { konto, menge, preis: cfg.preis };
+    state.owners[schiff.owner].cash -= arbeitsBudget;
+    state.owners[arbeitsKonto].cash += arbeitsBudget;
+    buch[schiff.id] = { konto, arbeitsKonto, menge, preis: cfg.preis, arbeitsPreis: cfg.minerJeMinute };
     return buch[schiff.id];
   }
   function abschliessen(state, rules, schiff, stornierung = false) {
@@ -1876,6 +1884,12 @@ const m_core_erzpilot = (() => {
       state.owners[cfg.station].cash += treuhand.cash;
       treuhand.cash = 0;
     }
+    // Betriebsmittel waren ebenfalls reserviert; beim Abbruch ungenutzten Rest zurueckgeben.
+    if (v.arbeitsKonto) {
+      const arbeit = state.owners[v.arbeitsKonto];
+      state.owners[schiff.owner].cash += arbeit.cash;
+      arbeit.cash = 0;
+    }
     delete buch[schiff.id];
     return menge;
   }
@@ -1891,7 +1905,9 @@ const m_core_erzpilot = (() => {
     if (vorher >= v.menge) return abschliessen(state, rules, schiff);
     const n = Math.min(rules.economy.miningRate, v.menge - vorher, rules.economy.cargo - vorher);
     const kosten = n * cfg.minerJeMinute;
-    const kasse = state.owners[schiff.owner];
+    // Alte Regel-15-Draft-Saves ohne Arbeits-Treuhand weiter abwickeln,
+    // neue Auftraege sind dagegen beidseitig voll vorfinanziert.
+    const kasse = v.arbeitsKonto ? state.owners[v.arbeitsKonto] : state.owners[schiff.owner];
     if (n <= 0 || kasse.cash < kosten) {
       schiff.auftrag = 'halten';
       stornieren(state, rules, schiff);
@@ -1930,7 +1946,9 @@ const m_core_erzpilot = (() => {
     const buch = vertragsbuch(state);
     const frei = state.owners[rules.erzpilot.station].cash;
     const gebunden = Object.values(buch).reduce((n, v) => n + state.owners[v.konto].cash, 0);
-    return { auftraege: ids(buch).length, gebunden, frei, reserviert: reserviert(state) };
+    const arbeitsGebunden = Object.values(buch).reduce((n, v) =>
+      n + (v.arbeitsKonto ? state.owners[v.arbeitsKonto].cash : 0), 0);
+    return { auftraege: ids(buch).length, gebunden, arbeitsGebunden, frei, reserviert: reserviert(state) };
   }
   return { beauftragen, stornieren, foerdern, exportiere, auftragsStand };
 })();
@@ -2227,6 +2245,16 @@ function audit(state) {
         continue;
       }
       active.add(v.konto);
+      if (v.arbeitsKonto) {
+        const arbeit = state.owners[v.arbeitsKonto];
+        const kostenJeEinheit = m_data_erzpilot.ERZ_RULES.erzpilot.minerJeMinute;
+        const verbleibend = Math.max(0, v.menge - (sh.ladung.erz || 0));
+        if (!arbeit || !Number.isSafeInteger(arbeit.cash)
+          || arbeit.cash !== verbleibend * kostenJeEinheit
+          || active.has(v.arbeitsKonto) || v.arbeitsPreis !== kostenJeEinheit)
+          errors[id] = 'ungueltige Arbeitskapitalbindung';
+        else active.add(v.arbeitsKonto);
+      }
       reservierteMenge += v.menge;
     }
     for (const id of ids(state.owners)) {
@@ -4351,6 +4379,7 @@ const m_ui_erzpilot = (() => {
     $('pilot-lager').textContent = String(state.stations.st_aldera.lager.erz);
     $('pilot-station').textContent = geld(state.owners.st_aldera.cash);
     $('pilot-gebunden').textContent = geld(vertrag.gebunden);
+    $('pilot-arbeitsgeld').textContent = geld(vertrag.arbeitsGebunden);
     $('pilot-vertraege').textContent = `${vertrag.auftraege} / ${vertrag.reserviert} Erz`;
     $('pilot-finanzlage').textContent = state.owners.export.cash === 0
       ? 'Exportbudget aufgebraucht: Ohne neue finanzierte Nachfrage keine dauerhafte Produktion.'

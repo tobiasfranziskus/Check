@@ -20,7 +20,7 @@ Stand: 04.11.2026. **Unveränderte Quell-Drafts:** [#172](https://github.com/tob
 
 `prototypes/w5-jagd/m_ui_w5b_bridge.mjs` exportiert `w5bJagdSichtAusCore(coreSicht, systemId?)`. Eingangsdatum kommt **ausschließlich** aus `m_core_index.JagdSichtV1(state)`. Es gibt keinen direkten Import des Produkt-Cores, kein neues Save, keine zusätzliche Uhr und keine Bildschirm-Physik. Die Brücke validiert und friert den vollständigen B-Snapshot erneut ein. Codex-Renderer und Mock-Referenzvorschau bleiben unverändert, sodass alte #172-Tests reproduzierbar sind.
 
-`tests/w5b-jagd-integration.test.mjs` erzeugt in echter Regel20-Welt einen real bezahlten Jäger, prüft das Vorher-Lager (0 aktive Jäger), danach tatsächliche `sh…`-ID und NPC-Besitz, liest denselben echten Core-Zustand 100 Renderer-Zeichnungen lang, prüft unveränderten Hash/Save/Waren-/ISK-Audit und den leeren Belegstrom. Regressionsprüfung inklusive `tests/w5-jagd-renderer.test.mjs` und bestehender W5b-13×90-Tage-Suite erforderlich.
+`tests/w5b-jagd-integration.test.mjs` erzeugt in echter Regel20-Welt einen real bezahlten Jäger, prüft das Vorher-Lager (0 aktive Jäger), danach tatsächliche `sh…`-ID und NPC-Besitz, liest denselben echten Core-Zustand 100 Renderer-Zeichnungen lang, prüft unveränderten Hash/Save/Waren-/ISK-Audit und den leeren Belegstrom. **[TEST ERFOLGREICH]** [CI #41860016834](https://github.com/tobiasfranziskus/Check/actions/runs/41860016834) auf Code-Head `ffe80b7`: **177/177 Node-Tests grün**, 0 Fehler/Skips, inklusive des neuen echten W5b-Renderer-Kettentests und der bestehenden W5b-13×90-Tage-Suite. Alle sieben ausgeführten CI-Jobs erfolgreich; ein optionaler Vergleich planmäßig übersprungen. Echte iPad-/NAS-Abnahme bleibt ausstehend.
 
 ## Grenzen
 

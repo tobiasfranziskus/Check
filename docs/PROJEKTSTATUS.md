@@ -1,5 +1,21 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W2 – finanzierte Aufträge beenden, NPC bei echter Absatzkrise stilllegen · 04.11.2026
+
+**[MAIN]** weiterhin `b4e604d6`. **[DRAFT]** Neuer Folgebranch `feature/w2-npc-krisensteuerung-20261104` auf dem W1-/2D-/W2-Integrations-Draft #165. Der Core von Regel16 erhält die deterministische `krisenLage` (rein lesend) und `krisenSteuern` (stündliche Validierung im bestehenden `m_core_step`), ohne zusätzliche Simulationsschleife und ohne neue Save-Felder. Regel14/15, unveränderter W1-/2D-Modus, reguläre Speicherslots und der öffentliche Hauptlink bleiben unverändert.
+
+**[KERNVERHALTEN]** Vor jeder neuen NPC-Fördercharge werden **bereits gebundene Erzverträge und Lagerbestände vom tatsächlich bezahlbaren Endkundenvolumen abgezogen**. Station, Lagerplätze und Unternehmen müssen je mindestens ein weiteres Erz real vorfinanzieren können. Ohne solche Finanzierung erteilt der Core **nur nicht durch aktives Treuhand gedeckten** NPC-Minern den vorhandenen validierten `shipWait`-Befehl. Ein vollständig vorfinanzierter laufender Vertrag wird nicht storniert. Der Status zeigt `absatzstopp`, `lagerengpass`, `abnahmeengpass`, `betriebskapitalengpass` oder `arbeitsbereit`. Wenn wieder freies Budget besteht, wird höchstens ein ruhender Miner pro Stunde über den bisherigen `shipMine`-Befehl angefordert, statt parallele ungesicherte Aufträge zu versprechen.
+
+**[ZUSÄTZLICHER DIREKTNACHWEIS]** Das Regel-16-Auftragsgate prüft die freie Endkundenkasse **direkt beim Binden jeder Charge**, für Spieler und NPC identisch und zusätzlich zur stündlichen Betriebsruhe. Es zieht vorhandenes Erzlager, schon reservierte Mengen und unverkaufte Fracht vom zahlbaren Restabsatz ab. Ein kontrollierter Teillieferungs-/Stopp-Test zeigt nach 1.998 verkauften Erz genau 20 ISK freies Käuferbudget: die nächste neue Fördercharge beträgt nur 2 statt 50 Erz und endet bei 2.000 tatsächlich bezahlten Exporten. Keine Änderung an Regel15.
+
+**[GEMESSEN, gezielter Core-Probelauf]** Seed42 ohne Spieler: bisher 2 vollständig bezahlte NPC-Miner, Käuferbudget nach **2.000 verkauftem Erz = 0 ISK**; beide Miner wechseln bis Tick 1.440 nach `halten`. NPC besitzt zu diesem Zeitpunkt 17.800 ISK; **Marktausfall ≠ Insolvenz**. Danach bis Tick 10.080 keine weitere NPC-Förderung, weder kostenlose Betriebskosten noch neue Hüllen oder Minting. Mit Spieler-Miner gilt dieselbe Marktstopp-Regel für NPC, während der Spieler-Nutzer weiter seine eigenen validierten Aufträge steuert. Bereits finanzierte Verträge werden nicht voreilig abgebrochen.
+
+**[TESTS]** Die neue `tests/w2-npc-krise.test.mjs` prüft getrennte Regel14/15-Saves, reinen read-only Bericht, zugesagte Aufträge während Finanzierungsengpass, Umsatzstopp ohne Cash-Verlust, Spieler-Konkurrenz und erneut 13 Seeds × 90 Tage mit täglichem Audit, festen Hash-Replays, 0 Minting und Save/Load. Die vorhandene vollständige W1-/2D-/W2-Suite bleibt vorgeschrieben. **Github-CI noch ausstehend**; nur tatsächlich abgeschlossene Jobs als bestanden melden.
+
+**[OFFEN]** Ein noch zahlungsfähiger Konzern ohne Absatz ist *nicht insolvent*. Formale Insolvenz, Flottenverlust, Fremd-Markteintritt und fortlaufend finanzierte Endnachfrage bleiben unabhängige W2-/W4-/W5-Gates; keine spekulativen Rettungen. Echte iPad-Safari-/NAS-Abnahme ist auf Nutzerwunsch verschoben; spätere Tests bevorzugt über seinen bereits vorhandenen Hauptlink nach separater Integrations- und Veröffentlichungsfreigabe. Kein Merge/Deployment.
+
+---
+
 ## [DRAFT] W2-Entscheidung mit W1-/2D-Miner auf einem Core · 04.11.2026
 
 **[MAIN]** unverändert `b4e604d6`. **[DRAFT]** Der Integrationsbranch `feature/w2-miner2d-gemeinsam-20261104` ist auf W1-/2D-Draft #164 gestapelt. Er uebernimmt den exakten, bereits gesondert geprüften Regel-16-Core aus #163 anstelle des bytegleichen Regel-15-Cores aus #164; W1-UI, 2D-Renderer, Controls, laufende Grafik, Regel-14-Standard und Regel-15-Speicherschutz bleiben unverändert. Die 2D-Projektion liest reale NPC-/Spielerschiffe und deren Kassen als eingefrorene Darstellung; die W2-Autoinvestition arbeitet im originalen `m_core_step` mit validierten `shipBuy`-/`shipMine`-Befehlen.

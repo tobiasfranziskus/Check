@@ -1,5 +1,18 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W5c – bezahlter Eigentumsuebergang zum Piraten und Jagdkostenvorauszahlung · 04.11.2026
+
+**[MAIN]** `b4e604d6` Regel14/Schema8 weiterhin unveraendert. **[DRAFT]** [PR #176](https://github.com/tobiasfranziskus/Check/pull/176) auf #175 nutzt eine neue, isolierte Forschungsregel21. Reale Baukette von W3/W4/W5b bleibt derselbe Core. Piraten erwerben **keine gratis generierte Huelle**, sondern das fuer 900 ISK von `npc3` zuerst gekaufte W5b-Industrieschiff als identische `sh...`-ID gegen weitere 900 ISK; verbuchte Hüllenmenge bleibt exakt 1. Start-ISK `st_nadir` um 900 geringer, `pirates` um 900 hoeher – die Gesamtmenge **33.000 ISK**, `minted=0`.
+
+**[KOSTEN]** Regel21 erlaubt `shipHunt` nur fuer einen vorhandenen NPC-Jaeger und mit realer, vorab bezahlter 50-ISK-Stundenleistung an `fonds_transport`. Bei Unterdeckung beendet die Tick-Logik die Bereitschaft, bevor eine unfinanzierte neue Stunde beginnt. Kein echter Piratenkontakt, keine Schuss-/Abschussbelege und keine KP/XP-Gutschrift.
+
+**[TATSAECHLICH DIREKT AUSGEFUEHRT]** 13 feste Seeds mit kompletter Industrie-/Eigentumskette und je 90 ×1440 Core-Ticks, tägliche Geld-, Waren-, Produktions- und W5c-Vertragsaudits erfolgreich. Für alle 13: genau eine bezahlte Piratenhuelle, 900-ISK-Kauf, `minted=0`, Save-/Load-Hash gleich; Seed42-Tag90 `b55060cf2bc34c0e`. Separat Seed7: nach 346 vollständig bezahlten Stunden Budgetstopp, Kasse 0, Audit grün, kein Kopfgeld. **CI-Suite noch zu prüfen** – Testbehauptungen unterscheiden direkte Core-Läufe und GitHub-CI.
+
+**[GRENZE]** Noch keine reale Zerstörung oder bezahlter Folge-Ersatz nach Vernichtung; historischer Rule14-Piratenspawn ohne Ware bleibt unangetastet. Keine Balance-/Emissionsfreigabe, kein Produkt-, UI-, Save-Slot-, iPad- oder NAS-Release. Einzelheiten: [W5c-Finanzierungsbeleg](W5C_PIRATENBUDGET.md).
+
+---
+
+
 ## [DRAFT] W5b + Codex-Jagdrenderer: lesender Schnittstellenabgleich · 04.11.2026
 
 **[MAIN]** unverändert `b4e604d6`, Regel14/Schema8. **[DRAFT]** [PR #175](https://github.com/tobiasfranziskus/Check/pull/175) liegt auf dem vollständig bezahlten Regel20-Jägerbau [#173](https://github.com/tobiasfranziskus/Check/pull/173) und übernimmt die zehn neuen Dateien aus Codex-Grafik-Draft [#172](https://github.com/tobiasfranziskus/Check/pull/172) unverändert. Ergänzt sind lediglich der Anzeigeadapter `w5bJagdSichtAusCore`, ein echter Core-/Renderer-Integrationstest und die [Schnittstellendokumentation](W5B_GRAFIK_INTEGRATION.md).

@@ -1,5 +1,14 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] W5b-2D: autoritativer Jaeger trifft Codex-Renderer · 04.11.2026
+
+**[DRAFT-PR #175](https://github.com/tobiasfranziskus/Check/pull/175)** stapelt auf W5b-Core [#173](https://github.com/tobiasfranziskus/Check/pull/173), übernimmt **die zehn unveränderten Dateien** des eigenständigen 2D-Vorschau-PRs [#172](https://github.com/tobiasfranziskus/Check/pull/172) und schließt allein den Feldvertrags-Unterschied zwischen `m_core_index.JagdSichtV1` (echte gekaufte `jaeger[]`) und Codex `jagdRenderer` (`schiffe[]` mit Besitzerart und Systemfilter). Der reine Datenadapter `m_ui_w5b_bridge.mjs` erstellt nur echte Kontakte: keine Piraten, Kampfbelege, Positionen oder Piloten aus Mockdaten. Die Werft- und Geld-/Warenregeln bleiben unberührt; der Renderer kann weder simulieren noch ISK/XP buchen.
+
+**[TEST]** [CI #41860016834](https://github.com/tobiasfranziskus/Check/actions/runs/41860016834) – **177/177 Node-Tests bestanden**, einschließlich der drei neuen tatsächlichen A/B-Integrationsprüfungen und der bestehenden 13 × 90 Tage W5b-Tests. Separate Chromium-Touch-Emulation wurde im Quell-PR #172 durchgeführt; **keine neue Chromium-Prüfung dieses Integrationsstands und keine echte iPad-/NAS-Abnahme**. Weiterhin kein produktiver Regel20-Browsermodus oder sicherer Regel20-Save-Slot. Diese offenen Schritte, echte Kampf-/Piratennachweise und externe Claude-Audits bleiben eigene Gates. Keine Integration nach `main` ohne Freigabe.
+
+---
+
+
 ## [DRAFT] W5b – finanziert hergestellter Jaeger und vorbereitete Jägeransicht · 04.11.2026
 
 [PR #173](https://github.com/tobiasfranziskus/Check/pull/173) setzt direkt auf #171 auf; weder der Produkt-`main` noch die freigegebene Regel14 oder ihre Referenzwerte wurden verändert. In **isolierter Forschungsregel20** verwendet ein einziger gemeinsamer Core die vorhandenen Regel14-Rezepte: 20 echtes W4-Material und 8 begrenzt bezahlte Siliziumeinheiten ergeben 8 Bauteile und einen industriell hergestellten Jäger. Die W3-/W4-Vorleistung, sämtliche Vorprodukte und 96 Werkarbeitsminuten werden real bezahlt. Ein einmaliger NPC-Firmenkauf aus 900 tatsächlich vorhandenen ISK erzeugt die eindeutig identifizierte Jägerhülle am Standort Nadir. Die `JagdSichtV1` ist eine unveränderliche, rein lesende Schnittstelle für einen späteren 2D-Jäger-Renderer. Keine zweite Simulation, keine kostenlosen Rohstoffe/ISK, kein Piraten- oder Pilotenfortschrittssystem.

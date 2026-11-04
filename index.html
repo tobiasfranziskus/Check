@@ -2701,7 +2701,9 @@ function audit(state) {
   if (state.rulesVersion === m_data_erzpilot.ERZ_RULES.rulesVersion
     || state.rulesVersion === m_data_erzpilot.W2_RULES.rulesVersion
     || state.rulesVersion === m_data_erzpilot.W3_RULES.rulesVersion) {
-    const bericht = m_core_w1_vollkosten.pruefen(state, m_data_erzpilot.ERZ_RULES);
+    const bericht = m_core_w1_vollkosten.pruefen(state,
+      state.rulesVersion === m_data_erzpilot.W3_RULES.rulesVersion
+        ? m_data_erzpilot.W3_RULES : m_data_erzpilot.ERZ_RULES);
     wirtschaftOk = bericht.ok;
     extra.vollkosten = { ok: wirtschaftOk, ketteOk: bericht.ketteOk,
       house: bericht.konzerne.house.ok, npc3: bericht.konzerne.npc3.ok,

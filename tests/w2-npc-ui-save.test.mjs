@@ -21,7 +21,7 @@ class FakeElement {
     this.classList = { add() {}, toggle() {} };
   }
   addEventListener(kind, callback) { this.listeners[kind] = callback; }
-  click() { return this.listeners.click?.({ preventDefault() {}, target: this }); }
+  click() { const e={preventDefault() {},target:this}; return this.listeners.click ? this.listeners.click(e) : this.onclick?.(e); }
   replaceChildren(...children) { this.children = children; }
 }
 async function settle() { for (let i = 0; i < 15; i++) await Promise.resolve(); }

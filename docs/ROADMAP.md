@@ -1,5 +1,16 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] W5c – bezahlter Piratenjaeger und vorfinanzierte Jagdbereitschaft · 04.11.2026
+
+**[DRAFT-PR #176](https://github.com/tobiasfranziskus/Check/pull/176)** liegt auf dem W5b-/Codex-Integrationsdraft #175 und führt separat **Forschungsregel21** ein. Die erste physische, aus Silizium/Material/Bauteilen gefertigte Jaegerhuelle kann nach echtem NPC-Kauf **gegen weitere 900 ISK** von der Piratenpartei als dieselbe Schiffs-ID erworben werden. Dafür wurden 900 ISK anfänglich von der Nadir-Station zur endlichen Piratenkasse umverteilt: **33.000 ISK Gesamtmenge**, keine Gratisrettung, keine neue Ware/Emission. Die NPC-Jagdbereitschaft ist je Stunde **vorab aus echter Kasse** an einen Fonds bezahlt; bei fehlenden 50 ISK stoppt sie ohne unbezahlte Leistung. Der Betrag ist hier nur ein Testparameter aus dem bestehenden Kern, kein beschlossenes Balancing.
+
+**[TEST DIREKT]** Die tatsächliche Regel21-Industriekette einschließlich Piratenkauf wurde in **13 Seeds × 90 Spieltagen** unmittelbar mit täglichem unabhängigem `audit` und Save-/Load-Hash geprüft: alle 13 Läufe ohne Bilanzfehler; jeweils genau eine produzierte Hülle, 900 ISK Piratenkauf, 0 ISK Emission. Seed42-Endhash `b55060cf2bc34c0e`. Ein zusätzlicher Nullbudget-Pilot stoppt bei Seed7 nach 346 vorab bezahlten Jagdstunden mit 0 ISK Restkasse. **[CI]** Gesamtsuite/Workflow separat ausstehend (GitHub-Lauf nachgetragen, sobald beendet). Frühere Rule20- und main-Tests nicht in dieser Aussage enthalten.
+
+**[GRENZE]** Die Piratenhülle ist ein **einmaliger, finanzierter Einstieg**, **noch kein Ersatz nach realem Abschuss**. Es gibt in Regel21 noch keine Schlacht, keine Piratenvernichtung, keinen wiederkehrenden Ersatzmarkt, keine Kopfgeldzahlung, keinen Pilotenskill und keinen gleichzeitigen nachhaltigen NPC-/Piratenflottennachschub. Historischer Rule14-Autospawn ist **nicht korrigiert**, bleibt außerhalb dieses Forschungsschritts. Kein Regel21-Browsermodus/Save-Slot, kein Merge/Deployment; echte Safari-/NAS-Abnahme weiterhin offen. [Details](W5C_PIRATENBUDGET.md).
+
+---
+
+
 ## [DRAFT] W5b-2D: autoritativer Jaeger trifft Codex-Renderer · 04.11.2026
 
 **[DRAFT-PR #175](https://github.com/tobiasfranziskus/Check/pull/175)** stapelt auf W5b-Core [#173](https://github.com/tobiasfranziskus/Check/pull/173), übernimmt **die zehn unveränderten Dateien** des eigenständigen 2D-Vorschau-PRs [#172](https://github.com/tobiasfranziskus/Check/pull/172) und schließt allein den Feldvertrags-Unterschied zwischen `m_core_index.JagdSichtV1` (echte gekaufte `jaeger[]`) und Codex `jagdRenderer` (`schiffe[]` mit Besitzerart und Systemfilter). Der reine Datenadapter `m_ui_w5b_bridge.mjs` erstellt nur echte Kontakte: keine Piraten, Kampfbelege, Positionen oder Piloten aus Mockdaten. Die Werft- und Geld-/Warenregeln bleiben unberührt; der Renderer kann weder simulieren noch ISK/XP buchen.

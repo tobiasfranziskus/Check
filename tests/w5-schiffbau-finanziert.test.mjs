@@ -171,6 +171,46 @@ test('W5: Manipulation an Material, Werftkonto oder fertiggestelltem Frachter wi
   assert.equal(bad.ok,false);
 });
 
+
+test('W5: Zweite reale Schiffbaucharge bleibt ohne 10 ISK Käuferbudget als fertige Ware liegen',()=>{
+  const s=realChain(42);
+  const f=freight(s);
+  assert.equal(api.execute(s,bau,rules).ok,true);
+  api.advance(s,30,rules);
+  assert.equal(api.execute(s,kauf,rules).ok,true);
+  assert.equal(s.owners.transport.cash,620,'Spedition hat das erste Schiff vollständig bezahlt');
+  let warteminuten=0;
+  while(s.stations.st_aldera.lager.erz<50 && warteminuten<360){
+    api.advance(s,1,rules);warteminuten++;
+  }
+  assert.ok(s.stations.st_aldera.lager.erz>=50);
+  assert.equal(api.execute(s,{type:'shipFreight',owner:'transport',schiff:f.id},rules).ok,true);
+  api.advance(s,120,rules);
+  assert.equal(s.owners.transport.cash,740,'zweiter bezahlter Transport verdient 120 netto');
+  assert.equal(s.w3.abgeschlossen,2);
+  assert.equal(api.execute(s,raff,rules).ok,true);
+  api.advance(s,20,rules);
+  assert.equal(s.stations.st_nadir.lager.material,5);
+  assert.equal(api.execute(s,bau,rules).ok,true);
+  api.advance(s,30,rules);
+  assert.equal(s.w5.fertig,2);
+  assert.equal(s.w5.verkauft,1);
+  assert.equal(s.stations.st_nadir.lager.frachter,1,
+    'zweiter physischer Frachter existiert im Werftlager');
+  const before=api.hash(s);
+  const fail=api.execute(s,kauf,rules);
+  assert.equal(fail.ok,false,'740 ISK reichen nicht für 750 ISK Schiffskauf');
+  assert.equal(api.hash(s),before,'kein Schiffsverkauf und keine Käufergeld-Erfindung');
+  assert.equal(s.owners.transport.cash,740);
+  assert.equal(s.stations.st_nadir.lager.frachter,1);
+  assert.equal(api.audit(s).ok,true,JSON.stringify(api.audit(s).w5));
+  assert.equal(api.hash(api.loadW5(api.save(s))),before);
+  assert.equal(s.minted,0);
+  console.log('W5_ZWEITES_SCHIFF_KAEUFERSTOPP '+JSON.stringify({
+    shipyard:s.owners.werft_extern.cash,carrier:s.owners.transport.cash,
+    finished:s.w5.fertig,sold:s.w5.verkauft,hash:before}));
+});
+
 test('W5: 13 Seeds x 90 Tage nach W0–W5-Kauf, Materialproduktion, Schiffbau und Save-Replay',()=>{
   const seeds=[1,2,7,11,13,42,99,123,777,1234,4096,65535,98765];
   for(const seed of seeds){

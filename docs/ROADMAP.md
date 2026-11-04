@@ -1,5 +1,7 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+Nachverfolgung: [Draft-PR #162](https://github.com/tobiasfranziskus/Check/pull/162), nicht integriert.
+
 ## [DRAFT] Separater 2D-Miner-Demonstrator · 04.11.2026
 
 Auf Nutzerauftrag wird die vorhandene Void-Echoes-2D-Darstellung unabhängig auf `feature/void-echoes-2d-miner` übernommen. Herkunft, Schnittstelle und Integrationsgates: [2D_UEBERNAHME.md](2D_UEBERNAHME.md). Basis main `b4e604d6`, Regel14 unverändert. Kein Vorziehen neuer Wirtschaft oder einer zweiten Flugphysik; W0/W1 in [#161](https://github.com/tobiasfranziskus/Check/pull/161) bleibt eigenständiger Draft. Schematische Anzeigeplätze bis zu echten lokalen Core-Flugzuständen. Reale iPad-/NAS-Abnahme und jede Integration bleiben offen.

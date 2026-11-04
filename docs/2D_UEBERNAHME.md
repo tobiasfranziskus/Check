@@ -1,5 +1,7 @@
 # [DRAFT] Void-Echoes-2D → Aphros Void
 
+Nachverfolgung: [Draft-PR #162](https://github.com/tobiasfranziskus/Check/pull/162), nicht integriert.
+
 Stand 04.11.2026. Branch `feature/void-echoes-2d-miner`, Basis Check
 [`b4e604d6`](https://github.com/tobiasfranziskus/Check/commit/b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c).
 Kein Merge oder Deployment. Start: statisch ausgelieferte `index.html?modus=miner2d`.

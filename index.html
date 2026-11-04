@@ -2373,6 +2373,121 @@ const m_core_w3 = (() => {
   return {kalkulation,pruefen,starten,tick,audit};
 })();
 
+// W4: Erz in Nadir zu Material verarbeiten. Kein externer Zahlmeister und
+// keine Gratisarbeit: die Nadir-Station sperrt alle realen Lohnmittel vorab.
+const m_core_w4 = (() => {
+  const { anzahl } = m_core_zahl;
+  const { buche, obergrenze } = m_core_handel;
+  const { protokolliere } = m_core_state;
+  function kosten(rules) { return rules.w4.dauer*rules.w4.lohnJeMinute; }
+  function pruefen(state,rules,owner,station) {
+    if (!rules.w4 || state.rulesVersion!==rules.rulesVersion)
+      return {ok:false,grund:'W4-Raffinerie in dieser Regel nicht aktiv'};
+    const c=rules.w4, w=state.w4;
+    if (owner!==c.station || station!==c.station)
+      return {ok:false,grund:'Nur die Nadir-Raffinerie darf diesen Auftrag bezahlen'};
+    if (!w || w.auftrag)
+      return {ok:false,grund:'Eine Raffineriecharge ist bereits finanziert'};
+    const lager=state.stations[c.station].lager;
+    if (anzahl(lager,'erz')<c.erzJeCharge)
+      return {ok:false,grund:'Es fehlt real angeliefertes Erz in Nadir'};
+    if (anzahl(lager,'material')+c.materialJeCharge
+      >obergrenze(state,rules,c.station,'material'))
+      return {ok:false,grund:'Kein freier Material-Lagerplatz'};
+    const budget=kosten(rules);
+    if (state.owners[c.station].cash < budget)
+      return {ok:false,grund:'Nadir kann die gesamte Arbeitscharge nicht bezahlen'};
+    const start=rules.owners.find(o=>o.id===c.station).cash;
+    if(state.owners[c.station].cash+state.w3.kaufAusgaben+w.gebucht!==start)
+      return {ok:false,grund:'Nadir: nicht nachgewiesenes Produktionskapital'};
+    return {ok:true,grund:'Erz und vollständige Arbeitskasse reservierbar',
+      erz:c.erzJeCharge,material:c.materialJeCharge,arbeit:budget,dauer:c.dauer};
+  }
+  function starten(state,rules,owner,station) {
+    const p=pruefen(state,rules,owner,station);
+    if(!p.ok)throw Error('W4: unbezahlte Raffineriecharge: '+p.grund);
+    const c=rules.w4,w=state.w4;
+    const konto='w4_arbeit_treuhand';
+    if(!state.owners[konto])state.owners[konto]={id:konto,kind:'w4-reserve',cash:0};
+    if(state.owners[konto].cash!==0)throw Error('W4: doppeltes Arbeitstreuhand');
+    state.owners[c.station].cash-=p.arbeit;
+    state.owners[konto].cash+=p.arbeit;
+    w.gebucht+=p.arbeit;
+    buche(state,c.station,'kosten',p.arbeit);
+    // Ware bleibt bis zum Produktionsabschluss im wirklichen Stationslager;
+    // nur dieser eine Auftrag darf sie bis dahin in Anspruch nehmen.
+    w.auftrag={begonnen:state.tick,gearbeitet:0,erz:p.erz,material:p.material,
+      arbeitsBudget:p.arbeit};
+    w.begonnen++;
+    protokolliere(state,'auftrag',
+      c.station+': '+p.erz+' Erz reserviert, '+p.arbeit+' ISK Arbeit vorfinanziert',c.station);
+    return true;
+  }
+  function tick(state,rules) {
+    const w=state.w4,vertrag=w?.auftrag;
+    if(!vertrag)return;
+    const c=rules.w4, arbeitsKasse=state.owners.w4_arbeit_treuhand;
+    if(!arbeitsKasse || arbeitsKasse.cash<c.lohnJeMinute)
+      throw Error('W4: Produktion ohne gedeckte Arbeitskasse');
+    if(anzahl(state.stations[c.station].lager,'erz')<vertrag.erz)
+      throw Error('W4: reserviertes Erz physisch nicht mehr im Lager');
+    arbeitsKasse.cash-=c.lohnJeMinute;
+    state.owners[c.arbeitOwner].cash+=c.lohnJeMinute;
+    buche(state,c.arbeitOwner,'erloes',c.lohnJeMinute);
+    w.gezahlt+=c.lohnJeMinute;
+    vertrag.gearbeitet++;
+    if(vertrag.gearbeitet<c.dauer)return;
+    if(vertrag.gearbeitet!==c.dauer || arbeitsKasse.cash!==0)
+      throw Error('W4: kein vollständig abgearbeiteter Auftrag');
+    const lager=state.stations[c.station].lager;
+    if(anzahl(lager,'material')+vertrag.material
+      >obergrenze(state,rules,c.station,'material'))
+      throw Error('W4: Materiallager kann fertige Ware nicht aufnehmen');
+    lager.erz-=vertrag.erz; lager.material+=vertrag.material;
+    state.ledger.erz.consumed+=vertrag.erz;
+    state.ledger.material.produced+=vertrag.material;
+    w.erzVerbraucht+=vertrag.erz;
+    w.materialErzeugt+=vertrag.material;
+    w.abgeschlossen++;w.auftrag=null;
+    protokolliere(state,'produktion',
+      c.station+': '+vertrag.erz+' Erz → '+vertrag.material+' Material, '
+      +vertrag.arbeitsBudget+' ISK realer Lohn',c.station);
+  }
+  function audit(state,rules) {
+    const c=rules.w4,w=state.w4,a=w?.auftrag;
+    if(!w||!c)return {ok:false,grund:'W4-Auftragsbuch fehlt'};
+    const p=kosten(rules),worker=state.owners[c.arbeitOwner]?.cash,
+      escrow=state.owners.w4_arbeit_treuhand?.cash??0;
+    const station=state.owners[c.station]?.cash,
+      start=rules.owners.find(o=>o.id===c.station).cash;
+    const lager=state.stations[c.station]?.lager,
+      erz=lager?.erz,material=lager?.material;
+    const erwarteterLohn=w.abgeschlossen*p+(a?.gearbeitet??0)*c.lohnJeMinute;
+    const ok=[worker,escrow,station,w.gebucht,w.gezahlt,w.erzVerbraucht,
+      w.materialErzeugt,w.begonnen,w.abgeschlossen,erz,material]
+      .every(Number.isSafeInteger)
+      && station>=0&&worker>=0&&escrow>=0
+      && w.begonnen===w.abgeschlossen+(a?1:0)
+      && w.gebucht===w.begonnen*p && w.gezahlt===erwarteterLohn
+      && worker===w.gezahlt&&escrow===w.gebucht-w.gezahlt
+      && station+state.w3.kaufAusgaben+w.gebucht===start
+      && w.erzVerbraucht===w.abgeschlossen*c.erzJeCharge
+      && w.materialErzeugt===w.abgeschlossen*c.materialJeCharge
+      && state.ledger.erz.consumed===w.erzVerbraucht
+      && state.ledger.material.produced===w.materialErzeugt
+      && erz===state.w3.geliefert-w.erzVerbraucht
+      && material===w.materialErzeugt
+      && (!a || (a.erz===c.erzJeCharge&&a.material===c.materialJeCharge
+        && a.arbeitsBudget===p&&Number.isSafeInteger(a.gearbeitet)
+        && a.gearbeitet>=0&&a.gearbeitet<c.dauer));
+    return {ok,arbeitsKasse:escrow,arbeiter:worker,station,erz,material,
+      verbraucht:w.erzVerbraucht,produziert:w.materialErzeugt,
+      begonnen:w.begonnen,abgeschlossen:w.abgeschlossen,
+      status:a?'in_produktion':'bereit',restzeit:a?c.dauer-a.gearbeitet:0};
+  }
+  return {kosten,pruefen,starten,tick,audit};
+})();
+
 // W1: rein lesende Vollkosten-/Liquiditaetsrechnung aus gebuchten Originalkonten.
 // Kein eigener Wirtschaftskern, kein weiterer Geld- oder Warenfluss.
 const m_core_w1_vollkosten = (() => {

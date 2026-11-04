@@ -222,26 +222,32 @@ test('W1: Pilot verbietet Warenhandel außerhalb des vorfinanzierten Auftrags', 
   assert.equal(api.hash(s), vorher);
 });
 
-test('W1: Nach versiegtem Exportbudget darf nur aus echten Fremdmitteln wieder Nachfrage entstehen', () => {
+test('W1: Fremdkontogeld ist ohne belegte Endkunden-Einnahme keine gueltige Kaueferfinanzierung', () => {
   const s = mitSpielerMiner(7);
   api.advance(s, 1440, rules);
   assert.equal(s.owners.export.cash, 0);
-  const verkauft = s.ledger.erz.exported;
-  const gefoerdert = s.ledger.erz.mined;
+  assert.equal(s.ledger.erz.exported, 2000);
+  assert.deepEqual(api.audit(s).finanzierung, {
+    ok: true, start: 20000, ausgegeben: 20000, rest: 0, differenz: 0, exportiert: 2000,
+  });
+  const verkauft = s.ledger.erz.exported, gefoerdert = s.ledger.erz.mined;
   api.advance(s, 600, rules);
   assert.equal(s.ledger.erz.exported, verkauft);
   assert.equal(s.ledger.erz.mined, gefoerdert);
   assert.equal(api.audit(s).ok, true);
-  // Reale externe Refinanzierung durch vorhandenes Geld: kein Minting.
-  const finanzierung = 1000;
-  assert.ok(s.owners.werft_extern.cash >= finanzierung);
-  s.owners.werft_extern.cash -= finanzierung;
-  s.owners.export.cash += finanzierung;
+  // Das ist nur eine Gegenbuchung, keine nachgewiesene Leistung des Kaeufers.
+  const umbuchen = 1000;
+  assert.ok(s.owners.werft_extern.cash >= umbuchen);
+  s.owners.werft_extern.cash -= umbuchen;
+  s.owners.export.cash += umbuchen;
   assert.equal(s.minted, 0);
-  api.advance(s, 1440, rules);
-  assert.ok(s.ledger.erz.exported > verkauft);
-  assert.equal(s.owners.export.cash, 0);
-  assert.equal(api.audit(s).ok, true);
+  const a = api.audit(s);
+  assert.equal(a.isk.ok, true);
+  assert.equal(a.goods.ok, true);
+  assert.equal(a.finanzierung.ok, false);
+  assert.equal(a.finanzierung.differenz, umbuchen);
+  assert.equal(a.ok, false);
+  assert.throws(() => api.loadErz(api.save(s)), /Bilanz fehlerhaft/);
 });
 
 test('W0: Freie Treuhandmittel dürfen nach Rueckgabe wieder gebunden werden', () => {
@@ -312,4 +318,33 @@ test('W1: Regel-15-Auftrag ohne altes Arbeits-Treuhandfeld bleibt ladbar', () =>
   api.advance(geladen, 48, rules);
   assert.equal(geladen.ledger.erz.mined, 50);
   assert.equal(api.audit(geladen).ok, true);
+});
+
+test('W1: Budgetnachweis je Liefercharge bleibt unveraendert und hashdeterministisch', () => {
+  const a = mitSpielerMiner(42), b = mitSpielerMiner(42);
+  assert.equal(api.audit(a).finanzierung.ausgegeben, 0);
+  assert.equal(api.audit(a).finanzierung.rest, 20000);
+  api.advance(a, 60, rules); api.advance(b, 60, rules);
+  const f = api.audit(a).finanzierung;
+  assert.equal(f.ok, true);
+  assert.equal(f.differenz, 0);
+  assert.equal(f.ausgegeben, a.ledger.erz.exported * rules.erzpilot.preis);
+  assert.equal(f.rest + f.ausgegeben, f.start);
+  assert.equal(api.hash(a), api.hash(b));
+  const saved = api.save(a), loaded = api.loadErz(saved);
+  assert.deepEqual(api.audit(loaded).finanzierung, f);
+  assert.equal(api.hash(loaded), api.hash(a));
+});
+
+test('W1: Fremdtransfer bleibt trotz korrekter ISK- und Warenbilanz gesperrt', () => {
+  const s = api.createErzState(1234);
+  const normal = api.audit(s).finanzierung;
+  assert.equal(normal.ok, true);
+  s.owners.export.cash += 10;
+  s.owners.werft_extern.cash -= 10;
+  const b = api.audit(s);
+  assert.equal(b.finanzierung.differenz, 10);
+  assert.equal(b.isk.ok, true);
+  assert.equal(b.goods.ok, true);
+  assert.equal(b.ok, false);
 });

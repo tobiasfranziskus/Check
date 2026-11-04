@@ -30,6 +30,9 @@ function boot(mode, initial = {}) {
   const ids = [...html.matchAll(/id="(pilot-[^"]+|erzpilot-app|miner2d|m2-[^"]+)"/g)].map(match => match[1]);
   assert.equal(new Set(ids).size, ids.length, 'keine doppelten UI-IDs');
   const el = Object.fromEntries(ids.map(id => [id, new FakeElement()]));
+  // Der echte DOM initialisiert <section id="miner2d" hidden>; FakeElement
+  // muss denselben Ausgangszustand abbilden.
+  el.miner2d.hidden = true;
   const store = new Map(Object.entries(initial)), downloads = [], navigations = [];
   const document = {
     hidden: false, body: { classList: { add() {} } },

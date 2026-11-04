@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aphros Void · Jagdvorschau</title><link rel="stylesheet" href="jagd-vorschau.css">
+<header><div><small>APHROS VOID / W5 · GRAFIKSTUDIE</small><h1>Piratenanomalie</h1></div><strong>MOCKDATEN · keine Simulation</strong></header>
+<main><section class="raum"><div class="leiste"><span id="ort"></span><span>Schematische Anzeigeplätze</span></div>
+<canvas aria-label="Jagdgebiet mit Spielerjäger, NPC-Jäger und Pirat; Auswahl auch per Schiffliste"></canvas>
+<div class="werkzeuge"><button id="minus" aria-label="Verkleinern">−</button><button id="plus" aria-label="Vergrößern">+</button><button id="zentrum">Zentrieren</button></div>
+<p>Antippen: auswählen · Zwei Finger: Zoom · □ Spieler · ○ NPC · ◇ Pirat</p></section>
+<aside><h2>Kontakte & Zielauswahl</h2><label for="schiffe">Schiff-ID</label><select id="schiffe"><option value="">Keine Auswahl</option></select><p id="auswahl">Kein Ziel gewählt</p><p id="pilot">Pilot: unbekannt · XP: unbekannt · Rang: unbekannt</p>
+<h2>Kampfbelege</h2><p id="abschuesse"></p><ul id="ereignisse"></ul>
+<h2>Vorschau-Snapshot</h2><p>Feste Beispiele wechseln. Kein Core-Tick, keine Auszahlung, keine Speicherung.</p><div class="stufen"><button data-stufe="0">Gebiet</button><button data-stufe="1">Schuss</button><button data-stufe="2">Abschuss</button></div></aside></main>
+<footer>Read-only JagdSichtV1 · Pilotenanschluss vorbereitet · keine Flugphysik</footer>
+<script type="module" src="jagd-vorschau.mjs"></script></html>

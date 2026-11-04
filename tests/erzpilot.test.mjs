@@ -107,6 +107,7 @@ test('13 Seeds x 90 Tage: taegliche unabhaengige Bilanz und Save/Load, aber kein
         assert.equal(lager + fracht, erzeugt - verbraucht, 'Warenbilanz ' + ware + '/' + seed + '/' + tag);
       }
       assert.ok(Object.values(s.owners).every((owner) => owner.cash >= 0));
+      assert.equal(api.audit(s).vollkosten.ok, true, 'Vollkostenbeleg ' + seed + '/' + tag);
       const finanz = api.audit(s).finanzierung;
       assert.equal(finanz.ok, true, 'Export-Käuferbudget ohne unbelegte Zuflüsse: ' + seed + '/' + tag);
       assert.equal(finanz.start, finanz.rest + finanz.ausgegeben);

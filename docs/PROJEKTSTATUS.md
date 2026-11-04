@@ -1,5 +1,18 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W5b – bezahlter Bauteil- und Jaegerbau aus echter W3/W4-Ware · 04.11.2026
+
+**[MAIN]** bleibt `b4e604d6` (Regel14/Schema8); **[DRAFT]** [PR #173](https://github.com/tobiasfranziskus/Check/pull/173) ist unmittelbar auf #171 gestapelt und verwendet ausschliesslich die isolierte Forschungsregel20. [Technischer Herstellungs- und Finanzierungsbeleg](W5B_JAEGERBAU.md). Keine neue UI-Route oder Spielstandsmigration, kein Merge/Deployment.
+
+**[PRODUKTFORTSCHRITT]** Vier reale W4-Raffineriechargen zu je 5 Material werden nach bezahltem Erztransport zu **20 Material**. Ein aus dem endlichen Starter-Minerlager umverteilter und fuer 600 ISK von `house` gekaufter Miner foerdert eine strikt endliche Charge **8 Silizium**, bezahlt mit **16 ISK** Arbeitskapital und **192 ISK** Nadir-Kauf-Treuhand. Das bestehende Regel14-Rezept `r_bauteil` verbraucht 16 Material + 8 Silizium, bezieht **1.792 ISK** reale Vorprodukte und zahlt **64 ISK** Werkarbeit. `r_jaeger` verwendet danach 8 Bauteile + 4 Material mit **400 ISK** Materialkauf sowie **32 ISK** reservierter und ausgezahlter Arbeit. Ein `npc3`-Kauf ueber 900 ISK aktiviert genau einen echten Nadir-Jaeger (`sh005` bei Seed42) mit eigener ID und Eigentümer. Keine neue ISK-Emission (`initialSupply=33.000`, `minted=0`).
+
+**[NACHWEIS]** Die [GitHub-CI #41857392019](https://github.com/tobiasfranziskus/Check/actions/runs/41857392019) auf Code-Head `83848735644677ecf917344cea6f766ee0b4e0b5` hat **169/169 Node-Tests bestanden**, 0 fehlgeschlagen/übersprungen. Das W5b-Testpaket umfasst 13 feste Seeds ×90 Tage mit taeglichen Geld-/Warenaudits, Hashgleichheit von zwei Replays, Save/Load, Ablehnung bei Waren- oder Geldmangel ohne Seitenbuchungen und negative bilanzneutrale Faelschungen. Regel14-Beleg `866776f7d84ef15e` bleibt unveraendert; historischer V14-CI-Job separat erfolgreich. **Die Gesamtsuite aller CI-Jobs erst nach Abschluss final bewerten.**
+
+**[INTERFACE/RESTBEDARF]** `m_core_index.JagdSichtV1(state)` ist ein vollständig lesender, gefrorener Snapshot der Schiff-ID, Eigentümer, Klasse, Standort, Aufgabe und Nadir-Werftbestände. Verkaufte Jaeger-IDs bleiben im Auftragsbuch; explizite Verlustliste fuer spaeteren Ersatzbedarf vorbereitet, aber **keine Zerstörungs-, Kampf- oder Ersatzkauffinanzierung freigeschaltet**. Keine Piratenspawns, Kopfgeldemission, Skillregel, Frachterattacke. Das endliche Vorkommen, ein Erstkauf und die gegenwaertige positive Konzernkasse **beweisen keine dauerhafte Industrie- oder Endnachfrageschleife**. Externe Codex-/Claude-Branches nur nach separater Prüfung integrieren. Browser- und reale iPad-/NAS-Abnahme ausstehend.
+
+---
+
+
 ## [DRAFT] Konzernkassen und Insolvenzgrenze im gemeinsamen W0–W5-Forschungsstack · 04.11.2026
 
 **[MAIN]** weiterhin `b4e604d6`, nicht gemergt. **[DRAFT]** Folgebranch `feature/w2-konzernstatus-auf-w5-20261104` auf dem Schiffbau-Stack [#170](https://github.com/tobiasfranziskus/Check/pull/170) erweitert lediglich den lesenden `m_core_w2_konzernstatus` und die bereits vorhandene W2-Konzernanzeige in den Forschungsmodi W2–W5. Regel14/15 bleiben unverändert, **keine neuen Save-Felder**.

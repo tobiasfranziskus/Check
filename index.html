@@ -920,12 +920,35 @@ const m_data_erzpilot = (() => {
       klasse:'frachter',dauer:30,lohnJeMinute:1,
       verkaufsPreis:W4_RULES.economy.waren.frachter.basis},
   };
+  // W5b: separater Regel-20-Forschungsstand mit begrenzter Silizium-Charge.
+  // Der Miner stammt aus bereits vorhandener, nur anders verteilter Lagerware.
+  const W5B_RULES = { ...W5_RULES, rulesVersion:20,
+    world:{...W5_RULES.world,
+      fields:[...W5_RULES.world.fields,{system:'nadir',ware:'silizium',miner:0}],
+      stations:{...W5_RULES.world.stations,
+        st_nadir:{...W5_RULES.world.stations.st_nadir,
+          ziel:{...W5_RULES.world.stations.st_nadir.ziel,
+            miner:1,silizium:8,bauteil:8,jaeger:1}}},
+    },
+    economy:{...W5_RULES.economy,
+      waren:{...W5_RULES.economy.waren,
+        silizium:basis.economy.waren.silizium,
+        bauteil:basis.economy.waren.bauteil,
+        jaeger:basis.economy.waren.jaeger},
+      rezepte:{r_bauteil:basis.economy.rezepte.r_bauteil,
+        r_jaeger:basis.economy.rezepte.r_jaeger}},
+    owners:[...W5_RULES.owners,{id:'arbeiter_w5b_nadir',kind:'labor',cash:0}],
+    w5b:{station:'st_nadir',produzent:'house',kaeufer:'npc3',
+      arbeiter:'arbeiter_w5b_nadir',arbeitsFonds:'fonds_transport',
+      silikonMenge:8,silikonLohn:2,materialPreis:100},
+  };
+  m_data_systeme.tiefFrieren(W5B_RULES);
   m_data_systeme.tiefFrieren(ERZ_RULES);
   m_data_systeme.tiefFrieren(W2_RULES);
   m_data_systeme.tiefFrieren(W3_RULES);
   m_data_systeme.tiefFrieren(W4_RULES);
   m_data_systeme.tiefFrieren(W5_RULES);
-  return { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES };
+  return { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES };
 })();
 
 const m_core_rng = (() => {
@@ -1038,7 +1061,7 @@ const FIELDS = {
   shipInstall: ['schiff', 'modul'], stationBuy: ['schiff'], shipBuy: ['klasse', 'station'],
   stationRecipe: ['station', 'rezept'], shipRemoveModule: ['schiff', 'modul'],
   shipFreight: ['schiff'], stationRefine: ['station'],
-  stationBuildShip: ['station'],
+  stationBuildShip: ['station'], stationBuildParts: ['station'], stationBuildFighter: ['station'],
 };
 function checkShape(state, cmd, rules) {
   if (cmd === null || typeof cmd !== 'object' || Array.isArray(cmd)) return 'Befehl ist kein Objekt';
@@ -1089,6 +1112,10 @@ function checkShape(state, cmd, rules) {
       if (typeof cmd.ware !== 'string' || !Object.hasOwn(rules.economy.waren, cmd.ware)) return 'unbekannte Ware';
       if (!rules.world.fields.some((f) => f.system === s.system && f.ware === cmd.ware))
         return `kein ${cmd.ware}-Vorkommen in ${s.system}`;
+      if (rules.w5b && cmd.ware === 'silizium') {
+        const check=m_core_w5b.minenPruefen(state,rules,s);
+        if(!check.ok)return check.grund;
+      }
     }
     if (cmd.type === 'shipEscort' || cmd.type === 'shipHunt') {
       if (s.klasse !== 'jaeger') return 'nur Jäger können das';
@@ -1138,20 +1165,35 @@ function checkShape(state, cmd, rules) {
     const pruefung=m_core_w5.pruefen(state,rules,cmd.owner,cmd.station);
     if (!pruefung.ok) return pruefung.grund;
   }
+  if (cmd.type === 'stationBuildParts' || cmd.type === 'stationBuildFighter') {
+    if (!rules.w5b) return 'W5b-Jaegerproduktion nicht aktiv';
+    const pruefung=m_core_w5b.pruefen(state,rules,cmd.type,cmd.owner,cmd.station);
+    if (!pruefung.ok)return pruefung.grund;
+  }
   if (rules.erzpilot && !['shipBuy', 'shipMine', 'shipWait', 'shipRename',
     ...(rules.w3 ? ['shipFreight'] : []), ...(rules.w4 ? ['stationRefine'] : []),
-    ...(rules.w5 ? ['stationBuildShip'] : [])].includes(cmd.type))
+    ...(rules.w5 ? ['stationBuildShip'] : []),
+    ...(rules.w5b ? ['stationBuildParts','stationBuildFighter'] : [])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if (cmd.type === 'shipBuy') {
     const frachter = !!rules.w3 && cmd.owner === rules.w3.spedition && cmd.klasse === 'frachter';
     const miner = cmd.klasse === 'miner' && (cmd.owner === 'house' || cmd.owner === 'npc3');
     const w5Kauf = !!rules.w5 && cmd.owner === rules.w5.kaeufer
       && cmd.klasse === rules.w5.klasse && cmd.station === rules.w5.station;
-    if (!rules.erzpilot || (!frachter && !miner) || (cmd.station !== rules.erzpilot.station && !w5Kauf))
-      return 'Komplettkauf nur fuer finanzierte Miner oder Frachter am Handelsplatz';
+    const w5bMiner = !!rules.w5b && cmd.owner === rules.w5b.produzent
+      && cmd.klasse === 'miner' && cmd.station === rules.w5b.station;
+    const w5bJaeger = !!rules.w5b && cmd.owner === rules.w5b.kaeufer
+      && cmd.klasse === 'jaeger' && cmd.station === rules.w5b.station;
+    if (!rules.erzpilot || (!frachter && !miner && !w5bJaeger)
+      || (cmd.station !== rules.erzpilot.station && !w5Kauf && !w5bMiner && !w5bJaeger))
+      return 'Komplettkauf nur fuer belegte Schiffe am Handelsplatz';
     if ((state.stations[cmd.station].lager[cmd.klasse] || 0) < 1) return 'kein Komplettschiff auf Lager';
     if (w5Kauf && !m_core_w5.verkaufPruefen(state,rules).ok)
       return 'W5-Schiffskauf nicht belegbar';
+    if (w5bJaeger) {
+      const pruefung=m_core_w5b.verkaufPruefen(state,rules);
+      if(!pruefung.ok)return pruefung.grund;
+    }
     if (state.owners[cmd.owner].cash < rules.economy.waren[cmd.klasse].basis) return 'zu wenig ISK';
   }
   if (cmd.type === 'stationRecipe') {
@@ -1179,12 +1221,17 @@ function execute(state, cmd, rules) {
     case 'shipBuy': {
       const p = rules.economy.waren[cmd.klasse].basis;
       state.owners[cmd.owner].cash -= p;
-      state.owners[rules.erzpilot.werftOwner].cash += p;
+      const w5bJaeger = !!rules.w5b && cmd.station===rules.w5b.station
+        && cmd.klasse==='jaeger' && cmd.owner===rules.w5b.kaeufer;
+      const verkaeufer=w5bJaeger?rules.w5b.produzent:rules.erzpilot.werftOwner;
+      state.owners[verkaeufer].cash += p;
       state.stations[cmd.station].lager[cmd.klasse] -= 1;
       state.ledger[cmd.klasse].consumed += 1;
       const w5Kauf = !!rules.w5 && cmd.station === rules.w5.station
         && cmd.klasse === rules.w5.klasse && cmd.owner === rules.w5.kaeufer;
-      const system = w5Kauf ? 'nadir' : 'aldera';
+      const w5bKauf = !!rules.w5b && cmd.station===rules.w5b.station
+        && ((cmd.klasse==='miner'&&cmd.owner===rules.w5b.produzent)||w5bJaeger);
+      const system = w5Kauf || w5bKauf ? 'nadir' : 'aldera';
       const sh = m_core_state.neuesSchiff(state, {
         owner: cmd.owner, klasse: cmd.klasse, system,
         heimat: system, auftrag: 'halten', ware: null,
@@ -1193,8 +1240,14 @@ function execute(state, cmd, rules) {
         state.w5.verkauft++;
         state.w5.schiffIds.push(sh.id);
       }
+      if(w5bKauf) {
+        if(w5bJaeger) {
+          state.w5b.jaegerVerkauft++;
+          state.w5b.schiffIds.push(sh.id);
+        } else state.w5b.minerId=sh.id;
+      }
       m_core_handel.buche(state, cmd.owner, 'kosten', p);
-      m_core_handel.buche(state, rules.erzpilot.werftOwner, 'erloes', p);
+      m_core_handel.buche(state, verkaeufer, 'erloes', p);
       m_core_state.protokolliere(state, 'dienst', `${sh.id} als Komplettschiff fuer ${p} ISK gekauft`, cmd.owner);
       break;
     }
@@ -1220,6 +1273,10 @@ function execute(state, cmd, rules) {
     }
     case 'stationBuildShip': {
       m_core_w5.starten(state,rules,cmd.owner,cmd.station); break;
+    }
+    case 'stationBuildParts':
+    case 'stationBuildFighter': {
+      m_core_w5b.starten(state,rules,cmd.type,cmd.owner,cmd.station); break;
     }
     case 'shipWait': {
       const s = state.ships[cmd.schiff];
@@ -1484,7 +1541,8 @@ function foerderung(state, rules) {
       continue;
     }
     if (rules.erzpilot) {
-      m_core_erzpilot.foerdern(state, rules, s);
+      if(rules.w5b && ware==='silizium')m_core_w5b.foerdern(state,rules,s);
+      else m_core_erzpilot.foerdern(state, rules, s);
       continue;
     }
     const vorher = anzahl(s.ladung, ware);
@@ -2872,6 +2930,7 @@ function step(state, rules) {
     if (rules.w3) m_core_w3.tick(state,rules);
     if (rules.w4) m_core_w4.tick(state,rules);
     if (rules.w5) m_core_w5.tick(state,rules);
+    if (rules.w5b) m_core_w5b.tick(state,rules);
     ankunft(state, rules);
     foerderung(state, rules);
     if (state.tick % rules.economy.stunde === 0) {

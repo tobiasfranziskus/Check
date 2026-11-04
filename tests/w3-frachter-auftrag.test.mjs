@@ -91,7 +91,10 @@ test('W3: Ankunft bezahlt Ware, Rueckfahrt verbraucht echte Arbeit, Entgelt nach
     assert.equal(s.owners.fonds_transport.cash,120);
     assert.equal(s.owners.transport.cash,1370,'2000-750 Schiff-120 Arbeit+240 Fracht');
     assert.equal(s.owners.st_nadir.cash,3260);
-    assert.equal(s.owners.werft_extern.cash,1350);
+    assert.equal(s.owners.werft_extern.cash,
+      s.ledger.miner.consumed*r.economy.waren.miner.basis
+      + s.ledger.frachter.consumed*r.economy.waren.frachter.basis,
+      'W3-Frachter und spaetere eigenfinanzierte NPC-Miner vollstaendig bezahlt');
     assert.equal(s.w3.frachtUmsatz,240);
     assert.equal(s.w3.arbeitsKosten,120);
     assert.equal(s.ledger.erz.exported<=s.ledger.erz.mined,true);

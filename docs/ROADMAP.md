@@ -10,7 +10,7 @@
 
 **Spielbarkeit ohne Hauptlink-Eingriff:** `?modus=w4raffinerie` zeigt die bereits vorhandene 2D-Ansicht und Konten, W4-Chargen und Material; `?modus=w4konten` dieselbe gespeicherte Welt ohne Canvas. Ein eigener Slot `aphros-void-w4-regel18-v1` mit geprüftem JSON-Import, Export und Archivierung schützt die Hauptwelt (`slot1`) sowie W1-/W2-/W3-Spielstände. Echte iPad-Safari-/NAS-Abnahme auf Nutzerwunsch später nach gesonderter Freigabe.
 
-**[TESTGATE]** `tests/w4-raffinerie-finanziert.test.mjs` für reale W3-Lieferung, bezahlte Einzelcharge, 15-Chargen-Kassenstopp trotz 100 verbliebenen Erzes, 13 Seeds ×90 Tage, Replay/Save/Load, Konten-/Waren-Audits; UI-/Save-Tests in `tests/w2-npc-ui-save.test.mjs`. Alle Tests und Gesamt-CI müssen tatsächlich grün sein, bevor die Stage als Kern-Probe bestanden gilt. Kein Merge oder Deployment.
+**[TESTGATE]** `tests/w4-raffinerie-finanziert.test.mjs` für reale W3-Lieferung, bezahlte Einzelcharge, 15-Chargen-Kassenstopp trotz 100 verbliebenen Erzes, 13 Seeds ×90 Tage, Replay/Save/Load, Konten-/Waren-Audits; UI-/Save-Tests in `tests/w2-npc-ui-save.test.mjs`. **[TEST] [CI #41833705400](https://github.com/tobiasfranziskus/Check/actions/runs/41833705400), `6865316f`: 149/149 Node-Tests erfolgreich, 0 fehlgeschlagen oder übersprungen.** Darin: zwei unabhängige Manipulationsproben (unbezahlte Fremd-ISK auf Arbeitstreuhand und erfundenes Material samt gefälschtem Waren-Ledger), reale Kunden- und Produktionsstopps, Save/Load, 13×90-Replay. Historische Workflow-Jobs separat erst bei Abschluss freigeben. Kein Merge oder Deployment.
 
 ---
 

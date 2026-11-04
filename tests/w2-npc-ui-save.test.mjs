@@ -30,6 +30,9 @@ function boot(mode, initial = {}) {
   const ids = [...html.matchAll(/id="(pilot-[^"]+|erzpilot-app|miner2d|m2-[^"]+)"/g)].map(match => match[1]);
   assert.equal(new Set(ids).size, ids.length, 'keine doppelten UI-IDs');
   const el = Object.fromEntries(ids.map(id => [id, new FakeElement()]));
+  // Der echte DOM initialisiert <section id="miner2d" hidden>; FakeElement
+  // muss denselben Ausgangszustand abbilden.
+  el.miner2d.hidden = true;
   const store = new Map(Object.entries(initial)), downloads = [], navigations = [];
   const document = {
     hidden: false, body: { classList: { add() {} } },
@@ -193,4 +196,93 @@ test('W2-Save: beschaedigten eigenen Slot niemals still ersetzen', async () => {
   el['pilot-datei'].click();
   assert.equal(downloads[0].text,bad);
   assert.match(downloads[0].name,/regel16-beschaedigt/);
+});
+
+test('W3 UI: Frachter bezahlen, Erz liefern und beide Flugstrecken sicher abrechnen',async()=>{
+  const seed={slot1:'REGEL14-ALT',[W1_SLOT]:'REGEL15-ALT',[W2_SLOT]:'REGEL16-ALT'};
+  const {el,store}=boot('w3frachter',seed);
+  const W3_SLOT='aphros-void-w3-regel17-v1';
+  await settle();
+  assert.equal(el['pilot-w3-panel'].hidden,false);
+  assert.equal(el['pilot-w2-panel'].hidden,false);
+  assert.equal(el.miner2d.hidden,false);
+  assert.match(el['pilot-version'].textContent,/Regel 17/);
+  assert.equal(el['pilot-w3-start'].disabled,true);
+  assert.equal(el['pilot-w3-kauf'].disabled,false);
+  el['pilot-w3-kauf'].click();await settle();
+  assert.match(el['pilot-w3-schiff'].textContent,/sh002/);
+  el['pilot-w3-50'].click();await settle();
+  assert.equal(el['pilot-w3-start'].disabled,false,'echtes Erz erst nach dem Core-Abbau');
+  el['pilot-w3-start'].click();await settle();
+  let s=JSON.parse(store.get(W3_SLOT));
+  assert.equal(s.rulesVersion,17);
+  assert.equal(s.w3.auftrag.phase,'hin');
+  assert.equal(s.owners.st_nadir.cash,3260);
+  assert.equal(s.owners.w3_kauf_treuhand.cash,740);
+  assert.equal(s.owners.w3_arbeit_treuhand.cash,120);
+  assert.equal(s.minted,0);
+  assert.equal(el['pilot-w3-audit'].textContent,'W3-Konten + Ware OK');
+  el['pilot-stunde'].click();await settle();
+  s=JSON.parse(store.get(W3_SLOT));
+  assert.equal(s.w3.geliefert,50);
+  assert.equal(s.w3.auftrag.phase,'rueck');
+  assert.equal(s.stations.st_nadir.lager.erz,50);
+  el['pilot-stunde'].click();await settle();
+  s=JSON.parse(store.get(W3_SLOT));
+  assert.equal(s.w3.abgeschlossen,1);
+  assert.equal(s.w3.auftrag,null);
+  assert.equal(s.owners.fonds_transport.cash,120);
+  assert.equal(el['pilot-w3-audit'].textContent,'W3-Konten + Ware OK');
+  assert.equal(store.get('slot1'),'REGEL14-ALT');
+  assert.equal(store.get(W1_SLOT),'REGEL15-ALT');
+  assert.equal(store.get(W2_SLOT),'REGEL16-ALT');
+});
+
+test('W3 UI: Konten- und 2D-Ansicht setzen exakt den gleichen geschützten Save fort',async()=>{
+  const W3_SLOT='aphros-void-w3-regel17-v1';
+  const a=boot('w3frachter');
+  await settle();
+  a.el['pilot-w3-kauf'].click();
+  a.el['pilot-w3-50'].click();
+  a.el['pilot-w3-start'].click();
+  await settle();
+  const json=a.store.get(W3_SLOT),hash=a.el['pilot-hash'].textContent;
+  const b=boot('w3konten',Object.fromEntries(a.store));
+  await settle();
+  assert.equal(b.el['pilot-w3-panel'].hidden,false);
+  assert.equal(b.el.miner2d.hidden,true);
+  assert.equal(b.el['pilot-hash'].textContent,hash);
+  assert.equal(b.store.get(W3_SLOT),json);
+  b.el['pilot-w3-50'].click();await settle();
+  assert.equal(JSON.parse(b.store.get(W3_SLOT)).tick,100);
+  const c=boot('w3frachter',Object.fromEntries(b.store));
+  await settle();
+  assert.equal(c.el['pilot-hash'].textContent,b.el['pilot-hash'].textContent);
+  assert.equal(c.el['pilot-w3-audit'].textContent,'W3-Konten + Ware OK');
+});
+
+test('W3 UI: inkompatibler W2-Import scheitert, Neustart archiviert nur Regel17',async()=>{
+  const W3_SLOT='aphros-void-w3-regel17-v1';
+  const {el,store,downloads}=boot('w3konten',{slot1:'ALT', [W1_SLOT]:'W1', [W2_SLOT]:'W2'});
+  await settle();
+  el['pilot-w3-kauf'].click();await settle();
+  const old=store.get(W3_SLOT);
+  el['pilot-datei'].click();
+  assert.equal(downloads.length,1);
+  assert.match(downloads[0].name,/regel17/);
+  const invalid=JSON.parse(old);invalid.rulesVersion=16;
+  await el['pilot-datei-input'].listeners.change({target:{
+    files:[{text:async()=>JSON.stringify(invalid)}],value:'invalid'
+  }});
+  await settle();
+  assert.equal(store.get(W3_SLOT),old);
+  assert.match(el['pilot-meldung'].textContent,/Import abgelehnt/);
+  await el['pilot-neu'].click();await settle();
+  const archives=[...store.keys()].filter(k=>k.startsWith(W3_SLOT+'-archiv-'));
+  assert.equal(archives.length,1);
+  assert.equal(store.get(archives[0]),old);
+  assert.equal(JSON.parse(store.get(W3_SLOT)).rulesVersion,17);
+  assert.equal(store.get('slot1'),'ALT');
+  assert.equal(store.get(W1_SLOT),'W1');
+  assert.equal(store.get(W2_SLOT),'W2');
 });

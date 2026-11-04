@@ -254,3 +254,28 @@ test('W0: Freie Treuhandmittel dürfen nach Rueckgabe wieder gebunden werden', 
   assert.ok(api.pilotAuftragsStand(s).gebunden > 0);
   assert.equal(api.audit(s).ok, true);
 });
+
+
+test('W1: Aeltere Pilotspielstaende ohne Auftragsbuch bleiben beim Anzeigen hashgleich', () => {
+  const s = api.createErzState(11);
+  delete s.erzpilotVertraege; // Regel 15 vor Einführung vorfinanzierter Aufträge
+  const referenz = api.hash(s);
+  assert.equal(api.pilotAuftragsStand(s).auftraege, 0);
+  assert.equal(api.hash(s), referenz);
+  const t = api.loadErz(api.save(s));
+  assert.equal(api.hash(t), referenz);
+  api.advance(t, 5, rules);
+  assert.equal(api.audit(t).ok, true);
+});
+
+test('W1: Import mit manipuliertem Treuhandkonto oder unplausibler Lagerbilanz wird abgelehnt', () => {
+  const s = api.createErzState(42);
+  api.advance(s, 3, rules);
+  const v = Object.values(s.erzpilotVertraege)[0];
+  s.owners[v.konto].cash -= 10;
+  s.owners.st_aldera.cash += 10;
+  assert.throws(() => api.loadErz(api.save(s)), /Bilanz fehlerhaft/);
+  const t = api.createErzState(42);
+  t.stations.st_aldera.lager.erz += 2;
+  assert.throws(() => api.loadErz(api.save(t)), /Bilanz fehlerhaft/);
+});

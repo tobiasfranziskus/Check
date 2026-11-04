@@ -107,6 +107,9 @@ test('13 Seeds x 90 Tage: taegliche unabhaengige Bilanz und Save/Load, aber kein
         assert.equal(lager + fracht, erzeugt - verbraucht, 'Warenbilanz ' + ware + '/' + seed + '/' + tag);
       }
       assert.ok(Object.values(s.owners).every((owner) => owner.cash >= 0));
+      const finanz = api.audit(s).finanzierung;
+      assert.equal(finanz.ok, true, 'Export-Käuferbudget ohne unbelegte Zuflüsse: ' + seed + '/' + tag);
+      assert.equal(finanz.start, finanz.rest + finanz.ausgegeben);
     }
     assert.equal(s.minted, 0);
     assert.equal(s.owners.export.cash, 0);
@@ -347,4 +350,22 @@ test('W1: Fremdtransfer bleibt trotz korrekter ISK- und Warenbilanz gesperrt', (
   assert.equal(b.isk.ok, true);
   assert.equal(b.goods.ok, true);
   assert.equal(b.ok, false);
+});
+
+test('W1: Nach Endabnahme fließt kein Geld automatisch zum Käufer zurück', () => {
+  const s = mitSpielerMiner(42);
+  api.advance(s, 2 * 1440, rules);
+  const gemessen = Object.fromEntries([
+    'house', 'npc3', 'st_aldera', 'fonds_aldera', 'export', 'werft_extern',
+  ].map((id) => [id, s.owners[id].cash]));
+  assert.deepEqual(gemessen, {
+    house: 10800, npc3: 10800, st_aldera: 0,
+    fonds_aldera: 4200, export: 0, werft_extern: 1200,
+  });
+  assert.equal(api.audit(s).isk.total, 27000);
+  assert.equal(s.ledger.erz.mined, 2100);
+  assert.equal(s.ledger.erz.exported, 2000);
+  assert.equal(s.stations.st_aldera.lager.erz, 100);
+  assert.equal(api.audit(s).finanzierung.ok, true);
+  assert.equal(s.minted, 0);
 });

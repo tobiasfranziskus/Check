@@ -1,5 +1,8 @@
 # Aphros Void – Projektstatus
 
+> **[DRAFT / WARTUNG · 04.11.2026]** GitHub `main b4e604d6` unverändert. Die unabhängigen PRs #172 und #177 sind **vollständig und blob-identisch** in #175 bzw. #179 übernommen; #174 ist ein abgeschlossener, nicht integrierter Piraten-Audit. Alle drei sind **closed, not merged**, mit Archivkommentar. 21 → **18 offene PRs**, aktive Branches nicht verändert. Auf dem gestapelten W5f-Head #181 `423f18d` ist [CI #41925543292](https://github.com/tobiasfranziskus/Check/actions/runs/41925543292) **completed/success**. Der reine Wartungs-Draft ergänzt [docs/README.md](README.md) und ignoriert nur lokale Testerzeugnisse, keine Produktsourcen oder Fixtures. Weiterhin keine reale iPad-/NAS-Abnahme und keine Produktfreigabe.
+
+
 ## [DRAFT] W5f – finanzierter Pilot, Abschussprämie und MK1-Laser · 04.11.2026
 
 **[MAIN]** GitHub `b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c` Regel14/Schema8 unverändert. **[DRAFT]** [#181](https://github.com/tobiasfranziskus/Check/pull/181) ist auf die ungemergte Forschungswelt [#180](https://github.com/tobiasfranziskus/Check/pull/180) gestapelt, separate Regel23/Schema8. `index.html` enthält R23 nur als isolierten Forschungs-Core; R14- und R17–22-Befehle/Saves bleiben getrennt. Neue statische Forschungsseite: `prototypes/w5-welt/w5f.html` mit eigenem `aphros-void-forschungswelt-w5f`-Browser-Slot, JSON-Backup, Importvalidierung und CAS-Schreibschutz. **Keine Veränderung am produktiven Startlink.**

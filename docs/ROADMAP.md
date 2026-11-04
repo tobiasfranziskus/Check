@@ -1,5 +1,8 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+> **[DRAFT / WARTUNG · 04.11.2026]** Die abgeschlossenen, nicht gemergten Ursprungsarbeiten [#172](https://github.com/tobiasfranziskus/Check/pull/172) (identisch in #175) und [#177](https://github.com/tobiasfranziskus/Check/pull/177) (identisch in #179) sowie das unabhängige Analyse-Audit [#174](https://github.com/tobiasfranziskus/Check/pull/174) sind nachvollziehbar archiviert. **18 offene Entwicklungs-PRs**, keine Branch- oder Dateilöschung, kein Merge. Navigationsindex: [docs/README.md](README.md). Produktziele und Freigabegates bleiben unverändert; W5f bleibt reine Forschung.
+
+
 ## [DRAFT] W5f – Piloteneinkommen, gedecktes Kopfgeld und MK1-Laser · 04.11.2026
 
 **[MAIN]** `b4e604d6` Regel14/Schema8 bleibt unverändert. **[DRAFT]** Auf [#180](https://github.com/tobiasfranziskus/Check/pull/180) gestapelter [PR #181](https://github.com/tobiasfranziskus/Check/pull/181) führt isolierte **Regel23/Schema8** ein: ein persönliches Konto für den NPC-Jägerpiloten, reale Dienstvergütung erst nach 60 geleisteten Core-Minuten, eine aus dem bisherigen Fonds *vor dem Kampf* gesperrte einmalige Abschussprämie, danach einen einzelnen physisch aus vorhandenem Erz→W4-Material hergestellten und vom Piloten gekauften **MK1-Laser**. Vorzeitig beendete Jagdaufträge erstatten ungenutzten Sold und Kopfgeldreserve; nach dem einzigen Piratenverlust endet die Jagd. **Keine ISK-Emission und keine Preisformelreform.**

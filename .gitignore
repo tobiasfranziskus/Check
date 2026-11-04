@@ -1,0 +1,9 @@
+# Nur lokale/erzeugte Artefakte; vorhandene Test-Fixtures bewusst versioniert.
+.DS_Store
+Thumbs.db
+node_modules/
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+*.tsbuildinfo

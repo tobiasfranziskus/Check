@@ -1,5 +1,15 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] W2-Forschungsminimum – eigenfinanzierte NPC-Expansion · 04.11.2026
+
+**Nicht auf main, keine W2-Produktfreigabe.** Gestapelter Draft [PR #163](https://github.com/tobiasfranziskus/Check/pull/163) auf W1-Branch #161 führt **Regel16 nur für Core-Forschung** ein. Regel14, W1-Regel15, W1-Browsermodus und ihre Save-Slots bleiben unverändert; Regel16 bekommt vorerst ausschließlich getrennte `createW2State`/`loadW2`-API, keinen öffentlichen Spielstart.
+
+Die erste W2-Entscheidung verwendet **nur bereits verbuchte Minerverkäufe, Arbeitskosten, echten fertigen Minerschiffsbestand, Stationstreuhand, Lagerplätze und das endliche Kundenguthaben**. Der NPC darf einen zweiten Miner über den bestehenden `shipBuy`-Befehl kaufen, wenn der erste seine Anschaffung tatsächlich durch bezahlte Verkäufe amortisiert hat, die Firma Hülle und parallele Arbeit finanzieren kann und zwei vollständige Erzchargen gleichzeitig am Markt finanzierbar sind. Eine konservative Mindestnachfrage aus vorhandenem Käuferbudget soll den vollen Anschaffungspreis je Miner bei der derzeitigen Einheitsmarge abdecken. Die neue Hülle startet nur über das originale validierte `shipMine`; keine neue Warenproduktion, Nachfrage oder ISK.
+
+**Konkurrenz:** Sind NPC- und Spieler-Miner bereits aktiv und belegen die gesamte real vorfinanzierbare Lager-/Abnahmekapazität, kauft NPC kein weiteres Schiff. Auch nach Erschöpfung des Exportbudgets unterbleibt Expansion und ungedeckte Arbeit. Dies ist ein **endlicher Entscheidungsnachweis**, kein dauerhaft selbsttragender W2-Markt. Tatsächliche Insolvenzen, weitere Anbieter, W3-Frachter, echte Endkundenfinanzierung sowie autonome Markteintritte bleiben offene Gates. Erst nach Finanzierung des Endabnehmers und gesonderter Abnahme darf W2 als Produktstufe gelten.
+
+---
+
 ## [BESCHLOSSEN] Kurswechsel: wirtschaftlicher Vertikalaufbau · 03.11.2026
 
 **Entscheidung:** Die Projektleitung hat einen kontrollierten Neuaufbau der Wirtschaft in kleinen, unabhängig auditierbaren Stufen genehmigt. Wir **ersetzen nicht das gesamte Spiel**: deterministischer Simulationskern, Karte, Kommandoarchitektur, iPad-/NAS-Ziel und Save-Schutz bleiben. Die frühere B–F-Wirtschaft wird vorerst nicht durch weitere Einzelreparaturen erweitert. Die Phasen A–I bleiben die verbindliche **Produktvision**; diese Reihenfolge präzisiert die **neue Implementierungsstrategie für Wirtschaft B–F**. Niemand leitet eine zweite Roadmap daraus ab.

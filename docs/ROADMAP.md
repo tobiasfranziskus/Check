@@ -1,5 +1,13 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] W2-Core mit W1-/2D-Miner vereint · 04.11.2026
+
+Der neue Stack `feature/w2-miner2d-gemeinsam-20261104` baut auf dem 2D-/W1-Integrations-Draft #164 auf und uebernimmt **ausschliesslich die bestaetigte Regel-16-NPC-Investitionslogik** plus ihre Testfaelle aus dem getrennten W2-Entscheidungs-Draft #163. Der bisherige Regel-15-2D-Einstieg `?modus=miner2d` und sein eigener Save-Slot bleiben **unveraendert**; keine neue W2-Browser-Speicherung und keine W1-Regelmigration. Der echte Spieler-/NPC-Vergleich laeuft auf demselben autoritativen Core; der 2D-Projektor zeigt reale NPC-Schiffe, aber er simuliert weder Bergbau noch Geld. Beide aufeinander gestapelten Entwurfsstränge werden erst nach gemeinsamer CI, Produktfreigabe und spaeterer iPad-/NAS-Abnahme integriert. Kein Merge/Deployment.
+
+**[OFFEN]** W2-Insolvenznachweis, weitere Konzerne und echte Endkunden-Kaufkraft sind nicht durch die Core-/Grafik-Zusammenfuehrung geloest. Sichtbarer W2-Spielmodus und W2-Save sind noch nicht freigegeben. Eine spätere Abnahme soll über den bestehenden Hauptlink nach gesondert freigegebener Integration/Veröffentlichung erfolgen, nicht über eine weitere Codespaces-Testadresse.
+
+---
+
 ## [DRAFT] W1-Wirtschaft und 2D-Miner verbunden · 04.11.2026
 
 Der [Integrations-Draft #164](https://github.com/tobiasfranziskus/Check/pull/164)

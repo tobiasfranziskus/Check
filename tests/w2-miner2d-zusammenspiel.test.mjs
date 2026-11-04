@@ -19,8 +19,8 @@ function spielerMiner(s) {
 }
 
 test('W1 2D-Start bleibt getrennt vom experimentellen W2-Core ohne Save-Migration', () => {
-  assert.match(html, /modus=\(\?:erzpilot\|miner2d\|w2konzern\|w2miner2d\|w3konten\|w3frachter\)/);
-  assert.ok(html.includes("const SLOT = istW3 ? 'aphros-void-w3-regel17-v1' : istW2"));
+  assert.match(html, /modus=\(\?:erzpilot\|miner2d\|w2konzern\|w2miner2d\|w3konten\|w3frachter\|w4konten\|w4raffinerie\)/);
+  assert.ok(html.includes("const SLOT = istW4 ? 'aphros-void-w4-regel18-v1' : istW3"));
   const a = c.createErzState(42), b = c.createW2State(42);
   assert.equal(a.rulesVersion, 15);
   assert.equal(b.rulesVersion, 16);

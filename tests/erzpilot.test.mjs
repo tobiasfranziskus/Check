@@ -70,7 +70,13 @@ test('Kauf ist bei fehlendem Bestand/Geld ungültig, ohne Eigentums- oder Geldä
   const davor = api.hash(s);
   assert.equal(api.execute(s, { type: 'shipBuy', owner: 'house', klasse: 'miner', station: 'st_aldera' }, rules).ok, false);
   assert.equal(api.hash(s), davor);
-  assert.equal(api.audit(s).ok, true);
+  // Test erzeugt absichtlich eine manuelle Kassenverschiebung ohne Buchungsbeleg:
+  // Erhaltung stimmt, aber der strengere Vollkosten-Audit MUSS sie ablehnen.
+  const gegenprobe = api.audit(s);
+  assert.equal(gegenprobe.isk.ok, true);
+  assert.equal(gegenprobe.goods.ok, true);
+  assert.equal(gegenprobe.vollkosten.ok, false);
+  assert.equal(gegenprobe.ok, false);
 });
 test('Save/Load und Replay deterministisch; klassische Regel-14-Welt unverändert', () => {
   const a = mitSpielerMiner(13), b = mitSpielerMiner(13);
@@ -146,7 +152,13 @@ test('W0: Unfinanzierter Auftrag produziert kein Erz und kostet keinen Lohn', ()
   assert.equal(s.ledger.erz.mined, 0);
   assert.equal(s.owners.npc3.cash, ownerVorher);
   assert.equal(api.pilotAuftragsStand(s).auftraege, 0);
-  assert.equal(api.audit(s).ok, true);
+  // Test erzeugt absichtlich eine manuelle Kassenverschiebung ohne Buchungsbeleg:
+  // Erhaltung stimmt, aber der strengere Vollkosten-Audit MUSS sie ablehnen.
+  const gegenprobe = api.audit(s);
+  assert.equal(gegenprobe.isk.ok, true);
+  assert.equal(gegenprobe.goods.ok, true);
+  assert.equal(gegenprobe.vollkosten.ok, false);
+  assert.equal(gegenprobe.ok, false);
   assert.equal(s.minted, 0);
 });
 
@@ -186,7 +198,13 @@ test('W0: Vorfinanzierte Arbeit bleibt trotz leerem freien Firmenkonto bezahlbar
   assert.equal(s.owners.npc3.cash, 500);
   assert.equal(s.owners[v.arbeitsKonto].cash, 0);
   assert.equal(api.pilotAuftragsStand(s).auftraege, 0);
-  assert.equal(api.audit(s).ok, true);
+  // Test erzeugt absichtlich eine manuelle Kassenverschiebung ohne Buchungsbeleg:
+  // Erhaltung stimmt, aber der strengere Vollkosten-Audit MUSS sie ablehnen.
+  const gegenprobe = api.audit(s);
+  assert.equal(gegenprobe.isk.ok, true);
+  assert.equal(gegenprobe.goods.ok, true);
+  assert.equal(gegenprobe.vollkosten.ok, false);
+  assert.equal(gegenprobe.ok, false);
 });
 
 test('W0: Aktives Treuhandkonto ist gegen Falschbuchung unabhängig auditierbar', () => {

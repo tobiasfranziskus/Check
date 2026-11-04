@@ -186,7 +186,7 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
     <p id="pilot-version" class="muted kopf-klein">Aphros Void · W1 Forschungsmodus · Regel 15</p>
     <h1 id="pilot-titel">Erzpilot · W1</h1>
     <p><a id="pilot-2d" href="?modus=miner2d">2D-Miner öffnen</a> · <a id="pilot-konten" href="?modus=erzpilot">Kontenansicht</a> (derselbe Spielstand)</p>
-    <p><a id="pilot-w2-link" href="?modus=w2miner2d">W2-Konzernvorschau (eigener Spielstand)</a> · <a id="pilot-w3-link" href="?modus=w3frachter">W3-Frachter (eigener Spielstand)</a> · <a id="pilot-w4-link" href="?modus=w4raffinerie">W4-Raffinerie (eigener Spielstand)</a><a id="pilot-w1-link" href="?modus=miner2d" hidden> · W1-Miner (anderer Spielstand)</a></p>
+    <p><a id="pilot-w2-link" href="?modus=w2miner2d">W2-Konzernvorschau (eigener Spielstand)</a> · <a id="pilot-w3-link" href="?modus=w3frachter">W3-Frachter (eigener Spielstand)</a> · <a id="pilot-w4-link" href="?modus=w4raffinerie">W4-Raffinerie (eigener Spielstand)</a> · <a id="pilot-w5-link" href="?modus=w5werft">W5-Schiffbau (eigener Spielstand)</a><a id="pilot-w1-link" href="?modus=miner2d" hidden> · W1-Miner (anderer Spielstand)</a></p>
     <p id="pilot-erklaerung" class="muted">Erz abbauen, Miner kaufen und bezahlte Verkäufe prüfen. Kein fertiges Wirtschaftsspiel: Das Exportbudget ist endlich.</p>
     <p><a href="./">Zum bisherigen Spiel (Regel 14)</a></p>
   </header>
@@ -301,6 +301,28 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
     </div>
     <p class="muted">Material bleibt zunächst als fertige Ware in Nadir. Ein Käufer oder industrieller Weiterverbrauch entsteht erst mit einer späteren, gesondert geprüften Wirtschaftsstufe.</p>
   </section>
+  <section id="pilot-w5-panel" class="card" aria-label="W5 – bezahlter Nadir-Schiffbau" hidden>
+    <h2>W5 · Nadir-Werft: Ein echter Frachter</h2>
+    <p>Die Werft kauft 5 echtes Raffineriematerial für 500 ISK, reserviert 30 ISK Arbeitslohn und baut 30 Core-Minuten. Erst danach kann die Spedition das fertige Schiff für 750 ISK bezahlen.</p>
+    <dl>
+      <div><dt>Verfügbares Nadir-Material</dt><dd id="pilot-w5-material">–</dd></div>
+      <div><dt>Werft – freie Kasse</dt><dd id="pilot-w5-werft">–</dd></div>
+      <div><dt>Belegter Materialverkauf an Nadir</dt><dd id="pilot-w5-umsatz">–</dd></div>
+      <div><dt>Für Werftarbeit gebunden</dt><dd id="pilot-w5-arbeit">–</dd></div>
+      <div><dt>Ausgezahlter Werftlohn</dt><dd id="pilot-w5-lohn">–</dd></div>
+      <div><dt>Fertige / verkaufte Frachter</dt><dd id="pilot-w5-schiffe">–</dd></div>
+      <div><dt>Neuer Frachter / Standort</dt><dd id="pilot-w5-station">–</dd></div>
+      <div><dt>Werftstatus</dt><dd id="pilot-w5-status">–</dd></div>
+      <div><dt>W5-Audit</dt><dd id="pilot-w5-audit">–</dd></div>
+    </dl>
+    <p id="pilot-w5-grund" class="muted" role="status">Material- und Käuferbudgets werden geprüft.</p>
+    <div class="actions">
+      <button type="button" class="primary" id="pilot-w5-bauen">5 Material → Frachter: Bau starten</button>
+      <button type="button" id="pilot-w5-30">+30 Core-Minuten</button>
+      <button type="button" id="pilot-w5-kaufen">Fertigen Frachter für 750 ISK kaufen</button>
+    </div>
+    <p class="muted">Der verkaufte Frachter liegt real in Nadir. Der bezahlte Überführungsflug nach Aldera und eine zweite operative Route sind spätere Ausbauschritte; es entsteht keine automatische Nachfrage.</p>
+  </section>
   <section class="card" aria-label="W1-Vollkosten und Zahlungsfähigkeit">
     <h2>W1 – tatsächliche Vollkosten</h2>
     <dl>
@@ -356,7 +378,7 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
   </section>
   <section class="card" aria-label="Spielstand">
     <ul class="liste">
-      <li><span class="liste-links">Wirtschafts-Neuaufbau</span><span class="liste-rechts"><a href="?modus=erzpilot">W1-Erzpilot</a> · <a href="?modus=w2miner2d">W2-Vorschau</a> · <a href="?modus=w3frachter">W3-Frachter</a> · <a href="?modus=w4raffinerie">W4-Raffinerie</a></span></li>
+      <li><span class="liste-links">Wirtschafts-Neuaufbau</span><span class="liste-rechts"><a href="?modus=erzpilot">W1-Erzpilot</a> · <a href="?modus=w2miner2d">W2-Vorschau</a> · <a href="?modus=w3frachter">W3-Frachter</a> · <a href="?modus=w4raffinerie">W4-Raffinerie</a> · <a href="?modus=w5werft">W5-Schiffbau</a></span></li>
       <li class="zeile-knopf"><button type="button" class="zeile" id="b-spielstand"><span class="liste-links">Spielstand</span><span class="liste-rechts muted" id="hq-gespeichert">–</span></button></li>
       <li id="hq-hinweis-zeile" class="hinweis-zeile" hidden><span class="marke marke-warn" id="hq-hinweis"></span></li>
       <li class="zeile-knopf"><button type="button" class="zeile" id="b-bericht"><span class="liste-links">Berichte</span><span class="liste-rechts muted" id="bericht-zahl">–</span></button></li>
@@ -4905,7 +4927,7 @@ return {zustand,befehl,grafik,treffer,eingabe};
 
 const m_ui_main = (() => {
 // In der Pilotansicht darf der alte Welt-Ticker bzw. sein Speicherplatz nicht starten.
-if (typeof location !== 'undefined' && /(?:^\?|&)modus=(?:erzpilot|miner2d|w2konzern|w2miner2d|w3konten|w3frachter|w4konten|w4raffinerie)(?:&|$)/.test(location.search || '')) return { pilot: true };
+if (typeof location !== 'undefined' && /(?:^\?|&)modus=(?:erzpilot|miner2d|w2konzern|w2miner2d|w3konten|w3frachter|w4konten|w4raffinerie|w5konten|w5werft)(?:&|$)/.test(location.search || '')) return { pilot: true };
 const { createState, advance, save, load, submit, execute } = m_core_index;
 const { RULES } = m_data_rules;
 const { OBERFLAECHE } = m_data_oberflaeche;
@@ -5416,53 +5438,63 @@ return {};
 // W1-UI nutzt dieselben Core-Commands wie die Simulation und einen getrennten Slot.
 // Aus Sicherheitsgruenden nie automatische Migration/Schreibzugriffe auf Regel-14-Spielstaende.
 const m_ui_erzpilot = (() => {
-  if (typeof location === 'undefined' || !/(?:^\?|&)modus=(?:erzpilot|miner2d|w2konzern|w2miner2d|w3konten|w3frachter|w4konten|w4raffinerie)(?:&|$)/.test(location.search || '')) return {};
+  if (typeof location === 'undefined' || !/(?:^\?|&)modus=(?:erzpilot|miner2d|w2konzern|w2miner2d|w3konten|w3frachter|w4konten|w4raffinerie|w5konten|w5werft)(?:&|$)/.test(location.search || '')) return {};
   document.body.classList.add('erzpilot-modus');
   const app = document.getElementById('erzpilot-app');
   app.hidden = false;
   const $ = (id) => document.getElementById(id);
-  const { createErzState, createW2State, createW3State, createW4State,
-    loadErz, loadW2, loadW3, loadW4, ERZ_RULES, W2_RULES, W3_RULES, W4_RULES,
+  const { createErzState, createW2State, createW3State, createW4State, createW5State,
+    loadErz, loadW2, loadW3, loadW4, loadW5,
+    ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES,
     pilotAuftragsStand, pilotNpcKrisenLage, pilotWirtschaftsStand,
     pilotW3Stand, pilotW3Kalkulation, pilotW4Stand, pilotW4Kalkulation,
+    pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf,
     execute, advance, save, audit, hash } = m_core_index;
   const { dbPut, dbGet, dateiSichern } = m_ui_speicher;
   const istW2 = /(?:^\?|&)modus=(?:w2konzern|w2miner2d)(?:&|$)/.test(location.search || '');
   const istW3 = /(?:^\?|&)modus=(?:w3konten|w3frachter)(?:&|$)/.test(location.search || '');
   const istW4 = /(?:^\?|&)modus=(?:w4konten|w4raffinerie)(?:&|$)/.test(location.search || '');
-  const rules = istW4 ? W4_RULES : istW3 ? W3_RULES : istW2 ? W2_RULES : ERZ_RULES;
-  const neuerStand = istW4 ? createW4State : istW3 ? createW3State : istW2 ? createW2State : createErzState;
-  const laden = istW4 ? loadW4 : istW3 ? loadW3 : istW2 ? loadW2 : loadErz;
-  // Forschungsmodule und slot1 bleiben in getrennten IndexedDB-Slots.
-  const SLOT = istW4 ? 'aphros-void-w4-regel18-v1' : istW3
-    ? 'aphros-void-w3-regel17-v1' : istW2
-      ? 'aphros-void-w2-regel16-v1' : 'aphros-void-erzpilot-regel15-v1';
-  const DATEI_REGEL = istW4 ? 'regel18' : istW3 ? 'regel17' : istW2 ? 'regel16' : 'regel15';
+  const istW5 = /(?:^\?|&)modus=(?:w5konten|w5werft)(?:&|$)/.test(location.search || '');
+  const rules = istW5 ? W5_RULES : istW4 ? W4_RULES : istW3 ? W3_RULES : istW2 ? W2_RULES : ERZ_RULES;
+  const neuerStand = istW5 ? createW5State : istW4 ? createW4State : istW3 ? createW3State
+    : istW2 ? createW2State : createErzState;
+  const laden = istW5 ? loadW5 : istW4 ? loadW4 : istW3 ? loadW3 : istW2 ? loadW2 : loadErz;
+  // Kein Forschungsmode teilt Spielstand oder Migration mit dem Hauptspiel.
+  const SLOT = istW5 ? 'aphros-void-w5-regel19-v1' : istW4
+    ? 'aphros-void-w4-regel18-v1' : istW3
+      ? 'aphros-void-w3-regel17-v1' : istW2
+        ? 'aphros-void-w2-regel16-v1' : 'aphros-void-erzpilot-regel15-v1';
+  const DATEI_REGEL = istW5 ? 'regel19' : istW4 ? 'regel18'
+    : istW3 ? 'regel17' : istW2 ? 'regel16' : 'regel15';
   let state = neuerStand();
   let gesperrt = false;
   let ladebereit = false;
   let defekterStand = null;
   let speicherKette = Promise.resolve();
-  const ist2d = /(?:^\?|&)modus=(?:miner2d|w2miner2d|w3frachter|w4raffinerie)(?:&|$)/.test(location.search || '');
-  $('pilot-version').textContent = istW4 ? 'Aphros Void · W4 Forschungsmodus · Regel 18'
+  const ist2d = /(?:^\?|&)modus=(?:miner2d|w2miner2d|w3frachter|w4raffinerie|w5werft)(?:&|$)/.test(location.search || '');
+  $('pilot-version').textContent = istW5 ? 'Aphros Void · W5 Forschungsmodus · Regel 19'
+    : istW4 ? 'Aphros Void · W4 Forschungsmodus · Regel 18'
     : istW3 ? 'Aphros Void · W3 Forschungsmodus · Regel 17'
       : istW2 ? 'Aphros Void · W2 Forschungsmodus · Regel 16' : 'Aphros Void · W1 Forschungsmodus · Regel 15';
-  $('pilot-titel').textContent = istW4 ? 'Raffinerie und Erzmarkt · W4' : istW3 ? 'Frachter und Erzmarkt · W3'
+  $('pilot-titel').textContent = istW5 ? 'Schiffbau und Materialmarkt · W5' : istW4 ? 'Raffinerie und Erzmarkt · W4' : istW3 ? 'Frachter und Erzmarkt · W3'
     : istW2 ? 'Bergbaukonzerne · W2' : 'Erzpilot · W1';
-  $('pilot-erklaerung').textContent = istW4
-    ? 'Echtes Erz nach Nadir liefern, aus einer bezahlten Arbeitscharge Material erzeugen und die vollständige Geld-/Warenbilanz prüfen.'
+  $('pilot-erklaerung').textContent = istW5
+    ? 'Real bezahlten Bergbau, Erztransport, Raffinerie und Schiffbau im selben Core erleben. Der Frachter entsteht nur aus gekauftem Material und entlohnter Arbeit.'
+    : istW4 ? 'Echtes Erz nach Nadir liefern, aus einer bezahlten Arbeitscharge Material erzeugen und die vollständige Geld-/Warenbilanz prüfen.'
     : istW3 ? 'Bezahlt gekaufter Frachter, echte Erzladung, reale Lieferung Aldera–Nadir und vorfinanzierte Rückfahrt. Der Abnehmer hat nur endliches Kapital.'
       : istW2 ? 'Spieler und NPC bauen Erz mit demselben Core ab. Der NPC investiert nach belegtem Umsatz und ruht bei fehlender bezahlter Nachfrage. Eigenes Regel-16-Experiment ohne neue ISK.'
         : 'Erz abbauen, Miner kaufen und bezahlte Verkäufe prüfen. Kein fertiges Wirtschaftsspiel: Das Exportbudget ist endlich.';
-  $('pilot-2d').href = istW4 ? '?modus=w4raffinerie' : istW3 ? '?modus=w3frachter' : istW2 ? '?modus=w2miner2d' : '?modus=miner2d';
-  $('pilot-konten').href = istW4 ? '?modus=w4konten' : istW3 ? '?modus=w3konten' : istW2 ? '?modus=w2konzern' : '?modus=erzpilot';
+  $('pilot-2d').href = istW5 ? '?modus=w5werft' : istW4 ? '?modus=w4raffinerie' : istW3 ? '?modus=w3frachter' : istW2 ? '?modus=w2miner2d' : '?modus=miner2d';
+  $('pilot-konten').href = istW5 ? '?modus=w5konten' : istW4 ? '?modus=w4konten' : istW3 ? '?modus=w3konten' : istW2 ? '?modus=w2konzern' : '?modus=erzpilot';
   $('pilot-w2-link').hidden = istW2;
   $('pilot-w3-link').hidden = istW3;
   $('pilot-w4-link').hidden = istW4;
-  $('pilot-w1-link').hidden = !(istW2 || istW3 || istW4);
-  $('pilot-w2-panel').hidden = !(istW2 || istW3 || istW4);
-  $('pilot-w3-panel').hidden = !(istW3 || istW4);
-  $('pilot-w4-panel').hidden = !istW4;
+  $('pilot-w5-link').hidden = istW5;
+  $('pilot-w1-link').hidden = !(istW2 || istW3 || istW4 || istW5);
+  $('pilot-w2-panel').hidden = !(istW2 || istW3 || istW4 || istW5);
+  $('pilot-w3-panel').hidden = !(istW3 || istW4 || istW5);
+  $('pilot-w4-panel').hidden = !(istW4 || istW5);
+  $('pilot-w5-panel').hidden = !istW5;
   let minerAnsicht = null;
   const geld = (n) => `${n.toLocaleString('de-DE')} ISK`;
   function nachricht(t, fehler = false) {
@@ -5475,7 +5507,7 @@ const m_ui_erzpilot = (() => {
     minerAnsicht?.anzeigen(state, gesperrt || !ladebereit);
     $('pilot-kasse').textContent = geld(state.owners.house.cash);
     $('pilot-npc').textContent = geld(state.owners.npc3.cash);
-    if (istW2 || istW3 || istW4) {
+    if (istW2 || istW3 || istW4 || istW5) {
       const lage = pilotNpcKrisenLage(state);
       const status = { arbeitsbereit:'Arbeitsbereit', absatzstopp:'Kein finanzierter Absatz',
         lagerengpass:'Lager belegt', abnahmeengpass:'Stationskasse reicht nicht',
@@ -5490,7 +5522,7 @@ const m_ui_erzpilot = (() => {
       $('pilot-w2-nachweis').textContent = lage.kaeuferNachweisOk ? 'Ja (endlicher Etat)' : 'Nein – gesperrt';
       $('pilot-w2-kapital').textContent = geld(lage.unternehmenCash);
     }
-    if (istW3 || istW4) {
+    if (istW3 || istW4 || istW5) {
       const st = pilotW3Stand(state);
       const frachter = Object.values(state.ships).find(x=>x.owner==='transport'&&x.klasse==='frachter');
       const pruefung = pilotW3Kalkulation(state, frachter?.id);
@@ -5509,7 +5541,7 @@ const m_ui_erzpilot = (() => {
       $('pilot-w3-start').disabled = gesperrt || !ladebereit || !pruefung.ok;
       $('pilot-w3-50').disabled = gesperrt || !ladebereit;
     }
-    if (istW4) {
+    if (istW4 || istW5) {
       const w4 = pilotW4Stand(state), pruefung = pilotW4Kalkulation(state);
       $('pilot-w4-erz').textContent = `${w4.erz} Erz`;
       $('pilot-w4-material').textContent = `${w4.material} Material`;
@@ -5523,6 +5555,26 @@ const m_ui_erzpilot = (() => {
       $('pilot-w4-grund').textContent = pruefung.grund;
       $('pilot-w4-start').disabled = gesperrt || !ladebereit || !pruefung.ok;
       $('pilot-w4-20').disabled = gesperrt || !ladebereit;
+    }
+    if (istW5) {
+      const w5=pilotW5Stand(state), plan=pilotW5Kalkulation(state), angebot=pilotW5Verkauf(state);
+      const ids=state.w5.schiffIds;
+      const neu=ids.length ? state.ships[ids[ids.length-1]] : null;
+      $('pilot-w5-material').textContent = `${w5.materialLager} Material`;
+      $('pilot-w5-werft').textContent = geld(w5.werftCash);
+      $('pilot-w5-umsatz').textContent = geld(w5.materialUmsatz);
+      $('pilot-w5-arbeit').textContent = geld(w5.werftEscrow);
+      $('pilot-w5-lohn').textContent = geld(w5.lohnBezahlt);
+      $('pilot-w5-schiffe').textContent = `${w5.produziert} / ${w5.verkauft}`;
+      $('pilot-w5-station').textContent = neu
+        ? `${neu.rufname || neu.id} · ${neu.system}` : 'Noch kein bezahltes Schiff';
+      $('pilot-w5-status').textContent = w5.status === 'bau'
+        ? `Werft baut · noch ${w5.restMinuten} Minuten` : 'Bereit / Finanzierung prüfen';
+      $('pilot-w5-audit').textContent = w5.ok ? 'Bau + Verkauf + Geld OK' : 'W5-FEHLER';
+      $('pilot-w5-grund').textContent = `Bau: ${plan.grund}. Verkauf: ${angebot.grund}.`;
+      $('pilot-w5-bauen').disabled = gesperrt || !ladebereit || !plan.ok;
+      $('pilot-w5-kaufen').disabled = gesperrt || !ladebereit || !angebot.ok;
+      $('pilot-w5-30').disabled = gesperrt || !ladebereit;
     }
     $('pilot-miner').textContent = String(sh.length);
     $('pilot-huellen').textContent = String(state.stations.st_aldera.lager.miner);
@@ -5579,7 +5631,10 @@ const m_ui_erzpilot = (() => {
     if (gesperrt || !ladebereit) return;
     const result = execute(state, cmd, rules);
     if (!result.ok) return nachricht(result.reason, true);
-    nachricht(cmd.type === 'stationRefine' ? 'Raffineriecharge beauftragt: 10 Erz und 20 ISK Arbeitslohn gesichert.'
+    nachricht(cmd.type === 'stationBuildShip' ? 'Werftauftrag bezahlt: 5 Material gekauft und 30 ISK Lohn reserviert.'
+      : cmd.type === 'shipBuy' && cmd.station === 'st_nadir'
+        ? 'Neuer Frachter aus echtem Material für 750 ISK gekauft und in Nadir übernommen.'
+      : cmd.type === 'stationRefine' ? 'Raffineriecharge beauftragt: 10 Erz und 20 ISK Arbeitslohn gesichert.'
       : cmd.type === 'shipFreight' ? 'Frachter gestartet: Erz, Kaufgeld und Hin-/Rückflug-Arbeit vollständig vorfinanziert.'
       : cmd.type === 'shipBuy' && cmd.klasse === 'frachter' ? 'Frachter vollständig bezahlt und übernommen.'
       : cmd.type === 'shipMine' ? 'Förderauftrag gesetzt. Finanzierung und Förderung beginnen mit der nächsten Core-Minute.'
@@ -5588,7 +5643,7 @@ const m_ui_erzpilot = (() => {
     anzeigen();
     sichern();
   }
-  for (const id of ['pilot-2d', 'pilot-konten', 'pilot-w2-link', 'pilot-w3-link', 'pilot-w4-link', 'pilot-w1-link']) $(id).addEventListener('click', async (e) => {
+  for (const id of ['pilot-2d', 'pilot-konten', 'pilot-w2-link', 'pilot-w3-link', 'pilot-w4-link', 'pilot-w5-link', 'pilot-w1-link']) $(id).addEventListener('click', async (e) => {
     e.preventDefault();
     if (!ladebereit) return;
     if (!gesperrt && !await sichern()) return;
@@ -5598,26 +5653,37 @@ const m_ui_erzpilot = (() => {
     befehl({ type: 'shipBuy', owner: 'house', klasse: 'miner', station: 'st_aldera' });
   });
   $('pilot-w3-kauf').addEventListener('click',()=> {
-    if(istW3 || istW4) befehl({type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_aldera'});
+    if(istW3 || istW4 || istW5) befehl({type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_aldera'});
   });
   $('pilot-w3-start').addEventListener('click',()=> {
-    if(!(istW3 || istW4))return;
+    if(!(istW3 || istW4 || istW5))return;
     const frachter=Object.values(state.ships).find(sh=>sh.owner==='transport'&&sh.klasse==='frachter');
     if(frachter) befehl({type:'shipFreight',owner:'transport',schiff:frachter.id});
   });
   $('pilot-w3-50').addEventListener('click',()=> {
-    if(!(istW3 || istW4) || gesperrt || !ladebereit)return;
+    if(!(istW3 || istW4 || istW5) || gesperrt || !ladebereit)return;
     advance(state,50,rules);anzeigen();sichern();
     if(!gesperrt)nachricht('50 Core-Minuten gespielt. Transportaufträge nur mit echter Ware und Kapital.');
   });
   $('pilot-w4-start').addEventListener('click',() => {
-    if (istW4) befehl({type:'stationRefine',owner:'st_nadir',station:'st_nadir'});
+    if (istW4 || istW5) befehl({type:'stationRefine',owner:'st_nadir',station:'st_nadir'});
   });
   $('pilot-w4-20').addEventListener('click',() => {
-    if (!istW4 || gesperrt || !ladebereit)return;
+    if (!(istW4 || istW5) || gesperrt || !ladebereit)return;
     advance(state,20,rules);
     anzeigen();sichern();
     if(!gesperrt)nachricht('20 bezahlte Core-Minuten gespielt; tatsächliches Raffinerieergebnis geprüft.');
+  });
+  $('pilot-w5-bauen').addEventListener('click', () => {
+    if (istW5) befehl({type:'stationBuildShip',owner:'werft_extern',station:'st_nadir'});
+  });
+  $('pilot-w5-kaufen').addEventListener('click', () => {
+    if (istW5) befehl({type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_nadir'});
+  });
+  $('pilot-w5-30').addEventListener('click', () => {
+    if (!istW5 || gesperrt || !ladebereit)return;
+    advance(state,30,rules);anzeigen();sichern();
+    if(!gesperrt)nachricht('30 Core-Minuten geprüft: fertiger Frachter nur nach realem Material- und Lohnfluss.');
   });
   function auftrag(typ) {
     if (gesperrt || !ladebereit) return;
@@ -5764,7 +5830,8 @@ const m_ui_erzpilot = (() => {
   if (ist2d) minerAnsicht = minerStart();
   anzeigen();
   starten();
-  return { modus: istW4 ? 'w4raffinerie' : istW3 ? 'w3frachter' : istW2 ? 'w2konzern' : 'erzpilot' };
+  return { modus: istW5 ? 'w5werft' : istW4 ? 'w4raffinerie' : istW3 ? 'w3frachter'
+    : istW2 ? 'w2konzern' : 'erzpilot' };
 })();
 </script>
 </body>

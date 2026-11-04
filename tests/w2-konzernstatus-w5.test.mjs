@@ -79,7 +79,7 @@ test('W2 Absatzkrise ist keine Insolvenz: 17.800 ISK beim ruhenden NPC',()=>{
   assert.equal(s.owners.export.cash,0);
   assert.equal(s.minted,0);
   assert.equal(api.hash(s),h);
-  api.advance(s,90*1440,api.W2_RULES);
+  for(let tag=0;tag<90;tag++) api.advance(s,1440,api.W2_RULES);
   assert.equal(belege(s).npc3.freieKasse,17800);
   assert.equal(api.audit(s).ok,true);
 });

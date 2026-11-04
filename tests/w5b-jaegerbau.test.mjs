@@ -23,7 +23,7 @@ function bauKette(seed=42){
   assert.equal(s.rulesVersion,20);
   assert.equal(s.initialSupply,33000,'keine neuen Start-ISK');
   for(const ware of ['silizium','bauteil','jaeger'])assert.equal(s.stations.st_nadir.lager[ware],0);
-  assert.equal(s.stations.st_aldera.lager.miner,3,'ein vorhandener Starter-Miner nach Nadir verteilt');
+  assert.equal(s.stations.st_aldera.lager.miner,2,'NPC-Starterkauf bereits erfolgt; ein weiterer Miner nach Nadir verteilt');
   assert.equal(s.stations.st_nadir.lager.miner,1);
   check(s,'Anfang');
   const kauf=api.execute(s,cmd('shipBuy','house','st_nadir'),rules);

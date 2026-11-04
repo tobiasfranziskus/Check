@@ -1,5 +1,20 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W3 – finanzierter Aldera–Nadir-Frachtauftrag und UI · 04.11.2026
+
+**[MAIN]** weiterhin `b4e604d6`, Regel14/Schema8. **[DRAFT]** [PR #168](https://github.com/tobiasfranziskus/Check/pull/168) auf #167; isolierter Regel17-Modus mit zwei Stationen, derselben Core-Tickfunktion und echtem 750-ISK-Frachterkauf. W2-Mining und NPC-Investition bleiben vorhanden; Frachterreise und Warenkonto besitzen keinen zweiten Simulationstakt.
+
+**[BUCHUNGSBELEG]** Bei ersten 50 tatsächlichen Erz aus Aldera: Käufer Nadir reserviert 740 ISK (500 Ware + 240 Transport), Spedition reserviert 120 ISK Arbeit. Abfahrt: 50 Erz verlassen reales Stationslager und gehen ins Schiff. Nach 60 bezahlten Minuten: 50 Erz in Nadir, Aldera erhält 500 ISK aus Kauf-Treuhand. Nach weiteren 60 Minuten: Spedition erhält 240 ISK für vollendete Hin- und Rückfahrt, Arbeitsfonds hat 120 ISK erhalten; die Treuhandkonten sind leer. Ausgangs-ISK bleiben erhalten (W3-Pilot **33.000 ISK** inklusive neuer, ausdrücklich endlicher Nadir- und Speditions-Startkassen), kein `minted`. Frachter-Investition 750 ISK und mögliche spätere NPC-Minerkäufe werden vom Werfterlös getrennt nachgerechnet.
+
+**[AUDIT]** Der neue W3-Audit prüft physische Erzherkunft, Nadir-Lager gegen bezahlte Lieferung, Käuferanfangsetat gegen gebundene Gesamtausgaben, Frachthülle, Betriebskosten, Arbeitsfonds und erhaltenes Frachtentgelt, jeweils einschließlich aktiver Verträge. W1-Vollkostenrechnung umfasst nun in **Regel17** den zusätzlichen echten Frachter- und Erzverkauf; R14–R16 bleiben unverändert. Einzeltests für 42/7, vollen Hin-/Rückflug mit Save/Load, negative Befehle sowie 13 Seeds ×90 Spieltage. CI nur für tatsächlich vollständig abgeschlossene Jobs als bestanden bezeichnen.
+
+**[SPIELBARER DRAFT]** `?modus=w3frachter` bietet Frachterkauf, +50 Core-Minuten, finanzierte Beauftragung und eine gemeinsame 2D-/Kontenansicht. `?modus=w3konten` zeigt dieselbe gespeicherte W3-Welt ohne Canvas. W3 nutzt **ausschließlich** `aphros-void-w3-regel17-v1` inklusive Archiv vor Neustart/Import; `slot1` sowie Regel15-/16-Slots werden nicht verändert. Echte iPad-Safari-/NAS-Abnahme nach Nutzerwunsch später.
+
+**[NICHT BEHAUPTET]** Dauerhafte Endnachfrage und langfristiger Wirtschaftskreislauf: Nadir verbraucht die Ware noch nicht; die Käuferkasse von 4.000 ISK füllt sich nicht automatisch. Schiffsschäden, Wartung, Produktionsverwendung des Erzes, konkrete Kosten-/Preisbalance und NPC-Insolvenz sind offene W3–W5-Gates. Kein Merge und keine Veröffentlichung.
+
+---
+
+
 ## [DRAFT] W2 – Nachfrage-Wiederanlauf: Kontenhärtung und überprüfbarer Fehlbetrag · 04.11.2026
 
 **[MAIN]** b4e604d6 / Regel14-Schema8 bleibt unverändert. Auf dem offenen PR #167 werden ausschließlich die Regel16-Forschungswelt und ihre W2-Kontoansicht ergänzt. `krisenLage` zeigt die wirklich vorhandene Endkundenkasse, vorrangige Ware/Vertragsmengen, fehlende ISK bis zu *einem zusätzlichen* Erzauftrag und die Gültigkeit des Käuferherkunftsnachweises. Der Bericht verändert keine Konten und erzeugt keine neuen ISK.

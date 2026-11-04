@@ -2205,6 +2205,126 @@ const m_core_erzpilot = (() => {
     investitionsPruefung, npcInvestieren, krisenLage, krisenSteuern };
 })();
 
+// W3: Derselbe Core verarbeitet eine vorab finanzierte Hin- UND Rueckfahrt.
+const m_core_w3 = (() => {
+  const { anzahl }=m_core_zahl;
+  const { buche, obergrenze }=m_core_handel;
+  const { protokolliere }=m_core_state;
+  function kalkulation(rules) {
+    const c=rules.w3, route=m_core_route.route(rules.world,'aldera','nadir');
+    if(!route||route.zeit<=0)throw Error('W3: keine echte Route');
+    const erzWert=c.fracht*rules.erzpilot.preis;
+    const arbeitsKosten=route.zeit*2*c.arbeitJeMinute;
+    const frachtGebuehr=route.zeit*2*c.frachtgebuehrJeMinute;
+    return {zeit:route.zeit,erzWert,arbeitsKosten,frachtGebuehr,gesamt:erzWert+frachtGebuehr};
+  }
+  function pruefen(state,rules,sh) {
+    if(!rules.w3||state.rulesVersion!==rules.rulesVersion)
+      return {ok:false,grund:'W3 nur im isolierten Transportkern'};
+    const c=rules.w3,w=state.w3;
+    if(!w||w.auftrag)return {ok:false,grund:'Bereits ein W3-Auftrag gebunden'};
+    if(!sh||sh.owner!==c.spedition||sh.klasse!=='frachter'||sh.phase!=='dock'
+      ||sh.system!=='aldera'||sh.auftrag!=='halten')
+      return {ok:false,grund:'Bezahlter Frachter muss frei in Aldera liegen'};
+    if(Object.values(sh.ladung).some(n=>n!==0))
+      return {ok:false,grund:'Frachtraum nicht leer'};
+    const k=kalkulation(rules);
+    if(c.fracht>rules.economy.cargo||anzahl(state.stations[c.quellStation].lager,'erz')<c.fracht)
+      return {ok:false,grund:'Noch keine echte Erzcharge im Quelllager'};
+    if(anzahl(state.stations[c.zielStation].lager,'erz')+c.fracht
+      >obergrenze(state,rules,c.zielStation,'erz'))
+      return {ok:false,grund:'Kein Ziel-Lagerplatz'};
+    if(state.owners[c.kunde].cash<k.gesamt)
+      return {ok:false,grund:'Kaeufer kann Ware und beide Fluege nicht bezahlen'};
+    if(state.owners[c.spedition].cash<k.arbeitsKosten)
+      return {ok:false,grund:'Spedition kann die Flugloehne nicht decken'};
+    const start=rules.owners.find(o=>o.id===c.kunde).cash;
+    if(state.owners[c.kunde].cash+w.kaufAusgaben!==start)
+      return {ok:false,grund:'W3: unbelegtes Kaeufergeld'};
+    return {ok:true,grund:'Vollstaendig vorfinanziert',...k};
+  }
+  function starten(state,rules,sh) {
+    const k=pruefen(state,rules,sh);
+    if(!k.ok)throw Error('W3 ohne Kapital: '+k.grund);
+    const c=rules.w3,w=state.w3,ka='w3_kauf_treuhand',ar='w3_arbeit_treuhand';
+    if(!state.owners[ka])state.owners[ka]={id:ka,kind:'w3-reserve',cash:0};
+    if(!state.owners[ar])state.owners[ar]={id:ar,kind:'w3-reserve',cash:0};
+    if(state.owners[ka].cash||state.owners[ar].cash)throw Error('W3: Doppeltreuhand');
+    state.owners[c.kunde].cash-=k.gesamt;state.owners[ka].cash+=k.gesamt;
+    w.kaufAusgaben+=k.gesamt;buche(state,c.kunde,'kosten',k.gesamt);
+    state.owners[c.spedition].cash-=k.arbeitsKosten;state.owners[ar].cash+=k.arbeitsKosten;
+    state.stations[c.quellStation].lager.erz-=c.fracht;sh.ladung.erz=c.fracht;
+    sh.phase='reise';sh.ziel=c.zielStation;sh.ankunft=state.tick+k.zeit;sh.auftrag='fracht';
+    w.auftrag={schiff:sh.id,phase:'hin',menge:c.fracht,gearbeitet:0,...k};
+    w.beauftragt++;
+    protokolliere(state,'auftrag',sh.id+': Erz, Kaufetat und beide Flugkosten gesperrt',c.spedition);
+    return true;
+  }
+  function tick(state,rules) {
+    const w=state.w3,a=w?.auftrag;
+    if(!a)return;
+    const c=rules.w3,sh=state.ships[a.schiff];
+    const arbeit=state.owners.w3_arbeit_treuhand,kauf=state.owners.w3_kauf_treuhand;
+    if(!sh||sh.phase!=='reise'||!arbeit||!kauf||arbeit.cash<c.arbeitJeMinute)
+      throw Error('W3: Nicht bezahlter Flug');
+    arbeit.cash-=c.arbeitJeMinute;state.owners[c.arbeitsFonds].cash+=c.arbeitJeMinute;
+    buche(state,c.spedition,'kosten',c.arbeitJeMinute);w.arbeitsKosten+=c.arbeitJeMinute;
+    a.gearbeitet++;
+    if(state.tick!==sh.ankunft)return;
+    if(a.phase==='hin') {
+      if(sh.ziel!==c.zielStation||sh.ladung.erz!==a.menge||kauf.cash<a.erzWert)
+        throw Error('W3: Lieferung ohne Ware/Kaufetat');
+      delete sh.ladung.erz;state.stations[c.zielStation].lager.erz+=a.menge;
+      kauf.cash-=a.erzWert;state.owners[c.quellStation].cash+=a.erzWert;
+      buche(state,c.quellStation,'erloes',a.erzWert);w.geliefert+=a.menge;
+      a.phase='rueck';sh.system='nadir';sh.ziel=c.quellStation;sh.ankunft+=a.zeit;
+      protokolliere(state,'handel',sh.id+': '+a.menge+' Erz real in Nadir gekauft',c.spedition);
+    } else {
+      if(sh.ziel!==c.quellStation||kauf.cash!==a.frachtGebuehr
+        ||arbeit.cash!==0||a.gearbeitet!==2*a.zeit)
+        throw Error('W3: Rueckflug nicht vollstaendig finanziert');
+      kauf.cash=0;state.owners[c.spedition].cash+=a.frachtGebuehr;
+      buche(state,c.spedition,'erloes',a.frachtGebuehr);w.frachtUmsatz+=a.frachtGebuehr;
+      w.abgeschlossen++;w.auftrag=null;
+      sh.system='aldera';sh.phase='dock';sh.ziel=null;sh.ankunft=state.tick;sh.auftrag='halten';
+      protokolliere(state,'handel',sh.id+': Rueckfahrt bezahlt; Spedition entlohnt',c.spedition);
+    }
+  }
+  function audit(state,rules) {
+    const c=rules.w3,w=state.w3,a=w?.auftrag;
+    if(!w||!c)return {ok:false,grund:'W3-Daten fehlen'};
+    const k=kalkulation(rules),buyer=state.owners[c.kunde]?.cash;
+    const startBuyer=rules.owners.find(o=>o.id===c.kunde).cash;
+    const carrier=state.owners[c.spedition]?.cash,startCarrier=rules.owners.find(o=>o.id===c.spedition).cash;
+    const kauf=state.owners.w3_kauf_treuhand?.cash??0,arbeit=state.owners.w3_arbeit_treuhand?.cash??0;
+    const huelle=(state.ledger.frachter?.consumed??0)*rules.economy.waren.frachter.basis;
+    const erwarteteBezahlung=w.abgeschlossen*k.gesamt+(a?k.gesamt:0);
+    const erwarteteWare=w.abgeschlossen*c.fracht+(a?.phase==='rueck'?c.fracht:0);
+    const erwarteteArbeit=w.abgeschlossen*k.arbeitsKosten+(a?.gearbeitet??0)*c.arbeitJeMinute;
+    const ok=[buyer,carrier,kauf,arbeit,w.kaufAusgaben,w.geliefert,w.arbeitsKosten,
+      w.frachtUmsatz,w.beauftragt,w.abgeschlossen,huelle].every(Number.isSafeInteger)
+      && buyer>=0&&carrier>=0&&buyer+w.kaufAusgaben===startBuyer
+      && w.kaufAusgaben===erwarteteBezahlung && w.geliefert===erwarteteWare
+      && w.arbeitsKosten===erwarteteArbeit
+      && w.frachtUmsatz===w.abgeschlossen*k.frachtGebuehr
+      && w.beauftragt===w.abgeschlossen+(a?1:0)
+      && state.stations[c.zielStation].lager.erz===w.geliefert
+      && state.owners[c.arbeitsFonds].cash===w.arbeitsKosten
+      && kauf===(a?(a.phase==='hin'?a.gesamt:a.frachtGebuehr):0)
+      && arbeit===(a?k.arbeitsKosten-a.gearbeitet*c.arbeitJeMinute:0)
+      && carrier+arbeit===startCarrier-huelle-w.arbeitsKosten+w.frachtUmsatz
+      && (!a||(a.menge===c.fracht&&a.zeit===k.zeit&&a.erzWert===k.erzWert
+        && a.arbeitsKosten===k.arbeitsKosten&&a.frachtGebuehr===k.frachtGebuehr
+        && a.gesamt===k.gesamt&&a.gearbeitet>=0&&a.gearbeitet<=2*k.zeit
+        && state.ships[a.schiff]?.owner===c.spedition
+        && (state.ships[a.schiff]?.ladung.erz??0)===(a.phase==='hin'?c.fracht:0)));
+    return {ok,buyer,carrier,kaufTreuhand:kauf,arbeitTreuhand:arbeit,
+      oreDelivered:w.geliefert,paidWork:w.arbeitsKosten,freightRevenue:w.frachtUmsatz,
+      status:a?.phase??'frei'};
+  }
+  return {kalkulation,pruefen,starten,tick,audit};
+})();
+
 // W1: rein lesende Vollkosten-/Liquiditaetsrechnung aus gebuchten Originalkonten.
 // Kein eigener Wirtschaftskern, kein weiterer Geld- oder Warenfluss.
 const m_core_w1_vollkosten = (() => {

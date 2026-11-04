@@ -202,7 +202,9 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
       <h2>Markt und Arbeit</h2>
       <dl>
         <div><dt>Station: Erz</dt><dd id="pilot-lager">–</dd></div>
-        <div><dt>Station: Geld</dt><dd id="pilot-station">–</dd></div>
+        <div><dt>Station: frei verfügbar</dt><dd id="pilot-station">–</dd></div>
+        <div><dt>Für Erzaufträge reserviert</dt><dd id="pilot-gebunden">–</dd></div>
+        <div><dt>Aufträge / reserviertes Erz</dt><dd id="pilot-vertraege">–</dd></div>
         <div><dt>Exportbudget</dt><dd id="pilot-exportbudget">–</dd></div>
         <div><dt>Gefördert / exportiert</dt><dd id="pilot-mengen">–</dd></div>
         <div><dt>Spielzeit</dt><dd id="pilot-zeit">–</dd></div>
@@ -211,7 +213,8 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
         <button type="button" class="primary" id="pilot-stunde">+1 Stunde</button>
         <button type="button" id="pilot-tag">+1 Tag</button>
       </div>
-      <p class="muted">Erzverkauf bei voller Ladung. Export höchstens 200 Erz pro Stunde, solange das externe Budget reicht.</p>
+      <p class="muted">Die Station sichert jeden Erzauftrag vor Förderbeginn ab. Bei Abbruch wird nur gelieferte Ware bezahlt; ungenutztes Geld fließt zurück. Export höchstens 200 Erz pro Stunde.</p>
+      <p id="pilot-finanzlage" class="hinweis-text muted" role="status">Käuferfinanzierung wird geprüft.</p>
     </section>
   </div>
   <section class="card" aria-label="Kontrollen und Spielstand">
@@ -4310,7 +4313,7 @@ const m_ui_erzpilot = (() => {
   const app = document.getElementById('erzpilot-app');
   app.hidden = false;
   const $ = (id) => document.getElementById(id);
-  const { createErzState, loadErz, ERZ_RULES: rules, execute, advance, save, audit, hash } = m_core_index;
+  const { createErzState, loadErz, ERZ_RULES: rules, pilotAuftragsStand, execute, advance, save, audit, hash } = m_core_index;
   const { dbPut, dbGet, dateiSichern } = m_ui_speicher;
   const SLOT = 'aphros-void-erzpilot-regel15-v1';
   let state = createErzState();
@@ -4325,13 +4328,18 @@ const m_ui_erzpilot = (() => {
   }
   function anzeigen() {
     const sh = Object.values(state.ships).filter((s) => s.owner === 'house');
-    const a = audit(state);
+    const a = audit(state), vertrag = pilotAuftragsStand(state);
     $('pilot-kasse').textContent = geld(state.owners.house.cash);
     $('pilot-npc').textContent = geld(state.owners.npc3.cash);
     $('pilot-miner').textContent = String(sh.length);
     $('pilot-auftraege').textContent = `${sh.filter((s) => s.auftrag === 'foerdern').length} aktiv`;
     $('pilot-lager').textContent = String(state.stations.st_aldera.lager.erz);
     $('pilot-station').textContent = geld(state.owners.st_aldera.cash);
+    $('pilot-gebunden').textContent = geld(vertrag.gebunden);
+    $('pilot-vertraege').textContent = `${vertrag.auftraege} / ${vertrag.reserviert} Erz`;
+    $('pilot-finanzlage').textContent = state.owners.export.cash === 0
+      ? 'Exportbudget aufgebraucht: Ohne neue finanzierte Nachfrage keine dauerhafte Produktion.'
+      : `Vorfinanzierter Exportkäufer: ${geld(state.owners.export.cash)} verfügbar.`;
     $('pilot-exportbudget').textContent = geld(state.owners.export.cash);
     $('pilot-mengen').textContent = `${state.ledger.erz.mined} / ${state.ledger.erz.exported}`;
     $('pilot-zeit').textContent = `Tag ${Math.floor(state.tick / 1440) + 1}, Minute ${state.tick % 1440}`;

@@ -276,10 +276,10 @@ test('W1: Import mit manipuliertem Treuhandkonto oder unplausibler Lagerbilanz w
   const v = Object.values(s.erzpilotVertraege)[0];
   s.owners[v.konto].cash -= 10;
   s.owners.st_aldera.cash += 10;
-  assert.throws(() => api.loadErz(api.save(s)), /Bilanz fehlerhaft/);
+  assert.throws(() => api.loadErz(api.save(s)), /Vertragsbilanz fehlerhaft/);
   const t = api.createErzState(42);
   t.stations.st_aldera.lager.erz += 2;
-  assert.throws(() => api.loadErz(api.save(t)), /Bilanz fehlerhaft/);
+  assert.throws(() => api.loadErz(api.save(t)), /Vertragsbilanz fehlerhaft/);
 });
 
 test('W0: Arbeitskapital ist bei Auftragserteilung gebunden und gegen Falschbuchung auditiert', () => {

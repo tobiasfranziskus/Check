@@ -95,11 +95,12 @@ function laserAndHunter(seed=42){
  // Bereits bezahlte Bereitschaft: echter Lohn, aber ohne Gegner/Kopfgeld.
  command(s,'shipHunt','npc3',{schiff:fighter});
  const sal=s.w5f.lohnBezahlt;
- assert.equal(sal,rules.w5c.jaegerStunde);
+ assert.equal(sal,0,'no salary for clicking start');
+ assert.equal(s.w5f.dienstOffen,rules.w5c.jaegerStunde);
  const initialReserve=s.owners.w5f_kopfgeld_reserve.cash;
  assert.equal(initialReserve,rules.w5f.bounty);
  api.advance(s,120,rules);
- assert.ok(s.w5f.lohnBezahlt>=3*rules.w5c.jaegerStunde);
+ assert.ok(s.w5f.lohnBezahlt>=2*rules.w5c.jaegerStunde);
  assert.equal(s.stats.kopfgeld,0,'no piracy, no bounty');
  command(s,'shipWait','npc3',{schiff:fighter});
  assert.equal(s.owners.w5f_kopfgeld_reserve.cash,0,'unused bounty refunded');
@@ -111,7 +112,8 @@ function laserAndHunter(seed=42){
  assert.ok(s.stations.st_nadir.lager.material>=1);
  const materialBefore=s.stations.st_nadir.lager.material;
  const full=api.pilotW5FVollkosten();
- assert.equal(full,rules.w5b.materialPreis+rules.w4.dauer*rules.w4.lohnJeMinute);
+ assert.equal(full,rules.economy.waren.material.basis+rules.w4.dauer*rules.w4.lohnJeMinute);
+ assert.equal(full,40,'fully costed with already specified W4 material basis');
  assert.ok(s.owners.pilot_npc3.cash>=full);
  command(s,'stationBuildLaser','house',{station:'st_nadir'});
  assert.equal(s.stations.st_nadir.lager.material,materialBefore-1);
@@ -128,6 +130,10 @@ function laserAndHunter(seed=42){
  assert.equal(s.ledger.laser_mk1.produced,1);
  assert.equal(s.ledger.laser_mk1.consumed,1);
  assert.equal(s.w5f.eingebaut,1);
+ assert.equal(api.pilotW5FAngriff(s),
+   rules.combat.einheiten.jaeger.angriff+rules.w5f.bonusAngriff,
+   'actual central combat function receives the effective laser attack');
+ reject(s,'pirateBuy','pirates',{angebot:fighter});
  const paidIncome=s.owners.pilot_npc3.cash;
  command(s,'pirateBuy','pirates',{angebot:pirateCandidate});
  assert.equal(s.owners.pirates.cash,0);
@@ -148,6 +154,24 @@ test('W5f: research rule 23 starts with 33000 ISK, no new money and has separate
  assert.throws(()=>api.loadW5D(api.save(s)),/inkompatibel/);
  assert.throws(()=>api.loadW5F(api.save(api.createW5DState(42))),/inkompatibel/);
  assert.equal(api.audit(api.createW5DState(42)).ok,true);
+});
+test('W5f: clicking start/stop repeatedly cannot generate unearned pilot salary',()=>{
+ const {s,fighter}=twoFighters(42),startNpc=s.owners.npc3.cash;
+ const startFund=s.owners.fonds_transport.cash;
+ for(let i=0;i<100;i++){
+   command(s,'shipHunt','npc3',{schiff:fighter});
+   assert.equal(s.owners.pilot_npc3.cash,0,'not yet worked one minute');
+   command(s,'shipWait','npc3',{schiff:fighter});
+   assert.equal(s.w5f.dienstOffen,0);
+   assert.equal(s.owners.w5f_kopfgeld_reserve.cash,0);
+   assert.equal(s.w5c.jagdKosten,0);
+   independent(s);
+ }
+ assert.equal(s.owners.pilot_npc3.cash,0);
+ assert.equal(s.owners.npc3.cash,startNpc,'all unworked service hours refunded');
+ assert.equal(s.owners.fonds_transport.cash,startFund);
+ assert.equal(s.w5f.storniert,100);
+ assert.equal(s.w5f.dienstBeauftragt,100);
 });
 test('W5f: entirely paid pilot salary, escrowed bounty, laser purchase and fitting',()=>{
  const {s,fighter}=laserAndHunter(42);

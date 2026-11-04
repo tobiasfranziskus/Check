@@ -6,7 +6,7 @@
 
 **[GEMESSEN]** Im Seed42 nach 2 Tagen mit einem bezahlten Spieler-Miner und NPC-Miner: 2.100 Erz gefördert, 2.000 für insgesamt 20.000 ISK exportiert, 100 Erz noch auf der Station; 0 ISK beim Exportkäufer und bei der Station, je 10.800 ISK bei Spieler und NPC, 4.200 ISK Arbeitsfonds sowie 1.200 ISK Schiffverkäufer. **27.000 ISK Gesamtbestand unverändert, 0 Emission.** Daraus folgt kein dauerhafter Käuferetat. Der Browserpilot zeigt nun getrennt Exportzahlungen, Käuferabweichung und die vollständige Geldverteilung.
 
-**[TEST]** [CI-Testjob #41783327307](https://github.com/tobiasfranziskus/Check/actions/runs/41783327307): **93/93 Node-Tests erfolgreich**, darunter 13 Seeds × 90 Tage mit täglicher Käuferherkunftsprüfung, Save/Load, illegitime bilanzneutrale Kassenübertragungen, unveränderte Regel-14-Referenz. Übrige historische CI-Jobs waren bei Erstellung noch in Arbeit; keine iPad-/NAS-Abnahme.
+**[TEST]** [CI-Testjob #41783327307](https://github.com/tobiasfranziskus/Check/actions/runs/41783327307): **93/93 Node-Tests erfolgreich**, darunter 13 Seeds × 90 Tage mit täglicher Käuferherkunftsprüfung, Save/Load, illegitime bilanzneutrale Kassenübertragungen, unveränderte Regel-14-Referenz. **Vollständiger CI-Lauf erfolgreich abgeschlossen** (7 erfolgreiche Jobs, kein Fehlschlag). Keine iPad-/NAS-Abnahme.
 
 **[OFFEN]** Die zusätzliche Käuferfinanzierung ist nicht implementiert: echte Mittelrückflüsse benötigen eine bezahlte Folge-Wertschöpfung mit Endkunden oder eine separat freigegebene, begrenzte Modell-B-Emission. Kassenumbuchungen allein reichen nicht. Weiterhin keine Produktfreigabe oder Merge.
 

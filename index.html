@@ -2048,7 +2048,8 @@ const m_core_erzpilot = (() => {
   // aber freies Erz darf nicht mit bereits gebundenem Absatzbudget konkurrieren.
   function krisenLage(state, rules) {
     const cfg = rules.erzpilot;
-    if (!cfg?.npcInvestor) return { aktiv: false, status: 'nicht_aktiv' };
+    if (!cfg?.npcInvestor || state.rulesVersion !== rules.rulesVersion)
+      return { aktiv: false, status: 'nicht_aktiv' };
     const owner = cfg.npcInvestor, eigene = ids(state.ships)
       .map((id) => state.ships[id])
       .filter((sh) => sh.owner === owner && sh.klasse === 'miner');

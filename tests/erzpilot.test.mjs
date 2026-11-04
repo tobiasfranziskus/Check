@@ -114,3 +114,108 @@ test('13 Seeds x 90 Tage: taegliche unabhaengige Bilanz und Save/Load, aber kein
     assert.equal(api.hash(api.loadErz(api.save(s))), api.hash(s));
   }
 });
+
+
+test('W0: Erzauftrag bindet Geld und Lagerraum atomar vor Förderbeginn', () => {
+  const s = mitSpielerMiner();
+  api.advance(s, 1, rules);
+  const contracts = Object.values(s.erzpilotVertraege);
+  assert.equal(contracts.length, 2);
+  assert.deepEqual(contracts.map((v) => v.menge).sort(), [50, 50]);
+  assert.equal(api.pilotAuftragsStand(s).gebunden, 1000);
+  assert.equal(api.pilotAuftragsStand(s).frei, 0);
+  assert.equal(s.owners.st_aldera.cash, 0);
+  assert.equal(contracts.reduce((x, v) => x + s.owners[v.konto].cash, 0), 1000);
+  assert.equal(s.ledger.erz.mined, 2);
+  assert.equal(s.minted, 0);
+  assert.equal(api.audit(s).contracts.ok, true);
+  assert.equal(api.audit(s).ok, true);
+});
+
+test('W0: Unfinanzierter Auftrag produziert kein Erz und kostet keinen Lohn', () => {
+  const s = api.createErzState(7);
+  const cash = s.owners.st_aldera.cash;
+  s.owners.st_aldera.cash -= cash;
+  s.owners.werft_extern.cash += cash;
+  const ownerVorher = s.owners.npc3.cash;
+  api.advance(s, 60, rules);
+  assert.equal(s.ledger.erz.mined, 0);
+  assert.equal(s.owners.npc3.cash, ownerVorher);
+  assert.equal(api.pilotAuftragsStand(s).auftraege, 0);
+  assert.equal(api.audit(s).ok, true);
+  assert.equal(s.minted, 0);
+});
+
+test('W0: Stornierung liefert wirklich geförderte Erzteilmenge und gibt Treuhandrest zurück', () => {
+  const s = api.createErzState(11);
+  api.advance(s, 13, rules);
+  const schiff = Object.values(s.ships).find((x) => x.owner === 'npc3');
+  const v = s.erzpilotVertraege[schiff.id];
+  assert.equal(v.menge, 50);
+  assert.equal(s.owners[v.konto].cash, 500);
+  const abbruch = api.execute(s, { type: 'shipWait', owner: 'npc3', schiff: schiff.id }, rules);
+  assert.equal(abbruch.ok, true);
+  assert.equal(s.stations.st_aldera.lager.erz, 13);
+  assert.equal(s.owners.st_aldera.cash, 870);
+  assert.equal(s.owners.npc3.cash, 2400 - 26 + 130);
+  assert.equal(s.owners[v.konto].cash, 0);
+  assert.equal(api.pilotAuftragsStand(s).gebunden, 0);
+  assert.equal(Object.keys(s.erzpilotVertraege).length, 0);
+  assert.equal(api.audit(s).ok, true);
+  const mined = s.ledger.erz.mined;
+  api.advance(s, 45, rules);
+  assert.equal(s.ledger.erz.mined, mined);
+});
+
+test('W0: Zahlungsunfähigkeit während des Auftrags stoppt Bergbau, ohne gratis weiterzuarbeiten', () => {
+  const s = api.createErzState(42);
+  api.advance(s, 8, rules);
+  const schiff = Object.values(s.ships).find((x) => x.owner === 'npc3');
+  const rest = s.owners.npc3.cash;
+  s.owners.npc3.cash = 0;
+  s.owners.werft_extern.cash += rest;
+  api.advance(s, 1, rules);
+  assert.equal(s.ledger.erz.mined, 8);
+  assert.equal(s.stations.st_aldera.lager.erz, 8);
+  assert.equal(s.ships[schiff.id].auftrag, 'halten');
+  assert.equal(api.pilotAuftragsStand(s).gebunden, 0);
+  assert.equal(s.owners.npc3.cash, 80);
+  assert.equal(api.audit(s).ok, true);
+});
+
+test('W0: Aktives Treuhandkonto ist gegen Falschbuchung unabhängig auditierbar', () => {
+  const s = api.createErzState(13);
+  api.advance(s, 1, rules);
+  const v = Object.values(s.erzpilotVertraege)[0];
+  s.owners[v.konto].cash -= 10;
+  s.owners.st_aldera.cash += 10;
+  const b = api.audit(s);
+  assert.equal(b.isk.ok, true);
+  assert.equal(b.goods.ok, true);
+  assert.equal(b.contracts.ok, false);
+  assert.equal(b.ok, false);
+});
+
+test('W1: Vertrag mit gebundenem Geld ist deterministisch speicherbar und replaystabil', () => {
+  const a = mitSpielerMiner(13), b = mitSpielerMiner(13);
+  api.advance(a, 7, rules);
+  api.advance(b, 7, rules);
+  assert.equal(api.pilotAuftragsStand(a).gebunden, 1000);
+  assert.equal(api.hash(a), api.hash(b));
+  const c = api.loadErz(api.save(a));
+  assert.equal(api.hash(c), api.hash(a));
+  api.advance(a, 1433, rules);
+  api.advance(c, 1433, rules);
+  assert.equal(api.hash(a), api.hash(c));
+  assert.equal(api.audit(c).ok, true);
+});
+
+test('W1: Pilot verbietet Warenhandel außerhalb des vorfinanzierten Auftrags', () => {
+  const s = api.createErzState(42);
+  const id = Object.keys(s.ships)[0];
+  const vorher = api.hash(s);
+  assert.equal(api.execute(s, {
+    type: 'shipTrade', owner: 'npc3', schiff: id, ware: 'erz', menge: 1, kauf: true,
+  }, rules).ok, false);
+  assert.equal(api.hash(s), vorher);
+});

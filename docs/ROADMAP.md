@@ -1,5 +1,20 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] W5a – erster echter Frachter aus bezahltem Material · 04.11.2026
+
+**[DRAFT PR #170](https://github.com/tobiasfranziskus/Check/pull/170)** stapelt auf dem W0–W4-Branch #169. Der bisherige `main` (Regel14/Schema8) wird weder geändert noch veröffentlicht. W5 beginnt in einer **isolierten Regel19-Welt**, die vollständig die W1–W4-Ticker, Ledger, Kauf-/Transport-/Raffinerie-Kernfunktionen und das Speicher-/Auditprinzip weiterverwendet. Kein paralleler Simulationskern oder neue Laufzeitabhängigkeit.
+
+**Tatsächlicher Produktionsweg:** Erst nach bezahltem Bergbau, einer vollständigen W3-Erzlieferung nach Nadir und einer 20-ISK-Raffineriecharge entstehen 5 Material. Die bereits vorhandene Firma `werft_extern` kauft **5 Material für 500 ISK** von der Nadir-Station, vollständig aus zuvor tatsächlich verdienten Werfterlösen bezahlter Minerkäufe und eines früheren Frachterkaufs. **Keine neue anfängliche ISK-Menge** gegenüber W4: 33.000 ISK bleiben als `initialSupply`, `minted = 0`. Die Werft hinterlegt zusätzlich **30 ISK für 30 Minuten Werftarbeit**, zahlt sie zeitgenau an `arbeiter_werft_nadir` aus und erhält erst nach vollständigem Produktionsabschluss **einen realen Frachter im Nadir-Warenlager**. Ein separater, tatsächlich zahlungspflichtiger `shipBuy` erlaubt der Spedition den Erwerb des physischen Fertigschiffs **für 750 ISK**, und erst danach besitzt sie ein neues Schiff mit echter ID und Standort Nadir. Keine Buchung als bereits fliegendes Aldera-Schiff: Ein Überführungsauftrag muss erst als eigene, vorfinanzierte Leistung ergänzt werden.
+
+**Erster belegter Geldrückfluss:** Der Materialverkauf erhöht die freie Nadir-Stationkasse **um 500 ISK** und kann damit spätere, real finanzierte Erz-/Frachtkäufe ermöglichen. W3-/W4-Käuferherkunfts-Audits erkennen diesen **belegten Erlös** an, nicht irgendeinen Kontotransfer. Die alten Audits bleiben aktiv; zusätzlich gleicht W5 unabhängig Materialverbrauch, Werftstatistik, gebundene und ausgezahlte Löhne, tatsächliche Hüllenproduktion, Verkauf, neue Schiff-IDs und Lagerorte ab. Eine erdachte Hülle oder Geldumleitung wird nicht als reale Leistung angenommen.
+
+**Spielbarkeit:** `?modus=w5werft` zeigt die 2D-/Konten-Vorschau mit Auftrag, Arbeitsschritten und Kauf; `?modus=w5konten` dieselbe Welt ohne Canvas. Ein **eigener**, archivierungs- und importgeschützter Slot `aphros-void-w5-regel19-v1` verhindert Veränderungen an `slot1` und Regel15–18. Die neue Kette wird mit festen Seeds, Save/Load, unabhängigen Finanzaudits, Manipulationsproben, 13 × 90 Spieltagen und UI-Regressionen geprüft. **Nur ausgeführte und abgeschlossene Tests sind bestanden.**
+
+**Offene W5/W6-Gates:** Der erworbene Frachter ist physisch in Nadir, noch nicht nach Aldera überführt und als W3-Frachtflotte aktiviert. Eine bezahlte Überführung, Module, echte Nachfrage nach Fertigschiffen und eine langfristig selbsttragende Wirtschaftsrechnung bleiben separat offen. 500 ISK Materialpreis, 30 ISK Werftlohn und 750 ISK Verkaufspreis sind ausdrücklich **Pilotparameter**, keine endgültige Balancingentscheidung. Kein Merge oder Deployment; echte Safari-/NAS-Abnahme später auf Nutzerwunsch über den bestehenden Hauptlink.
+
+---
+
+
 ## [DRAFT] W4 – echte Nadir-Raffinerie aus angeliefertem Erz · 04.11.2026
 
 **[DRAFT PR #169](https://github.com/tobiasfranziskus/Check/pull/169)** stapelt auf dem mit vollständiger CI erfolgreich getesteten W3-Frachtauftrag #168. Die isolierte Regel18-Welt baut auf derselben Core-Uhr und der gemeinsamen W0–W3-Kontobuchung auf. Es gibt **keinen** neuen Simulationskern, keinen separaten Raffinerieticker, keine ISK-Emission und keine neuen Produktregeln für Regel14–17.

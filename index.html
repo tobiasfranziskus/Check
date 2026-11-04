@@ -2429,7 +2429,7 @@ const m_core_w3 = (() => {
       return {ok:false,grund:'Spedition kann die Flugloehne nicht decken'};
     const start=rules.owners.find(o=>o.id===c.kunde).cash;
     if(state.owners[c.kunde].cash+w.kaufAusgaben+(state.w4?.gebucht??0)
-      -(state.w5?.materialUmsatz??0)!==start)
+      -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)!==start)
       return {ok:false,grund:'W3: unbelegtes Kaeufergeld'};
     return {ok:true,grund:'Vollstaendig vorfinanziert',...k};
   }
@@ -2495,14 +2495,14 @@ const m_core_w3 = (() => {
       w.frachtUmsatz,w.beauftragt,w.abgeschlossen,huelle].every(Number.isSafeInteger)
       && buyer>=0&&carrier>=0
       && buyer+w.kaufAusgaben+(state.w4?.gebucht??0)
-        -(state.w5?.materialUmsatz??0)===startBuyer
+        -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)===startBuyer
       && w.kaufAusgaben===erwarteteBezahlung && w.geliefert===erwarteteWare
       && w.arbeitsKosten===erwarteteArbeit
       && w.frachtUmsatz===w.abgeschlossen*k.frachtGebuehr
       && w.beauftragt===w.abgeschlossen+(a?1:0)
       && state.stations[c.zielStation].lager.erz
         ===w.geliefert-(state.w4?.erzVerbraucht??0)
-      && state.owners[c.arbeitsFonds].cash===w.arbeitsKosten
+      && state.owners[c.arbeitsFonds].cash===w.arbeitsKosten+(state.w5b?.siliziumLohnBezahlt??0)
       && kauf===(a?(a.phase==='hin'?a.gesamt:a.frachtGebuehr):0)
       && arbeit===(a?k.arbeitsKosten-a.gearbeitet*c.arbeitJeMinute:0)
       && carrier+arbeit===startCarrier-huelle-w.arbeitsKosten+w.frachtUmsatz
@@ -2544,7 +2544,7 @@ const m_core_w4 = (() => {
       return {ok:false,grund:'Nadir kann die gesamte Arbeitscharge nicht bezahlen'};
     const start=rules.owners.find(o=>o.id===c.station).cash;
     if(state.owners[c.station].cash+state.w3.kaufAusgaben+w.gebucht
-      -(state.w5?.materialUmsatz??0)!==start)
+      -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)!==start)
       return {ok:false,grund:'Nadir: nicht nachgewiesenes Produktionskapital'};
     return {ok:true,grund:'Erz und vollständige Arbeitskasse reservierbar',
       erz:c.erzJeCharge,material:c.materialJeCharge,arbeit:budget,dauer:c.dauer};
@@ -2617,13 +2617,13 @@ const m_core_w4 = (() => {
       && w.gebucht===w.begonnen*p && w.gezahlt===erwarteterLohn
       && worker===w.gezahlt&&escrow===w.gebucht-w.gezahlt
       && station+state.w3.kaufAusgaben+w.gebucht
-        -(state.w5?.materialUmsatz??0)===start
+        -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)===start
       && w.erzVerbraucht===w.abgeschlossen*c.erzJeCharge
       && w.materialErzeugt===w.abgeschlossen*c.materialJeCharge
       && state.ledger.erz.consumed===w.erzVerbraucht
       && state.ledger.material.produced===w.materialErzeugt
       && erz===state.w3.geliefert-w.erzVerbraucht
-      && material===w.materialErzeugt-(state.w5?.materialVerbraucht??0)
+      && material===w.materialErzeugt-(state.w5?.materialVerbraucht??0)-(state.w5b?.materialVerbraucht??0)
       && (!a || (a.erz===c.erzJeCharge&&a.material===c.materialJeCharge
         && a.arbeitsBudget===p&&Number.isSafeInteger(a.gearbeitet)
         && a.gearbeitet>=0&&a.gearbeitet<c.dauer));
@@ -2756,8 +2756,8 @@ const m_core_w5 = (() => {
         +(a?.gearbeitet??0)*c.lohnJeMinute
       && escrow===w.arbeitsGebunden-w.arbeitsGezahlt
       && arbeit===w.arbeitsGezahlt
-      && state.ledger.material.consumed===w.materialVerbraucht
-      && st.material===state.w4.materialErzeugt-w.materialVerbraucht
+      && state.ledger.material.consumed===w.materialVerbraucht+(state.w5b?.materialVerbraucht??0)
+      && st.material===state.w4.materialErzeugt-w.materialVerbraucht-(state.w5b?.materialVerbraucht??0)
       && state.ledger.frachter.produced===w.fertig
       && st.frachter===w.fertig-w.verkauft
       && w.verkauft===shipIds.length&&w.verkauft<=w.fertig
@@ -3063,7 +3063,7 @@ const m_core_w1_vollkosten = (() => {
     }, 0);
     const abnahmeGebunden = Object.values(vertraege).reduce((sum, v) =>
       sum + (state.owners[v.konto]?.cash ?? NaN), 0);
-    const haus = saldo('house', arbeitsGebunden('house'));
+    const haus = saldo('house', arbeitsGebunden('house')+(state.owners.w5b_silizium_arbeit?.cash??0)+(state.owners.w5b_fabrik_arbeit?.cash??0));
     const npc = saldo('npc3', arbeitsGebunden('npc3'));
     const station = saldo(cfg.station, abnahmeGebunden);
     const verkauf = saldo(cfg.werftOwner,
@@ -3074,7 +3074,9 @@ const m_core_w1_vollkosten = (() => {
     const frachterHuelle = rules.w3 ? anzahl(state.ledger.frachter,'consumed')
       * rules.economy.waren.frachter.basis : 0;
     const foerderArbeit = state.ledger.erz.mined * cfg.minerJeMinute;
-    const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle;
+    const b=state.w5b;
+    const abzug=b?b.siliziumLohnBezahlt+b.vorproduktKauf+b.fabrikLohnBezahlt+b.jaegerVerkauft*rules.economy.waren.jaeger.basis:0;
+    const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-abzug;
     const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
     const fonds = state.owners[fondsId].cash - startCash(fondsId);
     const stationErz = state.stations[cfg.station].lager.erz;
@@ -3119,10 +3121,9 @@ const m_core_w2_konzernstatus = (() => {
       const ausgaben = state.stats.konto[owner]?.kosten;
       const schiffe = Object.values(state.ships).filter((sh) => sh.owner === owner && sh.klasse === 'miner');
       const vertraege = schiffe.filter((sh) => !!buch[sh.id]);
-      const arbeitsReserve = vertraege.reduce((sum, sh) => {
-        const v = buch[sh.id];
-        return sum + (v.arbeitsKonto ? (state.owners[v.arbeitsKonto]?.cash ?? NaN) : 0);
-      }, 0);
+      const erzReserve=vertraege.reduce((sum,sh)=>{const v=buch[sh.id];return sum+(v.arbeitsKonto?(state.owners[v.arbeitsKonto]?.cash??NaN):0);},0);
+      const zusatzReserve=owner==='house'?(state.owners.w5b_silizium_arbeit?.cash??0)+(state.owners.w5b_fabrik_arbeit?.cash??0):0;
+      const arbeitsReserve=erzReserve+zusatzReserve;
       const bereitsBeauftragt = schiffe.filter((sh) => sh.auftrag === 'foerdern').length;
       const saldiert = anfang + erloese - ausgaben;
       const freiUndGebunden = freieKasse + arbeitsReserve;
@@ -3133,7 +3134,7 @@ const m_core_w2_konzernstatus = (() => {
       const offeneFoerderkosten = vertraege.reduce((sum, sh) => {
         const v = buch[sh.id];
         return sum + (v.menge - (sh.ladung.erz || 0)) * v.arbeitsPreis;
-      }, 0);
+      }, 0)+zusatzReserve;
       const reserveOk = Number.isSafeInteger(offeneFoerderkosten)
         && offeneFoerderkosten >= 0 && offeneFoerderkosten === arbeitsReserve;
       const keinFreierExport = markt.kaeuferMenge === 0;
@@ -3456,7 +3457,8 @@ function audit(state) {
     || state.rulesVersion === m_data_erzpilot.W2_RULES.rulesVersion
     || state.rulesVersion === m_data_erzpilot.W3_RULES.rulesVersion
     || state.rulesVersion === m_data_erzpilot.W4_RULES.rulesVersion
-    || state.rulesVersion === m_data_erzpilot.W5_RULES.rulesVersion) {
+    || state.rulesVersion === m_data_erzpilot.W5_RULES.rulesVersion
+    || state.rulesVersion === m_data_erzpilot.W5B_RULES.rulesVersion) {
     const cfg = m_data_erzpilot.ERZ_RULES.erzpilot;
     const start = m_data_erzpilot.ERZ_RULES.owners.find((o) => o.id === cfg.exportOwner).cash;
     const exportiert = state.ledger?.erz?.exported;
@@ -3477,10 +3479,13 @@ function audit(state) {
     || state.rulesVersion === m_data_erzpilot.W2_RULES.rulesVersion
     || state.rulesVersion === m_data_erzpilot.W3_RULES.rulesVersion
     || state.rulesVersion === m_data_erzpilot.W4_RULES.rulesVersion
-    || state.rulesVersion === m_data_erzpilot.W5_RULES.rulesVersion) {
+    || state.rulesVersion === m_data_erzpilot.W5_RULES.rulesVersion
+    || state.rulesVersion === m_data_erzpilot.W5B_RULES.rulesVersion) {
     const bericht = m_core_w1_vollkosten.pruefen(state,
-      state.rulesVersion === m_data_erzpilot.W5_RULES.rulesVersion
-        ? m_data_erzpilot.W5_RULES
+      state.rulesVersion === m_data_erzpilot.W5B_RULES.rulesVersion
+        ? m_data_erzpilot.W5B_RULES
+        : state.rulesVersion === m_data_erzpilot.W5_RULES.rulesVersion
+          ? m_data_erzpilot.W5_RULES
         : state.rulesVersion === m_data_erzpilot.W4_RULES.rulesVersion
           ? m_data_erzpilot.W4_RULES
         : state.rulesVersion === m_data_erzpilot.W3_RULES.rulesVersion
@@ -3531,20 +3536,23 @@ function audit(state) {
     vertragsOk = Object.keys(errors).length === 0;
     extra.contracts = { ok: vertragsOk, errors, reserved: reservierteMenge };
   }
-  const istW5 = state.rulesVersion === m_data_erzpilot.W5_RULES.rulesVersion;
+  const istW5b = state.rulesVersion === m_data_erzpilot.W5B_RULES.rulesVersion;
+  const istW5 = state.rulesVersion === m_data_erzpilot.W5_RULES.rulesVersion || istW5b;
   const istW4 = state.rulesVersion === m_data_erzpilot.W4_RULES.rulesVersion;
   const w3 = state.rulesVersion === m_data_erzpilot.W3_RULES.rulesVersion
     || istW4 || istW5
-    ? m_core_w3.audit(state,istW5 ? m_data_erzpilot.W5_RULES
+    ? m_core_w3.audit(state,istW5b ? m_data_erzpilot.W5B_RULES : istW5 ? m_data_erzpilot.W5_RULES
       : istW4 ? m_data_erzpilot.W4_RULES : m_data_erzpilot.W3_RULES) : null;
   const w4 = istW4 || istW5
-    ? m_core_w4.audit(state,istW5 ? m_data_erzpilot.W5_RULES : m_data_erzpilot.W4_RULES) : null;
-  const w5 = istW5 ? m_core_w5.audit(state,m_data_erzpilot.W5_RULES) : null;
+    ? m_core_w4.audit(state,istW5b ? m_data_erzpilot.W5B_RULES : istW5 ? m_data_erzpilot.W5_RULES : m_data_erzpilot.W4_RULES) : null;
+  const w5 = istW5 ? m_core_w5.audit(state,istW5b ? m_data_erzpilot.W5B_RULES : m_data_erzpilot.W5_RULES) : null;
+  const w5b = istW5b ? m_core_w5b.audit(state,m_data_erzpilot.W5B_RULES) : null;
   if (w3) extra.w3=w3;
   if (w4) extra.w4=w4;
   if (w5) extra.w5=w5;
+  if (w5b) extra.w5b=w5b;
   return { ok: isk.ok && goods.ok && vertragsOk && finanzierungsOk
-      && wirtschaftOk && (!w3 || w3.ok) && (!w4 || w4.ok) && (!w5 || w5.ok),
+      && wirtschaftOk && (!w3 || w3.ok) && (!w4 || w4.ok) && (!w5 || w5.ok) && (!w5b || w5b.ok),
     total, expected, delta: total - expected, isk, goods, ...extra };
 }
 return { audit };

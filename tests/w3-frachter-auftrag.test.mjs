@@ -28,7 +28,7 @@ function bereit(seed=42) {
   assert.equal(buy.ok,true,buy.reason);
   assert.equal(s.owners.transport.cash,1250,'750 ISK Schiffspreis bezahlt');
   assert.equal(s.owners.werft_extern.cash,1350,'Werft erhielt Miner- und Frachterpreise');
-  assert.equal(api.audit(s).ok,true);
+  assert.equal(api.audit(s).ok,true,JSON.stringify(api.audit(s)));
   return s;
 }
 function start(s) {

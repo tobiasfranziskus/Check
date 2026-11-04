@@ -1,5 +1,14 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] W5b – finanziert hergestellter Jaeger und vorbereitete Jägeransicht · 04.11.2026
+
+[PR #173](https://github.com/tobiasfranziskus/Check/pull/173) setzt direkt auf #171 auf; weder der Produkt-`main` noch die freigegebene Regel14 oder ihre Referenzwerte wurden verändert. In **isolierter Forschungsregel20** verwendet ein einziger gemeinsamer Core die vorhandenen Regel14-Rezepte: 20 echtes W4-Material und 8 begrenzt bezahlte Siliziumeinheiten ergeben 8 Bauteile und einen industriell hergestellten Jäger. Die W3-/W4-Vorleistung, sämtliche Vorprodukte und 96 Werkarbeitsminuten werden real bezahlt. Ein einmaliger NPC-Firmenkauf aus 900 tatsächlich vorhandenen ISK erzeugt die eindeutig identifizierte Jägerhülle am Standort Nadir. Die `JagdSichtV1` ist eine unveränderliche, rein lesende Schnittstelle für einen späteren 2D-Jäger-Renderer. Keine zweite Simulation, keine kostenlosen Rohstoffe/ISK, kein Piraten- oder Pilotenfortschrittssystem.
+
+**[TEST]** Der Node-Job [#41857392019](https://github.com/tobiasfranziskus/Check/actions/runs/41857392019) ist mit **169/169 Tests grün**, einschließlich 13 ×90 Tage Regel20-Audit, Save/Load und Replay; historische Regel14-Referenz unverändert. **[GESAMT-CI BESTANDEN]** Alle sieben ausgeführten Workflow-Jobs erfolgreich, ein optionaler Vergleich planmäßig übersprungen. Produktionsintegration und Merge weiterhin nur nach gesonderter Freigabe. Codex-2D-Jäger und Claude-Wirtschaftsaudit/Skillkonzept bleiben auf separaten Zweigen, ohne vorauseilende Übernahme. Insbesondere ist ein **nachhaltiger Endverbrauch/Jägerersatzmarkt** noch nicht finanziert; eine spätere Vernichtung erzeugt keinen kostenfreien Ersatz, sondern einen eigenen Kauf-/Finanzierungsauftrag. Kein UI-Modus und kein neuer Save-Slot für Regel20 im Browser; echte iPad-/NAS-Abnahme später über den Hauptlink nach Freigabe. [W5b-Nachweis](W5B_JAEGERBAU.md).
+
+---
+
+
 ## [DRAFT] W2-Konzernstatus auf dem aktuellen W5-Gesamtstand · 04.11.2026
 
 **Basis:** Der W0–W5-Forschungsstack bis Draft [#170](https://github.com/tobiasfranziskus/Check/pull/170) wird nicht dupliziert. Ein klein gehaltener **Folge-Draft** ergänzt einen *rein lesenden* Firmenstatus für die zwei Bergbaukonzerne in den Forschungsversionen Regel16–19. Keine Änderung an Preisen, Arbeitsregeln, NPC-Investitionen, Transport, Raffinerie, Schiffproduktion oder Hauptspiel-Regel14.

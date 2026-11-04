@@ -94,7 +94,7 @@ test('Save/Load und Replay deterministisch; klassische Regel-14-Welt unveränder
 test('13 Seeds x 90 Tage: taegliche unabhaengige Bilanz und Save/Load, aber kein Dauerumsatz', () => {
   const seeds = [1, 2, 7, 11, 13, 42, 99, 123, 777, 1234, 4096, 65535, 98765];
   for (const seed of seeds) {
-    const s = api.createErzState(seed);
+    const s = mitSpielerMiner(seed);
     for (let tag = 1; tag <= 90; tag++) {
       api.advance(s, 24 * 60, rules);
       const kassen = Object.values(s.owners).reduce((sum, owner) => sum + owner.cash, 0);
@@ -218,4 +218,39 @@ test('W1: Pilot verbietet Warenhandel außerhalb des vorfinanzierten Auftrags', 
     type: 'shipTrade', owner: 'npc3', schiff: id, ware: 'erz', menge: 1, kauf: true,
   }, rules).ok, false);
   assert.equal(api.hash(s), vorher);
+});
+
+test('W1: Nach versiegtem Exportbudget darf nur aus echten Fremdmitteln wieder Nachfrage entstehen', () => {
+  const s = mitSpielerMiner(7);
+  api.advance(s, 1440, rules);
+  assert.equal(s.owners.export.cash, 0);
+  const verkauft = s.ledger.erz.exported;
+  const gefoerdert = s.ledger.erz.mined;
+  api.advance(s, 600, rules);
+  assert.equal(s.ledger.erz.exported, verkauft);
+  assert.equal(s.ledger.erz.mined, gefoerdert);
+  assert.equal(api.audit(s).ok, true);
+  // Reale externe Refinanzierung durch vorhandenes Geld: kein Minting.
+  const finanzierung = 1000;
+  assert.ok(s.owners.werft_extern.cash >= finanzierung);
+  s.owners.werft_extern.cash -= finanzierung;
+  s.owners.export.cash += finanzierung;
+  assert.equal(s.minted, 0);
+  api.advance(s, 1440, rules);
+  assert.ok(s.ledger.erz.exported > verkauft);
+  assert.equal(s.owners.export.cash, 0);
+  assert.equal(api.audit(s).ok, true);
+});
+
+test('W0: Freie Treuhandmittel dürfen nach Rueckgabe wieder gebunden werden', () => {
+  const s = api.createErzState(7);
+  api.advance(s, 5, rules);
+  const schiff = Object.values(s.ships).find((x) => x.owner === 'npc3');
+  assert.equal(api.pilotAuftragsStand(s).gebunden, 500);
+  assert.equal(api.execute(s, { type: 'shipWait', owner: 'npc3', schiff: schiff.id }, rules).ok, true);
+  assert.equal(api.pilotAuftragsStand(s).gebunden, 0);
+  assert.equal(api.execute(s, { type: 'shipMine', owner: 'npc3', schiff: schiff.id, ware: 'erz' }, rules).ok, true);
+  api.advance(s, 1, rules);
+  assert.ok(api.pilotAuftragsStand(s).gebunden > 0);
+  assert.equal(api.audit(s).ok, true);
 });

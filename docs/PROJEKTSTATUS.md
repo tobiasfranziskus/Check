@@ -1,5 +1,16 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] Unveränderte Codex-Frachteransicht neben W5d-Kampfkern · 04.11.2026
+
+**[MAIN]** weiterhin `b4e604d6`, Regel14/Schema8. **[DRAFT]** [PR #179](https://github.com/tobiasfranziskus/Check/pull/179) basiert auf #178 und übernimmt exakt die acht neuen Dateien aus #177. Keine Dateikonflikte oder Änderungen an den Original-PRs; ein separater W3-/W5d-Koexistenztest und eine Grenzen-Dokumentation wurden ergänzt.
+
+**[QUELL-CI BELEGT]** #177 [CI #41866522816](https://github.com/tobiasfranziskus/Check/actions/runs/41866522816): 180/180 Node grün, sieben CI-Jobs grün. #178 [CI #41868171271](https://github.com/tobiasfranziskus/Check/actions/runs/41868171271): 185/185 Node grün, sieben CI-Jobs grün. Bei beiden optionaler Sicherheitsgeografievergleich planmäßig übersprungen. **[KOMBINIERTE CI]** [#41870340337](https://github.com/tobiasfranziskus/Check/actions/runs/41870340337) separat laufend; noch nicht als bestanden zählen.
+
+**[TECHNISCHE GRENZE]** Frachter ist im Codex-Prototyp eine echte, aber flüchtige **W3-Regel17**-Sitzung; Jäger/Piraten der Regel22 werden nicht in derselben Welt angezeigt oder gesteuert. Kein Zugriff auf bestehende Hauptspiel-Saves, keine heimlichen Transfers, keine parallel implementierte Wirtschaft. Der aktuelle W3-Loader evaluiert vorhandene Inline-Module per `Function`; strenge NAS-CSP könnte das verhindern, echte NAS- und iPad-Safari-Abnahme ausstehend. Kein Hauptlink- oder Speicher-Release, Merge oder Deployment. [Technischer Nachweis](W5D_FRACHTER_INTEGRATION.md).
+
+---
+
+
 ## [DRAFT] W5d – zwei reale Jäger und physische Abschussbelege · 04.11.2026
 
 **[MAIN]** weiterhin `b4e604d6` (Regel14/Schema8). **[DRAFT]** [PR #178](https://github.com/tobiasfranziskus/Check/pull/178) auf #176, isolierte Regel22. **Echter Warenbeleg:** zweimal Erztransport, acht Raffineriechargen, zweimal acht Silizium, zweimal acht Bauteile, zweimal bezahlter Jägerbau; zusätzliche echte W1-Hauserlöse aus einem bezahlten Aldera-Erzminer finanzierten die zweite Charge. Zwei physische IDs, zweimal 900-ISK-Konzernkauf und einmalige 900-ISK-Piratenübernahme. `ledger.jaeger.produced=2`, `consumed=2`, `minted=0`.

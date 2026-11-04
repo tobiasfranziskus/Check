@@ -799,9 +799,32 @@ const m_data_erzpilot = (() => {
   // W2-Variantenkern nur im Test-API: alte W1-Saves und Regeln bleiben unveraendert.
   const W2_RULES = { ...ERZ_RULES, rulesVersion: 16,
     erzpilot: { ...ERZ_RULES.erzpilot, npcInvestor: 'npc3' } };
+  // W3 ist ein isolierter zweiter Handelsort mit EINER bereits bezahlten
+  // kompletten Frachterhuelle und endlichem Stationskaufetat, kein neues ISK.
+  const W3_RULES = { ...W2_RULES, rulesVersion: 17,
+    world: { ...world,
+      systems: { ...world.systems, nadir: { station: 'st_nadir', fonds: 'fonds_transport', sicherheit: 'sicher' } },
+      stations: {
+        ...world.stations,
+        st_aldera: { ...world.stations.st_aldera, ziel: { ...world.stations.st_aldera.ziel, frachter: 1 } },
+        st_nadir: { system: 'nadir', linien: [], verbrauch: {}, ziel: { erz: 500 }, gebuehr: 0 },
+      },
+      gates: [['aldera','nadir',60]],
+    },
+    economy: { ...economy, waren: { ...economy.waren, frachter: { stufe:'schiff', basis:750 } } },
+    owners: [ ...owners,
+      { id:'st_nadir', kind:'station', cash:4000 },
+      { id:'transport', kind:'carrier', cash:2000 },
+      { id:'fonds_transport', kind:'fund', cash:0 },
+    ],
+    w3: { quellStation:'st_aldera', zielStation:'st_nadir', kunde:'st_nadir',
+      spedition:'transport', arbeitsFonds:'fonds_transport',
+      fracht:50, arbeitJeMinute:1, frachtgebuehrJeMinute:2 },
+  };
   m_data_systeme.tiefFrieren(ERZ_RULES);
   m_data_systeme.tiefFrieren(W2_RULES);
-  return { ERZ_RULES, W2_RULES };
+  m_data_systeme.tiefFrieren(W3_RULES);
+  return { ERZ_RULES, W2_RULES, W3_RULES };
 })();
 
 const m_core_rng = (() => {
@@ -913,6 +936,7 @@ const FIELDS = {
   shipEscort: ['schiff', 'ziel'], shipHunt: ['schiff'],
   shipInstall: ['schiff', 'modul'], stationBuy: ['schiff'], shipBuy: ['klasse', 'station'],
   stationRecipe: ['station', 'rezept'], shipRemoveModule: ['schiff', 'modul'],
+  shipFreight: ['schiff'],
 };
 function checkShape(state, cmd, rules) {
   if (cmd === null || typeof cmd !== 'object' || Array.isArray(cmd)) return 'Befehl ist kein Objekt';
@@ -949,6 +973,13 @@ function checkShape(state, cmd, rules) {
       if (typeof cmd.klasse !== 'string' || !Object.hasOwn(rules.economy.waren, cmd.klasse)) return 'unbekannte Schiffsklasse';
       if (rules.economy.waren[cmd.klasse].stufe !== 'schiff') return 'Ware ist kein aktivierbares Schiff';
       if (!Object.hasOwn(s.ladung, cmd.klasse) || s.ladung[cmd.klasse] < 1) return 'Schiff nicht im Frachtraum';
+    }
+    if (rules.w3 && s.klasse === 'frachter' && cmd.type !== 'shipFreight' && cmd.type !== 'shipRename')
+      return 'W3-Frachter ausschließlich per finanziertem Transportauftrag steuern';
+    if (cmd.type === 'shipFreight') {
+      if (!rules.w3) return 'W3-Transport in dieser Regel nicht aktiv';
+      const pruefung = m_core_w3.pruefen(state, rules, s);
+      if (!pruefung.ok) return pruefung.grund;
     }
     if (cmd.type === 'shipHandeln' && s.klasse !== 'frachter') return 'nur Frachter können selbständig handeln';
     if (cmd.type === 'shipMine') {
@@ -995,14 +1026,15 @@ function checkShape(state, cmd, rules) {
       if (state.owners[cmd.owner].cash < m_core_handel.stationspreis(state, rules, station)) return 'zu wenig ISK für den Stationskauf';
     }
   }
-  if (rules.erzpilot && !['shipBuy', 'shipMine', 'shipWait', 'shipRename'].includes(cmd.type))
+  if (rules.erzpilot && !['shipBuy', 'shipMine', 'shipWait', 'shipRename', ...(rules.w3 ? ['shipFreight'] : [])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if (cmd.type === 'shipBuy') {
-    if (!rules.erzpilot || cmd.klasse !== 'miner' || cmd.station !== rules.erzpilot.station)
-      return 'Komplettkauf nur fuer Miner am Erzpilot-Handelsplatz';
-    if (cmd.owner !== 'house' && cmd.owner !== 'npc3') return 'kein berechtigter Konzern';
-    if ((state.stations[cmd.station].lager.miner || 0) < 1) return 'kein Komplettschiff auf Lager';
-    if (state.owners[cmd.owner].cash < rules.economy.waren.miner.basis) return 'zu wenig ISK';
+    const frachter = !!rules.w3 && cmd.owner === rules.w3.spedition && cmd.klasse === 'frachter';
+    const miner = cmd.klasse === 'miner' && (cmd.owner === 'house' || cmd.owner === 'npc3');
+    if (!rules.erzpilot || (!frachter && !miner) || cmd.station !== rules.erzpilot.station)
+      return 'Komplettkauf nur fuer finanzierte Miner oder W3-Frachter am Handelsplatz';
+    if ((state.stations[cmd.station].lager[cmd.klasse] || 0) < 1) return 'kein Komplettschiff auf Lager';
+    if (state.owners[cmd.owner].cash < rules.economy.waren[cmd.klasse].basis) return 'zu wenig ISK';
   }
   if (cmd.type === 'stationRecipe') {
     if (typeof cmd.station !== 'string' || !Object.hasOwn(state.stations, cmd.station)) return 'unbekannte Station';
@@ -1027,13 +1059,13 @@ function execute(state, cmd, rules) {
   if (fehler) return { ok: false, type: cmd && cmd.type, reason: fehler };
   switch (cmd.type) {
     case 'shipBuy': {
-      const p = rules.economy.waren.miner.basis;
+      const p = rules.economy.waren[cmd.klasse].basis;
       state.owners[cmd.owner].cash -= p;
       state.owners[rules.erzpilot.werftOwner].cash += p;
-      state.stations[cmd.station].lager.miner -= 1;
-      state.ledger.miner.consumed += 1;
+      state.stations[cmd.station].lager[cmd.klasse] -= 1;
+      state.ledger[cmd.klasse].consumed += 1;
       const sh = m_core_state.neuesSchiff(state, {
-        owner: cmd.owner, klasse: 'miner', system: 'aldera',
+        owner: cmd.owner, klasse: cmd.klasse, system: 'aldera',
         heimat: 'aldera', auftrag: 'halten', ware: null,
       });
       m_core_handel.buche(state, cmd.owner, 'kosten', p);
@@ -1055,6 +1087,9 @@ function execute(state, cmd, rules) {
       state.stats.handel += 1; state.stats.verkaeufe[s.id] += 1; break;
     }
     case 'shipMine': { const s = state.ships[cmd.schiff]; s.auftrag = 'foerdern'; s.ware = cmd.ware; s.eskorte = null; break; }
+    case 'shipFreight': {
+      m_core_w3.starten(state, rules, state.ships[cmd.schiff]); break;
+    }
     case 'shipWait': {
       const s = state.ships[cmd.schiff];
       s.auftrag = 'halten'; s.eskorte = null;

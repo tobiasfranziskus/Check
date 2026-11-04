@@ -78,10 +78,14 @@ Core-Ereignisse; keine vorgetäuschten Schild-/Panzer-/Energieanzeigen.
 ## PR #161 und Integrationsfolge
 
 [#161](https://github.com/tobiasfranziskus/Check/pull/161) geprüft bei Head
-`3a564e3e4f8b1d1a4dfc940268f6c6f85bace117`: offener Draft, fünf geänderte Dateien,
+`3f725af37a3075aa872ea3f0adda96634f5f23d1`: offener Draft, fünf geänderte Dateien,
 keine Diskussionskommentare. Er enthält W0/W1-Regel15 mit vorfinanzierten
 Aufträgen, eigenem Save-Slot und endlichem Exportbudget. Diese Änderungen und die
-auf seinem Branch vorgeschlagene W0–W6-Roadmap sind **nicht main**. Der vorliegende
+auf seinem Branch vorgeschlagene W0–W6-Roadmap sind **nicht main**.
+Während dieses Auftrags wurde #161 extern weitergeführt (Käuferherkunfts-Audit
+und UI-Nachweis, laut PR 93 Tests). Der neue Head wurde abschließend lesend
+geprüft; kein Einfluss auf diesen Regel14-Grafikadapter und keine eigene Änderung
+an #161. Der vorliegende
 Branch basiert unabhängig auf main und ändert weder PR #161 noch seine Regeln.
 
 1. Diesen Grafik-/Adapter-Draft separat prüfen, insbesondere Herkunft und echte

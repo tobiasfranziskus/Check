@@ -38,7 +38,9 @@ function realChain(seed=42){
   assert.equal(s.w4.abgeschlossen,1);
   assert.equal(s.stations.st_nadir.lager.material,5);
   assert.equal(s.owners.st_nadir.cash,3240);
-  assert.equal(s.owners.werft_extern.cash,1350);
+  assert.equal(s.owners.werft_extern.cash,
+    s.ledger.miner.consumed*600+s.ledger.frachter.consumed*750,
+    'NPC-Miner der zweiten Stunde wurden ebenfalls real gekauft');
   assert.equal(api.audit(s).ok,true,JSON.stringify(api.audit(s)));
   return s;
 }
@@ -66,7 +68,9 @@ test('W5: Echtes W4-Material wird fuer 500 ISK gekauft, 30 ISK Werftarbeit bezah
     assert.equal(s.stations.st_nadir.lager.material,0);
     assert.equal(s.ledger.material.consumed,5);
     assert.equal(s.owners.st_nadir.cash,3740,'Nadir hat echte Verkaufserloese erhalten');
-    assert.equal(s.owners.werft_extern.cash,820);
+    assert.equal(s.owners.werft_extern.cash,
+      s.ledger.miner.consumed*600+s.ledger.frachter.consumed*750-530,
+      'Werft hat echten Materialkauf und 30 ISK Arbeit reserviert');
     assert.equal(s.owners.w5_arbeit_treuhand.cash,30);
     assert.equal(s.owners.arbeiter_werft_nadir.cash,0);
     assert.equal(s.ledger.frachter.produced,0,'vor Arbeitsabschluss kein Schiff');

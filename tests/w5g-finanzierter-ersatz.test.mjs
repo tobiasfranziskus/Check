@@ -188,19 +188,50 @@ test('W5g: falsche Verlustbelege, fabrikneue Phantomhüllen und Transfers werden
  assert.equal(api.audit(noFunds).ok,false,'do not accept tampered liquidity');
  assert.equal(api.hash(s),hash);pruefen(s);
 });
-test('W5g: 13 Seeds × 90 Tage – dritte bezahlte Werftcharge, bedingter echter Ersatz, Replay und Audits',()=>{
+function dritteNurBeiEchterKaufkraft(s){
+  // Vorleistung ist gebunden: Aufträge dürfen an fehlendem Exportgeld scheitern.
+  // Keine Kapitalzufuhr, keine geschenkte Exportnachfrage und keine harten Test-Fakes.
+  cmd(s,'shipMine','house',{schiff:mine(s,'house','nadir'),ware:'silizium'});
+  advance(s,8);
+  const fr=carrier(s);
+  let ready=false;
+  for(let i=0;i<500;i++){
+    if(s.stations.st_aldera.lager.erz>=50&&s.ships[fr].phase==='dock'){
+      ready=true;break;
+    }
+    api.advance(s,1,rules);
+  }
+  pruefen(s,'Dritte Charge: verfügbare Exportmittel');
+  if(!ready){
+    return {ok:false,grund:'echte Erzlieferung nicht bezahlbar',
+      exportCash:s.owners.export.cash,erz:s.stations.st_aldera.lager.erz,
+      frachterPhase:s.ships[fr].phase};
+  }
+  cmd(s,'shipFreight','transport',{schiff:fr});
+  advance(s,120);factory(s);
+  assert.equal(s.w5b.jaegerFertig,3);
+  return {ok:true,grund:'dritte Charge vollständig bezahlt',
+    exportCash:s.owners.export.cash,erz:s.stations.st_aldera.lager.erz};
+}
+test('W5g: 13 Seeds × 90 Tage – reale Drittchargen oder ehrliche Kaufkraftblockade, Replay und Audits',()=>{
  for(const seed of seeds){
    const x=start(seed),{s}=x,combat=kampf(x);
-   const p=dritte(s);
+   const attempt=dritteNurBeiEchterKaufkraft(s);
+   const p=api.pilotW5GPlan(s);
    assert.equal(p.hersteller.fabrikmarge,-1388);
-   if(combat.lossNpc){
+   if(attempt.ok && combat.lossNpc){
      const c=s.owners.npc3.cash;
      assert.ok(c>=900,'no individual rescue for NPC');
      cmd(s,'shipReplaceFighter','npc3',{station:'st_nadir'});
      assert.equal(s.owners.npc3.cash,c-900);
    }else{
      reject(s,'shipReplaceFighter','npc3',{station:'st_nadir'});
-     assert.equal(s.stations.st_nadir.lager.jaeger,1);
+     assert.equal(s.stations.st_nadir.lager.jaeger,attempt.ok?1:0);
+   }
+   if(!attempt.ok){
+     assert.ok(attempt.erz<50,'fehlende Ware nach 500 echten Minuten');
+     assert.equal(attempt.exportCash,0,
+       'nur belegter Stillstand durch erschöpfte Exportnachfrage zählt als ökonomischer Stopp');
    }
    const replay=api.loadW5G(api.save(s));
    for(let day=1;day<=90;day++){
@@ -210,12 +241,14 @@ test('W5g: 13 Seeds × 90 Tage – dritte bezahlte Werftcharge, bedingter echter
      assert.equal(api.hash(s),api.hash(replay),'replay '+seed+'/day '+day);
    }
    assert.equal(s.minted,0);
-   assert.equal(s.w5b.jaegerFertig,3);
-   assert.equal(s.w5g.ersatz.length,combat.lossNpc?1:0);
+   assert.equal(s.w5b.jaegerFertig,attempt.ok?3:2);
+   assert.equal(s.w5g.ersatz.length,attempt.ok&&combat.lossNpc?1:0);
    assert.equal(s.owners.pirates.cash,0);
    assert.equal(api.hash(api.loadW5G(api.save(s))),api.hash(s));
    console.log('W5G_90T '+JSON.stringify({seed,hash:api.hash(s),
      npcLost:!!combat.lossNpc,ersatz:s.w5g.ersatz.length,
+     dritteCharge:attempt.ok,blockGrund:attempt.ok?null:attempt.grund,
+     exportCash:attempt.exportCash,
      house:s.owners.house.cash,npc3:s.owners.npc3.cash,
      lager:s.stations.st_nadir.lager.jaeger,minted:s.minted}));
  }

@@ -81,6 +81,10 @@ try{
       +' · Zustand '+view.w5g.naechsterErsatz
       +' · bezahlter Ersatz '+view.w5g.ersatz
       +' · Piratenkasse '+geld(view.w5g.kassen.pirates)
+      +' · Exportkasse '+geld(view.w5g.naechsteCharge.exportKaufkraft)
+      +' · Erz Aldera '+view.w5g.naechsteCharge.erzAldera
+      +(view.w5g.naechsteCharge.kaufkraftstopp
+         ? ' · ACHTUNG: Dritte Erzfracht wegen leerer Exportkasse nicht finanzierbar':'')
       +' · neues Geld '+geld(view.w5g.minted)+'. Vorgelagerte Bergbau-/Fracht-/Raffineriekosten werden getrennt ausgewiesen, nicht doppelt addiert.';
    $('laserstand').textContent='Pilotenkasse '+geld(view.pilot.cash)
       +' · echte Dienste '+view.pilot.stunden+' · Pilotengehalt '+geld(view.pilot.lohn)

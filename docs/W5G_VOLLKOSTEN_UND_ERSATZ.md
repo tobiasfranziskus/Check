@@ -36,6 +36,12 @@ Der anschließende Kauf ruft die **vorhandene, validierte `shipBuy`-Buchungslogi
 
 **Keine Piratenrettung:** Der erste Pirat ist aus genau 900 bestehenden ISK bezahlt. Nach dem Abschuss besitzt der Piratenkonzern 0 ISK und kann keinen weiteren Jäger kaufen. Die dritte House-/NPC-Produktion erzeugt **nicht** automatisch Nachfrage oder Geld für Piraten. Keine wiederkehrende Endnachfrage, keine generische NPC-Pilotenzuweisung nach Verlust, keine gesicherten Gewinne.
 
+## [TEST / Wirtschaftskrise] Dritte Charge nur in 8 von 13 Welten finanzierbar
+
+Der erste W5g-CI-Versuch #41929272435 war **rot (216/217 Node-Tests)**, weil der Langlauftest irrtümlich in allen 13 Seeds eine dritte Erzlieferung verlangte. Die wirtschaftliche Gegenprobe zeigte den **echten** Grund: In Seed7 liegt am Ende des Versuchs `export.cash=0` und `st_aldera.lager.erz=0`; der Miner erhält keine weitere bezahlte Abnahme. Das ist gerade der zu untersuchende Kaufkraftengpass, **kein Bug, der durch zusätzliche ISK oder eine gefälschte Testerwartung versteckt werden darf**.
+
+**Unabhängig direkt ausgeführte, anschließend korrigierte 13×90-Tage-Langläufe:** Jeder Tag Geld-/Warenaudit, separater deterministischer Replay, Save-/Load-Abgleich, keine ISK-Emission. **8 Seeds** (`11, 2, 65535, 42, 98765, 99, 2024, 314159`) finanzieren tatsächlich die dritte komplette Erzlieferung, Raffinerie, Bauteile und Jägerhülle. **5 Seeds** (`7, 1, 1234, 3, 2025`) stoppen bei erschöpfter realer Exportkaufkraft, bevor dritte Erzmenge bereitsteht. Es wird in diesen fünf Welten **keine zusätzliche Hülle vorgetäuscht**. Nur Seed98765 enthält den echten Konzernverlust und einen finanzierbaren Ersatzkauf. Die neue W5g-Kostenansicht zeigt auch die tatsächliche Exportkasse und den Rohstoffengpass. Der nächste vollständige GitHub-CI-Lauf muss diese korrigierte Erwartung noch bestätigen.
+
 ## Browser-Forschung und Spielstand-Schutz
 
 Neue statische, bedienbare Forschungsoberfläche: `prototypes/w5-welt/w5g.html`. Sie kombiniert dieselben Miner-/W3-/W4-/W5b-/W5d-/W5f-Core-Befehle und zeigt die **vom Core gelesene** Marge, echte Bestände, Konten und den Ersatzstatus. Ein zusätzlicher Button startet ausschließlich den validierten Ersatzbefehl, **kein UI-eigener Geldtransfer**. Die bestehenden W5e-/W5f-Forschungswelten bleiben erhalten.
@@ -47,7 +53,7 @@ Die Seite ist **kein produktiver Hauptlink**. Das weiterhin verwendete `Function
 ## Ausgeführte Tests und offene Qualitätsgates
 
 - **Direkt ausgeführt:** `createW5GState` startet mit 33.000 ISK, 0 `minted`, sämtlichen Geld-/Warenaudits grün. Der echte Seed98765-Durchlauf bis nach dem dritten Jäger und der bezahlten Ersatzbuchung ist hash- und kontenkorrekt; Seed42 weist den Ersatz ohne Verlust korrekt ab.
-- Neue unabhängige Node-Tests `tests/w5g-finanzierter-ersatz.test.mjs` und `tests/w5g-ui.test.mjs` prüfen vollständige Realproduktion, Doppelverlust und Ersatz-ID, Werft- und Geldengpässe, bilanzneutral gefälschte Transfers, transaktionale Spielstandsicherung, unbeabsichtigte UI-Mutationen sowie 13 Seeds × 90 Spieltage mit täglichem unabhängigem Geld-/Warenaudit, deterministischem Replay und Save/Load.
+- Neue unabhängige Node-Tests `tests/w5g-finanzierter-ersatz.test.mjs` und `tests/w5g-ui.test.mjs` prüfen vollständige Realproduktion, Doppelverlust und Ersatz-ID, Werft- und Geldengpässe, bilanzneutral gefälschte Transfers, transaktionale Spielstandsicherung, unbeabsichtigte UI-Mutationen sowie 13 Seeds × 90 Spieltage mit täglichem unabhängigem Geld-/Warenaudit, deterministischem Replay und Save/Load. Die Drittproduktion ist nur bei **wirklich vorhandenem** Erz und Kaufkapital ein gültiger Erfolg; bei einem belegten Finanzierungsstopp bleibt die Welt bilanziell korrekt stehen.
 - **GitHub-CI-Gesamtzahl und 13×90-Tage-Ergebnis erst nach tatsächlich abgeschlossenem Workflow eintragen.** Die alte W5f-CI #41925543292 ist erfolgreich, aber ausdrücklich kein automatischer W5g-Testnachweis.
 
 ## Entscheidung / nächste ökonomische Abhängigkeit

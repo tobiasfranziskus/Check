@@ -3633,7 +3633,7 @@ const m_core_w5g=(()=>{
     // Hier bewusst NICHT Erz-, Frachter- und W4-Transfers nochmals addieren:
     // 2.288 ISK sind die tatsächlichen HOUSE-Fabrikzahlungen, nicht Weltkosten.
     const cash=Object.fromEntries(['house','npc3','pirates','st_nadir',
-      'transport','fonds_transport'].map(id=>[id,state.owners[id]?.cash??0]));
+      'transport','fonds_transport','export'].map(id=>[id,state.owners[id]?.cash??0]));
     const loss=offenerVerlust(state,rules);
     const status=loss
       ? (state.stations[c.station].lager.jaeger<1?'hülle_fehlt'
@@ -3655,6 +3655,14 @@ const m_core_w5g=(()=>{
       bezahlteKaeufe:state.w5b.jaegerVerkauft,
       echteVerluste:state.w5d.verluste.length,
       ersatz:state.w5g.ersatz.length,naechsterErsatz:status,
+      naechsteCharge:{
+        erzAldera:state.stations.st_aldera.lager.erz,
+        exportKaufkraft:cash.export,
+        kaufkraftstopp:cash.export===0&&state.stations.st_aldera.lager.erz<rules.w3.fracht,
+        siliziumNadir:state.stations.st_nadir.lager.silizium,
+        stationKasse:cash.st_nadir,
+        nochFertigbar:state.w5b.jaegerBegonnen<rules.w5d.maxChargen,
+      },
       offeneNpcVerlustId:loss?.id??null,
       fondsOhneGratisrettung:state.owners.pirates.cash===0,
       minted:state.minted,

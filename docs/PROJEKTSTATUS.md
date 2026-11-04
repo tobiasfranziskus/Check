@@ -1,5 +1,9 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] 2D-Komponenten aus Void Echoes · 04.11.2026
+
+Separater Branch `feature/void-echoes-2d-miner` ab main `b4e604d6`; Demo `index.html?modus=miner2d`, normaler Spielstart und Speicherpfad unverändert. Effektive GX-Schiffsgrafik, Sternfelder, Asteroiden, Auswahl, Touch-/Kamera- und HUD-Technik übernommen. Core und Originalrepository unverändert; keine PR-#161-Änderung, kein Merge/Deployment. Node22: neun Dateisuiten erfolgreich, darunter sieben neue 2D-Tests. Chromium-Touchtests mit drei Viewports und Rotation erfolgreich; echte iPad-Safari-/NAS-Abnahme offen. Umfang, Herkunft, Core-Lücken und Integrationsplan: [2D_UEBERNAHME.md](2D_UEBERNAHME.md).
+
 ## [ANALYSE] B8o/B8p – bezahlte Aufträge und Endnachfrage · 01.11.2026
 
 **[MAIN]** Weiterhin `0d473e6`, v0.12.5/Regel14/Schema8 ohne Produktcodeänderung. Dokumentations-Draft #78 ist noch **nicht integriert**; dieser Abschnitt bezieht sich auf den vorgeschlagenen Docs-Stand.

@@ -2823,12 +2823,12 @@ const m_core_w2_konzernstatus = (() => {
       }, 0);
       const reserveOk = Number.isSafeInteger(offeneFoerderkosten)
         && offeneFoerderkosten >= 0 && offeneFoerderkosten === arbeitsReserve;
-      const keinFreierAbsatz = markt.kaeuferMenge === 0;
-      const betrieb = vertraege.length > 0 ? 'finanzierte_arbeit'
-        : keinFreierAbsatz ? 'absatzruhe'
-        : freieKasse < rules.erzpilot.minerJeMinute ? 'arbeitskapital_fehlt'
-        : bereitsBeauftragt > 0 ? 'auftrag_wartet'
-        : schiffe.length > 0 ? 'freiwillige_ruhe' : 'ohne_miner';
+      const keinFreierExport = markt.kaeuferMenge === 0;
+      const betrieb = schiffe.length === 0 ? 'ohne_miner'
+        : vertraege.length > 0 ? 'finanzierte_arbeit'
+          : keinFreierExport ? 'exportpause'
+            : freieKasse < rules.erzpilot.minerJeMinute ? 'arbeitskapital_fehlt'
+              : bereitsBeauftragt > 0 ? 'auftrag_wartet' : 'freiwillige_ruhe';
       return {
         owner, betrieb, freieKasse, arbeitsReserve, freiUndGebunden,
         anfang, erloese, ausgaben, kassenwirksamerSaldo: erloese - ausgaben,
@@ -2844,7 +2844,7 @@ const m_core_w2_konzernstatus = (() => {
     }
     const house = firma('house'), npc3 = firma('npc3');
     return { ok: house.kassenbelegOk && npc3.kassenbelegOk,
-      house, npc3, kunde: markt.status, freieKaeuferMenge: markt.kaeuferMenge,
+      house, npc3, exportmarkt: markt.status, freieKaeuferMenge: markt.kaeuferMenge,
       insolvenzmodell: 'kein_forderungsbuch_im_piloten' };
   }
   return { pruefen };
@@ -5596,7 +5596,7 @@ const m_ui_erzpilot = (() => {
       $('pilot-w2-spielerkapital').textContent = `${geld(konzerne.house.freieKasse)} / ${geld(konzerne.house.arbeitsReserve)}`;
       $('pilot-w2-npckapital').textContent = `${geld(konzerne.npc3.freieKasse)} / ${geld(konzerne.npc3.arbeitsReserve)}`;
       const betriebsart = { finanzierte_arbeit:'Finanzierte Arbeit',
-        absatzruhe:'Ruhe wegen fehlendem Erzabsatz',
+        exportpause:'Ruhe wegen fehlender Exportabnahme',
         arbeitskapital_fehlt:'Kein frei finanzierbares Arbeitskapital',
         auftrag_wartet:'Auftrag wartet auf Finanzierung',
         freiwillige_ruhe:'Ruhend', ohne_miner:'Keine Miner' };

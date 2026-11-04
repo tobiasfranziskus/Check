@@ -97,8 +97,7 @@ Branch basiert unabhängig auf main und ändert weder PR #161 noch seine Regeln.
 
 ## Prüfung und verbleibende Abnahme
 
-- Node.js **22.23.4**, Pflichtbefehl `node --test tests/*.test.mjs`: neun
-  Dateisuiten bestanden, keine Fehler/Skips. Neue Suite: sieben Einzeltests für
+- Node.js **22.23.4**, Pflichtbefehl `node --test tests/*.test.mjs`: **74/74 Einzeltests in neun Dateien** bestanden, keine Fehler/Skips. Bestehender Bestand: 67 Tests. Neue Suite: sieben Einzeltests für
   unveränderliche/kanonische Übergabe, echte Queue-Replays inkl. Audit/Save/Load,
   Ablehnung, CSS-Touchziele, Gesten, Herkunft und 100 Renderframes ohne Coreänderung.
 - Bestehende Start-/Speicher-/Wirtschafts-/Hash-Regressionen unverändert; keine

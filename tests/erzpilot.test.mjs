@@ -167,19 +167,21 @@ test('W0: Stornierung liefert wirklich geförderte Erzteilmenge und gibt Treuhan
   assert.equal(s.ledger.erz.mined, mined);
 });
 
-test('W0: Zahlungsunfähigkeit während des Auftrags stoppt Bergbau, ohne gratis weiterzuarbeiten', () => {
+test('W0: Vorfinanzierte Arbeit bleibt trotz leerem freien Firmenkonto bezahlbar', () => {
   const s = api.createErzState(42);
   api.advance(s, 8, rules);
   const schiff = Object.values(s.ships).find((x) => x.owner === 'npc3');
+  const v = s.erzpilotVertraege[schiff.id];
+  assert.equal(s.owners[v.arbeitsKonto].cash, 84);
   const rest = s.owners.npc3.cash;
   s.owners.npc3.cash = 0;
   s.owners.werft_extern.cash += rest;
-  api.advance(s, 1, rules);
-  assert.equal(s.ledger.erz.mined, 8);
-  assert.equal(s.stations.st_aldera.lager.erz, 8);
-  assert.equal(s.ships[schiff.id].auftrag, 'halten');
-  assert.equal(api.pilotAuftragsStand(s).gebunden, 0);
-  assert.equal(s.owners.npc3.cash, 80);
+  api.advance(s, 42, rules);
+  assert.equal(s.ledger.erz.mined, 50);
+  assert.equal(s.stations.st_aldera.lager.erz, 50);
+  assert.equal(s.owners.npc3.cash, 500);
+  assert.equal(s.owners[v.arbeitsKonto].cash, 0);
+  assert.equal(api.pilotAuftragsStand(s).auftraege, 0);
   assert.equal(api.audit(s).ok, true);
 });
 
@@ -278,4 +280,36 @@ test('W1: Import mit manipuliertem Treuhandkonto oder unplausibler Lagerbilanz w
   const t = api.createErzState(42);
   t.stations.st_aldera.lager.erz += 2;
   assert.throws(() => api.loadErz(api.save(t)), /Bilanz fehlerhaft/);
+});
+
+test('W0: Arbeitskapital ist bei Auftragserteilung gebunden und gegen Falschbuchung auditiert', () => {
+  const s = api.createErzState(42);
+  api.advance(s, 1, rules);
+  const v = Object.values(s.erzpilotVertraege)[0];
+  assert.equal(v.arbeitsPreis, 2);
+  assert.equal(s.owners[v.arbeitsKonto].cash, 98);
+  assert.equal(api.pilotAuftragsStand(s).arbeitsGebunden, 98);
+  s.owners[v.arbeitsKonto].cash -= 2;
+  s.owners.npc3.cash += 2;
+  const a = api.audit(s);
+  assert.equal(a.isk.ok, true);
+  assert.equal(a.goods.ok, true);
+  assert.equal(a.contracts.ok, false);
+});
+
+test('W1: Regel-15-Auftrag ohne altes Arbeits-Treuhandfeld bleibt ladbar', () => {
+  const s = api.createErzState(42);
+  api.advance(s, 2, rules);
+  const v = Object.values(s.erzpilotVertraege)[0];
+  const arbeitsrest = s.owners[v.arbeitsKonto].cash;
+  s.owners.npc3.cash += arbeitsrest;
+  delete s.owners[v.arbeitsKonto];
+  delete v.arbeitsKonto;
+  delete v.arbeitsPreis;
+  const h = api.hash(s);
+  const geladen = api.loadErz(api.save(s));
+  assert.equal(api.hash(geladen), h);
+  api.advance(geladen, 48, rules);
+  assert.equal(geladen.ledger.erz.mined, 50);
+  assert.equal(api.audit(geladen).ok, true);
 });

@@ -1,0 +1,39 @@
+# [DRAFT] W5f / Regel 23 – finanzierter Pilot, gedecktes Kopfgeld und MK1-Laser
+
+**Basis:** gestapelter [PR #180](https://github.com/tobiasfranziskus/Check/pull/180) / Regel22, Schema8. **[MAIN]** weiterhin `b4e604d6`, Regel14/Schema8. Neue, strikt isolierte Forschungsversion **Regel23/Schema8**, keine Migration und keine Main-Veröffentlichung.
+
+## Drei reale Schritte im vorhandenen Core
+
+**1. Pilotengehalt.** Der NPC-Konzern zahlt wie bisher **50 ISK für eine ganze vorfinanzierte Jagdbereitschaftsstunde**. Neu: Diese Zahlung wird im bestehenden Fonds zunächst lediglich vorgemerkt; der persönliche Pilot `pilot_npc3` erhält die 50 ISK **erst nach tatsächlich verstrichenen 60 Core-Minuten**. Bei vorzeitigem Abbruch wird die ungenutzte Stundenanzahlung aus dem Fonds vollständig dem NPC erstattet, und Kostenstatistik sowie Vertragsbuch werden rückgebucht. Kein wiederholtes Start/Stop-Farming: 100 Versuche ohne Zeitfortschritt müssen 0 Piloteneinnahmen und 0 NPC-Verlust ergeben. NPC-Pilot besitzt **kein eigenes Schiff**; die Jägerhülle bleibt beim Konzern. Nur eine feste, gespeicherte Pilot→Schiff-Zuordnung im Pilotkern.
+
+**2. Einmaliges Kopfgeld.** Der vorhandene Fonds `fonds_transport` muss vor Jagdbeginn **50 schon existierende ISK** in `w5f_kopfgeld_reserve` sperren. Erst der echte, vom deterministischen `m_core_kampf.kampf` erzeugte Tod einer zuvor vollständig industriell gebauten und wirklich von Piraten bezahlten Hülle setzt diese 50 ISK **genau einmal** frei. Empfänger ist das persönliche Pilotenkonto, nicht ein neues Geldkonto der Zentrale. Ungenutzte Reserve wird bei Abbruch oder Verlust der Jagd zurückgebucht. Die `state.minted`-Summe bleibt 0; die bereits existierende `state.stats.kopfgeld` zählt hier den **bezahlten Transfer**, nicht eine Emission. +1 nachvollziehbarer Abschuss-XP-Beleg, vorerst keine weiteren Skills/Level-Boni. **Kein Gratis-Pirat, kein Respawn, keine unfinanzierte Prämie.** Nach dem letzten Piratenabschuss stoppt Regel23 die Jagd und erstattet die ungenutzte Folgestunde.
+
+**3. Erster MK1-Laser.** Ausschließlich **ein tatsächlich von W4 aus geliefertem Erz raffiniertes Material** ist der Input. Der Hersteller `house` bezahlt der Station den bereits vorhandenen **W4-Materialbasiswert von 20 ISK** und sperrt **20 ISK für 20 echte Fertigungsminuten** (unveränderter W4-Zeit-/Lohnparameter: 20 × 1). Fertiger, eindeutig gezählter und gelagerter Laser `laser_mk1`: **Vollkosten 40 ISK**, kein erfundener Gewinn, keine neue freie Verkaufspreisformel. Der aus wirklichen Dienststunden finanzierte Pilot kauft ihn für genau 40 ISK und hat ihn zunächst als eigenes Gut im physischen Laderaum eines konzernbesessenen Jägers. Ein separater validierter Einbaubefehl verbucht `ledger.laser_mk1.consumed` und weist das eingebaute Modul weiterhin dem Piloten zu. Ein Verlust des Jägers wird samt vorhandener Ausrüstung bilanziert, Verkäufe eines ausgerüsteten/zugeteilten Pilotenjägers an Piraten sind gesperrt. Ein eingebauter Laser erhöht **nur in Regel23** die für `m_core_kampf.kampf` hergeleitete Jäger-Angriffsgröße experimentell von 45 auf 50. Das ist ausdrücklich **noch kein beschlossenes Produktbalancing**.
+
+**Ressourcen:** Bereits bestehendes Erz → W4-Material → MK1-Laser; bereits existente Silizium-/Bauteil-/Jägerkette wird unverändert für die zwei echten Jäger benötigt. Keine neuen **Rohstoffe**, keine neue ISK-Emission, kein neuer allgemeiner Preisalgorithmus und keine Hintergrundsubvention. Firmenkonto und Pilotenkonto sind getrennt; eine Werftschuld oder ein Piratenverlust wird nicht automatisch gerettet.
+
+## Ein Core und Geld-/Warenbelege
+
+Alle Aktionen laufen über den vorhandenen `m_core_index.execute` und `advance`; der Regel23-Zustand hängt an demselben `state` und demselben Seed-RNG. Neue validierte Befehle sind `stationBuildLaser`, `pilotBuyLaser`, `pilotFitLaser`. Bestehende W3-Frachter-, W4-Material-, W5b-Werft-, W5c-Budget- und W5d-Kampfbücher prüfen in Regel23 auch die neuen Fonds-/Produktbuchungen. Zusätzlich überprüft `m_core_w5f.audit` Pilotensaldo, vollständig geleistete vs. angezahlte Stunden, rückgebuchte Stunden, unwiederholbares Kopfgeld, tatsächlichen physischen Piratenverlust, Arbeits-Treuhand, Herstellerkosten, Laser-Lager/Ladung/Einbau/Verlust und echte Hülleneigentümer.
+
+Die gesamte ISK-Menge bleibt `sum(owners.cash) = initialSupply + minted − burned = 33.000`. Ein einmaliger Pilotenkauf bezahlt den Hersteller, kein Auszahlungskanal erzeugt neues Geld. Save/Load verwendet ausschließlich `createW5FState` / `loadW5F` und die spezifische **Regel23**. Regel14/17/20/21/22-Saves bleiben inkompatibel und unangetastet.
+
+## Spielbare Forschungsoberfläche
+
+`prototypes/w5-welt/w5f.html`: gemeinsame 2D-Weltkarte, echte Schiff-IDs und Konten, Bergbau, vorfinanzierte Fracht, W4, Jägerbau, bezahlter Jagddienst, Piratenkauf, Einzel-MK1-Laser samt Kaufen/Einbauen und Sicht auf Pilotenkonto/Kopfgeld/XP/Material/Finanzierungsstände. Nur ein gemeinsamer Tick. Separater Browser-Speicher **`aphros-void-forschungswelt-w5f`**, Slot `regel23-pilot-laser-v1`. Derselbe transaktionale CAS-Schreibschutz und JSON-Sicherungs-/Importbestätigungsweg wie W5e, aber **eine eigene Datenbank** statt Hauptspiel/R22. Die existierenden Prototypen und Hauptspiel-Slots bleiben unberührt.
+
+Technische Grenze: Der Forschungsprototyp extrahiert bisher vorhandene Inline-Core-Module mit `Function`; eine strikte NAS-CSP könnte das blockieren. Reale Safari/iPad-Dateidialoge sowie NAS sind nicht abgenommen. Kein Hauptlink und kein Deployment.
+
+## Tests und negative Wirtschaftsgates
+
+Direkt auf dem echten Regel23-Kern ausgeführt, unabhängig von GitHub-CI:
+- **13 feste Seeds × 90 Spieltage**, jeden Tag physische Warenbilanz + Geldbestandsrechnung **unabhängig vom Core-Audit**, daneben vollständiger Core-Audit, zweiter deterministischer Replay und JSON-Save/Load. Alle 13 Serien sind ohne Abweichung durchgelaufen. Feste Seeds: 7, 11, 1, 2, 65535, 42, 1234, 98765, 3, 99, 2024, 2025, 314159.
+- Alle 13 Welten: genau ein physisch produzierter/bezahlter/eingebauter MK1-Laser, ein echter Piratenverlust mit **50 ISK bereits vorher gesperrtem** Kopfgeld, `minted=0`; Ende Tag90 NPC3-Kassen im Bereich 7.650 bis 10.200 ISK; kein persönliches Staatsrettungsgeld.
+- **Anti-Farming:** 100 Start/Abbrüche bei Nullminuten → Pilot 0 ISK, NPC-Kasse und Fonds unverändert, beide Reserven rückerstattet; mehrfaches Kopfgeld, Doppelmodule, fremde Saves, manipulierter Waren- oder Geldbeleg, unfinanzierter Fabrikauftrag und leere Käufertasche werden abgewiesen bzw. durch Audit erkannt.
+- Kein Neuzuweisen eines bereits piloten-ausgerüsteten Jägers an Piraten; Kampfboni ausschließlich für wirklich montierte Module. Bestehende Regel22-Kampftests und historischer Regel14-Golden bleiben als Regressionen erhalten.
+
+**[GitHub-CI #41925076369](https://github.com/tobiasfranziskus/Check/actions/runs/41925076369)** auf Code-Commit `a0b4a29` ist **completed/success**: `node --test` **207/207 bestanden**, 0 Fehler, 0 übersprungen; sieben Workflow-Jobs erfolgreich und ein bedingter Vergleich planmäßig übersprungen. Neuerer reiner Dokumentationscommit hat keine Codeänderung. Reale iPad-/NAS-Abnahme offen.
+
+### Bewertung und Grenzen
+
+Der **isolierte, endlich finanzierte Demonstrationskreislauf** kollabiert in diesen 13 festen Prüfwelten nicht: kein negatives Firmenkonto, keine neue Geldmenge, keine offene fiktive Lohnverpflichtung. Das ist **kein Nachweis einer dauerhaft selbsttragenden Gesamtwirtschaft**: Exportkasse und Piraten sind endlich, Kopfgeld nur einmal, Laserfertigung maximal einmal, keine bezahlte Piraten-Neuproduktion, kein wiederkehrender Endverbrauch. Hier liegt das nächste, gesondert zu entscheidende Wirtschafts- und Produktgate. Keine neuen Preiswerte, Regeln für neue NPC-Piloten oder Kopfgeldemissionsdeckel ohne Freigabe übernehmen.

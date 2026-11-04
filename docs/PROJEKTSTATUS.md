@@ -1,5 +1,16 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W5f – finanzierter Pilot, Abschussprämie und MK1-Laser · 04.11.2026
+
+**[MAIN]** GitHub `b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c` Regel14/Schema8 unverändert. **[DRAFT]** [#181](https://github.com/tobiasfranziskus/Check/pull/181) ist auf die ungemergte Forschungswelt [#180](https://github.com/tobiasfranziskus/Check/pull/180) gestapelt, separate Regel23/Schema8. `index.html` enthält R23 nur als isolierten Forschungs-Core; R14- und R17–22-Befehle/Saves bleiben getrennt. Neue statische Forschungsseite: `prototypes/w5-welt/w5f.html` mit eigenem `aphros-void-forschungswelt-w5f`-Browser-Slot, JSON-Backup, Importvalidierung und CAS-Schreibschutz. **Keine Veränderung am produktiven Startlink.**
+
+**[GELDFLUSS]** NPC zahlt existente 50 ISK pro Stunde zunächst auf Fonds, Pilot erhält erst nach vollständig geleisteter Stunde; abgebrochene/unverbrauchte Arbeitsvorschüsse werden dem NPC inklusive Kostenstatistik erstattet. Einmaliges 50-ISK-Kopfgeld stammt nur aus zuvor gebundener Fonds-Kasse und echtem W5d-Piratenabschuss, `state.minted=0`; kein Ersatzspawn. Laser: 1 physisches W4-Material (20 ISK bisheriger W4-Basiswert) + 20 Minuten real vorfinanzierte Löhne à 1 ISK; 40 ISK tatsächliche Herstellungsvollkosten werden aus dem Pilotenkonto an den Hersteller bezahlt. Piloten-eigener Einbau am weiterhin konzern-eigenen Jäger; Forschungsbonus +5 Angriff, XP +1 nach nachgewiesenem Abschuss. Kein neu freigegebenes produktives Preis-/Skillsystem.
+
+**[TEST DIREKT]** 13 Seeds × 90 Tage mit täglichem unabhängigem ISK-/Ware-Saldo, Kern-Audit, deterministischem Replay und Save-/Load-Hash erfolgreich. Keine Geldemission, je ein bezahlter Laser, ein Piratenverlust und 50 ISK Fonds-Kopfgeld; NPC3-Kassen an Tag90 7.650–10.200 ISK. Manipulierter aber global bilanzerhaltender Geldtransfer, doppelte Ware, ungedeckte Arbeit und falscher Save werden abgelehnt; 100 sofortige Jagdstarts/-abbrüche erzeugen 0 Pilot-ISK und lassen NPC-Kasse/Fonds unverändert. **[CI #41925076369](https://github.com/tobiasfranziskus/Check/actions/runs/41925076369) auf Code-Head `a0b4a29c5eb7e1a228a53a954550108fa57f635b` vollständig erfolgreich: 207/207 Node-Tests, 0 Fehler, 7 erfolgreiche Jobs und ein planmäßig übersprungener Vergleich**; reale Safari/iPad-/NAS-Abnahme nicht erfolgt.
+
+**[GRENZE]** Nur ein endlicher Pilotenkreislauf, noch keine nachfinanzierten Piraten, keine dauerhafte Schiff-/Modulnachfrage oder Gesamtwirtschaftsstabilität. Bestehender `Function`-Loader kann bei strikter CSP scheitern. Kein Merge, Deployment oder neue Rohstoffe/Geldemissionen/Preisregeln.
+
+
 ## [DRAFT] W5e – eine Forschungswelt für Miner/Frachter/Jäger, sichere getrennte Persistenz · 04.11.2026
 
 **[MAIN]** GitHub `b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c`, Regel14/Schema8 unverändert. **[DRAFT]** Integrationsbasis [#179](https://github.com/tobiasfranziskus/Check/pull/179) Head `801766427ca0a036a32195430e67d2502fc5e963`. Der jüngste dokumentationshaltige Workflow [#41870607375](https://github.com/tobiasfranziskus/Check/actions/runs/41870607375) ist **completed/success** (alle sieben ausgeführten Jobs erfolgreich, ein bedingter Vergleich skipped); vorangegangener Code-Lauf [#41870340337](https://github.com/tobiasfranziskus/Check/actions/runs/41870340337): **190/190 Node-Tests**. Das ist **nicht** die Abnahme der neuen W5e-Dateien.

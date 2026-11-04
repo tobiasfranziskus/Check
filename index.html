@@ -2766,6 +2766,7 @@ const m_core_w5 = (() => {
       && werkEinnahmen===old + werftErloese-werftKosten
       && state.owners[c.station].cash+state.w3.kaufAusgaben
         +state.w4.gebucht-w.materialUmsatz
+        +m_core_w5b.stationsKorrektur(state)
           ===rules.owners.find(o=>o.id===c.station).cash
       && (!a || (a.material===p.material && a.materialKosten===p.materialKosten
         && a.arbeitKosten===p.arbeitKosten && Number.isSafeInteger(a.gearbeitet)
@@ -3560,19 +3561,22 @@ return { audit };
 
 const m_core_index = (() => {
 const { RULES } = m_data_rules;
-const { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES } = m_data_erzpilot;
+const { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES } = m_data_erzpilot;
 const pilotAuftragsStand = (state) => m_core_erzpilot.auftragsStand(state, ERZ_RULES);
 const pilotNpcInvestition = (state) => m_core_erzpilot.investitionsPruefung(state, W2_RULES);
 const pilotKonzernStatus = (state) => m_core_w2_konzernstatus.pruefen(state,
-  state.rulesVersion === W5_RULES.rulesVersion ? W5_RULES
+  state.rulesVersion === W5B_RULES.rulesVersion ? W5B_RULES
+    : state.rulesVersion === W5_RULES.rulesVersion ? W5_RULES
     : state.rulesVersion === W4_RULES.rulesVersion ? W4_RULES
       : state.rulesVersion === W3_RULES.rulesVersion ? W3_RULES : W2_RULES);
 const pilotNpcKrisenLage = (state) => m_core_erzpilot.krisenLage(state,
-  state.rulesVersion === W5_RULES.rulesVersion ? W5_RULES
+  state.rulesVersion === W5B_RULES.rulesVersion ? W5B_RULES
+    : state.rulesVersion === W5_RULES.rulesVersion ? W5_RULES
     : state.rulesVersion === W4_RULES.rulesVersion ? W4_RULES
       : state.rulesVersion === W3_RULES.rulesVersion ? W3_RULES : W2_RULES);
 const pilotWirtschaftsStand = (state) => m_core_w1_vollkosten.pruefen(state,
-  state.rulesVersion === W5_RULES.rulesVersion ? W5_RULES
+  state.rulesVersion === W5B_RULES.rulesVersion ? W5B_RULES
+    : state.rulesVersion === W5_RULES.rulesVersion ? W5_RULES
     : state.rulesVersion === W4_RULES.rulesVersion ? W4_RULES
       : state.rulesVersion === W3_RULES.rulesVersion ? W3_RULES : ERZ_RULES);
 function createErzState(seed = ERZ_RULES.startSeed, rules = ERZ_RULES) {
@@ -3631,8 +3635,8 @@ function createW4State(seed = W4_RULES.startSeed,rules=W4_RULES) {
   return s;
 }
 const loadW4 = (json) => loadErz(json,W4_RULES);
-function createW5State(seed = W5_RULES.startSeed) {
-  const s=createW4State(seed,W5_RULES);
+function createW5State(seed = W5_RULES.startSeed,rules=W5_RULES) {
+  const s=createW4State(seed,rules);
   // Fertige Frachter beginnen ausschliesslich als neu PRODUZIERTE Waren.
   const starter=s.stations.st_nadir.lager.frachter;
   s.stations.st_nadir.lager.frachter=0;
@@ -3642,6 +3646,47 @@ function createW5State(seed = W5_RULES.startSeed) {
   return s;
 }
 const loadW5 = (json) => loadErz(json,W5_RULES);
+function createW5BState(seed=W5B_RULES.startSeed) {
+  const s=createW5State(seed,W5B_RULES),lager=s.stations.st_nadir.lager;
+  // Kein Start-Silizium, kein Bauteil und kein fertiger Jaeger.
+  for(const ware of ['silizium','bauteil','jaeger']) {
+    s.ledger[ware].initial-=lager[ware];
+    lager[ware]=0;
+  }
+  // Die angebotene Nadir-Minerhuelle ersetzt eine Aldera-Starterhuelle.
+  // Gesamtbestand an Starter-Minern bleibt daher exakt unveraendert.
+  s.stations.st_aldera.lager.miner--;
+  s.ledger.miner.initial--;
+  s.w5b={minerId:null,siliziumBegonnen:0,siliziumAbgeschlossen:0,
+    siliziumAbgebaut:0,siliziumLohnBezahlt:0,siliziumAbnahme:0,
+    siliziumAuftrag:null,bauteilBegonnen:0,bauteilFertig:0,
+    jaegerBegonnen:0,jaegerFertig:0,jaegerVerkauft:0,
+    vorproduktKauf:0,materialVerbraucht:0,siliziumVerbraucht:0,
+    bauteilVerbraucht:0,fabrikLohnGebunden:0,fabrikLohnBezahlt:0,
+    auftrag:null,schiffIds:[],zerstoerteIds:[]};
+  if(!m_core_audit.audit(s).ok)throw Error('W5b Startfinanzierung inkonsistent');
+  return s;
+}
+const loadW5B = json => loadErz(json,W5B_RULES);
+const pilotW5BStand = state => m_core_w5b.audit(state,W5B_RULES);
+const pilotW5BPlan = (state,art) => m_core_w5b.pruefen(state,W5B_RULES,
+  art,'house','st_nadir');
+// Unveraenderliche, vollstaendig lesende Projektion fuer den Renderer.
+// Bewusst ohne Physik, Kampflogik oder getrennten Simulationszustand.
+function JagdSichtV1(state) {
+  if(state.rulesVersion!==W5B_RULES.rulesVersion)
+    throw Error('JagdSichtV1 nur fuer isolierte W5b-Welt');
+  const jaeger=Object.keys(state.ships).sort().map(id=>state.ships[id])
+    .filter(sh=>sh.klasse==='jaeger')
+    .map(sh=>Object.freeze({id:sh.id,owner:sh.owner,klasse:sh.klasse,
+      system:sh.system,heimat:sh.heimat,phase:sh.phase,auftrag:sh.auftrag,
+      name:sh.rufname||sh.id,hpMax:W5B_RULES.combat.einheiten.jaeger.hp}));
+  return Object.freeze({version:'JagdSichtV1',tick:state.tick,
+    jaeger:Object.freeze(jaeger),werft:Object.freeze({
+      station:'st_nadir',lager:state.stations.st_nadir.lager.jaeger,
+      produziert:state.w5b.jaegerFertig,verkauft:state.w5b.jaegerVerkauft,
+      ersatzbedarf:state.w5b.zerstoerteIds.length})});
+}
 const pilotW3Stand = (state) => m_core_w3.audit(state,
   state.rulesVersion===W5_RULES.rulesVersion?W5_RULES:
     state.rulesVersion===W4_RULES.rulesVersion?W4_RULES:W3_RULES);
@@ -3679,12 +3724,12 @@ const { reise } = m_core_ankunft;
 const { kampf } = m_core_kampf;
 const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
-return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES,
+return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, JagdSichtV1,
   pilotAuftragsStand, pilotWirtschaftsStand, pilotNpcInvestition, pilotNpcKrisenLage, pilotKonzernStatus,
   pilotW3Stand, pilotW3Kalkulation, pilotW4Stand, pilotW4Kalkulation,
-  pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf,
-  createErzState, createW2State, createW3State, createW4State, createW5State,
-  loadErz, loadW2, loadW3, loadW4, loadW5, createState, submit, execute, step, advance, load, preis, faktor };
+  pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf, pilotW5BStand, pilotW5BPlan,
+  createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState,
+  loadErz, loadW2, loadW3, loadW4, loadW5, loadW5B, createState, submit, execute, step, advance, load, preis, faktor };
 })();
 
 const m_data_oberflaeche = (() => {

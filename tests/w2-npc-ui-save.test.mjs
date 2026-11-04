@@ -100,6 +100,9 @@ test('W2-Marktkrise wird angezeigt; fortgesetzte Stunde erzeugt weder gratis Nac
   assert.equal(before.ledger.erz.exported,2000);
   assert.match(el['pilot-w2-status'].textContent,/Kein finanzierter Absatz/);
   assert.match(el['pilot-w2-miner'].textContent,/2 \/ 2/);
+  assert.equal(el['pilot-w2-nachweis'].textContent,'Ja (endlicher Etat)');
+  assert.match(el['pilot-w2-vorbestand'].textContent,/\\d+ Erz/);
+  assert.match(el['pilot-w2-kundenluecke'].textContent,/\\d+ ISK/);
   assert.match(el['pilot-w2-kaeufer'].textContent,/0 Erz/);
   assert.ok(before.owners.npc3.cash>0,'Absatzstopp ist keine Insolvenz');
   el['pilot-tag'].click();

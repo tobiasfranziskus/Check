@@ -203,6 +203,9 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
       <dl>
         <div><dt>Station: Erz</dt><dd id="pilot-lager">–</dd></div>
         <div><dt>Station: frei verfügbar</dt><dd id="pilot-station">–</dd></div>
+        <div><dt>Arbeitsfonds</dt><dd id="pilot-fonds">–</dd></div>
+        <div><dt>Schiffsverkäufer</dt><dd id="pilot-werft">–</dd></div>
+        <div><dt>ISK-Gesamtbestand</dt><dd id="pilot-geldsumme">–</dd></div>
         <div><dt>Für Erzaufträge reserviert</dt><dd id="pilot-gebunden">–</dd></div>
         <div><dt>Arbeitskapital gebunden</dt><dd id="pilot-arbeitsgeld">–</dd></div>
         <div><dt>Aufträge / reserviertes Erz</dt><dd id="pilot-vertraege">–</dd></div>
@@ -4397,13 +4400,16 @@ const m_ui_erzpilot = (() => {
     $('pilot-auftraege').textContent = `${sh.filter((s) => s.auftrag === 'foerdern').length} aktiv`;
     $('pilot-lager').textContent = String(state.stations.st_aldera.lager.erz);
     $('pilot-station').textContent = geld(state.owners.st_aldera.cash);
+    $('pilot-fonds').textContent = geld(state.owners.fonds_aldera.cash);
+    $('pilot-werft').textContent = geld(state.owners.werft_extern.cash);
+    $('pilot-geldsumme').textContent = geld(a.isk.total);
     $('pilot-gebunden').textContent = geld(vertrag.gebunden);
     $('pilot-arbeitsgeld').textContent = geld(vertrag.arbeitsGebunden);
     $('pilot-vertraege').textContent = `${vertrag.auftraege} / ${vertrag.reserviert} Erz`;
     $('pilot-finanzlage').textContent = !a.finanzierung.ok
       ? 'Unbelegte Käuferfinanzierung erkannt. Kein Nachweis für neuen Endverbrauch.'
       : state.owners.export.cash === 0
-        ? 'Exportbudget aufgebraucht: Ohne neue belegte Einnahme keine dauerhafte Produktion.'
+        ? `Exportbudget aufgebraucht: ${geld(a.isk.total)} existieren weiterhin, aber nicht als Budget des Endkäufers. Ohne echte Einnahme keine dauerhafte Nachfrage.`
         : `Anfangsbudget ${geld(a.finanzierung.start)}; bezahlt ${geld(a.finanzierung.ausgegeben)}; Rest ${geld(a.finanzierung.rest)}.`;
     $('pilot-exportbudget').textContent = geld(state.owners.export.cash);
     $('pilot-exportausgaben').textContent = geld(a.finanzierung.ausgegeben);

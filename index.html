@@ -2329,7 +2329,7 @@ function loadErz(json) {
     || !Number.isSafeInteger(geladen.stations.st_aldera.lager.miner))
     throw new Error('Erzpilot-Spielstand: ungueltiges Lager');
   if (!m_core_audit.audit(geladen).ok)
-    throw new Error('Erzpilot-Spielstand: Geld-, Waren- oder Vertragsbilanz fehlerhaft');
+    throw new Error('Erzpilot-Spielstand: Geld-, Waren- oder Vertragsbilanz fehlerhaft (Käuferfinanzierung eingeschlossen)');
   return geladen;
 }
 const createState = (seed = RULES.startSeed, rules = RULES) => m_core_state.createState(seed, rules);

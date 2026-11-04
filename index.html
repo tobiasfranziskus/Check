@@ -3155,11 +3155,13 @@ const { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES } = m_data_erzpilot;
 const pilotAuftragsStand = (state) => m_core_erzpilot.auftragsStand(state, ERZ_RULES);
 const pilotNpcInvestition = (state) => m_core_erzpilot.investitionsPruefung(state, W2_RULES);
 const pilotNpcKrisenLage = (state) => m_core_erzpilot.krisenLage(state,
-  state.rulesVersion === W4_RULES.rulesVersion ? W4_RULES
-    : state.rulesVersion === W3_RULES.rulesVersion ? W3_RULES : W2_RULES);
+  state.rulesVersion === W5_RULES.rulesVersion ? W5_RULES
+    : state.rulesVersion === W4_RULES.rulesVersion ? W4_RULES
+      : state.rulesVersion === W3_RULES.rulesVersion ? W3_RULES : W2_RULES);
 const pilotWirtschaftsStand = (state) => m_core_w1_vollkosten.pruefen(state,
-  state.rulesVersion === W4_RULES.rulesVersion ? W4_RULES
-    : state.rulesVersion === W3_RULES.rulesVersion ? W3_RULES : ERZ_RULES);
+  state.rulesVersion === W5_RULES.rulesVersion ? W5_RULES
+    : state.rulesVersion === W4_RULES.rulesVersion ? W4_RULES
+      : state.rulesVersion === W3_RULES.rulesVersion ? W3_RULES : ERZ_RULES);
 function createErzState(seed = ERZ_RULES.startSeed, rules = ERZ_RULES) {
   const state = m_core_state.createState(seed, rules);
   // Erz stammt nur aus echter Foerderung, nicht aus vorausgefuellten Zielbestaenden.
@@ -3205,8 +3207,8 @@ function loadErz(json, rules = ERZ_RULES) {
 }
 const loadW2 = (json) => loadErz(json, W2_RULES);
 const loadW3 = (json) => loadErz(json, W3_RULES);
-function createW4State(seed = W4_RULES.startSeed) {
-  const s=createW3State(seed,W4_RULES);
+function createW4State(seed = W4_RULES.startSeed,rules=W4_RULES) {
+  const s=createW3State(seed,rules);
   // Das Material entsteht ausschließlich durch echte Fertigstellung.
   const vorbestand=s.stations.st_nadir.lager.material;
   s.stations.st_nadir.lager.material=0;
@@ -3216,13 +3218,32 @@ function createW4State(seed = W4_RULES.startSeed) {
   return s;
 }
 const loadW4 = (json) => loadErz(json,W4_RULES);
+function createW5State(seed = W5_RULES.startSeed) {
+  const s=createW4State(seed,W5_RULES);
+  // Fertige Frachter beginnen ausschliesslich als neu PRODUZIERTE Waren.
+  const starter=s.stations.st_nadir.lager.frachter;
+  s.stations.st_nadir.lager.frachter=0;
+  s.ledger.frachter.initial-=starter;
+  s.w5={materialUmsatz:0,materialVerbraucht:0,arbeitsGebunden:0,
+    arbeitsGezahlt:0,begonnen:0,fertig:0,verkauft:0,schiffIds:[],auftrag:null};
+  return s;
+}
+const loadW5 = (json) => loadErz(json,W5_RULES);
 const pilotW3Stand = (state) => m_core_w3.audit(state,
-  state.rulesVersion===W4_RULES.rulesVersion?W4_RULES:W3_RULES);
+  state.rulesVersion===W5_RULES.rulesVersion?W5_RULES:
+    state.rulesVersion===W4_RULES.rulesVersion?W4_RULES:W3_RULES);
 const pilotW3Kalkulation = (state, schiff) => m_core_w3.pruefen(state,
-  state.rulesVersion===W4_RULES.rulesVersion?W4_RULES:W3_RULES,state.ships[schiff]);
-const pilotW4Stand = (state) => m_core_w4.audit(state,W4_RULES);
-const pilotW4Kalkulation = (state) => m_core_w4.pruefen(state,W4_RULES,
+  state.rulesVersion===W5_RULES.rulesVersion?W5_RULES:
+    state.rulesVersion===W4_RULES.rulesVersion?W4_RULES:W3_RULES,state.ships[schiff]);
+const pilotW4Stand = (state) => m_core_w4.audit(state,
+  state.rulesVersion===W5_RULES.rulesVersion?W5_RULES:W4_RULES);
+const pilotW4Kalkulation = (state) => m_core_w4.pruefen(state,
+  state.rulesVersion===W5_RULES.rulesVersion?W5_RULES:W4_RULES,
   W4_RULES.w4.station,W4_RULES.w4.station);
+const pilotW5Stand = (state) => m_core_w5.audit(state,W5_RULES);
+const pilotW5Kalkulation = (state) => m_core_w5.pruefen(state,W5_RULES,
+  W5_RULES.w5.werft,W5_RULES.w5.station);
+const pilotW5Verkauf = (state) => m_core_w5.verkaufPruefen(state,W5_RULES);
 const createState = (seed = RULES.startSeed, rules = RULES) => m_core_state.createState(seed, rules);
 const submit = (state, cmd, rules = RULES) => m_core_commands.submit(state, cmd, rules);
 const execute = (state, cmd, rules = RULES) => m_core_commands.execute(state, cmd, rules);
@@ -3245,10 +3266,12 @@ const { reise } = m_core_ankunft;
 const { kampf } = m_core_kampf;
 const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
-return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, pilotAuftragsStand, pilotWirtschaftsStand,
-  pilotNpcInvestition, pilotNpcKrisenLage, pilotW3Stand, pilotW3Kalkulation,
-  pilotW4Stand, pilotW4Kalkulation, createErzState, createW2State, createW3State,
-  createW4State, loadErz, loadW2, loadW3, loadW4, createState, submit, execute, step, advance, load, preis, faktor };
+return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES,
+  pilotAuftragsStand, pilotWirtschaftsStand, pilotNpcInvestition, pilotNpcKrisenLage,
+  pilotW3Stand, pilotW3Kalkulation, pilotW4Stand, pilotW4Kalkulation,
+  pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf,
+  createErzState, createW2State, createW3State, createW4State, createW5State,
+  loadErz, loadW2, loadW3, loadW4, loadW5, createState, submit, execute, step, advance, load, preis, faktor };
 })();
 
 const m_data_oberflaeche = (() => {

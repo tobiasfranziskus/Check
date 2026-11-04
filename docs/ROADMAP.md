@@ -1,5 +1,14 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] W5e – eine spielbare Regel22-Welt, sicherer Forschungs-Save · 04.11.2026
+
+**[MAIN]** `b4e604d6` bleibt unverändert Regel14/Schema8. **[DRAFT]** Auf dem Integrationsstand [#179](https://github.com/tobiasfranziskus/Check/pull/179) entsteht ein gemeinsamer W5d-Research-Modus: dieselbe echte Regel22-Welt, dieselben Accounts, ein Tick und ein Audit für Miner, W3-Frachter, Raffinerie, Jägerproduktion, Piratenkauf und Kampf. Neue Dateien ausschließlich in `prototypes/w5-welt/`, `tests/` und `docs/`; kein Main-Link- oder Save-Eingriff. Technische Beschreibung: [W5E_FORSCHUNGSWELT.md](W5E_FORSCHUNGSWELT.md). **[TEST/CI]** Der Code-Head `f54bbd1` hat [CI #41874726983](https://github.com/tobiasfranziskus/Check/actions/runs/41874726983) vollständig bestanden: 196/196 Node-Tests (darunter 6 neue W5e-Tests), 0 Fehler/Skips, 7 erfolgreiche Jobs und 1 planmäßig übersprungener Vergleich. Reale iPad-/NAS-Abnahme steht aus.
+
+**[SAVE-GATE]** Eigene IndexedDB-Datenbank `aphros-void-forschungswelt-w5d`, eigener Slot für Regel22, validierter `loadW5D`-Import und Core-Audit, atomarer Versionsvergleich gegen konkurrierende Tabs sowie JSON-Backup vor bestätigtem Ersetzen. Hauptspiel- und ältere Forschungs-Saves bleiben unangetastet. Browser-/CSP-/Safari-/NAS-Abnahme bleibt offen.
+
+**[OPTION – kein Produktregelbeschluss]** Konzeptdatei `Aphros_Void_Produktionskette_Piloten_Module_Schiffbau.md`: zuerst echte, aus vorhandenen Konten bezahlte Piloteneinkommen getrennt von eventuell **neuem** Kopfgeld; deren Zahler/Betrag und eine etwaige Geldmodell-B-Emission sind vorab freizugeben. Danach begrenzte Erz→Material/Bauteil→MK1-Laser→bezahlter Pilotenkauf→Einbau→messbare Kampfänderung samt vollständigem Geld-/Warenaudit. **Keine zusätzlichen Rohstoffe, Rezept-/Preis-/Emissionswerte oder Module durch diesen Forschungswelt-PR beschlossen.** Langfristig angestrebte Kostenordnung Jäger < Miner < Frachter bleibt zu prüfen, nicht als derzeitige Regel zu behaupten.
+
+
 ## [DRAFT] Frachter-/Jäger-Gesamtstack – kombinierte CI und Save-Trennung · 04.11.2026
 
 **[Integrations-Draft #179](https://github.com/tobiasfranziskus/Check/pull/179)** stapelt auf dem industriell finanzierten Jäger-/Kampf-Draft #178; die **acht vollständig unveränderten Codex-Dateien** aus dem eigenständigen [2D-Frachter-Draft #177](https://github.com/tobiasfranziskus/Check/pull/177) sind ergänzend enthalten. Unveränderte Jäger- und Frachter-Originalbranches; der produktive `main` bleibt unverändert.

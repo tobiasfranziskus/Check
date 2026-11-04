@@ -1,0 +1,13 @@
+:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark;background:#08111c;color:#eef4fc;font-size:16px}
+*{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) max(14px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(14px,env(safe-area-inset-left))}
+header,main{max-width:1340px;margin:auto}header{padding:24px 3px 12px}h1{margin:.25em 0;font-size:clamp(1.6rem,3vw,2.6rem)}h2{font-size:1.18rem;margin:0 0 12px}h3{font-size:1rem;margin:22px 0 10px}.eyebrow{font-size:.76rem;letter-spacing:.13em;color:#95b7d5}
+main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:18px}
+section{padding:17px;border:1px solid #31465e;border-radius:14px;background:#111e2e;min-width:0}
+.visual{grid-column:1/-1}p{line-height:1.48;color:#c3d4e5;margin:8px 0 15px}
+canvas{display:block;width:100%;height:clamp(300px,40vw,520px);border:1px solid #3b5878;border-radius:12px;background:#030915;touch-action:none}
+.buttons{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}button,.file,select,input{font:inherit;min-height:48px;border-radius:9px;border:1px solid #577491;background:#213650;color:#f5faff;padding:10px 12px}
+button,.file{cursor:pointer}button:active{background:#2e5f87}button:disabled{opacity:.38;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #82bbfc}
+.file input{display:none}select{display:block;max-width:100%;margin:6px 0;min-width:min(100%,440px)}
+input[type=number]{display:block;width:125px;margin-top:5px}#meldung{position:sticky;bottom:0;background:#12324f;border-top:1px solid #557d9b;padding:13px max(16px,env(safe-area-inset-left));margin:0;z-index:5}
+.mono{font-family:ui-monospace,SFMono-Regular,monospace;overflow-wrap:anywhere;font-size:.87rem}.hinweis{border-left:3px solid #7c9dbb;padding-left:12px}
+@media(max-width:850px){main{grid-template-columns:1fr}section{padding:13px}canvas{height:360px}}@media(max-width:420px){canvas{height:290px}.buttons>*{flex:1 1 145px}button,.file{font-size:.94rem}}

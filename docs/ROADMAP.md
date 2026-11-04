@@ -1,5 +1,14 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] W5d – zweiter finanziert hergestellter Jäger, echter Kampf und Ersatzbedarf · 04.11.2026
+
+**[DRAFT PR #178](https://github.com/tobiasfranziskus/Check/pull/178)** ist auf W5c #176 gestapelt und behält Codex' eigenständigen Frachterauftrag unberührt. In isolierter **Forschungsregel22** gibt es zwei statt einer endlichen, vollständig finanzierten Silizium-/Bauteil-/Jägercharge. Die notwendige zweite Produktionsfinanzierung stammt aus regulärer, bezahlter **W1-Erzförderung eines zusätzlich vom Spieler erworbenen Aldera-Miners**, nicht aus Startgelderhöhung oder Rettung. Zwei reale W3-Frachtlieferungen, acht W4-Chargen und 192 tatsächlich ausgezahlte Werkarbeitsminuten ergeben **zwei bezahlte Jäger**: der erste wird nach Konzernkauf an Piraten verkauft, der zweite bleibt NPC-Jäger. Die gemeinsamen bestehenden Kampffunktionen ermöglichen bei bezahltem Jagdeinsatz reale Kampfverluste, die eindeutige Schiff-ID und die Hülle werden als vernichtet dokumentiert. Keine Kopfgeldemission, keine XP, kein automatisch erzeugtes Piratenschiff.
+
+**[DIREKTER TEST]** 13 feste Seeds × 90 Tage einschließlich **täglicher Geld-/Waren-/Produktions-/Kampfaudits**, deterministisch identischem zweiten Lauf und Save/Load-Hash: bestanden. Jeder Seed: zwei produzierte, bezahlte Schiffe, ein Piratenverlust, **0** bezahlte Piratenersatzkäufe und **0 ISK** Emission; ein Seed mit zusätzlichem NPC-Jägerverlust. Seed42-Endhash `2fce717d7fd452e1`. **[CI]** Die neue Node-Regressionsdatei liegt vor; GitHub-Gesamtsuite muss separat bestätigt werden. **[WIRTSCHAFT]** Piraten können wegen leerer Kasse und erschöpfter Werftchargen nicht ersetzt werden; die langfristig negative Schiffsherstellermarge ist weiterhin offen. **Kein vollständiger Rattingkreislauf** und kein Eingriff in produktive Regel14/Saves. [Vollbericht](W5D_ZWEI_JAEGER_KAMPF.md).
+
+---
+
+
 ## [DRAFT] W5c – bezahlter Piratenjaeger und vorfinanzierte Jagdbereitschaft · 04.11.2026
 
 **[DRAFT-PR #176](https://github.com/tobiasfranziskus/Check/pull/176)** liegt auf dem W5b-/Codex-Integrationsdraft #175 und führt separat **Forschungsregel21** ein. Die erste physische, aus Silizium/Material/Bauteilen gefertigte Jaegerhuelle kann nach echtem NPC-Kauf **gegen weitere 900 ISK** von der Piratenpartei als dieselbe Schiffs-ID erworben werden. Dafür wurden 900 ISK anfänglich von der Nadir-Station zur endlichen Piratenkasse umverteilt: **33.000 ISK Gesamtmenge**, keine Gratisrettung, keine neue Ware/Emission. Die NPC-Jagdbereitschaft ist je Stunde **vorab aus echter Kasse** an einen Fonds bezahlt; bei fehlenden 50 ISK stoppt sie ohne unbezahlte Leistung. Der Betrag ist hier nur ein Testparameter aus dem bestehenden Kern, kein beschlossenes Balancing.

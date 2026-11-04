@@ -1,5 +1,17 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W2-NPC investiert aus eigenem Kapital – 04.11.2026
+
+**[MAIN]** unverändert `b4e604d6`; **[DRAFT]** [PR #163](https://github.com/tobiasfranziskus/Check/pull/163) ist auf W1-Draft #161 **gestapelt**. Die separate Regel16-Forschungswelt nutzt denselben `m_core_step` und dieselben validierten `shipBuy`-/`shipMine`-Befehle wie Spieler und NPC; ihre Kassen-/Waren-/Auftrags-/Vollkosten-Audits gelten weiter. Regel15 bleibt ohne NPC-Expansion, Regel14 unverändert. Regel16 hat ausschließlich Core-API `createW2State`, `W2_RULES`, `loadW2`; noch keinen Browsermodus und keinen produktiven Save-Slot. Die 2D-Codex-Integration bearbeitet keine W2-Dateien.
+
+**[DIREKT GEMESSEN]** Seed42, allein startender NPC-Miner: Nach 60 Minuten besitzt NPC einen einzigen Miner, der seinen Hüllenkauf noch nicht amortisiert hat. Nach 120 Minuten bewirken tatsächlich gebuchte Verkäufe und finanzierte Aufträge den **Kauf eines zweiten Miners für 600 ISK** aus vorhandener NPC-Kasse; der Schiffsverkäufer erhält exakt 600 ISK, die Lagerware sinkt um 1 komplettes Minerschiff. Am nächsten Tick fördern beide Miner ausschließlich aus vollständig finanzierten Stations-/Arbeits-Treuhandkonten. Im Gegenversuch ist ein eigener Spieler-Miner gleichzeitig aktiv: Bei ausgeschöpfter Abnahme-/Lagerkapazität **kein NPC-Zusatzkauf**. Wenn das endliche Exportbudget erschöpft ist, **keine Folgeinvestition, keine kostenlose Arbeit**. In allen direkt geprüften Szenarien Geld-/Waren-Audit `ok`, ISK-Minting 0.
+
+**[TESTS]** `tests/w2-npc-investition.test.mjs` enthält insbesondere Finanzierungs-/Amortisationsgate, Markt- und Spielerkonkurrenz, Käufer-Erschöpfung, Replay/Save-Load, Regel14-/15-Isolation und 13 feste Seeds × 90 Spieltage mit täglichem Audit. Der erste Push-Lauf auf dem neuen Draft zeigte **102/103 Node-Tests**, einzig die erwartete Resttreuhand war falsch kalkuliert: Bereits 20 Erz im bestehenden Miner reduzieren noch zu reservierende Arbeits-ISK von 196 auf **156**. Der Test wurde **aus den tatsächlich verbliebenen Auftragsminuten** korrigiert; endgültige CI auf dem aktuellen Head separat prüfen, nicht vorab als bestanden bezeichnen.
+
+**[OFFENE GATES]** Keine neue Endnachfrage, kein Geldmodell-B-Emit, keine dauerhafte Kreislauffinanzierung, kein weiterer Konzern-/Insolvenzmechanismus. W1-Produktfreigabe weiterhin offen, W2 nur isolierter finanzieller Entscheidungsnachweis. Kein Merge, Release oder iPad-/NAS-Abnahme.
+
+---
+
 ## [DRAFT] W1 – bezahlte Miner-Vollkosten, Stationsliquidität und Amortisation · 04.11.2026
 
 **[MAIN]** `b4e604d6` unverändert. **[DRAFT]** [PR #161](https://github.com/tobiasfranziskus/Check/pull/161) erweitert im bestehenden Core die *rein lesende* Prüffunktion `pilotWirtschaftsStand` und den W1-Audit um tatsächliche Kassenüberschüsse beider Miner-Konzerne, Kosten einschließlich vollständig bezahlter Minerhüllen, noch gebundenes Arbeits-/Abnahmegeld, Stationsliquidität, Fonds-Einnahmen und stationären Erzbestand. Der Bericht erzeugt weder neue Geldflüsse noch Produktionsrezepte oder Spielstandsfelder.

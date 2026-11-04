@@ -1,5 +1,18 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W5b + Codex-Jagdrenderer: lesender Schnittstellenabgleich · 04.11.2026
+
+**[MAIN]** unverändert `b4e604d6`, Regel14/Schema8. **[DRAFT]** [PR #175](https://github.com/tobiasfranziskus/Check/pull/175) liegt auf dem vollständig bezahlten Regel20-Jägerbau [#173](https://github.com/tobiasfranziskus/Check/pull/173) und übernimmt die zehn neuen Dateien aus Codex-Grafik-Draft [#172](https://github.com/tobiasfranziskus/Check/pull/172) unverändert. Ergänzt sind lediglich der Anzeigeadapter `w5bJagdSichtAusCore`, ein echter Core-/Renderer-Integrationstest und die [Schnittstellendokumentation](W5B_GRAFIK_INTEGRATION.md).
+
+**[SCHNITTSTELLE]** Das Core liefert `jaeger[]`, `werft`, Tick und tatsächliche Besitzer/Orte, der Renderer verlangt `schiffe[]`, System- und Anomaliekennung sowie belegte Ereignisse. Der Adapter projiziert nur gekaufte reale Jäger mit Eigentümer und Systemfilter. Fehlende Koordinaten, XP, Pilot-ID, Piraten und Kampfereignisse bleiben **unbekannt bzw. leer**; `werft-kontakte-ohne-anomalie` ist ausdrücklich kein vorhandener Piratenstützpunkt. Ein fertig hergestellter, aber noch nicht gekaufter Jäger bleibt im Lager und erscheint nicht als aktives Schiff.
+
+**[TEST]** [CI #41860016834](https://github.com/tobiasfranziskus/Check/actions/runs/41860016834) auf `ffe80b7`: **177/177 Node-Tests bestanden**, 0 Fehler, 0 Skips, einschließlich real finanzierter A/B-Kaufkette, echter ID, 100 unveränderlicher Renderframes, Hash/Save/Load, fehlendem Belegstrom und vorhandenen W5b-13×90-Tagen. Der historische Regel14-Hash bleibt unverändert. **[GESAMT-CI ERFOLGREICH]** Alle sieben ausgeführten Jobs erfolgreich; der optionale Sicherheitsgeografie-Vergleich planmäßig übersprungen. Der geprüfte Code-Head ist `ffe80b7`; die nachfolgenden Commits ergänzen ausschließlich Dokumentation. Codex #172 hat zuvor Chromium-Touchtests separat auf dessen eigener Quelle gemeldet; der kombinierte Browserstand wurde nicht eigenständig auf Chromium/iPad/NAS abgenommen.
+
+**[OFFEN]** Kein benutzbarer Regel20-Hauptlink, kein neuer Browser-Save-Slot, keine Piraten, Pilotenskills oder echten Kämpfe. Die Mockvorschau bleibt klar als Mock gekennzeichnet. Claude-Code-Audits noch nicht integriert. Kein Merge/Deployment.
+
+---
+
+
 ## [DRAFT] W5b – bezahlter Bauteil- und Jaegerbau aus echter W3/W4-Ware · 04.11.2026
 
 **[MAIN]** bleibt `b4e604d6` (Regel14/Schema8); **[DRAFT]** [PR #173](https://github.com/tobiasfranziskus/Check/pull/173) ist unmittelbar auf #171 gestapelt und verwendet ausschliesslich die isolierte Forschungsregel20. [Technischer Herstellungs- und Finanzierungsbeleg](W5B_JAEGERBAU.md). Keine neue UI-Route oder Spielstandsmigration, kein Merge/Deployment.

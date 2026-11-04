@@ -1,5 +1,18 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+## [DRAFT] W3 – erster echter und bezahlter Transport Aldera → Nadir → Aldera · 04.11.2026
+
+**[DRAFT PR #168](https://github.com/tobiasfranziskus/Check/pull/168)** auf dem W1/W2-Stack #161/#164/#165/#166/#167, **nicht** in `main`. Regel17 ergänzt den gemeinsamen deterministischen Core um einen zweiten Handelsort Nadir mit **0 Start-Erz**, eine echte 60-Minuten-Torroute und einen aus bestehender Speditionskasse für **750 ISK** gekauften fertigen Frachter. Es gibt keine parallele Wirtschaft oder freie Schiffserzeugung.
+
+**Vollständiger W3-Auftrag (50 Erz):** Die Ware muss zuvor vom Miner unter voll finanziertem W1-Vertrag gefördert und in Aldera bezahlt worden sein. Nadir blockiert vor der Abfahrt **500 ISK Warenpreis + 240 ISK Frachtentgelt** aus eigenen endlichen 4.000 ISK. Die Spedition blockiert parallel **120 ISK Arbeitskapital** (60 Minuten Hinfahrt und 60 Minuten Rückfahrt, je 1 ISK tatsächliche Arbeitskosten/Minute) aus eigener Kasse. Erst danach geht echte Erzladung auf das Schiff; am Ziel erhält Aldera 500 ISK, Nadir die 50 Erz, und nach vollständig bezahltem Rückflug erhält die Spedition 240 ISK. Arbeitszahlungen gehen pro Minute an ihren eigenen Fonds; alle ISK bleiben Bestandteil des unveränderten Weltbestands.
+
+**Prüfkriterien:** Das W3-Core-Audit vergleicht den ursprünglichen Nadir-Käuferetat mit jedem gebundenen Betrag, tatsächliche Lieferungen mit dem Nadir-Lager, Lohnzahlungen mit dem Arbeitsfonds, Frachterkauf mit dem Werftkonto sowie Speditionssaldo mit freien, reservierten und bezahlten Mitteln. Regel14/15/16 und deren Hash-/Save-Grenzen bleiben bestehen. Neue Routen `?modus=w3frachter` (2D-Projektion + Frachtkonten) und `?modus=w3konten` teilen sich nur den **eigenen**, archivierenden Regel17-Slot `aphros-void-w3-regel17-v1`; `slot1`, W1, W2 und die öffentliche Hauptadresse bleiben unangetastet.
+
+**Kein künstlicher Dauerabsatz:** Nadir verwendet zunächst eine endliche vorhandene Käuferkasse und lagert Erz, konsumiert es aber **noch nicht**. Wiederkehrende Endkaufkraft, Raffinerie/Erzverbrauch (W4), Industrieproduktion und Modul-/Schiffbau (W5) benötigen eigene echte Aufträge. Das W3-Gate beweist den vorfinanzierten Transport, **nicht** einen dauerhaft profitablen Gesamtmarkt. Frachtentgelt, Kosten und Verkaufskurs in dieser Regel17-Pilotwelt sind explizite Testparameter, keine Produktions-Balancing-Freigabe. Keine neue ISK, kein Merge/Deployment, iPad/NAS-Abnahme nach Nutzerwunsch später über den vorhandenen Hauptlink.
+
+---
+
+
 ## [DRAFT] W2-Käuferkasse: Wiederanlauf nur nach belegtem Geldzufluss · 04.11.2026
 
 **[ANALYSE → DRAFT-Codehärtung, PR #167]** Der W2-Krisencontroller besitzt bereits die automatische Wiederaufnahme ruhender NPC-Miner, sobald eine *tatsächlich finanzierbare* zusätzliche Charge vorhanden ist. Im gegenwärtigen W2-Modell hat der externe Exportkäufer aber ausschließlich 20.000 ISK Anfangsgeld und **keine freigegebene Einnahmequelle**. Er darf nicht aus NPC-, Spieler-, Fonds- oder Werftkasse ohne wirtschaftliche Gegenleistung aufgefüllt werden: Schon der vorhandene Käuferherkunfts-Audit sperrt solche Überweisungen. Ein echter positiver Wiederanlauf nach erneuter Endkundeneinnahme ist somit **noch nicht vorführbar**, ohne eine neue, ausdrücklich finanzierte Waren-/Leistungskette zu bauen.

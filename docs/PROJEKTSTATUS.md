@@ -1,5 +1,18 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W2 – Nachfrage-Wiederanlauf: Kontenhärtung und überprüfbarer Fehlbetrag · 04.11.2026
+
+**[MAIN]** b4e604d6 / Regel14-Schema8 bleibt unverändert. Auf dem offenen PR #167 werden ausschließlich die Regel16-Forschungswelt und ihre W2-Kontoansicht ergänzt. `krisenLage` zeigt die wirklich vorhandene Endkundenkasse, vorrangige Ware/Vertragsmengen, fehlende ISK bis zu *einem zusätzlichen* Erzauftrag und die Gültigkeit des Käuferherkunftsnachweises. Der Bericht verändert keine Konten und erzeugt keine neuen ISK.
+
+**[KONTENGATE]** Ein bilanzneutraler Transfer von einem vorhandenen Unternehmen auf das Käuferkonto ist ohne echte Einnahme **kein** gültiger Wiederanlauf. Bereits das bestehende Audit verlangt `Käuferanfangsgeld = exportiertes Erz × 10 ISK + Restkasse`; die neuen Regel16-Prüfungen verweigern deshalb auf dieser verfälschten Basis neue Förderaufträge und den anschließenden Erzexport. Eine finanzierte Wiederaufnahme setzt eine nachweisbar echte Einnahme des Käufers voraus. Eine solche Einkommensregel wird **nicht** eingeführt und ein positiver Restart daher nicht als bestanden behauptet.
+
+**[TESTGATE]** Neuer `tests/w2-kaufkraft-gate.test.mjs` für Seeds 42/7: tatsächlicher Käuferstopp mit korrektem Konto-/Warenfehlbetrag, read-only Hash, Save/Load, und negative Gegenprobe gegen eine 1.000-ISK-Umlagerung (Geldsumme unverändert, Käuferherkunft ungültig, kein Export). Bestehender W1-/Regel14-Hash und W2-UI-Slot müssen bestehen. CI erst bei Abschluss als erfolgreich melden. iPad-/NAS-Abnahme verschoben; kein Merge oder Deployment.
+
+**[OFFEN]** Der nächste positive Wiederanlauf erfordert eine *echte* nachgewiesene Leistung, für die der Käufer Geld erhält. Diese Kette gehört wirtschaftlich zu W3/W4/W5 beziehungsweise zu einer ausdrücklich zu genehmigenden Geldmodell-B-Regel. Die vorhandenen Gelder des Spielers und NPC dürfen unbegrenzt liegen bleiben.
+
+---
+
+
 ## [DRAFT] W2-Konzern- und 2D-Ansicht mit isoliertem Regel16-Slot · 04.11.2026
 
 **[MAIN]** weiterhin `b4e604d6`, Regel14/Schema8. Der neue gestapelte Entwicklungsbranch `feature/w2-npc-ui-save-20261104` setzt auf W2-Krisensteuerung #166 auf. Zusätzlich zu den W1-Modi `erzpilot` und `miner2d` gibt es ausschließlich im Draft `?modus=w2konzern` und `?modus=w2miner2d`. Beide nutzen den **existierenden**, autoritativen Regel16-Core und dieselben `shipBuy`-/`shipMine`-/`shipWait`-Befehle sowie Stunden-/Tagesfortschritt. Die 2D-Darstellung zeigt echte NPC-Flotten; der Konzernbericht zeigt Absatz, bereits finanzierte Aufträge, verfügbares Kapital und Betriebsruhe.

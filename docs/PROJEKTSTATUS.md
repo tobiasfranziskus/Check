@@ -1,5 +1,15 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W2-Entscheidung mit W1-/2D-Miner auf einem Core · 04.11.2026
+
+**[MAIN]** unverändert `b4e604d6`. **[DRAFT]** Der Integrationsbranch `feature/w2-miner2d-gemeinsam-20261104` ist auf W1-/2D-Draft #164 gestapelt. Er uebernimmt den exakten, bereits gesondert geprüften Regel-16-Core aus #163 anstelle des bytegleichen Regel-15-Cores aus #164; W1-UI, 2D-Renderer, Controls, laufende Grafik, Regel-14-Standard und Regel-15-Speicherschutz bleiben unverändert. Die 2D-Projektion liest reale NPC-/Spielerschiffe und deren Kassen als eingefrorene Darstellung; die W2-Autoinvestition arbeitet im originalen `m_core_step` mit validierten `shipBuy`-/`shipMine`-Befehlen.
+
+**[GEMESSEN]** Der isolierte Core-Gegencheck bestätigt: Regel14-Referenzhash `866776f7d84ef15e` erhalten; Regel15-NPC-Anzahl nach 120 Minuten 1; Regel16-NPC-Anzahl 2 und geldechter Audit. Neue Kombinationstests prüfen W2-2D-NPC-Darstellung, reale Bezahlung einer neuen Hülle, W2-Spieler-NPC-Konkurrenz, Save/Load/Replays und Nachfrageende. Tests werden erst nach tatsächlicher GitHub-CI als bestanden eingestuft.
+
+**[OFFEN]** W2-2D als öffentliche Spieloption, W2-Speicherslot, autonomer Konkurs/Markteintritt, Endverbrauch sowie iPad-Safari-/NAS-Abnahme. Nutzer möchte spätere manuelle Tests bevorzugt über den bereits vorhandenen Hauptlink statt Codespaces. Kein Merge oder Deployment ohne ausdrückliche Freigabe.
+
+---
+
 ## [DRAFT] W1-Wirtschaft und 2D-Miner verbunden · 04.11.2026
 
 Der [Integrations-Draft #164](https://github.com/tobiasfranziskus/Check/pull/164)

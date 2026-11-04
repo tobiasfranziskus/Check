@@ -223,6 +223,20 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
       <p id="pilot-finanzlage" class="hinweis-text muted" role="status">Käuferfinanzierung wird geprüft.</p>
     </section>
   </div>
+  <section class="card" aria-label="W1-Vollkosten und Zahlungsfähigkeit">
+    <h2>W1 – tatsächliche Vollkosten</h2>
+    <dl>
+      <div><dt>Spieler: Erzumsatz</dt><dd id="pilot-voll-umsatz">–</dd></div>
+      <div><dt>Spieler: Kosten einschließlich Mineranschaffung</dt><dd id="pilot-voll-kosten">–</dd></div>
+      <div><dt>Spieler: Ergebnis nach Auszahlungen</dt><dd id="pilot-voll-spieler">–</dd></div>
+      <div><dt>NPC: Ergebnis nach Auszahlungen</dt><dd id="pilot-voll-npc">–</dd></div>
+      <div><dt>Station: Liquiditätsveränderung inklusive Reservierungen</dt><dd id="pilot-voll-station">–</dd></div>
+      <div><dt>Station: unverkauftes Erz (kalkulatorischer Wert)</dt><dd id="pilot-voll-lager">–</dd></div>
+      <div><dt>Rückgewinnung des Miner-Kaufpreises ab</dt><dd id="pilot-voll-grenze">–</dd></div>
+      <div><dt>Vollkosten-Audit</dt><dd id="pilot-voll-audit">–</dd></div>
+    </dl>
+    <p class="muted">Ein angeschaffter Miner zählt zunächst mit vollem Kaufpreis als Ausgabe. Erz im Stationslager ist kein ISK und garantiert keinen späteren Verkauf. Positive Konzernergebnisse allein finanzieren keinen neuen Endkäufer.</p>
+  </section>
   <section class="card" aria-label="Kontrollen und Spielstand">
     <h2>Prüfung und Spielstand</h2>
     <dl>
@@ -4451,7 +4465,7 @@ const m_ui_erzpilot = (() => {
   const app = document.getElementById('erzpilot-app');
   app.hidden = false;
   const $ = (id) => document.getElementById(id);
-  const { createErzState, loadErz, ERZ_RULES: rules, pilotAuftragsStand, execute, advance, save, audit, hash } = m_core_index;
+  const { createErzState, loadErz, ERZ_RULES: rules, pilotAuftragsStand, pilotWirtschaftsStand, execute, advance, save, audit, hash } = m_core_index;
   const { dbPut, dbGet, dateiSichern } = m_ui_speicher;
   const SLOT = 'aphros-void-erzpilot-regel15-v1';
   let state = createErzState();
@@ -4466,7 +4480,7 @@ const m_ui_erzpilot = (() => {
   }
   function anzeigen() {
     const sh = Object.values(state.ships).filter((s) => s.owner === 'house');
-    const a = audit(state), vertrag = pilotAuftragsStand(state);
+    const a = audit(state), vertrag = pilotAuftragsStand(state), voll = pilotWirtschaftsStand(state);
     $('pilot-kasse').textContent = geld(state.owners.house.cash);
     $('pilot-npc').textContent = geld(state.owners.npc3.cash);
     $('pilot-miner').textContent = String(sh.length);
@@ -4476,6 +4490,15 @@ const m_ui_erzpilot = (() => {
     $('pilot-fonds').textContent = geld(state.owners.fonds_aldera.cash);
     $('pilot-werft').textContent = geld(state.owners.werft_extern.cash);
     $('pilot-geldsumme').textContent = geld(a.isk.total);
+    $('pilot-voll-umsatz').textContent = geld(voll.konzerne.house.erloese);
+    $('pilot-voll-kosten').textContent = geld(voll.konzerne.house.kosten);
+    $('pilot-voll-spieler').textContent = geld(voll.konzerne.house.netto);
+    $('pilot-voll-npc').textContent = geld(voll.konzerne.npc3.netto);
+    $('pilot-voll-station').textContent = geld(voll.station.netto);
+    $('pilot-voll-lager').textContent = `${voll.stationErz} Erz · ${geld(voll.wertUnverkauft)} (nicht liquide)`;
+    $('pilot-voll-grenze').textContent = `${voll.amortisationErz} verkauften Erz pro Miner`;
+    $('pilot-voll-audit').textContent = voll.ok ? 'Vollkosten + Konten OK' : 'Vollkosten FEHLER';
+    $('pilot-voll-audit').className = voll.ok ? 'good' : 'bad';
     $('pilot-gebunden').textContent = geld(vertrag.gebunden);
     $('pilot-arbeitsgeld').textContent = geld(vertrag.arbeitsGebunden);
     $('pilot-vertraege').textContent = `${vertrag.auftraege} / ${vertrag.reserviert} Erz`;
@@ -4489,7 +4512,7 @@ const m_ui_erzpilot = (() => {
     $('pilot-finanzdelta').textContent = geld(a.finanzierung.differenz);
     $('pilot-mengen').textContent = `${state.ledger.erz.mined} / ${state.ledger.erz.exported}`;
     $('pilot-zeit').textContent = `Tag ${Math.floor(state.tick / 1440) + 1}, Minute ${state.tick % 1440}`;
-    $('pilot-audit').textContent = a.ok ? 'ISK + Waren OK' : 'FEHLER – gesperrt';
+    $('pilot-audit').textContent = a.ok ? 'ISK + Waren + Vollkosten OK' : 'FEHLER – gesperrt';
     $('pilot-audit').className = a.ok ? 'good' : 'bad';
     $('pilot-hash').textContent = hash(state);
     $('pilot-hash').style.fontFamily = 'ui-monospace, monospace';

@@ -2548,6 +2548,152 @@ const m_core_w4 = (() => {
   return {kosten,pruefen,starten,tick,audit};
 })();
 
+// W5: Schiffbau aus realen W4-Materialien, ausschliesslich aus dem
+// Verkaufserloes des bestehenden externen Werftunternehmens finanziert.
+const m_core_w5 = (() => {
+  const { anzahl } = m_core_zahl;
+  const { buche, obergrenze } = m_core_handel;
+  const { protokolliere, neuesSchiff } = m_core_state;
+  function plan(rules) {
+    const c=rules.w5;
+    return { material: c.material, materialKosten:c.material*c.materialPreis,
+      arbeitKosten:c.dauer*c.lohnJeMinute, dauer:c.dauer,
+      preis:c.verkaufsPreis };
+  }
+  function pruefen(state,rules,owner,station) {
+    if(!rules.w5 || state.rulesVersion!==rules.rulesVersion)
+      return {ok:false,grund:'W5-Werft nur in isolierter Regel19'};
+    const c=rules.w5,w=state.w5,k=plan(rules);
+    if(owner!==c.werft || station!==c.station)
+      return {ok:false,grund:'Nur die finanzierende Werft darf Nadir-Schiffe bauen'};
+    if(!w || w.auftrag)
+      return {ok:false,grund:'Eine Werftcharge ist bereits beauftragt'};
+    if(anzahl(state.stations[c.station].lager,'material')<k.material)
+      return {ok:false,grund:'Nicht genug reales W4-Material in Nadir'};
+    if(state.owners[c.werft].cash<k.materialKosten+k.arbeitKosten)
+      return {ok:false,grund:'Werft kann Material und alle Lohnminuten nicht finanzieren'};
+    if(anzahl(state.stations[c.station].lager,c.klasse)+1
+      >obergrenze(state,rules,c.station,c.klasse))
+      return {ok:false,grund:'Kein Platz fuer das fertige Schiff'};
+    if(!audit(state,rules).ok) return {ok:false,grund:'W5: ungedecktes Werftkonto'};
+    return {ok:true,grund:'Material und Arbeitskosten vollstaendig finanziert',...k};
+  }
+  function starten(state,rules,owner,station) {
+    const check=pruefen(state,rules,owner,station);
+    if(!check.ok) throw Error('W5-Schiffbau unbezahlt: '+check.grund);
+    const c=rules.w5,w=state.w5,escrowId='w5_arbeit_treuhand';
+    if(!state.owners[escrowId])state.owners[escrowId]={id:escrowId,kind:'w5-escrow',cash:0};
+    const escrow=state.owners[escrowId];
+    if(escrow.cash)throw Error('W5: Werftarbeit bereits hinterlegt');
+    state.owners[c.werft].cash-=check.materialKosten;
+    state.owners[c.station].cash+=check.materialKosten;
+    buche(state,c.werft,'kosten',check.materialKosten);
+    buche(state,c.station,'erloes',check.materialKosten);
+    state.stations[c.station].lager.material-=check.material;
+    state.ledger.material.consumed+=check.material;
+    w.materialVerbraucht+=check.material;
+    w.materialUmsatz+=check.materialKosten;
+    state.owners[c.werft].cash-=check.arbeitKosten;
+    escrow.cash+=check.arbeitKosten;
+    w.arbeitsGebunden+=check.arbeitKosten;
+    w.begonnen++;
+    w.auftrag={gearbeitet:0,material:check.material,
+      materialKosten:check.materialKosten,arbeitKosten:check.arbeitKosten};
+    protokolliere(state,'auftrag',
+      'Nadir-Werft: '+check.material+' Material gekauft, '+check.arbeitKosten
+      +' ISK Arbeit gesichert',c.werft);
+  }
+  function tick(state,rules) {
+    const w=state.w5,a=w?.auftrag;if(!a)return;
+    const c=rules.w5,escrow=state.owners.w5_arbeit_treuhand;
+    if(!escrow || escrow.cash<c.lohnJeMinute)
+      throw Error('W5: Werftarbeit ohne gedecktes Arbeitsbudget');
+    escrow.cash-=c.lohnJeMinute;
+    state.owners[c.arbeiter].cash+=c.lohnJeMinute;
+    buche(state,c.werft,'kosten',c.lohnJeMinute);
+    buche(state,c.arbeiter,'erloes',c.lohnJeMinute);
+    a.gearbeitet++;w.arbeitsGezahlt+=c.lohnJeMinute;
+    if(a.gearbeitet<c.dauer)return;
+    if(a.gearbeitet!==c.dauer || escrow.cash!==0)
+      throw Error('W5: Werftvertrag nicht voll bezahlt');
+    const lager=state.stations[c.station].lager;
+    if(anzahl(lager,c.klasse)+1>obergrenze(state,rules,c.station,c.klasse))
+      throw Error('W5: Fertigschiff ohne Lagerplatz');
+    lager[c.klasse]=(lager[c.klasse]||0)+1;
+    state.ledger[c.klasse].produced+=1;
+    w.fertig++;
+    w.auftrag=null;
+    protokolliere(state,'produktion',
+      'Nadir-Werft: ein '+c.klasse+' real gebaut, '+a.material
+      +' Material und '+a.arbeitKosten+' ISK Lohn',c.werft);
+  }
+  function verkaufPruefen(state,rules) {
+    const c=rules.w5, w=state.w5;
+    if(!w) return {ok:false,grund:'W5-Auftragsbuch fehlt'};
+    if(!audit(state,rules).ok)
+      return {ok:false,grund:'Werftbilanz nicht gueltig'};
+    if((state.stations[c.station].lager[c.klasse]||0)<1)
+      return {ok:false,grund:'Kein bezahltes Fertigschiff'};
+    if(state.owners[c.kaeufer].cash<c.verkaufsPreis)
+      return {ok:false,grund:'Transportkonzern kann Frachter nicht bezahlen'};
+    return {ok:true,grund:'Fertigschiff und Kaufmittel vorhanden',
+      preis:c.verkaufsPreis};
+  }
+  function audit(state,rules) {
+    const c=rules.w5,w=state.w5, a=w?.auftrag;
+    if(!c||!w)return {ok:false,grund:'Kein W5-Auftragsbuch'};
+    const p=plan(rules),escrow=state.owners.w5_arbeit_treuhand?.cash??0;
+    const st=state.stations[c.station]?.lager,old=rules.owners.find(o=>o.id===c.werft).cash;
+    const werk=state.owners[c.werft]?.cash,arbeit=state.owners[c.arbeiter]?.cash;
+    const werkEinnahmen=(state.owners[c.werft]?.cash??0)
+      + (state.owners.w5_arbeit_treuhand?.cash??0);
+    const werftErloese=state.stats.konto[c.werft]?.erloes;
+    const werftKosten=state.stats.konto[c.werft]?.kosten;
+    const w3VerkaufteFrachter=state.ledger.frachter?.consumed??0;
+    const shipIds=w.schiffIds||[];
+    const gekaufte=shipIds.every(id=>{
+      const sh=state.ships[id];
+      return sh?.klasse===c.klasse && sh.owner===c.kaeufer
+        && sh.heimat==='nadir';
+    });
+    const ok=[escrow,werk,arbeit,werftErloese,werftKosten,
+      w.materialVerbraucht,w.materialUmsatz,w.arbeitsGebunden,
+      w.arbeitsGezahlt,w.begonnen,w.fertig,w.verkauft,w3VerkaufteFrachter]
+      .every(Number.isSafeInteger)
+      && werk>=0&&arbeit>=0&&escrow>=0&&w.begonnen>=w.fertig
+      && w.begonnen===w.fertig+(a?1:0)
+      && w.materialVerbraucht===w.begonnen*p.material
+      && w.materialUmsatz===w.begonnen*p.materialKosten
+      && w.arbeitsGebunden===w.begonnen*p.arbeitKosten
+      && w.arbeitsGezahlt===w.fertig*p.arbeitKosten
+        +(a?.gearbeitet??0)*c.lohnJeMinute
+      && escrow===w.arbeitsGebunden-w.arbeitsGezahlt
+      && arbeit===w.arbeitsGezahlt
+      && state.ledger.material.consumed===w.materialVerbraucht
+      && st.material===state.w4.materialErzeugt-w.materialVerbraucht
+      && state.ledger.frachter.produced===w.fertig
+      && st.frachter===w.fertig-w.verkauft
+      && w.verkauft===shipIds.length&&w.verkauft<=w.fertig
+      && gekaufte
+      && w3VerkaufteFrachter>=w.verkauft
+      && werkEinnahmen===old + werftErloese-werftKosten
+      && state.owners[c.station].cash+state.w3.kaufAusgaben
+        +state.w4.gebucht-w.materialUmsatz
+          ===rules.owners.find(o=>o.id===c.station).cash
+      && (!a || (a.material===p.material && a.materialKosten===p.materialKosten
+        && a.arbeitKosten===p.arbeitKosten && Number.isSafeInteger(a.gearbeitet)
+        && a.gearbeitet>=0&&a.gearbeitet<c.dauer));
+    return {ok,werftCash:werk,werftEscrow:escrow,materialUmsatz:w.materialUmsatz,
+      materialVerbraucht:w.materialVerbraucht,lohnBezahlt:w.arbeitsGezahlt,
+      arbeitCash:arbeit,produziert:w.fertig,verkauft:w.verkauft,
+      frachterLager:st.frachter,materialLager:st.material,
+      buyerCash:state.owners[c.kaeufer].cash,
+      stationCash:state.owners[c.station].cash,
+      status:a?'bau':'bereit',restMinuten:a?c.dauer-a.gearbeitet:0 };
+  }
+  return {plan,pruefen,starten,tick,verkaufPruefen,audit};
+})();
+
 // W1: rein lesende Vollkosten-/Liquiditaetsrechnung aus gebuchten Originalkonten.
 // Kein eigener Wirtschaftskern, kein weiterer Geld- oder Warenfluss.
 const m_core_w1_vollkosten = (() => {

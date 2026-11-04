@@ -127,6 +127,39 @@ test('W3: keine Gratis-Fahrt ohne Ware; keine doppelten Verträge, nicht bei W1/
   assert.equal(api.hash(main),'866776f7d84ef15e');
 });
 
+
+test('W3: 5 echte Lieferzyklen im selben Save, dann harter Käuferstopp ohne Gratisrettung',()=>{
+  const s=bereit(42),sh=cargo(s);
+  for(let charge=1;charge<=5;charge++){
+    const vor=api.audit(s);
+    assert.equal(vor.ok,true);
+    const order=api.execute(s,{type:'shipFreight',owner:'transport',schiff:sh.id},r);
+    assert.equal(order.ok,true,'Vorfinanzierte Charge '+charge+': '+order.reason);
+    assert.equal(api.audit(s).w3.status,'hin');
+    api.advance(s,120,r);
+    assert.equal(s.w3.auftrag,null,'jeder Frachter kehrt zurueck');
+    assert.equal(s.w3.geliefert,charge*50,'nur echte Ware gelangt nach Nadir');
+    assert.equal(s.stations.st_nadir.lager.erz,charge*50);
+    assert.equal(s.owners.st_nadir.cash,4000-charge*740);
+    assert.equal(s.owners.fonds_transport.cash,charge*120);
+    assert.equal(s.w3.frachtUmsatz,charge*240);
+    assert.equal(s.w3.arbeitsKosten,charge*120);
+    assert.equal(api.audit(s).ok,true,'vollstaendiger Arbeits- und Kassenbeleg '+charge);
+    assert.equal(s.minted,0);
+    assert.equal(api.hash(api.loadW3(api.save(s))),api.hash(s));
+    if(charge<5 && s.stations.st_aldera.lager.erz<50)
+      api.advance(s,50,r);
+  }
+  const before=api.hash(s);
+  assert.equal(s.owners.st_nadir.cash,300);
+  const sixth=api.execute(s,{type:'shipFreight',owner:'transport',schiff:sh.id},r);
+  assert.equal(sixth.ok,false,'300 ISK reichen nicht fuer 740-ISK-Auftrag');
+  assert.match(sixth.reason,/Kaeufer|Käufer|Ziel|finanzier|bezahlen/);
+  assert.equal(api.hash(s),before,'kein Nebenbuch bei abgelehntem Auftrag');
+  assert.equal(api.audit(s).ok,true);
+  assert.equal(s.minted,0);
+});
+
 test('W3: 13 Seeds x 90 Tage, alle realen Konten/Warenaudits plus Save/Load',()=>{
   const seeds=[1,2,7,11,13,42,99,123,777,1234,4096,65535,98765];
   for(const seed of seeds){

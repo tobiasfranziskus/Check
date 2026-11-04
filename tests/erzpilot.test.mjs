@@ -247,7 +247,7 @@ test('W1: Fremdkontogeld ist ohne belegte Endkunden-Einnahme keine gueltige Kaue
   assert.equal(a.finanzierung.ok, false);
   assert.equal(a.finanzierung.differenz, umbuchen);
   assert.equal(a.ok, false);
-  assert.throws(() => api.loadErz(api.save(s)), /Bilanz fehlerhaft/);
+  assert.throws(() => api.loadErz(api.save(s)), /Vertragsbilanz fehlerhaft/);
 });
 
 test('W0: Freie Treuhandmittel dürfen nach Rueckgabe wieder gebunden werden', () => {

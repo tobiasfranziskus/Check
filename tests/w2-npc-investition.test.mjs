@@ -54,7 +54,10 @@ test('W2: Investition erst nach echtem Gewinn und nur mit zweiter finanzierter C
   api.advance(s, 1, rules);
   assert.equal(api.pilotAuftragsStand(s).auftraege, 2);
   assert.equal(api.pilotAuftragsStand(s).gebunden, 1000);
-  assert.equal(api.pilotAuftragsStand(s).arbeitsGebunden, 196);
+  const restkosten = Object.entries(s.erzpilotVertraege).reduce((gesamt, [shipId, v]) =>
+    gesamt + (v.menge - (s.ships[shipId].ladung.erz || 0)) * v.arbeitsPreis, 0);
+  assert.equal(restkosten, 156, 'bestehender Miner hat bereits bezahlte Erz im Frachtraum');
+  assert.equal(api.pilotAuftragsStand(s).arbeitsGebunden, restkosten);
   assert.equal(api.audit(s).ok, true);
 });
 

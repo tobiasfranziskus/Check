@@ -171,6 +171,38 @@ test('W4: 5 reale Frachten, 15 Produktionschargen, Stopp bei 0 ISK trotz Rest-Er
   assert.equal(s.minted,0);
 });
 
+
+test('W4: Bilanzneutrale Fremdzahlung auf Arbeitstreuhand bleibt trotz ISK-Erhaltung gesperrt',()=>{
+  const s=startCargo(42);
+  assert.equal(api.execute(s,refine,r).ok,true);
+  const normal=api.audit(s);
+  assert.equal(normal.ok,true);
+  s.owners.transport.cash-=1;
+  s.owners.w4_arbeit_treuhand.cash+=1;
+  const a=api.audit(s);
+  assert.equal(a.isk.ok,true,'Gesamt-ISK allein reicht nicht zum Arbeitsbeleg');
+  assert.equal(a.goods.ok,true);
+  assert.equal(a.w4.ok,false,'W4-Arbeitstreuhand hat unberechtigt 1 ISK mehr');
+  assert.equal(a.w3.ok,false,'Auch Speditionsherkunft bleibt auditierbar');
+  assert.throws(()=>api.loadW4(api.save(s)),/bilanz fehlerhaft/i);
+  assert.equal(s.minted,0);
+});
+
+test('W4: 1 erfundenes Material mit nachgetragenem Warenledger bleibt betrugssicher erkannt',()=>{
+  const s=startCargo(42);
+  assert.equal(api.execute(s,refine,r).ok,true);
+  api.advance(s,20,r);
+  assert.equal(api.audit(s).ok,true);
+  s.stations.st_nadir.lager.material+=1;
+  s.ledger.material.produced+=1;
+  const a=api.audit(s);
+  assert.equal(a.isk.ok,true);
+  assert.equal(a.goods.ok,true,'Ein manipuliertes Ledger kann den bloßen Warenaudit täuschen');
+  assert.equal(a.w4.ok,false,'W4-Zähler muss unabhängig echte Fertigstellungen belegen');
+  assert.equal(a.ok,false);
+  assert.throws(()=>api.loadW4(api.save(s)),/bilanz fehlerhaft/i);
+});
+
 test('W4: 13 Seeds x 90 Tage mit bezahltem Transport, Produktion, Replay, Save und Gesamtbilanz',()=>{
   const seeds=[1,2,7,11,13,42,99,123,777,1234,4096,65535,98765];
   for(const seed of seeds){

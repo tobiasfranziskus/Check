@@ -384,3 +384,109 @@ test('W4 UI: beschädigter Regel18-Slot bleibt gesperrt und als Original exporti
   assert.equal(downloads[0].text,broken);
   assert.match(downloads[0].name,/regel18-beschaedigt/);
 });
+
+test('W5 UI: echtes Material, bezahlter Werftbau und realer Frachterkauf',async()=>{
+  const W3_SLOT='aphros-void-w3-regel17-v1',W4_SLOT='aphros-void-w4-regel18-v1',
+    W5_SLOT='aphros-void-w5-regel19-v1';
+  const originals={slot1:'MAIN-ALT',[W1_SLOT]:'W1-ALT',[W2_SLOT]:'W2-ALT',
+    [W3_SLOT]:'W3-ALT',[W4_SLOT]:'W4-ALT'};
+  const {el,store}=boot('w5werft',originals);
+  await settle();
+  assert.equal(el.miner2d.hidden,false);
+  assert.equal(el['pilot-w5-panel'].hidden,false);
+  assert.equal(el['pilot-w4-panel'].hidden,false);
+  assert.match(el['pilot-version'].textContent,/Regel 19/);
+  assert.equal(el['pilot-w5-bauen'].disabled,true,'zuerst echte Raffinerieware');
+  assert.equal(el['pilot-w5-kaufen'].disabled,true,'kein kostenloses Fertigschiff');
+  el['pilot-w3-kauf'].click();await settle();
+  el['pilot-w3-50'].click();await settle();
+  el['pilot-w3-start'].click();await settle();
+  el['pilot-stunde'].click();await settle();
+  el['pilot-stunde'].click();await settle();
+  el['pilot-w4-start'].click();await settle();
+  el['pilot-w4-20'].click();await settle();
+  assert.equal(el['pilot-w5-material'].textContent,'5 Material');
+  assert.equal(el['pilot-w5-bauen'].disabled,false);
+  el['pilot-w5-bauen'].click();await settle();
+  let state=JSON.parse(store.get(W5_SLOT));
+  assert.equal(state.rulesVersion,19);
+  assert.equal(state.owners.st_nadir.cash,3740);
+  assert.equal(state.w5.materialUmsatz,500);
+  assert.equal(state.owners.w5_arbeit_treuhand.cash,30);
+  assert.equal(state.stations.st_nadir.lager.material,0);
+  assert.equal(state.ledger.frachter.produced,0);
+  assert.equal(el['pilot-w5-bauen'].disabled,true);
+  assert.match(el['pilot-w5-status'].textContent,/30 Minuten/);
+  el['pilot-w5-30'].click();await settle();
+  state=JSON.parse(store.get(W5_SLOT));
+  assert.equal(state.stations.st_nadir.lager.frachter,1);
+  assert.equal(state.ledger.frachter.produced,1);
+  assert.equal(state.owners.arbeiter_werft_nadir.cash,30);
+  assert.equal(el['pilot-w5-kaufen'].disabled,false,'echtes Fertigschiff und Käuferbudget');
+  el['pilot-w5-kaufen'].click();await settle();
+  state=JSON.parse(store.get(W5_SLOT));
+  assert.equal(state.w5.verkauft,1);
+  assert.equal(state.stations.st_nadir.lager.frachter,0);
+  assert.equal(state.ships[state.w5.schiffIds[0]].system,'nadir');
+  assert.equal(state.ships[state.w5.schiffIds[0]].owner,'transport');
+  assert.equal(el['pilot-w5-audit'].textContent,'Bau + Verkauf + Geld OK');
+  assert.equal(el['pilot-audit'].textContent,'ISK + Waren + Vollkosten OK');
+  assert.equal(state.minted,0);
+  assert.equal(state.initialSupply,33000);
+  for(const [id,value] of Object.entries(originals)) assert.equal(store.get(id),value);
+});
+
+test('W5 UI: Ansichtswechsel ist hashgleich, Importablehnung und Archiv nur Regel19',async()=>{
+  const W3_SLOT='aphros-void-w3-regel17-v1',W4_SLOT='aphros-void-w4-regel18-v1',
+    W5_SLOT='aphros-void-w5-regel19-v1';
+  const old={slot1:'MAINALT',[W1_SLOT]:'W1',[W2_SLOT]:'W2',[W3_SLOT]:'W3',[W4_SLOT]:'W4'};
+  const a=boot('w5werft',old);await settle();
+  a.el['pilot-w3-kauf'].click();await settle();
+  a.el['pilot-w3-50'].click();await settle();
+  a.el['pilot-w3-start'].click();await settle();
+  a.el['pilot-stunde'].click();await settle();
+  a.el['pilot-stunde'].click();await settle();
+  a.el['pilot-w4-start'].click();await settle();
+  a.el['pilot-w4-20'].click();await settle();
+  a.el['pilot-w5-bauen'].click();await settle();
+  const firstHash=a.el['pilot-hash'].textContent,firstSave=a.store.get(W5_SLOT);
+  const b=boot('w5konten',Object.fromEntries(a.store));await settle();
+  assert.equal(b.el.miner2d.hidden,true);
+  assert.equal(b.el['pilot-w5-panel'].hidden,false);
+  assert.equal(b.el['pilot-hash'].textContent,firstHash);
+  assert.equal(b.store.get(W5_SLOT),firstSave);
+  b.el['pilot-w5-30'].click();await settle();
+  const next=b.store.get(W5_SLOT);
+  assert.equal(JSON.parse(next).w5.fertig,1);
+  const c=boot('w5werft',Object.fromEntries(b.store));await settle();
+  assert.equal(c.el['pilot-hash'].textContent,b.el['pilot-hash'].textContent);
+  assert.equal(c.store.get(W5_SLOT),next);
+  const wrong=JSON.parse(next);wrong.rulesVersion=18;
+  await c.el['pilot-datei-input'].listeners.change({target:{
+    files:[{text:async()=>JSON.stringify(wrong)}],value:'invalid'
+  }});await settle();
+  assert.equal(c.store.get(W5_SLOT),next,'kein heimlicher Import eines W4-Standes');
+  assert.match(c.el['pilot-meldung'].textContent,/Import abgelehnt/);
+  c.el['pilot-datei'].click();
+  assert.match(c.downloads[0].name,/regel19/);
+  await c.el['pilot-neu'].click();await settle();
+  const archives=[...c.store.keys()].filter(k=>k.startsWith(W5_SLOT+'-archiv-'));
+  assert.equal(archives.length,1);
+  assert.equal(c.store.get(archives[0]),next);
+  assert.equal(JSON.parse(c.store.get(W5_SLOT)).rulesVersion,19);
+  for(const [id,val] of Object.entries(old))assert.equal(c.store.get(id),val);
+});
+
+test('W5 UI: korrupter Regel19-Slot ist gesperrt und roh exportierbar',async()=>{
+  const W5_SLOT='aphros-void-w5-regel19-v1',broken='{"rulesVersion":19,"fake":true}';
+  const {el,store,downloads}=boot('w5konten',{[W5_SLOT]:broken});
+  await settle();
+  assert.equal(el['pilot-w5-bauen'].disabled,true);
+  assert.equal(el['pilot-w5-kaufen'].disabled,true);
+  assert.equal(el['pilot-w5-30'].disabled,true);
+  assert.equal(el['pilot-stunde'].disabled,true);
+  assert.equal(store.get(W5_SLOT),broken);
+  el['pilot-datei'].click();
+  assert.equal(downloads[0].text,broken);
+  assert.match(downloads[0].name,/regel19-beschaedigt/);
+});

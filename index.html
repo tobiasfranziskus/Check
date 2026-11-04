@@ -252,6 +252,9 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
       <div><dt>Bereits finanzierte NPC-Verträge</dt><dd id="pilot-w2-finanzierte">–</dd></div>
       <div><dt>Nächste finanzierbare Erzmenge</dt><dd id="pilot-w2-planbar">–</dd></div>
       <div><dt>Noch freie Endkunden-Abnahme</dt><dd id="pilot-w2-kaeufer">–</dd></div>
+      <div><dt>Vorhandenes Erz mit vorrangigem Käuferbedarf</dt><dd id="pilot-w2-vorbestand">–</dd></div>
+      <div><dt>Fehlende Käufermittel für eine weitere Erzcharge (ab 1 Erz)</dt><dd id="pilot-w2-kundenluecke">–</dd></div>
+      <div><dt>Käuferfinanzierung belegt</dt><dd id="pilot-w2-nachweis">–</dd></div>
       <div><dt>Verfügbares NPC-Kapital</dt><dd id="pilot-w2-kapital">–</dd></div>
     </dl>
     <p class="muted" id="pilot-w2-erklaerung">NPC investiert nur aus vorhandenen Mitteln. Ohne Absatz werden neue Aufträge gestoppt; bereits bezahlte Arbeiten bleiben gültig. Ein Absatzstopp ist keine Insolvenz.</p>
@@ -1909,6 +1912,7 @@ const m_core_erzpilot = (() => {
   }
   function beauftragen(state, rules, schiff) {
     const cfg = rules.erzpilot, buch = (state.erzpilotVertraege ||= {});
+    if (cfg.npcInvestor && !m_core_audit.audit(state).finanzierung?.ok) return null;
     if (buch[schiff.id]) return buch[schiff.id];
     const station = state.owners[cfg.station];
     const lager = state.stations[cfg.station].lager;
@@ -1997,6 +2001,10 @@ const m_core_erzpilot = (() => {
   // Export: nur nachweislich gelagertes Erz gegen reales endliches Kaeuferbudget.
   function exportiere(state, rules) {
     if (!rules.erzpilot) return 0;
+    // W2 darf auch bei direkter Core-Nutzung keine unbelegte Aufstockung
+    // des Endkundenkontos als neuen realen Absatz behandeln.
+    if (rules.erzpilot.npcInvestor && !m_core_audit.audit(state).finanzierung?.ok)
+      throw Error('W2: Endkundenkonto ohne belegte Einnahme; kein weiterer Erzexport');
     const cfg = rules.erzpilot;
     const lager = state.stations[cfg.station].lager;
     const kaeufer = state.owners[cfg.exportOwner];
@@ -2085,15 +2093,27 @@ const m_core_erzpilot = (() => {
     const buch = vertragsbuch(state), lager = state.stations[cfg.station].lager;
     const reservierteMenge = reserviert(state);
     const kaeuferMenge = freieEndnachfrage(state, rules);
+    const kaeuferNachweisOk = m_core_audit.audit(state).finanzierung?.ok === true;
+    // Bereits erzeugtes/zugesagtes Erz verbraucht den naechsten vorhandenen
+    // Kaufetat zuerst. So ist der benoetigte Betrag ohne neue Preistabelle
+    // aus dem einzigen R16-Preis und dem bestehenden Core-Bestand hergeleitet.
+    const fremdeFracht = ids(state.ships).reduce((sum, id) => {
+      if (buch[id]) return sum;
+      return sum + anzahl(state.ships[id].ladung, 'erz');
+    }, 0);
+    const vorbestand = anzahl(lager, 'erz') + reservierteMenge + fremdeFracht;
+    const kundenlueckeISK = Math.max(0,
+      (vorbestand + 1) * cfg.preis - state.owners[cfg.exportOwner].cash);
     const freiePlaetze = Math.max(0, obergrenze(state, rules, cfg.station, 'erz')
       - anzahl(lager, 'erz') - reservierteMenge);
     const stationsMenge = Math.max(0, Math.floor(state.owners[cfg.station].cash / cfg.preis));
     const arbeitsMenge = Math.max(0, Math.floor(state.owners[owner].cash / cfg.minerJeMinute));
-    const planbar = Math.min(cfg.auftragsMenge, rules.economy.cargo,
-      kaeuferMenge, freiePlaetze, stationsMenge, arbeitsMenge);
+    const planbar = kaeuferNachweisOk ? Math.min(cfg.auftragsMenge, rules.economy.cargo,
+      kaeuferMenge, freiePlaetze, stationsMenge, arbeitsMenge) : 0;
     const finanzierte = eigene.filter((sh) => !!buch[sh.id]).length;
     // Fehlender Absatz ist keine Insolvenz: ein wohlhabender Konzern pausiert.
-    const status = planbar > 0 ? 'arbeitsbereit'
+    const status = !kaeuferNachweisOk ? 'finanzierungsfehler'
+      : planbar > 0 ? 'arbeitsbereit'
       : kaeuferMenge === 0 ? 'absatzstopp'
       : freiePlaetze === 0 ? 'lagerengpass'
       : stationsMenge === 0 ? 'abnahmeengpass'
@@ -2102,6 +2122,7 @@ const m_core_erzpilot = (() => {
       finanzierte, ruhend: eigene.filter((sh) => sh.auftrag === 'halten').length,
       unternehmenCash: state.owners[owner].cash,
       kaeuferCash: state.owners[cfg.exportOwner].cash,
+      kaeuferNachweisOk, vorbestand, kundenlueckeISK,
       freiePlaetze, stationsMenge, kaeuferMenge, arbeitsMenge };
   }
   function krisenSteuern(state, rules) {
@@ -4826,12 +4847,15 @@ const m_ui_erzpilot = (() => {
       const lage = pilotNpcKrisenLage(state);
       const status = { arbeitsbereit:'Arbeitsbereit', absatzstopp:'Kein finanzierter Absatz',
         lagerengpass:'Lager belegt', abnahmeengpass:'Stationskasse reicht nicht',
-        betriebskapitalengpass:'Arbeitskapital fehlt' };
+        betriebskapitalengpass:'Arbeitskapital fehlt', finanzierungsfehler:'Käufergeld ohne gültigen Zahlungsbeleg' };
       $('pilot-w2-status').textContent = status[lage.status] || lage.status;
       $('pilot-w2-miner').textContent = `${lage.eigene} / ${lage.ruhend}`;
       $('pilot-w2-finanzierte').textContent = String(lage.finanzierte);
       $('pilot-w2-planbar').textContent = `${lage.planbar} Erz`;
       $('pilot-w2-kaeufer').textContent = `${lage.kaeuferMenge} Erz`;
+      $('pilot-w2-vorbestand').textContent = `${lage.vorbestand} Erz`;
+      $('pilot-w2-kundenluecke').textContent = geld(lage.kundenlueckeISK);
+      $('pilot-w2-nachweis').textContent = lage.kaeuferNachweisOk ? 'Ja (endlicher Etat)' : 'Nein – gesperrt';
       $('pilot-w2-kapital').textContent = geld(lage.unternehmenCash);
     }
     $('pilot-miner').textContent = String(sh.length);

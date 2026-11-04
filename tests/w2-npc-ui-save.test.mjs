@@ -336,10 +336,10 @@ test('W4 UI: Konto-/2D-Wechsel liest denselben Hash, archiviert nur eigenen Save
   const old={slot1:'ALTMAIN',[W1_SLOT]:'ALT15',[W2_SLOT]:'ALT16',[W3_SLOT]:'ALT17'};
   const a=boot('w4raffinerie',old);
   await settle();
-  a.el['pilot-w3-kauf'].click();
-  a.el['pilot-w3-50'].click();
-  a.el['pilot-w3-start'].click();
-  a.el['pilot-stunde'].click();
+  a.el['pilot-w3-kauf'].click();await settle();
+  a.el['pilot-w3-50'].click();await settle();
+  a.el['pilot-w3-start'].click();await settle();
+  a.el['pilot-stunde'].click();await settle();
   a.el['pilot-w4-start'].click();await settle();
   const before=a.store.get(W4_SLOT),hash=a.el['pilot-hash'].textContent;
   const b=boot('w4konten',Object.fromEntries(a.store));await settle();

@@ -2,7 +2,8 @@
 
 ## [DRAFT] W1-Wirtschaft und 2D-Miner verbunden · 04.11.2026
 
-Der Integrationsbranch `feature/w1-miner2d-integration` stapelt gezielt Grafik und
+Der [Integrations-Draft #164](https://github.com/tobiasfranziskus/Check/pull/164)
+(`feature/w1-miner2d-integration`, gegen den W1-Branch) stapelt gezielt Grafik und
 Touch aus [#162](https://github.com/tobiasfranziskus/Check/pull/162) auf den
 unveränderten Regel-15-Core aus [#161](https://github.com/tobiasfranziskus/Check/pull/161).
 `?modus=miner2d` bedient denselben W1-Zustand und Speicherplatz wie die Kontenansicht:

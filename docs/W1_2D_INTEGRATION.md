@@ -1,5 +1,7 @@
 # [DRAFT] W1-/2D-Miner-Integration · 04.11.2026
 
+Integrations-Draft: [PR #164](https://github.com/tobiasfranziskus/Check/pull/164), gegen den W1-Branch aus #161.
+
 Integrationsbranch: `feature/w1-miner2d-integration`, Basis [#161](https://github.com/tobiasfranziskus/Check/pull/161)
 bei `61eebed5`; gezielte Grafik-/Touchübernahme aus [#162](https://github.com/tobiasfranziskus/Check/pull/162)
 bei `35688082`. Kein Merge, kein Deployment. Der gesamte Core bis

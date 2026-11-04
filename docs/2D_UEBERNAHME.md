@@ -1,5 +1,7 @@
 # [DRAFT] Void-Echoes-2D im W1-Erzpiloten
 
+Integrations-Draft: [PR #164](https://github.com/tobiasfranziskus/Check/pull/164), gegen den W1-Branch aus #161.
+
 Stand 04.11.2026. Integration auf `feature/w1-miner2d-integration`, gestapelt auf
 [PR #161](https://github.com/tobiasfranziskus/Check/pull/161), Commit
 `61eebed51e07df5e99fe5d06a5c205887cb3c142`. Darstellung, Kamera, Grafikherkunft und

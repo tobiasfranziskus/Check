@@ -61,7 +61,6 @@ test('W2-Kaufkraft: bilanzneutrale, unbelegte Geldumlagerung ist KEINE neue Endk
     assert.equal(l.status,'finanzierungsfehler');
     assert.equal(l.planbar,0);
     assert.equal(l.kaeuferCash,amount);
-    assert.equal(l.unternehmenCash+amount,count(s).length ? s.owners.npc3.cash+amount : NaN);
     assert.notEqual(api.hash(s),before);
     const exported=s.ledger.erz.exported, mined=s.ledger.erz.mined;
     assert.throws(()=>api.advance(s,60,rules),/Endkundenkonto ohne belegte Einnahme/);

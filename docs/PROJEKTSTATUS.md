@@ -1,5 +1,16 @@
 # Aphros Void – Projektstatus
 
+## [DRAFT] W5e – eine Forschungswelt für Miner/Frachter/Jäger, sichere getrennte Persistenz · 04.11.2026
+
+**[MAIN]** GitHub `b4e604d6ae5b9a4ba0a8d8e53651ca61119c9e1c`, Regel14/Schema8 unverändert. **[DRAFT]** Integrationsbasis [#179](https://github.com/tobiasfranziskus/Check/pull/179) Head `801766427ca0a036a32195430e67d2502fc5e963`. Der jüngste dokumentationshaltige Workflow [#41870607375](https://github.com/tobiasfranziskus/Check/actions/runs/41870607375) ist **completed/success** (alle sieben ausgeführten Jobs erfolgreich, ein bedingter Vergleich skipped); vorangegangener Code-Lauf [#41870340337](https://github.com/tobiasfranziskus/Check/actions/runs/41870340337): **190/190 Node-Tests**. Das ist **nicht** die Abnahme der neuen W5e-Dateien.
+
+Die neue statische Seite `prototypes/w5-welt/welt.html` verwendet `createW5DState`, `execute`, `advance`, `save`, `loadW5D` und den unveränderten 2D-Renderer. Ein gemeinsamer Core-Stand für Erz-/Siliziumminer, Frachter, Industrie und echte Kämpfe, keine parallele UI-Wirtschaft. Die Hauptspiel-DB `aphros-void` wird nicht geöffnet; separate `aphros-void-forschungswelt-w5d` mit `regel22-gemeinsame-welt-v1`. JSON-Sicherung vor bestätigtem Ersetzen, Fremdversions-/Audit-Gate und atomarer Schutz gegen konkurrierende Tab-Schreibvorgänge. Bei fehlendem Browser-Speicher explizit flüchtige Sitzung.
+
+**[TESTSTATUS]** Neue gezielte Tests für tatsächliche Core-Befehle, Hashes, Save/Load, Ablehnungen und simulierte atomare IndexedDB-Transaktionen sind im PR. **Ausführung und genaue Zahl erst nach CI berichten**; bestehende 13×90-Tage-W5d-Prüfungen werden nicht als neue W5e-Abnahme umetikettiert. **Offen:** reale iPad-Safari-/NAS- und CSP-Abnahme, Einstieg über den Hauptlink, freie Flugsteuerung. Kein Merge/Deployment.
+
+**[OPTION]** Pilotenvergütung aus vorhandenen, wirklich gebundenen ISK vor irgendeiner neuen Kopfgeldemission; danach MK1-Laser aus ausschließlich bereits vorhandenen Erz-/Materialflüssen mit realem Piloten-Kauf, Einbau, Wirkung und Audit. Konzeptnotiz ist ein Vorschlag. Kein neuer Rohstoff, kein geänderter Preis/Recipe, keine neue Geldquelle oder neue Schiffswertordnung beschlossen.
+
+
 ## [DRAFT] Unveränderte Codex-Frachteransicht neben W5d-Kampfkern · 04.11.2026
 
 **[MAIN]** weiterhin `b4e604d6`, Regel14/Schema8. **[DRAFT]** [PR #179](https://github.com/tobiasfranziskus/Check/pull/179) basiert auf #178 und übernimmt exakt die acht neuen Dateien aus #177. Keine Dateikonflikte oder Änderungen an den Original-PRs; ein separater W3-/W5d-Koexistenztest und eine Grenzen-Dokumentation wurden ergänzt.

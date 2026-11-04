@@ -2076,7 +2076,7 @@ function schutzgeld(state, rules) {
     buche(state, st, 'kosten', n); buche(state, w.piraten.owner, 'erloes', n);
   }
 }
-return { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewegen };
+return { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewegen, entfernen };
 })();
 
 const m_core_schiffbau = (() => {
@@ -3162,6 +3162,9 @@ const m_core_w5c = (() => {
     const gekauft=w.kaufIds.length,sh=state.ships[w.kaufIds[0]];
     const akt=w.jagdAktivId?state.ships[w.jagdAktivId]:null;
     const start=rules.owners.find(o=>o.id===c.pirat).cash;
+    const verlust=!!rules.w5d && w.kaufIds.length===1
+      && state.w5d?.verluste.some(e=>e.id===w.kaufIds[0]&&e.owner===c.pirat)
+      && state.w5b.zerstoerteIds.includes(w.kaufIds[0]) && !sh;
     const integer=[gekauft,w.piratenAusgaben,w.jagdKosten,w.bezahlteStunden,
       w.budgetStopps,w.finanziertBis,pirat.cash].every(x=>Number.isSafeInteger(x)&&x>=0);
     const ok=integer && gekauft<=1
@@ -3169,8 +3172,8 @@ const m_core_w5c = (() => {
       && w.piratenAusgaben===gekauft*c.piratenPreis
       && pirat.cash===start-w.piratenAusgaben
       && (gekauft===0||(state.w5b.schiffIds.includes(w.kaufIds[0])
-        && sh?.owner===c.pirat&&sh.klasse==='jaeger'&&sh.heimat==='nadir'
-        && sh.auftrag==='pirat'))
+        && ((sh?.owner===c.pirat&&sh.klasse==='jaeger'&&sh.heimat==='nadir'
+        && sh.auftrag==='pirat') || verlust)))
       && w.jagdKosten===w.bezahlteStunden*c.jaegerStunde
       && state.owners[c.fonds].cash===state.w3.arbeitsKosten
         +state.w5b.siliziumLohnBezahlt+w.jagdKosten
@@ -3184,6 +3187,70 @@ const m_core_w5c = (() => {
       aktiv:w.jagdAktivId};
   }
   return {kaufPruefen,kaufen,jagdPruefen,jagdStarten,stoppen,tick,audit};
+})();
+
+// W5d: echter deterministischer Jaeger-gegen-Piraten-Kampf aus dem
+// unveraenderten gemeinsamen Kampfkern. Kein Bounty, kein Auto-Respawn.
+const m_core_w5d = (() => {
+  const {ids}=m_core_zahl;
+  const {rngInt}=m_core_rng;
+  const {kampf}=m_core_kampf;
+  const {entfernen}=m_core_sicherheit;
+  const {protokolliere}=m_core_state;
+  function vernichten(state,rules,schiff) {
+    if(schiff.owner===rules.w5c.anbieter)m_core_w5c.stoppen(state,schiff);
+    if(state.w5b.zerstoerteIds.includes(schiff.id))
+      throw Error('W5d: doppelt vernichtete Huelle');
+    state.w5b.zerstoerteIds.push(schiff.id);
+    state.w5d.verluste.push({id:schiff.id,owner:schiff.owner,tick:state.tick});
+    entfernen(state,rules,schiff);
+    protokolliere(state,'verlust',schiff.id+': reale Industriehuelle im Kampf vernichtet',schiff.owner);
+  }
+  function tick(state,rules) {
+    const c=rules.w5c;
+    if(state.tick % rules.economy.stunde!==0)return;
+    const schiffe=ids(state.ships).map(id=>state.ships[id]);
+    const j=schiffe.find(s=>s.id===state.w5c.jagdAktivId
+      &&s.owner===c.anbieter&&s.klasse==='jaeger'&&s.phase==='dock'
+      &&s.system==='nadir'&&s.auftrag==='jagd');
+    const p=schiffe.find(s=>s.owner===c.pirat&&s.klasse==='jaeger'
+      &&s.system==='nadir'&&s.phase==='dock'&&s.auftrag==='pirat');
+    if(!j||!p)return;
+    if(rngInt(state,1000)>=rules.world.patrouilleChance)return;
+    const einheiten=rules.combat.einheiten;
+    const a={schiffe:[{einheit:j.klasse,hp:einheiten[j.klasse].hp}],fokus:'schwach',rueckzug:50};
+    const b={schiffe:[{einheit:p.klasse,hp:einheiten[p.klasse].hp}],fokus:'erste',rueckzug:0};
+    const ergebnis=kampf(state,a,b,rules);
+    state.w5d.kaempfe++;
+    state.stats.kaempfe++;
+    if(ergebnis.a[0]===0)vernichten(state,rules,j);
+    if(ergebnis.b[0]===0)vernichten(state,rules,p);
+    // Kein Kopfgeld, keine ISK-Emission, keine XP. Der gemeinsame
+    // Kampfkern berechnet allein Kampf-/Rueckzugsergebnisse.
+  }
+  function audit(state,rules) {
+    const w=state.w5d;
+    if(!w)return {ok:false,grund:'W5d-Kampfbuch fehlt'};
+    const verloren=w.verluste||[];
+    const idSet=new Set(verloren.map(e=>e.id));
+    const ok=Number.isSafeInteger(w.kaempfe)&&w.kaempfe>=0
+      &&w.kaempfe===state.stats.kaempfe
+      &&idSet.size===verloren.length
+      &&verloren.every(e=>typeof e.id==='string'
+        &&state.w5b.schiffIds.includes(e.id)
+        &&state.w5b.zerstoerteIds.includes(e.id)
+        &&!state.ships[e.id]
+        &&(e.owner===rules.w5c.pirat||e.owner===rules.w5c.anbieter)
+        &&Number.isSafeInteger(e.tick)&&e.tick>=0&&e.tick<=state.tick)
+      &&state.w5b.zerstoerteIds.length===verloren.length
+      &&state.minted===0&&state.stats.kopfgeld===0;
+    return {ok,kaempfe:w.kaempfe,verluste:verloren.length,
+      piratenVerluste:verloren.filter(x=>x.owner===rules.w5c.pirat).length,
+      konzernVerluste:verloren.filter(x=>x.owner===rules.w5c.anbieter).length,
+      piratenErsatzbedarf:verloren.filter(x=>x.owner===rules.w5c.pirat).length,
+      bezahltErsatz:0};
+  }
+  return {tick,audit};
 })();
 
 // W1: rein lesende Vollkosten-/Liquiditaetsrechnung aus gebuchten Originalkonten.
@@ -3339,6 +3406,7 @@ function step(state, rules) {
     if (rules.w5) m_core_w5.tick(state,rules);
     if (rules.w5b) m_core_w5b.tick(state,rules);
     if (rules.w5c) m_core_w5c.tick(state,rules);
+    if (rules.w5d) m_core_w5d.tick(state,rules);
     ankunft(state, rules);
     foerderung(state, rules);
     if (state.tick % rules.economy.stunde === 0) {
@@ -3710,13 +3778,15 @@ function audit(state) {
   const w5 = istW5 ? m_core_w5.audit(state,istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : istW5b ? m_data_erzpilot.W5B_RULES : m_data_erzpilot.W5_RULES) : null;
   const w5b = istW5b ? m_core_w5b.audit(state,istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : m_data_erzpilot.W5B_RULES) : null;
   const w5c = istW5c ? m_core_w5c.audit(state,istW5d ? m_data_erzpilot.W5D_RULES : m_data_erzpilot.W5C_RULES) : null;
+  const w5d = istW5d ? m_core_w5d.audit(state,m_data_erzpilot.W5D_RULES) : null;
   if (w3) extra.w3=w3;
   if (w4) extra.w4=w4;
   if (w5) extra.w5=w5;
   if (w5b) extra.w5b=w5b;
   if (w5c) extra.w5c=w5c;
+  if (w5d) extra.w5d=w5d;
   return { ok: isk.ok && goods.ok && vertragsOk && finanzierungsOk
-      && wirtschaftOk && (!w3 || w3.ok) && (!w4 || w4.ok) && (!w5 || w5.ok) && (!w5b || w5b.ok) && (!w5c || w5c.ok),
+      && wirtschaftOk && (!w3 || w3.ok) && (!w4 || w4.ok) && (!w5 || w5.ok) && (!w5b || w5b.ok) && (!w5c || w5c.ok) && (!w5d || w5d.ok),
     total, expected, delta: total - expected, isk, goods, ...extra };
 }
 return { audit };
@@ -3836,6 +3906,7 @@ function createW5BState(seed=W5B_RULES.startSeed,rules=W5B_RULES) {
   if(rules.w5c)s.w5c={kaufIds:[],piratenAusgaben:0,
     bezahlteStunden:0,jagdKosten:0,budgetStopps:0,
     jagdAktivId:null,finanziertBis:0};
+  if(rules.w5d)s.w5d={kaempfe:0,verluste:[]};
   if(!m_core_audit.audit(s).ok)throw Error('W5b Startfinanzierung inkonsistent');
   return s;
 }
@@ -3844,6 +3915,7 @@ const createW5CState = (seed=W5C_RULES.startSeed) => createW5BState(seed,W5C_RUL
 const loadW5C = json => loadErz(json,W5C_RULES);
 const createW5DState = (seed=W5D_RULES.startSeed) => createW5BState(seed,W5D_RULES);
 const loadW5D = json => loadErz(json,W5D_RULES);
+const pilotW5DStand = state => m_core_w5d.audit(state,W5D_RULES);
 const pilotW5CStand = state => m_core_w5c.audit(state,W5C_RULES);
 const pilotW5BStand = state => m_core_w5b.audit(state,W5B_RULES);
 const pilotW5BPlan = (state,art) => m_core_w5b.pruefen(state,W5B_RULES,
@@ -3905,7 +3977,7 @@ const { ersatzkauf, zuschuss } = m_core_schiffbau;
 return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, JagdSichtV1,
   pilotAuftragsStand, pilotWirtschaftsStand, pilotNpcInvestition, pilotNpcKrisenLage, pilotKonzernStatus,
   pilotW3Stand, pilotW3Kalkulation, pilotW4Stand, pilotW4Kalkulation,
-  pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf, pilotW5BStand, pilotW5BPlan, pilotW5CStand,
+  pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf, pilotW5BStand, pilotW5BPlan, pilotW5CStand, pilotW5DStand,
   createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState,
   loadErz, loadW2, loadW3, loadW4, loadW5, loadW5B, loadW5C, loadW5D, createState, submit, execute, step, advance, load, preis, faktor };
 })();

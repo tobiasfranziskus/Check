@@ -4596,7 +4596,8 @@ const m_core_w5r=(()=>{
    const age=s.w5r.minutes[sh.id]?.minutes||0;
    const life=kind==='miner'?r.w5r.minerLifetime:r.w5r.freighterLifetime;
    if(sh.w5rRetired||age<life||sh.phase!=='dock'
-     ||sh.system!=='aldera'||Object.values(sh.ladung).some(n=>n!==0)
+     ||sh.system!=='aldera'
+     ||(kind==='frachter'&&Object.values(sh.ladung).some(n=>n!==0))
      ||s.w5n.frachtauftrag?.schiff===sh.id)return;
    sh.auftrag='halten';sh.ware=null;sh.w5rRetired=true;
    s.w5r.retired.push({id:sh.id,owner:sh.owner,kind,age,tick:s.tick});

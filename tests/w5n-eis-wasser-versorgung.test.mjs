@@ -132,6 +132,39 @@ test('W5n: consumption stops when physical water or real cash are missing',()=>{
  api.advance(s,1440,rules);audit(s,'no rescue 48h');
  assert.equal(s.w5n.wasserErlos,end);
 });
+test('W5n: two paid deliveries, ten real water batches, finite consumers pay exactly 1400 ISK',()=>{
+ const s=started(42);
+ api.advance(s,50,rules);
+ for(let n=0;n<2;n++){
+   cmd(s,'shipFreightIce','transport',{schiff:'sh003'});
+   api.advance(s,120,rules);audit(s,'two-way freight '+n);
+ }
+ assert.equal(s.w5n.eisGeliefert,100);
+ for(let n=0;n<10;n++){
+   cmd(s,'stationWater','st_nadir',{station:'st_nadir'});
+   api.advance(s,20,rules);
+   audit(s,'water batch '+n);
+ }
+ assert.equal(s.w5n.wasserProduziert,100);
+ assert.equal(s.w5n.fabrikBezahlt,200);
+ api.advance(s,3600,rules);audit(s,'after 60 hours');
+ assert.equal(s.w5n.wasserVerbraucht,100);
+ assert.equal(s.w5n.wasserErlos,1400);
+ assert.equal(s.owners.w5n_kunden.cash,0,'finite household funding exhausted');
+ assert.equal(s.owners.st_nadir.cash,1920,'true 2 x 490 + 10 x 20 cost, 1400 paid revenue');
+ assert.equal(s.ledger.wasser.produced,100);
+ assert.equal(s.ledger.wasser.consumed,100);
+ assert.equal(s.minted,0);
+ const hash=api.hash(s),received=s.w5n.wasserErlos;
+ api.advance(s,1440,rules);audit(s,'one more day with empty customer budget');
+ assert.equal(s.w5n.wasserErlos,received,'no imaginary civilian refinancing');
+ assert.equal(s.owners.w5n_kunden.cash,0);
+ assert.equal(api.hash(api.loadW5N(api.save(s))),api.hash(s));
+ console.log('W5N_ZWEI_ZYKLEN '+JSON.stringify({seed:42,
+   sold:s.w5n.mineVerkauft,shipped:s.w5n.eisGeliefert,
+   water:s.w5n.wasserVerbraucht,consumerPaid:received,
+   nadirCash:s.owners.st_nadir.cash,minted:s.minted,hash}));
+});
 test('W5n: forgery of commodity ledger, payment and escrow is rejected on load',()=>{
  const s=route(started());
  cmd(s,'stationWater','st_nadir',{station:'st_nadir'});

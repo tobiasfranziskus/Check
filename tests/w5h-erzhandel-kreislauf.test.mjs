@@ -71,7 +71,8 @@ function liefern(s){
   assert.equal(s.w5h.unterwegs,50);
   tick(s,60);
   assert.equal(s.w3.geliefert,delivered+50);
-  assert.equal(s.owners.export.cash,before+500,'shipment reimburses prior real purchase');
+  // Am selben Stundentick kann bereits die naechste reale Charge bezahlt werden.
+  assert.equal(s.owners.export.cash+10*(s.w5h.bestand+s.w5h.unterwegs),20000);
   assert.equal(s.w5h.unterwegs,0);
   tick(s,60);
 }
@@ -100,14 +101,14 @@ test('W5h: echte Ware und zweimal bezahlter W3-Transport ohne neue Export-ISK',(
   assert.equal(before,19500);
   liefern(s);
   assert.equal(s.w5h.verkauft,50);
-  assert.equal(s.owners.export.cash,20000);
+  assert.equal(s.owners.export.cash+10*(s.w5h.bestand+s.w5h.unterwegs),20000);
   assert.equal(s.ledger.erz.exported,0);
   produzieren(s);
   cmd(s,'shipMine','house',{schiff:miner(s,'nadir'),ware:'silizium'});
   tick(s,8);
   liefern(s);
   assert.equal(s.w5h.verkauft,100);
-  assert.equal(s.owners.export.cash,20000);
+  assert.equal(s.owners.export.cash+10*(s.w5h.bestand+s.w5h.unterwegs),20000);
   assert.ok(s.w3.abgeschlossen>=2);
   check(s,'two funded shipments');
 });

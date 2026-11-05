@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aphros Void · W5h bezahlte Jägerproduktion und Ersatz</title>
+<link rel="stylesheet" href="welt.css">
+</head><body>
+<header><p class="eyebrow">APHROS VOID · ENTWICKLUNG / REGEL 23</p>
+<h1>Realer Erzhandel und bezahlter Jägerbau</h1>
+<p>Regel25-Forschung: Bis zu acht endliche Industrieketten. Der bestehende Exportkäufer zahlt für physisches Aldera-Erz, das derselbe Frachter gegen echtes Nadir-Geld weiterverkauft. Kein neues Geld, keine Preisanpassung, keine Gratisware.</p>
+</header>
+<main>
+<section class="visual"><h2>2D-Systemübersicht</h2>
+<p>Schema: Aldera links, Nadir rechts. Flugpositionen dienen der Übersicht, nicht der freien Navigation.</p>
+<canvas aria-label="2D-Weltkarte: Schiffe antippen, um sie auszuwählen"></canvas>
+<div class="buttons"><button id="zoomminus" type="button">− Zoom</button><button id="zoomplus" type="button">+ Zoom</button></div>
+<p id="auswahl">Lade Schiffe …</p><label>Schiff auswählen <select id="schiffe"></select></label>
+<p id="zeit" class="mono"></p><p id="hash" class="mono"></p></section>
+<section><h2>Finanzierte Spielaktionen</h2>
+<p>Alle Aktionen werden vom gemeinsamen deterministischen Regel25-Core geprüft. Abgelehnte Aufträge verändern den Spielstand nicht.</p>
+<h3>1. Echter Grosshandel, Bergbau und Transport</h3>
+ <p>Der Händler bezahlt echtes Erz in Aldera (10 ISK/Stück). Nur eine W3-Lieferung mit realer Nadir-Kaufkasse verkauft es weiter und bezahlt dem Händler seinen Wareneinsatz zurück. Waren- und Geldbuchungen werden unabhängig geprüft.</p>
+<div class="buttons"><button data-aktion="minerA">Miner in Aldera kaufen</button>
+<button data-aktion="minerN">Miner in Nadir kaufen</button>
+<button data-aktion="erz">Erz fördern</button><button data-aktion="silizium">Silizium fördern</button>
+<button data-aktion="frachter">Frachter kaufen</button><button data-aktion="transport">50 Erz nach Nadir transportieren</button></div>
+<h3>2. Industrie und Schiffbau</h3><div class="buttons">
+<button data-aktion="raffinerie">Erz raffinieren</button>
+<button data-aktion="bauteile">Bauteile fertigen</button>
+<button data-aktion="jaegerbau">Jäger herstellen</button>
+<button data-aktion="jaegerkauf">Konzern kauft Jäger</button></div>
+<h3>3. Piraten, Piloteneinkommen und Kampf</h3><div class="buttons">
+<button data-aktion="piratenkauf">Pirat kauft einen Jäger</button>
+<button data-aktion="jagd">Konzernjäger starten</button></div>
+<h3>4. Nachgewiesener Ersatz</h3>
+ <p>Erst nach einem tatsächlichen Konzernjägerverlust und der dritten industriell bezahlten Jägerhülle kann der Konzern einen Ersatz erwerben. Ohne Verlust oder Käuferkapital bleibt der Befehl gesperrt.</p>
+ <div class="buttons"><button data-aktion="ersatz">Echten Ersatzjäger kaufen</button></div>
+ <p id="w5hkosten"></p>
+ <h3>5. MK1-Laser aus echtem Material</h3><div class="buttons">
+ <button data-aktion="laserbau">MK1-Laser herstellen</button>
+ <button data-aktion="laserkauf">Pilot kauft Laser</button>
+ <button data-aktion="lasereinbau">Pilot baut Laser ein</button></div>
+ <p id="laserstand"></p><p class="hinweis">Erst zwei echte Jäger bauen, dann einen NPC-Jäger für bezahlte Jagd wählen. Für den Laser müssen tatsächlich Erz und W4-Material verfügbar und die Pilotenkasse gedeckt sein. MK1-Preis = bereits gezahlte Material- und Fertigungskosten. Die Jagd-Kopfgeldreserve stammt aus bestehenden Fonds-ISK und wird bei Abbruch zurückerstattet. Keine Geldschöpfung.</p>
+</section>
+<section><h2>Gemeinsame Zeit und Wirtschaft</h2>
+<p>Pausiert zwischen Klicks. Jede Zeitstufe bewegt Miner, Transport, Fabrik, Jagd und Kampf gleichzeitig.</p>
+<div class="buttons">
+<button data-step="1">+1 min</button><button data-step="10">+10 min</button>
+<button data-step="20">+20 min</button><button data-step="32">+32 min</button>
+<button data-step="50">+50 min</button><button data-step="60">+60 min</button>
+<button data-step="64">+64 min</button><button data-step="120">+120 min</button>
+</div>
+<h3>Physische Bestände</h3><p id="lager"></p><h3>Vorhandene Kassen</h3><p id="kassen"></p>
+<h3>Transport, Produktion und Kampf</h3><p id="vorgaenge"></p><p id="audit"></p>
+</section>
+<section><h2>Getrennter Forschungs-Spielstand</h2>
+<p>Automatische Speicherung in <strong>eigener</strong> Browser-Datenbank; das Hauptspiel und ältere Forschungs-Slots werden nicht geöffnet oder überschrieben. Bei einem fremden Tab-Stand werden Schreibzugriffe gesperrt.</p>
+<div class="buttons"><button id="export">JSON sichern</button>
+<label class="file">Geprüftes Regel-25-JSON importieren<input id="import" type="file" accept=".json,application/json"></label></div>
+<div class="buttons"><label>Neuer Seed <input id="seed" type="number" min="1" max="2147483647" value="42"></label>
+<button id="neu">Neuen Forschungsstand beginnen</button>
+<button id="retten" hidden>Unlesbaren Rohstand sichern</button></div>
+<p>Vor jedem bestätigten Ersetzen wird der bisherige Stand zusätzlich als JSON angeboten. Andere Regelversionen und fehlerhafte Audits werden abgelehnt. Browserdaten sind keine NAS-Sicherung.</p>
+<p class="hinweis">Forschungsstand unter <code>prototypes/w5-welt/w5h.html</code>. Kein Merge oder Deployment. Freie 2D-Steuerung, Spieler-Jägerpilot, Automatischer Piratenersatz, weitere Module und reale iPad-/NAS-Abnahme sind noch offen.</p>
+</section>
+</main>
+<p id="meldung" role="status" aria-live="polite">Lade Forschungswelt …</p>
+<script type="module" src="w5h.mjs"></script>
+</body></html>

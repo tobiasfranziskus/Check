@@ -18,7 +18,7 @@ export function w5jNachfrage(api,state){
   const konto=state.stats.konto[kaeufer];
   const frei=state.owners[kaeufer].cash;
   const status=Object.freeze({
-    anfang,einahmen:konto.erloes,ausgaben:konto.kosten,
+    anfang,einnahmen:konto.erloes,ausgaben:konto.kosten,
     gebundeneBergbauArbeit:arbeitsreserve,frei,
     bilanziert:anfang+konto.erloes-konto.kosten===frei+arbeitsreserve,
     minerId:miner?.id??null,minerAuftrag:miner?.auftrag??'kein Miner',

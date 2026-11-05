@@ -4658,6 +4658,8 @@ const m_core_w5r=(()=>{
       &&w.purchases.filter(x=>x.type==='miner').length===w.miner.bought
       &&w.purchases.filter(x=>x.type==='frachter').length===w.frachter.bought
       &&w.lostIce===cargoIce
+      &&s.ledger.miner.consumed===1+(s.w5o.minerOwner==='house'?1:0)+w.miner.bought
+      &&s.ledger.frachter.consumed===1+w.frachter.bought
       &&w.serviceAllocated===w.services*fee+(w.serviceJob?fee:0)
       &&w.servicePaid===w.services*fee+(w.serviceJob?.minutes??0)*c.serviceWage
       &&s.owners.w5r_maintenance_reserved.cash===w.serviceAllocated-w.servicePaid
@@ -5516,7 +5518,11 @@ const loadW5Q=json=>loadErz(json,W5Q_RULES);
 const createW5RState=(seed=W5R_RULES.startSeed,modus='full',minerOwner='npc3',
   exportMode='off',rate=0,dayCap=0,totalCap=0)=>
   m_core_w5r.start(seed,modus,minerOwner,exportMode,rate,dayCap,totalCap,W5R_RULES);
-const loadW5R=json=>loadErz(json,W5R_RULES);
+const loadW5R=json=>{
+  const s=loadErz(json,W5R_RULES);
+  if(!s.w5r?.initialized)throw Error('W5r: uninitialisierte Forschungswelt nicht ladbar');
+  return s;
+};
 const pilotW5RStand=state=>m_core_w5r.stand(state,W5R_RULES);
 const pilotW5QStand=state=>m_core_w5q.stand(state,W5Q_RULES);
 const pilotW5OStand=state=>m_core_w5o.stand(state,W5O_RULES);

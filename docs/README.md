@@ -1,54 +1,47 @@
-# Aphros Void – Dokumentation und Entwicklungszweige
+# Aphros Void – Entwicklungsindex (05.11.2026)
 
-> **Navigationsindex, keine zweite Roadmap.** Produktprioritäten und Freigaben stehen ausschließlich in [ROADMAP.md](ROADMAP.md), technische Nachweise in [PROJEKTSTATUS.md](PROJEKTSTATUS.md), Entwicklungsregeln in [AGENTS.md](../AGENTS.md). Maßgeblich ist immer der jeweilige Git-Branch. Stand: **04.11.2026**.
+> **Navigation, keine zweite Roadmap.** Verbindlich bleiben [ROADMAP.md](ROADMAP.md) (Produkt), [PROJEKTSTATUS.md](PROJEKTSTATUS.md) (Technik), [AGENTS.md](../AGENTS.md) (Regeln) und der tatsächliche Git-Stand. Vorhaben/Tests in Drafts sind keine Produktfreigabe.
 
-## Verbindlicher Stand
+## Aktueller Stand
 
-| Achse | Stand und Quelle |
+| Status | Befund |
 | --- | --- |
-| **[MAIN] Produkt** | [`main`](https://github.com/tobiasfranziskus/Check/tree/main), Commit `b4e604d6`, v0.12.5 / Regel 14 / Schema 8. Die folgenden Drafts sind **nicht** auf `main` veröffentlicht. |
-| **[DRAFT] Forschung** | [PR #181](https://github.com/tobiasfranziskus/Check/pull/181), Code-Head `a0b4a29`, dokumentierter Head `423f18d`, **Regel 23 / Schema 8**, eigene Forschungswelt und getrennte Browser-Spielstände. |
-| **[DRAFT] Aktuelle Forschung** | [PR #183](https://github.com/tobiasfranziskus/Check/pull/183), **Regel24 / Schema8**: reale dritte Industriecharge, bezahlter NPC-Ersatz nach Verlust und nachgewiesene Fabrikmarge −1.388 ISK; 8/13 finanzierbar, 5/13 bei Exportkaufkraft blockiert, 0 neue ISK. |
-| **[TEST] W5g-CI** | [Workflow #41931017679](https://github.com/tobiasfranziskus/Check/actions/runs/41931017679), Code-Head `572553b`, **217/217 Node-Tests**, alle sieben ausgeführten Jobs grün, ein Skip. |
-| **[TEST] Code-CI** | [Workflow #41925076369](https://github.com/tobiasfranziskus/Check/actions/runs/41925076369) komplett grün, **207/207 Node-Tests**, darunter 13 Seeds × 90 Tage mit Audit, Replay und Save/Load. [Dokumentations-Head #41925543292](https://github.com/tobiasfranziskus/Check/actions/runs/41925543292) ebenfalls vollständig grün. |
-| **[OFFEN] Praxis** | iPad-Safari, NAS/CSP/MIME, öffentlicher Hauptlink, echte langfristig finanzierte Endnachfrage. Keine Produktfreigabe, kein Merge/Deployment. |
+| **[MAIN]** | [main](https://github.com/tobiasfranziskus/Check/tree/main) **b4e604d6**: v0.12.5, **Regel14/Schema8**. Der W0–W5-Neuaufbau ist **nicht** integriert oder veröffentlicht. |
+| **[DRAFT]** | [#200 – W5r](https://github.com/tobiasfranziskus/Check/pull/200): letzter gestapelter Forschungsstand, **Regel32/Schema8**. Echte Verschleiß-/Wartungsbuchungen; **kein fertiger Ersatzfrachter** im Lager trotz vorhandener ISK. Forschungsannahmen, keine freigegebenen Produktregeln. |
+| **[TEST]** | [CI #42065843200](https://github.com/tobiasfranziskus/Check/actions/runs/42065843200) für #200s geprüften **Code-Head**: 7 Jobs erfolgreich, 1 Skip. Der PR berichtet 8/8 gezielte Direktprüfungen, 13×90d und 365d-Krisen. Eine spätere reine README-Änderung ist damit nicht erneut getestet. |
+| **[OFFEN]** | iPad Safari/NAS, Hauptlink, Freigabe/Migration des Stacks, echte langfristige Ersatzschiffproduktion, stabile Kaufkraft und verbindliche Geldmodell-B-Regeln. Forschungs-Saves strikt vom Regel14-Slot trennen. |
 
-## Aktiver, gestapelter Forschungsweg
+W5q-Exportemission ist **standardmäßig AUS** und nur hypothetisch; Verschleißdauer, Wartungslohn und Ausschüttungsquoten sind **nicht beschlossen**. Keine Spieler-Spargrenze, Gratisrettung oder stille Save-Überschreibung.
 
-Diese PRs bleiben geöffnet, weil spätere Stände auf ihren Branches aufbauen. Eine PR enthält **nicht** automatisch die Freigabe ihrer Vorgänger.
+## Welche Entwicklungszweige gehören zusammen?
 
-| Abschnitt | Aktive PRs | Inhalt |
+Alle genannten PRs sind hier zu finden: https://github.com/tobiasfranziskus/Check/pulls . Die folgende Reihenfolge ist eine **Abhängigkeitsfolge**, keine Merge-Reihenfolge oder Freigabe.
+
+| Bereich | Noch aktive PRs | Kerninhalt |
 | --- | --- | --- |
-| **W0–W1 / 2D** | [#161](https://github.com/tobiasfranziskus/Check/pull/161), [#162](https://github.com/tobiasfranziskus/Check/pull/162), [#164](https://github.com/tobiasfranziskus/Check/pull/164) | Erzpilot, 2D-Übernahme, Miner-Integration |
-| **W2 / Unternehmen** | [#163](https://github.com/tobiasfranziskus/Check/pull/163), [#165](https://github.com/tobiasfranziskus/Check/pull/165), [#166](https://github.com/tobiasfranziskus/Check/pull/166), [#167](https://github.com/tobiasfranziskus/Check/pull/167) | Kapital, Nachfragegates, gemeinsame Oberfläche und Save |
-| **W3–W5 / Produktion** | [#168](https://github.com/tobiasfranziskus/Check/pull/168), [#169](https://github.com/tobiasfranziskus/Check/pull/169), [#170](https://github.com/tobiasfranziskus/Check/pull/170), [#171](https://github.com/tobiasfranziskus/Check/pull/171) | Vorfinanzierter Frachter, Raffinerie, Schiffbau und Konzernkonten |
-| **W5b–W5d / Jäger** | [#173](https://github.com/tobiasfranziskus/Check/pull/173), [#175](https://github.com/tobiasfranziskus/Check/pull/175), [#176](https://github.com/tobiasfranziskus/Check/pull/176), [#178](https://github.com/tobiasfranziskus/Check/pull/178) | Bauteile/Jäger, Renderer, bezahlte Piratenhülle, Kampf und Verluste |
-| **Integration** | [#179](https://github.com/tobiasfranziskus/Check/pull/179), [#180](https://github.com/tobiasfranziskus/Check/pull/180), [#181](https://github.com/tobiasfranziskus/Check/pull/181) | 2D-Frachter übernommen; gemeinsame W5e-Welt; W5f-Pilotengehalt, Kopfgeld und MK1-Laser |
-| **W5g-Finanzierungsprüfung** | [#182](https://github.com/tobiasfranziskus/Check/pull/182) (Dokumentationspflege), [#183](https://github.com/tobiasfranziskus/Check/pull/183) (Forschung) | Tatsächliche Ersatzbuchung, 8/13 Drittchargen, 5/13 Kaufkraftstopps |
+| W0–W2 | **#161, #164–#167** | Erzpilot, 2D-Miner, finanzierte NPCs, Konzernansicht, Forschungs-Saves |
+| W3–W5 | **#168–#171** | Vorfinanzierter Frachter, Raffinerie, Werft und Konzernkonten |
+| W5b–W5f | **#173, #175, #176, #178–#181** | Jäger, Piraten, Kampf, 2D-Frachter, gemeinsame Welt, Pilotengeld und MK1 |
+| W5g–W5m | **#182–#185, #188, #190–#192** | Vorherige Dokumentationspflege, bezahlter Jägerersatz, Markt, freier Eigenabbau und MK1-Bergbaurendite |
+| W5n–W5r | **#193, #194, #196, #197, #200** | Eis/Wasser, Haushalte, Kaufkraftanalyse, Exportversuch und reale Verschleiß-/Ersatzgrenze |
 
-**Direkte Arbeitsbasis für weitere W5g-Forschung:** der geprüfte, noch nicht gemergte Code-Head von **#183**, nicht `main`. Branch-/Regelwechsel niemals durch Ersetzen vorhandener JSON-Saves vortäuschen. `main` und die Forschungswelten verwenden eigene, bewusst getrennte Spielstände.
+**Einzelne Legacy-UI-Drafts gegen main:** [#186 Fitting](https://github.com/tobiasfranziskus/Check/pull/186), [#187 Station](https://github.com/tobiasfranziskus/Check/pull/187), [#189 Pilotenakte](https://github.com/tobiasfranziskus/Check/pull/189), [#195 Bergbauscanner](https://github.com/tobiasfranziskus/Check/pull/195), [#198 Konzernzentrale](https://github.com/tobiasfranziskus/Check/pull/198). Lesende, startbare Prototypen; keine produktiven Core-Adapter/Save-Verbindungen. Nur die Darstellungsmuster übernehmen, **keine alten Wirtschaftsregeln**.
 
-## Archivierte, nicht gemergte Einzel-PRs
+## Geschlossene, nicht gemergte Ursprünge und Alternativen
 
-| PR | Warum archiviert / Nachweis |
+| PR | Grund; Belege und Branch-Historie bleiben |
 | --- | --- |
-| [#172 – isolierter Jäger-Renderer](https://github.com/tobiasfranziskus/Check/pull/172) | **Alle 10 Dateien** (einschließlich Browser-/Node-Tests und Dokumentation) per identischem Git-Blob in **#175** übernommen. |
-| [#177 – Codex-2D-Frachter](https://github.com/tobiasfranziskus/Check/pull/177) | **Alle 8 Dateien** (einschließlich Browser-/Node-Tests) per identischem Git-Blob in **#179** übernommen. |
-| [#174 – Piratenbelt-Ökonomieaudit](https://github.com/tobiasfranziskus/Check/pull/174) | Unabhängige, abgeschlossene **[ANALYSE]**; bewusst nicht in Produktcode integriert. Audit, Kommentare und CI-Belege bleiben im geschlossenen PR zugänglich. |
+| [#162](https://github.com/tobiasfranziskus/Check/pull/162) | Isolierte 2D-Übernahme in **#164** angepasst und weitergeführt |
+| [#163](https://github.com/tobiasfranziskus/Check/pull/163) | W2-Investitions-Core in **#165** übernommen, identische NPC-Testdatei |
+| [#172](https://github.com/tobiasfranziskus/Check/pull/172), [#177](https://github.com/tobiasfranziskus/Check/pull/177) | Renderer bzw. 2D-Frachter blob-identisch in **#175** bzw. **#179** übernommen |
+| [#174](https://github.com/tobiasfranziskus/Check/pull/174) | Nichtproduktiver Piratenbelt-Audit abgeschlossen |
+| [#199](https://github.com/tobiasfranziskus/Check/pull/199) | **Alternative W5r-Forschung**, nicht widerlegt: Verschleiß nach bezahlten Minuten statt Tagen; Wartung mit echtem Eis + Lohn statt reinem Service. Vor Produktentscheidung mit #200 vergleichen |
 
-**Bereinigung am 04.11.2026:** damals 21 → **18 offene PRs**; anschließend kamen die neuen Drafts **#182/#183** hinzu (20 offene PRs zum Zeitpunkt der W5g-Prüfung). Keine produktiven Dateien oder Spielstände gelöscht, keine PR gemergt. Originalbranches und Commits bleiben als historische Quellen erhalten. Weitere ältere Forschungsbranches wurden **nicht blind gelöscht**; der Branch-Bestand ist ausdrücklich noch nicht physisch reduziert.
+## Gezieltes weiteres Aufräumen – nicht blind löschen
 
-## Dokumente schnell finden
+- **Kontext:** Immer ROADMAP/PROJEKTSTATUS/AGENTS und den neuesten PR/CI prüfen, dann nur das **betroffene** W5-Prüfdokument lesen; ältere B8-/V11-Berichte und archivierte Analysen bei Bedarf. Keine Chronik komplett in neue Chats kopieren.
+- **Nach Integration:** Alte, nicht mehr genutzte gestaffelte Demo-Ansichten unter prototypes/w5-welt/ und Mock-Oberflächen auf konkrete Tests/Imports prüfen und erst dann aus dem Produktbranch entfernen. Save-Logik, Ledger-Tests, Golden-Hashes und Beweis-Fixtures bewahren.
+- **PRs:** Alte Ursprungs-PRs schließen, wenn nachweislich im Nachfolger enthalten. Den aktiven Stack nicht ohne geprüftes Integrationskonzept schließen. Ein späterer **konsolidierter Integrations-PR** ist sinnvoller als blindes Mergen jeder Forschungsstufe.
+- **Speicher:** Schließen von PRs oder Löschen aus dem aktuellen Baum verkleinert Git-Historie nicht. History-Rewrite bei den vielen voneinander abhängigen Branches vermeiden.
 
-- [W5G_VOLLKOSTEN_UND_ERSATZ.md](W5G_VOLLKOSTEN_UND_ERSATZ.md): aktuelle Finanzierungsprüfung mit echten Drittchargen und Exportkaufkraftstopps.
-- [W5F_PILOTEN_KOPFGELD_LASER.md](W5F_PILOTEN_KOPFGELD_LASER.md): aktuelle endliche Forschungskette, negative Finanzierungsprüfungen und Grenzen.
-- [W5E_FORSCHUNGSWELT.md](W5E_FORSCHUNGSWELT.md): getrennte IndexedDB, Import/Audit, gemeinsame Core-Sitzung.
-- [W5D_ZWEI_JAEGER_KAMPF.md](W5D_ZWEI_JAEGER_KAMPF.md) und [W5D_FRACHTER_INTEGRATION.md](W5D_FRACHTER_INTEGRATION.md): reale Jägerverluste und Frachterübernahme.
-- [W5B_JAEGERBAU.md](W5B_JAEGERBAU.md): erste echte Bau-/Kaufkette, negative Marge und begrenzte Nachfrage.
-- [ANALYSEARCHIV_HANDELSZYKLUS_2026-10-31.md](ANALYSEARCHIV_HANDELSZYKLUS_2026-10-31.md) und [ARCHITEKTUR_WIRTSCHAFT_V12.md](ARCHITEKTUR_WIRTSCHAFT_V12.md): historische Wirtschaftsforschung, **kein aktiver Produktplan**.
-- `tests/`: unveränderte Golden-Referenzen, Core-/Save-/Bilanz-/Langzeittests; `tests/browser/`: gesonderte Browser-Smokes, kein Nachweis einer realen iPad-/NAS-Abnahme.
-- `prototypes/w5-welt/welt.html` (Regel22) und `prototypes/w5-welt/w5f.html` (Regel23): **Forschungsseiten**, nicht Produkt-Hauptlink.
-
-## Pflegegrundsatz
-
-Archiviere nur eindeutig abgegrenzte Arbeiten und dokumentiere die Nachfolge. Schließe keine PR, deren Branch für aktive gestapelte PRs benötigt wird. Keine pauschalen Löschaktionen an Spielständen, Test-Fixtures, Referenzdaten, Archivberichten oder historischen Branches. Für die nächste Entwicklung erst den jüngsten PR-Head und seine CI prüfen, dann gezielte Änderungen mit eigenen Audits vornehmen. **Eine bestandene begrenzte 90-Tage-Welt beweist noch keine dauerhaft selbsttragende Wirtschaft.**
+**Nächstes Wirtschafts-Gate:** Material-, Produktions- und Finanzierungsweg für tatsächlich verfügbare **Ersatzhüllen** (sowie Wartungsmaterial) beweisen; anschließend gemeinsame Forschungswelt/Legacy-Adapter integrieren und 13×90d, Spar- und Insolvenzfälle, Save/Load sowie iPad/NAS abnehmen. Kein Merge oder Deployment ohne Freigabe.

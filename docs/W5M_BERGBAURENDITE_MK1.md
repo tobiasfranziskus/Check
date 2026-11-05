@@ -43,4 +43,12 @@ Ein Basisminer amortisiert **600 / 8 = 75 tatsächlich verkaufte Erz** (ohne wei
 - 13 feste Seeds ×90 Spieltage: Geld-/Warenaudits, feste Hashes, Save/Load und kein ungebuchtes `minted`/ `burned`.
 - Direkte Core-Ausführung Seed42 nach drei echten, voll finanzierten W3-Frachtrunden und 420 Spielminuten: Basismine NPC3 225 Erz verkauft, 596 ISK Förderlöhne, **1.054 ISK** Vollkostensaldo; MK1 NPC3 ebenfalls 225 Erz verkauft, **396 ISK** Förderlöhne, **1.094 ISK** Vollkostensaldo einschließlich MK1-Arbeit und verbautem Erz; Differenz **+40 ISK**. Jeweils Cash-/Warenaudit erfolgreich, `minted=0`. Das ist ein **begrenzter, reproduzierbarer Einzeltest**, keine permanente Absatzgarantie. CI-Ergebnis wird nach erfolgreicher Ausführung ergänzt.
 
+## Nachvollziehbare Direktprüfungen (05.11.2026)
+
+Der aktuelle R28-Core wurde unmittelbar mit derselben aus `index.html` extrahierten Funktion ausgeführt. Die **sechs neuen W5m-Kerntests** wurden unverändert in einer JavaScript-Testhülle mit Gleichheits-/Ablehnungs-Prüfungen durchlaufen: **6/6 erfolgreich**. Das ist kein Ersatz für den vorgeschriebenen Node-22-Gesamtlauf in GitHub-CI.
+
+Für die **13 festen Seeds** 7, 11, 1, 2, 65535, 42, 1234, 98765, 3, 99, 2024, 2025, 314159 wurden nach bezahltem House-Miner-Kauf, echtem 60-Minuten-Bergbau und regulärem MK1-Upgrade je **90 Tage** mit täglichen Core-Geld-/Warenaudits simuliert. Alle 13 abgeschlossen, keine negativen Kassen oder Güterbilanzfehler, je 33.000 ISK Gesamtgeld und `minted=0`. Save/Load-Hashes an Tag30 und Tag90 stimmen überein. Seed42-Tag90-Hash `3ff612ed3550ebf6`, Seed7 `4b1410e2529c9cd7`. In dieser endlichen Vergleichswelt endet die aktuelle Nachfrage, danach liegen überwiegend unverkaufte Rohwaren; **kein dauerhaftes Mining-Einkommensversprechen**.
+
+Bei drei wirklich finanzierten W3-Hin-/Rückfahrten mit identisch zwei konkurrierenden Minern auf Seed42 (420 Minuten) liegt der Vollkostensaldo des Basismine-Besitzers NPC3 bei **1.054 ISK** und mit MK1 bei **1.094 ISK**. Der Vergleichs-MK1-Hash lautet `7b307f24a27ea886`. Beide erzielen **genau 225 Erzverkäufe**; Mehrgewinn kommt nur aus tatsächlich geringerer bezahlter Arbeitszeit.
+
 **Nicht bewiesen:** dauerhaft liquide Käufer, profitable Werft und ein stabiler Gesamtkreislauf ohne zusätzliche Nachfrage. Das ist weiter ein eigener Wirtschaftsauftrag. Keine Merge-/Deployment-Freigabe, echte Safari-/NAS-Abnahme offen.

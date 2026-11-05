@@ -975,6 +975,15 @@ const m_data_erzpilot = (() => {
     w5d:{...W5F_RULES.w5d,maxChargen:3},
     w5g:{ersatzLimit:1,anbieter:W5F_RULES.w5c.anbieter,station:W5F_RULES.w5b.station}
   };
+  // W5h/Regel25: dieselbe Erzware, aber echter Grosshaendler-Wiederverkauf.
+  // Acht endliche Chargen sind nur eine Forschungsgrenze, keine Serienfreigabe.
+  const W5H_RULES={...W5G_RULES,rulesVersion:25,
+    w5d:{...W5G_RULES.w5d,maxChargen:8},
+    w5h:{kaeufer:W5G_RULES.erzpilot.exportOwner,
+      quellStation:W5G_RULES.w3.quellStation,zielStation:W5G_RULES.w3.zielStation,
+      charge:W5G_RULES.w3.fracht}
+  };
+  m_data_systeme.tiefFrieren(W5H_RULES);
   m_data_systeme.tiefFrieren(W5G_RULES);
   m_data_systeme.tiefFrieren(W5F_RULES);
   m_data_systeme.tiefFrieren(W5D_RULES);
@@ -985,7 +994,7 @@ const m_data_erzpilot = (() => {
   m_data_systeme.tiefFrieren(W3_RULES);
   m_data_systeme.tiefFrieren(W4_RULES);
   m_data_systeme.tiefFrieren(W5_RULES);
-  return { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES };
+  return { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES };
 })();
 
 const m_core_rng = (() => {
@@ -2214,6 +2223,8 @@ const m_core_erzpilot = (() => {
       if (id === ausnahmeSchiff || buch[id]) return sum;
       return sum + anzahl(state.ships[id].ladung, 'erz');
     }, 0);
+    if(rules.w5h && state.owners[rules.w3.kunde].cash<m_core_w3.kalkulation(rules).gesamt)
+      return 0; // Keine erneute Erzfoerderung ohne echten zahlenden W3-Endkunden.
     return Math.max(0, Math.floor(state.owners[cfg.exportOwner].cash / cfg.preis)
       - bestand - reserviert(state) - fremdeFracht);
   }
@@ -2316,6 +2327,24 @@ const m_core_erzpilot = (() => {
     const lager = state.stations[cfg.station].lager;
     const kaeufer = state.owners[cfg.exportOwner];
     const station = state.owners[cfg.station];
+    if(rules.w5h){
+      const w=state.w5h,p=m_core_w3.kalkulation(rules);
+      const carrier=Object.values(state.ships).some(sh=>sh.owner===rules.w3.spedition
+        &&sh.klasse==='frachter');
+      const endkundeGedeckt=carrier&&state.owners[rules.w3.kunde].cash>=p.gesamt;
+      const menge=endkundeGedeckt?Math.min(
+        Math.max(0,anzahl(lager,'erz')-w.bestand),
+        Math.floor(kaeufer.cash/cfg.preis),cfg.maximalJeStunde,
+        rules.w5h.charge-w.bestand):0;
+      if(menge<=0)return 0;
+      const wert=menge*cfg.preis;
+      // Nur Eigentumswechsel. Die reale Ware verbleibt bis zum W3-Vertrag im Lager.
+      kaeufer.cash-=wert;station.cash+=wert;
+      w.gekauft+=menge;w.bestand+=menge;
+      buche(state,cfg.exportOwner,'kosten',wert);
+      buche(state,cfg.station,'erloes',wert);
+      return menge;
+    }
     const menge = Math.min(anzahl(lager, 'erz'),
       Math.floor(kaeufer.cash / cfg.preis), cfg.maximalJeStunde);
     if (menge <= 0) return 0;
@@ -2503,6 +2532,8 @@ const m_core_w3 = (() => {
     const k=kalkulation(rules);
     if(c.fracht>rules.economy.cargo||anzahl(state.stations[c.quellStation].lager,'erz')<c.fracht)
       return {ok:false,grund:'Noch keine echte Erzcharge im Quelllager'};
+    if(rules.w5h && state.w5h.bestand<c.fracht)
+      return {ok:false,grund:'W5h: nur wirklich angekauftes Grosshaendlererz transportierbar'};
     if(anzahl(state.stations[c.zielStation].lager,'erz')+c.fracht
       >obergrenze(state,rules,c.zielStation,'erz'))
       return {ok:false,grund:'Kein Ziel-Lagerplatz'};
@@ -2527,6 +2558,7 @@ const m_core_w3 = (() => {
     w.kaufAusgaben+=k.gesamt;buche(state,c.kunde,'kosten',k.gesamt);
     state.owners[c.spedition].cash-=k.arbeitsKosten;state.owners[ar].cash+=k.arbeitsKosten;
     state.stations[c.quellStation].lager.erz-=c.fracht;sh.ladung.erz=c.fracht;
+    if(rules.w5h){state.w5h.bestand-=c.fracht;state.w5h.unterwegs+=c.fracht;}
     sh.phase='reise';sh.ziel=c.zielStation;sh.ankunft=state.tick+k.zeit;sh.auftrag='fracht';
     w.auftrag={schiff:sh.id,phase:'hin',menge:c.fracht,gearbeitet:0,...k};
     w.beauftragt++;
@@ -2548,8 +2580,10 @@ const m_core_w3 = (() => {
       if(sh.ziel!==c.zielStation||sh.ladung.erz!==a.menge||kauf.cash<a.erzWert)
         throw Error('W3: Lieferung ohne Ware/Kaufetat');
       delete sh.ladung.erz;state.stations[c.zielStation].lager.erz+=a.menge;
-      kauf.cash-=a.erzWert;state.owners[c.quellStation].cash+=a.erzWert;
-      buche(state,c.quellStation,'erloes',a.erzWert);w.geliefert+=a.menge;
+      const lieferant=rules.w5h?rules.w5h.kaeufer:c.quellStation;
+      kauf.cash-=a.erzWert;state.owners[lieferant].cash+=a.erzWert;
+      buche(state,lieferant,'erloes',a.erzWert);w.geliefert+=a.menge;
+      if(rules.w5h){state.w5h.unterwegs-=a.menge;state.w5h.verkauft+=a.menge;}
       a.phase='rueck';sh.system='nadir';sh.ziel=c.quellStation;sh.ankunft+=a.zeit;
       protokolliere(state,'handel',sh.id+': '+a.menge+' Erz real in Nadir gekauft',c.spedition);
     } else {

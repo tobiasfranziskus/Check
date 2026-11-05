@@ -4454,6 +4454,8 @@ const m_core_w5q=(()=>{
     if(!s.w5q||s.tick%1440!==0)return 0;
     const w=s.w5q,c=r.w5q;
     if(w.mode==='off')return 0;
+    const day=s.tick/1440;
+    if(w.lastExportDay===day)return 0; // keine Doppelauszahlung in demselben Tick
     const remaining=w.totalCap-w.minted;
     const budget=Math.min(w.dayCap,remaining);
     const stock=s.stations.st_nadir.lager.wasser||0;
@@ -4461,7 +4463,6 @@ const m_core_w5q=(()=>{
     if(units<=0)return 0;
     const amount=units*w.rate;
     if(!Number.isSafeInteger(amount)||amount<=0)throw Error('W5q: ungedeckte Zahl');
-    const day=s.tick/1440;
     const st=s.owners.st_nadir,ha=s.owners.w5n_kunden;
     // Same commodity cannot be consumed again by W5n households.
     s.stations.st_nadir.lager.wasser-=units;
@@ -4478,6 +4479,7 @@ const m_core_w5q=(()=>{
       w.payout+=amount;
     }else w.stationNet+=amount;
     w.events.push({tick:s.tick,day,units,amount,mode:w.mode});
+    w.lastExportDay=day;
     return units;
   }
   function audit(s,r){
@@ -4497,7 +4499,9 @@ const m_core_w5q=(()=>{
         ||e.mode!==w.mode)safe=false;
       prior=e?.tick||prior;days.add(e?.day);amount+=e?.amount||0;units+=e?.units||0;
     }
-    const valid=safe&&[w.exported,w.minted,w.payout,w.stationNet].every(x=>
+    const valid=safe&&Number.isSafeInteger(w.lastExportDay)
+      &&w.lastExportDay===(w.events?.at(-1)?.day??0)
+      &&[w.exported,w.minted,w.payout,w.stationNet].every(x=>
       Number.isSafeInteger(x)&&x>=0)
       &&w.exported===units&&w.minted===amount&&amount<=w.totalCap
       &&w.payout===(w.mode==='household'?amount:0)
@@ -5312,7 +5316,7 @@ function createW5BState(seed=W5B_RULES.startSeed,rules=W5B_RULES) {
     divMine:0,divFracht:0,divStation:0,npcMineErlos:0,npcMineLohn:0,
     houseMineErlos:0,houseMineLohn:0};
   if(rules.w5q)s.w5q={mode:'off',rate:0,dayCap:0,totalCap:0,
-    exported:0,minted:0,payout:0,stationNet:0,
+    exported:0,minted:0,payout:0,stationNet:0,lastExportDay:0,
     events:[]};
   if(!m_core_audit.audit(s).ok)throw Error('W5b Startfinanzierung inkonsistent');
   return s;

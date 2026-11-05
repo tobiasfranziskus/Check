@@ -133,7 +133,7 @@ test('W5r: 90d NPC supply buys two real miner hulls, freight retirement halts su
 test('W5r: savings and player-owned miner still follow shared paid replacement rules',()=>{
  for(const c of [
    {mode:'npcSave',owner:'npc3',water:675,miner:1,freight:0,replace:1,paid:600,service:140,customer:9},
-   {mode:'full',owner:'house',water:574,miner:1,freight:0,replace:1,paid:600,service:120,customer:6}
+   {mode:'full',owner:'house',water:513,miner:1,freight:0,replace:0,paid:0,service:100,customer:2}
  ]){
    const s=advance(make(42,c.mode,c.owner),90,c.mode+' '+c.owner);
    const p=api.pilotW5RStand(s);
@@ -148,6 +148,29 @@ test('W5r: savings and player-owned miner still follow shared paid replacement r
      'player keeps income');
    assert.equal(s.minted,0);
  }
+});
+test('W5r: the player never buys a hull automatically; explicit shipBuy is 600 ISK and really depletes stock',()=>{
+ const s=advance(make(42,'full','house'),90,'player decision');
+ const old=api.hash(s),cash=s.owners.house.cash;
+ assert.equal(s.w5r.retired.filter(x=>x.owner==='house').length,1);
+ assert.equal(s.w5r.replacements.length,0);
+ assert.ok(s.w5r.replacementFailedMiner>0,'decision to save or buy must remain available');
+ assert.equal(s.stations.st_aldera.lager.miner,1,'stock still exists before choice');
+ assert.equal(s.owners.house.cash,4200);
+ assert.equal(s.ledger.miner.consumed,2,'only original NPC and player miner consumed');
+ const bought=api.execute(s,{type:'shipBuy',owner:'house',klasse:'miner',
+   station:'st_aldera'},rules);
+ assert.equal(bought.ok,true,'explicit player purchase succeeds');
+ check(s,'manual purchase');
+ assert.notEqual(api.hash(s),old,'purchase changes game state');
+ assert.equal(s.owners.house.cash,cash-600,'no hidden financial source');
+ assert.equal(s.stations.st_aldera.lager.miner,0);
+ assert.equal(s.ledger.miner.consumed,3);
+ assert.equal(s.w5r.replacements.length,1);
+ assert.deepEqual({...s.w5r.replacements[0]},
+   {id:'sh004',owner:'house',kind:'miner',cost:600,tick:s.tick});
+ assert.equal(s.w5r.replacementFailedMiner>0,'prior unbought hours preserved');
+ assert.equal(api.hash(api.loadW5R(api.save(s))),api.hash(s));
 });
 test('W5r: capped physical export income does not create a nonexistent freighter hull',()=>{
  const s=advance(make(42,'full','npc3','household',14,140,7000),90,'export');
@@ -186,8 +209,8 @@ test('W5r: 365d history of financed plant and hull replacement vs saving collaps
      replacements:2,services:9,freight:1,minted:0,hash:'801f5c83ffdc525b'},
    {mode:'npcSave',owner:'npc3',ex:'off',rate:0,day:0,cap:0,water:675,
      replacements:1,services:7,freight:0,minted:0,hash:'ebd1011d0eeabb29'},
-   {mode:'full',owner:'house',ex:'off',rate:0,day:0,cap:0,water:574,
-     replacements:1,services:6,freight:0,minted:0,hash:'b8950a2102767135'},
+   {mode:'full',owner:'house',ex:'off',rate:0,day:0,cap:0,water:513,
+     replacements:0,services:5,freight:0,minted:0,hash:'17e0f474c242fa30'},
    {mode:'full',owner:'npc3',ex:'household',rate:14,day:140,cap:7000,water:812,
      replacements:2,services:9,freight:1,minted:2352,hash:'74e53495a2d884df'}
  ];

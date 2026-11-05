@@ -175,12 +175,17 @@ test('W5h: real finanzierter Zweitjäger oder belegter Kapitalstopp ohne Rettung
   const p=api.execute(s,{type:'stationBuildParts',owner:'house',station:'st_nadir'},rules);
   if(p.ok){
     tick(s,64);
+    const beforeFighter=api.hash(s);
     const h=api.execute(s,{type:'stationBuildFighter',owner:'house',station:'st_nadir'},rules);
-    assert.equal(h.ok,true,JSON.stringify(h));
-    tick(s,32);
-    cmd(s,'shipBuy','npc3',{station:'st_nadir',klasse:'jaeger'});
-    assert.equal(s.w5b.jaegerFertig,2);
-    assert.equal(s.w5b.jaegerVerkauft,2);
+    if(h.ok){
+      tick(s,32);
+      cmd(s,'shipBuy','npc3',{station:'st_nadir',klasse:'jaeger'});
+      assert.equal(s.w5b.jaegerFertig,2);
+      assert.equal(s.w5b.jaegerVerkauft,2);
+    }else{
+      assert.match(h.reason,/Hersteller kann Rohstoffe und alle Lohnminuten nicht bezahlen/);
+      assert.equal(api.hash(s),beforeFighter,'ungezahlter Zweitjäger darf nicht begonnen werden');
+    }
   }else{
     assert.equal(api.hash(s),bevor,'cashstop may not mutate state');
     assert.ok(p.reason?.length>0,'rejected order must give economic reason');

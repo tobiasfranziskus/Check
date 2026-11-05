@@ -12,7 +12,9 @@ In W5i produziert House drei Jäger tatsächlich und vollständig, doch NPC3 kan
 
 | Echtes Ereignis | NPC3-Kasse |
 | --- | ---: |
-| Start: ursprüngliche NPC3-Eigentümerkasse | 2.400 ISK |
+| Ursprüngliche NPC3-Eigentümerkasse | 3.000 ISK |
+| Bereits bezahlter ursprünglicher NPC3-Miner | −600 ISK |
+| Frei vor den beiden ersten Jägern | 2.400 ISK |
 | Zwei vorherige 900-ISK-Jägerkäufe | −1.800 ISK |
 | Frei vor erneuter eigener Leistung | 600 ISK |
 | Vorfinanzierte 50 Erz × 2 ISK Arbeit aus NPC3 | −100 ISK |
@@ -21,7 +23,7 @@ In W5i produziert House drei Jäger tatsächlich und vollständig, doch NPC3 kan
 | Dritter voll bezahlter Jägerkauf | −900 ISK |
 | **Rest** | **100 ISK** |
 
-Zusätzlich gilt am finalen Kassenstand die unabhängig aus den Original-Kontostatistiken hergeleitete Identität `npc3.cash + ungenutzte_Arbeitsreserve = 2400 + npc3.Erlöse − npc3.Kosten`. Nach abgeschlossener Förderung und dem Kauf: `100 = 2.400 + 500 − 2.800`. Die 500 ISK stammen aus Alderas vorhandenen Mitteln, nicht aus dem Nichts. Die zurückliegende W3-Lieferung hat zuvor das Erz des Händlers real nach Nadir gebracht. Kein Bankkredit, Geschenk, Fondsauffüllung, ISK-Emissionsakt oder kostenloser Arbeitsauftrag.
+Zusätzlich gilt am finalen Kassenstand die unabhängig aus den Original-Kontostatistiken hergeleitete Identität `npc3.cash + ungenutzte_Arbeitsreserve = 3000 + npc3.Erlöse − npc3.Kosten`. Nach abgeschlossener Förderung und dem Kauf: `100 = 3.000 + 500 − 3.400`. Die 500 ISK stammen aus Alderas vorhandenen Mitteln, nicht aus dem Nichts. Die zurückliegende W3-Lieferung hat zuvor das Erz des Händlers real nach Nadir gebracht. Kein Bankkredit, Geschenk, Fondsauffüllung, ISK-Emissionsakt oder kostenloser Arbeitsauftrag.
 
 Im Endstand des direkten Versuchs wurden **9 × 50 Erz = 450 Erz** in echten W3-Frachten nach Nadir geliefert. Drei Jäger wurden zuvor aus wirklichen Rohstoffen und Bauteilen produziert und danach für je 900 ISK wirklich verkauft; keine Scheinabschreibung im Warenledger. House verfügt nach dem dritten Verkauf über **1.764 ISK**, NPC3 über **100 ISK**, Nadir über **2.200 ISK**. Die Gesamtgeldmenge bleibt **33.000 ISK** mit `minted=burned=0`.
 

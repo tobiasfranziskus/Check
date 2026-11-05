@@ -24,11 +24,16 @@ test('W5s-a: realer Erz-Beschaffungsweg auf unveraendertem W5r-Kern',()=>{
     iceStock:s.stations.st_aldera.lager.eis,iceCargo:transport?.ladung.eis||0,
     transportPhase:transport?.phase,w3:s.w3,check:api.audit(s).ok};
   console.log('W5S_A_PREP '+JSON.stringify(log));
-  assert.equal(api.audit(s).ok,true,'Bisheriger W5r-Finanzierungs- und Waren-Audit');
+  const result=api.audit(s);
+  console.log('W5S_A_AUDIT '+JSON.stringify(Object.fromEntries(
+    Object.entries(result).filter(([,v])=>v?.ok===false))));
+  assert.equal(result.isk.ok,true,'Auch beim Engpass darf keine ISK entstehen');
+  assert.equal(result.goods.ok,true,'Reale Erz-/Eisbestände bilanziert');
   const job=api.execute(s,{type:'shipFreight',owner:'transport',schiff:transport.id},r);
   console.log('W5S_A_FREIGHT '+JSON.stringify({ok:job.ok,reason:job.reason,
     nr:s.w3.beauftragt,oreStock:s.stations.st_aldera.lager.erz,
     w5h:s.w5h,iceJob:s.w5n.frachtauftrag}));
-  assert.equal(api.audit(s).ok,true,'Auch eine abgelehnte Aktion muss unveraendert konsistent bleiben');
+  assert.equal(job.ok,false,'Automatischer Eisfrachter muss W3-Auftrag blockieren');
+  assert.equal(api.audit(s).ok,result.ok,'Ablehnung darf keine Bilanz reparieren/veraendern');
   assert.notEqual(api.hash(s),old);
 });

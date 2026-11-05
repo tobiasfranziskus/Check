@@ -1171,6 +1171,8 @@ function checkShape(state, cmd, rules) {
   if (FIELDS[cmd.type].includes('schiff')) {
     if (typeof cmd.schiff !== 'string' || !Object.hasOwn(state.ships, cmd.schiff)) return 'unbekanntes Schiff';
     const s = state.ships[cmd.schiff];
+    if(rules.w5r&&s.w5rRetired&&!['shipWait','shipRename','shipSellIce'].includes(cmd.type))
+      return 'Ausgemusterte Huelle darf nur noch Fracht entladen';
     if (s.owner !== cmd.owner
       && !(rules.w5f && (cmd.type==='pilotBuyLaser'||cmd.type==='pilotFitLaser')
         && cmd.owner===rules.w5f.pilot && s.owner===rules.w5c.anbieter))
@@ -2595,7 +2597,7 @@ const m_core_erzpilot = (() => {
     const owner = rules.erzpilot.npcInvestor, buch = vertragsbuch(state);
     const eigene = ids(state.ships).map((id) => state.ships[id])
       .filter((sh) => sh.owner === owner && sh.klasse === 'miner' && sh.phase === 'dock'
-        &&(!rules.w5n||sh.ware!=='eis'));
+        &&(!rules.w5n||sh.ware!=='eis')&&(!rules.w5r||!sh.w5rRetired));
     if (info.planbar === 0) {
       // Kein kostenloses Weiterfördern: Stop ausschließlich bei unbelegter Zukunft.
       // Ein schon bezahlter, noch nicht fertiggestellter Auftrag bleibt unangetastet.
@@ -4625,6 +4627,13 @@ const m_core_w5r=(()=>{
      if(sh.klasse==='frachter'&&sh.owner===r.w5n.frachterOwner)retire(s,r,sh,'frachter');
    }
    if(s.tick%r.economy.stunde===0){
+     // Stillgelegte Miner laden nur gegen echten Käuferetat Eis ab.
+     for(const sh of Object.values(s.ships)){
+       if(sh.w5rRetired&&sh.klasse==='miner'&&(sh.ladung.eis||0)>0
+         &&sh.system==='aldera')
+         m_core_commands.execute(s,{type:'shipSellIce',owner:sh.owner,
+           schiff:sh.id,menge:Math.min(50,sh.ladung.eis)},r);
+     }
      const mineOwner=s.w5o.minerOwner;
      if(!Object.values(s.ships).some(sh=>sh.owner===mineOwner
        &&sh.klasse==='miner'&&!sh.w5rRetired)

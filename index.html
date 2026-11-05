@@ -2268,7 +2268,8 @@ const m_core_erzpilot = (() => {
     const freiePlaetze = obergrenze(state, rules, cfg.station, 'erz')
       - anzahl(lager, 'erz') - reserviert(state);
     const vorhandenesErz = anzahl(schiff.ladung, 'erz');
-    const verfuengbareArbeit = Math.floor(state.owners[schiff.owner].cash / cfg.minerJeMinute);
+    const verfuengbareArbeit = Math.floor(state.owners[schiff.owner].cash / cfg.minerJeMinute)
+      * m_core_w5m.rate(rules,schiff);
     let menge = Math.max(0, Math.min(cfg.auftragsMenge, rules.economy.cargo,
       Math.floor(station.cash / cfg.preis), freiePlaetze,
       Math.max(vorhandenesErz, verfuengbareArbeit)));
@@ -2278,7 +2279,8 @@ const m_core_erzpilot = (() => {
     if (menge <= 0) return null;
     const wert = menge * cfg.preis, konto = `erz_treuhand_${schiff.id}`;
     const arbeitsKonto = `erz_arbeit_${schiff.id}`;
-    const arbeitsBudget = Math.max(0, menge - vorhandenesErz) * cfg.minerJeMinute;
+    const arbeitsBudget = Math.ceil(Math.max(0, menge - vorhandenesErz)
+      / m_core_w5m.rate(rules,schiff)) * cfg.minerJeMinute;
     if (state.owners[schiff.owner].cash < arbeitsBudget) throw Error('Bergbauauftrag ohne Arbeitskapital');
     if (!state.owners[konto]) state.owners[konto] = { id: konto, kind: 'escrow', cash: 0 };
     if (!state.owners[arbeitsKonto]) state.owners[arbeitsKonto] = { id: arbeitsKonto, kind: 'escrow', cash: 0 };
@@ -2331,14 +2333,15 @@ const m_core_erzpilot = (() => {
       // Arbeitskosten werden sofort von derselben Eigentuemer-Kasse gezahlt.
       const vorher=anzahl(schiff.ladung,'erz');
       const n=Math.min(m_core_w5m.rate(rules,schiff),rules.economy.cargo-vorher,
-        Math.floor(state.owners[schiff.owner].cash/cfg.minerJeMinute));
+        Math.floor(state.owners[schiff.owner].cash/cfg.minerJeMinute)
+          * m_core_w5m.rate(rules,schiff));
       if(n<=0) {
         schiff.auftrag='halten';
         protokolliere(state,'kosten',
           schiff.id+': Eigenabbau pausiert (Fracht voll oder Arbeitskapital fehlt)',schiff.owner);
         return 0;
       }
-      const kosten=n*cfg.minerJeMinute;
+      const kosten=n>0?cfg.minerJeMinute:0;
       state.owners[schiff.owner].cash-=kosten;
       state.owners[rules.world.systems[schiff.system].fonds].cash+=kosten;
       buche(state,schiff.owner,'kosten',kosten);
@@ -2351,7 +2354,7 @@ const m_core_erzpilot = (() => {
     const vorher = anzahl(schiff.ladung, 'erz');
     if (vorher >= v.menge) return abschliessen(state, rules, schiff);
     const n = Math.min(m_core_w5m.rate(rules,schiff), v.menge - vorher, rules.economy.cargo - vorher);
-    const kosten = n * cfg.minerJeMinute;
+    const kosten = n>0?cfg.minerJeMinute:0;
     // Alte Regel-15-Draft-Saves ohne Arbeits-Treuhand weiter abwickeln,
     // neue Auftraege sind dagegen beidseitig voll vorfinanziert.
     const kasse = v.arbeitsKonto ? state.owners[v.arbeitsKonto] : state.owners[schiff.owner];
@@ -3862,9 +3865,9 @@ const m_core_w5m=(()=>{
   const rate=(rules,sh)=>rules.w5m&&sh?.bohrerMk1===true
     ?rules.w5m.rate:rules.economy.miningRate;
   function buch(s,sh){
-    return (s.w5m.schiffe[sh.id] ||= {owner:sh.owner,erz:0,verkauft:0,erloes:0,lohn:0});
+    return (s.w5m.schiffe[sh.id] ||= {owner:sh.owner,erz:0,minuten:0,verkauft:0,erloes:0,lohn:0});
   }
-  function abbau(s,sh,n,kosten){const z=buch(s,sh);z.erz+=n;z.lohn+=kosten;}
+  function abbau(s,sh,n,kosten){const z=buch(s,sh);z.erz+=n;z.minuten++;z.lohn+=kosten;}
   function verkauf(s,sh,n,preis){const z=buch(s,sh);z.verkauft+=n;z.erloes+=n*preis;}
   function pruefen(s,r,sh){
     if(!r.w5m||s.rulesVersion!==r.rulesVersion||!s.w5m)
@@ -3905,9 +3908,10 @@ const m_core_w5m=(()=>{
     const bb=Object.entries(w.schiffe);
     const sum=bb.reduce((a,[id,z])=>{
       if(!s.ships[id]||s.ships[id].klasse!=='miner'||s.ships[id].owner!==z.owner
-        ||![z.erz,z.verkauft,z.erloes,z.lohn].every(n=>Number.isSafeInteger(n)&&n>=0)
+        ||![z.erz,z.minuten,z.verkauft,z.erloes,z.lohn].every(n=>Number.isSafeInteger(n)&&n>=0)
         ||z.verkauft>z.erz||z.erloes!==z.verkauft*r.erzpilot.preis
-        ||z.lohn!==z.erz*r.erzpilot.minerJeMinute)a.ok=false;
+        ||z.lohn!==z.minuten*r.erzpilot.minerJeMinute
+        ||z.erz<z.minuten||z.erz>z.minuten*r.w5m.rate)a.ok=false;
       a.erz+=z.erz;a.verkauft+=z.verkauft;a.lohn+=z.lohn;return a;
     },{ok:true,erz:0,verkauft:0,lohn:0});
     const gekauft=Object.entries(w.minerKaeufe).every(([owner,n])=>
@@ -3928,7 +3932,7 @@ const m_core_w5m=(()=>{
     for(const owner of ['house','npc3']){
       const schiffe=Object.keys(s.ships).sort().filter(id=>
         s.ships[id].klasse==='miner'&&s.ships[id].owner===owner).map(id=>{
-          const z=s.w5m.schiffe[id]||{erz:0,verkauft:0,erloes:0,lohn:0};
+          const z=s.w5m.schiffe[id]||{erz:0,minuten:0,verkauft:0,erloes:0,lohn:0};
           return Object.freeze({id,...z,mk1:s.ships[id].bohrerMk1===true,
             rate:rate(r,s.ships[id]),ladung:s.ships[id].ladung.erz||0});
         });
@@ -3988,7 +3992,9 @@ const m_core_w1_vollkosten = (() => {
     const bezahlteHuelle = minerKaeufe * rules.economy.waren.miner.basis;
     const frachterHuelle = rules.w3 ? anzahl(state.ledger.frachter,'consumed')
       * rules.economy.waren.frachter.basis : 0;
-    const foerderArbeit = state.ledger.erz.mined * cfg.minerJeMinute;
+    const foerderArbeit = state.w5m
+      ? Object.values(state.w5m.schiffe).reduce((n,x)=>n+x.lohn,0)
+      : state.ledger.erz.mined * cfg.minerJeMinute;
     const b=state.w5b;
     const abzug=(b?b.siliziumLohnBezahlt+b.vorproduktKauf+b.fabrikLohnBezahlt+b.jaegerVerkauft*rules.economy.waren.jaeger.basis:0)
       +(state.w5c?.jagdKosten??0)
@@ -4053,7 +4059,8 @@ const m_core_w2_konzernstatus = (() => {
         && saldiert === freiUndGebunden;
       const offeneFoerderkosten = vertraege.reduce((sum, sh) => {
         const v = buch[sh.id];
-        return sum + (v.menge - (sh.ladung.erz || 0)) * v.arbeitsPreis;
+        return sum + Math.ceil(Math.max(0,v.menge - (sh.ladung.erz || 0))
+          / m_core_w5m.rate(rules,sh)) * v.arbeitsPreis;
       }, 0)+zusatzReserve;
       const reserveOk = Number.isSafeInteger(offeneFoerderkosten)
         && offeneFoerderkosten >= 0 && offeneFoerderkosten === arbeitsReserve;
@@ -4470,7 +4477,9 @@ function audit(state) {
         const kostenJeEinheit = m_data_erzpilot.ERZ_RULES.erzpilot.minerJeMinute;
         const verbleibend = Math.max(0, v.menge - (sh.ladung.erz || 0));
         if (!arbeit || !Number.isSafeInteger(arbeit.cash)
-          || arbeit.cash !== verbleibend * kostenJeEinheit
+          || arbeit.cash !== Math.ceil(verbleibend
+             / m_core_w5m.rate(state.rulesVersion===m_data_erzpilot.W5M_RULES.rulesVersion
+               ?m_data_erzpilot.W5M_RULES:m_data_erzpilot.ERZ_RULES,sh))*kostenJeEinheit
           || active.has(v.arbeitsKonto) || v.arbeitsPreis !== kostenJeEinheit)
           errors[id] = 'ungueltige Arbeitskapitalbindung';
         else active.add(v.arbeitsKonto);

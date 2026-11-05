@@ -133,11 +133,45 @@ export function analysiereKaufkraft(api,{
   };
   return Object.freeze(result);
 }
+export function wertekettePro50(rules,{foerderrate=1}={}){
+  if(!rules?.w5n||!Number.isSafeInteger(foerderrate)||foerderrate<1
+    ||rules.w5n.charge%rules.w5n.rezeptEis!==0
+    ||rules.w5n.charge%foerderrate!==0)
+    throw Error('W5p: nur komplette, physisch nachvollziehbare Chargen');
+  const c=rules.w5n;
+  const eis=c.charge*c.eisPreis;
+  const hinRueckFracht=c.flugMinuten*2*c.frachtJeMinute;
+  const flugLohn=c.flugMinuten*2*c.fliegerLohn;
+  const fabrikLohn=c.charge/c.rezeptEis*c.fabrikMinuten*c.fabrikLohn;
+  const minerLohn=c.charge/foerderrate*c.mineLohn;
+  const wasserEinheiten=c.charge/c.rezeptEis*c.rezeptWasser;
+  const wasserUmsatz=wasserEinheiten*c.wasserPreis;
+  const minerGewinn=eis-minerLohn;
+  const frachtGewinn=hinRueckFracht-flugLohn;
+  const stationsGewinn=wasserUmsatz-eis-hinRueckFracht-fabrikLohn;
+  const loehne=minerLohn+flugLohn+fabrikLohn;
+  const gewinne=minerGewinn+frachtGewinn+stationsGewinn;
+  if(wasserUmsatz!==loehne+gewinne||Math.min(
+    minerGewinn,frachtGewinn,stationsGewinn)>=wasserUmsatz)
+    throw Error('W5p: Leistungsrechnung nicht geschlossen');
+  return Object.freeze({foerderrate,ladungEis:c.charge,wasserEinheiten,
+    wasserkaufISK:wasserUmsatz,
+    arbeitsLohnISK:loehne,minerlLohnISK:minerLohn,
+    frachterLohnISK:flugLohn,werkLohnISK:fabrikLohn,
+    minerGewinnISK:minerGewinn,frachterGewinnISK:frachtGewinn,
+    stationsGewinnISK:stationsGewinn,
+    auskehrbarerGewinnISK:gewinne,vollstaendigerRueckflussISK:loehne+gewinne,
+    lueckeWennMinerSpartISK:minerGewinn,
+    lueckeJeWasserBeiMinerSparenISK:minerGewinn/wasserEinheiten});
+}
+
 export function vergleichOhneScheinemission(resultate){
   if(!Array.isArray(resultate)||resultate.length<2)
     throw Error('W5p: mindestens zwei real beobachtete Welten');
   const referenz=resultate.find(x=>x.modus==='full'&&x.minerOwner==='npc3');
   if(!referenz)throw Error('W5p: voll finanzierte NPC-Referenz fehlt');
+  if(resultate.some(x=>x.seed!==referenz.seed||x.tage!==referenz.tage
+    ||x.regel!==referenz.regel))throw Error('W5p: Welten muessen identische Seed-/Zeit-/Regelbasis haben');
   return Object.freeze(resultate.map(x=>Object.freeze({
     modus:x.modus,minerOwner:x.minerOwner,seed:x.seed,tage:x.tage,
     verkauft:x.nachfrage.wirklichGekauft,

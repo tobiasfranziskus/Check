@@ -3407,7 +3407,7 @@ const m_core_w5c = (() => {
         && sh.auftrag==='pirat') || verlust)))
       && w.jagdKosten===w.bezahlteStunden*c.jaegerStunde
       && state.owners[c.fonds].cash===state.w3.arbeitsKosten
-        +state.w5b.siliziumLohnBezahlt+w.jagdKosten
+        +(state.w5n?.frachtLohn??0)+state.w5b.siliziumLohnBezahlt+w.jagdKosten
         -(state.w5f?.lohnBezahlt??0)-(state.w5f?.kopfgeldBezahlt??0)
         -(state.owners.w5f_kopfgeld_reserve?.cash??0)
       && (w.jagdAktivId===null ? w.finanziertBis===0
@@ -3875,7 +3875,7 @@ const m_core_w5h=(()=>{
       &&w.bestand<=c.charge &&w.bestand<=(s.stations[c.quellStation].lager.erz??-1)
       &&k?.cash===start-w.gekauft*p+w.verkauft*p
       &&stat?.kosten===w.gekauft*p &&stat?.erloes===w.verkauft*p
-      &&quelle?.erloes===w.gekauft*p
+      &&quelle?.erloes===w.gekauft*p+(s.w5n?.eisTransferWert??0)
       &&s.ledger.erz.exported===0 &&s.minted===0 &&s.burned===0;
     return {ok,gekauft:w.gekauft,verkauft:w.verkauft,bestand:w.bestand,
       unterwegs:w.unterwegs,exportCash:k?.cash??null,lieferungen:s.w3.geliefert,

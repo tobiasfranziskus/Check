@@ -987,6 +987,10 @@ const m_data_erzpilot = (() => {
   // vorfinanzierbare Erz-Pipeline; Folgeauftraege erst nach realer W3-Ankunft.
   const W5I_RULES={...W5H_RULES,rulesVersion:26,
     w5i:{maxOffen:W5H_RULES.w3.fracht}};
+  // W5l: kein kuenstlicher 50-Erz-Deckel fuer Mining; Eigenabbau
+  // ohne Kundenvertrag ist ein vollstaendig eigentuemerfinanziertes Risiko.
+  const W5L_RULES={...W5I_RULES,rulesVersion:27,w5l:{eigenabbauOhneAbnahme:true}};
+  m_data_systeme.tiefFrieren(W5L_RULES);
   m_data_systeme.tiefFrieren(W5I_RULES);
   m_data_systeme.tiefFrieren(W5H_RULES);
   m_data_systeme.tiefFrieren(W5G_RULES);
@@ -999,7 +1003,7 @@ const m_data_erzpilot = (() => {
   m_data_systeme.tiefFrieren(W3_RULES);
   m_data_systeme.tiefFrieren(W4_RULES);
   m_data_systeme.tiefFrieren(W5_RULES);
-  return { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES };
+  return { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES, W5L_RULES };
 })();
 
 const m_core_rng = (() => {
@@ -2235,7 +2239,7 @@ const m_core_erzpilot = (() => {
       if(state.owners[rules.w3.kunde].cash<m_core_w3.kalkulation(rules).gesamt
         ||frei<rules.w3.fracht)return 0;
     } // Keine neue Erzfoerderung ohne zahlbaren W3-Kunden UND realen Lagerplatz.
-    const weiterverkaufOffen=rules.w5i
+    const weiterverkaufOffen=rules.w5i && !rules.w5l
       ?Math.max(0,rules.w5i.maxOffen-bestand-reserviert(state)-fremdeFracht)
       :Infinity;
     return Math.max(0,Math.min(weiterverkaufOffen,
@@ -2307,7 +2311,28 @@ const m_core_erzpilot = (() => {
   function foerdern(state, rules, schiff) {
     const cfg = rules.erzpilot;
     const v = beauftragen(state, rules, schiff);
-    if (!v) return 0; // kein Auftrag: keine unbezahlte oder spekulative Produktion.
+    if (!v) {
+      if (!rules.w5l) return 0;
+      // Eigene Ware, nicht automatisch verkaufter Auftrag. Die echten
+      // Arbeitskosten werden sofort von derselben Eigentuemer-Kasse gezahlt.
+      const vorher=anzahl(schiff.ladung,'erz');
+      const n=Math.min(rules.economy.miningRate,rules.economy.cargo-vorher,
+        Math.floor(state.owners[schiff.owner].cash/cfg.minerJeMinute));
+      if(n<=0) {
+        schiff.auftrag='halten';
+        protokolliere(state,'kosten',
+          schiff.id+': Eigenabbau pausiert (Fracht voll oder Arbeitskapital fehlt)',schiff.owner);
+        return 0;
+      }
+      const kosten=n*cfg.minerJeMinute;
+      state.owners[schiff.owner].cash-=kosten;
+      state.owners[rules.world.systems[schiff.system].fonds].cash+=kosten;
+      buche(state,schiff.owner,'kosten',kosten);
+      schiff.ladung.erz=vorher+n;
+      state.ledger.erz.mined+=n;
+      if(schiff.ladung.erz>=rules.economy.cargo)schiff.auftrag='halten';
+      return n;
+    }
     const vorher = anzahl(schiff.ladung, 'erz');
     if (vorher >= v.menge) return abschliessen(state, rules, schiff);
     const n = Math.min(rules.economy.miningRate, v.menge - vorher, rules.economy.cargo - vorher);
@@ -3797,9 +3822,9 @@ const m_core_w5i=(()=>{
     const g=m_core_w5h.audit(state,rules);
     const ok=g.ok&&[reserviert,fremdeFracht,gelagert,offen]
       .every(n=>Number.isSafeInteger(n)&&n>=0)
-      &&offen<=c.maxOffen&&c.maxOffen===rules.w3.fracht;
-    return {ok,limit:c.maxOffen,offen,gelagert,reserviert,
-      unterwegs:fremdeFracht,freiesAuftragsvolumen:Math.max(0,c.maxOffen-offen),
+      &&(!!rules.w5l || (offen<=c.maxOffen&&c.maxOffen===rules.w3.fracht));
+    return {ok,limit:rules.w5l?null:c.maxOffen,offen,gelagert,reserviert,
+      unterwegs:fremdeFracht,freiesAuftragsvolumen:rules.w5l?null:Math.max(0,c.maxOffen-offen),
       house:state.owners.house.cash,npc3:state.owners.npc3.cash,
       nadir:state.owners.st_nadir.cash,
       jaegerGebaut:state.w5b.jaegerFertig,jaegerVerkauft:state.w5b.jaegerVerkauft,
@@ -4249,7 +4274,8 @@ function audit(state) {
     || state.rulesVersion === m_data_erzpilot.W5F_RULES.rulesVersion
     || state.rulesVersion === m_data_erzpilot.W5G_RULES.rulesVersion
     || state.rulesVersion === m_data_erzpilot.W5H_RULES.rulesVersion
-    || state.rulesVersion === m_data_erzpilot.W5I_RULES.rulesVersion) {
+    || state.rulesVersion === m_data_erzpilot.W5I_RULES.rulesVersion
+    || state.rulesVersion === m_data_erzpilot.W5L_RULES.rulesVersion) {
     const cfg = m_data_erzpilot.ERZ_RULES.erzpilot;
     const start = m_data_erzpilot.ERZ_RULES.owners.find((o) => o.id === cfg.exportOwner).cash;
     const exportiert = state.ledger?.erz?.exported;
@@ -4278,9 +4304,12 @@ function audit(state) {
     || state.rulesVersion === m_data_erzpilot.W5F_RULES.rulesVersion
     || state.rulesVersion === m_data_erzpilot.W5G_RULES.rulesVersion
     || state.rulesVersion === m_data_erzpilot.W5H_RULES.rulesVersion
-    || state.rulesVersion === m_data_erzpilot.W5I_RULES.rulesVersion) {
+    || state.rulesVersion === m_data_erzpilot.W5I_RULES.rulesVersion
+    || state.rulesVersion === m_data_erzpilot.W5L_RULES.rulesVersion) {
     const bericht = m_core_w1_vollkosten.pruefen(state,
-      state.rulesVersion === m_data_erzpilot.W5I_RULES.rulesVersion
+      state.rulesVersion === m_data_erzpilot.W5L_RULES.rulesVersion
+        ? m_data_erzpilot.W5L_RULES
+        : state.rulesVersion === m_data_erzpilot.W5I_RULES.rulesVersion
         ? m_data_erzpilot.W5I_RULES
         : state.rulesVersion === m_data_erzpilot.W5H_RULES.rulesVersion
         ? m_data_erzpilot.W5H_RULES
@@ -4346,7 +4375,8 @@ function audit(state) {
     vertragsOk = Object.keys(errors).length === 0;
     extra.contracts = { ok: vertragsOk, errors, reserved: reservierteMenge };
   }
-  const istW5i = state.rulesVersion === m_data_erzpilot.W5I_RULES.rulesVersion;
+  const istW5l = state.rulesVersion === m_data_erzpilot.W5L_RULES.rulesVersion;
+   const istW5i = state.rulesVersion === m_data_erzpilot.W5I_RULES.rulesVersion || istW5l;
   const istW5h = state.rulesVersion === m_data_erzpilot.W5H_RULES.rulesVersion || istW5i;
   const istW5g = state.rulesVersion === m_data_erzpilot.W5G_RULES.rulesVersion || istW5h;
   const istW5f = state.rulesVersion === m_data_erzpilot.W5F_RULES.rulesVersion || istW5g;
@@ -4357,19 +4387,19 @@ function audit(state) {
   const istW4 = state.rulesVersion === m_data_erzpilot.W4_RULES.rulesVersion;
   const w3 = state.rulesVersion === m_data_erzpilot.W3_RULES.rulesVersion
     || istW4 || istW5
-    ? m_core_w3.audit(state,istW5i ? m_data_erzpilot.W5I_RULES : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : istW5b ? m_data_erzpilot.W5B_RULES : istW5 ? m_data_erzpilot.W5_RULES
+    ? m_core_w3.audit(state,istW5i ? (istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : istW5b ? m_data_erzpilot.W5B_RULES : istW5 ? m_data_erzpilot.W5_RULES
       : istW4 ? m_data_erzpilot.W4_RULES : m_data_erzpilot.W3_RULES) : null;
   const w4 = istW4 || istW5
-    ? m_core_w4.audit(state,istW5i ? m_data_erzpilot.W5I_RULES : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : istW5b ? m_data_erzpilot.W5B_RULES : istW5 ? m_data_erzpilot.W5_RULES : m_data_erzpilot.W4_RULES) : null;
-  const w5 = istW5 ? m_core_w5.audit(state,istW5i ? m_data_erzpilot.W5I_RULES : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : istW5b ? m_data_erzpilot.W5B_RULES : m_data_erzpilot.W5_RULES) : null;
-  const w5b = istW5b ? m_core_w5b.audit(state,istW5i ? m_data_erzpilot.W5I_RULES : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : m_data_erzpilot.W5B_RULES) : null;
+    ? m_core_w4.audit(state,istW5i ? (istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : istW5b ? m_data_erzpilot.W5B_RULES : istW5 ? m_data_erzpilot.W5_RULES : m_data_erzpilot.W4_RULES) : null;
+  const w5 = istW5 ? m_core_w5.audit(state,istW5i ? (istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : istW5b ? m_data_erzpilot.W5B_RULES : m_data_erzpilot.W5_RULES) : null;
+  const w5b = istW5b ? m_core_w5b.audit(state,istW5i ? (istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : m_data_erzpilot.W5B_RULES) : null;
   const w5c = istW5c ? m_core_w5c.audit(state,istW5d ? m_data_erzpilot.W5D_RULES : m_data_erzpilot.W5C_RULES) : null;
-  const w5d = istW5d ? m_core_w5d.audit(state,istW5i?m_data_erzpilot.W5I_RULES:istW5h?m_data_erzpilot.W5H_RULES:istW5f?m_data_erzpilot.W5F_RULES:m_data_erzpilot.W5D_RULES) : null;
-  const w5f = istW5f ? m_core_w5f.audit(state,istW5i?m_data_erzpilot.W5I_RULES:istW5h?m_data_erzpilot.W5H_RULES:istW5g?
+  const w5d = istW5d ? m_core_w5d.audit(state,istW5i?(istW5l?m_data_erzpilot.W5L_RULES:m_data_erzpilot.W5I_RULES):istW5h?m_data_erzpilot.W5H_RULES:istW5f?m_data_erzpilot.W5F_RULES:m_data_erzpilot.W5D_RULES) : null;
+  const w5f = istW5f ? m_core_w5f.audit(state,istW5i?(istW5l?m_data_erzpilot.W5L_RULES:m_data_erzpilot.W5I_RULES):istW5h?m_data_erzpilot.W5H_RULES:istW5g?
     m_data_erzpilot.W5G_RULES:m_data_erzpilot.W5F_RULES) : null;
-  const w5g = istW5g ? m_core_w5g.audit(state,istW5i ? m_data_erzpilot.W5I_RULES : istW5h ? m_data_erzpilot.W5H_RULES : m_data_erzpilot.W5G_RULES) : null;
-  const w5h = istW5h ? m_core_w5h.audit(state,istW5i ? m_data_erzpilot.W5I_RULES : m_data_erzpilot.W5H_RULES) : null;
-  const w5i = istW5i ? m_core_w5i.audit(state,m_data_erzpilot.W5I_RULES) : null;
+  const w5g = istW5g ? m_core_w5g.audit(state,istW5i ? (istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : m_data_erzpilot.W5G_RULES) : null;
+  const w5h = istW5h ? m_core_w5h.audit(state,istW5i ? (istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : m_data_erzpilot.W5H_RULES) : null;
+  const w5i = istW5i ? m_core_w5i.audit(state,istW5l?m_data_erzpilot.W5L_RULES:m_data_erzpilot.W5I_RULES) : null;
   if (w3) extra.w3=w3;
   if (w4) extra.w4=w4;
   if (w5) extra.w5=w5;
@@ -4389,11 +4419,11 @@ return { audit };
 
 const m_core_index = (() => {
 const { RULES } = m_data_rules;
-const { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES } = m_data_erzpilot;
+const { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES, W5L_RULES } = m_data_erzpilot;
 const pilotAuftragsStand = (state) => m_core_erzpilot.auftragsStand(state, ERZ_RULES);
 const pilotNpcInvestition = (state) => m_core_erzpilot.investitionsPruefung(state, W2_RULES);
 const pilotKonzernStatus = (state) => m_core_w2_konzernstatus.pruefen(state,
-  state.rulesVersion === W5I_RULES.rulesVersion ? W5I_RULES : state.rulesVersion === W5H_RULES.rulesVersion ? W5H_RULES : state.rulesVersion === W5G_RULES.rulesVersion ? W5G_RULES
+  state.rulesVersion === W5L_RULES.rulesVersion ? W5L_RULES : state.rulesVersion === W5I_RULES.rulesVersion ? W5I_RULES : state.rulesVersion === W5H_RULES.rulesVersion ? W5H_RULES : state.rulesVersion === W5G_RULES.rulesVersion ? W5G_RULES
     : state.rulesVersion === W5F_RULES.rulesVersion ? W5F_RULES
     : state.rulesVersion === W5D_RULES.rulesVersion ? W5D_RULES
     : state.rulesVersion === W5C_RULES.rulesVersion ? W5C_RULES
@@ -4402,7 +4432,7 @@ const pilotKonzernStatus = (state) => m_core_w2_konzernstatus.pruefen(state,
     : state.rulesVersion === W4_RULES.rulesVersion ? W4_RULES
       : state.rulesVersion === W3_RULES.rulesVersion ? W3_RULES : W2_RULES);
 const pilotNpcKrisenLage = (state) => m_core_erzpilot.krisenLage(state,
-  state.rulesVersion === W5I_RULES.rulesVersion ? W5I_RULES : state.rulesVersion === W5H_RULES.rulesVersion ? W5H_RULES : state.rulesVersion === W5G_RULES.rulesVersion ? W5G_RULES
+  state.rulesVersion === W5L_RULES.rulesVersion ? W5L_RULES : state.rulesVersion === W5I_RULES.rulesVersion ? W5I_RULES : state.rulesVersion === W5H_RULES.rulesVersion ? W5H_RULES : state.rulesVersion === W5G_RULES.rulesVersion ? W5G_RULES
     : state.rulesVersion === W5F_RULES.rulesVersion ? W5F_RULES
     : state.rulesVersion === W5D_RULES.rulesVersion ? W5D_RULES
     : state.rulesVersion === W5C_RULES.rulesVersion ? W5C_RULES
@@ -4411,7 +4441,7 @@ const pilotNpcKrisenLage = (state) => m_core_erzpilot.krisenLage(state,
     : state.rulesVersion === W4_RULES.rulesVersion ? W4_RULES
       : state.rulesVersion === W3_RULES.rulesVersion ? W3_RULES : W2_RULES);
 const pilotWirtschaftsStand = (state) => m_core_w1_vollkosten.pruefen(state,
-  state.rulesVersion === W5I_RULES.rulesVersion ? W5I_RULES : state.rulesVersion === W5H_RULES.rulesVersion ? W5H_RULES : state.rulesVersion === W5G_RULES.rulesVersion ? W5G_RULES
+  state.rulesVersion === W5L_RULES.rulesVersion ? W5L_RULES : state.rulesVersion === W5I_RULES.rulesVersion ? W5I_RULES : state.rulesVersion === W5H_RULES.rulesVersion ? W5H_RULES : state.rulesVersion === W5G_RULES.rulesVersion ? W5G_RULES
     : state.rulesVersion === W5F_RULES.rulesVersion ? W5F_RULES
     : state.rulesVersion === W5D_RULES.rulesVersion ? W5D_RULES
     : state.rulesVersion === W5C_RULES.rulesVersion ? W5C_RULES
@@ -4539,6 +4569,10 @@ const pilotW5HStand = state => m_core_w5h.audit(state,W5H_RULES);
 const pilotW5HPlan = state => m_core_w5h.plan(state,W5H_RULES);
 const createW5IState = (seed=W5I_RULES.startSeed) => createW5BState(seed,W5I_RULES);
 const loadW5I = json => loadErz(json,W5I_RULES);
+ const createW5LState = (seed=W5L_RULES.startSeed) => createW5BState(seed,W5L_RULES);
+ const loadW5L = json => loadErz(json,W5L_RULES);
+ const pilotW5LStand = state => m_core_w5i.audit(state,W5L_RULES);
+ const pilotW5LPlan = state => m_core_w5i.plan(state,W5L_RULES);
 const pilotW5IStand = state => m_core_w5i.audit(state,W5I_RULES);
 const pilotW5IPlan = state => m_core_w5i.plan(state,W5I_RULES);
 const pilotW5GStand = state => m_core_w5g.audit(state,W5G_RULES);
@@ -4560,7 +4594,7 @@ const pilotW5BPlan = (state,art) => m_core_w5b.pruefen(state,W5B_RULES,
 function JagdSichtV1(state) {
   if(state.rulesVersion!==W5B_RULES.rulesVersion && state.rulesVersion!==W5C_RULES.rulesVersion
     && state.rulesVersion!==W5D_RULES.rulesVersion&&state.rulesVersion!==W5F_RULES.rulesVersion
-    && state.rulesVersion!==W5G_RULES.rulesVersion&&state.rulesVersion!==W5H_RULES.rulesVersion&&state.rulesVersion!==W5I_RULES.rulesVersion)
+    && state.rulesVersion!==W5G_RULES.rulesVersion&&state.rulesVersion!==W5H_RULES.rulesVersion&&state.rulesVersion!==W5I_RULES.rulesVersion&&state.rulesVersion!==W5L_RULES.rulesVersion)
     throw Error('JagdSichtV1 nur fuer isolierte W5b-/W5c-Welt');
   const jaeger=Object.keys(state.ships).sort().map(id=>state.ships[id])
     .filter(sh=>sh.klasse==='jaeger')
@@ -4610,13 +4644,13 @@ const { reise } = m_core_ankunft;
 const { kampf } = m_core_kampf;
 const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
-return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES, JagdSichtV1,
+return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES, W5L_RULES, JagdSichtV1,
   pilotAuftragsStand, pilotWirtschaftsStand, pilotNpcInvestition, pilotNpcKrisenLage, pilotKonzernStatus,
   pilotW3Stand, pilotW3Kalkulation, pilotW4Stand, pilotW4Kalkulation,
   pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf, pilotW5BStand, pilotW5BPlan, pilotW5CStand, pilotW5DStand,
-  pilotW5FStand, pilotW5FVollkosten, pilotW5FAngriff, pilotW5GStand, pilotW5GPlan, pilotW5HStand, pilotW5HPlan, pilotW5IStand, pilotW5IPlan,
-  createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState,
-  loadErz, loadW2, loadW3, loadW4, loadW5, loadW5B, loadW5C, loadW5D, loadW5F, loadW5G, loadW5H, loadW5I, createState, submit, execute, step, advance, load, preis, faktor };
+  pilotW5FStand, pilotW5FVollkosten, pilotW5FAngriff, pilotW5GStand, pilotW5GPlan, pilotW5HStand, pilotW5HPlan, pilotW5IStand, pilotW5IPlan, pilotW5LStand, pilotW5LPlan,
+  createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState, createW5LState,
+  loadErz, loadW2, loadW3, loadW4, loadW5, loadW5B, loadW5C, loadW5D, loadW5F, loadW5G, loadW5H, loadW5I, loadW5L, createState, submit, execute, step, advance, load, preis, faktor };
 })();
 
 const m_data_oberflaeche = (() => {

@@ -3013,6 +3013,8 @@ const m_core_w5 = (() => {
       && state.owners[c.station].cash+state.w3.kaufAusgaben
         +state.w4.gebucht-w.materialUmsatz
         +m_core_w5b.stationsKorrektur(state)
+        +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
+        -(state.w5n?.wasserErlos??0)
           ===rules.owners.find(o=>o.id===c.station).cash
       && (!a || (a.material===p.material && a.materialKosten===p.materialKosten
         && a.arbeitKosten===p.arbeitKosten && Number.isSafeInteger(a.gearbeitet)
@@ -4087,7 +4089,7 @@ const m_core_w5n=(()=>{
  function frachtStart(s,r,sh){
    const p=pruefenFracht(s,r,sh);if(!p.ok)throw Error('W5n-Fracht: '+p.grund);
    const c=r.w5n,w=s.w5n;
-   for(const [id,kind]of [['w5n_fracht_kauf','escrow'],['w5n_fracht_arbeit','escrow']])
+   for(const [id,kind]of [['w5n_fracht_kauf','w5n-reserve'],['w5n_fracht_arbeit','w5n-reserve']])
      if(!s.owners[id])s.owners[id]={id,kind,cash:0};
    const geld=s.owners.w5n_fracht_kauf,arbeit=s.owners.w5n_fracht_arbeit;
    if(geld.cash||arbeit.cash)throw Error('W5n doppelte Reservierung');
@@ -4118,7 +4120,7 @@ const m_core_w5n=(()=>{
  function wasserStart(s,r,owner,station){
    const p=pruefenWasser(s,r,owner,station);if(!p.ok)throw Error(p.grund);
    const w=s.w5n;
-   if(!s.owners.w5n_fabrik_arbeit)s.owners.w5n_fabrik_arbeit={id:'w5n_fabrik_arbeit',kind:'escrow',cash:0};
+   if(!s.owners.w5n_fabrik_arbeit)s.owners.w5n_fabrik_arbeit={id:'w5n_fabrik_arbeit',kind:'w5n-reserve',cash:0};
    if(s.owners.w5n_fabrik_arbeit.cash)throw Error('Wasserwerk doppelt vorfinanziert');
    s.owners[station].cash-=p.arbeit;
    s.owners.w5n_fabrik_arbeit.cash+=p.arbeit;

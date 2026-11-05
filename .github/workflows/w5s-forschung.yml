@@ -1,0 +1,20 @@
+name: W5s – isolierter Forschungscheck
+on:
+  push:
+    branches:
+      - feature/w5s-physische-ersatzwerft-20261105
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-ersatzwerft-vertikalschnitt.test.mjs
+      - .github/workflows/w5s-forschung.yml
+jobs:
+  w5s-kern:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Gezieltes echtes R32-Core-Gate
+        run: node --test tests/w5s-ersatzwerft-vertikalschnitt.test.mjs

@@ -39,7 +39,8 @@ function einfrieren(o){
 }
 /** Rein lesende, schematische gemeinsame Karte für Miner, Frachter und Jäger. */
 export function weltSicht(api,state,gewaehlt=null){
- const regeln=state.rulesVersion===api.W5G_RULES?.rulesVersion?api.W5G_RULES
+ const regeln=state.rulesVersion===api.W5H_RULES?.rulesVersion?api.W5H_RULES
+   :state.rulesVersion===api.W5G_RULES?.rulesVersion?api.W5G_RULES
    :state.rulesVersion===api.W5F_RULES?.rulesVersion?api.W5F_RULES:api.W5D_RULES;
  if(state.rulesVersion!==regeln.rulesVersion)throw Error('Nur W5d-Regel22 oder W5f-Regel23');
  const schiffe=Object.keys(state.ships).sort().map(id=>state.ships[id]).map(s=>({

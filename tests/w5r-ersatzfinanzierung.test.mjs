@@ -186,11 +186,11 @@ test('W5r: 13 fixed seeds x 90d dual replay, daily goods/cash, roundtrips day 30
  }
 });
 test('W5r: 365d verifies finite stocked hulls, paid labor and no unsupported restart',()=>{
- for(const [mode,owner,eMode,rate,day,total,water,services,stock]of [
+ for(const [mode,owner,eMode,rate,dailyCap,total,water,services,stock]of [
    ['full','npc3','off',0,0,0,1500,18,0],
    ['npcSave','npc3','off',0,0,0,899,18,0],
    ['full','house','off',0,0,0,789,17,0]]){
-   const s=start(mode,owner,eMode,rate,day,total);
+   const s=start(mode,owner,eMode,rate,dailyCap,total);
    for(let d=1;d<=365;d++)day(s,d);
    assert.equal(s.w5n.wasserVerbraucht,water);
    assert.equal(s.w5r.services,services);

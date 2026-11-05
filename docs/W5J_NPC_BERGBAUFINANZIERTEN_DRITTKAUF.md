@@ -1,6 +1,6 @@
 # W5j – Dritter Jäger aus tatsächlich vergütetem NPC-Erzabbau
 
-**[DRAFT / ANALYSE] 05.11.2026 · PR #187 auf W5i #185 · Regel26/Schema8 unverändert.**
+**[DRAFT / ANALYSE] 05.11.2026 · PR #188 auf W5i #185 · Regel26/Schema8 unverändert.**
 
 ## Leitfrage und Antwort
 

@@ -2797,7 +2797,7 @@ const m_core_w4 = (() => {
         -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)===start
       && w.erzVerbraucht===w.abgeschlossen*c.erzJeCharge
       && w.materialErzeugt===w.abgeschlossen*c.materialJeCharge
-      && state.ledger.erz.consumed===w.erzVerbraucht
+      && state.ledger.erz.consumed===w.erzVerbraucht+(state.w5m?.modulErz??0)
       && state.ledger.material.produced===w.materialErzeugt
       && erz===state.w3.geliefert-w.erzVerbraucht
       && material===w.materialErzeugt-(state.w5?.materialVerbraucht??0)-(state.w5b?.materialVerbraucht??0)
@@ -3993,7 +3993,9 @@ const m_core_w1_vollkosten = (() => {
     const abzug=(b?b.siliziumLohnBezahlt+b.vorproduktKauf+b.fabrikLohnBezahlt+b.jaegerVerkauft*rules.economy.waren.jaeger.basis:0)
       +(state.w5c?.jagdKosten??0)
       +(state.w5f?.materialUmsatz??0)+(state.w5f?.arbeitsBezahlt??0);
-    const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-abzug;
+    const modulLohn=state.w5m?.modulArbeit??0;
+    const modulErz=state.w5m?.modulErz??0;
+    const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-abzug-modulLohn;
     const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
     const fonds = state.owners[fondsId].cash - startCash(fondsId);
     const stationErz = state.stations[cfg.station].lager.erz;
@@ -4003,9 +4005,9 @@ const m_core_w1_vollkosten = (() => {
     const ketteOk = [minerKaeufe, bezahlteHuelle, foerderArbeit, belegteArbeit, fonds,
       stationErz, wertUnverkauft, beschaffung, abnahme].every(Number.isSafeInteger)
       && minerKaeufe >= 0 && stationErz >= 0
-      && belegteArbeit === foerderArbeit && fonds === foerderArbeit
+      && belegteArbeit === foerderArbeit && fonds === foerderArbeit+modulLohn
       && verkauf.erloese === bezahlteHuelle + frachterHuelle
-      && beschaffung === (state.ledger.erz.mined
+      && beschaffung === (state.ledger.erz.mined - modulErz
         - Object.values(state.ships).filter(sh => sh.klasse==='miner')
           .reduce((sum, sh) => sum + anzahl(sh.ladung, 'erz'), 0)) * cfg.preis
       && abnahme === (rules.w5h ? state.w5h.gekauft : state.ledger.erz.exported

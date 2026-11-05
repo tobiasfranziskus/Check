@@ -4663,8 +4663,12 @@ const m_core_w5r=(()=>{
       &&w.purchases.filter(x=>x.type==='miner').length===w.miner.bought
       &&w.purchases.filter(x=>x.type==='frachter').length===w.frachter.bought
       &&w.lostIce===cargoIce
-      &&s.ledger.miner.consumed===1+(s.w5o.minerOwner==='house'?1:0)+w.miner.bought
-      &&s.ledger.frachter.consumed===1+w.frachter.bought
+      // Zusaetzlich gueltig gekaufte Hüllen anderer Eigentümer bleiben moeglich.
+      // R32 darf sie nicht mit unbelegtem Gratisersatz verwechseln.
+      &&s.ledger.miner.consumed===Object.values(s.ships)
+        .filter(x=>x.klasse==='miner').length+w.miner.lost
+      &&s.ledger.frachter.consumed===Object.values(s.ships)
+        .filter(x=>x.klasse==='frachter').length+w.frachter.lost
       &&w.serviceAllocated===w.services*fee+(w.serviceJob?fee:0)
       &&w.servicePaid===w.services*fee+(w.serviceJob?.minutes??0)*c.serviceWage
       &&s.owners.w5r_maintenance_reserved.cash===w.serviceAllocated-w.servicePaid

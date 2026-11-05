@@ -166,6 +166,25 @@ test('W5q: 365d finite export caps improve liquidity but cannot guarantee endles
      endWater:c.water,emitted:c.mint,lastPaidDay:c.last}));
  }
 });
+test('W5q: player can save freely; same external rules do not silently confiscate profits',()=>{
+ const candidates=[
+   {mode:'off',price:0,day:0,total:0,sold:733,exported:0,minted:0,house:4750,hash:'6483d63b900ace13'},
+   {mode:'station',price:14,day:140,total:3500,sold:1479,exported:250,minted:3500,house:7750,hash:'42348ff2ff5a98fe'},
+   {mode:'household',price:14,day:140,total:3500,sold:1780,exported:250,minted:3500,house:8650,hash:'8a780200173b3422'},
+   {mode:'household',price:14,day:140,total:7000,sold:2722,exported:500,minted:7000,house:12250,hash:'b041133444987235'}
+ ];
+ for(const c of candidates){
+   const s=api.createW5QState(42,'full','house',c.mode,c.price,c.day,c.total);
+   run(s,90);
+   assert.equal(s.w5n.wasserVerbraucht,c.sold);
+   assert.equal(s.w5q.exported,c.exported);
+   assert.equal(s.minted,c.minted);
+   assert.equal(s.owners.house.cash,c.house);
+   assert.equal(s.w5o.divMine,0,'player miner profit retained in player cash');
+   assert.ok(s.w5n.knappheitsStunden>0,'no artificial guarantee for player saving');
+   assert.equal(api.hash(s),c.hash);
+ }
+});
 test('W5q: 13 seeds x 90d identical replay, independent goods/cash and 30/60/90 saves',()=>{
  for(const seed of seeds){
    const a=make('household',14,140,3500,seed);

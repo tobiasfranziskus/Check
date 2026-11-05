@@ -77,7 +77,7 @@ try{
      +' · Jagdstunden bezahlt '+j.bezahlteStunden+' ('+geld(j.jagdkosten)+') · Kämpfe '+j.kaempfe+' · Verluste '+j.verluste.length
      +' · Kopfgeld '+geld(j.kopfgeld)+' · neue ISK '+geld(j.minted)+'.';
    $('w5j-nachfrage').textContent='NPC3-Nachfrage: Anfang '+geld(view.w5j.anfang)
-      +' · reale Einnahmen '+geld(view.w5j.einahmen)
+      +' · reale Einnahmen '+geld(view.w5j.einnahmen)
       +' · Ausgaben '+geld(view.w5j.ausgaben)
       +' · Arbeitsreserve '+geld(view.w5j.gebundeneBergbauArbeit)
       +' · frei '+geld(view.w5j.frei)

@@ -111,7 +111,7 @@ test('W5s: aus echter Erzlieferung, Raffinerie und bezahlter Werft wird ein real
     if(seed===42){
       // Die Nadir-Huelle ersetzt ohne eigens finanzierte Rueckfuehrung den
       // alten Frachter NICHT. Kein Gratis-Andocken in Aldera.
-      api.advance(s,30*1440-s.tick,oreFirst);
+      while(s.tick<30*1440)api.advance(s,Math.min(1440,30*1440-s.tick),oreFirst);
       valid(s,'Tag30: aus Altflotte ausgeschieden, Huelle noch in Nadir');
       assert.equal(s.w5r.frachter.lost,1);
       assert.equal(s.w5r.frachter.bought,0,'R32-Rueckkauf in Aldera unmoeglich');

@@ -4552,7 +4552,9 @@ const m_core_w5r=(()=>{
    if(!s.w5r?.initialized)return;
    const w=s.w5r,c=r.w5r,fee=c.serviceMinutes*c.serviceWage;
    if(s.tick>=w.serviceDue&&!w.serviceJob&&!s.w5n.fabrikauftrag){
-     if(s.owners.st_nadir.cash<fee)w.blocked.service++;
+     if(s.owners.st_nadir.cash<fee){
+       if(s.tick%1440===0)w.blocked.service++;
+     }
      else {
        if(s.owners.w5r_maintenance_reserved.cash)throw Error('W5r doppelte Mittelbindung');
        s.owners.st_nadir.cash-=fee;

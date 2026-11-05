@@ -2480,7 +2480,7 @@ const m_core_erzpilot = (() => {
     const eigene = schiffe.filter((s) => s.owner === owner && s.klasse === 'miner');
     const aktiv = schiffe.filter((s) => s.klasse === 'miner'
       && s.system === rules.world.stations[cfg.station].system && s.phase === 'dock'
-      && s.auftrag === 'foerdern');
+      && s.auftrag === 'foerdern' && (!rules.w5n||s.ware==='erz'));
     const job = cfg.auftragsMenge, p = cfg.preis, lohn = cfg.minerJeMinute;
     const kaufpreis = rules.economy.waren.miner.basis;
     const marge = p - lohn;
@@ -2508,7 +2508,8 @@ const m_core_erzpilot = (() => {
     const amortisation = Math.ceil(kaufpreis / marge);
     if (state.owners[cfg.exportOwner].cash < (aktiv.length + 1) * amortisation * p)
       return { ok: false, grund: 'Endkunde kann zusaetzliche Miner nicht amortisieren' };
-    const eigeneArbeit = eigene.filter((x) => x.auftrag === 'foerdern').length;
+    const eigeneArbeit = eigene.filter((x) => x.auftrag === 'foerdern'
+      &&(!rules.w5n||x.ware==='erz')).length;
     if (state.owners[owner].cash < kaufpreis + (eigeneArbeit + 1) * job * lohn)
       return { ok: false, grund: 'Firmenkapital deckt Huelle und laufende Arbeit nicht' };
     return { ok: true, grund: 'Bezahlte Expansion wirtschaftlich moeglich',
@@ -2579,7 +2580,8 @@ const m_core_erzpilot = (() => {
     if (!info.aktiv) return info;
     const owner = rules.erzpilot.npcInvestor, buch = vertragsbuch(state);
     const eigene = ids(state.ships).map((id) => state.ships[id])
-      .filter((sh) => sh.owner === owner && sh.klasse === 'miner' && sh.phase === 'dock');
+      .filter((sh) => sh.owner === owner && sh.klasse === 'miner' && sh.phase === 'dock'
+        &&(!rules.w5n||sh.ware!=='eis'));
     if (info.planbar === 0) {
       // Kein kostenloses Weiterfördern: Stop ausschließlich bei unbelegter Zukunft.
       // Ein schon bezahlter, noch nicht fertiggestellter Auftrag bleibt unangetastet.

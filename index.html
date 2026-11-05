@@ -4645,14 +4645,17 @@ const m_core_w5r=(()=>{
    const keys=[w.serviceAllocated,w.servicePaid,w.services,w.lostIce,
      w.miner.lost,w.miner.bought,w.frachter.lost,w.frachter.bought,
      w.blocked.miner,w.blocked.frachter,w.blocked.service];
-   const lostIds=w.losses.map(l=>l.id),ids=new Set(lostIds);
+   const lostIds=w.losses.map(l=>l.id),ids=new Set(lostIds),
+     boughtIds=w.purchases.map(p=>p.id);
+   const ownerFor=type=>type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;
    const ok=keys.every(x=>Number.isSafeInteger(x)&&x>=0)
-      &&ids.size===lostIds.length
+      &&ids.size===lostIds.length&&new Set(boughtIds).size===boughtIds.length
       &&w.losses.every(x=>Number.isSafeInteger(x.tick)&&x.tick>0
         &&x.tick%1440===0&&x.tick<=s.tick&&!s.ships[x.id]
-        &&['miner','frachter'].includes(x.type)
+        &&['miner','frachter'].includes(x.type)&&x.owner===ownerFor(x.type)
         &&x.cargo.every(g=>Number.isSafeInteger(g.menge)&&g.menge>0))
-      &&w.purchases.every(x=>Number.isSafeInteger(x.tick)
+      &&w.purchases.every(x=>x.owner===ownerFor(x.type)
+        &&Number.isSafeInteger(x.tick)
         &&x.tick<=s.tick&&x.cost===cost(r,x.type)
         &&(s.ships[x.id]?.owner===x.owner||ids.has(x.id)))
       &&w.losses.filter(x=>x.type==='miner').length===w.miner.lost
@@ -4669,7 +4672,14 @@ const m_core_w5r=(()=>{
       &&(!w.serviceJob||(w.serviceJob.cost===fee
         &&w.serviceJob.minutes>=0&&w.serviceJob.minutes<c.serviceMinutes))
       &&Number.isSafeInteger(w.serviceDue)&&w.serviceDue>0
-      &&['miner','frachter'].every(type=>!w[type].id||s.ships[w[type].id]?.klasse===type)
+      &&['miner','frachter'].every(type=>{
+        const row=w[type],sh=s.ships[row.id];
+        if(!Number.isSafeInteger(row.born)||row.born<0||row.born>s.tick)return false;
+        if(!row.id)return true;
+        if(!sh||sh.klasse!==type||sh.owner!==ownerFor(type))return false;
+        const purchase=w.purchases.find(x=>x.id===row.id);
+        return purchase ? purchase.tick===row.born : row.born===0;
+      })
       &&s.ledger.eis.consumed===s.w5n.eisVerbraucht+w.lostIce;
    return {ok,serviceAllocated:w.serviceAllocated,servicePaid:w.servicePaid,
      services:w.services,lostIce:w.lostIce,lostMiner:w.miner.lost,boughtMiner:w.miner.bought,

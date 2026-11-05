@@ -25,6 +25,12 @@ Neu `tests/w5l-offener-eigenabbau.test.mjs` mit unabhängiger physischer Bestand
 
 Regel27 betrifft nur den separaten W5-Forschungszweig. Kein Merge nach main, keine Veröffentlichung. Die bestehende Hauptspiel-DB, R26, W5k und Codex-Legacy-Drafts bleiben unberührt. Echte iPad-Safari-/NAS-Abnahme offen.
 
+## Ausgeführter CI-Nachweis (05.11.2026)
+
+**[CI ERFOLGREICH]** [Workflow #42013829554](https://github.com/tobiasfranziskus/Check/actions/runs/42013829554), geprüfter Stand `610ed486`: **257/257 Node-Tests bestanden**, 0 Fehler, 0 Skips. Sieben ausgeführte Jobs grün, bedingter Sicherheitsvergleich planmäßig übersprungen. **13 Seeds ×90 Tage** mit täglichem unabhängigen Geld-/Warenaudit, Save/Load und deterministischem Replay. Seed42 nach 55 Minuten: 110 Erz gefördert, 100 real aus vorhandener Stationskasse abgenommen, 10 Schiffs-Erz (NPC3 5, House 5), jeweils 500 ISK Erlös, Stationskasse 0, `minted=0`, Hash `e08905aad0b23fbb`. Nach 90 Tagen: Seed42-Hash `7cb8c4cd3dc4671a`, 210 Erz insgesamt gefördert, Geldmenge 33.000 ISK. Weiter keine nachgewiesene dynamisch wiederkehrende Nachfrage oder profitable Werft.
+
+Vor diesem dokumentierenden Abschluss wurden die Code-/Testdateien mit exakt diesem Prüfstand ausgeführt. Keine echte Safari-/NAS-Abnahme.
+
 ## Folgeschritt: Wettbewerb durch Schiffe und Module
 
 Sobald Absatz und Lagerverkauf funktionieren, wird die **Förderleistung** (Erz/Minute), nicht die Zahl künstlich verfügbarer Aufträge, zum zentralen Stellhebel. Zielvarianten: höherwertige Mining-Schiffe, MK1-/MK2-Bergbaumodule, optional Pilotenfähigkeiten, größere Laderäume und ggf. seltenere Rohstoffe in riskanteren Gebieten. Jede Verbesserung benötigt nachweislich bezahlte Herstellung, Kauf, Wartung und ggf. zusätzlichen Energie-/Arbeitsaufwand, sodass ein schnellerer Miner **nicht automatisch** profitabler ist. Exakte Geschwindigkeitsboni, Preise, Skillkurven, Abbaumengen/Ressourcenregeneration und automatisches NPC-Bietverhalten sind noch **[OPTION]** und werden im eigenen Balancing-Gate festgelegt.\n

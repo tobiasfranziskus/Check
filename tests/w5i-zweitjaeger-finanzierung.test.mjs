@@ -125,6 +125,36 @@ test('W5i: tatsächliche Arbeit finanziert zwei komplette Jäger ohne neue ISK',
    haus:s.owners.house.cash,npc3:s.owners.npc3.cash,
    nadir:s.owners.st_nadir.cash,minted:s.minted}));
 });
+test('W5i: dritte Hülle wird aus echten Leistungen gebaut, Käufermangel stoppt den Verkauf',()=>{
+ const s=twoFighters(42);
+ freight(s);freight(s);
+ command(s,'shipMine','house',{schiff:sh(s,'house','miner','nadir').id,ware:'silizium'});
+ advance(s,8);
+ for(let i=0;i<4;i++){
+   command(s,'stationRefine','st_nadir',{station:'st_nadir'});
+   advance(s,20);
+ }
+ command(s,'stationBuildParts','house',{station:'st_nadir'});
+ advance(s,64);
+ command(s,'stationBuildFighter','house',{station:'st_nadir'});
+ advance(s,32);
+ assert.equal(s.w3.geliefert,400);
+ assert.equal(s.w5b.jaegerFertig,3);
+ assert.equal(s.w5b.jaegerVerkauft,2);
+ assert.equal(s.stations.st_nadir.lager.jaeger,1,'real fertiger unverkaufter Jäger');
+ assert.equal(s.owners.npc3.cash,600);
+ const hash=api.hash(s);
+ const reason=refuse(s,'shipBuy','npc3',{station:'st_nadir',klasse:'jaeger'});
+ assert.match(reason,/zu wenig ISK/);
+ assert.equal(api.hash(s),hash);
+ assert.equal(s.ledger.jaeger.produced,3);
+ assert.equal(s.ledger.jaeger.consumed,2);
+ assert.equal(s.minted,0);
+ check(s,'third hull unsold');
+ console.log('W5I_DRITTE_HUELLE '+JSON.stringify({seed:42,hash,jaegerFertig:3,
+   verkauft:2,geliefert:400,house:s.owners.house.cash,
+   npc3:s.owners.npc3.cash,nadir:s.owners.st_nadir.cash,grund:reason}));
+});
 test('W5i: Eigentums- und Pipelinefaelschung wird sogar bei ausgeglichener ISK-Summe entdeckt',()=>{
  const base=twoFighters(7),raw=api.save(base),hash=api.hash(base);
  const bad=api.loadW5I(raw);

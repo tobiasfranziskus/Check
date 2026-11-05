@@ -4526,7 +4526,7 @@ const m_core_w5q=(()=>{
       &&s.ledger.wasser.exported===units
       &&s.minted===amount&&s.burned===0
       &&s.owners.w5n_kunden.cash===r.owners.find(o=>o.id==='w5n_kunden').cash
-        +s.w5o.ausgezahlt+w.payout-s.w5n.wasserErlos
+        +s.w5o.ausgezahlt+w.payout+(s.w5r?.servicePaid??0)-s.w5n.wasserErlos
       &&s.stations.st_nadir.lager.wasser===
         s.w5n.wasserProduziert-s.w5n.wasserVerbraucht-units;
     return {ok:valid,exported:units,minted:amount,householdTransfer:w.payout,
@@ -4551,6 +4551,158 @@ const m_core_w5q=(()=>{
       worldISK:Object.values(s.owners).reduce((a,o)=>a+o.cash,0)});
   }
   return {exportieren,audit,start,stand};
+})();
+
+// W5r/R32: common core lifecycle, never a second simulation engine.
+const m_core_w5r=(()=>{
+ const {buche}=m_core_handel;
+ function arbeit(s,sh,kind){
+   if(!s.w5r||sh.w5rRetired||sh.klasse!==kind)throw Error('W5r: work on retired hull');
+   const x=s.w5r.minutes[sh.id]||{owner:sh.owner,kind,minutes:0};
+   if(x.owner!==sh.owner||x.kind!==kind)throw Error('W5r: ownership mismatch');
+   x.minutes++;s.w5r.minutes[sh.id]=x;sh.w5rWork=x.minutes;
+ }
+ const serviceDue=(s,r)=>!!s.w5r&&s.w5r.workWaterMinutes
+   >=r.w5r.waterServiceEvery*(s.w5r.serviceCompleted+1);
+ function serviceStart(s,r){
+   if(!serviceDue(s,r)||s.w5r.serviceOrder||s.w5n.fabrikauftrag)return false;
+   const w=s.w5r,c=r.w5r,cost=c.waterServiceMinutes*c.waterServiceWage;
+   if((s.stations.st_nadir.lager.eis||0)<c.waterServiceIce
+     ||s.owners.st_nadir.cash<cost)return false;
+   if(!s.owners.w5r_service_escrow)
+     s.owners.w5r_service_escrow={id:'w5r_service_escrow',kind:'w5r-reserve',cash:0};
+   if(s.owners.w5r_service_escrow.cash)throw Error('W5r: double escrow');
+   s.owners.st_nadir.cash-=cost;s.owners.w5r_service_escrow.cash+=cost;
+   buche(s,'st_nadir','kosten',cost);
+   s.stations.st_nadir.lager.eis-=c.waterServiceIce;
+   s.ledger.eis.consumed+=c.waterServiceIce;
+   w.serviceIceConsumed+=c.waterServiceIce;w.serviceFunded+=cost;
+   w.serviceStarted++;w.serviceOrder={tick:s.tick,worked:0,cost};
+   return true;
+ }
+ function tick(s,r){
+   const w=s.w5r,o=w?.serviceOrder;if(!o)return;
+   const wage=r.w5r.waterServiceWage,esc=s.owners.w5r_service_escrow;
+   if(!esc||esc.cash<wage)throw Error('W5r: unpaid service');
+   esc.cash-=wage;s.owners.w5n_kunden.cash+=wage;
+   buche(s,'w5n_kunden','erloes',wage);
+   w.servicePaid+=wage;o.worked++;
+   if(o.worked===r.w5r.waterServiceMinutes){
+     if(esc.cash!==0)throw Error('W5r: residual paid reserve');
+     w.serviceCompleted++;w.serviceOrder=null;
+   }
+ }
+ function retire(s,r,sh,kind){
+   const age=s.w5r.minutes[sh.id]?.minutes||0;
+   const life=kind==='miner'?r.w5r.minerLifetime:r.w5r.freighterLifetime;
+   if(sh.w5rRetired||age<life||sh.phase!=='dock'
+     ||sh.system!=='aldera'||Object.values(sh.ladung).some(n=>n!==0)
+     ||s.w5n.frachtauftrag?.schiff===sh.id)return;
+   sh.auftrag='halten';sh.ware=null;sh.w5rRetired=true;
+   s.w5r.retired.push({id:sh.id,owner:sh.owner,kind,age,tick:s.tick});
+ }
+ function replace(s,r,owner,kind){
+   const newId='sh'+String(s.nextShip).padStart(3,'0');
+   const pay=r.economy.waren[kind].basis;
+   const out=m_core_commands.execute(s,{type:'shipBuy',owner,klasse:kind,
+     station:'st_aldera'},r);
+   if(!out.ok)return false;
+   const sh=s.ships[newId];
+   if(!sh||sh.owner!==owner||sh.klasse!==kind)throw Error('W5r: unpaid replacement');
+   s.w5r.replacements.push({id:newId,owner,kind,cost:pay,tick:s.tick});
+   if(kind==='miner'){
+     const cmd=m_core_commands.execute(s,{type:'shipMine',owner,
+       schiff:newId,ware:'eis'},r);
+     if(!cmd.ok)throw Error('W5r: replacement miner cannot work');
+   }
+   return true;
+ }
+ function autopilot(s,r){
+   const w=s.w5r;if(!w)return;
+   for(const sh of Object.values(s.ships)){
+     if(sh.klasse==='miner'&&sh.owner===s.w5o.minerOwner)retire(s,r,sh,'miner');
+     if(sh.klasse==='frachter'&&sh.owner===r.w5n.frachterOwner)retire(s,r,sh,'frachter');
+   }
+   if(s.tick%r.economy.stunde===0){
+     const mineOwner=s.w5o.minerOwner;
+     if(!Object.values(s.ships).some(sh=>sh.owner===mineOwner
+       &&sh.klasse==='miner'&&!sh.w5rRetired)
+       &&!replace(s,r,mineOwner,'miner'))w.replacementFailedMiner++;
+     const carrier=r.w5n.frachterOwner;
+     if(!Object.values(s.ships).some(sh=>sh.owner===carrier
+       &&sh.klasse==='frachter'&&!sh.w5rRetired)
+       &&!replace(s,r,carrier,'frachter'))w.replacementFailedFreighter++;
+   }
+   if(serviceDue(s,r)&&!w.serviceOrder&&!serviceStart(s,r)
+     &&s.tick%r.economy.stunde===0)w.serviceBlockedHours++;
+ }
+ function audit(s,r){
+   const w=s.w5r,c=r.w5r;
+   if(!w||!c)return {ok:false,reason:'missing W5r book'};
+   const ages=Object.entries(w.minutes);
+   const usage=kind=>ages.filter(([,v])=>v.kind===kind)
+     .reduce((n,[,v])=>n+v.minutes,0);
+   const allAges=ages.every(([id,v])=>s.ships[id]&&
+     s.ships[id].owner===v.owner&&s.ships[id].klasse===v.kind
+     &&Number.isSafeInteger(v.minutes)&&v.minutes>0&&s.ships[id].w5rWork===v.minutes);
+   const ids=new Set(),retired=w.retired.every(x=>{
+     if(ids.has(x.id))return false;ids.add(x.id);
+     const sh=s.ships[x.id],a=w.minutes[x.id];
+     return sh&&sh.w5rRetired&&a&&a.minutes===x.age&&sh.auftrag==='halten'
+       &&sh.owner===x.owner&&sh.klasse===x.kind
+       &&x.age>=(x.kind==='miner'?c.minerLifetime:c.freighterLifetime)
+       &&Number.isSafeInteger(x.tick)&&x.tick<=s.tick;
+   });
+   const replacementIds=new Set(),replaced=w.replacements.every(x=>{
+     if(replacementIds.has(x.id))return false;
+     replacementIds.add(x.id);
+     const sh=s.ships[x.id];
+     return sh&&sh.owner===x.owner&&sh.klasse===x.kind&&sh.heimat==='aldera'
+       &&x.cost===r.economy.waren[x.kind].basis
+       &&Number.isSafeInteger(x.tick)&&x.tick<=s.tick;
+   });
+   const o=w.serviceOrder,serviceCost=c.waterServiceMinutes*c.waterServiceWage;
+   const valid=[w.serviceStarted,w.serviceCompleted,w.serviceFunded,
+     w.servicePaid,w.serviceIceConsumed,w.workWaterMinutes,
+     w.replacementFailedMiner,w.replacementFailedFreighter,w.serviceBlockedHours]
+     .every(n=>Number.isSafeInteger(n)&&n>=0)
+     &&w.serviceStarted===w.serviceCompleted+(o?1:0)
+     &&w.serviceFunded===w.serviceStarted*serviceCost
+     &&w.servicePaid===w.serviceCompleted*serviceCost
+       +(o?.worked??0)*c.waterServiceWage
+     &&w.serviceIceConsumed===w.serviceStarted*c.waterServiceIce
+     &&(s.owners.w5r_service_escrow?.cash??0)===w.serviceFunded-w.servicePaid
+     &&(!o||(o.worked>=0&&o.worked<c.waterServiceMinutes
+       &&o.cost===serviceCost&&Number.isSafeInteger(o.tick)&&o.tick<=s.tick));
+   const ok=allAges&&retired&&replaced&&valid
+     &&usage('miner')===s.w5n.mineMinuten
+     &&usage('frachter')===s.w5n.frachtLohn/r.w5n.fliegerLohn
+     &&w.workWaterMinutes===s.w5n.fabrikBezahlt/r.w5n.fabrikLohn
+     &&w.retired.length===Object.values(s.ships).filter(sh=>sh.w5rRetired).length;
+   return {ok,retiredMiner:w.retired.filter(x=>x.kind==='miner').length,
+     retiredFreighter:w.retired.filter(x=>x.kind==='frachter').length,
+     replacements:w.replacements.length,replacementPaidISK:w.replacements.reduce((n,x)=>n+x.cost,0),
+     missingMinerHours:w.replacementFailedMiner,missingFreighterHours:w.replacementFailedFreighter,
+     serviceStarted:w.serviceStarted,serviceCompleted:w.serviceCompleted,
+     servicePaid:w.servicePaid,iceConsumed:w.serviceIceConsumed,
+     serviceBlockedHours:w.serviceBlockedHours};
+ }
+ function start(seed,mode,owner,exportMode,rate,dayCap,totalCap,r){
+   const s=m_core_w5q.start(seed,mode,owner,exportMode,rate,dayCap,totalCap,r);
+   if(!m_core_audit.audit(s).ok)throw Error('W5r: invalid initial ledger');
+   return s;
+ }
+ function stand(s,r){
+   if(s.rulesVersion!==r.rulesVersion)throw Error('W5r only R32');
+   return Object.freeze({...audit(s,r),tick:s.tick,hash:m_core_hash.hash(s),
+     consumed:s.w5n.wasserVerbraucht,produced:s.w5n.wasserProduziert,
+     missing:s.w5n.knappheitsStunden,ice:s.stations.st_nadir.lager.eis,
+     station:s.owners.st_nadir.cash,miner:s.owners[s.w5o.minerOwner].cash,
+     carrier:s.owners.transport.cash,customer:s.owners.w5n_kunden.cash,
+     worldISK:Object.values(s.owners).reduce((n,o)=>n+o.cash,0),
+     minted:s.minted});
+ }
+ return {arbeit,serviceDue,serviceStart,tick,autopilot,audit,start,stand};
 })();
 
 // W1: rein lesende Vollkosten-/Liquiditaetsrechnung aus gebuchten Originalkonten.
@@ -5185,7 +5337,7 @@ return { audit };
 
 const m_core_index = (() => {
 const { RULES } = m_data_rules;
-const { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES, W5L_RULES, W5M_RULES, W5N_RULES, W5O_RULES, W5Q_RULES } = m_data_erzpilot;
+const { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES, W5L_RULES, W5M_RULES, W5N_RULES, W5O_RULES, W5Q_RULES, W5R_RULES } = m_data_erzpilot;
 const pilotAuftragsStand = (state) => m_core_erzpilot.auftragsStand(state, ERZ_RULES);
 const pilotNpcInvestition = (state) => m_core_erzpilot.investitionsPruefung(state, W2_RULES);
 const pilotKonzernStatus = (state) => m_core_w2_konzernstatus.pruefen(state,

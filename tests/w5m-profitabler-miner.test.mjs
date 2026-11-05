@@ -95,7 +95,7 @@ test('W5m: raw ore and paid labor are essential; module neither free nor duplica
   rejectWithoutMutation(s,{type:'shipUpgradeMiner',owner:'npc3',schiff:npc.id});
   assert.equal(api.hash(api.loadW5M(api.save(s))),api.hash(s));
 });
-test('W5m: faster mining pays proportionally more labor, never creates demand',()=>{
+test('W5m: MK1 extracts twice as much per paid labor minute, but creates no buyer',()=>{
   const base=start(42),up=start(42);
   fit(up,'house');
   const b=api.pilotW5MStand(base),u=api.pilotW5MStand(up);
@@ -103,36 +103,61 @@ test('W5m: faster mining pays proportionally more labor, never creates demand',(
   assert.equal(u.unternehmen.house.schiffe[0].rate,2);
   assert.equal(up.owners.st_aldera.cash,0,'no unconditional buyer refill');
   const beforeB=base.ledger.erz.mined,beforeU=up.ledger.erz.mined;
+  const baseLohn=api.pilotW5MStand(base).unternehmen.house.foerderlohn;
+  const upgradeLohn=api.pilotW5MStand(up).unternehmen.house.foerderlohn;
   const bIncome=base.stats.konto.house.erloes,uIncome=up.stats.konto.house.erloes;
   api.advance(base,10,rules);api.advance(up,10,rules);
   audit(base,'base 10m');audit(up,'mk1 10m');
   assert.equal(base.ledger.erz.mined-beforeB,10,'baseline 1 ore per minute');
   assert.equal(up.ledger.erz.mined-beforeU,20,'MK1 2 ore per minute');
+  assert.equal(api.pilotW5MStand(base).unternehmen.house.foerderlohn-baseLohn,20,
+    'basic miner pays all 10 real working minutes');
+  assert.equal(api.pilotW5MStand(up).unternehmen.house.foerderlohn-upgradeLohn,20,
+    'MK1 does not pay fictitious double work time for twice the output');
   assert.equal(base.stats.konto.house.erloes,bIncome,'buyer broke');
   assert.equal(up.stats.konto.house.erloes,uIncome,'speed cannot generate revenue');
   assert.equal(api.pilotW5MStand(up).unternehmen.house.schiffe[0].rate,2);
 });
-test('W5m: funded buyer repays faster Miner MK1; competition stays genuine',()=>{
+test('W5m: after three genuine paid W3 deliveries MK1 yields more net profit than basic miner',()=>{
   const base=start(42,true),up=start(42,true);
-  assert.equal(base.owners.st_aldera.cash,500,'only existing export money refills buyer');
+  assert.equal(base.owners.st_aldera.cash,500,'only funded external sale refills the original buyer');
   assert.equal(up.owners.st_aldera.cash,500);
   fit(up,'npc3');
-  const beforeBase=api.pilotW5MStand(base).unternehmen.npc3;
-  const beforeUp=api.pilotW5MStand(up).unternehmen.npc3;
-  assert.equal(beforeBase.umsatz,500);
-  assert.equal(beforeUp.umsatz,500);
-  api.advance(base,25,rules);api.advance(up,25,rules);
-  audit(base,'baseline after 25m');audit(up,'mk1 after 25m');
+  assert.equal(api.pilotW5MStand(base).unternehmen.npc3.umsatz,500);
+  assert.equal(api.pilotW5MStand(up).unternehmen.npc3.umsatz,500);
+  // Strict comparison under identical, finite real customers; no free subsidy
+  // and no forced House pause. Three full W3 round-trips each cost real money.
+  for(let round=1;round<=3;round++){
+    for(const [label,world] of [['basis',base],['mk1',up]]){
+      const transport=Object.values(world.ships).find(sh=>
+        sh.owner==='transport'&&sh.klasse==='frachter');
+      const f=api.execute(world,{type:'shipFreight',owner:'transport',
+        schiff:transport.id},rules);
+      assert.equal(f.ok,true,label+' funded round '+round+': '+f.reason);
+      api.advance(world,120,rules);
+      audit(world,label+' delivered round '+round);
+      assert.equal(world.w3.geliefert,round*50,'exact paid physical delivery');
+    }
+  }
   const b=api.pilotW5MStand(base).unternehmen.npc3;
   const u=api.pilotW5MStand(up).unternehmen.npc3;
-  assert.ok(u.gefoerdert>b.gefoerdert,'higher real production under same clock');
-  assert.ok(u.verkauft>b.verkauft,'faster paid sale, not virtual ISK');
-  assert.ok(u.umsatz>b.umsatz,'actual station payment');
-  assert.ok(u.amortisierterSaldo>b.amortisierterSaldo,
-    'full cost including physical ore opportunity');
-  assert.equal(up.minted,0);assert.equal(base.minted,0);
-  console.log('W5M_RENTABILITAET '+JSON.stringify({baseline:b,upgrade:u,
-    stationISK:up.owners.st_aldera.cash,hash:api.hash(up)}));
+  assert.equal(b.verkauft,225);
+  assert.equal(u.verkauft,225,'limited demand means NO fictitious extra sale');
+  assert.equal(b.amortisierterSaldo,1054,'full-cost baseline with actual sales');
+  assert.equal(u.amortisierterSaldo,1094,'full-cost MK1 including ore opportunity');
+  assert.equal(b.foerderlohn,596);
+  assert.equal(u.foerderlohn,396,'faster extraction means less REAL paid work');
+  assert.ok(u.gefoerdert>b.gefoerdert);
+  assert.ok(u.amortisierterSaldo>b.amortisierterSaldo,'MK1 earns 40 ISK more after all costs');
+  assert.equal(base.minted,0);assert.equal(up.minted,0);
+  assert.equal(base.owners.st_nadir.cash,up.owners.st_nadir.cash);
+  assert.equal(api.hash(api.loadW5M(api.save(up))),api.hash(up));
+  console.log('W5M_RENTABILITAET '+JSON.stringify({seed:42,minute:up.tick,
+    baseline:{sold:b.verkauft,mined:b.gefoerdert,wages:b.foerderlohn,
+      profit:b.amortisierterSaldo},
+    mk1:{sold:u.verkauft,mined:u.gefoerdert,wages:u.foerderlohn,
+      profit:u.amortisierterSaldo},surplus:u.amortisierterSaldo-b.amortisierterSaldo,
+    cashNadir:up.owners.st_nadir.cash,hash:api.hash(up),minted:up.minted}));
 });
 test('W5m: module and money tampering, invalid saves rejected',()=>{
   const s=start(42);fit(s,'house');

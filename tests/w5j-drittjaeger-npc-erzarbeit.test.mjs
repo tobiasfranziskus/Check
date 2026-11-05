@@ -40,7 +40,8 @@ function check(s,label=''){
  const reserved=contract?.arbeitsKonto?s.owners[contract.arbeitsKonto]?.cash:0;
  const book=s.stats.konto.npc3;
  assert.ok(Number.isSafeInteger(reserved)&&reserved>=0);
- assert.equal(s.owners.npc3.cash+reserved,2400+book.erloes-book.kosten,
+ assert.equal(s.owners.npc3.cash+reserved,
+   r.owners.find(o=>o.id==='npc3').cash+book.erloes-book.kosten,
    'NPC3 no unsupported income '+label);
  return a;
 }
@@ -153,8 +154,8 @@ test('W5j: erst Verkäuferleistung dann atomarer Kauf des dritten Jägers, alle 
  assert.equal(api.hash(s),hash);
  fundThirdByNpcWork(s);
  assert.equal(s.stats.konto.npc3.erloes,500);
- assert.equal(s.stats.konto.npc3.kosten,2800);
- assert.equal(2400+500-2800,100);
+ assert.equal(s.stats.konto.npc3.kosten,3400);
+ assert.equal(3000+500-3400,100);
  assert.equal(s.minted,0);
  assert.equal(api.hash(api.loadW5I(api.save(s))),api.hash(s));
  console.log('W5J_DRITTER_KAUF '+JSON.stringify({seed:42,hash:api.hash(s),

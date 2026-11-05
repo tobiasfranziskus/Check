@@ -39,6 +39,8 @@ Keine dieser Welten erhält neu erzeugte ISK. Jede startet mit 33.000 ISK Weltge
 
 Die beiden anfänglichen Mangelstunden (je 2 Wasser) ergeben sich aus dem physischen Anlauf von Eisförderung, Flügen und Wasserwerk. Danach gelingt die vollständige 90-Tage-Versorgung **nur im spezifizierten vollen NPC-Rückfluss-Szenario**. Die abweichenden Varianten sind absichtliche Negativkontrollen, keine Fehlfunktion.
 
+**Vergleichsgrenze:** Die House-Variante kauft ausdrücklich einen **zusätzlichen** vollständig bezahlten House-Miner (600 ISK) und lässt den bereits gekauften NPC3-Miner ruhen, statt dessen Eigentum kostenlos umzuschreiben. Sie ist deshalb eine **illustrierende Gegenprobe für das freie Spielersparen**, kein vollkommen kapital- und flottengleiches Eigentümer-Experiment. Die `npcSave`-Variante hält dagegen Eigentümer und Startflotte identisch zur `full`-Variante und isoliert tatsächlich das Sparverhalten des NPC-Miners.
+
 **Wichtig:** Der Spieler darf unbegrenzt sparen. Die House-Variante endet mit **4.750 ISK Spieler-Kasse** (Beginn 3.000 ISK und tatsächlich bezahlter Miner-Kauf). Diese Konzentration ist kein „Bug“, sondern ein überprüftes makroökonomisches Risiko. Auch NPC-Unternehmen dürfen Gewinne behalten, verlieren dann aber die Garantie des langfristigen, vollständig bezahlten Verbrauchs.
 
 ## Ausgeführte Tests

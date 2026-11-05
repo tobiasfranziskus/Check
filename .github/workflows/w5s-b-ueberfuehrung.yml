@@ -1,0 +1,20 @@
+name: W5s-b – bezahlte Frachterüberführung
+on:
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-bezahlte-ueberfuehrung.test.mjs
+      - .github/workflows/w5s-b-ueberfuehrung.yml
+  push:
+    branches:
+      - feature/w5s-b-bezahlte-frachterueberfuehrung-20261105
+jobs:
+  bezahlte-ueberfuehrung:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bezahlter W5s-b-Core- und Save/Load-End-to-End-Test
+        run: node --test tests/w5s-bezahlte-ueberfuehrung.test.mjs

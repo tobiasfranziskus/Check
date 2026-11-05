@@ -164,6 +164,11 @@ test('W5r: reject forged lost cargo, imaginary hulls, worker payouts and save re
  invalid(s,x=>{x.w5r.serviceAllocated+=60});
  invalid(s,x=>{x.w5r.losses[0].id=x.w5r.losses[1].id});
  invalid(s,x=>{x.w5r.purchases[0].cost=0});
+ invalid(s,x=>{x.w5r.purchases[1].id=x.w5r.purchases[0].id});
+ invalid(s,x=>{x.w5r.miner.born=-1});
+ invalid(s,x=>{x.w5r.frachter.born=-1});
+ invalid(s,x=>{x.w5r.losses[0].owner='house'});
+ invalid(s,x=>{x.w5r.purchases[0].owner='house'});
  invalid(s,x=>{x.minted++});
 });
 test('W5r: 13 fixed seeds x 90d dual replay, daily goods/cash, roundtrips day 30/60/90',()=>{

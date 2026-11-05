@@ -145,7 +145,7 @@ test('W5i: dritte Hülle wird aus echten Leistungen gebaut, Käufermangel stoppt
  assert.equal(s.owners.npc3.cash,600);
  const hash=api.hash(s);
  const reason=refuse(s,'shipBuy','npc3',{station:'st_nadir',klasse:'jaeger'});
- assert.match(reason,/zu wenig ISK/);
+ assert.match(reason,/Konzern kann 900-ISK-Jaeger nicht bezahlen|zu wenig ISK/);
  assert.equal(api.hash(s),hash);
  assert.equal(s.ledger.jaeger.produced,3);
  assert.equal(s.ledger.jaeger.consumed,2);

@@ -151,7 +151,7 @@ test('W5k: two independent NPC3 mining sales and three paid fighters without Hou
  assert.equal(api.hash(api.loadW5I(api.save(s))),api.hash(s));
  const before=api.hash(s);
  const reason=refused(s,'shipBuy','npc3',{station:'st_nadir',klasse:'jaeger'});
- assert.match(reason,/Konzern kann 900-ISK-Jaeger nicht bezahlen|Nicht genug|Keine.*Jaeger|nicht verfuegbar/i);
+ assert.match(reason,/Konzern kann 900-ISK-Jaeger nicht bezahlen|kein Komplettschiff auf Lager|nicht verfuegbar/i);
  assert.equal(api.hash(s),before);
  console.log('W5K_KONKURRENZ '+JSON.stringify({seed:42,
    hash:api.hash(s),npcSales:2,houseSales:7,delivered:s.w3.geliefert,

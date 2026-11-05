@@ -120,6 +120,22 @@ test('W5n: rejects free freight, wrong owner and processing without inputs',()=>
  audit(s,'freight finished');
  assert.notEqual(api.hash(s),before);
 });
+test('W5n: NPC miners can work independently in ice instead of auto-restarting Erz',()=>{
+ const s=api.createW5NState(42);
+ const npc=Object.values(s.ships).find(sh=>sh.owner==='npc3'&&sh.klasse==='miner');
+ assert.ok(npc,'original NPC hull is paid and owned');
+ cmd(s,'shipWait','npc3',{schiff:npc.id});
+ cmd(s,'shipMine','npc3',{schiff:npc.id,ware:'eis'});
+ api.advance(s,70,rules);audit(s,'NPC ice autonomy across hourly planner ticks');
+ assert.equal(s.w5n.eisAbgebaut,70);
+ assert.equal(s.w5n.mineVerkauft,50);
+ assert.equal(npc.ware,'eis','NPC Erz planner may not hijack other ore types');
+ assert.equal(npc.auftrag,'foerdern');
+ assert.equal(npc.ladung.eis,20);
+ assert.equal(s.owners.npc3.cash,2510,'600 hull + 140 paid work + 250 paid ice sales');
+ assert.equal(s.minted,0);
+ assert.equal(api.hash(api.loadW5N(api.save(s))),api.hash(s));
+});
 test('W5n: consumption stops when physical water or real cash are missing',()=>{
  const s=started();
  api.advance(s,1440,rules);audit(s,'no processing 24h');

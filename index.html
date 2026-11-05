@@ -4285,6 +4285,144 @@ const m_core_w5n=(()=>{
    pruefenWasser,wasserStart,tick,verbrauch,audit,stand};
 })();
 
+// W5o: no minting, real-work incomes and distributed realised NPC profit.
+// Only this scenario may run the automatic supply agent; the core clock is shared.
+const m_core_w5o=(()=>{
+ const {buche}=m_core_handel;
+ const MODES=['none','wages','npcSave','full'],OWNERS=['npc3','house'];
+ const pay=(s,owner,field,n)=>{
+   if(!Number.isSafeInteger(n)||n<0||n>s.owners[owner].cash)
+     throw Error('W5o: Auszahlung ohne Kapital');
+   if(!n)return 0;
+   s.owners[owner].cash-=n;s.owners.w5n_kunden.cash+=n;
+   s.w5o[field]+=n;s.w5o.ausgezahlt+=n;
+   buche(s,owner,'kosten',n);buche(s,'w5n_kunden','erloes',n);
+   return n;
+ };
+ function profits(s,r,field){
+   const n=s.w5n,w=s.w5o,c=r.w5n;
+   if(field==='divMine')
+     return w.npcMineErlos-
+       Math.floor(w.npcMineErlos/c.eisPreis)*c.mineLohn;
+   if(field==='divFracht'){
+     const p=m_core_w5n.preise(r);
+     return n.frachtAbgeschlossen*(p.fracht-p.arbeit);
+   }
+   if(field==='divStation'){
+     const p=m_core_w5n.preise(r);
+     const costPerLoad=p.gesamt+(c.charge/c.rezeptEis)*c.fabrikMinuten*c.fabrikLohn;
+     return n.wasserErlos-Math.ceil(n.wasserVerbraucht*costPerLoad/c.charge);
+   }
+   throw Error('W5o: Unbekannter Ertrag');
+ }
+ function einkommen(s,r){
+   const w=s.w5o;if(!w||w.mode==='none')return;
+   for(const [field,owner,value]of [
+     ['lohnEis','fonds_aldera',s.w5n.mineLohn],
+     ['lohnFracht','fonds_transport',s.w5n.frachtLohn],
+     ['lohnWasser','w5n_arbeit',s.w5n.fabrikBezahlt]
+   ]){
+     const due=value-w[field];
+     if(due<0)throw Error('W5o: Lohn ohne Arbeit');
+     pay(s,owner,field,Math.min(due,s.owners[owner].cash));
+   }
+   if(w.mode==='wages')return;
+   for(const [field,owner,reserve]of [
+     ['divMine','npc3',r.w5o.minerReserve],
+     ['divFracht','transport',r.w5o.carrierReserve],
+     ['divStation','st_nadir',r.w5o.stationReserve]
+   ]){
+     if(field==='divMine'&&(w.mode==='npcSave'||w.minerOwner!=='npc3'))continue;
+     const dividend=Math.max(0,profits(s,r,field)-w[field]);
+     pay(s,owner,field,Math.min(dividend,Math.max(0,s.owners[owner].cash-reserve)));
+   }
+ }
+ const attempt=(s,r,type,owner,args)=>{
+   const res=m_core_commands.execute(s,{type,owner,...args},r);
+   if(res.ok){s.w5o.aktionen++;return true}return false;
+ };
+ function autopilot(s,r){
+   const w=s.w5o,n=s.w5n,c=r.w5n;
+   const miner=Object.values(s.ships).find(sh=>sh.owner===w.minerOwner
+     &&sh.klasse==='miner'&&sh.system==='aldera');
+   if(miner&&miner.phase==='dock'&&miner.auftrag==='halten'){
+     if((miner.ladung.eis||0)>=c.charge)
+       attempt(s,r,'shipSellIce',w.minerOwner,{schiff:miner.id,menge:c.charge});
+     if(Object.values(miner.ladung).reduce((x,y)=>x+y,0)<r.economy.cargo
+       &&s.owners[w.minerOwner].cash>=c.mineLohn)
+       attempt(s,r,'shipMine',w.minerOwner,{schiff:miner.id,ware:'eis'});
+   }
+   const sh=Object.values(s.ships).find(x=>x.owner===c.frachterOwner&&x.klasse==='frachter');
+   const ice=s.stations.st_nadir.lager.eis||0,water=s.stations.st_nadir.lager.wasser||0;
+   if(sh&&!n.frachtauftrag&&!s.w3.auftrag&&ice+water<=r.w5o.versorgungZiel)
+     attempt(s,r,'shipFreightIce',c.frachterOwner,{schiff:sh.id});
+   if(!n.fabrikauftrag&&ice>=c.rezeptEis&&water<=r.w5o.wasserZiel)
+     attempt(s,r,'stationWater',c.zielStation,{station:c.zielStation});
+ }
+ function start(seed,mode,minerOwner,r){
+   if(!MODES.includes(mode)||!OWNERS.includes(minerOwner))
+     throw Error('W5o: Ungueltiges Szenario');
+   const s=m_core_index.createW5BState(seed,r);
+   s.w5o.mode=mode;s.w5o.minerOwner=minerOwner;
+   const npc=Object.values(s.ships).find(sh=>sh.owner==='npc3'&&sh.klasse==='miner');
+   if(!npc)throw Error('W5o: NPC-Startminer fehlt');
+   for(const cmd of [
+     {type:'shipWait',owner:'npc3',schiff:npc.id},
+     ...(minerOwner==='house'?[{type:'shipBuy',owner:'house',station:'st_aldera',klasse:'miner'}]:[])
+   ]){
+     const out=m_core_commands.execute(s,cmd,r);if(!out.ok)throw Error(out.reason);
+   }
+   const m=Object.values(s.ships).find(sh=>sh.owner===minerOwner&&sh.klasse==='miner');
+   const ice=m_core_commands.execute(s,{type:'shipMine',owner:minerOwner,schiff:m.id,ware:'eis'},r);
+   if(!ice.ok)throw Error(ice.reason);
+   const freight=m_core_commands.execute(s,
+     {type:'shipBuy',owner:'transport',station:'st_aldera',klasse:'frachter'},r);
+   if(!freight.ok)throw Error(freight.reason);
+   if(!m_core_audit.audit(s).ok)throw Error('W5o: Startbilanz falsch');
+   return s;
+ }
+ function audit(s,r){
+   const w=s.w5o,n=s.w5n;
+   if(!w||!n||!r.w5o)return {ok:false,grund:'W5o-Buch fehlt'};
+   const keys=['aktionen','ausgezahlt','lohnEis','lohnFracht','lohnWasser',
+     'divMine','divFracht','divStation','npcMineErlos','npcMineLohn',
+     'houseMineErlos','houseMineLohn'];
+   const sum=w.lohnEis+w.lohnFracht+w.lohnWasser+w.divMine+w.divFracht+w.divStation;
+   const ok=keys.every(k=>Number.isSafeInteger(w[k])&&w[k]>=0)
+     &&MODES.includes(w.mode)&&OWNERS.includes(w.minerOwner)
+     &&w.ausgezahlt===sum&&w.lohnEis<=n.mineLohn
+     &&w.lohnFracht<=n.frachtLohn&&w.lohnWasser<=n.fabrikBezahlt
+     &&w.npcMineLohn+w.houseMineLohn===n.mineLohn
+     &&w.npcMineErlos+w.houseMineErlos===n.mineVerkaufWert
+     &&w.divMine<=Math.max(0,profits(s,r,'divMine'))
+     &&w.divFracht<=Math.max(0,profits(s,r,'divFracht'))
+     &&w.divStation<=Math.max(0,profits(s,r,'divStation'))
+     &&(w.minerOwner==='npc3'||w.divMine===0)
+     &&(w.mode!=='none'||sum===0)
+     &&(w.mode!=='wages'||w.divMine+w.divFracht+w.divStation===0)
+     &&(w.mode!=='npcSave'||w.divMine===0)
+     &&s.owners.w5n_kunden.cash===r.owners.find(o=>o.id==='w5n_kunden').cash
+       +sum-n.wasserErlos
+     &&s.minted===0&&s.burned===0;
+   return {ok,mode:w.mode,minerOwner:w.minerOwner,ausgezahlt:sum,
+     lohn:w.lohnEis+w.lohnFracht+w.lohnWasser,
+     dividenden:w.divMine+w.divFracht+w.divStation,
+     wasserGekauft:n.wasserVerbraucht,haushalt:s.owners.w5n_kunden.cash,
+     zahlungen:n.wasserErlos,transporte:n.frachtAbgeschlossen,
+     mangelstunden:n.knappheitsStunden};
+ }
+ function stand(s,r){
+   if(s.rulesVersion!==r.rulesVersion)throw Error('W5o nur Regel30');
+   return Object.freeze({...audit(s,r),tick:s.tick,hash:m_core_hash.hash(s),
+     geld:Object.values(s.owners).reduce((sum,x)=>sum+x.cash,0),
+     nadir:s.owners.st_nadir.cash,transport:s.owners.transport.cash,
+     npc3:s.owners.npc3.cash,house:s.owners.house.cash,
+     eis:s.w5n.eisAbgebaut,verkauft:s.w5n.mineVerkauft,
+     wasser:s.w5n.wasserProduziert,bestand:s.stations.st_nadir.lager.wasser});
+ }
+ return {start,einkommen,autopilot,audit,stand};
+})();
+
 // W1: rein lesende Vollkosten-/Liquiditaetsrechnung aus gebuchten Originalkonten.
 // Kein eigener Wirtschaftskern, kein weiterer Geld- oder Warenfluss.
 const m_core_w1_vollkosten = (() => {
@@ -5051,6 +5189,10 @@ function createW5BState(seed=W5B_RULES.startSeed,rules=W5B_RULES) {
       eisVerbraucht:0,wasserProduziert:0,fabrikauftrag:null,
       wasserVerbraucht:0,wasserErlos:0,knappheitsStunden:0};
   }
+  if(rules.w5o)s.w5o={mode:'full',minerOwner:'npc3',aktionen:0,
+    ausgezahlt:0,lohnEis:0,lohnFracht:0,lohnWasser:0,
+    divMine:0,divFracht:0,divStation:0,npcMineErlos:0,npcMineLohn:0,
+    houseMineErlos:0,houseMineLohn:0};
   if(!m_core_audit.audit(s).ok)throw Error('W5b Startfinanzierung inkonsistent');
   return s;
 }

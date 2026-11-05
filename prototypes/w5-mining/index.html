@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aphros Void – W5m Bergbaurendite (Forschung)</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,Arial,sans-serif;background:#07101d;color:#eef4ff}
+*{box-sizing:border-box}body{margin:0;padding:calc(env(safe-area-inset-top) + 18px) max(18px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 30px) max(18px,env(safe-area-inset-left))}
+main{max-width:1120px;margin:auto}header{border-bottom:1px solid #29415e;margin-bottom:18px;padding-bottom:14px}
+h1{font-size:clamp(1.5rem,4vw,2.4rem);margin:7px 0}h2{font-size:1.17rem}
+p{line-height:1.48;color:#cad8e8}small{color:#aac0d8}.mark{color:#8ed5f6;font-size:.9rem;letter-spacing:.08em;text-transform:uppercase}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:16px}
+section{background:#0d1b2d;border:1px solid #29415e;border-radius:12px;padding:17px;min-width:0}
+button,.file-control{font:inherit;background:#163450;border:1px solid #456989;color:#f4fbff;padding:12px 13px;min-height:48px;border-radius:8px;cursor:pointer}
+button:focus-visible,.file-control:focus-within{outline:3px solid #a4d9ff;outline-offset:2px}
+button:hover{background:#234d70}button:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin:13px 0}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 4px;border-bottom:1px solid #24405c}td:last-child,th:last-child{text-align:right}
+.positive{color:#9fe4b8}.negative{color:#f1b4b4}.mono{font-family:ui-monospace,monospace;overflow-wrap:anywhere}
+#meldung{min-height:1.4em;color:#d1e8ff}input[type=file]{max-width:100%;font:inherit}
+</style>
+</head>
+<body><main>
+<header>
+<div class="mark">Aphros Void · Getrennte Forschungswelt · Regel 28 / Schema 8</div>
+<h1>W5m – Lohnt sich Mining?</h1>
+<p>Vergleiche zwei echte Miner. Ein MK1-Bohrkopf erhöht die Förderleistung nur, nachdem <strong>10 eigenes Erz</strong> und <strong>60 ISK Werftarbeit</strong> bezahlt sind. Ein Verkauf erfolgt ausschließlich gegen eine tatsächlich zahlungsfähige Station.</p>
+</header>
+<section aria-label="Weltsteuerung">
+<h2>Forschungswelt steuern</h2>
+<div class="actions">
+<button data-action="houseBuy">House-Miner kaufen (600 ISK)</button>
+<button data-action="houseMine">House: Erz fördern</button>
+<button data-action="npcMine">NPC3: Erz fördern</button>
+<button data-action="transportBuy">Frachter kaufen (750 ISK)</button>
+<button data-action="freight">50 Erz transportieren (bezahlter W3-Auftrag)</button>
+</div><div class="actions">
+<button data-action="fitHouse">MK1 für House</button>
+<button data-action="fitNpc">MK1 für NPC3</button>
+<button data-action="step1">+1 Minute</button>
+<button data-action="step25">+25 Minuten</button>
+<button data-action="step60">+60 Minuten</button>
+<button data-action="stepDay">+1 Spieltag</button>
+</div>
+<div class="actions">
+<button data-action="export">JSON-Export</button>
+<label class="file-control">Forschungsstand importieren <input id="import" aria-label="JSON-Forschungsstand importieren" type="file" accept=".json,application/json"></label>
+<button data-action="reset">Neue Welt (Seed 42)</button>
+</div>
+<p id="meldung" role="status" aria-live="polite">Forschungswelt wird geladen …</p>
+<small>Nur im Arbeitsspeicher: keine Änderungen an Hauptspiel, Hauptlink, IndexedDB oder anderen Forschungs-Spielständen. Vor Neuanlage den JSON-Export verwenden.</small>
+</section>
+<section style="margin-top:16px">
+<h2>Nachfrage und Bilanz</h2>
+<p id="markt" class="mono"></p>
+</section>
+<div id="firmen" class="cards" style="margin-top:16px" aria-label="Bergbauunternehmen">
+<section><h2>House</h2><p>Wird geladen …</p></section>
+<section><h2>NPC3</h2><p>Wird geladen …</p></section>
+</div>
+<section style="margin-top:16px">
+<h2>Die Rentabilitätsfrage</h2>
+<p>Ein Miner kostet 600 ISK. Bei 10 ISK Verkaufspreis und 2 ISK Lohn je Erz benötigt er rechnerisch <strong>75 verkaufte Erz</strong> zur Amortisation. Die MK1-Umrüstung bindet außerdem 10 Erz (Marktwert 100 ISK) und kostet 60 ISK. Zusätzliche Förderung lohnt sich erst, wenn sie tatsächlich verkauft wird – sonst bleiben Rohware und Kosten beim Eigentümer.</p>
+<p>Der ausgewiesene <strong>Vollkostensaldo</strong> enthält Miner-Anschaffung, Mining-Löhne, MK1-Arbeit und die Opportunitätskosten des verbauten Erzes. Andere Konzernaktivitäten, mögliche Risiken und künftige Wartung sind nicht enthalten. Das ist kein Beweis für eine langfristig stabile Gesamtwirtschaft.</p>
+</section>
+</main><script type="module" src="./w5m.mjs"></script></body></html>

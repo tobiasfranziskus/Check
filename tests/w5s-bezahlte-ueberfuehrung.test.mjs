@@ -106,7 +106,7 @@ function transfer(seed,saveMid=false){
   const vorFehler=api.hash(s);
   s.w5s.paid++;
   assert.equal(api.audit(s).ok,false,'gefälschte Lohnzahlung fällt auf');
-  assert.throws(()=>api.loadW5R(api.save(s)),/Bilanz|inkompatibel/);
+  assert.throws(()=>api.loadW5R(api.save(s)),/bilanz|inkompatibel/i);
   s.w5s.paid--;
   assert.equal(api.hash(s),vorFehler);
   if(saveMid){

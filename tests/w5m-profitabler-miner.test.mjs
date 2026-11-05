@@ -76,11 +76,12 @@ test('W5m: R28 is isolated; old R26/R27 states and hashes remain unchanged',()=>
   rejectWithoutMutation(r27,{type:'shipUpgradeMiner',owner:'npc3',schiff:miner(r27,'npc3').id});
 });
 test('W5m: raw ore and paid labor are essential; module neither free nor duplicable',()=>{
-  const s=api.createW5MState(42),npc=miner(s,'npc3');
-  rejectWithoutMutation(s,{type:'shipUpgradeMiner',owner:'npc3',schiff:npc.id});
-  rejectWithoutMutation(s,{type:'shipUpgradeMiner',owner:'house',schiff:npc.id});
-  rejectWithoutMutation(s,{type:'shipUpgradeMiner',owner:'npc3',schiff:npc.id,rate:99});
-  api.advance(s,60,rules);audit(s,'60m no House');
+  const fresh=api.createW5MState(42),first=miner(fresh,'npc3');
+  rejectWithoutMutation(fresh,{type:'shipUpgradeMiner',owner:'npc3',schiff:first.id});
+  rejectWithoutMutation(fresh,{type:'shipUpgradeMiner',owner:'house',schiff:first.id});
+  rejectWithoutMutation(fresh,{type:'shipUpgradeMiner',owner:'npc3',schiff:first.id,rate:99});
+  // Ohne Absatz bleibt die vom Miner selbst finanzierte Rohware Eigentum.
+  const s=start(42),npc=miner(s,'npc3');
   assert.ok((npc.ladung.erz||0)>=10,'unpaid customer cannot gift ore');
   const before={cash:s.owners.npc3.cash,fund:s.owners.fonds_aldera.cash,
     ore:npc.ladung.erz,consumed:s.ledger.erz.consumed,minted:s.minted};

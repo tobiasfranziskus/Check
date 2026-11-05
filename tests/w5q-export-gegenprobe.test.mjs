@@ -138,14 +138,15 @@ test('W5q: independent anti-forgery rejects duplicate export, counterfeited good
  falsify(x=>x.w5q.events.push({...x.w5q.events[0]}));
  falsify(x=>x.w5q.events[0].tick+=1);
  falsify(x=>x.w5q.events[0].mode='station');
+ falsify(x=>x.w5q.lastExportDay--);
  falsify(x=>x.w5q.rate=14.5);
 });
 test('W5q: 365d finite export caps improve liquidity but cannot guarantee endless consumption',()=>{
  const cases=[
-   {mode:'off',rate:0,daily:0,total:0,water:789,mint:0,last:17,hash:'c5f5d000a96f0a5e'},
-   {mode:'station',rate:14,daily:140,total:3500,water:1533,mint:3500,last:33,hash:'92e54a6b93ee7a2a'},
-   {mode:'household',rate:14,daily:140,total:3500,water:1872,mint:3500,last:40,hash:'0c3e9f9ab7a5e52a'},
-   {mode:'household',rate:14,daily:140,total:7000,water:2775,mint:7000,last:58,hash:'e70309482962fa32'}
+   {mode:'off',rate:0,daily:0,total:0,water:789,mint:0,last:17,hash:'a70646bfe8bbc428'},
+   {mode:'station',rate:14,daily:140,total:3500,water:1533,mint:3500,last:33,hash:'5198e94f7e86806a'},
+   {mode:'household',rate:14,daily:140,total:3500,water:1872,mint:3500,last:40,hash:'d3cc977cfebdf7c5'},
+   {mode:'household',rate:14,daily:140,total:7000,water:2775,mint:7000,last:58,hash:'5d2bb4b20ae305c2'}
  ];
  for(const c of cases){
    const s=make(c.mode,c.rate,c.daily,c.total);

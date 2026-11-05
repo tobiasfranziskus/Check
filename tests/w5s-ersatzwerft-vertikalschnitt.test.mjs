@@ -108,5 +108,21 @@ test('W5s: aus echter Erzlieferung, Raffinerie und bezahlter Werft wird ein real
       werftlohn:s.w5.arbeitsGezahlt,
       fluss:{werftAusgabe:530,werftEinnahme:750,kaufSpedition:750},
       transportCash:s.owners.transport.cash,worldISK:s.initialSupply}));
+    if(seed===42){
+      // Die Nadir-Huelle ersetzt ohne eigens finanzierte Rueckfuehrung den
+      // alten Frachter NICHT. Kein Gratis-Andocken in Aldera.
+      api.advance(s,30*1440-s.tick,oreFirst);
+      valid(s,'Tag30: aus Altflotte ausgeschieden, Huelle noch in Nadir');
+      assert.equal(s.w5r.frachter.lost,1);
+      assert.equal(s.w5r.frachter.bought,0,'R32-Rueckkauf in Aldera unmoeglich');
+      assert.equal(s.w5r.frachter.id,null);
+      assert.equal(s.ships[newId]?.system,'nadir','keine unsichtbare Hullen-Ueberfuehrung');
+      assert.equal(s.w5n.frachtauftrag,null,'kein kostenloser Frachter-Neustart');
+      assert.equal(s.minted,0);
+      assert.equal(api.hash(api.loadW5R(api.save(s))),api.hash(s));
+      console.log('W5S_TAG30_BLOCK '+JSON.stringify({seed,tick:s.tick,
+        neu:newId,ort:s.ships[newId].system,ersatz:s.w5r.frachter.bought,
+        frachterVerlust:s.w5r.frachter.lost,globalCash:33000,hash:api.hash(s)}));
+    }
   }
 });

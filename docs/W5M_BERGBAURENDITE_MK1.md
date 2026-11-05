@@ -11,13 +11,14 @@ Kann ein Miner durch eine reale, selbst finanzierte Investition schneller und na
 | Rechengröße | W5l-Basis | W5m-MK1 |
 | --- | ---: | ---: |
 | Fördermenge | 1 Erz/Minute | 2 Erz/Minute |
-| Arbeitskosten | 2 ISK/Erz | 2 ISK/Erz |
+| Kosten je tatsächlich geleisteter Förderminute | 2 ISK | 2 ISK |
+| Förderkosten pro Erz bei voller Auslastung | 2 ISK | 1 ISK |
 | Erlös bei echtem Verkauf | 10 ISK/Erz | 10 ISK/Erz |
-| Deckungsbeitrag je **verkauftem** Erz | 8 ISK | 8 ISK |
+| Rechnerischer Deckungsbeitrag bei kontinuierlichem Verkauf | 8 ISK/Erz | 9 ISK/Erz |
 | Fertige Minerhülle | 600 ISK | 600 ISK |
 | Zusätzliche einmalige Umrüstung | – | 10 eigenes Erz + 60 ISK |
 
-Ein Basisminer amortisiert **600 / 8 = 75 tatsächlich verkaufte Erz** (ohne weitere Kosten). Das R28-MK1 benötigt zusätzlich 10 selbst geförderte Erz, die dadurch nicht mehr verkauft werden können. Bei Ansatz des aktuellen potenziellen Verkaufspreises von 10 ISK sind das 100 ISK Opportunitätskosten zuzüglich 60 ISK bezahlter Arbeitskosten. Bei einem zusätzlichen verkauften Erz je Minute und 8 ISK Deckungsbeitrag liegt eine **rechnerische** MK1-Amortisation bei 20 solchen zusätzlichen Einheiten bzw. 20 aktiven Förderminuten; tatsächlich hängt sie von Verkäufen, verfügbaren Aufträgen und Frachtraum ab.
+Ein Basisminer amortisiert **600 / 8 = 75 tatsächlich verkaufte Erz** (ohne weitere Kosten). Das R28-MK1 benötigt zusätzlich 10 selbst geförderte Erz, die dadurch nicht mehr verkauft werden können. Bei Ansatz des aktuellen potenziellen Verkaufspreises von 10 ISK sind das 100 ISK Opportunitätskosten zuzüglich 60 ISK bezahlter Arbeitskosten. Die 160 ISK zusätzlichen kalkulatorischen Investitionskosten amortisieren sich in einem idealisierten gleichmäßigen Verkauf bei 1 ISK Lohnersparnis je erzielter Einheit nach etwa **160 zusätzlichen tatsächlich verkauften Erz** (ohne unbezahlte Lagerproduktion). Die reale Amortisationsdauer hängt von Käufern, Aufträgen, Frachtraum und Absatzverteilung ab.
 
 ## Kernregel und Besitzschutz
 
@@ -25,21 +26,21 @@ Ein Basisminer amortisiert **600 / 8 = 75 tatsächlich verkaufte Erz** (ohne wei
 - Erfordert **10 im eigenen Miner geladenes, nicht durch Erz-Treuhand gebundenes Erz** und **60 frei verfügbare ISK** für Werftarbeit.
 - Erz wird aus genau dieser Schiffsladung und dem Waren-Ledger als Verbrauch ausgebucht; 60 ISK werden vom Schiffseigentümer an den bestehenden Aldera-Fonds überwiesen und in dessen Kostenbuch erfasst.
 - Das Schiff trägt anschließend einen **direkt montierten Bohrkopf**. R28 behandelt ihn als gebundene Umrüstung, noch nicht als separat handelbare MK1-Modulware. Das wird erst mit einer gesondert finanzierten, geprüften Modulproduktion möglich.
-- Verdopplung der Menge pro Minute, nicht der Zahl künstlicher Mining-Aufträge. Der Core rechnet die vollen Arbeitskosten pro geförderter Einheit auch beim Eigenabbau ohne Käufer und bei vorfinanzierten 50er-Verträgen ab.
+- Verdopplung der Menge pro Minute, nicht der Zahl künstlicher Mining-Aufträge. Der Core rechnet **2 ISK je tatsächlich gearbeiteter Minute** ab. Basis: 1 Erz/Minute für 2 ISK, MK1: 2 Erz/Minute für dieselben 2 ISK. Das gilt sowohl für Eigenabbau als auch für vorfinanzierte 50er-Verträge. Es wird nur die benötigte Zahl von Arbeitsminuten vorfinanziert, aufgerundet auf ganze Minuten.
 - Keine zusätzliche ISK-Quelle, keine Preis-/Kassenmanipulation, keine garantierte Nachfrage. Bei vollem Frachtraum oder fehlendem Betriebskapital ruht der Miner. Einzelne Konzerne können weiterhin scheitern.
 
 ## Rentabilitätsbericht
 
 `pilotW5MStand(state)` liest je Eigentümer und je Miner **tatsächlich gefördertes Erz, echte Warenverkäufe, bezahlte Förderlöhne, Hüllenkauf und zusätzliche MK1-Arbeit**. Der konservative Vollkosten-Saldo belastet zusätzlich den potenziellen Verkaufspreis der beim Umbau verbrauchten 10 Erz. Nicht verkauftes Erz erzeugt weder Umsatz noch fiktive Gewinne.
 
-`m_core_w5m.audit` vergleicht die gezählten Fördermengen mit dem ursprünglichen Ledger, die abgerechneten Verkäufe mit 10 ISK je Erz, Löhne mit 2 ISK je gefördertem Erz, tatsächliche Einbauten mit Schiffsausrüstungen und bezahltem Material-/Arbeitsaufwand. Zusätzlich gelten alte globale Geld-/Waren- und Vertragsprüfungen.
+`m_core_w5m.audit` vergleicht die gezählten Fördermengen mit dem ursprünglichen Ledger, die abgerechneten Verkäufe mit 10 ISK je Erz, Löhne mit 2 ISK je tatsächlich geleisteter Förderminute, tatsächliche Einbauten mit Schiffsausrüstungen und bezahltem Material-/Arbeitsaufwand. Zusätzlich gelten alte globale Geld-/Waren- und Vertragsprüfungen.
 
 ## Qualitäts-Gates
 
 - Alte Regel26/Regel27-Stände inklusive goldenem Hash und separater Save-Version bleiben unverändert.
 - Abgelehnte fremde, doppelte, zu teure und auf nicht vorhandenes Erz gestützte Umrüstungen verändern keine Spielbuchung.
-- Bezahlt vorhandene Folge-Kaufkraft über den ursprünglichen W5h/W3-Kreislauf und ein real bezahlter zweiter Erzabsatz müssen gegenüber einer unverbesserten Mine verglichen werden.
+- Drei identische tatsächlich finanzierte W3-Frachtrunden als Vergleich gegen denselben Basismine-Seed (mit einem konkurrierenden House-Miner); kein simuliertes Buyer-Refill ohne Kauf.
 - 13 feste Seeds ×90 Spieltage: Geld-/Warenaudits, feste Hashes, Save/Load und kein ungebuchtes `minted`/ `burned`.
-- GitHub CI-Ergebnis und konkrete Nettowerte werden erst nach tatsächlich ausgeführter Prüfung nachgetragen.
+- Direkte Core-Ausführung Seed42 nach drei echten, voll finanzierten W3-Frachtrunden und 420 Spielminuten: Basismine NPC3 225 Erz verkauft, 596 ISK Förderlöhne, **1.054 ISK** Vollkostensaldo; MK1 NPC3 ebenfalls 225 Erz verkauft, **396 ISK** Förderlöhne, **1.094 ISK** Vollkostensaldo einschließlich MK1-Arbeit und verbautem Erz; Differenz **+40 ISK**. Jeweils Cash-/Warenaudit erfolgreich, `minted=0`. Das ist ein **begrenzter, reproduzierbarer Einzeltest**, keine permanente Absatzgarantie. CI-Ergebnis wird nach erfolgreicher Ausführung ergänzt.
 
 **Nicht bewiesen:** dauerhaft liquide Käufer, profitable Werft und ein stabiler Gesamtkreislauf ohne zusätzliche Nachfrage. Das ist weiter ein eigener Wirtschaftsauftrag. Keine Merge-/Deployment-Freigabe, echte Safari-/NAS-Abnahme offen.

@@ -36,6 +36,19 @@ Die 365-Tage-Gesamtgeldmengen sind exakt **33.000 / 36.500 / 36.500 / 40.000 ISK
 
 **[TESTBEFUND]** Rate 7 ISK, Tagesdeckel 70 und Gesamtdeckel 3.500 liefern in der 90-Tage-Gegenprobe **nur 348 real exportierte Wasser / 2.436 tatsächlich ausgegebene ISK**; übriges theoretisches Budget bleibt ungenutzt. Das ist korrekt: **Ohne reale Ware wird nicht emittiert**. Die 90-Tage-Gegenprobe mit Rate 14 und Gesamtdeckel 3.500 verbucht **250 physische Exporte**, **3.500 neue ISK**, 25 eindeutige Tagesbelege und 1.872 Wasser an Haushalte, statt 789 ohne Export.
 
+### Spieler spart – gleiche Import-/Exportregel, kein Zugriff auf seine Kasse
+
+Zusätzliche **direkt ausgeführte, vollständig auditierte 90-Tage-Gegenprobe**, Seed42 mit einem **aus eigenen 600 ISK bezahlten Spieler-Miner**, dessen Gewinn nicht zwangsweise ausgeschüttet wird:
+
+| Außenverkaufs-Profil | Wasserkäufe intern | Neue ISK | Spieler-Endkasse |
+| --- | ---: | ---: | ---: |
+| OFF | 733 | 0 | 4.750 ISK |
+| Station bekommt 3.500 ISK | 1.479 | 3.500 | 7.750 ISK |
+| 3.500 ISK an Haushalt weitergeleitet | 1.780 | 3.500 | 8.650 ISK |
+| 7.000 ISK an Haushalt weitergeleitet | 2.722 | 7.000 | 12.250 ISK |
+
+Alle vier Weltgeld- und Warenaudits sind korrekt; die Nachfragesicherung gelingt jedoch auch in der höchsten getesteten Variante **nicht**. Gleichzeitig darf der Spieler weiter sparen und verdient durch den wiedergewonnenen Handel. Dieser zusätzliche Sparabfluss zeigt, warum **die Auszahlung neuer ISK an Haushalte allein keine dauerhafte Kreislaufgarantie** ist. Diese House-Gegenprobe verwendet wie W5o eine zusätzliche real gekaufte House-Minerhülle gegenüber der NPC-Variante und ist deshalb keine exakt identische Flotteninventar-Simulation.
+
 ### Prüfungen
 
 - **7/7 neue Kernprüfungen direkt ausgeführt und bestanden:** Default-OFF, R30-/Altsave-Schutz, echte einmalige Außenlieferung, Station-vs.-Haushalt-Gegenprobe, Tages-/Gesamtdeckel, physischer Knappheitsfall, 12 zielgerichtete Geld-/Waren-/Beleg-Fälschungen sowie Wiederholungsangriff desselben Ticks.

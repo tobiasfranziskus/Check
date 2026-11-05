@@ -37,6 +37,10 @@ Das W5k-Ergebnis darf **nur** lauten: Zwei autonome NPC-Aufträge lassen sich **
 
 Der nächste sachliche Wirtschaftsschritt nach W5k ist deshalb eine **bezahlte fortgesetzte Konkurrenzentscheidung unter tatsächlich gemeinsamem Nachfragebudget** mit Stopps bei Kaufkraftmangel; zusätzliche Geldmodell-B-Emissionen, neue Preise, Schenkungen, NPC-Pflichtförderung und künstlicher Absatz bleiben gesondert freigabepflichtig.
 
-## Prüfstand
+## Prüfstand – geprüfter CI-Abschluss · 05.11.2026
 
-Die W5k-CI wurde mit [PR #190](https://github.com/tobiasfranziskus/Check/pull/190) angestoßen; finalen Teststatus, Hashes und tatsächlich ausgeführte Gate-Ergebnisse ausschließlich nach Abschluss ergänzen. Keine iPad-/NAS-/WebKit-Abnahme, kein Merge, kein Deployment. W5k ändert `index.html`, bestehenden W5i-/W5j-Core und Produkt-Saves nicht.
+**[CI ERFOLGREICH]** [Workflow #41993648020](https://github.com/tobiasfranziskus/Check/actions/runs/41993648020), Prüf-Head `471dbec2`: **252/252 Node-Tests bestanden**, 0 Fehler, 0 Skips; sieben ausgeführte CI-Jobs grün, ein bedingter Sicherheitsvergleich planmäßig übersprungen. **13 Seeds × 90 Tage** mit täglichen unabhängigen Geld-/Warenaudits, Replay und Save/Load. Seed42: 2 echte autonome NPC3-Erzverkäufe, 7 bezahlte House-Erzverkäufe, 400 Erz per W3 transportiert, 3 Jäger gebaut und für je 900 ISK verkauft; NPC3 500 ISK, House 964 ISK, Nadir 2.940 ISK, `minted=0`; Hash nach Kauf `4213af92887fb457`, nach 90 Tagen `f239e7acf8259d63`. Der Herstellerbeitrag bleibt −1.388 ISK/Jäger, echter langfristiger NPC-Wiederanlauf nicht belegt.
+
+Der historische erste PR-CI-Lauf erreichte das unveränderte 5-Minuten-Zeitlimit für das inzwischen größere Forschungs-Testpaket und wurde **abgebrochen, nicht als fehlgeschlagen gewertet**. Daher wurde auf diesem Draft ausschließlich das `test`-Job-Zeitlimit in `.github/workflows/ui-regression.yml` auf 15 Minuten erhöht; die 13×90-Gates und alle Tests blieben unangetastet.
+
+Keine iPad-/NAS-/WebKit-Abnahme, kein Merge, kein Deployment. W5k ändert `index.html`, bestehenden W5i-/W5j-Core und Produkt-Saves nicht.

@@ -1,0 +1,45 @@
+<!doctype html><html lang="de">
+<head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aphros Void – Eis-Wasser-Forschungswelt (W5n)</title>
+<style>
+:root{color-scheme:dark;background:#081323;color:#edf6ff;font-family:system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;padding:calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 22px)}
+main{max-width:1100px;margin:0 auto}header{padding-bottom:12px;border-bottom:1px solid #34526c}
+h1{font-size:clamp(1.45rem,4vw,2.25rem);margin:.45rem 0}h2{font-size:1.15rem;margin:0 0 12px}
+p{line-height:1.5;color:#c8d8e8}small{color:#9fb9cf}.label{color:#87c5f0;letter-spacing:.08em;font-size:.8rem;text-transform:uppercase}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:13px;margin-top:16px}
+section{border:1px solid #36516b;background:#0c2136;border-radius:12px;padding:16px;min-width:0}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0 2px}
+button,.upload{background:#174361;border:1px solid #467f9f;border-radius:8px;padding:12px;min-height:48px;color:#e8f8ff;font:inherit;cursor:pointer}
+button:focus-visible,.upload:focus-within{outline:3px solid #8fdbff;outline-offset:3px}
+button:hover{background:#245a7e}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 3px;border-bottom:1px solid #29425a}
+td:last-child{text-align:right}input[type=file]{max-width:100%}
+#meldung{min-height:1.5em;color:#a9defa}.mono{font-family:ui-monospace,monospace;overflow-wrap:anywhere}
+</style></head><body><main>
+<header><div class="label">Aphros Void · Forschung W5n · Regel 29/Schema 8</div>
+<h1>Eis, Wasser &amp; bezahlte Versorgung</h1>
+<p>Ein realer Warenkreislauf: Miner gewinnen Eis in Aldera, ein Frachter bringt es nach Nadir, ein Wasserwerk bereitet es auf. Die Station erhält nur beim <strong>tatsächlich bezahlten Verbrauch</strong> Geld – aus einem endlichen Kundenbudget, ohne neue ISK.</p></header>
+<div class="cols">
+<section><h2>1 · Eis gewinnen</h2>
+<p>House-Miner kaufen, echten Arbeitslohn bezahlen und Eis im Aldera-Lager verkaufen. Ein freier NPC-Miner kann unter denselben Regeln fördern.</p>
+<div class="actions"><button data-act="miner">Miner kaufen</button><button data-act="mine">House: Eis abbauen</button><button data-act="sell">Eis aus eigener Fracht verkaufen</button></div></section>
+<section><h2>2 · Eis transportieren</h2>
+<p>50 Eis pro Reise. Der Kaufpreis und beide Flugstrecken müssen vor Abflug bezahlt sein.</p>
+<div class="actions"><button data-act="freighter">Frachter kaufen</button><button data-act="ship">50 Eis nach Nadir transportieren</button></div></section>
+<section><h2>3 · Wasser produzieren</h2>
+<p>Eine Charge: 10 angeliefertes Eis + 20 Minuten bezahlte Arbeit → 10 Wasser. Nadir verbraucht bis zu zwei Einheiten je Spielstunde.</p>
+<div class="actions"><button data-act="water">Wassercharge aufbereiten</button></div></section>
+<section><h2>4 · Zeit &amp; Daten</h2>
+<div class="actions"><button data-act="50">+50 Minuten</button><button data-act="60">+60 Minuten</button><button data-act="120">+120 Minuten</button><button data-act="day">+1 Spieltag</button></div>
+<div class="actions"><button data-act="export">JSON exportieren</button><label class="upload">JSON importieren <input id="import" type="file" accept=".json,application/json"></label><button data-act="new">Neue Forschungswelt</button></div>
+<small>Dieser Forschungsstand bleibt im Arbeitsspeicher; weder Hauptspiel- noch andere Forschungs-Saves werden überschrieben. Vor Neustart den JSON-Export sichern.</small></section>
+</div>
+<section style="margin-top:14px"><h2>5 · Unabhängig prüfbare Bilanz</h2>
+<p id="meldung" role="status" aria-live="polite">Lade Simulationskern …</p>
+<p id="meta" class="mono"></p>
+<table><tbody id="werte"></tbody></table>
+<p><strong>Grenze:</strong> Das Forschungsbudget der Wasserkunden ist endlich. Wird es aufgebraucht, gibt es ohne neue, separat beschlossene Zahlungsquelle keine weiteren Verkaufserlöse. Eine profitable Gesamtwirtschaft wird hier noch nicht behauptet.</p>
+</section>
+</main><script type="module" src="./w5n.mjs"></script></body></html>

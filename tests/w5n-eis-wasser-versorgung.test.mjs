@@ -140,7 +140,7 @@ test('W5n: forgery of commodity ledger, payment and escrow is rejected on load',
  for(const change of [
    x=>{x.owners.w5n_kunden.cash+=14;},
    x=>{x.stations.st_nadir.lager.wasser+=10;},
-   x=>{x.w5n.waterErlos+=28;},
+   x=>{x.w5n.wasserErlos+=28;},
    x=>{x.w5n.frachtLohn-=1;},
    x=>{x.w5n.fabrikBezahlt+=1;},
  ]){

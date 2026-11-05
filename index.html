@@ -1398,6 +1398,10 @@ function execute(state, cmd, rules) {
         } else state.w5b.minerId=sh.id;
       }
       if(state.w5m&&cmd.klasse==='miner')state.w5m.minerKaeufe[cmd.owner]++;
+      // Real replacement recorded at the canonical paid shipBuy, never twice.
+      if(rules.w5r&&state.w5r?.retired.some(x=>x.owner===cmd.owner&&x.kind===cmd.klasse))
+        state.w5r.replacements.push({id:sh.id,owner:cmd.owner,
+          kind:cmd.klasse,cost:p,tick:state.tick});
       m_core_handel.buche(state, cmd.owner, 'kosten', p);
       m_core_handel.buche(state, verkaeufer, 'erloes', p);
       m_core_state.protokolliere(state, 'dienst', `${sh.id} als Komplettschiff fuer ${p} ISK gekauft`, cmd.owner);
@@ -4612,7 +4616,7 @@ const m_core_w5r=(()=>{
    if(!out.ok)return false;
    const sh=s.ships[newId];
    if(!sh||sh.owner!==owner||sh.klasse!==kind)throw Error('W5r: unpaid replacement');
-   s.w5r.replacements.push({id:newId,owner,kind,cost:pay,tick:s.tick});
+   // Replacement ledger is already written by the validated shipBuy.
    if(kind==='miner'){
      const cmd=m_core_commands.execute(s,{type:'shipMine',owner,
        schiff:newId,ware:'eis'},r);
@@ -4636,8 +4640,11 @@ const m_core_w5r=(()=>{
      }
      const mineOwner=s.w5o.minerOwner;
      if(!Object.values(s.ships).some(sh=>sh.owner===mineOwner
-       &&sh.klasse==='miner'&&!sh.w5rRetired)
-       &&!replace(s,r,mineOwner,'miner'))w.replacementFailedMiner++;
+       &&sh.klasse==='miner'&&!sh.w5rRetired)){
+       // NPC autonomy must never spend a player's savings without their command.
+       if(mineOwner==='house'||!replace(s,r,mineOwner,'miner'))
+         w.replacementFailedMiner++;
+     }
      const carrier=r.w5n.frachterOwner;
      if(!Object.values(s.ships).some(sh=>sh.owner===carrier
        &&sh.klasse==='frachter'&&!sh.w5rRetired)

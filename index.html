@@ -1022,6 +1022,11 @@ const m_data_erzpilot = (() => {
   const W5Q_RULES={...W5O_RULES,rulesVersion:31,
     w5q:{exportUnitsDay:10,defaultMode:'off',defaultRate:0,
       defaultDayCap:0,defaultTotalCap:0}};
+  // W5r: nur Forschungsbelastung, keine genehmigte Lebensdauer- oder Ersatzregel.
+  const W5R_RULES={...W5Q_RULES,rulesVersion:32,w5r:{
+    minerLifeDays:15,freighterLifeDays:30,serviceEveryDays:20,
+    serviceMinutes:60,serviceWage:1}};
+  m_data_systeme.tiefFrieren(W5R_RULES);
   m_data_systeme.tiefFrieren(W5Q_RULES);
   m_data_systeme.tiefFrieren(W5O_RULES);
   m_data_systeme.tiefFrieren(W5N_RULES);
@@ -1039,7 +1044,7 @@ const m_data_erzpilot = (() => {
   m_data_systeme.tiefFrieren(W3_RULES);
   m_data_systeme.tiefFrieren(W4_RULES);
   m_data_systeme.tiefFrieren(W5_RULES);
-  return { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES, W5L_RULES, W5M_RULES, W5N_RULES, W5O_RULES, W5Q_RULES };
+  return { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES, W5L_RULES, W5M_RULES, W5N_RULES, W5O_RULES, W5Q_RULES, W5R_RULES };
 })();
 
 const m_core_rng = (() => {
@@ -2671,7 +2676,7 @@ const m_core_w3 = (() => {
       -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)
       +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
       -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)!==start)
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)!==start)
       return {ok:false,grund:'W3: unbelegtes Kaeufergeld'};
     return {ok:true,grund:'Vollstaendig vorfinanziert',...k};
   }
@@ -2743,7 +2748,7 @@ const m_core_w3 = (() => {
         -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)===startBuyer
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)===startBuyer
       && w.kaufAusgaben===erwarteteBezahlung && w.geliefert===erwarteteWare
       && w.arbeitsKosten===erwarteteArbeit
       && w.frachtUmsatz===w.abgeschlossen*k.frachtGebuehr
@@ -2802,7 +2807,7 @@ const m_core_w4 = (() => {
       -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)
       +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
       -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)!==start)
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)!==start)
       return {ok:false,grund:'Nadir: nicht nachgewiesenes Produktionskapital'};
     return {ok:true,grund:'Erz und vollständige Arbeitskasse reservierbar',
       erz:c.erzJeCharge,material:c.materialJeCharge,arbeit:budget,dauer:c.dauer};
@@ -2878,7 +2883,7 @@ const m_core_w4 = (() => {
         -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)
          +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
          -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)===start
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)===start
       && w.erzVerbraucht===w.abgeschlossen*c.erzJeCharge
       && w.materialErzeugt===w.abgeschlossen*c.materialJeCharge
       && state.ledger.erz.consumed===w.erzVerbraucht+(state.w5m?.modulErz??0)
@@ -3033,7 +3038,7 @@ const m_core_w5 = (() => {
         +m_core_w5b.stationsKorrektur(state)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)
           ===rules.owners.find(o=>o.id===c.station).cash
       && (!a || (a.material===p.material && a.materialKosten===p.materialKosten
         && a.arbeitKosten===p.arbeitKosten && Number.isSafeInteger(a.gearbeitet)
@@ -4137,6 +4142,8 @@ const m_core_w5n=(()=>{
    if(owner!==c.zielStation||station!==c.zielStation)
      return {ok:false,grund:'Nur Nadir zahlt sein Wasserwerk'};
    if(w.fabrikauftrag)return {ok:false,grund:'Wasserwerk bereits beauftragt'};
+   if(s.w5r?.initialized&&s.tick>=s.w5r.serviceDue)
+     return {ok:false,grund:'W5r: Wasserwerk wegen Wartungsarbeit gesperrt'};
    if(s.stations[station].lager.eis<c.rezeptEis)
      return {ok:false,grund:'Reales geliefertes Eis fehlt'};
    if(s.stations[station].lager.wasser+c.rezeptWasser>obergrenze(s,r,station,'wasser'))
@@ -4240,7 +4247,7 @@ const m_core_w5n=(()=>{
      &&w.eisAbgebaut===s.ledger.eis.mined&&w.mineLohn===w.mineMinuten*c.mineLohn
      &&w.eisAbgebaut>=w.mineMinuten
      &&w.eisAbgebaut<=w.mineMinuten*r.w5m.rate
-     &&w.eisAbgebaut===w.mineVerkauft+iceCargo
+     &&w.eisAbgebaut===w.mineVerkauft+iceCargo+(s.w5r?.lostIce??0)
      &&w.mineVerkaufWert===w.mineVerkauft*c.eisPreis
      &&w.eisTransferWert===w.eisGeliefert*c.eisPreis
      &&w.mineVerkauft===s.stations[c.quellStation].lager.eis+iceRoute+w.eisGeliefert
@@ -4248,7 +4255,7 @@ const m_core_w5n=(()=>{
      &&s.stations[c.zielStation].lager.eis===w.eisGeliefert-w.eisVerbraucht
      &&s.stations[c.zielStation].lager.wasser===w.wasserProduziert-w.wasserVerbraucht
        -(s.w5q?.exported??0)
-     &&w.eisVerbraucht===s.ledger.eis.consumed
+     &&w.eisVerbraucht+(s.w5r?.lostIce??0)===s.ledger.eis.consumed
      &&w.wasserProduziert===s.ledger.wasser.produced
      &&w.wasserVerbraucht===s.ledger.wasser.consumed
      &&w.wasserErlos===w.wasserVerbraucht*c.wasserPreis
@@ -4537,6 +4544,146 @@ const m_core_w5q=(()=>{
   return {exportieren,audit,start,stand};
 })();
 
+// W5r isolated research: no free replacement ship and fully paid dock work.
+const m_core_w5r=(()=>{
+ const {buche}=m_core_handel;
+ const cost=(r,type)=>r.economy.waren[type].basis;
+ function tick(s,r){
+   if(!s.w5r?.initialized)return;
+   const w=s.w5r,c=r.w5r,fee=c.serviceMinutes*c.serviceWage;
+   if(s.tick>=w.serviceDue&&!w.serviceJob&&!s.w5n.fabrikauftrag){
+     if(s.owners.st_nadir.cash<fee)w.blocked.service++;
+     else {
+       if(s.owners.w5r_maintenance_reserved.cash)throw Error('W5r doppelte Mittelbindung');
+       s.owners.st_nadir.cash-=fee;
+       s.owners.w5r_maintenance_reserved.cash+=fee;
+       w.serviceAllocated+=fee;
+       buche(s,'st_nadir','kosten',fee);
+       w.serviceJob={start:s.tick,minutes:0,cost:fee};
+     }
+   }
+   const job=w.serviceJob;
+   if(!job)return;
+   if(s.w5n.fabrikauftrag)throw Error('W5r Produktionsarbeit waehrend Service');
+   if(s.owners.w5r_maintenance_reserved.cash<c.serviceWage)
+     throw Error('W5r Lohn vor Service nicht vorfinanziert');
+   s.owners.w5r_maintenance_reserved.cash-=c.serviceWage;
+   s.owners.w5r_maintenance_workforce.cash+=c.serviceWage;
+   buche(s,'w5r_maintenance_workforce','erloes',c.serviceWage);
+   w.servicePaid+=c.serviceWage;job.minutes++;
+   if(job.minutes===c.serviceMinutes){
+     if(s.owners.w5r_maintenance_reserved.cash!==0)
+       throw Error('W5r ungenutzte Arbeitsmittel');
+     w.services++;w.serviceJob=null;
+     w.serviceDue=s.tick+c.serviceEveryDays*1440;
+   }
+ }
+ function retire(s,r,type){
+   const w=s.w5r,entry=w[type],sh=s.ships[entry.id];
+   if(!sh||sh.phase!=='dock'||sh.klasse!==type
+      ||(type==='frachter'&&(s.w5n.frachtauftrag||s.w3.auftrag)))return false;
+   if(type==='miner'&&(sh.bohrerMk1||s.w5m.schiffe[sh.id]))
+     throw Error('W5r MK1-/Erzuebernahme noch nicht beschlossen');
+   const cargo=Object.entries(sh.ladung).filter(([,n])=>n>0)
+     .map(([ware,menge])=>({ware,menge}));
+   for(const x of cargo){
+     s.ledger[x.ware].consumed+=x.menge;
+     if(x.ware==='eis')w.lostIce+=x.menge;
+   }
+   if(type==='miner')s.w5m.minerKaeufe[sh.owner]--;
+   w.losses.push({id:sh.id,type,owner:sh.owner,tick:s.tick,cargo});
+   delete s.ships[sh.id];entry.lost++;entry.id=null;
+   return true;
+ }
+ function buy(s,r,type){
+   const w=s.w5r,e=w[type];
+   if(e.id)return false;
+   const owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;
+   const old=s.nextShip;
+   const res=m_core_commands.execute(s,{type:'shipBuy',owner,
+     station:'st_aldera',klasse:type},r);
+   if(!res.ok){w.blocked[type]++;return false}
+   const id=m_core_state.schiffId(old),ship=s.ships[id];
+   if(!ship||ship.owner!==owner||ship.klasse!==type)
+     throw Error('W5r Kauf ohne belegbare Huelle');
+   w.purchases.push({id,type,owner,tick:s.tick,cost:cost(r,type)});
+   e.id=id;e.born=s.tick;e.bought++;
+   if(type==='miner'){
+     const mine=m_core_commands.execute(s,{type:'shipMine',owner,schiff:id,ware:'eis'},r);
+     if(!mine.ok)ship.auftrag='halten';
+   }
+   return true;
+ }
+ function verschleiss(s,r){
+   if(!s.w5r?.initialized||s.tick%1440!==0)return;
+   for(const [type,days]of [['miner',r.w5r.minerLifeDays],['frachter',r.w5r.freighterLifeDays]]){
+     const e=s.w5r[type];
+     if(e.id&&s.tick-e.born>=days*1440)retire(s,r,type);
+     if(!e.id)buy(s,r,type);
+   }
+ }
+ function start(seed,mode,minerOwner,exportMode,rate,dayCap,totalCap,r){
+   const s=m_core_w5q.start(seed,mode,minerOwner,exportMode,rate,dayCap,totalCap,r);
+   const w=s.w5r;
+   const m=Object.values(s.ships).find(sh=>sh.owner===minerOwner&&sh.klasse==='miner');
+   const f=Object.values(s.ships).find(sh=>sh.owner===r.w5n.frachterOwner&&sh.klasse==='frachter');
+   if(!m||!f)throw Error('W5r nur mit bezahlter Anfangsflotte');
+   w.miner.id=m.id;w.frachter.id=f.id;w.initialized=true;
+   if(!m_core_audit.audit(s).ok)throw Error('W5r Startaudit');
+   return s;
+ }
+ function audit(s,r){
+   const w=s.w5r,c=r.w5r;
+   if(!w||!c)return {ok:false,grund:'W5r-Forschungsbuch fehlt'};
+   if(!w.initialized)return {ok:w.losses.length===0&&w.purchases.length===0
+     &&w.serviceAllocated===0,initial:true};
+   const fee=c.serviceMinutes*c.serviceWage;
+   const cargoIce=w.losses.reduce((n,l)=>n+l.cargo.filter(
+     x=>x.ware==='eis').reduce((a,x)=>a+x.menge,0),0);
+   const keys=[w.serviceAllocated,w.servicePaid,w.services,w.lostIce,
+     w.miner.lost,w.miner.bought,w.frachter.lost,w.frachter.bought,
+     w.blocked.miner,w.blocked.frachter,w.blocked.service];
+   const lostIds=w.losses.map(l=>l.id),ids=new Set(lostIds);
+   const ok=keys.every(x=>Number.isSafeInteger(x)&&x>=0)
+      &&ids.size===lostIds.length
+      &&w.losses.every(x=>Number.isSafeInteger(x.tick)&&x.tick>0
+        &&x.tick%1440===0&&x.tick<=s.tick&&!s.ships[x.id]
+        &&['miner','frachter'].includes(x.type)
+        &&x.cargo.every(g=>Number.isSafeInteger(g.menge)&&g.menge>0))
+      &&w.purchases.every(x=>Number.isSafeInteger(x.tick)
+        &&x.tick<=s.tick&&x.cost===cost(r,x.type)
+        &&(s.ships[x.id]?.owner===x.owner||ids.has(x.id)))
+      &&w.losses.filter(x=>x.type==='miner').length===w.miner.lost
+      &&w.losses.filter(x=>x.type==='frachter').length===w.frachter.lost
+      &&w.purchases.filter(x=>x.type==='miner').length===w.miner.bought
+      &&w.purchases.filter(x=>x.type==='frachter').length===w.frachter.bought
+      &&w.lostIce===cargoIce
+      &&w.serviceAllocated===w.services*fee+(w.serviceJob?fee:0)
+      &&w.servicePaid===w.services*fee+(w.serviceJob?.minutes??0)*c.serviceWage
+      &&s.owners.w5r_maintenance_reserved.cash===w.serviceAllocated-w.servicePaid
+      &&s.owners.w5r_maintenance_workforce.cash===w.servicePaid
+      &&(!w.serviceJob||(w.serviceJob.cost===fee
+        &&w.serviceJob.minutes>=0&&w.serviceJob.minutes<c.serviceMinutes))
+      &&Number.isSafeInteger(w.serviceDue)&&w.serviceDue>0
+      &&['miner','frachter'].every(type=>!w[type].id||s.ships[w[type].id]?.klasse===type)
+      &&s.ledger.eis.consumed===s.w5n.eisVerbraucht+w.lostIce;
+   return {ok,serviceAllocated:w.serviceAllocated,servicePaid:w.servicePaid,
+     services:w.services,lostIce:w.lostIce,lostMiner:w.miner.lost,boughtMiner:w.miner.bought,
+     lostFreighter:w.frachter.lost,boughtFreighter:w.frachter.bought,
+     activeMiner:w.miner.id,activeFreighter:w.frachter.id,blocked:{...w.blocked}};
+ }
+ function stand(s,r){
+   return Object.freeze({...audit(s,r),tick:s.tick,hash:m_core_hash.hash(s),
+     water:s.w5n.wasserVerbraucht,produced:s.w5n.wasserProduziert,
+     freight:s.w5n.frachtAbgeschlossen,house:s.owners.house.cash,
+     buyer:s.owners.w5n_kunden.cash,nadir:s.owners.st_nadir.cash,
+     miner:s.owners[s.w5o.minerOwner].cash,carrier:s.owners.transport.cash,
+     minted:s.minted,stockMiner:s.stations.st_aldera.lager.miner,
+     stockFreighter:s.stations.st_aldera.lager.frachter});
+ }
+ return {start,tick,verschleiss,audit,stand};
+})();
+
 // W1: rein lesende Vollkosten-/Liquiditaetsrechnung aus gebuchten Originalkonten.
 // Kein eigener Wirtschaftskern, kein weiterer Geld- oder Warenfluss.
 const m_core_w1_vollkosten = (() => {
@@ -4703,6 +4850,7 @@ function step(state, rules) {
     if (rules.w5c) m_core_w5c.tick(state,rules);
     if (rules.w5d) m_core_w5d.tick(state,rules);
     if (rules.w5f) m_core_w5f.tick(state,rules);
+    if (rules.w5r) m_core_w5r.tick(state,rules);
     if (rules.w5n) m_core_w5n.tick(state,rules);
     ankunft(state, rules);
     foerderung(state, rules);
@@ -4716,6 +4864,7 @@ function step(state, rules) {
         m_core_erzpilot.npcInvestieren(state, rules);
       }
     }
+    if(rules.w5r)m_core_w5r.verschleiss(state,rules);
     if(rules.w5o)m_core_w5o.autopilot(state,rules);
     return ergebnisse;
   }
@@ -4990,7 +5139,8 @@ function audit(state) {
     || state.rulesVersion === m_data_erzpilot.W5M_RULES.rulesVersion
     || state.rulesVersion === m_data_erzpilot.W5N_RULES.rulesVersion
     || state.rulesVersion === m_data_erzpilot.W5O_RULES.rulesVersion
-    || state.rulesVersion === m_data_erzpilot.W5Q_RULES.rulesVersion) {
+    || state.rulesVersion === m_data_erzpilot.W5Q_RULES.rulesVersion
+    || state.rulesVersion === m_data_erzpilot.W5R_RULES.rulesVersion) {
     const cfg = m_data_erzpilot.ERZ_RULES.erzpilot;
     const start = m_data_erzpilot.ERZ_RULES.owners.find((o) => o.id === cfg.exportOwner).cash;
     const exportiert = state.ledger?.erz?.exported;
@@ -5024,9 +5174,12 @@ function audit(state) {
     || state.rulesVersion === m_data_erzpilot.W5M_RULES.rulesVersion
     || state.rulesVersion === m_data_erzpilot.W5N_RULES.rulesVersion
     || state.rulesVersion === m_data_erzpilot.W5O_RULES.rulesVersion
-    || state.rulesVersion === m_data_erzpilot.W5Q_RULES.rulesVersion) {
+    || state.rulesVersion === m_data_erzpilot.W5Q_RULES.rulesVersion
+    || state.rulesVersion === m_data_erzpilot.W5R_RULES.rulesVersion) {
     const bericht = m_core_w1_vollkosten.pruefen(state,
-      state.rulesVersion === m_data_erzpilot.W5Q_RULES.rulesVersion
+      state.rulesVersion === m_data_erzpilot.W5R_RULES.rulesVersion
+        ? m_data_erzpilot.W5R_RULES
+        : state.rulesVersion === m_data_erzpilot.W5Q_RULES.rulesVersion
         ? m_data_erzpilot.W5Q_RULES
         : state.rulesVersion === m_data_erzpilot.W5O_RULES.rulesVersion
         ? m_data_erzpilot.W5O_RULES
@@ -5104,7 +5257,8 @@ function audit(state) {
     vertragsOk = Object.keys(errors).length === 0;
     extra.contracts = { ok: vertragsOk, errors, reserved: reservierteMenge };
   }
-  const istW5q = state.rulesVersion === m_data_erzpilot.W5Q_RULES.rulesVersion;
+  const istW5r = state.rulesVersion === m_data_erzpilot.W5R_RULES.rulesVersion;
+  const istW5q = istW5r||state.rulesVersion === m_data_erzpilot.W5Q_RULES.rulesVersion;
   const istW5o = istW5q||state.rulesVersion === m_data_erzpilot.W5O_RULES.rulesVersion;
   const istW5n = istW5o||state.rulesVersion === m_data_erzpilot.W5N_RULES.rulesVersion;
   const istW5m = istW5n||state.rulesVersion === m_data_erzpilot.W5M_RULES.rulesVersion;
@@ -5120,19 +5274,19 @@ function audit(state) {
   const istW4 = state.rulesVersion === m_data_erzpilot.W4_RULES.rulesVersion;
   const w3 = state.rulesVersion === m_data_erzpilot.W3_RULES.rulesVersion
     || istW4 || istW5
-    ? m_core_w3.audit(state,istW5i ? (istW5q ? m_data_erzpilot.W5Q_RULES : istW5o ? m_data_erzpilot.W5O_RULES : istW5n ? m_data_erzpilot.W5N_RULES : istW5m ? m_data_erzpilot.W5M_RULES : istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : istW5b ? m_data_erzpilot.W5B_RULES : istW5 ? m_data_erzpilot.W5_RULES
+    ? m_core_w3.audit(state,istW5i ? (istW5r ? m_data_erzpilot.W5R_RULES : istW5q ? m_data_erzpilot.W5Q_RULES : istW5o ? m_data_erzpilot.W5O_RULES : istW5n ? m_data_erzpilot.W5N_RULES : istW5m ? m_data_erzpilot.W5M_RULES : istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : istW5b ? m_data_erzpilot.W5B_RULES : istW5 ? m_data_erzpilot.W5_RULES
       : istW4 ? m_data_erzpilot.W4_RULES : m_data_erzpilot.W3_RULES) : null;
   const w4 = istW4 || istW5
-    ? m_core_w4.audit(state,istW5i ? (istW5q ? m_data_erzpilot.W5Q_RULES : istW5o ? m_data_erzpilot.W5O_RULES : istW5n ? m_data_erzpilot.W5N_RULES : istW5m ? m_data_erzpilot.W5M_RULES : istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : istW5b ? m_data_erzpilot.W5B_RULES : istW5 ? m_data_erzpilot.W5_RULES : m_data_erzpilot.W4_RULES) : null;
-  const w5 = istW5 ? m_core_w5.audit(state,istW5i ? (istW5q ? m_data_erzpilot.W5Q_RULES : istW5o ? m_data_erzpilot.W5O_RULES : istW5n ? m_data_erzpilot.W5N_RULES : istW5m ? m_data_erzpilot.W5M_RULES : istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : istW5b ? m_data_erzpilot.W5B_RULES : m_data_erzpilot.W5_RULES) : null;
-  const w5b = istW5b ? m_core_w5b.audit(state,istW5i ? (istW5q ? m_data_erzpilot.W5Q_RULES : istW5o ? m_data_erzpilot.W5O_RULES : istW5n ? m_data_erzpilot.W5N_RULES : istW5m ? m_data_erzpilot.W5M_RULES : istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : m_data_erzpilot.W5B_RULES) : null;
+    ? m_core_w4.audit(state,istW5i ? (istW5r ? m_data_erzpilot.W5R_RULES : istW5q ? m_data_erzpilot.W5Q_RULES : istW5o ? m_data_erzpilot.W5O_RULES : istW5n ? m_data_erzpilot.W5N_RULES : istW5m ? m_data_erzpilot.W5M_RULES : istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : istW5b ? m_data_erzpilot.W5B_RULES : istW5 ? m_data_erzpilot.W5_RULES : m_data_erzpilot.W4_RULES) : null;
+  const w5 = istW5 ? m_core_w5.audit(state,istW5i ? (istW5r ? m_data_erzpilot.W5R_RULES : istW5q ? m_data_erzpilot.W5Q_RULES : istW5o ? m_data_erzpilot.W5O_RULES : istW5n ? m_data_erzpilot.W5N_RULES : istW5m ? m_data_erzpilot.W5M_RULES : istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : istW5b ? m_data_erzpilot.W5B_RULES : m_data_erzpilot.W5_RULES) : null;
+  const w5b = istW5b ? m_core_w5b.audit(state,istW5i ? (istW5r ? m_data_erzpilot.W5R_RULES : istW5q ? m_data_erzpilot.W5Q_RULES : istW5o ? m_data_erzpilot.W5O_RULES : istW5n ? m_data_erzpilot.W5N_RULES : istW5m ? m_data_erzpilot.W5M_RULES : istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : istW5g ? m_data_erzpilot.W5G_RULES : istW5f ? m_data_erzpilot.W5F_RULES : istW5d ? m_data_erzpilot.W5D_RULES : istW5c ? m_data_erzpilot.W5C_RULES : m_data_erzpilot.W5B_RULES) : null;
   const w5c = istW5c ? m_core_w5c.audit(state,istW5d ? m_data_erzpilot.W5D_RULES : m_data_erzpilot.W5C_RULES) : null;
-  const w5d = istW5d ? m_core_w5d.audit(state,istW5i?(istW5q?m_data_erzpilot.W5Q_RULES:istW5o?m_data_erzpilot.W5O_RULES:istW5n?m_data_erzpilot.W5N_RULES:istW5m?m_data_erzpilot.W5M_RULES:istW5l?m_data_erzpilot.W5L_RULES:m_data_erzpilot.W5I_RULES):istW5h?m_data_erzpilot.W5H_RULES:istW5f?m_data_erzpilot.W5F_RULES:m_data_erzpilot.W5D_RULES) : null;
-  const w5f = istW5f ? m_core_w5f.audit(state,istW5i?(istW5q?m_data_erzpilot.W5Q_RULES:istW5o?m_data_erzpilot.W5O_RULES:istW5n?m_data_erzpilot.W5N_RULES:istW5m?m_data_erzpilot.W5M_RULES:istW5l?m_data_erzpilot.W5L_RULES:m_data_erzpilot.W5I_RULES):istW5h?m_data_erzpilot.W5H_RULES:istW5g?
+  const w5d = istW5d ? m_core_w5d.audit(state,istW5i?(istW5r?m_data_erzpilot.W5R_RULES:istW5q?m_data_erzpilot.W5Q_RULES:istW5o?m_data_erzpilot.W5O_RULES:istW5n?m_data_erzpilot.W5N_RULES:istW5m?m_data_erzpilot.W5M_RULES:istW5l?m_data_erzpilot.W5L_RULES:m_data_erzpilot.W5I_RULES):istW5h?m_data_erzpilot.W5H_RULES:istW5f?m_data_erzpilot.W5F_RULES:m_data_erzpilot.W5D_RULES) : null;
+  const w5f = istW5f ? m_core_w5f.audit(state,istW5i?(istW5r?m_data_erzpilot.W5R_RULES:istW5q?m_data_erzpilot.W5Q_RULES:istW5o?m_data_erzpilot.W5O_RULES:istW5n?m_data_erzpilot.W5N_RULES:istW5m?m_data_erzpilot.W5M_RULES:istW5l?m_data_erzpilot.W5L_RULES:m_data_erzpilot.W5I_RULES):istW5h?m_data_erzpilot.W5H_RULES:istW5g?
     m_data_erzpilot.W5G_RULES:m_data_erzpilot.W5F_RULES) : null;
-  const w5g = istW5g ? m_core_w5g.audit(state,istW5i ? (istW5q ? m_data_erzpilot.W5Q_RULES : istW5o ? m_data_erzpilot.W5O_RULES : istW5n ? m_data_erzpilot.W5N_RULES : istW5m ? m_data_erzpilot.W5M_RULES : istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : m_data_erzpilot.W5G_RULES) : null;
-  const w5h = istW5h ? m_core_w5h.audit(state,istW5i ? (istW5q ? m_data_erzpilot.W5Q_RULES : istW5o ? m_data_erzpilot.W5O_RULES : istW5n ? m_data_erzpilot.W5N_RULES : istW5m ? m_data_erzpilot.W5M_RULES : istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : m_data_erzpilot.W5H_RULES) : null;
-  const w5i = istW5i ? m_core_w5i.audit(state,istW5q?m_data_erzpilot.W5Q_RULES:istW5o?m_data_erzpilot.W5O_RULES:istW5n?m_data_erzpilot.W5N_RULES:istW5m?m_data_erzpilot.W5M_RULES:istW5l?m_data_erzpilot.W5L_RULES:m_data_erzpilot.W5I_RULES) : null;
+  const w5g = istW5g ? m_core_w5g.audit(state,istW5i ? (istW5r ? m_data_erzpilot.W5R_RULES : istW5q ? m_data_erzpilot.W5Q_RULES : istW5o ? m_data_erzpilot.W5O_RULES : istW5n ? m_data_erzpilot.W5N_RULES : istW5m ? m_data_erzpilot.W5M_RULES : istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : istW5h ? m_data_erzpilot.W5H_RULES : m_data_erzpilot.W5G_RULES) : null;
+  const w5h = istW5h ? m_core_w5h.audit(state,istW5i ? (istW5r ? m_data_erzpilot.W5R_RULES : istW5q ? m_data_erzpilot.W5Q_RULES : istW5o ? m_data_erzpilot.W5O_RULES : istW5n ? m_data_erzpilot.W5N_RULES : istW5m ? m_data_erzpilot.W5M_RULES : istW5l ? m_data_erzpilot.W5L_RULES : m_data_erzpilot.W5I_RULES) : m_data_erzpilot.W5H_RULES) : null;
+  const w5i = istW5i ? m_core_w5i.audit(state,istW5r?m_data_erzpilot.W5R_RULES:istW5q?m_data_erzpilot.W5Q_RULES:istW5o?m_data_erzpilot.W5O_RULES:istW5n?m_data_erzpilot.W5N_RULES:istW5m?m_data_erzpilot.W5M_RULES:istW5l?m_data_erzpilot.W5L_RULES:m_data_erzpilot.W5I_RULES) : null;
   const w5m = istW5m ? m_core_w5m.audit(state,m_data_erzpilot.W5M_RULES) : null;
   if (w3) extra.w3=w3;
   if (w4) extra.w4=w4;
@@ -5151,8 +5305,10 @@ function audit(state) {
   if(w5o)extra.w5o=w5o;
   const w5q=istW5q?m_core_w5q.audit(state,m_data_erzpilot.W5Q_RULES):null;
   if(w5q)extra.w5q=w5q;
+  const w5r=istW5r?m_core_w5r.audit(state,m_data_erzpilot.W5R_RULES):null;
+  if(w5r)extra.w5r=w5r;
   return { ok: isk.ok && goods.ok && vertragsOk && finanzierungsOk
-      && wirtschaftOk && (!w3 || w3.ok) && (!w4 || w4.ok) && (!w5 || w5.ok) && (!w5b || w5b.ok) && (!w5c || w5c.ok) && (!w5d || w5d.ok) && (!w5f || w5f.ok) && (!w5g || w5g.ok) && (!w5h || w5h.ok) && (!w5i || w5i.ok) && (!w5m || w5m.ok) && (!w5n || w5n.ok) && (!w5o || w5o.ok) && (!w5q || w5q.ok),
+      && wirtschaftOk && (!w3 || w3.ok) && (!w4 || w4.ok) && (!w5 || w5.ok) && (!w5b || w5b.ok) && (!w5c || w5c.ok) && (!w5d || w5d.ok) && (!w5f || w5f.ok) && (!w5g || w5g.ok) && (!w5h || w5h.ok) && (!w5i || w5i.ok) && (!w5m || w5m.ok) && (!w5n || w5n.ok) && (!w5o || w5o.ok) && (!w5q || w5q.ok) && (!w5r || w5r.ok),
     total, expected, delta: total - expected, isk, goods, ...extra };
 }
 return { audit };
@@ -5160,11 +5316,11 @@ return { audit };
 
 const m_core_index = (() => {
 const { RULES } = m_data_rules;
-const { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES, W5L_RULES, W5M_RULES, W5N_RULES, W5O_RULES, W5Q_RULES } = m_data_erzpilot;
+const { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES, W5L_RULES, W5M_RULES, W5N_RULES, W5O_RULES, W5Q_RULES, W5R_RULES } = m_data_erzpilot;
 const pilotAuftragsStand = (state) => m_core_erzpilot.auftragsStand(state, ERZ_RULES);
 const pilotNpcInvestition = (state) => m_core_erzpilot.investitionsPruefung(state, W2_RULES);
 const pilotKonzernStatus = (state) => m_core_w2_konzernstatus.pruefen(state,
-  state.rulesVersion === W5Q_RULES.rulesVersion ? W5Q_RULES : state.rulesVersion === W5O_RULES.rulesVersion ? W5O_RULES : state.rulesVersion === W5N_RULES.rulesVersion ? W5N_RULES : state.rulesVersion === W5M_RULES.rulesVersion ? W5M_RULES : state.rulesVersion === W5L_RULES.rulesVersion ? W5L_RULES : state.rulesVersion === W5I_RULES.rulesVersion ? W5I_RULES : state.rulesVersion === W5H_RULES.rulesVersion ? W5H_RULES : state.rulesVersion === W5G_RULES.rulesVersion ? W5G_RULES
+  state.rulesVersion === W5R_RULES.rulesVersion ? W5R_RULES : state.rulesVersion === W5Q_RULES.rulesVersion ? W5Q_RULES : state.rulesVersion === W5O_RULES.rulesVersion ? W5O_RULES : state.rulesVersion === W5N_RULES.rulesVersion ? W5N_RULES : state.rulesVersion === W5M_RULES.rulesVersion ? W5M_RULES : state.rulesVersion === W5L_RULES.rulesVersion ? W5L_RULES : state.rulesVersion === W5I_RULES.rulesVersion ? W5I_RULES : state.rulesVersion === W5H_RULES.rulesVersion ? W5H_RULES : state.rulesVersion === W5G_RULES.rulesVersion ? W5G_RULES
     : state.rulesVersion === W5F_RULES.rulesVersion ? W5F_RULES
     : state.rulesVersion === W5D_RULES.rulesVersion ? W5D_RULES
     : state.rulesVersion === W5C_RULES.rulesVersion ? W5C_RULES
@@ -5173,7 +5329,7 @@ const pilotKonzernStatus = (state) => m_core_w2_konzernstatus.pruefen(state,
     : state.rulesVersion === W4_RULES.rulesVersion ? W4_RULES
       : state.rulesVersion === W3_RULES.rulesVersion ? W3_RULES : W2_RULES);
 const pilotNpcKrisenLage = (state) => m_core_erzpilot.krisenLage(state,
-  state.rulesVersion === W5Q_RULES.rulesVersion ? W5Q_RULES : state.rulesVersion === W5O_RULES.rulesVersion ? W5O_RULES : state.rulesVersion === W5N_RULES.rulesVersion ? W5N_RULES : state.rulesVersion === W5M_RULES.rulesVersion ? W5M_RULES : state.rulesVersion === W5L_RULES.rulesVersion ? W5L_RULES : state.rulesVersion === W5I_RULES.rulesVersion ? W5I_RULES : state.rulesVersion === W5H_RULES.rulesVersion ? W5H_RULES : state.rulesVersion === W5G_RULES.rulesVersion ? W5G_RULES
+  state.rulesVersion === W5R_RULES.rulesVersion ? W5R_RULES : state.rulesVersion === W5Q_RULES.rulesVersion ? W5Q_RULES : state.rulesVersion === W5O_RULES.rulesVersion ? W5O_RULES : state.rulesVersion === W5N_RULES.rulesVersion ? W5N_RULES : state.rulesVersion === W5M_RULES.rulesVersion ? W5M_RULES : state.rulesVersion === W5L_RULES.rulesVersion ? W5L_RULES : state.rulesVersion === W5I_RULES.rulesVersion ? W5I_RULES : state.rulesVersion === W5H_RULES.rulesVersion ? W5H_RULES : state.rulesVersion === W5G_RULES.rulesVersion ? W5G_RULES
     : state.rulesVersion === W5F_RULES.rulesVersion ? W5F_RULES
     : state.rulesVersion === W5D_RULES.rulesVersion ? W5D_RULES
     : state.rulesVersion === W5C_RULES.rulesVersion ? W5C_RULES
@@ -5182,7 +5338,7 @@ const pilotNpcKrisenLage = (state) => m_core_erzpilot.krisenLage(state,
     : state.rulesVersion === W4_RULES.rulesVersion ? W4_RULES
       : state.rulesVersion === W3_RULES.rulesVersion ? W3_RULES : W2_RULES);
 const pilotWirtschaftsStand = (state) => m_core_w1_vollkosten.pruefen(state,
-  state.rulesVersion === W5Q_RULES.rulesVersion ? W5Q_RULES : state.rulesVersion === W5O_RULES.rulesVersion ? W5O_RULES : state.rulesVersion === W5N_RULES.rulesVersion ? W5N_RULES : state.rulesVersion === W5M_RULES.rulesVersion ? W5M_RULES : state.rulesVersion === W5L_RULES.rulesVersion ? W5L_RULES : state.rulesVersion === W5I_RULES.rulesVersion ? W5I_RULES : state.rulesVersion === W5H_RULES.rulesVersion ? W5H_RULES : state.rulesVersion === W5G_RULES.rulesVersion ? W5G_RULES
+  state.rulesVersion === W5R_RULES.rulesVersion ? W5R_RULES : state.rulesVersion === W5Q_RULES.rulesVersion ? W5Q_RULES : state.rulesVersion === W5O_RULES.rulesVersion ? W5O_RULES : state.rulesVersion === W5N_RULES.rulesVersion ? W5N_RULES : state.rulesVersion === W5M_RULES.rulesVersion ? W5M_RULES : state.rulesVersion === W5L_RULES.rulesVersion ? W5L_RULES : state.rulesVersion === W5I_RULES.rulesVersion ? W5I_RULES : state.rulesVersion === W5H_RULES.rulesVersion ? W5H_RULES : state.rulesVersion === W5G_RULES.rulesVersion ? W5G_RULES
     : state.rulesVersion === W5F_RULES.rulesVersion ? W5F_RULES
     : state.rulesVersion === W5D_RULES.rulesVersion ? W5D_RULES
     : state.rulesVersion === W5C_RULES.rulesVersion ? W5C_RULES
@@ -5318,6 +5474,15 @@ function createW5BState(seed=W5B_RULES.startSeed,rules=W5B_RULES) {
   if(rules.w5q)s.w5q={mode:'off',rate:0,dayCap:0,totalCap:0,
     exported:0,minted:0,payout:0,stationNet:0,lastExportDay:0,
     events:[]};
+  if(rules.w5r){
+    s.w5r={initialized:false,miner:{id:null,born:0,lost:0,bought:0},
+      frachter:{id:null,born:0,lost:0,bought:0},
+      losses:[],purchases:[],lostIce:0,serviceDue:rules.w5r.serviceEveryDays*1440,
+      serviceJob:null,serviceAllocated:0,servicePaid:0,services:0,
+      blocked:{miner:0,frachter:0,service:0}};
+    s.owners.w5r_maintenance_reserved={id:'w5r_maintenance_reserved',kind:'w5r-reserve',cash:0};
+    s.owners.w5r_maintenance_workforce={id:'w5r_maintenance_workforce',kind:'w5r-labor',cash:0};
+  }
   if(!m_core_audit.audit(s).ok)throw Error('W5b Startfinanzierung inkonsistent');
   return s;
 }
@@ -5348,6 +5513,11 @@ const createW5QState=(seed=W5Q_RULES.startSeed,modus='npcSave',
   minerOwner='npc3',exportMode='off',rate=0,dayCap=0,totalCap=0)=>
     m_core_w5q.start(seed,modus,minerOwner,exportMode,rate,dayCap,totalCap,W5Q_RULES);
 const loadW5Q=json=>loadErz(json,W5Q_RULES);
+const createW5RState=(seed=W5R_RULES.startSeed,modus='full',minerOwner='npc3',
+  exportMode='off',rate=0,dayCap=0,totalCap=0)=>
+  m_core_w5r.start(seed,modus,minerOwner,exportMode,rate,dayCap,totalCap,W5R_RULES);
+const loadW5R=json=>loadErz(json,W5R_RULES);
+const pilotW5RStand=state=>m_core_w5r.stand(state,W5R_RULES);
 const pilotW5QStand=state=>m_core_w5q.stand(state,W5Q_RULES);
 const pilotW5OStand=state=>m_core_w5o.stand(state,W5O_RULES);
 const pilotW5NStand=state=>m_core_w5n.stand(state,W5N_RULES);
@@ -5375,7 +5545,7 @@ const pilotW5BPlan = (state,art) => m_core_w5b.pruefen(state,W5B_RULES,
 function JagdSichtV1(state) {
   if(state.rulesVersion!==W5B_RULES.rulesVersion && state.rulesVersion!==W5C_RULES.rulesVersion
     && state.rulesVersion!==W5D_RULES.rulesVersion&&state.rulesVersion!==W5F_RULES.rulesVersion
-    && state.rulesVersion!==W5G_RULES.rulesVersion&&state.rulesVersion!==W5H_RULES.rulesVersion&&state.rulesVersion!==W5I_RULES.rulesVersion&&state.rulesVersion!==W5L_RULES.rulesVersion&&state.rulesVersion!==W5M_RULES.rulesVersion&&state.rulesVersion!==W5N_RULES.rulesVersion&&state.rulesVersion!==W5O_RULES.rulesVersion&&state.rulesVersion!==W5Q_RULES.rulesVersion)
+    && state.rulesVersion!==W5G_RULES.rulesVersion&&state.rulesVersion!==W5H_RULES.rulesVersion&&state.rulesVersion!==W5I_RULES.rulesVersion&&state.rulesVersion!==W5L_RULES.rulesVersion&&state.rulesVersion!==W5M_RULES.rulesVersion&&state.rulesVersion!==W5N_RULES.rulesVersion&&state.rulesVersion!==W5O_RULES.rulesVersion&&state.rulesVersion!==W5Q_RULES.rulesVersion&&state.rulesVersion!==W5R_RULES.rulesVersion)
     throw Error('JagdSichtV1 nur fuer isolierte W5b-/W5c-Welt');
   const jaeger=Object.keys(state.ships).sort().map(id=>state.ships[id])
     .filter(sh=>sh.klasse==='jaeger')
@@ -5425,13 +5595,13 @@ const { reise } = m_core_ankunft;
 const { kampf } = m_core_kampf;
 const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
-return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES, W5L_RULES, W5M_RULES, W5N_RULES, W5O_RULES, W5Q_RULES, JagdSichtV1,
+return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES, W5L_RULES, W5M_RULES, W5N_RULES, W5O_RULES, W5Q_RULES, W5R_RULES, JagdSichtV1,
   pilotAuftragsStand, pilotWirtschaftsStand, pilotNpcInvestition, pilotNpcKrisenLage, pilotKonzernStatus,
   pilotW3Stand, pilotW3Kalkulation, pilotW4Stand, pilotW4Kalkulation,
   pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf, pilotW5BStand, pilotW5BPlan, pilotW5CStand, pilotW5DStand,
-  pilotW5FStand, pilotW5FVollkosten, pilotW5FAngriff, pilotW5GStand, pilotW5GPlan, pilotW5HStand, pilotW5HPlan, pilotW5IStand, pilotW5IPlan, pilotW5LStand, pilotW5LPlan, pilotW5MStand, pilotW5NStand, pilotW5OStand, pilotW5QStand,
-  createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState, createW5LState, createW5MState, createW5NState, createW5OState, createW5QState,
-  loadErz, loadW2, loadW3, loadW4, loadW5, loadW5B, loadW5C, loadW5D, loadW5F, loadW5G, loadW5H, loadW5I, loadW5L, loadW5M, loadW5N, loadW5O, loadW5Q, createState, submit, execute, step, advance, load, preis, faktor };
+  pilotW5FStand, pilotW5FVollkosten, pilotW5FAngriff, pilotW5GStand, pilotW5GPlan, pilotW5HStand, pilotW5HPlan, pilotW5IStand, pilotW5IPlan, pilotW5LStand, pilotW5LPlan, pilotW5MStand, pilotW5NStand, pilotW5OStand, pilotW5QStand, pilotW5RStand,
+  createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState, createW5LState, createW5MState, createW5NState, createW5OState, createW5QState, createW5RState,
+  loadErz, loadW2, loadW3, loadW4, loadW5, loadW5B, loadW5C, loadW5D, loadW5F, loadW5G, loadW5H, loadW5I, loadW5L, loadW5M, loadW5N, loadW5O, loadW5Q, loadW5R, createState, submit, execute, step, advance, load, preis, faktor };
 })();
 
 const m_data_oberflaeche = (() => {

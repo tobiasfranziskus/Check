@@ -152,3 +152,42 @@ test('W5h: 13 Seeds x 90 Tage, zwei echte Lieferungen, Bilanz, Replay und Save/L
       npc3:s.owners.npc3.cash,produziert:s.w5b.jaegerFertig,minted:s.minted}));
   }
 });
+
+test('W5h: real finanzierter Zweitjäger oder belegter Kapitalstopp ohne Rettung',()=>{
+  const s=start(42);
+  liefern(s);produzieren(s);
+  cmd(s,'shipMine','house',{schiff:miner(s,'nadir'),ware:'silizium'});
+  tick(s,8);
+  let extra=0;
+  while(extra<5&&s.owners.house.cash<2288){
+    if(s.owners.st_nadir.cash<740)break;
+    const fr=carrier(s);
+    for(let i=0;i<650&&(s.w5h.bestand<50||s.ships[fr].phase!=='dock');i++)api.advance(s,1,rules);
+    if(s.w5h.bestand<50)break;
+    liefern(s);extra++;
+  }
+  for(let i=0;i<4;i++){
+    const r=api.execute(s,{type:'stationRefine',owner:'st_nadir',station:'st_nadir'},rules);
+    if(!r.ok)break;
+    tick(s,20);
+  }
+  const bevor=api.hash(s);
+  const p=api.execute(s,{type:'stationBuildParts',owner:'house',station:'st_nadir'},rules);
+  if(p.ok){
+    tick(s,64);
+    const h=api.execute(s,{type:'stationBuildFighter',owner:'house',station:'st_nadir'},rules);
+    assert.equal(h.ok,true,JSON.stringify(h));
+    tick(s,32);
+    cmd(s,'shipBuy','npc3',{station:'st_nadir',klasse:'jaeger'});
+    assert.equal(s.w5b.jaegerFertig,2);
+    assert.equal(s.w5b.jaegerVerkauft,2);
+  }else{
+    assert.equal(api.hash(s),bevor,'cashstop may not mutate state');
+    assert.ok(p.reason?.length>0,'rejected order must give economic reason');
+  }
+  check(s,'second genuine fighter or genuine cashstop');
+  console.log('W5H_PRODUKTION '+JSON.stringify({seed:42,extraFrachten:extra,
+    erzW3:s.w3.geliefert,bauteile:s.w5b.bauteilFertig,jaeger:s.w5b.jaegerFertig,
+    verkauft:s.w5b.jaegerVerkauft,haus:s.owners.house.cash,
+    nadir:s.owners.st_nadir.cash,grund:p.ok?null:p.reason,minted:s.minted}));
+});

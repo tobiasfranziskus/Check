@@ -13,10 +13,10 @@ test('W5j UI: 100 rein lesende Statusprojektionen ohne eigene Simulationsregel',
    const v=w5jSicht(api,s.lesen());
    assert.equal(v.version,'W5jSichtV1');
    assert.equal(v.w5i.limit,50);
-   assert.equal(v.w5j.anfang,2400);
+   assert.equal(v.w5j.anfang,3000);
    assert.equal(v.w5j.frei,2400);
-   assert.equal(v.w5j.einahmen,0);
-   assert.equal(v.w5j.ausgaben,0);
+   assert.equal(v.w5j.einnahmen,0);
+   assert.equal(v.w5j.ausgaben,600);
    assert.equal(v.w5j.bilanziert,true);
    assert.equal(v.w5j.bezahlbar,false);
    assert.equal(v.audit.ok,true);

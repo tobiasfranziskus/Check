@@ -2223,8 +2223,13 @@ const m_core_erzpilot = (() => {
       if (id === ausnahmeSchiff || buch[id]) return sum;
       return sum + anzahl(state.ships[id].ladung, 'erz');
     }, 0);
-    if(rules.w5h && state.owners[rules.w3.kunde].cash<m_core_w3.kalkulation(rules).gesamt)
-      return 0; // Keine erneute Erzfoerderung ohne echten zahlenden W3-Endkunden.
+    if(rules.w5h){
+      const ziel=rules.w3.zielStation;
+      const frei=m_core_handel.obergrenze(state,rules,ziel,'erz')
+        -(state.stations[ziel].lager.erz||0);
+      if(state.owners[rules.w3.kunde].cash<m_core_w3.kalkulation(rules).gesamt
+        ||frei<rules.w3.fracht)return 0;
+    } // Keine neue Erzfoerderung ohne zahlbaren W3-Kunden UND realen Lagerplatz.
     return Math.max(0, Math.floor(state.owners[cfg.exportOwner].cash / cfg.preis)
       - bestand - reserviert(state) - fremdeFracht);
   }
@@ -2331,7 +2336,10 @@ const m_core_erzpilot = (() => {
       const w=state.w5h,p=m_core_w3.kalkulation(rules);
       const carrier=Object.values(state.ships).some(sh=>sh.owner===rules.w3.spedition
         &&sh.klasse==='frachter');
-      const endkundeGedeckt=carrier&&state.owners[rules.w3.kunde].cash>=p.gesamt;
+      const zielFrei=m_core_handel.obergrenze(state,rules,rules.w3.zielStation,'erz')
+        -(state.stations[rules.w3.zielStation].lager.erz||0);
+      const endkundeGedeckt=carrier&&state.owners[rules.w3.kunde].cash>=p.gesamt
+        &&zielFrei>=rules.w3.fracht;
       const menge=endkundeGedeckt?Math.min(
         Math.max(0,anzahl(lager,'erz')-w.bestand),
         Math.floor(kaeufer.cash/cfg.preis),cfg.maximalJeStunde,

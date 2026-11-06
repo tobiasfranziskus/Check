@@ -3013,7 +3013,8 @@ const m_core_w4 = (() => {
       && station>=0&&worker>=0&&escrow>=0
       && w.begonnen===w.abgeschlossen+(a?1:0)
       && w.gebucht===w.begonnen*p && w.gezahlt===erwarteterLohn
-      && worker===w.gezahlt&&escrow===w.gebucht-w.gezahlt
+      && worker===w.gezahlt-(state.w5s?.industryWages?.paid?.refinery??0)
+      &&escrow===w.gebucht-w.gezahlt
       && station+state.w3.kaufAusgaben+w.gebucht
         -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)
          +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
@@ -3180,7 +3181,7 @@ const m_core_w5 = (() => {
       && w.arbeitsGezahlt===w.fertig*p.arbeitKosten
         +(a?.gearbeitet??0)*c.lohnJeMinute
       && escrow===w.arbeitsGebunden-w.arbeitsGezahlt
-      && arbeit===w.arbeitsGezahlt
+      && arbeit===w.arbeitsGezahlt-(state.w5s?.industryWages?.paid?.shipyard??0)
       && state.ledger.material.consumed===w.materialVerbraucht+(state.w5b?.materialVerbraucht??0)
         +(state.w5f?.materialVerbraucht??0)
       && st.material===state.w4.materialErzeugt-w.materialVerbraucht-(state.w5b?.materialVerbraucht??0)
@@ -4434,6 +4435,7 @@ const m_core_w5n=(()=>{
      &&w.wasserErlos===w.wasserVerbraucht*c.wasserPreis
      &&s.owners[c.kunde].cash===r.owners.find(o=>o.id===c.kunde).cash-w.wasserErlos
        +(s.w5o?.ausgezahlt??0)+(s.w5s?.orePilotWages??0)
+       +Object.values(s.w5s?.industryWages?.paid??{}).reduce((n,x)=>n+x,0)
        +(s.w5q?.payout??0)
      &&w.frachtBeauftragt===w.frachtAbgeschlossen+(a?1:0)
      &&w.kaufAusgaben===w.frachtBeauftragt*p.gesamt
@@ -4680,8 +4682,9 @@ const m_core_w5o=(()=>{
      &&(w.mode!=='wages'||w.divMine+w.divFracht+w.divStation===0)
      &&(w.mode!=='npcSave'||w.divMine===0)
      &&s.owners.w5n_kunden.cash===r.owners.find(o=>o.id==='w5n_kunden').cash
-       +sum+(s.w5s?.orePilotWages??0)-n.wasserErlos
-       +(s.w5q?.payout??0)
+       +sum+(s.w5s?.orePilotWages??0)
+       +Object.values(s.w5s?.industryWages?.paid??{}).reduce((n,x)=>n+x,0)
+       -n.wasserErlos+(s.w5q?.payout??0)
      &&s.minted===(s.w5q?.minted??0)&&s.burned===0;
    return {ok,mode:w.mode,minerOwner:w.minerOwner,ausgezahlt:sum,
      lohn:w.lohnEis+w.lohnFracht+w.lohnWasser,
@@ -4779,6 +4782,7 @@ const m_core_w5q=(()=>{
       &&s.minted===amount&&s.burned===0
       &&s.owners.w5n_kunden.cash===r.owners.find(o=>o.id==='w5n_kunden').cash
         +s.w5o.ausgezahlt+(s.w5s?.orePilotWages??0)
+        +Object.values(s.w5s?.industryWages?.paid??{}).reduce((n,x)=>n+x,0)
         +w.payout-s.w5n.wasserErlos
       &&s.stations.st_nadir.lager.wasser===
         s.w5n.wasserProduziert-s.w5n.wasserVerbraucht-units;
@@ -6110,6 +6114,7 @@ const m_core_w5r=(()=>{
       &&w.servicePaid===w.services*fee+(w.serviceJob?.minutes??0)*c.serviceWage
       &&s.owners.w5r_maintenance_reserved.cash===w.serviceAllocated-w.servicePaid
       &&s.owners.w5r_maintenance_workforce.cash===w.servicePaid
+        -(s.w5s?.industryWages?.paid?.maintenance??0)
       &&(!w.serviceJob||(w.serviceJob.cost===fee
         &&w.serviceJob.minutes>=0&&w.serviceJob.minutes<c.serviceMinutes))
       &&Number.isSafeInteger(w.serviceDue)&&w.serviceDue>0

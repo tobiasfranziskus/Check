@@ -3013,7 +3013,8 @@ const m_core_w4 = (() => {
       && station>=0&&worker>=0&&escrow>=0
       && w.begonnen===w.abgeschlossen+(a?1:0)
       && w.gebucht===w.begonnen*p && w.gezahlt===erwarteterLohn
-      && worker===w.gezahlt&&escrow===w.gebucht-w.gezahlt
+      && worker===w.gezahlt-(state.w5s?.industryWages?.paid?.refinery??0)
+      &&escrow===w.gebucht-w.gezahlt
       && station+state.w3.kaufAusgaben+w.gebucht
         -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)
          +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
@@ -3180,7 +3181,7 @@ const m_core_w5 = (() => {
       && w.arbeitsGezahlt===w.fertig*p.arbeitKosten
         +(a?.gearbeitet??0)*c.lohnJeMinute
       && escrow===w.arbeitsGebunden-w.arbeitsGezahlt
-      && arbeit===w.arbeitsGezahlt
+      && arbeit===w.arbeitsGezahlt-(state.w5s?.industryWages?.paid?.shipyard??0)
       && state.ledger.material.consumed===w.materialVerbraucht+(state.w5b?.materialVerbraucht??0)
         +(state.w5f?.materialVerbraucht??0)
       && st.material===state.w4.materialErzeugt-w.materialVerbraucht-(state.w5b?.materialVerbraucht??0)
@@ -4434,6 +4435,7 @@ const m_core_w5n=(()=>{
      &&w.wasserErlos===w.wasserVerbraucht*c.wasserPreis
      &&s.owners[c.kunde].cash===r.owners.find(o=>o.id===c.kunde).cash-w.wasserErlos
        +(s.w5o?.ausgezahlt??0)+(s.w5s?.orePilotWages??0)
+       +Object.values(s.w5s?.industryWages?.paid??{}).reduce((n,x)=>n+x,0)
        +(s.w5q?.payout??0)
      &&w.frachtBeauftragt===w.frachtAbgeschlossen+(a?1:0)
      &&w.kaufAusgaben===w.frachtBeauftragt*p.gesamt
@@ -4680,8 +4682,9 @@ const m_core_w5o=(()=>{
      &&(w.mode!=='wages'||w.divMine+w.divFracht+w.divStation===0)
      &&(w.mode!=='npcSave'||w.divMine===0)
      &&s.owners.w5n_kunden.cash===r.owners.find(o=>o.id==='w5n_kunden').cash
-       +sum+(s.w5s?.orePilotWages??0)-n.wasserErlos
-       +(s.w5q?.payout??0)
+       +sum+(s.w5s?.orePilotWages??0)
+       +Object.values(s.w5s?.industryWages?.paid??{}).reduce((n,x)=>n+x,0)
+       -n.wasserErlos+(s.w5q?.payout??0)
      &&s.minted===(s.w5q?.minted??0)&&s.burned===0;
    return {ok,mode:w.mode,minerOwner:w.minerOwner,ausgezahlt:sum,
      lohn:w.lohnEis+w.lohnFracht+w.lohnWasser,
@@ -4779,6 +4782,7 @@ const m_core_w5q=(()=>{
       &&s.minted===amount&&s.burned===0
       &&s.owners.w5n_kunden.cash===r.owners.find(o=>o.id==='w5n_kunden').cash
         +s.w5o.ausgezahlt+(s.w5s?.orePilotWages??0)
+        +Object.values(s.w5s?.industryWages?.paid??{}).reduce((n,x)=>n+x,0)
         +w.payout-s.w5n.wasserErlos
       &&s.stations.st_nadir.lager.wasser===
         s.w5n.wasserProduziert-s.w5n.wasserVerbraucht-units;
@@ -5689,6 +5693,81 @@ const m_core_w5s=(()=>{
       events:events?.length??0,
       fund:s.owners[r.w3.arbeitsFonds]?.cash??0};
   }
+  // W5s-r: Drei bisher auf realen Arbeiterkonten verbliebene Lohngruppen
+  // werden als VERDIENTE Lohnauszahlung in denselben privaten Haushalten
+  // verbucht. Die Original-Auftraege leisten und zahlen weiterhin allein.
+  const industryJobs=[
+    ['refinery','w4_arbeitslohn','arbeitskraefte_nadir'],
+    ['shipyard','w5_arbeitslohn','arbeiter_werft_nadir'],
+    ['maintenance','w5r_arbeitslohn','w5r_maintenance_workforce']
+  ];
+  function industryWageRows(s,r){
+    return [
+      {key:'refinery',account:r.w4.arbeitOwner,earned:s.w4.gezahlt},
+      {key:'shipyard',account:r.w5.arbeiter,earned:s.w5.arbeitsGezahlt},
+      {key:'maintenance',account:'w5r_maintenance_workforce',
+        earned:s.w5r.servicePaid}
+    ];
+  }
+  function industryWageAudit(s,r){
+    const book=s.w5s?.industryWages;
+    const rows=industryWageRows(s,r);
+    const keys=rows.map(x=>x.key);
+    const paid=book?.paid??{};
+    const records=book?.events??[];
+    const totals=Object.fromEntries(keys.map(k=>[k,0]));
+    const counts=Object.fromEntries(keys.map(k=>[k,0]));
+    const last=Object.fromEntries(keys.map(k=>[k,0]));
+    let recordsOk=Array.isArray(records);
+    if(recordsOk)for(const x of records){
+      if(!x||!keys.includes(x.key)
+        ||!Number.isSafeInteger(x.tick)||x.tick<=0
+        ||x.tick> s.tick||x.tick%r.economy.stunde!==0
+        ||x.tick<=last[x.key]
+        ||!Number.isSafeInteger(x.amount)||x.amount<=0)
+        recordsOk=false;
+      if(!x||!keys.includes(x.key))continue;
+      totals[x.key]+=x.amount;counts[x.key]++;
+      last[x.key]=x.tick;
+    }
+    const details=rows.map(x=>{
+      const spent=paid[x.key]??0,actual=s.owners[x.account]?.cash??-1;
+      const ok=Number.isSafeInteger(x.earned)&&x.earned>=0
+        &&Number.isSafeInteger(spent)&&spent>=0
+        &&spent===totals[x.key]&&spent<=x.earned
+        &&actual===x.earned-spent;
+      return {key:x.key,account:x.account,earned:x.earned,
+        paid:spent,held:actual,events:counts[x.key],ok};
+    });
+    const ok=recordsOk&&details.every(x=>x.ok)
+      &&(!book||Object.keys(paid).every(k=>keys.includes(k)));
+    return {ok,active:!!book,
+      earned:details.reduce((n,x)=>n+x.earned,0),
+      paid:details.reduce((n,x)=>n+x.paid,0),details};
+  }
+  function industryWage(s,r){
+    if(!r.w5s?.autoIndustryWages||!r.w5s.autoIndustry
+      ||!s.w5r?.initialized||!s.w5o)return 0;
+    s.w5s ||= {allocated:0,paid:0,active:null,completed:[]};
+    const book=s.w5s.industryWages ||= {paid:{},events:[]};
+    let total=0;
+    for(const row of industryWageRows(s,r)){
+      const prior=book.paid[row.key]??0;
+      const due=row.earned-prior;
+      if(!Number.isSafeInteger(due)||due<0)
+        throw Error('W5s-r: Lohnforderung ohne reale Industriearbeit');
+      const source=s.owners[row.account],target=s.owners.w5n_kunden;
+      const amount=Math.min(due,source.cash);
+      if(!amount)continue;
+      source.cash-=amount;target.cash+=amount;
+      book.paid[row.key]=prior+amount;
+      book.events.push({tick:s.tick,key:row.key,amount});
+      m_core_handel.buche(s,row.account,'kosten',amount);
+      m_core_handel.buche(s,'w5n_kunden','erloes',amount);
+      total+=amount;
+    }
+    return total;
+  }
   function finanzPlan(s,r){
     if(!r.w5s||!r.w5r||!s.w5r?.initialized
       ||s.rulesVersion!==r.rulesVersion)return Object.freeze({stage:'inaktiv'});
@@ -5810,6 +5889,7 @@ const m_core_w5s=(()=>{
       oreVenture:Object.freeze({...oreVentureAudit(s,r)}),
       oreVenturePlan:Object.freeze({...oreVenturePlan(s,r)}),
       orePilotWages:Object.freeze({...orePilotWageAudit(s,r)}),
+      industryWages:Object.freeze({...industryWageAudit(s,r)}),
       orePlan:Object.freeze({...erzPlan(s,r)}),
       yardPlan:Object.freeze({...werkPlan(s,r)}),
       ok:valid});
@@ -5854,8 +5934,9 @@ const m_core_w5s=(()=>{
         ===(r.world.stations[r.w5.station].ziel.miner||0)
           +(s.w5.minerFertig||0)-(s.w5.minerVerkauft||0)-1);
     const equityProof=takeoverAudit(s,r),miningProof=oreVentureAudit(s,r);
-    const wageProof=orePilotWageAudit(s,r);
-    const ok=starterOk&&proof.ok&&equityProof.ok&&miningProof.ok&&wageProof.ok
+    const wageProof=orePilotWageAudit(s,r),industryProof=industryWageAudit(s,r);
+    const ok=starterOk&&proof.ok&&equityProof.ok&&miningProof.ok
+      &&wageProof.ok&&industryProof.ok
       &&[w.allocated,w.paid,reserve,pilot].every(n=>
         Number.isSafeInteger(n)&&n>=0)
       &&Array.isArray(completed)&&new Set(ids).size===ids.length
@@ -5877,12 +5958,13 @@ const m_core_w5s=(()=>{
       &&reserve===w.allocated-w.paid&&pilot===w.paid;
     return {ok,allocated:w.allocated,paid:w.paid,reserve,
       completed:completed.length,active:!!a,contract:proof,
-      equity:equityProof,oreVenture:miningProof,orePilotWages:wageProof};
+      equity:equityProof,oreVenture:miningProof,
+      orePilotWages:wageProof,industryWages:industryProof};
   }
   return {arbeitsPuffer,finanzPlan,pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
     takeoverPlan,takeoverStart,takeoverDividend,takeoverAudit,
     oreVenturePlan,oreVentureStart,oreVentureDividend,oreVentureAudit,
-    orePilotWage,orePilotWageAudit,
+    orePilotWage,orePilotWageAudit,industryWage,industryWageAudit,
     starterCheck,starterSold,starterPlan,autoStarter,minerSource,
     orderCheck,orderStart,orderCancelCheck,orderCancel,contractCommand,
     contractAudit,completeOrder,npcOrePlan,autoNpcOre};
@@ -6032,6 +6114,7 @@ const m_core_w5r=(()=>{
       &&w.servicePaid===w.services*fee+(w.serviceJob?.minutes??0)*c.serviceWage
       &&s.owners.w5r_maintenance_reserved.cash===w.serviceAllocated-w.servicePaid
       &&s.owners.w5r_maintenance_workforce.cash===w.servicePaid
+        -(s.w5s?.industryWages?.paid?.maintenance??0)
       &&(!w.serviceJob||(w.serviceJob.cost===fee
         &&w.serviceJob.minutes>=0&&w.serviceJob.minutes<c.serviceMinutes))
       &&Number.isSafeInteger(w.serviceDue)&&w.serviceDue>0
@@ -6262,6 +6345,7 @@ function step(state, rules) {
       if(rules.w5n)m_core_w5n.verbrauch(state,rules);
       if(rules.w5o)m_core_w5o.einkommen(state,rules);
       if(rules.w5s?.autoOreWageHousehold)m_core_w5s.orePilotWage(state,rules);
+      if(rules.w5s?.autoIndustryWages)m_core_w5s.industryWage(state,rules);
       if(rules.w5q)m_core_w5q.exportieren(state,rules);
       if (rules.erzpilot.npcInvestor) {
         m_core_erzpilot.krisenSteuern(state, rules);

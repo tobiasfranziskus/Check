@@ -2886,6 +2886,7 @@ const m_core_w3 = (() => {
         ===w.geliefert-(state.w4?.erzVerbraucht??0)
       && state.owners[c.arbeitsFonds].cash===w.arbeitsKosten+(state.w5n?.frachtLohn??0)
          -(state.w5o?.lohnFracht??0)
+         -(state.w5s?.orePilotWages??0)
         +(state.w5b?.siliziumLohnBezahlt??0)
         +(state.w5c?.jagdKosten??0)-(state.w5f?.lohnBezahlt??0)
         -(state.w5f?.kopfgeldBezahlt??0)-(state.owners.w5f_kopfgeld_reserve?.cash??0)
@@ -3595,6 +3596,7 @@ const m_core_w5c = (() => {
       && w.jagdKosten===w.bezahlteStunden*c.jaegerStunde
       && state.owners[c.fonds].cash===state.w3.arbeitsKosten
         +(state.w5n?.frachtLohn??0)-(state.w5o?.lohnFracht??0)
+        -(state.w5s?.orePilotWages??0)
         +state.w5b.siliziumLohnBezahlt+w.jagdKosten
         -(state.w5f?.lohnBezahlt??0)-(state.w5f?.kopfgeldBezahlt??0)
         -(state.owners.w5f_kopfgeld_reserve?.cash??0)
@@ -4677,7 +4679,8 @@ const m_core_w5o=(()=>{
      &&(w.mode!=='wages'||w.divMine+w.divFracht+w.divStation===0)
      &&(w.mode!=='npcSave'||w.divMine===0)
      &&s.owners.w5n_kunden.cash===r.owners.find(o=>o.id==='w5n_kunden').cash
-       +sum-n.wasserErlos+(s.w5q?.payout??0)
+       +sum+(s.w5s?.orePilotWages??0)-n.wasserErlos
+       +(s.w5q?.payout??0)
      &&s.minted===(s.w5q?.minted??0)&&s.burned===0;
    return {ok,mode:w.mode,minerOwner:w.minerOwner,ausgezahlt:sum,
      lohn:w.lohnEis+w.lohnFracht+w.lohnWasser,
@@ -4774,7 +4777,8 @@ const m_core_w5q=(()=>{
       &&s.ledger.wasser.exported===units
       &&s.minted===amount&&s.burned===0
       &&s.owners.w5n_kunden.cash===r.owners.find(o=>o.id==='w5n_kunden').cash
-        +s.w5o.ausgezahlt+w.payout-s.w5n.wasserErlos
+        +s.w5o.ausgezahlt+(s.w5s?.orePilotWages??0)
+        +w.payout-s.w5n.wasserErlos
       &&s.stations.st_nadir.lager.wasser===
         s.w5n.wasserProduziert-s.w5n.wasserVerbraucht-units;
     return {ok:valid,exported:units,minted:amount,householdTransfer:w.payout,

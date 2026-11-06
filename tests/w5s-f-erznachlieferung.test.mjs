@@ -151,7 +151,8 @@ test('W5s-f: Eisversorgung schlägt Erzlieferung auf nur einem freien R32-Fracht
   assert.equal(s.w5h.bestand,50);
   assert.equal(s.w3.auftrag,null);
   const before=api.hash(s);
-  const iceFirst=api.w5sErzStatus(s,active);
+  const iceFirst=api.w5sErzStatus(s,{...active,
+    w5s:{...active.w5s,autoLeadDays:30}});
   assert.equal(iceFirst.stage,'kein_freier_frachter',
     'kein Stehlen des einzigen noch für Eis benötigten Frachters');
   assert.equal(iceFirst.eisPrioritaet,true);

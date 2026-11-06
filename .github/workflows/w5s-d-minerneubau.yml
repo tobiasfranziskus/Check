@@ -1,0 +1,19 @@
+name: W5s-d – realer Miner-Neubau
+on:
+  push:
+    branches:
+      - feature/w5s-d-finanzierter-minerneubau-20261106
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-d-minerneubau.test.mjs
+      - .github/workflows/w5s-d-minerneubau.yml
+jobs:
+  miner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5s-d-minerneubau.test.mjs

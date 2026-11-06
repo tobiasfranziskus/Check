@@ -4055,12 +4055,14 @@ const m_core_w5h=(()=>{
       &&w.verkauft===s.w3.geliefert &&w.unterwegs===hin
       &&w.bestand<=c.charge &&w.bestand<=(s.stations[c.quellStation].lager.erz??-1)
       &&k?.cash===start-w.gekauft*p+w.verkauft*p
+        -(s.w5s?.takeover?.amount??0)+(s.w5s?.takeover?.dividends??0)
       &&stat?.kosten===w.gekauft*p &&stat?.erloes===w.verkauft*p
       &&quelle?.erloes===w.gekauft*p+(s.w5n?.eisTransferWert??0)
       &&s.ledger.erz.exported===0 &&s.minted===(s.w5q?.minted??0) &&s.burned===0;
     return {ok,gekauft:w.gekauft,verkauft:w.verkauft,bestand:w.bestand,
       unterwegs:w.unterwegs,exportCash:k?.cash??null,lieferungen:s.w3.geliefert,
-      geldsaldo:k?.cash-start+w.gekauft*p-w.verkauft*p};
+      geldsaldo:k?.cash-start+w.gekauft*p-w.verkauft*p
+        +(s.w5s?.takeover?.amount??0)-(s.w5s?.takeover?.dividends??0)};
   }
   function plan(s,r){
     const p=m_core_w5g.kalkulation(s,r),h=audit(s,r);
@@ -4509,9 +4511,16 @@ const m_core_w5o=(()=>{
      ['divStation','st_nadir',r.w5o.stationReserve]
    ]){
      if(field==='divMine'&&(w.mode==='npcSave'||w.minerOwner!=='npc3'))continue;
-     const dividend=Math.max(0,profits(s,r,field)-w[field]);
+     const outside=field==='divFracht'?(s.w5s?.takeover?.dividends??0):0;
+     const dividend=Math.max(0,profits(s,r,field)-w[field]-outside);
      const effective=investitionsReserve(s,r,field,reserve);
-     pay(s,owner,field,Math.min(dividend,Math.max(0,s.owners[owner].cash-effective)));
+     const free=Math.min(dividend,Math.max(0,s.owners[owner].cash-effective));
+     // Nach Firmenuebernahme bleiben wirklich neue operative
+     // Frachtgewinne anteilig beim Eigentuemerkonzern; kein Zugriff auf
+     // Anlegergeld oder bereits vor der Uebernahme erwirtschaftete Fahrt.
+     const shareholder=field==='divFracht'
+       ?m_core_w5s.takeoverDividend(s,r,free):0;
+     pay(s,owner,field,free-shareholder);
    }
  }
  // W5s-h: optionaler, ausschließlich im R32-Forschungsprofil
@@ -4657,7 +4666,8 @@ const m_core_w5o=(()=>{
      &&w.npcMineLohn+w.houseMineLohn===n.mineLohn
      &&w.npcMineErlos+w.houseMineErlos===n.mineVerkaufWert
      &&w.divMine<=Math.max(0,profits(s,r,'divMine'))
-     &&w.divFracht<=Math.max(0,profits(s,r,'divFracht'))
+     &&w.divFracht+(s.w5s?.takeover?.dividends??0)
+       <=Math.max(0,profits(s,r,'divFracht'))
      &&w.divStation<=Math.max(0,profits(s,r,'divStation'))
      &&(w.minerOwner==='npc3'||w.divMine===0)
      &&(w.mode!=='none'||sum===0)
@@ -6003,6 +6013,7 @@ function step(state, rules) {
     if(rules.w5r)m_core_w5r.verschleiss(state,rules);
     if(rules.w5o)m_core_w5o.autopilot(state,rules);
     if(rules.w5s?.autoIndustry && state.tick%rules.economy.stunde===0){
+      if(rules.w5s.autoTakeover)m_core_w5s.takeoverStart(state,rules);
       if(rules.w5s.autoNpcOre)m_core_w5s.autoNpcOre(state,rules);
       if(rules.w5s.autoStarterMiner)m_core_w5s.autoStarter(state,rules);
       if(rules.w5s.autoOre)m_core_w5s.autoErz(state,rules);
@@ -6289,7 +6300,11 @@ function audit(state) {
     const rest = state.owners?.[cfg.exportOwner]?.cash;
     const ausgegeben = (state.w5h
       ? state.w5h.gekauft-state.w5h.verkauft : exportiert) * cfg.preis;
-    const differenz = rest + ausgegeben - start;
+    // Nicht als Erzumsatz verbuchen: vorhandenes Firmen-Eigenkapital
+    // und real bezahlte Gewinnausschuettungen separat belegen.
+    const equity=state.w5s?.takeover?.amount??0;
+    const shareholderPaid=state.w5s?.takeover?.dividends??0;
+    const differenz = rest + ausgegeben + equity-shareholderPaid - start;
     // Ohne belegte Endkunden-Einnahmen darf ein blosses Verschieben vorhandener ISK
     // nicht als wiederkehrend finanziertes Exportgeschaeft gelten.
     finanzierungsOk = Number.isSafeInteger(rest) && rest >= 0

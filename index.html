@@ -4433,7 +4433,8 @@ const m_core_w5n=(()=>{
      &&w.wasserVerbraucht===s.ledger.wasser.consumed
      &&w.wasserErlos===w.wasserVerbraucht*c.wasserPreis
      &&s.owners[c.kunde].cash===r.owners.find(o=>o.id===c.kunde).cash-w.wasserErlos
-       +(s.w5o?.ausgezahlt??0)+(s.w5q?.payout??0)
+       +(s.w5o?.ausgezahlt??0)+(s.w5s?.orePilotWages??0)
+       +(s.w5q?.payout??0)
      &&w.frachtBeauftragt===w.frachtAbgeschlossen+(a?1:0)
      &&w.kaufAusgaben===w.frachtBeauftragt*p.gesamt
      &&w.eisGeliefert===(w.frachtAbgeschlossen+(a?.phase==='rueck'?1:0))*c.charge

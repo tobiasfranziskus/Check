@@ -563,12 +563,12 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
 </div>
 
 <script>
-// GitHub Pages: nur der Haupteinstieg /Check/ verwendet den separaten W5-Spieltest-Slot.
-if (typeof location !== 'undefined' && /^\\/Check\\/?$/.test(location.pathname || '')
-  && !location.search && !location.hash && typeof location.replace === 'function') {
+'use strict';
+// GitHub Pages: nur /Check/ ohne Parameter führt in den getrennten W5-Spieltest.
+if (typeof location !== 'undefined' && (location.pathname === '/Check/' || location.pathname === '/Check')
+    && !location.search && !location.hash && typeof location.replace === 'function') {
   location.replace(location.pathname + '?modus=w5werft');
 }
-'use strict';
 
 const m_data_systeme = (() => {
   function tiefFrieren(obj, seen = new WeakSet()) {

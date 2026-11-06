@@ -12,7 +12,9 @@ const withoutStarter={...withStarter,w5s:{...withStarter.w5s,autoStarterMiner:fa
 const assertAudit=(s,tag)=>{
   const a=api.audit(s);
   assert.equal(a.ok,true,tag+' '+JSON.stringify(Object.fromEntries(
-    Object.entries(a).filter(([,z])=>z?.ok===false))));
+    Object.entries(a).filter(([,z])=>z&&typeof z==='object')
+      .map(([k,z])=>[k,{ok:z.ok,status:z.status,account:z.account,
+        miner:z.miner,stage:z.stage,contract:z.contract}]))));
   assert.equal(s.minted,0,'keine zusätzlichen ISK');
   assert.equal(s.burned,0);
   assert.equal(Object.values(s.owners).reduce((n,x)=>n+x.cash,0),

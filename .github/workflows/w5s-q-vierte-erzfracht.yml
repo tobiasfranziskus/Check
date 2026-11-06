@@ -1,0 +1,19 @@
+name: W5s-q – Nachfrage, Kapital und vierte Erzfahrt
+on:
+  push:
+    branches:
+      - feature/w5s-q-erz-nachfolge-absatz-20261106
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-q-*.test.mjs
+      - .github/workflows/w5s-q-vierte-erzfracht.yml
+jobs:
+  demand:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5s-q-*.test.mjs

@@ -5679,8 +5679,11 @@ const m_core_w5s=(()=>{
         ||!Number.isSafeInteger(p.amount)||p.amount<=0)valid=false;
       sum+=p.amount;prev=p.tick;
     }
+    // Der persistierte Lohnbeleg ist selbsttragend: das globale Audit
+    // prueft mit der unveraenderten R32-Regel und darf nicht vom
+    // momentanen UI-/Forschungsflag des Aufrufers abhaengen.
     const ok=valid&&Number.isSafeInteger(paid)&&paid>=0&&paid===sum
-      &&paid<=s.w3.arbeitsKosten&&(!paid||r.w5s?.autoOreWageHousehold);
+      &&paid<=s.w3.arbeitsKosten;
     return {ok,earned:s.w3.arbeitsKosten,paid,
       stillHeld:s.w3.arbeitsKosten-paid,
       events:events?.length??0,

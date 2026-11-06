@@ -2459,7 +2459,7 @@ const m_core_erzpilot = (() => {
     if(!p.ok)throw Error(p.grund);
     const v=beauftragen(state,rules,schiff);
     if(!v||v.menge!==p.menge||v.menge>(schiff.ladung.erz||0))
-      throw Error('W5s-m: Vertragsmenge nicht durch eigene Erzladung gedeckt');
+      throw Error('W5s-m: Vertragabweichung '+JSON.stringify({tick:state.tick,p:p.menge,vertrag:v?.menge,ladung:schiff.ladung.erz,station:state.owners[rules.erzpilot.station].cash}));
     const n=abschliessen(state,rules,schiff);
     if(n!==p.menge)throw Error('W5s-m: bezahlter Teilankauf nicht abgeschlossen');
     protokolliere(state,'handel',schiff.id+': '+n+

@@ -29,7 +29,7 @@ function cmd(s,r,type,owner,args={}){
   assert.notEqual(api.hash(s),before,'erfolgreicher Befehl verändert die Welt');
   valid(s,type);
 }
-function complete(seed){
+function complete(seed,days=0){
   const s=api.createW5RState(seed,'full','npc3');
   valid(s,'Start');
   const actor='npc3',builder='werft_extern';
@@ -121,17 +121,83 @@ function complete(seed){
   valid(s,'wiederaufgenommene Eisproduktion');
   assert.ok(s.w5n.eisAbgebaut>ice,'die neue Hülle fördert tatsächlich Eis');
   assert.equal(api.hash(api.loadW5R(api.save(s))),api.hash(s));
-  return {seed,hash:api.hash(s),minerId:id,replacedId:original,
+  const result = {seed,hash:api.hash(s),minerId:id,replacedId:original,
     werftKosten:530,verkaufspreis:price,repositionPaid:60,
     minerBuilt:s.w5.minerFertig,minerSold:s.w5.minerVerkauft,
     replacement:s.w5r.miner.id,replacementPurchases:s.w5r.miner.bought,
     oreDelivered:s.w3.geliefert,iceMined:s.w5n.eisAbgebaut,
     minted:s.minted};
+  if(days){
+    const until=days*1440;
+    while(s.tick<until){
+      let rest=Math.min(1440-(s.tick%1440),until-s.tick);
+      while(rest>0){
+        const n=Math.min(rest,active.maxAdvanceSteps);
+        api.advance(s,n,active);
+        rest-=n;
+      }
+      valid(s,'W5s-d tägliches unabhängiges 90/365-Tage-Audit '+s.tick);
+      if(s.tick%1440===0 && [30,60,90,365].includes(s.tick/1440))
+        assert.equal(api.hash(api.loadW5R(api.save(s))),api.hash(s),
+          'gespeicherte R32-Ersatzwelt an Tag '+s.tick/1440);
+    }
+    result.longHash=api.hash(s);
+    result.water=s.w5n.wasserVerbraucht;
+    result.minerLost=s.w5r.miner.lost;
+    result.minerExtraPurchased=s.w5r.miner.bought;
+    result.minerAssigned=(s.w5r.assignments||[]).filter(x=>x.type==='miner').length;
+    result.frachterLost=s.w5r.frachter.lost;
+    result.minerCurrent=s.w5r.miner.id;
+    result.readyMiner=s.stations.st_aldera.lager.miner;
+    result.material=s.stations.st_nadir.lager.material;
+    result.ore=s.stations.st_nadir.lager.erz;
+    result.npcCash=s.owners.npc3.cash;
+    result.minted=s.minted;
+  }
+  return result;
 }
 test('W5s-d: Seed42/7 echte Erz→Material→Minerwerft→Kauf→bezahlter Flug→R32-Ersatz→Eisförderung',()=>{
   for(const seed of [42,7]){
     const a=complete(seed),b=complete(seed);
     assert.deepEqual(b,a,'gleicher Seed und Befehle wiederholbar');
     console.log('W5S_D_MINER '+JSON.stringify(a));
+  }
+});
+
+
+test('W5s-d: Befehle ohne echten Rohstoff, Werft-Eigentum und Forschungsprofil bleiben seiteneffektfrei',()=>{
+  const state=api.createW5RState(42,'full','npc3'),hash=api.hash(state);
+  for(const [cmd,rules] of [
+    [{type:'stationBuildMiner',owner:'werft_extern',station:'st_nadir'},base],
+    [{type:'stationBuildMiner',owner:'npc3',station:'st_nadir'},active],
+    [{type:'stationBuildMiner',owner:'werft_extern',station:'st_nadir'},active],
+    [{type:'shipBuy',owner:'npc3',station:'st_nadir',klasse:'miner'},active]
+  ]){
+    const out=api.execute(state,cmd,rules);
+    assert.equal(out.ok,false,'kein Beleg für '+cmd.type);
+    assert.equal(api.hash(state),hash,'unzulässiger Eingriff ändert keine Daten');
+  }
+  valid(state,'unveränderte R32-Welt nach abgelehnten Befehlen');
+});
+
+test('W5s-d: 13 feste Seeds × 90 Tage, täglicher unabhängiger Audit und Save/Load',()=>{
+  const seeds=[42,7,11,1,2,65535,1234,98765,3,99,2024,2025,314159];
+  for(const seed of seeds){
+    const row=complete(seed,90);
+    assert.equal(row.minerBuilt,1);
+    assert.equal(row.minerSold,1);
+    assert.equal(row.minted,0);
+    if(seed===42||seed===7)
+      assert.deepEqual(complete(seed,90),row,
+        '90 Tage + Referenzseed deterministisch doppelt ausgeführt');
+    console.log('W5S_D_90D '+JSON.stringify(row));
+  }
+});
+test('W5s-d: zwei 365-Tage-Krisenläufe mit realen Ressourcen- und Geldengpässen',()=>{
+  for(const seed of [42,7]){
+    const row=complete(seed,365);
+    assert.equal(row.minted,0);
+    assert.ok(row.minerLost>=1,'keine unsterbliche Starterhülle');
+    console.log('W5S_D_365D '+JSON.stringify(row));
   }
 });

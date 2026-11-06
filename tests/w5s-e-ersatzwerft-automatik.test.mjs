@@ -105,7 +105,16 @@ function run(seed,days){
   }
   assert.ok(s.w5r.assignments?.some(x=>x.id===newMiner));
   if(days>=30)assert.ok(s.w5r.assignments?.some(x=>x.id===newFreighter));
+  const blocker=api.w5sWerkStatus(s,natural);
+  if(days>=90){
+    assert.equal(s.stations.st_nadir.lager.miner,1,
+      'echt gebaute aber unverkaufte Minerware bleibt im Werftlager');
+    assert.equal(blocker.stage,'kauf_und_flug_unfinanziert',
+      'ohne Käuferkasse findet kein verdeckter Ersatzkauf statt');
+    assert.equal(blocker.fehlbetrag,180,'600 ISK Kauf +60 Pilot minus480 Kasse');
+  }
   const row={seed,days,hash:api.hash(s),minted:s.minted,
+    blocker:blocker.stage,shortfall:blocker.fehlbetrag||0,
     ore:s.stations.st_nadir.lager.erz,
     mineral:s.stations.st_nadir.lager.material,
     shipMiner:s.w5.minerFertig,shipFreighter:s.w5.fertig-s.w5.minerFertig,

@@ -5832,9 +5832,14 @@ const m_core_w5s=(()=>{
     if(investor!==r.w5h.kaeufer||investor===legacy
       ||!s.owners[investor]||s.owners[successorId])
       return {stage:'kein_unabhaengiger_investor'};
+    // Frueher, expliziter Investitionseintritt bei realer Nachfolgekrise:
+    // noch ein alter Frachter ist moeglich, aber das eigene Betriebskapital
+    // reicht NICHT mehr fuer eine komplette neue 930-ISK-Ersatzflotte.
     if(s.w5r.frachter.lost<2||s.w3.abgeschlossen<2
-      ||Object.values(s.ships).some(x=>x.klasse==='frachter'&&x.owner===legacy))
-      return {stage:'kein_belegter_altausfall'};
+      ||s.owners[legacy].cash>=m_core_w5.plan(r,'frachter').preis
+        +m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn
+        +arbeitsPuffer(r,'frachter'))
+      return {stage:'keine_belegte_altflottenkrise'};
     const route=m_core_route.route(r.world,'nadir','aldera');
     const hull=m_core_w5.plan(r,'frachter').preis;
     const flight=route?.zeit*r.w5n.fliegerLohn;

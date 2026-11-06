@@ -1,0 +1,19 @@
+name: W5s-m – echter Erzankauf und Nachfrage
+on:
+  push:
+    branches:
+      - feature/w5s-m-erzkauf-nachfrage-20261106
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-m-erzkauf-nachfrage.test.mjs
+      - .github/workflows/w5s-m-erzkauf.yml
+jobs:
+  w5s-m:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5s-m-erzkauf-nachfrage.test.mjs

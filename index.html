@@ -1163,6 +1163,7 @@ const FIELDS = {
   shipReplaceFighter: ['station'], shipUpgradeMiner: ['schiff'], shipFreightIce: ['schiff'],
   shipSellIce: ['schiff','menge'], stationWater: ['station'],
   shipReposition: ['schiff'], shipOrder: ['klasse'], shipCancelOrder: [],
+  shipSellBookedOre: ['schiff'],
 };
 function checkShape(state, cmd, rules) {
   if (cmd === null || typeof cmd !== 'object' || Array.isArray(cmd)) return 'Befehl ist kein Objekt';
@@ -1218,6 +1219,10 @@ function checkShape(state, cmd, rules) {
     }
     if(cmd.type==='shipFreightIce') {
       const p=m_core_w5n.pruefenFracht(state,rules,s);
+      if(!p.ok)return p.grund;
+    }
+    if(cmd.type==='shipSellBookedOre'){
+      const p=m_core_erzpilot.bestandsVerkaufCheck(state,rules,s);
       if(!p.ok)return p.grund;
     }
     if(cmd.type==='shipSellIce'){
@@ -1334,7 +1339,8 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5m ? ['shipUpgradeMiner'] : []),
     ...(rules.w5n ? ['shipSellIce','shipFreightIce','stationWater'] : []),
     ...(rules.w5s ? ['shipReposition'] : []),
-    ...(rules.w5s?.prepaidOrders ? ['shipOrder','shipCancelOrder'] : [])].includes(cmd.type))
+    ...(rules.w5s?.prepaidOrders ? ['shipOrder','shipCancelOrder'] : []),
+    ...(rules.w5s?.autoOreSettlement ? ['shipSellBookedOre'] : [])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if(cmd.type==='shipOrder'){
     const c=m_core_w5s.orderCheck(state,rules,cmd.owner,cmd.klasse);
@@ -1460,6 +1466,9 @@ function execute(state, cmd, rules) {
     }
     case 'shipSellIce': {
       m_core_w5n.verkauf(state,rules,state.ships[cmd.schiff],cmd.menge);break;
+    }
+    case 'shipSellBookedOre': {
+      m_core_erzpilot.bestandsVerkauf(state,rules,state.ships[cmd.schiff]);break;
     }
     case 'stationWater': {
       m_core_w5n.wasserStart(state,rules,cmd.owner,cmd.station);break;
@@ -2378,7 +2387,7 @@ const m_core_erzpilot = (() => {
       Math.floor(state.owners[cfg.exportOwner].cash / cfg.preis)
       - bestand - reserviert(state) - fremdeFracht));
   }
-  function beauftragen(state, rules, schiff) {
+  function beauftragen(state, rules, schiff, maxBestand = Infinity) {
     const cfg = rules.erzpilot, buch = (state.erzpilotVertraege ||= {});
     if (cfg.npcInvestor && !m_core_audit.audit(state).finanzierung?.ok) return null;
     if (buch[schiff.id]) return buch[schiff.id];
@@ -2389,7 +2398,7 @@ const m_core_erzpilot = (() => {
     const vorhandenesErz = anzahl(schiff.ladung, 'erz');
     const verfuengbareArbeit = Math.floor(state.owners[schiff.owner].cash / cfg.minerJeMinute)
       * m_core_w5m.rate(rules,schiff);
-    let menge = Math.max(0, Math.min(cfg.auftragsMenge, rules.economy.cargo,
+    let menge = Math.max(0, Math.min(cfg.auftragsMenge, maxBestand, rules.economy.cargo,
       Math.floor(station.cash / cfg.preis), freiePlaetze,
       Math.max(vorhandenesErz, verfuengbareArbeit)));
     // Regel16: Endverbraucher muss auch diese neue Charge nachvollziehbar
@@ -2411,6 +2420,53 @@ const m_core_erzpilot = (() => {
     state.owners[arbeitsKonto].cash += arbeitsBudget;
     buch[schiff.id] = { konto, arbeitsKonto, menge, preis: cfg.preis, arbeitsPreis: cfg.minerJeMinute };
     return buch[schiff.id];
+  }
+  // W5s-m: Bereits nachweislich geförderte NPC-Erzladung darf mit einem
+  // regulären W2-Kaufvertrag teilweise an die Station verkauft werden.
+  // Die Station reserviert den Betrag im Originalvertrag; es entsteht
+  // kein Förderlohn für schon existierende Ware und keine neue Ware.
+  // Eisladung und Schiffsauftrag bleiben unberührt.
+  function bestandsVerkaufCheck(state,rules,schiff) {
+    const cfg=rules.erzpilot;
+    if(!rules.w5s?.autoOreSettlement||!rules.w5s.autoNpcOre
+      ||!rules.w5s.autoIndustry||!cfg?.npcInvestor
+      ||schiff?.owner!==cfg.npcInvestor||schiff.klasse!=='miner'
+      ||schiff.system!==rules.world.stations[cfg.station]?.system
+      ||schiff.phase!=='dock'||schiff.auftrag!=='halten')
+      return {ok:false,grund:'W5s-m: nur ruhender NPC-Erzminer im Forschungsprofil'};
+    if((schiff.ladung.erz||0)<=0||vertragsbuch(state)[schiff.id])
+      return {ok:false,grund:'W5s-m: kein ungebundener eigener Erzbestand'};
+    // Keine bereits reservierte Werft-Ersatzhülle oder Eis-Verbrauchsroute
+    // missbrauchen; nur der bisherige W2-Erzminer verkauft eigenen Bestand.
+    if(state.w5?.minerSchiffIds?.includes(schiff.id)
+      ||(rules.w5s?.autoStarterMiner
+        &&state.w5s?.starterMiner?.id===schiff.id
+        &&!(state.w5r?.assignments||[]).some(x=>x.id===schiff.id)))
+      return {ok:false,grund:'W5s-m: Hülle dem Ersatzpool zugeordnet'};
+    if(!m_core_audit.audit(state).finanzierung?.ok)
+      return {ok:false,grund:'W5s-m: Käufernachweis fehlt'};
+    const preis=cfg.preis,lager=state.stations[cfg.station].lager;
+    const menge=Math.max(0,Math.min(schiff.ladung.erz||0,
+      Math.floor(state.owners[cfg.station].cash/preis),
+      m_core_handel.obergrenze(state,rules,cfg.station,'erz')
+        -(lager.erz||0)-reserviert(state),
+      freieEndnachfrage(state,rules,schiff.id)));
+    if(menge<1)return {ok:false,grund:'W5s-m: kein vollständig finanzierter Teilankauf'};
+    return {ok:true,menge};
+  }
+  function bestandsVerkauf(state,rules,schiff){
+    const p=bestandsVerkaufCheck(state,rules,schiff);
+    if(!p.ok)throw Error(p.grund);
+    const v=beauftragen(state,rules,schiff,p.menge);
+    if(!v||v.menge!==p.menge||v.menge>(schiff.ladung.erz||0))
+      throw Error('W5s-m: Vertragsmenge nicht durch eigene Erzladung gedeckt');
+    const n=abschliessen(state,rules,schiff);
+    if(n!==p.menge)throw Error('W5s-m: bezahlter Teilankauf nicht abgeschlossen');
+    protokolliere(state,'handel',schiff.id+': '+n+
+      ' bereits geförderte Erz zu '+rules.erzpilot.preis+
+      ' ISK je Einheit gegen stationär reserviertes W2-Käufergeld verkauft',
+      schiff.owner, rules.erzpilot.station);
+    return n;
   }
   function abschliessen(state, rules, schiff, stornierung = false) {
     const cfg = rules.erzpilot, buch = vertragsbuch(state);
@@ -2696,6 +2752,7 @@ const m_core_erzpilot = (() => {
     return { auftraege: ids(buch).length, gebunden, arbeitsGebunden, frei, reserviert: reserviert(state) };
   }
   return { beauftragen, stornieren, foerdern, exportiere, auftragsStand,
+    bestandsVerkaufCheck,bestandsVerkauf,
     investitionsPruefung, npcInvestieren, krisenLage, krisenSteuern };
 })();
 
@@ -5211,6 +5268,15 @@ const m_core_w5s=(()=>{
       .sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
     const crisis=m_core_erzpilot.krisenLage(s,r);
     if(!crisis.kaeuferNachweisOk)return {stage:'kaeufer_audit_fehler'};
+    // Bereits geförderte, bislang unverkäufliche NPC-Restladung kann
+    // am realen Käuferetat scheitern. Teilverkauf vor Neubau/Förderung:
+    // niemals beauftragte oder fremde Ware ausbuchen.
+    if(r.w5s?.autoOreSettlement){
+      const sellable=oreMiner.find(sh=>
+        m_core_erzpilot.bestandsVerkaufCheck(s,r,sh).ok);
+      if(sellable)return {stage:'erzbestand_verkaufen',ship:sellable.id,
+        command:{type:'shipSellBookedOre',owner,schiff:sellable.id}};
+    }
     const ready=oreMiner.find(sh=>sh.phase==='dock'
       &&sh.auftrag==='halten'&&sh.ware!=='eis'
       &&Object.values(sh.ladung).every(n=>n===0));

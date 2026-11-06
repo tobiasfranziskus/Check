@@ -4440,8 +4440,56 @@ const m_core_w5o=(()=>{
    ]){
      if(field==='divMine'&&(w.mode==='npcSave'||w.minerOwner!=='npc3'))continue;
      const dividend=Math.max(0,profits(s,r,field)-w[field]);
-     pay(s,owner,field,Math.min(dividend,Math.max(0,s.owners[owner].cash-reserve)));
+     const effective=investitionsReserve(s,r,field,reserve);
+     pay(s,owner,field,Math.min(dividend,Math.max(0,s.owners[owner].cash-effective)));
    }
+ }
+ // W5s-h: optionaler, ausschließlich im R32-Forschungsprofil
+ // verprobter Eigenkapitalpuffer. Keinerlei Zahlung oder neue Geldquelle:
+ // tatsächlich erzielter Unternehmensgewinn bleibt VOR einer Dividende
+ // auf derselben Eigentümerkasse, um reale Folgekäufe zu ermöglichen.
+ function investitionsReserve(s,r,field,standard){
+   if(!r.w5s?.retainFleetEarnings||!r.w5s?.prepaidOrders
+     ||!r.w5s?.autoIndustry||!s.w5r?.initialized
+     ||!['divMine','divFracht'].includes(field))return standard;
+   const type=field==='divMine'?'miner':'frachter';
+   const owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;
+   // Spieler-Sparen und Spieler-Dividenden bleiben unverändert.
+   if(owner==='house')return standard;
+   const price=m_core_w5.plan(r,type).preis;
+   const time=m_core_route.route(r.world,'nadir','aldera')?.zeit;
+   const wage=time*r.w5n.fliegerLohn;
+   // Ein vollständiger Folgeauftrag einschließlich bezahlter Überführung.
+   const target=price+wage;
+   if(!Number.isSafeInteger(target)||target<=0)return standard;
+   return Math.max(standard,target);
+ }
+ function kapitalLage(s,r){
+   const mine=s.w5o.minerOwner,car=r.w5n.frachterOwner;
+   const targetMine=m_core_w5.plan(r,'miner').preis
+     +m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn;
+   const targetCar=m_core_w5.plan(r,'frachter').preis
+     +m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn;
+   const held=s.owners.w5s_order_reserved?.cash??0;
+   const contract=s.w5s?.contract;
+   const row=(owner,target)=>{
+     const free=s.owners[owner]?.cash??0;
+     const escrow=contract?.owner===owner
+       &&['reserved','bought'].includes(contract.stage)?held:0;
+     return {owner,free,escrow,available:free+escrow,
+       target,shortfall:Math.max(0,target-free-escrow),
+       expenses:s.stats.konto[owner]?.kosten??0,
+       income:s.stats.konto[owner]?.erloes??0};
+   };
+   return Object.freeze({miner:Object.freeze(row(mine,targetMine)),
+     freight:Object.freeze(row(car,targetCar)),
+     paidDividends:Object.freeze({miner:s.w5o.divMine,
+       freight:s.w5o.divFracht,station:s.w5o.divStation}),
+     waterConsumed:s.w5n.wasserVerbraucht,
+     waterPayments:s.w5n.wasserErlos,
+     minedOre:s.ledger.erz.mined,
+     oreDelivered:s.w3.geliefert,
+     minted:s.minted});
  }
  const attempt=(s,r,type,owner,args)=>{
    const res=m_core_commands.execute(s,{type,owner,...args},r);
@@ -4560,7 +4608,7 @@ const m_core_w5o=(()=>{
      eis:s.w5n.eisAbgebaut,verkauft:s.w5n.mineVerkauft,
      wasser:s.w5n.wasserProduziert,bestand:s.stations.st_nadir.lager.wasser});
  }
- return {start,einkommen,autopilot,audit,stand};
+ return {start,einkommen,autopilot,audit,stand,kapitalLage};
 })();
 
 // W5q: research-only real water export with ledger removal and exact ONE mint.
@@ -6256,6 +6304,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   pilotW5FStand, pilotW5FVollkosten, pilotW5FAngriff, pilotW5GStand, pilotW5GPlan, pilotW5HStand, pilotW5HPlan, pilotW5IStand, pilotW5IPlan, pilotW5LStand, pilotW5LPlan, pilotW5MStand, pilotW5NStand, pilotW5OStand, pilotW5QStand, pilotW5RStand,
   w5sWerkStatus:(state,rules)=>m_core_w5s.werkPlan(state,rules),
   w5sErzStatus:(state,rules)=>m_core_w5s.erzPlan(state,rules),
+  w5sKapitalLage:(state,rules)=>m_core_w5o.kapitalLage(state,rules),
   createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState, createW5LState, createW5MState, createW5NState, createW5OState, createW5QState, createW5RState,
   loadErz, loadW2, loadW3, loadW4, loadW5, loadW5B, loadW5C, loadW5D, loadW5F, loadW5G, loadW5H, loadW5I, loadW5L, loadW5M, loadW5N, loadW5O, loadW5Q, loadW5R, createState, submit, execute, step, advance, load, preis, faktor };
 })();

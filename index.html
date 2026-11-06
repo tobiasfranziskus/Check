@@ -4719,6 +4719,75 @@ const m_core_w5q=(()=>{
 const m_core_w5s=(()=>{
   const {buche}=m_core_handel;
   const {protokolliere}=m_core_state;
+  // W5s-j: endlicher Nadir-Starterbestand, ausdrücklich KEINE W5-Produktion.
+  const starter=s=>s.w5s?.starterMiner||null;
+  function starterCheck(s,r,owner){
+    if(!r.w5s?.autoStarterMiner||!r.w5s?.autoNpcOre
+      ||!r.w5s?.minerIndustry||!r.w5s?.autoIndustry
+      ||!s.w5r?.initialized||owner==='house'||owner!==s.w5o.minerOwner)
+      return {ok:false,grund:'Starterminer-Forschung nicht aktiv'};
+    if(starter(s))return {ok:false,grund:'Endlicher Starterminer bereits verkauft'};
+    const stock=s.stations[r.w5.station]?.lager.miner||0;
+    const produced=(s.w5.minerFertig||0)-(s.w5.minerVerkauft||0);
+    if(stock-produced<1)return {ok:false,grund:'Kein anfänglicher Minerbestand vorhanden'};
+    const price=r.economy.waren.miner.basis;
+    const minutes=m_core_route.route(r.world,'nadir','aldera')?.zeit;
+    const wage=minutes*r.w5n.fliegerLohn;
+    if(![price,wage].every(x=>Number.isSafeInteger(x)&&x>0))
+      return {ok:false,grund:'Keine gültige bezahlbare Nadir–Aldera-Reise'};
+    if(s.owners[owner].cash<price+wage)
+      return {ok:false,grund:'Kauf und Überführung nicht vollständig finanzierbar'};
+    return {ok:true,price,wage};
+  }
+  function starterSold(s,r,sh){
+    const p=starterCheck(s,r,sh.owner);
+    if(!p.ok||sh.klasse!=='miner'||sh.system!=='nadir'
+      ||sh.heimat!=='nadir')throw Error('Unbelegter Nadir-Starterminer');
+    s.w5s ||= {allocated:0,paid:0,active:null,completed:[]};
+    s.w5s.starterMiner={id:sh.id,owner:sh.owner,tick:s.tick,price:p.price};
+  }
+  function starterPlan(s,r){
+    const owner=s.w5o?.minerOwner;
+    if(!r.w5s?.autoStarterMiner||!r.w5s?.autoNpcOre
+      ||!r.w5s?.autoIndustry||owner==='house'||!s.w5r?.initialized)
+      return {stage:'inaktiv'};
+    const record=starter(s);
+    if(record){
+      const sh=s.ships[record.id];
+      if(!sh)return {stage:'starter_verbraucht',ship:record.id};
+      if(sh.system==='aldera')return {stage:(s.w5r.assignments||[])
+        .some(a=>a.id===record.id)?'starter_zugeordnet':'starter_bereit',
+        ship:record.id};
+      if(sh.phase==='reise')return {stage:'starter_unterwegs',ship:record.id};
+      if(s.w5s.active)return {stage:'ueberfuehrung_belegt',ship:record.id};
+      const fee=m_core_route.route(r.world,'nadir','aldera')?.zeit
+        *r.w5n.fliegerLohn;
+      if(s.owners[owner].cash<fee)
+        return {stage:'pilot_unfinanziert',fehlbetrag:fee-s.owners[owner].cash};
+      return {stage:'starter_ueberfuehren',ship:record.id,
+        command:{type:'shipReposition',owner,schiff:record.id}};
+    }
+    const current=s.w5r.miner;
+    const lead=Number.isSafeInteger(r.w5s.autoLeadDays)
+      ?Math.max(0,Math.min(30,r.w5s.autoLeadDays)):2;
+    if(current.id&&current.born+r.w5r.minerLifeDays*1440
+      -s.tick>lead*1440)return {stage:'noch_kein_ersatzbedarf'};
+    const proof=starterCheck(s,r,owner);
+    if(!proof.ok)return {stage:'starter_nicht_finanzierbar',grund:proof.grund};
+    if(s.w5s?.active)return {stage:'ueberfuehrung_belegt'};
+    return {stage:'starter_kaufen',owner,kosten:proof.price+proof.wage,
+      command:{type:'shipBuy',owner,station:r.w5.station,klasse:'miner'}};
+  }
+  function autoStarter(s,r){
+    const p=starterPlan(s,r);
+    if(!p.command)return p;
+    const {type,owner,...args}=p.command;
+    const res=m_core_commands.execute(s,{type,owner,...args},r);
+    return {stage:res.ok?p.stage:'core_abgelehnt',ok:res.ok,
+      grund:res.ok?null:res.reason};
+  }
+  const minerSource=(s,r,id)=>s.w5.minerSchiffIds?.includes(id)
+    ||!!(r.w5s?.autoStarterMiner&&starter(s)?.id===id);
   function pruefen(s,r,sh){
     if(!r.w5s||!r.w5r||s.rulesVersion!==r.rulesVersion||!s.w5r?.initialized)
       return {ok:false,grund:'W5s: Forschungsprofil nicht aktiv'};

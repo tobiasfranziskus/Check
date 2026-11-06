@@ -74,7 +74,7 @@ function run(seed,days,lead=30,retain=true,mode='full'){
     freight:p.freight,consumers:p.demand,
     built:s.w5.fertig,
     sold:s.w5.verkauft+(s.w5.minerVerkauft||0),
-    assignmentCount:s.w5r.assignments.length,
+    assignmentCount:(s.w5r.assignments||[]).length,
     losses:s.w5r.losses.length,
     oreGate:p.orePlan.stage,yardGate:p.yardPlan.stage,
     checkpoints};

@@ -4513,16 +4513,9 @@ const m_core_w5o=(()=>{
      ['divStation','st_nadir',r.w5o.stationReserve]
    ]){
      if(field==='divMine'&&(w.mode==='npcSave'||w.minerOwner!=='npc3'))continue;
-     const outside=field==='divFracht'?(s.w5s?.takeover?.dividends??0):0;
-     const dividend=Math.max(0,profits(s,r,field)-w[field]-outside);
+     const dividend=Math.max(0,profits(s,r,field)-w[field]);
      const effective=investitionsReserve(s,r,field,reserve);
-     const free=Math.min(dividend,Math.max(0,s.owners[owner].cash-effective));
-     // Nach Firmenuebernahme bleiben wirklich neue operative
-     // Frachtgewinne anteilig beim Eigentuemerkonzern; kein Zugriff auf
-     // Anlegergeld oder bereits vor der Uebernahme erwirtschaftete Fahrt.
-     const shareholder=field==='divFracht'
-       ?m_core_w5s.takeoverDividend(s,r,free):0;
-     pay(s,owner,field,free-shareholder);
+     pay(s,owner,field,Math.min(dividend,Math.max(0,s.owners[owner].cash-effective)));
    }
  }
  // W5s-h: optionaler, ausschließlich im R32-Forschungsprofil
@@ -4668,8 +4661,7 @@ const m_core_w5o=(()=>{
      &&w.npcMineLohn+w.houseMineLohn===n.mineLohn
      &&w.npcMineErlos+w.houseMineErlos===n.mineVerkaufWert
      &&w.divMine<=Math.max(0,profits(s,r,'divMine'))
-     &&w.divFracht+(s.w5s?.takeover?.dividends??0)
-       <=Math.max(0,profits(s,r,'divFracht'))
+     &&w.divFracht<=Math.max(0,profits(s,r,'divFracht'))
      &&w.divStation<=Math.max(0,profits(s,r,'divStation'))
      &&(w.minerOwner==='npc3'||w.divMine===0)
      &&(w.mode!=='none'||sum===0)
@@ -4851,23 +4843,32 @@ const m_core_w5s=(()=>{
     s.w5s ||= {allocated:0,paid:0,active:null,completed:[]};
     s.w5s.takeover={investor:p.investor,company:p.company,
       amount:p.amount,share:p.share,tick:s.tick,
-      preIceTrips:s.w5n.frachtAbgeschlossen,dividends:0,payouts:[]};
+      preIceTrips:s.w5n.frachtAbgeschlossen,
+      preOreTrips:s.w3.abgeschlossen,dividends:0,payouts:[]};
     protokolliere(s,'handel',p.investor+': '+p.amount+
       ' echte ISK gegen '+p.share+
       '% kontrollierende Beteiligung an '+p.company,p.investor);
     return {stage:'eigenkapital_gezeichnet',...p};
   }
-  function takeoverDividend(s,r,free){
+  function takeoverDividend(s,r){
     const z=uebernahme(s);
-    if(!z||!free)return 0;
-    const fare=m_core_w5n.preise(r);
-    const net=fare.fracht-fare.arbeit;
-    const earned=Math.max(0,s.w5n.frachtAbgeschlossen-z.preIceTrips)*net;
+    if(!z)return 0;
+    // Der Erz-Grosshaendler erhaelt KEINE Haushalts-/Eisdividende.
+    // Die Mehrheitsbeteiligung traegt das Investitionsrisiko; ein
+    // variabler Ertrag entsteht ausschliesslich aus nach dem Einstieg
+    // real fertig geflogenen W3-Erzfahrten.
+    const fare=m_core_w3.kalkulation(r);
+    const net=fare.frachtGebuehr-fare.arbeitsKosten;
+    const earned=Math.max(0,s.w3.abgeschlossen-z.preOreTrips)*net;
     const due=Math.max(0,Math.floor(earned*z.share/100)-z.dividends);
+    const puffer=m_core_w5.plan(r,'frachter').preis
+      +m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn
+      +arbeitsPuffer(r,'frachter');
+    const free=Math.max(0,s.owners[z.company].cash-puffer);
     const pay=Math.min(free,due);
     if(!pay)return 0;
     if(!Number.isSafeInteger(pay)||s.owners[z.company].cash<pay)
-      throw Error('W5s-o: keine finanzierte Gewinnausschuettung');
+      throw Error('W5s-o: keine finanzierte Erzfahrt-Gewinnausschuettung');
     s.owners[z.company].cash-=pay;s.owners[z.investor].cash+=pay;
     z.dividends+=pay;z.payouts.push({tick:s.tick,amount:pay});
     return pay;
@@ -4875,8 +4876,8 @@ const m_core_w5s=(()=>{
   function takeoverAudit(s,r){
     const z=uebernahme(s);
     if(!z)return {ok:true,active:false,capital:0,dividends:0};
-    const fare=m_core_w5n.preise(r);
-    const net=fare.fracht-fare.arbeit;
+    const fare=m_core_w3.kalkulation(r);
+    const net=fare.frachtGebuehr-fare.arbeitsKosten;
     let sum=0,last=0,valid=Array.isArray(z.payouts);
     if(valid)for(const x of z.payouts){
       if(!Number.isSafeInteger(x.tick)||x.tick<=z.tick
@@ -4884,17 +4885,18 @@ const m_core_w5s=(()=>{
         ||x.amount<=0)valid=false;
       last=x.tick;sum+=x.amount;
     }
-    const earned=Math.max(0,s.w5n.frachtAbgeschlossen-z.preIceTrips)*net;
+    const earned=Math.max(0,s.w3.abgeschlossen-z.preOreTrips)*net;
     const ok=valid&&z.investor===r.w5h.kaeufer
       &&z.company===r.w3.spedition&&z.investor!==z.company
       &&z.amount===takeoverAmount&&z.share===takeoverShare
       &&Number.isSafeInteger(z.tick)&&z.tick>0&&z.tick<=s.tick
       &&Number.isSafeInteger(z.preIceTrips)&&z.preIceTrips>=0
       &&z.preIceTrips<=s.w5n.frachtAbgeschlossen
+      &&Number.isSafeInteger(z.preOreTrips)&&z.preOreTrips>=0
+      &&z.preOreTrips<=s.w3.abgeschlossen
       &&Number.isSafeInteger(z.dividends)&&z.dividends>=0
       &&z.dividends===sum
-      &&z.dividends<=Math.floor(earned*z.share/100)
-      &&s.w5o.divFracht+z.dividends<=s.w5n.frachtAbgeschlossen*net;
+      &&z.dividends<=Math.floor(earned*z.share/100);
     return {ok,active:true,investor:z.investor,company:z.company,
       share:z.share,capital:z.amount,dividends:z.dividends,
       earnedAfter:earned,netInvestor:z.dividends-z.amount,
@@ -6021,6 +6023,7 @@ function step(state, rules) {
     if(rules.w5r)m_core_w5r.verschleiss(state,rules);
     if(rules.w5o)m_core_w5o.autopilot(state,rules);
     if(rules.w5s?.autoIndustry && state.tick%rules.economy.stunde===0){
+      if(state.w5s?.takeover)m_core_w5s.takeoverDividend(state,rules);
       if(rules.w5s.autoTakeover)m_core_w5s.takeoverStart(state,rules);
       if(rules.w5s.autoNpcOre)m_core_w5s.autoNpcOre(state,rules);
       if(rules.w5s.autoStarterMiner)m_core_w5s.autoStarter(state,rules);

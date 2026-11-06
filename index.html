@@ -2629,7 +2629,9 @@ const m_core_erzpilot = (() => {
         // Keine Sperre für andere Miner und keine Verschiebung von Ladung.
         &&!(rules.w5s?.minerIndustry&&sh.id!==state.w5r?.miner.id
           &&state.w5?.minerSchiffIds?.includes(sh.id)
-          &&state.w5s?.completed?.some(x=>x.id===sh.id&&x.type==='miner')
+          // Bereits gekaufte, aber noch in Nadir auf den bezahlten
+          // Transfer wartende Ersatzminer sind ebenso gebunden wie
+          // tatsächlich angekommene Hüllen. Nadir hat hier kein Erz-Belt.
           &&!(state.w5r?.assignments||[]).some(x=>x.id===sh.id)));
     if (info.planbar === 0) {
       // Kein kostenloses Weiterfördern: Stop ausschließlich bei unbelegter Zukunft.
@@ -4432,7 +4434,12 @@ const m_core_w5o=(()=>{
  function autopilot(s,r){
    const w=s.w5o,n=s.w5n,c=r.w5n;
    const miner=Object.values(s.ships).find(sh=>sh.owner===w.minerOwner
-     &&sh.klasse==='miner'&&sh.system==='aldera');
+     &&sh.klasse==='miner'&&sh.system==='aldera'
+     // Auch bei einer erst NACH dem Verlust ankommenden echten Werfthülle
+     // gehört der Miner bis zur belegten R32-Zuordnung dem Ersatzpool.
+     // Kein heimlicher Eis-Arbeitsvertrag vor offizieller Übernahme.
+     &&!(r.w5s?.autoIndustry&&s.w5?.minerSchiffIds?.includes(sh.id)
+       &&!(s.w5r?.assignments||[]).some(x=>x.id===sh.id)));
    if(miner&&miner.phase==='dock'&&miner.auftrag==='halten'){
      if((miner.ladung.eis||0)>=c.charge)
        attempt(s,r,'shipSellIce',w.minerOwner,{schiff:miner.id,menge:c.charge});
@@ -4462,7 +4469,10 @@ const m_core_w5o=(()=>{
      // Kein erneuter Erzauftrag, der den einzigen Ersatz ewig bindet.
      if(s.w5r?.frachter.id&&!s.w3.auftrag){
        const spare=free.find(x=>x.id!==s.w5r?.frachter.id
-         &&x.phase==='dock'&&x.auftrag==='halten');
+         &&x.phase==='dock'&&x.auftrag==='halten'
+         &&!(r.w5s?.autoIndustry&&s.w5.schiffIds.includes(x.id)
+           &&s.w5s?.completed?.some(d=>d.id===x.id)
+           &&!(s.w5r.assignments||[]).some(d=>d.id===x.id)));
        if(spare)attempt(s,r,'shipFreight',c.frachterOwner,{schiff:spare.id});
      }
    } else {
@@ -4749,6 +4759,124 @@ const m_core_w5s=(()=>{
       candidate.owner);
     return true;
   }
+  // W5s-e: ausschließlich lesender, deterministischer Industrie-Plan.
+  // Keine Schiffe/Güter/ISK entstehen durch diesen Plan; ausgeführt werden
+  // ausschließlich die bestehenden validierten Core-Befehle.
+  function werkPlan(s,r){
+    if(!r.w5s?.autoIndustry||!r.w5s.minerIndustry||!r.w5s.concurrent
+      ||!r.w5r||!s.w5r?.initialized)
+      return {stage:'inaktiv'};
+    const kinds=['miner','frachter'];
+    const due=type=>s.w5r[type].id
+      ?s.w5r[type].born+r.w5r[
+        type==='miner'?'minerLifeDays':'freighterLifeDays']*1440
+      :s.tick;
+    const lead=Number.isSafeInteger(r.w5s.autoLeadDays)
+      &&r.w5s.autoLeadDays>=0&&r.w5s.autoLeadDays<=30
+        ?r.w5s.autoLeadDays:2;
+    const ready=type=>{
+      const owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;
+      const ids=type==='miner'?(s.w5.minerSchiffIds||[]):s.w5.schiffIds;
+      return Object.values(s.ships).some(sh=>sh.owner===owner
+        &&sh.klasse===type&&ids.includes(sh.id)
+        &&sh.system==='aldera'&&sh.phase==='dock'
+        &&sh.auftrag==='halten'
+        &&Object.values(sh.ladung).every(n=>n===0)
+        &&s.w5s?.completed?.some(x=>x.id===sh.id&&x.ankunft<=s.tick)
+        &&!s.w5r.assignments?.some(x=>x.id===sh.id));
+    };
+    const candidates=kinds.filter(type=>
+      (type!=='miner'||s.w5o.minerOwner!=='house')
+      &&due(type)-s.tick<=lead*1440&&!ready(type));
+    candidates.sort((a,b)=>due(a)-due(b)||(a<b?-1:a>b?1:0));
+    if(!candidates.length)return {stage:'kein_ersatzbedarf'};
+    function planType(type){
+    const owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner,
+      ids=type==='miner'?(s.w5.minerSchiffIds||[]):s.w5.schiffIds,
+      record=s.w5,stock=s.stations[r.w5.station].lager;
+    const proof=sh=>sh.owner===owner&&sh.klasse===type
+      &&ids.includes(sh.id)&&!s.w5r.assignments?.some(x=>x.id===sh.id);
+    const ships=Object.values(s.ships).filter(proof)
+      .sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
+    const arrived=ships.find(sh=>sh.system==='aldera'&&sh.phase==='dock'
+      &&sh.auftrag==='halten'&&Object.values(sh.ladung).every(n=>n===0)
+      &&s.w5s?.completed?.some(c=>c.id===sh.id&&c.ankunft<=s.tick));
+    if(arrived)return {type,stage:'ersatzhuelle_bereit',ship:arrived.id};
+    if(s.w5s?.active)return {type,stage:'ueberfuehrung_aktiv',
+      ship:s.w5s.active.id};
+    const route=m_core_route.route(r.world,'nadir','aldera'),
+      wage=route?.zeit*r.w5n.fliegerLohn;
+    if(!Number.isSafeInteger(wage)||wage<=0)
+      return {type,stage:'route_ungueltig'};
+    const nadir=ships.find(sh=>sh.system==='nadir'&&sh.phase==='dock'
+      &&sh.auftrag==='halten'&&Object.values(sh.ladung).every(n=>n===0)
+      &&!s.w5s?.completed?.some(c=>c.id===sh.id));
+    if(nadir){
+      if(s.owners[owner].cash<wage)
+        return {type,stage:'ueberfuehrung_unfinanziert',fehlbetrag:wage-s.owners[owner].cash};
+      return {type,stage:'ueberfuehren',ship:nadir.id,
+        command:{type:'shipReposition',owner,schiff:nadir.id}};
+    }
+    const p=m_core_w5.plan(r,type),price=p.preis;
+    const made=type==='miner'
+      ?(record.minerFertig||0)-(record.minerVerkauft||0)
+      :record.fertig-(record.minerFertig||0)-record.verkauft;
+    // Das Start-Minerangebot in Nadir ist ausdrücklich KEIN W5-Neubau.
+    // Fehlt ein Werftbeleg, wird weder die Starterhülle als Neubau gekauft
+    // noch eine kostenlose Werftfläche hergestellt.
+    if(made>0){
+      if(s.owners[owner].cash<price+wage)
+        return {type,stage:'kauf_und_flug_unfinanziert',
+          fehlbetrag:price+wage-s.owners[owner].cash};
+      return {type,stage:'kaufen',command:{
+        type:'shipBuy',owner,station:r.w5.station,klasse:type}};
+    }
+    // Keine neue Werftinvestition bei aktuell nicht zahlungsfähigem
+    // Eigentümer. Der Kaufetat bleibt weiterhin frei, NICHT reserviert:
+    // Eine später verarmte Firma darf den Kauf rechtmäßig ablehnen.
+    if(s.owners[owner].cash<price+wage)
+      return {type,stage:'abnehmer_unfinanziert',
+        fehlbetrag:price+wage-s.owners[owner].cash};
+    if(s.owners[r.w5.werft].cash<p.materialKosten+p.arbeitKosten)
+      return {type,stage:'werft_unfinanziert',
+        fehlbetrag:p.materialKosten+p.arbeitKosten-s.owners[r.w5.werft].cash};
+    if(record.auftrag)return {type,stage:'werft_belegt'};
+    if((stock[type]||0)+1>m_core_handel.obergrenze(s,r,r.w5.station,type))
+      return {type,stage:'fertiglager_belegt'};
+    if((stock.material||0)>=p.material)
+      return {type,stage:'bauen',command:{
+        type:type==='miner'?'stationBuildMiner':'stationBuildShip',
+        owner:r.w5.werft,station:r.w5.station}};
+    if(s.w4.auftrag)return {type,stage:'raffinerie_belegt'};
+    if((stock.erz||0)<r.w4.erzJeCharge)
+      return {type,stage:'erz_fehlt',
+        fehlmenge:r.w4.erzJeCharge-(stock.erz||0)};
+    if(s.owners[r.w4.station].cash<r.w4.dauer*r.w4.lohnJeMinute)
+      return {type,stage:'raffinerie_unfinanziert'};
+    return {type,stage:'raffinieren',command:{
+      type:'stationRefine',owner:r.w4.station,station:r.w4.station}};
+    }
+    // Insolvenz einer Firma blockiert nicht automatisch eine andere:
+    // Wenn der dringlichste Auftrag nicht bezahlt werden kann, darf
+    // der nächste vollständig finanzierte Ersatzauftrag starten.
+    let ersterBlock=null;
+    for(const type of candidates){
+      const plan=planType(type);
+      if(plan.command||['werft_belegt','raffinerie_belegt',
+        'ueberfuehrung_aktiv','route_ungueltig'].includes(plan.stage))
+        return plan;
+      if(!ersterBlock)ersterBlock=plan;
+    }
+    return ersterBlock||{stage:'kein_finanzierbarer_ersatz'};
+  }
+  function autoWerk(s,r){
+    const plan=werkPlan(s,r);
+    if(!plan.command)return plan;
+    const {type,owner,...args}=plan.command;
+    const result=m_core_commands.execute(s,{type,owner,...args},r);
+    return {type:plan.type,stage:result.ok?plan.stage:'core_abgelehnt',
+      ok:result.ok,grund:result.ok?null:result.reason};
+  }
   function audit(s,r){
     const w=s.w5s;
     if(!w)return {ok:true,active:false,completed:0};
@@ -4791,7 +4919,7 @@ const m_core_w5s=(()=>{
     return {ok,allocated:w.allocated,paid:w.paid,reserve,
       completed:completed.length,active:!!a};
   }
-  return {pruefen,start,tick,assign,audit};
+  return {pruefen,start,tick,assign,audit,werkPlan,autoWerk};
 })();
 
 // W5r isolated research: no free replacement ship and fully paid dock work.
@@ -5159,6 +5287,8 @@ function step(state, rules) {
     }
     if(rules.w5r)m_core_w5r.verschleiss(state,rules);
     if(rules.w5o)m_core_w5o.autopilot(state,rules);
+    if(rules.w5s?.autoIndustry && state.tick%rules.economy.stunde===0)
+      m_core_w5s.autoWerk(state,rules);
     return ergebnisse;
   }
   ankunft(state, rules); foerderung(state, rules); entscheidung(state, rules); reise(state, rules); produktion(state, rules);
@@ -5899,6 +6029,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   pilotW3Stand, pilotW3Kalkulation, pilotW4Stand, pilotW4Kalkulation,
   pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf, pilotW5BStand, pilotW5BPlan, pilotW5CStand, pilotW5DStand,
   pilotW5FStand, pilotW5FVollkosten, pilotW5FAngriff, pilotW5GStand, pilotW5GPlan, pilotW5HStand, pilotW5HPlan, pilotW5IStand, pilotW5IPlan, pilotW5LStand, pilotW5LPlan, pilotW5MStand, pilotW5NStand, pilotW5OStand, pilotW5QStand, pilotW5RStand,
+  w5sWerkStatus:(state,rules)=>m_core_w5s.werkPlan(state,rules),
   createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState, createW5LState, createW5MState, createW5NState, createW5OState, createW5QState, createW5RState,
   loadErz, loadW2, loadW3, loadW4, loadW5, loadW5B, loadW5C, loadW5D, loadW5F, loadW5G, loadW5H, loadW5I, loadW5L, loadW5M, loadW5N, loadW5O, loadW5Q, loadW5R, createState, submit, execute, step, advance, load, preis, faktor };
 })();

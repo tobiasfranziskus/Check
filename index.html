@@ -4434,7 +4434,12 @@ const m_core_w5o=(()=>{
  function autopilot(s,r){
    const w=s.w5o,n=s.w5n,c=r.w5n;
    const miner=Object.values(s.ships).find(sh=>sh.owner===w.minerOwner
-     &&sh.klasse==='miner'&&sh.system==='aldera');
+     &&sh.klasse==='miner'&&sh.system==='aldera'
+     // Auch bei einer erst NACH dem Verlust ankommenden echten Werfthülle
+     // gehört der Miner bis zur belegten R32-Zuordnung dem Ersatzpool.
+     // Kein heimlicher Eis-Arbeitsvertrag vor offizieller Übernahme.
+     &&!(r.w5s?.autoIndustry&&s.w5?.minerSchiffIds?.includes(sh.id)
+       &&!(s.w5r?.assignments||[]).some(x=>x.id===sh.id)));
    if(miner&&miner.phase==='dock'&&miner.auftrag==='halten'){
      if((miner.ladung.eis||0)>=c.charge)
        attempt(s,r,'shipSellIce',w.minerOwner,{schiff:miner.id,menge:c.charge});

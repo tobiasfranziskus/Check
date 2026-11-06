@@ -4961,14 +4961,15 @@ const m_core_w5s=(()=>{
   function oreVentureStart(s,r){
     const p=oreVenturePlan(s,r);
     if(p.stage!=='echter_npc_erzminer_finanzierbar')return p;
-    const id=m_core_state.schiffId(s.nextShip);
+    const purchaseIndex=s.nextShip;
+    const id=m_core_state.schiffId(purchaseIndex);
     // Ausschliesslich bereits vorhandene ISK werden gegen echte Anteile
     // an NPC3 gezeichnet. Keine Zahlung fuer Fracht-/Erzleistung hier.
     s.owners[p.investor].cash-=p.amount;
     s.owners[p.owner].cash+=p.amount;
     s.w5s ||= {allocated:0,paid:0,active:null,completed:[]};
     s.w5s.oreVenture={investor:p.investor,owner:p.owner,
-      capital:p.amount,share:oreVentureShare,ship:id,
+      capital:p.amount,share:oreVentureShare,ship:id,purchaseIndex,
       price:p.price,tick:s.tick,initialOre:s.w3.geliefert,
       dividends:0,payouts:[]};
     const buy=m_core_commands.execute(s,{
@@ -5034,6 +5035,12 @@ const m_core_w5s=(()=>{
       &&Number.isSafeInteger(z.initialOre)&&z.initialOre>=100
       &&z.initialOre<=s.w3.geliefert
       &&bought>0
+      // Die zugeordnete Huellen-ID muss EXAKT dem beim bezahlten
+      // Anteilskauf reservierten naechsten Schiffindex entsprechen.
+      // Ein fremder bereits existierender NPC-Miner ist kein Beleg.
+      &&Number.isSafeInteger(z.purchaseIndex)&&z.purchaseIndex>0
+      &&z.purchaseIndex<s.nextShip
+      &&z.ship===m_core_state.schiffId(z.purchaseIndex)
       &&sh?.klasse==='miner'&&sh.owner===z.owner
       &&sh.heimat==='aldera'
       &&!(s.w5?.minerSchiffIds||[]).includes(z.ship)

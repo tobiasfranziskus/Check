@@ -67,7 +67,13 @@ function run(seed,days,enabled=true){
  if(enabled&&days>=3){
    assert.ok(s.w5.fertig>=1,'real aus NPC-Erz mindestens eine Werfthülle gebaut');
    assert.ok(s.w5.verkauft+s.w5.minerVerkauft>=1,
-     'mindestens eine echte Werfthülle gegen NPC-Kaufetat verkauft');
+     'Werft-Verkaufsblocker '+JSON.stringify({
+       work:api.w5sWerkStatus(s,rules),
+       ownerCash:{npc3:s.owners.npc3.cash,transport:s.owners.transport.cash,
+         werft:s.owners.werft_extern.cash,nadir:s.owners.st_nadir.cash},
+       w5:s.w5,w5s:s.w5s,storage:s.stations.st_nadir.lager,
+       ore:s.w5h,shipCounts:{miner:s.ledger.miner,frachter:s.ledger.frachter}
+     }));
    assert.ok(s.w5s?.completed?.length>=1,
      'mindestens eine Hülle nach bezahltem Flug angekommen');
  }

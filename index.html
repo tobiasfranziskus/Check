@@ -3099,7 +3099,7 @@ const m_core_w5 = (() => {
         -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
         -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)
           ===rules.owners.find(o=>o.id===c.station).cash
-      && (!a || ((a.klasse===undefined||a.klasse==='miner'&&rules.w5s?.minerIndustry)
+      && (!a || ((a.klasse===undefined||a.klasse==='miner'&&state.w5r?.initialized)
         &&a.material===p.material&&a.materialKosten===p.materialKosten
         &&a.arbeitKosten===p.arbeitKosten && Number.isSafeInteger(a.gearbeitet)
         && a.gearbeitet>=0&&a.gearbeitet<c.dauer));

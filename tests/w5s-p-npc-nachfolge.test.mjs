@@ -66,11 +66,13 @@ test('W5s-p: Finanzierter NPC-Erzlieferant im selben vollständigen R32-Core',()
  assert.equal(x.venture.active,true,'nach Investment tatsächlich gekaufter Miner');
  assert.equal(x.ore,3,'dritte 50er Erzlieferung voll bezahlt');
  assert.ok(x.events.some(e=>e.ore===3&&e.day===104));
- assert.equal(x.water,5724,'echte bezahlte Wasserversorgung');
+ assert.equal(x.water,5722,'echte bezahlte Wasserversorgung nach 24-ISK-Erzgewinnabgabe');
  assert.equal(x.ice,116,'W3 und W5n weiterhin gemeinsamer Logistikcore');
  assert.equal(x.venture.capital,700);
  assert.equal(x.venture.share,60);
- assert.equal(x.venture.dividends,0,'kein Anlegergewinn bevor Minerhülle und Arbeit amortisiert');
+ assert.equal(x.venture.eligible,40,'Erzverkauf 1050 minus 410 Arbeit minus 600 Hülle');
+ assert.equal(x.venture.dividends,24,'60 Prozent vom echten 40-ISK-Nettogewinn');
+ assert.equal(x.venture.netInvestor,-676,'ungedeckter Rest des echten Eigenkapitalrisikos');
 });
 
 const SEEDS=[42,7,11,1,2,65535,1234,98765,3,99,2024,2025,314159];
@@ -97,7 +99,7 @@ test('W5s-p: 13×120d echte NPC-Kapitalzeichnung, dreimal W3 und volles Weltledg
   assert.equal(x.ore,3,'dritte W3-Fracht ohne Spieler-Befehl bis Tag120');
   assert.equal(x.events.find(z=>z.ore===3)?.day,104);
   assert.equal(x.ice,116);
-  assert.equal(x.water,5724);
+  assert.equal(x.water,5722);
   assert.ok(x.venture.mining>=150);
   assert.ok(x.venture.sold>=100);
   assert.ok(x.shipCount>=2);
@@ -115,7 +117,11 @@ test('W5s-p: Seed42/7 ×365 Tage – keine versteckten weiteren Aufträge',()=>{
    assert.equal(x.venture.active,true);
    assert.equal(x.venture.ok,true);
    assert.ok(x.ore>=3,'mindestens drei real bezahlte W3-Frachten');
-   assert.ok(x.water>=5724);
+   assert.equal(x.water,5738,'365 Tage tatsächlich bezahltes Wasser');
+   assert.equal(x.ice,116,'Flughaushalt stoppt ohne neu finanzierte Nachfrage');
+   assert.equal(x.venture.eligible,40);
+   assert.equal(x.venture.dividends,24);
+   assert.equal(x.venture.netInvestor,-676);
    assert.ok(x.venture.dividends<=Math.floor(x.venture.eligible*.6));
    console.log('W5S_P_365D '+JSON.stringify({
      seed,hash:x.hash,ore:x.ore,water:x.water,ice:x.ice,

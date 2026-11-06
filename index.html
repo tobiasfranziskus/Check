@@ -5420,6 +5420,33 @@ const m_core_w5s=(()=>{
       nextHullWithWorkingCapital:fleet+puffer,
       missing:Math.max(0,fleet+puffer-current),valid
     });
+    // W5s-n: Insolvenz-/Nachfolge-Gate ist ausschließlich LESEND.
+    // Es darf liquide ISK anderer NPC-Firmen nicht als
+    // verfügbar für die Spedition deklarieren oder umbuchen.
+    const carrierHulls=Object.values(s.ships).filter(sh=>
+      sh.owner===owner&&sh.klasse==='frachter');
+    const carrierReady=carrierHulls.filter(sh=>sh.system==='aldera'
+      &&sh.phase==='dock'&&sh.auftrag==='halten'
+      &&Object.values(sh.ladung).every(x=>x===0));
+    const replacementNeed=fleet+puffer;
+    const continuity=Object.freeze({
+      owner,ownerCash:current,freighters:carrierHulls.length,
+      readyFreighters:carrierReady.length,
+      replacementHullPrice:m_core_w5.plan(r,'frachter').preis,
+      replacementFlightCost:fleet-m_core_w5.plan(r,'frachter').preis,
+      nextJobLabor:puffer,replacementNeed,
+      ownCapitalMissing:Math.max(0,replacementNeed-current),
+      freeYardHulls:s.stations[r.w5.station].lager.frachter||0,
+      // Nur Information über weitere juristisch GETRENNTE Firmen.
+      // Kein Geld kann ohne eigenen realen Vertrag angefordert werden.
+      independentCapital:Object.freeze({
+        oreMerchant:s.owners[r.w5h.kaeufer]?.cash??0,
+        shipyard:s.owners[r.w5.werft]?.cash??0
+      }),
+      stage:carrierHulls.length?'flotte_vorhanden'
+        :current>=replacementNeed?'neuer_frachter_eigenfinanzierbar'
+          :'spedition_ohne_frachter_und_kapital'
+    });
     const demand=Object.freeze({
       nadirBuyerCash:buyer,householdCash:customer,
       nextOreBudget:ore.gesamt,oreWorkReserve:ore.arbeitsKosten,
@@ -5433,7 +5460,7 @@ const m_core_w5s=(()=>{
       iceCarrierCovered:current>=ice.arbeit
     });
     return Object.freeze({stage:'bereit',tick:s.tick,
-      freight,demand,
+      freight,demand,continuity,
       orePlan:Object.freeze({...erzPlan(s,r)}),
       yardPlan:Object.freeze({...werkPlan(s,r)}),
       ok:valid});

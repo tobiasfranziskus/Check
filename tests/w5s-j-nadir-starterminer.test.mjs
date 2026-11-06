@@ -137,3 +137,24 @@ test('W5s-j: 2 ×365 Tage ohne Gratisrettung, Save-Verlust oder ISK-Mint',()=>{
    console.log('W5S_J_365D '+JSON.stringify(a));
  }
 });
+
+
+test('W5s-j: kontrollierter 90-Tage-Gegenversuch Starterkauf AUS/EIN',()=>{
+ for(const seed of [42,7]){
+   const original=simulate(seed,90,false);
+   const intervention=simulate(seed,90,true);
+   assert.equal(original.remainingNadirMiner,1,
+     'ohne Freigabe bleibt das endliche Starterangebot unberührt');
+   assert.equal(intervention.remainingNadirMiner,0,
+     'mit Freigabe echter Käufer und frei gewordener Werftplatz');
+   assert.ok(intervention.minersBuilt>original.minersBuilt,
+     'mehr physisch hergestellte Miner statt umetikettierter Starterschiffe');
+   assert.ok(intervention.water>original.water,
+     'Verbesserung an wirklich bezahltem Wasserverbrauch messen');
+   assert.equal(original.minted,0);assert.equal(intervention.minted,0);
+   console.log('W5S_J_PAIR '+JSON.stringify({seed,
+     baseline:original,intervention,
+     waterDelta:intervention.water-original.water,
+     builtMinerDelta:intervention.minersBuilt-original.minersBuilt}));
+ }
+});

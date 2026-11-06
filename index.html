@@ -2908,7 +2908,7 @@ const m_core_w3 = (() => {
         -(state.w5f?.kopfgeldBezahlt??0)-(state.owners.w5f_kopfgeld_reserve?.cash??0)
       && kauf===(a?(a.phase==='hin'?a.gesamt:a.frachtGebuehr):0)
       && arbeit===(a?k.arbeitsKosten-a.gearbeitet*c.arbeitJeMinute:0)
-      && carrier+arbeit+held+(state.owners.w5n_fracht_arbeit?.cash??0)
+      && carrier+arbeit+held+(state.w5n?.frachtauftrag?.owner?0:(state.owners.w5n_fracht_arbeit?.cash??0))
           +(state.w5s?.active?.owner===c.spedition
             ?(state.owners.w5s_transfer_reserved?.cash??0):0)
         ===startCarrier-huelle-w.arbeitsKosten+w.frachtUmsatz
@@ -4483,7 +4483,7 @@ const m_core_w5n=(()=>{
      &&(!a||(a.eis===p.eis&&a.fracht===p.fracht&&a.arbeit===p.arbeit
        &&a.zeit===p.zeit&&a.gearbeitet>=0&&a.gearbeitet<2*p.zeit
        &&s.ships[a.schiff]?.owner===(a.owner||c.frachterOwner)
-       &&(!a.owner||(r.w5s?.successorFreight&&a.owner===s.w5s?.successor?.owner
+       &&(!a.owner||(a.owner===s.w5s?.successor?.owner
           &&a.schiff===s.w5s.successor.ship))))
      &&w.fabrikBegonnen===w.fabrikFertig+(f?1:0)
      &&w.fabrikGebucht===w.fabrikBegonnen*factoryCost
@@ -6000,7 +6000,7 @@ const m_core_w5s=(()=>{
     const reposition=s.w5s?.paidTransport??s.w5s?.paid??0;
     const dividend=s.w5o.divFracht;
     const w3Escrow=s.owners.w3_arbeit_treuhand?.cash??0;
-    const iceEscrow=s.owners.w5n_fracht_arbeit?.cash??0;
+    const iceEscrow=s.w5n.frachtauftrag?.owner?0:(s.owners.w5n_fracht_arbeit?.cash??0);
     const transferEscrow=s.w5s?.active?.owner===owner
       ?s.owners.w5s_transfer_reserved?.cash??0:0;
     const contract=s.w5s?.contract;

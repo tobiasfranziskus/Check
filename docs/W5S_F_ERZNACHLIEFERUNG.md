@@ -1,0 +1,35 @@
+# W5s-f – automatisch disponierte, wirklich vorfinanzierte Erzlieferung
+
+**[DRAFT / ANALYSE · 06.11.2026]** [PR #209](https://github.com/tobiasfranziskus/Check/pull/209), eigenständiger Branch `feature/w5s-f-vorfinanzierte-erznachlieferung-20261106` gegen W5s-e #208; der ältere gestapelte W5r-Forschungs-Core ist weiterhin Regel32/Schema8. `main` v0.12.5/Regel14, Dokumentations-PR #201 und Legacy-UI-Adapter #207 bleiben unangetastet. Keine neue produktive Regel, kein Merge, keine Veröffentlichung, keine Migration von Spielständen.
+
+## Tatsächlich neue Fähigkeit
+
+Bisher musste nach dem echten Kauf von Erz durch `w5h` ein Mensch `shipFreight` auf dem Frachter selbst auslösen, um W4/W5 mit Nadir-Erz zu versorgen. W5s-f ergänzt **keinen zweiten Handel/Erz-/Flugkern**. Der optionale Schalter `w5s.autoOre` disponiert nur den **bereits existierenden, vorher validierten und vollständig finanzierten W3-Frachtauftrag**.
+
+`m_core_index.w5sErzStatus(state,rules)` ist ein **rein lesender** Plan. Er meldet nachvollziehbar: ausgeschaltet, nicht belegter Bedarf, ausreichend Erzbestand, laufender W3-Transport, fehlende tatsächlich bereits gekaufte Erzcharge, kein freier Frachter, Core-Ablehnungsgrund oder startbare reale Fracht.
+
+Maximal **einmal pro Core-Stunde** darf der Dispatcher nach W5o-Eisdisposition und vor W5s-e-Werftdisposition `m_core_commands.execute(shipFreight)` aufrufen. Der originale W3-Kern kontrolliert atomar, dass **50 physisch vorhandene und bereits vom Großhändler bezahlte Erz**, das Käuferbudget, sämtliche Frachterlohnminuten, eine freie eigene Schiff-ID und ein freier Lagerplatz vorhanden sind. Geld, Besitz, Entladung, Flugzeit und Handelsumsatz folgen weiterhin den W3-/W5h-Belegen. Bei Ablehnung keine Abbuchung oder von der Automatik erfundene Ware.
+
+**Eis- und Eigentumsschutz:** Ein anderweitig belegter Frachter bleibt tabu. Die R32-Eisfracht ist priorisiert; der aktive R32-Frachter darf Erz nur übernehmen, falls keine Eisfracht aktiv ist und der aktuelle Eis-/Wasser-Puffer oberhalb des bestehenden Versorgungsziels liegt. Ein zusätzlich verfügbarer Frachter ist vorher dran. Eine erst gekaufte und überführte, aber für den R32-Ersatz vorgemerkte W5-Hülle darf nicht als beliebiges Erzfahrzeug zweckentfremdet werden. Gleichstandsregeln basieren nur auf stabilen Schiff-IDs.
+
+**Bedarfsgrenze:** Nur eine wirklich finanzierbare W5s-e-Produktionsnachfrage bei weniger als zwei vorhandenen W4-Erzchargen in Nadir darf die Erzlieferung auslösen. Keine automatische Auffüllung unbegrenzter Lagerbestände. Ohne finanzierbare Werftnachfrage wird nicht für ein Lager geräumt, das keine realen Absatzaufträge hat.
+
+## Abnahme-Szenario
+
+1. In Seed42/7 kauft der Hauskonzern für echte 600 ISK einen eigenen Miner in Aldera und erteilt ihm **ausdrücklich** `shipMine(erz)`. Er kauft außerdem den endlichen Nadir-Starterminer real für 600 ISK und schafft so Lagerplatz. Keine künstlichen Endbestände oder freie Schiffe.
+2. Die existierende W1-Produktion fördert und verkauft **50 Erz** gegen vorhandenes Stations- und Großhändlergeld. Anschließend greift **ohne manuelle W3-Fracht** W5s-f die volle, echte Erzcharge auf. Im Test-Profil wird für diese **erste** Fahrt wie zuvor die W5s-c-Diagnose `versorgungZiel:-1` verwendet; das ist **keine** Produktregel.
+3. Der normale W3-Kern bindet Käufer- und Arbeitsmittel, zahlt den realen Hin-/Rückweg und stellt 50 Erz nach 60 Flugminuten in Nadir bereit. Die W4- und W5s-e-Automatik baut danach eigenständig eine Miner- und eine Frachterhülle, verkauft sie an echte Unternehmen und bezahlt zwei Überführungen von je 60 Minuten. Forschungs-Profil `autoLeadDays:30` zur gezielten parallelen Belegung, **nicht** der Standardvorlauf von 2 Tagen.
+4. Der reine Status, Save/Load **während des ersten W3-Transfers**, abgelehnte doppelte Transportbefehle, unabhängige Weltgeld- und Warenaudits, deterministische Wiederholungen sowie R32-Ersatz und weitere Laufzeiten werden mitausgeführt.
+
+**[TEST] Ursprünglicher Code-Head `d8049df3`**: [GitHub Actions W5s-f #42182126833](https://github.com/tobiasfranziskus/Check/actions/runs/42182126833): **4/4 Testgruppen** grün, keine Fehler/Skips. Seeds 42 und 7 zweimal für den realen Start, **13 feste Seeds ×90 Tage** mit täglichen Geld-/Warenaudits und historische Krisenseeds 42/7 als vollständigen Replay, anschließend **Seed42/7 ×365 Tage**. Keine ISK-Emission. Die historische Gesamt-Node-CI für spätere Code-Heads ist separat nachzulesen und bis zum Abschluss **nicht** als erfolgreich zu behaupten.
+
+**Beobachtete 90d-Resultate auf diesem Stand:** Wirklich gefördert insgesamt 225 Erz, W3 lieferte **50 Erz genau einmal vollfinanziert**, drei Miner und ein Frachter wurden gebaut, zwei Miner und ein Frachter verkauft, und der Verbrauch beträgt **2.350 Wasser**. Drei Miner- und zwei Frachterverluste; NPC-Minerkapital am Ende **480 ISK**, Speditionskapital **560 ISK**. Danach wirtschaftlicher Stopp. Die zuvor in W5s-e gesehenen **2.400 Wasser** sind unter einer etwas anderen Anfangstaktung entstanden und kein Maßstab für eine garantierte Verbesserung. Mindestens ein zweiter wirklicher Erztransport entsteht im aktuellen Versuch **nicht**, weil ein entsprechend finanzierter fortlaufender Kunden-/Industrieauftrag fehlt. **Technisch automatische Nachlieferung ≠ nachgewiesen dauerhaft regenerierende Wirtschaft.**
+
+## Unbedingt offen – nächster sinnvoller Schritt
+
+- **Käuferfinanzierung über mehrere Phasen:** W5s-e liest bei Werftstart Käufercash und prüft es beim späteren Kauf erneut. Das ist bewusst **keine verbindliche Käufer-Treuhand**. Das W5s-f-Arbeitsergebnis umfasst ausschließlich den bisherigen **atomar vorfinanzierten W3-Frachtvertrag**. Ein neuer Schiffs-Vorbestellungsvertrag müsste den gesamten Kaufpreis und die spätere Überführung **vor dem Werftbeginn** tatsächlich aus einer konkret identifizierten Eigentümerkasse binden, die Geld-/Vollkostenbuchführung neu auditieren, Abbruch/Restmittel regeln und Save/Load-Tampering nachweisen. Erst nach diesem eigenständigen, kleineren Integrationsgate darf von einem verbindlichen Werftkauf gesprochen werden.
+- **Eigene Rohstoff-Neuproduktion:** Das Haus-Schiff ist mit ausdrücklichem Spielerbefehl auf Erz gesetzt. W5s-f ersetzt **nicht** die Entscheidung des Spielers und kauft **keine** neuen NPC-Erzminer frei aus der Luft. Ein echter NPC-Erzminer mit Arbeitslohn und Endabnehmerbudget ist ein eigener Nachweis.
+- **Kapitalzyklus:** Langfristiger Kupfer-/Silizium-/Erz- und Materialkreislauf, 13×90d einer **vollständig automatischen Kaltstart-Wirtschaft**, Sparen, Insolvenz/Fremdübernahme, W5r-R32 gegen #199, tatsächliches Balancing der 15-/30-Tage-Hüllenlebensdauern, W6-Absatz und Echtgeld-Cap für eventuelle externe Leistungen sind nicht erledigt.
+- **Plattform:** iPad Safari und NAS mit echter gesicherter JSON-Datei nicht abgenommen; Node-/Chromium-CI ist keine Hardwareabnahme.
+
+Nur `docs/ROADMAP.md` ist die verbindliche Roadmap, `docs/PROJEKTSTATUS.md` der belegte Gesamtstatus. Dieser Forschungsbericht ersetzt keines dieser beiden Dokumente und verändert die separat laufende Docs-PR #201 nicht.

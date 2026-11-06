@@ -4869,6 +4869,63 @@ const m_core_w5s=(()=>{
     }
     return ersterBlock||{stage:'kein_finanzierbarer_ersatz'};
   }
+  // W5s-f: Erz-Beschaffung ist ausdrücklich ein VORFINANZIERTER
+  // Auftrag des vorhandenen W3-Core. Kein Erz-Käufer, kein Frachter oder
+  // keine bezahlbare Route => keine Ersatzware durch den Dispatcher.
+  function erzPlan(s,r){
+    if(!r.w5s?.autoOre||!r.w5s?.autoIndustry
+      ||!r.w5s.minerIndustry||!r.w5s.concurrent
+      ||!r.w5r||!s.w5r?.initialized)
+      return {stage:'inaktiv'};
+    const need=werkPlan(s,r),typ=need.type;
+    const relevant=['erz_fehlt','raffinieren','raffinerie_belegt',
+      'bauen','werft_belegt','fertiglager_belegt'];
+    if(!typ||!relevant.includes(need.stage))
+      return {stage:'kein_finanzierter_bedarf',werk:need.stage};
+    // Genau zwei Materialchargen Puffer. Kein beliebiges Auffüllen;
+    // oberhalb der Schwelle entscheidet weiter ausschließlich die Werft.
+    const floor=r.w4.erzJeCharge*2,stock=s.stations[r.w4.station].lager.erz||0;
+    if(stock>=floor)return {stage:'erzbestand_genuegt',bestand:stock,minimum:floor};
+    if(s.w3.auftrag)return {stage:'erztransport_aktiv',schiff:s.w3.auftrag.schiff};
+    if(s.w5h.bestand<r.w3.fracht)
+      return {stage:'gekauftes_erz_fehlt',menge:s.w5h.bestand,
+        erforderlich:r.w3.fracht};
+    const transporter=Object.values(s.ships)
+      .filter(sh=>sh.klasse==='frachter'&&sh.owner===r.w3.spedition
+        &&sh.system==='aldera'&&sh.phase==='dock'
+        &&sh.auftrag==='halten'
+        &&Object.values(sh.ladung).every(n=>n===0))
+      .sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
+    const primary=s.w5r.frachter.id;
+    // Frei verfügbare, bereits zugeordnete Flottenhüllen dürfen
+    // arbeiten; noch für R32 vorgemerkte W5-Neubauten dagegen nicht.
+    const spare=transporter.find(sh=>sh.id!==primary
+      &&(!(s.w5.schiffIds||[]).includes(sh.id)
+        ||(s.w5r.assignments||[]).some(x=>x.id===sh.id)));
+    const ice=s.stations.st_nadir.lager.eis||0;
+    const water=s.stations.st_nadir.lager.wasser||0;
+    // Die R32-Eisfracht bleibt priorisiert. Nur bei erfülltem
+    // Versorgungspuffer darf die bisherige Hülle vorübergehend Erz liefern.
+    const primaryAllowed=!s.w5n.frachtauftrag
+      &&ice+water>r.w5o.versorgungZiel;
+    const sh=spare||(primaryAllowed
+      ?transporter.find(x=>x.id===primary):null);
+    if(!sh)return {stage:'kein_freier_frachter',
+      eisPrioritaet:!primaryAllowed};
+    const p=m_core_w3.pruefen(s,r,sh);
+    if(!p.ok)return {stage:'fracht_nicht_finanzierbar',
+      grund:p.grund,schiff:sh.id};
+    return {stage:'erztransport_starten',schiff:sh.id,
+      command:{type:'shipFreight',owner:r.w3.spedition,schiff:sh.id}};
+  }
+  function autoErz(s,r){
+    const plan=erzPlan(s,r);
+    if(!plan.command)return plan;
+    const {type,owner,...args}=plan.command;
+    const result=m_core_commands.execute(s,{type,owner,...args},r);
+    return {stage:result.ok?'erztransport_starten':'core_abgelehnt',
+      ok:result.ok,grund:result.ok?null:result.reason,schiff:plan.schiff};
+  }
   function autoWerk(s,r){
     const plan=werkPlan(s,r);
     if(!plan.command)return plan;
@@ -4919,7 +4976,7 @@ const m_core_w5s=(()=>{
     return {ok,allocated:w.allocated,paid:w.paid,reserve,
       completed:completed.length,active:!!a};
   }
-  return {pruefen,start,tick,assign,audit,werkPlan,autoWerk};
+  return {pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz};
 })();
 
 // W5r isolated research: no free replacement ship and fully paid dock work.
@@ -5287,8 +5344,10 @@ function step(state, rules) {
     }
     if(rules.w5r)m_core_w5r.verschleiss(state,rules);
     if(rules.w5o)m_core_w5o.autopilot(state,rules);
-    if(rules.w5s?.autoIndustry && state.tick%rules.economy.stunde===0)
+    if(rules.w5s?.autoIndustry && state.tick%rules.economy.stunde===0){
+      if(rules.w5s.autoOre)m_core_w5s.autoErz(state,rules);
       m_core_w5s.autoWerk(state,rules);
+    }
     return ergebnisse;
   }
   ankunft(state, rules); foerderung(state, rules); entscheidung(state, rules); reise(state, rules); produktion(state, rules);
@@ -6030,6 +6089,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf, pilotW5BStand, pilotW5BPlan, pilotW5CStand, pilotW5DStand,
   pilotW5FStand, pilotW5FVollkosten, pilotW5FAngriff, pilotW5GStand, pilotW5GPlan, pilotW5HStand, pilotW5HPlan, pilotW5IStand, pilotW5IPlan, pilotW5LStand, pilotW5LPlan, pilotW5MStand, pilotW5NStand, pilotW5OStand, pilotW5QStand, pilotW5RStand,
   w5sWerkStatus:(state,rules)=>m_core_w5s.werkPlan(state,rules),
+  w5sErzStatus:(state,rules)=>m_core_w5s.erzPlan(state,rules),
   createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState, createW5LState, createW5MState, createW5NState, createW5OState, createW5QState, createW5RState,
   loadErz, loadW2, loadW3, loadW4, loadW5, loadW5B, loadW5C, loadW5D, loadW5F, loadW5G, loadW5H, loadW5I, loadW5L, loadW5M, loadW5N, loadW5O, loadW5Q, loadW5R, createState, submit, execute, step, advance, load, preis, faktor };
 })();

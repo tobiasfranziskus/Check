@@ -4764,9 +4764,23 @@ const m_core_w5s=(()=>{
       ?s.w5r[type].born+r.w5r[
         type==='miner'?'minerLifeDays':'freighterLifeDays']*1440
       :s.tick;
+    const lead=Number.isSafeInteger(r.w5s.autoLeadDays)
+      &&r.w5s.autoLeadDays>=0&&r.w5s.autoLeadDays<=30
+        ?r.w5s.autoLeadDays:2;
+    const ready=type=>{
+      const owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;
+      const ids=type==='miner'?(s.w5.minerSchiffIds||[]):s.w5.schiffIds;
+      return Object.values(s.ships).some(sh=>sh.owner===owner
+        &&sh.klasse===type&&ids.includes(sh.id)
+        &&sh.system==='aldera'&&sh.phase==='dock'
+        &&sh.auftrag==='halten'
+        &&Object.values(sh.ladung).every(n=>n===0)
+        &&s.w5s?.completed?.some(x=>x.id===sh.id&&x.ankunft<=s.tick)
+        &&!s.w5r.assignments?.some(x=>x.id===sh.id));
+    };
     const candidates=kinds.filter(type=>
-      type!=='miner'||s.w5o.minerOwner!=='house').filter(type=>
-        due(type)-s.tick<=2*1440);
+      (type!=='miner'||s.w5o.minerOwner!=='house')
+      &&due(type)-s.tick<=lead*1440&&!ready(type));
     candidates.sort((a,b)=>due(a)-due(b)||(a<b?-1:a>b?1:0));
     if(!candidates.length)return {stage:'kein_ersatzbedarf'};
     const type=candidates[0],owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner,

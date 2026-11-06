@@ -52,6 +52,11 @@ function complete(seed){
   api.advance(s,20,oreFirst);
   valid(s,'W4: 5 Material');
   assert.equal(s.stations.st_nadir.lager.material,5);
+  // Die endliche Nadir-Starterhülle belegt den einzigen Werft-Lagerplatz.
+  // Sie wird nicht gelöscht: Der Hauskonzern kauft sie real für 600 ISK.
+  assert.equal(s.stations.st_nadir.lager.miner,1);
+  cmd(s,oreFirst,'shipBuy','house',{station:'st_nadir',klasse:'miner'});
+  assert.equal(s.stations.st_nadir.lager.miner,0);
   const price=base.economy.waren.miner.basis;
   assert.equal(price,600);
   const cashBefore=s.owners[builder].cash;

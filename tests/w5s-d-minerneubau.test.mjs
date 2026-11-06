@@ -201,3 +201,77 @@ test('W5s-d: zwei 365-Tage-Krisenläufe mit realen Ressourcen- und Geldengpässe
     console.log('W5S_D_365D '+JSON.stringify(row));
   }
 });
+
+
+test('W5s-d: eine einzige W5-Werft fertigt Miner und Frachter, beide real zugeordnet',()=>{
+  for(const seed of [42,7]){
+    const s=api.createW5RState(seed,'full','npc3');
+    cmd(s,oreFirst,'shipBuy','house',{station:'st_aldera',klasse:'miner'});
+    const house=Object.values(s.ships).find(sh=>sh.owner==='house'&&sh.klasse==='miner');
+    cmd(s,oreFirst,'shipMine','house',{schiff:house.id,ware:'erz'});
+    api.advance(s,60,oreFirst);
+    assert.equal(s.w5h.bestand,50);
+    cmd(s,oreFirst,'shipFreight','transport',{schiff:s.w5r.frachter.id});
+    api.advance(s,120,oreFirst);
+    assert.equal(s.w3.geliefert,50);
+    const originalMiner=s.w5r.miner.id,originalFreight=s.w5r.frachter.id;
+
+    // Starterhülle im Nadir-Werftplatz tatsächlich verkaufen; nicht löschen.
+    cmd(s,oreFirst,'shipBuy','house',{station:'st_nadir',klasse:'miner'});
+    cmd(s,oreFirst,'stationRefine','st_nadir',{station:'st_nadir'});
+    api.advance(s,20,oreFirst);
+    cmd(s,oreFirst,'stationBuildMiner','werft_extern',{station:'st_nadir'});
+    api.advance(s,30,oreFirst);
+    const mi='sh'+String(s.nextShip).padStart(3,'0');
+    cmd(s,oreFirst,'shipBuy','npc3',{station:'st_nadir',klasse:'miner'});
+    cmd(s,oreFirst,'shipReposition','npc3',{schiff:mi});
+    api.advance(s,60,oreFirst);
+    valid(s,'erste Werftcharge Miner');
+
+    // Noch 40 echte angelieferte Erz; zweite W4-Charge und genau dieselbe W5.
+    cmd(s,oreFirst,'stationRefine','st_nadir',{station:'st_nadir'});
+    api.advance(s,20,oreFirst);
+    assert.equal(s.stations.st_nadir.lager.material,5);
+    cmd(s,oreFirst,'stationBuildShip','werft_extern',{station:'st_nadir'});
+    api.advance(s,30,oreFirst);
+    const fr='sh'+String(s.nextShip).padStart(3,'0');
+    cmd(s,oreFirst,'shipBuy','transport',{station:'st_nadir',klasse:'frachter'});
+    cmd(s,oreFirst,'shipReposition','transport',{schiff:fr});
+    api.advance(s,60,oreFirst);
+    valid(s,'zwei Klassen aus gleicher Werft und unterschiedlichen Eigentümerkassen');
+    assert.equal(s.w5.fertig,2);
+    assert.equal(s.w5.minerFertig,1);
+    assert.equal(s.w5.verkauft,1);
+    assert.equal(s.w5.minerVerkauft,1);
+    assert.equal(s.ledger.miner.produced,1);
+    assert.equal(s.ledger.frachter.produced,1);
+    assert.equal(s.w5s.paid,120,'zwei tatsächlich bezahlte Überführungen');
+    assert.equal(s.w5s.paidTransport,60,'Spedition trägt nur Frachter-Pilotlohn');
+    assert.equal(api.hash(api.loadW5R(api.save(s))),api.hash(s));
+
+    while(s.tick<15*1440){
+      api.advance(s,Math.min(1440,15*1440-s.tick),oreFirst);
+      valid(s,'W5s-d gemischte Werft bis Miner-Ersatz');
+    }
+    assert.equal(s.w5r.miner.id,mi);
+    assert.notEqual(s.w5r.miner.id,originalMiner);
+    assert.equal(s.w5r.miner.bought,0);
+    while(s.tick<30*1440){
+      api.advance(s,Math.min(1440,30*1440-s.tick),oreFirst);
+      valid(s,'W5s-d gemischte Werft bis Frachter-Ersatz');
+    }
+    assert.equal(s.w5r.frachter.id,fr);
+    assert.notEqual(s.w5r.frachter.id,originalFreight);
+    assert.equal(s.w5r.frachter.bought,0);
+    assert.equal(s.w5r.assignments.length,2);
+    api.advance(s,150,active);
+    valid(s,'W5s-d beide Industrieklassen zurück in Eislogistik');
+    assert.ok(s.w5n.frachtAbgeschlossen>=1);
+    assert.equal(s.minted,0);
+    console.log('W5S_D_BOTH '+JSON.stringify({
+      seed,miner:mi,freighter:fr,producedMiner:s.ledger.miner.produced,
+      producedFreighter:s.ledger.frachter.produced,retired:s.w5r.losses.length,
+      assignments:s.w5r.assignments.length,paidTransfer:s.w5s.paid,
+      iceTrips:s.w5n.frachtAbgeschlossen,hash:api.hash(s)}));
+  }
+});

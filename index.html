@@ -2629,7 +2629,9 @@ const m_core_erzpilot = (() => {
         // Keine Sperre für andere Miner und keine Verschiebung von Ladung.
         &&!(rules.w5s?.minerIndustry&&sh.id!==state.w5r?.miner.id
           &&state.w5?.minerSchiffIds?.includes(sh.id)
-          &&state.w5s?.completed?.some(x=>x.id===sh.id&&x.type==='miner')
+          // Bereits gekaufte, aber noch in Nadir auf den bezahlten
+          // Transfer wartende Ersatzminer sind ebenso gebunden wie
+          // tatsächlich angekommene Hüllen. Nadir hat hier kein Erz-Belt.
           &&!(state.w5r?.assignments||[]).some(x=>x.id===sh.id)));
     if (info.planbar === 0) {
       // Kein kostenloses Weiterfördern: Stop ausschließlich bei unbelegter Zukunft.

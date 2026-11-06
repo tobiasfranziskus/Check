@@ -71,10 +71,20 @@ test('W5s-t: echte W4/W5-Werftcharge + private Gründung + eigener bezahlter Fra
   assert.equal(finance.successor.revenue,0,'keine fingierte Frachtmarge');
   const hash=api.hash(s);
   assert.equal(api.hash(api.loadW5R(api.save(s))),hash,'Save/Load');
+  assert.equal(cmd(s,{type:'shipBuy',owner:'w5s_carrier2',
+    station:'st_nadir',klasse:'frachter'}).ok,false,
+    'keine zweite Hülle auf denselben 930-ISK-Gründungsvertrag');
+  assert.equal(api.hash(s),hash,'abgewiesener zweiter Kauf ohne Nebenwirkung');
   const illegal=api.loadW5R(api.save(s));
   illegal.w5s.successor.capital++;
   assert.equal(api.audit(illegal).ok,false,'Kapital ohne echte Gegenbuchung abgelehnt');
   assert.equal(api.hash(s),hash,'Manipulation nur auf Kopie');
+  for(let day=121;day<=140;day++){
+    api.advance(s,1440,rules);
+    const verified=hasAudit(s,'Fortsetzung '+seed+' Tag'+day);
+    assert.equal(verified.successor.ship,id,'kein stiller Schiffs-/Firmenwechsel');
+    assert.equal(verified.successor.revenue,0,'ohne Frachtvertrag keine Gratiserlöse');
+  }
   console.log('W5S_T_REAL '+JSON.stringify({seed,hash,ship:id,
     capital:finance.successor.capital,investorSpent:investor-s.owners.export.cash,
     shipyardRevenue:750,workingCapital:s.owners.w5s_carrier2.cash,

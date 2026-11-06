@@ -95,6 +95,9 @@ test('W5s-l: ein echter 50-Erz-Folgeauftrag ist nur bei Finanzierung erlaubt –
     if([42,7].includes(seed))
       assert.deepEqual(run(seed,90,true),a,'gepaarter Replay');
     assert.equal(a.delivered,a.ore*50,'W3 nur tatsächlich gelieferte volle Chargen');
+    assert.ok(a.ore>=2,'mindestens zwei echte W3-Erztransporte aus realem Käuferkapital');
+    assert.equal(a.firstSecondOre,31,'zweite vollständig abgewickelte Fracht bis Tag31');
+    assert.ok(a.built>=5,'neue Werftbestände statt kostenloser Ersatzhülle');
     assert.ok(a.ice>=0&&a.water>=0);
     console.log('W5S_L_90D '+JSON.stringify(a));
   }
@@ -103,6 +106,7 @@ test('W5s-l: Seed42/7 volle 365 Tage plus Save/Load, keine automatische Gratisre
   for(const seed of [42,7]){
     const a=run(seed,365,true);
     assert.equal(a.delivered,a.ore*50);
+    assert.ok(a.ore>=2,'zweite Echtgeld-Erzlieferung bis Tag365 bleibt verbucht');
     console.log('W5S_L_365D '+JSON.stringify(a));
   }
 });

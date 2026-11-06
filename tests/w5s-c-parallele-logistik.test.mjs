@@ -116,6 +116,13 @@ function scenario(seed,{longDays=0}={}){
     row.oreTrips=s.w3.abgeschlossen;
     row.losses=s.w5r.frachter.lost;
     row.assigned=s.w5r.assignments?.length??0;
+    row.carrierCash=s.owners.transport.cash;
+    row.nadirCash=s.owners.st_nadir.cash;
+    row.frachterInAldera=s.stations.st_aldera.lager.frachter;
+    row.frachterInNadir=s.stations.st_nadir.lager.frachter;
+    row.minerInAldera=s.stations.st_aldera.lager.miner;
+    row.nadirMaterial=s.stations.st_nadir.lager.material;
+    row.nadirErz=s.stations.st_nadir.lager.erz;
   }
   return row;
 }

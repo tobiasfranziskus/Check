@@ -70,7 +70,7 @@ test('W5s-n: Kunden- und Fremdvermögen gehören niemals automatisch der Spediti
  let f=verify(s,r,'Start');
  assert.equal(f.continuity.stage,'flotte_vorhanden');
  assert.equal(f.continuity.freighters,1);
- api.advance(s,120*1440,r);
+ for(let day=0;day<120;day++)api.advance(s,1440,r);
  f=verify(s,r,'Tag120');
  assert.equal(f.continuity.stage,'spedition_ohne_frachter_und_kapital');
  assert.equal(f.continuity.freighters,0);

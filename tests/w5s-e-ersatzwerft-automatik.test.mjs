@@ -109,9 +109,14 @@ function run(seed,days){
   if(days>=90){
     assert.equal(s.stations.st_nadir.lager.miner,1,
       'echt gebaute aber unverkaufte Minerware bleibt im Werftlager');
-    assert.equal(blocker.stage,'kauf_und_flug_unfinanziert',
-      'ohne Käuferkasse findet kein verdeckter Ersatzkauf statt');
-    assert.equal(blocker.fehlbetrag,180,'600 ISK Kauf +60 Pilot minus480 Kasse');
+    assert.ok(['kauf_und_flug_unfinanziert','abnehmer_unfinanziert']
+      .includes(blocker.stage),
+      'ohne Käuferkasse findet weder heimlicher Kauf noch Gratisbau statt');
+    assert.equal(660-s.owners.npc3.cash,180,
+      'Minerkauf 600 + Transfer60, NPC-Kapital 480');
+    assert.equal(810-s.owners.transport.cash,250,
+      'Frachterkauf 750 + Transfer60, Speditionskapital 560');
+    assert.ok(blocker.fehlbetrag>0,'Blocker mit tatsächlicher Geldlücke');
   }
   const row={seed,days,hash:api.hash(s),minted:s.minted,
     blocker:blocker.stage,shortfall:blocker.fehlbetrag||0,

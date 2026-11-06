@@ -4785,7 +4785,8 @@ const m_core_w5s=(()=>{
       &&due(type)-s.tick<=lead*1440&&!ready(type));
     candidates.sort((a,b)=>due(a)-due(b)||(a<b?-1:a>b?1:0));
     if(!candidates.length)return {stage:'kein_ersatzbedarf'};
-    const type=candidates[0],owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner,
+    function planType(type){
+    const owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner,
       ids=type==='miner'?(s.w5.minerSchiffIds||[]):s.w5.schiffIds,
       record=s.w5,stock=s.stations[r.w5.station].lager;
     const proof=sh=>sh.owner===owner&&sh.klasse===type
@@ -4849,6 +4850,19 @@ const m_core_w5s=(()=>{
       return {type,stage:'raffinerie_unfinanziert'};
     return {type,stage:'raffinieren',command:{
       type:'stationRefine',owner:r.w4.station,station:r.w4.station}};
+    }
+    // Insolvenz einer Firma blockiert nicht automatisch eine andere:
+    // Wenn der dringlichste Auftrag nicht bezahlt werden kann, darf
+    // der nächste vollständig finanzierte Ersatzauftrag starten.
+    let ersterBlock=null;
+    for(const type of candidates){
+      const plan=planType(type);
+      if(plan.command||['werft_belegt','raffinerie_belegt',
+        'ueberfuehrung_aktiv','route_ungueltig'].includes(plan.stage))
+        return plan;
+      if(!ersterBlock)ersterBlock=plan;
+    }
+    return ersterBlock||{stage:'kein_finanzierbarer_ersatz'};
   }
   function autoWerk(s,r){
     const plan=werkPlan(s,r);

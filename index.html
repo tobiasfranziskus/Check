@@ -5768,6 +5768,35 @@ const m_core_w5s=(()=>{
     }
     return total;
   }
+  // W5s-s: Bedarfsgebundene, vorfinanzierte W5r-Pflichtwartung.
+  // W5n sperrt ueberfaellige Produktion: niemals kostenlose Nutzung.
+  function wartungPlan(s,r){
+    if(!r.w5s?.onDemandMaintenance||!r.w5r||!r.w5n||!r.w5o
+      ||!s.w5r?.initialized||!s.w5n
+      ||s.rulesVersion!==r.rulesVersion)return {stage:'inaktiv'};
+    const w=s.w5r,c=r.w5n,fee=r.w5r.serviceMinutes*r.w5r.serviceWage;
+    const factoryCost=c.fabrikMinuten*c.fabrikLohn;
+    const cash=s.owners[c.zielStation]?.cash??0;
+    const buyer=s.owners[c.kunde]?.cash??0;
+    const lager=s.stations[c.zielStation]?.lager||{};
+    const ice=lager.eis||0,water=lager.wasser||0;
+    const capacity=m_core_handel.obergrenze(s,r,c.zielStation,'wasser');
+    const demand=ice>=c.rezeptEis
+      &&water<=r.w5o.wasserZiel
+      &&water+c.rezeptWasser<=capacity
+      &&buyer>=c.wasserPreis;
+    const totals={fee,factoryCost,required:fee+factoryCost,
+      stationCash:cash,buyerCash:buyer,ice,water,capacity,
+      demand,overdue:s.tick>=w.serviceDue};
+    if(s.tick<w.serviceDue)return {stage:'nicht_faellig',...totals};
+    if(w.serviceJob)return {stage:'wartung_aktiv',...totals};
+    if(s.w5n.fabrikauftrag)return {stage:'fertigung_aktiv',...totals};
+    if(!demand)return {stage:'kein_bezahlter_folgeauftrag',...totals};
+    if(cash<fee+factoryCost)return {
+      stage:'wartung_plus_produktion_unfinanziert',
+      fehlbetrag:fee+factoryCost-cash,...totals};
+    return {stage:'wartung_plus_produktion_vorfinanziert',...totals};
+  }
   function finanzPlan(s,r){
     if(!r.w5s||!r.w5r||!s.w5r?.initialized
       ||s.rulesVersion!==r.rulesVersion)return Object.freeze({stage:'inaktiv'});
@@ -5890,6 +5919,7 @@ const m_core_w5s=(()=>{
       oreVenturePlan:Object.freeze({...oreVenturePlan(s,r)}),
       orePilotWages:Object.freeze({...orePilotWageAudit(s,r)}),
       industryWages:Object.freeze({...industryWageAudit(s,r)}),
+      maintenance:Object.freeze({...wartungPlan(s,r)}),
       orePlan:Object.freeze({...erzPlan(s,r)}),
       yardPlan:Object.freeze({...werkPlan(s,r)}),
       ok:valid});
@@ -5964,7 +5994,7 @@ const m_core_w5s=(()=>{
   return {arbeitsPuffer,finanzPlan,pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
     takeoverPlan,takeoverStart,takeoverDividend,takeoverAudit,
     oreVenturePlan,oreVentureStart,oreVentureDividend,oreVentureAudit,
-    orePilotWage,orePilotWageAudit,industryWage,industryWageAudit,
+    orePilotWage,orePilotWageAudit,industryWage,industryWageAudit,wartungPlan,
     starterCheck,starterSold,starterPlan,autoStarter,minerSource,
     orderCheck,orderStart,orderCancelCheck,orderCancel,contractCommand,
     contractAudit,completeOrder,npcOrePlan,autoNpcOre};
@@ -5978,7 +6008,13 @@ const m_core_w5r=(()=>{
    if(!s.w5r?.initialized)return;
    const w=s.w5r,c=r.w5r,fee=c.serviceMinutes*c.serviceWage;
    if(s.tick>=w.serviceDue&&!w.serviceJob&&!s.w5n.fabrikauftrag){
-     if(s.owners.st_nadir.cash<fee){
+     const bedarf=r.w5s?.onDemandMaintenance
+       ?m_core_w5s.wartungPlan(s,r):null;
+     if(bedarf&&bedarf.stage!=='wartung_plus_produktion_vorfinanziert'){
+       if(bedarf.stage==='wartung_plus_produktion_unfinanziert'
+         &&s.tick%1440===0)w.blocked.service++;
+     }
+     else if(s.owners.st_nadir.cash<fee){
        if(s.tick%1440===0)w.blocked.service++;
      }
      else {
@@ -7116,6 +7152,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   w5sErzStatus:(state,rules)=>m_core_w5s.erzPlan(state,rules),
   w5sKapitalLage:(state,rules)=>m_core_w5o.kapitalLage(state,rules),
   w5sFinanzStatus:(state,rules)=>m_core_w5s.finanzPlan(state,rules),
+  w5sWartungStatus:(state,rules)=>m_core_w5s.wartungPlan(state,rules),
   w5sNpcErzStatus:(state,rules)=>m_core_w5s.npcOrePlan(state,rules),
   w5sStarterStatus:(state,rules)=>m_core_w5s.starterPlan(state,rules),
   createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState, createW5LState, createW5MState, createW5NState, createW5OState, createW5QState, createW5RState,

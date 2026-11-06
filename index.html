@@ -4301,7 +4301,13 @@ const m_core_w5n=(()=>{
    if(w.frachtauftrag||(s.w3.auftrag
      && (!r.w5s?.concurrent||s.w3.auftrag.schiff===sh?.id)))
      return {ok:false,grund:'W5n: Auftrag oder identischer Frachter bereits gebunden'};
-   if(!sh||sh.klasse!=='frachter'||sh.owner!==c.frachterOwner
+   const successor=s.w5s?.successor;
+   const alternate=!!(r.w5s?.successorFreight&&r.w5s?.independentSuccessor
+     &&successor?.ship===sh?.id&&sh?.owner===successor.owner
+     &&successor.flightPaid===successor.flight
+     &&s.w5s.completed?.some(x=>x.id===sh.id&&x.owner===successor.owner));
+   const owner=alternate?successor.owner:c.frachterOwner;
+   if(!sh||sh.klasse!=='frachter'||sh.owner!==owner
      ||sh.phase!=='dock'||sh.system!=='aldera'||sh.auftrag!=='halten'
      ||Object.values(sh.ladung).some(n=>n!==0))
      return {ok:false,grund:'Eigener leerer Frachter in Aldera erforderlich'};
@@ -4311,9 +4317,10 @@ const m_core_w5n=(()=>{
      return {ok:false,grund:'Eislager Nadir voll'};
    if(s.owners[c.zielStation].cash<p.gesamt)
      return {ok:false,grund:'Nadir kann Eis und Hin-/Rueckfracht nicht bezahlen'};
-   if(s.owners[c.frachterOwner].cash<p.arbeit)
+   if(s.owners[owner].cash<p.arbeit)
      return {ok:false,grund:'Spedition kann Flugarbeit nicht vorfinanzieren'};
-   return {ok:true,grund:'Beide Fluege, Ware und Frachttarif finanzierbar',...p};
+   return {ok:true,grund:'Beide Fluege, Ware und Frachttarif finanzierbar',
+     ...p,...(alternate?{owner}: {})};
  }
  function frachtStart(s,r,sh){
    const p=pruefenFracht(s,r,sh);if(!p.ok)throw Error('W5n-Fracht: '+p.grund);
@@ -4324,7 +4331,9 @@ const m_core_w5n=(()=>{
    if(geld.cash||arbeit.cash)throw Error('W5n doppelte Reservierung');
    s.owners[c.zielStation].cash-=p.gesamt;geld.cash+=p.gesamt;
    buche(s,c.zielStation,'kosten',p.gesamt);
-   s.owners[c.frachterOwner].cash-=p.arbeit;arbeit.cash+=p.arbeit;
+   const owner=p.owner||c.frachterOwner;
+   s.owners[owner].cash-=p.arbeit;arbeit.cash+=p.arbeit;
+   if(p.owner)s.w5s.successor.workReserved=(s.w5s.successor.workReserved||0)+p.arbeit;
    s.stations[c.quellStation].lager.eis-=c.charge;
    sh.ladung.eis=c.charge;
    sh.phase='reise';sh.ziel=c.zielStation;sh.ankunft=s.tick+p.zeit;sh.auftrag='eisfracht';
@@ -4368,7 +4377,9 @@ const m_core_w5n=(()=>{
        ||!work||!kauf||work.cash<c.fliegerLohn)
        throw Error('W5n unbezahlte Frachtminute');
      work.cash-=c.fliegerLohn;s.owners.fonds_transport.cash+=c.fliegerLohn;
-     w.frachtLohn+=c.fliegerLohn;buche(s,c.frachterOwner,'kosten',c.fliegerLohn);
+     const owner=a.owner||c.frachterOwner;
+     w.frachtLohn+=c.fliegerLohn;buche(s,owner,'kosten',c.fliegerLohn);
+     if(a.owner)s.w5s.successor.workPaid=(s.w5s.successor.workPaid||0)+c.fliegerLohn;
      a.gearbeitet++;
      if(s.tick===sh.ankunft){
        if(a.phase==='hin'){
@@ -4385,8 +4396,10 @@ const m_core_w5n=(()=>{
          if(sh.ziel!==c.quellStation||kauf.cash!==a.fracht
            ||work.cash!==0||a.gearbeitet!==2*a.zeit)
            throw Error('W5n Rueckfahrt unbezahlt');
-         kauf.cash=0;s.owners[c.frachterOwner].cash+=a.fracht;
-         buche(s,c.frachterOwner,'erloes',a.fracht);
+         kauf.cash=0;s.owners[owner].cash+=a.fracht;
+         buche(s,owner,'erloes',a.fracht);
+         if(a.owner){s.w5s.successor.freightRevenue=(s.w5s.successor.freightRevenue||0)+a.fracht;
+           s.w5s.successor.trips=(s.w5s.successor.trips||0)+1;}
          w.frachtUmsatz+=a.fracht;w.frachtAbgeschlossen++;
          w.frachtauftrag=null;
          sh.system='aldera';sh.phase='dock';sh.ziel=null;
@@ -4468,7 +4481,9 @@ const m_core_w5n=(()=>{
      &&(s.owners.w5n_fracht_arbeit?.cash||0)===(a?p.arbeit-a.gearbeitet*c.fliegerLohn:0)
      &&(!a||(a.eis===p.eis&&a.fracht===p.fracht&&a.arbeit===p.arbeit
        &&a.zeit===p.zeit&&a.gearbeitet>=0&&a.gearbeitet<2*p.zeit
-       &&s.ships[a.schiff]?.owner===c.frachterOwner))
+       &&s.ships[a.schiff]?.owner===(a.owner||c.frachterOwner)
+       &&(!a.owner||(r.w5s?.successorFreight&&a.owner===s.w5s?.successor?.owner
+          &&a.schiff===s.w5s.successor.ship))))
      &&w.fabrikBegonnen===w.fabrikFertig+(f?1:0)
      &&w.fabrikGebucht===w.fabrikBegonnen*factoryCost
      &&w.fabrikBezahlt===w.fabrikFertig*factoryCost+(f?.gearbeitet??0)*c.fabrikLohn

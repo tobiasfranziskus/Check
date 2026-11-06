@@ -4802,8 +4802,9 @@ const m_core_w5s=(()=>{
     return {stage:res.ok?p.stage:'core_abgelehnt',ok:res.ok,
       grund:res.ok?null:res.reason};
   }
+  // Rechtmäßig bezahlte Provenienz auch ohne nichtpersistentes Forschungsflag prüfen.
   const minerSource=(s,r,id)=>s.w5.minerSchiffIds?.includes(id)
-    ||!!(r.w5s?.autoStarterMiner&&starter(s)?.id===id);
+    ||!!(starter(s)?.id===id);
   function pruefen(s,r,sh){
     if(!r.w5s||!r.w5r||s.rulesVersion!==r.rulesVersion||!s.w5r?.initialized)
       return {ok:false,grund:'W5s: Forschungsprofil nicht aktiv'};
@@ -4888,7 +4889,7 @@ const m_core_w5s=(()=>{
         &&type==='frachter')||s.w5r[type].id)return false;
     const w=s.w5r,owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;
     const ids=type==='miner'?[...(s.w5.minerSchiffIds||[]),
-      ...(r.w5s?.autoStarterMiner&&starter(s)?[starter(s).id]:[])]
+      ...(starter(s)?[starter(s).id]:[])]
       :s.w5.schiffIds;
     const candidate=Object.values(s.ships).sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0)
       .find(sh=>sh.owner===owner&&sh.klasse===type
@@ -4931,7 +4932,7 @@ const m_core_w5s=(()=>{
     const ready=type=>{
       const owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;
       const ids=type==='miner'?[...(s.w5.minerSchiffIds||[]),
-        ...(r.w5s?.autoStarterMiner&&starter(s)?[starter(s).id]:[])]
+        ...(starter(s)?[starter(s).id]:[])]
         :s.w5.schiffIds;
       return Object.values(s.ships).some(sh=>sh.owner===owner
         &&sh.klasse===type&&ids.includes(sh.id)
@@ -4954,7 +4955,7 @@ const m_core_w5s=(()=>{
     function planType(type){
     const owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner,
       ids=type==='miner'?[...(s.w5.minerSchiffIds||[]),
-        ...(r.w5s?.autoStarterMiner&&starter(s)?[starter(s).id]:[])]
+        ...(starter(s)?[starter(s).id]:[])]
         :s.w5.schiffIds,
       record=s.w5,stock=s.stations[r.w5.station].lager;
     const c=r.w5s?.prepaidOrders?s.w5s?.contract:null;
@@ -5301,7 +5302,7 @@ const m_core_w5s=(()=>{
     const ids=completed.map(x=>x.id);
     const transferOwner=type=>type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;
     const transferIds=type=>type==='miner'?[...(s.w5.minerSchiffIds||[]),
-      ...(r.w5s?.autoStarterMiner&&starter(s)?[starter(s).id]:[])]
+      ...(starter(s)?[starter(s).id]:[])]
       :s.w5.schiffIds;
     const jobOk=!a||(a.owner===transferOwner(a.type||'frachter')
       &&transferIds(a.type||'frachter')?.includes(a.id)
@@ -5317,7 +5318,7 @@ const m_core_w5s=(()=>{
     const initial=starter(s),original=initial&&s.ships[initial.id];
     const lost=initial&&s.w5r.losses.some(x=>x.id===initial.id
       &&x.owner===initial.owner&&x.type==='miner');
-    const starterOk=!initial||(r.w5s?.autoStarterMiner
+    const starterOk=!initial||(s.w5r?.initialized
       &&initial.owner===s.w5o.minerOwner&&initial.owner!=='house'
       &&initial.price===r.economy.waren.miner.basis
       &&Number.isSafeInteger(initial.tick)&&initial.tick>=0
@@ -5483,8 +5484,7 @@ const m_core_w5r=(()=>{
       &&(w.assignments||[]).every(a=>{
         const type=a.type||'frachter',owner=ownerFor(type);
         const source=type==='miner'?[...(s.w5.minerSchiffIds||[]),
-          ...(r.w5s?.autoStarterMiner&&s.w5s?.starterMiner
-            ?[s.w5s.starterMiner.id]:[])]:s.w5.schiffIds;
+          ...(s.w5s?.starterMiner?[s.w5s.starterMiner.id]:[])]:s.w5.schiffIds;
         return a.owner===owner&&Number.isSafeInteger(a.tick)
           &&a.tick<=s.tick&&source?.includes(a.id)
           &&s.w5s?.completed.some(d=>d.id===a.id

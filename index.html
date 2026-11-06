@@ -5642,6 +5642,45 @@ const m_core_w5s=(()=>{
   // Die operative Frachtmarge ist kein frei verfuegbares Flottenkapital:
   // bereits gekaufte Huellen, gebuchte Pilotenarbeit und Dividenden
   // gehoeren zur selben, rekonstruierten Speditionskasse.
+  // W5s-q: nur bereits wirklich vergütete W3-Pilotenarbeit wird aus
+  // dem bestehenden Transport-Arbeitsfonds als Lohn an die Haushalte
+  // ausgezahlt; W5o vergütet W5n-Flüge bereits separat.
+  function orePilotWage(s,r){
+    if(!r.w5s?.autoOreWageHousehold||!r.w5s.autoIndustry
+      ||!s.w5r?.initialized||!s.w5o)return 0;
+    const book=s.w5s||(s.w5s={allocated:0,paid:0,active:null,completed:[]});
+    const paid=book.orePilotWages||0,due=s.w3.arbeitsKosten-paid;
+    if(!Number.isSafeInteger(due)||due<0)
+      throw Error('W5s-q: keine Leistung ohne Lohnbeleg');
+    const fund=s.owners[r.w3.arbeitsFonds],house=s.owners.w5n_kunden;
+    const amount=Math.min(due,fund.cash);
+    if(amount<=0)return 0;
+    fund.cash-=amount;house.cash+=amount;
+    book.orePilotWages=paid+amount;
+    (book.orePilotPays||=[]).push({tick:s.tick,amount});
+    m_core_handel.buche(s,r.w3.arbeitsFonds,'kosten',amount);
+    m_core_handel.buche(s,'w5n_kunden','erloes',amount);
+    m_core_state.protokolliere(s,'dienst',
+      amount+' ISK tatsächlicher W3-Pilotenlohn aus erwirtschaftetem Fondsguthaben',
+      r.w3.arbeitsFonds);
+    return amount;
+  }
+  function orePilotWageAudit(s,r){
+    const book=s.w5s,paid=book?.orePilotWages??0,events=book?.orePilotPays??[];
+    let sum=0,prev=0,valid=Array.isArray(events);
+    if(valid)for(const p of events){
+      if(!Number.isSafeInteger(p.tick)||p.tick<=0||p.tick<=prev
+        ||p.tick>s.tick||p.tick%r.economy.stunde!==0
+        ||!Number.isSafeInteger(p.amount)||p.amount<=0)valid=false;
+      sum+=p.amount;prev=p.tick;
+    }
+    const ok=valid&&Number.isSafeInteger(paid)&&paid>=0&&paid===sum
+      &&paid<=s.w3.arbeitsKosten&&(!paid||r.w5s?.autoOreWageHousehold);
+    return {ok,earned:s.w3.arbeitsKosten,paid,
+      stillHeld:s.w3.arbeitsKosten-paid,
+      events:events?.length??0,
+      fund:s.owners[r.w3.arbeitsFonds]?.cash??0};
+  }
   function finanzPlan(s,r){
     if(!r.w5s||!r.w5r||!s.w5r?.initialized
       ||s.rulesVersion!==r.rulesVersion)return Object.freeze({stage:'inaktiv'});
@@ -5731,6 +5770,7 @@ const m_core_w5s=(()=>{
       takeoverPlan:Object.freeze({...takeoverPlan(s,r)}),
       oreVenture:Object.freeze({...oreVentureAudit(s,r)}),
       oreVenturePlan:Object.freeze({...oreVenturePlan(s,r)}),
+      orePilotWages:Object.freeze({...orePilotWageAudit(s,r)}),
       orePlan:Object.freeze({...erzPlan(s,r)}),
       yardPlan:Object.freeze({...werkPlan(s,r)}),
       ok:valid});
@@ -5775,7 +5815,8 @@ const m_core_w5s=(()=>{
         ===(r.world.stations[r.w5.station].ziel.miner||0)
           +(s.w5.minerFertig||0)-(s.w5.minerVerkauft||0)-1);
     const equityProof=takeoverAudit(s,r),miningProof=oreVentureAudit(s,r);
-    const ok=starterOk&&proof.ok&&equityProof.ok&&miningProof.ok
+    const wageProof=orePilotWageAudit(s,r);
+    const ok=starterOk&&proof.ok&&equityProof.ok&&miningProof.ok&&wageProof.ok
       &&[w.allocated,w.paid,reserve,pilot].every(n=>
         Number.isSafeInteger(n)&&n>=0)
       &&Array.isArray(completed)&&new Set(ids).size===ids.length
@@ -5797,11 +5838,12 @@ const m_core_w5s=(()=>{
       &&reserve===w.allocated-w.paid&&pilot===w.paid;
     return {ok,allocated:w.allocated,paid:w.paid,reserve,
       completed:completed.length,active:!!a,contract:proof,
-      equity:equityProof,oreVenture:miningProof};
+      equity:equityProof,oreVenture:miningProof,orePilotWages:wageProof};
   }
   return {arbeitsPuffer,finanzPlan,pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
     takeoverPlan,takeoverStart,takeoverDividend,takeoverAudit,
     oreVenturePlan,oreVentureStart,oreVentureDividend,oreVentureAudit,
+    orePilotWage,orePilotWageAudit,
     starterCheck,starterSold,starterPlan,autoStarter,minerSource,
     orderCheck,orderStart,orderCancelCheck,orderCancel,contractCommand,
     contractAudit,completeOrder,npcOrePlan,autoNpcOre};
@@ -6180,6 +6222,7 @@ function step(state, rules) {
       m_core_erzpilot.exportiere(state, rules);
       if(rules.w5n)m_core_w5n.verbrauch(state,rules);
       if(rules.w5o)m_core_w5o.einkommen(state,rules);
+      if(rules.w5s?.autoOreWageHousehold)m_core_w5s.orePilotWage(state,rules);
       if(rules.w5q)m_core_w5q.exportieren(state,rules);
       if (rules.erzpilot.npcInvestor) {
         m_core_erzpilot.krisenSteuern(state, rules);

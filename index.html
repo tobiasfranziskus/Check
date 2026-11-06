@@ -4989,30 +4989,46 @@ const m_core_w5s=(()=>{
   function contractAudit(s,r){
     const c=contract(s),sum=s.owners[account]?.cash??0;
     if(!c)return {ok:sum===0,stage:'none',sum};
-    const t=terms(r,c.type),owed=c.stage==='reserved'?c.total:
-      c.stage==='bought'?c.wage:0;
-    const sold=['bought','inflight','completed'].includes(c.stage);
-    const ids=c.type==='miner'?s.w5.minerSchiffIds:s.w5.schiffIds;
-    const evidence=s.ships[c.ship]?.owner===c.owner
-      ||s.w5r?.losses.some(x=>x.id===c.ship&&x.owner===c.owner);
+    const history=s.w5s.orderHistory||[],records=[...history,c];
+    const validRecord=x=>{
+      if(!x||!['miner','frachter'].includes(x.type))return false;
+      const t=terms(r,x.type);
+      const sold=['bought','inflight','completed'].includes(x.stage);
+      const ids=x.type==='miner'?s.w5.minerSchiffIds:s.w5.schiffIds;
+      const evidence=s.ships[x.ship]?.owner===x.owner
+        ||s.w5r?.losses.some(z=>z.id===x.ship&&z.owner===x.owner
+          &&z.type===x.type);
+      return Number.isSafeInteger(x.ordered)&&x.ordered>=0&&x.ordered<=s.tick
+        &&x.owner!=='house'
+        &&x.owner===(x.type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner)
+        &&x.price===t.price&&x.wage===t.wage&&x.total===t.total
+        &&typeof x.buildStarted==='boolean'
+        &&['reserved','bought','inflight','completed','cancelled'].includes(x.stage)
+        &&(!sold||(x.buildStarted===true&&ids?.includes(x.ship)&&evidence
+          &&Number.isSafeInteger(x.bought)&&x.bought>=x.ordered
+          &&x.bought<=s.tick))
+        &&(x.stage!=='inflight'
+          ||(s.w5s.active?.id===x.ship&&s.w5s.active.owner===x.owner))
+        &&(x.stage!=='completed'
+          ||(Number.isSafeInteger(x.arrived)&&x.arrived>=x.bought
+            &&x.arrived<=s.tick
+            &&s.w5s.completed.some(z=>z.id===x.ship
+              &&z.owner===x.owner&&z.ankunft===x.arrived
+              &&(z.type||'frachter')===x.type)))
+        &&(x.stage!=='cancelled'
+          ||(!x.buildStarted&&Number.isSafeInteger(x.cancelled)
+            &&x.cancelled>=x.ordered&&x.cancelled<=s.tick));
+    };
+    const owed=c.stage==='reserved'?c.total:c.stage==='bought'?c.wage:0;
     const ok=Number.isSafeInteger(sum)&&sum>=0&&sum===owed
-      &&Number.isSafeInteger(c.ordered)&&c.ordered>=0&&c.ordered<=s.tick
-      &&c.owner!=='house'
-      &&c.owner===(c.type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner)
-      &&c.price===t.price&&c.wage===t.wage&&c.total===t.total
-      &&typeof c.buildStarted==='boolean'
-      &&['reserved','bought','inflight','completed','cancelled'].includes(c.stage)
-      &&(!sold||(ids?.includes(c.ship)&&evidence
-        &&Number.isSafeInteger(c.bought)&&c.bought>=c.ordered&&c.bought<=s.tick))
-      &&(c.stage!=='inflight'||s.w5s.active?.id===c.ship)
-      &&(c.stage!=='completed'
-        ||(Number.isSafeInteger(c.arrived)&&c.arrived>=c.bought
-          &&s.w5s.completed.some(x=>x.id===c.ship&&x.ankunft===c.arrived)))
-      &&(c.stage!=='cancelled'||(!c.buildStarted
-        &&Number.isSafeInteger(c.cancelled)&&c.cancelled>=c.ordered
-        &&c.cancelled<=s.tick))
-      &&(s.w5s.orderHistory||[]).every(x=>['cancelled','completed'].includes(x.stage));
-    return {ok,sum,stage:c.stage,owner:c.owner,type:c.type,ship:c.ship||null};
+      &&Array.isArray(s.w5s.orderHistory||[])
+      &&history.every(x=>['cancelled','completed'].includes(x.stage))
+      &&records.every(validRecord)
+      &&records.every((x,i)=>!i||records[i-1].ordered<=x.ordered)
+      &&new Set(records.filter(x=>x.ship).map(x=>x.ship)).size===
+        records.filter(x=>x.ship).length;
+    return {ok,sum,stage:c.stage,owner:c.owner,type:c.type,ship:c.ship||null,
+      contracts:records.length};
   }
   // W5s-f: Erz-Beschaffung ist ausdrücklich ein VORFINANZIERTER
   // Auftrag des vorhandenen W3-Core. Kein Erz-Käufer, kein Frachter oder

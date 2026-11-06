@@ -66,7 +66,7 @@ function run(seed,days,enabled=true){
  }
  if(enabled&&days>=3){
    assert.ok(s.w5.fertig>=1,'real aus NPC-Erz mindestens eine Werfthülle gebaut');
-   assert.ok(s.w5.verkauft+s.w5.minerVerkauft>=1,
+   assert.ok(s.w5.verkauft+(s.w5.minerVerkauft||0)>=1,
      'Werft-Verkaufsblocker '+JSON.stringify({
        work:api.w5sWerkStatus(s,rules),
        ownerCash:{npc3:s.owners.npc3.cash,transport:s.owners.transport.cash,
@@ -86,7 +86,7 @@ function run(seed,days,enabled=true){
    water:s.w5n.wasserVerbraucht,
    material:s.stations.st_nadir.lager.material,
    minerNadir:s.stations.st_nadir.lager.miner,
-   built:s.w5.fertig,sold:s.w5.verkauft+s.w5.minerVerkauft,
+   built:s.w5.fertig,sold:s.w5.verkauft+(s.w5.minerVerkauft||0),
    flights:s.w5s?.completed?.length||0,
    contractStage:s.w5s?.contract?.stage||null,
    contracts:s.w5s?.orderHistory?.length||0,

@@ -7,10 +7,6 @@
 <meta name="theme-color" content="#f5f5f7">
 <meta name="aphros-version" content="v0.12.5">
 <meta name="aphros-pages-kanal" content="W5-Spieltest-2026-11-06">
-<script>
-// Nur der GitHub-Pages-Haupteinstieg startet in den getrennten W5-Test-Slot.
-if (!location.search && !location.hash) location.replace(location.pathname + '?modus=w5werft');
-</script>
 <title>Aphros Void</title>
 <style>
 :root {
@@ -567,6 +563,11 @@ body.erzpilot-modus > :not(#erzpilot-app):not(script) { display: none !important
 </div>
 
 <script>
+// GitHub Pages: nur der Haupteinstieg /Check/ verwendet den separaten W5-Spieltest-Slot.
+if (typeof location !== 'undefined' && /^\\/Check\\/?$/.test(location.pathname || '')
+  && !location.search && !location.hash && typeof location.replace === 'function') {
+  location.replace(location.pathname + '?modus=w5werft');
+}
 'use strict';
 
 const m_data_systeme = (() => {

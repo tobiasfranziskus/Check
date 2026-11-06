@@ -1,0 +1,19 @@
+name: W5s-h – Kapitalbindung und NPC-Reinvestition
+on:
+  push:
+    branches:
+      - feature/w5s-h-echte-reinvestition-20261106
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-h-reinvestition.test.mjs
+      - .github/workflows/w5s-h-reinvestition.yml
+jobs:
+  kapital:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5s-h-reinvestition.test.mjs

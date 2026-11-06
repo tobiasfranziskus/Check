@@ -2912,7 +2912,8 @@ const m_core_w3 = (() => {
           +(state.w5s?.active?.owner===c.spedition
             ?(state.owners.w5s_transfer_reserved?.cash??0):0)
         ===startCarrier-huelle-w.arbeitsKosten+w.frachtUmsatz
-          -(state.w5n?.frachtLohn??0)+(state.w5n?.frachtUmsatz??0)
+          -((state.w5n?.frachtLohn??0)-(state.w5s?.successor?.workPaid??0))
+          +((state.w5n?.frachtUmsatz??0)-(state.w5s?.successor?.freightRevenue??0))
           -(state.w5o?.divFracht??0)
           +(state.w5s?.takeover?.amount??0)
           -(state.w5s?.takeover?.dividends??0)
@@ -4537,7 +4538,7 @@ const m_core_w5o=(()=>{
        Math.floor(w.npcMineErlos/c.eisPreis)*c.mineLohn;
    if(field==='divFracht'){
      const p=m_core_w5n.preise(r);
-     return n.frachtAbgeschlossen*(p.fracht-p.arbeit);
+     return (n.frachtAbgeschlossen-(s.w5s?.successor?.trips??0))*(p.fracht-p.arbeit);
    }
    if(field==='divStation'){
      const p=m_core_w5n.preise(r);
@@ -5173,7 +5174,10 @@ const m_core_w5s=(()=>{
     if(!r.w5s||!r.w5r||s.rulesVersion!==r.rulesVersion||!s.w5r?.initialized)
       return {ok:false,grund:'W5s: Forschungsprofil nicht aktiv'};
     const miner=r.w5s?.minerIndustry&&sh?.klasse==='miner';
-    const owner=miner?s.w5o.minerOwner:r.w5n.frachterOwner;
+    const successor=!!(r.w5s?.successorFreight&&r.w5s?.independentSuccessor
+      &&sh?.id===s.w5s?.successor?.ship&&sh.owner===s.w5s.successor.owner);
+    const owner=successor?s.w5s.successor.owner:
+      miner?s.w5o.minerOwner:r.w5n.frachterOwner;
     if(!sh||sh.owner!==owner||(sh.klasse!=='frachter'&&!miner)
       ||sh.system!=='nadir'||sh.phase!=='dock'||sh.auftrag!=='halten'
       ||Object.values(sh.ladung).some(n=>n!==0))
@@ -5209,6 +5213,8 @@ const m_core_w5s=(()=>{
     s.owners[owner].cash-=p.kosten;
     s.owners.w5s_transfer_reserved.cash+=p.kosten;
     w.allocated+=p.kosten;
+    if(owner===s.w5s?.successor?.owner)
+      s.w5s.successor.flightAllocated=p.kosten;
     buche(s,owner,'kosten',p.kosten);
     w.active={id:sh.id,owner,start:s.tick,minuten:p.minuten,
       ...(starter(s)?.id===sh.id?{starter:true}:{}),
@@ -5231,7 +5237,10 @@ const m_core_w5s=(()=>{
     reserve.cash-=a.lohn;s.owners.w5s_transfer_pilot.cash+=a.lohn;
     buche(s,'w5s_transfer_pilot','erloes',a.lohn);
     w.paid+=a.lohn;
-    if(a.type!=='miner'&&w.paidTransport!==undefined)w.paidTransport+=a.lohn;
+    if(a.owner===s.w5s?.successor?.owner)
+      s.w5s.successor.flightPaid=(s.w5s.successor.flightPaid||0)+a.lohn;
+    if(a.type!=='miner'&&a.owner!==s.w5s?.successor?.owner&&w.paidTransport!==undefined)
+      w.paidTransport+=a.lohn;
     a.gearbeitet++;
     if(a.gearbeitet===a.minuten){
       if(s.tick!==sh.ankunft||reserve.cash!==0)
@@ -5957,8 +5966,8 @@ const m_core_w5s=(()=>{
     const current=s.owners[owner]?.cash;
     const ore=m_core_w3.kalkulation(r),ice=m_core_w5n.preise(r);
     const w3=s.w3,n=s.w5n;
-    const laborOre=w3.arbeitsKosten,laborIce=n.frachtLohn;
-    const revenueOre=w3.frachtUmsatz,revenueIce=n.frachtUmsatz;
+    const laborOre=w3.arbeitsKosten,laborIce=n.frachtLohn-(s.w5s?.successor?.workPaid??0);
+    const revenueOre=w3.frachtUmsatz,revenueIce=n.frachtUmsatz-(s.w5s?.successor?.freightRevenue??0);
     const hulls=s.ledger.frachter.consumed*r.economy.waren.frachter.basis
       -(s.w5s?.successor?.pricePaid??0);
     const reposition=s.w5s?.paidTransport??s.w5s?.paid??0;
@@ -6087,11 +6096,12 @@ const m_core_w5s=(()=>{
     const pilot=s.owners.w5s_transfer_pilot?.cash??0;
     const finished=completed.reduce((n,x)=>n+x.kosten,0);
     const ids=completed.map(x=>x.id);
-    const transferOwner=type=>type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;
+    const transferOwner=(type,id)=>type==='miner'?s.w5o.minerOwner:
+      id===s.w5s?.successor?.ship?s.w5s.successor.owner:r.w5n.frachterOwner;
     const transferIds=type=>type==='miner'?[...(s.w5.minerSchiffIds||[]),
       ...(starter(s)?[starter(s).id]:[])]
       :s.w5.schiffIds;
-    const jobOk=!a||(a.owner===transferOwner(a.type||'frachter')
+    const jobOk=!a||(a.owner===transferOwner(a.type||'frachter',a.id)
       &&transferIds(a.type||'frachter')?.includes(a.id)
       &&a.minuten===m_core_route.route(r.world,'nadir','aldera')?.zeit
       &&a.lohn===lohn&&a.kosten===a.minuten*lohn
@@ -6126,7 +6136,7 @@ const m_core_w5s=(()=>{
       &&[w.allocated,w.paid,reserve,pilot].every(n=>
         Number.isSafeInteger(n)&&n>=0)
       &&Array.isArray(completed)&&new Set(ids).size===ids.length
-      &&completed.every(x=>x.owner===transferOwner(x.type||'frachter')
+      &&completed.every(x=>x.owner===transferOwner(x.type||'frachter',x.id)
         &&transferIds(x.type||'frachter')?.includes(x.id)
         &&x.minuten===m_core_route.route(r.world,'nadir','aldera')?.zeit
         &&x.kosten===x.minuten*lohn
@@ -6138,9 +6148,11 @@ const m_core_w5s=(()=>{
       &&w.paid===finished+(a?.gearbeitet??0)*lohn
       &&(w.paidTransport===undefined||(
         Number.isSafeInteger(w.paidTransport)&&w.paidTransport>=0
-        &&w.paidTransport===completed.filter(x=>x.type!=='miner')
+        &&w.paidTransport===completed.filter(x=>x.type!=='miner'
+          &&x.owner!==s.w5s?.successor?.owner)
           .reduce((n,x)=>n+x.kosten,0)
-          +(a&&a.type!=='miner'?a.gearbeitet*lohn:0)))
+          +(a&&a.type!=='miner'&&a.owner!==s.w5s?.successor?.owner
+            ?a.gearbeitet*lohn:0)))
       &&reserve===w.allocated-w.paid&&pilot===w.paid;
     return {ok,allocated:w.allocated,paid:w.paid,reserve,
       completed:completed.length,active:!!a,contract:proof,

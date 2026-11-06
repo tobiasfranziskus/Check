@@ -67,7 +67,12 @@ test('W5s-r: 13 Seeds ×90 Tage mit täglichen, unabhängigen Wirtschaftsprüfun
  for(const seed of seeds){
   const x=run(seed,90,true);
   assert.equal(x.wages.ok,true);
-  assert.ok(x.wages.paid>0,'realer Lohn aus Industrie');
+  assert.equal(x.wages.paid,640,'90 Tage: reale 160+240+240 ISK');
+  assert.equal(x.wages.earned,640);
+  assert.deepEqual(x.wages.details.map(z=>z.paid),[160,240,240]);
+  assert.equal(x.water,4316);
+  assert.equal(x.ice,88);
+  assert.equal(x.ore,2);
   if(seed===42||seed===7)assert.deepEqual(run(seed,90,true),x);
   console.log('W5S_R_90D '+JSON.stringify({seed,hash:x.hash,ore:x.ore,
     water:x.water,ice:x.ice,wages:x.wages,refinery:x.points[90].refined,
@@ -78,7 +83,18 @@ test('W5s-r: Seed42/7 ×365 Tage – Industriearbeit kein Staatsgeld',()=>{
  for(const seed of [42,7]){
   const x=run(seed,365,true);
   assert.equal(x.wages.ok,true);
-  assert.ok(x.water>=5823,'kein gegenüber W5s-q verschlechterter Endkundenabsatz');
+  assert.equal(x.water,6143,'zusätzlich real bezahlte 320 Wasser');
+  assert.equal(x.ice,123,'fünf zusätzliche echte Eisfahrten');
+  assert.equal(x.ore,3,'keine mangels Produktionsbedarf erfundene vierte Fracht');
+  assert.equal(x.wages.earned,1730);
+  assert.equal(x.wages.paid,1730);
+  assert.deepEqual(x.wages.details.map(z=>z.paid),[260,390,1080]);
+  assert.equal(x.points[365].shipyard,13);
+  assert.equal(x.points[365].refined,13);
+  assert.equal(x.points[365].services,18);
+  assert.equal(x.points[365].demand.automatedW3Approved,false);
+  assert.equal(x.points[365].carrier.freighters,0);
+  assert.equal(x.points[365].carrier.ownCapitalMissing,810);
   console.log('W5S_R_365D '+JSON.stringify(x));
  }
 });

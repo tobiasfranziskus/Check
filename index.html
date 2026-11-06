@@ -1352,12 +1352,16 @@ function checkShape(state, cmd, rules) {
       && cmd.klasse === 'miner' && cmd.station === rules.w5b.station;
     const w5bJaeger = !!rules.w5b && cmd.owner === rules.w5b.kaeufer
       && cmd.klasse === 'jaeger' && cmd.station === rules.w5b.station;
+    const w5sStarter=!!rules.w5s?.autoStarterMiner
+      &&cmd.station===rules.w5.station&&cmd.klasse==='miner'
+      &&m_core_w5s.starterCheck(state,rules,cmd.owner).ok;
     const w5sMiner = !!rules.w5s?.minerIndustry
+      && !w5sStarter
       && cmd.station===rules.w5.station && cmd.klasse==='miner'
       && cmd.owner===state.w5o.minerOwner;
     if (!rules.erzpilot || (!frachter && !miner && !w5bJaeger)
       || (cmd.station !== rules.erzpilot.station && !w5Kauf
-        && !w5bMiner && !w5bJaeger && !w5sMiner))
+        && !w5bMiner && !w5bJaeger && !w5sMiner && !w5sStarter))
       return 'Komplettkauf nur fuer belegte Schiffe am Handelsplatz';
     if ((state.stations[cmd.station].lager[cmd.klasse] || 0) < 1) return 'kein Komplettschiff auf Lager';
     if ((w5Kauf||w5sMiner) && !m_core_w5.verkaufPruefen(
@@ -1408,12 +1412,16 @@ function execute(state, cmd, rules) {
       state.ledger[cmd.klasse].consumed += 1;
       const w5Kauf = !!rules.w5 && cmd.station === rules.w5.station
         && cmd.klasse === rules.w5.klasse && cmd.owner === rules.w5.kaeufer;
-      const w5sMiner = !!rules.w5s?.minerIndustry
+      const w5sStarter=!!rules.w5s?.autoStarterMiner
+        &&cmd.station===rules.w5.station&&cmd.klasse==='miner'
+        &&m_core_w5s.starterCheck(state,rules,cmd.owner).ok;
+      const w5sMiner = !!rules.w5s?.minerIndustry && !w5sStarter
         && cmd.station===rules.w5.station && cmd.klasse==='miner'
         && cmd.owner===state.w5o.minerOwner;
       const w5bKauf = !!rules.w5b && cmd.station===rules.w5b.station
         && ((cmd.klasse==='miner'&&cmd.owner===rules.w5b.produzent)||w5bJaeger);
-      const system = w5Kauf || w5bKauf || w5sMiner ? 'nadir' : 'aldera';
+      const system = w5Kauf || w5bKauf || w5sMiner || w5sStarter
+        ? 'nadir' : 'aldera';
       const sh = m_core_state.neuesSchiff(state, {
         owner: cmd.owner, klasse: cmd.klasse, system,
         heimat: system, auftrag: 'halten', ware: null,
@@ -1422,6 +1430,7 @@ function execute(state, cmd, rules) {
         state.w5.verkauft++;
         state.w5.schiffIds.push(sh.id);
       }
+      if(w5sStarter)m_core_w5s.starterSold(state,rules,sh);
       if(w5sMiner) {
         state.w5.minerVerkauft=(state.w5.minerVerkauft||0)+1;
         (state.w5.minerSchiffIds ||= []).push(sh.id);

@@ -5078,6 +5078,56 @@ const m_core_w5s=(()=>{
     return {ok,sum,stage:c.stage,owner:c.owner,type:c.type,ship:c.ship||null,
       contracts:records.length};
   }
+  // W5s-i: reale, durch W2 und W3 abgedeckte NPC-Erzbeschaffung.
+  // Der vorhandene R32-NPC-Miner ist exklusiv im Eisvertrag; ein
+  // zweiter Miner wird aus eigener NPC-Kasse regulär gekauft.
+  // Jede weitere Förderung nutzt den EINEN bereits bestehenden W2-Core.
+  function npcOrePlan(s,r){
+    if(!r.w5s?.autoNpcOre||!r.w5s.autoIndustry||!r.w5s.autoOre
+      ||!r.erzpilot?.npcInvestor||!s.w5r?.initialized)
+      return {stage:'inaktiv'};
+    const owner=r.erzpilot.npcInvestor,c=r.erzpilot;
+    if(owner==='house'||owner!==s.w5o.minerOwner)
+      return {stage:'keine_npc_erzeigentuemer'};
+    const oreMiner=Object.values(s.ships).filter(sh=>sh.owner===owner
+      &&sh.klasse==='miner'&&sh.id!==s.w5r.miner.id
+      &&sh.system==='aldera')
+      .sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
+    const crisis=m_core_erzpilot.krisenLage(s,r);
+    if(!crisis.kaeuferNachweisOk)return {stage:'kaeufer_audit_fehler'};
+    const ready=oreMiner.find(sh=>sh.phase==='dock'
+      &&sh.auftrag==='halten'&&sh.ware!=='eis'
+      &&Object.values(sh.ladung).every(n=>n===0));
+    if(crisis.planbar>=c.auftragsMenge&&ready)
+      return {stage:'erzauftrag_starten',ship:ready.id,
+        command:{type:'shipMine',owner,schiff:ready.id,ware:'erz'}};
+    if(oreMiner.length)return {stage:crisis.planbar>0?'eigener_erzminer_vorhanden':'kein_finanzierter_erzauftrag',
+      ships:oreMiner.map(x=>x.id),planbar:crisis.planbar};
+    if(crisis.planbar<c.auftragsMenge)
+      return {stage:'kein_finanzierter_erzauftrag',planbar:crisis.planbar};
+    if((s.w5h?.bestand||0)>=r.w3.fracht||s.w3?.auftrag)
+      return {stage:'vorhandene_erzcharge'};
+    const price=r.economy.waren.miner.basis;
+    const work=Math.ceil(c.auftragsMenge/m_core_w5m.rate(r,
+      {klasse:'miner',bohrerMk1:false}))*c.minerJeMinute;
+    if(!Number.isSafeInteger(work)||work<1)
+      return {stage:'arbeitsplan_ungueltig'};
+    const required=price+work;
+    if(s.owners[owner].cash<required)
+      return {stage:'miner_unfinanziert',fehlbetrag:required-s.owners[owner].cash};
+    if((s.stations[c.station]?.lager.miner||0)<1)
+      return {stage:'kein_verkaufter_starterminer'};
+    return {stage:'miner_kaufen',preis:price,arbeit:work,
+      command:{type:'shipBuy',owner,station:c.station,klasse:'miner'}};
+  }
+  function autoNpcOre(s,r){
+    const plan=npcOrePlan(s,r);
+    if(!plan.command)return plan;
+    const {type,owner,...cmd}=plan.command;
+    const out=m_core_commands.execute(s,{type,owner,...cmd},r);
+    return {stage:out.ok?plan.stage:'core_abgelehnt',
+      ok:out.ok,grund:out.ok?null:out.reason};
+  }
   // W5s-f: Erz-Beschaffung ist ausdrücklich ein VORFINANZIERTER
   // Auftrag des vorhandenen W3-Core. Kein Erz-Käufer, kein Frachter oder
   // keine bezahlbare Route => keine Ersatzware durch den Dispatcher.
@@ -5188,7 +5238,7 @@ const m_core_w5s=(()=>{
   }
   return {pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
     orderCheck,orderStart,orderCancelCheck,orderCancel,contractCommand,
-    contractAudit,completeOrder};
+    contractAudit,completeOrder,npcOrePlan,autoNpcOre};
 })();
 
 // W5r isolated research: no free replacement ship and fully paid dock work.
@@ -5559,6 +5609,7 @@ function step(state, rules) {
     if(rules.w5r)m_core_w5r.verschleiss(state,rules);
     if(rules.w5o)m_core_w5o.autopilot(state,rules);
     if(rules.w5s?.autoIndustry && state.tick%rules.economy.stunde===0){
+      if(rules.w5s.autoNpcOre)m_core_w5s.autoNpcOre(state,rules);
       if(rules.w5s.autoOre)m_core_w5s.autoErz(state,rules);
       m_core_w5s.autoWerk(state,rules);
     }
@@ -6305,6 +6356,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   w5sWerkStatus:(state,rules)=>m_core_w5s.werkPlan(state,rules),
   w5sErzStatus:(state,rules)=>m_core_w5s.erzPlan(state,rules),
   w5sKapitalLage:(state,rules)=>m_core_w5o.kapitalLage(state,rules),
+  w5sNpcErzStatus:(state,rules)=>m_core_w5s.npcOrePlan(state,rules),
   createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState, createW5LState, createW5MState, createW5NState, createW5OState, createW5QState, createW5RState,
   loadErz, loadW2, loadW3, loadW4, loadW5, loadW5B, loadW5C, loadW5D, loadW5F, loadW5G, loadW5H, loadW5I, loadW5L, loadW5M, loadW5N, loadW5O, loadW5Q, loadW5R, createState, submit, execute, step, advance, load, preis, faktor };
 })();

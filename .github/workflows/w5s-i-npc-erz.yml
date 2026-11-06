@@ -1,0 +1,19 @@
+name: W5s-i – NPC-Erzabbau ohne Spielerbefehl
+on:
+  push:
+    branches:
+      - feature/w5s-i-autonomer-npc-erzabbau-20261106
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-i-autonomer-npc-bergbaustart.test.mjs
+      - .github/workflows/w5s-i-npc-erz.yml
+jobs:
+  npc-erz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5s-i-autonomer-npc-bergbaustart.test.mjs

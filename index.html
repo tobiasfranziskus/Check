@@ -4806,11 +4806,22 @@ const m_core_w5s=(()=>{
       (type!=='miner'||s.w5o.minerOwner!=='house')
       &&due(type)-s.tick<=lead*1440&&!ready(type));
     candidates.sort((a,b)=>due(a)-due(b)||(a<b?-1:a>b?1:0));
+    const pending=s.w5s?.contract;
+    if(r.w5s?.prepaidOrders&&pending
+      &&['reserved','bought','inflight'].includes(pending.stage)
+      &&candidates.includes(pending.type))
+      candidates.sort((a,b)=>a===pending.type?-1:b===pending.type?1:0);
     if(!candidates.length)return {stage:'kein_ersatzbedarf'};
     function planType(type){
     const owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner,
       ids=type==='miner'?(s.w5.minerSchiffIds||[]):s.w5.schiffIds,
       record=s.w5,stock=s.stations[r.w5.station].lager;
+    const c=r.w5s?.prepaidOrders?s.w5s?.contract:null;
+    if(c&&['reserved','bought','inflight'].includes(c.stage)
+      &&(c.type!==type||c.owner!==owner))
+      return {type,stage:'vertrag_andere_klasse'};
+    const reserved=!!(c&&c.type===type&&c.owner===owner
+      &&['reserved','bought','inflight'].includes(c.stage));
     const proof=sh=>sh.owner===owner&&sh.klasse===type
       &&ids.includes(sh.id)&&!s.w5r.assignments?.some(x=>x.id===sh.id);
     const ships=Object.values(s.ships).filter(proof)
@@ -4829,7 +4840,7 @@ const m_core_w5s=(()=>{
       &&sh.auftrag==='halten'&&Object.values(sh.ladung).every(n=>n===0)
       &&!s.w5s?.completed?.some(c=>c.id===sh.id));
     if(nadir){
-      if(s.owners[owner].cash<wage)
+      if(!reserved&&s.owners[owner].cash<wage)
         return {type,stage:'ueberfuehrung_unfinanziert',fehlbetrag:wage-s.owners[owner].cash};
       return {type,stage:'ueberfuehren',ship:nadir.id,
         command:{type:'shipReposition',owner,schiff:nadir.id}};
@@ -4842,7 +4853,7 @@ const m_core_w5s=(()=>{
     // Fehlt ein Werftbeleg, wird weder die Starterhülle als Neubau gekauft
     // noch eine kostenlose Werftfläche hergestellt.
     if(made>0){
-      if(s.owners[owner].cash<price+wage)
+      if(!reserved&&s.owners[owner].cash<price+wage)
         return {type,stage:'kauf_und_flug_unfinanziert',
           fehlbetrag:price+wage-s.owners[owner].cash};
       return {type,stage:'kaufen',command:{
@@ -4851,7 +4862,7 @@ const m_core_w5s=(()=>{
     // Keine neue Werftinvestition bei aktuell nicht zahlungsfähigem
     // Eigentümer. Der Kaufetat bleibt weiterhin frei, NICHT reserviert:
     // Eine später verarmte Firma darf den Kauf rechtmäßig ablehnen.
-    if(s.owners[owner].cash<price+wage)
+    if(!reserved&&s.owners[owner].cash<price+wage)
       return {type,stage:'abnehmer_unfinanziert',
         fehlbetrag:price+wage-s.owners[owner].cash};
     if(s.owners[r.w5.werft].cash<p.materialKosten+p.arbeitKosten)
@@ -4860,6 +4871,11 @@ const m_core_w5s=(()=>{
     if(record.auftrag)return {type,stage:'werft_belegt'};
     if((stock[type]||0)+1>m_core_handel.obergrenze(s,r,r.w5.station,type))
       return {type,stage:'fertiglager_belegt'};
+    if(r.w5s?.prepaidOrders&&!reserved
+      &&((stock.material||0)>=p.material
+        ||(stock.erz||0)>=r.w4.erzJeCharge))
+      return {type,stage:'bestellen',command:{
+        type:'shipOrder',owner,klasse:type}};
     if((stock.material||0)>=p.material)
       return {type,stage:'bauen',command:{
         type:type==='miner'?'stationBuildMiner':'stationBuildShip',
@@ -5006,7 +5022,7 @@ const m_core_w5s=(()=>{
       return {stage:'inaktiv'};
     const need=werkPlan(s,r),typ=need.type;
     const relevant=['erz_fehlt','raffinieren','raffinerie_belegt',
-      'bauen','werft_belegt','fertiglager_belegt'];
+      'bauen','werft_belegt','fertiglager_belegt','bestellen'];
     if(!typ||!relevant.includes(need.stage))
       return {stage:'kein_finanzierter_bedarf',werk:need.stage};
     // Genau zwei Materialchargen Puffer. Kein beliebiges Auffüllen;
@@ -5057,7 +5073,7 @@ const m_core_w5s=(()=>{
     const plan=werkPlan(s,r);
     if(!plan.command)return plan;
     const {type,owner,...args}=plan.command;
-    const result=m_core_commands.execute(s,{type,owner,...args},r);
+    const result=contractCommand(s,r,{type,owner,...args});
     return {type:plan.type,stage:result.ok?plan.stage:'core_abgelehnt',
       ok:result.ok,grund:result.ok?null:result.reason};
   }

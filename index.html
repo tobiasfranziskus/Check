@@ -4535,7 +4535,13 @@ const m_core_w5o=(()=>{
    // W5s-l: ein zusaetzlicher vollstaendig finanzierbarer Flug
    // bleibt im Forschungsprofil nach dem Schiffskauf als EIGENES
    // Speditions-Betriebskapital stehen, nicht als neues Geld.
-   return Math.max(standard,target+m_core_w5s.arbeitsPuffer(r,type));
+   // W5s-n Forschungsvariante: nicht aus dem Nichts finanzieren.
+   // Der NPC-Spediteur kann bis zu drei *eigene*, bereits verdiente
+   // volle Frachter-Erneuerungsbudgets vor Dividendenauszahlung halten.
+   // Ohne Flag bleibt das W5s-m/L-Verhalten bitidentisch.
+   const cycles=type==='frachter'&&[2,3].includes(r.w5s?.carrierRenewalCycles)
+     ?r.w5s.carrierRenewalCycles:1;
+   return Math.max(standard,cycles*(target+m_core_w5s.arbeitsPuffer(r,type)));
  }
  function kapitalLage(s,r){
    const mine=s.w5o.minerOwner,car=r.w5n.frachterOwner;

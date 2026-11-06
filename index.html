@@ -5083,8 +5083,8 @@ const m_core_w5s=(()=>{
     const w=s.w5s;
     if(!w)return {ok:true,active:false,completed:0};
     const a=w.active,completed=w.completed||[],lohn=r.w5n.fliegerLohn;
-    const reserve=s.owners.w5s_transfer_reserved?.cash;
-    const pilot=s.owners.w5s_transfer_pilot?.cash;
+    const reserve=s.owners.w5s_transfer_reserved?.cash??0;
+    const pilot=s.owners.w5s_transfer_pilot?.cash??0;
     const finished=completed.reduce((n,x)=>n+x.kosten,0);
     const ids=completed.map(x=>x.id);
     const transferOwner=type=>type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;

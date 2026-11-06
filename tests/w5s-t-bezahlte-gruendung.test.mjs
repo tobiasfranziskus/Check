@@ -48,6 +48,7 @@ test('W5s-t: echte W4/W5-Werftcharge + private Gründung + eigener bezahlter Fra
   assert.equal(s.owners.w5s_carrier2.cash,930);
   assert.equal(s.w5s.successor.ship,null);
   assert.equal(cmd(s,{type:'shipFoundCarrier',owner:'export'}).ok,false,'keine zweite Gratisgründung');
+  console.log('W5S_T_FOUNDER_AUDIT '+JSON.stringify({core:api.audit(s),finance:api.w5sFinanzStatus(s,rules)}));
   hasAudit(s,'nach Unternehmensgründung');
   const buyer=s.owners.werft_extern.cash;
   const before=s.nextShip;

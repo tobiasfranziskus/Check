@@ -23,6 +23,20 @@ test('W5s-o: echte Marktgüter und verfügbare Schiffe am Insolvenzzeitpunkt',()
          oreTrips:s.w3.abgeschlossen},
        sale}));
    }
+   if(d===120){
+     assert.equal(s.stations.st_aldera.lager.eis,150,
+       'Aldera kauft bei vollem Eis-Lager keine zusätzliche Ware');
+     assert.equal(s.ships.sh003.ladung.eis,100,
+       'weitere 100 physisch vorhandene Eis im NPC-Miner');
+     assert.equal(s.owners.w5n_kunden.cash,2,
+       'ausgetrockneter Wasser-Endkundenetat, keine erfundene Nachfrage');
+     const hash=api.hash(s);
+     const denied=api.execute(s,{type:'shipSellIce',owner:'npc3',
+       schiff:'sh003',menge:50},r);
+     assert.equal(denied.ok,false,
+       'vollen Quellmarkt nicht mit Gratis-Eis aufstocken');
+     assert.equal(api.hash(s),hash,'Ablehnung verändert keine Waren oder ISK');
+   }
  }
  assert.equal(api.audit(s).ok,true);
 });

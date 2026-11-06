@@ -1,10 +1,10 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const api=Function(html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='))+'\nreturn m_core_index;')();
-const make=(lead=2)=>({...api.W5R_RULES,w5s:{minerIndustry:true,concurrent:true,autoIndustry:true,autoOre:true,autoNpcOre:true,prepaidOrders:true,autoStarterMiner:true,autoLeadDays:lead,retainFleetEarnings:true,carrierWorkingCapital:true}});
+const make=(lead=2,settlement=false)=>({...api.W5R_RULES,w5s:{minerIndustry:true,concurrent:true,autoIndustry:true,autoOre:true,autoNpcOre:true,prepaidOrders:true,autoStarterMiner:true,autoLeadDays:lead,retainFleetEarnings:true,carrierWorkingCapital:true,...(settlement?{autoOreSettlement:true}:{})}});
 test('W5s-m: Ist-Analyse 2-/7-Tage-Erz-Nachfrage und Eigentumsfluss',()=>{
-for(const lead of [2,7]){
- const r=make(lead),s=api.createW5RState(42,'full','npc3');
+for(const lead of [2,7])for(const settlement of [false,true]){
+ const r=make(lead,settlement),s=api.createW5RState(42,'full','npc3');
  for(let d=1;d<=90;d++){
    api.advance(s,1440,r);
    assert.equal(api.audit(s).ok,true,'vollstaendiges Buch day '+d);
@@ -12,7 +12,7 @@ for(const lead of [2,7]){
      const f=api.w5sFinanzStatus(s,r),
        k=api.pilotNpcKrisenLage(s),
        m=api.w5sNpcErzStatus(s,r);
-     console.log('W5S_M_DIAG '+JSON.stringify({lead,d,
+     console.log('W5S_M_DIAG '+JSON.stringify({lead,settlement,d,
        ore:s.w3.abgeschlossen,erzPlan:f.orePlan,werkPlan:f.yardPlan,
        npcOrePlan:m,krise:k,
        w5h:s.w5h,stationAlderaOre:s.stations.st_aldera.lager.erz,

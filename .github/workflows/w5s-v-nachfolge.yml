@@ -1,0 +1,19 @@
+name: W5s-v – eigenstaendiger Nachfolger, keine Gratisfahrten und echter Verschleiss
+on:
+  push:
+    branches:
+      - feature/w5s-v-nachfolgerbetrieb-verschleiss-20261106
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-v-nachfolge-autobetrieb-verschleiss.test.mjs
+      - .github/workflows/w5s-v-nachfolge.yml
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5s-v-nachfolge-autobetrieb-verschleiss.test.mjs

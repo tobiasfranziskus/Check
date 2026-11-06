@@ -25,7 +25,8 @@ const LegacyHub = (() => {
     pilot:['../legacy-pilot/pilot.css',LegacyPilot.mount,''],
     scanner:['../legacy-mining-scanner/scanner.css',LegacyMiningScanner.mount,'']
   };
-  function mount(root, nav) {
+  function mount(root, nav, initial = null) {
+    let sources=initial ? {...snapshots,corporation:initial.corporation,station:initial.station} : snapshots;
     const views=new Map(); let current=null,closed=false;
     function show(id) {
       if(closed || !Object.hasOwn(definitions,id))return false;
@@ -47,7 +48,7 @@ const LegacyHub = (() => {
         const target=document.createElement('div');target.className=className+' hub-component';shadow.append(target);
         if(id==='corporation')target.style.height='100%';
         root.append(host);
-        const api=component(target,id==='pilot'?snapshots.pilot[0]:snapshots[id], {navigate(id){show(id);nav.querySelector('[data-view="'+id+'"]').focus({preventScroll:true});}});
+        const api=component(target,id==='pilot'?snapshots.pilot[0]:sources[id], {navigate(id){show(id);nav.querySelector('[data-view="'+id+'"]').focus({preventScroll:true});}});
         if(id==='pilot')shadow.querySelector('select').addEventListener('change',e=>api.update(snapshots.pilot[Number(e.target.value)]));
         views.set(id,{host,api});
       }
@@ -57,8 +58,8 @@ const LegacyHub = (() => {
     }
     function click(event){const b=event.target.closest('button[data-view]');if(b&&nav.contains(b))show(b.dataset.view);}
     nav.addEventListener('click',click);show('corporation');
-    return Object.freeze({show,getCurrent:()=>current,destroy(){if(closed)return;closed=true;nav.removeEventListener('click',click);views.forEach(v=>{v.api.destroy();v.host.remove();});views.clear();nav.querySelectorAll('[aria-current]').forEach(b=>b.removeAttribute('aria-current'));}});
+    return Object.freeze({show,update(bundle){if(closed)throw Error('Hub abgebaut');sources={...sources,corporation:bundle.corporation,station:bundle.station};for(const id of ['corporation','station'])views.get(id)?.api.update(sources[id]);},getCurrent:()=>current,destroy(){if(closed)return;closed=true;nav.removeEventListener('click',click);views.forEach(v=>{v.api.destroy();v.host.remove();});views.clear();nav.querySelectorAll('[aria-current]').forEach(b=>b.removeAttribute('aria-current'));}});
   }
   return Object.freeze({mount,snapshots,fittingMount});
 })();
-const legacyHub=LegacyHub.mount(document.getElementById('hub-content'),document.getElementById('hub-nav'));
+const legacyHub=document.body.hasAttribute('data-core-preview') ? null : LegacyHub.mount(document.getElementById('hub-content'),document.getElementById('hub-nav'));

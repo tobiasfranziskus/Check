@@ -49,7 +49,8 @@ function stageUntil(s,stage,limit=35){
 }
 function built(seed){
   const s=prepare(seed);
-  let sawReserved=false,sawBought=false,sawInflight=false,hadTwo=false,orders=0;
+  let sawReserved=false,sawBought=false,sawInflight=false,hadTwo=false;
+  let rejectedLateCancel=false;
   let reservedProof=null,first=null;
   for(let hour=0;hour<48;hour++){
     api.advance(s,60,finance);
@@ -70,6 +71,13 @@ function built(seed){
       s.owners.w5s_order_reserved.cash-=1;
       assert.equal(api.hash(s),before);
     }
+    if(c?.stage==='reserved'&&c.buildStarted&&!rejectedLateCancel){
+      const hash=api.hash(s);
+      assert.equal(api.execute(s,{type:'shipCancelOrder',owner:c.owner},finance).ok,false,
+        'nach Werftbeginn ist die Vorbestellung verbindlich');
+      assert.equal(api.hash(s),hash,'spätes Storno ohne Kassenbewegung');
+      rejectedLateCancel=true;
+    }
     if(c?.stage==='bought'){sawBought=true;assert.equal(s.owners.w5s_order_reserved.cash,c.wage)}
     if(c?.stage==='inflight')sawInflight=true;
     if((s.w5s?.completed||[]).length===2){hadTwo=true;break;}
@@ -85,6 +93,13 @@ function built(seed){
   assert.equal(s.w5s.contract.stage,'completed');
   assert.equal(s.w5s.orderHistory.length,1,'abgeschlossene Verträge archiviert');
   assert.equal(s.w5s.orderHistory[0].stage,'completed');
+  assert.equal(rejectedLateCancel,true,'Storno nach tatsächlichem Werftstart geprüft');
+  const prior=api.hash(s);
+  s.w5s.orderHistory[0].price++;
+  assert.equal(api.audit(s).ok,false,'historischer Kaufbeleg wird unabhängig geprüft');
+  assert.throws(()=>api.loadW5R(api.save(s)),/bilanz|inkompatibel/i);
+  s.w5s.orderHistory[0].price--;
+  assert.equal(api.hash(s),prior);
   assert.equal(s.w3.geliefert,50,'W3 liefert echtes Erz ohne manuellen Frachtauftrag');
   audit(s,'zwei vollständig bezahlte Verträge');
   return s;

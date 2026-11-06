@@ -4402,7 +4402,10 @@ const m_core_w5o=(()=>{
      // W3-Route ist nur mit eigener, ungebundener und bezahlter Hülle zulässig.
      // Unbelegte Rohware, leere Kundenkasse oder fehlender Lagerraum
      // führen zur Ablehnung durch die bestehenden Core-Gates.
-     if(!s.w3.auftrag){
+     // Bei fehlendem R32-Versorgungsfrachter verbleibt die zweite
+     // real bezahlte Hülle in Aldera, bis das Ersatz-Gate sie zuordnen kann.
+     // Kein erneuter Erzauftrag, der den einzigen Ersatz ewig bindet.
+     if(s.w5r?.frachter.id&&!s.w3.auftrag){
        const spare=free.find(x=>x.id!==s.w5r?.frachter.id
          &&x.phase==='dock'&&x.auftrag==='halten');
        if(spare)attempt(s,r,'shipFreight',c.frachterOwner,{schiff:spare.id});

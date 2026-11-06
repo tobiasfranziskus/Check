@@ -253,7 +253,11 @@ test('W5s-d: eine einzige W5-Werft fertigt Miner und Frachter, beide real zugeor
       api.advance(s,Math.min(1440,15*1440-s.tick),oreFirst);
       valid(s,'W5s-d gemischte Werft bis Miner-Ersatz');
     }
-    assert.equal(s.w5r.miner.id,mi);
+    assert.equal(s.w5r.miner.id,mi,JSON.stringify({
+      actual:s.w5r.miner,expected:mi,ship:s.ships[mi],
+      complete:s.w5s.completed,assignments:s.w5r.assignments,
+      losses:s.w5r.losses,minerIds:s.w5.minerSchiffIds
+    }));
     assert.notEqual(s.w5r.miner.id,originalMiner);
     assert.equal(s.w5r.miner.bought,0);
     while(s.tick<30*1440){

@@ -4063,13 +4063,17 @@ const m_core_w5h=(()=>{
       &&w.bestand<=c.charge &&w.bestand<=(s.stations[c.quellStation].lager.erz??-1)
       &&k?.cash===start-w.gekauft*p+w.verkauft*p
         -(s.w5s?.takeover?.amount??0)+(s.w5s?.takeover?.dividends??0)
+        -(s.w5s?.oreVenture?.capital??0)
+        +(s.w5s?.oreVenture?.dividends??0)
       &&stat?.kosten===w.gekauft*p &&stat?.erloes===w.verkauft*p
       &&quelle?.erloes===w.gekauft*p+(s.w5n?.eisTransferWert??0)
       &&s.ledger.erz.exported===0 &&s.minted===(s.w5q?.minted??0) &&s.burned===0;
     return {ok,gekauft:w.gekauft,verkauft:w.verkauft,bestand:w.bestand,
       unterwegs:w.unterwegs,exportCash:k?.cash??null,lieferungen:s.w3.geliefert,
       geldsaldo:k?.cash-start+w.gekauft*p-w.verkauft*p
-        +(s.w5s?.takeover?.amount??0)-(s.w5s?.takeover?.dividends??0)};
+        +(s.w5s?.takeover?.amount??0)-(s.w5s?.takeover?.dividends??0)
+        +(s.w5s?.oreVenture?.capital??0)
+        -(s.w5s?.oreVenture?.dividends??0)};
   }
   function plan(s,r){
     const p=m_core_w5g.kalkulation(s,r),h=audit(s,r);
@@ -4907,6 +4911,148 @@ const m_core_w5s=(()=>{
       earnedAfter:earned,netInvestor:z.dividends-z.amount,
       payoutCount:z.payouts?.length??0};
   }
+  // W5s-p: Unabhaengige, riskante Eigenkapitalzeichnung in den vorhandenen
+  // NPC3-Bergbaukonzern. Keine zweite Mining-Mechanik: der neue bezahlte
+  // Miner nutzt ausschliesslich W2/shipBuy/shipMine/shipSellOre.
+  const oreVenture=s=>s.w5s?.oreVenture||null;
+  const oreVentureAmount=700,oreVentureShare=60;
+  function oreVenturePlan(s,r){
+    if(!r.w5s?.autoNpcVenture||!r.w5s.autoIndustry
+      ||!r.w5s.autoNpcOre||!r.w5s.autoOreSettlement
+      ||!r.w5s.autoTakeover||!s.w5r?.initialized
+      ||s.rulesVersion!==r.rulesVersion)
+      return {stage:'inaktiv'};
+    if(oreVenture(s))return {stage:'erzkonzern_bereits_finanziert',
+      ship:oreVenture(s).ship};
+    if(!uebernahme(s))return {stage:'kein_belegter_konzerninvestor'};
+    const investor=r.w5h.kaeufer,owner=r.erzpilot.npcInvestor;
+    if(investor==='house'||owner==='house'||investor===owner
+      ||owner!==s.w5o.minerOwner)return {stage:'kein_unabhaengiger_miner'};
+    if(s.w3.abgeschlossen<2 || s.w5h.bestand>=r.w3.fracht)
+      return {stage:'noch_keine_finanzierte_erz_nachfrage'};
+    // Keine neue Miner-Huelle, wenn bereits ein eigener Erzminer
+    // unabhaengig von R32-Eis und gebundenen W5-Ersatzhuellen existiert.
+    const ready=Object.values(s.ships).some(sh=>
+      sh.owner===owner&&sh.klasse==='miner'&&sh.system==='aldera'
+      &&sh.id!==s.w5r.miner.id&&sh.ware!=='eis'
+      &&!(s.w5.minerSchiffIds||[]).includes(sh.id)
+      &&sh.id!==s.w5s?.starterMiner?.id);
+    if(ready)return {stage:'eigener_erzminer_vorhanden'};
+    const price=r.economy.waren.miner.basis;
+    const work=r.erzpilot.auftragsMenge*r.erzpilot.minerJeMinute;
+    if((s.stations[r.erzpilot.station].lager.miner||0)<1)
+      return {stage:'keine_physische_minerhuelle'};
+    if(s.owners[owner].cash>=price+work)
+      return {stage:'npc3_eigenfinanziert'};
+    if(s.owners[investor].cash<oreVentureAmount
+      +r.w3.fracht*r.erzpilot.preis)
+      return {stage:'investor_geld_nicht_frei'};
+    const buyer=m_core_w3.kalkulation(r);
+    if(s.owners[r.w3.kunde].cash<buyer.gesamt)
+      return {stage:'keine_bezahlte_erz_endnachfrage'};
+    const market=m_core_erzpilot.krisenLage(s,r);
+    if(!market.kaeuferNachweisOk||market.planbar<=0
+      ||market.freiePlaetze<=0)
+      return {stage:'kein_finanzierter_stations_auftrag'};
+    return {stage:'echter_npc_erzminer_finanzierbar',
+      investor,owner,amount:oreVentureAmount,price,work,
+      demand:market.planbar,station:r.erzpilot.station};
+  }
+  function oreVentureStart(s,r){
+    const p=oreVenturePlan(s,r);
+    if(p.stage!=='echter_npc_erzminer_finanzierbar')return p;
+    const purchaseIndex=s.nextShip;
+    const id=m_core_state.schiffId(purchaseIndex);
+    // Ausschliesslich bereits vorhandene ISK werden gegen echte Anteile
+    // an NPC3 gezeichnet. Keine Zahlung fuer Fracht-/Erzleistung hier.
+    s.owners[p.investor].cash-=p.amount;
+    s.owners[p.owner].cash+=p.amount;
+    s.w5s ||= {allocated:0,paid:0,active:null,completed:[]};
+    s.w5s.oreVenture={investor:p.investor,owner:p.owner,
+      capital:p.amount,share:oreVentureShare,ship:id,purchaseIndex,
+      price:p.price,tick:s.tick,initialOre:s.w3.geliefert,
+      dividends:0,payouts:[]};
+    const buy=m_core_commands.execute(s,{
+      type:'shipBuy',owner:p.owner,station:p.station,klasse:'miner'},r);
+    if(!buy.ok||s.ships[id]?.owner!==p.owner)
+      throw Error('W5s-p: Eigenkapital angelegt, realer Miner-Kauf abgelehnt: '+buy.reason);
+    const mine=m_core_commands.execute(s,{
+      type:'shipMine',owner:p.owner,schiff:id,ware:'erz'},r);
+    if(!mine.ok)throw Error('W5s-p: neuer Miner ohne finanzierten W2-Arbeitsauftrag: '+mine.reason);
+    protokolliere(s,'handel',p.investor+': '+p.amount+
+      ' ISK eigenes Beteiligungskapital in '+p.owner+
+      '; bezahlter Erzminer '+id+' gehoert weiterhin '+p.owner,p.investor);
+    return {stage:'npc3_miner_bezahlt_und_fordert',ship:id,amount:p.amount};
+  }
+  // Gewinn nur aus realem W2-Erzverkauf des NEU finanzierten Miners.
+  // Zuerst sämtliche tatsächlich gebuchten Förderlöhne und den
+  // tatsächlich bezahlten 600-ISK-Hüllenkauf amortisieren, dann 60%.
+  // Die Eis-/Haushaltsdividenden des alten NPC3-Miners bleiben frei.
+  function oreVentureEarned(s,r){
+    const z=oreVenture(s),work=z&&s.w5m?.schiffe?.[z.ship];
+    if(!z||!work)return 0;
+    return Math.max(0,work.verkauft*r.erzpilot.preis-work.lohn-z.price);
+  }
+  function oreVentureDividend(s,r){
+    const z=oreVenture(s);
+    if(!z)return 0;
+    const cap=Math.floor(oreVentureEarned(s,r)*z.share/100);
+    const due=Math.max(0,cap-z.dividends);
+    const workReserve=z.price+r.erzpilot.auftragsMenge*r.erzpilot.minerJeMinute;
+    const available=Math.max(0,s.owners[z.owner].cash-workReserve);
+    const amount=Math.min(available,due);
+    if(!amount)return 0;
+    if(!Number.isSafeInteger(amount)||s.owners[z.owner].cash<amount)
+      throw Error('W5s-p: nicht finanzierter Erzgewinn');
+    s.owners[z.owner].cash-=amount;s.owners[z.investor].cash+=amount;
+    z.dividends+=amount;z.payouts.push({tick:s.tick,amount});
+    protokolliere(s,'handel',z.owner+': '+amount+
+      ' ISK Gewinn aus wirklich verkauftem Miner-Erz nach Hüllen-/Arbeitskosten',
+      z.owner);
+    return amount;
+  }
+  function oreVentureAudit(s,r){
+    const z=oreVenture(s);
+    if(!z)return {ok:true,active:false,capital:0};
+    const sh=s.ships[z.ship];
+    const bought=s.w5m?.minerKaeufe?.[z.owner]??0;
+    const eligible=oreVentureEarned(s,r),cap=Math.floor(eligible*oreVentureShare/100);
+    let sum=0,prior=0,eventsOk=Array.isArray(z.payouts);
+    if(eventsOk)for(const event of z.payouts){
+      if(!Number.isSafeInteger(event.tick)||event.tick<=z.tick
+        ||event.tick<=prior||event.tick>s.tick
+        ||!Number.isSafeInteger(event.amount)||event.amount<=0)
+        eventsOk=false;
+      prior=event.tick;sum+=event.amount;
+    }
+    const ok=eventsOk&&z.investor===r.w5h.kaeufer
+      &&z.owner===r.erzpilot.npcInvestor&&z.investor!==z.owner
+      &&z.capital===oreVentureAmount&&z.share===oreVentureShare
+      &&z.price===r.economy.waren.miner.basis
+      &&Number.isSafeInteger(z.dividends)&&z.dividends>=0
+      &&z.dividends===sum&&z.dividends<=cap
+      &&Number.isSafeInteger(z.tick)&&z.tick>0&&z.tick<=s.tick
+      &&Number.isSafeInteger(z.initialOre)&&z.initialOre>=100
+      &&z.initialOre<=s.w3.geliefert
+      &&bought>0
+      // Die zugeordnete Huellen-ID muss EXAKT dem beim bezahlten
+      // Anteilskauf reservierten naechsten Schiffindex entsprechen.
+      // Ein fremder bereits existierender NPC-Miner ist kein Beleg.
+      &&Number.isSafeInteger(z.purchaseIndex)&&z.purchaseIndex>0
+      &&z.purchaseIndex<s.nextShip
+      &&z.ship===m_core_state.schiffId(z.purchaseIndex)
+      &&sh?.klasse==='miner'&&sh.owner===z.owner
+      &&sh.heimat==='aldera'
+      &&!(s.w5?.minerSchiffIds||[]).includes(z.ship)
+      &&z.ship!==s.w5r?.miner?.id;
+    return {ok,active:true,capital:z.capital,ship:z.ship,
+      owner:z.owner,investor:z.investor,
+      mining:s.w5m?.schiffe?.[z.ship]?.erz??0,
+      sold:s.w5m?.schiffe?.[z.ship]?.verkauft??0,
+      share:z.share,eligible,dividends:z.dividends,
+      payoutCount:z.payouts?.length??0,
+      netInvestor:z.dividends-z.capital};
+  }
   function starterCheck(s,r,owner){
     if(!r.w5s?.autoStarterMiner||!r.w5s?.autoNpcOre
       ||!r.w5s?.minerIndustry||!r.w5s?.autoIndustry
@@ -5392,7 +5538,12 @@ const m_core_w5s=(()=>{
     const ready=oreMiner.find(sh=>sh.phase==='dock'
       &&sh.auftrag==='halten'&&sh.ware!=='eis'
       &&Object.values(sh.ladung).every(n=>n===0));
-    if(crisis.planbar>=c.auftragsMenge&&ready)
+    // W5s-p: Sind am Markt nur 25 Erz statt einer kompletten 50er
+    // Kaufzusage vorfinanzierbar, darf ein eigens finanzierter NPC-Miner
+    // diese 25 realen Erz dennoch nach W2-Vertrag foerdern und verkaufen.
+    // Keine globale Obergrenze fuer Bergbauauftraege.
+    const minimum=r.w5s?.autoNpcVenture&&oreVenture(s)?1:c.auftragsMenge;
+    if(crisis.planbar>=minimum&&ready)
       return {stage:'erzauftrag_starten',ship:ready.id,
         command:{type:'shipMine',owner,schiff:ready.id,ware:'erz'}};
     if(oreMiner.length)return {stage:crisis.planbar>0?'eigener_erzminer_vorhanden':'kein_finanzierter_erzauftrag',
@@ -5578,6 +5729,8 @@ const m_core_w5s=(()=>{
       freight,demand,continuity,
       takeover:Object.freeze({...takeoverAudit(s,r)}),
       takeoverPlan:Object.freeze({...takeoverPlan(s,r)}),
+      oreVenture:Object.freeze({...oreVentureAudit(s,r)}),
+      oreVenturePlan:Object.freeze({...oreVenturePlan(s,r)}),
       orePlan:Object.freeze({...erzPlan(s,r)}),
       yardPlan:Object.freeze({...werkPlan(s,r)}),
       ok:valid});
@@ -5621,8 +5774,8 @@ const m_core_w5s=(()=>{
       &&s.stations[r.w5.station].lager.miner
         ===(r.world.stations[r.w5.station].ziel.miner||0)
           +(s.w5.minerFertig||0)-(s.w5.minerVerkauft||0)-1);
-    const equityProof=takeoverAudit(s,r);
-    const ok=starterOk&&proof.ok&&equityProof.ok
+    const equityProof=takeoverAudit(s,r),miningProof=oreVentureAudit(s,r);
+    const ok=starterOk&&proof.ok&&equityProof.ok&&miningProof.ok
       &&[w.allocated,w.paid,reserve,pilot].every(n=>
         Number.isSafeInteger(n)&&n>=0)
       &&Array.isArray(completed)&&new Set(ids).size===ids.length
@@ -5644,10 +5797,11 @@ const m_core_w5s=(()=>{
       &&reserve===w.allocated-w.paid&&pilot===w.paid;
     return {ok,allocated:w.allocated,paid:w.paid,reserve,
       completed:completed.length,active:!!a,contract:proof,
-      equity:equityProof};
+      equity:equityProof,oreVenture:miningProof};
   }
   return {arbeitsPuffer,finanzPlan,pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
     takeoverPlan,takeoverStart,takeoverDividend,takeoverAudit,
+    oreVenturePlan,oreVentureStart,oreVentureDividend,oreVentureAudit,
     starterCheck,starterSold,starterPlan,autoStarter,minerSource,
     orderCheck,orderStart,orderCancelCheck,orderCancel,contractCommand,
     contractAudit,completeOrder,npcOrePlan,autoNpcOre};
@@ -5864,7 +6018,9 @@ const m_core_w1_vollkosten = (() => {
       +(state.owners.w5b_fabrik_arbeit?.cash??0)+(state.owners.w5f_laser_arbeit?.cash??0));
     const npc = saldo('npc3', arbeitsGebunden('npc3')
       +(state.w5s?.contract?.owner==='npc3'
-        ?(state.owners.w5s_order_reserved?.cash??0):0));
+        ?(state.owners.w5s_order_reserved?.cash??0):0),
+        -(state.w5s?.oreVenture?.capital??0)
+        +(state.w5s?.oreVenture?.dividends??0));
     const station = saldo(cfg.station, abnahmeGebunden);
     const verkauf = saldo(cfg.werftOwner,
       rules.w5 ? state.owners.w5_arbeit_treuhand?.cash ?? 0 : 0);
@@ -5872,7 +6028,9 @@ const m_core_w1_vollkosten = (() => {
     // Produktionserloese und keine geheime Wiederauffuellung des Erzbudgets.
     const kaeufer = saldo(cfg.exportOwner,0,
       (state.w5s?.takeover?.amount??0)
-      -(state.w5s?.takeover?.dividends??0));
+      +(state.w5s?.oreVenture?.capital??0)
+      -(state.w5s?.takeover?.dividends??0)
+      -(state.w5s?.oreVenture?.dividends??0));
     const minerKaeufe = anzahl(state.ledger.miner, 'consumed');
     const bezahlteHuelle = minerKaeufe * rules.economy.waren.miner.basis;
     const frachterHuelle = rules.w3 ? anzahl(state.ledger.frachter,'consumed')
@@ -5944,7 +6102,10 @@ const m_core_w2_konzernstatus = (() => {
         +(state.owners.w5b_fabrik_arbeit?.cash??0)+(state.owners.w5f_laser_arbeit?.cash??0):0;
       const arbeitsReserve=erzReserve+zusatzReserve;
       const bereitsBeauftragt = schiffe.filter((sh) => sh.auftrag === 'foerdern').length;
-      const saldiert = anfang + erloese - ausgaben;
+      const saldiert = anfang + erloese - ausgaben
+        +(owner==='npc3'
+          ?(state.w5s?.oreVenture?.capital??0)
+            -(state.w5s?.oreVenture?.dividends??0):0);
       const freiUndGebunden = freieKasse + arbeitsReserve;
       const kontoOk = [anfang, freieKasse, erloese, ausgaben, arbeitsReserve, saldiert, freiUndGebunden]
         .every(Number.isSafeInteger) && anfang >= 0 && freieKasse >= 0
@@ -6030,6 +6191,10 @@ function step(state, rules) {
     if(rules.w5s?.autoIndustry && state.tick%rules.economy.stunde===0){
       if(state.w5s?.takeover)m_core_w5s.takeoverDividend(state,rules);
       if(rules.w5s.autoTakeover)m_core_w5s.takeoverStart(state,rules);
+      if(rules.w5s.autoNpcVenture){
+        m_core_w5s.oreVentureStart(state,rules);
+        m_core_w5s.oreVentureDividend(state,rules);
+      }
       if(rules.w5s.autoNpcOre)m_core_w5s.autoNpcOre(state,rules);
       if(rules.w5s.autoStarterMiner)m_core_w5s.autoStarter(state,rules);
       if(rules.w5s.autoOre)m_core_w5s.autoErz(state,rules);
@@ -6318,8 +6483,10 @@ function audit(state) {
       ? state.w5h.gekauft-state.w5h.verkauft : exportiert) * cfg.preis;
     // Nicht als Erzumsatz verbuchen: vorhandenes Firmen-Eigenkapital
     // und real bezahlte Gewinnausschuettungen separat belegen.
-    const equity=state.w5s?.takeover?.amount??0;
-    const shareholderPaid=state.w5s?.takeover?.dividends??0;
+    const equity=(state.w5s?.takeover?.amount??0)
+      +(state.w5s?.oreVenture?.capital??0);
+    const shareholderPaid=(state.w5s?.takeover?.dividends??0)
+      +(state.w5s?.oreVenture?.dividends??0);
     const differenz = rest + ausgegeben + equity-shareholderPaid - start;
     // Ohne belegte Endkunden-Einnahmen darf ein blosses Verschieben vorhandener ISK
     // nicht als wiederkehrend finanziertes Exportgeschaeft gelten.

@@ -1,0 +1,19 @@
+name: W5s-l – bezahlte Flugbetriebsreserve
+on:
+  push:
+    branches:
+      - feature/w5s-l-flugbetriebskapital-und-folgeerz-20261106
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-l-flugbetriebskapital.test.mjs
+      - .github/workflows/w5s-l-betriebskapital.yml
+jobs:
+  betreiberreserve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5s-l-flugbetriebskapital.test.mjs

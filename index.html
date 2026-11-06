@@ -4475,7 +4475,10 @@ const m_core_w5o=(()=>{
    // Ein vollständiger Folgeauftrag einschließlich bezahlter Überführung.
    const target=price+wage;
    if(!Number.isSafeInteger(target)||target<=0)return standard;
-   return Math.max(standard,target);
+   // W5s-l: ein zusaetzlicher vollstaendig finanzierbarer Flug
+   // bleibt im Forschungsprofil nach dem Schiffskauf als EIGENES
+   // Speditions-Betriebskapital stehen, nicht als neues Geld.
+   return Math.max(standard,target+m_core_w5s.arbeitsPuffer(r,type));
  }
  function kapitalLage(s,r){
    const mine=s.w5o.minerOwner,car=r.w5n.frachterOwner;
@@ -4914,6 +4917,18 @@ const m_core_w5s=(()=>{
       candidate.owner);
     return true;
   }
+  // W5s-l: bei optionaler NPC-Flotteninvestition eine echte,
+  // aus der bestehenden Speditionskasse finanzierte Fracht-Reserve.
+  // Keine Regel fuer manuelle Spielerkommandos; kein Treuhand-Geld
+  // umgebucht. W3/W5n validieren jede Reise weiterhin selbst.
+  function arbeitsPuffer(r,type){
+    if(type!=='frachter'||!r.w5s?.carrierWorkingCapital)return 0;
+    const e=m_core_w3.kalkulation(r).arbeitsKosten;
+    const i=m_core_w5n.preise(r).arbeit;
+    if(!Number.isSafeInteger(e)||!Number.isSafeInteger(i)||e<=0||i<=0)
+      throw Error('W5s-l: ungültiger Flugbetriebskapitalbedarf');
+    return Math.max(e,i);
+  }
   // W5s-e: ausschließlich lesender, deterministischer Industrie-Plan.
   // Keine Schiffe/Güter/ISK entstehen durch diesen Plan; ausgeführt werden
   // ausschließlich die bestehenden validierten Core-Befehle.
@@ -4959,6 +4974,7 @@ const m_core_w5s=(()=>{
         :s.w5.schiffIds,
       record=s.w5,stock=s.stations[r.w5.station].lager;
     const c=r.w5s?.prepaidOrders?s.w5s?.contract:null;
+    const puffer=arbeitsPuffer(r,type);
     if(c&&['reserved','bought','inflight'].includes(c.stage)
       &&(c.type!==type||c.owner!==owner))
       return {type,stage:'vertrag_andere_klasse'};
@@ -4982,8 +4998,9 @@ const m_core_w5s=(()=>{
       &&sh.auftrag==='halten'&&Object.values(sh.ladung).every(n=>n===0)
       &&!s.w5s?.completed?.some(c=>c.id===sh.id));
     if(nadir){
-      if(!reserved&&s.owners[owner].cash<wage)
-        return {type,stage:'ueberfuehrung_unfinanziert',fehlbetrag:wage-s.owners[owner].cash};
+      if(!reserved&&s.owners[owner].cash<wage+puffer)
+        return {type,stage:'ueberfuehrung_unfinanziert',
+          fehlbetrag:wage+puffer-s.owners[owner].cash};
       return {type,stage:'ueberfuehren',ship:nadir.id,
         command:{type:'shipReposition',owner,schiff:nadir.id}};
     }
@@ -4995,18 +5012,18 @@ const m_core_w5s=(()=>{
     // Fehlt ein Werftbeleg, wird weder die Starterhülle als Neubau gekauft
     // noch eine kostenlose Werftfläche hergestellt.
     if(made>0){
-      if(!reserved&&s.owners[owner].cash<price+wage)
+      if(!reserved&&s.owners[owner].cash<price+wage+puffer)
         return {type,stage:'kauf_und_flug_unfinanziert',
-          fehlbetrag:price+wage-s.owners[owner].cash};
+          fehlbetrag:price+wage+puffer-s.owners[owner].cash};
       return {type,stage:'kaufen',command:{
         type:'shipBuy',owner,station:r.w5.station,klasse:type}};
     }
     // Keine neue Werftinvestition bei aktuell nicht zahlungsfähigem
     // Eigentümer. Der Kaufetat bleibt weiterhin frei, NICHT reserviert:
     // Eine später verarmte Firma darf den Kauf rechtmäßig ablehnen.
-    if(!reserved&&s.owners[owner].cash<price+wage)
+    if(!reserved&&s.owners[owner].cash<price+wage+puffer)
       return {type,stage:'abnehmer_unfinanziert',
-        fehlbetrag:price+wage-s.owners[owner].cash};
+        fehlbetrag:price+wage+puffer-s.owners[owner].cash};
     if(s.owners[r.w5.werft].cash<p.materialKosten+p.arbeitKosten)
       return {type,stage:'werft_unfinanziert',
         fehlbetrag:p.materialKosten+p.arbeitKosten-s.owners[r.w5.werft].cash};
@@ -5064,8 +5081,8 @@ const m_core_w5s=(()=>{
     const p=terms(r,type);
     if(![p.price,p.wage,p.total].every(x=>Number.isSafeInteger(x)&&x>0))
       return {ok:false,grund:'Ungültige Schiffs- oder Flugkosten'};
-    if(s.owners[owner].cash<p.total)
-      return {ok:false,grund:'Kauf und Flug nicht voll finanziert'};
+    if(s.owners[owner].cash<p.total+arbeitsPuffer(r,type))
+      return {ok:false,grund:'Kauf, Flug und nächstes Arbeitsbudget nicht voll finanziert'};
     if(s.owners[account]?.cash||s.w5.auftrag)
       return {ok:false,grund:'Werft oder Geldtreuhand belegt'};
     return {ok:true,...p};
@@ -5325,6 +5342,7 @@ const m_core_w5s=(()=>{
       &&initial>=0&&current>=0&&escrow>=0&&current+escrow===expected;
     const fleet=m_core_w5.plan(r,'frachter').preis
       +m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn;
+    const puffer=arbeitsPuffer(r,'frachter');
     const buyer=s.owners[r.w3.kunde]?.cash??0;
     const customer=s.owners.w5n_kunden?.cash??0;
     const freight=Object.freeze({
@@ -5332,7 +5350,9 @@ const m_core_w5s=(()=>{
       revenueOre,revenueIce,laborOre,laborIce,hulls,reposition,dividend,
       marginBeforeHulls:revenueOre+revenueIce-laborOre-laborIce,
       reconstructed:expected,nextHullAndFlight:fleet,
-      missing:Math.max(0,fleet-current),valid
+      workingCapitalRequired:puffer,
+      nextHullWithWorkingCapital:fleet+puffer,
+      missing:Math.max(0,fleet+puffer-current),valid
     });
     const demand=Object.freeze({
       nadirBuyerCash:buyer,householdCash:customer,
@@ -5413,7 +5433,7 @@ const m_core_w5s=(()=>{
     return {ok,allocated:w.allocated,paid:w.paid,reserve,
       completed:completed.length,active:!!a,contract:proof};
   }
-  return {finanzPlan,pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
+  return {arbeitsPuffer,finanzPlan,pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
     starterCheck,starterSold,starterPlan,autoStarter,minerSource,
     orderCheck,orderStart,orderCancelCheck,orderCancel,contractCommand,
     contractAudit,completeOrder,npcOrePlan,autoNpcOre};

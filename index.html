@@ -5990,6 +5990,89 @@ const m_core_w5s=(()=>{
       flight,working,flightAllocated,flightPaid,workReserved,workPaid,
       trips,revenue,freightLicense:flightPaid===flight&&!!z.ship};
   }
+  // W5s-v: nur die vorhandenen Eigentums-/Kunden-/Pilotengates benutzen.
+  function nachfolgeBetriebPlan(s,r){
+    const z=s.w5s?.successor;
+    if(!r.w5s?.successorOperations||!r.w5s?.successorFreight
+      ||!r.w5s?.independentSuccessor||s.rulesVersion!==r.rulesVersion)
+      return Object.freeze({stage:'inaktiv'});
+    if(!z)return Object.freeze({stage:'keine_rechtmaessige_gruendung'});
+    const required=z.hull+z.flight+z.working;
+    const cash=s.owners[z.owner]?.cash??0,stock=s.stations[r.w5.station]?.lager.frachter??0;
+    if(z.retired)return Object.freeze({stage:'frachter_verschlissen',owner:z.owner,
+      ship:z.ship,retired:z.retired.tick,cash,required,
+      shortfall:Math.max(0,required-cash),stock,
+      replacement:stock<1?'keine_physische_werft_huelle':
+        cash<required?'nicht_voll_finanzierbar':'nur_finanzierungsoption'});
+    if(!z.ship)return Object.freeze({stage:'noch_keine_bezahlte_huelle',cash});
+    const sh=s.ships[z.ship];
+    if(!sh||sh.owner!==z.owner||sh.klasse!=='frachter')
+      return Object.freeze({stage:'keine_gueltige_eigene_huelle',ship:z.ship});
+    if(sh.phase==='reise')return Object.freeze({stage:'reale_reise_laueft',
+      ship:sh.id,auftrag:sh.auftrag});
+    if(sh.phase!=='dock'||sh.auftrag!=='halten'
+      ||Object.values(sh.ladung).some(n=>n!==0))
+      return Object.freeze({stage:'schiff_nicht_frei',ship:sh.id});
+    if(sh.system==='nadir'){
+      const p=pruefen(s,r,sh);
+      if(!p.ok)return Object.freeze({stage:'ueberfuehrung_unfinanziert',
+        grund:p.grund,ownCash:cash,required:z.flight});
+      return Object.freeze({stage:'ueberfuehrung_vorfinanziert',
+        owner:z.owner,ship:sh.id,kosten:p.kosten,
+        command:{type:'shipReposition',owner:z.owner,schiff:sh.id}});
+    }
+    if(sh.system!=='aldera')return Object.freeze({stage:'nicht_im_eislager',ship:sh.id});
+    const n=r.w5n,ice=s.stations[n.zielStation].lager.eis||0;
+    const water=s.stations[n.zielStation].lager.wasser||0;
+    if(ice+water>r.w5o.versorgungZiel)
+      return Object.freeze({stage:'kein_zusaetzlicher_versorgungsbedarf',
+        vorrat:ice+water,ziel:r.w5o.versorgungZiel});
+    const consumer=s.owners[n.kunde]?.cash??0;
+    if(consumer<n.wasserPreis*n.verbrauchStunde)
+      return Object.freeze({stage:'kein_zahlender_wasserhaushalt',
+        consumer,required:n.wasserPreis*n.verbrauchStunde});
+    const p=m_core_w5n.pruefenFracht(s,r,sh);
+    if(!p.ok)return Object.freeze({stage:'fracht_nicht_voll_finanziert',
+      grund:p.grund,owner:z.owner,ownCash:cash});
+    if(p.owner!==z.owner)return Object.freeze({stage:'nicht_eigener_vertrag'});
+    return Object.freeze({stage:'eisfracht_vorfinanziert',
+      owner:z.owner,ship:sh.id,clientCost:p.gesamt,ownPilotCost:p.arbeit,
+      freight:p.fracht,
+      command:{type:'shipFreightIce',owner:z.owner,schiff:sh.id}});
+  }
+  function autoNachfolger(s,r){
+    const p=nachfolgeBetriebPlan(s,r);
+    if(!p.command)return p;
+    const {type,owner,...args}=p.command;
+    const action=m_core_commands.execute(s,{type,owner,...args},r);
+    if(!action.ok)return {stage:'core_abgelehnt',grund:action.reason};
+    const z=s.w5s.successor;
+    z.autoOrders ||= [];
+    z.autoOrders.push({tick:s.tick,type,ship:args.schiff});
+    return {stage:p.stage,ok:true,ship:args.schiff};
+  }
+  function nachfolgeVerschleiss(s,r){
+    if(!r.w5s?.successorOperations||s.tick%1440!==0)return false;
+    const z=s.w5s?.successor;
+    if(!z||!z.ship||z.retired)return false;
+    const sh=s.ships[z.ship];
+    if(!sh||sh.owner!==z.owner||sh.klasse!=='frachter')
+      throw Error('W5s-v: verschleissende Nachfolgerhuelle fehlt');
+    const lifetime=r.w5r.freighterLifeDays*1440;
+    if(s.tick-z.bought<lifetime||sh.phase!=='dock'
+      ||sh.auftrag!=='halten'||Object.values(sh.ladung).some(x=>x!==0))
+      return false;
+    if(s.w5n.frachtauftrag?.schiff===z.ship||s.w3.auftrag?.schiff===z.ship
+      ||s.w5s.active?.id===z.ship)
+      throw Error('W5s-v: bezahlter Vertrag darf nicht vernichtet werden');
+    z.retired={id:sh.id,tick:s.tick,bought:z.bought,
+      lifeDays:r.w5r.freighterLifeDays,reason:'verschleiss'};
+    delete s.ships[sh.id];
+    m_core_state.protokolliere(s,'auftrag',
+      'Nachfolger-Frachter '+sh.id+' nach mindestens '+r.w5r.freighterLifeDays
+      +' Tagen ausgesondert; kein kostenloser Ersatz',z.owner);
+    return true;
+  }
   function finanzPlan(s,r){
     if(!r.w5s||!r.w5r||!s.w5r?.initialized
       ||s.rulesVersion!==r.rulesVersion)return Object.freeze({stage:'inaktiv'});

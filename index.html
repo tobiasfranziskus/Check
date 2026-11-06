@@ -3020,8 +3020,14 @@ const m_core_w5 = (() => {
     const shipIds=w.schiffIds||[];
     const gekaufte=shipIds.every(id=>{
       const sh=state.ships[id];
-      return sh?.klasse===c.klasse && sh.owner===c.kaeufer
-        && sh.heimat==='nadir';
+      if(sh)return sh.klasse===c.klasse&&sh.owner===c.kaeufer
+        &&sh.heimat==='nadir';
+      // Eine real verkaufte Werfthülle verschwindet beim späteren
+      // R32-Verschleiß physisch; der Kauf-/Herkunftsbeleg bleibt gültig.
+      // Nur exakt dokumentierte Verluste des autoritativen W5r-Buchs.
+      return !!state.w5r?.losses.some(x=>x.id===id
+        &&x.type===c.klasse&&x.owner===c.kaeufer
+        &&x.tick<=state.tick);
     });
     const ok=[escrow,werk,arbeit,werftErloese,werftKosten,
       w.materialVerbraucht,w.materialUmsatz,w.arbeitsGebunden,

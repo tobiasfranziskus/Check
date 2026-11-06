@@ -4063,13 +4063,15 @@ const m_core_w5h=(()=>{
       &&w.bestand<=c.charge &&w.bestand<=(s.stations[c.quellStation].lager.erz??-1)
       &&k?.cash===start-w.gekauft*p+w.verkauft*p
         -(s.w5s?.takeover?.amount??0)+(s.w5s?.takeover?.dividends??0)
+        -(s.w5s?.oreVenture?.capital??0)
       &&stat?.kosten===w.gekauft*p &&stat?.erloes===w.verkauft*p
       &&quelle?.erloes===w.gekauft*p+(s.w5n?.eisTransferWert??0)
       &&s.ledger.erz.exported===0 &&s.minted===(s.w5q?.minted??0) &&s.burned===0;
     return {ok,gekauft:w.gekauft,verkauft:w.verkauft,bestand:w.bestand,
       unterwegs:w.unterwegs,exportCash:k?.cash??null,lieferungen:s.w3.geliefert,
       geldsaldo:k?.cash-start+w.gekauft*p-w.verkauft*p
-        +(s.w5s?.takeover?.amount??0)-(s.w5s?.takeover?.dividends??0)};
+        +(s.w5s?.takeover?.amount??0)-(s.w5s?.takeover?.dividends??0)
+        +(s.w5s?.oreVenture?.capital??0)};
   }
   function plan(s,r){
     const p=m_core_w5g.kalkulation(s,r),h=audit(s,r);
@@ -5965,7 +5967,8 @@ const m_core_w1_vollkosten = (() => {
       +(state.owners.w5b_fabrik_arbeit?.cash??0)+(state.owners.w5f_laser_arbeit?.cash??0));
     const npc = saldo('npc3', arbeitsGebunden('npc3')
       +(state.w5s?.contract?.owner==='npc3'
-        ?(state.owners.w5s_order_reserved?.cash??0):0));
+        ?(state.owners.w5s_order_reserved?.cash??0):0),
+        -(state.w5s?.oreVenture?.capital??0));
     const station = saldo(cfg.station, abnahmeGebunden);
     const verkauf = saldo(cfg.werftOwner,
       rules.w5 ? state.owners.w5_arbeit_treuhand?.cash ?? 0 : 0);
@@ -5973,6 +5976,7 @@ const m_core_w1_vollkosten = (() => {
     // Produktionserloese und keine geheime Wiederauffuellung des Erzbudgets.
     const kaeufer = saldo(cfg.exportOwner,0,
       (state.w5s?.takeover?.amount??0)
+      +(state.w5s?.oreVenture?.capital??0)
       -(state.w5s?.takeover?.dividends??0));
     const minerKaeufe = anzahl(state.ledger.miner, 'consumed');
     const bezahlteHuelle = minerKaeufe * rules.economy.waren.miner.basis;
@@ -6045,7 +6049,8 @@ const m_core_w2_konzernstatus = (() => {
         +(state.owners.w5b_fabrik_arbeit?.cash??0)+(state.owners.w5f_laser_arbeit?.cash??0):0;
       const arbeitsReserve=erzReserve+zusatzReserve;
       const bereitsBeauftragt = schiffe.filter((sh) => sh.auftrag === 'foerdern').length;
-      const saldiert = anfang + erloese - ausgaben;
+      const saldiert = anfang + erloese - ausgaben
+        +(owner==='npc3'?(state.w5s?.oreVenture?.capital??0):0);
       const freiUndGebunden = freieKasse + arbeitsReserve;
       const kontoOk = [anfang, freieKasse, erloese, ausgaben, arbeitsReserve, saldiert, freiUndGebunden]
         .every(Number.isSafeInteger) && anfang >= 0 && freieKasse >= 0
@@ -6420,7 +6425,8 @@ function audit(state) {
       ? state.w5h.gekauft-state.w5h.verkauft : exportiert) * cfg.preis;
     // Nicht als Erzumsatz verbuchen: vorhandenes Firmen-Eigenkapital
     // und real bezahlte Gewinnausschuettungen separat belegen.
-    const equity=state.w5s?.takeover?.amount??0;
+    const equity=(state.w5s?.takeover?.amount??0)
+      +(state.w5s?.oreVenture?.capital??0);
     const shareholderPaid=state.w5s?.takeover?.dividends??0;
     const differenz = rest + ausgegeben + equity-shareholderPaid - start;
     // Ohne belegte Endkunden-Einnahmen darf ein blosses Verschieben vorhandener ISK

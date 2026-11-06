@@ -1339,7 +1339,8 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5m ? ['shipUpgradeMiner'] : []),
     ...(rules.w5n ? ['shipSellIce','shipFreightIce','stationWater'] : []),
     ...(rules.w5s ? ['shipReposition'] : []),
-    ...(rules.w5s?.prepaidOrders ? ['shipOrder','shipCancelOrder'] : [])].includes(cmd.type))
+    ...(rules.w5s?.prepaidOrders ? ['shipOrder','shipCancelOrder'] : []),
+    ...(rules.w5s?.autoOreSettlement ? ['shipSellBookedOre'] : [])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if(cmd.type==='shipOrder'){
     const c=m_core_w5s.orderCheck(state,rules,cmd.owner,cmd.klasse);

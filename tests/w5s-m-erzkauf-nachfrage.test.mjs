@@ -24,5 +24,11 @@ for(const lead of [2,7])for(const settlement of [false,true]){
        wat:s.w5n.wasserVerbraucht
       }));
    }
+   if(d===90&&settlement){
+     const sh=Object.values(s.ships).find(x=>x.owner==='npc3'&&x.ladung.erz>0);
+     try {const out=api.execute(s,{type:'shipSellBookedOre',owner:'npc3',schiff:sh.id},r);
+       console.log('W5S_M_MANUAL '+JSON.stringify({lead,out,after:s.w5h,cash:s.owners.st_aldera.cash,ore:sh.ladung.erz,audit:api.audit(s).ok}));}
+     catch(e){console.log('W5S_M_MANUAL_FAIL '+JSON.stringify({lead,error:e.message}));}
+   }
  }
 }});

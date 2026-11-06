@@ -60,7 +60,6 @@ function complete(seed){
   const price=base.economy.waren.miner.basis;
   assert.equal(price,600);
   const cashBefore=s.owners[builder].cash;
-  const npcCash=s.owners[actor].cash;
   cmd(s,oreFirst,'stationBuildMiner',builder,{station:'st_nadir'});
   assert.equal(s.owners.w5_arbeit_treuhand.cash,30,
     'alle 30 Werftlöhne vorfinanziert');
@@ -72,6 +71,7 @@ function complete(seed){
   assert.equal(s.w5.minerFertig,1);
   assert.equal(s.owners[builder].cash,cashBefore-530);
   assert.equal(s.owners.arbeiter_werft_nadir.cash,30);
+  const npcCash=s.owners[actor].cash;
   const next=s.nextShip;
   cmd(s,oreFirst,'shipBuy',actor,{station:'st_nadir',klasse:'miner'});
   const id='sh'+String(next).padStart(3,'0');

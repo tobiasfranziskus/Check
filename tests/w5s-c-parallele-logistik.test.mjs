@@ -135,6 +135,10 @@ test('W5s-c: 13 feste Seeds × 90 Tage – unabhängige tägliche Geld-/Waren-Au
     assert.equal(data.minted,0);
     assert.ok(data.oreTrips>=2&&data.iceTrips>=1,
       'mindestens der reale zweifache Anfangs-Vertikalschnitt');
+    if(seed===42||seed===7){
+      const replay=scenario(seed,{longDays:90});
+      assert.deepEqual(replay,data,'90-Tage-Doppelreplay inklusive End-Hash');
+    }
     console.log('W5S_C_90D '+JSON.stringify(data));
   }
 });

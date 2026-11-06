@@ -5772,8 +5772,39 @@ const m_core_w5s=(()=>{
       oreCarrierCovered:current>=ore.arbeitsKosten,
       iceCarrierCovered:current>=ice.arbeit
     });
+    // W5s-q: lesende Nachfrageprovenienz statt blindem vierten
+    // Erztransport. Der W3-Core KANN nachweislich 50 Erz abnehmen,
+    // doch nur der belegte Werftauftrag rechtfertigt Automatisierung.
+    const readyOreCarrier=carrierReady.sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0)[0];
+    const W3Proof=readyOreCarrier?m_core_w3.pruefen(s,r,readyOreCarrier):
+      {ok:false,grund:'kein freier Eigentümerfrachter'};
+    const yardDemand=werkPlan(s,r),automaticOreDemand=erzPlan(s,r);
+    const stationOre=s.stations[r.erzpilot.station].lager.erz||0;
+    const oreUnsold=Object.values(s.ships).filter(sh=>
+      sh.owner===r.erzpilot.npcInvestor&&sh.klasse==='miner')
+      .reduce((sum,sh)=>sum+(sh.ladung.erz||0),0);
+    const chain=Object.freeze({
+      stationCash:s.owners[r.erzpilot.station].cash,
+      stationPhysicalOre:stationOre,
+      merchantOwnedOre:s.w5h.bestand,
+      npcMinerCargoOre:oreUnsold,
+      nadirPhysicalOre:s.stations[r.w3.zielStation].lager.erz||0,
+      waterCustomerCash:customer,
+      carrierOwnCash:current,
+      nextCarrierShortfall:Math.max(0,replacementNeed-current),
+      yardDemand:yardDemand.stage,oreDispatcher:automaticOreDemand.stage,
+      originalW3PrepayPossible:W3Proof.ok,
+      originalW3Reason:W3Proof.grund,
+      automatedW3Approved:automaticOreDemand.command?.type==='shipFreight',
+      stage:automaticOreDemand.command?.type==='shipFreight'
+        ?'automatisch_bezahlter_werftauftrag'
+        :W3Proof.ok?'real_finanzierbar_aber_kein_werftbedarf'
+        :yardDemand.stage==='abnehmer_unfinanziert'
+          ?'ersatzschiff_und_weiterer_absatz_unfinanziert'
+          :automaticOreDemand.stage
+    });
     return Object.freeze({stage:'bereit',tick:s.tick,
-      freight,demand,continuity,
+      freight,demand,chain,continuity,
       takeover:Object.freeze({...takeoverAudit(s,r)}),
       takeoverPlan:Object.freeze({...takeoverPlan(s,r)}),
       oreVenture:Object.freeze({...oreVentureAudit(s,r)}),

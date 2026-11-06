@@ -4988,9 +4988,14 @@ const m_core_w1_vollkosten = (() => {
     }, 0);
     const abnahmeGebunden = Object.values(vertraege).reduce((sum, v) =>
       sum + (state.owners[v.konto]?.cash ?? NaN), 0);
+    // Die einmalig vorfinanzierte Hüllenüberführung belastet exakt den
+    // wirklichen Eigentümer; aktives Treuhandgeld ist noch sein Kapital.
+    const reiseReserve=id=>state.w5s?.active?.owner===id
+      ?(state.owners.w5s_transfer_reserved?.cash??0):0;
     const haus = saldo('house', arbeitsGebunden('house')+(state.owners.w5b_silizium_arbeit?.cash??0)
-      +(state.owners.w5b_fabrik_arbeit?.cash??0)+(state.owners.w5f_laser_arbeit?.cash??0));
-    const npc = saldo('npc3', arbeitsGebunden('npc3'));
+      +(state.owners.w5b_fabrik_arbeit?.cash??0)+(state.owners.w5f_laser_arbeit?.cash??0)
+      +reiseReserve('house'));
+    const npc = saldo('npc3', arbeitsGebunden('npc3')+reiseReserve('npc3'));
     const station = saldo(cfg.station, abnahmeGebunden);
     const verkauf = saldo(cfg.werftOwner,
       rules.w5 ? state.owners.w5_arbeit_treuhand?.cash ?? 0 : 0);
@@ -5009,8 +5014,13 @@ const m_core_w1_vollkosten = (() => {
       +(state.w5f?.materialUmsatz??0)+(state.w5f?.arbeitsBezahlt??0);
     const modulLohn=state.w5m?.modulArbeit??0;
     const modulErz=state.w5m?.modulErz??0;
+    const minerReiseKosten=(state.w5s?.completed||[])
+      .filter(x=>x.type==='miner').reduce((n,x)=>n+x.kosten,0)
+      +(state.w5s?.active?.type==='miner'?state.w5s.active.kosten:0);
+    // Miner-Reisekosten sind korrekt gebuchte echte Kosten, aber keine
+    // abgebauten Erzminuten; weder als Förderung noch doppelt als Lohn zählen.
     const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-abzug-modulLohn-iceArbeit
-      -(state.w5o?.divMine??0);
+      -(state.w5o?.divMine??0)-minerReiseKosten;
     const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
     const fonds = state.owners[fondsId].cash - startCash(fondsId);
     const stationErz = state.stations[cfg.station].lager.erz;

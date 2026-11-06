@@ -2848,6 +2848,11 @@ const m_core_w3 = (() => {
       kauf.cash=0;state.owners[c.spedition].cash+=a.frachtGebuehr;
       buche(state,c.spedition,'erloes',a.frachtGebuehr);w.frachtUmsatz+=a.frachtGebuehr;
       w.abgeschlossen++;w.auftrag=null;
+      // W5s-o: Erst die TATSAECHLICH abgeschlossene bezahlte W3-Fracht
+      // darf die Beteiligung am neuen Erz-Frachtgewinn bedienen. Vor den
+      // gewoehnlichen W5o-Haushaltsdividenden, damit allein der wirklich
+      // verdiente Erz-Deckungsbeitrag auf beide Anteilseigner verteilt wird.
+      if(state.w5s?.takeover)m_core_w5s.takeoverDividend(state,rules);
       sh.system='aldera';sh.phase='dock';sh.ziel=null;sh.ankunft=state.tick;sh.auftrag='halten';
       protokolliere(state,'handel',sh.id+': Rueckfahrt bezahlt; Spedition entlohnt',c.spedition);
     }

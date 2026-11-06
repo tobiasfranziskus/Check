@@ -196,3 +196,26 @@ test('W5s-v: ohne Operationsflag kein neuer NPC-Auftrag und keine neue Ermüdung
  assert.equal(api.audit(s).ok,true);
  assert.notEqual(api.hash(s),old,'Core-Uhr darf weiterlaufen');
 });
+
+test('W5s-v: Seed42/7 nach echter Gründung bis Tag365 ohne Geisterschiff, Kredit oder geschenkten Ersatz',()=>{
+ for(const [seed,expectedHash] of [[42,'433f98c35e9f2034'],[7,'adecb4a5a32d0a0a']]){
+  const s=build(seed),id=s.w5s.successor.ship;
+  const days=365-Math.floor(s.tick/1440);
+  for(let i=1;i<=days;i++){
+   api.advance(s,1440,RULES);
+   proof(s,'Echte Nachfolge Seed '+seed+' Tag '+Math.floor(s.tick/1440));
+   if(i%30===0)loadRoundTrip(s,'Nachfolge lang '+seed+' '+i);
+  }
+  const z=s.w5s.successor;
+  assert.equal(z.retired.tick,217440);
+  assert.equal(s.ships[id],undefined,'kein wiederbelebtes Schiff');
+  assert.equal(z.autoOrders.length,2,'nur tatsächlich finanzierte Aufträge');
+  assert.equal(z.trips,1,'keine Schattenfahrt nach Ausmusterung');
+  assert.equal(z.freightRevenue,240);
+  assert.equal(s.owners.w5s_carrier2.cash,240,'keine nachträgliche Rettung');
+  assert.equal(api.w5sNachfolgeBetrieb(s,RULES).stage,'frachter_verschlissen');
+  assert.equal(loadRoundTrip(s,'Nachfolger Tag365'),expectedHash);
+  console.log('W5S_V_365D_REAL '+JSON.stringify({seed,hash:expectedHash,retired:z.retired.tick,
+    realTrips:z.trips,cash:s.owners.w5s_carrier2.cash,minted:s.minted}));
+ }
+});

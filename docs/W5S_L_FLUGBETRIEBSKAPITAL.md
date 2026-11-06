@@ -16,4 +16,27 @@ Eine zusätzliche **rein lesende** W5s-k-Finanzprojektion zeigt die Kosten getre
 
 Die Forschungs-CI prüft 13 Seeds ×90 Tage und Seed42/7 ×365 Tage, unabhängiges tägliches Geld-/Warenaudit, Save/Load und Seed42/7-Doppelreplays. Die AUS-Variante muss identische W5s-k-Hashes behalten. Vorlauf 2/7/30 Tage wird bei AUS/EIN mit denselben endlichen Start-ISK verglichen. **W5s-l gilt nur dann als positiver autonomer Wiederanlauf, wenn mindestens zwei wirkliche 50-Erz-Transporte von je 740 ISK realem Käuferetat und 120 ISK vorfinanzierter Flug-Arbeit beendet sind und ein Ersatz durch echte Werftware bezahlt wird.** Fehlende Folgeaufträge sind ein ehrlicher Negativbefund, keine Rechtfertigung für Gratiserkäufe oder willkürliche Frachtaufträge.
 
-**[CI noch nicht abgeschlossen]** Ergebnisse und Folgeentscheidung nach wirklich ausgeführtem Lauf dokumentieren. Echte iPad-Safari-/NAS-Abnahme, globale W6-Stabilität, NPC-Insolvenz-/Neueintrittsmodell und Preis-/Geldmodell-B-Entscheidung bleiben offen.
+## Nachweis aus tatsächlich ausgeführter Node22-CI
+
+**[TEST] [Gezielter GitHub-Lauf #42203972058](https://github.com/tobiasfranziskus/Check/actions/runs/42203972058) auf Head `7ef5d3b6`: 5/5 Testgruppen erfolgreich, 0 Fehler/Skips.** Am geprüften Code wurden 13 feste Seeds ×90 Spieltage ausgeführt, Seed42/7 doppelt deterministisch gespielt, Seed42/7 ×365 Tage geprüft und zusätzlich 6 Vergleichsprofile je Seed (jeweils 2/7/30 Tage Vorlauf, Kapitalpuffer AUS/EIN). Die Checks verifizieren täglich die originale vollständige Core-Bilanz, unabhängig alle ISK-Konten und alle physisch existierenden Waren, außerdem Save/Load und die Treuhand-Summen. Der AUS-Pfad bleibt **bitidentisch** zu den W5s-k-90-Tage-Hashes Seed42 `12b217b14222d390`, Seed7 `83f8bc2dc6293710`.
+
+### Nachweisbar zweiter bezahlter 50-Erz-Transport (Vorlauf 30 Tage)
+
+**[POSITIV, eingeschränkt]** Mit Puffer und Gewinnrücklage führt das autonome NPC-Netz in *allen 13 Seedwelten* **zwei vollständig abgeschlossene W3-Transporte zu je 50 Erz** aus. Der zweite wird bis **Tag31** fertig. Dabei sind sowohl echte Warenkaufreserve 740 ISK je W3-Auftrag als auch eigener Speditionslohn 120 ISK vor Abfahrt vollständig durch den vorhandenen Core gebunden. **100 Erz** erreichen Nadir, fünf neue W5-Hüllen werden gebaut und verkauft, sechs echte R32-Ersatzzuordnungen folgen. Tag90: 25 abgeschlossene Eisfahrten, **1.250** real bezahltes Wasser, Spedition **720 ISK** frei, NPC-Bergbauer **360 ISK**. Vergleich ohne Puffer: 1 Erzfahrt / 50 Erz, 21 Eisfahrten / 1.050 Wasser, vier Werfthüllen, Spedition 0 ISK. Seed42/7 mit Puffer nach 365 Tagen **weiter nur zwei Erztransporte und 1.250 Wasser**, Spedition 720 ISK. **Keine** dauerhafte Selbsttragung behaupten.
+
+| 90d-Szenario, Seeds 42/7 | W3-Erzfahrten | Eisfahrten | Wasser real bezahlt | W5-Neuhüllen | Speditionskasse |
+|---|---:|---:|---:|---:|---:|
+| Vorlauf 30 Tage, Puffer AUS | 1 | 21 | 1.050 | 4 | 0 ISK |
+| Vorlauf 30 Tage, Puffer EIN | **2** | 25 | **1.250** | **5** | **720 ISK** |
+| Vorlauf 7 Tage, Puffer AUS | 1 | 53 | 2.650 | 5 | 0 ISK |
+| Vorlauf 7 Tage, Puffer EIN | 1 | **88** | **4.316** | 5 | **930 ISK** |
+| Vorlauf 2 Tage, Puffer AUS | 1 | 57 | 2.850 | 5 | 0 ISK |
+| Vorlauf 2 Tage, Puffer EIN | 1 | **88** | **4.316** | 5 | **930 ISK** |
+
+Das 2-/7-Tage-Profil versorgt in diesen 90 Tagen deutlich besser und bewahrt Kapital, **liefert aber nur 50 Erz nach Nadir**. Sein nachvollziehbarer Blocker im W5s-Erzplan ist `gekauftes_erz_fehlt`: Der bestehende Erzgroßhändler stellt keine weitere physisch angekaufte volle 50er-Charge bereit. Der W5s-g/W3-Core darf ohne echte Verkäufe nicht „vorsorglich“ 50 Erz erzeugen. Der Fabrikplan zeigt `erz_fehlt`. **W5s-m** sollte deshalb den echten nachfrage- und finanzierungsgebundenen W2-Erzkauf bei laufender 2-/7-Tage-Versorgung prüfen, nicht neue Lagerware oder Hüllen schenken.
+
+Der Forschungs-Vorlauf von 15/30 Tagen Schiffslebensdauer (R32) ist hypothetisch. Die 13 Seeds unterscheiden deterministische Hashes, aber nicht die Menge der vereinfachten Kernwirtschaft; deshalb nicht als 13 unabhängige konjunkturelle Szenarien oder freigegebenes Produktbalancing ausgeben.
+
+**[CI]** Nach dem ersten erfolgreichen Lauf wurden ausschließlich Positiv-Assertions für den zweiten tatsächlichen Transport und die zusätzliche real gebaute Werfthülle im Test ergänzt. Diese engere Prüfung ist erst nach dem erneuten CI-Lauf auf dem späteren Commit als bestanden zu führen. Vollständige historische Node-/Geografie-Regressionen werden unabhängig vom gezielten W5s-l-Lauf geprüft.
+
+**[OFFEN]** Für 90- oder 365-Tage-Wiederanlauf über diesen zweiten Transport hinaus fehlt ein autonom vollständig finanzierter Erznachkauf/Neuverwendung und langfristig Liquidität in mehreren Firmen. Neue Endkunden, Preis-/Geldmodell-B-Emissionen, Unternehmensgarantien oder Spieler-Sparbeschränkungen sind nicht beschlossen. Echte iPad-Safari-/NAS-Abnahme, globale W6-Stabilität, NPC-Insolvenz-/Neueintrittsmodell bleiben aus. Kein Merge/Deployment.

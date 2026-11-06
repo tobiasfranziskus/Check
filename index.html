@@ -3185,10 +3185,15 @@ const m_core_w5 = (() => {
         &&sh.heimat==='nadir';
       // Eine real verkaufte Werfthülle verschwindet beim späteren
       // R32-Verschleiß physisch; der Kauf-/Herkunftsbeleg bleibt gültig.
-      // Nur exakt dokumentierte Verluste des autoritativen W5r-Buchs.
+      // Belegte getrennte Eigentümer: auch eine W5s-v-Hülle altert.
       return !!state.w5r?.losses.some(x=>x.id===id
         &&x.type===c.klasse&&x.owner===c.kaeufer
-        &&x.tick<=state.tick);
+        &&x.tick<=state.tick)
+        ||(state.w5s?.successor?.retired?.id===id
+          &&state.w5s.successor.ship===id
+          &&state.w5s.successor.owner!==c.kaeufer
+          &&state.w5s.successor.pricePaid===c.verkaufsPreis
+          &&state.w5s.successor.retired.tick<=state.tick);
     });
     const ok=[escrow,werk,arbeit,werftErloese,werftKosten,
       w.materialVerbraucht,w.materialUmsatz,w.arbeitsGebunden,
@@ -6169,7 +6174,8 @@ const m_core_w5s=(()=>{
         &&x.kosten===x.minuten*lohn
         &&Number.isSafeInteger(x.start)&&x.start>=0
         &&x.ankunft===x.start+x.minuten&&x.ankunft<=s.tick
-        &&(s.ships[x.id]||s.w5r.losses.some(z=>z.id===x.id)))
+        &&(s.ships[x.id]||s.w5r.losses.some(z=>z.id===x.id)
+          ||s.w5s?.successor?.retired?.id===x.id))
       &&jobOk&&(!a||!ids.includes(a.id))
       &&w.allocated===finished+(a?.kosten??0)
       &&w.paid===finished+(a?.gearbeitet??0)*lohn
@@ -6343,6 +6349,7 @@ const m_core_w5r=(()=>{
         .filter(x=>x.klasse==='miner').length+w.miner.lost
       &&s.ledger.frachter.consumed===Object.values(s.ships)
         .filter(x=>x.klasse==='frachter').length+w.frachter.lost
+        +(s.w5s?.successor?.retired?1:0)
       &&w.serviceAllocated===w.services*fee+(w.serviceJob?fee:0)
       &&w.servicePaid===w.services*fee+(w.serviceJob?.minutes??0)*c.serviceWage
       &&s.owners.w5r_maintenance_reserved.cash===w.serviceAllocated-w.servicePaid
@@ -6587,7 +6594,14 @@ function step(state, rules) {
       }
     }
     if(rules.w5r)m_core_w5r.verschleiss(state,rules);
+    if(rules.w5s?.successorOperations&&rules.w5s?.successorFreight
+      &&rules.w5s?.independentSuccessor)
+      m_core_w5s.nachfolgeVerschleiss(state,rules);
     if(rules.w5o)m_core_w5o.autopilot(state,rules);
+    // Erst bestehende W5o-Nachfrage, dann ungebundene und bezahlte Folgeauftraege.
+    if(rules.w5s?.successorOperations&&rules.w5s?.successorFreight
+      &&rules.w5s?.independentSuccessor&&state.tick%rules.economy.stunde===0)
+      m_core_w5s.autoNachfolger(state,rules);
     if(rules.w5s?.autoIndustry && state.tick%rules.economy.stunde===0){
       if(state.w5s?.takeover)m_core_w5s.takeoverDividend(state,rules);
       if(rules.w5s.autoTakeover)m_core_w5s.takeoverStart(state,rules);

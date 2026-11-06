@@ -4089,8 +4089,7 @@ const m_core_w5h=(()=>{
         -(s.w5s?.oreVenture?.capital??0)
         +(s.w5s?.oreVenture?.dividends??0)
         -(s.w5s?.successor?.capital??0)
-      &&stat?.kosten===w.gekauft*p+(s.w5s?.successor?.capital??0)
-      &&stat?.erloes===w.verkauft*p
+      &&stat?.kosten===w.gekauft*p &&stat?.erloes===w.verkauft*p
       &&quelle?.erloes===w.gekauft*p+(s.w5n?.eisTransferWert??0)
       &&s.ledger.erz.exported===0 &&s.minted===(s.w5q?.minted??0) &&s.burned===0;
     return {ok,gekauft:w.gekauft,verkauft:w.verkauft,bestand:w.bestand,
@@ -5881,8 +5880,7 @@ const m_core_w5s=(()=>{
     s.w5s.successor={investor:p.investor,owner:p.owner,
       capital:p.capital,hull:p.hull,flight:p.flight,working:p.working,
       tick:s.tick,ship:null,pricePaid:0,bought:null};
-    buche(s,p.investor,'kosten',p.capital);
-    buche(s,p.owner,'erloes',p.capital);
+    // Eigenkapital ist weder Erzumsatz noch Pilotarbeit.
     protokolliere(s,'handel',p.capital+
       ' ISK echtes Kapital fuer eigenstaendige NPC-Spedition '+p.owner,
       p.investor);
@@ -6374,6 +6372,7 @@ const m_core_w1_vollkosten = (() => {
     const kaeufer = saldo(cfg.exportOwner,0,
       (state.w5s?.takeover?.amount??0)
       +(state.w5s?.oreVenture?.capital??0)
+      +(state.w5s?.successor?.capital??0)
       -(state.w5s?.takeover?.dividends??0)
       -(state.w5s?.oreVenture?.dividends??0));
     const minerKaeufe = anzahl(state.ledger.miner, 'consumed');

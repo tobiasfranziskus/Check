@@ -2623,7 +2623,14 @@ const m_core_erzpilot = (() => {
     const owner = rules.erzpilot.npcInvestor, buch = vertragsbuch(state);
     const eigene = ids(state.ships).map((id) => state.ships[id])
       .filter((sh) => sh.owner === owner && sh.klasse === 'miner' && sh.phase === 'dock'
-        &&(!rules.w5n||sh.ware!=='eis'));
+        &&(!rules.w5n||sh.ware!=='eis')
+        // W5s-d: Eine bereits bezahlte, aus Nadir überführte Minerhülle
+        // ist als R32-Ersatz vorgemerkt, nicht frei für NPC-Erzaufträge.
+        // Keine Sperre für andere Miner und keine Verschiebung von Ladung.
+        &&!(rules.w5s?.minerIndustry&&sh.id!==state.w5r?.miner.id
+          &&state.w5?.minerSchiffIds?.includes(sh.id)
+          &&state.w5s?.completed?.some(x=>x.id===sh.id&&x.type==='miner')
+          &&!(state.w5r?.assignments||[]).some(x=>x.id===sh.id)));
     if (info.planbar === 0) {
       // Kein kostenloses Weiterfördern: Stop ausschließlich bei unbelegter Zukunft.
       // Ein schon bezahlter, noch nicht fertiggestellter Auftrag bleibt unangetastet.

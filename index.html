@@ -2792,10 +2792,12 @@ const m_core_w3 = (() => {
       && kauf===(a?(a.phase==='hin'?a.gesamt:a.frachtGebuehr):0)
       && arbeit===(a?k.arbeitsKosten-a.gearbeitet*c.arbeitJeMinute:0)
       && carrier+arbeit+(state.owners.w5n_fracht_arbeit?.cash??0)
-          +(state.owners.w5s_transfer_reserved?.cash??0)
+          +(state.w5s?.active?.owner===c.spedition
+            ?(state.owners.w5s_transfer_reserved?.cash??0):0)
         ===startCarrier-huelle-w.arbeitsKosten+w.frachtUmsatz
           -(state.w5n?.frachtLohn??0)+(state.w5n?.frachtUmsatz??0)
-          -(state.w5o?.divFracht??0)-(state.w5s?.paid??0)
+          -(state.w5o?.divFracht??0)
+          -(state.w5s?.paidTransport??state.w5s?.paid??0)
       && (!a||(a.menge===c.fracht&&a.zeit===k.zeit&&a.erzWert===k.erzWert
         && a.arbeitsKosten===k.arbeitsKosten&&a.frachtGebuehr===k.frachtGebuehr
         && a.gesamt===k.gesamt&&a.gearbeitet>=0&&a.gearbeitet<=2*k.zeit
@@ -4639,12 +4641,13 @@ const m_core_w5s=(()=>{
   function pruefen(s,r,sh){
     if(!r.w5s||!r.w5r||s.rulesVersion!==r.rulesVersion||!s.w5r?.initialized)
       return {ok:false,grund:'W5s: Forschungsprofil nicht aktiv'};
-    const owner=r.w5n.frachterOwner;
-    if(!sh||sh.owner!==owner||sh.klasse!=='frachter'
+    const miner=r.w5s?.minerIndustry&&sh?.klasse==='miner';
+    const owner=miner?s.w5o.minerOwner:r.w5n.frachterOwner;
+    if(!sh||sh.owner!==owner||(sh.klasse!=='frachter'&&!miner)
       ||sh.system!=='nadir'||sh.phase!=='dock'||sh.auftrag!=='halten'
       ||Object.values(sh.ladung).some(n=>n!==0))
       return {ok:false,grund:'W5s: freie eigene Hülle in Nadir erforderlich'};
-    if(!s.w5?.schiffIds.includes(sh.id))
+    if(!(miner?s.w5?.minerSchiffIds:s.w5?.schiffIds)?.includes(sh.id))
       return {ok:false,grund:'W5s: kein belegter W5-Werftkauf'};
     if(((s.w3.auftrag||s.w5n.frachtauftrag)&&!r.w5s?.concurrent)
       ||s.w5s?.active||s.w5s?.completed.some(x=>x.id===sh.id))
@@ -4657,13 +4660,15 @@ const m_core_w5s=(()=>{
     const kosten=minuten*lohn;
     if(!Number.isSafeInteger(kosten)||s.owners[owner].cash<kosten)
       return {ok:false,grund:'W5s: Pilotenlohn nicht vorfinanziert'};
-    return {ok:true,minuten,lohn,kosten};
+    return {ok:true,minuten,lohn,kosten,owner,klasse:sh.klasse};
   }
   function start(s,r,sh){
     const p=pruefen(s,r,sh);
     if(!p.ok)throw Error(p.grund);
-    const owner=r.w5n.frachterOwner;
+    const owner=p.owner;
     const w=s.w5s ||= {allocated:0,paid:0,active:null,completed:[]};
+    if(p.klasse==='miner'&&w.paidTransport===undefined)
+      w.paidTransport=w.paid;
     s.owners.w5s_transfer_reserved ||= {
       id:'w5s_transfer_reserved',kind:'w5s-reserve',cash:0};
     s.owners.w5s_transfer_pilot ||= {
@@ -4675,7 +4680,8 @@ const m_core_w5s=(()=>{
     w.allocated+=p.kosten;
     buche(s,owner,'kosten',p.kosten);
     w.active={id:sh.id,owner,start:s.tick,minuten:p.minuten,
-      lohn:p.lohn,kosten:p.kosten,gearbeitet:0};
+      lohn:p.lohn,kosten:p.kosten,gearbeitet:0,
+      ...(p.klasse==='miner'?{type:'miner'}:{})};
     sh.phase='reise';sh.ziel='st_aldera';sh.ankunft=s.tick+p.minuten;
     sh.auftrag='w5s-ueberfuehrung';
     protokolliere(s,'auftrag',sh.id+': '+p.kosten+
@@ -4685,42 +4691,54 @@ const m_core_w5s=(()=>{
     const w=s.w5s,a=w?.active;
     if(!a)return;
     const sh=s.ships[a.id],reserve=s.owners.w5s_transfer_reserved;
-    if(!sh||sh.owner!==a.owner||sh.klasse!=='frachter'
+    if(!sh||sh.owner!==a.owner||sh.klasse!==(a.type||'frachter')
       ||sh.phase!=='reise'||sh.auftrag!=='w5s-ueberfuehrung'
       ||sh.ziel!=='st_aldera'||sh.ankunft!==a.start+a.minuten
       ||!reserve||reserve.cash<a.lohn||s.tick>sh.ankunft)
       throw Error('W5s: Flug ohne tatsächlich gebundene Arbeit');
     reserve.cash-=a.lohn;s.owners.w5s_transfer_pilot.cash+=a.lohn;
     buche(s,'w5s_transfer_pilot','erloes',a.lohn);
-    w.paid+=a.lohn;a.gearbeitet++;
+    w.paid+=a.lohn;
+    if(a.type!=='miner'&&w.paidTransport!==undefined)w.paidTransport+=a.lohn;
+    a.gearbeitet++;
     if(a.gearbeitet===a.minuten){
       if(s.tick!==sh.ankunft||reserve.cash!==0)
         throw Error('W5s: Überführung nicht vollständig bezahlt');
       w.completed.push({id:a.id,owner:a.owner,start:a.start,
-        ankunft:s.tick,minuten:a.minuten,kosten:a.kosten});
+        ankunft:s.tick,minuten:a.minuten,kosten:a.kosten,
+        ...(a.type==='miner'?{type:'miner'}:{})});
       w.active=null;
       sh.auftrag='halten';
       protokolliere(s,'auftrag',sh.id+': Nadir–Aldera nach '
         +a.minuten+' bezahlten Flugminuten beendet',a.owner);
     }
   }
-  function assign(s,r){
-    if(!r.w5s||!s.w5s||((s.w3.auftrag||s.w5n.frachtauftrag)&&!r.w5s?.concurrent)
-      ||s.w5r.frachter.id)return false;
-    const w=s.w5r;
-    const candidate=Object.values(s.ships).find(sh=>
-      sh.owner===r.w5n.frachterOwner&&sh.klasse==='frachter'
+  function assign(s,r,type='frachter'){
+    if(!r.w5s||!s.w5s||(type==='miner'&&!r.w5s.minerIndustry)
+      ||((s.w3.auftrag||s.w5n.frachtauftrag)&&!r.w5s?.concurrent
+        &&type==='frachter')||s.w5r[type].id)return false;
+    const w=s.w5r,owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;
+    const ids=type==='miner'?s.w5.minerSchiffIds:s.w5.schiffIds;
+    const candidate=Object.values(s.ships).sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0)
+      .find(sh=>sh.owner===owner&&sh.klasse===type
       &&sh.system==='aldera'&&sh.phase==='dock'&&sh.auftrag==='halten'
       &&Object.values(sh.ladung).every(n=>n===0)
-      &&s.w5.schiffIds.includes(sh.id)
-      &&s.w5s.completed.some(d=>d.id===sh.id&&d.ankunft<=s.tick)
+      &&ids?.includes(sh.id)
+      &&s.w5s.completed.some(d=>d.id===sh.id&&(d.type||'frachter')===type
+        &&d.ankunft<=s.tick)
       &&!(w.assignments||[]).some(a=>a.id===sh.id));
     if(!candidate)return false;
     w.assignments ||= [];
-    w.assignments.push({id:candidate.id,owner:candidate.owner,tick:s.tick});
-    w.frachter.id=candidate.id;w.frachter.born=s.tick;
+    w.assignments.push({id:candidate.id,owner:candidate.owner,tick:s.tick,
+      ...(type==='miner'?{type:'miner'}:{})});
+    w[type].id=candidate.id;w[type].born=s.tick;
+    if(type==='miner'){
+      const cmd=m_core_commands.execute(s,{type:'shipMine',owner,
+        schiff:candidate.id,ware:'eis'},r);
+      if(!cmd.ok)throw Error('W5s: Ersatzminer kann nicht echt foerdern: '+cmd.reason);
+    }
     protokolliere(s,'auftrag',candidate.id+
-      ': bereits bezahlte und überführte Hülle als R32-Ersatz zugeordnet',
+      ': bereits bezahlte und überführte Hülle als R32-'+type+'-Ersatz zugeordnet',
       candidate.owner);
     return true;
   }
@@ -4732,8 +4750,10 @@ const m_core_w5s=(()=>{
     const pilot=s.owners.w5s_transfer_pilot?.cash;
     const finished=completed.reduce((n,x)=>n+x.kosten,0);
     const ids=completed.map(x=>x.id);
-    const jobOk=!a||(a.owner===r.w5n.frachterOwner
-      &&s.w5.schiffIds.includes(a.id)
+    const transferOwner=type=>type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;
+    const transferIds=type=>type==='miner'?s.w5.minerSchiffIds:s.w5.schiffIds;
+    const jobOk=!a||(a.owner===transferOwner(a.type||'frachter')
+      &&transferIds(a.type||'frachter')?.includes(a.id)
       &&a.minuten===m_core_route.route(r.world,'nadir','aldera')?.zeit
       &&a.lohn===lohn&&a.kosten===a.minuten*lohn
       &&Number.isSafeInteger(a.gearbeitet)&&a.gearbeitet>=0
@@ -4745,8 +4765,8 @@ const m_core_w5s=(()=>{
     const ok=[w.allocated,w.paid,reserve,pilot].every(n=>
         Number.isSafeInteger(n)&&n>=0)
       &&Array.isArray(completed)&&new Set(ids).size===ids.length
-      &&completed.every(x=>x.owner===r.w5n.frachterOwner
-        &&s.w5.schiffIds.includes(x.id)
+      &&completed.every(x=>x.owner===transferOwner(x.type||'frachter')
+        &&transferIds(x.type||'frachter')?.includes(x.id)
         &&x.minuten===m_core_route.route(r.world,'nadir','aldera')?.zeit
         &&x.kosten===x.minuten*lohn
         &&Number.isSafeInteger(x.start)&&x.start>=0
@@ -4755,6 +4775,11 @@ const m_core_w5s=(()=>{
       &&jobOk&&(!a||!ids.includes(a.id))
       &&w.allocated===finished+(a?.kosten??0)
       &&w.paid===finished+(a?.gearbeitet??0)*lohn
+      &&(w.paidTransport===undefined||(
+        Number.isSafeInteger(w.paidTransport)&&w.paidTransport>=0
+        &&w.paidTransport===completed.filter(x=>x.type!=='miner')
+          .reduce((n,x)=>n+x.kosten,0)
+          +(a&&a.type!=='miner'?a.gearbeitet*lohn:0)))
       &&reserve===w.allocated-w.paid&&pilot===w.paid;
     return {ok,allocated:w.allocated,paid:w.paid,reserve,
       completed:completed.length,active:!!a};
@@ -4841,7 +4866,8 @@ const m_core_w5r=(()=>{
    for(const [type,days]of [['miner',r.w5r.minerLifeDays],['frachter',r.w5r.freighterLifeDays]]){
      const e=s.w5r[type];
      if(e.id&&s.tick-e.born>=days*1440)retire(s,r,type);
-     if(!e.id&&type==='frachter'&&r.w5s&&m_core_w5s.assign(s,r))continue;
+     if(!e.id&&r.w5s&&(type==='frachter'||r.w5s.minerIndustry)
+       &&m_core_w5s.assign(s,r,type))continue;
      if(!e.id)buy(s,r,type);
    }
  }
@@ -4883,11 +4909,15 @@ const m_core_w5r=(()=>{
       &&w.losses.filter(x=>x.type==='frachter').length===w.frachter.lost
       &&w.purchases.filter(x=>x.type==='miner').length===w.miner.bought
       &&w.purchases.filter(x=>x.type==='frachter').length===w.frachter.bought
-      &&(w.assignments||[]).every(a=>a.owner===r.w5n.frachterOwner
-        &&Number.isSafeInteger(a.tick)&&a.tick<=s.tick
-        &&s.w5.schiffIds.includes(a.id)
-        &&s.w5s?.completed.some(d=>d.id===a.id&&d.ankunft<=a.tick)
-        &&!w.purchases.some(p=>p.id===a.id))
+      &&(w.assignments||[]).every(a=>{
+        const type=a.type||'frachter',owner=ownerFor(type);
+        const source=type==='miner'?s.w5.minerSchiffIds:s.w5.schiffIds;
+        return a.owner===owner&&Number.isSafeInteger(a.tick)
+          &&a.tick<=s.tick&&source?.includes(a.id)
+          &&s.w5s?.completed.some(d=>d.id===a.id
+            &&(d.type||'frachter')===type&&d.ankunft<=a.tick)
+          &&!w.purchases.some(p=>p.id===a.id);
+      })
       &&new Set((w.assignments||[]).map(a=>a.id)).size===(w.assignments||[]).length
       &&w.lostIce===cargoIce
       // Zusaetzlich gueltig gekaufte Hüllen anderer Eigentümer bleiben moeglich.

@@ -5910,7 +5910,10 @@ const m_core_w5s=(()=>{
     if(!z)return {ok:true,active:false};
     const hull=m_core_w5.plan(r,'frachter').preis;
     const flight=m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn;
-    const working=arbeitsPuffer(r,'frachter'),total=hull+flight+working;
+    // Der persistierte Beleg muss sogar im globalen Core-Audit mit dem
+    // unveraenderten R32-Basisregelobjekt nachpruefbar bleiben.
+    const working=Math.max(m_core_w3.kalkulation(r).arbeitsKosten,
+      m_core_w5n.preise(r).arbeit),total=hull+flight+working;
     const account=s.owners[z.owner],sh=z.ship&&s.ships[z.ship];
     const ok=z.investor===r.w5h.kaeufer&&z.owner===successorId
       &&z.owner!==r.w3.spedition&&z.owner!=='house'

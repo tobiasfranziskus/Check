@@ -5182,6 +5182,11 @@ const m_core_w5s=(()=>{
       return {stage:'keine_npc_erzeigentuemer'};
     const oreMiner=Object.values(s.ships).filter(sh=>sh.owner===owner
       &&sh.klasse==='miner'&&sh.id!==s.w5r.miner.id
+      // W5s-j: eine nachweislich bezahlte Ersatzhülle bleibt bis zur
+      // R32-Übernahme dem Eisflottenbedarf zugeordnet.
+      &&!(r.w5s?.autoStarterMiner&&s.w5s?.starterMiner?.id===sh.id
+        &&!(s.w5r.assignments||[]).some(x=>x.id===sh.id))
+      &&!(s.w5?.minerSchiffIds||[]).includes(sh.id)
       &&sh.system==='aldera')
       .sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
     const crisis=m_core_erzpilot.krisenLage(s,r);

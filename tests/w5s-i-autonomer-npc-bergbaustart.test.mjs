@@ -64,6 +64,13 @@ function run(seed,days,enabled=true){
    assert.ok(sold>=50,'Großhändler bezahlt physische Erzcharge');
    assert.ok(delivered>=50,'W3 liefert automatisch an Nadir');
  }
+ if(enabled&&days>=3){
+   assert.ok(s.w5.fertig>=1,'real aus NPC-Erz mindestens eine Werfthülle gebaut');
+   assert.ok(s.w5.verkauft+s.w5.minerVerkauft>=1,
+     'mindestens eine echte Werfthülle gegen NPC-Kaufetat verkauft');
+   assert.ok(s.w5s?.completed?.length>=1,
+     'mindestens eine Hülle nach bezahltem Flug angekommen');
+ }
  assert.equal(Object.values(s.ships).some(sh=>sh.owner==='house'),false,
    'Spieler hat weder Schiff gekauft noch Abbau beauftragt');
  return {seed,days,enabled,hash:api.hash(s),
@@ -73,8 +80,13 @@ function run(seed,days,enabled=true){
    water:s.w5n.wasserVerbraucht,
    material:s.stations.st_nadir.lager.material,
    minerNadir:s.stations.st_nadir.lager.miner,
-   built:s.w5.fertig,
+   built:s.w5.fertig,sold:s.w5.verkauft+s.w5.minerVerkauft,
+   flights:s.w5s?.completed?.length||0,
+   contractStage:s.w5s?.contract?.stage||null,
    contracts:s.w5s?.orderHistory?.length||0,
+   buyerCash:s.owners.npc3.cash,
+   freightCash:s.owners.transport.cash,
+   warehouseBlock:api.w5sWerkStatus(s,rules).stage,
    minted:s.minted};
 }
 test('W5s-i: Seed42/7 startet vollständig ohne Spieler einen bezahlten NPC-Erzminer samt W2/W3-Abrechnung',()=>{
@@ -89,4 +101,24 @@ test('W5s-i: Ohne Flag unverändert, Eigentum/Erz nicht magisch erzeugt',()=>{
  const a=run(42,3,false);
  assert.equal(a.mined,0);
  assert.equal(a.delivered,0);
+});
+
+
+test('W5s-i: 13 feste Seeds ×90 Tage mit unabhängigen Tagesaudits und Krisenreplay',()=>{
+ for(const seed of [42,7,11,1,2,65535,1234,98765,3,99,2024,2025,314159]){
+   const row=run(seed,90,true);
+   assert.ok(row.delivered>=50);
+   assert.equal(row.minted,0);
+   if(seed===42||seed===7)
+     assert.deepEqual(run(seed,90,true),row,
+       'vollständiger deterministischer 90-Tage-Replay');
+   console.log('W5S_I_90D '+JSON.stringify(row));
+ }
+});
+test('W5s-i: Seed42/7 je 365 Tage ohne Rettung, Minting oder ungebuchte Waren',()=>{
+ for(const seed of [42,7]){
+   const row=run(seed,365,true);
+   assert.equal(row.minted,0);
+   console.log('W5S_I_365D '+JSON.stringify(row));
+ }
 });

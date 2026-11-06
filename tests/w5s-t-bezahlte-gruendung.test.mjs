@@ -41,11 +41,16 @@ test('W5s-t: echte W4/W5-Werftcharge + private Gründung + eigener bezahlter Fra
   p=api.w5sNachfolgeStatus(s,rules);
   assert.equal(p.stage,'finanzierbarer_neuer_spediteur',JSON.stringify(p));
   const investor=s.owners.export.cash,legacy=s.owners.transport.cash;
+  const oreTradeCost=s.stats.konto.export.kosten;
   const founded=cmd(s,{type:'shipFoundCarrier',owner:'export'});
   assert.equal(founded.ok,true,'einmalige private Kapitalgründung: '+founded.reason);
   assert.equal(s.owners.export.cash,investor-930);
   assert.equal(s.owners.transport.cash,legacy,'alte Spedition nicht gerettet');
   assert.equal(s.owners.w5s_carrier2.cash,930);
+  assert.equal(s.stats.konto.export.kosten,oreTradeCost,
+    'privates Anteilskapital ist KEIN Erz-Handelsaufwand');
+  assert.equal(s.stats.konto.w5s_carrier2?.erloes??0,0,
+    'Eigenkapital ist KEIN Frachtumsatz');
   assert.equal(s.w5s.successor.ship,null);
   assert.equal(cmd(s,{type:'shipFoundCarrier',owner:'export'}).ok,false,'keine zweite Gratisgründung');
   console.log('W5S_T_FOUNDER_AUDIT '+JSON.stringify({core:api.audit(s),finance:api.w5sFinanzStatus(s,rules)}));

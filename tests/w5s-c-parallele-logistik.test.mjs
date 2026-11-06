@@ -126,3 +126,23 @@ test('W5s-c: Seed42/7 reale W3-Erz- und W5n-Eisflüge auf zwei verschiedenen fin
     console.log('W5S_C_PARALLEL '+JSON.stringify(a));
   }
 });
+
+
+test('W5s-c: 13 feste Seeds × 90 Tage – unabhängige tägliche Geld-/Waren-Audits, Save/Load, keine Gratisrettung',()=>{
+  const seeds=[42,7,11,1,2,65535,1234,98765,3,99,2024,2025,314159];
+  for(const seed of seeds){
+    const data=scenario(seed,{longDays:90});
+    assert.equal(data.minted,0);
+    assert.ok(data.oreTrips>=2&&data.iceTrips>=1,
+      'mindestens der reale zweifache Anfangs-Vertikalschnitt');
+    console.log('W5S_C_90D '+JSON.stringify(data));
+  }
+});
+test('W5s-c: 365 Tage ohne individuelle Rettung – reale Zahlungs-/Schiffsmangel-Grenzen',()=>{
+  for(const seed of [42,7]){
+    const data=scenario(seed,{longDays:365});
+    assert.equal(data.minted,0);
+    assert.ok(data.produced>=1);
+    console.log('W5S_C_365D '+JSON.stringify(data));
+  }
+});

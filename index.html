@@ -4740,11 +4740,13 @@ const m_core_w5s=(()=>{
     return {ok:true,price,wage};
   }
   function starterSold(s,r,sh){
-    const p=starterCheck(s,r,sh.owner);
-    if(!p.ok||sh.klasse!=='miner'||sh.system!=='nadir'
-      ||sh.heimat!=='nadir')throw Error('Unbelegter Nadir-Starterminer');
+    if(!r.w5s?.autoStarterMiner||starter(s)
+      ||sh.klasse!=='miner'||sh.system!=='nadir'
+      ||sh.heimat!=='nadir'||sh.owner!==s.w5o.minerOwner)
+      throw Error('Unbelegter Nadir-Starterminer');
     s.w5s ||= {allocated:0,paid:0,active:null,completed:[]};
-    s.w5s.starterMiner={id:sh.id,owner:sh.owner,tick:s.tick,price:p.price};
+    s.w5s.starterMiner={id:sh.id,owner:sh.owner,tick:s.tick,
+      price:r.economy.waren.miner.basis};
   }
   function starterPlan(s,r){
     const owner=s.w5o?.minerOwner;
@@ -4797,7 +4799,7 @@ const m_core_w5s=(()=>{
       ||sh.system!=='nadir'||sh.phase!=='dock'||sh.auftrag!=='halten'
       ||Object.values(sh.ladung).some(n=>n!==0))
       return {ok:false,grund:'W5s: freie eigene Hülle in Nadir erforderlich'};
-    if(!(miner?s.w5?.minerSchiffIds:s.w5?.schiffIds)?.includes(sh.id))
+    if(!(miner?minerSource(s,r,sh.id):s.w5?.schiffIds?.includes(sh.id)))
       return {ok:false,grund:'W5s: kein belegter W5-Werftkauf'};
     if(((s.w3.auftrag||s.w5n.frachtauftrag)&&!r.w5s?.concurrent)
       ||s.w5s?.active||s.w5s?.completed.some(x=>x.id===sh.id))
@@ -4830,6 +4832,7 @@ const m_core_w5s=(()=>{
     w.allocated+=p.kosten;
     buche(s,owner,'kosten',p.kosten);
     w.active={id:sh.id,owner,start:s.tick,minuten:p.minuten,
+      ...(starter(s)?.id===sh.id?{starter:true}:{}),
       lohn:p.lohn,kosten:p.kosten,gearbeitet:0,
       ...(p.klasse==='miner'?{type:'miner'}:{})};
     sh.phase='reise';sh.ziel='st_aldera';sh.ankunft=s.tick+p.minuten;
@@ -4856,7 +4859,8 @@ const m_core_w5s=(()=>{
         throw Error('W5s: Überführung nicht vollständig bezahlt');
       w.completed.push({id:a.id,owner:a.owner,start:a.start,
         ankunft:s.tick,minuten:a.minuten,kosten:a.kosten,
-        ...(a.type==='miner'?{type:'miner'}:{})});
+        ...(a.type==='miner'?{type:'miner'}:{}),
+        ...(a.starter?{starter:true}:{})});
       w.active=null;
       sh.auftrag='halten';
       completeOrder(s,sh);
@@ -4869,7 +4873,9 @@ const m_core_w5s=(()=>{
       ||((s.w3.auftrag||s.w5n.frachtauftrag)&&!r.w5s?.concurrent
         &&type==='frachter')||s.w5r[type].id)return false;
     const w=s.w5r,owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;
-    const ids=type==='miner'?s.w5.minerSchiffIds:s.w5.schiffIds;
+    const ids=type==='miner'?[...(s.w5.minerSchiffIds||[]),
+      ...(r.w5s?.autoStarterMiner&&starter(s)?[starter(s).id]:[])]
+      :s.w5.schiffIds;
     const candidate=Object.values(s.ships).sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0)
       .find(sh=>sh.owner===owner&&sh.klasse===type
       &&sh.system==='aldera'&&sh.phase==='dock'&&sh.auftrag==='halten'
@@ -4910,7 +4916,9 @@ const m_core_w5s=(()=>{
         ?r.w5s.autoLeadDays:2;
     const ready=type=>{
       const owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;
-      const ids=type==='miner'?(s.w5.minerSchiffIds||[]):s.w5.schiffIds;
+      const ids=type==='miner'?[...(s.w5.minerSchiffIds||[]),
+        ...(r.w5s?.autoStarterMiner&&starter(s)?[starter(s).id]:[])]
+        :s.w5.schiffIds;
       return Object.values(s.ships).some(sh=>sh.owner===owner
         &&sh.klasse===type&&ids.includes(sh.id)
         &&sh.system==='aldera'&&sh.phase==='dock'
@@ -4931,7 +4939,9 @@ const m_core_w5s=(()=>{
     if(!candidates.length)return {stage:'kein_ersatzbedarf'};
     function planType(type){
     const owner=type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner,
-      ids=type==='miner'?(s.w5.minerSchiffIds||[]):s.w5.schiffIds,
+      ids=type==='miner'?[...(s.w5.minerSchiffIds||[]),
+        ...(r.w5s?.autoStarterMiner&&starter(s)?[starter(s).id]:[])]
+        :s.w5.schiffIds,
       record=s.w5,stock=s.stations[r.w5.station].lager;
     const c=r.w5s?.prepaidOrders?s.w5s?.contract:null;
     if(c&&['reserved','bought','inflight'].includes(c.stage)
@@ -5271,7 +5281,9 @@ const m_core_w5s=(()=>{
     const finished=completed.reduce((n,x)=>n+x.kosten,0);
     const ids=completed.map(x=>x.id);
     const transferOwner=type=>type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner;
-    const transferIds=type=>type==='miner'?s.w5.minerSchiffIds:s.w5.schiffIds;
+    const transferIds=type=>type==='miner'?[...(s.w5.minerSchiffIds||[]),
+      ...(r.w5s?.autoStarterMiner&&starter(s)?[starter(s).id]:[])]
+      :s.w5.schiffIds;
     const jobOk=!a||(a.owner===transferOwner(a.type||'frachter')
       &&transferIds(a.type||'frachter')?.includes(a.id)
       &&a.minuten===m_core_route.route(r.world,'nadir','aldera')?.zeit
@@ -5283,7 +5295,23 @@ const m_core_w5s=(()=>{
       &&s.ships[a.id]?.phase==='reise'
       &&s.ships[a.id]?.ankunft===a.start+a.minuten);
     const proof=contractAudit(s,r);
-    const ok=proof.ok&&[w.allocated,w.paid,reserve,pilot].every(n=>
+    const initial=starter(s),original=initial&&s.ships[initial.id];
+    const lost=initial&&s.w5r.losses.some(x=>x.id===initial.id
+      &&x.owner===initial.owner&&x.type==='miner');
+    const starterOk=!initial||(r.w5s?.autoStarterMiner
+      &&initial.owner===s.w5o.minerOwner&&initial.owner!=='house'
+      &&initial.price===r.economy.waren.miner.basis
+      &&Number.isSafeInteger(initial.tick)&&initial.tick>=0
+      &&initial.tick<=s.tick&&!s.w5.minerSchiffIds?.includes(initial.id)
+      &&((original?.owner===initial.owner&&original.klasse==='miner'
+          &&original.heimat==='nadir')||lost)
+      &&completed.filter(x=>x.id===initial.id).length<=1
+      &&(completed.find(x=>x.id===initial.id)?.starter!==false)
+      &&(a?.id!==initial.id||a.starter===true)
+      &&s.stations[r.w5.station].lager.miner
+        ===(r.world.stations[r.w5.station].ziel.miner||0)
+          +(s.w5.minerFertig||0)-(s.w5.minerVerkauft||0)-1);
+    const ok=starterOk&&proof.ok&&[w.allocated,w.paid,reserve,pilot].every(n=>
         Number.isSafeInteger(n)&&n>=0)
       &&Array.isArray(completed)&&new Set(ids).size===ids.length
       &&completed.every(x=>x.owner===transferOwner(x.type||'frachter')
@@ -5306,6 +5334,7 @@ const m_core_w5s=(()=>{
       completed:completed.length,active:!!a,contract:proof};
   }
   return {pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
+    starterCheck,starterSold,starterPlan,autoStarter,minerSource,
     orderCheck,orderStart,orderCancelCheck,orderCancel,contractCommand,
     contractAudit,completeOrder,npcOrePlan,autoNpcOre};
 })();
@@ -5679,6 +5708,7 @@ function step(state, rules) {
     if(rules.w5o)m_core_w5o.autopilot(state,rules);
     if(rules.w5s?.autoIndustry && state.tick%rules.economy.stunde===0){
       if(rules.w5s.autoNpcOre)m_core_w5s.autoNpcOre(state,rules);
+      if(rules.w5s.autoStarterMiner)m_core_w5s.autoStarter(state,rules);
       if(rules.w5s.autoOre)m_core_w5s.autoErz(state,rules);
       m_core_w5s.autoWerk(state,rules);
     }
@@ -6426,6 +6456,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   w5sErzStatus:(state,rules)=>m_core_w5s.erzPlan(state,rules),
   w5sKapitalLage:(state,rules)=>m_core_w5o.kapitalLage(state,rules),
   w5sNpcErzStatus:(state,rules)=>m_core_w5s.npcOrePlan(state,rules),
+  w5sStarterStatus:(state,rules)=>m_core_w5s.starterPlan(state,rules),
   createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState, createW5LState, createW5MState, createW5NState, createW5OState, createW5QState, createW5RState,
   loadErz, loadW2, loadW3, loadW4, loadW5, loadW5B, loadW5C, loadW5D, loadW5F, loadW5G, loadW5H, loadW5I, loadW5L, loadW5M, loadW5N, loadW5O, loadW5Q, loadW5R, createState, submit, execute, step, advance, load, preis, faktor };
 })();

@@ -5927,36 +5927,63 @@ const m_core_w5s=(()=>{
       throw Error('W5s-t: unabhängiger Hüllenkauf nicht belegbar');
     z.ship=sh.id;z.bought=s.tick;z.pricePaid=z.hull;
   }
+  // W5s-u: eine Eigentuemerkasse, aber getrennte Kapital-, Bau-,
+  // Ueberfuehrungs- und W5n-Frachtbelege. Ausfaelle des Altbetreibers
+  // koennen weder die Einnahmen noch die Arbeit des Neugruenders erben.
   function nachfolgeAudit(s,r){
     const z=s.w5s?.successor;
     if(!z)return {ok:true,active:false};
+    const p=m_core_w5n.preise(r);
     const hull=m_core_w5.plan(r,'frachter').preis;
     const flight=m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn;
-    // Der persistierte Beleg muss sogar im globalen Core-Audit mit dem
-    // unveraenderten R32-Basisregelobjekt nachpruefbar bleiben.
-    const working=Math.max(m_core_w3.kalkulation(r).arbeitsKosten,
-      m_core_w5n.preise(r).arbeit),total=hull+flight+working;
-    const account=s.owners[z.owner],sh=z.ship&&s.ships[z.ship];
+    const working=Math.max(m_core_w3.kalkulation(r).arbeitsKosten,p.arbeit);
+    const total=hull+flight+working,account=s.owners[z.owner];
+    const sh=z.ship&&s.ships[z.ship],a=s.w5n.frachtauftrag;
+    const live=a?.owner===z.owner;
+    const flightAllocated=z.flightAllocated||0,flightPaid=z.flightPaid||0;
+    const workReserved=z.workReserved||0,workPaid=z.workPaid||0;
+    const revenue=z.freightRevenue||0,trips=z.trips||0;
+    const transfer=s.w5s?.active?.id===z.ship
+      &&s.w5s.active.owner===z.owner?s.w5s.active:null;
+    const landed=s.w5s?.completed?.filter(x=>
+      x.id===z.ship&&x.owner===z.owner&&x.kosten===flight)||[];
+    const free=sh?.phase==='dock'&&sh.auftrag==='halten'
+      &&['nadir','aldera'].includes(sh.system);
+    const moving=sh?.phase==='reise'
+      &&((transfer&&sh.auftrag==='w5s-ueberfuehrung')
+        ||(live&&a.schiff===z.ship&&sh.auftrag==='eisfracht'));
+    const stats=s.stats.konto[z.owner]||{kosten:0,erloes:0};
     const ok=z.investor===r.w5h.kaeufer&&z.owner===successorId
       &&z.owner!==r.w3.spedition&&z.owner!=='house'
-      &&z.capital===total&&z.hull===hull&&z.flight===flight
-      &&z.working===working&&Number.isSafeInteger(z.tick)
-      &&z.tick>0&&z.tick<=s.tick
+      &&z.capital===total&&z.hull===hull&&z.flight===flight&&z.working===working
+      &&Number.isSafeInteger(z.tick)&&z.tick>0&&z.tick<=s.tick
       &&[0,hull].includes(z.pricePaid)
       &&account?.kind==='carrier'
-      &&account.cash===z.capital-z.pricePaid
-      &&(z.ship===null ? z.bought===null&&z.pricePaid===0
-        :Number.isSafeInteger(z.bought)&&z.bought>=z.tick
-          &&z.bought<=s.tick&&z.pricePaid===z.hull
-          &&sh?.owner===z.owner&&sh.klasse==='frachter'
-          &&sh.heimat==='nadir'&&sh.system==='nadir'
-          &&sh.phase==='dock'&&sh.auftrag==='halten'
+      &&[flightAllocated,flightPaid,workReserved,workPaid,revenue,trips]
+        .every(x=>Number.isSafeInteger(x)&&x>=0)
+      &&[0,flight].includes(flightAllocated)&&flightPaid<=flightAllocated
+      &&workReserved===(trips+(live?1:0))*p.arbeit
+      &&workPaid===trips*p.arbeit+(live?a.gearbeitet*r.w5n.fliegerLohn:0)
+      &&revenue===trips*p.fracht&&trips<=s.w5n.frachtAbgeschlossen
+      &&flightAllocated===(transfer||landed.length?flight:0)
+      &&flightPaid===(transfer?transfer.gearbeitet*r.w5n.fliegerLohn
+        :landed.length?flight:0)
+      &&landed.length<=1
+      &&account.cash===z.capital-z.pricePaid-flightAllocated-workReserved+revenue
+      &&stats.kosten===z.pricePaid+flightAllocated+workPaid
+      &&stats.erloes===revenue
+      &&(z.ship===null
+        ?z.bought===null&&z.pricePaid===0&&flightAllocated===0&&trips===0
+        :Number.isSafeInteger(z.bought)&&z.bought>=z.tick&&z.bought<=s.tick
+          &&z.pricePaid===z.hull&&sh?.owner===z.owner
+          &&sh.klasse==='frachter'&&sh.heimat==='nadir'
+          &&(free||moving)
           &&s.w5.schiffIds.includes(z.ship)
           &&s.w5.schiffIds.filter(x=>x===z.ship).length===1);
     return {ok,active:true,investor:z.investor,owner:z.owner,
-      capital:z.capital,held:account?.cash??null,ship:z.ship,
-      pricePaid:z.pricePaid,flight,working,
-      revenue:0,freightLicense:false};
+      capital:z.capital,held:account?.cash??null,ship:z.ship,pricePaid:z.pricePaid,
+      flight,working,flightAllocated,flightPaid,workReserved,workPaid,
+      trips,revenue,freightLicense:flightPaid===flight&&!!z.ship};
   }
   function finanzPlan(s,r){
     if(!r.w5s||!r.w5r||!s.w5r?.initialized

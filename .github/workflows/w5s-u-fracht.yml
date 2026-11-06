@@ -1,0 +1,19 @@
+name: W5s-u – bezahlte Nachfolger-Eisfracht und unabhaengiger Audit
+on:
+  push:
+    branches:
+      - feature/w5s-u-nachfolger-eisfracht-20261106
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-u-echte-nachfolger-eisfracht.test.mjs
+      - .github/workflows/w5s-u-fracht.yml
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5s-u-echte-nachfolger-eisfracht.test.mjs

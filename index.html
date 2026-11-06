@@ -4931,6 +4931,8 @@ const m_core_w5s=(()=>{
   function orderStart(s,r,owner,type){
     const p=orderCheck(s,r,owner,type);
     if(!p.ok)throw Error(p.grund);
+    // Das optionale W5s-Buch existiert vor der ersten Überführung noch nicht.
+    s.w5s ||= {allocated:0,paid:0,active:null,completed:[]};
     s.owners[account] ||= {id:account,kind:'w5s-prepaid',cash:0};
     s.owners[owner].cash-=p.total;s.owners[account].cash+=p.total;
     if(contract(s))(s.w5s.orderHistory ||= []).push(contract(s));

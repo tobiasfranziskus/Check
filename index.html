@@ -5292,6 +5292,66 @@ const m_core_w5s=(()=>{
     return {type:plan.type,stage:result.ok?plan.stage:'core_abgelehnt',
       ok:result.ok,grund:result.ok?null:result.reason};
   }
+  // W5s-k: ausschliesslich lesende Liquiditaets-/Vollkostenprobe.
+  // Die operative Frachtmarge ist kein frei verfuegbares Flottenkapital:
+  // bereits gekaufte Huellen, gebuchte Pilotenarbeit und Dividenden
+  // gehoeren zur selben, rekonstruierten Speditionskasse.
+  function finanzPlan(s,r){
+    if(!r.w5s||!r.w5r||!s.w5r?.initialized
+      ||s.rulesVersion!==r.rulesVersion)return Object.freeze({stage:'inaktiv'});
+    const owner=r.w3.spedition;
+    const initial=r.owners.find(x=>x.id===owner)?.cash;
+    const current=s.owners[owner]?.cash;
+    const ore=m_core_w3.kalkulation(r),ice=m_core_w5n.preise(r);
+    const w3=s.w3,n=s.w5n;
+    const laborOre=w3.arbeitsKosten,laborIce=n.frachtLohn;
+    const revenueOre=w3.frachtUmsatz,revenueIce=n.frachtUmsatz;
+    const hulls=s.ledger.frachter.consumed*r.economy.waren.frachter.basis;
+    const reposition=s.w5s?.paidTransport??s.w5s?.paid??0;
+    const dividend=s.w5o.divFracht;
+    const w3Escrow=s.owners.w3_arbeit_treuhand?.cash??0;
+    const iceEscrow=s.owners.w5n_fracht_arbeit?.cash??0;
+    const transferEscrow=s.w5s?.active?.owner===owner
+      ?s.owners.w5s_transfer_reserved?.cash??0:0;
+    const contract=s.w5s?.contract;
+    const orderEscrow=contract?.owner===owner
+      &&['reserved','bought'].includes(contract.stage)
+        ?s.owners.w5s_order_reserved?.cash??0:0;
+    const escrow=w3Escrow+iceEscrow+transferEscrow+orderEscrow;
+    const expected=initial+revenueOre+revenueIce-laborOre-laborIce
+      -hulls-reposition-dividend;
+    const valid=[initial,current,escrow,expected,revenueOre,revenueIce,
+      laborOre,laborIce,hulls,reposition,dividend].every(Number.isSafeInteger)
+      &&initial>=0&&current>=0&&escrow>=0&&current+escrow===expected;
+    const fleet=m_core_w5.plan(r,'frachter').preis
+      +m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn;
+    const buyer=s.owners[r.w3.kunde]?.cash??0;
+    const customer=s.owners.w5n_kunden?.cash??0;
+    const freight=Object.freeze({
+      owner,initial,current,escrow,available:current+escrow,
+      revenueOre,revenueIce,laborOre,laborIce,hulls,reposition,dividend,
+      marginBeforeHulls:revenueOre+revenueIce-laborOre-laborIce,
+      reconstructed:expected,nextHullAndFlight:fleet,
+      missing:Math.max(0,fleet-current),valid
+    });
+    const demand=Object.freeze({
+      nadirBuyerCash:buyer,householdCash:customer,
+      nextOreBudget:ore.gesamt,oreWorkReserve:ore.arbeitsKosten,
+      nextIceBudget:ice.gesamt,iceWorkReserve:ice.arbeit,
+      oreBoughtInAldera:s.w5h?.bestand??0,
+      oreDelivered:w3.geliefert,oreTrips:w3.abgeschlossen,
+      iceTrips:n.frachtAbgeschlossen,waterPaid:n.wasserVerbraucht,
+      oreBuyerCovered:buyer>=ore.gesamt,
+      iceBuyerCovered:buyer>=ice.gesamt,
+      oreCarrierCovered:current>=ore.arbeitsKosten,
+      iceCarrierCovered:current>=ice.arbeit
+    });
+    return Object.freeze({stage:'bereit',tick:s.tick,
+      freight,demand,
+      orePlan:Object.freeze({...erzPlan(s,r)}),
+      yardPlan:Object.freeze({...werkPlan(s,r)}),
+      ok:valid});
+  }
   function audit(s,r){
     const w=s.w5s;
     if(!w)return {ok:true,active:false,completed:0};
@@ -5353,7 +5413,7 @@ const m_core_w5s=(()=>{
     return {ok,allocated:w.allocated,paid:w.paid,reserve,
       completed:completed.length,active:!!a,contract:proof};
   }
-  return {pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
+  return {finanzPlan,pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
     starterCheck,starterSold,starterPlan,autoStarter,minerSource,
     orderCheck,orderStart,orderCancelCheck,orderCancel,contractCommand,
     contractAudit,completeOrder,npcOrePlan,autoNpcOre};
@@ -6476,6 +6536,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   w5sWerkStatus:(state,rules)=>m_core_w5s.werkPlan(state,rules),
   w5sErzStatus:(state,rules)=>m_core_w5s.erzPlan(state,rules),
   w5sKapitalLage:(state,rules)=>m_core_w5o.kapitalLage(state,rules),
+  w5sFinanzStatus:(state,rules)=>m_core_w5s.finanzPlan(state,rules),
   w5sNpcErzStatus:(state,rules)=>m_core_w5s.npcOrePlan(state,rules),
   w5sStarterStatus:(state,rules)=>m_core_w5s.starterPlan(state,rules),
   createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState, createW5LState, createW5MState, createW5NState, createW5OState, createW5QState, createW5RState,

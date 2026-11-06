@@ -1162,7 +1162,7 @@ const FIELDS = {
   stationBuildLaser: ['station'], pilotBuyLaser: ['schiff'], pilotFitLaser: ['schiff'],
   shipReplaceFighter: ['station'], shipUpgradeMiner: ['schiff'], shipFreightIce: ['schiff'],
   shipSellIce: ['schiff','menge'], stationWater: ['station'],
-  shipReposition: ['schiff'],
+  shipReposition: ['schiff'], shipOrder: ['klasse'], shipCancelOrder: [],
 };
 function checkShape(state, cmd, rules) {
   if (cmd === null || typeof cmd !== 'object' || Array.isArray(cmd)) return 'Befehl ist kein Objekt';
@@ -1333,8 +1333,16 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5g ? ['shipReplaceFighter'] : []),
     ...(rules.w5m ? ['shipUpgradeMiner'] : []),
     ...(rules.w5n ? ['shipSellIce','shipFreightIce','stationWater'] : []),
-    ...(rules.w5s ? ['shipReposition'] : [])].includes(cmd.type))
+    ...(rules.w5s ? ['shipReposition'] : []),
+    ...(rules.w5s?.prepaidOrders ? ['shipOrder','shipCancelOrder'] : [])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
+  if(cmd.type==='shipOrder'){
+    const c=m_core_w5s.orderCheck(state,rules,cmd.owner,cmd.klasse);
+    if(!c.ok)return c.grund;
+  }
+  if(cmd.type==='shipCancelOrder'
+    &&!m_core_w5s.orderCancelCheck(state,rules,cmd.owner))
+    return 'Kein stornierbarer Auftrag';
   if (cmd.type === 'shipBuy') {
     const frachter = !!rules.w3 && cmd.owner === rules.w3.spedition && cmd.klasse === 'frachter';
     const miner = cmd.klasse === 'miner' && (cmd.owner === 'house' || cmd.owner === 'npc3');
@@ -1383,6 +1391,12 @@ function execute(state, cmd, rules) {
   const fehler = checkShape(state, cmd, rules);
   if (fehler) return { ok: false, type: cmd && cmd.type, reason: fehler };
   switch (cmd.type) {
+    case 'shipOrder': {
+      m_core_w5s.orderStart(state,rules,cmd.owner,cmd.klasse);break;
+    }
+    case 'shipCancelOrder': {
+      m_core_w5s.orderCancel(state,rules,cmd.owner);break;
+    }
     case 'shipBuy': {
       const p = rules.economy.waren[cmd.klasse].basis;
       state.owners[cmd.owner].cash -= p;
@@ -2774,6 +2788,8 @@ const m_core_w3 = (() => {
     const k=kalkulation(rules),buyer=state.owners[c.kunde]?.cash;
     const startBuyer=rules.owners.find(o=>o.id===c.kunde).cash;
     const carrier=state.owners[c.spedition]?.cash,startCarrier=rules.owners.find(o=>o.id===c.spedition).cash;
+    const held=state.w5s?.contract?.owner===c.spedition
+      ?(state.owners.w5s_order_reserved?.cash??0):0;
     const kauf=state.owners.w3_kauf_treuhand?.cash??0,arbeit=state.owners.w3_arbeit_treuhand?.cash??0;
     const huelle=(state.ledger.frachter?.consumed??0)*rules.economy.waren.frachter.basis;
     const erwarteteBezahlung=w.abgeschlossen*k.gesamt+(a?k.gesamt:0);
@@ -2800,7 +2816,7 @@ const m_core_w3 = (() => {
         -(state.w5f?.kopfgeldBezahlt??0)-(state.owners.w5f_kopfgeld_reserve?.cash??0)
       && kauf===(a?(a.phase==='hin'?a.gesamt:a.frachtGebuehr):0)
       && arbeit===(a?k.arbeitsKosten-a.gearbeitet*c.arbeitJeMinute:0)
-      && carrier+arbeit+(state.owners.w5n_fracht_arbeit?.cash??0)
+      && carrier+arbeit+held+(state.owners.w5n_fracht_arbeit?.cash??0)
           +(state.w5s?.active?.owner===c.spedition
             ?(state.owners.w5s_transfer_reserved?.cash??0):0)
         ===startCarrier-huelle-w.arbeitsKosten+w.frachtUmsatz
@@ -4726,6 +4742,7 @@ const m_core_w5s=(()=>{
         ...(a.type==='miner'?{type:'miner'}:{})});
       w.active=null;
       sh.auftrag='halten';
+      completeOrder(s,sh);
       protokolliere(s,'auftrag',sh.id+': Nadir–Aldera nach '
         +a.minuten+' bezahlten Flugminuten beendet',a.owner);
     }
@@ -4869,6 +4886,116 @@ const m_core_w5s=(()=>{
     }
     return ersterBlock||{stage:'kein_finanzierbarer_ersatz'};
   }
+  // W5s-g: Eigentümergeld wird gesperrt, nicht an die Werft verschenkt.
+  // Der eigentliche Kauf und die Überführung nutzen weiter W5/W5s.
+  const account='w5s_order_reserved';
+  const contract=s=>s.w5s?.contract||null;
+  const terms=(r,type)=>{
+    const price=m_core_w5.plan(r,type).preis;
+    const wage=m_core_route.route(r.world,'nadir','aldera')?.zeit*r.w5n.fliegerLohn;
+    return {price,wage,total:price+wage};
+  };
+  function orderCheck(s,r,owner,type){
+    if(!r.w5s?.prepaidOrders||!r.w5s.autoIndustry||!r.w5s.minerIndustry)
+      return {ok:false,grund:'W5s-g nur im Forschungsprofil'};
+    if(!['miner','frachter'].includes(type)||owner==='house'
+      ||owner!==(type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner))
+      return {ok:false,grund:'Kein berechtigter NPC-Besteller'};
+    if(contract(s)&&!['cancelled','completed'].includes(contract(s).stage))
+      return {ok:false,grund:'Verbindlicher Auftrag besteht'};
+    const p=terms(r,type);
+    if(![p.price,p.wage,p.total].every(x=>Number.isSafeInteger(x)&&x>0))
+      return {ok:false,grund:'Ungültige Schiffs- oder Flugkosten'};
+    if(s.owners[owner].cash<p.total)
+      return {ok:false,grund:'Kauf und Flug nicht voll finanziert'};
+    if(s.owners[account]?.cash||s.w5.auftrag)
+      return {ok:false,grund:'Werft oder Geldtreuhand belegt'};
+    return {ok:true,...p};
+  }
+  function orderStart(s,r,owner,type){
+    const p=orderCheck(s,r,owner,type);
+    if(!p.ok)throw Error(p.grund);
+    s.owners[account] ||= {id:account,kind:'w5s-prepaid',cash:0};
+    s.owners[owner].cash-=p.total;s.owners[account].cash+=p.total;
+    if(contract(s))(s.w5s.orderHistory ||= []).push(contract(s));
+    s.w5s.contract={owner,type,price:p.price,wage:p.wage,total:p.total,
+      ordered:s.tick,stage:'reserved',buildStarted:false};
+  }
+  function orderCancelCheck(s,r,owner){
+    const c=contract(s);
+    return !!(r.w5s?.prepaidOrders&&c&&c.owner===owner
+      &&c.stage==='reserved'&&!c.buildStarted&&!s.w5.auftrag
+      &&s.owners[account]?.cash===c.total);
+  }
+  function orderCancel(s,r,owner){
+    if(!orderCancelCheck(s,r,owner))throw Error('Storno nach Werftstart unzulässig');
+    const c=contract(s);s.owners[account].cash-=c.total;
+    s.owners[owner].cash+=c.total;c.stage='cancelled';c.cancelled=s.tick;
+  }
+  function prepaid(s,r,stage,owner,type,ship){
+    const c=contract(s);
+    return !!(r.w5s?.prepaidOrders&&c&&c.stage===stage
+      &&c.owner===owner&&c.type===type&&(!ship||c.ship===ship));
+  }
+  function contractCommand(s,r,cmd){
+    const c=contract(s);
+    const buy=cmd.type==='shipBuy'&&prepaid(s,r,'reserved',
+      cmd.owner,cmd.klasse);
+    const fly=cmd.type==='shipReposition'&&prepaid(s,r,'bought',
+      cmd.owner,s.ships[cmd.schiff]?.klasse,cmd.schiff);
+    const debit=buy?c.price:fly?c.wage:0;
+    if(debit&&s.owners[account]?.cash<debit)
+      return {ok:false,reason:'Bestellgeld nicht hinterlegt'};
+    // Freigabe und Original-Core-Befehl laufen synchron. Bei Ablehnung
+    // wird die vollständig gleiche Summe sofort rückgebucht.
+    if(debit){s.owners[account].cash-=debit;s.owners[cmd.owner].cash+=debit}
+    const previous=s.nextShip;
+    const result=m_core_commands.execute(s,cmd,r);
+    if(!result.ok&&debit){
+      s.owners[cmd.owner].cash-=debit;s.owners[account].cash+=debit;
+    }else if(result.ok&&c){
+      if(buy){c.ship=m_core_state.schiffId(previous);c.stage='bought';c.bought=s.tick;}
+      else if(fly){c.stage='inflight';c.depart=s.tick;}
+      else if(c.stage==='reserved'&&
+        ['stationBuildShip','stationBuildMiner'].includes(cmd.type))
+        c.buildStarted=true;
+    }
+    return result;
+  }
+  function completeOrder(s,sh){
+    const c=contract(s);
+    if(c?.stage==='inflight'&&c.ship===sh.id){
+      c.stage='completed';c.arrived=s.tick;
+    }
+  }
+  function contractAudit(s,r){
+    const c=contract(s),sum=s.owners[account]?.cash??0;
+    if(!c)return {ok:sum===0,stage:'none',sum};
+    const t=terms(r,c.type),owed=c.stage==='reserved'?c.total:
+      c.stage==='bought'?c.wage:0;
+    const sold=['bought','inflight','completed'].includes(c.stage);
+    const ids=c.type==='miner'?s.w5.minerSchiffIds:s.w5.schiffIds;
+    const evidence=s.ships[c.ship]?.owner===c.owner
+      ||s.w5r?.losses.some(x=>x.id===c.ship&&x.owner===c.owner);
+    const ok=Number.isSafeInteger(sum)&&sum>=0&&sum===owed
+      &&Number.isSafeInteger(c.ordered)&&c.ordered>=0&&c.ordered<=s.tick
+      &&c.owner!=='house'
+      &&c.owner===(c.type==='miner'?s.w5o.minerOwner:r.w5n.frachterOwner)
+      &&c.price===t.price&&c.wage===t.wage&&c.total===t.total
+      &&typeof c.buildStarted==='boolean'
+      &&['reserved','bought','inflight','completed','cancelled'].includes(c.stage)
+      &&(!sold||(ids?.includes(c.ship)&&evidence
+        &&Number.isSafeInteger(c.bought)&&c.bought>=c.ordered&&c.bought<=s.tick))
+      &&(c.stage!=='inflight'||s.w5s.active?.id===c.ship)
+      &&(c.stage!=='completed'
+        ||(Number.isSafeInteger(c.arrived)&&c.arrived>=c.bought
+          &&s.w5s.completed.some(x=>x.id===c.ship&&x.ankunft===c.arrived)))
+      &&(c.stage!=='cancelled'||(!c.buildStarted
+        &&Number.isSafeInteger(c.cancelled)&&c.cancelled>=c.ordered
+        &&c.cancelled<=s.tick))
+      &&(s.w5s.orderHistory||[]).every(x=>['cancelled','completed'].includes(x.stage));
+    return {ok,sum,stage:c.stage,owner:c.owner,type:c.type,ship:c.ship||null};
+  }
   // W5s-f: Erz-Beschaffung ist ausdrücklich ein VORFINANZIERTER
   // Auftrag des vorhandenen W3-Core. Kein Erz-Käufer, kein Frachter oder
   // keine bezahlbare Route => keine Ersatzware durch den Dispatcher.
@@ -4954,7 +5081,8 @@ const m_core_w5s=(()=>{
       &&s.ships[a.id]?.owner===a.owner
       &&s.ships[a.id]?.phase==='reise'
       &&s.ships[a.id]?.ankunft===a.start+a.minuten);
-    const ok=[w.allocated,w.paid,reserve,pilot].every(n=>
+    const proof=contractAudit(s,r);
+    const ok=proof.ok&&[w.allocated,w.paid,reserve,pilot].every(n=>
         Number.isSafeInteger(n)&&n>=0)
       &&Array.isArray(completed)&&new Set(ids).size===ids.length
       &&completed.every(x=>x.owner===transferOwner(x.type||'frachter')
@@ -4974,9 +5102,11 @@ const m_core_w5s=(()=>{
           +(a&&a.type!=='miner'?a.gearbeitet*lohn:0)))
       &&reserve===w.allocated-w.paid&&pilot===w.paid;
     return {ok,allocated:w.allocated,paid:w.paid,reserve,
-      completed:completed.length,active:!!a};
+      completed:completed.length,active:!!a,contract:proof};
   }
-  return {pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz};
+  return {pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
+    orderCheck,orderStart,orderCancelCheck,orderCancel,contractCommand,
+    contractAudit,completeOrder};
 })();
 
 // W5r isolated research: no free replacement ship and fully paid dock work.
@@ -5185,7 +5315,9 @@ const m_core_w1_vollkosten = (() => {
     // Ihre Treuhand wird separat und vollständig im W5s-Audit geprüft.
     const haus = saldo('house', arbeitsGebunden('house')+(state.owners.w5b_silizium_arbeit?.cash??0)
       +(state.owners.w5b_fabrik_arbeit?.cash??0)+(state.owners.w5f_laser_arbeit?.cash??0));
-    const npc = saldo('npc3', arbeitsGebunden('npc3'));
+    const npc = saldo('npc3', arbeitsGebunden('npc3')
+      +(state.w5s?.contract?.owner==='npc3'
+        ?(state.owners.w5s_order_reserved?.cash??0):0));
     const station = saldo(cfg.station, abnahmeGebunden);
     const verkauf = saldo(cfg.werftOwner,
       rules.w5 ? state.owners.w5_arbeit_treuhand?.cash ?? 0 : 0);

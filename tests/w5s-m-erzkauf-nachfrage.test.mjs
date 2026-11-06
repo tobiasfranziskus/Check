@@ -117,11 +117,12 @@ test('W5s-m: vorhandene 45 Erz / 55 Eis werden teilweise real verkauft; kein gra
 test('W5s-m: 13×90 Tage – zwei reale W3-Frachten mit hohem bezahltem Wasserabsatz',()=>{
   for(const seed of SEEDS){
     const result=run(seed,90,2,true);
-    assert.ok(result.ore>=2,'zwei 50-Erz-Aufträge fertig und bezahlt');
-    assert.equal(result.delivered,50*result.ore,'nur abgewickelte 50er-Erzladungen');
-    assert.ok(result.second!==null&&result.second<=90);
-    assert.ok(result.water>=4000,'die Wasserversorgung bleibt in Betrieb');
-    assert.ok(result.built>=5,'reale bezahlte Werftfertigung');
+    assert.equal(result.ore,2,'genau zwei echte bezahlte 50-Erz-Frachten');
+    assert.equal(result.delivered,100,'nur abgewickelte 50er-Erzladungen');
+    assert.equal(result.second,59,'zweiter W3-Erzabschluss bis Tag59');
+    assert.equal(result.water,4316,'keine Verschlechterung der vollen Wasserversorgung');
+    assert.equal(result.ice,88,'Eisfracht bleibt tatsächlich finanziert');
+    assert.equal(result.built,8,'acht physisch gebaute Werfthüllen');
     assert.ok(result.merchantBought>=result.delivered,
       'keine Frachten ohne vorangegangenen Großhändlerankauf');
     if(seed===42||seed===7)

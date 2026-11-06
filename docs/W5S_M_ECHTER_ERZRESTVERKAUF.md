@@ -14,8 +14,20 @@ Ist kein Käufergeld vorhanden oder der Miner fremd, unterwegs, anderweitig vert
 
 ## Prüfgrenzen
 
-Ein erster gezielter Vergleich unter 2 Tagen Vorlauf (Seed42) ergab nach 90 Tagen **zwei vollständige W3-Frachten und weiterhin 4.316 real bezahlte Wasser** statt nur einer Fracht ohne Bestandsverkauf. Für 7 Tage Vorlauf kamen ebenso zwei W3-Frachten zustande, aber der Wasserverbrauch sank in dieser Variante auf 4.089. Diese Ergebnisse sind vor der umfassenden CI-Matrix noch **[VORLÄUFIG]** und enthalten keinen 365-Tage-Stabilitätsbeweis.
+**[TEST] [GitHub W5s-m-CI #42208104182](https://github.com/tobiasfranziskus/Check/actions/runs/42208104182) auf Code-Head `731f18b9`: 5/5 Testgruppen erfolgreich, 0 Fehler und 0 übersprungen.** 13 feste Seeds ×90 Tage, Seed42/7 ×365 Tage, täglicher unabhängiger Core-, Kassenprovenienz-, Weltgeld- und physischer Warenabgleich, 90-Tage-Doppelreplays, Save/Load, sowie abgelehnte verbotene Verkäufe ohne Forschungsflag/Stationsgeld/Eigentum und ohne Doppelverkauf. Der erste Zwischenstand hatte einen Fehler bei ungekürzten Verträgen (25er-Neuauftrag trotz 20 realer Restware); der Original-W2-`beauftragen`-Befehl erlaubt jetzt **nur auf ausdrücklichen Aufruf einen optionalen Mengen-Deckel**. Das reguläre W2/Spielerverhalten ohne Parameter bleibt identisch und die nachfolgende CI wurde erfolgreich ausgeführt.
 
-Die eigenständige Node22-CI muss mit 13 Seeds ×90 Tagen, Seed42/7 ×365 Tagen, unabhängigem täglichen ISK-/Warenaudit, Save/Load und zwei deterministischen Replays sowie Negativprüfungen gegen unberechtigten/doppelt gebuchten Ankauf bestanden werden. Das vollständige GitHub-Regressionsworkflow- und die iPad-Safari-/NAS-Abnahme sind eigene Gates. **Nicht** behauptet: ewiger NPC-Wiederanlauf oder genehmigte neue Geld-/Preispolitik.
+**[POSITIV]** Für **alle 13 Seed-Welten mit 2 Tagen Vorlauf**: nach 90 Tagen **zwei vollständige 50er-Erzfrachtabschlüsse**, zweiter Abschluss **Tag59**, real **100 Erz** in Nadir, **88 bezahlte Eisfahrten, 4.316 bezahlte Wasser, acht echte neue W5-Fertigstellungen** und 0 neue ISK. Gleiche Welt ohne Teilverkauf: **eine** 50er-Fracht, weiterhin 4.316 Wasser. Der Erzgroßhändler hat 120 Erz real aus der Station erworben, 100 davon nach Nadir verkauft; es bleiben nur nachweisbare Lagerbestände. Die meisten Seed-Welten teilen dieselben Wirtschaftsgrößen, unterscheiden sich aber im deterministischen Hash – **keine** 13 unabhängigen Krisenökonomien.
+
+| 90 Tage, jeweils Seed42 und Seed7 | W3 ohne/mit Bestandsverkauf | Wasser ohne/mit |
+|---|---:|---:|
+| 2 Tage Vorlauf | **1 → 2** | **4.316 → 4.316** |
+| 7 Tage Vorlauf | 1 → 2 | 4.316 → 4.089 |
+| 30 Tage Vorlauf | 2 → 2 | 1.250 → 1.250 |
+
+Bei 7 Tagen geht die zusätzliche echte Erz-Nachfrage zeitlich zulasten von **227 bezahlten Wasser**, deshalb ist 7 Tage keine gleichwertige Empfehlung. Die R32 15-/30-Tage-Verschleißwerte sind ausschließlich hypothetische Stressannahmen, **keine** freigegebene Produktregel.
+
+**[365d-Negativbeleg]** Seed42 und Seed7 bleiben auch nach 365 Tagen bei nur **zwei** abgeschlossenen Erztransporten und **4.382** bezahlten Wasser stehen; Speditionskasse 480 ISK, kein dauerhafter autonomer W6-Wiederanlauf. Das ist kein Test für NPC-Wiedergründung, neue Endnachfrage oder gesamtes Kampfsystem.
+
+**[CI-HÄRTUNG]** Nach erfolgreichem Forschungs-Run wurde die 13-Seed-Matrix um exakte Assertions für die zweite Erzlieferung an Tag59, 88 Eisfahrten, 4.316 Wasser und acht echte Werfthüllen verschärft; der erneute GitHub-Lauf auf dem Folgecommit ist separat zu bestätigen. Das vollständige GitHub-Regressionsworkflow- und die iPad-Safari-/NAS-Abnahme bleiben eigene Gates. **Nicht** behauptet: ewiger NPC-Wiederanlauf oder genehmigte neue Geld-/Preispolitik.
 
 Ausdrücklich nicht geändert: produktive `index.html` auf `main`, die bereits bestehenden UI-Drafts, W5s-k/l-Kassenregeln, realer Eigentumserwerb von Schiffen und Spieler-Sparfreiheit.

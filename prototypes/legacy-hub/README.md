@@ -46,3 +46,14 @@ und Chromium (`/usr/bin/chromium`), startet nur einen temporären Loopback-Serve
 Kein Paketmanifest oder Abhängigkeit für die Vorschau erforderlich.
 
 [Integrationsbericht](../../docs/LEGACY_HUB_INTEGRATION.md).
+
+## W5t: eigener lesender Core-Einstieg
+
+`core-preview.html` zeigt zunächst keine Welt. Eine explizit ausgewählte Core-JSON
+und eine vorhandene Eigentümer-ID laden HQ/Station aus **einem** Snapshot.
+Unterstützt: der validierte W5s-c/R32-State (Schema 8), kein Save-Hüllenformat.
+Alte Saves zuerst separat mit dem passenden Core laden; der Adapter migriert nicht.
+Keine Speicherung, kein Spielstart, kein automatischer Tick, kein Netzwerkabruf.
+Die drei übrigen Ansichten bleiben eigene gekennzeichnete Demos.
+
+[Vertrag, Grenzen und Prüfnachweis W5t](../../docs/W5T_CORE_ADAPTER.md).

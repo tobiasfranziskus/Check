@@ -39,7 +39,7 @@ function run(seed,days,on){
      assert.equal(api.hash(api.loadW5R(api.save(s))),api.hash(s),'Save/Load '+d);
      points[d]={ore:s.w3.abgeschlossen,water:s.w5n.wasserVerbraucht,
        ice:s.w5n.frachtAbgeschlossen,wages:f.orePilotWages,
-       consumer:s.owners.w5n_kunden.cash,spedition:s.owners.transport.cash,
+       chain:f.chain,consumer:s.owners.w5n_kunden.cash,spedition:s.owners.transport.cash,
        buyer:s.owners.st_nadir.cash,
        oreMerchant:s.w5h.bestand,oreAtNadir:s.stations.st_nadir.lager.erz,
        plan:f.yardPlan.stage,orePlan:f.orePlan.stage,
@@ -79,7 +79,23 @@ test('W5s-q: Seed42/7 ×365 Tage – reales Haushaltseinkommen und unveränderte
    const x=run(seed,365,true);
    assert.equal(x.wages.paid,x.wages.earned,'alle gebuchten W3-Pilotenlöhne genau einmal');
    assert.ok(x.water>5738,'tatsächlich höherer bezahlter Wasserabsatz');
-   assert.ok(x.ore>=3,'autonome dritte Erzlieferung bleibt erhalten');
+   assert.equal(x.ore,3,'auch mit echtem Lohnfluss kein vorgetäuschter vierter Auftrag');
+   assert.equal(x.water,5823,'jeder bezahlte Wasserabsatz physisch belegt');
+   assert.equal(x.ice,118);
+   assert.equal(x.wages.paid,360,'genau drei reale 120-ISK-Fluglohnzahlungen');
+   assert.equal(x.points[104].chain.originalW3PrepayPossible,true,
+     'Original-W3-Core erlaubt eine finanzierte vierte Fracht');
+   assert.equal(x.points[104].chain.automatedW3Approved,false,
+     'kein legitimer Werftauftrag: keine spekulative Lagerbestellung');
+   assert.equal(x.points[104].chain.yardDemand,'kein_ersatzbedarf');
+   assert.equal(x.points[365].chain.stationCash,0,
+     'Aldera darf keine weitere Erzproduktion unfinanziert bezahlen');
+   assert.equal(x.points[365].chain.merchantOwnedOre,50);
+   assert.equal(x.points[365].chain.npcMinerCargoOre,100);
+   assert.equal(x.points[365].chain.nextCarrierShortfall,450);
+   assert.equal(x.points[365].chain.stage,'ersatzschiff_und_weiterer_absatz_unfinanziert');
+   assert.equal(x.points[365].chain.originalW3PrepayPossible,false);
+   assert.equal(x.points[365].chain.automatedW3Approved,false);
    console.log('W5S_Q_WAGE_365D '+JSON.stringify(x));
  }
 });

@@ -1403,6 +1403,11 @@ function execute(state, cmd, rules) {
     }
     case 'shipBuy': {
       const p = rules.economy.waren[cmd.klasse].basis;
+      // Der Herkunftsbeweis muss VOR Preis- und Lagerabbuchung erfolgen:
+      // danach ist das letzte echte Anfangsstück bereits verbraucht.
+      const w5sStarter=!!rules.w5s?.autoStarterMiner
+        &&cmd.station===rules.w5.station&&cmd.klasse==='miner'
+        &&m_core_w5s.starterCheck(state,rules,cmd.owner).ok;
       state.owners[cmd.owner].cash -= p;
       const w5bJaeger = !!rules.w5b && cmd.station===rules.w5b.station
         && cmd.klasse==='jaeger' && cmd.owner===rules.w5b.kaeufer;
@@ -1412,9 +1417,6 @@ function execute(state, cmd, rules) {
       state.ledger[cmd.klasse].consumed += 1;
       const w5Kauf = !!rules.w5 && cmd.station === rules.w5.station
         && cmd.klasse === rules.w5.klasse && cmd.owner === rules.w5.kaeufer;
-      const w5sStarter=!!rules.w5s?.autoStarterMiner
-        &&cmd.station===rules.w5.station&&cmd.klasse==='miner'
-        &&m_core_w5s.starterCheck(state,rules,cmd.owner).ok;
       const w5sMiner = !!rules.w5s?.minerIndustry && !w5sStarter
         && cmd.station===rules.w5.station && cmd.klasse==='miner'
         && cmd.owner===state.w5o.minerOwner;

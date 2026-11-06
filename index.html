@@ -2387,7 +2387,7 @@ const m_core_erzpilot = (() => {
       Math.floor(state.owners[cfg.exportOwner].cash / cfg.preis)
       - bestand - reserviert(state) - fremdeFracht));
   }
-  function beauftragen(state, rules, schiff) {
+  function beauftragen(state, rules, schiff, maxBestand = Infinity) {
     const cfg = rules.erzpilot, buch = (state.erzpilotVertraege ||= {});
     if (cfg.npcInvestor && !m_core_audit.audit(state).finanzierung?.ok) return null;
     if (buch[schiff.id]) return buch[schiff.id];
@@ -2398,7 +2398,7 @@ const m_core_erzpilot = (() => {
     const vorhandenesErz = anzahl(schiff.ladung, 'erz');
     const verfuengbareArbeit = Math.floor(state.owners[schiff.owner].cash / cfg.minerJeMinute)
       * m_core_w5m.rate(rules,schiff);
-    let menge = Math.max(0, Math.min(cfg.auftragsMenge, rules.economy.cargo,
+    let menge = Math.max(0, Math.min(cfg.auftragsMenge, maxBestand, rules.economy.cargo,
       Math.floor(station.cash / cfg.preis), freiePlaetze,
       Math.max(vorhandenesErz, verfuengbareArbeit)));
     // Regel16: Endverbraucher muss auch diese neue Charge nachvollziehbar
@@ -2457,18 +2457,17 @@ const m_core_erzpilot = (() => {
   function bestandsVerkauf(state,rules,schiff){
     const p=bestandsVerkaufCheck(state,rules,schiff);
     if(!p.ok)throw Error(p.grund);
-    const v=beauftragen(state,rules,schiff);
+    const v=beauftragen(state,rules,schiff,p.menge);
     if(!v||v.menge!==p.menge||v.menge>(schiff.ladung.erz||0))
-      throw Error('W5s-m: Vertragabweichung '+JSON.stringify({tick:state.tick,p:p.menge,vertrag:v?.menge,ladung:schiff.ladung.erz,station:state.owners[rules.erzpilot.station].cash}));
+      throw Error('W5s-m: Vertragsmenge nicht durch eigene Erzladung gedeckt');
     const n=abschliessen(state,rules,schiff);
     if(n!==p.menge)throw Error('W5s-m: bezahlter Teilankauf nicht abgeschlossen');
     protokolliere(state,'handel',schiff.id+': '+n+
-      ' bereits geförderte Erz zu '+cfgPreis(rules)+
+      ' bereits geförderte Erz zu '+rules.erzpilot.preis+
       ' ISK je Einheit gegen stationär reserviertes W2-Käufergeld verkauft',
       schiff.owner, rules.erzpilot.station);
     return n;
   }
-  const cfgPreis=rules=>rules.erzpilot.preis;
   function abschliessen(state, rules, schiff, stornierung = false) {
     const cfg = rules.erzpilot, buch = vertragsbuch(state);
     const v = buch[schiff.id];

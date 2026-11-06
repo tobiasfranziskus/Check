@@ -54,6 +54,18 @@ test('W5s-o: Spieler kauft echten Miner, foerdert bezahltes Erz und bietet W3-Fr
    oreBefore:ore,oreTrips:s.w3.abgeschlossen,initialMerchant:merchant,
    merchant:s.w5h.bestand,started,third,paidAt,candidateErrors,
    investor:s.w5s.takeover.dividends}));
+ assert.equal(started,true,'echte W3-Fracht durch Originalkommando gebucht');
+ assert.equal(s.w3.abgeschlossen,3,'dritte vollständig abgerechnete 50er-Fracht');
+ assert.equal(s.w3.geliefert,150,'drei physisch gelieferte Erzchargen');
+ assert.ok(third!==null&&third<=1440,'dritte Erzlieferung binnen eines Spieltages');
+ assert.ok(paidAt!==null&&paidAt>=third,'Anteilsertrag erst nach erbrachter Leistung');
+ assert.equal(s.w5s.takeover.dividends,72,
+   '60% des realen 120-ISK-Erzfrachtdeckungsbeitrags, niemals vom Eislohn');
+ assert.equal(s.w5h.verkauft,150,'Grosshändler hat drei reale Erzchargen verkauft');
+ assert.ok(s.ledger.erz.mined>=150,'nicht erfundenes Erz');
  assert.equal(s.minted,0);
+ assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),s.initialSupply,
+   'keine externen Geldmittel');
  assert.equal(api.audit(s).ok,true);
+ assert.equal(api.w5sFinanzStatus(s,r).ok,true);
 });

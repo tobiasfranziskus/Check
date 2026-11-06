@@ -1,0 +1,19 @@
+name: W5s-r – tatsächlich bezahlte Industrie- und Wartungslöhne
+on:
+  push:
+    branches:
+      - feature/w5s-r-industrie-und-wartungsloehne-20261106
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-r-industrie-loehne.test.mjs
+      - .github/workflows/w5s-r-industrie-loehne.yml
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5s-r-industrie-loehne.test.mjs

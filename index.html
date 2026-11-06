@@ -4897,13 +4897,11 @@ const m_core_w5s=(()=>{
         &&Object.values(sh.ladung).every(n=>n===0))
       .sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
     const primary=s.w5r.frachter.id;
-    const freie=transporter.filter(sh=>sh.id!==primary
-      &&!(s.w5.schiffIds||[]).includes(sh.id)
-        ||(sh.id!==primary
-          &&(s.w5r.assignments||[]).some(x=>x.id===sh.id)));
-    // Keine Ersatzhülle als Erz-Arbeitstier zweckentfremden.
-    const spare=freie.find(sh=>!(s.w5.schiffIds||[]).includes(sh.id)
-      ||(s.w5r.assignments||[]).some(x=>x.id===sh.id));
+    // Frei verfügbare, bereits zugeordnete Flottenhüllen dürfen
+    // arbeiten; noch für R32 vorgemerkte W5-Neubauten dagegen nicht.
+    const spare=transporter.find(sh=>sh.id!==primary
+      &&(!(s.w5.schiffIds||[]).includes(sh.id)
+        ||(s.w5r.assignments||[]).some(x=>x.id===sh.id)));
     const ice=s.stations.st_nadir.lager.eis||0;
     const water=s.stations.st_nadir.lager.wasser||0;
     // Die R32-Eisfracht bleibt priorisiert. Nur bei erfülltem

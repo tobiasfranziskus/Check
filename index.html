@@ -2663,7 +2663,9 @@ const m_core_w3 = (() => {
     if(!rules.w3||state.rulesVersion!==rules.rulesVersion)
       return {ok:false,grund:'W3 nur im isolierten Transportkern'};
     const c=rules.w3,w=state.w3;
-    if(!w||w.auftrag||state.w5n?.frachtauftrag)return {ok:false,grund:'Bereits ein W3-/Eis-Transport gebunden'};
+    if(!w||w.auftrag||(state.w5n?.frachtauftrag
+      && (!rules.w5s?.concurrent||state.w5n.frachtauftrag.schiff===sh?.id)))
+      return {ok:false,grund:'W3: Auftrag oder identischer Frachter bereits gebunden'};
     if(!sh||sh.owner!==c.spedition||sh.klasse!=='frachter'||sh.phase!=='dock'
       ||sh.system!=='aldera'||sh.auftrag!=='halten')
       return {ok:false,grund:'Bezahlter Frachter muss frei in Aldera liegen'};
@@ -3018,8 +3020,14 @@ const m_core_w5 = (() => {
     const shipIds=w.schiffIds||[];
     const gekaufte=shipIds.every(id=>{
       const sh=state.ships[id];
-      return sh?.klasse===c.klasse && sh.owner===c.kaeufer
-        && sh.heimat==='nadir';
+      if(sh)return sh.klasse===c.klasse&&sh.owner===c.kaeufer
+        &&sh.heimat==='nadir';
+      // Eine real verkaufte Werfthülle verschwindet beim späteren
+      // R32-Verschleiß physisch; der Kauf-/Herkunftsbeleg bleibt gültig.
+      // Nur exakt dokumentierte Verluste des autoritativen W5r-Buchs.
+      return !!state.w5r?.losses.some(x=>x.id===id
+        &&x.type===c.klasse&&x.owner===c.kaeufer
+        &&x.tick<=state.tick);
     });
     const ok=[escrow,werk,arbeit,werftErloese,werftKosten,
       w.materialVerbraucht,w.materialUmsatz,w.arbeitsGebunden,
@@ -4115,7 +4123,9 @@ const m_core_w5n=(()=>{
    if(!r.w5n||s.rulesVersion!==r.rulesVersion||!s.w5n)
      return {ok:false,grund:'Eisroute nur in W5n/R29'};
    const c=r.w5n,w=s.w5n,p=preise(r);
-   if(w.frachtauftrag||s.w3.auftrag)return {ok:false,grund:'Frachter bereits gebunden'};
+   if(w.frachtauftrag||(s.w3.auftrag
+     && (!r.w5s?.concurrent||s.w3.auftrag.schiff===sh?.id)))
+     return {ok:false,grund:'W5n: Auftrag oder identischer Frachter bereits gebunden'};
    if(!sh||sh.klasse!=='frachter'||sh.owner!==c.frachterOwner
      ||sh.phase!=='dock'||sh.system!=='aldera'||sh.auftrag!=='halten'
      ||Object.values(sh.ladung).some(n=>n!==0))
@@ -4381,10 +4391,36 @@ const m_core_w5o=(()=>{
        &&s.owners[w.minerOwner].cash>=c.mineLohn)
        attempt(s,r,'shipMine',w.minerOwner,{schiff:miner.id,ware:'eis'});
    }
-   const sh=Object.values(s.ships).find(x=>x.owner===c.frachterOwner&&x.klasse==='frachter');
    const ice=s.stations.st_nadir.lager.eis||0,water=s.stations.st_nadir.lager.wasser||0;
-   if(sh&&!n.frachtauftrag&&!s.w3.auftrag&&ice+water<=r.w5o.versorgungZiel)
-     attempt(s,r,'shipFreightIce',c.frachterOwner,{schiff:sh.id});
+   if(r.w5s?.concurrent){
+     // W5s-c: ein gemeinsamer Core, getrennte bezahlte Aufträge je Schiff.
+     // Die aktive R32-Eishülle bleibt der Versorgung zugeordnet; eine zusätzlich
+     // tatsächlich gekaufte Werfthülle darf nur freie W3-Erzarbeit übernehmen.
+     const free=Object.values(s.ships).filter(x=>x.owner===c.frachterOwner
+       &&x.klasse==='frachter'&&x.system==='aldera'
+       &&x.phase==='dock'&&x.auftrag==='halten'
+       &&Object.values(x.ladung).every(v=>v===0))
+       .sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
+     const iceShip=free.find(x=>x.id===s.w5r?.frachter.id);
+     if(iceShip&&!n.frachtauftrag&&ice+water<=r.w5o.versorgungZiel)
+       attempt(s,r,'shipFreightIce',c.frachterOwner,{schiff:iceShip.id});
+     // Nie eine angefangene Eisfahrt durch Erz ersetzen. Die automatische
+     // W3-Route ist nur mit eigener, ungebundener und bezahlter Hülle zulässig.
+     // Unbelegte Rohware, leere Kundenkasse oder fehlender Lagerraum
+     // führen zur Ablehnung durch die bestehenden Core-Gates.
+     // Bei fehlendem R32-Versorgungsfrachter verbleibt die zweite
+     // real bezahlte Hülle in Aldera, bis das Ersatz-Gate sie zuordnen kann.
+     // Kein erneuter Erzauftrag, der den einzigen Ersatz ewig bindet.
+     if(s.w5r?.frachter.id&&!s.w3.auftrag){
+       const spare=free.find(x=>x.id!==s.w5r?.frachter.id
+         &&x.phase==='dock'&&x.auftrag==='halten');
+       if(spare)attempt(s,r,'shipFreight',c.frachterOwner,{schiff:spare.id});
+     }
+   } else {
+     const sh=Object.values(s.ships).find(x=>x.owner===c.frachterOwner&&x.klasse==='frachter');
+     if(sh&&!n.frachtauftrag&&!s.w3.auftrag&&ice+water<=r.w5o.versorgungZiel)
+       attempt(s,r,'shipFreightIce',c.frachterOwner,{schiff:sh.id});
+   }
    if(!n.fabrikauftrag&&ice>=c.rezeptEis&&water<=r.w5o.wasserZiel)
      attempt(s,r,'stationWater',c.zielStation,{station:c.zielStation});
  }
@@ -4570,8 +4606,8 @@ const m_core_w5s=(()=>{
       return {ok:false,grund:'W5s: freie eigene Hülle in Nadir erforderlich'};
     if(!s.w5?.schiffIds.includes(sh.id))
       return {ok:false,grund:'W5s: kein belegter W5-Werftkauf'};
-    if(s.w3.auftrag||s.w5n.frachtauftrag||s.w5s?.active
-      ||s.w5s?.completed.some(x=>x.id===sh.id))
+    if(((s.w3.auftrag||s.w5n.frachtauftrag)&&!r.w5s?.concurrent)
+      ||s.w5s?.active||s.w5s?.completed.some(x=>x.id===sh.id))
       return {ok:false,grund:'W5s: Frachter oder Überführung bereits gebunden'};
     const weg=m_core_route.route(r.world,'nadir','aldera');
     const minuten=weg?.zeit,lohn=r.w5n.fliegerLohn;
@@ -4629,7 +4665,7 @@ const m_core_w5s=(()=>{
     }
   }
   function assign(s,r){
-    if(!r.w5s||!s.w5s||s.w3.auftrag||s.w5n.frachtauftrag
+    if(!r.w5s||!s.w5s||((s.w3.auftrag||s.w5n.frachtauftrag)&&!r.w5s?.concurrent)
       ||s.w5r.frachter.id)return false;
     const w=s.w5r;
     const candidate=Object.values(s.ships).find(sh=>
@@ -4725,7 +4761,9 @@ const m_core_w5r=(()=>{
  function retire(s,r,type){
    const w=s.w5r,entry=w[type],sh=s.ships[entry.id];
    if(!sh||sh.phase!=='dock'||sh.klasse!==type
-      ||(type==='frachter'&&(s.w5n.frachtauftrag||s.w3.auftrag)))return false;
+      ||(type==='frachter'&&(r.w5s?.concurrent
+        ?(s.w5n.frachtauftrag?.schiff===sh.id||s.w3.auftrag?.schiff===sh.id)
+        :(s.w5n.frachtauftrag||s.w3.auftrag))))return false;
    if(type==='miner'&&(sh.bohrerMk1||s.w5m.schiffe[sh.id]))
      throw Error('W5r MK1-/Erzuebernahme noch nicht beschlossen');
    const cargo=Object.entries(sh.ladung).filter(([,n])=>n>0)

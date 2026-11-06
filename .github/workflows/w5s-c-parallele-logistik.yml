@@ -1,0 +1,19 @@
+name: W5s-c – echte parallele Logistik
+on:
+  push:
+    branches:
+      - feature/w5s-c-parallele-erz-eis-logistik-20261106
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-c-parallele-logistik.test.mjs
+      - .github/workflows/w5s-c-parallele-logistik.yml
+jobs:
+  core-parallel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5s-c-parallele-logistik.test.mjs

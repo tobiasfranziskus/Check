@@ -1,0 +1,19 @@
+name: W5s-p – real finanzierter NPC-Erzlieferant
+on:
+  push:
+    branches:
+      - feature/w5s-p-finanzierter-npc-erzlieferant-20261106
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-p-npc-nachfolge.test.mjs
+      - .github/workflows/w5s-p-npc-erz.yml
+jobs:
+  npc-ore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5s-p-npc-nachfolge.test.mjs

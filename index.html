@@ -2892,6 +2892,8 @@ const m_core_w3 = (() => {
         ===startCarrier-huelle-w.arbeitsKosten+w.frachtUmsatz
           -(state.w5n?.frachtLohn??0)+(state.w5n?.frachtUmsatz??0)
           -(state.w5o?.divFracht??0)
+          +(state.w5s?.takeover?.amount??0)
+          -(state.w5s?.takeover?.dividends??0)
           -(state.w5s?.paidTransport??state.w5s?.paid??0)
       && (!a||(a.menge===c.fracht&&a.zeit===k.zeit&&a.erzWert===k.erzWert
         && a.arbeitsKosten===k.arbeitsKosten&&a.frachtGebuehr===k.frachtGebuehr
@@ -5828,16 +5830,18 @@ const m_core_w1_vollkosten = (() => {
     if (!cfg) return null;
     const vertraege = state.erzpilotVertraege || {};
     const startCash = (id) => rules.owners.find((o) => o.id === id)?.cash ?? null;
-    function saldo(id, gebunden = 0) {
+    function saldo(id, gebunden = 0, kapitalBuchung = 0) {
       const konto = state.owners[id], statistik = state.stats.konto[id];
       const anfang = startCash(id);
       const erloese = statistik?.erloes, kosten = statistik?.kosten, frei = konto?.cash;
       const netto = erloese - kosten;
-      const kassenDelta = frei + gebunden - anfang;
-      const ok = [anfang, erloese, kosten, frei, gebunden, netto, kassenDelta]
+      const kassenDelta = frei + gebunden + kapitalBuchung - anfang;
+      const ok = [anfang, erloese, kosten, frei, gebunden,
+        kapitalBuchung, netto, kassenDelta]
         .every(Number.isSafeInteger) && anfang >= 0 && erloese >= 0 && kosten >= 0
         && frei >= 0 && gebunden >= 0 && netto === kassenDelta;
-      return { anfang, frei, gebunden, erloese, kosten, netto, kassenDelta, ok };
+      return { anfang, frei, gebunden, kapitalBuchung,
+        erloese, kosten, netto, kassenDelta, ok };
     }
     const arbeitsGebunden = (id) => Object.entries(vertraege).reduce((sum, [schiffId, v]) => {
       const schiff = state.ships[schiffId];
@@ -5857,7 +5861,11 @@ const m_core_w1_vollkosten = (() => {
     const station = saldo(cfg.station, abnahmeGebunden);
     const verkauf = saldo(cfg.werftOwner,
       rules.w5 ? state.owners.w5_arbeit_treuhand?.cash ?? 0 : 0);
-    const kaeufer = saldo(cfg.exportOwner);
+    // Rechtmaessig gezeichnete Anteile sind Anlagevermoegen, keine
+    // Produktionserloese und keine geheime Wiederauffuellung des Erzbudgets.
+    const kaeufer = saldo(cfg.exportOwner,0,
+      (state.w5s?.takeover?.amount??0)
+      -(state.w5s?.takeover?.dividends??0));
     const minerKaeufe = anzahl(state.ledger.miner, 'consumed');
     const bezahlteHuelle = minerKaeufe * rules.economy.waren.miner.basis;
     const frachterHuelle = rules.w3 ? anzahl(state.ledger.frachter,'consumed')

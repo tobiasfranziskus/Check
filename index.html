@@ -4400,7 +4400,7 @@ const m_core_w5o=(()=>{
        &&x.klasse==='frachter'&&x.system==='aldera'
        &&x.phase==='dock'&&x.auftrag==='halten'
        &&Object.values(x.ladung).every(v=>v===0))
-       .sort((a,b)=>a.id.localeCompare(b.id));
+       .sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
      const iceShip=free.find(x=>x.id===s.w5r?.frachter.id);
      if(iceShip&&!n.frachtauftrag&&ice+water<=r.w5o.versorgungZiel)
        attempt(s,r,'shipFreightIce',c.frachterOwner,{schiff:iceShip.id});

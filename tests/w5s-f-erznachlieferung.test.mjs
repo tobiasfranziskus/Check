@@ -143,6 +143,24 @@ test('W5s-f: ohne Käufererz oder aktiven Bedarf keine zusätzlichen bezahlten F
     'Hausminer wird nicht ohne Spielerbefehl auf Erz umgestellt');
   audit(house,'Sparrecht des Spielers');
 });
+test('W5s-f: Eisversorgung schlägt Erzlieferung auf nur einem freien R32-Frachter',()=>{
+  const noAuto={...auto,w5s:{...auto.w5s,autoOre:false}};
+  const s=basic(42);
+  api.advance(s,60,noAuto);
+  audit(s,'50 Erz am Großhandel vorhanden, kein W3 Auftrag');
+  assert.equal(s.w5h.bestand,50);
+  assert.equal(s.w3.auftrag,null);
+  const before=api.hash(s);
+  const iceFirst=api.w5sErzStatus(s,active);
+  assert.equal(iceFirst.stage,'kein_freier_frachter',
+    'kein Stehlen des einzigen noch für Eis benötigten Frachters');
+  assert.equal(iceFirst.eisPrioritaet,true);
+  assert.equal(api.hash(s),before,'reine Planung ohne Buchung');
+  const oreFirst=api.w5sErzStatus(s,auto);
+  assert.equal(oreFirst.stage,'erztransport_starten');
+  assert.equal(oreFirst.schiff,s.w5r.frachter.id);
+  assert.equal(api.hash(s),before,'auch positiver Plan mutiert nichts');
+});
 test('W5s-f: 13 Seedwelten ×90 Tage, Tag-Audit, Save/Load und Krisen-Replay',()=>{
   for(const seed of [42,7,11,1,2,65535,1234,98765,3,99,2024,2025,314159]){
     const a=replay(seed,90);

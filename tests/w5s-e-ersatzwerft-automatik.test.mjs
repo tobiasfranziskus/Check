@@ -6,7 +6,8 @@ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const api=Function(html.slice(html.indexOf('const m_data_systeme ='),
   html.indexOf('const m_data_oberflaeche ='))+'\nreturn m_core_index;')();
 const r=api.W5R_RULES;
-const passive={...r,w5s:{minerIndustry:true,concurrent:true}};
+const passive={...r,w5s:{minerIndustry:true,concurrent:true},
+  w5o:{...r.w5o,versorgungZiel:-1}};
 const fast={...r,w5s:{minerIndustry:true,concurrent:true,
   autoIndustry:true,autoLeadDays:30}};
 const natural={...r,w5s:{minerIndustry:true,concurrent:true,autoIndustry:true}};

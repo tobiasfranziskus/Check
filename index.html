@@ -2848,6 +2848,11 @@ const m_core_w3 = (() => {
       kauf.cash=0;state.owners[c.spedition].cash+=a.frachtGebuehr;
       buche(state,c.spedition,'erloes',a.frachtGebuehr);w.frachtUmsatz+=a.frachtGebuehr;
       w.abgeschlossen++;w.auftrag=null;
+      // W5s-o: Erst die TATSAECHLICH abgeschlossene bezahlte W3-Fracht
+      // darf die Beteiligung am neuen Erz-Frachtgewinn bedienen. Vor den
+      // gewoehnlichen W5o-Haushaltsdividenden, damit allein der wirklich
+      // verdiente Erz-Deckungsbeitrag auf beide Anteilseigner verteilt wird.
+      if(state.w5s?.takeover)m_core_w5s.takeoverDividend(state,rules);
       sh.system='aldera';sh.phase='dock';sh.ziel=null;sh.ankunft=state.tick;sh.auftrag='halten';
       protokolliere(state,'handel',sh.id+': Rueckfahrt bezahlt; Spedition entlohnt',c.spedition);
     }
@@ -2892,6 +2897,8 @@ const m_core_w3 = (() => {
         ===startCarrier-huelle-w.arbeitsKosten+w.frachtUmsatz
           -(state.w5n?.frachtLohn??0)+(state.w5n?.frachtUmsatz??0)
           -(state.w5o?.divFracht??0)
+          +(state.w5s?.takeover?.amount??0)
+          -(state.w5s?.takeover?.dividends??0)
           -(state.w5s?.paidTransport??state.w5s?.paid??0)
       && (!a||(a.menge===c.fracht&&a.zeit===k.zeit&&a.erzWert===k.erzWert
         && a.arbeitsKosten===k.arbeitsKosten&&a.frachtGebuehr===k.frachtGebuehr
@@ -4055,12 +4062,14 @@ const m_core_w5h=(()=>{
       &&w.verkauft===s.w3.geliefert &&w.unterwegs===hin
       &&w.bestand<=c.charge &&w.bestand<=(s.stations[c.quellStation].lager.erz??-1)
       &&k?.cash===start-w.gekauft*p+w.verkauft*p
+        -(s.w5s?.takeover?.amount??0)+(s.w5s?.takeover?.dividends??0)
       &&stat?.kosten===w.gekauft*p &&stat?.erloes===w.verkauft*p
       &&quelle?.erloes===w.gekauft*p+(s.w5n?.eisTransferWert??0)
       &&s.ledger.erz.exported===0 &&s.minted===(s.w5q?.minted??0) &&s.burned===0;
     return {ok,gekauft:w.gekauft,verkauft:w.verkauft,bestand:w.bestand,
       unterwegs:w.unterwegs,exportCash:k?.cash??null,lieferungen:s.w3.geliefert,
-      geldsaldo:k?.cash-start+w.gekauft*p-w.verkauft*p};
+      geldsaldo:k?.cash-start+w.gekauft*p-w.verkauft*p
+        +(s.w5s?.takeover?.amount??0)-(s.w5s?.takeover?.dividends??0)};
   }
   function plan(s,r){
     const p=m_core_w5g.kalkulation(s,r),h=audit(s,r);
@@ -4795,6 +4804,109 @@ const m_core_w5s=(()=>{
   const {protokolliere}=m_core_state;
   // W5s-j: endlicher Nadir-Starterbestand, ausdrücklich KEINE W5-Produktion.
   const starter=s=>s.w5s?.starterMiner||null;
+  // W5s-o: strikt vorhandenes Exportkapital zeichnet eine Mehrheits-
+  // Beteiligung am laufenden Transportkonzern. Kein kostenloses Schiff,
+  // keine Preis- oder Lohnsimulation außerhalb des bisherigen Cores.
+  const uebernahme=s=>s.w5s?.takeover||null;
+  const takeoverAmount=930,takeoverShare=60;
+  function takeoverPlan(s,r){
+    if(!r.w5s?.autoTakeover||!r.w5s.autoIndustry
+      ||!r.w5s.retainFleetEarnings||!r.w5s.carrierWorkingCapital
+      ||!s.w5r?.initialized||!s.w5n||!s.w5h
+      ||s.rulesVersion!==r.rulesVersion)
+      return {stage:'inaktiv'};
+    const z=uebernahme(s);
+    if(z)return {stage:'beteiligung_besteht',investor:z.investor};
+    const investor=r.w5h.kaeufer,company=r.w3.spedition;
+    if(investor===company||investor==='house'||company==='house')
+      return {stage:'unabhaengiger_investor_fehlt'};
+    if(s.w5r.frachter.lost<2||s.w3.abgeschlossen<2)
+      return {stage:'keine_belegte_nachfolgechance'};
+    const sh=s.ships[s.w5r.frachter.id];
+    if(!sh||sh.owner!==company||sh.phase!=='dock'
+      ||sh.auftrag!=='halten')return {stage:'kein_operativer_frachter'};
+    const freight=m_core_w5n.preise(r);
+    if((s.stations[r.w5n.quellStation].lager.eis||0)<r.w5n.charge
+      ||s.owners[r.w5n.zielStation].cash<freight.gesamt
+      ||s.owners.w5n_kunden.cash<r.w5n.wasserPreis)
+      return {stage:'nachfrage_oder_lager_fehlt'};
+    const need=m_core_w5.plan(r,'frachter').preis
+      +m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn
+      +arbeitsPuffer(r,'frachter');
+    if(s.owners[company].cash>=need)return {stage:'kein_realer_kapitalengpass'};
+    if(s.owners[investor].cash<takeoverAmount+r.w3.fracht*r.erzpilot.preis)
+      return {stage:'investor_ohne_betriebskapital'};
+    return {stage:'kapitalerhoehung_finanzierbar',investor,company,
+      amount:takeoverAmount,share:takeoverShare,
+      ownCash:s.owners[company].cash,required:need};
+  }
+  function takeoverStart(s,r){
+    const p=takeoverPlan(s,r);
+    if(p.stage!=='kapitalerhoehung_finanzierbar')return p;
+    s.owners[p.investor].cash-=p.amount;
+    s.owners[p.company].cash+=p.amount;
+    s.w5s ||= {allocated:0,paid:0,active:null,completed:[]};
+    s.w5s.takeover={investor:p.investor,company:p.company,
+      amount:p.amount,share:p.share,tick:s.tick,
+      preIceTrips:s.w5n.frachtAbgeschlossen,
+      preOreTrips:s.w3.abgeschlossen,dividends:0,payouts:[]};
+    protokolliere(s,'handel',p.investor+': '+p.amount+
+      ' echte ISK gegen '+p.share+
+      '% kontrollierende Beteiligung an '+p.company,p.investor);
+    return {stage:'eigenkapital_gezeichnet',...p};
+  }
+  function takeoverDividend(s,r){
+    const z=uebernahme(s);
+    if(!z)return 0;
+    // Der Erz-Grosshaendler erhaelt KEINE Haushalts-/Eisdividende.
+    // Die Mehrheitsbeteiligung traegt das Investitionsrisiko; ein
+    // variabler Ertrag entsteht ausschliesslich aus nach dem Einstieg
+    // real fertig geflogenen W3-Erzfahrten.
+    const fare=m_core_w3.kalkulation(r);
+    const net=fare.frachtGebuehr-fare.arbeitsKosten;
+    const earned=Math.max(0,s.w3.abgeschlossen-z.preOreTrips)*net;
+    const due=Math.max(0,Math.floor(earned*z.share/100)-z.dividends);
+    const puffer=m_core_w5.plan(r,'frachter').preis
+      +m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn
+      +arbeitsPuffer(r,'frachter');
+    const free=Math.max(0,s.owners[z.company].cash-puffer);
+    const pay=Math.min(free,due);
+    if(!pay)return 0;
+    if(!Number.isSafeInteger(pay)||s.owners[z.company].cash<pay)
+      throw Error('W5s-o: keine finanzierte Erzfahrt-Gewinnausschuettung');
+    s.owners[z.company].cash-=pay;s.owners[z.investor].cash+=pay;
+    z.dividends+=pay;z.payouts.push({tick:s.tick,amount:pay});
+    return pay;
+  }
+  function takeoverAudit(s,r){
+    const z=uebernahme(s);
+    if(!z)return {ok:true,active:false,capital:0,dividends:0};
+    const fare=m_core_w3.kalkulation(r);
+    const net=fare.frachtGebuehr-fare.arbeitsKosten;
+    let sum=0,last=0,valid=Array.isArray(z.payouts);
+    if(valid)for(const x of z.payouts){
+      if(!Number.isSafeInteger(x.tick)||x.tick<=z.tick
+        ||x.tick<=last||x.tick>s.tick||!Number.isSafeInteger(x.amount)
+        ||x.amount<=0)valid=false;
+      last=x.tick;sum+=x.amount;
+    }
+    const earned=Math.max(0,s.w3.abgeschlossen-z.preOreTrips)*net;
+    const ok=valid&&z.investor===r.w5h.kaeufer
+      &&z.company===r.w3.spedition&&z.investor!==z.company
+      &&z.amount===takeoverAmount&&z.share===takeoverShare
+      &&Number.isSafeInteger(z.tick)&&z.tick>0&&z.tick<=s.tick
+      &&Number.isSafeInteger(z.preIceTrips)&&z.preIceTrips>=0
+      &&z.preIceTrips<=s.w5n.frachtAbgeschlossen
+      &&Number.isSafeInteger(z.preOreTrips)&&z.preOreTrips>=0
+      &&z.preOreTrips<=s.w3.abgeschlossen
+      &&Number.isSafeInteger(z.dividends)&&z.dividends>=0
+      &&z.dividends===sum
+      &&z.dividends<=Math.floor(earned*z.share/100);
+    return {ok,active:true,investor:z.investor,company:z.company,
+      share:z.share,capital:z.amount,dividends:z.dividends,
+      earnedAfter:earned,netInvestor:z.dividends-z.amount,
+      payoutCount:z.payouts?.length??0};
+  }
   function starterCheck(s,r,owner){
     if(!r.w5s?.autoStarterMiner||!r.w5s?.autoNpcOre
       ||!r.w5s?.minerIndustry||!r.w5s?.autoIndustry
@@ -5401,8 +5513,10 @@ const m_core_w5s=(()=>{
       &&['reserved','bought'].includes(contract.stage)
         ?s.owners.w5s_order_reserved?.cash??0:0;
     const escrow=w3Escrow+iceEscrow+transferEscrow+orderEscrow;
+    const shares=uebernahme(s);
+    const investment=shares?.amount??0,investorDividends=shares?.dividends??0;
     const expected=initial+revenueOre+revenueIce-laborOre-laborIce
-      -hulls-reposition-dividend;
+      -hulls-reposition-dividend+investment-investorDividends;
     const valid=[initial,current,escrow,expected,revenueOre,revenueIce,
       laborOre,laborIce,hulls,reposition,dividend].every(Number.isSafeInteger)
       &&initial>=0&&current>=0&&escrow>=0&&current+escrow===expected;
@@ -5415,6 +5529,7 @@ const m_core_w5s=(()=>{
       owner,initial,current,escrow,available:current+escrow,
       revenueOre,revenueIce,laborOre,laborIce,hulls,reposition,dividend,
       marginBeforeHulls:revenueOre+revenueIce-laborOre-laborIce,
+      investment,investorDividends,
       reconstructed:expected,nextHullAndFlight:fleet,
       workingCapitalRequired:puffer,
       nextHullWithWorkingCapital:fleet+puffer,
@@ -5461,6 +5576,8 @@ const m_core_w5s=(()=>{
     });
     return Object.freeze({stage:'bereit',tick:s.tick,
       freight,demand,continuity,
+      takeover:Object.freeze({...takeoverAudit(s,r)}),
+      takeoverPlan:Object.freeze({...takeoverPlan(s,r)}),
       orePlan:Object.freeze({...erzPlan(s,r)}),
       yardPlan:Object.freeze({...werkPlan(s,r)}),
       ok:valid});
@@ -5504,7 +5621,9 @@ const m_core_w5s=(()=>{
       &&s.stations[r.w5.station].lager.miner
         ===(r.world.stations[r.w5.station].ziel.miner||0)
           +(s.w5.minerFertig||0)-(s.w5.minerVerkauft||0)-1);
-    const ok=starterOk&&proof.ok&&[w.allocated,w.paid,reserve,pilot].every(n=>
+    const equityProof=takeoverAudit(s,r);
+    const ok=starterOk&&proof.ok&&equityProof.ok
+      &&[w.allocated,w.paid,reserve,pilot].every(n=>
         Number.isSafeInteger(n)&&n>=0)
       &&Array.isArray(completed)&&new Set(ids).size===ids.length
       &&completed.every(x=>x.owner===transferOwner(x.type||'frachter')
@@ -5524,9 +5643,11 @@ const m_core_w5s=(()=>{
           +(a&&a.type!=='miner'?a.gearbeitet*lohn:0)))
       &&reserve===w.allocated-w.paid&&pilot===w.paid;
     return {ok,allocated:w.allocated,paid:w.paid,reserve,
-      completed:completed.length,active:!!a,contract:proof};
+      completed:completed.length,active:!!a,contract:proof,
+      equity:equityProof};
   }
   return {arbeitsPuffer,finanzPlan,pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
+    takeoverPlan,takeoverStart,takeoverDividend,takeoverAudit,
     starterCheck,starterSold,starterPlan,autoStarter,minerSource,
     orderCheck,orderStart,orderCancelCheck,orderCancel,contractCommand,
     contractAudit,completeOrder,npcOrePlan,autoNpcOre};
@@ -5716,16 +5837,18 @@ const m_core_w1_vollkosten = (() => {
     if (!cfg) return null;
     const vertraege = state.erzpilotVertraege || {};
     const startCash = (id) => rules.owners.find((o) => o.id === id)?.cash ?? null;
-    function saldo(id, gebunden = 0) {
+    function saldo(id, gebunden = 0, kapitalBuchung = 0) {
       const konto = state.owners[id], statistik = state.stats.konto[id];
       const anfang = startCash(id);
       const erloese = statistik?.erloes, kosten = statistik?.kosten, frei = konto?.cash;
       const netto = erloese - kosten;
-      const kassenDelta = frei + gebunden - anfang;
-      const ok = [anfang, erloese, kosten, frei, gebunden, netto, kassenDelta]
+      const kassenDelta = frei + gebunden + kapitalBuchung - anfang;
+      const ok = [anfang, erloese, kosten, frei, gebunden,
+        kapitalBuchung, netto, kassenDelta]
         .every(Number.isSafeInteger) && anfang >= 0 && erloese >= 0 && kosten >= 0
         && frei >= 0 && gebunden >= 0 && netto === kassenDelta;
-      return { anfang, frei, gebunden, erloese, kosten, netto, kassenDelta, ok };
+      return { anfang, frei, gebunden, kapitalBuchung,
+        erloese, kosten, netto, kassenDelta, ok };
     }
     const arbeitsGebunden = (id) => Object.entries(vertraege).reduce((sum, [schiffId, v]) => {
       const schiff = state.ships[schiffId];
@@ -5745,7 +5868,11 @@ const m_core_w1_vollkosten = (() => {
     const station = saldo(cfg.station, abnahmeGebunden);
     const verkauf = saldo(cfg.werftOwner,
       rules.w5 ? state.owners.w5_arbeit_treuhand?.cash ?? 0 : 0);
-    const kaeufer = saldo(cfg.exportOwner);
+    // Rechtmaessig gezeichnete Anteile sind Anlagevermoegen, keine
+    // Produktionserloese und keine geheime Wiederauffuellung des Erzbudgets.
+    const kaeufer = saldo(cfg.exportOwner,0,
+      (state.w5s?.takeover?.amount??0)
+      -(state.w5s?.takeover?.dividends??0));
     const minerKaeufe = anzahl(state.ledger.miner, 'consumed');
     const bezahlteHuelle = minerKaeufe * rules.economy.waren.miner.basis;
     const frachterHuelle = rules.w3 ? anzahl(state.ledger.frachter,'consumed')
@@ -5901,6 +6028,8 @@ function step(state, rules) {
     if(rules.w5r)m_core_w5r.verschleiss(state,rules);
     if(rules.w5o)m_core_w5o.autopilot(state,rules);
     if(rules.w5s?.autoIndustry && state.tick%rules.economy.stunde===0){
+      if(state.w5s?.takeover)m_core_w5s.takeoverDividend(state,rules);
+      if(rules.w5s.autoTakeover)m_core_w5s.takeoverStart(state,rules);
       if(rules.w5s.autoNpcOre)m_core_w5s.autoNpcOre(state,rules);
       if(rules.w5s.autoStarterMiner)m_core_w5s.autoStarter(state,rules);
       if(rules.w5s.autoOre)m_core_w5s.autoErz(state,rules);
@@ -6187,7 +6316,11 @@ function audit(state) {
     const rest = state.owners?.[cfg.exportOwner]?.cash;
     const ausgegeben = (state.w5h
       ? state.w5h.gekauft-state.w5h.verkauft : exportiert) * cfg.preis;
-    const differenz = rest + ausgegeben - start;
+    // Nicht als Erzumsatz verbuchen: vorhandenes Firmen-Eigenkapital
+    // und real bezahlte Gewinnausschuettungen separat belegen.
+    const equity=state.w5s?.takeover?.amount??0;
+    const shareholderPaid=state.w5s?.takeover?.dividends??0;
+    const differenz = rest + ausgegeben + equity-shareholderPaid - start;
     // Ohne belegte Endkunden-Einnahmen darf ein blosses Verschieben vorhandener ISK
     // nicht als wiederkehrend finanziertes Exportgeschaeft gelten.
     finanzierungsOk = Number.isSafeInteger(rest) && rest >= 0

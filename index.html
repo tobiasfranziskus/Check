@@ -1373,7 +1373,13 @@ function checkShape(state, cmd, rules) {
     const newBuyer=!!(rules.w5s?.successorNewPurchase
       &&reserved?.stage==='funded'&&cmd.owner===reserved.buyer
       &&cmd.klasse==='frachter'&&cmd.station===rules.w5.station);
+    // W5s-ai: Ein einzelnes, voll bezahlt gekauftes Fremdschiff darf
+    // eine spaeter getrennt finanzierte eigene Ersatzhuelle nicht mehr
+    // auf ewig sperren. Ohne ausdrueckliches Opt-in bleibt exakt die
+    // bisherige historische R32-Sperre aktiv.
     if(rules.w5s?.successorNewOrder&&reserved?.buildStarted
+      &&(!rules.w5s?.successorResolvedHullRelease
+        ||['reserved','building','hull_ready','funded'].includes(reserved.stage))
       &&cmd.klasse==='frachter'&&cmd.station===rules.w5.station
       &&(state.stations[cmd.station]?.lager.frachter||0)<=1&&!newBuyer)
       return 'W5s-z: bezahlte Fremdhuelle bis zur Eigentuemeruebergabe reserviert';

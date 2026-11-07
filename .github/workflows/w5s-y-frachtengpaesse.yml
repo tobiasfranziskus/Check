@@ -1,0 +1,19 @@
+name: W5s-y – nachgewiesene Nachfrage- und Finanzierungsluecken
+on:
+  push:
+    branches:
+      - feature/w5s-y-nachfolge-frachtengpasse-20261107
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-y-engpass-und-finanzierungsgrenzen.test.mjs
+      - .github/workflows/w5s-y-frachtengpaesse.yml
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5s-y-engpass-und-finanzierungsgrenzen.test.mjs tests/w5s-x-nachfolger-erzfracht.test.mjs tests/w5s-w-markt-und-ersatz.test.mjs tests/w5s-v-nachfolge-autobetrieb-verschleiss.test.mjs

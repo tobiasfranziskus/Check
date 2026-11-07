@@ -6294,7 +6294,7 @@ const m_core_w5s=(()=>{
     const owned=['bought','inflight','arrived'].includes(o.stage);
     const sh=o.ship&&s.ships[o.ship],buyer=s.owners[newCarrierBuyer];
     const stats=s.stats.konto[newCarrierBuyer]||{kosten:0,erloes:0};
-    const a=s.w5s?.active?.id===o.ship
+    const a=o.ship&&s.w5s?.active?.id===o.ship
       &&s.w5s.active.owner===newCarrierBuyer?s.w5s.active:null;
     const landings=s.w5s?.completed?.filter(x=>x.id===o.ship
       &&x.owner===newCarrierBuyer&&x.kosten===flight)||[];

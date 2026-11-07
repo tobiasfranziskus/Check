@@ -30,4 +30,21 @@ Die Forschungsmatrix ist **nicht bestanden**, solange der Test/CI nicht abgeschl
 3. Spielerersparnisse bleiben frei; NPC-Insolvenzen sind möglich. Bei ausbleibenden Aufträgen darf eine Simulation stillstehen.
 4. Für einen nächsten Mechanikschritt müsste ein **tatsächlich nachgefragter, voll vorfinanzierter zusätzlicher Stationsauftrag** samt realem Nutzwert, Lohn, Eigentümer, Material und späterem Absatz nachgewiesen werden, bevor er produktive Regeln ändert.
 
-**[TESTSTATUS]** Testdatei erstellt; Node22-CI auf PR #241 ausgelöst, Ergebnis bei Dokumenterstellung **offen**. Kein lokaler Volltest behauptet. iPad Safari und NAS weiterhin offen.
+**[TESTSTATUS]** Ursprünglich bei Anlage offen; inzwischen abgeschlossener erfolgreicher GitHub-Lauf und Langzeitbefund in Abschnitt 5. Echte iPad-Safari-/NAS-Abnahme weiterhin offen.
+
+## 5. Verifizierter CI-Abschluss und Langzeitbefund (07.11.2026)
+
+**[TEST/CI ERFOLGREICH]** GitHub-Actions-Lauf [#42404431102](https://github.com/tobiasfranziskus/Check/actions/runs/42404431102) auf unverändertem Code-/Test-Head `31578c0`: **464/464 Node-22-Einzeltests bestanden**, 0 fehlgeschlagen/übersprungen, **7/7 ausgeführte Jobs erfolgreich**, 1 historischer bedingter Job übersprungen. Die Testlogs des Jobs `test` belegen für beide Seeds die folgenden echten Original-R32-Stände:
+
+| Kennzahl | Tag365 | Tag425 | Tag550 | Tag730 |
+|---|---:|---:|---:|---:|
+| physisch ausgeführte W5q-Exporte | 1.000 Wasser | 1.000 | 1.000 | 1.000 |
+| einmalig neues ISK | 7.000 | 7.000 | 7.000 | 7.000 |
+| gesamter regulär bezahlter Wasserverbrauch | 16.551 | 17.868 | 17.868 | 17.868 |
+| echte produzierte Wasserwerkschargen | 1.759 | 1.891 | 1.891 | 1.891 |
+| wirklich abgeschlossene Eisfrachten | 353 | 379 | 379 | 379 |
+| rechtmäßige Restkasse `st_nadir` | 5.172 ISK | 6.673 | 6.673 | 6.673 |
+| private Restkasse `w5n_kunden` | 1.262 ISK | 11 | 11 | 11 |
+| nachgewiesenes kumuliertes Haushaltseinkommen | 231.576 ISK | 248.763 | 248.763 | 248.763 |
+
+**Bewertung:** Zwischen Tag 425 und Tag 730 findet **keine zusätzliche** wasserbezogene Produktion, bezahlte Eisfracht, Lohnauszahlung, Dividende oder Endabnahme statt. Der Cashbestand 6.673 ISK der Station ist reale Stationseigentümerliquidität, **kein Haushaltsanspruch**; bei 11 ISK Haushalt und 14 ISK je Wassereinheit ist kein weiterer regulärer Verbrauch möglich. Positive Geld-/Waren-/Eigentümeraudits und unveränderte Save/Load-Replays belegen lediglich korrekte Endlichkeit, **keine Nachhaltigkeit**. Seed42 und Seed7 liefern die gleichen Mengen/Geldzahlen, bei verschiedenen korrekten Hashes (d730: `7e84dbb37b18a552` bzw. `845d9d2e0ae18e7c`). Keine neue Geld-/Produktregel beschlossen.

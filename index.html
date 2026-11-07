@@ -7990,6 +7990,53 @@ return { audit };
 const m_core_index = (() => {
 const { RULES } = m_data_rules;
 const { ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES, W5B_RULES, W5C_RULES, W5D_RULES, W5F_RULES, W5G_RULES, W5H_RULES, W5I_RULES, W5L_RULES, W5M_RULES, W5N_RULES, W5O_RULES, W5Q_RULES, W5R_RULES } = m_data_erzpilot;
+// W5s-an: strictly read-only research quote for a POSSIBLE station share offering.
+// No shares exist, no earnings entitlement is issued and no money is transferred.
+// A real purchase and profit distribution require a separately approved Core contract.
+function w5sStationEquityQuote(state,rules){
+  if(!rules.w5s?.stationEquityQuote||!rules.w5q
+    ||state.rulesVersion!==W5R_RULES.rulesVersion
+    ||rules.rulesVersion!==state.rulesVersion
+    ||!state.w5n||!state.w5q)
+    return Object.freeze({stage:'inaktiv',authorizedDividends:0});
+  const c=rules.w5n,q=state.w5q;
+  if(q.mode!=='station'||!Number.isSafeInteger(q.rate)||q.rate<=0)
+    return Object.freeze({stage:'kein_stationseigener_export',authorizedDividends:0});
+  const trip=m_core_route.route(rules.world,'aldera','nadir');
+  if(!trip||trip.zeit!==c.flugMinuten
+    ||c.charge%c.rezeptWasser!==0)
+    return Object.freeze({stage:'keine_vollkostenkalkulation',authorizedDividends:0});
+  const batches=c.charge/c.rezeptWasser;
+  const costForLoad=c.charge*c.eisPreis
+    +2*trip.zeit*c.frachtJeMinute
+    +batches*c.fabrikMinuten*c.fabrikLohn;
+  const numer=q.exported*costForLoad;
+  const revenue=q.minted;
+  const cogs=Math.ceil(numer/c.charge);
+  if(![costForLoad,numer,cogs,revenue].every(Number.isSafeInteger))
+    return Object.freeze({stage:'zahlen_ausserhalb_sicherer_ganzzahlen',authorizedDividends:0});
+  const grossMargin=revenue-cogs; // Before maintenance, wear, any unallocated station cost.
+  const budgetRemaining=Math.max(0,q.totalCap-q.minted);
+  const buyer=state.owners.w5n_kunden?.cash??0;
+  const station=state.owners.st_nadir?.cash??0;
+  const minimumConsumptionCash=c.wasserPreis;
+  return Object.freeze({
+    stage:budgetRemaining===0?'exportbudget_erschoepft':'kein_belegter_neuer_exportvertrag',
+    owner:'st_nadir',prospectiveInvestor:'w5n_kunden',
+    exported:q.exported,revenue,rate:q.rate,
+    costPerLoad:costForLoad,loadUnits:c.charge,
+    fullCostPerUnit:costForLoad/c.charge,
+    accountedCost:cogs,grossMargin,
+    earnedDistributableProfit:0, // no approved shareholder/legal entitlement!
+    authorizedDividends:0,
+    stationCash:station,investorCash:buyer,
+    investorLiquidAfterWater:Math.max(0,buyer-minimumConsumptionCash),
+    requiredOperatingReserve:rules.w5o.stationReserve,
+    budgetRemaining,possibleUnitsByBudget:Math.floor(budgetRemaining/q.rate),
+    existingShareContract:false,
+    includesMaintenance:false
+  });
+}
 const pilotAuftragsStand = (state) => m_core_erzpilot.auftragsStand(state, ERZ_RULES);
 const pilotNpcInvestition = (state) => m_core_erzpilot.investitionsPruefung(state, W2_RULES);
 const pilotKonzernStatus = (state) => m_core_w2_konzernstatus.pruefen(state,
@@ -8282,6 +8329,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   w5sKapitalLage:(state,rules)=>m_core_w5o.kapitalLage(state,rules),
   w5sFinanzStatus:(state,rules)=>m_core_w5s.finanzPlan(state,rules),
   w5sWartungStatus:(state,rules)=>m_core_w5s.wartungPlan(state,rules),
+  w5sStationEquityQuote,
   w5sNachfolgeStatus:(state,rules,owner=rules.w5h.kaeufer)=>m_core_w5s.nachfolgePlan(state,rules,owner),
   w5sNachfolgeBetrieb:(state,rules)=>m_core_w5s.nachfolgeBetriebPlan(state,rules),
   w5sNachfolgeMarkt:(state,rules)=>m_core_w5s.nachfolgeMarktPlan(state,rules),

@@ -129,20 +129,18 @@ function configExport(s,scenario){
 }
 function profile(s,r,stop,label){
   const checkpoints=[snap(s,r)],last={water:0,batches:0,ice:0,wages:0,dividends:0};
-  let prior=checkpoints[0],now;
+  let prior=snapFast(s),now;
   for(let day=Math.floor(s.tick/1440)+1;day<=stop;day++){
     api.advance(s,1440-s.tick%1440,r);
     if(day%30===0||CHECKPOINTS.includes(day)||day===stop)
       verify(s,r,label+' day'+day);
     now=snapFast(s);
-    if(now.water>prior.waterSold)last.water=day;
-    if(now.batches>prior.waterBatches)last.batches=day;
-    if(now.ice>prior.finishedIceShipments)last.ice=day;
-    if(now.wages>prior.wages.total)last.wages=day;
-    if(now.dividends>prior.dividends.total)last.dividends=day;
-    prior={waterSold:now.water,waterBatches:now.batches,
-      finishedIceShipments:now.ice,wages:{total:now.wages},
-      dividends:{total:now.dividends}};
+    if(now.water>prior.water)last.water=day;
+    if(now.batches>prior.batches)last.batches=day;
+    if(now.ice>prior.ice)last.ice=day;
+    if(now.wages>prior.wages)last.wages=day;
+    if(now.dividends>prior.dividends)last.dividends=day;
+    prior=now;
     if(CHECKPOINTS.includes(day)){
       const start=api.hash(s);
       assert.equal(api.hash(api.loadW5R(api.save(s))),start,

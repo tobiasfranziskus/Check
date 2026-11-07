@@ -129,3 +129,40 @@ test('W5s-am: cash-conserving but unearned household gift, fictitious goods, fic
   assert.equal(api.audit(fakeDividend).ok,false,'no dividend absent documented earnings');
   assert.equal(api.hash(s),before,'no negative test alters audited research state');
 });
+test('W5s-am follow-up: Nadir can prefinance genuine maintenance, but no paying follow-up buyer exists',()=>{
+  for(const seed of [42,7]){
+    const s=startup(seed);
+    run(s,425,seed,[]);
+    const before=api.hash(s);
+    const gate=api.w5sWartungStatus(s,AI);
+    assert.equal(s.owners.st_nadir.cash,6673,'real station capital');
+    assert.equal(s.owners.w5n_kunden.cash,11,'no 14-ISK end demand');
+    assert.ok(gate.stationCash>=gate.required,'station has enough ISK for maintenance and factory work');
+    assert.equal(gate.buyerCash,11,'maintenance must use the actual final consumer');
+    assert.equal(gate.demand,false,'no paid follow-up means no real station job');
+    if(gate.overdue&&!s.w5r.serviceJob&&!s.w5n.fabrikauftrag)
+      assert.equal(gate.stage,'kein_bezahlter_folgeauftrag',
+        'existing W5s-s demand gate must reject unnecessary maintenance');
+    const unpaid={
+      ice: s.w5n.mineLohn-s.w5o.lohnEis,
+      freight: s.w5n.frachtLohn-s.w5o.lohnFracht,
+      water: s.w5n.fabrikBezahlt-s.w5o.lohnWasser,
+      refinery: s.w4.gezahlt-(s.w5s.industryWages?.paid?.refinery??0),
+      shipyard: s.w5.arbeitsGezahlt-(s.w5s.industryWages?.paid?.shipyard??0),
+      maintenance: s.w5r.servicePaid-(s.w5s.industryWages?.paid?.maintenance??0),
+      transferPilot: s.w5s.paid-(s.w5s.transferPilotWages??0)
+    };
+    for(const [name,n] of Object.entries(unpaid))
+      assert.ok(Number.isSafeInteger(n)&&n>=0,name+': documented wages cannot be negative');
+    const report={seed,day:425,stationCash:gate.stationCash,consumerCash:gate.buyerCash,
+      nextWaterUnit:AI.w5n.wasserPreis,maintenanceFee:gate.fee,
+      factoryReserve:gate.factoryCost,required:gate.required,
+      rawIce:gate.ice,storedWater:gate.water,
+      orderStage:gate.stage,hasPaidDemand:gate.demand,
+      unpaidWages:unpaid,hash:api.hash(s)};
+    console.log('W5S_AM_GATE '+JSON.stringify(report));
+    assert.equal(api.hash(s),before,'diagnosis is strictly read-only');
+    assert.equal(api.audit(s).ok,true);
+    assert.equal(api.hash(api.loadW5R(api.save(s))),before,'no data changes by gate check');
+  }
+});

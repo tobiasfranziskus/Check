@@ -163,6 +163,19 @@ test('W5s-ag: 35d actual second-stage paid water factory, work, revenue, no endl
       (o.oreFreightRevenue||0),'original cash ledger revenues');
     assert.equal(result.carrierCash,initial.cash+result.ownerIncome
       -(o.workPaid||0)-(o.oreWorkPaid||0),'every freight minute paid');
+    assert.ok(s.w5.fertig-(s.w5.minerFertig||0)-o.baseline>=2,
+      'later separately paid W5 hull remains physically auditable');
+    assert.equal(s.w5.schiffIds[o.baseline],o.ship,
+      'original chronological W5 sale anchors third-owner provenance');
+    for(const fakeBaseline of [o.baseline-1,o.baseline+1]){
+      const forged=api.loadW5R(api.save(s));
+      forged.w5s.newCarrierOrder.baseline=fakeBaseline;
+      assert.equal(api.audit(forged).ok,false,
+        'later real W5 production must not disguise forged initial baseline');
+    }
+    const forgedShip=api.loadW5R(api.save(s));
+    forgedShip.w5s.newCarrierOrder.ship='shFORGED';
+    assert.equal(api.audit(forgedShip).ok,false,'third-owner W5 ship ID must be real');
     console.log('W5S_AG_35D '+JSON.stringify(result));
   }
 });

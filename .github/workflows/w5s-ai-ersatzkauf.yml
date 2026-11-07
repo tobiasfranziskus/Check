@@ -1,0 +1,23 @@
+name: W5s-ai – paid original replacement contract and ownership
+on:
+  push:
+    branches:
+      - feature/w5s-ai-bezahlter-ersatzkauf-freigabe-20261107
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-ai-eigentumsschutz-ersatzlieferung.test.mjs
+      - .github/workflows/w5s-ai-ersatzkauf.yml
+jobs:
+  original-contract-and-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: W5s-ai–ad strict prepaid original-contract regressions
+        run: node --test tests/w5s-ai-eigentumsschutz-ersatzlieferung.test.mjs tests/w5s-ah-ueberfuehrung-pilotenlohn.test.mjs tests/w5s-ag-realwasser-nachfrage.test.mjs tests/w5s-ad-af-realnachfrage.test.mjs
+      - name: Full original JavaScript Node22 suite
+        run: node --test tests/*.test.mjs

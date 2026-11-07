@@ -30,7 +30,7 @@ Alle drei Varianten durchlaufen den selben finanzierenden Ablauf von echten Mine
 
 **A5 – Unabhängige Schranken:** Core- und Eigentümeraudit alle 30 Tage (zusätzlich Messpunkte); alle 13×90 Seeds ohne neue ISK; 6 echte Langzeitwelten mit `sum(owners.cash)=33.000+minted`; `w5q.payout=0`; `buyer.cash=1.400+verdientes Einkommen−bezahlte Wasser`; Wasserlager = wirklich produziert − wirklich verbraucht − wirklich exportiert. Keine positiven Dividenden aus unverdienten stationseigenen Exportgewinnen; W5o-Stationsdividende nur im vorhandenen **inländischen** Gewinnpfad. Alle Checkpoint-Spielstände müssen serialisieren, korrekt laden und denselben Hash besitzen.
 
-**[TESTSTATUS]** Die Testdatei `tests/w5s-ao-gesamtwirtschaft-13x90-730.test.mjs` und GitHub-Workflow `w5s-ao-gesamtwirtschaft.yml` wurden erstellt; Ausführung/Ergebnisse bei Anlage **noch offen**. Zahlen außerhalb schon bestätigter W5s-an/am-Referenzen ausdrücklich **nicht** aus Vermutungen ergänzt. Echte iPad-/NAS-Abnahme wäre nur für ein Produkt relevant und bleibt separat offen.
+**[TESTSTATUS · VERIFIZIERT]** Der ursprüngliche 13×90- und 6×730-Test bestand mit **2/2** Fällen in [CI #42421949722](https://github.com/tobiasfranziskus/Check/actions/runs/42421949722). Die um drei wirtschaftlich unterschiedliche Eigentums-/Sparprofile erweiterte Fassung bestand mit **3/3** Fällen in [CI #42422215632](https://github.com/tobiasfranziskus/Check/actions/runs/42422215632). Vollregression und CI auf dem jüngsten reinen Dokumentationsstand werden separat ausgewiesen. Echte iPad-/NAS-Abnahme ist keine R32-Forschungsabnahme. Echte iPad-/NAS-Abnahme wäre nur für ein Produkt relevant und bleibt separat offen.
 
 ## B. Bereits bestätigte Referenzbefunde, noch nicht das Ergebnis dieser Matrix
 
@@ -118,3 +118,24 @@ Die R32-Verschleißzählung registriert kumulativ beim 7-ISK-Fall **27 Miner- un
 4. **Erst danach Freigabeprüfung:** 13×90 dynamisch **verschiedene** Wirtschaftsszenarien (nicht nur RNG-Seeds), 42/7 bis ≥730, Kontrollgruppe sparender Spieler, ohne externe Verbraucher, bei NPC-Verlust/Stillstand und echter freiwilliger Insolvenz-Nachfolge, neben Save/Load und Negativ-Audits. Solange diese Kriterien fehlen: [DRAFT/ANALYSE], kein Nachhaltigkeitsnachweis.
 
 Diese konkreten Schlüsse stammen **nur** aus tatsächlich protokollierten CI-Zahlen. W5u #234 bleibt isolierte Regel-14-Spielwelt; `main`, Pages und Spielstände sind von der Analyse nicht betroffen.
+
+## E. Zweite Stressachse: Nicht der RNG-Seed, sondern Sparen und Eigentum verändern die Wirtschaft
+
+**[TEST/CI BESTANDEN]** Die erweiterte Gesamtmatrix [Node22-CI #42422215632](https://github.com/tobiasfranziskus/Check/actions/runs/42422215632) ist mit **3/3 Tests, 0 Fehler und 0 Skips** grün. Neben den bereits belegten 13×90+6×730 wurden **weitere 39 tatsächlich simulierte R32-Welten** ausgeführt: dieselben 13 festen Seeds unter **drei bereits im Originalkern definierten** Geld-/Eigentumsregimen. Original-Core-Audits alle 30 Tage, unveränderte 33.000 ISK pro Welt, keine externen Auszahlungen.
+
+| Original-R32-Eigentums-/Sparprofil | Bezahlte Wasserverkäufe bis Tag90 | Eisfrachten | Kasse `w5n_kunden` nach Tag90 | Beobachtung |
+|---|---:|---:|---:|---|
+| `full`, NPC-Miner `npc3` – Basiskontrolle aus Test A | **4.316** | **88** | 2.371 ISK | Brutto-Löhne **und** rechtmäßige modellierte Gewinne können zirkulieren |
+| `npcSave`, NPC-Miner `npc3` | **1.421** | **30** | 2 ISK | NPC-Miner-Gewinn wird bewusst einbehalten, keine Dividende dieses Unternehmens |
+| `wages`, NPC-Miner `npc3` | **510** | **12** | 0 ISK | Haushalte erhalten real verdiente Löhne, **keine** Gewinnbeteiligung |
+| `full`, Miner-Eigentümer `house` | **834** | **18** | 8 ISK | Spieler-Minereinkünfte bleiben beim Spieler; sein Guthaben 4.250 ISK darf gespeichert werden |
+
+**Wesentliche Beobachtung:** *Bei identischem Kern und ohne neue ISK* sinkt der tatsächlich bezahlte Wasserabsatz von 4.316 auf 1.421, 510 beziehungsweise 834 Einheiten, wenn die Geld-/Eigentumsrechte anders ausgestaltet sind. Das ist **keine Verletzung der Sparfreiheit**: NPC- und Spieler-Eigentümer dürfen sparen. Die heutige R32-Endnachfrage ist jedoch gegenüber zulässigen Sparentscheidungen und der Zuordnung von Einkommensansprüchen äußerst empfindlich. Eine Welt darf dabei nach den Projektregeln durchaus in eine Krise geraten – sie sollte dann aber **rechtmäßige, finanzierte Investitions- und Übernahmechancen** für unabhängige Firmen anbieten, keine garantierten Gratisrettungen.
+
+**Test-Abgrenzung:** Auch innerhalb jedes dieser drei Original-Modi erzeugen die 13 RNG-Seeds dieselben physischen und finanziellen Resultate (jeweils `distinctEconomicResults:1`), aber unterschiedliche Hashes. **Die vier Eigentums-/Verhaltensprofile**, nicht die 13 Seednummern, bilden hier die echte Wirtschaftsstress-Vielfalt. Es gibt keine zufällig verteilten Nachfrage-, Kosten-, Eigentümer- oder Einkommensschocks. Deshalb sind die **58** erfolgreich simulierten Welt-/Szenariofälle ein belastbarer *deterministischer* Funktions-/Sensitivitätstest, **kein statistischer Robustheitsnachweis**.
+
+### Priorisierter Entwicklungsentscheid aus der Gesamtmatrix
+
+**Empfohlene nächste kleine Produktstufe: finanzierbarer Nachfolge-Kauf samt realer Nachfrage**. Vor einem Kauf muss ein freier echter Werftfrachter, ein freiwilliger Kapitalgeber, voller Hüllen-/Flug-/Arbeitsbedarf und ein tatsächlich bezahlbarer Transportkunde belegt sein. Dadurch darf eine scheiternde Firma ersetzt werden, ohne dass die Welt eine Rettungsgarantie bekommt. Der echte Absatz muss **vor** der Geldanlage wieder möglich sein – entweder innerhalb eines realen privaten Haushaltsbudgets oder mit separat genehmigter, gegen physische Exportleistung auditierter Außennachfrage. **Neue Stationsanteile ohne Netto-Gewinn- und Rechtsgrund sind kein Ersatz.**
+
+Die wichtigste neue Erkenntnis ist also **ein gemeinsamer Nachfragemangel plus Eigentümer-/Kapitalinseln**, verschärft durch verschlissene Frachter. Ein zusätzlicher Mineralrohstoff, eine weitere Hülle auf Vorrat oder eine pauschale Geldausschüttung würde den Engpass nicht von selbst beseitigen.

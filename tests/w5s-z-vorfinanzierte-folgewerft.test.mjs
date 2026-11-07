@@ -143,3 +143,29 @@ test('W5s-z: escrow forgery and private transfers cannot fool the independent au
   }
   assert.equal(api.audit(s).ok,true);
 });
+
+test('W5s-z: Seed42 und Seed7 mit echter privat reservierter Folgehuelle bis Tag365',()=>{
+  for(const seed of [42,7]){
+    const s=activeOrder(seed),o=s.w5s.newCarrierOrder;
+    let day=Math.floor(s.tick/1440);
+    while(day<365){
+      api.advance(s,1440,RULES);
+      day=Math.floor(s.tick/1440);
+      fullAudit(s,'aktive Folgewerft Seed '+seed+' Tag '+day);
+    }
+    assert.equal(o.stage,'hull_ready');
+    assert.equal(s.stations.st_nadir.lager.frachter,1,
+      'ein realer, schon finanzierter Neubau im Werftlager');
+    assert.equal(s.owners.w5s_new_carrier_reserved.cash,930,
+      'keine unautorisierte Auszahlung des privaten Kaufetats');
+    assert.equal(s.owners.w5s_carrier2.cash,720,
+      'alte Gesellschaft scheitert rechtmaessig ohne Rettung');
+    assert.equal(s.owners.w5s_carrier3,undefined,
+      'neuer Firmenkauf bleibt fuer W5s-aa vorbehalten');
+    assert.equal(s.minted,0);assert.equal(s.burned,0);
+    console.log('W5S_Z_365_REAL '+JSON.stringify({seed,hash:api.hash(s),
+      tick:s.tick,oldCash:s.owners.w5s_carrier2.cash,
+      escrow:s.owners.w5s_new_carrier_reserved.cash,
+      yardHulls:s.stations.st_nadir.lager.frachter,stage:o.stage}));
+  }
+});

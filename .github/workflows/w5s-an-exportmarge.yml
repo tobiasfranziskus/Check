@@ -1,0 +1,21 @@
+name: W5s-an – station export contribution margin and no fictitious dividends
+on:
+  push:
+    branches:
+      - feature/w5s-an-exportmarge-eigentumsquote-20261107
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-an-exportmarge-eigentumsquote.test.mjs
+      - .github/workflows/w5s-an-exportmarge.yml
+jobs:
+  export-share-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact R32 owner and contribution-margin tests
+        run: node --test tests/w5s-an-exportmarge-eigentumsquote.test.mjs

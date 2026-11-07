@@ -92,3 +92,42 @@ test('W5s-x: ohne neue Freigabe bleibt alter W5s-v-Transport und dessen Hash sta
   assert.equal(api.audit(s).ok,true);
   assert.equal(api.hash(s),'6a15b8cdc26a25df');
 });
+
+test('W5s-x: Seed 42/7 mit echter Nachfolgegesellschaft bis Tag 365 ohne Gratisersatz',()=>{
+  for(const seed of [42,7]){
+    const s=build(seed),z=s.w5s.successor;
+    const dayStart=Math.floor(s.tick/1440);
+    for(let day=dayStart+1;day<=365;day++){
+      api.advance(s,1440,RULES);
+      proof(s,'aktive W5s-x Welt '+seed+' Tag '+day);
+    }
+    assert.equal(z.oreTrips,5,'fuenf abgeschlossene aus echten Quellen bezahlte Erzfrachten');
+    assert.equal(z.freightRevenue||0,0,'keine im Erzpfad erfundene Eisfracht');
+    assert.equal(s.owners[z.owner].cash,720);
+    assert.equal(z.retired?.reason,'verschleiss');
+    assert.equal(s.ships[z.ship],undefined,'kein Geisterschiff an Tag365');
+    assert.equal(s.stations.st_nadir.lager.frachter,0,'keine Gratiswerfthuelle');
+    assert.equal(s.minted,0);
+    console.log('W5S_X_365_REAL '+JSON.stringify({
+      seed,hash:api.hash(s),oreTrips:z.oreTrips,iceTrips:z.trips||0,
+      cash:s.owners[z.owner].cash,retired:z.retired.tick,
+      noShip:!s.ships[z.ship],minted:s.minted}));
+  }
+});
+
+test('W5s-x: gefaelschte W3-Zahlung, Lohnreserve und Abschlussbelege abweisen',()=>{
+  const s=build(42);
+  for(let day=1;day<=35;day++)api.advance(s,1440,RULES);
+  proof(s,'intakter Besitzerbeleg');
+  for(const [field,delta] of [
+    ['oreFreightRevenue',240],['oreWorkPaid',-1],['oreWorkReserved',120],['oreTrips',1]
+  ]){
+    const cloned=api.loadW5R(api.save(s));
+    cloned.w5s.successor[field]+=delta;
+    assert.equal(api.audit(cloned).ok,false,'Manipulation geblockt: '+field);
+  }
+  const wrong=api.loadW5R(api.save(s));
+  wrong.stats.konto.w5s_carrier2.erloes++;
+  assert.equal(api.audit(wrong).ok,false,'Schattenumsatz nicht erlaubt');
+  assert.equal(api.audit(s).ok,true);
+});

@@ -1,0 +1,24 @@
+name: W5s-al – station-owned real water export, no household subsidy
+on:
+  push:
+    branches:
+      - feature/w5s-al-stationsexport-anspruch-20261107
+  pull_request:
+    paths:
+      - tests/w5s-al-stationserloes-eigentum.test.mjs
+      - tests/w5s-aj-physischer-wasserexport-geldgrenzen.test.mjs
+      - index.html
+      - .github/workflows/w5s-al-stationsexport.yml
+jobs:
+  station-owner-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Isolated W5s-al/aj/ai ownership and end-demand controls
+        run: node --test tests/w5s-al-stationserloes-eigentum.test.mjs tests/w5s-aj-physischer-wasserexport-geldgrenzen.test.mjs tests/w5s-ai-eigentumsschutz-ersatzlieferung.test.mjs
+      - name: Full original JavaScript regression
+        run: node --test tests/*.test.mjs

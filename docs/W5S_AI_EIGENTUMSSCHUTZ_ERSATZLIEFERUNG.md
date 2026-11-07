@@ -29,7 +29,7 @@ Sechs neue Tests in `tests/w5s-ai-eigentumsschutz-ersatzlieferung.test.mjs` wurd
 5. 13 Seeds × 90 Tage im unaufgeführten Forschungsverhalten, ohne erfundene Gesellschaft oder Geld.
 6. Seed42 und Seed7 bis **exakt Spieltag365**, mit täglich vollständigen Original-Finanz-/Waren-/Schiff-/Eigenkapitalaudits und periodischem Save/Load.
 
-| Reale Zusatzleistung nach der vollständig finanzierten Drittgründung | W5s-ah, 35d | W5s-ai, Langzeitvergleich |
+| Reale Zusatzleistung seit der vollständig finanzierten Drittgründung, jeweils bis Spieltag 365 | W5s-ah (Flag OFF) | W5s-ai (Flag ON) |
 | --- | ---: | ---: |
 | Tatsächlich verkaufte Wassereinheiten zusätzlich | 1.490 | 1.524 |
 | Weitere Wasserwerkschargen | 150 | 154 |

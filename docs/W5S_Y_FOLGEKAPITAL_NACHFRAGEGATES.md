@@ -30,3 +30,7 @@ Die aktualisierten W5s-y-Tests prüfen den neuen Read-only-Status, Seed42/7, det
 **[OPTION] Nächste Ausbaustufe:** echtes neues Produkt-/Schiffsbedürfnis statt künstlich weiterer Fracht; anschließend Investorenkapital nur nach separater Entscheidung, echter Gesellschaftereinlage und bewiesener Nachfrage. Alternativ eine neue, zahlende reale Produktions- oder Verbraucherbranche. Kein Blankoscheck für eine konkret insolvente NPC-Firma.
 
 Keine produktive Integration, kein Merge/Deployment, keine reale iPad-Safari-/NAS-Abnahme.
+
+## Kombinierte Regressionsabnahme
+
+**[TEST · 07.11.2026] [GitHub Node22 #42350441951](https://github.com/tobiasfranziskus/Check/actions/runs/42350441951): 16/16 Testgruppen bestanden, 0 Fehler/Skips.** W5s-v, W5s-w, W5s-x und W5s-y gegen denselben Stand; zwei echte gegründete 365-Tage-Nachfolgerwelten, frühere Referenzseeds und stündliche/deterministische Finanz-/Buchungsaudits. Beide Seeds 42/7 bestätigen die exakt getrennten 720 ISK Firmen- und 18.066 ISK Investorenkassen; der absichtlich ungebuchte 210-ISK-Transfer scheitert am Audit. Die allgemeine Node-Regression sowie die reale iPad-/NAS-Abnahme sind gesondert zu prüfen.

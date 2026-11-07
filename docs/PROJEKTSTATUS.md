@@ -1,3 +1,5 @@
+**[TEST · Kombiniert W5s-v/w/x/y]** [Node22 #42350441951](https://github.com/tobiasfranziskus/Check/actions/runs/42350441951): **16/16 Testgruppen bestanden**, 0 Fehler/Skips. Langzeit- und Eigentümerbelege aus W5s-v/w/x sowie W5s-y-Quelle- und Kapitalgates zusammen erfolgreich. Keine Produktintegration; neueste allgemeine JS-Regression und iPad-/NAS-Abnahme separat.
+
 ## [DRAFT/ANALYSE] W5s-y – kaufkräftiger Investor ist kein belegtes Firmenkapital · 07.11.2026
 
 **Basis:** W5s-x [#228](https://github.com/tobiasfranziskus/Check/pull/228), eigener Branch `feature/w5s-y-nachfolge-frachtengpasse-20261107`; **[MAIN] `5a56d9d7`**, GitHub Pages, Saves und Produktionsversion unverändert.

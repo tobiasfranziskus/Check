@@ -6513,7 +6513,12 @@ const m_core_w5s=(()=>{
       &&retire.tick%1440===0&&retire.tick<=s.tick
       &&retire.tick-o.bought>=retire.lifeDays*1440
       &&landings.length===1&&!ore&&!ice;
-    const purchased=owned&&produced===1&&free===0
+    // W5s-ag: nach dem EINMALIGEN nachgewiesenen Drittverkauf koennen
+     // weitere, separat durch W5 auditierte Frachter entstehen und frei
+     // im Werftlager liegen. Die eigene huelle bleibt allein durch ihre
+     // originale verkaufte Schiff-ID, den vollen Kaufpreis und das
+     // Eigentums-/Geldledger belegt. Vor Verkauf bleiben ready-Gates strikt.
+     const purchased=owned&&produced>=1&&free>=0
       &&Number.isSafeInteger(o.bought)&&Number.isSafeInteger(o.funded)
       &&o.bought===o.funded&&o.bought>=o.readyTick&&o.bought<=s.tick
       &&o.pricePaid===p.preis

@@ -1,0 +1,23 @@
+name: W5s-ag – paid water replenishment and deterministic economic audits
+on:
+  push:
+    branches:
+      - feature/w5s-ag-finanzierte-wasser-nachfrage-20261107
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-ag-realwasser-nachfrage.test.mjs
+      - .github/workflows/w5s-ag-wasser.yml
+jobs:
+  original-financing-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Targeted W5s-ag and W5s-ad–af regressions
+        run: node --test tests/w5s-ag-realwasser-nachfrage.test.mjs tests/w5s-ad-af-realnachfrage.test.mjs
+      - name: Full standard regression
+        run: node --test tests/*.test.mjs

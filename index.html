@@ -6046,6 +6046,67 @@ const m_core_w5s=(()=>{
        retired:retired?.tick??null,autoOrders:orders.length,
       freightLicense:flightPaid===flight&&!!z.ship&&!retired};
   }
+  // W5s-y: getrennte Eigenkasse, potentielle Investorenmittel und echte
+  // W4/W5-Lieferkette. Lediglich Diagnose, KEIN Aktienkauf, Geldtransfer,
+  // Auto-Neubau oder stiller Ersatz fuer eine verschlissene Schiffs-ID.
+  function nachfolgeErsatzPlan(s,r){
+    if(!r.w5s?.successorOreFreight||!r.w5s?.successorOperations
+      ||!r.w5s?.successorFreight||!r.w5s?.independentSuccessor
+      ||s.rulesVersion!==r.rulesVersion)
+      return Object.freeze({stage:'inaktiv'});
+    const z=s.w5s?.successor;
+    if(!z)return Object.freeze({stage:'keine_rechtmaessige_gruendung'});
+    const hull=m_core_w5.plan(r,'frachter');
+    const required=z.hull+z.flight+z.working;
+    const own=s.owners[z.owner]?.cash??0;
+    const gap=Math.max(0,required-own);
+    const investor=s.owners[z.investor]?.cash??0;
+    const yardCash=s.owners[r.w5.werft]?.cash??0;
+    const stationCash=s.owners[r.w4.station]?.cash??0;
+    const inventory=s.stations[r.w5.station]?.lager||{};
+    const freeHull=inventory.frachter||0;
+    const made=s.w5.fertig-(s.w5.minerFertig||0)-s.w5.verkauft;
+    const realHull=freeHull>=1&&made>=1&&freeHull===made;
+    const ore=inventory.erz||0,material=inventory.material||0;
+    const refineryCost=r.w4.dauer*r.w4.lohnJeMinute;
+    const yardCost=hull.materialKosten+hull.arbeitKosten;
+    const refineryReady=!s.w4.auftrag
+      &&ore>=r.w4.erzJeCharge&&stationCash>=refineryCost;
+    const yardReady=!s.w5.auftrag
+      &&material>=hull.material&&yardCash>=yardCost;
+    const production=realHull?'bereits_reale_werft_huelle'
+      :yardReady?'echter_bau_mit_material_finanzierbar'
+      :refineryReady?'echte_raffineriecharge_finanzierbar'
+      :material<hull.material&&ore<r.w4.erzJeCharge?'rohstoff_fehlt'
+      :material<hull.material?'raffinerie_derzeit_nicht_finanzierbar_oder_belegt'
+      :yardCash<yardCost?'werft_unfinanziert'
+      :'werft_oder_fertiglager_belegt';
+    const stage=!z.retired?'lebenszyklus_noch_aktiv'
+      :own<required?'eigenkapital_nicht_ausreichend'
+      :!realHull?'reale_huelle_nicht_verfuegbar'
+      :'folgeauftrag_und_neues_eigentumsbuch_fehlend';
+    const oreFreight=m_core_w3.kalkulation(r);
+    const iceFreight=m_core_w5n.preise(r);
+    const marginOre=oreFreight.frachtGebuehr-oreFreight.arbeitsKosten;
+    const marginIce=iceFreight.fracht-iceFreight.arbeit;
+    const maxMargin=Math.max(marginOre,marginIce);
+    return Object.freeze({stage,production,owner:z.owner,investor:z.investor,
+      ship:z.ship,retired:!!z.retired,
+      ownCash:own,capitalRequired:required,ownShortfall:gap,
+      outsideInvestorCash:investor,investorCouldPayGap:investor>=gap,
+      outsideCashIsAvailableForCompany:false,
+      companyCanSelfFinance:own>=required,
+      paidOreTrips:z.oreTrips||0,paidIceTrips:z.trips||0,
+      furtherRealOrders:0, // Keine vorab belegte weitere Frachtzusage!
+      theoreticalTripsAtBest:gap>0&&maxMargin>0?Math.ceil(gap/maxMargin):0,
+      oreMargin:marginOre,iceMargin:marginIce,
+      realFreeHull:realHull,stockHulls:freeHull,documentedUnsoldHulls:made,
+      yardCash,yardCost,yardMaterialRequired:hull.material,
+      yardMaterialPresent:material,yardReady,
+      refineryOreRequired:r.w4.erzJeCharge,refineryOrePresent:ore,
+      refineryCash:stationCash,refineryCost,refineryReady,
+      replacementCommand:null});
+  }
   // W5s-w: Nur belegte Kaufkraft, reale Nachfrage und Eigenkapital zeigen.
   // Diese Prognose fuehrt KEINEN Kauf, Transfer oder NPC-Auftrag aus.
   function nachfolgeMarktPlan(s,r){
@@ -6341,6 +6402,7 @@ const m_core_w5s=(()=>{
       successor:Object.freeze({...nachfolgeAudit(s,r)}),
       successorOperations:Object.freeze({...nachfolgeBetriebPlan(s,r)}),
       successorMarket:Object.freeze({...nachfolgeMarktPlan(s,r)}),
+      successorReplacement:Object.freeze({...nachfolgeErsatzPlan(s,r)}),
       successorPlan:Object.freeze({...nachfolgePlan(s,r,r.w5h.kaeufer)}),
       maintenance:Object.freeze({...wartungPlan(s,r)}),
       orePlan:Object.freeze({...erzPlan(s,r)}),
@@ -6421,7 +6483,8 @@ const m_core_w5s=(()=>{
       successor:successorProof};
   }
   return {arbeitsPuffer,finanzPlan,pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
-    nachfolgeBetriebPlan,nachfolgeMarktPlan,autoNachfolger,nachfolgeVerschleiss,
+    nachfolgeBetriebPlan,nachfolgeMarktPlan,nachfolgeErsatzPlan,
+    autoNachfolger,nachfolgeVerschleiss,
     takeoverPlan,takeoverStart,takeoverDividend,takeoverAudit,
     oreVenturePlan,oreVentureStart,oreVentureDividend,oreVentureAudit,
     orePilotWage,orePilotWageAudit,industryWage,industryWageAudit,wartungPlan,
@@ -7597,6 +7660,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   w5sNachfolgeStatus:(state,rules,owner=rules.w5h.kaeufer)=>m_core_w5s.nachfolgePlan(state,rules,owner),
   w5sNachfolgeBetrieb:(state,rules)=>m_core_w5s.nachfolgeBetriebPlan(state,rules),
   w5sNachfolgeMarkt:(state,rules)=>m_core_w5s.nachfolgeMarktPlan(state,rules),
+  w5sNachfolgeErsatz:(state,rules)=>m_core_w5s.nachfolgeErsatzPlan(state,rules),
   w5sNpcErzStatus:(state,rules)=>m_core_w5s.npcOrePlan(state,rules),
   w5sStarterStatus:(state,rules)=>m_core_w5s.starterPlan(state,rules),
   createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState, createW5LState, createW5MState, createW5NState, createW5OState, createW5QState, createW5RState,

@@ -1361,6 +1361,14 @@ function checkShape(state, cmd, rules) {
     if(!p.ok)return p.grund;
   }
   if (cmd.type === 'shipBuy') {
+    // W5s-z: Ein durch echtes Investorengeld vorbestelltes Einzelstueck
+    // darf vor gruendlicher Eigentumsuebergabe NICHT von der Altflotte
+    // oder einem fremden NPC weggekauft werden.
+    const reserved=state.w5s?.newCarrierOrder;
+    if(rules.w5s?.successorNewOrder&&reserved?.buildStarted
+      &&cmd.klasse==='frachter'&&cmd.station===rules.w5.station
+      &&(state.stations[cmd.station]?.lager.frachter||0)<=1)
+      return 'W5s-z: bezahlte Fremdhuelle bis zur Eigentuemeruebergabe reserviert';
     const nachfolger=!!rules.w5s?.independentSuccessor
       &&cmd.klasse==='frachter'&&cmd.station===rules.w5.station
       &&m_core_w5s.nachfolgerKaufPlan(state,rules,cmd.owner).ok;

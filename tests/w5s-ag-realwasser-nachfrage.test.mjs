@@ -138,23 +138,31 @@ test('W5s-ag: absent buyer, ice, or work money never becomes a free third order'
 test('W5s-ag: 35d actual second-stage paid water factory, work, revenue, no endless phantom demand',()=>{
   for(const seed of [42,7]){
     const s=funded(seed,BASE),w=s.w5n,o=s.w5s.newCarrierOrder;
-    const initial={fabrik:w.fabrikFertig,water:w.wasserVerbraucht,trips:o.trips||0,
+    const initial={fabrik:w.fabrikFertig,water:w.wasserVerbraucht,
+      iceFreight:w.frachtAbgeschlossen,trips:o.trips||0,
       cash:s.owners.w5s_carrier3.cash};
     for(let day=1;day<=35;day++){
       api.advance(s,1440,ON);
       check(s,ON,'paid water '+seed+' day '+day,day===35);
     }
     const result={seed,iceTrips:o.trips||0,oreTrips:o.oreTrips||0,
-      started:o.autoOrders?.length||0,realFactory:w.fabrikFertig-initial.fabrik,
+      started:o.autoOrders?.length||0,newOriginalIceFreight:w.frachtAbgeschlossen-initial.iceFreight,
+      realFactory:w.fabrikFertig-initial.fabrik,
       paidConsumption:w.wasserVerbraucht-initial.water,
-      ownerIncome:o.freightRevenue||0,carrierCash:s.owners.w5s_carrier3.cash,
+      ownerIncome:(o.freightRevenue||0)+(o.oreFreightRevenue||0),
+      carrierCash:s.owners.w5s_carrier3.cash,
       originalIncome:s.w5n.wasserErlos,retired:o.stage==='retired',
       cash:money(s),hash:api.hash(s)};
-    assert.ok(result.iceTrips>=1,'first genuinely paid ice trip should dispatch');
+    assert.ok(result.iceTrips+result.oreTrips>=1,
+      'third carrier completes a genuinely paid W3 or W5n contract');
+    assert.ok(w.frachtAbgeschlossen>initial.iceFreight,
+      'existing higher-priority W5o carrier supplies actual paid new ice');
     assert.ok(result.realFactory>=2,'repeated original ice-to-water production');
     assert.ok(result.paidConsumption>0,'no fake purchases');
     assert.equal(result.ownerIncome,result.iceTrips*240+
       (o.oreFreightRevenue||0),'original cash ledger revenues');
+    assert.equal(result.carrierCash,initial.cash+result.ownerIncome
+      -(o.workPaid||0)-(o.oreWorkPaid||0),'every freight minute paid');
     console.log('W5S_AG_35D '+JSON.stringify(result));
   }
 });

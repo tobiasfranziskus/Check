@@ -112,3 +112,31 @@ test('W5s-y: reale Angebots- und Bedarfsgrenzen in Seed42 und 7 bestimmen',()=>{
     assert.equal(api.audit(s).ok,true);
   }
 });
+
+test('W5s-y: echte W4-Raffinerie schaltet W5-Kostenpruefung ohne unbestellten Bau frei',()=>{
+  const s=start(42);
+  for(let day=1;day<=35;day++)api.advance(s,1440,RULES);
+  const before=api.w5sNachfolgeErsatz(s,RULES);
+  assert.equal(before.refineryReady,true);
+  assert.equal(before.yardReady,false);
+  assert.equal(before.yardMaterialPresent,0);
+  assert.equal(before.realFreeHull,false);
+  const hullsBefore=s.w5.fertig;
+  const check=api.execute(s,{type:'stationRefine',owner:RULES.w4.station,
+    station:RULES.w4.station},RULES);
+  assert.equal(check.ok,true,check.reason);
+  while(s.w4.auftrag)api.advance(s,1,RULES);
+  const hash=api.hash(s),after=api.w5sNachfolgeErsatz(s,RULES);
+  assert.equal(api.hash(s),hash,'lesende Werftprognose bleibt ohne Schreibwirkung');
+  assert.equal(after.refineryReady,true);
+  assert.equal(after.yardReady,true,'W5 nutzt originalen Werft-Pruefpfad');
+  assert.equal(after.yardMaterialPresent,5,'echtes Raffineriematerial produziert');
+  assert.equal(after.production,'echter_bau_mit_material_finanzierbar');
+  assert.equal(after.companyCanSelfFinance,false,
+    'mit vorhandener Industrie wird kein fremdes Kapital frei');
+  assert.equal(after.replacementCommand,null);
+  assert.equal(s.w5.fertig,hullsBefore,'kein unbeauftragter Werft-Neubau');
+  assert.equal(s.stations[RULES.w5.station].lager.frachter,0);
+  assert.equal(api.audit(s).ok,true,'Autorisierte W4-Produktion und Geld-/Warenbelege');
+  assert.equal(api.hash(api.loadW5R(api.save(s))),hash,'Save/Load der bezahlten W4-Folge');
+});

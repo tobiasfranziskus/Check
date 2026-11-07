@@ -6057,6 +6057,143 @@ const m_core_w5s=(()=>{
        retired:retired?.tick??null,autoOrders:orders.length,
       freightLicense:flightPaid===flight&&!!z.ship&&!retired};
   }
+  // W5s-z: Gesonderter, ausdruecklich beauftragter NPC-FolgeMARKT.
+  // Privatkapital des Investors wird vor jeder neuen W4/W5-Charge in
+  // eine isolierte Bestelltreuhand gebunden. Die gescheiterte alte
+  // Spedition erhaelt keinen ISK und keinen Gratisfrachter.
+  const newCarrierEscrow='w5s_new_carrier_reserved',newCarrierBuyer='w5s_carrier3';
+  function newCarrierOrderCheck(s,r,investor){
+    if(!r.w5s?.successorNewOrder||!r.w5s?.successorOreFreight
+      ||!r.w5s?.successorOperations||!r.w5s?.independentSuccessor
+      ||s.rulesVersion!==r.rulesVersion||!s.w5r?.initialized)
+      return {ok:false,grund:'W5s-z nur im gesonderten Forschungsprofil'};
+    const old=s.w5s?.successor;
+    if(!old?.retired||s.ships[old.ship]||s.owners[old.owner]?.cash>=old.capital)
+      return {ok:false,grund:'Keine belegte ungedeckte Nachfolgerkrise'};
+    if(investor!==r.w5h.kaeufer||investor===old.owner
+      ||s.w5s?.newCarrierOrder||s.owners[newCarrierBuyer]
+      ||s.owners[newCarrierEscrow])
+      return {ok:false,grund:'Kein unabhaengiger neuer Besteller'};
+    if(s.w5s?.contract&&['reserved','bought','inflight'].includes(s.w5s.contract.stage)
+      ||s.w5.auftrag||s.w4.auftrag)
+      return {ok:false,grund:'Bestehender Werftvertrag hat Vorrang'};
+    const physical=s.stations[r.w5.station].lager.frachter||0;
+    const unsold=s.w5.fertig-(s.w5.minerFertig||0)-s.w5.verkauft;
+    if(physical!==0||unsold!==0)return {ok:false,grund:'Vorhandene Werfthuelle zuerst verkaufen'};
+    const p=m_core_w5.plan(r,'frachter'),flight=m_core_route.route(
+      r.world,'nadir','aldera')?.zeit*r.w5n.fliegerLohn;
+    const working=arbeitsPuffer(r,'frachter'),capital=p.preis+flight+working;
+    if(![p.preis,flight,working,capital].every(x=>Number.isSafeInteger(x)&&x>0))
+      return {ok:false,grund:'Keine volle Folgebetriebs-Finanzierung'};
+    if((s.owners[investor]?.cash??0)<capital
+      +r.erzpilot.auftragsMenge*r.erzpilot.preis)
+      return {ok:false,grund:'Investor ohne eigenes frei verfuegbares Risikokapital'};
+    const w4=m_core_w4.pruefen(s,r,r.w4.station,r.w4.station);
+    if(!w4.ok)return {ok:false,grund:'Fehlender realer W4-Produktionspfad: '+w4.grund};
+    const w5=r.w5;
+    if(s.owners[w5.werft].cash<p.materialKosten+p.arbeitKosten)
+      return {ok:false,grund:'Werft kann reale Folgehuelle nicht bezahlen'};
+    return {ok:true,investor,buyer:newCarrierBuyer,capital,
+      hull:p.preis,flight,working};
+  }
+  function newCarrierOrderStart(s,r,investor){
+    const p=newCarrierOrderCheck(s,r,investor);
+    if(!p.ok)throw Error('W5s-z: '+p.grund);
+    s.owners[investor].cash-=p.capital;
+    s.owners[newCarrierEscrow]={id:newCarrierEscrow,
+      kind:'prepaid-new-carrier',cash:p.capital};
+    s.w5s.newCarrierOrder={investor:p.investor,buyer:p.buyer,
+      capital:p.capital,hull:p.hull,flight:p.flight,working:p.working,
+      tick:s.tick,stage:'reserved',buildStarted:false,
+      baseline:s.w5.fertig-(s.w5.minerFertig||0),readyTick:null};
+    m_core_state.protokolliere(s,'auftrag',
+      'Neuer unabhängiger Frachterbesteller reserviert '+p.capital+
+      ' eigene ISK; erst reale W4/W5-Huelle, noch kein Schiffskauf',investor);
+    return {stage:'privat_finanzierter_neubesteller',buyer:p.buyer,capital:p.capital};
+  }
+  function newCarrierOrderPlan(s,r){
+    if(!r.w5s?.successorNewOrder||s.rulesVersion!==r.rulesVersion)
+      return Object.freeze({stage:'inaktiv'});
+    const o=s.w5s?.newCarrierOrder,investor=r.w5h.kaeufer;
+    if(!o){
+      const p=newCarrierOrderCheck(s,r,investor);
+      return Object.freeze({stage:p.ok?'neuer_privater_kaufauftrag_moeglich':p.grund,
+        investor,investorCash:s.owners[investor]?.cash??0,approved:p.ok});
+    }
+    const p=m_core_w5.plan(r,'frachter');
+    return Object.freeze({stage:o.stage,buyer:o.buyer,investor:o.investor,
+      placed:o.tick,amount:o.capital,escrow:s.owners[newCarrierEscrow]?.cash??0,
+      oldCompanyCash:s.owners[s.w5s.successor.owner].cash,
+      yardHulls:s.stations[r.w5.station].lager.frachter||0,
+      actualBuilt:s.w5.fertig-(s.w5.minerFertig||0)-o.baseline,
+      yardFunded:s.owners[r.w5.werft].cash>=p.materialKosten+p.arbeitKosten,
+      independentBuyer:true,ownershipTransferred:false});
+  }
+  function autoNewCarrierYard(s,r){
+    const o=s.w5s?.newCarrierOrder;
+    if(!r.w5s?.successorNewOrder||!o||o.stage==='hull_ready')
+      return {stage:'inaktiv_oder_fertig'};
+    if(o.stage==='building'){
+      const produced=s.w5.fertig-(s.w5.minerFertig||0)-o.baseline;
+      if(produced===1&&!s.w5.auftrag){
+        if((s.stations[r.w5.station].lager.frachter||0)<1)
+          throw Error('W5s-z: Vertragsfrachter ohne physische Werftware');
+        o.stage='hull_ready';o.readyTick=s.tick;
+        return {stage:'hull_ready'};
+      }
+      return {stage:'werft_in_arbeit'};
+    }
+    if(o.stage!=='reserved')throw Error('W5s-z: ungueltige Auftragsstufe');
+    if(s.w5.auftrag||s.w4.auftrag||s.w5s?.contract&&
+      ['reserved','bought','inflight'].includes(s.w5s.contract.stage))
+      return {stage:'andere_werftarbeit_hat_vorrang'};
+    const stock=s.stations[r.w5.station].lager;
+    const hull=m_core_w5.plan(r,'frachter');
+    if((stock.material||0)<hull.material){
+      const p=m_core_w4.pruefen(s,r,r.w4.station,r.w4.station);
+      if(!p.ok)return {stage:'raffinerie_nicht_finanzierbar',grund:p.grund};
+      const work=m_core_commands.execute(s,{type:'stationRefine',
+        owner:r.w4.station,station:r.w4.station},r);
+      return {stage:work.ok?'echte_w4_charge_gestartet':'core_abgelehnt',
+        grund:work.reason??null};
+    }
+    const p=m_core_w5.pruefen(s,r,r.w5.werft,r.w5.station,'frachter');
+    if(!p.ok)return {stage:'werft_nicht_finanzierbar',grund:p.grund};
+    const work=m_core_commands.execute(s,{type:'stationBuildShip',
+      owner:r.w5.werft,station:r.w5.station},r);
+    if(work.ok){o.stage='building';o.buildStarted=true;}
+    return {stage:work.ok?'bezahlter_w5_neubau_gestartet':'core_abgelehnt',
+      grund:work.reason??null};
+  }
+  function newCarrierOrderAudit(s,r){
+    const o=s.w5s?.newCarrierOrder,bank=s.owners[newCarrierEscrow]?.cash??0;
+    if(!o)return {ok:bank===0,active:false,escrow:bank};
+    const p=m_core_w5.plan(r,'frachter'),
+      flight=m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn,
+      working=arbeitsPuffer(r,'frachter');
+    const produced=s.w5.fertig-(s.w5.minerFertig||0)-o.baseline;
+    const free=s.stations[r.w5.station]?.lager.frachter??0;
+    const waiting=o.stage==='reserved'&&!o.buildStarted&&produced===0
+      &&o.readyTick===null;
+    const building=o.stage==='building'&&o.buildStarted&&
+      (produced===0&&!!s.w5.auftrag||produced===1&&free>=1&&!s.w5.auftrag)
+      &&o.readyTick===null;
+    const ready=o.stage==='hull_ready'&&o.buildStarted&&produced===1
+      &&free>=1&&!s.w5.auftrag&&Number.isSafeInteger(o.readyTick)
+      &&o.readyTick>=o.tick&&o.readyTick<=s.tick;
+    const ok=o.investor===r.w5h.kaeufer&&o.buyer===newCarrierBuyer
+      &&o.buyer!==s.w5s.successor.owner
+      &&o.capital===p.preis+flight+working
+      &&o.hull===p.preis&&o.flight===flight&&o.working===working
+      &&Number.isSafeInteger(o.tick)&&o.tick>=s.w5s.successor.retired.tick
+      &&o.tick<=s.tick&&Number.isSafeInteger(o.baseline)&&o.baseline>=0
+      &&(waiting||building||ready)
+      &&bank===o.capital
+      &&s.owners[newCarrierEscrow]?.kind==='prepaid-new-carrier'
+      &&!s.owners[newCarrierBuyer];
+    return {ok,active:true,stage:o.stage,escrow:bank,produced,
+      physicalFree:free,investor:o.investor,buyer:o.buyer};
+  }
   // W5s-y: getrennte Eigenkasse, potentielle Investorenmittel und echte
   // W4/W5-Lieferkette. Lediglich Diagnose, KEIN Aktienkauf, Geldtransfer,
   // Auto-Neubau oder stiller Ersatz fuer eine verschlissene Schiffs-ID.

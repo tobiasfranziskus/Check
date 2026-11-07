@@ -6138,6 +6138,69 @@ const m_core_w5s=(()=>{
       ' eigene ISK; erst reale W4/W5-Huelle, noch kein Schiffskauf',investor);
     return {stage:'privat_finanzierter_neubesteller',buyer:p.buyer,capital:p.capital};
   }
+  // W5s-aa: Expliziter, vollstaendig finanzierter Kaufvertrag, KEINE
+  // automatische Rettung der alten Spedition und KEIN Freigeld.
+  function newCarrierPurchaseCheck(s,r,investor){
+    if(!r.w5s?.successorNewPurchase||!r.w5s?.successorNewOrder
+      ||!r.w5s?.independentSuccessor||s.rulesVersion!==r.rulesVersion)
+      return {ok:false,grund:'W5s-aa nur nach ausdruecklicher Forschungsfreigabe'};
+    const o=s.w5s?.newCarrierOrder;
+    if(!o||o.stage!=='hull_ready'||o.investor!==investor
+      ||investor!==r.w5h.kaeufer||s.owners[newCarrierBuyer]
+      ||(s.owners[newCarrierEscrow]?.cash??0)!==o.capital)
+      return {ok:false,grund:'Kein autorisierter und voll gedeckter Vertrag'};
+    if(!newCarrierOrderAudit(s,r).ok)
+      return {ok:false,grund:'Treuhand- oder Werftbeleg nicht auditiert'};
+    const hull=m_core_w5.plan(r,'frachter'),
+      stock=s.stations[r.w5.station].lager.frachter||0,
+      unsold=s.w5.fertig-(s.w5.minerFertig||0)-s.w5.verkauft;
+    if(stock!==1||unsold!==1||s.w5.auftrag
+      ||!m_core_w5.audit(s,r).ok||o.hull!==hull.preis)
+      return {ok:false,grund:'Einzelhuelle oder urspruenglicher W5-Beleg fehlt'};
+    if(s.w5s?.active||s.owners[newCarrierBuyer])
+      return {ok:false,grund:'Vertragsverkauf waehrend Fremdbindung nicht erlaubt'};
+    return {ok:true,investor,buyer:o.buyer,hull:hull.preis,
+      capital:o.capital,flight:o.flight,working:o.working};
+  }
+  function newCarrierPurchase(s,r,investor){
+    const check=newCarrierPurchaseCheck(s,r,investor);
+    if(!check.ok)throw Error('W5s-aa: '+check.grund);
+    const o=s.w5s.newCarrierOrder,bank=s.owners[newCarrierEscrow];
+    if(s.owners[newCarrierBuyer]||bank.cash!==check.capital)
+      throw Error('W5s-aa: Doppel- oder ungedeckte Eigentumszeichnung');
+    // Die hoheitliche Kaufurkunde ist EIN synchroner Core-Befehl:
+    // Eigenkapital wird aus dem schon vorhandenen Investorentreuhand
+    // in die neue unabhängige Gesellschaft gebucht und sofort der
+    // ORIGINAL-W5-Einzelkauf mit regulaerer Werftzahlung ausgefuehrt.
+    bank.cash-=check.capital;
+    s.owners[newCarrierBuyer]={id:newCarrierBuyer,kind:'carrier',cash:check.capital};
+    o.stage='funded';o.funded=s.tick;
+    const oldId=s.nextShip;
+    const buy=m_core_commands.execute(s,{type:'shipBuy',owner:newCarrierBuyer,
+      klasse:'frachter',station:r.w5.station},r);
+    if(!buy.ok)throw Error('W5s-aa: autoritativer W5-Kauf scheiterte: '+buy.reason);
+    const id=m_core_state.schiffId(oldId);
+    if(o.stage!=='bought'||o.ship!==id||s.ships[id]?.owner!==newCarrierBuyer
+      ||s.owners[newCarrierBuyer].cash!==o.flight+o.working
+      ||!s.w5.schiffIds.includes(id))
+      throw Error('W5s-aa: physisch gekauftes Schiff oder Eigentuemerbuch fehlt');
+    m_core_state.protokolliere(s,'handel',id+': neuer unabhängiger NPC-Eigentuemer '
+      +newCarrierBuyer+' zahlt '+check.hull+
+      ' echte ISK aus hinterlegtem Privatkapital an die Werft',investor);
+    return {stage:'eigenstaendiger_frachter_bezahlt',ship:id,owner:newCarrierBuyer,
+      price:check.hull,cash:s.owners[newCarrierBuyer].cash};
+  }
+  function newCarrierSold(s,r,sh){
+    const o=s.w5s?.newCarrierOrder;
+    if(!o||o.stage!=='funded'||sh.owner!==newCarrierBuyer
+      ||sh.klasse!=='frachter'||sh.heimat!=='nadir'
+      ||s.owners[newCarrierBuyer]?.cash!==o.capital-o.hull
+      ||s.owners[newCarrierEscrow]?.cash!==0
+      ||!s.w5.schiffIds.includes(sh.id))
+      throw Error('W5s-aa: gebuchter Eigentumswechsel ungueltig');
+    o.ship=sh.id;o.bought=s.tick;o.pricePaid=o.hull;o.stage='bought';
+    o.flightAllocated=0;o.flightPaid=0;
+  }
   function newCarrierOrderPlan(s,r){
     if(!r.w5s?.successorNewOrder||s.rulesVersion!==r.rulesVersion)
       return Object.freeze({stage:'inaktiv'});

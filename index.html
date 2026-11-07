@@ -2931,7 +2931,8 @@ const m_core_w3 = (() => {
       ?(state.owners.w5s_order_reserved?.cash??0):0;
     const kauf=state.owners.w3_kauf_treuhand?.cash??0,arbeit=state.owners.w3_arbeit_treuhand?.cash??0;
     const huelle=(state.ledger.frachter?.consumed??0)*rules.economy.waren.frachter.basis
-      -(state.w5s?.successor?.pricePaid??0);
+      -(state.w5s?.successor?.pricePaid??0)
+      -(state.w5s?.newCarrierOrder?.pricePaid??0);
     const erwarteteBezahlung=w.abgeschlossen*k.gesamt+(a?k.gesamt:0);
     const erwarteteWare=w.abgeschlossen*c.fracht+(a?.phase==='rueck'?c.fracht:0);
     const erwarteteArbeit=w.abgeschlossen*k.arbeitsKosten+(a?.gearbeitet??0)*c.arbeitJeMinute;

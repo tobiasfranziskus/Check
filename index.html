@@ -2841,7 +2841,7 @@ const m_core_w3 = (() => {
     sh.phase='reise';sh.ziel=c.zielStation;sh.ankunft=state.tick+k.zeit;sh.auftrag='fracht';
     w.auftrag={schiff:sh.id,phase:'hin',menge:c.fracht,gearbeitet:0,...k};
     w.beauftragt++;
-    protokolliere(state,'auftrag',sh.id+': Erz, Kaufetat und beide Flugkosten gesperrt',c.spedition);
+    protokolliere(state,'auftrag',sh.id+': Erz, Kaufetat und beide Flugkosten gesperrt',owner);
     return true;
   }
   function tick(state,rules) {
@@ -2880,7 +2880,7 @@ const m_core_w3 = (() => {
       // verdiente Erz-Deckungsbeitrag auf beide Anteilseigner verteilt wird.
       if(state.w5s?.takeover)m_core_w5s.takeoverDividend(state,rules);
       sh.system='aldera';sh.phase='dock';sh.ziel=null;sh.ankunft=state.tick;sh.auftrag='halten';
-      protokolliere(state,'handel',sh.id+': Rueckfahrt bezahlt; Spedition entlohnt',c.spedition);
+      protokolliere(state,'handel',sh.id+': Rueckfahrt bezahlt; Spedition entlohnt',owner);
     }
   }
   function audit(state,rules) {
@@ -2919,10 +2919,11 @@ const m_core_w3 = (() => {
         -(state.w5f?.kopfgeldBezahlt??0)-(state.owners.w5f_kopfgeld_reserve?.cash??0)
       && kauf===(a?(a.phase==='hin'?a.gesamt:a.frachtGebuehr):0)
       && arbeit===(a?k.arbeitsKosten-a.gearbeitet*c.arbeitJeMinute:0)
-      && carrier+arbeit+held+(state.w5n?.frachtauftrag?.owner?0:(state.owners.w5n_fracht_arbeit?.cash??0))
+      && carrier+(a?.owner?0:arbeit)+held+(state.w5n?.frachtauftrag?.owner?0:(state.owners.w5n_fracht_arbeit?.cash??0))
           +(state.w5s?.active?.owner===c.spedition
             ?(state.owners.w5s_transfer_reserved?.cash??0):0)
-        ===startCarrier-huelle-w.arbeitsKosten+w.frachtUmsatz
+        ===startCarrier-huelle-(w.arbeitsKosten-(state.w5s?.successor?.oreWorkPaid??0))
+           +(w.frachtUmsatz-(state.w5s?.successor?.oreFreightRevenue??0))
           -((state.w5n?.frachtLohn??0)-(state.w5s?.successor?.workPaid??0))
           +((state.w5n?.frachtUmsatz??0)-(state.w5s?.successor?.freightRevenue??0))
           -(state.w5o?.divFracht??0)
@@ -2932,7 +2933,9 @@ const m_core_w3 = (() => {
       && (!a||(a.menge===c.fracht&&a.zeit===k.zeit&&a.erzWert===k.erzWert
         && a.arbeitsKosten===k.arbeitsKosten&&a.frachtGebuehr===k.frachtGebuehr
         && a.gesamt===k.gesamt&&a.gearbeitet>=0&&a.gearbeitet<=2*k.zeit
-        && state.ships[a.schiff]?.owner===c.spedition
+        && state.ships[a.schiff]?.owner===(a.owner||c.spedition)
+         && (!a.owner||(a.owner===state.w5s?.successor?.owner
+           &&a.schiff===state.w5s.successor.ship))
         && (state.ships[a.schiff]?.ladung.erz??0)===(a.phase==='hin'?c.fracht:0)));
     return {ok,buyer,carrier,kaufTreuhand:kauf,arbeitTreuhand:arbeit,
       oreDelivered:w.geliefert,paidWork:w.arbeitsKosten,freightRevenue:w.frachtUmsatz,

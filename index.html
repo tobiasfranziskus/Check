@@ -5238,7 +5238,10 @@ const m_core_w5s=(()=>{
     const miner=r.w5s?.minerIndustry&&sh?.klasse==='miner';
     const successor=!!(r.w5s?.successorFreight&&r.w5s?.independentSuccessor
       &&sh?.id===s.w5s?.successor?.ship&&sh.owner===s.w5s.successor.owner);
-    const owner=successor?s.w5s.successor.owner:
+    const next=s.w5s?.newCarrierOrder;
+    const newCompany=!!(r.w5s?.successorNewPurchase&&next?.stage==='bought'
+      &&sh?.id===next.ship&&sh.owner===next.buyer);
+    const owner=successor?s.w5s.successor.owner:newCompany?next.buyer:
       miner?s.w5o.minerOwner:r.w5n.frachterOwner;
     if(!sh||sh.owner!==owner||(sh.klasse!=='frachter'&&!miner)
       ||sh.system!=='nadir'||sh.phase!=='dock'||sh.auftrag!=='halten'
@@ -5277,6 +5280,10 @@ const m_core_w5s=(()=>{
     w.allocated+=p.kosten;
     if(owner===s.w5s?.successor?.owner)
       s.w5s.successor.flightAllocated=p.kosten;
+    if(owner===s.w5s?.newCarrierOrder?.buyer){
+      s.w5s.newCarrierOrder.flightAllocated=p.kosten;
+      s.w5s.newCarrierOrder.stage='inflight';
+    }
     buche(s,owner,'kosten',p.kosten);
     w.active={id:sh.id,owner,start:s.tick,minuten:p.minuten,
       ...(starter(s)?.id===sh.id?{starter:true}:{}),
@@ -5301,7 +5308,10 @@ const m_core_w5s=(()=>{
     w.paid+=a.lohn;
     if(a.owner===s.w5s?.successor?.owner)
       s.w5s.successor.flightPaid=(s.w5s.successor.flightPaid||0)+a.lohn;
-    if(a.type!=='miner'&&a.owner!==s.w5s?.successor?.owner&&w.paidTransport!==undefined)
+    if(a.owner===s.w5s?.newCarrierOrder?.buyer)
+      s.w5s.newCarrierOrder.flightPaid=(s.w5s.newCarrierOrder.flightPaid||0)+a.lohn;
+    if(a.type!=='miner'&&a.owner!==s.w5s?.successor?.owner
+      &&a.owner!==s.w5s?.newCarrierOrder?.buyer&&w.paidTransport!==undefined)
       w.paidTransport+=a.lohn;
     a.gearbeitet++;
     if(a.gearbeitet===a.minuten){
@@ -5313,6 +5323,8 @@ const m_core_w5s=(()=>{
         ...(a.starter?{starter:true}:{})});
       w.active=null;
       sh.auftrag='halten';
+      if(a.owner===s.w5s?.newCarrierOrder?.buyer)
+        s.w5s.newCarrierOrder.stage='arrived';
       completeOrder(s,sh);
       protokolliere(s,'auftrag',sh.id+': Nadir–Aldera nach '
         +a.minuten+' bezahlten Flugminuten beendet',a.owner);
@@ -6716,7 +6728,9 @@ const m_core_w5s=(()=>{
     const finished=completed.reduce((n,x)=>n+x.kosten,0);
     const ids=completed.map(x=>x.id);
     const transferOwner=(type,id)=>type==='miner'?s.w5o.minerOwner:
-      id===s.w5s?.successor?.ship?s.w5s.successor.owner:r.w5n.frachterOwner;
+      id===s.w5s?.successor?.ship?s.w5s.successor.owner:
+      id===s.w5s?.newCarrierOrder?.ship?s.w5s.newCarrierOrder.buyer:
+      r.w5n.frachterOwner;
     const transferIds=type=>type==='miner'?[...(s.w5.minerSchiffIds||[]),
       ...(starter(s)?[starter(s).id]:[])]
       :s.w5.schiffIds;
@@ -6769,9 +6783,11 @@ const m_core_w5s=(()=>{
       &&(w.paidTransport===undefined||(
         Number.isSafeInteger(w.paidTransport)&&w.paidTransport>=0
         &&w.paidTransport===completed.filter(x=>x.type!=='miner'
-          &&x.owner!==s.w5s?.successor?.owner)
+          &&x.owner!==s.w5s?.successor?.owner
+          &&x.owner!==s.w5s?.newCarrierOrder?.buyer)
           .reduce((n,x)=>n+x.kosten,0)
           +(a&&a.type!=='miner'&&a.owner!==s.w5s?.successor?.owner
+            &&a.owner!==s.w5s?.newCarrierOrder?.buyer
             ?a.gearbeitet*lohn:0)))
       &&reserve===w.allocated-w.paid&&pilot===w.paid;
     return {ok,allocated:w.allocated,paid:w.paid,reserve,

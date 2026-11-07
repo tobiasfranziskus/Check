@@ -74,7 +74,7 @@ test('W5s-ab: two original paid carriers, no third-company free W3/ore customer'
     assert.equal(o.oreFreightRevenue,240,'receipt after delivery and return');
     assert.equal(o.oreWorkPaid,120,'120 real pilot minutes');
   }else{
-    assert.equal(p.command,null,'no fabricated demand/route');
+    assert.equal(p.command??null,null,'no fabricated demand/route');
     assert.equal(s.w3.auftrag,null);
     assert.equal(o.oreTrips||0,0,'no phantom trip');
     assert.equal(s.owners[o.buyer].cash,120,'cash cannot change without work');
@@ -114,7 +114,7 @@ test('W5s-ab/ac: opt-out remains pure W5s-aa, 30d old/new owners distinct',()=>{
  const plan=api.w5sNewCarrierFreight(s,OFF);
  assert.equal(plan.stage,'inaktiv');
  assert.equal(api.execute(s,{type:'shipFreight',owner:o.buyer,schiff:id},OFF).ok,false);
- api.advance(s,35*1440,OFF);
+ for(let day=0;day<35;day++)api.advance(s,1440,OFF);
  assert.equal(o.stage,'arrived','unapproved wear not silently activated');
  assert.equal(s.ships[id]?.owner,o.buyer);
  assert.equal(s.owners[o.buyer].cash,120);
@@ -139,7 +139,7 @@ test('W5s-ac: 365d fully ledger-audited successors, save/load and replay',()=>{
 });
 test('W5s-ab/ac: falsified ship loss, margins and fictional freight fail audit',()=>{
  const s=build(42),o=s.w5s.newCarrierOrder;
- api.advance(s,35*1440,RULES);
+ for(let day=0;day<35;day++)api.advance(s,1440,RULES);
  proof(s,RULES,'before tampering');
  const mutations=[
   t=>t.w5s.newCarrierOrder.retired.tick-=1440*5,

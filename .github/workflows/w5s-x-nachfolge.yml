@@ -1,0 +1,19 @@
+name: W5s-x – Nachfolger Erz/Eis Doppelmarkt mit echtem W3/W5n Audit
+on:
+  push:
+    branches:
+      - feature/w5s-x-nachfolger-erzfracht-20261107
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-x-nachfolger-erzfracht.test.mjs
+      - .github/workflows/w5s-x-nachfolge.yml
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5s-x-nachfolger-erzfracht.test.mjs tests/w5s-w-markt-und-ersatz.test.mjs tests/w5s-v-nachfolge-autobetrieb-verschleiss.test.mjs

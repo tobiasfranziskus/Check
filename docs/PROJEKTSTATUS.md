@@ -1,3 +1,11 @@
+## [DRAFT/ANALYSE] W5s-x – echte, getrennt bezahlte Nachfolger-Erzfracht · 07.11.2026
+
+**Basis:** [W5s-w #227](https://github.com/tobiasfranziskus/Check/pull/227), eigenständiger [Draft #228](https://github.com/tobiasfranziskus/Check/pull/228) mit Opt-in `rules.w5s.successorOreFreight`. `main 5a56d9d7`, Pages, Save-Schema, veröffentlichter Altstand unverändert. Keine Produktion/Emission/Preisänderung.
+
+**Implementiert:** Beim tatsächlich belegten W5-Werftbedarf und voller Eis-/Wasserversorgung dürfen echte W3-Erzaufträge nun dem rechtlich unabhängigen NPC-Nachfolger über das **originale W3-Treuhand- und Befehlsmodell** übertragen werden. W3-Käuferkasse, 50 angekauftes Erz, eigenes Pilotengeld und freies Schiff müssen stimmen. Eigenständiges Umsatz-/Lohn-/Auftragsbuch und unveränderte globale Eigentümer-, Geld- und Warenbilanz; Lesestatus meldet beide Frachtmärkte getrennt.
+
+**[TEST]** [GitHub Node22 #42347489476](https://github.com/tobiasfranziskus/Check/actions/runs/42347489476) auf dem vollständig eingebauten Code vor ergänzenden Analysedaten: **13/13 Gruppen erfolgreich, keine Fehler/Skips**. Seeds42/7 jeweils fünf echte W3-Fahrten in der 35-Tage-Phase; 720 ISK Firmenkasse, 210 ISK Bedarf bis 930 ISK, physischer Verlust am Tag151; ohne Opt-in bleibt der alte Hash `6a15b8cdc26a25df`. Ergänzende gegründete 365-Tage-Prüfung und Abwehr gefälschter W3-Belege nachfolgend CI-abhängig. Bericht [W5S_X_NACHFOLGER_ERZFRACT.md](W5S_X_NACHFOLGER_ERZFRACT.md). Keine eigenfinanzierte Ersatzhülle. iPad-/NAS-Abnahme offen.
+
 ## [DRAFT/ANALYSE] W5s-w – belegbare Nachfragefenster und Eigenersatzdeckung · 07.11.2026
 
 **Basis:** W5s-v [#226](https://github.com/tobiasfranziskus/Check/pull/226), Forschungsbranch `feature/w5s-w-nachfolge-markt-rentabilitaet-20261107`. [MAIN] weiterhin `5a56d9d7`; bestehendes Spiel, Speicherstände und Pages unberührt.

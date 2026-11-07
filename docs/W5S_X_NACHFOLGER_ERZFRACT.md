@@ -1,0 +1,23 @@
+# W5s-x – unabhängige NPC-Spedition erhält einen zweiten, wirklich bezahlten Frachtmarkt
+
+**[DRAFT/ANALYSE · 07.11.2026]** [PR #228](https://github.com/tobiasfranziskus/Check/pull/228) auf W5s-w [#227](https://github.com/tobiasfranziskus/Check/pull/227). Nur im getrennten R32-Forschungsprofil mit `rules.w5s.successorOreFreight=true` zusätzlich zu den bisherigen Nachfolgerflags. **[MAIN] `5a56d9d7`, Pages-Spieltest, gesicherte Versionen und Spielstände unverändert.** Keine geänderten Preise, Bedarfsgrenzen, Waren-/ISK-Erzeugung, Save-Schema, kein Merge oder Deployment.
+
+## Echter zusätzlicher Transportweg
+
+Der autonome Nachfolger bleibt selbständiger Rechtsträger. Nach realem W4-/W5-Schiffsbau, echter 930-ISK-Gründung, 750-ISK-Frachterkauf und 60-ISK-Überführung entscheidet er jede volle Stunde: Wenn die bekannte Nadir-Eis-/Wasserversorgung mehr als das tatsächliche Versorgungsziel enthält, kann er **statt untätig zu warten** einen regulären W3-Erzauftrag prüfen. Eine Erzfahrt startet nur bei wirklichem W5-Werftbedarf, 50 zuvor vom Großhändler gekauften Erz am Quelllager, freiem W3-Treuhandvertrag, freiem Schiff, echter Nadir-Kaufkraft und vollständig finanzierter eigener Pilotenarbeit. Vorher hat der alte W5o-Dispatcher Vorrang. Ein positives Gate ist noch kein erfundener Bedarf.
+
+Nur **die schon vorhandenen, validierten** `shipFreight`-/W3-Frachtticks buchen reservierte Kunden-ISK, Erz, zwei Arbeitsflüge und den erst am Ende ausgezahlten Frachttarif. `w3.auftrag.owner` vermerkt bei einem neuen Auftrag den tatsächlichen Eigentümer; ohne neues Opt-in laufen historische Verträge und Spielstände unverändert. `w5s.successor.oreWorkReserved`, `oreWorkPaid`, `oreFreightRevenue` und `oreTrips` sind vom originalen W3-Vertrag sowie den realen Eigentümerkonten unabhängig zu auditierende Leistungsbelege. W5s-Finanzstatus, W3- und W5s-Eigentümeraudits trennen alle tatsächlichen Löhne und Erlöse vom Alttransporteur. W5o- und W5s-Dividenden dürfen keinen fremden Frachtgewinn verteilen. Der alte 30-Tage-Verschleiß gilt weiterhin; kein kostenloses Ersatzschiff.
+
+Der rein lesende `w5sNachfolgeMarkt`-Status nennt jetzt neben Eis auch den W3-Frachttarif, Kosten, Marge, Käuferkasse, angekauftes und tatsächlich vorhandenes Quelle-Erz sowie den W5-Werftbedarf.
+
+## Belegter Unterschied zum vorherigen Ergebnis
+
+Der frühere reine Eisnachfolger aus W5s-v/w schaffte in Seed 42 und 7 in derselben 35-Tage-Nachfolgephase **eine bezahlte Eisfahrt**, und beendete seinen Lebenszyklus mit 240 ISK. W5s-x nutzt in beiden Seeds stattdessen **fünf bezahlte W3-Erzfrachten**, keine zusätzliche Eisfahrt. Jede Erzfahrt hat 240 ISK entlohnten Frachttarif minus 120 ISK vorfinanzierte Pilotenarbeit. Aus ursprünglichen 120 ISK flüssigem Betriebskapital werden damit **720 ISK echte Firmenkasse**. Beide realen Schiffe werden am selben Verschleißtermin ausgeschieden; zum vollständigen neuen Betrieb mit Hülle/Überführung/Pilotengeld fehlen **210 ISK**, eine neue echte fertige W5-Hülle ist nicht verfügbar. Keine Subvention, kein unfinanzierter Ertrag, kein Beweis für einen unbegrenzt selbsttragenden W6-Kreislauf. Erz- und Eis-Szenarien sind **Alternativen**, keine gleichzeitig addierbaren 6 Aufträge.
+
+## Prüfungen und Grenzen
+
+**[TEST · 07.11.2026]** [Node22-W5s-x-CI #42347489476](https://github.com/tobiasfranziskus/Check/actions/runs/42347489476): **13/13 Testgruppen erfolgreich, 0 Fehler**, darunter 2 echte 35-Tage-Krisen, deterministischer Wiederholungslauf, Save/Load, stündliches Frachtgating, tägliche unveränderte Geld-/Waren-/Eigentümeraudits, OFF-Flag/alter Seed42-Hash und die W5s-v/w-Referenzen. Reale Seed35-Hashes: Seed42 `92bd14083ab5d210`, Seed7 `cf8250e94e034902`. Keine im Rechenmodell vorausgesetzte zusätzliche Eisfahrt.
+
+**Neuer ergänzender Testauftrag auf nachfolgendem Commit:** Seed42/7 jeweils bis 365 Tage **mit tatsächlich gegründeter Nachfolgefirma**, tägliche Audits/Save-Load sowie bewusst verfälschte W3-Umsatz-/Lohn-/Treuhandbelege. Diese Prüfung erst nach echtem CI-Ergebnis als bestanden melden.
+
+Nächste Etappe: Die weiterhin fehlenden 210 ISK und fehlende physische Ersatzhülle sind reale Rentabilitäts-/Materialengpässe. Mehrgenerationen-Ersatz muss Schiffs-ID, Verkauf, Ausmusterung und neue Pilotenvorfinanzierung unabhängig auditieren. Keine künstliche zusätzliche Nachfrage, kein Geldmodell-B-Regelwechsel ohne ausdrückliche Freigabe. Echte iPad-Safari-/NAS-Abnahme weiterhin offen.

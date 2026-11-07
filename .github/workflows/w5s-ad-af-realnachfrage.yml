@@ -1,0 +1,23 @@
+name: W5s-ad-af – reale Eis/Erz-Nachfrage, Konkurrenz und 365d-Audits
+on:
+  push:
+    branches:
+      - feature/w5s-ad-af-nachfrage-konkurrenz-20261107
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-ad-af-realnachfrage.test.mjs
+      - .github/workflows/w5s-ad-af-realnachfrage.yml
+jobs:
+  original-financing-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Targeted W5s-ad–af + W5s-ab/ac + W5s-aa regressions
+        run: node --test tests/w5s-ad-af-realnachfrage.test.mjs tests/w5s-ab-ac-folgefracht-verschleiss.test.mjs tests/w5s-aa-eigentum-kauf-flug.test.mjs tests/w5s-x-nachfolger-erzfracht.test.mjs
+      - name: Full standard regression
+        run: node --test tests/*.test.mjs

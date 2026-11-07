@@ -28,11 +28,11 @@
 | **W5p #196** | Lesende Kaufkraftdiagnose: Spar-NPC letzter Verkauf in Stunde397, am Tag90 physischer Wasserbestand bei Verbraucher-Kassenmangel; kein pauschaler Emissionsbedarf aus nominell entgangenen Umsätzen ableitbar |
 | **W5q #197** | Physisch buchbarer externer Wasserexport als isoliertes R31-Profil, global begrenzte **Testemission**, Default **OFF**. Seed42 Sparfall 365d ohne Export **789 Wasser**, mit maximal 3.500 ISK Testexport/Haushaltsüberweisung **1.872**, bei 7.000 ISK **2.775**; keine nachgewiesene dauerhafte Krisenfestigkeit |
 | **W5r #200** | Isolierte R32-Verschleiß-/Ersatz-/Wartungsbasis; ursprünglicher Verlust- und Lagerengpass im frühen Forschungsstand, später um echte Werftkäufe/Transportwege im W5s-Stack erweitert. Hypothetische 15-/30-Tage-Lebensdauern weiterhin **nicht beschlossen** |
+| **W5s #202–#242** | Reale bezahlte Hüllen/Überführung/Fracht-/Wartungs-/Lohnpfade, unabhängige Gesellschaften, physische Wasserexporte und Eigentümer-/Kostenprüfung. **Kein** Erfolg für den nachhaltigen, breit nachgefragten Geldkreislauf. |
+| **W5s-ao #243** | Integrierte Gesamtmatrix mit **52×90 Tage** (13 Basisseeds + 39 Eigentums-/Sparvarianten) und **6×730 Tage** (Seed42/7 ohne Export / Export 7 / Export 14 ISK). **3/3 gezielte Gruppen bestanden**, Wirtschaft **nicht** stabil. |
 
 **[ALTERNATIV / ARCHIV #199]** Verschleiß nach 600 echten Förder- und 2.400 echten Flugminuten; Schrottobjekte statt entfernten Schiff-IDs und Wartung nach Produktionsminuten mit **2 realem Eis + 20 ISK Arbeit**. Diese Variante ist **nicht** mit #200 identisch, trotz gleicher Forschungsnummer R32. Keine Gleichsetzung ihrer Ergebnisse/Hashes und **keine** bestätigte Überlegenheit eines Modells.
 
-| **W5s #202–#242** | Reale bezahlte Hüllen/Überführung/Fracht-/Wartungs-/Lohnpfade, unabhängige Gesellschaften, physische Wasserexporte und Eigentümer-/Kostenprüfung. **Kein** Erfolg für den nachhaltigen, breit nachgefragten Geldkreislauf. |
-| **W5s-ao #243** | Integrierte Gesamtmatrix mit **52×90 Tage** (13 Basisseeds + 39 Eigentums-/Sparvarianten) und **6×730 Tage** (Seed42/7 ohne Export / Export 7 / Export 14 ISK). **3/3 gezielte Gruppen bestanden**, Wirtschaft **nicht** stabil. |
 
 ## 3. Geld- und Wirtschaftsrisiken – neue Gesamtsicht
 

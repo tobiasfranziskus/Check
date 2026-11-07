@@ -1,0 +1,21 @@
+name: W5s-am – targeted owner/cash flow and work-demand audit
+on:
+  push:
+    branches:
+      - feature/w5s-am-langzeit-stationseinkommen-20261107
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-am-langzeit-einkommen.test.mjs
+      - .github/workflows/w5s-am-langzeit.yml
+jobs:
+  r32-owner-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original R32, seed42/7, day730 and paid demand gate
+        run: node --test tests/w5s-am-langzeit-einkommen.test.mjs

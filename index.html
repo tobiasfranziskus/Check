@@ -1164,6 +1164,7 @@ const FIELDS = {
   shipSellIce: ['schiff','menge'], stationWater: ['station'],
   shipReposition: ['schiff'], shipOrder: ['klasse'], shipCancelOrder: [],
   shipSellBookedOre: ['schiff'], shipFoundCarrier: [],
+  shipPrepayNewCarrier: [],
 };
 function checkShape(state, cmd, rules) {
   if (cmd === null || typeof cmd !== 'object' || Array.isArray(cmd)) return 'Befehl ist kein Objekt';
@@ -1341,7 +1342,8 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5s ? ['shipReposition'] : []),
     ...(rules.w5s?.prepaidOrders ? ['shipOrder','shipCancelOrder'] : []),
     ...(rules.w5s?.autoOreSettlement ? ['shipSellBookedOre'] : []),
-    ...(rules.w5s?.independentSuccessor ? ['shipFoundCarrier'] : [])].includes(cmd.type))
+    ...(rules.w5s?.independentSuccessor ? ['shipFoundCarrier'] : []),
+    ...(rules.w5s?.successorNewOrder ? ['shipPrepayNewCarrier'] : [])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if(cmd.type==='shipOrder'){
     const c=m_core_w5s.orderCheck(state,rules,cmd.owner,cmd.klasse);
@@ -1354,7 +1356,19 @@ function checkShape(state, cmd, rules) {
     const p=m_core_w5s.nachfolgePlan(state,rules,cmd.owner);
     if(p.stage!=='finanzierbarer_neuer_spediteur')return 'W5s-t: '+p.stage;
   }
+  if(cmd.type==='shipPrepayNewCarrier'){
+    const p=m_core_w5s.newCarrierOrderCheck(state,rules,cmd.owner);
+    if(!p.ok)return p.grund;
+  }
   if (cmd.type === 'shipBuy') {
+    // W5s-z: Ein durch echtes Investorengeld vorbestelltes Einzelstueck
+    // darf vor gruendlicher Eigentumsuebergabe NICHT von der Altflotte
+    // oder einem fremden NPC weggekauft werden.
+    const reserved=state.w5s?.newCarrierOrder;
+    if(rules.w5s?.successorNewOrder&&reserved?.buildStarted
+      &&cmd.klasse==='frachter'&&cmd.station===rules.w5.station
+      &&(state.stations[cmd.station]?.lager.frachter||0)<=1)
+      return 'W5s-z: bezahlte Fremdhuelle bis zur Eigentuemeruebergabe reserviert';
     const nachfolger=!!rules.w5s?.independentSuccessor
       &&cmd.klasse==='frachter'&&cmd.station===rules.w5.station
       &&m_core_w5s.nachfolgerKaufPlan(state,rules,cmd.owner).ok;
@@ -1411,6 +1425,9 @@ function execute(state, cmd, rules) {
   switch (cmd.type) {
     case 'shipFoundCarrier': {
       m_core_w5s.nachfolgeStart(state,rules,cmd.owner);break;
+    }
+    case 'shipPrepayNewCarrier': {
+      m_core_w5s.newCarrierOrderStart(state,rules,cmd.owner);break;
     }
     case 'shipOrder': {
       m_core_w5s.orderStart(state,rules,cmd.owner,cmd.klasse);break;
@@ -4114,6 +4131,7 @@ const m_core_w5h=(()=>{
         -(s.w5s?.oreVenture?.capital??0)
         +(s.w5s?.oreVenture?.dividends??0)
         -(s.w5s?.successor?.capital??0)
+        -(s.w5s?.newCarrierOrder?.capital??0)
       &&stat?.kosten===w.gekauft*p &&stat?.erloes===w.verkauft*p
       &&quelle?.erloes===w.gekauft*p+(s.w5n?.eisTransferWert??0)
       &&s.ledger.erz.exported===0 &&s.minted===(s.w5q?.minted??0) &&s.burned===0;
@@ -4123,7 +4141,8 @@ const m_core_w5h=(()=>{
         +(s.w5s?.takeover?.amount??0)-(s.w5s?.takeover?.dividends??0)
         +(s.w5s?.oreVenture?.capital??0)
         -(s.w5s?.oreVenture?.dividends??0)
-        +(s.w5s?.successor?.capital??0)};
+        +(s.w5s?.successor?.capital??0)
+        +(s.w5s?.newCarrierOrder?.capital??0)};
   }
   function plan(s,r){
     const p=m_core_w5g.kalkulation(s,r),h=audit(s,r);
@@ -6046,6 +6065,160 @@ const m_core_w5s=(()=>{
        retired:retired?.tick??null,autoOrders:orders.length,
       freightLicense:flightPaid===flight&&!!z.ship&&!retired};
   }
+  // W5s-z: Gesonderter, ausdruecklich beauftragter NPC-FolgeMARKT.
+  // Privatkapital des Investors wird vor jeder neuen W4/W5-Charge in
+  // eine isolierte Bestelltreuhand gebunden. Die gescheiterte alte
+  // Spedition erhaelt keinen ISK und keinen Gratisfrachter.
+  const newCarrierEscrow='w5s_new_carrier_reserved',newCarrierBuyer='w5s_carrier3';
+  function newCarrierOrderCheck(s,r,investor){
+    if(!r.w5s?.successorNewOrder||!r.w5s?.successorOreFreight
+      ||!r.w5s?.successorOperations||!r.w5s?.independentSuccessor
+      ||s.rulesVersion!==r.rulesVersion||!s.w5r?.initialized)
+      return {ok:false,grund:'W5s-z nur im gesonderten Forschungsprofil'};
+    const old=s.w5s?.successor;
+    if(!old?.retired||s.ships[old.ship]||s.owners[old.owner]?.cash>=old.capital)
+      return {ok:false,grund:'Keine belegte ungedeckte Nachfolgerkrise'};
+    if(investor!==r.w5h.kaeufer||investor===old.owner
+      ||s.w5s?.newCarrierOrder||s.owners[newCarrierBuyer]
+      ||s.owners[newCarrierEscrow])
+      return {ok:false,grund:'Kein unabhaengiger neuer Besteller'};
+    if(s.w5s?.contract&&['reserved','bought','inflight'].includes(s.w5s.contract.stage)
+      ||s.w5.auftrag||s.w4.auftrag)
+      return {ok:false,grund:'Bestehender Werftvertrag hat Vorrang'};
+    const physical=s.stations[r.w5.station].lager.frachter||0;
+    const unsold=s.w5.fertig-(s.w5.minerFertig||0)-s.w5.verkauft;
+    if(physical!==0||unsold!==0)return {ok:false,grund:'Vorhandene Werfthuelle zuerst verkaufen'};
+    const p=m_core_w5.plan(r,'frachter'),flight=m_core_route.route(
+      r.world,'nadir','aldera')?.zeit*r.w5n.fliegerLohn;
+    const working=arbeitsPuffer(r,'frachter'),capital=p.preis+flight+working;
+    if(![p.preis,flight,working,capital].every(x=>Number.isSafeInteger(x)&&x>0))
+      return {ok:false,grund:'Keine volle Folgebetriebs-Finanzierung'};
+    if((s.owners[investor]?.cash??0)<capital
+      +r.erzpilot.auftragsMenge*r.erzpilot.preis)
+      return {ok:false,grund:'Investor ohne eigenes frei verfuegbares Risikokapital'};
+    const w4=m_core_w4.pruefen(s,r,r.w4.station,r.w4.station);
+    if(!w4.ok)return {ok:false,grund:'Fehlender realer W4-Produktionspfad: '+w4.grund};
+    const w5=r.w5;
+    if(s.owners[w5.werft].cash<p.materialKosten+p.arbeitKosten)
+      return {ok:false,grund:'Werft kann reale Folgehuelle nicht bezahlen'};
+    return {ok:true,investor,buyer:newCarrierBuyer,capital,
+      hull:p.preis,flight,working};
+  }
+  function newCarrierOrderStart(s,r,investor){
+    const p=newCarrierOrderCheck(s,r,investor);
+    if(!p.ok)throw Error('W5s-z: '+p.grund);
+    s.owners[investor].cash-=p.capital;
+    s.owners[newCarrierEscrow]={id:newCarrierEscrow,
+      kind:'prepaid-new-carrier',cash:p.capital};
+    s.w5s.newCarrierOrder={investor:p.investor,buyer:p.buyer,
+      capital:p.capital,hull:p.hull,flight:p.flight,working:p.working,
+      tick:s.tick,stage:'reserved',buildStarted:false,
+      baseline:s.w5.fertig-(s.w5.minerFertig||0),readyTick:null};
+    m_core_state.protokolliere(s,'auftrag',
+      'Neuer unabhängiger Frachterbesteller reserviert '+p.capital+
+      ' eigene ISK; erst reale W4/W5-Huelle, noch kein Schiffskauf',investor);
+    return {stage:'privat_finanzierter_neubesteller',buyer:p.buyer,capital:p.capital};
+  }
+  function newCarrierOrderPlan(s,r){
+    if(!r.w5s?.successorNewOrder||s.rulesVersion!==r.rulesVersion)
+      return Object.freeze({stage:'inaktiv'});
+    const o=s.w5s?.newCarrierOrder,investor=r.w5h.kaeufer;
+    if(!o){
+      const p=newCarrierOrderCheck(s,r,investor);
+      return Object.freeze({stage:p.ok?'neuer_privater_kaufauftrag_moeglich':p.grund,
+        investor,investorCash:s.owners[investor]?.cash??0,approved:p.ok});
+    }
+    const p=m_core_w5.plan(r,'frachter');
+    return Object.freeze({stage:o.stage,buyer:o.buyer,investor:o.investor,
+      placed:o.tick,amount:o.capital,escrow:s.owners[newCarrierEscrow]?.cash??0,
+      oldCompanyCash:s.owners[s.w5s.successor.owner].cash,
+      yardHulls:s.stations[r.w5.station].lager.frachter||0,
+      actualBuilt:s.w5.fertig-(s.w5.minerFertig||0)-o.baseline,
+      yardFunded:s.owners[r.w5.werft].cash>=p.materialKosten+p.arbeitKosten,
+      independentBuyer:true,ownershipTransferred:false});
+  }
+  function autoNewCarrierYard(s,r){
+    const o=s.w5s?.newCarrierOrder;
+    if(!r.w5s?.successorNewOrder||!o||o.stage==='hull_ready')
+      return {stage:'inaktiv_oder_fertig'};
+    if(o.stage==='building'){
+      const produced=s.w5.fertig-(s.w5.minerFertig||0)-o.baseline;
+      if(produced===1&&!s.w5.auftrag){
+        if((s.stations[r.w5.station].lager.frachter||0)<1)
+          throw Error('W5s-z: Vertragsfrachter ohne physische Werftware');
+        o.stage='hull_ready';o.readyTick=s.tick;
+        return {stage:'hull_ready'};
+      }
+      return {stage:'werft_in_arbeit'};
+    }
+    if(o.stage!=='reserved')throw Error('W5s-z: ungueltige Auftragsstufe');
+    if(s.w5.auftrag||s.w4.auftrag||s.w5s?.contract&&
+      ['reserved','bought','inflight'].includes(s.w5s.contract.stage))
+      return {stage:'andere_werftarbeit_hat_vorrang'};
+    const stock=s.stations[r.w5.station].lager;
+    const hull=m_core_w5.plan(r,'frachter');
+    if((stock.material||0)<hull.material){
+      const p=m_core_w4.pruefen(s,r,r.w4.station,r.w4.station);
+      if(!p.ok)return {stage:'raffinerie_nicht_finanzierbar',grund:p.grund};
+      const work=m_core_commands.execute(s,{type:'stationRefine',
+        owner:r.w4.station,station:r.w4.station},r);
+      return {stage:work.ok?'echte_w4_charge_gestartet':'core_abgelehnt',
+        grund:work.reason??null};
+    }
+    const p=m_core_w5.pruefen(s,r,r.w5.werft,r.w5.station,'frachter');
+    if(!p.ok)return {stage:'werft_nicht_finanzierbar',grund:p.grund};
+    const work=m_core_commands.execute(s,{type:'stationBuildShip',
+      owner:r.w5.werft,station:r.w5.station},r);
+    if(work.ok){o.stage='building';o.buildStarted=true;}
+    return {stage:work.ok?'bezahlter_w5_neubau_gestartet':'core_abgelehnt',
+      grund:work.reason??null};
+  }
+  function newCarrierOrderAudit(s,r){
+    const o=s.w5s?.newCarrierOrder,bank=s.owners[newCarrierEscrow]?.cash??0;
+    if(!o)return {ok:bank===0,active:false,escrow:bank};
+    // Der globale Audit wird mit den unveraenderten R32-Basisregeln
+    // aufgerufen, daher muss die Vollreserve wie beim bestehenden
+    // Nachfolgervertrag UNABHAENGIG von Opt-in-Flags nachgerechnet werden.
+    const p=m_core_w5.plan(r,'frachter'),
+      flight=m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn,
+      working=Math.max(m_core_w3.kalkulation(r).arbeitsKosten,
+        m_core_w5n.preise(r).arbeit);
+    const produced=s.w5.fertig-(s.w5.minerFertig||0)-o.baseline;
+    const free=s.stations[r.w5.station]?.lager.frachter??0;
+    const waiting=o.stage==='reserved'&&!o.buildStarted&&produced===0
+      &&o.readyTick===null;
+    const building=o.stage==='building'&&o.buildStarted&&
+      (produced===0&&!!s.w5.auftrag||produced===1&&free>=1&&!s.w5.auftrag)
+      &&o.readyTick===null;
+    const ready=o.stage==='hull_ready'&&o.buildStarted&&produced===1
+      &&free>=1&&!s.w5.auftrag&&Number.isSafeInteger(o.readyTick)
+      &&o.readyTick>=o.tick&&o.readyTick<=s.tick;
+    const ok=o.investor===r.w5h.kaeufer&&o.buyer===newCarrierBuyer
+      &&o.buyer!==s.w5s.successor.owner
+      &&o.capital===p.preis+flight+working
+      &&o.hull===p.preis&&o.flight===flight&&o.working===working
+      &&Number.isSafeInteger(o.tick)&&o.tick>=s.w5s.successor.retired.tick
+      &&o.tick<=s.tick&&Number.isSafeInteger(o.baseline)&&o.baseline>=0
+      &&(waiting||building||ready)
+      &&bank===o.capital
+      &&s.owners[newCarrierEscrow]?.kind==='prepaid-new-carrier'
+      &&!s.owners[newCarrierBuyer];
+    return {ok,active:true,stage:o.stage,escrow:bank,produced,
+      physicalFree:free,investor:o.investor,buyer:o.buyer,
+      checks:{waiting,building,ready,
+        investor:o.investor===r.w5h.kaeufer,
+        buyer:o.buyer===newCarrierBuyer,
+        distinct:o.buyer!==s.w5s.successor.owner,
+        capital:o.capital===p.preis+flight+working,
+        price:o.hull===p.preis,flight:o.flight===flight,
+        working:o.working===working,
+        tick:Number.isSafeInteger(o.tick)&&o.tick>=s.w5s.successor.retired.tick
+          &&o.tick<=s.tick,
+        baseline:Number.isSafeInteger(o.baseline)&&o.baseline>=0,
+        escrow:bank===o.capital,
+        kind:s.owners[newCarrierEscrow]?.kind==='prepaid-new-carrier',
+        noBuyer:!s.owners[newCarrierBuyer]}};
+  }
   // W5s-y: getrennte Eigenkasse, potentielle Investorenmittel und echte
   // W4/W5-Lieferkette. Lediglich Diagnose, KEIN Aktienkauf, Geldtransfer,
   // Auto-Neubau oder stiller Ersatz fuer eine verschlissene Schiffs-ID.
@@ -6406,6 +6579,7 @@ const m_core_w5s=(()=>{
       successorOperations:Object.freeze({...nachfolgeBetriebPlan(s,r)}),
       successorMarket:Object.freeze({...nachfolgeMarktPlan(s,r)}),
       successorReplacement:Object.freeze({...nachfolgeErsatzPlan(s,r)}),
+      successorNewOrder:Object.freeze({...newCarrierOrderPlan(s,r)}),
       successorPlan:Object.freeze({...nachfolgePlan(s,r,r.w5h.kaeufer)}),
       maintenance:Object.freeze({...wartungPlan(s,r)}),
       orePlan:Object.freeze({...erzPlan(s,r)}),
@@ -6454,8 +6628,8 @@ const m_core_w5s=(()=>{
           +(s.w5.minerFertig||0)-(s.w5.minerVerkauft||0)-1);
     const equityProof=takeoverAudit(s,r),miningProof=oreVentureAudit(s,r);
     const wageProof=orePilotWageAudit(s,r),industryProof=industryWageAudit(s,r);
-    const successorProof=nachfolgeAudit(s,r);
-    const ok=successorProof.ok&&starterOk&&proof.ok&&equityProof.ok&&miningProof.ok
+    const successorProof=nachfolgeAudit(s,r),newOrderProof=newCarrierOrderAudit(s,r);
+    const ok=successorProof.ok&&newOrderProof.ok&&starterOk&&proof.ok&&equityProof.ok&&miningProof.ok
       &&wageProof.ok&&industryProof.ok
       &&[w.allocated,w.paid,reserve,pilot].every(n=>
         Number.isSafeInteger(n)&&n>=0)
@@ -6483,11 +6657,12 @@ const m_core_w5s=(()=>{
       completed:completed.length,active:!!a,contract:proof,
       equity:equityProof,oreVenture:miningProof,
       orePilotWages:wageProof,industryWages:industryProof,
-      successor:successorProof};
+      successor:successorProof,newCarrierOrder:newOrderProof};
   }
   return {arbeitsPuffer,finanzPlan,pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
     nachfolgeBetriebPlan,nachfolgeMarktPlan,nachfolgeErsatzPlan,
-    autoNachfolger,nachfolgeVerschleiss,
+    newCarrierOrderPlan,newCarrierOrderCheck,newCarrierOrderStart,newCarrierOrderAudit,
+    autoNewCarrierYard,autoNachfolger,nachfolgeVerschleiss,
     takeoverPlan,takeoverStart,takeoverDividend,takeoverAudit,
     oreVenturePlan,oreVentureStart,oreVentureDividend,oreVentureAudit,
     orePilotWage,orePilotWageAudit,industryWage,industryWageAudit,wartungPlan,
@@ -6728,6 +6903,7 @@ const m_core_w1_vollkosten = (() => {
       (state.w5s?.takeover?.amount??0)
       +(state.w5s?.oreVenture?.capital??0)
       +(state.w5s?.successor?.capital??0)
+      +(state.w5s?.newCarrierOrder?.capital??0)
       -(state.w5s?.takeover?.dividends??0)
       -(state.w5s?.oreVenture?.dividends??0));
     const minerKaeufe = anzahl(state.ledger.miner, 'consumed');
@@ -6907,6 +7083,7 @@ function step(state, rules) {
       if(rules.w5s.autoStarterMiner)m_core_w5s.autoStarter(state,rules);
       if(rules.w5s.autoOre)m_core_w5s.autoErz(state,rules);
       m_core_w5s.autoWerk(state,rules);
+      if(rules.w5s.successorNewOrder)m_core_w5s.autoNewCarrierYard(state,rules);
     }
     return ergebnisse;
   }
@@ -7193,7 +7370,8 @@ function audit(state) {
     // und real bezahlte Gewinnausschuettungen separat belegen.
     const equity=(state.w5s?.takeover?.amount??0)
       +(state.w5s?.oreVenture?.capital??0)
-      +(state.w5s?.successor?.capital??0);
+      +(state.w5s?.successor?.capital??0)
+      +(state.w5s?.newCarrierOrder?.capital??0);
     const shareholderPaid=(state.w5s?.takeover?.dividends??0)
       +(state.w5s?.oreVenture?.dividends??0);
     const differenz = rest + ausgegeben + equity-shareholderPaid - start;
@@ -7664,6 +7842,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   w5sNachfolgeBetrieb:(state,rules)=>m_core_w5s.nachfolgeBetriebPlan(state,rules),
   w5sNachfolgeMarkt:(state,rules)=>m_core_w5s.nachfolgeMarktPlan(state,rules),
   w5sNachfolgeErsatz:(state,rules)=>m_core_w5s.nachfolgeErsatzPlan(state,rules),
+  w5sNewCarrierOrder:(state,rules)=>m_core_w5s.newCarrierOrderPlan(state,rules),
   w5sNpcErzStatus:(state,rules)=>m_core_w5s.npcOrePlan(state,rules),
   w5sStarterStatus:(state,rules)=>m_core_w5s.starterPlan(state,rules),
   createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState, createW5LState, createW5MState, createW5NState, createW5OState, createW5QState, createW5RState,

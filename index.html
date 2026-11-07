@@ -6524,7 +6524,12 @@ const m_core_w5s=(()=>{
       &&o.pricePaid===p.preis
       &&(retiredProof||(sh?.klasse==='frachter'
         &&sh.owner===newCarrierBuyer&&sh.heimat==='nadir'))
-      &&s.w5.schiffIds.includes(o.ship)
+      // Zum Vorbestellzeitpunkt waren alle frueheren W5-Huellen
+      // verkauft (newCarrierOrderCheck). Daher ist der historische
+      // W5s-z-Baseline-Zähler genau der Index der neu gekauften ID
+      // in der chronologischen originalen W5-Verkaufsliste.
+      // Spaetere physische Neubauten duerfen diese ID nicht verschieben.
+      &&s.w5.schiffIds[o.baseline]===o.ship
       &&s.w5.schiffIds.filter(x=>x===o.ship).length===1
       &&buyer?.kind==='carrier'
       &&buyer.cash===o.capital-o.pricePaid-allocated-oreReserved

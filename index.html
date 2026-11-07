@@ -5988,7 +5988,7 @@ const m_core_w5s=(()=>{
       &&retired.reason==='verschleiss'&&Number.isSafeInteger(retired.tick)
       &&retired.tick%1440===0&&retired.tick<=s.tick
       &&retired.tick>=z.bought+retired.lifeDays*1440
-      &&!s.ships[z.ship]&&!live&&!transfer
+      &&!s.ships[z.ship]&&!live&&!oreLive&&!transfer
       &&s.w5s.completed.some(x=>x.id===z.ship&&x.owner===z.owner));
     const orders=z.autoOrders||[];
     const autoOk=Array.isArray(orders)&&orders.every((e,i)=>
@@ -6026,9 +6026,10 @@ const m_core_w5s=(()=>{
       &&flightPaid===(transfer?transfer.gearbeitet*r.w5n.fliegerLohn
         :landed.length?flight:0)
       &&landed.length<=1
-      &&account.cash===z.capital-z.pricePaid-flightAllocated-workReserved+revenue
-      &&stats.kosten===z.pricePaid+flightAllocated+workPaid
-      &&stats.erloes===revenue
+      &&account.cash===z.capital-z.pricePaid-flightAllocated-workReserved
+         -oreReserved+revenue+oreRevenue
+      &&stats.kosten===z.pricePaid+flightAllocated+workPaid+orePaid
+      &&stats.erloes===revenue+oreRevenue
       &&(z.ship===null
         ?z.bought===null&&z.pricePaid===0&&flightAllocated===0&&trips===0
         :Number.isSafeInteger(z.bought)&&z.bought>=z.tick&&z.bought<=s.tick
@@ -6138,9 +6139,24 @@ const m_core_w5s=(()=>{
     if(sh.system!=='aldera')return Object.freeze({stage:'nicht_im_eislager',ship:sh.id});
     const n=r.w5n,ice=s.stations[n.zielStation].lager.eis||0;
     const water=s.stations[n.zielStation].lager.wasser||0;
-    if(ice+water>r.w5o.versorgungZiel)
+    if(ice+water>r.w5o.versorgungZiel){
+      // Nur ein vom W5-Werftbedarf begruendeter, real vorfinanzierter
+      // W3-Erztransport ist eine Alternative zum aktuell vollen Eislager.
+      if(r.w5s?.successorOreFreight){
+        const yard=werkPlan(s,r),stages=['erz_fehlt','raffinieren',
+          'raffinerie_belegt','bauen','werft_belegt','fertiglager_belegt','bestellen'];
+        if(yard.type&&stages.includes(yard.stage)){
+          const ore=m_core_w3.pruefen(s,r,sh);
+          if(ore.ok&&ore.owner===z.owner)return Object.freeze({
+            stage:'erzfracht_vorfinanziert',owner:z.owner,ship:sh.id,
+            clientCost:ore.gesamt,ownPilotCost:ore.arbeitsKosten,
+            freight:ore.frachtGebuehr,werftbedarf:yard.stage,
+            command:{type:'shipFreight',owner:z.owner,schiff:sh.id}});
+        }
+      }
       return Object.freeze({stage:'kein_zusaetzlicher_versorgungsbedarf',
         vorrat:ice+water,ziel:r.w5o.versorgungZiel});
+    }
     const consumer=s.owners[n.kunde]?.cash??0;
     if(consumer<n.wasserPreis*n.verbrauchStunde)
       return Object.freeze({stage:'kein_zahlender_wasserhaushalt',

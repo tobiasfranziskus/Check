@@ -127,7 +127,7 @@ test('W5s-ag: absent buyer, ice, or work money never becomes a free third order'
 });
 test('W5s-ag: 35d actual second-stage paid water factory, work, revenue, no endless phantom demand',()=>{
   for(const seed of [42,7]){
-    const s=funded(seed,ON),w=s.w5n,o=s.w5s.newCarrierOrder;
+    const s=funded(seed,BASE),w=s.w5n,o=s.w5s.newCarrierOrder;
     const initial={fabrik:w.fabrikFertig,water:w.wasserVerbraucht,trips:o.trips||0,
       cash:s.owners.w5s_carrier3.cash};
     for(let day=1;day<=35;day++){
@@ -161,7 +161,7 @@ test('W5s-ag: thirteen 90d worlds without financed company remain unchanged',()=
 });
 test('W5s-ag: seed42/7 365d daily financed ownership, production and Save/Load',()=>{
   for(const seed of [42,7]){
-    const s=funded(seed,ON),o=s.w5s.newCarrierOrder;
+    const s=funded(seed,BASE),o=s.w5s.newCarrierOrder;
     for(let day=Math.floor(s.tick/1440)+1;day<=365;day++){
       api.advance(s,1440-(s.tick%1440),ON);
       check(s,ON,'365d '+seed+' day '+day,day%30===0||day===365);

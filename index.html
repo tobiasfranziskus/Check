@@ -2869,7 +2869,9 @@ const m_core_w3 = (() => {
       -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
         -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)!==start)
       return {ok:false,grund:'W3: unbelegtes Kaeufergeld'};
-    return {ok:true,grund:'Vollstaendig vorfinanziert',...k,...(alternate?{owner}:{})};
+    // W5s-ag: W3 muss auch beim dritten rechtmaessigen Eigentuemer
+    // die fremde Firma im Auftrag UND in allen originalen Belegen tragen.
+    return {ok:true,grund:'Vollstaendig vorfinanziert',...k,...((alternate||fresh)?{owner}:{})};
   }
   function starten(state,rules,sh) {
     const k=pruefen(state,rules,sh);
@@ -4416,7 +4418,7 @@ const m_core_w5n=(()=>{
    const owner=alternate?successor.owner:thirdAllowed?third.buyer:c.frachterOwner;
    if(thirdAllowed){
      const n=s.stations[c.zielStation].lager;
-     if((n.eis||0)+(n.wasser||0)>r.w5o.versorgungZiel)
+     if((n.eis||0)+(n.wasser||0)>m_core_w5o.versorgungsZiel(r))
        return {ok:false,grund:'W5s-ad: kein neuer Wasserbedarf'};
      if((s.owners[c.kunde]?.cash??0)<c.wasserPreis*c.verbrauchStunde)
        return {ok:false,grund:'W5s-ad: kein zahlender Wasserhaushalt'};
@@ -4648,6 +4650,21 @@ const m_core_w5n=(()=>{
 // W5o: no minting, real-work incomes and distributed realised NPC profit.
 // Only this scenario may run the automatic supply agent; the core clock is shared.
 const m_core_w5o=(()=>{
+ // W5s-ag: optionaler physischer Bestellvorlauf fuer wirklich belegten
+ // Wasserverbrauch. 40h Gesamt- und 20h Fertigwasserreichweite sind
+ // Lagerpuffer, KEINE Zusatzkunden. W5n validiert weiterhin Haushalt,
+ // Stationsgeld, eigene Pilotenvorauszahlung, Lager und Material.
+ // Ohne Opt-in bleiben die originalen 60/24-Grenzen unveraendert.
+ function versorgungsZiel(r){
+   const verbrauch=r.w5n?.verbrauchStunde;
+   return r.w5s?.successorDemandLoop&&Number.isSafeInteger(verbrauch)&&verbrauch>0
+     ?Math.max(r.w5o.versorgungZiel,40*verbrauch):r.w5o.versorgungZiel;
+ }
+ function wasserZiel(r){
+   const verbrauch=r.w5n?.verbrauchStunde;
+   return r.w5s?.successorDemandLoop&&Number.isSafeInteger(verbrauch)&&verbrauch>0
+     ?Math.max(r.w5o.wasserZiel,20*verbrauch):r.w5o.wasserZiel;
+ }
  const {buche}=m_core_handel;
  const MODES=['none','wages','npcSave','full'],OWNERS=['npc3','house'];
  const pay=(s,owner,field,n)=>{
@@ -4781,7 +4798,7 @@ const m_core_w5o=(()=>{
        &&Object.values(x.ladung).every(v=>v===0))
        .sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
      const iceShip=free.find(x=>x.id===s.w5r?.frachter.id);
-     if(iceShip&&!n.frachtauftrag&&ice+water<=r.w5o.versorgungZiel)
+     if(iceShip&&!n.frachtauftrag&&ice+water<=m_core_w5o.versorgungsZiel(r))
        attempt(s,r,'shipFreightIce',c.frachterOwner,{schiff:iceShip.id});
      // Nie eine angefangene Eisfahrt durch Erz ersetzen. Die automatische
      // W3-Route ist nur mit eigener, ungebundener und bezahlter Hülle zulässig.
@@ -4800,10 +4817,10 @@ const m_core_w5o=(()=>{
      }
    } else {
      const sh=Object.values(s.ships).find(x=>x.owner===c.frachterOwner&&x.klasse==='frachter');
-     if(sh&&!n.frachtauftrag&&!s.w3.auftrag&&ice+water<=r.w5o.versorgungZiel)
+     if(sh&&!n.frachtauftrag&&!s.w3.auftrag&&ice+water<=m_core_w5o.versorgungsZiel(r))
        attempt(s,r,'shipFreightIce',c.frachterOwner,{schiff:sh.id});
    }
-   if(!n.fabrikauftrag&&ice>=c.rezeptEis&&water<=r.w5o.wasserZiel)
+   if(!n.fabrikauftrag&&ice>=c.rezeptEis&&water<=m_core_w5o.wasserZiel(r))
      attempt(s,r,'stationWater',c.zielStation,{station:c.zielStation});
  }
  function start(seed,mode,minerOwner,r){
@@ -4869,7 +4886,7 @@ const m_core_w5o=(()=>{
      eis:s.w5n.eisAbgebaut,verkauft:s.w5n.mineVerkauft,
      wasser:s.w5n.wasserProduziert,bestand:s.stations.st_nadir.lager.wasser});
  }
- return {start,einkommen,autopilot,audit,stand,kapitalLage};
+ return {start,einkommen,autopilot,audit,stand,kapitalLage,versorgungsZiel,wasserZiel};
 })();
 
 // W5q: research-only real water export with ledger removal and exact ONE mint.
@@ -5807,7 +5824,7 @@ const m_core_w5s=(()=>{
     // Die R32-Eisfracht bleibt priorisiert. Nur bei erfülltem
     // Versorgungspuffer darf die bisherige Hülle vorübergehend Erz liefern.
     const primaryAllowed=!s.w5n.frachtauftrag
-      &&ice+water>r.w5o.versorgungZiel;
+      &&ice+water>m_core_w5o.versorgungsZiel(r);
     const sh=spare||(primaryAllowed
       ?transporter.find(x=>x.id===primary):null);
     if(!sh)return {stage:'kein_freier_frachter',
@@ -5969,7 +5986,7 @@ const m_core_w5s=(()=>{
     const ice=lager.eis||0,water=lager.wasser||0;
     const capacity=m_core_handel.obergrenze(s,r,c.zielStation,'wasser');
     const demand=ice>=c.rezeptEis
-      &&water<=r.w5o.wasserZiel
+      &&water<=m_core_w5o.wasserZiel(r)
       &&water+c.rezeptWasser<=capacity
       &&buyer>=c.wasserPreis;
     const totals={fee,factoryCost,required:fee+factoryCost,
@@ -6336,7 +6353,7 @@ const m_core_w5s=(()=>{
     // Nur echter Wasserverbrauch, wirkliche 50 Eis, freier Zielraum,
     // Verbraucher- und Stationskasse plus eigener 120-ISK-Pilotenetat.
     const n=r.w5n,stock=s.stations[n.zielStation].lager;
-    const demand=(stock.eis||0)+(stock.wasser||0)<=r.w5o.versorgungZiel;
+    const demand=(stock.eis||0)+(stock.wasser||0)<=m_core_w5o.versorgungsZiel(r);
     const consumer=s.owners[n.kunde]?.cash??0;
     const household=consumer>=n.wasserPreis*n.verbrauchStunde;
     const ice=r.w5s?.successorNewIce&&demand&&household
@@ -6496,13 +6513,23 @@ const m_core_w5s=(()=>{
       &&retire.tick%1440===0&&retire.tick<=s.tick
       &&retire.tick-o.bought>=retire.lifeDays*1440
       &&landings.length===1&&!ore&&!ice;
-    const purchased=owned&&produced===1&&free===0
+    // W5s-ag: nach dem EINMALIGEN nachgewiesenen Drittverkauf koennen
+     // weitere, separat durch W5 auditierte Frachter entstehen und frei
+     // im Werftlager liegen. Die eigene huelle bleibt allein durch ihre
+     // originale verkaufte Schiff-ID, den vollen Kaufpreis und das
+     // Eigentums-/Geldledger belegt. Vor Verkauf bleiben ready-Gates strikt.
+     const purchased=owned&&produced>=1&&free>=0
       &&Number.isSafeInteger(o.bought)&&Number.isSafeInteger(o.funded)
       &&o.bought===o.funded&&o.bought>=o.readyTick&&o.bought<=s.tick
       &&o.pricePaid===p.preis
       &&(retiredProof||(sh?.klasse==='frachter'
         &&sh.owner===newCarrierBuyer&&sh.heimat==='nadir'))
-      &&s.w5.schiffIds.includes(o.ship)
+      // Zum Vorbestellzeitpunkt waren alle frueheren W5-Huellen
+      // verkauft (newCarrierOrderCheck). Daher ist der historische
+      // W5s-z-Baseline-Zähler genau der Index der neu gekauften ID
+      // in der chronologischen originalen W5-Verkaufsliste.
+      // Spaetere physische Neubauten duerfen diese ID nicht verschieben.
+      &&s.w5.schiffIds[o.baseline]===o.ship
       &&s.w5.schiffIds.filter(x=>x===o.ship).length===1
       &&buyer?.kind==='carrier'
       &&buyer.cash===o.capital-o.pricePaid-allocated-oreReserved
@@ -6657,7 +6684,7 @@ const m_core_w5s=(()=>{
     const ice=s.stations[r.w5n.zielStation]?.lager.eis??0;
     const water=s.stations[r.w5n.zielStation]?.lager.wasser??0;
     const sourceIce=s.stations[r.w5n.quellStation]?.lager.eis??0;
-    const demand=ice+water<=r.w5o.versorgungZiel;
+    const demand=ice+water<=m_core_w5o.versorgungsZiel(r);
     const householdNeeded=r.w5n.wasserPreis*r.w5n.verbrauchStunde;
     const householdFunded=consumer>=householdNeeded;
     const stationFunded=buyer>=p.gesamt;
@@ -6697,7 +6724,7 @@ const m_core_w5s=(()=>{
       householdCash:consumer,householdNeeded,householdFunded,
       stationFunded,sourceIce,cargoRequired:r.w5n.charge,cargoReady,
       destinationIce:ice,destinationWater:water,
-      supplyTarget:r.w5o.versorgungZiel,demand,escrowFree,pilotFunded,
+      supplyTarget:m_core_w5o.versorgungsZiel(r),demand,escrowFree,pilotFunded,
       marketGate,dispatcher:nachfolgeBetriebPlan(s,r).stage});
   }
   // W5s-v: nur die vorhandenen Eigentums-/Kunden-/Pilotengates benutzen.
@@ -6734,7 +6761,7 @@ const m_core_w5s=(()=>{
     if(sh.system!=='aldera')return Object.freeze({stage:'nicht_im_eislager',ship:sh.id});
     const n=r.w5n,ice=s.stations[n.zielStation].lager.eis||0;
     const water=s.stations[n.zielStation].lager.wasser||0;
-    if(ice+water>r.w5o.versorgungZiel){
+    if(ice+water>m_core_w5o.versorgungsZiel(r)){
       // Nur ein vom W5-Werftbedarf begruendeter, real vorfinanzierter
       // W3-Erztransport ist eine Alternative zum aktuell vollen Eislager.
       if(r.w5s?.successorOreFreight){
@@ -6750,7 +6777,7 @@ const m_core_w5s=(()=>{
         }
       }
       return Object.freeze({stage:'kein_zusaetzlicher_versorgungsbedarf',
-        vorrat:ice+water,ziel:r.w5o.versorgungZiel});
+        vorrat:ice+water,ziel:m_core_w5o.versorgungsZiel(r)});
     }
     const consumer=s.owners[n.kunde]?.cash??0;
     if(consumer<n.wasserPreis*n.verbrauchStunde)

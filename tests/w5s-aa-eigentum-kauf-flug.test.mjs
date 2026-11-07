@@ -18,7 +18,8 @@ const audit=(s,title)=>{
   assert.equal(w.ok,true,title+': '+Object.entries(w).filter(([,p])=>p?.ok===false).map(([k])=>k));
   assert.equal(z.ok,true,title+': old and new company ledgers');
   assert.equal(z.successor.ok,true,title+': old successor company');
-  assert.equal(z.successorNewOrder.ok,true,title+': new private purchase contract');
+  assert.equal(w.w5s?.newCarrierOrder?.ok,true,title+': independent original-core purchase audit');
+  assert.equal(z.successorNewOrder.independentBuyer,true,title+': new private purchase plan');
   assert.equal(Object.values(s.owners).reduce((n,x)=>n+x.cash,0),33000,title+': global money');
   assert.equal(s.minted,0);assert.equal(s.burned,0);
   assert.equal(api.hash(api.loadW5R(api.save(s))),api.hash(s),title+': save/load');

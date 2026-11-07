@@ -1,0 +1,23 @@
+name: W5s-ah – real paid transfer pilot wages and household audit
+on:
+  push:
+    branches:
+      - feature/w5s-ah-echter-ueberfuehrungslohn-20261107
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-ah-ueberfuehrung-pilotenlohn.test.mjs
+      - .github/workflows/w5s-ah-pilotenlohn.yml
+jobs:
+  real-earned-income-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: W5s-ah, W5s-ag and W5s-ad–af genuine payment regression
+        run: node --test tests/w5s-ah-ueberfuehrung-pilotenlohn.test.mjs tests/w5s-ag-realwasser-nachfrage.test.mjs tests/w5s-ad-af-realnachfrage.test.mjs
+      - name: Original core complete Node 22 standard suite
+        run: node --test tests/*.test.mjs

@@ -4599,7 +4599,7 @@ const m_core_w5n=(()=>{
      &&s.owners[c.kunde].cash===r.owners.find(o=>o.id===c.kunde).cash-w.wasserErlos
        +(s.w5o?.ausgezahlt??0)+(s.w5s?.orePilotWages??0)
        +Object.values(s.w5s?.industryWages?.paid??{}).reduce((n,x)=>n+x,0)
-       +(s.w5q?.payout??0)
+       +(s.w5q?.payout??0)+(s.w5s?.transferPilotWages??0)
      &&w.frachtBeauftragt===w.frachtAbgeschlossen+(a?1:0)
      &&w.kaufAusgaben===w.frachtBeauftragt*p.gesamt
      &&w.eisGeliefert===(w.frachtAbgeschlossen+(a?.phase==='rueck'?1:0))*c.charge
@@ -4869,6 +4869,7 @@ const m_core_w5o=(()=>{
        +sum+(s.w5s?.orePilotWages??0)
        +Object.values(s.w5s?.industryWages?.paid??{}).reduce((n,x)=>n+x,0)
        -n.wasserErlos+(s.w5q?.payout??0)
+       +(s.w5s?.transferPilotWages??0)
      &&s.minted===(s.w5q?.minted??0)&&s.burned===0;
    return {ok,mode:w.mode,minerOwner:w.minerOwner,ausgezahlt:sum,
      lohn:w.lohnEis+w.lohnFracht+w.lohnWasser,
@@ -4967,7 +4968,7 @@ const m_core_w5q=(()=>{
       &&s.owners.w5n_kunden.cash===r.owners.find(o=>o.id==='w5n_kunden').cash
         +s.w5o.ausgezahlt+(s.w5s?.orePilotWages??0)
         +Object.values(s.w5s?.industryWages?.paid??{}).reduce((n,x)=>n+x,0)
-        +w.payout-s.w5n.wasserErlos
+        +w.payout+(s.w5s?.transferPilotWages??0)-s.w5n.wasserErlos
       &&s.stations.st_nadir.lager.wasser===
         s.w5n.wasserProduziert-s.w5n.wasserVerbraucht-units;
     return {ok:valid,exported:units,minted:amount,householdTransfer:w.payout,
@@ -5896,6 +5897,43 @@ const m_core_w5s=(()=>{
       stillHeld:s.w3.arbeitsKosten-paid,
       events:events?.length??0,
       fund:s.owners[r.w3.arbeitsFonds]?.cash??0};
+  }
+
+  // W5s-ah: real already-paid transfer-pilot work, no issuance.
+  function transferPilotWageAudit(s,r){
+    const w=s.w5s,earned=w?.paid??0,paid=w?.transferPilotWages??0,
+      events=w?.transferPilotPays??[];
+    const source=s.owners.w5s_transfer_pilot?.cash??0;
+    let sum=0,last=0,valid=Array.isArray(events);
+    if(valid)for(const x of events){
+      if(!x||!Number.isSafeInteger(x.tick)||x.tick<=last
+        ||x.tick>s.tick||x.tick%r.economy.stunde!==0
+        ||!Number.isSafeInteger(x.amount)||x.amount<=0)
+        valid=false;
+      if(x&&Number.isSafeInteger(x.amount))sum+=x.amount;
+      if(x&&Number.isSafeInteger(x.tick))last=x.tick;
+    }
+    const ok=valid&&[earned,paid,source,sum].every(n=>
+      Number.isSafeInteger(n)&&n>=0)
+      &&paid===sum&&paid<=earned&&source===earned-paid;
+    return {ok,earned,paid,held:source,events:events?.length??0};
+  }
+  function transferPilotWage(s,r){
+    if(!r.w5s?.autoTransferWageHousehold||!r.w5s.autoIndustry
+      ||!s.w5r?.initialized||!s.w5o||!s.w5s)return 0;
+    const w=s.w5s,paid=w.transferPilotWages??0,due=w.paid-paid;
+    if(!Number.isSafeInteger(due)||due<0)
+      throw Error('W5s-ah: no real flight work for wages');
+    const source=s.owners.w5s_transfer_pilot;
+    if(!source&&due)throw Error('W5s-ah: no pilot account');
+    const amount=Math.min(due,source?.cash??0);
+    if(!amount)return 0;
+    source.cash-=amount;s.owners.w5n_kunden.cash+=amount;
+    w.transferPilotWages=paid+amount;
+    (w.transferPilotPays||=[]).push({tick:s.tick,amount});
+    m_core_handel.buche(s,'w5s_transfer_pilot','kosten',amount);
+    m_core_handel.buche(s,'w5n_kunden','erloes',amount);
+    return amount;
   }
   // W5s-r: Drei bisher auf realen Arbeiterkonten verbliebene Lohngruppen
   // werden als VERDIENTE Lohnauszahlung in denselben privaten Haushalten
@@ -6955,6 +6993,7 @@ const m_core_w5s=(()=>{
       oreVenturePlan:Object.freeze({...oreVenturePlan(s,r)}),
       orePilotWages:Object.freeze({...orePilotWageAudit(s,r)}),
       industryWages:Object.freeze({...industryWageAudit(s,r)}),
+      transferPilotWages:Object.freeze({...transferPilotWageAudit(s,r)}),
       successor:Object.freeze({...nachfolgeAudit(s,r)}),
       successorOperations:Object.freeze({...nachfolgeBetriebPlan(s,r)}),
       successorMarket:Object.freeze({...nachfolgeMarktPlan(s,r)}),
@@ -7011,10 +7050,11 @@ const m_core_w5s=(()=>{
         ===(r.world.stations[r.w5.station].ziel.miner||0)
           +(s.w5.minerFertig||0)-(s.w5.minerVerkauft||0)-1);
     const equityProof=takeoverAudit(s,r),miningProof=oreVentureAudit(s,r);
-    const wageProof=orePilotWageAudit(s,r),industryProof=industryWageAudit(s,r);
+    const wageProof=orePilotWageAudit(s,r),industryProof=industryWageAudit(s,r),
+      transferProof=transferPilotWageAudit(s,r);
     const successorProof=nachfolgeAudit(s,r),newOrderProof=newCarrierOrderAudit(s,r);
     const ok=successorProof.ok&&newOrderProof.ok&&starterOk&&proof.ok&&equityProof.ok&&miningProof.ok
-      &&wageProof.ok&&industryProof.ok
+      &&wageProof.ok&&industryProof.ok&&transferProof.ok
       &&[w.allocated,w.paid,reserve,pilot].every(n=>
         Number.isSafeInteger(n)&&n>=0)
       &&Array.isArray(completed)&&new Set(ids).size===ids.length
@@ -7039,12 +7079,12 @@ const m_core_w5s=(()=>{
           +(a&&a.type!=='miner'&&a.owner!==s.w5s?.successor?.owner
             &&a.owner!==s.w5s?.newCarrierOrder?.buyer
             ?a.gearbeitet*lohn:0)))
-      &&reserve===w.allocated-w.paid&&pilot===w.paid;
+      &&reserve===w.allocated-w.paid&&pilot===w.paid-transferProof.paid;
     return {ok,allocated:w.allocated,paid:w.paid,reserve,
       completed:completed.length,active:!!a,contract:proof,
       equity:equityProof,oreVenture:miningProof,
       orePilotWages:wageProof,industryWages:industryProof,
-      successor:successorProof,newCarrierOrder:newOrderProof};
+      transferPilotWages:transferProof,successor:successorProof,newCarrierOrder:newOrderProof};
   }
   return {arbeitsPuffer,finanzPlan,pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
     nachfolgeBetriebPlan,nachfolgeMarktPlan,nachfolgeErsatzPlan,
@@ -7054,7 +7094,8 @@ const m_core_w5s=(()=>{
     autoNewCarrierYard,autoNachfolger,nachfolgeVerschleiss,
     takeoverPlan,takeoverStart,takeoverDividend,takeoverAudit,
     oreVenturePlan,oreVentureStart,oreVentureDividend,oreVentureAudit,
-    orePilotWage,orePilotWageAudit,industryWage,industryWageAudit,wartungPlan,
+    orePilotWage,orePilotWageAudit,industryWage,industryWageAudit,
+    transferPilotWage,transferPilotWageAudit,wartungPlan,
     nachfolgePlan,nachfolgeStart,nachfolgerKaufPlan,nachfolgerSold,nachfolgeAudit,
     starterCheck,starterSold,starterPlan,autoStarter,minerSource,
     orderCheck,orderStart,orderCancelCheck,orderCancel,contractCommand,
@@ -7447,6 +7488,8 @@ function step(state, rules) {
       if(rules.w5o)m_core_w5o.einkommen(state,rules);
       if(rules.w5s?.autoOreWageHousehold)m_core_w5s.orePilotWage(state,rules);
       if(rules.w5s?.autoIndustryWages)m_core_w5s.industryWage(state,rules);
+      if(rules.w5s?.autoTransferWageHousehold)
+        m_core_w5s.transferPilotWage(state,rules);
       if(rules.w5q)m_core_w5q.exportieren(state,rules);
       if (rules.erzpilot.npcInvestor) {
         m_core_erzpilot.krisenSteuern(state, rules);

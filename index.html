@@ -6176,9 +6176,13 @@ const m_core_w5s=(()=>{
   function newCarrierOrderAudit(s,r){
     const o=s.w5s?.newCarrierOrder,bank=s.owners[newCarrierEscrow]?.cash??0;
     if(!o)return {ok:bank===0,active:false,escrow:bank};
+    // Der globale Audit wird mit den unveraenderten R32-Basisregeln
+    // aufgerufen, daher muss die Vollreserve wie beim bestehenden
+    // Nachfolgervertrag UNABHAENGIG von Opt-in-Flags nachgerechnet werden.
     const p=m_core_w5.plan(r,'frachter'),
       flight=m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn,
-      working=arbeitsPuffer(r,'frachter');
+      working=Math.max(m_core_w3.kalkulation(r).arbeitsKosten,
+        m_core_w5n.preise(r).arbeit);
     const produced=s.w5.fertig-(s.w5.minerFertig||0)-o.baseline;
     const free=s.stations[r.w5.station]?.lager.frachter??0;
     const waiting=o.stage==='reserved'&&!o.buildStarted&&produced===0

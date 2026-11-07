@@ -1164,6 +1164,7 @@ const FIELDS = {
   shipSellIce: ['schiff','menge'], stationWater: ['station'],
   shipReposition: ['schiff'], shipOrder: ['klasse'], shipCancelOrder: [],
   shipSellBookedOre: ['schiff'], shipFoundCarrier: [],
+  shipPrepayNewCarrier: [],
 };
 function checkShape(state, cmd, rules) {
   if (cmd === null || typeof cmd !== 'object' || Array.isArray(cmd)) return 'Befehl ist kein Objekt';
@@ -1341,7 +1342,8 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5s ? ['shipReposition'] : []),
     ...(rules.w5s?.prepaidOrders ? ['shipOrder','shipCancelOrder'] : []),
     ...(rules.w5s?.autoOreSettlement ? ['shipSellBookedOre'] : []),
-    ...(rules.w5s?.independentSuccessor ? ['shipFoundCarrier'] : [])].includes(cmd.type))
+    ...(rules.w5s?.independentSuccessor ? ['shipFoundCarrier'] : []),
+    ...(rules.w5s?.successorNewOrder ? ['shipPrepayNewCarrier'] : [])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if(cmd.type==='shipOrder'){
     const c=m_core_w5s.orderCheck(state,rules,cmd.owner,cmd.klasse);
@@ -1353,6 +1355,10 @@ function checkShape(state, cmd, rules) {
   if(cmd.type==='shipFoundCarrier'){
     const p=m_core_w5s.nachfolgePlan(state,rules,cmd.owner);
     if(p.stage!=='finanzierbarer_neuer_spediteur')return 'W5s-t: '+p.stage;
+  }
+  if(cmd.type==='shipPrepayNewCarrier'){
+    const p=m_core_w5s.newCarrierOrderCheck(state,rules,cmd.owner);
+    if(!p.ok)return p.grund;
   }
   if (cmd.type === 'shipBuy') {
     const nachfolger=!!rules.w5s?.independentSuccessor
@@ -1411,6 +1417,9 @@ function execute(state, cmd, rules) {
   switch (cmd.type) {
     case 'shipFoundCarrier': {
       m_core_w5s.nachfolgeStart(state,rules,cmd.owner);break;
+    }
+    case 'shipPrepayNewCarrier': {
+      m_core_w5s.newCarrierOrderStart(state,rules,cmd.owner);break;
     }
     case 'shipOrder': {
       m_core_w5s.orderStart(state,rules,cmd.owner,cmd.klasse);break;
@@ -4114,6 +4123,7 @@ const m_core_w5h=(()=>{
         -(s.w5s?.oreVenture?.capital??0)
         +(s.w5s?.oreVenture?.dividends??0)
         -(s.w5s?.successor?.capital??0)
+        -(s.w5s?.newCarrierOrder?.capital??0)
       &&stat?.kosten===w.gekauft*p &&stat?.erloes===w.verkauft*p
       &&quelle?.erloes===w.gekauft*p+(s.w5n?.eisTransferWert??0)
       &&s.ledger.erz.exported===0 &&s.minted===(s.w5q?.minted??0) &&s.burned===0;
@@ -4123,7 +4133,8 @@ const m_core_w5h=(()=>{
         +(s.w5s?.takeover?.amount??0)-(s.w5s?.takeover?.dividends??0)
         +(s.w5s?.oreVenture?.capital??0)
         -(s.w5s?.oreVenture?.dividends??0)
-        +(s.w5s?.successor?.capital??0)};
+        +(s.w5s?.successor?.capital??0)
+        +(s.w5s?.newCarrierOrder?.capital??0)};
   }
   function plan(s,r){
     const p=m_core_w5g.kalkulation(s,r),h=audit(s,r);
@@ -6406,6 +6417,7 @@ const m_core_w5s=(()=>{
       successorOperations:Object.freeze({...nachfolgeBetriebPlan(s,r)}),
       successorMarket:Object.freeze({...nachfolgeMarktPlan(s,r)}),
       successorReplacement:Object.freeze({...nachfolgeErsatzPlan(s,r)}),
+      successorNewOrder:Object.freeze({...newCarrierOrderPlan(s,r)}),
       successorPlan:Object.freeze({...nachfolgePlan(s,r,r.w5h.kaeufer)}),
       maintenance:Object.freeze({...wartungPlan(s,r)}),
       orePlan:Object.freeze({...erzPlan(s,r)}),
@@ -6454,8 +6466,8 @@ const m_core_w5s=(()=>{
           +(s.w5.minerFertig||0)-(s.w5.minerVerkauft||0)-1);
     const equityProof=takeoverAudit(s,r),miningProof=oreVentureAudit(s,r);
     const wageProof=orePilotWageAudit(s,r),industryProof=industryWageAudit(s,r);
-    const successorProof=nachfolgeAudit(s,r);
-    const ok=successorProof.ok&&starterOk&&proof.ok&&equityProof.ok&&miningProof.ok
+    const successorProof=nachfolgeAudit(s,r),newOrderProof=newCarrierOrderAudit(s,r);
+    const ok=successorProof.ok&&newOrderProof.ok&&starterOk&&proof.ok&&equityProof.ok&&miningProof.ok
       &&wageProof.ok&&industryProof.ok
       &&[w.allocated,w.paid,reserve,pilot].every(n=>
         Number.isSafeInteger(n)&&n>=0)
@@ -6483,11 +6495,12 @@ const m_core_w5s=(()=>{
       completed:completed.length,active:!!a,contract:proof,
       equity:equityProof,oreVenture:miningProof,
       orePilotWages:wageProof,industryWages:industryProof,
-      successor:successorProof};
+      successor:successorProof,newCarrierOrder:newOrderProof};
   }
   return {arbeitsPuffer,finanzPlan,pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
     nachfolgeBetriebPlan,nachfolgeMarktPlan,nachfolgeErsatzPlan,
-    autoNachfolger,nachfolgeVerschleiss,
+    newCarrierOrderPlan,newCarrierOrderCheck,newCarrierOrderStart,newCarrierOrderAudit,
+    autoNewCarrierYard,autoNachfolger,nachfolgeVerschleiss,
     takeoverPlan,takeoverStart,takeoverDividend,takeoverAudit,
     oreVenturePlan,oreVentureStart,oreVentureDividend,oreVentureAudit,
     orePilotWage,orePilotWageAudit,industryWage,industryWageAudit,wartungPlan,
@@ -6907,6 +6920,7 @@ function step(state, rules) {
       if(rules.w5s.autoStarterMiner)m_core_w5s.autoStarter(state,rules);
       if(rules.w5s.autoOre)m_core_w5s.autoErz(state,rules);
       m_core_w5s.autoWerk(state,rules);
+      if(rules.w5s.successorNewOrder)m_core_w5s.autoNewCarrierYard(state,rules);
     }
     return ergebnisse;
   }
@@ -7664,6 +7678,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   w5sNachfolgeBetrieb:(state,rules)=>m_core_w5s.nachfolgeBetriebPlan(state,rules),
   w5sNachfolgeMarkt:(state,rules)=>m_core_w5s.nachfolgeMarktPlan(state,rules),
   w5sNachfolgeErsatz:(state,rules)=>m_core_w5s.nachfolgeErsatzPlan(state,rules),
+  w5sNewCarrierOrder:(state,rules)=>m_core_w5s.newCarrierOrderPlan(state,rules),
   w5sNpcErzStatus:(state,rules)=>m_core_w5s.npcOrePlan(state,rules),
   w5sStarterStatus:(state,rules)=>m_core_w5s.starterPlan(state,rules),
   createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState, createW5LState, createW5MState, createW5NState, createW5OState, createW5QState, createW5RState,

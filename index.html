@@ -2871,14 +2871,19 @@ const m_core_w3 = (() => {
       if(sh.ziel!==c.quellStation||kauf.cash!==a.frachtGebuehr
         ||arbeit.cash!==0||a.gearbeitet!==2*a.zeit)
         throw Error('W3: Rueckflug nicht vollstaendig finanziert');
-      kauf.cash=0;state.owners[c.spedition].cash+=a.frachtGebuehr;
-      buche(state,c.spedition,'erloes',a.frachtGebuehr);w.frachtUmsatz+=a.frachtGebuehr;
+      kauf.cash=0;state.owners[owner].cash+=a.frachtGebuehr;
+      buche(state,owner,'erloes',a.frachtGebuehr);w.frachtUmsatz+=a.frachtGebuehr;
+       if(a.owner){
+         const z=state.w5s.successor;
+         z.oreFreightRevenue=(z.oreFreightRevenue||0)+a.frachtGebuehr;
+         z.oreTrips=(z.oreTrips||0)+1;
+       }
       w.abgeschlossen++;w.auftrag=null;
       // W5s-o: Erst die TATSAECHLICH abgeschlossene bezahlte W3-Fracht
       // darf die Beteiligung am neuen Erz-Frachtgewinn bedienen. Vor den
       // gewoehnlichen W5o-Haushaltsdividenden, damit allein der wirklich
       // verdiente Erz-Deckungsbeitrag auf beide Anteilseigner verteilt wird.
-      if(state.w5s?.takeover)m_core_w5s.takeoverDividend(state,rules);
+      if(!a.owner&&state.w5s?.takeover)m_core_w5s.takeoverDividend(state,rules);
       sh.system='aldera';sh.phase='dock';sh.ziel=null;sh.ankunft=state.tick;sh.auftrag='halten';
       protokolliere(state,'handel',sh.id+': Rueckfahrt bezahlt; Spedition entlohnt',owner);
     }
@@ -5957,7 +5962,11 @@ const m_core_w5s=(()=>{
     const flight=m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn;
     const working=Math.max(m_core_w3.kalkulation(r).arbeitsKosten,p.arbeit);
     const total=hull+flight+working,account=s.owners[z.owner];
-    const sh=z.ship&&s.ships[z.ship],a=s.w5n.frachtauftrag;
+    const sh=z.ship&&s.ships[z.ship],a=s.w5n.frachtauftrag,
+      ore=s.w3?.auftrag,oreLive=ore?.owner===z.owner;
+    const orePrice=m_core_w3.kalkulation(r);
+    const oreReserved=z.oreWorkReserved||0,orePaid=z.oreWorkPaid||0,
+      oreRevenue=z.oreFreightRevenue||0,oreTrips=z.oreTrips||0;
     const live=a?.owner===z.owner;
     const flightAllocated=z.flightAllocated||0,flightPaid=z.flightPaid||0;
     const workReserved=z.workReserved||0,workPaid=z.workPaid||0;
@@ -5970,7 +5979,8 @@ const m_core_w5s=(()=>{
       &&['nadir','aldera'].includes(sh.system);
     const moving=sh?.phase==='reise'
       &&((transfer&&sh.auftrag==='w5s-ueberfuehrung')
-        ||(live&&a.schiff===z.ship&&sh.auftrag==='eisfracht'));
+        ||(live&&a.schiff===z.ship&&sh.auftrag==='eisfracht')
+        ||(oreLive&&ore.schiff===z.ship&&sh.auftrag==='fracht'));
     const stats=s.stats.konto[z.owner]||{kosten:0,erloes:0};
     const retired=z.retired;
     const retiredOk=!retired||(retired.id===z.ship&&retired.bought===z.bought
@@ -5986,12 +5996,14 @@ const m_core_w5s=(()=>{
       &&e.tick<=s.tick&&e.tick%r.economy.stunde===0
       &&(!i||orders[i-1].tick<e.tick)
       &&e.ship===z.ship
-      &&['shipFreightIce','shipReposition'].includes(e.type))
+      &&['shipFreightIce','shipReposition','shipFreight'].includes(e.type))
       &&orders.filter(x=>x.type==='shipReposition').length<=1
       &&orders.filter(x=>x.type==='shipReposition').length
         <=((transfer||landed.length)?1:0)
       &&orders.filter(x=>x.type==='shipFreightIce').length
-        <=trips+(live?1:0);
+        <=trips+(live?1:0)
+      &&orders.filter(x=>x.type==='shipFreight').length
+        <=oreTrips+(oreLive?1:0);
     const ok=retiredOk&&autoOk&&z.investor===r.w5h.kaeufer&&z.owner===successorId
       &&z.owner!==r.w3.spedition&&z.owner!=='house'
       &&z.capital===total&&z.hull===hull&&z.flight===flight&&z.working===working
@@ -6004,6 +6016,12 @@ const m_core_w5s=(()=>{
       &&workReserved===(trips+(live?1:0))*p.arbeit
       &&workPaid===trips*p.arbeit+(live?a.gearbeitet*r.w5n.fliegerLohn:0)
       &&revenue===trips*p.fracht&&trips<=s.w5n.frachtAbgeschlossen
+       &&oreReserved===(oreTrips+(oreLive?1:0))*orePrice.arbeitsKosten
+       &&orePaid===oreTrips*orePrice.arbeitsKosten
+         +(oreLive?ore.gearbeitet*r.w3.arbeitJeMinute:0)
+       &&oreRevenue===oreTrips*orePrice.frachtGebuehr
+       &&oreTrips<=s.w3.abgeschlossen
+       &&(!oreLive||ore.schiff===z.ship)
       &&flightAllocated===(transfer||landed.length?flight:0)
       &&flightPaid===(transfer?transfer.gearbeitet*r.w5n.fliegerLohn
         :landed.length?flight:0)
@@ -6022,7 +6040,8 @@ const m_core_w5s=(()=>{
     return {ok,active:true,investor:z.investor,owner:z.owner,
       capital:z.capital,held:account?.cash??null,ship:z.ship,pricePaid:z.pricePaid,
       flight,working,flightAllocated,flightPaid,workReserved,workPaid,
-      trips,revenue,retired:retired?.tick??null,autoOrders:orders.length,
+      trips,revenue,oreTrips,oreRevenue,oreReserved,orePaid,
+       retired:retired?.tick??null,autoOrders:orders.length,
       freightLicense:flightPaid===flight&&!!z.ship&&!retired};
   }
   // W5s-w: Nur belegte Kaufkraft, reale Nachfrage und Eigenkapital zeigen.

@@ -48,3 +48,21 @@ Die Forschungsmatrix ist **nicht bestanden**, solange der Test/CI nicht abgeschl
 | nachgewiesenes kumuliertes Haushaltseinkommen | 231.576 ISK | 248.763 | 248.763 | 248.763 |
 
 **Bewertung:** Zwischen Tag 425 und Tag 730 findet **keine zusätzliche** wasserbezogene Produktion, bezahlte Eisfracht, Lohnauszahlung, Dividende oder Endabnahme statt. Der Cashbestand 6.673 ISK der Station ist reale Stationseigentümerliquidität, **kein Haushaltsanspruch**; bei 11 ISK Haushalt und 14 ISK je Wassereinheit ist kein weiterer regulärer Verbrauch möglich. Positive Geld-/Waren-/Eigentümeraudits und unveränderte Save/Load-Replays belegen lediglich korrekte Endlichkeit, **keine Nachhaltigkeit**. Seed42 und Seed7 liefern die gleichen Mengen/Geldzahlen, bei verschiedenen korrekten Hashes (d730: `7e84dbb37b18a552` bzw. `845d9d2e0ae18e7c`). Keine neue Geld-/Produktregel beschlossen.
+
+## 6. Abgeschlossene Nachfrage-Gate- und Lohnschuld-Gegenprobe
+
+**[TEST/CI ERFOLGREICH]** Gezielter GitHub-Node22-Lauf [#42411793939](https://github.com/tobiasfranziskus/Check/actions/runs/42411793939), Commit `fecc63f`, **3/3 Tests, 0 Fehler/Skips**. Der dritte Test verwendet den **unveränderten autoritativen R32-Core** und die bereits finanzierte W5s-ai-Ausgangswelt, danach Original-Ticks bis Tag425. Ein lesender `w5sWartungStatus` zeigt in beiden Krisenseeds dieselben echten Originalwerte:
+
+| Originalprüfung Tag425 | Seed 42 | Seed 7 |
+|---|---:|---:|
+| Station Nadir ISK | 6.673 | 6.673 |
+| Privatkunden-ISK | 11 | 11 |
+| nächster Wasser-Einzelpreis | 14 | 14 |
+| Wartungsarbeit / Wasserwerk-Arbeit vollständig bezahlbar | 60 / 20 ISK | 60 / 20 ISK |
+| tatsächlich verfügbares Eis / vorhandenes Wasser | 40 / 42 | 40 / 42 |
+| Original-Gate | `kein_bezahlter_folgeauftrag` | `kein_bezahlter_folgeauftrag` |
+| aus Originalleistung bereits verdiente, nicht ausgeschüttete Löhne (Eis/Fracht/Wasser/W4/W5/Wartung/Überführung) | **7× 0 ISK** | **7× 0 ISK** |
+
+**[SCHLUSSFOLGERUNG]** Das nächste Wartungs- plus Produktionspaket wäre für die Station bei 6.673 ISK wirtschaftlich **bezahlbar**, wird aber **wegen fehlender privater Endabnahme korrekt nicht beauftragt**. Kein unbezahlter Arbeiteranspruch rechtfertigt eine zusätzliche private Auszahlung. Die Lager-/Produktions- und Service-Gates dürfen nicht durch blind finanzierte Aufträge umgangen werden: Sie würden echte Kosten erzeugen, aber noch keinen zahlenden Endkunden und damit keinen vollständigen Wirtschaftszyklus. Der reine Lesestatus erhält Hash und Save-/Load-Identität.
+
+**[OFFENE PRODUKTENTSCHEIDUNG]** Eine weitere Forschungsvariante braucht einen ausdrücklich belegten *neuen Käufer* für eine echte Leistung **oder** eine vorab rechtlich und buchhalterisch definierte Beteiligung am tatsächlichen Exportüberschuss mit wirksamer Betriebsmittelreserve. Keine Umdeklaration des Stationskontos zu Haushaltslohn, keine automatische Direktzahlung und keine erneute Emission nach Erschöpfung des Deckels. Erst konkrete Empfängerberechtigung, Nachfrage und vollständige Finanzkette entscheiden; W5s-am führt keine dieser Regeln ein. `main` / Pages / W5u / Spielstände unverändert. Die vollständige Regression der nach dem ursprünglichen 464/464-Abschluss ergänzten Probe ist gesondert zu prüfen, der gezielte CI ist erfolgreich.

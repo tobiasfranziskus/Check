@@ -6261,39 +6261,73 @@ const m_core_w5s=(()=>{
   }
   function newCarrierOrderAudit(s,r){
     const o=s.w5s?.newCarrierOrder,bank=s.owners[newCarrierEscrow]?.cash??0;
-    if(!o)return {ok:bank===0,active:false,escrow:bank};
-    // Der globale Audit wird mit den unveraenderten R32-Basisregeln
-    // aufgerufen, daher muss die Vollreserve wie beim bestehenden
-    // Nachfolgervertrag UNABHAENGIG von Opt-in-Flags nachgerechnet werden.
+    if(!o)return {ok:bank===0&&!s.owners[newCarrierBuyer],active:false,escrow:bank};
+    // Globale Audits laufen auf den unveraenderten R32-Basisregeln,
+    // selbst wenn die Forschungsbefehle opt-in sind.
     const p=m_core_w5.plan(r,'frachter'),
-      flight=m_core_route.route(r.world,'nadir','aldera').zeit*r.w5n.fliegerLohn,
+      route=m_core_route.route(r.world,'nadir','aldera'),
+      flight=route.zeit*r.w5n.fliegerLohn,
       working=Math.max(m_core_w3.kalkulation(r).arbeitsKosten,
         m_core_w5n.preise(r).arbeit);
     const produced=s.w5.fertig-(s.w5.minerFertig||0)-o.baseline;
     const free=s.stations[r.w5.station]?.lager.frachter??0;
     const waiting=o.stage==='reserved'&&!o.buildStarted&&produced===0
       &&o.readyTick===null;
-    const building=o.stage==='building'&&o.buildStarted&&
-      (produced===0&&!!s.w5.auftrag||produced===1&&free>=1&&!s.w5.auftrag)
+    const building=o.stage==='building'&&o.buildStarted
+      &&(produced===0&&!!s.w5.auftrag||produced===1&&free>=1&&!s.w5.auftrag)
       &&o.readyTick===null;
     const ready=o.stage==='hull_ready'&&o.buildStarted&&produced===1
       &&free>=1&&!s.w5.auftrag&&Number.isSafeInteger(o.readyTick)
       &&o.readyTick>=o.tick&&o.readyTick<=s.tick;
+    const owned=['bought','inflight','arrived'].includes(o.stage);
+    const sh=o.ship&&s.ships[o.ship],buyer=s.owners[newCarrierBuyer];
+    const stats=s.stats.konto[newCarrierBuyer]||{kosten:0,erloes:0};
+    const a=s.w5s?.active?.id===o.ship
+      &&s.w5s.active.owner===newCarrierBuyer?s.w5s.active:null;
+    const landings=s.w5s?.completed?.filter(x=>x.id===o.ship
+      &&x.owner===newCarrierBuyer&&x.kosten===flight)||[];
+    const paid=o.flightPaid||0,allocated=o.flightAllocated||0;
+    const purchased=owned&&produced===1&&free===0
+      &&Number.isSafeInteger(o.bought)&&Number.isSafeInteger(o.funded)
+      &&o.bought===o.funded&&o.bought>=o.readyTick&&o.bought<=s.tick
+      &&o.pricePaid===p.preis&&sh?.klasse==='frachter'
+      &&sh.owner===newCarrierBuyer&&sh.heimat==='nadir'
+      &&s.w5.schiffIds.includes(o.ship)
+      &&s.w5.schiffIds.filter(x=>x===o.ship).length===1
+      &&buyer?.kind==='carrier'
+      &&buyer.cash===o.capital-o.pricePaid-allocated
+      &&stats.kosten===o.pricePaid+allocated&&stats.erloes===0
+      &&bank===0&&[0,flight].includes(allocated)
+      &&Number.isSafeInteger(paid)&&paid>=0&&paid<=allocated
+      &&landings.length<=1;
+    const docked=purchased&&o.stage==='bought'&&allocated===0&&paid===0
+      &&!a&&landings.length===0&&sh.phase==='dock'
+      &&sh.auftrag==='halten'&&sh.system==='nadir';
+    const flying=purchased&&o.stage==='inflight'&&allocated===flight
+      &&!!a&&paid===a.gearbeitet*r.w5n.fliegerLohn
+      &&landings.length===0&&sh.phase==='reise'
+      &&sh.auftrag==='w5s-ueberfuehrung'&&sh.system==='nadir'
+      &&sh.ziel==='st_aldera';
+    const arrived=purchased&&o.stage==='arrived'&&allocated===flight
+      &&paid===flight&&!a&&landings.length===1
+      &&sh.phase==='dock'&&sh.auftrag==='halten'&&sh.system==='aldera';
+    const stageOk=waiting||building||ready||docked||flying||arrived;
     const ok=o.investor===r.w5h.kaeufer&&o.buyer===newCarrierBuyer
       &&o.buyer!==s.w5s.successor.owner
       &&o.capital===p.preis+flight+working
       &&o.hull===p.preis&&o.flight===flight&&o.working===working
       &&Number.isSafeInteger(o.tick)&&o.tick>=s.w5s.successor.retired.tick
       &&o.tick<=s.tick&&Number.isSafeInteger(o.baseline)&&o.baseline>=0
-      &&(waiting||building||ready)
-      &&bank===o.capital
+      &&stageOk
       &&s.owners[newCarrierEscrow]?.kind==='prepaid-new-carrier'
-      &&!s.owners[newCarrierBuyer];
+      &&(owned?bank===0:bank===o.capital&&!buyer&&!o.ship
+        &&o.pricePaid===undefined&&o.bought===undefined);
     return {ok,active:true,stage:o.stage,escrow:bank,produced,
       physicalFree:free,investor:o.investor,buyer:o.buyer,
-      checks:{waiting,building,ready,
-        investor:o.investor===r.w5h.kaeufer,
-        buyer:o.buyer===newCarrierBuyer,
+      ship:o.ship??null,pricePaid:o.pricePaid??0,
+      allocated,paid,ownerCash:buyer?.cash??null,
+      checks:{waiting,building,ready,docked,flying,arrived,stageOk,
+        investor:o.investor===r.w5h.kaeufer,buyer:o.buyer===newCarrierBuyer,
         distinct:o.buyer!==s.w5s.successor.owner,
         capital:o.capital===p.preis+flight+working,
         price:o.hull===p.preis,flight:o.flight===flight,
@@ -6301,9 +6335,9 @@ const m_core_w5s=(()=>{
         tick:Number.isSafeInteger(o.tick)&&o.tick>=s.w5s.successor.retired.tick
           &&o.tick<=s.tick,
         baseline:Number.isSafeInteger(o.baseline)&&o.baseline>=0,
-        escrow:bank===o.capital,
+        escrow:bank===(owned?0:o.capital),
         kind:s.owners[newCarrierEscrow]?.kind==='prepaid-new-carrier',
-        noBuyer:!s.owners[newCarrierBuyer]}};
+        buyerOwnership:owned?!!purchased:!buyer}};
   }
   // W5s-y: getrennte Eigenkasse, potentielle Investorenmittel und echte
   // W4/W5-Lieferkette. Lediglich Diagnose, KEIN Aktienkauf, Geldtransfer,

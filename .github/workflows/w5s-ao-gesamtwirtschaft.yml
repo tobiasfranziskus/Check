@@ -1,0 +1,21 @@
+name: W5s-ao – integrated 13x90 and six 730-day economic audits
+on:
+  push:
+    branches:
+      - feature/w5s-ao-gesamtwirtschaft-stresstest-20261107
+  pull_request:
+    paths:
+      - tests/w5s-ao-gesamtwirtschaft-13x90-730.test.mjs
+      - index.html
+      - .github/workflows/w5s-ao-gesamtwirtschaft.yml
+jobs:
+  integrated-economics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original R32 integrated world audit, no fictional work/ISK
+        run: node --test tests/w5s-ao-gesamtwirtschaft-13x90-730.test.mjs

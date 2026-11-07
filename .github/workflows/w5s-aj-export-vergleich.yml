@@ -1,0 +1,23 @@
+name: W5s-aj – real water export versus bounded issuance (analysis only)
+on:
+  push:
+    branches:
+      - feature/w5s-aj-physischer-export-emissionsgrenzen-20261107
+  pull_request:
+    paths:
+      - tests/w5s-aj-physischer-wasserexport-geldgrenzen.test.mjs
+      - .github/workflows/w5s-aj-export-vergleich.yml
+      - index.html
+jobs:
+  original-export-finance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Research W5s-aj 2x425d and W5s-ai regression
+        run: node --test tests/w5s-aj-physischer-wasserexport-geldgrenzen.test.mjs tests/w5s-ai-eigentumsschutz-ersatzlieferung.test.mjs
+      - name: Complete existing JavaScript standard suite
+        run: node --test tests/*.test.mjs

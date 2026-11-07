@@ -67,8 +67,11 @@ function run(seed,days=35){
  assert.equal(z.oreWorkPaid||0,(z.oreTrips||0)*120);
  assert.equal(z.oreFreightRevenue||0,(z.oreTrips||0)*240);
  assert.equal(f.successor.oreTrips,z.oreTrips||0);
- assert.equal(s.owners[z.owner].cash,930-750-60-120-120*(z.oreTrips||0)+240+240*(z.oreTrips||0),
-   'Eigenkapital/werthaltige W3+W5n-Erlöse korrekt rekonstruiert');
+ assert.equal(s.owners[z.owner].cash,z.capital-z.pricePaid-(z.flightAllocated||0)
+   -(z.workReserved||0)-(z.oreWorkReserved||0)
+   +(z.freightRevenue||0)+(z.oreFreightRevenue||0),
+   'nur tatsächlich gebuchte W3-/W5n-Kosten und Erlöse zählen');
+ assert.ok(z.oreTrips>0,'mindestens eine echte Erzfahrt in der bisherigen stillen Eis-Nachfrage');
  const record={seed,hash:api.hash(s),oreStart,oreFinished,iceStart,
    oreBlocked,retired:z.retired?.tick,successorCash:s.owners[z.owner].cash};
  console.log('W5S_X_REAL '+JSON.stringify(record));

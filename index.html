@@ -6054,7 +6054,8 @@ const m_core_w5s=(()=>{
       return Object.freeze({stage:'inaktiv'});
     const z=s.w5s?.successor;
     if(!z)return Object.freeze({stage:'keine_rechtmaessige_gruendung'});
-    const p=m_core_w5n.preise(r);
+    const p=m_core_w5n.preise(r),ore=m_core_w3.kalkulation(r);
+    const oreYard=werkPlan(s,r);
     const cash=s.owners[z.owner]?.cash??0;
     const capitalNeeded=z.hull+z.flight+z.working;
     const margin=p.fracht-p.arbeit;
@@ -6096,6 +6097,14 @@ const m_core_w5s=(()=>{
     return Object.freeze({stage:'beobachtet',tick:s.tick,owner:z.owner,
       ship:z.ship,retired:!!z.retired,hoursToWear,
       freightRevenue:p.fracht,pilotCost:p.arbeit,netContribution:margin,
+      oreFreightRevenue:ore.frachtGebuehr,orePilotCost:ore.arbeitsKosten,
+      oreNetContribution:ore.frachtGebuehr-ore.arbeitsKosten,
+      oreCompletedTrips:z.oreTrips||0,
+      oreBuyerCash:s.owners[r.w3.kunde]?.cash??0,oreBuyerCost:ore.gesamt,
+      oreBoughtAtSource:s.w5h?.bestand??0,
+      orePhysicalAtSource:s.stations[r.w3.quellStation]?.lager.erz??0,
+      oreSourceRequired:r.w3.fracht,oreJobActive:!!s.w3?.auftrag,
+      oreYardStage:oreYard.stage,oreYardType:oreYard.type??null,
       initialOperatingCash:firstLiquid,completedTrips:z.trips||0,
       totalTripsNeeded,extraTripsNeeded,
       cash,capitalNeeded,missing,realHull,yard,unsold,replacementStage,

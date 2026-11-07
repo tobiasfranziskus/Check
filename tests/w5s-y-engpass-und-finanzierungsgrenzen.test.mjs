@@ -56,6 +56,20 @@ test('W5s-y: reale Angebots- und Bedarfsgrenzen in Seed42 und 7 bestimmen',()=>{
       if((hour+1)%24===0)assert.equal(api.audit(s).ok,true,'Core-Audit Seed'+seed+' Tag'+(hour+1)/24);
     }
     const z=s.w5s.successor;
+    console.log('W5S_Y_CAPITAL '+JSON.stringify({seed,investor:z.investor,
+      investorCash:s.owners[z.investor]?.cash,
+      yardCash:s.owners[RULES.w5.werft]?.cash,
+      buyerCash:s.owners[RULES.w3.kunde]?.cash,
+      shipyardMaterials:s.stations[RULES.w5.station]?.lager.material,
+      oreAtYard:s.stations[RULES.w5.station]?.lager.erz,
+      refineryCash:s.owners[RULES.w4.station]?.cash,
+      materialPrice:api.W5R_RULES?.economy.waren.material?.basis,
+      successorCash:s.owners[z.owner]?.cash,
+      oldCarrierCash:s.owners[RULES.w3.spedition]?.cash,
+      hullPrice:z.hull,flight:z.flight,working:z.working,
+      w5Made:s.w5.fertig,w5Sold:s.w5.verkauft,
+      w5Plan:api.w5sFinanzStatus(s,RULES).yardPlan.stage
+    }));
     console.log('W5S_Y_DIAG '+JSON.stringify({seed,trips:z.oreTrips,
       cash:s.owners[z.owner].cash,stages:top(stages),yards:top(yards),
       ore:top(ore),events:events.slice(0,25),

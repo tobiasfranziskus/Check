@@ -6068,12 +6068,13 @@ const m_core_w5s=(()=>{
     const made=s.w5.fertig-(s.w5.minerFertig||0)-s.w5.verkauft;
     const realHull=freeHull>=1&&made>=1&&freeHull===made;
     const ore=inventory.erz||0,material=inventory.material||0;
-    const refineryCost=r.w4.dauer*r.w4.lohnJeMinute;
+    // Keine zweite Buchungs- oder Kapazitaetsregel: W4/W5 pruefen
+    // dieselben Original-Gates wie ein spaeterer echter Bauauftrag.
+    const refineryCost=m_core_w4.kosten(r);
     const yardCost=hull.materialKosten+hull.arbeitKosten;
-    const refineryReady=!s.w4.auftrag
-      &&ore>=r.w4.erzJeCharge&&stationCash>=refineryCost;
-    const yardReady=!s.w5.auftrag
-      &&material>=hull.material&&yardCash>=yardCost;
+    const refineryCheck=m_core_w4.pruefen(s,r,r.w4.station,r.w4.station);
+    const yardCheck=m_core_w5.pruefen(s,r,r.w5.werft,r.w5.station,'frachter');
+    const refineryReady=refineryCheck.ok,yardReady=yardCheck.ok;
     const production=realHull?'bereits_reale_werft_huelle'
       :yardReady?'echter_bau_mit_material_finanzierbar'
       :refineryReady?'echte_raffineriecharge_finanzierbar'
@@ -6105,6 +6106,8 @@ const m_core_w5s=(()=>{
       yardMaterialPresent:material,yardReady,
       refineryOreRequired:r.w4.erzJeCharge,refineryOrePresent:ore,
       refineryCash:stationCash,refineryCost,refineryReady,
+      refineryGate:refineryCheck.ok?'original_gate_ok':refineryCheck.grund,
+      yardGate:yardCheck.ok?'original_gate_ok':yardCheck.grund,
       replacementCommand:null});
   }
   // W5s-w: Nur belegte Kaufkraft, reale Nachfrage und Eigenkapital zeigen.

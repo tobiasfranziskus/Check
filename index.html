@@ -6886,6 +6886,7 @@ const m_core_w1_vollkosten = (() => {
       (state.w5s?.takeover?.amount??0)
       +(state.w5s?.oreVenture?.capital??0)
       +(state.w5s?.successor?.capital??0)
+      +(state.w5s?.newCarrierOrder?.capital??0)
       -(state.w5s?.takeover?.dividends??0)
       -(state.w5s?.oreVenture?.dividends??0));
     const minerKaeufe = anzahl(state.ledger.miner, 'consumed');
@@ -7352,7 +7353,8 @@ function audit(state) {
     // und real bezahlte Gewinnausschuettungen separat belegen.
     const equity=(state.w5s?.takeover?.amount??0)
       +(state.w5s?.oreVenture?.capital??0)
-      +(state.w5s?.successor?.capital??0);
+      +(state.w5s?.successor?.capital??0)
+      +(state.w5s?.newCarrierOrder?.capital??0);
     const shareholderPaid=(state.w5s?.takeover?.dividends??0)
       +(state.w5s?.oreVenture?.dividends??0);
     const differenz = rest + ausgegeben + equity-shareholderPaid - start;

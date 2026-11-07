@@ -1,0 +1,28 @@
+name: Temporary docs cleanup verification
+on:
+  push:
+    branches: [docs/kompass-aufraeumung-20261107]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: No game code, fixtures, tests, archived versions or workflows changed
+        shell: bash
+        run: |
+          git diff --exit-code 5a56d9d7e94a2ad283684b7b912c8b56ca96af53 HEAD -- index.html tests tools versionen AGENTS.md .github/workflows/ui-regression.yml .github/workflows/b5b-sollflotte.yml
+          test -f versionen/v0.12.5/index.html
+          test -f docs/ROADMAP.md
+          test -f docs/PROJEKTSTATUS.md
+          test -f docs/README.md
+          test -f README.md
+      - name: Run unchanged main Node 22 tests
+        run: node --test tests/*.test.mjs

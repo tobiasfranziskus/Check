@@ -21,8 +21,18 @@ const seeds=[42,7,11,1,2,65535,1234,98765,3,99,2024,2025,314159];
 function money(s){return Object.values(s.owners).reduce((n,o)=>n+o.cash,0)}
 function check(s,r,tag,save=false){
   const a=api.audit(s);
-  assert.equal(a.ok,true,tag+': core ledger '+JSON.stringify(
-    Object.keys(a).filter(k=>a[k]?.ok===false)));
+  assert.equal(a.ok,true,tag+': core ledger '+JSON.stringify({
+    failed:Object.keys(a).filter(k=>a[k]?.ok===false),
+    w3:a.w3?.ok===false?a.w3:undefined,
+    w5s:a.w5s?.ok===false?{
+      newCarrier:a.w5s.newCarrierOrder,
+      successor:a.w5s.successor,
+      contract:a.w5s.contract,
+      allocated:a.w5s.allocated,paid:a.w5s.paid}:undefined,
+    newCarrierState:s.w5s?.newCarrierOrder?.stage,
+    freightW3:s.w3?.auftrag?.owner,
+    freightIce:s.w5n?.frachtauftrag?.owner
+  }));
   assert.equal(api.w5sFinanzStatus(s,r).ok,true,tag+': owner and work audit');
   assert.equal(money(s),33000,tag+': every original ISK preserved');
   assert.equal(s.minted,0,tag+': no issuance');

@@ -6530,8 +6530,10 @@ const m_core_w5s=(()=>{
     const orders=o.autoOrders||[];
     const autoProof=Array.isArray(orders)
       &&orders.length<=oreTrips+iceTrips+(ore?1:0)+(ice?1:0)
+      &&orders.filter(x=>x.type==='shipFreight').length<=oreTrips+(ore?1:0)
+      &&orders.filter(x=>x.type==='shipFreightIce').length<=iceTrips+(ice?1:0)
       &&orders.every(x=>['shipFreight','shipFreightIce'].includes(x.type)
-        &&x.ship===o.ship
+        &&x.ship===o.ship&&x.tick%r.economy.stunde===0
         &&Number.isSafeInteger(x.tick)&&x.tick>=landings[0]?.ankunft
         &&x.tick<=s.tick)
       &&orders.every((x,i)=>i===0||orders[i-1].tick<x.tick);

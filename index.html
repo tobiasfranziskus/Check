@@ -2791,7 +2791,13 @@ const m_core_w3 = (() => {
     if(!w||w.auftrag||(state.w5n?.frachtauftrag
       && (!rules.w5s?.concurrent||state.w5n.frachtauftrag.schiff===sh?.id)))
       return {ok:false,grund:'W3: Auftrag oder identischer Frachter bereits gebunden'};
-    if(!sh||sh.owner!==c.spedition||sh.klasse!=='frachter'||sh.phase!=='dock'
+    const z=state.w5s?.successor;
+    const alternate=!!(rules.w5s?.successorOreFreight&&rules.w5s.successorOperations
+      &&rules.w5s.successorFreight&&z?.ship===sh?.id
+      &&sh?.owner===z.owner&&!z.retired&&z.flightPaid===z.flight
+      &&state.w5s.completed?.some(x=>x.id===sh.id&&x.owner===z.owner));
+    const owner=alternate?z.owner:c.spedition;
+    if(!sh||sh.owner!==owner||sh.klasse!=='frachter'||sh.phase!=='dock'
       ||sh.system!=='aldera'||sh.auftrag!=='halten')
       return {ok:false,grund:'Bezahlter Frachter muss frei in Aldera liegen'};
     if(Object.values(sh.ladung).some(n=>n!==0))
@@ -2806,7 +2812,7 @@ const m_core_w3 = (() => {
       return {ok:false,grund:'Kein Ziel-Lagerplatz'};
     if(state.owners[c.kunde].cash<k.gesamt)
       return {ok:false,grund:'Kaeufer kann Ware und beide Fluege nicht bezahlen'};
-    if(state.owners[c.spedition].cash<k.arbeitsKosten)
+    if(state.owners[owner].cash<k.arbeitsKosten)
       return {ok:false,grund:'Spedition kann die Flugloehne nicht decken'};
     const start=rules.owners.find(o=>o.id===c.kunde).cash;
     if(state.owners[c.kunde].cash+w.kaufAusgaben+(state.w4?.gebucht??0)
@@ -2815,18 +2821,21 @@ const m_core_w3 = (() => {
       -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
         -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)!==start)
       return {ok:false,grund:'W3: unbelegtes Kaeufergeld'};
-    return {ok:true,grund:'Vollstaendig vorfinanziert',...k};
+    return {ok:true,grund:'Vollstaendig vorfinanziert',...k,...(alternate?{owner}:{})};
   }
   function starten(state,rules,sh) {
     const k=pruefen(state,rules,sh);
     if(!k.ok)throw Error('W3 ohne Kapital: '+k.grund);
     const c=rules.w3,w=state.w3,ka='w3_kauf_treuhand',ar='w3_arbeit_treuhand';
+    const owner=k.owner||c.spedition;
     if(!state.owners[ka])state.owners[ka]={id:ka,kind:'w3-reserve',cash:0};
     if(!state.owners[ar])state.owners[ar]={id:ar,kind:'w3-reserve',cash:0};
     if(state.owners[ka].cash||state.owners[ar].cash)throw Error('W3: Doppeltreuhand');
     state.owners[c.kunde].cash-=k.gesamt;state.owners[ka].cash+=k.gesamt;
     w.kaufAusgaben+=k.gesamt;buche(state,c.kunde,'kosten',k.gesamt);
-    state.owners[c.spedition].cash-=k.arbeitsKosten;state.owners[ar].cash+=k.arbeitsKosten;
+    state.owners[owner].cash-=k.arbeitsKosten;state.owners[ar].cash+=k.arbeitsKosten;
+    if(k.owner)state.w5s.successor.oreWorkReserved=
+      (state.w5s.successor.oreWorkReserved||0)+k.arbeitsKosten;
     state.stations[c.quellStation].lager.erz-=c.fracht;sh.ladung.erz=c.fracht;
     if(rules.w5h){state.w5h.bestand-=c.fracht;state.w5h.unterwegs+=c.fracht;}
     sh.phase='reise';sh.ziel=c.zielStation;sh.ankunft=state.tick+k.zeit;sh.auftrag='fracht';
@@ -2838,12 +2847,14 @@ const m_core_w3 = (() => {
   function tick(state,rules) {
     const w=state.w3,a=w?.auftrag;
     if(!a)return;
-    const c=rules.w3,sh=state.ships[a.schiff];
+    const c=rules.w3,sh=state.ships[a.schiff],owner=a.owner||c.spedition;
     const arbeit=state.owners.w3_arbeit_treuhand,kauf=state.owners.w3_kauf_treuhand;
     if(!sh||sh.phase!=='reise'||!arbeit||!kauf||arbeit.cash<c.arbeitJeMinute)
       throw Error('W3: Nicht bezahlter Flug');
     arbeit.cash-=c.arbeitJeMinute;state.owners[c.arbeitsFonds].cash+=c.arbeitJeMinute;
-    buche(state,c.spedition,'kosten',c.arbeitJeMinute);w.arbeitsKosten+=c.arbeitJeMinute;
+    buche(state,owner,'kosten',c.arbeitJeMinute);w.arbeitsKosten+=c.arbeitJeMinute;
+    if(a.owner)state.w5s.successor.oreWorkPaid=
+      (state.w5s.successor.oreWorkPaid||0)+c.arbeitJeMinute;
     a.gearbeitet++;
     if(state.tick!==sh.ankunft)return;
     if(a.phase==='hin') {
@@ -2855,7 +2866,7 @@ const m_core_w3 = (() => {
       buche(state,lieferant,'erloes',a.erzWert);w.geliefert+=a.menge;
       if(rules.w5h){state.w5h.unterwegs-=a.menge;state.w5h.verkauft+=a.menge;}
       a.phase='rueck';sh.system='nadir';sh.ziel=c.quellStation;sh.ankunft+=a.zeit;
-      protokolliere(state,'handel',sh.id+': '+a.menge+' Erz real in Nadir gekauft',c.spedition);
+      protokolliere(state,'handel',sh.id+': '+a.menge+' Erz real in Nadir gekauft',owner);
     } else {
       if(sh.ziel!==c.quellStation||kauf.cash!==a.frachtGebuehr
         ||arbeit.cash!==0||a.gearbeitet!==2*a.zeit)
@@ -6162,13 +6173,15 @@ const m_core_w5s=(()=>{
     const current=s.owners[owner]?.cash;
     const ore=m_core_w3.kalkulation(r),ice=m_core_w5n.preise(r);
     const w3=s.w3,n=s.w5n;
-    const laborOre=w3.arbeitsKosten,laborIce=n.frachtLohn-(s.w5s?.successor?.workPaid??0);
-    const revenueOre=w3.frachtUmsatz,revenueIce=n.frachtUmsatz-(s.w5s?.successor?.freightRevenue??0);
+    const laborOre=w3.arbeitsKosten-(s.w5s?.successor?.oreWorkPaid??0),
+      laborIce=n.frachtLohn-(s.w5s?.successor?.workPaid??0);
+    const revenueOre=w3.frachtUmsatz-(s.w5s?.successor?.oreFreightRevenue??0),
+      revenueIce=n.frachtUmsatz-(s.w5s?.successor?.freightRevenue??0);
     const hulls=s.ledger.frachter.consumed*r.economy.waren.frachter.basis
       -(s.w5s?.successor?.pricePaid??0);
     const reposition=s.w5s?.paidTransport??s.w5s?.paid??0;
     const dividend=s.w5o.divFracht;
-    const w3Escrow=s.owners.w3_arbeit_treuhand?.cash??0;
+    const w3Escrow=s.w3?.auftrag?.owner?0:(s.owners.w3_arbeit_treuhand?.cash??0);
     const iceEscrow=s.w5n.frachtauftrag?.owner?0:(s.owners.w5n_fracht_arbeit?.cash??0);
     const transferEscrow=s.w5s?.active?.owner===owner
       ?s.owners.w5s_transfer_reserved?.cash??0:0;

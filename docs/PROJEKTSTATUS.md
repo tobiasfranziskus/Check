@@ -1,3 +1,5 @@
+**[TEST · Langzeit]** [GitHub Node22 #42347638235](https://github.com/tobiasfranziskus/Check/actions/runs/42347638235): **15/15 Testgruppen bestanden, 0 Fehler/Skips**. Seed42 und Seed7 mit wirklich gegründeter, eigene Erzarbeit ausführender Nachfolgefirma bis Spieltag365, täglich auditiert samt Save/Load; Hashes `a57a6ec9553f6519`/`d996a6136845bd99`. Bei beiden fünf volle Erzfrachten, 720 ISK frei, kein zweiter Schiffskörper, null Emission, gefälschte W3-Finanz- und Vertragsbelege abgelehnt. Das schließt die zuvor noch offene gezielte aktive 365d-Prüfung; produktive Safari/NAS- und neueste Gesamt-CI bleiben separat offen.
+
 ## [DRAFT/ANALYSE] W5s-x – echte, getrennt bezahlte Nachfolger-Erzfracht · 07.11.2026
 
 **Basis:** [W5s-w #227](https://github.com/tobiasfranziskus/Check/pull/227), eigenständiger [Draft #228](https://github.com/tobiasfranziskus/Check/pull/228) mit Opt-in `rules.w5s.successorOreFreight`. `main 5a56d9d7`, Pages, Save-Schema, veröffentlichter Altstand unverändert. Keine Produktion/Emission/Preisänderung.

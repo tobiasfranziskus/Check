@@ -6297,7 +6297,12 @@ const m_core_w5s=(()=>{
       independentBuyer:true,ownershipTransferred:!!o.ship,
       ship:o.ship??null,companyCash:s.owners[o.buyer]?.cash??null,
       paidPrice:o.pricePaid??0,flightAllocated:o.flightAllocated??0,
-      flightPaid:o.flightPaid??0});
+      flightPaid:o.flightPaid??0,oreTrips:o.oreTrips??0,
+      iceTrips:o.trips??0,oreRevenue:o.oreFreightRevenue??0,
+      iceRevenue:o.freightRevenue??0,companyWorkReserved:
+        (o.oreWorkReserved??0)+(o.workReserved??0),
+      companyWorkPaid:(o.oreWorkPaid??0)+(o.workPaid??0),
+      retired:!!o.retired});
   }
   // W5s-ab: Lesender, eigentuemergetrennter echter W3-Kundenmarkt.
   // Absichtlich KEIN automatischer Fracht-Spawn und KEINE Etat-Umbuchung.
@@ -6312,17 +6317,46 @@ const m_core_w5s=(()=>{
     if(!sh||sh.owner!==o.buyer||sh.system!=='aldera'||sh.phase!=='dock'
       ||sh.auftrag!=='halten')
       return Object.freeze({stage:'keine_freie_eigene_huelle',owner:o.buyer});
+    // W5s-ae: Erster real vollfinanzierter Auftrag gewinnt. Der W5o-
+    // Versorgungsfrachter und die alte Nachfolgefirma haben Tick-Vorrang.
+    // Erz ist keine Pflichtabnahme: nur konkrete aktuelle Werftnachfrage.
     const yard=werkPlan(s,r);
-    if(!yard.type)return Object.freeze({stage:'kein_echter_werftbedarf',
-      owner:o.buyer,ship:o.ship,werfstatus:yard.stage});
-    const p=m_core_w3.pruefen(s,r,sh);
-    return Object.freeze({stage:p.ok?'voll_vorfinanzierter_w3_auftrag':
-      'kein_finanzierter_kundenauftrag',owner:o.buyer,ship:o.ship,
+    const needed=['erz_fehlt','raffinieren','raffinerie_belegt',
+      'bauen','werft_belegt','fertiglager_belegt','bestellen'];
+    const oreNeed=!!(yard.type&&needed.includes(yard.stage));
+    const ore=oreNeed?m_core_w3.pruefen(s,r,sh)
+      :{ok:false,grund:'Kein belegter W5-Erzauftrag'};
+    if(ore.ok)return Object.freeze({stage:'bezahlte_erzfracht',
+      owner:o.buyer,ship:o.ship,ware:'erz',werfstatus:yard.stage,
+      fracht:ore.frachtGebuehr,lohn:ore.arbeitsKosten,
       kundenetat:s.owners[r.w3.kunde]?.cash??0,
-      pilotkasse:s.owners[o.buyer]?.cash??0,
-      erzAmStart:s.stations[r.w3.quellStation].lager.erz||0,
-      werfstatus:yard.stage,grund:p.ok?null:p.grund,
-      command:p.ok?{type:'shipFreight',owner:o.buyer,schiff:o.ship}:null});
+      command:{type:'shipFreight',owner:o.buyer,schiff:o.ship}});
+    // Nur echter Wasserverbrauch, wirkliche 50 Eis, freier Zielraum,
+    // Verbraucher- und Stationskasse plus eigener 120-ISK-Pilotenetat.
+    const n=r.w5n,stock=s.stations[n.zielStation].lager;
+    const demand=(stock.eis||0)+(stock.wasser||0)<=r.w5o.versorgungZiel;
+    const consumer=s.owners[n.kunde]?.cash??0;
+    const household=consumer>=n.wasserPreis*n.verbrauchStunde;
+    const ice=r.w5s?.successorNewIce&&demand&&household
+      ?m_core_w5n.pruefenFracht(s,r,sh)
+      :{ok:false,grund:!r.w5s?.successorNewIce?'Eismarkt nicht freigegeben':
+        !demand?'Kein neuer Wasserbedarf':'Wasserhaushalt nicht zahlungsfaehig'};
+    if(ice.ok)return Object.freeze({stage:'bezahlte_eisfracht',
+      owner:o.buyer,ship:o.ship,ware:'eis',
+      fracht:ice.fracht,lohn:ice.arbeit,
+      kundenetat:s.owners[n.zielStation]?.cash??0,haushalt:consumer,
+      command:{type:'shipFreightIce',owner:o.buyer,schiff:o.ship}});
+    return Object.freeze({stage:!oreNeed&&!demand?
+      'kein_zusaetzlicher_bedarf':'kein_finanzierter_folgeauftrag',
+      owner:o.buyer,ship:o.ship,werfstatus:yard.stage,
+      erzGrund:ore.grund,eisGrund:ice.grund,haushalt:consumer,
+      eigenerArbeitsEtat:s.owners[o.buyer]?.cash??0,
+      nadirErz:s.stations[r.w3.zielStation].lager.erz||0,
+      nadirEis:stock.eis||0,nadirWasser:stock.wasser||0,
+      quelleEis:s.stations[n.quellStation].lager.eis||0,
+      erzKundeCash:s.owners[r.w3.kunde]?.cash??0,
+      eisKundeCash:s.owners[n.zielStation]?.cash??0,
+      command:null});
   }
   // W5s-ac: NUR nach echten Bedarfs-/Finanzchecks; der Originalkern
   // reserviert Kundengeld und Pilotenarbeit, nicht dieser Dispatcher.
@@ -6334,7 +6368,7 @@ const m_core_w5s=(()=>{
     if(!result.ok)return {stage:'core_abgelehnt',grund:result.reason};
     const o=s.w5s.newCarrierOrder;
     (o.autoOrders ||= []).push({tick:s.tick,
-      type:'shipFreight',ship:o.ship});
+      type:plan.command.type,ship:o.ship});
     return {stage:'originaler_w3_auftrag_gebucht',owner:o.buyer,ship:o.ship};
   }
   // Eine gekaufte physische Huelle ist kein ewiges Gratisasset:
@@ -6896,6 +6930,7 @@ const m_core_w5s=(()=>{
       successorReplacement:Object.freeze({...nachfolgeErsatzPlan(s,r)}),
       successorNewOrder:Object.freeze({...newCarrierOrderPlan(s,r)}),
       successorNewFreight:Object.freeze({...newCarrierFreightPlan(s,r)}),
+      successorNewLedger:Object.freeze({...newCarrierOrderAudit(s,r)}),
       successorPlan:Object.freeze({...nachfolgePlan(s,r,r.w5h.kaeufer)}),
       maintenance:Object.freeze({...wartungPlan(s,r)}),
       orePlan:Object.freeze({...erzPlan(s,r)}),

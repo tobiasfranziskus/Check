@@ -6011,6 +6011,66 @@ const m_core_w5s=(()=>{
       trips,revenue,retired:retired?.tick??null,autoOrders:orders.length,
       freightLicense:flightPaid===flight&&!!z.ship&&!retired};
   }
+  // W5s-w: Nur belegte Kaufkraft, reale Nachfrage und Eigenkapital zeigen.
+  // Diese Prognose fuehrt KEINEN Kauf, Transfer oder NPC-Auftrag aus.
+  function nachfolgeMarktPlan(s,r){
+    if(!r.w5s?.successorOperations||!r.w5s?.successorFreight
+      ||!r.w5s?.independentSuccessor||s.rulesVersion!==r.rulesVersion)
+      return Object.freeze({stage:'inaktiv'});
+    const z=s.w5s?.successor;
+    if(!z)return Object.freeze({stage:'keine_rechtmaessige_gruendung'});
+    const p=m_core_w5n.preise(r);
+    const cash=s.owners[z.owner]?.cash??0;
+    const capitalNeeded=z.hull+z.flight+z.working;
+    const margin=p.fracht-p.arbeit;
+    const missing=Math.max(0,capitalNeeded-cash);
+    const firstLiquid=z.capital-z.hull-z.flight;
+    const totalTripsNeeded=margin>0
+      ?Math.max(0,Math.ceil((capitalNeeded-firstLiquid)/margin)):null;
+    const extraTripsNeeded=margin>0?Math.ceil(missing/margin):null;
+    const yard=s.stations[r.w5.station]?.lager.frachter??0;
+    const unsold=s.w5.fertig-(s.w5.minerFertig||0)-s.w5.verkauft;
+    const realHull=yard>=1&&unsold>=1&&yard===unsold;
+    const buyer=s.owners[r.w5n.zielStation]?.cash??0;
+    const consumer=s.owners.w5n_kunden?.cash??0;
+    const ice=s.stations[r.w5n.zielStation]?.lager.eis??0;
+    const water=s.stations[r.w5n.zielStation]?.lager.wasser??0;
+    const sourceIce=s.stations[r.w5n.quellStation]?.lager.eis??0;
+    const demand=ice+water<=r.w5o.versorgungZiel;
+    const householdNeeded=r.w5n.wasserPreis*r.w5n.verbrauchStunde;
+    const householdFunded=consumer>=householdNeeded;
+    const stationFunded=buyer>=p.gesamt;
+    const cargoReady=sourceIce>=r.w5n.charge;
+    const escrowFree=!s.w5n.frachtauftrag;
+    const pilotFunded=cash>=p.arbeit;
+    const marketGate=!demand?'kein_zusaetzlicher_versorgungsbedarf'
+      :!householdFunded?'kein_zahlender_wasserhaushalt'
+      :!stationFunded?'stationskunde_unfinanziert'
+      :!cargoReady?'eis_am_quelllager_fehlt'
+      :!escrowFree?'gemeinsames_frachtkonto_belegt'
+      :!pilotFunded?'eigener_pilotenlohn_unfinanziert'
+      :'marktfenster_voll_finanzierbar';
+    const retirementTick=z.bought===null?null
+      :z.bought+r.w5r.freighterLifeDays*1440;
+    const hoursToWear=retirementTick===null||z.retired?0
+      :Math.max(0,Math.ceil((retirementTick-s.tick)/r.economy.stunde));
+    const replacementStage=!z.retired?'alter_frachter_noch_im_betrieb'
+      :cash<capitalNeeded?'ersatz_aus_eigenkapital_unfinanziert'
+      :!realHull?'keine_reale_freie_werfthuelle'
+      :'finanzierung_und_huelle_vorhanden_kauf_nicht_freigegeben';
+    return Object.freeze({stage:'beobachtet',tick:s.tick,owner:z.owner,
+      ship:z.ship,retired:!!z.retired,hoursToWear,
+      freightRevenue:p.fracht,pilotCost:p.arbeit,netContribution:margin,
+      initialOperatingCash:firstLiquid,completedTrips:z.trips||0,
+      totalTripsNeeded,extraTripsNeeded,
+      cash,capitalNeeded,missing,realHull,yard,unsold,replacementStage,
+      buyerCash:buyer,buyerCost:p.gesamt,
+      householdCash:consumer,householdNeeded,householdFunded,
+      stationFunded,sourceIce,cargoRequired:r.w5n.charge,cargoReady,
+      destinationIce:ice,destinationWater:water,
+      supplyTarget:r.w5o.versorgungZiel,demand,escrowFree,pilotFunded,
+      marketGate,dispatcher:nachfolgeBetriebPlan(s,r).stage});
+  }
   // W5s-v: nur die vorhandenen Eigentums-/Kunden-/Pilotengates benutzen.
   function nachfolgeBetriebPlan(s,r){
     const z=s.w5s?.successor;
@@ -6219,6 +6279,7 @@ const m_core_w5s=(()=>{
       industryWages:Object.freeze({...industryWageAudit(s,r)}),
       successor:Object.freeze({...nachfolgeAudit(s,r)}),
       successorOperations:Object.freeze({...nachfolgeBetriebPlan(s,r)}),
+      successorMarket:Object.freeze({...nachfolgeMarktPlan(s,r)}),
       successorPlan:Object.freeze({...nachfolgePlan(s,r,r.w5h.kaeufer)}),
       maintenance:Object.freeze({...wartungPlan(s,r)}),
       orePlan:Object.freeze({...erzPlan(s,r)}),
@@ -6299,7 +6360,7 @@ const m_core_w5s=(()=>{
       successor:successorProof};
   }
   return {arbeitsPuffer,finanzPlan,pruefen,start,tick,assign,audit,werkPlan,autoWerk,erzPlan,autoErz,
-    nachfolgeBetriebPlan,autoNachfolger,nachfolgeVerschleiss,
+    nachfolgeBetriebPlan,nachfolgeMarktPlan,autoNachfolger,nachfolgeVerschleiss,
     takeoverPlan,takeoverStart,takeoverDividend,takeoverAudit,
     oreVenturePlan,oreVentureStart,oreVentureDividend,oreVentureAudit,
     orePilotWage,orePilotWageAudit,industryWage,industryWageAudit,wartungPlan,
@@ -7474,6 +7535,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   w5sWartungStatus:(state,rules)=>m_core_w5s.wartungPlan(state,rules),
   w5sNachfolgeStatus:(state,rules,owner=rules.w5h.kaeufer)=>m_core_w5s.nachfolgePlan(state,rules,owner),
   w5sNachfolgeBetrieb:(state,rules)=>m_core_w5s.nachfolgeBetriebPlan(state,rules),
+  w5sNachfolgeMarkt:(state,rules)=>m_core_w5s.nachfolgeMarktPlan(state,rules),
   w5sNpcErzStatus:(state,rules)=>m_core_w5s.npcOrePlan(state,rules),
   w5sStarterStatus:(state,rules)=>m_core_w5s.starterPlan(state,rules),
   createErzState, createW2State, createW3State, createW4State, createW5State, createW5BState, createW5CState, createW5DState, createW5FState, createW5GState, createW5HState, createW5IState, createW5LState, createW5MState, createW5NState, createW5OState, createW5QState, createW5RState,

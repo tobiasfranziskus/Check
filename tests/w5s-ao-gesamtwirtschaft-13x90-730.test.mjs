@@ -212,3 +212,41 @@ test('W5s-ao B: 42/7 controlled same initial fleet; off/7/14 paid station export
   assert.equal(reports.filter(r=>r.scenario==='off').every(r=>
     r.checkpoints.at(-1).minted===0),true,'never invent outside demand');
 });
+
+test('W5s-ao C: 13 seeds x 90d across three legal saving and ownership regimes',()=>{
+  const reports=[];
+  for(const [mode,minerOwner] of [
+    ['npcSave','npc3'],
+    ['wages','npc3'],
+    ['full','house']
+  ]){
+    const rows=[];
+    for(const seed of SEEDS){
+      const s=api.createW5RState(seed,mode,minerOwner);
+      for(let day=1;day<=90;day++){
+        api.advance(s,1440,BASE);
+        if(day%30===0)verify(s,BASE,mode+' '+minerOwner+' seed '+seed+' day'+day);
+      }
+      const x=snap(s,{...BASE,w5s:{...BASE.w5s,stationEquityQuote:true}});
+      assert.equal(x.worldISK,STARTING_MONEY);
+      assert.equal(x.minted,0);
+      rows.push({seed,hash:x.hash,waterSold:x.waterSold,iceTrips:x.finishedIceShipments,
+        npcCash:x.bank.npc3,playerCash:x.bank.house,consumerCash:x.bank.w5n_kunden,
+        income:x.earnedConsumerIncome,stationDividend:x.dividends.station,
+        minerDividend:x.dividends.miner,freightDividend:x.dividends.freight,
+        lostMiners:x.r32Life.minerLost,lostFreighters:x.r32Life.carrierLost});
+    }
+    reports.push({mode,minerOwner,seeds:rows.length,
+      distinctEconomicResults:new Set(rows.map(r=>JSON.stringify([
+        r.waterSold,r.iceTrips,r.npcCash,r.playerCash,r.consumerCash,
+        r.income,r.stationDividend,r.minerDividend,r.freightDividend
+      ]))).size,
+      first:rows[0],last:rows.at(-1),
+      minWaterSold:Math.min(...rows.map(r=>r.waterSold)),
+      maxWaterSold:Math.max(...rows.map(r=>r.waterSold)),
+      minHousehold:Math.min(...rows.map(r=>r.consumerCash)),
+      maxHousehold:Math.max(...rows.map(r=>r.consumerCash))});
+  }
+  assert.equal(reports.length,3);
+  console.log('W5S_AO_MODES '+JSON.stringify(reports));
+});

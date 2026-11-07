@@ -1,3 +1,5 @@
+**[TEST · aktuelle W5s-y Core-Gates]** [GitHub Node22 #42350728728](https://github.com/tobiasfranziskus/Check/actions/runs/42350728728): **17/17 Testgruppen bestanden, 0 Fehler/Skips**. Zusätzlich zum Eigentümer- und Kapitalnachweis sind W4-/W5-Prüfungen jetzt direkt an die **autoritativen** Core-`pruefen`-Gates angebunden. Ein durch originale `stationRefine`-Buchung aus zehn wirklichen Erz und 20 ISK Lohn erzeugter 5-Material-Bestand schaltet im Test die positive W5-Finanzierungsprüfung frei; es wird **kein** Frachter ohne echten Auftrag hergestellt und kein anderes Eigentümerkonto vereinnahmt. Letzte generelle GitHub-CI und iPad/NAS-Abnahme weiterhin separat.
+
 **[TEST · Kombiniert W5s-v/w/x/y]** [Node22 #42350441951](https://github.com/tobiasfranziskus/Check/actions/runs/42350441951): **16/16 Testgruppen bestanden**, 0 Fehler/Skips. Langzeit- und Eigentümerbelege aus W5s-v/w/x sowie W5s-y-Quelle- und Kapitalgates zusammen erfolgreich. Keine Produktintegration; neueste allgemeine JS-Regression und iPad-/NAS-Abnahme separat.
 
 ## [DRAFT/ANALYSE] W5s-y – kaufkräftiger Investor ist kein belegtes Firmenkapital · 07.11.2026

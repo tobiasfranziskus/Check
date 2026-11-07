@@ -7092,6 +7092,7 @@ const m_core_w5r=(()=>{
       &&s.ledger.frachter.consumed===Object.values(s.ships)
         .filter(x=>x.klasse==='frachter').length+w.frachter.lost
         +(s.w5s?.successor?.retired?1:0)
+        +(s.w5s?.newCarrierOrder?.retired?1:0)
       &&w.serviceAllocated===w.services*fee+(w.serviceJob?fee:0)
       &&w.servicePaid===w.services*fee+(w.serviceJob?.minutes??0)*c.serviceWage
       &&s.owners.w5r_maintenance_reserved.cash===w.serviceAllocated-w.servicePaid

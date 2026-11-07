@@ -79,7 +79,7 @@
       render(true);
     }
     reconcile();render();root.addEventListener('click',click);
-    return Object.freeze({update(snapshot){if(closed)throw new Error('Ansicht abgebaut.');const next=copy(snapshot);data=next;reconcile();render();},getSelection(){return {tab,shipId};},destroy(){if(closed)return;root.removeEventListener('click',click);root.innerHTML='';closed=true;}});
+    return Object.freeze({update(snapshot){if(closed)throw new Error('Ansicht abgebaut.');const next=copy(snapshot);data=next;reconcile();render();},selectShip(id){if(closed)throw new Error('Ansicht abgebaut.');if(!ships().some(s=>s.id===id))throw new Error('Unbekannte Schiff-ID');shipId=id;render();},getSelection(){return {tab,shipId};},destroy(){if(closed)return;root.removeEventListener('click',click);root.innerHTML='';closed=true;}});
   }
   const api=Object.freeze({mount});
   if(typeof module==='object'&&module.exports)module.exports=api;else scope.LegacyCorporation=api;

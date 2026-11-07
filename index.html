@@ -6200,7 +6200,20 @@ const m_core_w5s=(()=>{
       &&s.owners[newCarrierEscrow]?.kind==='prepaid-new-carrier'
       &&!s.owners[newCarrierBuyer];
     return {ok,active:true,stage:o.stage,escrow:bank,produced,
-      physicalFree:free,investor:o.investor,buyer:o.buyer};
+      physicalFree:free,investor:o.investor,buyer:o.buyer,
+      checks:{waiting,building,ready,
+        investor:o.investor===r.w5h.kaeufer,
+        buyer:o.buyer===newCarrierBuyer,
+        distinct:o.buyer!==s.w5s.successor.owner,
+        capital:o.capital===p.preis+flight+working,
+        price:o.hull===p.preis,flight:o.flight===flight,
+        working:o.working===working,
+        tick:Number.isSafeInteger(o.tick)&&o.tick>=s.w5s.successor.retired.tick
+          &&o.tick<=s.tick,
+        baseline:Number.isSafeInteger(o.baseline)&&o.baseline>=0,
+        escrow:bank===o.capital,
+        kind:s.owners[newCarrierEscrow]?.kind==='prepaid-new-carrier',
+        noBuyer:!s.owners[newCarrierBuyer]}};
   }
   // W5s-y: getrennte Eigenkasse, potentielle Investorenmittel und echte
   // W4/W5-Lieferkette. Lediglich Diagnose, KEIN Aktienkauf, Geldtransfer,

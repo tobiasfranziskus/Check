@@ -1,0 +1,19 @@
+name: W5s-aa – Echter Eigentumswechsel und bezahlter Frachterflug
+on:
+  push:
+    branches:
+      - feature/w5s-aa-echter-folgekauf-20261107
+  pull_request:
+    paths:
+      - index.html
+      - tests/w5s-aa-eigentum-kauf-flug.test.mjs
+      - .github/workflows/w5s-aa-kauf-und-flug.yml
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5s-aa-eigentum-kauf-flug.test.mjs tests/w5s-z-vorfinanzierte-folgewerft.test.mjs tests/w5s-y-engpass-und-finanzierungsgrenzen.test.mjs tests/w5s-x-nachfolger-erzfracht.test.mjs tests/w5s-w-markt-und-ersatz.test.mjs tests/w5s-v-nachfolge-autobetrieb-verschleiss.test.mjs

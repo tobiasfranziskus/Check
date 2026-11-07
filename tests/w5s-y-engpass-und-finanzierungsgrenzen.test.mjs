@@ -56,6 +56,39 @@ test('W5s-y: reale Angebots- und Bedarfsgrenzen in Seed42 und 7 bestimmen',()=>{
       if((hour+1)%24===0)assert.equal(api.audit(s).ok,true,'Core-Audit Seed'+seed+' Tag'+(hour+1)/24);
     }
     const z=s.w5s.successor;
+    const hashBefore=api.hash(s),repl=api.w5sNachfolgeErsatz(s,RULES);
+    assert.equal(api.hash(s),hashBefore,'Lesender Folgeersatz ohne Hash-Mutation');
+    assert.equal(Object.isFrozen(repl),true);
+    assert.deepEqual(api.w5sFinanzStatus(s,RULES).successorReplacement,repl);
+    assert.equal(repl.stage,'eigenkapital_nicht_ausreichend');
+    assert.equal(repl.owner,'w5s_carrier2');
+    assert.equal(repl.capitalRequired,930);
+    assert.equal(repl.ownCash,720);
+    assert.equal(repl.ownShortfall,210);
+    assert.equal(repl.companyCanSelfFinance,false);
+    assert.equal(repl.outsideCashIsAvailableForCompany,false);
+    assert.equal(repl.outsideInvestorCash,18066);
+    assert.equal(repl.investorCouldPayGap,true);
+    assert.equal(repl.furtherRealOrders,0);
+    assert.equal(repl.theoreticalTripsAtBest,2);
+    assert.equal(repl.realFreeHull,false);
+    assert.equal(repl.stockHulls,0);
+    assert.equal(repl.documentedUnsoldHulls,0);
+    assert.equal(repl.refineryOrePresent,250);
+    assert.equal(repl.yardMaterialPresent,0);
+    assert.equal(repl.refineryReady,true);
+    assert.equal(repl.production,'echte_raffineriecharge_finanzierbar');
+    assert.equal(repl.replacementCommand,null);
+    const clone=api.loadW5R(api.save(s));
+    clone.owners[z.investor].cash-=210;
+    clone.owners[z.owner].cash+=210;
+    assert.equal(Object.values(clone.owners).reduce((n,x)=>n+x.cash,0),33000);
+    assert.equal(api.audit(clone).ok,false,
+      'auch eine geldsummenneutrale, aber ungebuchte Investorenrettung ist illegitim');
+    const off={...RULES,w5s:{...RULES.w5s,successorOreFreight:false}};
+    assert.equal(api.w5sNachfolgeErsatz(s,off).stage,'inaktiv');
+    assert.equal(api.hash(s),hashBefore,'OFF-/READ darf den Weltzustand nicht aendern');
+    console.log('W5S_Y_REPLACEMENT '+JSON.stringify({seed,...repl}));
     console.log('W5S_Y_CAPITAL '+JSON.stringify({seed,investor:z.investor,
       investorCash:s.owners[z.investor]?.cash,
       yardCash:s.owners[RULES.w5.werft]?.cash,

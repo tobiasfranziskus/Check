@@ -2869,7 +2869,9 @@ const m_core_w3 = (() => {
       -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
         -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)!==start)
       return {ok:false,grund:'W3: unbelegtes Kaeufergeld'};
-    return {ok:true,grund:'Vollstaendig vorfinanziert',...k,...(alternate?{owner}:{})};
+    // W5s-ag: W3 muss auch beim dritten rechtmaessigen Eigentuemer
+    // die fremde Firma im Auftrag UND in allen originalen Belegen tragen.
+    return {ok:true,grund:'Vollstaendig vorfinanziert',...k,...((alternate||fresh)?{owner}:{})};
   }
   function starten(state,rules,sh) {
     const k=pruefen(state,rules,sh);

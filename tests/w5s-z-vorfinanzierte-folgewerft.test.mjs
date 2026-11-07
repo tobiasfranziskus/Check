@@ -15,7 +15,11 @@ const RULES={...api.W5R_RULES,w5s:{
 const OFF={...RULES,w5s:{...RULES.w5s,successorNewOrder:false}};
 function fullAudit(s,label){
   const core=api.audit(s),proof=api.w5sFinanzStatus(s,RULES);
-  assert.equal(core.ok,true,label+': world '+Object.entries(core).filter(([,v])=>v?.ok===false).map(([k])=>k).join(','));
+  if(!core.ok)console.log('W5S_Z_AUDIT_DETAIL '+JSON.stringify({label,
+    worldMoney:core.isk,w5s:core.w5s,financial:core.finanzierung,
+    buyer:core.vollkosten,newOrder:proof.successorNewOrder,
+    successor:proof.successor}));
+  assert.equal(core.ok,true,label+': world +Object.entries(core).filter(([,v])=>v?.ok===false).map(([k])=>k).join(','));
   assert.equal(proof.ok,true,label+': independent transport accounts');
   assert.equal(proof.successor.ok,true,label+': previous company unchanged');
   assert.equal(proof.newCarrierOrder?.ok??true,true,label+': new order audit if exposed');

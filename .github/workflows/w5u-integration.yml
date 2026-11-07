@@ -1,0 +1,43 @@
+name: W5u – isolierter Originalkern und Touch-Hub
+on:
+  pull_request:
+    paths:
+      - 'prototypes/w5u/**'
+      - 'prototypes/legacy-hub/core-adapter.js'
+      - 'prototypes/legacy-corporation/**'
+      - 'prototypes/legacy-station/**'
+      - 'tests/**'
+      - 'index.html'
+      - '.github/workflows/w5u-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/*.test.mjs
+      - run: node --test --experimental-test-isolation=none tests/*.test.mjs
+  touch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.62.0
+      - run: python -m playwright install --with-deps chromium
+      - run: python tests/w5u-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: w5u-touch-screenshots
+          path: /tmp/w5u-*.png

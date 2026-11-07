@@ -19,7 +19,7 @@
   }
   function project(input,{ownerId}={}){
     const s=copy(typeof input==='string'?JSON.parse(input):input);
-    if(!obj(s)||s.schema!==8||s.rulesVersion!==32)throw TypeError('W5t erwartet Core Schema 8 / Regel 32; vorher mit Core laden');
+    if(!obj(s)||s.schema!==8||![14,32].includes(s.rulesVersion))throw TypeError('W5t erwartet Core Schema 8 / Regel 14 oder 32; vorher mit Core laden');
     const rows=key=>{
       if(s[key]==null)return null;
       if(!obj(s[key]))throw TypeError(key+': ID-Tabelle erforderlich');
@@ -50,7 +50,7 @@
         status:value(job.phase),phase:null,funding:null,issuer:null,evidence:section+'.'+key,core:job});
     }
     const owner=owners.find(o=>o.id===ownerId),account=s.stats?.konto?.[ownerId];
-    const provenance='Core-Snapshot · Schema 8 / Regel 32 · Tick '+value(s.tick)+' · keine Vollkostenrechnung';
+    const provenance='Core-Snapshot · Schema 8 / Regel '+s.rulesVersion+' · Tick '+value(s.tick)+' · keine Vollkostenrechnung';
     const corporation={demo:false,provenance,asOf:value(s.tick),company:{id:owner.id,name:owner.id,
       capitalLabel:'ISK-Kontostand',availableCapital:value(owner.cash),capitalEvidence:'owners.'+owner.id+'.cash (Kontostand, keine freie Reserve)',
       income:value(account?.erloes),expenses:value(account?.kosten),coverage:'Kumulierte Core-Kontozähler; kein vollständiges Journal',result:null},

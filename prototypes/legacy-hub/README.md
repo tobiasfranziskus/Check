@@ -57,3 +57,12 @@ Keine Speicherung, kein Spielstart, kein automatischer Tick, kein Netzwerkabruf.
 Die drei übrigen Ansichten bleiben eigene gekennzeichnete Demos.
 
 [Vertrag, Grenzen und Prüfnachweis W5t](../../docs/W5T_CORE_ADAPTER.md).
+
+## W5u: integrierte Forschungswelt
+
+Separater Einstieg: [../w5u/index.html](../w5u/index.html).
+Verwendet dieselben HQ-/Stationskomponenten und den bestehenden Snapshot-Adapter,
+jedoch einen isolierten unveränderten **Regel-14-Core der W5t-Basis**. Keine
+W5s-/R32-Welt und keine produktiven Speicherzugriffe. Echte Originalbefehle,
+Flottenauswahl und bestehende 2D-Grafik. Grenzen und Nachweise:
+[W5U_INTEGRATION.md](../../docs/W5U_INTEGRATION.md).

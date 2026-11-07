@@ -1,0 +1,20 @@
+# Lokale Editor-/OS-/Node-Artefakte; produktive Spielstände und Referenzdaten NICHT ignorieren.
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+*.orig
+*.rej
+.idea/
+.vscode/
+node_modules/
+coverage/
+.nyc_output/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.local.log
+
+# WICHTIG: Kein pauschales *.json, kein versionen/, kein backup/, kein *.html.
+# Goldene Hashes, Testfixtures, JSON-Save-Exporte und Archivstände bleiben trackbar.

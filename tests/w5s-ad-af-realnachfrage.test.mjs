@@ -181,3 +181,58 @@ test('W5s-af: false third revenues, work, and mixed automatic order types fail p
   assert.equal(api.audit(t).ok,false,'fake income or freight blocked '+i);
  }
 });
+
+test('W5s-ad: positiver ORIGINAL-W5n-Vertrag im getrennten 80er-Sicherheitsbestand-Gegenversuch',()=>{
+  // Dies ist ein ausdrücklich isolierter RESEARCH-Szenariovergleich, keine
+  // Produkt-Nachfrageregel. Ursprünglich 60 Einheiten, hier 80. Die
+  // 50 Eis, der zahlende Haushalt und alle ISK stammen aus der REALEN Welt.
+  const s=build(42);
+  const ship=s.w5s.newCarrierOrder.ship;
+  const normal=api.w5sNewCarrierFreight(s,RULES);
+  assert.equal(RULES.w5o.versorgungZiel,60);
+  assert.equal(normal.command??null,null,'Originalwelt hat keinen neuen Bedarf');
+  const CONTROL={...RULES,w5o:{...RULES.w5o,versorgungZiel:80}};
+  const source=s.stations.st_aldera.lager.eis;
+  const target=s.stations.st_nadir.lager.eis;
+  const money=allCash(s);
+  const customer=s.owners.st_nadir.cash;
+  const worker=s.owners.w5s_carrier3.cash;
+  const household=s.owners.w5n_kunden.cash;
+  assert.ok(source>=50,'50 reale Eis vorhanden');
+  assert.ok(target+50<=100,'belegter Lagerplatz; kein physisches Fiktivgut');
+  assert.ok(household>=CONTROL.w5n.wasserPreis*CONTROL.w5n.verbrauchStunde);
+  const offer=api.w5sNewCarrierFreight(s,CONTROL);
+  assert.equal(offer.command?.type,'shipFreightIce',JSON.stringify(offer));
+  assert.equal(offer.command?.schiff,ship);
+  const started=api.execute(s,offer.command,CONTROL);
+  assert.equal(started.ok,true,started.reason);
+  assert.equal(s.w5n.frachtauftrag?.owner,'w5s_carrier3','echter Eigentümer');
+  assert.equal(s.stations.st_aldera.lager.eis,source-50);
+  assert.equal(s.owners.st_nadir.cash,customer-490,'490 ISK wirklich gebunden');
+  assert.equal(s.owners.w5n_fracht_kauf.cash,490);
+  assert.equal(s.owners.w5n_fracht_arbeit.cash,120);
+  assert.equal(s.owners.w5s_carrier3.cash,worker-120);
+  assert.equal(allCash(s),money);
+  proof(s,CONTROL,'financed ICE contract immediately after departure');
+  for(let minute=1;minute<=120;minute++){
+    api.advance(s,1,CONTROL);
+    if(minute%30===0)proof(s,CONTROL,'real ICE minute '+minute);
+  }
+  assert.equal(s.w5n.frachtauftrag,null);
+  assert.equal(s.stations.st_nadir.lager.eis,target+50,'real delivery to Nadir');
+  assert.equal(s.w5s.newCarrierOrder.workPaid,120);
+  assert.equal(s.w5s.newCarrierOrder.workReserved,120);
+  assert.equal(s.w5s.newCarrierOrder.freightRevenue,240);
+  assert.equal(s.w5s.newCarrierOrder.trips,1);
+  assert.equal(s.owners.w5s_carrier3.cash,worker-120+240);
+  assert.equal(s.owners.w5n_fracht_kauf.cash,0);
+  assert.equal(s.owners.w5n_fracht_arbeit.cash,0);
+  assert.equal(s.owners.w5s_carrier2.cash,720,'kein Fremdeinkommen');
+  assert.equal(allCash(s),money);
+  proof(s,CONTROL,'original ICE contract after fully paid return');
+  console.log('W5S_AD_PAID_ICE_COUNTERFACTUAL '+JSON.stringify({
+    seed:42,originalTarget:60,testTarget:80,ship,iceDelivered:50,
+    actualPilotWork:120,paidClient:490,freightRevenue:240,
+    companyCash:s.owners.w5s_carrier3.cash,minted:s.minted,
+    hash:api.hash(s)}));
+});

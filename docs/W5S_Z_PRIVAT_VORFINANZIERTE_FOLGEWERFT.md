@@ -23,3 +23,7 @@ Eigene Node-22-CI umfasst darüber hinaus **W5s-v/w/x/y**, einschließlich der b
 ## Weiterer Produktentscheid – nicht vorweggenommen
 
 **W5s-aa:** Separater echter Eigentums- und Verkaufsvertrag für den neuen unabhängigen `w5s_carrier3`. Erst dann darf aus dem 930-ISK-Treuhandbuch eine rechtlich finanzierte Kapitalzeichnung, 750-ISK-Zahlung an die Werft und später 60-ISK-Überführung sowie 120-ISK-Flugbetriebsreserve werden – jeweils mit überprüften W5-/W5s-/W3-/W5n-Belegen und individuellen Schiff-IDs. In W5s-z wird die Hülle **bewusst noch nicht verkauft**. Echte Safari-/NAS-Abnahme weiterhin offen.
+
+## Abschließende zusätzliche Langzeitprüfung
+
+**[TEST · Node22, 07.11.2026]** [GitHub-W5s-z-CI #42352512003](https://github.com/tobiasfranziskus/Check/actions/runs/42352512003): **22/22 kombinierte W5s-v/w/x/y/z-Testgruppen erfolgreich, 0 Fehler, 0 Skips** auf Commit `b2ada178` (danach Dokumentationsänderungen, kein neuer Core-Code). Zusätzlich zu den positiven Seed42/7-W4/W5-Bestellungen: Beide tatsächlich kapitalgedeckten Folgewerften wurden in der deterministischen 365-Tage-Welt **täglich** mit Save/Load, Geld-/Waren-/Original-Firmen- und neuem Bestellaudit geprüft. In beiden verbleiben bis Tag365 **930 echte ISK gesperrt, eine physische, produzierte und reservierte Frachterhülle, 720 ISK eigene Restkasse der gescheiterten alten Spedition, keine neue Firmen-ID oder Gratishülle, keine zusätzliche ISK-Emission**. Seed42-Hash `ac180f35b37c7e22`; Seed7-Hash `c17b0b0c3dea104b`. Noch keine neue Gesellschaft oder tatsächliche Überführung/Transportfähigkeit.

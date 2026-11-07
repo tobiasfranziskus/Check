@@ -1,3 +1,5 @@
+**[TEST · W5s-z 365d-Mehrgenerationen-Nachfragebeleg]** [Node22 #42352512003](https://github.com/tobiasfranziskus/Check/actions/runs/42352512003): **22/22 Spezialtestgruppen erfolgreich, 0 Fehler/Skips**. Seeds 42 und 7 mit explizit kapitalgedeckter neuer Werftbestellung bis Tag365 im Original-Core täglich geprüft: physisch ein echter Frachter im gesperrten Nadir-Lager, 930 ISK Käufergeld unverändert im Treuhandkonto, Altgesellschaft 720 ISK, `minted=0`, keine neue juristische Spedition gegründet. Hashes `ac180f35b37c7e22`/`c17b0b0c3dea104b`. Noch keine Produktintegration, Gesamt-JS- und reale iPad-/NAS-Abnahme getrennt.
+
 ## [DRAFT/ANALYSE] W5s-z – echte privat vorfinanzierte Folgebestellung, W4-/W5-Werftproduktion · 07.11.2026
 
 **Basis:** auf [W5s-y #229](https://github.com/tobiasfranziskus/Check/pull/229) gestapelt; optionaler R32-Forschungsflag `w5s.successorNewOrder`. **[MAIN] `5a56d9d7`**, veröffentlichter Pages-Spieltest, Save-Schema 8, Archiv unverändert. Keine neue Emission, kein fertiger Kauf-/Eigentumswechsel.

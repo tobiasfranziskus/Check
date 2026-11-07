@@ -28,3 +28,9 @@ Neue gezielte Tests unter `tests/w5s-w-markt-und-ersatz.test.mjs` und eigener No
 - Workflow führt die bestehenden **W5s-v-Spezialtests** gemeinsam mit W5s-w aus. Zusätzliche historische 13×90d und Seed42/7×365d sind bereits im übernommenen W5s-v-Test enthalten.
 
 **CI-Ergebnis erst nach tatsächlichem GitHub-Lauf als bestanden melden.** Reale iPad-Safari-/NAS-Abnahme steht weiter aus.
+
+## Bestätigte GitHub-Ausführung auf unverändertem Code
+
+**[TEST · Node 22] [CI #42346487718](https://github.com/tobiasfranziskus/Check/actions/runs/42346487718), Commit `4a6dc8f`: 10/10 Testgruppen bestanden, 0 Fehler** (3 neue W5s-w-Fälle einschließlich Doppellauf plus 7 bestehende W5s-v-Fälle). Die anschließenden Branch-Commits aktualisieren ausschließlich diese Dokumentation, Roadmap und Projektstatus; eine gesonderte letzte Gesamt-CI auf dem jüngsten Dokumentations-Head ist davon zu unterscheiden.
+
+In beiden realen Seed-42/7-Szenarien sind innerhalb der 35 Tage **834 von 840 Stundensnapshots über dem Versorgungsziel**, zwölf mit belegter gemeinsamer Fracht-Treuhand und **null** nach Stundenabschluss noch freie, vollständig finanzierte neue Marktfenster zu beobachten. Letzteres bedeutet nicht, dass überhaupt keine gültige Fracht stattgefunden hat: Der einmalige Auftrag war beim Snapshot bereits in Arbeit. Beiderseits eine bezahlte Fahrt, 240 ISK Restkasse, 690 ISK Ersatzlücke, keine verfügbare zusätzliche W5-Werfthülle, keine Geldemission. Doppelläufe reproduzieren Seed42 Hash `6a15b8cdc26a25df` und Seed7 Hash `bb4fe1ac37f711cf` für diese 35-Tage-Forschungswelt.

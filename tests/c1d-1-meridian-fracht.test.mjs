@@ -16,6 +16,17 @@ function good(s){
 }
 function step(s,n){for(let i=0;i<n;i++){c.step(s);good(s);}return s;}
 function saved(s){const before=c.hash(s);const loaded=c.load(c.save(s));assert.equal(c.hash(loaded),before);return loaded;}
+function readyCarrier(s){
+ // The same original W3 hull can be in another honestly funded W5n trip.
+ // Never teleport or cancel it: wait until this actual ship docks freely.
+ for(let minutes=0;minutes<=1440;minutes++){
+  const sh=s.ships.sh002;
+  if(sh?.phase==='dock'&&sh.system==='aldera'&&sh.auftrag==='halten'
+   &&!s.w3?.auftrag&&!s.w5n?.frachtauftrag)return saved(s);
+  c.step(s);good(s);
+ }
+ throw Error('Real carrier did not become free for research export');
+}
 function manufactured(seed=42){
  let s=c.create(seed);good(s);
  cmd(c,s,{type:'shipWait',owner:'npc3',schiff:'sh001'});
@@ -42,6 +53,7 @@ function manufactured(seed=42){
  return saved(s);
 }
 function delivery(s){
+ s=readyCarrier(s);
  const sellerBefore=s.owners.house.cash,carrierBefore=s.owners.transport.cash;
  const start=s.tick;
  cmd(c,s,{type:'shipCapitalFreight',owner:'transport',schiff:'sh002'});
@@ -113,7 +125,7 @@ test('C1d-1: research-only Meridian geography, immutable profile, zero initial c
 test('C1d-1: real paid Aldera-Nadir-Meridian-Aldera freight and warehouse, two seeds',()=>{
  for(const seed of [42,7]){
   const s=delivery(manufactured(seed));
-  assert.equal(s.tick,468);
+  assert.equal(s.tick,s.c1d.job.start+240);
   assert.equal(s.c1d.delivered,1);
   assert.equal(s.c1d.completed,1);
   assert.equal(s.w5b.lagerFertig,1);
@@ -133,7 +145,7 @@ test('C1d-1: unproduced product, wrong owner and double contract reject without 
  const before=c.hash(s);
  assert.equal(c.execute(s,{type:'shipCapitalFreight',owner:'transport',schiff:'sh002'}).ok,false);
  assert.equal(c.hash(s),before);
- const full=manufactured();
+ const full=readyCarrier(manufactured());
  const h=c.hash(full);
  assert.equal(c.execute(full,{type:'shipCapitalFreight',owner:'house',schiff:'sh002'}).ok,false);
  assert.equal(c.hash(full),h);
@@ -144,7 +156,7 @@ test('C1d-1: unproduced product, wrong owner and double contract reject without 
  good(full);
 });
 test('C1d-1: deterministic replay through 240 paid flight minutes and saves',()=>{
- let a=manufactured(42),b=saved(a);
+ let a=readyCarrier(manufactured(42)),b=saved(a);
  for(const s of [a,b])cmd(c,s,{type:'shipCapitalFreight',owner:'transport',schiff:'sh002'});
  assert.equal(c.hash(a),c.hash(b));
  for(let i=1;i<=240;i++){
@@ -152,12 +164,13 @@ test('C1d-1: deterministic replay through 240 paid flight minutes and saves',()=
   if(i===30||i===60||i===119||i===120||i===200){a=saved(a);b=saved(b);}
   assert.equal(c.hash(a),c.hash(b));
  }
+ assert.equal(a.tick,a.c1d.job.start+240);
  assert.equal(a.stations.st_meridian.lager.lager,1);
  assert.equal(a.c1d.completed,1);
  assert.equal(a.minted,0);
 });
 test('C1d-1: forged cash, warehouse, transfer, pilot work, ownership and mint rejected',()=>{
- const mid=manufactured(),finished=delivery(manufactured());
+ const mid=readyCarrier(manufactured()),finished=delivery(manufactured());
  cmd(c,mid,{type:'shipCapitalFreight',owner:'transport',schiff:'sh002'});
  step(mid,61);
  for(const modify of [

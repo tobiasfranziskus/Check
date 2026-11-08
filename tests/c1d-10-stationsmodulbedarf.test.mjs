@@ -123,7 +123,7 @@ function installed(seed){
  action(s,{type:'stationInstallPaidStorage',owner:'st_nadir',station:'st_nadir'});
  assert.equal(s.owners.st_nadir.cash,before.buyer-430);
  assert.equal(s.owners.house.cash,before.seller+430);
- assert.equal(s.stations.st_nadir.module.lager,before.module+1);
+ assert.equal(s.stations.st_nadir.module.lager,(before.module||0)+1);
  assert.equal(s.c1g.installed,1);
  assert.equal(s.ledger.lager.consumed,1);
  assert.equal(s.stations.st_nadir.lager.lager,0);

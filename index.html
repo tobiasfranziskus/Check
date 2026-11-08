@@ -1156,10 +1156,11 @@ const FIELDS = {
   shipEscort: ['schiff', 'ziel'], shipHunt: ['schiff'],
   shipInstall: ['schiff', 'modul'], stationBuy: ['schiff'], shipBuy: ['klasse', 'station'],
   stationRecipe: ['station', 'rezept'], shipRemoveModule: ['schiff', 'modul'],
-  shipFreight: ['schiff'], stationRefine: ['station'],
+  shipFreight: ['schiff'], shipCapitalFreightSecond: ['schiff'], stationRefine: ['station'],
   stationBuildShip: ['station'], stationBuildMiner: ['station'], stationBuildParts: ['station'], stationBuildFighter: ['station'],
   stationBuildStorage: ['station'], shipCapitalFreight: ['schiff'],
   stationPrepayStorage: [], stationAcceptStorage: [],
+  stationPrepayStorageSecond: [], stationAcceptStorageSecond: [],
   stationExportReserve: ['station'], stationExportAccept: ['station'],
   pirateBuy: ['angebot'],
   stationBuildLaser: ['station'], pilotBuyLaser: ['schiff'], pilotFitLaser: ['schiff'],
@@ -1211,7 +1212,8 @@ function checkShape(state, cmd, rules) {
     if (rules.w3 && s.klasse === 'frachter' && cmd.type !== 'shipFreight' && cmd.type !== 'shipRename'
       && !(rules.w5n&&cmd.type==='shipFreightIce')
       && !(rules.w5s&&cmd.type==='shipReposition')
-      && !(rules.c1d&&cmd.type==='shipCapitalFreight'))
+      && !(rules.c1d&&cmd.type==='shipCapitalFreight')
+      && !(rules.c1d?.secondEnabled&&cmd.type==='shipCapitalFreightSecond'))
       return 'W3-Frachter ausschließlich per finanziertem Transportauftrag steuern';
     if (cmd.type === 'shipFreight') {
       if (!rules.w3) return 'W3-Transport in dieser Regel nicht aktiv';
@@ -1296,6 +1298,16 @@ function checkShape(state, cmd, rules) {
       if (state.owners[cmd.owner].cash < m_core_handel.stationspreis(state, rules, station)) return 'zu wenig ISK für den Stationskauf';
     }
   }
+  if(cmd.type==='stationPrepayStorageSecond'||cmd.type==='stationAcceptStorageSecond'){
+    const p=cmd.type==='stationPrepayStorageSecond'
+      ?m_core_c1f.prepaySecondCheck(state,rules,cmd.owner)
+      :m_core_c1f.acceptSecondCheck(state,rules,cmd.owner);
+    if(!p.ok)return p.grund;
+  }
+  if(cmd.type==='shipCapitalFreightSecond'){
+    const p=m_core_c1d.pruefenSecond(state,rules,state.ships[cmd.schiff]);
+    if(!p.ok)return p.grund;
+  }
   if(cmd.type==='stationPrepayStorage'||cmd.type==='stationAcceptStorage'){
     const p=cmd.type==='stationPrepayStorage'
       ?m_core_c1f.prepayCheck(state,rules,cmd.owner)
@@ -1347,8 +1359,8 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5s?.minerIndustry ? ['stationBuildMiner'] : []),
     ...(rules.w5b ? ['stationBuildParts','stationBuildFighter'] : []),
     ...(rules.w5b?.allowStorageManufacturing ? ['stationBuildStorage'] : []),
-    ...(rules.c1d ? ['shipCapitalFreight'] : []),
-    ...(rules.c1f ? ['stationPrepayStorage','stationAcceptStorage'] : []),
+    ...(rules.c1d ? ['shipCapitalFreight',...(rules.c1d.secondEnabled?['shipCapitalFreightSecond']:[])] : []),
+    ...(rules.c1f ? ['stationPrepayStorage','stationAcceptStorage',...(rules.c1f.secondEnabled?['stationPrepayStorageSecond','stationAcceptStorageSecond']:[])] : []),
     ...(rules.c1e ? ['stationExportReserve','stationExportAccept'] : []),
     ...(rules.w5c ? ['pirateBuy','shipHunt'] : []),
     ...(rules.w5f ? ['stationBuildLaser','pilotBuyLaser','pilotFitLaser'] : []),
@@ -1589,6 +1601,15 @@ function execute(state, cmd, rules) {
     case 'stationBuildMiner': {
       m_core_w5.starten(state,rules,cmd.owner,cmd.station,
         cmd.type==='stationBuildMiner'?'miner':rules.w5.klasse); break;
+    }
+    case 'stationPrepayStorageSecond':{
+      m_core_c1f.prepaySecond(state,rules,cmd.owner);break;
+    }
+    case 'stationAcceptStorageSecond':{
+      m_core_c1f.acceptSecond(state,rules,cmd.owner);break;
+    }
+    case 'shipCapitalFreightSecond':{
+      m_core_c1d.startSecond(state,rules,state.ships[cmd.schiff]);break;
     }
     case 'stationPrepayStorage': {
       m_core_c1f.prepay(state,rules,cmd.owner);break;
@@ -3048,6 +3069,7 @@ const m_core_w3 = (() => {
           -(state.w5s?.takeover?.dividends??0)
           -(state.w5s?.paidTransport??state.w5s?.paid??0)
       -(state.c1d?.pilotAllocated??0)+(state.c1d?.feePaid??0)
+      -(state.c1d?.second?.pilotAllocated??0)+(state.c1d?.second?.feePaid??0)
       && (!a||(a.menge===c.fracht&&a.zeit===k.zeit&&a.erzWert===k.erzWert
         && a.arbeitsKosten===k.arbeitsKosten&&a.frachtGebuehr===k.frachtGebuehr
         && a.gesamt===k.gesamt&&a.gearbeitet>=0&&a.gearbeitet<=2*k.zeit
@@ -3706,7 +3728,8 @@ const m_core_w5b = (() => {
         &&(state.ledger.lager?.consumed||0)===0
         &&(lager.lager||0)+(state.ships[state.c1d?.job?.ship]?.ladung?.lager||0)
           +(state.stations.st_meridian?.lager?.lager||0)
-          +(state.c1e?.accepted||0)+(state.c1f?.accepted||0)===lagerFertig))
+          +(state.c1e?.accepted||0)+(state.c1f?.accepted||0)
+          +(state.c1f?.secondAccepted||0)===lagerFertig))
       &&(!c.directPartsCustody||bauteilTitelAudit(state,rules))
       && w.jaegerFertig>=w.jaegerVerkauft&&idsOk
       && (!w.minerId||(miner?.owner===c.produzent&&miner.klasse==='miner'&&miner.heimat==='nadir'))
@@ -4313,7 +4336,8 @@ const m_core_w5h=(()=>{
     const hin=s.w3.auftrag?.phase==='hin'?r.w3.fracht:0;
     // Only the opt-in buyer prepayment spends this existing ore-buyer wallet.
     // The separate C1f Core audit proves the exact 4 x 430 contract.
-    const storageExpense=s.c1f?.advanced?r.c1f.quantity*r.c1f.unitPrice:0;
+    const storageExpense=(s.c1f?.advanced?r.c1f.quantity*r.c1f.unitPrice:0)
+      +(s.c1f?.secondAdvanced?r.c1f.quantity*r.c1f.unitPrice:0);
     const ok=nums.every(n=>Number.isSafeInteger(n)&&n>=0)
       &&w.gekauft===w.verkauft+w.bestand+w.unterwegs
       &&w.verkauft===s.w3.geliefert &&w.unterwegs===hin
@@ -7496,7 +7520,8 @@ const m_core_w1_vollkosten = (() => {
     // abgebauten Erzminuten; weder als Förderung noch doppelt als Lohn zählen.
     const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-abzug-modulLohn-iceArbeit
       -(state.w5o?.divMine??0)-minerReiseKosten
-      -(state.c1d?.feeAllocated??0); // prepaid export carriage is not mining labour
+      -(state.c1d?.feeAllocated??0)
+      -(state.c1d?.second?.feeAllocated??0); // prepaid export carriage is not mining labour
     const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
     const fonds = state.owners[fondsId].cash - startCash(fondsId);
     const stationErz = state.stations[cfg.station].lager.erz;
@@ -7983,6 +8008,8 @@ const m_core_c1d = (() => {
   }
   function tick(s,r){
     const w=s.c1d,j=w?.job;
+    if(r.c1d?.secondEnabled&&w?.second?.job?.phase!=='finished'
+      &&w?.second?.job){tickSecond(s,r);return;}
     if(!j||j.phase==='finished')return;
     const c=r.c1d,sh=s.ships[j.ship],work=s.owners[workAccount];
     const phases={position:'st_nadir',delivery:'st_meridian',return:'st_aldera'};
@@ -8029,6 +8056,143 @@ const m_core_c1d = (() => {
         c.carrier);
     }
   }
+
+  // Same original C1d flight engine, separate authenticated job and second
+  // escrow use after the first job has irrevocably paid out. No second sim.
+  function pruefenSecond(s,r,sh){
+    const c=r.c1d,w=s.c1d,k=c&&rcheck(r);
+    if(!c?.secondEnabled||!w||s.rulesVersion!==r.rulesVersion
+      ||w.second||w.completed!==1||w.job?.phase!=='finished'
+      ||s.c1f?.order?.status!=='accepted'||s.c1f?.secondOrder?.status!=='prepaid'
+      ||s.c1f.secondAccepted!==0||!k
+      ||s.w5b?.lagerFertig!==8||s.ledger.lager.produced!==8
+      ||s.ledger.lager.exported!==4||s.stations.st_nadir.lager.lager!==4
+      ||s.stations.st_meridian.lager.lager!==0)
+      return {ok:false,grund:'Zweite bezahlte Viererfracht nicht verfuegbar'};
+    if(!sh||sh.owner!==c.carrier||sh.klasse!=='frachter'
+      ||sh.phase!=='dock'||sh.system!=='aldera'||sh.auftrag!=='halten'
+      ||Object.values(sh.ladung).some(n=>n!==0)
+      ||s.w3?.auftrag||s.w5n?.frachtauftrag)
+      return {ok:false,grund:'Kein unbelasteter echter Frachter fuer zweite Rundfahrt'};
+    const labour=k.minutes*c.wagePerMinute,fee=c.freightFee;
+    if(s.owners[feeAccount].cash!==0||s.owners[workAccount].cash!==0
+      ||s.owners[c.seller].cash<fee||s.owners[c.carrier].cash<labour
+      ||s.owners.c1f_kaufrest_escrow.cash!==1380)
+      return {ok:false,grund:'Zweite Fracht, Pilotlohn und Kaufrest nicht vorfinanziert'};
+    if(!m_core_audit.audit(s).ok)
+      return {ok:false,grund:'Keine gueltigen Originalbuecher vor Zweitfracht'};
+    return {ok:true,labour,fee,...k};
+  }
+  function startSecond(s,r,sh){
+    const p=pruefenSecond(s,r,sh);if(!p.ok)throw Error(p.grund);
+    const c=r.c1d,w=s.c1d;
+    const sellerBefore=s.owners[c.seller].cash,carrierBefore=s.owners[c.carrier].cash;
+    const sellerJournal=journal(s,c.seller),carrierJournal=journal(s,c.carrier);
+    s.owners[c.seller].cash-=p.fee;s.owners[feeAccount].cash+=p.fee;
+    s.owners[c.carrier].cash-=p.labour;s.owners[workAccount].cash+=p.labour;
+    buche(s,c.seller,'kosten',p.fee);buche(s,c.carrier,'kosten',p.labour);
+    w.second={ordered:1,delivered:0,completed:0,feeAllocated:p.fee,
+      feePaid:0,pilotAllocated:p.labour,pilotPaid:0,
+      job:{id:'C1D8B-FREIGHT-0002',ship:sh.id,titleOwner:c.seller,
+        sellerBefore,carrierBefore,sellerJournal,carrierJournal,
+        start:s.tick,phase:'position',phaseStart:s.tick,paidMinutes:0,
+        routes:{position:p.position,delivery:p.delivery,back:p.back}}};
+    sh.phase='reise';sh.ziel='st_nadir';sh.ankunft=s.tick+p.position;
+    sh.auftrag='c1d-bezahlte-fracht';
+    m_core_state.protokolliere(s,'auftrag',
+      'C1d-8b: getrennte 300-ISK-Rundfracht, alle 240 Pilot-ISK neu vorfinanziert',c.seller);
+  }
+  function tickSecond(s,r){
+    const c=r.c1d,w=s.c1d,q=w.second,j=q.job;
+    const sh=s.ships[j.ship],work=s.owners[workAccount];
+    if(!sh||sh.owner!==c.carrier||sh.phase!=='reise'
+      ||sh.auftrag!=='c1d-bezahlte-fracht'
+      ||sh.ziel!==({position:'st_nadir',delivery:'st_meridian',return:'st_aldera'})[j.phase]
+      ||s.tick>sh.ankunft||!work||work.cash<c.wagePerMinute)
+      throw Error('C1d-8b: zweiter Frachterflug nicht wirklich bezahlt');
+    work.cash-=c.wagePerMinute;
+    s.owners[pilot].cash+=c.wagePerMinute;
+    buche(s,pilot,'erloes',c.wagePerMinute);
+    q.pilotPaid+=c.wagePerMinute;j.paidMinutes++;
+    if(s.tick!==sh.ankunft)return;
+    if(j.phase==='position'){
+      if(s.stations.st_nadir.lager.lager!==4
+        ||Object.values(sh.ladung).some(n=>n!==0))
+        throw Error('C1d-8b: keine zweite hergestellte Vierercharge an Quelle');
+      s.stations.st_nadir.lager.lager-=4;
+      sh.ladung.lager=4;
+      sh.system='nadir';sh.ziel='st_meridian';sh.ankunft+=j.routes.delivery;
+      j.phase='delivery';j.phaseStart=s.tick;
+    }else if(j.phase==='delivery'){
+      if(sh.ladung.lager!==4||s.stations.st_meridian.lager.lager!==0)
+        throw Error('C1d-8b: zweite Meridian-Lieferung physisch nicht moeglich');
+      delete sh.ladung.lager;s.stations.st_meridian.lager.lager=4;
+      sh.system='meridian';sh.ziel='st_aldera';sh.ankunft+=j.routes.back;
+      j.phase='return';j.phaseStart=s.tick;q.delivered=1;
+    }else{
+      if(j.paidMinutes!==j.routes.position+j.routes.delivery+j.routes.back
+        ||work.cash!==0||s.owners[feeAccount].cash!==q.feeAllocated)
+        throw Error('C1d-8b: Pilotarbeitslohn oder Frachtreserve unbezahlt');
+      s.owners[feeAccount].cash=0;
+      s.owners[c.carrier].cash+=q.feeAllocated;
+      buche(s,c.carrier,'erloes',q.feeAllocated);
+      q.feePaid=q.feeAllocated;q.completed=1;
+      j.phase='finished';j.phaseStart=s.tick;
+      sh.system='aldera';sh.phase='dock';sh.ziel=null;sh.ankunft=s.tick;
+      sh.auftrag='halten';
+      m_core_state.protokolliere(s,'handel',
+        'C1d-8b: zweite reale Viererrundfahrt nach 240 bezahlten Pilotminuten abgeschlossen',
+        c.carrier);
+    }
+  }
+  function secondAudit(s,r){
+    const c=r.c1d,w=s.c1d,q=w?.second;
+    if(!c?.secondEnabled)return !q;
+    if(!q)return s.c1f?.secondAccepted===0;
+    const j=q.job,k=rcheck(r),sh=s.ships[j?.ship],accepted=s.c1f?.secondAccepted||0;
+    const numbers=[q.ordered,q.delivered,q.completed,q.feeAllocated,
+      q.feePaid,q.pilotAllocated,q.pilotPaid,j?.start,j?.phaseStart,j?.paidMinutes];
+    if(!numbers.every(x=>Number.isSafeInteger(x)&&x>=0))return false;
+    if(q.ordered!==1||q.completed>q.delivered||q.delivered>1
+      ||q.feeAllocated!==c.freightFee||q.pilotAllocated!==k.minutes*c.wagePerMinute
+      ||q.feePaid!==q.completed*c.freightFee
+      ||q.pilotPaid!==j.paidMinutes*c.wagePerMinute||j.paidMinutes>k.minutes
+      ||j.id!=='C1D8B-FREIGHT-0002'||j.id===w.job?.id
+      ||j.start<=w.job.start||j.start>s.tick
+      ||j.titleOwner!==c.seller||sh?.owner!==c.carrier||sh?.klasse!=='frachter'
+      ||j.routes.position!==k.position||j.routes.delivery!==k.delivery
+      ||j.routes.back!==k.back
+      ||!journalCash(s,c.seller,j.sellerBefore,j.sellerJournal)
+      ||!journalCash(s,c.carrier,j.carrierBefore,j.carrierJournal)
+      ||s.c1f?.secondOrder?.status===undefined)return false;
+    const stage=j.phase;
+    const elapsed=s.tick-j.start;
+    const expectedPhaseStart=j.start+
+      (stage==='position'?0:stage==='delivery'?k.position:
+        stage==='return'?k.position+k.delivery:k.minutes);
+    if(!['position','delivery','return','finished'].includes(stage)
+      ||j.phaseStart!==expectedPhaseStart
+      ||(stage==='finished'?elapsed<k.minutes:elapsed!==j.paidMinutes)
+      ||q.delivered!==(['return','finished'].includes(stage)?1:0)
+      ||q.completed!==(stage==='finished'?1:0))return false;
+    const nadir=s.stations.st_nadir.lager.lager,
+      meridian=s.stations.st_meridian.lager.lager,
+      cargo=sh.ladung.lager||0;
+    const legit=(stage==='position'?nadir===4&&meridian===0&&cargo===0:
+      stage==='delivery'?nadir===0&&meridian===0&&cargo===4:
+      stage==='return'?nadir===0&&meridian===4&&cargo===0:
+       nadir===0&&meridian===4-accepted&&cargo===0);
+    if(!legit)return false;
+    if(stage==='finished')
+      return sh.phase==='dock'&&sh.system==='aldera'&&sh.auftrag==='halten'
+        &&j.paidMinutes===k.minutes;
+    return sh.phase==='reise'&&sh.auftrag==='c1d-bezahlte-fracht'
+      &&sh.ziel===(stage==='position'?'st_nadir':
+        stage==='delivery'?'st_meridian':'st_aldera')
+      &&sh.ankunft===j.start+(stage==='position'?k.position:
+        stage==='delivery'?k.position+k.delivery:k.minutes);
+  }
+
   function audit(s,r){
     const w=s.c1d,c=r.c1d,j=w?.job,k=c&&rcheck(r);
     if(!w||!c||!k||!Number.isSafeInteger(units(r))||units(r)<1||units(r)>8)
@@ -8043,8 +8207,10 @@ const m_core_c1d = (() => {
       &&w.feeAllocated===w.ordered*c.freightFee
       &&w.pilotAllocated===w.ordered*k.minutes*c.wagePerMinute
       &&fee===w.feeAllocated-w.feePaid
+        +(c.secondEnabled?(w.second?.feeAllocated||0)-(w.second?.feePaid||0):0)
       &&pending===w.pilotAllocated-w.pilotPaid
-      &&salary===w.pilotPaid
+        +(c.secondEnabled?(w.second?.pilotAllocated||0)-(w.second?.pilotPaid||0):0)
+      &&salary===w.pilotPaid+(c.secondEnabled?(w.second?.pilotPaid||0):0)
       &&w.feePaid===w.completed*c.freightFee
       &&s.minted===(s.c1e?.minted||0)&&s.burned===0;
     if(j){
@@ -8058,7 +8224,9 @@ const m_core_c1d = (() => {
       // C1d-8: a correctly settled first one-time carriage is historical.
       // New truly manufactured inventory may await a second distinct job in Nadir.
       const newerInventory=s.ledger.lager.produced-units(r);
-      const correctLocation=j.phase==='position'
+      const correctLocation=j.phase==='finished'&&c.secondEnabled&&w.second
+        ?true // The second physical ledger is validated by secondAudit below.
+        :j.phase==='position'
         ?s.stations.st_nadir.lager.lager===units(r)&&
           s.stations.st_meridian.lager.lager===0&&!sh?.ladung?.lager
         :j.phase==='delivery'
@@ -8069,7 +8237,7 @@ const m_core_c1d = (() => {
             :s.stations.st_nadir.lager.lager===0)&&
           s.stations.st_meridian.lager.lager===firstRemaining
           &&!sh?.ladung?.lager;
-      valid=valid&&eventAllowed.includes(j.phase)&&
+      valid=valid&&(!c.secondEnabled||secondAudit(s,r))&&eventAllowed.includes(j.phase)&&
         j.titleOwner===c.seller&&j.routes.position===k.position
         &&j.routes.delivery===k.delivery&&j.routes.back===k.back
         &&j.paidMinutes===w.pilotPaid/c.wagePerMinute
@@ -8100,10 +8268,11 @@ const m_core_c1d = (() => {
     }else{
       valid=valid&&w.ordered===0&&w.delivered===0&&w.completed===0;
     }
+    if(c.secondEnabled&&!j)valid=valid&&secondAudit(s,r);
     return {ok:valid,ordered:w.ordered,delivered:w.delivered,
       returned:w.completed,workPaid:w.pilotPaid,feePaid:w.feePaid};
   }
-  return {pruefen,starten,tick,audit};
+  return {pruefen,starten,tick,audit,pruefenSecond,startSecond};
 })();
 
 // C1d-2: Forschungsabnahme, ausschließlich mit echten angesparten Etatrechten.
@@ -8303,6 +8472,100 @@ const m_core_c1f=(()=>{
      'C1d-4: vier physische Lagermodule gegen 1720 bereits bezahlte ISK ausgeführt; 0 neue ISK',
      owner);
  }
+
+ // C1d-8b: a second distinctly signed, entirely prepaid four-module sale.
+ // No replay of the first buyer's accepted title or discharged escrow.
+ function prepaySecondCheck(s,r,owner){
+   const c=r.c1f,w=s.c1f,o=w?.order;
+   if(!c?.secondEnabled||!w||!o||owner!==c.buyer||w.secondOrder
+     ||o.status!=='accepted'||w.accepted!==4||w.settled!==1380
+     ||s.c1d?.completed!==1||s.c1d.job?.phase!=='finished'||s.c1d.second
+     ||s.w5b?.lagerFertig!==8||s.w5b?.bauteilFertig!==8||s.w5b?.auftrag
+     ||s.stations.st_nadir.lager.lager!==4
+     ||s.stations.st_meridian.lager.lager!==0
+     ||s.ledger.lager.produced!==8||s.ledger.lager.exported!==4
+     ||s.owners[ESCROW].cash!==0||s.minted!==0||s.burned!==0)
+     return {ok:false,grund:'Zweite vierfache Bestellung nicht aus neuen Eigenwaren gedeckt'};
+   const amount=total(c),rest=amount-c.advance;
+   if(s.owners[c.buyer].cash<amount||s.owners[c.seller].cash<r.c1d.freightFee
+     ||s.owners[r.c1d.carrier].cash<240)
+     return {ok:false,grund:'Zweiter Kauf oder echte Frachtarbeit nicht vorfinanzierbar'};
+   if(!m_core_audit.audit(s).ok)
+     return {ok:false,grund:'Zweiter Kauf verweigert: Gesamtbuch vor Vorauszahlung fehlerhaft'};
+   return {ok:true,amount,rest};
+ }
+ function prepaySecond(s,r,owner){
+   const p=prepaySecondCheck(s,r,owner);if(!p.ok)throw Error(p.grund);
+   const c=r.c1f,w=s.c1f,buyerBefore=s.owners[c.buyer].cash;
+   const buyerJournal=journal(s,c.buyer);
+   s.owners[c.buyer].cash-=p.amount;
+   s.owners[c.seller].cash+=c.advance;
+   s.owners[ESCROW].cash=p.rest;
+   buche(s,c.buyer,'kosten',p.amount);
+   buche(s,c.seller,'erloes',c.advance);
+   w.secondAdvanced=c.advance;
+   w.secondOrder={id:'C1D8B-0002',buyer:c.buyer,seller:c.seller,
+     createdTick:s.tick,buyerBefore,amount:p.amount,advance:c.advance,
+     rest:p.rest,status:'prepaid',acceptedTick:null,buyerJournal};
+   m_core_state.protokolliere(s,'auftrag',
+     'C1d-8b: zweite eigene Vierercharge fuer 1720 bestehende ISK bestellt, 1380 gebunden',
+     c.buyer);
+ }
+ function acceptSecondCheck(s,r,owner){
+   const c=r.c1f,w=s.c1f,o=w?.secondOrder,flight=s.c1d?.second;
+   if(!c?.secondEnabled||!w||!o||owner!==c.buyer||o.buyer!==owner
+     ||o.status!=='prepaid'||o.acceptedTick!==null
+     ||w.secondAccepted!==0||w.secondSettled!==0
+     ||flight?.completed!==1||flight?.delivered!==1
+     ||flight.job?.phase!=='finished'
+     ||s.w5b?.lagerFertig!==8||s.stations.st_nadir.lager.lager!==0
+     ||s.stations.st_meridian.lager.lager!==4
+     ||s.ledger.lager.exported!==4||s.ledger.lager.produced!==8
+     ||s.owners[ESCROW]?.cash!==o.rest||s.minted!==0)
+     return {ok:false,grund:'Zweite echte Lieferung, Rueckflug oder Kaufrest fehlen'};
+   if(!m_core_audit.audit(s).ok)
+     return {ok:false,grund:'Vor Zweitabnahme Eigentums-/Finanzierungsaudit fehlgeschlagen'};
+   return {ok:true,rest:o.rest};
+ }
+ function acceptSecond(s,r,owner){
+   const p=acceptSecondCheck(s,r,owner);if(!p.ok)throw Error(p.grund);
+   const c=r.c1f,w=s.c1f;
+   s.stations.st_meridian.lager.lager-=c.quantity;
+   s.ledger.lager.exported+=c.quantity;
+   s.owners[ESCROW].cash-=p.rest;
+   s.owners[c.seller].cash+=p.rest;
+   buche(s,c.seller,'erloes',p.rest);
+   w.secondSettled=p.rest;w.secondAccepted=c.quantity;
+   w.secondOrder.status='accepted';w.secondOrder.acceptedTick=s.tick;
+   m_core_state.protokolliere(s,'handel',
+     'C1d-8b: zweite reale Vierercharge gegen erneute 1720 ISK ohne Emission abgenommen',
+     c.buyer);
+ }
+ function secondAudit(s,r){
+   const w=s.c1f,c=r.c1f,o=w?.secondOrder,esc=s.owners[ESCROW];
+   if(!c?.secondEnabled)return !o;
+   if(!safe(w?.secondAdvanced)||!safe(w?.secondSettled)
+     ||!safe(w?.secondAccepted)||!esc)return false;
+   if(!o)return w.secondAdvanced===0&&w.secondSettled===0
+     &&w.secondAccepted===0&&(!s.c1d?.second);
+   const done=o.status==='accepted',rest=total(c)-c.advance;
+   return o.id==='C1D8B-0002'&&o.id!==w.order?.id
+     &&o.buyer===c.buyer&&o.seller===c.seller
+     &&o.amount===total(c)&&o.advance===c.advance&&o.rest===rest
+     &&safe(o.buyerBefore)&&o.buyerBefore>=o.amount
+     &&safe(o.createdTick)&&o.createdTick>w.order.acceptedTick
+     &&o.createdTick<=s.tick
+     &&journalCash(s,c.buyer,o.buyerBefore,o.buyerJournal)
+     &&w.secondAdvanced===c.advance
+     &&w.secondAccepted===(done?4:0)&&w.secondSettled===(done?rest:0)
+     &&o.status===(done?'accepted':'prepaid')
+     &&(!done?o.acceptedTick===null:
+       safe(o.acceptedTick)&&o.acceptedTick>=o.createdTick
+         &&o.acceptedTick<=s.tick
+         &&o.acceptedTick>=s.c1d.second?.job?.start+240)
+     &&(!done||s.c1d.second?.completed===1);
+ }
+
  function audit(s,r){
    const c=r.c1f,w=s.c1f,o=w?.order;
    if(!c||!w||c.quantity!==4||c.unitPrice!==430||c.advance!==340
@@ -8311,8 +8574,10 @@ const m_core_c1f=(()=>{
      return {ok:false,grund:'C1d-4 Konto oder vertragliche Begrenzung falsch'};
    const accepted=w.accepted===4,amount=total(c),rest=amount-c.advance;
    let ok=!!s.owners[ESCROW]&&s.minted===0&&s.burned===0
-     &&s.ledger.lager.exported===w.accepted
-     &&s.stations.st_meridian.lager.lager===s.c1d.delivered*c.quantity-w.accepted;
+     &&s.ledger.lager.exported===w.accepted+(c.secondEnabled?(w.secondAccepted||0):0)
+     &&s.stations.st_meridian.lager.lager===s.c1d.delivered*c.quantity-w.accepted
+       +(c.secondEnabled?(s.c1d.second?.delivered||0)*c.quantity-(w.secondAccepted||0):0)
+     &&(!c.secondEnabled||secondAudit(s,r));
    if(!o)ok=ok&&w.advanced===0&&w.settled===0&&w.accepted===0
      &&s.owners[ESCROW].cash===0;
    else ok=ok&&o.id==='C1D4-0001'
@@ -8329,12 +8594,15 @@ const m_core_c1f=(()=>{
      &&(accepted?(safe(o.acceptedTick)&&o.acceptedTick>=o.createdTick
        &&o.acceptedTick<=s.tick&&o.acceptedTick>=s.c1d.job.start+240)
        :o.acceptedTick===null)
-     &&s.owners[ESCROW].cash===(accepted?0:rest)
+     &&s.owners[ESCROW].cash===(accepted
+       ?(c.secondEnabled&&w.secondOrder?.status==='prepaid'?rest:0)
+       :rest)
      &&(!accepted||s.c1d.completed===1);
    return {ok,units:w.accepted,advanced:w.advanced,
      settled:w.settled,rest:s.owners[ESCROW]?.cash??-1};
  }
- return {prepayCheck,prepay,acceptCheck,accept,audit};
+ return {prepayCheck,prepay,acceptCheck,accept,
+   prepaySecondCheck,prepaySecond,acceptSecondCheck,acceptSecond,audit};
 })();
 
 const m_core_audit = (() => {
@@ -8398,8 +8666,10 @@ function audit(state) {
       +(state.w5s?.oreVenture?.dividends??0);
     // C1d-4: existing ore buyer also prepays a separately proven storage purchase.
     // Keep it a distinct expense, never re-label it as exported ore or new ISK.
-    const storageExpense=state.c1f?.advanced
-      ?m_data_erzpilot.W5R_RULES.c1f.quantity*m_data_erzpilot.W5R_RULES.c1f.unitPrice:0;
+    const storageExpense=(state.c1f?.advanced
+      ?m_data_erzpilot.W5R_RULES.c1f.quantity*m_data_erzpilot.W5R_RULES.c1f.unitPrice:0)
+      +(state.c1f?.secondAdvanced
+      ?m_data_erzpilot.W5R_RULES.c1f.quantity*m_data_erzpilot.W5R_RULES.c1f.unitPrice:0);
     const differenz = rest + ausgegeben + equity+storageExpense-shareholderPaid-start;
     // Ohne belegte Endkunden-Einnahmen darf ein blosses Verschieben vorhandener ISK
     // nicht als wiederkehrend finanziertes Exportgeschaeft gelten.
@@ -8407,8 +8677,8 @@ function audit(state) {
       && Number.isSafeInteger(exportiert) && exportiert >= 0
       && Number.isSafeInteger(ausgegeben) && Number.isSafeInteger(differenz)
       && differenz === 0;
-    extra.finanzierung = { ok: finanzierungsOk, start, ausgegeben, storageExpense, rest,
-      differenz, exportiert };
+    extra.finanzierung = { ok: finanzierungsOk, start, ausgegeben,
+      ...(state.c1f?.advanced?{storageExpense}:{}),rest,differenz, exportiert };
   }
   let wirtschaftOk = true;
   if (state.rulesVersion === m_data_erzpilot.ERZ_RULES.rulesVersion
@@ -8500,7 +8770,8 @@ function audit(state) {
     if(state.c1f?.order){
       const p=m_core_c1f.audit(state,m_data_erzpilot.W5R_RULES);
       if(!p.ok)errors.c1f='unbelegter Käufer-Vorauftrag';
-      else if(state.c1f.order.status==='prepaid')active.add('c1f_kaufrest_escrow');
+      else if(state.c1f.order.status==='prepaid'||state.c1f.secondOrder?.status==='prepaid')
+        active.add('c1f_kaufrest_escrow');
     }
     if(state.c1d?.job){
       const proof=m_core_c1d.audit(state,m_data_erzpilot.W5R_RULES);
@@ -8826,7 +9097,9 @@ function createW5BState(seed=W5B_RULES.startSeed,rules=W5B_RULES) {
         s.c1e={order:null,accepted:0,minted:0,reserved:0,events:[]};
       if(rules.w5b?.directPartsCustody)s.w5b.bauteilTitel=[];
       if(rules.c1f){
-        s.c1f={order:null,accepted:0,advanced:0,settled:0};
+        s.c1f={order:null,accepted:0,advanced:0,settled:0,
+          ...(rules.c1f.secondEnabled
+            ?{secondOrder:null,secondAdvanced:0,secondAccepted:0,secondSettled:0}:{})};
         s.owners.c1f_kaufrest_escrow={id:'c1f_kaufrest_escrow',kind:'escrow',cash:0};
       }
     }

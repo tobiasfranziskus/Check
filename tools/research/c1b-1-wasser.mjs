@@ -8,20 +8,22 @@ export const WAGES_PROFILE='aphros-research:C1c-1:earned-industry-wages-v1';
 export const PARTS_PROFILE='aphros-research:C1c-2:paid-component-v1';
 export const STORAGE_PROFILE='aphros-research:C1c-3:timed-silicon-storage-v1';
 export const DELIVERY_PROFILE='aphros-research:C1d-1:physical-delivery-no-mint-v1';
-const SOURCE_SHA='307b1e8828f1ba6fccd89743b6e53bd607dbf0b13bbfb8efe246f619335d8e4c';
+export const EXPORT_PROFILE='aphros-research:C1d-2:once-only-bounded-acceptance-v1';
+const SOURCE_SHA='311b4f0628a8964c9dbd7a4ed8c5e1792739e8732fb72b0a0ad3969ae2b5172c';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};
 
 // One bounded registration path; never accept arbitrary rule callbacks or patched audits.
 export function createResearchCore({profile=PROFILE}={}){
- check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE,STORAGE_PROFILE,DELIVERY_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
+ check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE,STORAGE_PROFILE,DELIVERY_PROFILE,EXPORT_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
  const precursor=profile!==PROFILE;
  const partsFlow=profile===PARTS_PROFILE;
- const deliveryFlow=profile===DELIVERY_PROFILE;
+ const exportFlow=profile===EXPORT_PROFILE;
+ const deliveryFlow=profile===DELIVERY_PROFILE||exportFlow;
  const storageFlow=profile===STORAGE_PROFILE||deliveryFlow;
  const wageFlow=profile===WAGES_PROFILE||partsFlow||storageFlow;
- const version=deliveryFlow?3306:storageFlow?3305:partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
+ const version=exportFlow?3307:deliveryFlow?3306:storageFlow?3305:partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
  const html=readFileSync(new URL('../../index.html',import.meta.url),'utf8');
  check(sha(html)===SOURCE_SHA,'unbekannte Core-Basis');
  const source=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
@@ -35,7 +37,7 @@ export function createResearchCore({profile=PROFILE}={}){
   base:m_data_rules.RULES});
  `+source.slice(boundary)+`
 return {api:m_core_index,serialize:m_core_serialize,
-  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s,parts:m_core_w5b};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow}));
+  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s,parts:m_core_w5b};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow}));
  const rules=core.api.W5R_RULES;
  const fingerprint=sha(core.serialize.save(rules));
  function identity(s){
@@ -43,7 +45,8 @@ return {api:m_core_index,serialize:m_core_serialize,
   check(s.c1b.rules===fingerprint,'Regel-Fingerprint falsch');
   check(s.w5o.mode==='wages'&&s.w5o.minerOwner==='npc3','Einkommensprofil falsch');
   check((wageFlow?!!s.w5s:!s.w5s)&&s.w5q.mode==='off'&&['rate','dayCap','totalCap','exported','minted','payout','stationNet'].every(k=>s.w5q[k]===0)
-   &&s.w5q.events.length===0&&s.minted===0&&s.burned===0,'Export/Mint/Rettung nicht Teil dieses Profils');
+   &&s.w5q.events.length===0&&s.minted===(exportFlow?(s.c1e?.minted??-1):0)
+   &&s.burned===0,'Nur belegte C1d-2-Forschungsemission erlaubt');
  }
  function audit(s){
   try{
@@ -61,6 +64,10 @@ return {api:m_core_index,serialize:m_core_serialize,
     check(core.api.audit(s).c1d?.ok===true,'originaler C1d Transport-/Eigentumsaudit');
     check(deliveryAudit(s,rules),'zusaetzliches unabhaengiges C1d-Geldaudit');
    }
+   if(exportFlow){
+    check(core.api.audit(s).c1e?.ok===true,'Core-Abnahmeaudit');
+    check(exportAudit(s,rules),'unabhaengige Originalwaren-/Emissionsbelege');
+   }
    check(Object.values(s.owners).every(o=>integer(o.cash)),'ungueltiges Geld');
    for(const obj of [...Object.values(s.stations).map(x=>x.lager),...Object.values(s.ships).map(x=>x.ladung),...Object.values(s.ledger)])
     check(Object.values(obj).every(integer),'ungueltige Waren');
@@ -77,7 +84,7 @@ return {api:m_core_index,serialize:m_core_serialize,
   const s=core.serialize.load(json,core.serialize.MIGRATIONS,8,version,{});
   return validate(s);
  }
- const allowed=new Set([...(precursor?['shipFreight','stationRefine']:[]),...(partsFlow||storageFlow?['stationBuildParts']:[]),...(storageFlow?['stationBuildStorage']:[]),...(deliveryFlow?['shipCapitalFreight']:[]),'shipMine','shipWait','shipSellIce','shipFreightIce','stationWater','shipBuy']);
+ const allowed=new Set([...(precursor?['shipFreight','stationRefine']:[]),...(partsFlow||storageFlow?['stationBuildParts']:[]),...(storageFlow?['stationBuildStorage']:[]),...(deliveryFlow?['shipCapitalFreight']:[]),...(exportFlow?['stationExportReserve','stationExportAccept']:[]),'shipMine','shipWait','shipSellIce','shipFreightIce','stationWater','shipBuy']);
  function execute(s,cmd){
   identity(s);check(allowed.has(cmd?.type),'Befehl ausserhalb des Wasserprofils');
   return core.api.execute(s,cmd,rules);
@@ -121,12 +128,36 @@ function lohnAudit(s,r){
    &&s.owners[r.w4.arbeitOwner].cash===s.w4.gezahlt-(paid.refinery||0)
    &&s.owners.w5n_kunden.cash===init('w5n_kunden')+s.w5o.ausgezahlt
        +(w.orePilotWages||0)+industry-s.w5n.wasserErlos
-   &&s.minted===0&&s.burned===0;
+   &&s.minted===(s.c1e?.minted||0)&&s.burned===0;
 }
 // Independent checks beyond the registered original W5b audit. Research rule
 // 3304 only establishes the *paid output*, not ten timed C-silicon work minutes.
 // Independent of the original W5b goods/escrow audit: exact ten paid
 // silicon minutes per unit, two genuine component units and one paid storage lot.
+function exportAudit(s,r){
+ const w=s.c1e,c=r.c1e,o=w?.order;
+ if(!w||!c||c.price!==430||c.dayCap!==400||c.cap30!==12000
+   ||c.cap365!==146000||c.carryDays!==30)return false;
+ const e=w.events[0],accepted=w.accepted;
+ const enough=day=>Math.min(400*Math.min(day+1,30),12000,146000);
+ return [accepted,w.minted,w.reserved].every(integer)
+   &&accepted<=1&&w.minted===430*accepted
+   &&w.reserved===(o?.status==='reserved'?430:0)
+   &&s.ledger.lager.exported===accepted
+   &&s.stations.st_meridian.lager.lager===s.c1d.delivered-accepted
+   &&s.minted===w.minted&&s.burned===0
+   &&(o===null
+     ?accepted===0&&w.events.length===0
+     :o.id==='C1D2-0001'&&o.seller==='house'&&o.station==='st_meridian'
+       &&o.day===Math.floor(o.tick/1440)&&o.day>=1
+       &&o.available===enough(o.day)&&o.available>=430
+       &&o.tick<=s.tick&&o.price===430&&w.events.length===accepted
+       &&(accepted
+         ?o.status==='accepted'&&e.id===o.id&&e.tick===o.acceptedTick
+           &&e.day===o.day&&e.owner==='house'&&e.units===1&&e.amount===430
+           &&e.tick>=s.c1d.job.start+240
+         :o.status==='reserved'&&o.acceptedTick===null));
+}
 function deliveryAudit(s,r){
  const c=s.c1d,j=c?.job;
  if(!c||!r.c1d||!Number.isSafeInteger(c.pilotPaid)
@@ -144,11 +175,11 @@ function deliveryAudit(s,r){
     j.titleOwner===r.c1d.seller
     &&j.routes.position===60&&j.routes.delivery===60&&j.routes.back===120
     &&j.paidMinutes===c.pilotPaid
-    && s.owners[r.c1d.seller].cash===j.sellerBefore-c.feeAllocated
+    && s.owners[r.c1d.seller].cash===j.sellerBefore-c.feeAllocated+(s.c1e?.minted||0)
     && s.owners[r.c1d.carrier].cash===j.carrierBefore-c.pilotAllocated+c.feePaid
   ))
-  &&s.minted===0&&s.burned===0
-  &&s.ledger.lager.exported===0;
+  &&s.minted===(s.c1e?.minted||0)&&s.burned===0
+  &&s.ledger.lager.exported===(s.c1e?.accepted||0);
 }
 function lagerAudit(s,r){
  const w=s.w5b,c=r.w5b,f=w?.auftrag,m=w?.siliziumAuftrag;
@@ -171,11 +202,11 @@ function lagerAudit(s,r){
    &&s.ledger.lager.produced===w.lagerFertig
    &&s.ledger.lager.consumed===0
    &&s.stations.st_nadir.lager.lager+(s.ships[s.c1d?.job?.ship]?.ladung?.lager||0)
-      +(s.stations.st_meridian?.lager?.lager||0)===w.lagerFertig
+      +(s.stations.st_meridian?.lager?.lager||0)+(s.c1e?.accepted||0)===w.lagerFertig
    &&w.fabrikLohnGebunden===allocated
    &&w.fabrikLohnBezahlt===settled
    &&(s.owners.w5b_fabrik_arbeit?.cash||0)===allocated-settled
-   &&s.minted===0&&s.burned===0;
+   &&s.minted===(s.c1e?.minted||0)&&s.burned===0;
 }
 function bauteilAudit(s,r){
  const w=s.w5b, p=r.w5b;
@@ -220,7 +251,7 @@ function nachfrageAudit(s){
    &&x.bought===(!x.missingCash&&!x.missingGoods?1:0))
   &&rows.reduce((n,x)=>n+x.bought,0)===s.w5n.wasserVerbraucht;
 }
-function register({data,freeze,water,income,trade,state,base},{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow}){
+function register({data,freeze,water,income,trade,state,base},{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow}){
  const rules=structuredClone(data.W5R_RULES);
  rules.rulesVersion=version;
  rules.researchProfile=profile;
@@ -259,6 +290,10 @@ function register({data,freeze,water,income,trade,state,base},{profile,version,p
    ziel:{lager:2},gebuehr:0};
   rules.owners.push({id:'st_meridian',kind:'station',cash:0});
   rules.c1d={seller:'house',carrier:'transport',freightFee:300,wagePerMinute:1};
+ }
+ if(exportFlow){
+  rules.c1e={seller:'house',price:430,dayCap:400,cap30:12000,
+    cap365:146000,carryDays:30};
  }
  if(wageFlow){
   // Reuse existing W5s-q (paid W3 flights) and W5s-r (earned W4/W5/W5r
@@ -373,7 +408,7 @@ function register({data,freeze,water,income,trade,state,base},{profile,version,p
      &&(s.owners.w5n_fabrik_arbeit?.cash||0)===w.fabrikGebucht-w.fabrikBezahlt
      &&w.eisVerbraucht===w.fabrikFertig*c.rezeptEis
      &&w.wasserProduziert===w.fabrikFertig*c.rezeptWasser
-     &&s.minted===(s.w5q?.minted??0)&&s.burned===0;
+     &&s.minted===(s.w5q?.minted??0)+(s.c1e?.minted||0)&&s.burned===0;
    return {ok,eisAbgebaut:w.eisAbgebaut,eisVerkauft:w.mineVerkauft,
      eisGeliefert:w.eisGeliefert,wasserProduziert:w.wasserProduziert,
      wasserVerbraucht:w.wasserVerbraucht,waterBuyerCash:s.owners[c.kunde].cash,

@@ -10,6 +10,7 @@ on:
       - tests/c1c-2-bauteil-produktion.test.mjs
       - tests/c1c-3-silizium-lager.test.mjs
       - tests/c1d-1-meridian-fracht.test.mjs
+      - tests/c1d-2-externe-abnahme.test.mjs
       - .github/workflows/c1b-1-wasser.yml
 permissions:
   contents: read
@@ -38,6 +39,8 @@ jobs:
         run: node tests/c1c-3-silizium-lager.test.mjs
       - name: C1d-1 echte vorfinanzierte Meridian-Lieferung ohne Emission
         run: node tests/c1d-1-meridian-fracht.test.mjs
+      - name: C1d-2 einmalige externe Abnahme und begrenzte Forschungsrechte
+        run: node tests/c1d-2-externe-abnahme.test.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: c1b1-water-measurements

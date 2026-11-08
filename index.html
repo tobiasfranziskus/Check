@@ -1159,6 +1159,7 @@ const FIELDS = {
   shipFreight: ['schiff'], stationRefine: ['station'],
   stationBuildShip: ['station'], stationBuildMiner: ['station'], stationBuildParts: ['station'], stationBuildFighter: ['station'],
   stationBuildStorage: ['station'], shipCapitalFreight: ['schiff'],
+  stationExportReserve: ['station'], stationExportAccept: ['station'],
   pirateBuy: ['angebot'],
   stationBuildLaser: ['station'], pilotBuyLaser: ['schiff'], pilotFitLaser: ['schiff'],
   shipReplaceFighter: ['station'], shipUpgradeMiner: ['schiff'], shipFreightIce: ['schiff'],
@@ -1340,6 +1341,7 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5b ? ['stationBuildParts','stationBuildFighter'] : []),
     ...(rules.w5b?.allowStorageManufacturing ? ['stationBuildStorage'] : []),
     ...(rules.c1d ? ['shipCapitalFreight'] : []),
+    ...(rules.c1e ? ['stationExportReserve','stationExportAccept'] : []),
     ...(rules.w5c ? ['pirateBuy','shipHunt'] : []),
     ...(rules.w5f ? ['stationBuildLaser','pilotBuyLaser','pilotFitLaser'] : []),
     ...(rules.w5g ? ['shipReplaceFighter'] : []),
@@ -1420,6 +1422,13 @@ function checkShape(state, cmd, rules) {
       if(!pruefung.ok)return pruefung.grund;
     }
     if (state.owners[cmd.owner].cash < rules.economy.waren[cmd.klasse].basis) return 'zu wenig ISK';
+  }
+  if (cmd.type==='stationExportReserve'||cmd.type==='stationExportAccept') {
+    if(!rules.c1e)return 'C1d-2 Forschungsabnahme nicht aktiv';
+    const p=cmd.type==='stationExportReserve'
+      ?m_core_c1e.reserveCheck(state,rules,cmd.owner,cmd.station)
+      :m_core_c1e.acceptCheck(state,rules,cmd.owner,cmd.station);
+    if(!p.ok)return p.grund;
   }
   if (cmd.type === 'shipCapitalFreight') {
     if(!rules.c1d)return 'C1d-Fracht nicht aktiv';
@@ -1575,6 +1584,12 @@ function execute(state, cmd, rules) {
     }
     case 'shipCapitalFreight': {
       m_core_c1d.starten(state,rules,state.ships[cmd.schiff]);break;
+    }
+    case 'stationExportReserve': {
+      m_core_c1e.reserve(state,rules,cmd.owner,cmd.station);break;
+    }
+    case 'stationExportAccept': {
+      m_core_c1e.accept(state,rules,cmd.owner,cmd.station);break;
     }
     case 'stationBuildParts':
     case 'stationBuildFighter':
@@ -3626,7 +3641,8 @@ const m_core_w5b = (() => {
       && (!c.allowStorageManufacturing||(state.ledger.lager?.produced===lagerFertig
         &&(state.ledger.lager?.consumed||0)===0
         &&(lager.lager||0)+(state.ships[state.c1d?.job?.ship]?.ladung?.lager||0)
-          +(state.stations.st_meridian?.lager?.lager||0)===lagerFertig))
+          +(state.stations.st_meridian?.lager?.lager||0)
+          +(state.c1e?.accepted||0)===lagerFertig))
       && w.jaegerFertig>=w.jaegerVerkauft&&idsOk
       && (!w.minerId||(miner?.owner===c.produzent&&miner.klasse==='miner'&&miner.heimat==='nadir'))
       && (!w.siliziumAuftrag||(w.siliziumAuftrag.schiff===w.minerId
@@ -3844,7 +3860,7 @@ const m_core_w5d = (() => {
         &&(e.owner===rules.w5c.pirat||e.owner===rules.w5c.anbieter)
         &&Number.isSafeInteger(e.tick)&&e.tick>=0&&e.tick<=state.tick)
       &&state.w5b.zerstoerteIds.length===verloren.length
-      &&state.minted===(state.w5q?.minted??0)
+      &&state.minted===(state.w5q?.minted??0)+(state.c1e?.minted||0)
       &&state.stats.kopfgeld===(state.w5f?.kopfgeldBezahlt??0);
     return {ok,kaempfe:w.kaempfe,verluste:verloren.length,
       piratenVerluste:verloren.filter(x=>x.owner===rules.w5c.pirat).length,
@@ -4210,7 +4226,7 @@ const m_core_w5g=(()=>{
     const ok=valid&&w.ersatz.length<=c.ersatzLimit
       &&w.ersatz.length<=state.w5d.verluste.filter(e=>e.owner===c.anbieter).length
       &&w.ersatz.length<=state.w5b.jaegerVerkauft
-      &&state.minted===(state.w5q?.minted??0);
+      &&state.minted===(state.w5q?.minted??0)+(state.c1e?.minted||0);
     return {ok,ersatz:w.ersatz.length,kaufpreis:preis(rules),
       echteNpcVerluste:state.w5d.verluste.filter(e=>e.owner===c.anbieter).length,
       piratenKasse:state.owners.pirates.cash,
@@ -4242,7 +4258,7 @@ const m_core_w5h=(()=>{
         -(s.w5s?.newCarrierOrder?.capital??0)
       &&stat?.kosten===w.gekauft*p &&stat?.erloes===w.verkauft*p
       &&quelle?.erloes===w.gekauft*p+(s.w5n?.eisTransferWert??0)
-      &&s.ledger.erz.exported===0 &&s.minted===(s.w5q?.minted??0) &&s.burned===0;
+      &&s.ledger.erz.exported===0 &&s.minted===(s.w5q?.minted??0)+(s.c1e?.minted||0) &&s.burned===0;
     return {ok,gekauft:w.gekauft,verkauft:w.verkauft,bestand:w.bestand,
       unterwegs:w.unterwegs,exportCash:k?.cash??null,lieferungen:s.w3.geliefert,
       geldsaldo:k?.cash-start+w.gekauft*p-w.verkauft*p
@@ -4358,7 +4374,7 @@ const m_core_w5m=(()=>{
       &&w.modulErz===verbaut.length*c.material
       &&w.modulArbeit===verbaut.length*c.arbeit
       &&s.ledger.erz.consumed>=w.modulErz
-      &&sum.erz===s.ledger.erz.mined&&s.minted===(s.w5q?.minted??0)&&s.burned===0;
+      &&sum.erz===s.ledger.erz.mined&&s.minted===(s.w5q?.minted??0)+(s.c1e?.minted||0)&&s.burned===0;
     return {ok,gefoerdert:sum.erz,verkauft:sum.verkauft,lohn:sum.lohn,
       module:verbaut.length,erzVerbraucht:w.modulErz,werftkosten:w.modulArbeit};
   }
@@ -4673,7 +4689,7 @@ const m_core_w5n=(()=>{
      &&(s.owners.w5n_fabrik_arbeit?.cash||0)===w.fabrikGebucht-w.fabrikBezahlt
      &&w.eisVerbraucht===w.fabrikFertig*c.rezeptEis
      &&w.wasserProduziert===w.fabrikFertig*c.rezeptWasser
-     &&s.minted===(s.w5q?.minted??0)&&s.burned===0;
+     &&s.minted===(s.w5q?.minted??0)+(s.c1e?.minted||0)&&s.burned===0;
    return {ok,eisAbgebaut:w.eisAbgebaut,eisVerkauft:w.mineVerkauft,
      eisGeliefert:w.eisGeliefert,wasserProduziert:w.wasserProduziert,
      wasserVerbraucht:w.wasserVerbraucht,waterBuyerCash:s.owners[c.kunde].cash,
@@ -4924,7 +4940,7 @@ const m_core_w5o=(()=>{
        +Object.values(s.w5s?.industryWages?.paid??{}).reduce((n,x)=>n+x,0)
        -n.wasserErlos+(s.w5q?.payout??0)
        +(s.w5s?.transferPilotWages??0)
-     &&s.minted===(s.w5q?.minted??0)&&s.burned===0;
+     &&s.minted===(s.w5q?.minted??0)+(s.c1e?.minted||0)&&s.burned===0;
    return {ok,mode:w.mode,minerOwner:w.minerOwner,ausgezahlt:sum,
      lohn:w.lohnEis+w.lohnFracht+w.lohnWasser,
      dividenden:w.divMine+w.divFracht+w.divStation,
@@ -5018,7 +5034,7 @@ const m_core_w5q=(()=>{
       &&w.stationNet===amount-w.payout
       &&(w.mode!=='off'||amount===0)
       &&s.ledger.wasser.exported===units
-      &&s.minted===amount&&s.burned===0
+      &&s.minted===amount+(s.c1e?.minted||0)&&s.burned===0
       &&s.owners.w5n_kunden.cash===r.owners.find(o=>o.id==='w5n_kunden').cash
         +s.w5o.ausgezahlt+(s.w5s?.orePilotWages??0)
         +Object.values(s.w5s?.industryWages?.paid??{}).reduce((n,x)=>n+x,0)
@@ -7935,7 +7951,7 @@ const m_core_c1d = (() => {
       &&pending===w.pilotAllocated-w.pilotPaid
       &&salary===w.pilotPaid
       &&w.feePaid===w.completed*c.freightFee
-      &&s.minted===0&&s.burned===0;
+      &&s.minted===(s.c1e?.minted||0)&&s.burned===0;
     if(j){
       const sh=s.ships[j.ship];
       const limits={position:k.position,delivery:k.position+k.delivery,
@@ -7949,7 +7965,8 @@ const m_core_c1d = (() => {
         ?s.stations.st_nadir.lager.lager===0&&sh?.ladung?.lager===1
           &&s.stations.st_meridian.lager.lager===0
         :s.stations.st_nadir.lager.lager===0&&
-          s.stations.st_meridian.lager.lager===1&&!sh?.ladung?.lager;
+          s.stations.st_meridian.lager.lager===(1-(s.c1e?.accepted||0))
+          &&!sh?.ladung?.lager;
       valid=valid&&eventAllowed.includes(j.phase)&&
         j.titleOwner===c.seller&&j.routes.position===k.position
         &&j.routes.delivery===k.delivery&&j.routes.back===k.back
@@ -7962,7 +7979,7 @@ const m_core_c1d = (() => {
         &&j.phaseStart===j.start+
            (j.phase==='position'?0:j.phase==='delivery'?k.position:
             j.phase==='return'?k.position+k.delivery:k.minutes)
-        &&s.owners[c.seller].cash===j.sellerBefore-w.feeAllocated
+        &&s.owners[c.seller].cash===j.sellerBefore-w.feeAllocated+(s.c1e?.minted||0)
         &&carrier===j.carrierBefore-w.pilotAllocated+w.feePaid
         &&sh?.owner===c.carrier&&sh?.klasse==='frachter'
         &&(j.phase==='finished'
@@ -7978,6 +7995,104 @@ const m_core_c1d = (() => {
       returned:w.completed,workPaid:w.pilotPaid,feePaid:w.feePaid};
   }
   return {pruefen,starten,tick,audit};
+})();
+
+// C1d-2: Forschungsabnahme, ausschließlich mit echten angesparten Etatrechten.
+// Keine ISK aus Kalenderzeit; eine neue ISK-Buchung erst bei Warenabnahme.
+const m_core_c1e=(()=>{
+ const {buche}=m_core_handel;
+ const ID='C1D2-0001',safe=n=>Number.isSafeInteger(n)&&n>=0;
+ const day=t=>Math.floor(t/1440);
+ const rights=(r,d)=>Math.min((Math.min(d+1,r.c1e.carryDays))*r.c1e.dayCap,
+   r.c1e.cap30,r.c1e.cap365);
+ function reserveCheck(s,r,owner,station){
+   const c=r.c1e,w=s.c1e,t=s.c1d;
+   if(!c||!w||s.rulesVersion!==r.rulesVersion||owner!==c.seller
+     ||station!=='st_meridian'||w.order||w.accepted||w.minted||w.reserved
+     ||t?.delivered!==1||t?.completed!==1||t.job?.phase!=='finished'
+     ||t.job.titleOwner!==owner||s.w5b?.lagerFertig!==1
+     ||s.ledger.lager.initial!==0||s.ledger.lager.produced!==1
+     ||s.ledger.lager.exported!==0||s.stations.st_meridian.lager.lager!==1
+     ||s.stations.st_nadir.lager.lager!==0||s.minted!==0)
+     return {ok:false,grund:'Reale bezahlte Ware oder Einmalvertrag fehlen'};
+   const d=day(s.tick),avail=rights(r,d);
+   if(d<1||avail<c.price)return {ok:false,grund:'Etatrechte reichen nicht aus'};
+   if(!m_core_audit.audit(s).ok)return {ok:false,grund:'Bestehender Audit fehlerhaft'};
+   return {ok:true,day:d,avail};
+ }
+ function reserve(s,r,owner,station){
+   const p=reserveCheck(s,r,owner,station);if(!p.ok)throw Error(p.grund);
+   s.c1e.order={id:ID,seller:owner,station,day:p.day,tick:s.tick,
+     available:p.avail,price:r.c1e.price,status:'reserved',acceptedTick:null};
+   s.c1e.reserved=r.c1e.price;
+   m_core_state.protokolliere(s,'auftrag',
+     'C1d-2: Forschungsrecht für echte Lagermodulabnahme reserviert; noch 0 ISK',
+     owner);
+ }
+ function acceptCheck(s,r,owner,station){
+   const c=r.c1e,w=s.c1e,o=w?.order;
+   if(!c||!w||!o||o.id!==ID||o.seller!==owner||owner!==c.seller
+     ||station!=='st_meridian'||o.station!==station||o.status!=='reserved'
+     ||o.acceptedTick!==null||o.price!==c.price||w.reserved!==c.price
+     ||w.minted!==0||w.accepted!==0||s.minted!==0
+     ||s.tick<o.tick||s.tick-o.tick>c.carryDays*1440
+     ||s.c1d?.completed!==1||s.c1d?.delivered!==1
+     ||s.c1d?.job?.phase!=='finished'
+     ||s.stations.st_meridian.lager.lager!==1
+     ||s.ledger.lager.exported!==0||rights(r,o.day)<c.price)
+     return {ok:false,grund:'Keine einmalige, gedeckte Warenabnahme'};
+   if(!m_core_audit.audit(s).ok)return {ok:false,grund:'Audits vor Abnahme nicht gültig'};
+   return {ok:true,price:c.price};
+ }
+ function accept(s,r,owner,station){
+   const p=acceptCheck(s,r,owner,station);if(!p.ok)throw Error(p.grund);
+   // Ein reales Lagermodul verlässt die Welt. Erst jetzt wird nach Modell B
+   // genau einmal neues Geld für diesen realen Leistungsbeleg ausgegeben.
+   s.stations.st_meridian.lager.lager--;
+   s.ledger.lager.exported++;
+   s.owners[owner].cash+=p.price;
+   s.minted+=p.price;
+   buche(s,owner,'erloes',p.price);
+   const w=s.c1e;w.accepted=1;w.minted=p.price;w.reserved=0;
+   w.order.status='accepted';w.order.acceptedTick=s.tick;
+   w.events.push({id:ID,tick:s.tick,day:w.order.day,owner,
+     amount:p.price,units:1});
+   m_core_state.protokolliere(s,'handel',
+     'C1d-2: ein echtes Lagermodul extern angenommen; 430 Forschungs-ISK auditiert',
+     owner);
+ }
+ function audit(s,r){
+   const w=s.c1e,c=r.c1e,o=w?.order;
+   if(!w||!c)return {ok:false,grund:'C1d-2 Forschungsbuch fehlt'};
+   let ok=c.price===430&&c.dayCap===400&&c.cap30===12000
+     &&c.cap365===146000&&c.carryDays===30&&c.seller==='house'
+     &&[w.accepted,w.minted,w.reserved].every(safe)&&w.accepted<=1
+     &&w.minted===w.accepted*c.price
+     &&w.reserved===(o?.status==='reserved'?c.price:0)
+     &&s.ledger.lager.exported===w.accepted
+     &&s.stations.st_meridian.lager.lager===s.c1d.delivered-w.accepted
+     &&s.minted===w.minted+(s.w5q?.minted||0)&&s.burned===0
+     &&Array.isArray(w.events)&&w.events.length===w.accepted;
+   if(!o)ok=ok&&w.accepted===0&&w.reserved===0&&w.events.length===0;
+   else ok=ok&&o.id===ID&&o.seller===c.seller&&o.station==='st_meridian'
+     &&o.price===c.price&&safe(o.tick)&&safe(o.day)
+     &&o.day===day(o.tick)&&o.day>=1&&o.tick<=s.tick
+     &&o.available===rights(r,o.day)&&o.available>=c.price
+     &&(o.status==='reserved'?o.acceptedTick===null
+       &&s.tick-o.tick<=c.carryDays*1440
+       :o.status==='accepted'&&safe(o.acceptedTick)
+         &&o.acceptedTick>=o.tick&&o.acceptedTick<=s.tick
+         &&o.acceptedTick-o.tick<=c.carryDays*1440);
+   if(w.accepted){
+     const e=w.events[0];
+     ok=ok&&o?.status==='accepted'&&e?.id===ID&&e.tick===o.acceptedTick
+       &&e.day===o.day&&e.owner===c.seller&&e.units===1
+       &&e.amount===c.price&&e.tick>=s.c1d.job.start+240&&e.tick<=s.tick;
+   }
+   return {ok,accepted:w.accepted,minted:w.minted,reserved:w.reserved,
+     events:w.events.length,day:o?.day??null};
+ }
+ return {reserveCheck,reserve,acceptCheck,accept,audit};
 })();
 
 const m_core_audit = (() => {
@@ -8213,8 +8328,10 @@ function audit(state) {
   if(w5s)extra.w5s=w5s;
   const c1d=state.c1d?m_core_c1d.audit(state,m_data_erzpilot.W5R_RULES):null;
   if(c1d)extra.c1d=c1d;
+  const c1e=state.c1e?m_core_c1e.audit(state,m_data_erzpilot.W5R_RULES):null;
+  if(c1e)extra.c1e=c1e;
   return { ok: isk.ok && goods.ok && vertragsOk && finanzierungsOk
-      && wirtschaftOk && (!c1d || c1d.ok) && (!w3 || w3.ok) && (!w4 || w4.ok) && (!w5 || w5.ok) && (!w5b || w5b.ok) && (!w5c || w5c.ok) && (!w5d || w5d.ok) && (!w5f || w5f.ok) && (!w5g || w5g.ok) && (!w5h || w5h.ok) && (!w5i || w5i.ok) && (!w5m || w5m.ok) && (!w5n || w5n.ok) && (!w5o || w5o.ok) && (!w5q || w5q.ok) && (!w5r || w5r.ok) && (!w5s || w5s.ok),
+      && wirtschaftOk && (!c1d || c1d.ok) && (!c1e || c1e.ok) && (!w3 || w3.ok) && (!w4 || w4.ok) && (!w5 || w5.ok) && (!w5b || w5b.ok) && (!w5c || w5c.ok) && (!w5d || w5d.ok) && (!w5f || w5f.ok) && (!w5g || w5g.ok) && (!w5h || w5h.ok) && (!w5i || w5i.ok) && (!w5m || w5m.ok) && (!w5n || w5n.ok) && (!w5o || w5o.ok) && (!w5q || w5q.ok) && (!w5r || w5r.ok) && (!w5s || w5s.ok),
     total, expected, delta: total - expected, isk, goods, ...extra };
 }
 return { audit };
@@ -8452,6 +8569,8 @@ function createW5BState(seed=W5B_RULES.startSeed,rules=W5B_RULES) {
         feePaid:0,pilotAllocated:0,pilotPaid:0};
       for(const id of ['c1d_freight_escrow','c1d_pilot_escrow','c1d_pilot'])
         s.owners[id]={id,kind:id==='c1d_pilot'?'labor':'escrow',cash:0};
+      if(rules.c1e)
+        s.c1e={order:null,accepted:0,minted:0,reserved:0,events:[]};
     }
   }
   if(!m_core_audit.audit(s).ok)throw Error('W5b Startfinanzierung inkonsistent');

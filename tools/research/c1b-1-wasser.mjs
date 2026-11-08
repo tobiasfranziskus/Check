@@ -6,18 +6,20 @@ export const PROFILE='aphros-research:C1b-1:water-v1';
 export const RULE_VERSION=3301;
 export const WAGES_PROFILE='aphros-research:C1c-1:earned-industry-wages-v1';
 export const PARTS_PROFILE='aphros-research:C1c-2:paid-component-v1';
-const SOURCE_SHA='6274d118345d505bc3a147eb2e169a31a8c4ed4e1b6eca566f402b70a4ae217b';
+export const SILICON_PROFILE='aphros-research:C1c-3:paid-silicon-cadence-v1';
+const SOURCE_SHA='e00e8deeea799d10c9eaa2c15846e8771853d632faa2411a29239fa7a4db7989';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};
 
 // One bounded registration path; never accept arbitrary rule callbacks or patched audits.
 export function createResearchCore({profile=PROFILE}={}){
- check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
+ check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE,SILICON_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
  const precursor=profile!==PROFILE;
- const partsFlow=profile===PARTS_PROFILE;
+ const siliconFlow=profile===SILICON_PROFILE;
+ const partsFlow=profile===PARTS_PROFILE||siliconFlow;
  const wageFlow=profile===WAGES_PROFILE||partsFlow;
- const version=partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
+ const version=siliconFlow?3305:partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
  const html=readFileSync(new URL('../../index.html',import.meta.url),'utf8');
  check(sha(html)===SOURCE_SHA,'unbekannte Core-Basis');
  const source=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
@@ -30,7 +32,7 @@ export function createResearchCore({profile=PROFILE}={}){
   water:m_core_w5n,income:m_core_w5o,trade:m_core_handel,state:m_core_state});
  `+source.slice(boundary)+`
 return {api:m_core_index,serialize:m_core_serialize,
-  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow}));
+  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,siliconFlow}));
  const rules=core.api.W5R_RULES;
  const fingerprint=sha(core.serialize.save(rules));
  function identity(s){
@@ -116,6 +118,8 @@ function bauteilAudit(s,r){
   w.fabrikLohnBezahlt,w.materialVerbraucht,w.siliziumVerbraucht,w.vorproduktKauf];
  if(!ints.every(integer))return false;
  return w.siliziumLohnBezahlt===10*w.siliziumAbgebaut
+   +((w.siliziumAuftrag?.gearbeitet||0)%(p.silikonMinutenJeEinheit||1))
+    *(10/(p.silikonMinutenJeEinheit||1))
   &&w.siliziumAbnahme===w.siliziumAbgeschlossen*24
   &&w.bauteilBegonnen===w.bauteilFertig+(a?.art==='stationBuildParts'?1:0)
   &&w.materialVerbraucht===2*w.bauteilBegonnen
@@ -147,7 +151,7 @@ function nachfrageAudit(s){
    &&x.bought===(!x.missingCash&&!x.missingGoods?1:0))
   &&rows.reduce((n,x)=>n+x.bought,0)===s.w5n.wasserVerbraucht;
 }
-function register({data,freeze,water,income,trade,state},{profile,version,precursor,wageFlow,partsFlow}){
+function register({data,freeze,water,income,trade,state},{profile,version,precursor,wageFlow,partsFlow,siliconFlow}){
  const rules=structuredClone(data.W5R_RULES);
  rules.rulesVersion=version;
  rules.researchProfile=profile;
@@ -167,6 +171,10 @@ function register({data,freeze,water,income,trade,state},{profile,version,precur
   // C-compatible; the 10-minute cadence is explicitly NOT proven.
   Object.assign(rules.w5b,{silikonMenge:1,silikonLohn:10,materialPreis:48});
   rules.economy.waren.silizium.basis=24;
+ }
+ if(siliconFlow){
+  // Ten paid Core minutes to produce one silicon, legacy W5b stays 1.
+  rules.w5b.silikonMinutenJeEinheit=10;
  }
  if(wageFlow){
   // Reuse existing W5s-q (paid W3 flights) and W5s-r (earned W4/W5/W5r

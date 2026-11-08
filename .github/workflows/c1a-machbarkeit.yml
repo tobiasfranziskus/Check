@@ -1,0 +1,25 @@
+name: C1a – Modell-C-Teilversuch (kein Gesamtwirtschaftsnachweis)
+on:
+  push:
+    branches: [analyse/c1a-modell-c-machbarkeit-20261108]
+  pull_request:
+    paths:
+      - tests/c1a-modell-c-teilversuch.test.mjs
+      - .github/workflows/c1a-machbarkeit.yml
+jobs:
+  water-subset:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 30 dann 90 Tage, unveränderte Teilprofilparameter
+        env:
+          C1A_REPORT: c1a-results.json
+        run: node tests/c1a-modell-c-teilversuch.test.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c1a-water-subset-measurements
+          path: c1a-results.json

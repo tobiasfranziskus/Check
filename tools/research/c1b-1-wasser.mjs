@@ -185,7 +185,7 @@ function bundleAudit(s,r){
  const w=s.w5b,c=r.c1d,j=s.c1d?.job;
  const cap=r.w5b?.maxStorageLots,limit=r.w5b?.maxPartsLots;
  if(!w||!c||c.quantity!==(r.c1f?4:3)
-   ||cap!==(r.c1d.allowSecondManufacturing?8:4)
+   ||cap!==(r.c1g?.enabled?9:r.c1d.allowSecondManufacturing?8:4)
    ||limit!==cap||r.w5b?.maxSiliconLots!==cap)return false;
  const produced=w.lagerFertig,stored=s.stations.st_nadir.lager.lager,
    travelling=s.ships[j?.ship]?.ladung.lager||0,
@@ -193,8 +193,8 @@ function bundleAudit(s,r){
  return [produced,stored,travelling,arrived].every(integer)
   &&produced<=cap
   &&s.ledger.lager.produced===produced
-  &&s.ledger.lager.consumed===0&&s.ledger.lager.exported===(s.c1f?.accepted||0)+(s.c1f?.secondAccepted||0)
-  &&stored+travelling+arrived+s.ledger.lager.exported===produced
+  &&s.ledger.lager.consumed===(s.c1g?.installed||0)&&s.ledger.lager.exported===(s.c1f?.accepted||0)+(s.c1f?.secondAccepted||0)
+  &&stored+travelling+arrived+s.ledger.lager.exported+(s.c1g?.installed||0)===produced
   &&w.bauteilBegonnen<=w.siliziumAbgeschlossen
   &&w.lagerBegonnen<=w.bauteilFertig
   &&w.lagerFertig<=w.lagerBegonnen
@@ -288,7 +288,8 @@ function secondFundingAudit(s,r){
    ||w.secondAccepted!==(done?4:0)
    ||s.ledger.lager.exported!==4+w.secondAccepted
    ||s.owners.c1f_kaufrest_escrow.cash!==(done?0:1380)
-   ||s.w5b?.lagerFertig!==8||s.ledger.lager.produced!==8)return false;
+   ||(s.w5b?.lagerFertig!==8&&!(r.c1g?.enabled&&done&&s.w5b?.lagerFertig===9))
+   ||s.ledger.lager.produced!==s.w5b.lagerFertig)return false;
  if(!q){
    return !done&&o.acceptedTick===null
      &&s.stations.st_nadir.lager.lager===4
@@ -327,7 +328,8 @@ function secondFundingAudit(s,r){
  const physical=phase==='position'?nadir===4&&meridian===0&&cargo===0:
    phase==='delivery'?nadir===0&&meridian===0&&cargo===4:
    phase==='return'?nadir===0&&meridian===4&&cargo===0:
-     nadir===0&&meridian===4-w.secondAccepted&&cargo===0;
+     nadir===(r.c1g?.enabled?s.w5b.lagerFertig-8-(s.c1g?.installed||0):0)
+       &&meridian===4-w.secondAccepted&&cargo===0;
  return physical;
 }
 
@@ -405,9 +407,9 @@ function lagerAudit(s,r){
    &&s.ledger.bauteil.consumed===2*w.lagerBegonnen
    &&s.stations.st_nadir.lager.bauteil===2*(w.bauteilFertig-w.lagerBegonnen)
    &&s.ledger.lager.produced===w.lagerFertig
-   &&s.ledger.lager.consumed===0
+   &&s.ledger.lager.consumed===(s.c1g?.installed||0)
    &&s.stations.st_nadir.lager.lager+(s.ships[s.c1d?.job?.ship]?.ladung?.lager||0)
-      +(s.stations.st_meridian?.lager?.lager||0)+(s.c1e?.accepted||0)+(s.c1f?.accepted||0)+(s.c1f?.secondAccepted||0)===w.lagerFertig
+      +(s.stations.st_meridian?.lager?.lager||0)+(s.c1e?.accepted||0)+(s.c1f?.accepted||0)+(s.c1f?.secondAccepted||0)+(s.c1g?.installed||0)===w.lagerFertig
    &&w.fabrikLohnGebunden===allocated
    &&w.fabrikLohnBezahlt===settled
    &&(s.owners.w5b_fabrik_arbeit?.cash||0)===allocated-settled
@@ -456,7 +458,7 @@ function nachfrageAudit(s){
    &&x.bought===(!x.missingCash&&!x.missingGoods?1:0))
   &&rows.reduce((n,x)=>n+x.bought,0)===s.w5n.wasserVerbraucht;
 }
-function register({data,freeze,water,income,trade,state,base},{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow,titleFlow,followupFlow,secondBatchFlow,secondExportFlow}){
+function register({data,freeze,water,income,trade,state,base},{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow,titleFlow,followupFlow,secondBatchFlow,secondExportFlow,internalDemandFlow}){
  const rules=structuredClone(data.W5R_RULES);
  rules.rulesVersion=version;
  rules.researchProfile=profile;
@@ -529,6 +531,11 @@ function register({data,freeze,water,income,trade,state,base},{profile,version,p
  if(secondExportFlow){
   rules.c1d.secondEnabled=true;
   rules.c1f.secondEnabled=true;
+ }
+ if(internalDemandFlow){
+  Object.assign(rules.w5b,{maxSiliconLots:9,maxPartsLots:9,maxStorageLots:9});
+  rules.c1d.internalDemandEnabled=true;
+  rules.c1g={enabled:true,buyer:'st_nadir',seller:'house',station:'st_nadir',unitPrice:430};
  }
  if(exportFlow){
   rules.c1e={seller:'house',price:430,dayCap:400,cap30:12000,

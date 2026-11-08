@@ -1161,6 +1161,7 @@ const FIELDS = {
   stationBuildStorage: ['station'], shipCapitalFreight: ['schiff'],
   stationPrepayStorage: [], stationAcceptStorage: [],
   stationPrepayStorageSecond: [], stationAcceptStorageSecond: [],
+  stationInstallPaidStorage: ['station'],
   stationExportReserve: ['station'], stationExportAccept: ['station'],
   pirateBuy: ['angebot'],
   stationBuildLaser: ['station'], pilotBuyLaser: ['schiff'], pilotFitLaser: ['schiff'],
@@ -1298,6 +1299,10 @@ function checkShape(state, cmd, rules) {
       if (state.owners[cmd.owner].cash < m_core_handel.stationspreis(state, rules, station)) return 'zu wenig ISK für den Stationskauf';
     }
   }
+  if(cmd.type==='stationInstallPaidStorage'){
+    const p=m_core_c1g.pruefen(state,rules,cmd.owner,cmd.station);
+    if(!p.ok)return p.grund;
+  }
   if(cmd.type==='stationPrepayStorageSecond'||cmd.type==='stationAcceptStorageSecond'){
     const p=cmd.type==='stationPrepayStorageSecond'
       ?m_core_c1f.prepaySecondCheck(state,rules,cmd.owner)
@@ -1361,6 +1366,7 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5b?.allowStorageManufacturing ? ['stationBuildStorage'] : []),
     ...(rules.c1d ? ['shipCapitalFreight',...(rules.c1d.secondEnabled?['shipCapitalFreightSecond']:[])] : []),
     ...(rules.c1f ? ['stationPrepayStorage','stationAcceptStorage',...(rules.c1f.secondEnabled?['stationPrepayStorageSecond','stationAcceptStorageSecond']:[])] : []),
+    ...(rules.c1g?.enabled?['stationInstallPaidStorage']:[]),
     ...(rules.c1e ? ['stationExportReserve','stationExportAccept'] : []),
     ...(rules.w5c ? ['pirateBuy','shipHunt'] : []),
     ...(rules.w5f ? ['stationBuildLaser','pilotBuyLaser','pilotFitLaser'] : []),
@@ -1601,6 +1607,9 @@ function execute(state, cmd, rules) {
     case 'stationBuildMiner': {
       m_core_w5.starten(state,rules,cmd.owner,cmd.station,
         cmd.type==='stationBuildMiner'?'miner':rules.w5.klasse); break;
+    }
+    case 'stationInstallPaidStorage':{
+      m_core_c1g.installieren(state,rules,cmd.owner,cmd.station);break;
     }
     case 'stationPrepayStorageSecond':{
       m_core_c1f.prepaySecond(state,rules,cmd.owner);break;
@@ -2938,7 +2947,7 @@ const m_core_w3 = (() => {
       -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)
       +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
       -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)!==start)
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)+(rules.c1g?.enabled?(state.c1g?.installed||0)*430:0)!==start)
       return {ok:false,grund:'W3: unbelegtes Kaeufergeld'};
     // W5s-ag: W3 muss auch beim dritten rechtmaessigen Eigentuemer
     // die fremde Firma im Auftrag UND in allen originalen Belegen tragen.
@@ -3038,7 +3047,7 @@ const m_core_w3 = (() => {
         -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)===startBuyer
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)+(rules.c1g?.enabled?(state.c1g?.installed||0)*430:0)===startBuyer
       && w.kaufAusgaben===erwarteteBezahlung && w.geliefert===erwarteteWare
       && w.arbeitsKosten===erwarteteArbeit
       && w.frachtUmsatz===w.abgeschlossen*k.frachtGebuehr
@@ -3117,7 +3126,7 @@ const m_core_w4 = (() => {
       -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)
       +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
       -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)!==start)
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)+(rules.c1g?.enabled?(state.c1g?.installed||0)*430:0)!==start)
       return {ok:false,grund:'Nadir: nicht nachgewiesenes Produktionskapital'};
     return {ok:true,grund:'Erz und vollständige Arbeitskasse reservierbar',
       erz:c.erzJeCharge,material:c.materialJeCharge,arbeit:budget,dauer:c.dauer};
@@ -3194,7 +3203,7 @@ const m_core_w4 = (() => {
         -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)
          +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
          -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)===start
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)+(rules.c1g?.enabled?(state.c1g?.installed||0)*430:0)===start
       && w.erzVerbraucht===w.abgeschlossen*c.erzJeCharge
       && w.materialErzeugt===w.abgeschlossen*c.materialJeCharge
       && state.ledger.erz.consumed===w.erzVerbraucht+(state.w5m?.modulErz??0)
@@ -3393,7 +3402,7 @@ const m_core_w5 = (() => {
         +m_core_w5b.stationsKorrektur(state)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)+(rules.c1g?.enabled?(state.c1g?.installed||0)*430:0)
           ===rules.owners.find(o=>o.id===c.station).cash
       && (!a || ((a.klasse===undefined||a.klasse==='miner'&&state.w5r?.initialized)
         &&a.material===p.material&&a.materialKosten===p.materialKosten
@@ -3725,11 +3734,11 @@ const m_core_w5b = (() => {
       && state.ledger.jaeger.consumed===w.jaegerVerkauft
       && lager.jaeger===w.jaegerFertig-w.jaegerVerkauft
       && (!c.allowStorageManufacturing||(state.ledger.lager?.produced===lagerFertig
-        &&(state.ledger.lager?.consumed||0)===0
+        &&(state.ledger.lager?.consumed||0)===(state.c1g?.installed||0)
         &&(lager.lager||0)+(state.ships[state.c1d?.job?.ship]?.ladung?.lager||0)
           +(state.stations.st_meridian?.lager?.lager||0)
           +(state.c1e?.accepted||0)+(state.c1f?.accepted||0)
-          +(state.c1f?.secondAccepted||0)===lagerFertig))
+          +(state.c1f?.secondAccepted||0)+(state.c1g?.installed||0)===lagerFertig))
       &&(!c.directPartsCustody||bauteilTitelAudit(state,rules))
       && w.jaegerFertig>=w.jaegerVerkauft&&idsOk
       && (!w.minerId||(miner?.owner===c.produzent&&miner.klasse==='miner'&&miner.heimat==='nadir'))
@@ -8181,7 +8190,8 @@ const m_core_c1d = (() => {
     const legit=(stage==='position'?nadir===4&&meridian===0&&cargo===0:
       stage==='delivery'?nadir===0&&meridian===0&&cargo===4:
       stage==='return'?nadir===0&&meridian===4&&cargo===0:
-       nadir===0&&meridian===4-accepted&&cargo===0);
+       nadir===(c.internalDemandEnabled?s.w5b.lagerFertig-8-(s.c1g?.installed||0):0)
+        &&meridian===4-accepted&&cargo===0);
     if(!legit)return false;
     if(stage==='finished')
       return sh.phase==='dock'&&sh.system==='aldera'&&sh.auftrag==='halten'
@@ -8605,6 +8615,89 @@ const m_core_c1f=(()=>{
    prepaySecondCheck,prepaySecond,acceptSecondCheck,acceptSecond,audit};
 })();
 
+// C1d-10 research: one endogenous, strictly paid storage upgrade.
+// A real ninth newly built product buys real additional physical station capacity.
+const m_core_c1g=(()=>{
+ const {buche,obergrenze}=m_core_handel;
+ const safe=n=>Number.isSafeInteger(n)&&n>=0;
+ const journal=(s,id)=>({revenue:s.stats.konto[id].erloes,costs:s.stats.konto[id].kosten});
+ const basis=(s,id,before,old)=>{
+   const now=s.stats.konto[id];
+   const mining=Object.entries(s.erzpilotVertraege||{}).reduce((n,[idShip,v])=>n+
+     (s.ships[idShip]?.owner===id&&v.arbeitsKonto?s.owners[v.arbeitsKonto].cash:0),0);
+   const reserved=mining+(id==='house'?(s.owners.w5b_silizium_arbeit?.cash||0)
+     +(s.owners.w5b_fabrik_arbeit?.cash||0):0);
+   return safe(before)&&safe(old?.revenue)&&safe(old?.costs)
+     &&safe(now?.erloes)&&safe(now?.kosten)
+     &&now.erloes>=old.revenue&&now.kosten>=old.costs
+     &&s.owners[id].cash+reserved===before+now.erloes-old.revenue-now.kosten+old.costs;
+ };
+ const capacity=(r,count)=>m_core_zahl.div(
+   r.world.stations.st_nadir.ziel.erz*r.world.obergrenze*(1000+500*count),1000000);
+ function pruefen(s,r,owner,station){
+  const c=r.c1g,w=s.c1g,st=s.stations?.st_nadir;
+  if(!c?.enabled||!w||s.rulesVersion!==r.rulesVersion
+    ||owner!==c.buyer||station!==c.station||w.order
+    ||s.c1f?.secondOrder?.status!=='accepted'||s.c1f.secondAccepted!==4
+    ||s.c1d?.second?.completed!==1
+    ||s.w5b?.lagerFertig!==9||s.w5b?.bauteilFertig!==9
+    ||s.w5b?.auftrag||s.w5b?.siliziumAuftrag
+    ||s.ledger?.lager?.produced!==9||s.ledger.lager.exported!==8
+    ||s.ledger.lager.consumed!==0||st?.lager?.lager!==1
+    ||(st.module?.lager||0)!==w.moduleBefore||w.moduleBefore>=2
+    ||s.stations.st_meridian.lager.lager!==0
+    ||s.minted!==0||s.burned!==0)
+    return {ok:false,grund:'Kein realer neunter Lagerartikel oder kein Stationsbedarf'};
+  const price=c.unitPrice,old=obergrenze(s,r,'st_nadir','erz'),next=capacity(r,w.moduleBefore+1);
+  if(price!==430||s.owners[owner].cash<price||next<=old)
+    return {ok:false,grund:'Kein bezahlter Stationsausbau mit Lagergewinn'};
+  if(!m_core_audit.audit(s).ok)
+    return {ok:false,grund:'Core-Gesamtbuch vor Stationsausbau ungueltig'};
+  return {ok:true,price,old,next};
+ }
+ function installieren(s,r,owner,station){
+  const p=pruefen(s,r,owner,station);if(!p.ok)throw Error(p.grund);
+  const c=r.c1g,w=s.c1g,from=s.owners[c.buyer],to=s.owners[c.seller];
+  const buyerBefore=from.cash,sellerBefore=to.cash,
+    buyerJournal=journal(s,c.buyer),sellerJournal=journal(s,c.seller);
+  from.cash-=p.price;to.cash+=p.price;
+  buche(s,c.buyer,'kosten',p.price);buche(s,c.seller,'erloes',p.price);
+  s.stations[c.station].lager.lager--;
+  s.ledger.lager.consumed++;
+  s.stations[c.station].module.lager=(s.stations[c.station].module.lager||0)+1;
+  w.installed=1;
+  w.order={id:'C1D10-NADIR-0001',buyer:c.buyer,seller:c.seller,
+    station:c.station,title:'C1D5-LAGER-0009',status:'installed',
+    price:p.price,createdTick:s.tick,moduleBefore:w.moduleBefore,
+    capacityBefore:p.old,capacityAfter:p.next,
+    buyerBefore,sellerBefore,buyerJournal,sellerJournal};
+  m_core_state.protokolliere(s,'handel',
+    'C1d-10: Nadir erwirbt ein echtes neuntes Lagermodul fuer 430 eigene ISK und baut es ein',owner);
+ }
+ function audit(s,r){
+  const c=r.c1g,w=s.c1g,o=w?.order,st=s.stations?.st_nadir;
+  if(!c?.enabled||!w||!st||!safe(w.moduleBefore)||w.moduleBefore>=2
+    ||![0,1].includes(w.installed)||s.minted!==0||s.burned!==0)return {ok:false};
+  if(!o)return {ok:w.installed===0&&(st.module.lager||0)===w.moduleBefore
+    &&s.ledger.lager.consumed===0,installed:0};
+  const old=capacity(r,w.moduleBefore),next=obergrenze(s,r,'st_nadir','erz');
+  const ok=w.installed===1&&o.status==='installed'
+    &&o.id==='C1D10-NADIR-0001'&&o.title==='C1D5-LAGER-0009'
+    &&o.buyer===c.buyer&&o.seller===c.seller&&o.station===c.station
+    &&o.price===430&&o.moduleBefore===w.moduleBefore
+    &&o.capacityBefore===old&&o.capacityAfter===next&&next>old
+    &&st.module.lager===w.moduleBefore+1
+    &&safe(o.createdTick)&&o.createdTick>=s.c1f?.secondOrder?.acceptedTick
+    &&o.createdTick<=s.tick&&s.w5b?.lagerFertig===9
+    &&s.ledger.lager.produced===9&&s.ledger.lager.exported===8
+    &&s.ledger.lager.consumed===1&&st.lager.lager===0
+    &&basis(s,c.buyer,o.buyerBefore,o.buyerJournal)
+    &&basis(s,c.seller,o.sellerBefore,o.sellerJournal);
+  return {ok,installed:w.installed,capacityBefore:old,capacityAfter:next};
+ }
+ return {pruefen,installieren,audit};
+})();
+
 const m_core_audit = (() => {
 const { ids, anzahl } = m_core_zahl;
 // v0.11.0 / B3: Bewusste Audit-Entscheidung zu Modulen.
@@ -8854,8 +8947,10 @@ function audit(state) {
   if(c1e)extra.c1e=c1e;
   const c1f=state.c1f?m_core_c1f.audit(state,m_data_erzpilot.W5R_RULES):null;
   if(c1f)extra.c1f=c1f;
+   const c1g=state.c1g?m_core_c1g.audit(state,m_data_erzpilot.W5R_RULES):null;
+   if(c1g)extra.c1g=c1g;
   return { ok: isk.ok && goods.ok && vertragsOk && finanzierungsOk
-      && wirtschaftOk && (!c1d || c1d.ok) && (!c1e || c1e.ok) && (!c1f || c1f.ok) && (!w3 || w3.ok) && (!w4 || w4.ok) && (!w5 || w5.ok) && (!w5b || w5b.ok) && (!w5c || w5c.ok) && (!w5d || w5d.ok) && (!w5f || w5f.ok) && (!w5g || w5g.ok) && (!w5h || w5h.ok) && (!w5i || w5i.ok) && (!w5m || w5m.ok) && (!w5n || w5n.ok) && (!w5o || w5o.ok) && (!w5q || w5q.ok) && (!w5r || w5r.ok) && (!w5s || w5s.ok),
+      && wirtschaftOk && (!c1d || c1d.ok) && (!c1e || c1e.ok) && (!c1f || c1f.ok) && (!c1g || c1g.ok) && (!w3 || w3.ok) && (!w4 || w4.ok) && (!w5 || w5.ok) && (!w5b || w5b.ok) && (!w5c || w5c.ok) && (!w5d || w5d.ok) && (!w5f || w5f.ok) && (!w5g || w5g.ok) && (!w5h || w5h.ok) && (!w5i || w5i.ok) && (!w5m || w5m.ok) && (!w5n || w5n.ok) && (!w5o || w5o.ok) && (!w5q || w5q.ok) && (!w5r || w5r.ok) && (!w5s || w5s.ok),
     total, expected, delta: total - expected, isk, goods, ...extra };
 }
 return { audit };
@@ -9096,7 +9191,8 @@ function createW5BState(seed=W5B_RULES.startSeed,rules=W5B_RULES) {
       if(rules.c1e)
         s.c1e={order:null,accepted:0,minted:0,reserved:0,events:[]};
       if(rules.w5b?.directPartsCustody)s.w5b.bauteilTitel=[];
-      if(rules.c1f){
+      if(rules.c1g?.enabled)s.c1g={moduleBefore:s.stations.st_nadir.module.lager||0,installed:0,order:null};
+       if(rules.c1f){
         s.c1f={order:null,accepted:0,advanced:0,settled:0,
           ...(rules.c1f.secondEnabled
             ?{secondOrder:null,secondAdvanced:0,secondAccepted:0,secondSettled:0}:{})};

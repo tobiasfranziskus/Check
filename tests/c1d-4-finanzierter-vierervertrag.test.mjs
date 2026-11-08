@@ -120,7 +120,7 @@ test('C1d-4: opt-in 3309 does not alter three-lot 3308 or C1d-2 3307',()=>{
 test('C1d-4: fourth manufacturing still fails before funded buyer preorder',()=>{
  const s=ready();
  reject(s,{type:'stationBuildStorage',owner:'house',station:'st_nadir'},/bezahlen/);
- reject(s,{type:'stationPrepayStorage',owner:'house'},/Vorauftrag/);
+ reject(s,{type:'stationPrepayStorage',owner:'house'},/vorauftrag/i);
  reject(s,{type:'stationAcceptStorage',owner:'export'},/Lieferung/);
  assert.equal(s.owners.house.cash,312);
  assert.equal(s.ledger.lager.produced,3);

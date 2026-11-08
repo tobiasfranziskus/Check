@@ -11,23 +11,25 @@ export const DELIVERY_PROFILE='aphros-research:C1d-1:physical-delivery-no-mint-v
 export const EXPORT_PROFILE='aphros-research:C1d-2:once-only-bounded-acceptance-v1';
 export const BUNDLE_PROFILE='aphros-research:C1d-3:three-paid-storage-freight-lot-v1';
 export const FINANCED_PROFILE='aphros-research:C1d-4:four-paid-storage-preorder-v1';
-const SOURCE_SHA='5229ef5d9f117fdfd8ff6c51a2729ccddf9eaeb7fa34b8aa4b2d3747951ca97b';
+export const TITLE_PROFILE='aphros-research:C1d-5:owner-custody-storage-v1';
+const SOURCE_SHA='68c6ba5ed8484ddbb1e04bad1f5458122552705d49dfb82b80aff3a13275900e';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};
 
 // One bounded registration path; never accept arbitrary rule callbacks or patched audits.
 export function createResearchCore({profile=PROFILE}={}){
- check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE,STORAGE_PROFILE,DELIVERY_PROFILE,EXPORT_PROFILE,BUNDLE_PROFILE,FINANCED_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
+ check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE,STORAGE_PROFILE,DELIVERY_PROFILE,EXPORT_PROFILE,BUNDLE_PROFILE,FINANCED_PROFILE,TITLE_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
  const precursor=profile!==PROFILE;
  const partsFlow=profile===PARTS_PROFILE;
- const fundedFlow=profile===FINANCED_PROFILE;
+ const titleFlow=profile===TITLE_PROFILE;
+ const fundedFlow=profile===FINANCED_PROFILE||titleFlow;
  const bundleFlow=profile===BUNDLE_PROFILE||fundedFlow;
  const exportFlow=profile===EXPORT_PROFILE;
  const deliveryFlow=profile===DELIVERY_PROFILE||exportFlow||bundleFlow;
  const storageFlow=profile===STORAGE_PROFILE||deliveryFlow;
  const wageFlow=profile===WAGES_PROFILE||partsFlow||storageFlow;
- const version=fundedFlow?3309:bundleFlow?3308:exportFlow?3307:deliveryFlow?3306:storageFlow?3305:partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
+ const version=titleFlow?3310:fundedFlow?3309:bundleFlow?3308:exportFlow?3307:deliveryFlow?3306:storageFlow?3305:partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
  const html=readFileSync(new URL('../../index.html',import.meta.url),'utf8');
  check(sha(html)===SOURCE_SHA,'unbekannte Core-Basis');
  const source=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
@@ -41,7 +43,7 @@ export function createResearchCore({profile=PROFILE}={}){
   base:m_data_rules.RULES});
  `+source.slice(boundary)+`
 return {api:m_core_index,serialize:m_core_serialize,
-  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s,parts:m_core_w5b};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow}));
+  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s,parts:m_core_w5b};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow,titleFlow}));
  const rules=core.api.W5R_RULES;
  const fingerprint=sha(core.serialize.save(rules));
  function identity(s){
@@ -71,6 +73,7 @@ return {api:m_core_index,serialize:m_core_serialize,
     if(fundedFlow){
       check(core.api.audit(s).c1f?.ok===true,'Original-C1d-4-Kaeufervertrag');
       check(financedAudit(s,rules),'unabhaengige Kaufgeld-/Treuhand-/Warenbelege');
+      if(titleFlow)check(bauteilTitelAudit(s,rules),'unabhaengige W5b-Bauteil-Titel-/Verwahrbelege');
     }
    }
    if(exportFlow){
@@ -192,6 +195,38 @@ function bundleAudit(s,r){
 
 // Independent C1d-4 contract budget, prepayment and original goods audit.
 // Only actually available pre-existing buyer cash is contracted, never new ISK.
+
+function bauteilTitelAudit(s,r){
+ const w=s.w5b,c=r.w5b,rows=w?.bauteilTitel;
+ if(!c?.directPartsCustody||!Array.isArray(rows)||rows.length!==w.bauteilFertig)
+   return false;
+ const materialCost=4*c.materialPreis,siCost=2*r.economy.waren.silizium.basis;
+ let used=0;
+ for(let i=0;i<rows.length;i++){
+  const x=rows[i],consumed=x?.usedUnits===2;
+  if(!x||x.id!=='C1D5-BT-'+String(i+1).padStart(4,'0')
+    ||x.owner!==c.produzent||x.custodian!==c.station||x.units!==2
+    ||![0,2].includes(x.usedUnits)||!integer(x.createdTick)
+    ||x.createdTick>s.tick
+    ||(consumed
+      ?!integer(x.usedTick)||x.usedTick<x.createdTick||x.usedTick>s.tick
+       ||x.usedBy!=='C1D5-LAGER-'+String(used+1).padStart(4,'0')
+      :x.usedTick!==null||x.usedBy!==null))return false;
+  if(consumed)used++;
+ }
+ return used===w.lagerBegonnen
+   &&s.stations[c.station].lager.bauteil===2*(w.bauteilFertig-used)
+   &&s.ledger.bauteil.produced===2*w.bauteilFertig
+   &&s.ledger.bauteil.consumed===2*used
+   &&w.bauteilVerbraucht===2*used
+   &&w.vorproduktKauf===w.bauteilBegonnen*(materialCost+siCost)
+   &&w.bauteilBegonnen===w.bauteilFertig+(w.auftrag?.art==='stationBuildParts'?1:0)
+   &&w.materialVerbraucht===4*w.bauteilBegonnen
+   &&w.siliziumVerbraucht===2*w.bauteilBegonnen
+   &&w.lagerBegonnen<=w.bauteilFertig
+   &&s.minted===0&&s.burned===0;
+}
+
 function financedAudit(s,r){
  const c=r.c1f,w=s.c1f,o=w?.order,esc=s.owners.c1f_kaufrest_escrow;
  if(!c||!w||!esc||c.buyer!=='export'||c.seller!=='house'||c.quantity!==4
@@ -307,7 +342,7 @@ function nachfrageAudit(s){
    &&x.bought===(!x.missingCash&&!x.missingGoods?1:0))
   &&rows.reduce((n,x)=>n+x.bought,0)===s.w5n.wasserVerbraucht;
 }
-function register({data,freeze,water,income,trade,state,base},{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow}){
+function register({data,freeze,water,income,trade,state,base},{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow,titleFlow}){
  const rules=structuredClone(data.W5R_RULES);
  rules.rulesVersion=version;
  rules.researchProfile=profile;
@@ -360,6 +395,11 @@ function register({data,freeze,water,income,trade,state,base},{profile,version,p
   rules.c1d.quantity=4;
   rules.world.stations.st_meridian.ziel.lager=4;
   rules.c1f={seller:'house',buyer:'export',quantity:4,unitPrice:430,advance:340};
+ }
+ if(titleFlow){
+  // Only C1d-5: the manufacturer owns its components in station custody.
+  // Direct processing does not repurchase its own parts from the custodian.
+  rules.w5b.directPartsCustody=true;
  }
  if(exportFlow){
   rules.c1e={seller:'house',price:430,dayCap:400,cap30:12000,

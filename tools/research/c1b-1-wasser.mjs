@@ -13,7 +13,7 @@ export const BUNDLE_PROFILE='aphros-research:C1d-3:three-paid-storage-freight-lo
 export const FINANCED_PROFILE='aphros-research:C1d-4:four-paid-storage-preorder-v1';
 export const TITLE_PROFILE='aphros-research:C1d-5:owner-custody-storage-v1';
 export const FOLLOWUP_PROFILE='aphros-research:C1d-7:post-settlement-journals-v1';
-const SOURCE_SHA='3cd72c0af58c649c60432795ed972cde57a15d522e5df40567fd4c630bab7c4a';
+const SOURCE_SHA='991af1163e6c1b8c6b77b3c86c96f697ddb4d05513469a7cac74c02724b8be92';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};
@@ -236,7 +236,7 @@ function reservedAfter(s,id){
  const mining=Object.entries(s.erzpilotVertraege||{}).reduce((sum,[shipId,v])=>
   sum+(s.ships[shipId]?.owner===id&&v.arbeitsKonto
    ?(s.owners[v.arbeitsKonto]?.cash??NaN):0),0);
- return mining+(id==='house'
+ return mining+(id==='transport'&&s.w3?.auftrag?(s.owners.w3_arbeit_treuhand?.cash??0):0)+(id==='house'
   ?(s.owners.w5b_silizium_arbeit?.cash??0)
    +(s.owners.w5b_fabrik_arbeit?.cash??0)
    +(s.owners.w5f_laser_arbeit?.cash??0):0);

@@ -162,7 +162,7 @@ function exportAudit(s,r){
          :o.status==='reserved'&&o.acceptedTick===null));
 }
 function bundleAudit(s,r){
- const w=s.w5b,c=s.c1d,j=s.c1d?.job;
+ const w=s.w5b,c=r.c1d,j=s.c1d?.job;
  if(!w||!c||c.quantity!==2||r.w5b?.maxStorageLots!==2
    ||r.w5b?.maxPartsLots!==2||r.w5b?.maxSiliconLots!==2)return false;
  const produced=w.lagerFertig,stored=s.stations.st_nadir.lager.lager,
@@ -173,8 +173,10 @@ function bundleAudit(s,r){
   &&s.ledger.lager.produced===produced
   &&s.ledger.lager.consumed===0&&s.ledger.lager.exported===0
   &&stored+travelling+arrived===produced
-  &&w.siliziumAbgeschlossen===w.bauteilFertig
-  &&w.bauteilFertig===w.lagerFertig+(w.auftrag?.art==='stationBuildStorage'?1:0)
+  &&w.bauteilBegonnen<=w.siliziumAbgeschlossen
+  &&w.lagerBegonnen<=w.bauteilFertig
+  &&w.lagerFertig<=w.lagerBegonnen
+  &&w.bauteilFertig<=w.bauteilBegonnen
   &&w.materialVerbraucht===4*w.bauteilBegonnen
   &&w.siliziumVerbraucht===2*w.bauteilBegonnen
   &&w.bauteilVerbraucht===2*w.lagerBegonnen

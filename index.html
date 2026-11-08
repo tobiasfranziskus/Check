@@ -4260,6 +4260,9 @@ const m_core_w5h=(()=>{
       quelle=s.stats.konto[c.quellStation];
     const start=r.owners.find(x=>x.id===c.kaeufer).cash;
     const hin=s.w3.auftrag?.phase==='hin'?r.w3.fracht:0;
+    // Only the opt-in buyer prepayment spends this existing ore-buyer wallet.
+    // The separate C1f Core audit proves the exact 4 x 430 contract.
+    const storageExpense=s.c1f?.advanced?r.c1f.quantity*r.c1f.unitPrice:0;
     const ok=nums.every(n=>Number.isSafeInteger(n)&&n>=0)
       &&w.gekauft===w.verkauft+w.bestand+w.unterwegs
       &&w.verkauft===s.w3.geliefert &&w.unterwegs===hin
@@ -4269,8 +4272,8 @@ const m_core_w5h=(()=>{
         -(s.w5s?.oreVenture?.capital??0)
         +(s.w5s?.oreVenture?.dividends??0)
         -(s.w5s?.successor?.capital??0)
-        -(s.w5s?.newCarrierOrder?.capital??0)
-      &&stat?.kosten===w.gekauft*p &&stat?.erloes===w.verkauft*p
+        -(s.w5s?.newCarrierOrder?.capital??0)-storageExpense
+      &&stat?.kosten===w.gekauft*p+storageExpense &&stat?.erloes===w.verkauft*p
       &&quelle?.erloes===w.gekauft*p+(s.w5n?.eisTransferWert??0)
       &&s.ledger.erz.exported===0 &&s.minted===(s.w5q?.minted??0)+(s.c1e?.minted||0) &&s.burned===0;
     return {ok,gekauft:w.gekauft,verkauft:w.verkauft,bestand:w.bestand,
@@ -4280,7 +4283,7 @@ const m_core_w5h=(()=>{
         +(s.w5s?.oreVenture?.capital??0)
         -(s.w5s?.oreVenture?.dividends??0)
         +(s.w5s?.successor?.capital??0)
-        +(s.w5s?.newCarrierOrder?.capital??0)};
+        +(s.w5s?.newCarrierOrder?.capital??0)+storageExpense};
   }
   function plan(s,r){
     const p=m_core_w5g.kalkulation(s,r),h=audit(s,r);
@@ -8279,14 +8282,18 @@ function audit(state) {
       +(state.w5s?.newCarrierOrder?.capital??0);
     const shareholderPaid=(state.w5s?.takeover?.dividends??0)
       +(state.w5s?.oreVenture?.dividends??0);
-    const differenz = rest + ausgegeben + equity-shareholderPaid - start;
+    // C1d-4: existing ore buyer also prepays a separately proven storage purchase.
+    // Keep it a distinct expense, never re-label it as exported ore or new ISK.
+    const storageExpense=state.c1f?.advanced
+      ?m_data_erzpilot.W5R_RULES.c1f.quantity*m_data_erzpilot.W5R_RULES.c1f.unitPrice:0;
+    const differenz = rest + ausgegeben + equity+storageExpense-shareholderPaid-start;
     // Ohne belegte Endkunden-Einnahmen darf ein blosses Verschieben vorhandener ISK
     // nicht als wiederkehrend finanziertes Exportgeschaeft gelten.
     finanzierungsOk = Number.isSafeInteger(rest) && rest >= 0
       && Number.isSafeInteger(exportiert) && exportiert >= 0
       && Number.isSafeInteger(ausgegeben) && Number.isSafeInteger(differenz)
       && differenz === 0;
-    extra.finanzierung = { ok: finanzierungsOk, start, ausgegeben, rest,
+    extra.finanzierung = { ok: finanzierungsOk, start, ausgegeben, storageExpense, rest,
       differenz, exportiert };
   }
   let wirtschaftOk = true;

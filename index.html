@@ -8053,14 +8053,21 @@ const m_core_c1d = (() => {
         return:k.minutes,finished:k.minutes};
       const startClock=s.tick-j.start;
       const eventAllowed=['position','delivery','return','finished'];
+      const firstAccepted=(s.c1e?.accepted||0)+(s.c1f?.accepted||0);
+      const firstRemaining=units(r)-firstAccepted;
+      // C1d-8: a correctly settled first one-time carriage is historical.
+      // New truly manufactured inventory may await a second distinct job in Nadir.
+      const newerInventory=s.ledger.lager.produced-units(r);
       const correctLocation=j.phase==='position'
         ?s.stations.st_nadir.lager.lager===units(r)&&
           s.stations.st_meridian.lager.lager===0&&!sh?.ladung?.lager
         :j.phase==='delivery'
         ?s.stations.st_nadir.lager.lager===0&&sh?.ladung?.lager===units(r)
           &&s.stations.st_meridian.lager.lager===0
-        :s.stations.st_nadir.lager.lager===0&&
-          s.stations.st_meridian.lager.lager===(units(r)-(s.c1e?.accepted||0)-(s.c1f?.accepted||0))
+        :(c.allowSecondManufacturing&&j.phase==='finished'
+            ?newerInventory>=0&&s.stations.st_nadir.lager.lager===newerInventory
+            :s.stations.st_nadir.lager.lager===0)&&
+          s.stations.st_meridian.lager.lager===firstRemaining
           &&!sh?.ladung?.lager;
       valid=valid&&eventAllowed.includes(j.phase)&&
         j.titleOwner===c.seller&&j.routes.position===k.position

@@ -3547,7 +3547,7 @@ const m_core_w5b = (() => {
     if(!w||!c)return {ok:false,grund:'W5b-Auftragsbuch fehlt'};
     const lager=state.stations[c.station]?.lager||{};
     const miner=state.ships[w.minerId];
-    const siliziumFracht=w.siliziumAuftrag?(miner?.ladung?.silizium??-1):0;
+    const siliziumFracht=w.siliziumAuftrag?(miner?(miner.ladung.silizium||0):-1):0;
     const mineKauf=state.owners[KONTO_SILIKON]?.cash??0;
     const mineArbeit=state.owners[KONTO_MINE]?.cash??0;
     const fabrik=state.owners[KONTO_FABRIK]?.cash??0;

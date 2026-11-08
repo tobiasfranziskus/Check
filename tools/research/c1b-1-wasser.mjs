@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 export const PROFILE='aphros-research:C1b-1:water-v1';
 export const RULE_VERSION=3301;
 export const WAGES_PROFILE='aphros-research:C1c-1:earned-industry-wages-v1';
+export const PARTS_PROFILE='aphros-research:C1c-2:paid-component-v1';
 const SOURCE_SHA='6274d118345d505bc3a147eb2e169a31a8c4ed4e1b6eca566f402b70a4ae217b';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
@@ -12,10 +13,11 @@ const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};
 
 // One bounded registration path; never accept arbitrary rule callbacks or patched audits.
 export function createResearchCore({profile=PROFILE}={}){
- check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
+ check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
  const precursor=profile!==PROFILE;
- const wageFlow=profile===WAGES_PROFILE;
- const version=wageFlow?3303:precursor?3302:RULE_VERSION;
+ const partsFlow=profile===PARTS_PROFILE;
+ const wageFlow=profile===WAGES_PROFILE||partsFlow;
+ const version=partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
  const html=readFileSync(new URL('../../index.html',import.meta.url),'utf8');
  check(sha(html)===SOURCE_SHA,'unbekannte Core-Basis');
  const source=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
@@ -28,7 +30,7 @@ export function createResearchCore({profile=PROFILE}={}){
   water:m_core_w5n,income:m_core_w5o,trade:m_core_handel,state:m_core_state});
  `+source.slice(boundary)+`
 return {api:m_core_index,serialize:m_core_serialize,
-  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s};`)(modules=>register(modules,{profile,version,precursor,wageFlow}));
+  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow}));
  const rules=core.api.W5R_RULES;
  const fingerprint=sha(core.serialize.save(rules));
  function identity(s){
@@ -44,6 +46,7 @@ return {api:m_core_index,serialize:m_core_serialize,
    check(base.ok,'Core-Audit '+JSON.stringify(Object.fromEntries(Object.entries(base).filter(([,v])=>v?.ok===false))));
    check(foerderAudit(s),'Arbeitsbelege');check(nachfrageAudit(s),'Nachfragebelege');
    if(wageFlow)check(lohnAudit(s,rules),'wirklich verdiente W3/W4-Loehne');
+   if(partsFlow)check(bauteilAudit(s,rules),'bezahlt erzeugtes Bauteil');
    check(Object.values(s.owners).every(o=>integer(o.cash)),'ungueltiges Geld');
    for(const obj of [...Object.values(s.stations).map(x=>x.lager),...Object.values(s.ships).map(x=>x.ladung),...Object.values(s.ledger)])
     check(Object.values(obj).every(integer),'ungueltige Waren');
@@ -60,7 +63,7 @@ return {api:m_core_index,serialize:m_core_serialize,
   const s=core.serialize.load(json,core.serialize.MIGRATIONS,8,version,{});
   return validate(s);
  }
- const allowed=new Set([...(precursor?['shipFreight','stationRefine']:[]),'shipMine','shipWait','shipSellIce','shipFreightIce','stationWater','shipBuy']);
+ const allowed=new Set([...(precursor?['shipFreight','stationRefine']:[]),...(partsFlow?['stationBuildParts']:[]),'shipMine','shipWait','shipSellIce','shipFreightIce','stationWater','shipBuy']);
  function execute(s,cmd){
   identity(s);check(allowed.has(cmd?.type),'Befehl ausserhalb des Wasserprofils');
   return core.api.execute(s,cmd,rules);
@@ -93,11 +96,39 @@ function lohnAudit(s,r){
    &&(w.orePilotWages||0)<=s.w3.arbeitsKosten
    &&(paid.refinery||0)<=s.w4.gezahlt
    &&s.owners[r.w3.arbeitsFonds].cash===init(r.w3.arbeitsFonds)
-       +s.w3.arbeitsKosten+s.w5n.frachtLohn-s.w5o.lohnFracht-(w.orePilotWages||0)
+       +s.w3.arbeitsKosten+s.w5n.frachtLohn+(s.w5b?.siliziumLohnBezahlt||0)-s.w5o.lohnFracht-(w.orePilotWages||0)
    &&s.owners[r.w4.arbeitOwner].cash===s.w4.gezahlt-(paid.refinery||0)
    &&s.owners.w5n_kunden.cash===init('w5n_kunden')+s.w5o.ausgezahlt
        +(w.orePilotWages||0)+industry-s.w5n.wasserErlos
    &&s.minted===0&&s.burned===0;
+}
+// Independent checks beyond the registered original W5b audit. Research rule
+// 3304 only establishes the *paid output*, not ten timed C-silicon work minutes.
+function bauteilAudit(s,r){
+ const w=s.w5b, p=r.w5b;
+ if(!w||!p||p.silikonMenge!==1||p.silikonLohn!==10||p.materialPreis!==48)return false;
+ const a=w.auftrag;
+ const part=r.economy.rezepte.r_bauteil;
+ if(part?.ein.material!==2||part?.ein.silizium!==1||part?.aus.bauteil!==1
+    ||part?.dauer!==8)return false;
+ const ints=[w.siliziumBegonnen,w.siliziumAbgeschlossen,w.siliziumAbgebaut,
+  w.siliziumLohnBezahlt,w.bauteilBegonnen,w.bauteilFertig,w.fabrikLohnGebunden,
+  w.fabrikLohnBezahlt,w.materialVerbraucht,w.siliziumVerbraucht,w.vorproduktKauf];
+ if(!ints.every(integer))return false;
+ return w.siliziumLohnBezahlt===10*w.siliziumAbgebaut
+  &&w.siliziumAbnahme===w.siliziumAbgeschlossen*24
+  &&w.bauteilBegonnen===w.bauteilFertig+(a?.art==='stationBuildParts'?1:0)
+  &&w.materialVerbraucht===2*w.bauteilBegonnen
+  &&w.siliziumVerbraucht===w.bauteilBegonnen
+  &&w.vorproduktKauf===120*w.bauteilBegonnen
+  &&w.fabrikLohnGebunden===8*w.bauteilBegonnen
+  &&w.fabrikLohnBezahlt===8*w.bauteilFertig+(a?.gearbeitet||0)
+  &&(s.owners.w5b_fabrik_arbeit?.cash||0)
+    ===w.fabrikLohnGebunden-w.fabrikLohnBezahlt
+  &&s.owners[p.arbeiter].cash===w.fabrikLohnBezahlt
+  &&s.ledger.bauteil.produced===w.bauteilFertig
+  &&s.ledger.bauteil.consumed===0
+  &&s.stations[p.station].lager.bauteil===w.bauteilFertig;
 }
 function foerderAudit(s){
  const rows=Object.entries(s.c1b?.mining||{}),w=s.w5n;
@@ -116,7 +147,7 @@ function nachfrageAudit(s){
    &&x.bought===(!x.missingCash&&!x.missingGoods?1:0))
   &&rows.reduce((n,x)=>n+x.bought,0)===s.w5n.wasserVerbraucht;
 }
-function register({data,freeze,water,income,trade,state},{profile,version,precursor,wageFlow}){
+function register({data,freeze,water,income,trade,state},{profile,version,precursor,wageFlow,partsFlow}){
  const rules=structuredClone(data.W5R_RULES);
  rules.rulesVersion=version;
  rules.researchProfile=profile;
@@ -128,6 +159,14 @@ function register({data,freeze,water,income,trade,state},{profile,version,precur
   // C recipe only; upstream ore extraction and W3 freight remain explicitly R32.
   Object.assign(rules.w4,{erzJeCharge:10,materialJeCharge:4,dauer:10,lohnJeMinute:1});
   rules.economy.waren.material.basis=48;
+ }
+ if(partsFlow){
+  // Pre-existing W5b Core contract: one paid 2m+1Si -> 1 part lot,
+  // eight paid fabrication minutes. Silicon's original ONE-tick extraction
+  // is deliberately retained, but its 10-ISK gross labour unit cost is
+  // C-compatible; the 10-minute cadence is explicitly NOT proven.
+  Object.assign(rules.w5b,{silikonMenge:1,silikonLohn:10,materialPreis:48});
+  rules.economy.waren.silizium.basis=24;
  }
  if(wageFlow){
   // Reuse existing W5s-q (paid W3 flights) and W5s-r (earned W4/W5/W5r

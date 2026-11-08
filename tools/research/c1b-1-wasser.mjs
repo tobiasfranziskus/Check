@@ -12,24 +12,26 @@ export const EXPORT_PROFILE='aphros-research:C1d-2:once-only-bounded-acceptance-
 export const BUNDLE_PROFILE='aphros-research:C1d-3:three-paid-storage-freight-lot-v1';
 export const FINANCED_PROFILE='aphros-research:C1d-4:four-paid-storage-preorder-v1';
 export const TITLE_PROFILE='aphros-research:C1d-5:owner-custody-storage-v1';
-const SOURCE_SHA='68c6ba5ed8484ddbb1e04bad1f5458122552705d49dfb82b80aff3a13275900e';
+export const FOLLOWUP_PROFILE='aphros-research:C1d-7:post-settlement-journals-v1';
+const SOURCE_SHA='62ff1ff20a3725133b21787b0d3f5c52c334f8f37e7b95d8e60afa1479c21267';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};
 
 // One bounded registration path; never accept arbitrary rule callbacks or patched audits.
 export function createResearchCore({profile=PROFILE}={}){
- check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE,STORAGE_PROFILE,DELIVERY_PROFILE,EXPORT_PROFILE,BUNDLE_PROFILE,FINANCED_PROFILE,TITLE_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
+ check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE,STORAGE_PROFILE,DELIVERY_PROFILE,EXPORT_PROFILE,BUNDLE_PROFILE,FINANCED_PROFILE,TITLE_PROFILE,FOLLOWUP_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
  const precursor=profile!==PROFILE;
  const partsFlow=profile===PARTS_PROFILE;
- const titleFlow=profile===TITLE_PROFILE;
+ const followupFlow=profile===FOLLOWUP_PROFILE;
+ const titleFlow=profile===TITLE_PROFILE||followupFlow;
  const fundedFlow=profile===FINANCED_PROFILE||titleFlow;
  const bundleFlow=profile===BUNDLE_PROFILE||fundedFlow;
  const exportFlow=profile===EXPORT_PROFILE;
  const deliveryFlow=profile===DELIVERY_PROFILE||exportFlow||bundleFlow;
  const storageFlow=profile===STORAGE_PROFILE||deliveryFlow;
  const wageFlow=profile===WAGES_PROFILE||partsFlow||storageFlow;
- const version=titleFlow?3310:fundedFlow?3309:bundleFlow?3308:exportFlow?3307:deliveryFlow?3306:storageFlow?3305:partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
+ const version=followupFlow?3311:titleFlow?3310:fundedFlow?3309:bundleFlow?3308:exportFlow?3307:deliveryFlow?3306:storageFlow?3305:partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
  const html=readFileSync(new URL('../../index.html',import.meta.url),'utf8');
  check(sha(html)===SOURCE_SHA,'unbekannte Core-Basis');
  const source=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
@@ -43,7 +45,7 @@ export function createResearchCore({profile=PROFILE}={}){
   base:m_data_rules.RULES});
  `+source.slice(boundary)+`
 return {api:m_core_index,serialize:m_core_serialize,
-  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s,parts:m_core_w5b};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow,titleFlow}));
+  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s,parts:m_core_w5b};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow,titleFlow,followupFlow}));
  const rules=core.api.W5R_RULES;
  const fingerprint=sha(core.serialize.save(rules));
  function identity(s){
@@ -227,6 +229,26 @@ function bauteilTitelAudit(s,r){
    &&s.minted===0&&s.burned===0;
 }
 
+// C1d-7 independent amount reconciliation against immutable original
+// account-journal baselines. A later legitimate purchase cannot retroactively
+// invalidate a settled order; an unbooked transfer still fails.
+function reservedAfter(s,id){
+ const mining=Object.entries(s.erzpilotVertraege||{}).reduce((sum,[shipId,v])=>
+  sum+(s.ships[shipId]?.owner===id&&v.arbeitsKonto
+   ?(s.owners[v.arbeitsKonto]?.cash??NaN):0),0);
+ return mining+(id==='transport'&&s.w3?.auftrag?(s.owners.w3_arbeit_treuhand?.cash??0):0)+(id==='house'
+  ?(s.owners.w5b_silizium_arbeit?.cash??0)
+   +(s.owners.w5b_fabrik_arbeit?.cash??0)
+   +(s.owners.w5f_laser_arbeit?.cash??0):0);
+}
+function validJournalCash(s,id,before,snap){
+ const j=s.stats?.konto?.[id];
+ return integer(before)&&integer(snap?.revenue)&&integer(snap?.costs)
+   &&integer(j?.erloes)&&integer(j?.kosten)
+   &&j.erloes>=snap.revenue&&j.kosten>=snap.costs
+   &&s.owners[id].cash+reservedAfter(s,id)===before+(j.erloes-snap.revenue)-(j.kosten-snap.costs);
+}
+
 function financedAudit(s,r){
  const c=r.c1f,w=s.c1f,o=w?.order,esc=s.owners.c1f_kaufrest_escrow;
  if(!c||!w||!esc||c.buyer!=='export'||c.seller!=='house'||c.quantity!==4
@@ -240,7 +262,9 @@ function financedAudit(s,r){
  return o.id==='C1D4-0001'&&o.buyer==='export'&&o.seller==='house'
    &&o.amount===total&&o.advance===340&&o.rest===rest
    &&integer(o.buyerBefore)&&o.buyerBefore>=total
-   &&s.owners.export.cash===o.buyerBefore-total
+   &&(r.c1f.postSettlementJournal
+     ?validJournalCash(s,'export',o.buyerBefore,o.buyerJournal)
+     :s.owners.export.cash===o.buyerBefore-total)
    &&w.advanced===340&&w.settled===(done?rest:0)
    &&w.accepted===(done?4:0)
    &&esc.cash===(done?0:rest)
@@ -266,8 +290,11 @@ function deliveryAudit(s,r){
     j.titleOwner===r.c1d.seller
     &&j.routes.position===60&&j.routes.delivery===60&&j.routes.back===120
     &&j.paidMinutes===c.pilotPaid
-    && s.owners[r.c1d.seller].cash===j.sellerBefore-c.feeAllocated+(s.c1e?.minted||0)+(s.c1f?.settled||0)
-    && s.owners[r.c1d.carrier].cash===j.carrierBefore-c.pilotAllocated+c.feePaid
+    &&(r.c1d.postSettlementJournal
+      ?validJournalCash(s,r.c1d.seller,j.sellerBefore,j.sellerJournal)
+        &&validJournalCash(s,r.c1d.carrier,j.carrierBefore,j.carrierJournal)
+      :s.owners[r.c1d.seller].cash===j.sellerBefore-c.feeAllocated+(s.c1e?.minted||0)+(s.c1f?.settled||0)
+        &&s.owners[r.c1d.carrier].cash===j.carrierBefore-c.pilotAllocated+c.feePaid)
   ))
   &&s.minted===(s.c1e?.minted||0)&&s.burned===0
   &&s.ledger.lager.exported===(s.c1e?.accepted||0)+(s.c1f?.accepted||0);
@@ -342,7 +369,7 @@ function nachfrageAudit(s){
    &&x.bought===(!x.missingCash&&!x.missingGoods?1:0))
   &&rows.reduce((n,x)=>n+x.bought,0)===s.w5n.wasserVerbraucht;
 }
-function register({data,freeze,water,income,trade,state,base},{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow,titleFlow}){
+function register({data,freeze,water,income,trade,state,base},{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow,titleFlow,followupFlow}){
  const rules=structuredClone(data.W5R_RULES);
  rules.rulesVersion=version;
  rules.researchProfile=profile;
@@ -397,9 +424,13 @@ function register({data,freeze,water,income,trade,state,base},{profile,version,p
   rules.c1f={seller:'house',buyer:'export',quantity:4,unitPrice:430,advance:340};
  }
  if(titleFlow){
-  // Only C1d-5: the manufacturer owns its components in station custody.
+  // C1d-5 and its successors: the manufacturer owns its components in station custody.
   // Direct processing does not repurchase its own parts from the custodian.
   rules.w5b.directPartsCustody=true;
+ }
+ if(followupFlow){
+  rules.c1d.postSettlementJournal=true;
+  rules.c1f.postSettlementJournal=true;
  }
  if(exportFlow){
   rules.c1e={seller:'house',price:430,dayCap:400,cap30:12000,

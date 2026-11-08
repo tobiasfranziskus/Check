@@ -9094,7 +9094,9 @@ function createW5BState(seed=W5B_RULES.startSeed,rules=W5B_RULES) {
         s.c1e={order:null,accepted:0,minted:0,reserved:0,events:[]};
       if(rules.w5b?.directPartsCustody)s.w5b.bauteilTitel=[];
       if(rules.c1f){
-        s.c1f={order:null,accepted:0,advanced:0,settled:0};
+        s.c1f={order:null,accepted:0,advanced:0,settled:0,
+          ...(rules.c1f.secondEnabled
+            ?{secondOrder:null,secondAdvanced:0,secondAccepted:0,secondSettled:0}:{})};
         s.owners.c1f_kaufrest_escrow={id:'c1f_kaufrest_escrow',kind:'escrow',cash:0};
       }
     }

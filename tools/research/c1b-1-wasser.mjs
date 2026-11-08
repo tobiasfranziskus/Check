@@ -15,17 +15,19 @@ export const TITLE_PROFILE='aphros-research:C1d-5:owner-custody-storage-v1';
 export const FOLLOWUP_PROFILE='aphros-research:C1d-7:post-settlement-journals-v1';
 export const SECOND_BATCH_PROFILE='aphros-research:C1d-8:second-real-manufacturing-v1';
 export const SECOND_EXPORT_PROFILE='aphros-research:C1d-8b:second-paid-delivery-v1';
-const SOURCE_SHA='8f4e7357792065b76a2ecf8c3468599fe5f2cbc9cc2818ef4c45fe8d88584adb';
+export const INTERNAL_DEMAND_PROFILE='aphros-research:C1d-10:paid-station-capacity-v1';
+const SOURCE_SHA='212c047f5f8f08439141341f606ec43f4690d23a5f7882d75350a790f4505db0';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};
 
 // One bounded registration path; never accept arbitrary rule callbacks or patched audits.
 export function createResearchCore({profile=PROFILE}={}){
- check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE,STORAGE_PROFILE,DELIVERY_PROFILE,EXPORT_PROFILE,BUNDLE_PROFILE,FINANCED_PROFILE,TITLE_PROFILE,FOLLOWUP_PROFILE,SECOND_BATCH_PROFILE,SECOND_EXPORT_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
+ check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE,STORAGE_PROFILE,DELIVERY_PROFILE,EXPORT_PROFILE,BUNDLE_PROFILE,FINANCED_PROFILE,TITLE_PROFILE,FOLLOWUP_PROFILE,SECOND_BATCH_PROFILE,SECOND_EXPORT_PROFILE,INTERNAL_DEMAND_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
  const precursor=profile!==PROFILE;
  const partsFlow=profile===PARTS_PROFILE;
- const secondExportFlow=profile===SECOND_EXPORT_PROFILE;
+ const internalDemandFlow=profile===INTERNAL_DEMAND_PROFILE;
+ const secondExportFlow=profile===SECOND_EXPORT_PROFILE||internalDemandFlow;
  const secondBatchFlow=profile===SECOND_BATCH_PROFILE||secondExportFlow;
  const followupFlow=profile===FOLLOWUP_PROFILE||secondBatchFlow;
  const titleFlow=profile===TITLE_PROFILE||followupFlow;
@@ -35,7 +37,7 @@ export function createResearchCore({profile=PROFILE}={}){
  const deliveryFlow=profile===DELIVERY_PROFILE||exportFlow||bundleFlow;
  const storageFlow=profile===STORAGE_PROFILE||deliveryFlow;
  const wageFlow=profile===WAGES_PROFILE||partsFlow||storageFlow;
- const version=secondExportFlow?3313:secondBatchFlow?3312:followupFlow?3311:titleFlow?3310:fundedFlow?3309:bundleFlow?3308:exportFlow?3307:deliveryFlow?3306:storageFlow?3305:partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
+ const version=internalDemandFlow?3314:secondExportFlow?3313:secondBatchFlow?3312:followupFlow?3311:titleFlow?3310:fundedFlow?3309:bundleFlow?3308:exportFlow?3307:deliveryFlow?3306:storageFlow?3305:partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
  const html=readFileSync(new URL('../../index.html',import.meta.url),'utf8');
  check(sha(html)===SOURCE_SHA,'unbekannte Core-Basis');
  const source=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
@@ -49,7 +51,7 @@ export function createResearchCore({profile=PROFILE}={}){
   base:m_data_rules.RULES});
  `+source.slice(boundary)+`
 return {api:m_core_index,serialize:m_core_serialize,
-  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s,parts:m_core_w5b};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow,titleFlow,followupFlow,secondBatchFlow,secondExportFlow}));
+  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s,parts:m_core_w5b};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow,titleFlow,followupFlow,secondBatchFlow,secondExportFlow,internalDemandFlow}));
  const rules=core.api.W5R_RULES;
  const fingerprint=sha(core.serialize.save(rules));
  function identity(s){
@@ -81,6 +83,7 @@ return {api:m_core_index,serialize:m_core_serialize,
       check(financedAudit(s,rules),'unabhaengige Kaufgeld-/Treuhand-/Warenbelege');
       if(titleFlow)check(bauteilTitelAudit(s,rules),'unabhaengige W5b-Bauteil-Titel-/Verwahrbelege');
       if(secondExportFlow)check(secondFundingAudit(s,rules),'unabhaengiger zweiter C1f/C1d-Kauf- und Frachtbeleg');
+       if(internalDemandFlow)check(stationDemandAudit(s,rules),'Nadir-Budget, echte neunte Ware und produktiver Moduleinbau');
     }
    }
    if(exportFlow){
@@ -104,7 +107,7 @@ return {api:m_core_index,serialize:m_core_serialize,
   return validate(s);
  }
  const allowed=new Set([...(precursor?['shipFreight','stationRefine']:[]),...(partsFlow||storageFlow?['stationBuildParts']:[]),...(storageFlow?['stationBuildStorage']:[]),...(deliveryFlow?['shipCapitalFreight']:[]),...(exportFlow?['stationExportReserve','stationExportAccept']:[]),...(fundedFlow?['stationPrepayStorage','stationAcceptStorage']:[]),
- ...(secondExportFlow?['stationPrepayStorageSecond','stationAcceptStorageSecond','shipCapitalFreightSecond']:[]),'shipMine','shipWait','shipSellIce','shipFreightIce','stationWater','shipBuy']);
+ ...(secondExportFlow?['stationPrepayStorageSecond','stationAcceptStorageSecond','shipCapitalFreightSecond']:[]),...(internalDemandFlow?['stationInstallPaidStorage']:[]),'shipMine','shipWait','shipSellIce','shipFreightIce','stationWater','shipBuy']);
  function execute(s,cmd){
   identity(s);check(allowed.has(cmd?.type),'Befehl ausserhalb des Wasserprofils');
   return core.api.execute(s,cmd,rules);

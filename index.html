@@ -2947,7 +2947,7 @@ const m_core_w3 = (() => {
       -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)
       +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
       -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)!==start)
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)+(rules.c1g?.enabled?(state.c1g?.installed||0)*430:0)!==start)
       return {ok:false,grund:'W3: unbelegtes Kaeufergeld'};
     // W5s-ag: W3 muss auch beim dritten rechtmaessigen Eigentuemer
     // die fremde Firma im Auftrag UND in allen originalen Belegen tragen.
@@ -3047,7 +3047,7 @@ const m_core_w3 = (() => {
         -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)===startBuyer
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)+(rules.c1g?.enabled?(state.c1g?.installed||0)*430:0)===startBuyer
       && w.kaufAusgaben===erwarteteBezahlung && w.geliefert===erwarteteWare
       && w.arbeitsKosten===erwarteteArbeit
       && w.frachtUmsatz===w.abgeschlossen*k.frachtGebuehr
@@ -3126,7 +3126,7 @@ const m_core_w4 = (() => {
       -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)
       +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
       -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)!==start)
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)+(rules.c1g?.enabled?(state.c1g?.installed||0)*430:0)!==start)
       return {ok:false,grund:'Nadir: nicht nachgewiesenes Produktionskapital'};
     return {ok:true,grund:'Erz und vollständige Arbeitskasse reservierbar',
       erz:c.erzJeCharge,material:c.materialJeCharge,arbeit:budget,dauer:c.dauer};
@@ -3203,7 +3203,7 @@ const m_core_w4 = (() => {
         -(state.w5?.materialUmsatz??0)+m_core_w5b.stationsKorrektur(state)
          +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
          -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)===start
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)+(rules.c1g?.enabled?(state.c1g?.installed||0)*430:0)===start
       && w.erzVerbraucht===w.abgeschlossen*c.erzJeCharge
       && w.materialErzeugt===w.abgeschlossen*c.materialJeCharge
       && state.ledger.erz.consumed===w.erzVerbraucht+(state.w5m?.modulErz??0)
@@ -3402,7 +3402,7 @@ const m_core_w5 = (() => {
         +m_core_w5b.stationsKorrektur(state)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)+(state.w5o?.divStation??0)
-        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)
+        -(state.w5q?.minted??0)+(state.w5q?.payout??0)+(state.w5r?.serviceAllocated??0)+(rules.c1g?.enabled?(state.c1g?.installed||0)*430:0)
           ===rules.owners.find(o=>o.id===c.station).cash
       && (!a || ((a.klasse===undefined||a.klasse==='miner'&&state.w5r?.initialized)
         &&a.material===p.material&&a.materialKosten===p.materialKosten

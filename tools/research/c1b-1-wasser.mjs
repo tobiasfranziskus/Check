@@ -458,6 +458,30 @@ function nachfrageAudit(s){
    &&x.bought===(!x.missingCash&&!x.missingGoods?1:0))
   &&rows.reduce((n,x)=>n+x.bought,0)===s.w5n.wasserVerbraucht;
 }
+
+// C1d-10 independent buyer and tangible utility audit. No new ISK or engine.
+function stationDemandAudit(s,r){
+ const w=s.c1g,o=w?.order,st=s.stations?.st_nadir;
+ if(!r.c1g?.enabled||!w||!st||!integer(w.moduleBefore)||w.moduleBefore>=2
+   ||![0,1].includes(w.installed)||s.ledger.lager.consumed!==w.installed
+   ||s.minted!==0||s.burned!==0)return false;
+ if(!o)return w.installed===0&&st.module.lager===w.moduleBefore;
+ const basis=r.world.stations.st_nadir.ziel.erz*r.world.obergrenze;
+ const before=Math.floor(basis*(1000+500*w.moduleBefore)/1000000);
+ const after=Math.floor(basis*(1000+500*(w.moduleBefore+1))/1000000);
+ return w.installed===1&&o.status==='installed'
+   &&o.id==='C1D10-NADIR-0001'&&o.title==='C1D5-LAGER-0009'
+   &&o.buyer==='st_nadir'&&o.seller==='house'&&o.station==='st_nadir'
+   &&o.price===430&&o.moduleBefore===w.moduleBefore
+   &&o.capacityBefore===before&&o.capacityAfter===after&&after>before
+   &&integer(o.createdTick)&&o.createdTick>=s.c1f?.secondOrder?.acceptedTick
+   &&o.createdTick<=s.tick&&st.module.lager===w.moduleBefore+1
+   &&s.w5b?.lagerFertig===9&&s.ledger.lager.produced===9
+   &&s.ledger.lager.exported===8&&s.stations.st_nadir.lager.lager===0
+   &&validJournalCash(s,'st_nadir',o.buyerBefore,o.buyerJournal)
+   &&validJournalCash(s,'house',o.sellerBefore,o.sellerJournal);
+}
+
 function register({data,freeze,water,income,trade,state,base},{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow,titleFlow,followupFlow,secondBatchFlow,secondExportFlow,internalDemandFlow}){
  const rules=structuredClone(data.W5R_RULES);
  rules.rulesVersion=version;

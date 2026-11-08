@@ -173,7 +173,8 @@ test('C1d-7: one genuine paid post-settlement refinery charge from retained phys
  audit(save(s));
 });
 test('C1d-7: genuine resumed ore mining and second paid transport attempt, no fake warehouse transfer',()=>{
- let s=finished(42);
+ for(const seed of [42,7]){
+ let s=finished(seed);
  assert.equal(s.stations.st_aldera.lager.erz,10);
  assert.equal(s.stations.st_nadir.lager.erz,10);
  // Free a full 50-ore receiving slot with an actually paid 10-ore recipe.
@@ -212,7 +213,8 @@ test('C1d-7: genuine resumed ore mining and second paid transport attempt, no fa
  assert.equal(s.minted,0);
  audit(s);
  console.log('C1D7_SECOND_ORE '+JSON.stringify({tick:s.tick,hash:c.hash(s),stationCash:s.owners.st_nadir.cash,
-    buyerCash:s.owners.export.cash}));
+    buyerCash:s.owners.export.cash,seed}));
+ }
 });
 test('C1d-7: journal tamper, unbooked transfers, double claims are rejected on reload',()=>{
  const s=finished(7);

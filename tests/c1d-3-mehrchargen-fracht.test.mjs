@@ -69,7 +69,7 @@ function made(seed=42){
 }
 function bundled(seed=42){
  let s=made(seed);const madeCash=s.owners.house.cash;
- assert.equal(c.execute(s,{type:'stationExportReserve',owner:'house',station:'st_meridian'}).ok,false);
+ assert.throws(()=>c.execute(s,{type:'stationExportReserve',owner:'house',station:'st_meridian'}),/Befehl/);
  for(let i=0;i<240;i++){
   const sh=s.ships.sh002;
   if(sh.phase==='dock'&&sh.system==='aldera'

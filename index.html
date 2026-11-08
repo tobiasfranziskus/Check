@@ -3411,7 +3411,7 @@ const m_core_w5b = (() => {
     if(!schiff||schiff.id!==w.minerId||schiff.owner!==c.produzent
       ||schiff.klasse!=='miner'||schiff.system!=='nadir'||schiff.phase!=='dock')
       return {ok:false,grund:'Kein bezahlter eigener Nadir-Miner'};
-    if(w.siliziumBegonnen >= (rules.w5d?.maxChargen??1) || w.siliziumAuftrag)
+    if(w.siliziumBegonnen >= (c.maxSiliconLots??rules.w5d?.maxChargen??1) || w.siliziumAuftrag)
       return {ok:false,grund:'Begrenztes Siliziumvorkommen bereits beauftragt'};
     if(Object.values(schiff.ladung).some(n=>n!==0))
       return {ok:false,grund:'Miner hat noch Fracht'};
@@ -3487,11 +3487,11 @@ const m_core_w5b = (() => {
     if(owner!==c.produzent||station!==c.station)
       return {ok:false,grund:'Nur der finanzierende Hersteller in Nadir'};
     if(w.auftrag)return {ok:false,grund:'Bereits ein Produktionsauftrag aktiv'};
-    if(art==='stationBuildParts'&&w.bauteilBegonnen >= (rules.w5d?.maxChargen??1))
+    if(art==='stationBuildParts'&&w.bauteilBegonnen >= (c.maxPartsLots??rules.w5d?.maxChargen??1))
       return {ok:false,grund:'W5: begrenzte Bauteilchargen aufgebraucht'};
     if(art==='stationBuildFighter'&&w.jaegerBegonnen >= (rules.w5d?.maxChargen??1))
       return {ok:false,grund:'W5: begrenzte Jaegerchargen aufgebraucht'};
-    if(art==='stationBuildStorage'&&(!c.allowStorageManufacturing||w.lagerBegonnen>=1))
+    if(art==='stationBuildStorage'&&(!c.allowStorageManufacturing||w.lagerBegonnen>=(c.maxStorageLots??1)))
       return {ok:false,grund:'Bezahlter Lagerauftrag nicht freigegeben oder belegt'};
     const p=plan(rules,art),lager=state.stations[c.station].lager;
     for(const [ware,menge] of Object.entries(p.ein))
@@ -3602,8 +3602,8 @@ const m_core_w5b = (() => {
       w.fabrikLohnGebunden,w.fabrikLohnBezahlt,mineKauf,mineArbeit,fabrik,
       lager.silizium,lager.bauteil,lager.jaeger,siliziumFracht,lagerBegonnen,lagerFertig,cadence]
       .every(n=>Number.isSafeInteger(n)&&n>=0)
-      && w.siliziumBegonnen<=(rules.w5d?.maxChargen??1)
-      && w.bauteilBegonnen<=(rules.w5d?.maxChargen??1)
+      && w.siliziumBegonnen<=(c.maxSiliconLots??rules.w5d?.maxChargen??1)
+      && w.bauteilBegonnen<=(c.maxPartsLots??rules.w5d?.maxChargen??1)
       && w.jaegerBegonnen<=(rules.w5d?.maxChargen??1)
       && w.siliziumBegonnen===w.siliziumAbgeschlossen+(w.siliziumAuftrag?1:0)
       &&cadence>=1&&cadence<=1440
@@ -7831,6 +7831,7 @@ const m_core_c1d = (() => {
   const {buche}=m_core_handel;
   const {route}=m_core_route;
   const feeAccount='c1d_freight_escrow',workAccount='c1d_pilot_escrow',pilot='c1d_pilot';
+  const units=r=>r.c1d?.quantity??1;
   const rcheck=(rules)=>{
     const outward=route(rules.world,'aldera','nadir');
     const delivery=route(rules.world,'nadir','meridian');
@@ -7851,8 +7852,8 @@ const m_core_c1d = (() => {
       return {ok:false,grund:'Kein wirklich vorhandener freier Frachter in Aldera'};
     if(s.w3?.auftrag||s.w5n?.frachtauftrag)
       return {ok:false,grund:'Frachter bereits anderweitig gebunden'};
-    if(s.w5b?.lagerFertig!==1||s.stations.st_nadir.lager.lager!==1
-      ||(s.ledger.lager?.initial||0)!==0||s.ledger.lager.produced!==1)
+    if(s.w5b?.lagerFertig!==units(r)||s.stations.st_nadir.lager.lager!==units(r)
+      ||(s.ledger.lager?.initial||0)!==0||s.ledger.lager.produced!==units(r))
       return {ok:false,grund:'Kein nachweislich produziertes Lagermodul'};
     if(s.stations.st_meridian.lager.lager!==0
       ||s.owners[feeAccount].cash!==0||s.owners[workAccount].cash!==0)
@@ -7902,17 +7903,17 @@ const m_core_c1d = (() => {
     w.pilotPaid+=c.wagePerMinute;j.paidMinutes++;
     if(s.tick!==sh.ankunft)return;
     if(j.phase==='position'){
-      if(s.stations.st_nadir.lager.lager!==1
+      if(s.stations.st_nadir.lager.lager!==units(r)
         ||Object.values(sh.ladung).some(n=>n!==0))
         throw Error('C1d: Quelle oder Frachter nicht geladen');
-      s.stations.st_nadir.lager.lager--;
-      sh.ladung.lager=1;
+      s.stations.st_nadir.lager.lager-=units(r);
+      sh.ladung.lager=units(r);
       sh.system='nadir';sh.ziel='st_meridian';sh.ankunft+=j.routes.delivery;
       j.phase='delivery';j.phaseStart=s.tick;
     }else if(j.phase==='delivery'){
-      if(sh.ladung.lager!==1||s.stations.st_meridian.lager.lager!==0)
+      if(sh.ladung.lager!==units(r)||s.stations.st_meridian.lager.lager!==0)
         throw Error('C1d: keine tatsächliche Meridian-Lieferung');
-      delete sh.ladung.lager;s.stations.st_meridian.lager.lager=1;
+      delete sh.ladung.lager;s.stations.st_meridian.lager.lager=units(r);
       sh.system='meridian';sh.ziel='st_aldera';sh.ankunft+=j.routes.back;
       j.phase='return';j.phaseStart=s.tick;
       w.delivered=1;
@@ -7937,7 +7938,8 @@ const m_core_c1d = (() => {
   }
   function audit(s,r){
     const w=s.c1d,c=r.c1d,j=w?.job,k=c&&rcheck(r);
-    if(!w||!c||!k)return {ok:false,grund:'C1d-Register oder Route fehlt'};
+    if(!w||!c||!k||!Number.isSafeInteger(units(r))||units(r)<1||units(r)>8)
+      return {ok:false,grund:'C1d-Register oder Frachtlos fehlt'};
     const fee=s.owners[feeAccount]?.cash,pending=s.owners[workAccount]?.cash,
       salary=s.owners[pilot]?.cash,carrier=s.owners[c.carrier]?.cash,
       seller=s.owners[c.seller]?.cash;
@@ -7959,13 +7961,13 @@ const m_core_c1d = (() => {
       const startClock=s.tick-j.start;
       const eventAllowed=['position','delivery','return','finished'];
       const correctLocation=j.phase==='position'
-        ?s.stations.st_nadir.lager.lager===1&&
+        ?s.stations.st_nadir.lager.lager===units(r)&&
           s.stations.st_meridian.lager.lager===0&&!sh?.ladung?.lager
         :j.phase==='delivery'
-        ?s.stations.st_nadir.lager.lager===0&&sh?.ladung?.lager===1
+        ?s.stations.st_nadir.lager.lager===0&&sh?.ladung?.lager===units(r)
           &&s.stations.st_meridian.lager.lager===0
         :s.stations.st_nadir.lager.lager===0&&
-          s.stations.st_meridian.lager.lager===(1-(s.c1e?.accepted||0))
+          s.stations.st_meridian.lager.lager===(units(r)-(s.c1e?.accepted||0))
           &&!sh?.ladung?.lager;
       valid=valid&&eventAllowed.includes(j.phase)&&
         j.titleOwner===c.seller&&j.routes.position===k.position

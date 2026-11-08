@@ -185,7 +185,7 @@ test('C1d-7: genuine resumed ore mining and second paid transport attempt, no fa
  step(s,65);
  command(s,{type:'shipWait',owner:'house',schiff:'sh003'});
  assert.ok(s.stations.st_aldera.lager.erz>=50);
- assert.equal(s.ledger.erz.mined,125);
+ assert.equal(s.ledger.erz.mined,124); // first resumed tick opens the fully funded ore contract
  const before=s.owners.st_nadir.cash;
  command(s,{type:'shipFreight',owner:'transport',schiff:'sh002'});
  assert.equal(s.w3.beauftragt,2);

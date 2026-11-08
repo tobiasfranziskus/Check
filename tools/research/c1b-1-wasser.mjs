@@ -9,7 +9,11 @@ const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};
 
-export function createResearchCore(){
+// One bounded registration path; never accept arbitrary rule callbacks or patched audits.
+export function createResearchCore({profile=PROFILE}={}){
+ check([PROFILE,'aphros-research:C1b-2:material-precursor-v1'].includes(profile),'unbekanntes Forschungsprofil');
+ const precursor=profile!==PROFILE;
+ const version=precursor?3302:RULE_VERSION;
  const html=readFileSync(new URL('../../index.html',import.meta.url),'utf8');
  check(sha(html)===SOURCE_SHA,'unbekannte Core-Basis');
  const source=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
@@ -22,11 +26,11 @@ export function createResearchCore(){
   water:m_core_w5n,income:m_core_w5o,trade:m_core_handel,state:m_core_state});
  `+source.slice(boundary)+`
 return {api:m_core_index,serialize:m_core_serialize,
-  water:m_core_w5n,income:m_core_w5o};`)(register);
+  water:m_core_w5n,income:m_core_w5o};`)(modules=>register(modules,{profile,version,precursor}));
  const rules=core.api.W5R_RULES;
  const fingerprint=sha(core.serialize.save(rules));
  function identity(s){
-  check(s?.schema===8&&s.rulesVersion===RULE_VERSION&&s.c1b?.profile===PROFILE,'Profilwechsel verboten');
+  check(s?.schema===8&&s.rulesVersion===version&&s.c1b?.profile===profile,'Profilwechsel verboten');
   check(s.c1b.rules===fingerprint,'Regel-Fingerprint falsch');
   check(s.w5o.mode==='wages'&&s.w5o.minerOwner==='npc3','Einkommensprofil falsch');
   check(!s.w5s&&s.w5q.mode==='off'&&['rate','dayCap','totalCap','exported','minted','payout','stationNet'].every(k=>s.w5q[k]===0)
@@ -50,10 +54,10 @@ return {api:m_core_index,serialize:m_core_serialize,
  function save(s){validate(s);return core.api.save(s);}
  function load(json){
   const raw=JSON.parse(json);identity(raw);
-  const s=core.serialize.load(json,core.serialize.MIGRATIONS,8,RULE_VERSION,{});
+  const s=core.serialize.load(json,core.serialize.MIGRATIONS,8,version,{});
   return validate(s);
  }
- const allowed=new Set(['shipMine','shipWait','shipSellIce','shipFreightIce','stationWater','shipBuy']);
+ const allowed=new Set([...(precursor?['shipFreight','stationRefine']:[]),'shipMine','shipWait','shipSellIce','shipFreightIce','stationWater','shipBuy']);
  function execute(s,cmd){
   identity(s);check(allowed.has(cmd?.type),'Befehl ausserhalb des Wasserprofils');
   return core.api.execute(s,cmd,rules);
@@ -64,10 +68,10 @@ return {api:m_core_index,serialize:m_core_serialize,
  }
  function create(seed=42){
   const s=core.api.createW5RState(seed,'wages','npc3','off',0,0,0);
-  s.c1b={profile:PROFILE,rules:fingerprint,mining:{},demand:[]};
+  s.c1b={profile,rules:fingerprint,mining:{},demand:[]};
   return validate(s);
  }
- return Object.freeze({profile:PROFILE,rules,fingerprint,create,step,execute,audit,save,load,hash:core.api.hash,
+ return Object.freeze({profile,rules,fingerprint,create,step,execute,audit,save,load,hash:core.api.hash,
   // Low-level module entrypoints permit adversarial double-call tests, never browser access.
   diagnostics:Object.freeze({mine:core.water.foerdern,income:core.income.einkommen,demand:core.water.nachfrage})});
 }
@@ -89,20 +93,25 @@ function nachfrageAudit(s){
    &&x.bought===(!x.missingCash&&!x.missingGoods?1:0))
   &&rows.reduce((n,x)=>n+x.bought,0)===s.w5n.wasserVerbraucht;
 }
-function register({data,freeze,water,income,trade,state}){
+function register({data,freeze,water,income,trade,state},{profile,version,precursor}){
  const rules=structuredClone(data.W5R_RULES);
- rules.rulesVersion=RULE_VERSION;
- rules.researchProfile=PROFILE;
+ rules.rulesVersion=version;
+ rules.researchProfile=profile;
  Object.assign(rules.w5n,{mineLohn:1,rezeptEis:50,rezeptWasser:50,
   fabrikMinuten:100,fabrikLohn:1,wasserPreis:18,frachtJeMinute:2.25,verbrauchStunde:0});
  rules.economy.waren.wasser.basis=18;
  rules.c1b={paidMinutesPerIce:2,dayMinutes:1440,scheduledWaterPerDay:10,interval:144};
+ if(precursor){
+  // C recipe only; upstream ore extraction and W3 freight remain explicitly R32.
+  Object.assign(rules.w4,{erzJeCharge:10,materialJeCharge:4,dauer:10,lohnJeMinute:1});
+  rules.economy.waren.material.basis=48;
+ }
  freeze(rules);
  // The stock full-audit dispatch hardcodes these names. Register the SAME frozen
  // research rules in its four private water/income/export/wear slots, before index init.
  for(const key of ['W5N_RULES','W5O_RULES','W5Q_RULES','W5R_RULES'])data[key]=rules;
  water.foerdern=(s,r,sh)=>{
-  check(r===rules&&s.rulesVersion===RULE_VERSION&&s.c1b?.profile===PROFILE,'falsches Arbeitsprofil');
+  check(r===rules&&s.rulesVersion===version&&s.c1b?.profile===profile,'falsches Arbeitsprofil');
   check(sh===s.ships[sh.id]&&sh.owner==='npc3'&&sh.klasse==='miner'&&sh.system==='aldera'
    &&sh.phase==='dock'&&sh.auftrag==='foerdern'&&sh.ware==='eis','keine berechtigte Eisarbeit');
   const previous=s.c1b.mining[sh.id];
@@ -129,7 +138,7 @@ function register({data,freeze,water,income,trade,state}){
  };
  const originalTick=water.tick;
  function nachfrage(s,r){
-  check(r===rules&&s.c1b?.profile===PROFILE,'falsches Nachfrageprofil');
+  check(r===rules&&s.c1b?.profile===profile,'falsches Nachfrageprofil');
   if(s.tick%144!==0)return;
   const rows=s.c1b.demand;
   check(rows.length===s.tick/144-1,'Doppelabrechnung der Nachfrage');

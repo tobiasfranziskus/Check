@@ -33,7 +33,7 @@ function oreStart(seed=42){
  command(s,{type:'shipFreight',owner:'transport',schiff:'sh002'});
  ticks(s,60);
  assert.equal(s.w3.geliefert,50);
- assert.equal(s.w3.abgeschlossen,1);
+ assert.equal(s.w3.abgeschlossen,0); // The fully paid return journey remains in progress.
  return saved(s);
 }
 function oneLot(s,lot){

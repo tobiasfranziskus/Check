@@ -9,7 +9,7 @@ export const PARTS_PROFILE='aphros-research:C1c-2:paid-component-v1';
 export const STORAGE_PROFILE='aphros-research:C1c-3:timed-silicon-storage-v1';
 export const DELIVERY_PROFILE='aphros-research:C1d-1:physical-delivery-no-mint-v1';
 export const EXPORT_PROFILE='aphros-research:C1d-2:once-only-bounded-acceptance-v1';
-export const BUNDLE_PROFILE='aphros-research:C1d-3:two-paid-storage-freight-lot-v1';
+export const BUNDLE_PROFILE='aphros-research:C1d-3:three-paid-storage-freight-lot-v1';
 const SOURCE_SHA='311b4f0628a8964c9dbd7a4ed8c5e1792739e8732fb72b0a0ad3969ae2b5172c';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
@@ -163,13 +163,13 @@ function exportAudit(s,r){
 }
 function bundleAudit(s,r){
  const w=s.w5b,c=r.c1d,j=s.c1d?.job;
- if(!w||!c||c.quantity!==2||r.w5b?.maxStorageLots!==2
-   ||r.w5b?.maxPartsLots!==2||r.w5b?.maxSiliconLots!==2)return false;
+ if(!w||!c||c.quantity!==3||r.w5b?.maxStorageLots!==3
+   ||r.w5b?.maxPartsLots!==3||r.w5b?.maxSiliconLots!==3)return false;
  const produced=w.lagerFertig,stored=s.stations.st_nadir.lager.lager,
    travelling=s.ships[j?.ship]?.ladung.lager||0,
    arrived=s.stations.st_meridian.lager.lager;
  return [produced,stored,travelling,arrived].every(integer)
-  &&produced<=2
+  &&produced<=3
   &&s.ledger.lager.produced===produced
   &&s.ledger.lager.consumed===0&&s.ledger.lager.exported===0
   &&stored+travelling+arrived===produced
@@ -318,8 +318,10 @@ function register({data,freeze,water,income,trade,state,base},{profile,version,p
  }
  if(bundleFlow){
   // Intentional isolated research caps, not new productive price rules.
-  Object.assign(rules.w5b,{maxSiliconLots:2,maxPartsLots:2,maxStorageLots:2});
-  rules.c1d.quantity=2;
+  Object.assign(rules.w5b,{maxSiliconLots:3,maxPartsLots:3,maxStorageLots:3});
+  rules.world.stations.st_nadir.ziel.lager=3;
+  rules.world.stations.st_meridian.ziel.lager=3;
+  rules.c1d.quantity=3;
  }
  if(exportFlow){
   rules.c1e={seller:'house',price:430,dayCap:400,cap30:12000,

@@ -1158,7 +1158,7 @@ const FIELDS = {
   stationRecipe: ['station', 'rezept'], shipRemoveModule: ['schiff', 'modul'],
   shipFreight: ['schiff'], stationRefine: ['station'],
   stationBuildShip: ['station'], stationBuildMiner: ['station'], stationBuildParts: ['station'], stationBuildFighter: ['station'],
-  stationBuildStorage: ['station'],
+  stationBuildStorage: ['station'], shipCapitalFreight: ['schiff'],
   pirateBuy: ['angebot'],
   stationBuildLaser: ['station'], pilotBuyLaser: ['schiff'], pilotFitLaser: ['schiff'],
   shipReplaceFighter: ['station'], shipUpgradeMiner: ['schiff'], shipFreightIce: ['schiff'],
@@ -1338,6 +1338,7 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5s?.minerIndustry ? ['stationBuildMiner'] : []),
     ...(rules.w5b ? ['stationBuildParts','stationBuildFighter'] : []),
     ...(rules.w5b?.allowStorageManufacturing ? ['stationBuildStorage'] : []),
+    ...(rules.c1d ? ['shipCapitalFreight'] : []),
     ...(rules.w5c ? ['pirateBuy','shipHunt'] : []),
     ...(rules.w5f ? ['stationBuildLaser','pilotBuyLaser','pilotFitLaser'] : []),
     ...(rules.w5g ? ['shipReplaceFighter'] : []),
@@ -1418,6 +1419,11 @@ function checkShape(state, cmd, rules) {
       if(!pruefung.ok)return pruefung.grund;
     }
     if (state.owners[cmd.owner].cash < rules.economy.waren[cmd.klasse].basis) return 'zu wenig ISK';
+  }
+  if (cmd.type === 'shipCapitalFreight') {
+    if(!rules.c1d)return 'C1d-Fracht nicht aktiv';
+    const p=m_core_c1d.pruefen(state,rules,state.ships[cmd.schiff]);
+    if(!p.ok)return p.grund;
   }
   if (cmd.type === 'stationRecipe') {
     if (typeof cmd.station !== 'string' || !Object.hasOwn(state.stations, cmd.station)) return 'unbekannte Station';
@@ -1565,6 +1571,9 @@ function execute(state, cmd, rules) {
     case 'stationBuildMiner': {
       m_core_w5.starten(state,rules,cmd.owner,cmd.station,
         cmd.type==='stationBuildMiner'?'miner':rules.w5.klasse); break;
+    }
+    case 'shipCapitalFreight': {
+      m_core_c1d.starten(state,rules,state.ships[cmd.schiff]);break;
     }
     case 'stationBuildParts':
     case 'stationBuildFighter':
@@ -3008,6 +3017,7 @@ const m_core_w3 = (() => {
           +(state.w5s?.takeover?.amount??0)
           -(state.w5s?.takeover?.dividends??0)
           -(state.w5s?.paidTransport??state.w5s?.paid??0)
+      -(state.c1d?.pilotAllocated??0)+(state.c1d?.feePaid??0)
       && (!a||(a.menge===c.fracht&&a.zeit===k.zeit&&a.erzWert===k.erzWert
         && a.arbeitsKosten===k.arbeitsKosten&&a.frachtGebuehr===k.frachtGebuehr
         && a.gesamt===k.gesamt&&a.gearbeitet>=0&&a.gearbeitet<=2*k.zeit
@@ -3613,7 +3623,9 @@ const m_core_w5b = (() => {
       && state.ledger.jaeger.consumed===w.jaegerVerkauft
       && lager.jaeger===w.jaegerFertig-w.jaegerVerkauft
       && (!c.allowStorageManufacturing||(state.ledger.lager?.produced===lagerFertig
-        &&(state.ledger.lager?.consumed||0)===0&&(lager.lager||0)===lagerFertig))
+        &&(state.ledger.lager?.consumed||0)===0
+        &&(lager.lager||0)+(state.ships[state.c1d?.job?.ship]?.ladung?.lager||0)
+          +(state.stations.st_meridian?.lager?.lager||0)===lagerFertig))
       && w.jaegerFertig>=w.jaegerVerkauft&&idsOk
       && (!w.minerId||(miner?.owner===c.produzent&&miner.klasse==='miner'&&miner.heimat==='nadir'))
       && (!w.siliziumAuftrag||(w.siliziumAuftrag.schiff===w.minerId
@@ -7516,6 +7528,7 @@ function step(state, rules) {
     if (rules.w5d) m_core_w5d.tick(state,rules);
     if (rules.w5f) m_core_w5f.tick(state,rules);
     if (rules.w5r) m_core_w5r.tick(state,rules);
+    if (rules.c1d) m_core_c1d.tick(state,rules);
     if (rules.w5n) m_core_w5n.tick(state,rules);
     if (rules.w5s) m_core_w5s.tick(state,rules);
     ankunft(state, rules);
@@ -7791,6 +7804,177 @@ function load(json, table = MIGRATIONS, currentSchema, currentRulesVersion, rule
 return { MIGRATIONS, RULE_MIGRATIONS, migrate, save, load };
 })();
 
+// C1d-1 research only: one physically delivered and fully funded storage module.
+// No external sale, no export minting and no free hull or working time.
+const m_core_c1d = (() => {
+  const {buche}=m_core_handel;
+  const {route}=m_core_route;
+  const feeAccount='c1d_freight_escrow',workAccount='c1d_pilot_escrow',pilot='c1d_pilot';
+  const rcheck=(rules)=>{
+    const outward=route(rules.world,'aldera','nadir');
+    const delivery=route(rules.world,'nadir','meridian');
+    const back=route(rules.world,'meridian','aldera');
+    if(!outward||!delivery||!back||outward.zeit!==60
+      ||delivery.zeit!==60||back.zeit!==120)
+      return null;
+    return {position:outward.zeit,delivery:delivery.zeit,back:back.zeit,
+      minutes:outward.zeit+delivery.zeit+back.zeit};
+  };
+  function pruefen(s,r,sh){
+    const c=r.c1d,w=s.c1d,k=c&&rcheck(r);
+    if(!c||!w||w.job||w.ordered||!k||s.rulesVersion!==r.rulesVersion)
+      return {ok:false,grund:'C1d Forschungsprofil, Route oder Erstauftrag fehlt'};
+    if(!sh||sh.owner!==c.carrier||sh.klasse!=='frachter'
+      ||sh.phase!=='dock'||sh.system!=='aldera'||sh.auftrag!=='halten'
+      ||Object.values(sh.ladung).some(n=>n!==0))
+      return {ok:false,grund:'Kein wirklich vorhandener freier Frachter in Aldera'};
+    if(s.w3?.auftrag||s.w5n?.frachtauftrag)
+      return {ok:false,grund:'Frachter bereits anderweitig gebunden'};
+    if(s.w5b?.lagerFertig!==1||s.stations.st_nadir.lager.lager!==1
+      ||(s.ledger.lager?.initial||0)!==0||s.ledger.lager.produced!==1)
+      return {ok:false,grund:'Kein nachweislich produziertes Lagermodul'};
+    if(s.stations.st_meridian.lager.lager!==0
+      ||s.owners[feeAccount].cash!==0||s.owners[workAccount].cash!==0)
+      return {ok:false,grund:'Doppelt belegtes Exportlager oder Treuhand'};
+    const labour=k.minutes*c.wagePerMinute,fee=c.freightFee;
+    if(![fee,labour].every(n=>Number.isSafeInteger(n)&&n>0))
+      return {ok:false,grund:'Ungültige Frachtkosten'};
+    if(s.owners[c.seller].cash<fee||s.owners[c.carrier].cash<labour)
+      return {ok:false,grund:'Fracht und beide Arbeitsvorleistungen nicht finanziert'};
+    if(!m_core_audit.audit(s).ok)
+      return {ok:false,grund:'Vorbestehender Core-Audit fehlgeschlagen'};
+    return {ok:true,fee,labour,...k};
+  }
+  function starten(s,r,sh){
+    const p=pruefen(s,r,sh);
+    if(!p.ok)throw Error('C1d unfinanzierte Fracht: '+p.grund);
+    const c=r.c1d,w=s.c1d;
+    const sellerBefore=s.owners[c.seller].cash,carrierBefore=s.owners[c.carrier].cash;
+    s.owners[c.seller].cash-=p.fee;
+    s.owners[feeAccount].cash+=p.fee;
+    s.owners[c.carrier].cash-=p.labour;
+    s.owners[workAccount].cash+=p.labour;
+    buche(s,c.seller,'kosten',p.fee);
+    buche(s,c.carrier,'kosten',p.labour);
+    w.ordered=1;w.feeAllocated=p.fee;w.pilotAllocated=p.labour;
+    w.job={ship:sh.id,titleOwner:c.seller,sellerBefore,carrierBefore,
+      start:s.tick,phase:'position',phaseStart:s.tick,paidMinutes:0,
+      routes:{position:p.position,delivery:p.delivery,back:p.back}};
+    sh.phase='reise';sh.ziel='st_nadir';sh.ankunft=s.tick+p.position;
+    sh.auftrag='c1d-bezahlte-fracht';
+    m_core_state.protokolliere(s,'auftrag',
+      'C1d: '+p.fee+' ISK Fracht und '+p.labour+' ISK Pilotlohn vorfinanziert',
+      c.seller);
+  }
+  function tick(s,r){
+    const w=s.c1d,j=w?.job;
+    if(!j||j.phase==='finished')return;
+    const c=r.c1d,sh=s.ships[j.ship],work=s.owners[workAccount];
+    const phases={position:'st_nadir',delivery:'st_meridian',return:'st_aldera'};
+    if(!sh||sh.owner!==c.carrier||sh.phase!=='reise'
+      ||sh.auftrag!=='c1d-bezahlte-fracht'||sh.ziel!==phases[j.phase]
+      ||s.tick>sh.ankunft||!work||work.cash<c.wagePerMinute)
+      throw Error('C1d: nicht belegter oder unbezahlter Flug');
+    work.cash-=c.wagePerMinute;
+    s.owners[pilot].cash+=c.wagePerMinute;
+    buche(s,pilot,'erloes',c.wagePerMinute);
+    w.pilotPaid+=c.wagePerMinute;j.paidMinutes++;
+    if(s.tick!==sh.ankunft)return;
+    if(j.phase==='position'){
+      if(s.stations.st_nadir.lager.lager!==1
+        ||Object.values(sh.ladung).some(n=>n!==0))
+        throw Error('C1d: Quelle oder Frachter nicht geladen');
+      s.stations.st_nadir.lager.lager--;
+      sh.ladung.lager=1;
+      sh.system='nadir';sh.ziel='st_meridian';sh.ankunft+=j.routes.delivery;
+      j.phase='delivery';j.phaseStart=s.tick;
+    }else if(j.phase==='delivery'){
+      if(sh.ladung.lager!==1||s.stations.st_meridian.lager.lager!==0)
+        throw Error('C1d: keine tatsächliche Meridian-Lieferung');
+      delete sh.ladung.lager;s.stations.st_meridian.lager.lager=1;
+      sh.system='meridian';sh.ziel='st_aldera';sh.ankunft+=j.routes.back;
+      j.phase='return';j.phaseStart=s.tick;
+      w.delivered=1;
+      m_core_state.protokolliere(s,'handel',
+        'C1d: original hergestelltes Lagermodul physisch in Meridian angekommen; KEINE Außenabnahme',
+        c.seller);
+    }else{
+      if(j.paidMinutes!==j.routes.position+j.routes.delivery+j.routes.back
+        ||work.cash!==0||s.owners[feeAccount].cash!==w.feeAllocated)
+        throw Error('C1d: bezahlter Rückflug oder Frachtertreuhand unvollständig');
+      s.owners[feeAccount].cash=0;
+      s.owners[c.carrier].cash+=w.feeAllocated;
+      buche(s,c.carrier,'erloes',w.feeAllocated);
+      w.feePaid=w.feeAllocated;w.completed=1;
+      j.phase='finished';j.phaseStart=s.tick;
+      sh.system='aldera';sh.phase='dock';sh.ziel=null;sh.ankunft=s.tick;
+      sh.auftrag='halten';
+      m_core_state.protokolliere(s,'handel',
+        'C1d: Frachterrückflug vollständig bezahlt; Meridian-Lager wartet auf echte Außenabnahme',
+        c.carrier);
+    }
+  }
+  function audit(s,r){
+    const w=s.c1d,c=r.c1d,j=w?.job,k=c&&rcheck(r);
+    if(!w||!c||!k)return {ok:false,grund:'C1d-Register oder Route fehlt'};
+    const fee=s.owners[feeAccount]?.cash,pending=s.owners[workAccount]?.cash,
+      salary=s.owners[pilot]?.cash,carrier=s.owners[c.carrier]?.cash,
+      seller=s.owners[c.seller]?.cash;
+    const numbers=[w.ordered,w.delivered,w.completed,w.feeAllocated,
+      w.feePaid,w.pilotAllocated,w.pilotPaid,fee,pending,salary];
+    let valid=numbers.every(n=>Number.isSafeInteger(n)&&n>=0)
+      &&w.ordered===(j?1:0)&&w.completed<=w.delivered&&w.delivered<=w.ordered
+      &&w.feeAllocated===w.ordered*c.freightFee
+      &&w.pilotAllocated===w.ordered*k.minutes*c.wagePerMinute
+      &&fee===w.feeAllocated-w.feePaid
+      &&pending===w.pilotAllocated-w.pilotPaid
+      &&salary===w.pilotPaid
+      &&w.feePaid===w.completed*c.freightFee
+      &&s.minted===0&&s.burned===0;
+    if(j){
+      const sh=s.ships[j.ship];
+      const limits={position:k.position,delivery:k.position+k.delivery,
+        return:k.minutes,finished:k.minutes};
+      const startClock=s.tick-j.start;
+      const eventAllowed=['position','delivery','return','finished'];
+      const correctLocation=j.phase==='position'
+        ?s.stations.st_nadir.lager.lager===1&&
+          s.stations.st_meridian.lager.lager===0&&!sh?.ladung?.lager
+        :j.phase==='delivery'
+        ?s.stations.st_nadir.lager.lager===0&&sh?.ladung?.lager===1
+          &&s.stations.st_meridian.lager.lager===0
+        :s.stations.st_nadir.lager.lager===0&&
+          s.stations.st_meridian.lager.lager===1&&!sh?.ladung?.lager;
+      valid=valid&&eventAllowed.includes(j.phase)&&
+        j.titleOwner===c.seller&&j.routes.position===k.position
+        &&j.routes.delivery===k.delivery&&j.routes.back===k.back
+        &&j.paidMinutes===w.pilotPaid/c.wagePerMinute
+        &&Number.isSafeInteger(j.start)&&j.start>=0&&j.start<=s.tick
+        &&startClock===j.paidMinutes
+        &&startClock<=k.minutes&&correctLocation
+        &&w.delivered===(['return','finished'].includes(j.phase)?1:0)
+        &&w.completed===(j.phase==='finished'?1:0)
+        &&j.phaseStart===j.start+
+           (j.phase==='position'?0:j.phase==='delivery'?k.position:
+            j.phase==='return'?k.position+k.delivery:k.minutes)
+        &&s.owners[c.seller].cash===j.sellerBefore-w.feeAllocated
+        &&carrier===j.carrierBefore-w.pilotAllocated+w.feePaid
+        &&sh?.owner===c.carrier&&sh?.klasse==='frachter'
+        &&(j.phase==='finished'
+         ?sh.phase==='dock'&&sh.system==='aldera'&&sh.auftrag==='halten'
+         :sh.phase==='reise'&&sh.auftrag==='c1d-bezahlte-fracht'&&
+           sh.ziel===(j.phase==='position'?'st_nadir':
+             j.phase==='delivery'?'st_meridian':'st_aldera')&&
+           sh.ankunft===j.start+limits[j.phase]);
+    }else{
+      valid=valid&&w.ordered===0&&w.delivered===0&&w.completed===0;
+    }
+    return {ok:valid,ordered:w.ordered,delivered:w.delivered,
+      returned:w.completed,workPaid:w.pilotPaid,feePaid:w.feePaid};
+  }
+  return {pruefen,starten,tick,audit};
+})();
+
 const m_core_audit = (() => {
 const { ids, anzahl } = m_core_zahl;
 // v0.11.0 / B3: Bewusste Audit-Entscheidung zu Modulen.
@@ -8012,8 +8196,10 @@ function audit(state) {
   if(w5r)extra.w5r=w5r;
   const w5s=state.w5s?m_core_w5s.audit(state,m_data_erzpilot.W5R_RULES):null;
   if(w5s)extra.w5s=w5s;
+  const c1d=state.c1d?m_core_c1d.audit(state,m_data_erzpilot.W5R_RULES):null;
+  if(c1d)extra.c1d=c1d;
   return { ok: isk.ok && goods.ok && vertragsOk && finanzierungsOk
-      && wirtschaftOk && (!w3 || w3.ok) && (!w4 || w4.ok) && (!w5 || w5.ok) && (!w5b || w5b.ok) && (!w5c || w5c.ok) && (!w5d || w5d.ok) && (!w5f || w5f.ok) && (!w5g || w5g.ok) && (!w5h || w5h.ok) && (!w5i || w5i.ok) && (!w5m || w5m.ok) && (!w5n || w5n.ok) && (!w5o || w5o.ok) && (!w5q || w5q.ok) && (!w5r || w5r.ok) && (!w5s || w5s.ok),
+      && wirtschaftOk && (!c1d || c1d.ok) && (!w3 || w3.ok) && (!w4 || w4.ok) && (!w5 || w5.ok) && (!w5b || w5b.ok) && (!w5c || w5c.ok) && (!w5d || w5d.ok) && (!w5f || w5f.ok) && (!w5g || w5g.ok) && (!w5h || w5h.ok) && (!w5i || w5i.ok) && (!w5m || w5m.ok) && (!w5n || w5n.ok) && (!w5o || w5o.ok) && (!w5q || w5q.ok) && (!w5r || w5r.ok) && (!w5s || w5s.ok),
     total, expected, delta: total - expected, isk, goods, ...extra };
 }
 return { audit };
@@ -8243,6 +8429,15 @@ function createW5BState(seed=W5B_RULES.startSeed,rules=W5B_RULES) {
     s.ledger.lager.initial-=free;
     s.w5b.lagerBegonnen=0;
     s.w5b.lagerFertig=0;
+    if(rules.c1d){
+      const meridian=s.stations.st_meridian.lager.lager||0;
+      s.stations.st_meridian.lager.lager=0;
+      s.ledger.lager.initial-=meridian;
+      s.c1d={job:null,ordered:0,delivered:0,completed:0,feeAllocated:0,
+        feePaid:0,pilotAllocated:0,pilotPaid:0};
+      for(const id of ['c1d_freight_escrow','c1d_pilot_escrow','c1d_pilot'])
+        s.owners[id]={id,kind:id==='c1d_pilot'?'labor':'escrow',cash:0};
+    }
   }
   if(!m_core_audit.audit(s).ok)throw Error('W5b Startfinanzierung inkonsistent');
   return s;

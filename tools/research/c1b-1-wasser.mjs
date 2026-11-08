@@ -16,7 +16,7 @@ export const FOLLOWUP_PROFILE='aphros-research:C1d-7:post-settlement-journals-v1
 export const SECOND_BATCH_PROFILE='aphros-research:C1d-8:second-real-manufacturing-v1';
 export const SECOND_EXPORT_PROFILE='aphros-research:C1d-8b:second-paid-delivery-v1';
 export const INTERNAL_DEMAND_PROFILE='aphros-research:C1d-10:paid-station-capacity-v1';
-const SOURCE_SHA='58e0c6b8be911abad2beec6a976d25112070bd9eb7024a6d6e0fa32556d4213b';
+const SOURCE_SHA='a5ef3e28b3cae245fdd161f3c28cb3bca612631769a2cde3cd5fdfa187af0e31';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};

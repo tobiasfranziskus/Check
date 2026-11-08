@@ -1156,10 +1156,11 @@ const FIELDS = {
   shipEscort: ['schiff', 'ziel'], shipHunt: ['schiff'],
   shipInstall: ['schiff', 'modul'], stationBuy: ['schiff'], shipBuy: ['klasse', 'station'],
   stationRecipe: ['station', 'rezept'], shipRemoveModule: ['schiff', 'modul'],
-  shipFreight: ['schiff'], stationRefine: ['station'],
+  shipFreight: ['schiff'], shipCapitalFreightSecond: ['schiff'], stationRefine: ['station'],
   stationBuildShip: ['station'], stationBuildMiner: ['station'], stationBuildParts: ['station'], stationBuildFighter: ['station'],
   stationBuildStorage: ['station'], shipCapitalFreight: ['schiff'],
   stationPrepayStorage: [], stationAcceptStorage: [],
+  stationPrepayStorageSecond: [], stationAcceptStorageSecond: [],
   stationExportReserve: ['station'], stationExportAccept: ['station'],
   pirateBuy: ['angebot'],
   stationBuildLaser: ['station'], pilotBuyLaser: ['schiff'], pilotFitLaser: ['schiff'],
@@ -1296,6 +1297,16 @@ function checkShape(state, cmd, rules) {
       if (state.owners[cmd.owner].cash < m_core_handel.stationspreis(state, rules, station)) return 'zu wenig ISK für den Stationskauf';
     }
   }
+  if(cmd.type==='stationPrepayStorageSecond'||cmd.type==='stationAcceptStorageSecond'){
+    const p=cmd.type==='stationPrepayStorageSecond'
+      ?m_core_c1f.prepaySecondCheck(state,rules,cmd.owner)
+      :m_core_c1f.acceptSecondCheck(state,rules,cmd.owner);
+    if(!p.ok)return p.grund;
+  }
+  if(cmd.type==='shipCapitalFreightSecond'){
+    const p=m_core_c1d.pruefenSecond(state,rules,state.ships[cmd.schiff]);
+    if(!p.ok)return p.grund;
+  }
   if(cmd.type==='stationPrepayStorage'||cmd.type==='stationAcceptStorage'){
     const p=cmd.type==='stationPrepayStorage'
       ?m_core_c1f.prepayCheck(state,rules,cmd.owner)
@@ -1347,8 +1358,8 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5s?.minerIndustry ? ['stationBuildMiner'] : []),
     ...(rules.w5b ? ['stationBuildParts','stationBuildFighter'] : []),
     ...(rules.w5b?.allowStorageManufacturing ? ['stationBuildStorage'] : []),
-    ...(rules.c1d ? ['shipCapitalFreight'] : []),
-    ...(rules.c1f ? ['stationPrepayStorage','stationAcceptStorage'] : []),
+    ...(rules.c1d ? ['shipCapitalFreight',...(rules.c1d.secondEnabled?['shipCapitalFreightSecond']:[])] : []),
+    ...(rules.c1f ? ['stationPrepayStorage','stationAcceptStorage',...(rules.c1f.secondEnabled?['stationPrepayStorageSecond','stationAcceptStorageSecond']:[])] : []),
     ...(rules.c1e ? ['stationExportReserve','stationExportAccept'] : []),
     ...(rules.w5c ? ['pirateBuy','shipHunt'] : []),
     ...(rules.w5f ? ['stationBuildLaser','pilotBuyLaser','pilotFitLaser'] : []),
@@ -1589,6 +1600,15 @@ function execute(state, cmd, rules) {
     case 'stationBuildMiner': {
       m_core_w5.starten(state,rules,cmd.owner,cmd.station,
         cmd.type==='stationBuildMiner'?'miner':rules.w5.klasse); break;
+    }
+    case 'stationPrepayStorageSecond':{
+      m_core_c1f.prepaySecond(state,rules,cmd.owner);break;
+    }
+    case 'stationAcceptStorageSecond':{
+      m_core_c1f.acceptSecond(state,rules,cmd.owner);break;
+    }
+    case 'shipCapitalFreightSecond':{
+      m_core_c1d.startSecond(state,rules,state.ships[cmd.schiff]);break;
     }
     case 'stationPrepayStorage': {
       m_core_c1f.prepay(state,rules,cmd.owner);break;
@@ -3706,7 +3726,8 @@ const m_core_w5b = (() => {
         &&(state.ledger.lager?.consumed||0)===0
         &&(lager.lager||0)+(state.ships[state.c1d?.job?.ship]?.ladung?.lager||0)
           +(state.stations.st_meridian?.lager?.lager||0)
-          +(state.c1e?.accepted||0)+(state.c1f?.accepted||0)===lagerFertig))
+          +(state.c1e?.accepted||0)+(state.c1f?.accepted||0)
+          +(state.c1f?.secondAccepted||0)===lagerFertig))
       &&(!c.directPartsCustody||bauteilTitelAudit(state,rules))
       && w.jaegerFertig>=w.jaegerVerkauft&&idsOk
       && (!w.minerId||(miner?.owner===c.produzent&&miner.klasse==='miner'&&miner.heimat==='nadir'))
@@ -4313,7 +4334,8 @@ const m_core_w5h=(()=>{
     const hin=s.w3.auftrag?.phase==='hin'?r.w3.fracht:0;
     // Only the opt-in buyer prepayment spends this existing ore-buyer wallet.
     // The separate C1f Core audit proves the exact 4 x 430 contract.
-    const storageExpense=s.c1f?.advanced?r.c1f.quantity*r.c1f.unitPrice:0;
+    const storageExpense=(s.c1f?.advanced?r.c1f.quantity*r.c1f.unitPrice:0)
+      +(s.c1f?.secondAdvanced?r.c1f.quantity*r.c1f.unitPrice:0);
     const ok=nums.every(n=>Number.isSafeInteger(n)&&n>=0)
       &&w.gekauft===w.verkauft+w.bestand+w.unterwegs
       &&w.verkauft===s.w3.geliefert &&w.unterwegs===hin
@@ -8398,8 +8420,10 @@ function audit(state) {
       +(state.w5s?.oreVenture?.dividends??0);
     // C1d-4: existing ore buyer also prepays a separately proven storage purchase.
     // Keep it a distinct expense, never re-label it as exported ore or new ISK.
-    const storageExpense=state.c1f?.advanced
-      ?m_data_erzpilot.W5R_RULES.c1f.quantity*m_data_erzpilot.W5R_RULES.c1f.unitPrice:0;
+    const storageExpense=(state.c1f?.advanced
+      ?m_data_erzpilot.W5R_RULES.c1f.quantity*m_data_erzpilot.W5R_RULES.c1f.unitPrice:0)
+      +(state.c1f?.secondAdvanced
+      ?m_data_erzpilot.W5R_RULES.c1f.quantity*m_data_erzpilot.W5R_RULES.c1f.unitPrice:0);
     const differenz = rest + ausgegeben + equity+storageExpense-shareholderPaid-start;
     // Ohne belegte Endkunden-Einnahmen darf ein blosses Verschieben vorhandener ISK
     // nicht als wiederkehrend finanziertes Exportgeschaeft gelten.
@@ -8407,8 +8431,8 @@ function audit(state) {
       && Number.isSafeInteger(exportiert) && exportiert >= 0
       && Number.isSafeInteger(ausgegeben) && Number.isSafeInteger(differenz)
       && differenz === 0;
-    extra.finanzierung = { ok: finanzierungsOk, start, ausgegeben, storageExpense, rest,
-      differenz, exportiert };
+    extra.finanzierung = { ok: finanzierungsOk, start, ausgegeben,
+      ...(state.c1f?.advanced?{storageExpense}:{}),rest,differenz, exportiert };
   }
   let wirtschaftOk = true;
   if (state.rulesVersion === m_data_erzpilot.ERZ_RULES.rulesVersion
@@ -8500,7 +8524,8 @@ function audit(state) {
     if(state.c1f?.order){
       const p=m_core_c1f.audit(state,m_data_erzpilot.W5R_RULES);
       if(!p.ok)errors.c1f='unbelegter Käufer-Vorauftrag';
-      else if(state.c1f.order.status==='prepaid')active.add('c1f_kaufrest_escrow');
+      else if(state.c1f.order.status==='prepaid'||state.c1f.secondOrder?.status==='prepaid')
+        active.add('c1f_kaufrest_escrow');
     }
     if(state.c1d?.job){
       const proof=m_core_c1d.audit(state,m_data_erzpilot.W5R_RULES);

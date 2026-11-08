@@ -9,6 +9,7 @@ on:
       - tests/c1c-1-lohnrueckfluss.test.mjs
       - tests/c1c-2-bauteil-produktion.test.mjs
       - tests/c1c-3-silizium-lager.test.mjs
+      - tests/c1d-1-meridian-fracht.test.mjs
       - .github/workflows/c1b-1-wasser.yml
 permissions:
   contents: read
@@ -35,6 +36,8 @@ jobs:
         run: node tests/c1c-2-bauteil-produktion.test.mjs
       - name: C1c-3 Silizium 10 Minuten und bezahltes Lagermodul
         run: node tests/c1c-3-silizium-lager.test.mjs
+      - name: C1d-1 echte vorfinanzierte Meridian-Lieferung ohne Emission
+        run: node tests/c1d-1-meridian-fracht.test.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: c1b1-water-measurements

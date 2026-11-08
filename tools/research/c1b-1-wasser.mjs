@@ -7,19 +7,21 @@ export const RULE_VERSION=3301;
 export const WAGES_PROFILE='aphros-research:C1c-1:earned-industry-wages-v1';
 export const PARTS_PROFILE='aphros-research:C1c-2:paid-component-v1';
 export const STORAGE_PROFILE='aphros-research:C1c-3:timed-silicon-storage-v1';
-const SOURCE_SHA='f0e3d0d374549255b57a5c4d437caa7948e7240ea58fa310ff4d95f27f5c50d4';
+export const DELIVERY_PROFILE='aphros-research:C1d-1:physical-delivery-no-mint-v1';
+const SOURCE_SHA='307b1e8828f1ba6fccd89743b6e53bd607dbf0b13bbfb8efe246f619335d8e4c';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};
 
 // One bounded registration path; never accept arbitrary rule callbacks or patched audits.
 export function createResearchCore({profile=PROFILE}={}){
- check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE,STORAGE_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
+ check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE,STORAGE_PROFILE,DELIVERY_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
  const precursor=profile!==PROFILE;
  const partsFlow=profile===PARTS_PROFILE;
- const storageFlow=profile===STORAGE_PROFILE;
+ const deliveryFlow=profile===DELIVERY_PROFILE;
+ const storageFlow=profile===STORAGE_PROFILE||deliveryFlow;
  const wageFlow=profile===WAGES_PROFILE||partsFlow||storageFlow;
- const version=storageFlow?3305:partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
+ const version=deliveryFlow?3306:storageFlow?3305:partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
  const html=readFileSync(new URL('../../index.html',import.meta.url),'utf8');
  check(sha(html)===SOURCE_SHA,'unbekannte Core-Basis');
  const source=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
@@ -33,7 +35,7 @@ export function createResearchCore({profile=PROFILE}={}){
   base:m_data_rules.RULES});
  `+source.slice(boundary)+`
 return {api:m_core_index,serialize:m_core_serialize,
-  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s,parts:m_core_w5b};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,storageFlow}));
+  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s,parts:m_core_w5b};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow}));
  const rules=core.api.W5R_RULES;
  const fingerprint=sha(core.serialize.save(rules));
  function identity(s){
@@ -55,6 +57,10 @@ return {api:m_core_index,serialize:m_core_serialize,
     check(original.ok,'W5b-Originalaudit '+JSON.stringify(original));
     check(lagerAudit(s,rules),'Waren-/Arbeitsminuten fuer zwei Bauteile und Lager');
    }
+   if(deliveryFlow){
+    check(core.api.audit(s).c1d?.ok===true,'originaler C1d Transport-/Eigentumsaudit');
+    check(deliveryAudit(s,rules),'zusaetzliches unabhaengiges C1d-Geldaudit');
+   }
    check(Object.values(s.owners).every(o=>integer(o.cash)),'ungueltiges Geld');
    for(const obj of [...Object.values(s.stations).map(x=>x.lager),...Object.values(s.ships).map(x=>x.ladung),...Object.values(s.ledger)])
     check(Object.values(obj).every(integer),'ungueltige Waren');
@@ -71,7 +77,7 @@ return {api:m_core_index,serialize:m_core_serialize,
   const s=core.serialize.load(json,core.serialize.MIGRATIONS,8,version,{});
   return validate(s);
  }
- const allowed=new Set([...(precursor?['shipFreight','stationRefine']:[]),...(partsFlow||storageFlow?['stationBuildParts']:[]),...(storageFlow?['stationBuildStorage']:[]),'shipMine','shipWait','shipSellIce','shipFreightIce','stationWater','shipBuy']);
+ const allowed=new Set([...(precursor?['shipFreight','stationRefine']:[]),...(partsFlow||storageFlow?['stationBuildParts']:[]),...(storageFlow?['stationBuildStorage']:[]),...(deliveryFlow?['shipCapitalFreight']:[]),'shipMine','shipWait','shipSellIce','shipFreightIce','stationWater','shipBuy']);
  function execute(s,cmd){
   identity(s);check(allowed.has(cmd?.type),'Befehl ausserhalb des Wasserprofils');
   return core.api.execute(s,cmd,rules);
@@ -121,6 +127,29 @@ function lohnAudit(s,r){
 // 3304 only establishes the *paid output*, not ten timed C-silicon work minutes.
 // Independent of the original W5b goods/escrow audit: exact ten paid
 // silicon minutes per unit, two genuine component units and one paid storage lot.
+function deliveryAudit(s,r){
+ const c=s.c1d,j=c?.job;
+ if(!c||!r.c1d||!Number.isSafeInteger(c.pilotPaid)
+   ||!Number.isSafeInteger(c.pilotAllocated))return false;
+ const fee=s.owners.c1d_freight_escrow.cash,work=s.owners.c1d_pilot_escrow.cash,
+  pilot=s.owners.c1d_pilot.cash;
+ return [fee,work,pilot].every(integer)
+  && c.pilotAllocated===c.ordered*240
+  && c.feeAllocated===c.ordered*300
+  && c.pilotPaid===pilot
+  && fee===c.feeAllocated-c.feePaid
+  && work===c.pilotAllocated-c.pilotPaid
+  && c.completed===c.feePaid/300
+  &&(!j||(
+    j.titleOwner===r.c1d.seller
+    &&j.routes.position===60&&j.routes.delivery===60&&j.routes.back===120
+    &&j.paidMinutes===c.pilotPaid
+    && s.owners[r.c1d.seller].cash===j.sellerBefore-c.feeAllocated
+    && s.owners[r.c1d.carrier].cash===j.carrierBefore-c.pilotAllocated+c.feePaid
+  ))
+  &&s.minted===0&&s.burned===0
+  &&s.ledger.lager.exported===0;
+}
 function lagerAudit(s,r){
  const w=s.w5b,c=r.w5b,f=w?.auftrag,m=w?.siliziumAuftrag;
  if(!w||!c||c.silikonMenge!==2||c.silikonLohn!==1
@@ -141,7 +170,8 @@ function lagerAudit(s,r){
    &&s.stations.st_nadir.lager.bauteil===2*(w.bauteilFertig-w.lagerBegonnen)
    &&s.ledger.lager.produced===w.lagerFertig
    &&s.ledger.lager.consumed===0
-   &&s.stations.st_nadir.lager.lager===w.lagerFertig
+   &&s.stations.st_nadir.lager.lager+(s.ships[s.c1d?.job?.ship]?.ladung?.lager||0)
+      +(s.stations.st_meridian?.lager?.lager||0)===w.lagerFertig
    &&w.fabrikLohnGebunden===allocated
    &&w.fabrikLohnBezahlt===settled
    &&(s.owners.w5b_fabrik_arbeit?.cash||0)===allocated-settled
@@ -190,7 +220,7 @@ function nachfrageAudit(s){
    &&x.bought===(!x.missingCash&&!x.missingGoods?1:0))
   &&rows.reduce((n,x)=>n+x.bought,0)===s.w5n.wasserVerbraucht;
 }
-function register({data,freeze,water,income,trade,state,base},{profile,version,precursor,wageFlow,partsFlow,storageFlow}){
+function register({data,freeze,water,income,trade,state,base},{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow}){
  const rules=structuredClone(data.W5R_RULES);
  rules.rulesVersion=version;
  rules.researchProfile=profile;
@@ -220,6 +250,15 @@ function register({data,freeze,water,income,trade,state,base},{profile,version,p
   rules.economy.waren.lager={...base.economy.waren.lager,basis:430};
   rules.economy.rezepte.r_lager=structuredClone(base.economy.rezepte.r_lager);
   rules.world.stations.st_nadir.ziel.lager=2;
+ }
+ if(deliveryFlow){
+  // Research-only geography extension, with no imported or free export goods.
+  rules.world.systems.meridian={station:'st_meridian',fonds:'fonds_transport',sicherheit:'gesetzlos'};
+  rules.world.gates.push(['nadir','meridian',60]);
+  rules.world.stations.st_meridian={system:'meridian',linien:[],verbrauch:{},
+   ziel:{lager:2},gebuehr:0};
+  rules.owners.push({id:'st_meridian',kind:'station',cash:0});
+  rules.c1d={seller:'house',carrier:'transport',freightFee:300,wagePerMinute:1};
  }
  if(wageFlow){
   // Reuse existing W5s-q (paid W3 flights) and W5s-r (earned W4/W5/W5r

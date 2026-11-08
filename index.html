@@ -3410,7 +3410,10 @@ const m_core_w5b = (() => {
     const dauer=r.dauer*anzahlRezepte;
     const warenKosten=(ein.material||0)*c.materialPreis
       +(ein.silizium||0)*rules.economy.waren.silizium.basis
-      +(art==='stationBuildStorage'?(ein.bauteil||0)*rules.economy.waren.bauteil.basis:0);
+      +(art==='stationBuildStorage'&&!c.directPartsCustody
+        ?(ein.bauteil||0)*rules.economy.waren.bauteil.basis:0);
+    // With a recorded custody contract, house already owns its paid
+    // components. Its own parts are not bought back from the host station.
     return {art,ein,aus,dauer,warenKosten,arbeitKosten:dauer,gesamt:warenKosten+dauer};
   }
   function stationsKorrektur(state) {
@@ -3494,6 +3497,34 @@ const m_core_w5b = (() => {
     schiff.auftrag='halten';
     protokolliere(state,'handel',a.menge+' echtes Silizium gegen '+a.preis+' ISK in Nadir abgenommen',c.produzent);
   }
+  // C1d-5: a paid component lot remains the manufacturer's property while
+  // physically held by Nadir as custodian, until direct storage processing.
+  // Old research profiles retain their previous invoicing rules unchanged.
+  function bauteilTitelAudit(state,rules) {
+    const c=rules.w5b,w=state.w5b,rows=w?.bauteilTitel;
+    if(!c?.directPartsCustody)return !rows;
+    if(!Array.isArray(rows)||rows.length!==w.bauteilFertig)return false;
+    let unused=0,used=0;
+    for(let i=0;i<rows.length;i++){
+      const x=rows[i],taken=x.usedUnits===2;
+      if(!x||x.id!=='C1D5-BT-'+String(i+1).padStart(4,'0')
+        ||x.owner!==c.produzent||x.custodian!==c.station
+        ||x.units!==2||![0,2].includes(x.usedUnits)
+        ||!Number.isSafeInteger(x.createdTick)||x.createdTick<0
+        ||x.createdTick>state.tick
+        ||(taken?x.usedTick===null||!Number.isSafeInteger(x.usedTick)
+          ||x.usedTick<x.createdTick||x.usedTick>state.tick
+          ||x.usedBy!=='C1D5-LAGER-'+String(used+1).padStart(4,'0')
+          :x.usedTick!==null||x.usedBy!==null))
+        return false;
+      if(taken)used++;else unused+=2;
+    }
+    return used===w.lagerBegonnen
+      &&unused===(state.stations[c.station]?.lager.bauteil||0)
+      &&w.bauteilVerbraucht===2*used
+      &&w.materialVerbraucht===4*w.bauteilBegonnen
+      &&w.siliziumVerbraucht===2*w.bauteilBegonnen;
+  }
   function pruefen(state,rules,art,owner,station) {
     const c=rules.w5b,w=state.w5b;
     if(!c||!w||state.rulesVersion!==rules.rulesVersion)
@@ -3507,6 +3538,10 @@ const m_core_w5b = (() => {
       return {ok:false,grund:'W5: begrenzte Jaegerchargen aufgebraucht'};
     if(art==='stationBuildStorage'&&(!c.allowStorageManufacturing||w.lagerBegonnen>=(c.maxStorageLots??1)))
       return {ok:false,grund:'Bezahlter Lagerauftrag nicht freigegeben oder belegt'};
+    if(art==='stationBuildStorage'&&c.directPartsCustody
+      &&(!bauteilTitelAudit(state,rules)
+        ||!w.bauteilTitel.some(x=>x.usedUnits===0)))
+      return {ok:false,grund:'Keine belegten, dem Hersteller gehoerenden Bauteile zur Direktverarbeitung'};
     const p=plan(rules,art),lager=state.stations[c.station].lager;
     for(const [ware,menge] of Object.entries(p.ein))
       if(anzahl(lager,ware)<menge)return {ok:false,grund:'Reales Vorprodukt fehlt: '+ware};
@@ -3525,6 +3560,13 @@ const m_core_w5b = (() => {
     const c=rules.w5b,w=state.w5b,lager=state.stations[c.station].lager;
     if(!state.owners[KONTO_FABRIK])state.owners[KONTO_FABRIK]={id:KONTO_FABRIK,kind:'w5b-escrow',cash:0};
     if(state.owners[KONTO_FABRIK].cash)throw Error('W5b: Doppelte Arbeitsreserve');
+    if(c.directPartsCustody&&art==='stationBuildStorage') {
+      const title=w.bauteilTitel.find(x=>x.usedUnits===0);
+      if(!title||title.owner!==owner||title.custodian!==station)
+        throw Error('W5b: Eigentumsnachweis fuer Teile nicht erbracht');
+      title.usedUnits=2;title.usedTick=state.tick;
+      title.usedBy='C1D5-LAGER-'+String(w.lagerBegonnen+1).padStart(4,'0');
+    }
     for(const [ware,menge] of Object.entries(p.ein)) {
       lager[ware]-=menge;
       state.ledger[ware].consumed+=menge;
@@ -3565,8 +3607,16 @@ const m_core_w5b = (() => {
       lager[ware]+=menge;
       state.ledger[ware].produced+=menge;
     }
-    if(a.art==='stationBuildParts')w.bauteilFertig++;
-    else if(a.art==='stationBuildStorage')w.lagerFertig++;
+    if(a.art==='stationBuildParts'){
+      w.bauteilFertig++;
+      if(c.directPartsCustody){
+        (w.bauteilTitel ||= []).push({
+          id:'C1D5-BT-'+String(w.bauteilFertig).padStart(4,'0'),
+          owner:c.produzent,custodian:c.station,units:2,usedUnits:0,
+          createdTick:state.tick,usedTick:null,usedBy:null
+        });
+      }
+    }else if(a.art==='stationBuildStorage')w.lagerFertig++;
     else w.jaegerFertig++;
     w.auftrag=null;
     protokolliere(state,'produktion',a.art+': fertig aus bezahlten Rohstoffen und Arbeit',c.produzent);
@@ -3657,6 +3707,7 @@ const m_core_w5b = (() => {
         &&(lager.lager||0)+(state.ships[state.c1d?.job?.ship]?.ladung?.lager||0)
           +(state.stations.st_meridian?.lager?.lager||0)
           +(state.c1e?.accepted||0)+(state.c1f?.accepted||0)===lagerFertig))
+      &&(!c.directPartsCustody||bauteilTitelAudit(state,rules))
       && w.jaegerFertig>=w.jaegerVerkauft&&idsOk
       && (!w.minerId||(miner?.owner===c.produzent&&miner.klasse==='miner'&&miner.heimat==='nadir'))
       && (!w.siliziumAuftrag||(w.siliziumAuftrag.schiff===w.minerId
@@ -8710,6 +8761,7 @@ function createW5BState(seed=W5B_RULES.startSeed,rules=W5B_RULES) {
         s.owners[id]={id,kind:id==='c1d_pilot'?'labor':'escrow',cash:0};
       if(rules.c1e)
         s.c1e={order:null,accepted:0,minted:0,reserved:0,events:[]};
+      if(rules.w5b?.directPartsCustody)s.w5b.bauteilTitel=[];
       if(rules.c1f){
         s.c1f={order:null,accepted:0,advanced:0,settled:0};
         s.owners.c1f_kaufrest_escrow={id:'c1f_kaufrest_escrow',kind:'escrow',cash:0};

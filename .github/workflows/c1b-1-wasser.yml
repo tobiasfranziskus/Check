@@ -13,6 +13,7 @@ on:
       - tests/c1d-2-externe-abnahme.test.mjs
       - tests/c1d-3-mehrchargen-fracht.test.mjs
       - tests/c1d-4-finanzierter-vierervertrag.test.mjs
+      - tests/c1d-5-bauteil-eigentum.test.mjs
       - .github/workflows/c1b-1-wasser.yml
 permissions:
   contents: read
@@ -47,6 +48,8 @@ jobs:
         run: node tests/c1d-3-mehrchargen-fracht.test.mjs
       - name: C1d-4 kaufvertraglich bezahlte Viererfracht und reale Abnahme
         run: node tests/c1d-4-finanzierter-vierervertrag.test.mjs
+      - name: C1d-5 echte Bauteiltitel, Verwahrung, Direktverarbeitung und Endabnahme
+        run: node tests/c1d-5-bauteil-eigentum.test.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: c1b1-water-measurements

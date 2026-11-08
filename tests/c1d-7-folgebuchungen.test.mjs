@@ -187,6 +187,11 @@ test('C1d-7: genuine resumed ore mining and second paid transport attempt, no fa
  assert.ok(s.stations.st_aldera.lager.erz>=50);
  assert.equal(s.ledger.erz.mined,124); // first resumed tick opens the fully funded ore contract
  console.log('C1D7_UPSTREAM_GATE '+JSON.stringify({tick:s.tick,ore:s.stations.st_aldera.lager.erz,wholesale:s.w5h,shipOre:s.ships.sh003.ladung.erz,station:s.owners.st_aldera.cash,buyer:s.owners.export.cash,nadir:s.stations.st_nadir.lager.erz}));
+ // The genuine wholesale owner buys on its existing scheduled market ticks;
+ // physical warehouse ore cannot be shipped before the export buyer owns 50.
+ let waited=0;
+ while(s.w5h.bestand<50&&waited<180){step(s,1);waited++;}
+ assert.equal(s.w5h.bestand,50,'second 50-ore lot was never purchased');
  const before=s.owners.st_nadir.cash;
  command(s,{type:'shipFreight',owner:'transport',schiff:'sh002'});
  assert.equal(s.w3.beauftragt,2);

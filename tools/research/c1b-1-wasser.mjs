@@ -13,7 +13,7 @@ export const BUNDLE_PROFILE='aphros-research:C1d-3:three-paid-storage-freight-lo
 export const FINANCED_PROFILE='aphros-research:C1d-4:four-paid-storage-preorder-v1';
 export const TITLE_PROFILE='aphros-research:C1d-5:owner-custody-storage-v1';
 export const FOLLOWUP_PROFILE='aphros-research:C1d-7:post-settlement-journals-v1';
-const SOURCE_SHA='991af1163e6c1b8c6b77b3c86c96f697ddb4d05513469a7cac74c02724b8be92';
+const SOURCE_SHA='62ff1ff20a3725133b21787b0d3f5c52c334f8f37e7b95d8e60afa1479c21267';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};

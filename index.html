@@ -7903,13 +7903,23 @@ const m_core_c1d = (() => {
   // C1d-7: a completed one-time job is still auditable after unrelated,
   // genuinely booked downstream business. Older profiles retain frozen cash.
   const journal=(s,id)=>({revenue:s.stats.konto[id].erloes,costs:s.stats.konto[id].kosten});
+  const reservedAfter=(s,id)=>{
+    const mining=Object.entries(s.erzpilotVertraege||{}).reduce((sum,[shipId,v])=>
+      sum+(s.ships[shipId]?.owner===id&&v.arbeitsKonto
+        ?(s.owners[v.arbeitsKonto]?.cash??NaN):0),0);
+    return mining+(id==='house'
+      ?(s.owners.w5b_silizium_arbeit?.cash??0)
+        +(s.owners.w5b_fabrik_arbeit?.cash??0)
+        +(s.owners.w5f_laser_arbeit?.cash??0):0);
+  };
+
   const journalCash=(s,id,original,snapshot)=>{
     const now=s.stats.konto[id];
     return Number.isSafeInteger(snapshot?.revenue)&&snapshot.revenue>=0
       &&Number.isSafeInteger(snapshot?.costs)&&snapshot.costs>=0
       &&Number.isSafeInteger(now?.erloes)&&now.erloes>=snapshot.revenue
       &&Number.isSafeInteger(now?.kosten)&&now.kosten>=snapshot.costs
-      &&s.owners[id].cash===original+(now.erloes-snapshot.revenue)-(now.kosten-snapshot.costs);
+      &&s.owners[id].cash+reservedAfter(s,id)===original+(now.erloes-snapshot.revenue)-(now.kosten-snapshot.costs);
   };
   const rcheck=(rules)=>{
     const outward=route(rules.world,'aldera','nadir');
@@ -8194,13 +8204,23 @@ const m_core_c1f=(()=>{
  const total=c=>c.quantity*c.unitPrice;
  // Bound signed-account journal, not a perpetual freeze of a trading firm.
  const journal=(s,id)=>({revenue:s.stats.konto[id].erloes,costs:s.stats.konto[id].kosten});
+ const reservedAfter=(s,id)=>{
+   const mining=Object.entries(s.erzpilotVertraege||{}).reduce((sum,[shipId,v])=>
+     sum+(s.ships[shipId]?.owner===id&&v.arbeitsKonto
+       ?(s.owners[v.arbeitsKonto]?.cash??NaN):0),0);
+   return mining+(id==='house'
+     ?(s.owners.w5b_silizium_arbeit?.cash??0)
+       +(s.owners.w5b_fabrik_arbeit?.cash??0)
+       +(s.owners.w5f_laser_arbeit?.cash??0):0);
+ };
+
  const journalCash=(s,id,original,snapshot)=>{
    const now=s.stats.konto[id];
    return Number.isSafeInteger(snapshot?.revenue)&&snapshot.revenue>=0
      &&Number.isSafeInteger(snapshot?.costs)&&snapshot.costs>=0
      &&Number.isSafeInteger(now?.erloes)&&now.erloes>=snapshot.revenue
      &&Number.isSafeInteger(now?.kosten)&&now.kosten>=snapshot.costs
-     &&s.owners[id].cash===original+now.erloes-snapshot.revenue-now.kosten+snapshot.costs;
+     &&s.owners[id].cash+reservedAfter(s,id)===original+now.erloes-snapshot.revenue-now.kosten+snapshot.costs;
  };
  function prepayCheck(s,r,owner){
    const c=r.c1f,w=s.c1f;

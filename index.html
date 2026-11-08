@@ -3069,6 +3069,7 @@ const m_core_w3 = (() => {
           -(state.w5s?.takeover?.dividends??0)
           -(state.w5s?.paidTransport??state.w5s?.paid??0)
       -(state.c1d?.pilotAllocated??0)+(state.c1d?.feePaid??0)
+      -(state.c1d?.second?.pilotAllocated??0)+(state.c1d?.second?.feePaid??0)
       && (!a||(a.menge===c.fracht&&a.zeit===k.zeit&&a.erzWert===k.erzWert
         && a.arbeitsKosten===k.arbeitsKosten&&a.frachtGebuehr===k.frachtGebuehr
         && a.gesamt===k.gesamt&&a.gearbeitet>=0&&a.gearbeitet<=2*k.zeit
@@ -7519,7 +7520,8 @@ const m_core_w1_vollkosten = (() => {
     // abgebauten Erzminuten; weder als Förderung noch doppelt als Lohn zählen.
     const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-abzug-modulLohn-iceArbeit
       -(state.w5o?.divMine??0)-minerReiseKosten
-      -(state.c1d?.feeAllocated??0); // prepaid export carriage is not mining labour
+      -(state.c1d?.feeAllocated??0)
+      -(state.c1d?.second?.feeAllocated??0); // prepaid export carriage is not mining labour
     const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
     const fonds = state.owners[fondsId].cash - startCash(fondsId);
     const stationErz = state.stations[cfg.station].lager.erz;

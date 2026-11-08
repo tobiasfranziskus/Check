@@ -4821,6 +4821,9 @@ const m_core_w5o=(()=>{
    if(res.ok){s.w5o.aktionen++;return true}return false;
  };
  function autopilot(s,r){
+   // C1d research: once the paid storage lot is ready, do not commit a
+   // new ice/ore contract to its freight hull. Active paid flights finish.
+   if(r.c1d&&s.w5b?.lagerFertig>0)return;
    const w=s.w5o,n=s.w5n,c=r.w5n;
    const miner=Object.values(s.ships).find(sh=>sh.owner===w.minerOwner
      &&sh.klasse==='miner'&&sh.system==='aldera'

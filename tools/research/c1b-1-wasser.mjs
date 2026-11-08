@@ -10,22 +10,24 @@ export const STORAGE_PROFILE='aphros-research:C1c-3:timed-silicon-storage-v1';
 export const DELIVERY_PROFILE='aphros-research:C1d-1:physical-delivery-no-mint-v1';
 export const EXPORT_PROFILE='aphros-research:C1d-2:once-only-bounded-acceptance-v1';
 export const BUNDLE_PROFILE='aphros-research:C1d-3:three-paid-storage-freight-lot-v1';
-const SOURCE_SHA='b3bf4da0a666d0300cec0e4149839b67d4527201ea7a305eabbb1442107aff97';
+export const FINANCED_PROFILE='aphros-research:C1d-4:four-paid-storage-preorder-v1';
+const SOURCE_SHA='5229ef5d9f117fdfd8ff6c51a2729ccddf9eaeb7fa34b8aa4b2d3747951ca97b';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};
 
 // One bounded registration path; never accept arbitrary rule callbacks or patched audits.
 export function createResearchCore({profile=PROFILE}={}){
- check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE,STORAGE_PROFILE,DELIVERY_PROFILE,EXPORT_PROFILE,BUNDLE_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
+ check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE,PARTS_PROFILE,STORAGE_PROFILE,DELIVERY_PROFILE,EXPORT_PROFILE,BUNDLE_PROFILE,FINANCED_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
  const precursor=profile!==PROFILE;
  const partsFlow=profile===PARTS_PROFILE;
- const bundleFlow=profile===BUNDLE_PROFILE;
+ const fundedFlow=profile===FINANCED_PROFILE;
+ const bundleFlow=profile===BUNDLE_PROFILE||fundedFlow;
  const exportFlow=profile===EXPORT_PROFILE;
  const deliveryFlow=profile===DELIVERY_PROFILE||exportFlow||bundleFlow;
  const storageFlow=profile===STORAGE_PROFILE||deliveryFlow;
  const wageFlow=profile===WAGES_PROFILE||partsFlow||storageFlow;
- const version=bundleFlow?3308:exportFlow?3307:deliveryFlow?3306:storageFlow?3305:partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
+ const version=fundedFlow?3309:bundleFlow?3308:exportFlow?3307:deliveryFlow?3306:storageFlow?3305:partsFlow?3304:wageFlow?3303:precursor?3302:RULE_VERSION;
  const html=readFileSync(new URL('../../index.html',import.meta.url),'utf8');
  check(sha(html)===SOURCE_SHA,'unbekannte Core-Basis');
  const source=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
@@ -39,7 +41,7 @@ export function createResearchCore({profile=PROFILE}={}){
   base:m_data_rules.RULES});
  `+source.slice(boundary)+`
 return {api:m_core_index,serialize:m_core_serialize,
-  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s,parts:m_core_w5b};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow}));
+  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s,parts:m_core_w5b};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow}));
  const rules=core.api.W5R_RULES;
  const fingerprint=sha(core.serialize.save(rules));
  function identity(s){
@@ -48,7 +50,7 @@ return {api:m_core_index,serialize:m_core_serialize,
   check(s.w5o.mode==='wages'&&s.w5o.minerOwner==='npc3','Einkommensprofil falsch');
   check((wageFlow?!!s.w5s:!s.w5s)&&s.w5q.mode==='off'&&['rate','dayCap','totalCap','exported','minted','payout','stationNet'].every(k=>s.w5q[k]===0)
    &&s.w5q.events.length===0&&s.minted===(exportFlow?(s.c1e?.minted??-1):0)
-   &&s.burned===0,'Nur belegte C1d-2-Forschungsemission erlaubt');
+   &&s.burned===0&&(!fundedFlow||!!s.c1f&&!s.c1e),'Nur belegte C1d-2-Forschungsemission erlaubt');
  }
  function audit(s){
   try{
@@ -65,7 +67,11 @@ return {api:m_core_index,serialize:m_core_serialize,
    if(deliveryFlow){
     check(core.api.audit(s).c1d?.ok===true,'originaler C1d Transport-/Eigentumsaudit');
     check(deliveryAudit(s,rules),'zusaetzliches unabhaengiges C1d-Geldaudit');
-    if(bundleFlow)check(bundleAudit(s,rules),'zwei echte Lagermodule nur aus bezahlten Auftraegen');
+    if(bundleFlow)check(bundleAudit(s,rules),'echte Lagermodule nur aus bezahlten Auftraegen');
+    if(fundedFlow){
+      check(core.api.audit(s).c1f?.ok===true,'Original-C1d-4-Kaeufervertrag');
+      check(financedAudit(s,rules),'unabhaengige Kaufgeld-/Treuhand-/Warenbelege');
+    }
    }
    if(exportFlow){
     check(core.api.audit(s).c1e?.ok===true,'Core-Abnahmeaudit');
@@ -87,7 +93,7 @@ return {api:m_core_index,serialize:m_core_serialize,
   const s=core.serialize.load(json,core.serialize.MIGRATIONS,8,version,{});
   return validate(s);
  }
- const allowed=new Set([...(precursor?['shipFreight','stationRefine']:[]),...(partsFlow||storageFlow?['stationBuildParts']:[]),...(storageFlow?['stationBuildStorage']:[]),...(deliveryFlow?['shipCapitalFreight']:[]),...(exportFlow?['stationExportReserve','stationExportAccept']:[]),'shipMine','shipWait','shipSellIce','shipFreightIce','stationWater','shipBuy']);
+ const allowed=new Set([...(precursor?['shipFreight','stationRefine']:[]),...(partsFlow||storageFlow?['stationBuildParts']:[]),...(storageFlow?['stationBuildStorage']:[]),...(deliveryFlow?['shipCapitalFreight']:[]),...(exportFlow?['stationExportReserve','stationExportAccept']:[]),...(fundedFlow?['stationPrepayStorage','stationAcceptStorage']:[]),'shipMine','shipWait','shipSellIce','shipFreightIce','stationWater','shipBuy']);
  function execute(s,cmd){
   identity(s);check(allowed.has(cmd?.type),'Befehl ausserhalb des Wasserprofils');
   return core.api.execute(s,cmd,rules);
@@ -163,7 +169,7 @@ function exportAudit(s,r){
 }
 function bundleAudit(s,r){
  const w=s.w5b,c=r.c1d,j=s.c1d?.job;
- if(!w||!c||c.quantity!==3||r.w5b?.maxStorageLots!==4
+ if(!w||!c||c.quantity!==(r.c1f?4:3)||r.w5b?.maxStorageLots!==4
    ||r.w5b?.maxPartsLots!==4||r.w5b?.maxSiliconLots!==4)return false;
  const produced=w.lagerFertig,stored=s.stations.st_nadir.lager.lager,
    travelling=s.ships[j?.ship]?.ladung.lager||0,
@@ -171,8 +177,8 @@ function bundleAudit(s,r){
  return [produced,stored,travelling,arrived].every(integer)
   &&produced<=4
   &&s.ledger.lager.produced===produced
-  &&s.ledger.lager.consumed===0&&s.ledger.lager.exported===0
-  &&stored+travelling+arrived===produced
+  &&s.ledger.lager.consumed===0&&s.ledger.lager.exported===(s.c1f?.accepted||0)
+  &&stored+travelling+arrived+s.ledger.lager.exported===produced
   &&w.bauteilBegonnen<=w.siliziumAbgeschlossen
   &&w.lagerBegonnen<=w.bauteilFertig
   &&w.lagerFertig<=w.lagerBegonnen
@@ -183,6 +189,31 @@ function bundleAudit(s,r){
   &&w.fabrikLohnBezahlt===16*w.bauteilFertig+12*w.lagerFertig+(w.auftrag?.gearbeitet||0)
   &&s.minted===0&&s.burned===0;
 }
+
+// Independent C1d-4 contract budget, prepayment and original goods audit.
+// Only actually available pre-existing buyer cash is contracted, never new ISK.
+function financedAudit(s,r){
+ const c=r.c1f,w=s.c1f,o=w?.order,esc=s.owners.c1f_kaufrest_escrow;
+ if(!c||!w||!esc||c.buyer!=='export'||c.seller!=='house'||c.quantity!==4
+   ||c.unitPrice!==430||c.advance!==340)return false;
+ const total=4*430,rest=total-340,exported=s.ledger.lager.exported;
+ if(![w.advanced,w.settled,w.accepted,esc.cash,exported].every(integer)
+   ||s.minted!==0||s.burned!==0||s.c1e)return false;
+ if(!o)return w.advanced===0&&w.settled===0&&w.accepted===0
+   &&esc.cash===0&&exported===0;
+ const done=o.status==='accepted';
+ return o.id==='C1D4-0001'&&o.buyer==='export'&&o.seller==='house'
+   &&o.amount===total&&o.advance===340&&o.rest===rest
+   &&integer(o.buyerBefore)&&o.buyerBefore>=total
+   &&s.owners.export.cash===o.buyerBefore-total
+   &&w.advanced===340&&w.settled===(done?rest:0)
+   &&w.accepted===(done?4:0)
+   &&esc.cash===(done?0:rest)
+   &&exported===(done?4:0)
+   &&s.stations.st_meridian.lager.lager===4*s.c1d.delivered-exported
+   &&(!done||s.c1d.completed===1&&s.c1d.pilotPaid===240);
+}
+
 function deliveryAudit(s,r){
  const c=s.c1d,j=c?.job;
  if(!c||!r.c1d||!Number.isSafeInteger(c.pilotPaid)
@@ -200,11 +231,11 @@ function deliveryAudit(s,r){
     j.titleOwner===r.c1d.seller
     &&j.routes.position===60&&j.routes.delivery===60&&j.routes.back===120
     &&j.paidMinutes===c.pilotPaid
-    && s.owners[r.c1d.seller].cash===j.sellerBefore-c.feeAllocated+(s.c1e?.minted||0)
+    && s.owners[r.c1d.seller].cash===j.sellerBefore-c.feeAllocated+(s.c1e?.minted||0)+(s.c1f?.settled||0)
     && s.owners[r.c1d.carrier].cash===j.carrierBefore-c.pilotAllocated+c.feePaid
   ))
   &&s.minted===(s.c1e?.minted||0)&&s.burned===0
-  &&s.ledger.lager.exported===(s.c1e?.accepted||0);
+  &&s.ledger.lager.exported===(s.c1e?.accepted||0)+(s.c1f?.accepted||0);
 }
 function lagerAudit(s,r){
  const w=s.w5b,c=r.w5b,f=w?.auftrag,m=w?.siliziumAuftrag;
@@ -227,7 +258,7 @@ function lagerAudit(s,r){
    &&s.ledger.lager.produced===w.lagerFertig
    &&s.ledger.lager.consumed===0
    &&s.stations.st_nadir.lager.lager+(s.ships[s.c1d?.job?.ship]?.ladung?.lager||0)
-      +(s.stations.st_meridian?.lager?.lager||0)+(s.c1e?.accepted||0)===w.lagerFertig
+      +(s.stations.st_meridian?.lager?.lager||0)+(s.c1e?.accepted||0)+(s.c1f?.accepted||0)===w.lagerFertig
    &&w.fabrikLohnGebunden===allocated
    &&w.fabrikLohnBezahlt===settled
    &&(s.owners.w5b_fabrik_arbeit?.cash||0)===allocated-settled
@@ -276,7 +307,7 @@ function nachfrageAudit(s){
    &&x.bought===(!x.missingCash&&!x.missingGoods?1:0))
   &&rows.reduce((n,x)=>n+x.bought,0)===s.w5n.wasserVerbraucht;
 }
-function register({data,freeze,water,income,trade,state,base},{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow}){
+function register({data,freeze,water,income,trade,state,base},{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow}){
  const rules=structuredClone(data.W5R_RULES);
  rules.rulesVersion=version;
  rules.researchProfile=profile;
@@ -322,6 +353,13 @@ function register({data,freeze,water,income,trade,state,base},{profile,version,p
   rules.world.stations.st_nadir.ziel.lager=4;
   rules.world.stations.st_meridian.ziel.lager=3;
   rules.c1d.quantity=3;
+ }
+ if(fundedFlow){
+  // Legally bound buyer's already existing 20,000-ISK initial budget;
+  // no new cash owner and no C1d-2 research minting on this profile.
+  rules.c1d.quantity=4;
+  rules.world.stations.st_meridian.ziel.lager=4;
+  rules.c1f={seller:'house',buyer:'export',quantity:4,unitPrice:430,advance:340};
  }
  if(exportFlow){
   rules.c1e={seller:'house',price:430,dayCap:400,cap30:12000,

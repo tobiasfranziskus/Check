@@ -175,6 +175,12 @@ test('C1d-7: one genuine paid post-settlement refinery charge from retained phys
 test('C1d-7: genuine resumed ore mining and second paid transport attempt, no fake warehouse transfer',()=>{
  let s=finished(42);
  assert.equal(s.stations.st_aldera.lager.erz,10);
+ assert.equal(s.stations.st_nadir.lager.erz,10);
+ // Free a full 50-ore receiving slot with an actually paid 10-ore recipe.
+ command(s,{type:'stationRefine',owner:'st_nadir',station:'st_nadir'});
+ step(s,10);
+ assert.equal(s.stations.st_nadir.lager.erz,0);
+ assert.equal(s.stations.st_nadir.lager.material,4);
  command(s,{type:'shipMine',owner:'house',schiff:'sh003',ware:'erz'});
  step(s,65);
  command(s,{type:'shipWait',owner:'house',schiff:'sh003'});
@@ -187,7 +193,7 @@ test('C1d-7: genuine resumed ore mining and second paid transport attempt, no fa
  step(s,120);
  assert.equal(s.w3.abgeschlossen,2);
  assert.equal(s.w3.geliefert,100);
- assert.equal(s.stations.st_nadir.lager.erz,60);
+ assert.equal(s.stations.st_nadir.lager.erz,50);
  assert.equal(s.minted,0);
  audit(s);
  console.log('C1D7_SECOND_ORE '+JSON.stringify({tick:s.tick,hash:c.hash(s),stationCash:s.owners.st_nadir.cash,

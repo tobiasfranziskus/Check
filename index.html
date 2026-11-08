@@ -1212,7 +1212,8 @@ function checkShape(state, cmd, rules) {
     if (rules.w3 && s.klasse === 'frachter' && cmd.type !== 'shipFreight' && cmd.type !== 'shipRename'
       && !(rules.w5n&&cmd.type==='shipFreightIce')
       && !(rules.w5s&&cmd.type==='shipReposition')
-      && !(rules.c1d&&cmd.type==='shipCapitalFreight'))
+      && !(rules.c1d&&cmd.type==='shipCapitalFreight')
+      && !(rules.c1d?.secondEnabled&&cmd.type==='shipCapitalFreightSecond'))
       return 'W3-Frachter ausschließlich per finanziertem Transportauftrag steuern';
     if (cmd.type === 'shipFreight') {
       if (!rules.w3) return 'W3-Transport in dieser Regel nicht aktiv';

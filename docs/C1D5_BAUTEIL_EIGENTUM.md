@@ -38,7 +38,7 @@ Die auf `house` entfallenden 960 ISK bezahlter Material-/Siliziumankauf sind ech
 
 - Produktionslos-Zahl = Anzahl wirklich abgeschlossener Teileaufträge; IDs, Eigentümer, Verwahrstation, Stückzahl, Buchungsticks und Zuordnung zur jeweiligen Endmontage deterministisch und nach Originalzählern geprüft.
 - Die parallel unverändert gültigen Geld-/Waren-/Arbeits-/Fracht-/W5b-/C1d- und C1f-Audits müssen ebenfalls stimmen. Ein gefälschter Eigentümer, falscher Verwahrer, doppeltes Los, manipulierte Menge, Montage-Zuordnung, Zeit, Kaufpreis, Warenbuchung, Pilotenlohn oder Minting wird abgewiesen.
-- **Direkt ausgeführt, kein offizieller CI-Ersatz:** 6/6 neue C1d-5-Tests über denselben JS-Core einschließlich Seeds 42/7, Save/Load und Replay. Vier fertige Module Tick352, nach korrekter Rückfracht und Käuferabnahme Tick592. Endhash Seed42 `a08511483ad5350a`, Seed7 `b83514514e50182c`.
+- **Direkt ausgeführt, kein offizieller CI-Ersatz:** 6/6 neue C1d-5-Tests und zusätzlich 12/12 vorhandene C1d-3/C1d-4-Tests im selben tatsächlich ausgeführten JavaScript-Core-Harness, zusammen **18/18**. Alle Seed-42/7-, Save/Load-, Replay- und Fälschungsprüfungen bestanden. Vier fertige Module Tick352, nach korrekter Rückfracht und Käuferabnahme Tick592. Endhash Seed42 `a08511483ad5350a`, Seed7 `b83514514e50182c`.
 - Prüfbefehl: `node --test tests/c1d-5-bauteil-eigentum.test.mjs`; vollständige Node22-Regression und eigene Forschungs-CI separat zu bestätigen. iPad-Safari/NAS noch nicht abgenommen.
 - Kein Rückabwicklungs-/Insolvenzmodell für einen gescheiterten Vorauftrag; keine globale Geldemissionsregel; keine reproduzierbare weltwirtschaftliche Folge-Nachfrage; Erzförderung noch nicht auf die Modell-C-Frequenz 4 bezahlte Minuten je Stück angepasst.
 

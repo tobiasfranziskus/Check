@@ -1366,6 +1366,7 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5b?.allowStorageManufacturing ? ['stationBuildStorage'] : []),
     ...(rules.c1d ? ['shipCapitalFreight',...(rules.c1d.secondEnabled?['shipCapitalFreightSecond']:[])] : []),
     ...(rules.c1f ? ['stationPrepayStorage','stationAcceptStorage',...(rules.c1f.secondEnabled?['stationPrepayStorageSecond','stationAcceptStorageSecond']:[])] : []),
+    ...(rules.c1g?.enabled?['stationInstallPaidStorage']:[]),
     ...(rules.c1e ? ['stationExportReserve','stationExportAccept'] : []),
     ...(rules.w5c ? ['pirateBuy','shipHunt'] : []),
     ...(rules.w5f ? ['stationBuildLaser','pilotBuyLaser','pilotFitLaser'] : []),

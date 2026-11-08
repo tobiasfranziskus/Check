@@ -8081,7 +8081,11 @@ const m_core_c1d = (() => {
             &&carrier===j.carrierBefore-w.pilotAllocated+w.feePaid)
         &&sh?.owner===c.carrier&&sh?.klasse==='frachter'
         &&(j.phase==='finished'
-         ?sh.phase==='dock'&&sh.system==='aldera'&&sh.auftrag==='halten'
+         ?(c.postSettlementJournal
+           ?j.phaseStart===j.start+k.minutes
+             &&w.completed===1&&w.feePaid===c.freightFee
+             &&w.pilotPaid===k.minutes*c.wagePerMinute
+           :sh.phase==='dock'&&sh.system==='aldera'&&sh.auftrag==='halten')
          :sh.phase==='reise'&&sh.auftrag==='c1d-bezahlte-fracht'&&
            sh.ziel===(j.phase==='position'?'st_nadir':
              j.phase==='delivery'?'st_meridian':'st_aldera')&&

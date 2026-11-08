@@ -3394,6 +3394,14 @@ const m_core_w5b = (() => {
   }
   function foerdern(state,rules,schiff) {
     const c=rules.w5b,w=state.w5b;
+    // C1c-3: opt-in paid labour cadence. Legacy W5b keeps 1 tick/unit.
+    // Per-unit labour is reserved upfront; every tick transfers exactly
+    // one paid minute's share. Cargo/ledger appear only on completion.
+    const minutenJeEinheit=c.silikonMinutenJeEinheit??1;
+    const lohnJeMinute=c.silikonLohn/minutenJeEinheit;
+    if(!Number.isSafeInteger(minutenJeEinheit)||minutenJeEinheit<=0
+      ||!Number.isSafeInteger(lohnJeMinute)||lohnJeMinute<=0)
+      throw Error('W5b: ungueltige Silizium-Arbeitscadence');
     let a=w.siliziumAuftrag;
     if(!a) {
       const test=minenPruefen(state,rules,schiff);
@@ -3409,19 +3417,22 @@ const m_core_w5b = (() => {
       w.siliziumBegonnen++;
       a={schiff:schiff.id,menge:test.menge,gearbeitet:0,preis:test.preis,arbeit:test.arbeit};
       w.siliziumAuftrag=a;
-      protokolliere(state,'auftrag','Nadir: 8 Silizium und 16 ISK Minenarbeit voll reserviert',c.produzent);
+      protokolliere(state,'auftrag','Nadir: '+a.menge+' Silizium und '+a.arbeit+' ISK Minenarbeit voll reserviert',c.produzent);
     }
-    if(schiff.id!==a.schiff||state.owners[KONTO_MINE].cash<c.silikonLohn)
+    if(schiff.id!==a.schiff||state.owners[KONTO_MINE].cash<lohnJeMinute)
       throw Error('W5b: Silizium-Minenvertrag nicht gedeckt');
-    state.owners[KONTO_MINE].cash-=c.silikonLohn;
-    state.owners[c.arbeitsFonds].cash+=c.silikonLohn;
-    buche(state,c.produzent,'kosten',c.silikonLohn);
-    w.siliziumLohnBezahlt+=c.silikonLohn;
-    a.gearbeitet++;w.siliziumAbgebaut++;
-    schiff.ladung.silizium=(schiff.ladung.silizium||0)+1;
-    state.ledger.silizium.mined++;
-    if(a.gearbeitet<a.menge)return;
-    if(a.gearbeitet!==a.menge||state.owners[KONTO_MINE].cash!==0
+    state.owners[KONTO_MINE].cash-=lohnJeMinute;
+    state.owners[c.arbeitsFonds].cash+=lohnJeMinute;
+    buche(state,c.produzent,'kosten',lohnJeMinute);
+    w.siliziumLohnBezahlt+=lohnJeMinute;
+    a.gearbeitet++;
+    if(a.gearbeitet%minutenJeEinheit===0){
+      w.siliziumAbgebaut++;
+      schiff.ladung.silizium=(schiff.ladung.silizium||0)+1;
+      state.ledger.silizium.mined++;
+    }
+    if(a.gearbeitet<a.menge*minutenJeEinheit)return;
+    if(a.gearbeitet!==a.menge*minutenJeEinheit||state.owners[KONTO_MINE].cash!==0
       ||state.owners[KONTO_SILIKON].cash!==a.preis)
       throw Error('W5b: Nicht vollständig finanziertes Silizium');
     const lager=state.stations[c.station].lager;
@@ -3437,7 +3448,7 @@ const m_core_w5b = (() => {
     w.siliziumAbgeschlossen++;
     w.siliziumAuftrag=null;
     schiff.auftrag='halten';
-    protokolliere(state,'handel','8 echtes Silizium gegen 192 ISK in Nadir abgenommen',c.produzent);
+    protokolliere(state,'handel',a.menge+' echtes Silizium gegen '+a.preis+' ISK in Nadir abgenommen',c.produzent);
   }
   function pruefen(state,rules,art,owner,station) {
     const c=rules.w5b,w=state.w5b;
@@ -3528,11 +3539,17 @@ const m_core_w5b = (() => {
     if(!w||!c)return {ok:false,grund:'W5b-Auftragsbuch fehlt'};
     const lager=state.stations[c.station]?.lager||{};
     const miner=state.ships[w.minerId];
-    const siliziumFracht=w.siliziumAuftrag?(miner?.ladung?.silizium??-1):0;
+    const siliziumFracht=w.siliziumAuftrag?(miner?.ladung?.silizium??0):0;
     const mineKauf=state.owners[KONTO_SILIKON]?.cash??0;
     const mineArbeit=state.owners[KONTO_MINE]?.cash??0;
     const fabrik=state.owners[KONTO_FABRIK]?.cash??0;
     const parts=plan(rules,'stationBuildParts'),fighter=plan(rules,'stationBuildFighter');
+    const siliconMinutes=c.silikonMinutenJeEinheit??1;
+    const siliconMinuteWage=c.silikonLohn/siliconMinutes;
+    const siliconWorked=w.siliziumAuftrag?.gearbeitet??0;
+    const siliconUnitsInFlight=Math.floor(siliconWorked/siliconMinutes);
+    const cadenceOk=Number.isSafeInteger(siliconMinutes)&&siliconMinutes>0
+      &&Number.isSafeInteger(siliconMinuteWage)&&siliconMinuteWage>0;
     const aktive=w.auftrag;
     const hatTeile=aktive?.art==='stationBuildParts';
     const hatJaeger=aktive?.art==='stationBuildFighter';
@@ -3545,7 +3562,7 @@ const m_core_w5b = (() => {
           && (sh.owner===c.kaeufer || (rules.w5c && sh.owner===rules.w5c.pirat
             && state.w5c?.kaufIds.includes(id)))) || w.zerstoerteIds.includes(id);
       });
-    const ok=[w.siliziumBegonnen,w.siliziumAbgeschlossen,w.siliziumAbgebaut,
+    const ok=cadenceOk&&[w.siliziumBegonnen,w.siliziumAbgeschlossen,w.siliziumAbgebaut,
       w.siliziumLohnBezahlt,w.siliziumAbnahme,w.bauteilBegonnen,w.bauteilFertig,
       w.jaegerBegonnen,w.jaegerFertig,w.jaegerVerkauft,w.vorproduktKauf,
       w.materialVerbraucht,w.siliziumVerbraucht,w.bauteilVerbraucht,
@@ -3557,8 +3574,9 @@ const m_core_w5b = (() => {
       && w.jaegerBegonnen<=(rules.w5d?.maxChargen??1)
       && w.siliziumBegonnen===w.siliziumAbgeschlossen+(w.siliziumAuftrag?1:0)
       && w.siliziumAbgebaut===w.siliziumAbgeschlossen*c.silikonMenge
-        +(w.siliziumAuftrag?.gearbeitet??0)
-      && w.siliziumLohnBezahlt===w.siliziumAbgebaut*c.silikonLohn
+        +siliconUnitsInFlight
+      && w.siliziumLohnBezahlt===w.siliziumAbgeschlossen*c.silikonMenge*c.silikonLohn
+        +siliconWorked*siliconMinuteWage
       && mineArbeit===w.siliziumBegonnen*c.silikonMenge*c.silikonLohn-w.siliziumLohnBezahlt
       && mineKauf===(w.siliziumAuftrag?c.silikonMenge*rules.economy.waren.silizium.basis:0)
       && w.siliziumAbnahme===w.siliziumAbgeschlossen*c.silikonMenge*rules.economy.waren.silizium.basis
@@ -3587,8 +3605,12 @@ const m_core_w5b = (() => {
       && w.jaegerFertig>=w.jaegerVerkauft&&idsOk
       && (!w.minerId||(miner?.owner===c.produzent&&miner.klasse==='miner'&&miner.heimat==='nadir'))
       && (!w.siliziumAuftrag||(w.siliziumAuftrag.schiff===w.minerId
-        && siliziumFracht===w.siliziumAuftrag.gearbeitet
-        && w.siliziumAuftrag.menge===c.silikonMenge))
+        && siliziumFracht===siliconUnitsInFlight
+        && Number.isSafeInteger(siliconWorked)&&siliconWorked>=1
+        && siliconWorked<w.siliziumAuftrag.menge*siliconMinutes
+        && w.siliziumAuftrag.menge===c.silikonMenge
+        && w.siliziumAuftrag.arbeit===c.silikonMenge*c.silikonLohn
+        && w.siliziumAuftrag.preis===c.silikonMenge*rules.economy.waren.silizium.basis))
       && (!aktive||(aktive.dauer===plan(rules,aktive.art).dauer
         && aktive.arbeit===aktive.dauer&&aktive.gearbeitet>=0&&aktive.gearbeitet<aktive.dauer));
     return {ok,produziert:w.jaegerFertig,verkauft:w.jaegerVerkauft,

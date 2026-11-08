@@ -1208,7 +1208,8 @@ function checkShape(state, cmd, rules) {
     }
     if (rules.w3 && s.klasse === 'frachter' && cmd.type !== 'shipFreight' && cmd.type !== 'shipRename'
       && !(rules.w5n&&cmd.type==='shipFreightIce')
-      && !(rules.w5s&&cmd.type==='shipReposition'))
+      && !(rules.w5s&&cmd.type==='shipReposition')
+      && !(rules.c1d&&cmd.type==='shipCapitalFreight'))
       return 'W3-Frachter ausschließlich per finanziertem Transportauftrag steuern';
     if (cmd.type === 'shipFreight') {
       if (!rules.w3) return 'W3-Transport in dieser Regel nicht aktiv';
@@ -7953,8 +7954,8 @@ const m_core_c1d = (() => {
         &&j.routes.delivery===k.delivery&&j.routes.back===k.back
         &&j.paidMinutes===w.pilotPaid/c.wagePerMinute
         &&Number.isSafeInteger(j.start)&&j.start>=0&&j.start<=s.tick
-        &&startClock===j.paidMinutes
-        &&startClock<=k.minutes&&correctLocation
+        &&(j.phase==='finished'?startClock>=j.paidMinutes:startClock===j.paidMinutes)
+        &&j.paidMinutes<=k.minutes&&correctLocation
         &&w.delivered===(['return','finished'].includes(j.phase)?1:0)
         &&w.completed===(j.phase==='finished'?1:0)
         &&j.phaseStart===j.start+

@@ -18,6 +18,8 @@ on:
       - tests/c1d-7-folgebuchungen.test.mjs
       - tests/c1d-8-zweiter-modulzyklus.test.mjs
       - tests/c1d-8b-zweiter-export.test.mjs
+      - tests/c1d-9-kapitalreichweite.test.mjs
+      - tools/research/c1d-9-kapitalreichweite.mjs
       - tools/research/c1d-6-vollkosten.mjs
       - .github/workflows/c1b-1-wasser.yml
 permissions:
@@ -63,6 +65,8 @@ jobs:
         run: node tests/c1d-8-zweiter-modulzyklus.test.mjs
       - name: C1d-8b zweite echte 1720-ISK-Abnahme und voll vorfinanzierter 240-Minuten-Rueckflug
         run: node tests/c1d-8b-zweiter-export.test.mjs
+      - name: C1d-9 zwei Produktionsperioden Kapitalreichweite und Endkauf-Gate auditieren
+        run: node tests/c1d-9-kapitalreichweite.test.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: c1b1-water-measurements

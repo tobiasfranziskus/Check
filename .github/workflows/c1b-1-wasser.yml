@@ -6,6 +6,7 @@ on:
       - tools/research/c1b-1-wasser.mjs
       - tests/c1b-1-exaktes-c-wasser.test.mjs
       - tests/c1b-2-industrie-vorstufe.test.mjs
+      - tests/c1c-1-lohnrueckfluss.test.mjs
       - .github/workflows/c1b-1-wasser.yml
 permissions:
   contents: read
@@ -26,6 +27,8 @@ jobs:
         env:
           C1B2_REPORT: c1b2-results.json
         run: node tests/c1b-2-industrie-vorstufe.test.mjs
+      - name: C1c-1 bezahlte Industrie- und Transportloehne
+        run: node tests/c1c-1-lohnrueckfluss.test.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: c1b1-water-measurements

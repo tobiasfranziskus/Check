@@ -163,13 +163,13 @@ function exportAudit(s,r){
 }
 function bundleAudit(s,r){
  const w=s.w5b,c=r.c1d,j=s.c1d?.job;
- if(!w||!c||c.quantity!==3||r.w5b?.maxStorageLots!==3
-   ||r.w5b?.maxPartsLots!==3||r.w5b?.maxSiliconLots!==3)return false;
+ if(!w||!c||c.quantity!==3||r.w5b?.maxStorageLots!==4
+   ||r.w5b?.maxPartsLots!==4||r.w5b?.maxSiliconLots!==4)return false;
  const produced=w.lagerFertig,stored=s.stations.st_nadir.lager.lager,
    travelling=s.ships[j?.ship]?.ladung.lager||0,
    arrived=s.stations.st_meridian.lager.lager;
  return [produced,stored,travelling,arrived].every(integer)
-  &&produced<=3
+  &&produced<=4
   &&s.ledger.lager.produced===produced
   &&s.ledger.lager.consumed===0&&s.ledger.lager.exported===0
   &&stored+travelling+arrived===produced
@@ -318,8 +318,8 @@ function register({data,freeze,water,income,trade,state,base},{profile,version,p
  }
  if(bundleFlow){
   // Intentional isolated research caps, not new productive price rules.
-  Object.assign(rules.w5b,{maxSiliconLots:3,maxPartsLots:3,maxStorageLots:3});
-  rules.world.stations.st_nadir.ziel.lager=3;
+  Object.assign(rules.w5b,{maxSiliconLots:4,maxPartsLots:4,maxStorageLots:4});
+  rules.world.stations.st_nadir.ziel.lager=4;
   rules.world.stations.st_meridian.ziel.lager=3;
   rules.c1d.quantity=3;
  }

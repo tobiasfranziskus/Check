@@ -7952,6 +7952,8 @@ const m_core_c1d = (() => {
     if(!p.ok)throw Error('C1d unfinanzierte Fracht: '+p.grund);
     const c=r.c1d,w=s.c1d;
     const sellerBefore=s.owners[c.seller].cash,carrierBefore=s.owners[c.carrier].cash;
+    const sellerJournal=c.postSettlementJournal?journal(s,c.seller):null;
+    const carrierJournal=c.postSettlementJournal?journal(s,c.carrier):null;
     s.owners[c.seller].cash-=p.fee;
     s.owners[feeAccount].cash+=p.fee;
     s.owners[c.carrier].cash-=p.labour;
@@ -7962,8 +7964,7 @@ const m_core_c1d = (() => {
     w.job={ship:sh.id,titleOwner:c.seller,sellerBefore,carrierBefore,
       start:s.tick,phase:'position',phaseStart:s.tick,paidMinutes:0,
       routes:{position:p.position,delivery:p.delivery,back:p.back},
-      ...(c.postSettlementJournal
-        ?{sellerJournal:journal(s,c.seller),carrierJournal:journal(s,c.carrier)}:{})};
+      ...(c.postSettlementJournal?{sellerJournal,carrierJournal}:{})};
     sh.phase='reise';sh.ziel='st_nadir';sh.ankunft=s.tick+p.position;
     sh.auftrag='c1d-bezahlte-fracht';
     m_core_state.protokolliere(s,'auftrag',
@@ -8226,6 +8227,7 @@ const m_core_c1f=(()=>{
    const p=prepayCheck(s,r,owner);if(!p.ok)throw Error(p.grund);
    const c=r.c1f,w=s.c1f;
    const buyerBefore=s.owners[c.buyer].cash;
+   const buyerJournal=c.postSettlementJournal?journal(s,c.buyer):null;
    s.owners[c.buyer].cash-=p.amount;
    s.owners[c.seller].cash+=c.advance;
    s.owners[ESCROW].cash=p.rest;
@@ -8235,7 +8237,7 @@ const m_core_c1f=(()=>{
    w.order={id:'C1D4-0001',buyer:c.buyer,seller:c.seller,
      createdTick:s.tick,buyerBefore,amount:p.amount,
      advance:c.advance,rest:p.rest,status:'prepaid',acceptedTick:null,
-     ...(c.postSettlementJournal?{buyerJournal:journal(s,c.buyer)}:{})};
+     ...(c.postSettlementJournal?{buyerJournal}:{})};
    m_core_state.protokolliere(s,'auftrag',
      'C1d-4: vier echte Lagermodule aus endlichem Käuferetat vorbestellt; 340 ISK Vorschuss, 1380 ISK Treuhand',
      c.buyer);

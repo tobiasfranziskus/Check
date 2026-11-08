@@ -8,7 +8,7 @@ export const WAGES_PROFILE='aphros-research:C1c-1:earned-industry-wages-v1';
 export const PARTS_PROFILE='aphros-research:C1c-2:paid-component-v1';
 export const STORAGE_PROFILE='aphros-research:C1c-3:timed-silicon-storage-v1';
 export const DELIVERY_PROFILE='aphros-research:C1d-1:physical-delivery-no-mint-v1';
-const SOURCE_SHA='21244200fe8f28e13029540572c50f70ea8afae5218b33b0b8768fb975c49887';
+const SOURCE_SHA='1265032159c08f9ebd30bd80834a60a115c0e842beb7fd72124ee01f0bcf3461';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};

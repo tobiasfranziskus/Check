@@ -10,7 +10,7 @@
 - Das vierte Lagermodul benötigt wieder zwei wirklich produzierte Bauteile und **12 bezahlte Endmontageminuten**. Der vorhandene Frachter `sh002` befördert vier reale Module über Aldera → Nadir → Meridian → Aldera. Für die Fahrt: **300 ISK Speditionshonorar** plus **240 aus bestehendem Speditionskapital vorfinanzierte Pilotenminuten**; Rückflug vor Abnahmeauszahlung.
 - Der Käufer kann den **1.380-ISK-Kaufrest nur nach physischem Eingang aller vier Module und abgeschlossenem bezahlten Rückflug** auszahlen lassen. Der ursprüngliche Lagerbestand wird dann exakt um vier reduziert und als **vier reale Exporte** verbucht. Gesamtzahlung 1.720 ISK; neuer Geldbestand **0 ISK**; keine Parallelabnahme von C1d-2.
 
-Das ist ein **vorfinanzierter privater Endkauf**, keine Modell-C-Emission. Der Verkäufer hält die Ware bis zur Abnahme in seiner Herkunftskette, der Käufer hält die vertraglichen Abnahmerechte und den für die Erfüllung gesperrten Kaufrest. Forschungstarife, Käuferverpflichtung und konkretes Geschäftsmodell bleiben **[OPTION]**.
+Das ist ein **vorfinanzierter privater Endkauf**, keine Modell-C-Emission. Die vier Lagergüter sind physisch nachweisbar; der Käufer hält die vorfinanzierten Abnahmerechte und den gesperrten Kaufrest. **Ein vollständiger zivilrechtlicher Eigentumsnachweis der vorgelagerten Bauteile fehlt noch:** Wie bereits in #254 festgestellt, bucht der bestehende W5b-Core von `house` gefertigte Bauteile ins Stationslager und lässt `house` beim Lagerbau nochmals 2 × 170 ISK an die Station zahlen, ohne einen expliziten Bauteil-Ankauf/Verarbeitungsvertrag nachzuweisen. Die Geld-/Warenbilanz ersetzt diese fehlende Eigentumsübertragung nicht. Daher **keine Freigabe als vollständig rechtmäßiger Außenhandelsvertrag** vor Behebung und unabhängigem Eigentümeraudit. Forschungstarife, Käuferverpflichtung und konkretes Geschäftsmodell bleiben **[OPTION]**.
 
 ## Profile und technische Trennung
 
@@ -30,6 +30,10 @@ Das ist ein **vorfinanzierter privater Endkauf**, keine Modell-C-Emission. Der V
 | **Nur nach diesen drei Kostenblöcken** | **+12 ISK** |
 
 Diese 12 ISK sind **kein Nettogewinn**: Erz-/Siliziumherkunft, Raffinerie, Minerbeschaffung, Vorleistungen, Wartung, Werft-/Frachterabschreibung, freie Lohnzuflüsse, Stationskonten sowie der eigentliche einmalige Endkunde bleiben im Gesamtabschluss zu prüfen. Die 240 ISK Pilotenlöhne sind bereits reale Speditionsausgabe; eine Verrechnung nur auf Produzentenebene darf nicht fälschlich Gewinn der Gesamtwirtschaft ausweisen.
+
+## Tatsächlich ausgeführter direkter JavaScript-Core-Test
+
+Sechs neue Tests im direkten Original-JavaScript-Core-Harness **6/6 bestanden**, Seeds 42 und 7, Save/Load, deterministische Wiederholung, Vertrag und manipulierte Belege. Gemessene Abnahme bei Tick 592: Seed 42 `4cd0e04afa285c1a`, Seed 7 `9c94c5e42658e616`, jeweils vier exportierte Module, 300 ISK Fracht, 240 Pilotminuten, 1.720 ISK vorhandenes Käufergeld, 0 neue ISK. **Das ist kein abgeschlossenes Node-22-/GitHub-CI-Gesamtergebnis.**
 
 ## Prüfgates
 

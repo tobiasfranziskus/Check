@@ -11,7 +11,7 @@ export const DELIVERY_PROFILE='aphros-research:C1d-1:physical-delivery-no-mint-v
 export const EXPORT_PROFILE='aphros-research:C1d-2:once-only-bounded-acceptance-v1';
 export const BUNDLE_PROFILE='aphros-research:C1d-3:three-paid-storage-freight-lot-v1';
 export const FINANCED_PROFILE='aphros-research:C1d-4:four-paid-storage-preorder-v1';
-const SOURCE_SHA='a34e4049dfcb237f0fd6a52b8d30075b55f740a56b4a7e88c3a815314b231fb5';
+const SOURCE_SHA='5229ef5d9f117fdfd8ff6c51a2729ccddf9eaeb7fa34b8aa4b2d3747951ca97b';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};

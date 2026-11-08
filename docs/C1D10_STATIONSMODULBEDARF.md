@@ -17,6 +17,25 @@ Stattdessen erhält die bestehende Nadir-Station einen **einmaligen, aktiven Kau
 5. Erst jetzt darf der konkrete Käufer `st_nadir` seinen eigenen vorhandenen Kontostand belasten: neuer Original-Core-Befehl `stationInstallPaidStorage`, **430 ISK an `house`**, einmalige Güterausbuchung aus Stationsbestand in `ledger.lager.consumed`, und tatsächliche Erhöhung von `stations.st_nadir.module.lager` um eins. Die Lagerobergrenze steigt gemäß **unverändertem** `m_core_handel.obergrenze`.
 6. Eine zweite identische Bestellung ist ohne neues reales Modul, neue Finanzierung und neue Bedarfsberechtigung ausdrücklich gesperrt. C1d-4 / C1d-8b bleiben historisch abgeschlossen; keine neue Meridian-Rundfahrt.
 
+## Gemessener Forschungsabschluss – beide Seeds 42 und 7
+
+| Original-Core-Messung | Je Seed |
+| --- | ---: |
+| Abschlusszeitpunkt, Tick | **1.360** |
+| Kumulativ produzierte Lagermodule | **9** |
+| Davon extern bezahlt exportiert | **8** |
+| Zusätzlich tatsächlich installiert | **1** |
+| Nadir-Betriebskasse nach Kauf | **1.428 ISK** |
+| Herstellerkasse nach Verkauf | **3.762 ISK** |
+| Originale Erz-Lagerobergrenze Nadir vorher | **625 Erz** |
+| Nach tatsächlichem Einbau | **937 Erz** |
+| Weltweite Geldmenge | **33.000 ISK** |
+| Neue ISK | **0** |
+| Seed-42-Abschlusshash | `41af8dee141bec8b` |
+| Seed-7-Abschlusshash | `2004feb2d7250d0c` |
+
+**[TEST / direkte Ausführung]** Der vollständige Original-JavaScript-Core wurde im isolierten Prüf-Harness ausgeführt: **6/6 C1d-10-Testgruppen erfolgreich**, beide Seeds mit 1.360 echten Ticks, negativen Berechtigungs-/Fälschungsfällen, Save/Load und je 200 weiteren Ticks deterministischen Audits. Die eigenständigen GitHub-Node22- und Vollregressionsprüfungen sind damit **nicht** ersetzt. Die erste GitHub-Forschungs-CI #42522911304 war rot wegen eines nicht auf Null normalisierten, anfangs fehlenden Modulzählers; dies ist im neueren Code korrigiert. Die korrigierte komplette CI [als aktueller PR-Check](https://github.com/tobiasfranziskus/Check/pull/264/checks) erst nach tatsächlichem Abschluss bewerten.
+
 ## Unabhängigkeit, Risiken und Tests
 
 - Original-Core-Produktions-, Arbeits-, Geld-, Eigentums-, Kapazitäts- und Warenaudits sowie unabhängiger Forschungsprüfer `stationDemandAudit` greifen ineinander. Originalfrachtrundflüge und beide Käuferverträge bleiben vollständig erkennbar.

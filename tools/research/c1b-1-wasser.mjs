@@ -404,7 +404,7 @@ function lagerAudit(s,r){
    &&s.ledger.lager.produced===w.lagerFertig
    &&s.ledger.lager.consumed===0
    &&s.stations.st_nadir.lager.lager+(s.ships[s.c1d?.job?.ship]?.ladung?.lager||0)
-      +(s.stations.st_meridian?.lager?.lager||0)+(s.c1e?.accepted||0)+(s.c1f?.accepted||0)===w.lagerFertig
+      +(s.stations.st_meridian?.lager?.lager||0)+(s.c1e?.accepted||0)+(s.c1f?.accepted||0)+(s.c1f?.secondAccepted||0)===w.lagerFertig
    &&w.fabrikLohnGebunden===allocated
    &&w.fabrikLohnBezahlt===settled
    &&(s.owners.w5b_fabrik_arbeit?.cash||0)===allocated-settled

@@ -96,7 +96,7 @@ function lohnAudit(s,r){
    &&(w.orePilotWages||0)<=s.w3.arbeitsKosten
    &&(paid.refinery||0)<=s.w4.gezahlt
    &&s.owners[r.w3.arbeitsFonds].cash===init(r.w3.arbeitsFonds)
-       +s.w3.arbeitsKosten+s.w5n.frachtLohn-s.w5o.lohnFracht-(w.orePilotWages||0)
+       +s.w3.arbeitsKosten+s.w5n.frachtLohn+(s.w5b?.siliziumLohnBezahlt||0)-s.w5o.lohnFracht-(w.orePilotWages||0)
    &&s.owners[r.w4.arbeitOwner].cash===s.w4.gezahlt-(paid.refinery||0)
    &&s.owners.w5n_kunden.cash===init('w5n_kunden')+s.w5o.ausgezahlt
        +(w.orePilotWages||0)+industry-s.w5n.wasserErlos

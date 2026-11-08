@@ -8643,7 +8643,7 @@ const m_core_c1g=(()=>{
     ||s.w5b?.auftrag||s.w5b?.siliziumAuftrag
     ||s.ledger?.lager?.produced!==9||s.ledger.lager.exported!==8
     ||s.ledger.lager.consumed!==0||st?.lager?.lager!==1
-    ||st.module?.lager!==w.moduleBefore||w.moduleBefore>=2
+    ||(st.module?.lager||0)!==w.moduleBefore||w.moduleBefore>=2
     ||s.stations.st_meridian.lager.lager!==0
     ||s.minted!==0||s.burned!==0)
     return {ok:false,grund:'Kein realer neunter Lagerartikel oder kein Stationsbedarf'};
@@ -8663,7 +8663,7 @@ const m_core_c1g=(()=>{
   buche(s,c.buyer,'kosten',p.price);buche(s,c.seller,'erloes',p.price);
   s.stations[c.station].lager.lager--;
   s.ledger.lager.consumed++;
-  s.stations[c.station].module.lager++;
+  s.stations[c.station].module.lager=(s.stations[c.station].module.lager||0)+1;
   w.installed=1;
   w.order={id:'C1D10-NADIR-0001',buyer:c.buyer,seller:c.seller,
     station:c.station,title:'C1D5-LAGER-0009',status:'installed',
@@ -8677,7 +8677,7 @@ const m_core_c1g=(()=>{
   const c=r.c1g,w=s.c1g,o=w?.order,st=s.stations?.st_nadir;
   if(!c?.enabled||!w||!st||!safe(w.moduleBefore)||w.moduleBefore>=2
     ||![0,1].includes(w.installed)||s.minted!==0||s.burned!==0)return {ok:false};
-  if(!o)return {ok:w.installed===0&&st.module.lager===w.moduleBefore
+  if(!o)return {ok:w.installed===0&&(st.module.lager||0)===w.moduleBefore
     &&s.ledger.lager.consumed===0,installed:0};
   const old=capacity(r,w.moduleBefore),next=obergrenze(s,r,'st_nadir','erz');
   const ok=w.installed===1&&o.status==='installed'

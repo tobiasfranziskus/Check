@@ -1,0 +1,460 @@
+[
+  {
+    "profile": "R32-C1a",
+    "days": 30,
+    "seed": 42,
+    "checks": 43200,
+    "maxDailyPurchases": 48,
+    "planned": 1440,
+    "missingCash": null,
+    "missingGoods": null,
+    "firstCashBlock": null,
+    "lastSaleTick": 21840,
+    "lastWorkTick": 21700,
+    "tick": 43200,
+    "hash": "5e963b2b261e722b",
+    "ice": 600,
+    "paidMiningMinutes": 600,
+    "iceSold": 400,
+    "iceDelivered": 250,
+    "freight": 5,
+    "freightRevenue": 1350,
+    "water": 200,
+    "sold": 166,
+    "householdIncome": 1600,
+    "householdCash": 12,
+    "wages": {
+      "mine": 600,
+      "freight": 600,
+      "factory": 400
+    },
+    "maintenance": 60,
+    "purchases": [
+      {
+        "cost": 600,
+        "id": "sh003",
+        "owner": "npc3",
+        "tick": 21600,
+        "type": "miner"
+      },
+      {
+        "cost": 600,
+        "id": "sh004",
+        "owner": "npc3",
+        "tick": 43200,
+        "type": "miner"
+      }
+    ],
+    "losses": [
+      {
+        "cargo": [
+          {
+            "menge": 100,
+            "ware": "eis"
+          }
+        ],
+        "id": "sh001",
+        "owner": "npc3",
+        "tick": 21600,
+        "type": "miner"
+      },
+      {
+        "cargo": [
+          {
+            "menge": 100,
+            "ware": "eis"
+          }
+        ],
+        "id": "sh003",
+        "owner": "npc3",
+        "tick": 43200,
+        "type": "miner"
+      },
+      {
+        "cargo": [],
+        "id": "sh002",
+        "owner": "transport",
+        "tick": 43200,
+        "type": "frachter"
+      }
+    ],
+    "cash": {
+      "arbeiter_laser_nadir": 0,
+      "arbeiter_w5b_nadir": 0,
+      "arbeiter_werft_nadir": 0,
+      "arbeitskraefte_nadir": 0,
+      "export": 20000,
+      "fonds_aldera": 0,
+      "fonds_transport": 0,
+      "house": 3000,
+      "npc3": 2600,
+      "pilot_npc3": 0,
+      "pirates": 900,
+      "st_aldera": 250,
+      "st_nadir": 1628,
+      "transport": 2000,
+      "w5n_arbeit": 0,
+      "w5n_fabrik_arbeit": 0,
+      "w5n_fracht_arbeit": 0,
+      "w5n_fracht_kauf": 0,
+      "w5n_kunden": 12,
+      "w5r_maintenance_reserved": 0,
+      "w5r_maintenance_workforce": 60,
+      "werft_extern": 2550
+    },
+    "minted": 0
+  },
+  {
+    "profile": "C1b-1",
+    "days": 30,
+    "seed": 42,
+    "checks": 43200,
+    "maxDailyPurchases": 10,
+    "planned": 300,
+    "missingCash": 82,
+    "missingGoods": 1,
+    "firstCashBlock": {
+      "tick": 31536,
+      "cash": 14,
+      "stock": 33,
+      "missingCash": true,
+      "missingGoods": false,
+      "bought": 0
+    },
+    "lastSaleTick": 31392,
+    "lastWorkTick": 27624,
+    "tick": 43200,
+    "hash": "678bfa9f5506bd69",
+    "ice": 650,
+    "paidMiningMinutes": 1300,
+    "iceSold": 450,
+    "iceDelivered": 300,
+    "freight": 6,
+    "freightRevenue": 1620,
+    "water": 250,
+    "sold": 217,
+    "householdIncome": 2520,
+    "householdCash": 14,
+    "wages": {
+      "mine": 1300,
+      "freight": 720,
+      "factory": 500
+    },
+    "maintenance": 60,
+    "purchases": [
+      {
+        "cost": 600,
+        "id": "sh003",
+        "owner": "npc3",
+        "tick": 21600,
+        "type": "miner"
+      },
+      {
+        "cost": 600,
+        "id": "sh004",
+        "owner": "npc3",
+        "tick": 43200,
+        "type": "miner"
+      }
+    ],
+    "losses": [
+      {
+        "cargo": [
+          {
+            "menge": 100,
+            "ware": "eis"
+          }
+        ],
+        "id": "sh001",
+        "owner": "npc3",
+        "tick": 21600,
+        "type": "miner"
+      },
+      {
+        "cargo": [
+          {
+            "menge": 100,
+            "ware": "eis"
+          }
+        ],
+        "id": "sh003",
+        "owner": "npc3",
+        "tick": 43200,
+        "type": "miner"
+      },
+      {
+        "cargo": [],
+        "id": "sh002",
+        "owner": "transport",
+        "tick": 43200,
+        "type": "frachter"
+      }
+    ],
+    "cash": {
+      "arbeiter_laser_nadir": 0,
+      "arbeiter_w5b_nadir": 0,
+      "arbeiter_werft_nadir": 0,
+      "arbeitskraefte_nadir": 0,
+      "export": 20000,
+      "fonds_aldera": 0,
+      "fonds_transport": 0,
+      "house": 3000,
+      "npc3": 2150,
+      "pilot_npc3": 0,
+      "pirates": 900,
+      "st_aldera": 250,
+      "st_nadir": 1926,
+      "transport": 2150,
+      "w5n_arbeit": 0,
+      "w5n_fabrik_arbeit": 0,
+      "w5n_fracht_arbeit": 0,
+      "w5n_fracht_kauf": 0,
+      "w5n_kunden": 14,
+      "w5r_maintenance_reserved": 0,
+      "w5r_maintenance_workforce": 60,
+      "werft_extern": 2550
+    },
+    "minted": 0
+  },
+  {
+    "profile": "R32-C1a",
+    "days": 90,
+    "seed": 42,
+    "checks": 129600,
+    "maxDailyPurchases": 48,
+    "planned": 4320,
+    "missingCash": null,
+    "missingGoods": null,
+    "firstCashBlock": null,
+    "lastSaleTick": 43440,
+    "lastWorkTick": 43300,
+    "tick": 129600,
+    "hash": "3cb81cf1600121fa",
+    "ice": 700,
+    "paidMiningMinutes": 700,
+    "iceSold": 400,
+    "iceDelivered": 250,
+    "freight": 5,
+    "freightRevenue": 1350,
+    "water": 200,
+    "sold": 172,
+    "householdIncome": 1700,
+    "householdCash": 4,
+    "wages": {
+      "mine": 700,
+      "freight": 600,
+      "factory": 400
+    },
+    "maintenance": 240,
+    "purchases": [
+      {
+        "cost": 600,
+        "id": "sh003",
+        "owner": "npc3",
+        "tick": 21600,
+        "type": "miner"
+      },
+      {
+        "cost": 600,
+        "id": "sh004",
+        "owner": "npc3",
+        "tick": 43200,
+        "type": "miner"
+      }
+    ],
+    "losses": [
+      {
+        "cargo": [
+          {
+            "menge": 100,
+            "ware": "eis"
+          }
+        ],
+        "id": "sh001",
+        "owner": "npc3",
+        "tick": 21600,
+        "type": "miner"
+      },
+      {
+        "cargo": [
+          {
+            "menge": 100,
+            "ware": "eis"
+          }
+        ],
+        "id": "sh003",
+        "owner": "npc3",
+        "tick": 43200,
+        "type": "miner"
+      },
+      {
+        "cargo": [],
+        "id": "sh002",
+        "owner": "transport",
+        "tick": 43200,
+        "type": "frachter"
+      },
+      {
+        "cargo": [
+          {
+            "menge": 100,
+            "ware": "eis"
+          }
+        ],
+        "id": "sh004",
+        "owner": "npc3",
+        "tick": 64800,
+        "type": "miner"
+      }
+    ],
+    "cash": {
+      "arbeiter_laser_nadir": 0,
+      "arbeiter_w5b_nadir": 0,
+      "arbeiter_werft_nadir": 0,
+      "arbeitskraefte_nadir": 0,
+      "export": 20000,
+      "fonds_aldera": 0,
+      "fonds_transport": 0,
+      "house": 3000,
+      "npc3": 2500,
+      "pilot_npc3": 0,
+      "pirates": 900,
+      "st_aldera": 250,
+      "st_nadir": 1556,
+      "transport": 2000,
+      "w5n_arbeit": 0,
+      "w5n_fabrik_arbeit": 0,
+      "w5n_fracht_arbeit": 0,
+      "w5n_fracht_kauf": 0,
+      "w5n_kunden": 4,
+      "w5r_maintenance_reserved": 0,
+      "w5r_maintenance_workforce": 240,
+      "werft_extern": 2550
+    },
+    "minted": 0
+  },
+  {
+    "profile": "C1b-1",
+    "days": 90,
+    "seed": 42,
+    "checks": 129600,
+    "maxDailyPurchases": 10,
+    "planned": 900,
+    "missingCash": 665,
+    "missingGoods": 1,
+    "firstCashBlock": {
+      "tick": 31536,
+      "cash": 14,
+      "stock": 33,
+      "missingCash": true,
+      "missingGoods": false,
+      "bought": 0
+    },
+    "lastSaleTick": 45648,
+    "lastWorkTick": 44596,
+    "tick": 129600,
+    "hash": "ceaca29ff0a31dca",
+    "ice": 750,
+    "paidMiningMinutes": 1500,
+    "iceSold": 450,
+    "iceDelivered": 300,
+    "freight": 6,
+    "freightRevenue": 1620,
+    "water": 300,
+    "sold": 234,
+    "householdIncome": 2820,
+    "householdCash": 8,
+    "wages": {
+      "mine": 1500,
+      "freight": 720,
+      "factory": 600
+    },
+    "maintenance": 240,
+    "purchases": [
+      {
+        "cost": 600,
+        "id": "sh003",
+        "owner": "npc3",
+        "tick": 21600,
+        "type": "miner"
+      },
+      {
+        "cost": 600,
+        "id": "sh004",
+        "owner": "npc3",
+        "tick": 43200,
+        "type": "miner"
+      }
+    ],
+    "losses": [
+      {
+        "cargo": [
+          {
+            "menge": 100,
+            "ware": "eis"
+          }
+        ],
+        "id": "sh001",
+        "owner": "npc3",
+        "tick": 21600,
+        "type": "miner"
+      },
+      {
+        "cargo": [
+          {
+            "menge": 100,
+            "ware": "eis"
+          }
+        ],
+        "id": "sh003",
+        "owner": "npc3",
+        "tick": 43200,
+        "type": "miner"
+      },
+      {
+        "cargo": [],
+        "id": "sh002",
+        "owner": "transport",
+        "tick": 43200,
+        "type": "frachter"
+      },
+      {
+        "cargo": [
+          {
+            "menge": 100,
+            "ware": "eis"
+          }
+        ],
+        "id": "sh004",
+        "owner": "npc3",
+        "tick": 64800,
+        "type": "miner"
+      }
+    ],
+    "cash": {
+      "arbeiter_laser_nadir": 0,
+      "arbeiter_w5b_nadir": 0,
+      "arbeiter_werft_nadir": 0,
+      "arbeitskraefte_nadir": 0,
+      "export": 20000,
+      "fonds_aldera": 0,
+      "fonds_transport": 0,
+      "house": 3000,
+      "npc3": 1950,
+      "pilot_npc3": 0,
+      "pirates": 900,
+      "st_aldera": 250,
+      "st_nadir": 1952,
+      "transport": 2150,
+      "w5n_arbeit": 0,
+      "w5n_fabrik_arbeit": 0,
+      "w5n_fracht_arbeit": 0,
+      "w5n_fracht_kauf": 0,
+      "w5n_kunden": 8,
+      "w5r_maintenance_reserved": 0,
+      "w5r_maintenance_workforce": 240,
+      "werft_extern": 2550
+    },
+    "minted": 0
+  }
+]

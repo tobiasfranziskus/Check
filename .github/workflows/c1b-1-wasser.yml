@@ -1,0 +1,28 @@
+name: C1b-1 – exaktes isoliertes C-Wasserprofil
+on:
+  pull_request:
+    paths:
+      - index.html
+      - tools/research/c1b-1-wasser.mjs
+      - tests/c1b-1-exaktes-c-wasser.test.mjs
+      - .github/workflows/c1b-1-wasser.yml
+permissions:
+  contents: read
+jobs:
+  water-profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Negativtests, 30/90 Tage, gepaarte C1a-Kontrolle, Replay und Audits
+        env:
+          C1B1_REPORT: c1b1-results.json
+        run: node tests/c1b-1-exaktes-c-wasser.test.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c1b1-water-measurements
+          path: c1b1-results.json
+          if-no-files-found: error

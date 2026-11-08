@@ -199,3 +199,21 @@ test('C1d-1: forged cash, warehouse, transfer, pilot work, ownership and mint re
   const x=structuredClone(finished);modify(x);assert.throws(()=>c.load(JSON.stringify(x)));
  }
 });
+
+test('C1d-1: finished freight ledger remains valid after 120 further simulation minutes',()=>{
+ let s=delivery(manufactured(42));
+ const initialHash=c.hash(s),beforePilot=s.c1d.pilotPaid,beforeFee=s.c1d.feePaid;
+ assert.ok(initialHash);
+ for(let i=0;i<120;i++){
+  c.step(s);good(s);
+  if(i===59)s=saved(s);
+ }
+ assert.equal(s.c1d.completed,1);
+ assert.equal(s.c1d.pilotPaid,beforePilot);
+ assert.equal(s.c1d.feePaid,beforeFee);
+ assert.equal(s.c1d.job.phase,'finished');
+ assert.equal(s.stations.st_meridian.lager.lager,1);
+ assert.equal(s.ledger.lager.exported,0);
+ assert.equal(s.minted,0);
+ assert.ok(c.hash(s)!==initialHash);
+});

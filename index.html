@@ -7907,7 +7907,7 @@ const m_core_c1d = (() => {
     const mining=Object.entries(s.erzpilotVertraege||{}).reduce((sum,[shipId,v])=>
       sum+(s.ships[shipId]?.owner===id&&v.arbeitsKonto
         ?(s.owners[v.arbeitsKonto]?.cash??NaN):0),0);
-    return mining+(id==='house'
+    return mining+(id==='transport'&&s.w3?.auftrag?(s.owners.w3_arbeit_treuhand?.cash??0):0)+(id==='house'
       ?(s.owners.w5b_silizium_arbeit?.cash??0)
         +(s.owners.w5b_fabrik_arbeit?.cash??0)
         +(s.owners.w5f_laser_arbeit?.cash??0):0);
@@ -8208,7 +8208,7 @@ const m_core_c1f=(()=>{
    const mining=Object.entries(s.erzpilotVertraege||{}).reduce((sum,[shipId,v])=>
      sum+(s.ships[shipId]?.owner===id&&v.arbeitsKonto
        ?(s.owners[v.arbeitsKonto]?.cash??NaN):0),0);
-   return mining+(id==='house'
+   return mining+(id==='transport'&&s.w3?.auftrag?(s.owners.w3_arbeit_treuhand?.cash??0):0)+(id==='house'
      ?(s.owners.w5b_silizium_arbeit?.cash??0)
        +(s.owners.w5b_fabrik_arbeit?.cash??0)
        +(s.owners.w5f_laser_arbeit?.cash??0):0);

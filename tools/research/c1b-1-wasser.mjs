@@ -4,6 +4,7 @@ import {createHash} from 'node:crypto';
 // Isolated Node research registration. Never loaded by index.html or browser storage.
 export const PROFILE='aphros-research:C1b-1:water-v1';
 export const RULE_VERSION=3301;
+export const WAGES_PROFILE='aphros-research:C1c-1:earned-industry-wages-v1';
 const SOURCE_SHA='6274d118345d505bc3a147eb2e169a31a8c4ed4e1b6eca566f402b70a4ae217b';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
@@ -11,9 +12,10 @@ const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};
 
 // One bounded registration path; never accept arbitrary rule callbacks or patched audits.
 export function createResearchCore({profile=PROFILE}={}){
- check([PROFILE,'aphros-research:C1b-2:material-precursor-v1'].includes(profile),'unbekanntes Forschungsprofil');
+ check([PROFILE,'aphros-research:C1b-2:material-precursor-v1',WAGES_PROFILE].includes(profile),'unbekanntes Forschungsprofil');
  const precursor=profile!==PROFILE;
- const version=precursor?3302:RULE_VERSION;
+ const wageFlow=profile===WAGES_PROFILE;
+ const version=wageFlow?3303:precursor?3302:RULE_VERSION;
  const html=readFileSync(new URL('../../index.html',import.meta.url),'utf8');
  check(sha(html)===SOURCE_SHA,'unbekannte Core-Basis');
  const source=html.slice(html.indexOf('const m_data_systeme ='),html.indexOf('const m_data_oberflaeche ='));
@@ -26,14 +28,14 @@ export function createResearchCore({profile=PROFILE}={}){
   water:m_core_w5n,income:m_core_w5o,trade:m_core_handel,state:m_core_state});
  `+source.slice(boundary)+`
 return {api:m_core_index,serialize:m_core_serialize,
-  water:m_core_w5n,income:m_core_w5o};`)(modules=>register(modules,{profile,version,precursor}));
+  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s};`)(modules=>register(modules,{profile,version,precursor,wageFlow}));
  const rules=core.api.W5R_RULES;
  const fingerprint=sha(core.serialize.save(rules));
  function identity(s){
   check(s?.schema===8&&s.rulesVersion===version&&s.c1b?.profile===profile,'Profilwechsel verboten');
   check(s.c1b.rules===fingerprint,'Regel-Fingerprint falsch');
   check(s.w5o.mode==='wages'&&s.w5o.minerOwner==='npc3','Einkommensprofil falsch');
-  check(!s.w5s&&s.w5q.mode==='off'&&['rate','dayCap','totalCap','exported','minted','payout','stationNet'].every(k=>s.w5q[k]===0)
+  check((wageFlow?!!s.w5s:!s.w5s)&&s.w5q.mode==='off'&&['rate','dayCap','totalCap','exported','minted','payout','stationNet'].every(k=>s.w5q[k]===0)
    &&s.w5q.events.length===0&&s.minted===0&&s.burned===0,'Export/Mint/Rettung nicht Teil dieses Profils');
  }
  function audit(s){
@@ -41,6 +43,7 @@ return {api:m_core_index,serialize:m_core_serialize,
    identity(s);const base=core.api.audit(s);
    check(base.ok,'Core-Audit '+JSON.stringify(Object.fromEntries(Object.entries(base).filter(([,v])=>v?.ok===false))));
    check(foerderAudit(s),'Arbeitsbelege');check(nachfrageAudit(s),'Nachfragebelege');
+   if(wageFlow)check(lohnAudit(s,rules),'wirklich verdiente W3/W4-Loehne');
    check(Object.values(s.owners).every(o=>integer(o.cash)),'ungueltiges Geld');
    for(const obj of [...Object.values(s.stations).map(x=>x.lager),...Object.values(s.ships).map(x=>x.ladung),...Object.values(s.ledger)])
     check(Object.values(obj).every(integer),'ungueltige Waren');
@@ -69,13 +72,33 @@ return {api:m_core_index,serialize:m_core_serialize,
  function create(seed=42){
   const s=core.api.createW5RState(seed,'wages','npc3','off',0,0,0);
   s.c1b={profile,rules:fingerprint,mining:{},demand:[]};
+  if(wageFlow)s.w5s={allocated:0,paid:0,active:null,completed:[],industryWages:{paid:{},events:[]}};
   return validate(s);
  }
  return Object.freeze({profile,rules,fingerprint,create,step,execute,audit,save,load,hash:core.api.hash,
   // Low-level module entrypoints permit adversarial double-call tests, never browser access.
-  diagnostics:Object.freeze({mine:core.water.foerdern,income:core.income.einkommen,demand:core.water.nachfrage})});
+  diagnostics:Object.freeze({mine:core.water.foerdern,income:core.income.einkommen,demand:core.water.nachfrage,
+   oreWages:core.wages.orePilotWage,industryWages:core.wages.industryWage})});
 }
 
+// Additional independent accounts check for C1c; the money moves only in the
+// pre-existing W5s-q/W5s-r Core wage routines, never in this research adapter.
+function lohnAudit(s,r){
+ const w=s.w5s;if(!w||!w.industryWages)return false;
+ const init=id=>r.owners.find(o=>o.id===id)?.cash??0;
+ const paid=w.industryWages.paid;
+ const industry=(paid.refinery||0)+(paid.shipyard||0)+(paid.maintenance||0);
+ return [w.orePilotWages||0,paid.refinery||0,paid.shipyard||0,paid.maintenance||0]
+     .every(integer)
+   &&(w.orePilotWages||0)<=s.w3.arbeitsKosten
+   &&(paid.refinery||0)<=s.w4.gezahlt
+   &&s.owners[r.w3.arbeitsFonds].cash===init(r.w3.arbeitsFonds)
+       +s.w3.arbeitsKosten+s.w5n.frachtLohn-s.w5o.lohnFracht-(w.orePilotWages||0)
+   &&s.owners[r.w4.arbeitOwner].cash===s.w4.gezahlt-(paid.refinery||0)
+   &&s.owners.w5n_kunden.cash===init('w5n_kunden')+s.w5o.ausgezahlt
+       +(w.orePilotWages||0)+industry-s.w5n.wasserErlos
+   &&s.minted===0&&s.burned===0;
+}
 function foerderAudit(s){
  const rows=Object.entries(s.c1b?.mining||{}),w=s.w5n;
  return rows.every(([id,x])=>integer(x.minutes)&&integer(x.units)&&[0,1].includes(x.rest)
@@ -93,7 +116,7 @@ function nachfrageAudit(s){
    &&x.bought===(!x.missingCash&&!x.missingGoods?1:0))
   &&rows.reduce((n,x)=>n+x.bought,0)===s.w5n.wasserVerbraucht;
 }
-function register({data,freeze,water,income,trade,state},{profile,version,precursor}){
+function register({data,freeze,water,income,trade,state},{profile,version,precursor,wageFlow}){
  const rules=structuredClone(data.W5R_RULES);
  rules.rulesVersion=version;
  rules.researchProfile=profile;
@@ -105,6 +128,11 @@ function register({data,freeze,water,income,trade,state},{profile,version,precur
   // C recipe only; upstream ore extraction and W3 freight remain explicitly R32.
   Object.assign(rules.w4,{erzJeCharge:10,materialJeCharge:4,dauer:10,lohnJeMinute:1});
   rules.economy.waren.material.basis=48;
+ }
+ if(wageFlow){
+  // Reuse existing W5s-q (paid W3 flights) and W5s-r (earned W4/W5/W5r
+  // labour), without activating its unrelated shipyard/autonomous operations.
+  rules.w5s={autoIndustry:true,autoOreWageHousehold:true,autoIndustryWages:true};
  }
  freeze(rules);
  // The stock full-audit dispatch hardcodes these names. Register the SAME frozen

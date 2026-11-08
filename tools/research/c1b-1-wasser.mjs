@@ -15,7 +15,7 @@ export const TITLE_PROFILE='aphros-research:C1d-5:owner-custody-storage-v1';
 export const FOLLOWUP_PROFILE='aphros-research:C1d-7:post-settlement-journals-v1';
 export const SECOND_BATCH_PROFILE='aphros-research:C1d-8:second-real-manufacturing-v1';
 export const SECOND_EXPORT_PROFILE='aphros-research:C1d-8b:second-paid-delivery-v1';
-const SOURCE_SHA='ba58a6c31ede784cd2b0b91b42a9ac3f95bd449191a276baee0cefd8ef4b3179';
+const SOURCE_SHA='8f4e7357792065b76a2ecf8c3468599fe5f2cbc9cc2818ef4c45fe8d88584adb';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};

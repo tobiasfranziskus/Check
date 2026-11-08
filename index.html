@@ -8235,6 +8235,15 @@ function createW5BState(seed=W5B_RULES.startSeed,rules=W5B_RULES) {
     s.owners.w5r_maintenance_reserved={id:'w5r_maintenance_reserved',kind:'w5r-reserve',cash:0};
     s.owners.w5r_maintenance_workforce={id:'w5r_maintenance_workforce',kind:'w5r-labor',cash:0};
   }
+  // C1c-3: Remove initial decorative storage goods before the original
+  // whole-world startup audit. An unproduced C module is never free stock.
+  if(rules.w5b?.allowStorageManufacturing){
+    const free=s.stations.st_nadir.lager.lager||0;
+    s.stations.st_nadir.lager.lager=0;
+    s.ledger.lager.initial-=free;
+    s.w5b.lagerBegonnen=0;
+    s.w5b.lagerFertig=0;
+  }
   if(!m_core_audit.audit(s).ok)throw Error('W5b Startfinanzierung inkonsistent');
   return s;
 }

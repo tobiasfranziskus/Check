@@ -257,6 +257,77 @@ function validJournalCash(s,id,before,snap){
    &&s.owners[id].cash+reservedAfter(s,id)===before+(j.erloes-snap.revenue)-(j.kosten-snap.costs);
 }
 
+// C1d-8b: independently account for the SECOND signed contract, while
+// retaining the original first job and its non-transferable title/escrow.
+// No authority to create demand or ISK: this function only verifies.
+function secondFundingAudit(s,r){
+ const c=r.c1f,w=s.c1f,v=s.c1d,q=v?.second,o=w?.secondOrder;
+ if(!r.c1f?.secondEnabled||!r.c1d?.secondEnabled||!w||!v
+   ||s.minted!==0||s.burned!==0)return false;
+ const eligible=[w.secondAdvanced,w.secondSettled,w.secondAccepted,
+   s.owners.c1f_kaufrest_escrow.cash,s.ledger.lager.exported];
+ if(!eligible.every(integer))return false;
+ const accepted=w.accepted===4&&w.order?.status==='accepted'&&v.completed===1;
+ if(!o)return w.secondAdvanced===0&&w.secondSettled===0
+   &&w.secondAccepted===0&&!q
+   &&s.ledger.lager.exported===w.accepted;
+ if(!accepted||o.id!=='C1D8B-0002'||o.id===w.order.id
+   ||o.seller!==c.seller||o.buyer!==c.buyer
+   ||o.amount!==1720||o.advance!==340||o.rest!==1380
+   ||!integer(o.buyerBefore)||o.buyerBefore<1720
+   ||!integer(o.createdTick)||o.createdTick<=w.order.acceptedTick
+   ||o.createdTick>s.tick
+   ||!validJournalCash(s,c.buyer,o.buyerBefore,o.buyerJournal)
+   ||w.secondAdvanced!==340)return false;
+ const done=o.status==='accepted';
+ if(!['accepted','prepaid'].includes(o.status)
+   ||w.secondSettled!==(done?1380:0)
+   ||w.secondAccepted!==(done?4:0)
+   ||s.ledger.lager.exported!==4+w.secondAccepted
+   ||s.owners.c1f_kaufrest_escrow.cash!==(done?0:1380)
+   ||s.w5b?.lagerFertig!==8||s.ledger.lager.produced!==8)return false;
+ if(!q){
+   return !done&&o.acceptedTick===null
+     &&s.stations.st_nadir.lager.lager===4
+     &&s.stations.st_meridian.lager.lager===0;
+ }
+ const j=q.job,sh=s.ships[j?.ship];
+ const fee=300,labour=240;
+ if(!j||j.id!=='C1D8B-FREIGHT-0002'||j.start<o.createdTick
+   ||j.start<=v.job.start||j.start>s.tick
+   ||j.titleOwner!=='house'||sh?.owner!==r.c1d.carrier
+   ||sh.klasse!=='frachter'
+   ||!validJournalCash(s,'house',j.sellerBefore,j.sellerJournal)
+   ||!validJournalCash(s,'transport',j.carrierBefore,j.carrierJournal)
+   ||q.ordered!==1||!integer(q.delivered)||!integer(q.completed)
+   ||q.delivered>1||q.completed>1
+   ||q.feeAllocated!==fee||q.feePaid!==q.completed*fee
+   ||q.pilotAllocated!==labour||!integer(q.pilotPaid)
+   ||q.pilotPaid>labour||j.paidMinutes!==q.pilotPaid
+   ||j.routes.position!==60||j.routes.delivery!==60||j.routes.back!==120
+   ||s.owners.c1d_pilot.cash!==240+q.pilotPaid
+   ||s.owners.c1d_freight_escrow.cash!==fee-q.feePaid
+   ||s.owners.c1d_pilot_escrow.cash!==labour-q.pilotPaid
+   ||s.stats.konto.c1d_pilot.erloes!==240+q.pilotPaid)
+   return false;
+ const stages=['position','delivery','return','finished'],phase=j.phase,
+   expectedStart=j.start+(phase==='position'?0:phase==='delivery'?60:
+     phase==='return'?120:240);
+ if(!stages.includes(phase)||j.phaseStart!==expectedStart
+   ||(phase==='finished'?s.tick<j.start+240:s.tick-j.start!==j.paidMinutes)
+   ||q.delivered!==(phase==='return'||phase==='finished'?1:0)
+   ||q.completed!==(phase==='finished'?1:0)
+   ||(done&&(!q.completed||o.acceptedTick<j.start+240
+     ||o.acceptedTick>s.tick))||(!done&&o.acceptedTick!==null))return false;
+ const nadir=s.stations.st_nadir.lager.lager,
+   meridian=s.stations.st_meridian.lager.lager,cargo=sh.ladung.lager||0;
+ const physical=phase==='position'?nadir===4&&meridian===0&&cargo===0:
+   phase==='delivery'?nadir===0&&meridian===0&&cargo===4:
+   phase==='return'?nadir===0&&meridian===4&&cargo===0:
+     nadir===0&&meridian===4-w.secondAccepted&&cargo===0;
+ return physical;
+}
+
 function financedAudit(s,r){
  const c=r.c1f,w=s.c1f,o=w?.order,esc=s.owners.c1f_kaufrest_escrow;
  if(!c||!w||!esc||c.buyer!=='export'||c.seller!=='house'||c.quantity!==4

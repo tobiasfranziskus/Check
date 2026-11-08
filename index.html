@@ -8209,7 +8209,9 @@ const m_core_c1f=(()=>{
      &&w.advanced===c.advance
      &&w.settled===(accepted?rest:0)
      &&o.status===(accepted?'accepted':'prepaid')
-     &&o.acceptedTick===(accepted?s.tick:null) // later ticks need a persisted arrival time
+     &&(accepted?(safe(o.acceptedTick)&&o.acceptedTick>=o.createdTick
+       &&o.acceptedTick<=s.tick&&o.acceptedTick>=s.c1d.job.start+240)
+       :o.acceptedTick===null)
      &&s.owners[ESCROW].cash===(accepted?0:rest)
      &&(!accepted||s.c1d.completed===1);
    return {ok,units:w.accepted,advanced:w.advanced,

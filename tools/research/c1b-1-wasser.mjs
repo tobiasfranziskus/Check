@@ -9,7 +9,7 @@ export const PARTS_PROFILE='aphros-research:C1c-2:paid-component-v1';
 export const STORAGE_PROFILE='aphros-research:C1c-3:timed-silicon-storage-v1';
 export const DELIVERY_PROFILE='aphros-research:C1d-1:physical-delivery-no-mint-v1';
 export const EXPORT_PROFILE='aphros-research:C1d-2:once-only-bounded-acceptance-v1';
-const SOURCE_SHA='307b1e8828f1ba6fccd89743b6e53bd607dbf0b13bbfb8efe246f619335d8e4c';
+const SOURCE_SHA='311b4f0628a8964c9dbd7a4ed8c5e1792739e8732fb72b0a0ad3969ae2b5172c';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};

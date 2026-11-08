@@ -204,7 +204,7 @@ test('C1d-8b: rule3313 isolated with independent order/flight IDs; 3312 remains 
  audit(c.create());
 });
 
-test('C1d-8b: buyer's second 1720 ISK held without mint or prepay double-spend on 42/7',()=>{
+test('C1d-8b: second buyer budget of 1720 ISK stays finite without duplicate prepay on 42/7',()=>{
  for(const seed of [42,7]){
   let s=ordered(seed);
   assert.equal(s.c1f.advanced,340);

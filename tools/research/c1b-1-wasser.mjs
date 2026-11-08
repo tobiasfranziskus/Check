@@ -13,7 +13,7 @@ export const BUNDLE_PROFILE='aphros-research:C1d-3:three-paid-storage-freight-lo
 export const FINANCED_PROFILE='aphros-research:C1d-4:four-paid-storage-preorder-v1';
 export const TITLE_PROFILE='aphros-research:C1d-5:owner-custody-storage-v1';
 export const FOLLOWUP_PROFILE='aphros-research:C1d-7:post-settlement-journals-v1';
-const SOURCE_SHA='ea2de94445da7c93da020e0b7615474826d08a8caaa95b4624639d82b805e17a';
+const SOURCE_SHA='3cd72c0af58c649c60432795ed972cde57a15d522e5df40567fd4c630bab7c4a';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};
@@ -232,12 +232,21 @@ function bauteilTitelAudit(s,r){
 // C1d-7 independent amount reconciliation against immutable original
 // account-journal baselines. A later legitimate purchase cannot retroactively
 // invalidate a settled order; an unbooked transfer still fails.
+function reservedAfter(s,id){
+ const mining=Object.entries(s.erzpilotVertraege||{}).reduce((sum,[shipId,v])=>
+  sum+(s.ships[shipId]?.owner===id&&v.arbeitsKonto
+   ?(s.owners[v.arbeitsKonto]?.cash??NaN):0),0);
+ return mining+(id==='house'
+  ?(s.owners.w5b_silizium_arbeit?.cash??0)
+   +(s.owners.w5b_fabrik_arbeit?.cash??0)
+   +(s.owners.w5f_laser_arbeit?.cash??0):0);
+}
 function validJournalCash(s,id,before,snap){
  const j=s.stats?.konto?.[id];
  return integer(before)&&integer(snap?.revenue)&&integer(snap?.costs)
    &&integer(j?.erloes)&&integer(j?.kosten)
    &&j.erloes>=snap.revenue&&j.kosten>=snap.costs
-   &&s.owners[id].cash===before+(j.erloes-snap.revenue)-(j.kosten-snap.costs);
+   &&s.owners[id].cash+reservedAfter(s,id)===before+(j.erloes-snap.revenue)-(j.kosten-snap.costs);
 }
 
 function financedAudit(s,r){

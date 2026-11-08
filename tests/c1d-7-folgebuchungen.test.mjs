@@ -200,6 +200,15 @@ test('C1d-7: genuine resumed ore mining and second paid transport attempt, no fa
  assert.equal(s.w3.abgeschlossen,2);
  assert.equal(s.w3.geliefert,100);
  assert.equal(s.stations.st_nadir.lager.erz,50);
+ // Real additional production, without raising any parts/storage/contract caps.
+ for(let i=0;i<3;i++){
+  command(s,{type:'stationRefine',owner:'st_nadir',station:'st_nadir'});
+  step(s,10);
+ }
+ assert.equal(s.w4.abgeschlossen,8);
+ assert.equal(s.w4.materialErzeugt,32);
+ assert.equal(s.stations.st_nadir.lager.material,16);
+ assert.equal(s.stations.st_nadir.lager.erz,20);
  assert.equal(s.minted,0);
  audit(s);
  console.log('C1D7_SECOND_ORE '+JSON.stringify({tick:s.tick,hash:c.hash(s),stationCash:s.owners.st_nadir.cash,

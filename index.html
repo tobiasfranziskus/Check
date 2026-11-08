@@ -7411,7 +7411,8 @@ const m_core_w1_vollkosten = (() => {
     // Miner-Reisekosten sind korrekt gebuchte echte Kosten, aber keine
     // abgebauten Erzminuten; weder als Förderung noch doppelt als Lohn zählen.
     const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-abzug-modulLohn-iceArbeit
-      -(state.w5o?.divMine??0)-minerReiseKosten;
+      -(state.w5o?.divMine??0)-minerReiseKosten
+      -(state.c1d?.feeAllocated??0); // prepaid export carriage is not mining labour
     const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
     const fonds = state.owners[fondsId].cash - startCash(fondsId);
     const stationErz = state.stations[cfg.station].lager.erz;
@@ -8132,6 +8133,16 @@ function audit(state) {
         else active.add(v.arbeitsKonto);
       }
       reservierteMenge += v.menge;
+    }
+    // Only an existing C1d job with a passing, independent shipping audit
+    // may authorize these two research escrows. Never globally whitelist them.
+    if(state.c1d?.job){
+      const proof=m_core_c1d.audit(state,m_data_erzpilot.W5R_RULES);
+      if(!proof.ok)errors.c1d='unbelegter Kapitalfrachtvertrag';
+      else {
+        active.add('c1d_freight_escrow');
+        active.add('c1d_pilot_escrow');
+      }
     }
     for (const id of ids(state.owners)) {
       const o = state.owners[id];

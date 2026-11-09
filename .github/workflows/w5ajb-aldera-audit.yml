@@ -1,0 +1,21 @@
+name: W5ajb – isolate real Aldera cash bridge
+on:
+  pull_request:
+    paths:
+      - 'tests/w5ajb-*'
+      - 'docs/W5AJB_*'
+      - '.github/workflows/w5ajb-aldera-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-money-bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/w5ajb-aldera-geldbruecke.test.mjs
+      - run: node --test tests/*.test.mjs

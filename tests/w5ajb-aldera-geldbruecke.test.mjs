@@ -134,17 +134,18 @@ function probeRealEscrowUnlock(app){
  }
  const now=phase(app,'afterWaitWindow');
  assert.equal(now.worldCash,33000);assert.equal(now.mint,0);
+ assert.equal(soldTick,600,'W1 work releases exactly the 1,000 reserved ISK by tick600');
+ assert.equal(afterSaleCash,750,'real 50 ice costs Aldera 250 ISK at historical fixed Core price');
  assert.equal(app.snapshot().wages.eis,initialWages,
   'waiting may process NPC work but cannot pay a private ice-flight pilot');
  if(soldTick!==null){
   assert.ok(now.ice.sold>=150);
   const before=app.snapshot(),flight=app.command('ice-freight');
-  if(flight.ok){
-   must(app.advance(120),'third fully paid original flight after a real ice purchase');
-   assert.equal(app.snapshot().wages.eis,before.wages.eis+120);
-   assert.equal(app.snapshot().iceTrips,before.iceTrips+1);
-   assert.equal(app.snapshot().minted,0);
-  }else reason='Source unlocked but independent Nadir/carrier gate: '+flight.reason;
+  assert.equal(flight.ok,true,'third Nadir 490 and carrier 120 ISK must be truly prefinanced: '+flight.reason);
+  must(app.advance(120),'third fully paid original flight after a real ice purchase');
+  assert.equal(app.snapshot().wages.eis,before.wages.eis+120);
+  assert.equal(app.snapshot().iceTrips,before.iceTrips+1);
+  assert.equal(app.snapshot().minted,0);
  }
  const end=phase(app,'endOfWaitProbe');
  console.log('W5AJB_REAL_ESCROW_WAIT '+JSON.stringify({
@@ -165,7 +166,11 @@ for(const {seed,buyerCash} of [{seed:42,buyerCash:4000},{seed:7,buyerCash:2000}]
  });
 }
 
-test('W5aj-b: wait for genuine W1 escrow releases; never auto-pay private wages or rescue station',()=>{
+test('W5aj-b: 50-minute genuine W1 escrow release finances third ice trip, seed42',()=>{
  const {app}=run(42,4000);
+ probeRealEscrowUnlock(app);
+});
+test('W5aj-b: same genuine escrow release also enables 3rd full ice trip at lower Nadir budget, seed7',()=>{
+ const {app}=run(7,2000);
  probeRealEscrowUnlock(app);
 });

@@ -78,7 +78,7 @@ test('W5y: financed 50-ore original outward and return freight, two seeds and in
   assert.equal(t.state.tick,110);
   assert.equal(t.freight.audit.status,'rueck');
   assert.equal(t.state.stations.st_nadir.lager.erz,50);
-  assert.equal(t.state.owners.st_aldera.cash>=500,true);
+  assert.equal(t.state.w3.geliefert,50,'ware has reached its destination; seller receipt validated by core W3 audit');
   assert.equal(t.state.owners.w3_kauf_treuhand.cash,240);
   assert.equal(t.state.owners.w3_arbeit_treuhand.cash,60);
   const replay=Session.create(seed);

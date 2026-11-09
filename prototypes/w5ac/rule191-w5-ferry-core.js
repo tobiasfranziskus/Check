@@ -1934,7 +1934,9 @@ const m_core_w3 = (() => {
       return {ok:false,grund:'Spedition kann die Flugloehne nicht decken'};
     const start=rules.owners.find(o=>o.id===c.kunde).cash;
     if(state.owners[c.kunde].cash+w.kaufAusgaben+(state.w4?.gebucht??0)
-      -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)!==start)
+      -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
+        +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
+        -(state.w5n?.wasserErlos??0)!==start)
       return {ok:false,grund:'W3: unbelegtes Kaeufergeld'};
     return {ok:true,grund:'Vollstaendig vorfinanziert',...k};
   }
@@ -2003,18 +2005,23 @@ const m_core_w3 = (() => {
       w.frachtUmsatz,w.beauftragt,w.abgeschlossen,huelle].every(Number.isSafeInteger)
       && buyer>=0&&carrier>=0
       && buyer+w.kaufAusgaben+(state.w4?.gebucht??0)
-        -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)===startBuyer
+        -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
+        +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
+        -(state.w5n?.wasserErlos??0)===startBuyer
       && w.kaufAusgaben===erwarteteBezahlung && w.geliefert===erwarteteWare
       && w.arbeitsKosten===erwarteteArbeit
       && w.frachtUmsatz===w.abgeschlossen*k.frachtGebuehr
       && w.beauftragt===w.abgeschlossen+(a?1:0)
       && state.stations[c.zielStation].lager.erz
         ===w.geliefert-(state.w4?.erzVerbraucht??0)
-      && state.owners[c.arbeitsFonds].cash+(state.w5ae?.spent??0)===w.arbeitsKosten
+      && state.owners[c.arbeitsFonds].cash+(state.w5ae?.spent??0)
+        +(state.w5n?.wasserErlos??0)===w.arbeitsKosten+(state.w5n?.frachtLohn??0)
       && kauf===(a?(a.phase==='hin'?a.gesamt:a.frachtGebuehr):0)
       && arbeit===(a?k.arbeitsKosten-a.gearbeitet*c.arbeitJeMinute:0)
       && carrier+arbeit+(state.owners.w5ac_transfer_reserved?.cash??0)
-        +(state.w5ac?.paid??0)===startCarrier-huelle-w.arbeitsKosten+w.frachtUmsatz
+        +(state.w5ac?.paid??0)+(state.owners.w5n_fracht_arbeit?.cash??0)
+        +(state.w5n?.frachtLohn??0)-(state.w5n?.frachtUmsatz??0)
+        ===startCarrier-huelle-w.arbeitsKosten+w.frachtUmsatz
       && (!a||(a.menge===c.fracht&&a.zeit===k.zeit&&a.erzWert===k.erzWert
         && a.arbeitsKosten===k.arbeitsKosten&&a.frachtGebuehr===k.frachtGebuehr
         && a.gesamt===k.gesamt&&a.gearbeitet>=0&&a.gearbeitet<=2*k.zeit
@@ -2053,7 +2060,9 @@ const m_core_w4 = (() => {
       return {ok:false,grund:'Nadir kann die gesamte Arbeitscharge nicht bezahlen'};
     const start=rules.owners.find(o=>o.id===c.station).cash;
     if(state.owners[c.station].cash+state.w3.kaufAusgaben+w.gebucht
-      -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)!==start)
+      -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
+        +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
+        -(state.w5n?.wasserErlos??0)!==start)
       return {ok:false,grund:'Nadir: nicht nachgewiesenes Produktionskapital'};
     return {ok:true,grund:'Erz und vollständige Arbeitskasse reservierbar',
       erz:c.erzJeCharge,material:c.materialJeCharge,arbeit:budget,dauer:c.dauer};
@@ -2126,7 +2135,9 @@ const m_core_w4 = (() => {
       && w.gebucht===w.begonnen*p && w.gezahlt===erwarteterLohn
       && worker===w.gezahlt&&escrow===w.gebucht-w.gezahlt
       && station+state.w3.kaufAusgaben+w.gebucht
-        -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)===start
+        -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
+        +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
+        -(state.w5n?.wasserErlos??0)===start
       && w.erzVerbraucht===w.abgeschlossen*c.erzJeCharge
       && w.materialErzeugt===w.abgeschlossen*c.materialJeCharge
       && state.ledger.erz.consumed===w.erzVerbraucht
@@ -2276,6 +2287,8 @@ const m_core_w5 = (() => {
       && werkEinnahmen===old + werftErloese-werftKosten
       && state.owners[c.station].cash+state.w3.kaufAusgaben
         +state.w4.gebucht-w.materialUmsatz-(state.w5ae?.spent??0)
+        +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
+        -(state.w5n?.wasserErlos??0)
           ===rules.owners.find(o=>o.id===c.station).cash
       && (!a || (a.material===p.material && a.materialKosten===p.materialKosten
         && a.arbeitKosten===p.arbeitKosten && Number.isSafeInteger(a.gearbeitet)
@@ -2569,11 +2582,14 @@ const m_core_w5_wage_trade=(()=>{
       &&w.purchased===items&&w.spent===sales
       &&w.spent===w.purchased*cfg.preis
       &&inv===w.purchased
-      &&fund+w.spent===s.w3.arbeitsKosten
-      &&s.stats.konto[cfg.buyer].kosten===w.spent
-      &&s.stats.konto[cfg.seller].erloes===(s.w5?.materialUmsatz??0)+w.spent
+      &&fund+w.spent+(s.w5n?.wasserErlos??0)
+        ===s.w3.arbeitsKosten+(s.w5n?.frachtLohn??0)
+      &&s.stats.konto[cfg.buyer].kosten===w.spent+(s.w5n?.wasserErlos??0)
+      &&s.stats.konto[cfg.seller].erloes===(s.w5?.materialUmsatz??0)+w.spent+(s.w5n?.wasserErlos??0)
       &&seller+s.w3.kaufAusgaben+s.w4.gebucht
          -(s.w5?.materialUmsatz??0)-w.spent
+         +(s.w5n?.kaufAusgaben??0)+(s.w5n?.fabrikGebucht??0)
+         -(s.w5n?.wasserErlos??0)
          ===r.owners.find(o=>o.id===cfg.seller).cash;
     return {ok:good,workerCash:fund,stationCash:seller,
       materialOwned:inv,materialPurchased:w.purchased,
@@ -2897,7 +2913,8 @@ const m_core_w1_vollkosten = (() => {
     const frachterHuelle = rules.w3 ? anzahl(state.ledger.frachter,'consumed')
       * rules.economy.waren.frachter.basis : 0;
     const foerderArbeit = state.ledger.erz.mined * cfg.minerJeMinute;
-    const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle;
+    const iceLohn=state.w5n?.mineLohn??0;
+    const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-iceLohn;
     const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
     const fonds = state.owners[fondsId].cash - startCash(fondsId);
     const stationErz = state.stations[cfg.station].lager.erz;
@@ -2907,12 +2924,12 @@ const m_core_w1_vollkosten = (() => {
     const ketteOk = [minerKaeufe, bezahlteHuelle, foerderArbeit, belegteArbeit, fonds,
       stationErz, wertUnverkauft, beschaffung, abnahme].every(Number.isSafeInteger)
       && minerKaeufe >= 0 && stationErz >= 0
-      && belegteArbeit === foerderArbeit && fonds === foerderArbeit
+      && belegteArbeit === foerderArbeit && fonds === foerderArbeit+iceLohn
       && verkauf.erloese === bezahlteHuelle + frachterHuelle
-      && beschaffung === (state.ledger.erz.mined
+      && beschaffung-(state.w5n?.mineVerkaufWert??0) === (state.ledger.erz.mined
         - Object.values(state.ships).filter(sh => sh.klasse==='miner')
           .reduce((sum, sh) => sum + anzahl(sh.ladung, 'erz'), 0)) * cfg.preis
-      && abnahme === (state.ledger.erz.exported
+      && abnahme-(state.w5n?.eisTransferWert??0) === (state.ledger.erz.exported
         + (rules.w3 ? state.w3.geliefert : 0)) * cfg.preis;
     return {
       ok: haus.ok && npc.ok && station.ok && verkauf.ok && kaeufer.ok && ketteOk,

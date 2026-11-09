@@ -19,7 +19,7 @@
   }
   function project(input,{ownerId}={}){
     const s=copy(typeof input==='string'?JSON.parse(input):input);
-    if(!obj(s)||s.schema!==8||![14,15,16,32].includes(s.rulesVersion))throw TypeError('W5t/W5w/W5x erwartet Core Schema 8 / Regel 14, 15, 16 oder 32; vorher mit dem passenden Original-Core laden');
+    if(!obj(s)||s.schema!==8||![14,15,16,17,32].includes(s.rulesVersion))throw TypeError('W5t/W5w/W5x erwartet Core Schema 8 / Regel 14, 15, 16, 17 oder 32; vorher mit dem passenden Original-Core laden');
     const rows=key=>{
       if(s[key]==null)return null;
       if(!obj(s[key]))throw TypeError(key+': ID-Tabelle erforderlich');
@@ -41,7 +41,7 @@
       location:location(sh),activity:value(sh.auftrag),status:value(sh.phase),cargo:goods(sh.ladung,'ships.'+sh.id+'.ladung')});
     // These paths identify snapshot slots, NOT durable order identities or receipts.
     const orders=[];
-    const ordersKnown=obj(s.w3)&&own(s.w3,'auftrag')&&obj(s.w5n)&&own(s.w5n,'frachtauftrag');
+    const ordersKnown=(obj(s.w3)&&own(s.w3,'auftrag'))||(obj(s.w5n)&&own(s.w5n,'frachtauftrag'));
     for(const [section,key] of [['w3','auftrag'],['w5n','frachtauftrag']]){
       const job=s[section]?.[key];if(job==null)continue;
       const sh=ships?.find(x=>x.id===job.schiff);

@@ -1,0 +1,12 @@
+/* W5y supplements existing static W5w touch / W5x corporate layouts. */
+#freight-stats,#w2-company-stats{margin:14px 0}
+#freight-stats strong,#w2-company-stats strong{font-variant-numeric:tabular-nums}
+#freight-ledger,#w2-demand,#w2-fleet{max-width:100%;overflow-wrap:anywhere}
+#freight-quote,#freight-status{overflow-wrap:anywhere}
+#freight .controls{display:flex;flex-wrap:wrap;gap:10px}
+#freight .controls button{min-height:48px}
+@media(max-width:600px){
+ #freight h2{font-size:1.2rem}
+ #freight .controls button{width:100%}
+ #freight-stats,#w2-company-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

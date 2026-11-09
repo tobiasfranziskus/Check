@@ -60,13 +60,29 @@ try:
    page.locator('#import').set_input_files({'name':'valid-w3.json','mimeType':'application/json','buffer':save.encode()})
    page.wait_for_function("document.querySelector('#message').textContent.includes('geprüft und ausgeführt')")
    assert page.locator('#identity').inner_text()==before
+   # The same paid ship completes four more original 60+60 minute round trips.
+   for voyage in range(2,6):
+    assert page.locator('#freight-start').is_enabled(),f'voyage {voyage} must be genuinely funded'
+    page.locator('#freight-start').tap()
+    assert page.locator('#freight-start').is_disabled()
+    page.locator('[data-step="60"]').tap()
+    page.locator('[data-step="60"]').tap()
+    page.wait_for_function(f"document.querySelector('#identity').textContent.includes('Tick {50+120*voyage}')")
+    assert 'Original-Audit OK' in page.locator('#identity').inner_text()
+   assert page.locator('#freight-start').is_disabled(),'sixth shipment must be blocked by Nadir buyer funds'
+   assert '300 ISK' in page.locator('#freight-demand-gate').inner_text()
+   assert '250 Erz' in page.locator('#freight-demand-gate').inner_text()
+   assert 'Kaeufer kann Ware und beide Fluege nicht bezahlen' in page.locator('#freight-demand-gate').inner_text()
+   assert '5' in page.locator('#freight-stats').inner_text()
+   assert '1.850 ISK' in page.locator('#freight-stats').inner_text()
+   assert page.locator('#freight-buy').is_disabled(),'do not duplicate the paid ship'
    assert errors==[],errors
    page.locator('#freight').screenshot(path=f'/tmp/w5y-{w}x{h}.png')
    page.reload()
    page.wait_for_function("document.querySelector('#identity').textContent.includes('Tick 0')")
    assert page.evaluate("localStorage.getItem('w5y-protected-sentinel')")=='do-not-touch'
    ctx.close()
-   print(f'PASS W5y {w}x{h}: paid hull, real ore, buyer escrow, wages, outward and return flight, import isolation')
+   print(f'PASS W5z {w}x{h}: five real W3 voyages, finite 4k Nadir budget, genuine sixth stop, import isolation')
   browser.close()
 finally:
  server.shutdown();server.server_close()

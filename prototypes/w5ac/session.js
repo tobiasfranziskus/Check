@@ -56,6 +56,10 @@ function create(seed=42,profile=null){
  function build(req){
   if(!req||typeof req!=='object')return {ok:false,reason:'Fehlender Original-Core-Befehl'};
   if(rules.rulesVersion===195){
+   if(req.type==='shipSellIce'){
+    if(!req.schiff||req.schiff!==selection())return {ok:false,reason:'Eigenen Miner auswählen'};
+    return {ok:true,command:{type:'shipSellIce',owner,schiff:req.schiff,menge:req.menge}};
+   }
    if(req.type==='iceFreight')return {ok:true,command:{type:'shipFreightIce',owner:'transport',schiff:hauler()?.id}};
    if(req.type==='waterStart')return {ok:true,command:{type:'stationWater',owner:'st_nadir',station:'st_nadir'}};
    if(req.type==='waterBuy'){

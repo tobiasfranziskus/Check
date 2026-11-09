@@ -32,7 +32,7 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install playwright==1.62.0
       - run: python -m playwright install --with-deps chromium
-      - name: Touch: paid W3 freight outward and back, four viewports
+      - name: 'Touch: paid W3 freight outward and back, four viewports'
         run: python tests/w5y-touch.py
         env:
           CHROMIUM_PATH: playwright-managed

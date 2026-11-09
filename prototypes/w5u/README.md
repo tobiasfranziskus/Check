@@ -20,3 +20,23 @@ Entwicklungswerkzeuge für Browserprüfung: Python Playwright und Chromium;
 `python tests/w5u-touch.py`. Kein Teil der Spiel-Laufzeit.
 
 [Integrationsvertrag und Befunde](../../docs/W5U_INTEGRATION.md).
+
+## W5v – originale Finanzierungs- und Kaufvorschau (eigener Draft)
+
+Unter **Handeln** und **In Dienst stellen** prüft die Oberfläche jetzt die
+geplante Aktion vollständig auf einem **separat validierten Original-Core-Zustand**.
+Sie zeigt, ob der Befehl jetzt zulässig wäre, das genaue Sofort-Cash-Delta
+einschließlich vom Core berechneter Gebühren, betroffene Warenbestände oder
+den echten Ablehnungsgrund. Die Ansicht verändert weder Spielzeit, Seed/RNG,
+Geld, Waren noch produktive Save-Slots; eine erfolgreiche Vorschau **reserviert
+nichts**. Beim eigentlichen Klick prüft der Original-Core alles erneut.
+
+Beispiel: Ein Miner-Kauf zeigt die vollständige sofortige Konto- und
+Ladungsänderung; nach tatsächlichem Kauf lässt sich die Hülle nochmals separat
+als eigene Schiffsinbetriebnahme mit Vorschau prüfen. Es handelt sich weiter
+ausschließlich um **Regel 14 / Schema 8** und eine **isolierte Forschungswelt**.
+Die C1d-11-Investitionsquote und Regeln 3313/3314 sind hier **nicht integriert**.
+Zukünftige Löhne, Dividenden, langfristige Gewinne und W5-Werftaufträge
+können deshalb nicht vorab berechnet werden. Tests:
+`node --test tests/w5v-finance-preview.test.mjs` plus reguläre W5u-Tests
+und Touch-/Save-Prüfungen. Echte Safari-/NAS-Abnahme offen.

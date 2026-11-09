@@ -367,11 +367,13 @@ const m_data_erzpilot = (() => {
   // W5ad uses this SAME core. Genesis allocations are explicit research inputs,
   // never transfers or rescue during a running economy; total remains 33,000 ISK.
   if(research){
-    W5_RULES.rulesVersion=research.waterTrade===true?194:research.wageTrade===true?193:192;
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade'].includes(k))
+    W5_RULES.rulesVersion=research.personalWages===true?195:research.waterTrade===true?194:research.wageTrade===true?193:192;
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages'].includes(k))
       || (Object.hasOwn(research,'wageTrade')&&research.wageTrade!==true)
       || (Object.hasOwn(research,'waterTrade')&&research.waterTrade!==true)
-      || (research.waterTrade===true&&research.wageTrade!==true))
+      || (research.waterTrade===true&&research.wageTrade!==true)
+      || (research.personalWages===true&&(research.waterTrade!==true||research.wageTrade!==true))
+      || (Object.hasOwn(research,'personalWages')&&research.personalWages!==true))
       throw TypeError('Unbekannter W5ad-Startparameter');
     const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
     if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
@@ -397,6 +399,15 @@ const m_data_erzpilot = (() => {
         flugMinuten:60,frachtJeMinute:2,fliegerLohn:1,
         rezeptEis:10,rezeptWasser:10,fabrikMinuten:20,fabrikLohn:1,
         wasserPreis:14,verbrauchStunde:2
+      };
+    }
+    if(research.personalWages===true){
+      W5_RULES.owners=[...W5_RULES.owners,
+        {id:'pilot_erz',kind:'private-pilot',cash:0},
+        {id:'pilot_eis',kind:'private-pilot',cash:0}];
+      W5_RULES.w5ag={
+        fonds:'fonds_transport',pilots:{erz:'pilot_erz',eis:'pilot_eis'},
+        wagePerMinute:W5_RULES.w3.arbeitJeMinute
       };
     }
     if(research.wageTrade===true){
@@ -531,7 +542,7 @@ const FIELDS = {
   researchShipLoss: ['schiff'], shipReplace: ['verlust','reserve'],
   workerMaterialBuy: ['menge'],
   shipFreightIce:['schiff'],shipSellIce:['schiff','menge'],
-  stationWater:['station'],workerWaterBuy:['menge'],
+  stationWater:['station'],workerWaterBuy:['menge'],pilotWaterBuy:['menge'],
 };
 function checkShape(state, cmd, rules) {
   if (cmd === null || typeof cmd !== 'object' || Array.isArray(cmd)) return 'Befehl ist kein Objekt';
@@ -648,6 +659,12 @@ function checkShape(state, cmd, rules) {
     if(!q.ok)return q.grund;
   }
   if(cmd.type==='workerWaterBuy'){
+    if(rules.w5ag)return 'Kollektivfonds hat in Regel195 kein privates Kaufrecht';
+    const q=m_core_w5n.pruefenKonsum(state,rules,cmd.owner,cmd.menge);
+    if(!q.ok)return q.grund;
+  }
+  if(cmd.type==='pilotWaterBuy'){
+    if(!rules.w5ag)return 'Privatpiloten gibt es nur in Regel195';
     const q=m_core_w5n.pruefenKonsum(state,rules,cmd.owner,cmd.menge);
     if(!q.ok)return q.grund;
   }
@@ -670,6 +687,7 @@ function checkShape(state, cmd, rules) {
     if(!q.ok)return q.grund;
   }
   if(cmd.type==='workerMaterialBuy'){
+    if(rules.w5ag)return 'Keine ungeprueften Kollektiv-Eigentumsrechte in Regel195';
     const q=m_core_w5_wage_trade.pruefen(state,rules,cmd.owner,cmd.menge);
     if(!q.ok)return q.grund;
   }
@@ -679,7 +697,8 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5Transfer ? ['shipReposition'] : []),
     ...(rules.w5Replacement ? ['researchShipLoss','shipReplace'] : []),
     ...(rules.w5WageTrade ? ['workerMaterialBuy'] : []),
-    ...(rules.w5n?['shipSellIce','shipFreightIce','stationWater','workerWaterBuy']:[])].includes(cmd.type))
+    ...(rules.w5n?['shipSellIce','shipFreightIce','stationWater','workerWaterBuy']:[]),
+    ...(rules.w5ag?['pilotWaterBuy']:[])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if (cmd.type === 'shipBuy') {
     const frachter = !!rules.w3 && cmd.owner === rules.w3.spedition && cmd.klasse === 'frachter';
@@ -719,11 +738,14 @@ function execute(state, cmd, rules) {
       m_core_w5n.verkauf(state,rules,state.ships[cmd.schiff],cmd.menge);break;
     }
     case 'shipFreightIce':{
-      m_core_w5n.frachtStart(state,rules,state.ships[cmd.schiff]);break;
+      m_core_w5n.frachtStart(state,rules,state.ships[cmd.schiff]);
+      if(rules.w5ag)m_core_w5ag.iceStart(state,rules,cmd.schiff);
+      break;
     }
     case 'stationWater':{
       m_core_w5n.wasserStart(state,rules,cmd.owner,cmd.station);break;
     }
+    case 'pilotWaterBuy':
     case 'workerWaterBuy':{
       m_core_w5n.verbrauch(state,rules,cmd.owner,cmd.menge);break;
     }
@@ -1968,7 +1990,9 @@ const m_core_w3 = (() => {
     const arbeit=state.owners.w3_arbeit_treuhand,kauf=state.owners.w3_kauf_treuhand;
     if(!sh||sh.phase!=='reise'||!arbeit||!kauf||arbeit.cash<c.arbeitJeMinute)
       throw Error('W3: Nicht bezahlter Flug');
-    arbeit.cash-=c.arbeitJeMinute;state.owners[c.arbeitsFonds].cash+=c.arbeitJeMinute;
+    arbeit.cash-=c.arbeitJeMinute;
+    if(rules.w5ag)m_core_w5ag.pay(state,rules,'erz',c.arbeitJeMinute,sh.id);
+    else state.owners[c.arbeitsFonds].cash+=c.arbeitJeMinute;
     buche(state,c.spedition,'kosten',c.arbeitJeMinute);w.arbeitsKosten+=c.arbeitJeMinute;
     a.gearbeitet++;
     if(state.tick!==sh.ankunft)return;
@@ -2017,8 +2041,10 @@ const m_core_w3 = (() => {
       && w.beauftragt===w.abgeschlossen+(a?1:0)
       && state.stations[c.zielStation].lager.erz
         ===w.geliefert-(state.w4?.erzVerbraucht??0)
-      && state.owners[c.arbeitsFonds].cash+(state.w5ae?.spent??0)
-        +(state.w5n?.wasserErlos??0)===w.arbeitsKosten+(state.w5n?.frachtLohn??0)
+      &&(rules.w5ag
+         ?state.owners[c.arbeitsFonds].cash===0&&(state.w5ae?.spent??0)===0
+         :state.owners[c.arbeitsFonds].cash+(state.w5ae?.spent??0)
+           +(state.w5n?.wasserErlos??0)===w.arbeitsKosten+(state.w5n?.frachtLohn??0))
       && kauf===(a?(a.phase==='hin'?a.gesamt:a.frachtGebuehr):0)
       && arbeit===(a?k.arbeitsKosten-a.gearbeitet*c.arbeitJeMinute:0)
       && carrier+arbeit+(state.owners.w5ac_transfer_reserved?.cash??0)
@@ -2585,9 +2611,11 @@ const m_core_w5_wage_trade=(()=>{
       &&w.purchased===items&&w.spent===sales
       &&w.spent===w.purchased*cfg.preis
       &&inv===w.purchased
-      &&fund+w.spent+(s.w5n?.wasserErlos??0)
-        ===s.w3.arbeitsKosten+(s.w5n?.frachtLohn??0)
-      &&s.stats.konto[cfg.buyer].kosten===w.spent+(s.w5n?.wasserErlos??0)
+      &&(r.w5ag
+        ?fund===0&&w.spent===0
+        :fund+w.spent+(s.w5n?.wasserErlos??0)
+           ===s.w3.arbeitsKosten+(s.w5n?.frachtLohn??0))
+      &&s.stats.konto[cfg.buyer].kosten===w.spent+(r.w5ag?0:(s.w5n?.wasserErlos??0))
       &&s.stats.konto[cfg.seller].erloes===(s.w5?.materialUmsatz??0)+w.spent+(s.w5n?.wasserErlos??0)
       &&seller+s.w3.kaufAusgaben+s.w4.gebucht
          -(s.w5?.materialUmsatz??0)-w.spent
@@ -2718,7 +2746,9 @@ const m_core_w5n=(()=>{
      if(!sh||sh.auftrag!=='eisfracht'||sh.phase!=='reise'
        ||!work||!kauf||work.cash<c.fliegerLohn)
        throw Error('W5n unbezahlte Frachtminute');
-     work.cash-=c.fliegerLohn;s.owners.fonds_transport.cash+=c.fliegerLohn;
+     work.cash-=c.fliegerLohn;
+     if(r.w5ag)m_core_w5ag.pay(s,r,'eis',c.fliegerLohn,sh.id);
+     else s.owners.fonds_transport.cash+=c.fliegerLohn;
      w.frachtLohn+=c.fliegerLohn;buche(s,c.frachterOwner,'kosten',c.fliegerLohn);
      a.gearbeitet++;
      if(s.tick===sh.ankunft){
@@ -2739,6 +2769,7 @@ const m_core_w5n=(()=>{
          kauf.cash=0;s.owners[c.frachterOwner].cash+=a.fracht;
          buche(s,c.frachterOwner,'erloes',a.fracht);
          w.frachtUmsatz+=a.fracht;w.frachtAbgeschlossen++;
+         if(r.w5ag)m_core_w5ag.iceEnd(s,r,sh.id);
          w.frachtauftrag=null;
          sh.system='aldera';sh.phase='dock';sh.ziel=null;
          sh.ankunft=s.tick;sh.auftrag='halten';
@@ -2768,7 +2799,8 @@ const m_core_w5n=(()=>{
     const c=r.w5n,w=s.w5n;
     if(!c||!w||s.rulesVersion!==r.rulesVersion)
       return {ok:false,grund:'W5af nicht aktiv'};
-    if(owner!==c.kunde)return {ok:false,grund:'Kein fremder Lohnfonds'};
+    if(r.w5ag ? !Object.values(r.w5ag.pilots).includes(owner) : owner!==c.kunde)
+      return {ok:false,grund:'Wasser nur aus eigenem wirklich verdienten Pilotenlohn'};
     if(!Number.isSafeInteger(menge)||menge<=0)
       return {ok:false,grund:'Nur positive ganze Wassermenge'};
     const kosten=menge*c.wasserPreis;
@@ -2825,12 +2857,15 @@ const m_core_w5n=(()=>{
      &&w.wasserProduziert===s.ledger.wasser.produced
      &&w.wasserVerbraucht===s.ledger.wasser.consumed
      &&w.wasserErlos===w.wasserVerbraucht*c.wasserPreis
-     &&s.owners[c.kunde].cash+(s.w5ae?.spent??0)+w.wasserErlos
-        ===s.w3.arbeitsKosten+w.frachtLohn
+     &&(r.w5ag
+       ?s.owners[c.kunde].cash===0&&(s.w5ae?.spent??0)===0
+       :s.owners[c.kunde].cash+(s.w5ae?.spent??0)+w.wasserErlos
+          ===s.w3.arbeitsKosten+w.frachtLohn)
       &&Array.isArray(w.kaufDeals)
       &&w.kaufDeals.every((d,i)=>Number.isSafeInteger(d.tick)
         &&d.tick>=0&&d.tick<=s.tick&&(i===0||w.kaufDeals[i-1].tick<=d.tick)
-        &&d.owner===c.kunde&&d.station===c.zielStation
+        &&(r.w5ag?Object.values(r.w5ag.pilots).includes(d.owner):d.owner===c.kunde)
+        &&d.station===c.zielStation
         &&Number.isSafeInteger(d.menge)&&d.menge>0
         &&d.preis===c.wasserPreis&&d.betrag===d.menge*d.preis)
       &&w.kaufDeals.reduce((n,d)=>n+d.menge,0)===w.wasserVerbraucht
@@ -2877,6 +2912,110 @@ const m_core_w5n=(()=>{
    pruefenWasser,wasserStart,pruefenKonsum,tick,verbrauch,audit,stand};
 })();
 
+
+// W5ag: exclusive, individual pilot accounts; wages are booked ONLY
+// when an existing W3/W5n flight escrow has paid a real Core minute.
+// This is an opt-in private-ownership RESEARCH assumption, not product law.
+const m_core_w5ag=(()=>{
+  const {buche}=m_core_handel;
+  function pay(s,r,kind,amount,ship){
+    const cfg=r.w5ag,p=s.w5ag,id=cfg?.pilots?.[kind];
+    if(!cfg||!p||!id||amount!==cfg.wagePerMinute
+      ||!s.owners[id]||!Number.isSafeInteger(s.tick)||s.tick<=0)
+      throw Error('W5ag: kein beweisbarer privater Pilotenlohn');
+    s.owners[id].cash+=amount;
+    buche(s,id,'erloes',amount);
+    p.paid[kind]+=amount;
+    p.payments.push({tick:s.tick,kind,owner:id,schiff:ship,isk:amount});
+  }
+  function iceStart(s,r,ship){
+    const p=s.w5ag,a=s.w5n?.frachtauftrag;
+    if(!p||!a||a.schiff!==ship||p.iceContracts.some(c=>c.end===null))
+      throw Error('W5ag: unbelegter oder doppelter Eis-Arbeitsvertrag');
+    p.iceContracts.push({schiff:ship,start:s.tick,end:null});
+  }
+  function iceEnd(s,r,ship){
+    const p=s.w5ag,v=p?.iceContracts?.at(-1);
+    if(!v||v.end!==null||v.schiff!==ship
+      ||s.tick!==v.start+2*r.w5n.flugMinuten)
+      throw Error('W5ag: Eislohn ohne echte 120-Minuten-Rundfracht');
+    v.end=s.tick;
+  }
+  function audit(s,r){
+    const cfg=r.w5ag,p=s.w5ag;
+    if(!cfg||!p||!Array.isArray(p.payments)||!Array.isArray(p.iceContracts)
+      ||!p.paid)return {ok:false,grund:'Private Pilotenbelege fehlen'};
+    const valid=n=>Number.isSafeInteger(n)&&n>=0;
+    const ore=s.w5ad?.freight??[],ice=p.iceContracts,
+      w=s.w5n,f3=s.w3;
+    const expected=[];
+    const add=(kind,ship,start,end)=>{
+      if(!valid(start)||!valid(end)||end<start||end>s.tick)return false;
+      for(let tick=start+1;tick<=end;tick++)
+        expected.push({tick,kind,owner:cfg.pilots[kind],
+          schiff:ship,isk:cfg.wagePerMinute});
+      return true;
+    };
+    let contractOk=Array.isArray(ore)&&Array.isArray(ice);
+    for(const t of ore)
+      contractOk=add('erz',t.id,t.start,t.end)&&contractOk;
+    if(f3?.auftrag){
+      const a=f3.auftrag;
+      contractOk=add('erz',a.schiff,a.start,a.start+a.gearbeitet)&&contractOk;
+    }
+    for(let i=0;i<ice.length;i++){
+      const t=ice[i],active=t.end===null,
+        worked=active?w?.frachtauftrag?.gearbeitet:2*r.w5n.flugMinuten;
+      contractOk=typeof t.schiff==='string'&&valid(t.start)
+        &&!ice.slice(0,i).some(x=>x.schiff===t.schiff&&x.start===t.start)
+        &&(active
+          ?i===ice.length-1&&w.frachtauftrag?.schiff===t.schiff
+            &&valid(worked)&&s.tick===t.start+worked
+          :t.end===t.start+2*r.w5n.flugMinuten)
+        &&add('eis',t.schiff,t.start,t.start+worked)&&contractOk;
+    }
+    contractOk=contractOk
+      &&ice.filter(x=>x.end!==null).length===w.frachtAbgeschlossen
+      &&ice.filter(x=>x.end===null).length===(w.frachtauftrag?1:0)
+      &&ice.length===w.frachtBeauftragt
+      &&ore.length===f3.abgeschlossen;
+    expected.sort((a,b)=>a.tick-b.tick||a.kind.localeCompare(b.kind));
+    const paymentsOk=expected.length===p.payments.length
+      &&expected.every((d,i)=>{
+        const got=p.payments[i];
+        return got&&got.tick===d.tick&&got.kind===d.kind
+          &&got.owner===d.owner&&got.schiff===d.schiff&&got.isk===d.isk;
+      });
+    const spent={erz:0,eis:0};
+    for(const d of w?.kaufDeals??[]){
+      if(d.owner===cfg.pilots.erz)spent.erz+=d.betrag;
+      else if(d.owner===cfg.pilots.eis)spent.eis+=d.betrag;
+    }
+    const wagesOk=valid(p.paid.erz)&&valid(p.paid.eis)
+      &&p.paid.erz===f3.arbeitsKosten&&p.paid.eis===w.frachtLohn
+      &&p.paid.erz===expected.filter(x=>x.kind==='erz').length*cfg.wagePerMinute
+      &&p.paid.eis===expected.filter(x=>x.kind==='eis').length*cfg.wagePerMinute;
+    const ownerOk=['erz','eis'].every(kind=>{
+      const id=cfg.pilots[kind],wallet=s.owners[id],
+        stats=s.stats.konto[id],earned=p.paid[kind],cost=spent[kind];
+      return wallet?.kind==='private-pilot'&&valid(wallet.cash)
+        &&wallet.cash===earned-cost
+        &&stats?.erloes===earned&&stats?.kosten===cost;
+    })&&s.owners[cfg.fonds]?.cash===0
+      &&s.stats.konto[cfg.fonds]?.kosten===0
+      &&s.w5ae?.spent===0;
+    return {ok:contractOk&&paymentsOk&&wagesOk&&ownerOk,
+      contractOk,paymentsOk,wagesOk,ownerOk,
+      earnedOre:p.paid.erz,earnedIce:p.paid.eis,
+      spentOre:spent.erz,spentIce:spent.eis,
+      cashOre:s.owners[cfg.pilots.erz]?.cash,
+      cashIce:s.owners[cfg.pilots.eis]?.cash,
+      pooledCash:s.owners[cfg.fonds]?.cash,
+      paidMinutes:p.payments.length,
+      iceContracts:ice.length};
+  }
+  return {pay,iceStart,iceEnd,audit};
+})();
 
 // W1: rein lesende Vollkosten-/Liquiditaetsrechnung aus gebuchten Originalkonten.
 // Kein eigener Wirtschaftskern, kein weiterer Geld- oder Warenfluss.
@@ -3333,6 +3472,9 @@ function audit(state) {
   const water=istW5&&m_data_erzpilot.W5_RULES.w5n
     ?m_core_w5n.audit(state,m_data_erzpilot.W5_RULES):null;
   if(water)extra.water=water;
+  const personal=istW5&&m_data_erzpilot.W5_RULES.w5ag
+    ?m_core_w5ag.audit(state,m_data_erzpilot.W5_RULES):null;
+  if(personal)extra.personal=personal;
   const wageTrade=istW5&&m_data_erzpilot.W5_RULES.w5WageTrade
     ?m_core_w5_wage_trade.audit(state,m_data_erzpilot.W5_RULES):null;
   if(wageTrade)extra.wageTrade=wageTrade;
@@ -3344,7 +3486,8 @@ function audit(state) {
   return { ok: isk.ok && goods.ok && vertragsOk && finanzierungsOk
       && wirtschaftOk && (!w3 || w3.ok) && (!w4 || w4.ok) && (!w5 || w5.ok)
       && (!w5transfer || w5transfer.ok) && (!replacement || replacement.ok)
-      && (!wageTrade || wageTrade.ok) && (!water||water.ok),
+      && (!wageTrade || wageTrade.ok) && (!water||water.ok)
+      &&(!personal||personal.ok),
     total, expected, delta: total - expected, isk, goods, ...extra };
 }
 return { audit };
@@ -3431,6 +3574,8 @@ function createW5State(seed = W5_RULES.startSeed) {
   if(W5_RULES.w5Replacement)s.w5ad={profile:{...W5_RULES.w5Replacement},
     purchases:[],losses:[],assignments:[],freight:[]};
   if(W5_RULES.w5WageTrade)s.w5ae={purchased:0,spent:0,inventory:{material:0},deals:[]};
+  if(W5_RULES.w5ag)s.w5ag={
+    paid:{erz:0,eis:0},payments:[],iceContracts:[]};
   if(W5_RULES.w5n){
     // Nonzero target is capacity only; initial goods are zero.
     for(const st of Object.values(s.stations))
@@ -3472,6 +3617,8 @@ const pilotWaterStand=state=>m_core_w5n.audit(state,W5_RULES);
 const pilotWaterQuote=(state,menge=1)=>m_core_w5n.pruefenKonsum(state,W5_RULES,'fonds_transport',menge);
 const pilotIceFreightQuote=(state,id)=>m_core_w5n.pruefenFracht(state,W5_RULES,state.ships[id]);
 const pilotWaterFactoryQuote=state=>m_core_w5n.pruefenWasser(state,W5_RULES,'st_nadir','st_nadir');
+const pilotPrivateWageStand=state=>m_core_w5ag.audit(state,W5_RULES);
+const pilotPrivateWaterQuote=(state,id,menge=1)=>m_core_w5n.pruefenKonsum(state,W5_RULES,id,menge);
 const createState = (seed = RULES.startSeed, rules = RULES) => m_core_state.createState(seed, rules);
 const submit = (state, cmd, rules = RULES) => m_core_commands.submit(state, cmd, rules);
 const execute = (state, cmd, rules = RULES) => m_core_commands.execute(state, cmd, rules);
@@ -3501,6 +3648,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   pilotW5TransferStand, pilotW5TransferKalkulation,
   pilotWageTradeStand,pilotWageTradeQuote,
   pilotWaterStand,pilotWaterQuote,pilotIceFreightQuote,pilotWaterFactoryQuote,
+  pilotPrivateWageStand,pilotPrivateWaterQuote,
   replacementQuote:(s,id,reserve=0)=>m_core_w5_replacement.quote(s,W5_RULES,
     W5_RULES.w3.spedition,id,reserve),
   createErzState, createW2State, createW3State, createW4State, createW5State,
@@ -3528,6 +3676,13 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
       ||Object.hasOwn(options,'wageTrade')||Object.hasOwn(options,'waterTrade'))
       throw TypeError('W5af-Parameter: nur Kapitalverteilung');
     return createEngine({},{...options,wageTrade:true,waterTrade:true});
+  },
+  createPrivateWageResearch:options=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('W5ag: nur eigene Anfangskapital-Verteilung');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,personalWages:true});
   }});
 if(research)return api;
 if(typeof module==='object'&&module.exports)module.exports=api;else scope.W5acOriginal=api;

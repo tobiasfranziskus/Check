@@ -1,0 +1,22 @@
+name: W5ag – real private pilot wages, per-minute invoices and genuine voluntary water demand
+on:
+  pull_request:
+    paths:
+      - 'prototypes/w5ac/rule191-w5-ferry-core.js'
+      - 'tests/w5ag-*.test.mjs'
+      - 'docs/W5AG_*'
+      - '.github/workflows/w5ag-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-core-private-salaries-and-all-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Rule195 private pay proofs and all original JS tests, 13 distinct economies x 90d, 3 crises x 365d
+        run: node --test tests/*.test.mjs

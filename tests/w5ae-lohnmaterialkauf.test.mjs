@@ -207,9 +207,9 @@ test('W5ae: fake salary, materially fake goods, fake cash source, fake receipts 
  assert.equal(core.hash(s),hash,'no failed import mutates original core state');
  assert.equal(core.hash(core.loadW5(original)),hash,'valid salary purchase and property save succeeds');
 });
-test('W5ae: opt-in Rule194 leaves Rule193 material-only and Rule191 UI unchanged',()=>{
+test('W5ae: Rule195 private wages are optional; Rule193 material and Rule191 UI stay separate',()=>{
  const src=readFileSync(new URL('../prototypes/w5ac/rule191-w5-ferry-core.js',import.meta.url),'utf8');
- assert.match(src,/W5_RULES.rulesVersion=research.waterTrade===true\?194:research.wageTrade===true\?193:192/);
+ assert.match(src,/W5_RULES.rulesVersion=research.personalWages===true\?195:research.waterTrade===true\?194:research.wageTrade===true\?193:192/);
  assert.match(src,/workerMaterialBuy: \['menge'\]/);
  assert.match(src,/const m_core_w5_wage_trade=/);
  assert.match(src,/cannotClaimConsumption:true/);

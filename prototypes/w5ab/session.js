@@ -99,7 +99,7 @@ function create(seed=42){
   import(json){const next=validate(json);state=next;selection();return {ok:true};},
   command(req){const candidate=simulate(req);if(!candidate.ok)return candidate;
    state=candidate.next;selection();return {ok:true,type:req.type};},
-  advance(n){if(![1,10,20,50,60].includes(n))throw Error('Nur 1, 10, 20, 50 oder 60 originale Core-Minuten');
+  advance(n){if(![1,10,20,30,50,60].includes(n))throw Error('Nur 1, 10, 20, 30, 50 oder 60 originale Core-Minuten');
    const next=validate(core.save(state));core.advance(next,n,rules);
    state=validate(core.save(next));return {ok:true};}
  });

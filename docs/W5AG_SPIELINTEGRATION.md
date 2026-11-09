@@ -1,5 +1,7 @@
 # W5ag-Spielintegration [DRAFT]
 
+> **[DRAFT · Folgearbeit UI-Miner2D]** Dieser Bericht dokumentiert den unveränderten Ausgangsstand von #280. Die aktuelle Weiterentwicklung auf `feature/ui-miner2d-rule195` ergänzt das direkt bedienbare Core-Fördercockpit und die gemeinsame Weltkarte. [Aktueller Bericht und Grenzen](UI_MINER2D_RULE195.md); weiterhin kein Freiflug-/Dock-Core.
+
 Separater Forschungsprototyp auf dem geprüften Head von [PR #278](https://github.com/tobiasfranziskus/Check/pull/278): `1b01d3d61e4fd18688d31493a480fc07af77e4ab`. Vorgänger #273–#277 geprüft: W5ab-Spielhub → bezahlte Überführung → Ersatzfinanzierung → Lohnmaterialkauf → Eis/Wasser → individuelle Löhne. Produktplanung: [main fd3e9154 / Roadmap](https://github.com/tobiasfranziskus/Check/blob/fd3e915448a2f35fa803db709aff9ce223dddc6f/docs/ROADMAP.md). Produkt bleibt Regel14/Schema8. Dieser Schritt verwendet ausschließlich die bereits implementierte Forschungsregel195/Schema8.
 
 ## Start und Schutz

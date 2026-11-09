@@ -23,8 +23,8 @@
   holder.append(tbl);root.replaceChildren(holder);
  }
  function render(snapshot){
-  if(snapshot.state.rulesVersion!==18||!snapshot.audit?.ok||!snapshot.refinery?.audit?.ok)
-   throw Error('W5aa: nur Original-W4-Regel18-Audit');
+  if(![18,19].includes(snapshot.state.rulesVersion)||!snapshot.audit?.ok||!snapshot.refinery?.audit?.ok)
+   throw Error('W5aa/W5ab: nur Original-W4/5-Regel18/19-Audit');
   const s=snapshot.state,r=snapshot.refinery.audit,q=snapshot.refinery.quote,work=s.w4;
   $('refinery-stats').replaceChildren(
    field('Echtes, geliefertes Erz in Nadir',quantity(r.erz)),

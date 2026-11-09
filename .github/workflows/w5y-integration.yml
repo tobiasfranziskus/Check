@@ -6,6 +6,7 @@ on:
       - 'prototypes/w5w/app.js'
       - 'prototypes/legacy-hub/core-adapter.js'
       - 'tests/w5y-original-w3-freight.test.mjs'
+      - 'tests/w5z-finanzierte-folgefrachten.test.mjs'
       - 'tests/w5y-touch.py'
       - '.github/workflows/w5y-integration.yml'
   workflow_dispatch:

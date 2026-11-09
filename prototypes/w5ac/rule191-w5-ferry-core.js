@@ -2041,8 +2041,10 @@ const m_core_w3 = (() => {
       && w.beauftragt===w.abgeschlossen+(a?1:0)
       && state.stations[c.zielStation].lager.erz
         ===w.geliefert-(state.w4?.erzVerbraucht??0)
-      && state.owners[c.arbeitsFonds].cash+(state.w5ae?.spent??0)
-        +(state.w5n?.wasserErlos??0)===w.arbeitsKosten+(state.w5n?.frachtLohn??0)
+      &&(rules.w5ag
+         ?state.owners[c.arbeitsFonds].cash===0&&(state.w5ae?.spent??0)===0
+         :state.owners[c.arbeitsFonds].cash+(state.w5ae?.spent??0)
+           +(state.w5n?.wasserErlos??0)===w.arbeitsKosten+(state.w5n?.frachtLohn??0))
       && kauf===(a?(a.phase==='hin'?a.gesamt:a.frachtGebuehr):0)
       && arbeit===(a?k.arbeitsKosten-a.gearbeitet*c.arbeitJeMinute:0)
       && carrier+arbeit+(state.owners.w5ac_transfer_reserved?.cash??0)
@@ -2609,9 +2611,11 @@ const m_core_w5_wage_trade=(()=>{
       &&w.purchased===items&&w.spent===sales
       &&w.spent===w.purchased*cfg.preis
       &&inv===w.purchased
-      &&fund+w.spent+(s.w5n?.wasserErlos??0)
-        ===s.w3.arbeitsKosten+(s.w5n?.frachtLohn??0)
-      &&s.stats.konto[cfg.buyer].kosten===w.spent+(s.w5n?.wasserErlos??0)
+      &&(r.w5ag
+        ?fund===0&&w.spent===0
+        :fund+w.spent+(s.w5n?.wasserErlos??0)
+           ===s.w3.arbeitsKosten+(s.w5n?.frachtLohn??0))
+      &&s.stats.konto[cfg.buyer].kosten===w.spent+(r.w5ag?0:(s.w5n?.wasserErlos??0))
       &&s.stats.konto[cfg.seller].erloes===(s.w5?.materialUmsatz??0)+w.spent+(s.w5n?.wasserErlos??0)
       &&seller+s.w3.kaufAusgaben+s.w4.gebucht
          -(s.w5?.materialUmsatz??0)-w.spent
@@ -2853,12 +2857,15 @@ const m_core_w5n=(()=>{
      &&w.wasserProduziert===s.ledger.wasser.produced
      &&w.wasserVerbraucht===s.ledger.wasser.consumed
      &&w.wasserErlos===w.wasserVerbraucht*c.wasserPreis
-     &&s.owners[c.kunde].cash+(s.w5ae?.spent??0)+w.wasserErlos
-        ===s.w3.arbeitsKosten+w.frachtLohn
+     &&(r.w5ag
+       ?s.owners[c.kunde].cash===0&&(s.w5ae?.spent??0)===0
+       :s.owners[c.kunde].cash+(s.w5ae?.spent??0)+w.wasserErlos
+          ===s.w3.arbeitsKosten+w.frachtLohn)
       &&Array.isArray(w.kaufDeals)
       &&w.kaufDeals.every((d,i)=>Number.isSafeInteger(d.tick)
         &&d.tick>=0&&d.tick<=s.tick&&(i===0||w.kaufDeals[i-1].tick<=d.tick)
-        &&d.owner===c.kunde&&d.station===c.zielStation
+        &&(r.w5ag?Object.values(r.w5ag.pilots).includes(d.owner):d.owner===c.kunde)
+        &&d.station===c.zielStation
         &&Number.isSafeInteger(d.menge)&&d.menge>0
         &&d.preis===c.wasserPreis&&d.betrag===d.menge*d.preis)
       &&w.kaufDeals.reduce((n,d)=>n+d.menge,0)===w.wasserVerbraucht

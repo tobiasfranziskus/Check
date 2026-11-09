@@ -1,6 +1,6 @@
 # UI-Miner2D · Regel195 [DRAFT]
 
-Basis: geprüfter W5ag-Spielhub [#280](https://github.com/tobiasfranziskus/Check/pull/280), Head `500669a01ba94589a5f6e343a884833a2184d3fa`. Eigener Branch `feature/ui-miner2d-rule195`, Ziel ausschließlich `research/w5ag-spielintegration-20261109`. Verbindliche [main-Roadmap fd3e9154](https://github.com/tobiasfranziskus/Check/blob/fd3e915448a2f35fa803db709aff9ce223dddc6f/docs/ROADMAP.md) und AGENTS.md geprüft. Der parallele W5ai-Branch wird weder abgerufen noch geändert.
+Basis: geprüfter W5ag-Spielhub [#280](https://github.com/tobiasfranziskus/Check/pull/280), Head `500669a01ba94589a5f6e343a884833a2184d3fa`. Eigener Branch `feature/ui-miner2d-rule195`, [Draft-PR #282](https://github.com/tobiasfranziskus/Check/pull/282), Ziel ausschließlich `research/w5ag-spielintegration-20261109`. Verbindliche [main-Roadmap fd3e9154](https://github.com/tobiasfranziskus/Check/blob/fd3e915448a2f35fa803db709aff9ce223dddc6f/docs/ROADMAP.md) und AGENTS.md geprüft. Der parallele W5ai-Branch wird weder abgerufen noch geändert.
 
 ## Start und Bedienung
 
@@ -44,6 +44,7 @@ Aktuelle Ergebnisse werden nach Abschluss der Läufe unten erfasst. Tests verän
 ### Tatsächlich lokal geprüft · 09.11.2026
 
 - Node **v22.23.4**, vorgeschriebener Aufruf `node --test tests/*.test.mjs`: **35/35 Dateigruppen bestanden**, 0 Fehler, 0 Skips, 133,5 Sekunden. Keine Referenzhashes oder geerbten Node-Tests geändert.
+- Zusätzlicher vollständiger Node22-Lauf mit `--experimental-test-isolation=none`: **193/193 Einzeltests bestanden**, 0 Fehler/Skips, 143,5 Sekunden; einschließlich geerbter 13×90d-/365d-Regime.
 - Neue gezielte Miner-Tests: **2/2 Einzeltests bestanden**, einschließlich Seeds42/7, deterministischer Replays, echter Core-Förderung/Abrechnung, fehlender Käuferfinanzierung und Save/Load.
 - Chromium-Touch: neuer Miner-Test **4/4**, geerbter W5ag-Test **4/4**, geerbter Regel191/W5ac-Test **4/4**. Neuer Cockpit-Screenshot visuell geprüft. Kein JavaScript-Seitenfehler oder horizontaler Seitenüberlauf in den geprüften Ansichten.
 - iPad Safari und reales NAS **nicht ausgeführt**. Diese Ergebnisse sind keine Gerätefreigabe und keine Wirtschaftsnachhaltigkeitsprüfung.

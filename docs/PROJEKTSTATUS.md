@@ -22,6 +22,16 @@
 
 **[MAIN/FREIGABE]** `main` bleibt `fd3e9154` / v0.12.5 / Regel14/Schema8. [W5ab #273](https://github.com/tobiasfranziskus/Check/pull/273) und dieser Docs-only-PR bleiben beide **Draft**, keine Merges, keine Pages-Veröffentlichung, keine produktive Save-Migration.
 
+### [DRAFT / W5ac-Überführung · 09.11.2026]
+
+**[#274 W5ac](https://github.com/tobiasfranziskus/Check/pull/274)** führt den W0–W5-Pfad aus [#273](https://github.com/tobiasfranziskus/Check/pull/273) mit einer ausdrücklich **veränderten isolierten Forschungsregel191/Schema8** fort. Grundlage sind die Original-W5-Regel19 (#170) und das bereits im R32-Entwicklungsstand geprüfte Nadir→Aldera-Finanzierungsprinzip [#204 W5s-b](https://github.com/tobiasfranziskus/Check/pull/204). Die neue Datei `prototypes/w5ac/rule191-w5-ferry-core.js` ist **keine unveränderte Original-Regel19-Quellkopie**, sondern eine kleine, geprüft getrennte Core-Erweiterung mit eigener Flugtreuhand und Kauf-/Standort-/Lohnaudit. Alte Regel19-/Produkt-Saves werden nicht still geladen.
+
+**[BELEGT / abgeschlossene Tests, Head `4db5e8d6`]** [CI #42626781995](https://github.com/tobiasfranziskus/Check/actions/runs/42626781995): **166/166 Node22-Tests, keine Fehler/Skips**, und vier Chromium-Touchgrößen (1180×820, 1024×768, 820×1180, 390×844) bestanden, beide Jobs grün. Echte Original-W5-Kauf-/Werft-/Transport-Kette, 60-ISK-Fluglohn vollständig vorab gebunden, 60 einzelne Core-Pilotenminuten bezahlt, JSON-Save/Load bei Minute 30 exakt replaybar, Ankunft des einzig gekauften `sh004` in Aldera, darauf zweiter real finanzierter W3-Erztransport **mit genau diesem Schiff**. 13 RNG-Seeds × 90 Tage mit täglichen W0–W5-/Flug-/Geld-/Waren-/Eigentümeraudits. **Nicht 13 ökonomisch unterschiedliche Finanzierungs-/Krisenregime**, kein Beleg für W6-Dauerrentabilität. [Ausführlicher Nachweis](https://github.com/tobiasfranziskus/Check/blob/research/w5ac-w5-frachterueberfuehrung-finanziert-20261109/docs/W5AC_BEZAHLTE_FRAECHTERUEBERFUEHRUNG.md).
+
+**[WIRKLICHE FINANZEN]** Tick160: neue physische Werft-Hülle `sh004` in Nadir für 750 ISK gekauft, 380 ISK Speditionskasse vor Abschluss der alten W3-Rückfahrt. Tick170: Spedition 620 ISK nach echter alter Frachtauszahlung, davon **60 ISK** für Überführung reserviert → 560 ISK frei. Tick200: 30 Minuten / 30 ISK Löhne, Tick230: 60 Minuten / **60 ISK vollständig ausgezahlt**, `sh004` wirklich in Aldera, 0 Flugtreuhand. Zweiter W3-Vertrag mit `sh004` bindet weitere **120 ISK** eigene Löhne und **740 ISK** Nadir-Käufergeld für 50 wirkliche Erz, Abschluss Tick350 nach beiden 60-min-Flügen, Spedition 680 ISK. Weltgeld **33.000 ISK, 0 Mint**. Keine freie Treibstoff-/Überführungsleistung, kein falscher Warenursprung.
+
+**[MAIN / PRODUKT]** `main fd3e9154`, v0.12.5 / Regel14/Schema8, Pages/produktive Save-Slots/iPad-Safari-/NAS-Abnahme unverändert. W5ac bleibt auf dem **gestapelten Research-Draft #274**, dieser Docs-only-PR getrennt auf `main`, **keine Merges oder Veröffentlichung**. Nächste offene Entwicklung: echte langfristige Kapitaldeckung, Modul-/Schiffbau-Ersatzwirtschaft, kaufkräftige Endkunden, wirtschaftlich differenzierte 13×90d-Krisen.
+
 ## 1. Integrationsstand und schützenswerte Versionen
 
 | Teil | Nachgewiesener Stand |

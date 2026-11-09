@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aphros Void · W5ah private Piloten und Wasser</title>
+<link rel="stylesheet" href="style.css">
+<script defer src="../w5ac/rule191-w5-ferry-core.js"></script>
+<script defer src="session.js"></script>
+<script defer src="app.js"></script></head><body>
+<header><h1>Aphros Void · W5ah</h1><p><strong>Isolierte, manuell spielbare Forschungswelt: Regel195, Schema8.</strong> Zwei getrennte Piloten verdienen ausschließlich auf echten, vorfinanzierten W3-/Eisflügen und kaufen Wasser freiwillig aus ihrem eigenen Geld. Keine Wirtschaftssimulation in der Oberfläche, keine automatische Nachfrage, kein Produkt-Save, kein Minting und kein Pages-Release.</p>
+<p id="identity" aria-live="polite"></p></header>
+<main>
+<section><h2>Core-Befehle und Zeitschritte</h2><p>Beispiel: Frachter und Miner kaufen → Eis fördern → 50 Minuten → Miner stoppen → Erzfracht starten → 120 Minuten → Eisfracht starten → 60 Minuten → Wasserwerk starten → 20 Minuten → privat kaufen → 40 Minuten Rückflug. Für eine zweite echte Wassercharge: Wasserwerk erneut beauftragen → 20 Minuten → wieder privat kaufen. Jeder Schritt wird vom ursprünglichen Core geprüft.</p>
+<div class="buttons">
+<button data-action="buy-freighter">Speditionsfrachter kaufen</button>
+<button data-action="buy-miner">Eigenen Miner kaufen</button>
+<button data-action="mine-ice">50 Eis fördern</button>
+<button data-action="mine-ore">Erz fördern</button>
+<button data-action="stop-miner">Miner stoppen</button>
+<button data-action="ore-freight">Bezahlte Erzfracht</button>
+<button data-action="ice-freight">Bezahlte Eisfracht</button>
+<button data-action="produce-water">10 Eis → 10 Wasser (Arbeitslohn)</button>
+</div>
+<div class="buttons" aria-label="Original-Core-Zeitschritte">
+<button data-step="1">+1 min</button><button data-step="20">+20 min</button><button data-step="40">+40 min</button><button data-step="50">+50 min</button><button data-step="60">+60 min</button><button data-step="120">+120 min</button>
+</div><p id="message" role="status" aria-live="polite">Die Welt ist pausiert. Keine automatische Arbeit, Einnahme oder Nachfrage.</p>
+</section>
+<section><h2>Zwei persönliche Kassen</h2><div class="cards">
+<article><h3>Erzpilot</h3><strong id="cash-pilot_erz">0 ISK</strong><p id="ore-work"></p><label>Wasser freiwillig kaufen (Stück) <input type="number" min="1" step="1" id="ore-amount" value="6" inputmode="numeric"></label><button data-action="ore-water" data-buy="ore">Aus Erzpiloten-Kasse kaufen</button></article>
+<article><h3>Eispilot</h3><strong id="cash-pilot_eis">0 ISK</strong><p id="ice-work"></p><label>Wasser freiwillig kaufen (Stück) <input type="number" min="1" step="1" id="ice-amount" value="4" inputmode="numeric"></label><button data-action="ice-water" data-buy="ice">Aus Eispiloten-Kasse kaufen</button></article>
+</div><p id="price"></p><p>Die Konten können unbegrenzt sparen. Ohne echte geleistete Flugminuten ist der Kauf gesperrt.</p></section>
+<section><h2>Physische Ware und Belege</h2><p id="stocks"></p><p id="production"></p><p id="trips"></p><p id="hull"></p><p id="miner"></p><h3>Firmen und Auftragskassen</h3><div class="cards" aria-label="Geldkonten"><p>Spedition <strong id="cash-transport"></strong></p><p>Minerfirma <strong id="cash-house"></strong></p><p>Aldera <strong id="cash-st_aldera"></strong></p><p>Nadir <strong id="cash-st_nadir"></strong></p><p>Alter Lohnfonds <strong id="cash-fonds_transport"></strong></p></div><p id="cashsum"></p></section>
+<section><h2>Forschung sichern</h2><p>Nur manuell exportierbare und auditierte Regel195-JSON; Import wird vor jeder Übernahme validiert. Die Seite verwendet keine produktiven IndexedDB-/LocalStorage-Spielstände.</p><div class="buttons"><button id="export">Regel195-JSON exportieren</button><label>Regel195-JSON importieren <input id="import" type="file" accept=".json,application/json"></label></div><h3>Letzte Core-Ereignisse</h3><pre id="events"></pre></section>
+</main>
+</body></html>

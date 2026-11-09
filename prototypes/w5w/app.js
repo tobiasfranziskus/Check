@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
  const $=id=>document.getElementById(id),session=W5wSession.create(),{rules}=W5wOriginal;
- const modeName=rules.rulesVersion===191?'W5-Transfer':rules.rulesVersion===19?'W5':rules.rulesVersion===18?'W4':rules.rulesVersion===17?'W3':rules.rulesVersion===16?'W2':'W1';
+ const modeName=rules.rulesVersion===195?'W5ag':rules.rulesVersion===191?'W5-Transfer':rules.rulesVersion===19?'W5':rules.rulesVersion===18?'W4':rules.rulesVersion===17?'W3':rules.rulesVersion===16?'W2':'W1';
  const fmt=n=>Number.isSafeInteger(n)?n.toLocaleString('de-DE')+' ISK':'Unbekannt',
   val=x=>x===null||x===undefined?'Unbekannt':typeof x==='object'?JSON.stringify(x):String(x);
  let snap=session.snapshot(),current='mining',revision=0,angle=0;
@@ -33,7 +33,7 @@
   if(current!=='ship')return;
   const s=snap.state.ships[snap.selected];
   $('ship-data').textContent=s?'Schiff '+s.id+' · Besitzer '+s.owner+
-   ' · Auftrag '+s.auftrag+' · echtes Erz an Bord '+(s.ladung.erz||0):
+   ' · Auftrag '+s.auftrag+' · Erz '+(s.ladung.erz||0)+' · Eis '+(s.ladung.eis||0):
    'Noch kein eigenes Schiff. Im Bergbau-Bereich einen Miner mit vorhandenem Kapital kaufen.';
   local.selected=s?.id||null;local.zoom=Number($('zoom').value);
   graphics.zeichnen({t:snap.state.tick,entities:s?
@@ -106,7 +106,7 @@
    mq.ok?(active?'Stop möglich. Bei Ausführung werden gelieferte Erz und unbenutztes Treuhandgeld durch den Originalkern abgerechnet.':
       'Förderung anforderbar. Ab dem nächsten Core-Tick reservieren Station und Eigentümer vorhandene Mittel; keine garantierte Dauer-Nachfrage.'):
    'Original-'+modeName+'-Auftrag abgelehnt: '+mq.reason;
-  refs();globalThis.W5xExtension?.render(snap);globalThis.W5yExtension?.render(snap);globalThis.W5aaExtension?.render(snap);globalThis.W5abExtension?.render(snap);globalThis.W5acExtension?.render(snap);
+  refs();globalThis.W5xExtension?.render(snap);globalThis.W5yExtension?.render(snap);globalThis.W5aaExtension?.render(snap);globalThis.W5abExtension?.render(snap);globalThis.W5acExtension?.render(snap);globalThis.W5agExtension?.render(snap,session);
   $('fleet-data').replaceChildren();
   table($('fleet-data'),['ID','Eigentümer','Klasse','System','Aktivität','Erz an Bord'],
    Object.values(snap.state.ships).sort((a,b)=>a.id.localeCompare(b.id))
@@ -140,7 +140,7 @@
  $('zoom').addEventListener('input',draw);window.addEventListener('resize',draw);
  $('export').addEventListener('click',()=>{
   const url=URL.createObjectURL(new Blob([session.export()],{type:'application/json'})),a=document.createElement('a');
-  a.href=url;a.download=rules.rulesVersion===191?'aphros-w5ac-forschung-w5-transfer-regel191.json':rules.rulesVersion===19?'aphros-w5ab-forschung-w5-regel19.json':rules.rulesVersion===18?'aphros-w5aa-forschung-w4-regel18.json':rules.rulesVersion===17?'aphros-w5y-forschung-w3-regel17.json':rules.rulesVersion===16?'aphros-w5x-forschung-w2-regel16.json':'aphros-w5w-forschung-w1-regel15.json';a.click();
+  a.href=url;a.download=rules.rulesVersion===195?'aphros-w5ag-regel195.json':rules.rulesVersion===191?'aphros-w5ac-forschung-w5-transfer-regel191.json':rules.rulesVersion===19?'aphros-w5ab-forschung-w5-regel19.json':rules.rulesVersion===18?'aphros-w5aa-forschung-w4-regel18.json':rules.rulesVersion===17?'aphros-w5y-forschung-w3-regel17.json':rules.rulesVersion===16?'aphros-w5x-forschung-w2-regel16.json':'aphros-w5w-forschung-w1-regel15.json';a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
  });
  $('import').addEventListener('change',async()=>{
@@ -153,6 +153,6 @@
   }catch(e){if(request===revision)$('message').textContent='Nicht übernommen: '+e.message;}
   finally{if($('import').files[0]===file)$('import').value='';}
  });
- globalThis.W5yExtension?.mount(session,run);globalThis.W5aaExtension?.mount(session,run);globalThis.W5abExtension?.mount(session,run);globalThis.W5acExtension?.mount(session,run);
+ globalThis.W5yExtension?.mount(session,run);globalThis.W5aaExtension?.mount(session,run);globalThis.W5abExtension?.mount(session,run);globalThis.W5acExtension?.mount(session,run);globalThis.W5agExtension?.mount(session,run);
  go('mining');update();
 })();

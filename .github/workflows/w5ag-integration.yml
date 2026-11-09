@@ -1,9 +1,16 @@
-name: W5ag – real private pilot wages, per-minute invoices and genuine voluntary water demand
+name: W5ag – Rule195 browser integration and paid ice-water flow
 on:
   pull_request:
     paths:
-      - 'prototypes/w5ac/rule191-w5-ferry-core.js'
-      - 'tests/w5ag-*.test.mjs'
+      - 'prototypes/w5ag/**'
+      - 'prototypes/w5ac/**'
+      - 'prototypes/w5ab/extension.js'
+      - 'prototypes/w5aa/extension.js'
+      - 'prototypes/w5y/extension.js'
+      - 'prototypes/w5w/app.js'
+      - 'prototypes/legacy-hub/core-adapter.js'
+      - 'tests/w5ag*.test.mjs'
+      - 'tests/w5ag-touch.py'
       - 'docs/W5AG_*'
       - '.github/workflows/w5ag-integration.yml'
   workflow_dispatch:
@@ -18,5 +25,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Rule195 private pay proofs and all original JS tests, 13 distinct economies x 90d, 3 crises x 365d
+      - name: Complete Node22 regression including Rule195 wages, replay and browser session
         run: node --test tests/*.test.mjs
+  touch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.62.0
+      - run: python -m playwright install --with-deps chromium
+      - name: Four touch sizes: paid W0-W5, ice, water, two private buyers and protected imports
+        run: python tests/w5ag-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: w5ag-touch-evidence
+          path: /tmp/w5ag-*.png

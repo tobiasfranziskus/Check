@@ -23,7 +23,7 @@
   wrapper.append(t);root.replaceChildren(wrapper);
  }
  function render(snapshot){
-  if(snapshot.state.rulesVersion!==191||!snapshot.audit?.ok||!snapshot.transfer?.audit?.ok)
+  if(![191,195].includes(snapshot.state.rulesVersion)||!snapshot.audit?.ok||!snapshot.transfer?.audit?.ok)
    throw Error('W5ac: Rule191 mit vollständig geprüfter Transferfinanzierung erforderlich');
   const s=snapshot.state,t=snapshot.transfer.audit,ids=s.w5.schiffIds,sel=$('transfer-select');
   const previous=sel.value;

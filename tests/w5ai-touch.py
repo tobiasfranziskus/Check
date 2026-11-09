@@ -50,7 +50,7 @@ try:
    prev=page.locator('#identity').inner_text()
    page.locator('#import').set_input_files({'name':'forged.json','mimeType':'application/json',
       'buffer':saved.replace('"rulesVersion":195','"rulesVersion":194').encode()})
-   page.wait_for_function("document.querySelector('#message').textContent.startswith('Nicht übernommen:')")
+   page.wait_for_function("document.querySelector('#message').textContent.startsWith('Nicht übernommen:')")
    assert page.locator('#identity').inner_text()==prev
    assert page.evaluate("localStorage.getItem('product-sentinel-w5ai')")=='keep'
    assert page.evaluate("document.documentElement.scrollWidth<=innerWidth"),(w,h)

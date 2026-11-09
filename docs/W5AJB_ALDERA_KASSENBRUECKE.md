@@ -16,4 +16,33 @@
 
 Keine zeitgesteuerte Kapitalzuführung, kein willkürlicher neuer Käufer, keine Gegenbuchung, kein Versuch, den tatsächlich fehlenden Quellankauf zu umgehen. Das ist ein isolierter Audit und kein Simulationszweig.
 
-**Interpretation erst nach ausgeführter CI und geprüften Logdaten ergänzen.** Der Report ist ein Recherchebeleg, kein Beweis für dauerhafte W6-Wirtschaft.
+## Nachgewiesener Mechanismus: freies Geld vs. echte W1-Erztreuhand
+
+Die erste tatsächlich ausgeführte [W5aj-b-CI #42708069089](https://github.com/tobiasfranziskus/Check/actions/runs/42708069089) war grün: **2/2 gezielte Tests** und **199/199 Node22-Gesamttests**, jeweils ohne Fehler/Skips. Die Originalkonten- und Tickreihe in beiden Seeds 42 und 7 zeigte identische Aldera-Bindungen:
+
+| Zeitpunkt | Aldera frei | Buchsaldo aus ursprünglichen 1.000 ISK plus tatsächlich gebuchten Erlösen minus Kosten | In Erz-Kauf-Treuhand gebunden |
+| --- | ---: | ---: | ---: |
+| 0 – vor der Arbeit | 1.000 | 1.000 | 0 |
+| 50 – nach erster Eisförderung | 250 | 250 | 0 |
+| 170 – nach Erz-Rundflug | 0 | 250 | 250 |
+| 230 – nach erster Eislieferung | 250 | 750 | 500 |
+| 310 – W5ah-Wasser-Zweitkauf | 0 | 1.000 | 1.000 |
+| 360 – vor zweitem echten Quellankauf | 1.000 | 1.000 | 0 |
+| 360 – nach zweitem bezahlten 50-Eis-Quellankauf | 750 | 750 | 0 |
+| 480 – nach zweiter bezahlter Eisrundfahrt | 1.000 | 1.000 | 0 |
+| 500 – nach weiterer Wasserproduktion/-kauf | 0 | 1.000 | 1.000 |
+| 550 – dritte Eischarge im Miner, Verkauf verweigert | 0 | 1.000 | 1.000 |
+
+**Kassenidentität im unveränderten Core:** `Aldera frei + summe(owners[erz_treuhand_*].cash) = 1.000 Start-ISK + Aldera gebuchte Erlöse − Aldera gebuchte Kosten`. Dieser ursprünglich unaufgeklärte **1.000-ISK-Abstand** ist ein tatsächlicher W1-Vorfinanzierungsauftrag an den NPC-Erzbergbau, **kein ungebuchter Abfluss und keine verschwundene ISK-Menge**. Der Original-Core sperrt die 1.000 ISK bis zur tatsächlichen Vertragsabwicklung. Solange sie nicht frei sind, ist auch der unabhängige Eis-Einkauf von 250 ISK korrekt gesperrt.
+
+### Anschluss: rechtmäßige Wartezeit statt Gratisauffüllung
+
+Ein zusätzlicher Prüfpfad lässt die Originalwelt in echten 10-Minuten-Core-Schritten laufen. **Bei Tick 600** sind die 1.000 ISK wieder frei und das ursprüngliche W1-Erztreuhandkonto auf null zurückgeführt. Aldera erwirbt die schon bei Tick550 tatsächlich geförderten 50 Eis für **250 ISK** aus eigener Kasse; **750 ISK** bleiben frei. Erst anschließend ist der dritte W5n-Rundtransport zugelassen: **Nadir reserviert 490 ISK, die Spedition 120 ISK Arbeitslohn**, und nach 120 echten Flugminuten bei **Tick720** sind 150 Eis insgesamt geliefert, 3 Eisrundfahrten abgeschlossen und weitere 120 private Eispilotenlöhne bezahlt.
+
+Die erste Zeitfreigabe wurde in [CI #42708733133](https://github.com/tobiasfranziskus/Check/actions/runs/42708733133) als gezielter Test **bestanden**; dazu **200/200 Node22-Gesamttests**. Ein weiterer deterministischer Seed-7-Gegenversuch gehört zum nachfolgenden finalen PR-Head und erhält seinen Ergebnisstatus erst nach dessen CI.
+
+**Korrektur der Interpretation von W5aj #283:** Die dortige 13×90d-Matrix weist korrekt ein sofort blockiertes nächstes Eisgeschäft bei Tick550 nach. Daraus folgt **nicht**, dass nach zwei Eisfrachten kein dritter bezahlter Transport möglich ist. Bereits ein realer W1-Vertragsabschluss nach 50 weiteren Minuten kann das Geld rechtmäßig freisetzen. Längere Beschäftigung, Wartung, Käuferinsolvenz und dauerhaftes W6-Gleichgewicht sind damit **nicht** geklärt.
+
+Diese Lösung **erfindet weder Arbeitsgeld noch einen NPC-Rettungsmechanismus**: Der Spieler wartet nur, bis tatsächliche, bereits vorfinanzierte Arbeit des bestehenden Original-Core beendet ist. Es wird kein laufender Vertrag abgebrochen, kein fremdes Geld angezapft und kein automatischer privater Wasserkauf ausgelöst.
+
+**Echte iPad-Safari- und NAS-Abnahme offen. Keine Preis-/Core-/Produktänderung oder Merge-Freigabe.**

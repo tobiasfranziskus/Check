@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Aphros Void · W5ah private Piloten und Wasser</title>
+<title>Aphros Void · W5ah/W5ai private Löhne und Wasserkreislauf</title>
 <link rel="stylesheet" href="style.css">
 <script defer src="../w5ac/rule191-w5-ferry-core.js"></script>
 <script defer src="session.js"></script>
 <script defer src="app.js"></script></head><body>
-<header><h1>Aphros Void · W5ah</h1><p><strong>Isolierte, manuell spielbare Forschungswelt: Regel195, Schema8.</strong> Zwei getrennte Piloten verdienen ausschließlich auf echten, vorfinanzierten W3-/Eisflügen und kaufen Wasser freiwillig aus ihrem eigenen Geld. Keine Wirtschaftssimulation in der Oberfläche, keine automatische Nachfrage, kein Produkt-Save, kein Minting und kein Pages-Release.</p>
+<header><h1>Aphros Void · W5ah / W5ai</h1><p><strong>Isolierte, manuell spielbare Forschungswelt: Regel195, Schema8.</strong> Zwei getrennte Piloten verdienen ausschließlich auf echten, vorfinanzierten W3-/Eisflügen und kaufen Wasser freiwillig aus ihrem eigenen Geld. Keine Wirtschaftssimulation in der Oberfläche, keine automatische Nachfrage, kein Produkt-Save, kein Minting und kein Pages-Release.</p>
 <p id="identity" aria-live="polite"></p></header>
 <main>
 <section><h2>Core-Befehle und Zeitschritte</h2><p>Beispiel: Frachter und Miner kaufen → Eis fördern → 50 Minuten → Miner stoppen → Erzfracht starten → 120 Minuten → Eisfracht starten → 60 Minuten → Wasserwerk starten → 20 Minuten → privat kaufen → 40 Minuten Rückflug. Für eine zweite echte Wassercharge: Wasserwerk erneut beauftragen → 20 Minuten → wieder privat kaufen. Jeder Schritt wird vom ursprünglichen Core geprüft.</p>
@@ -16,6 +16,7 @@
 <button data-action="mine-ice">50 Eis fördern</button>
 <button data-action="mine-ore">Erz fördern</button>
 <button data-action="stop-miner">Miner stoppen</button>
+<button data-action="sell-ice">50 Eis aus echtem Miner-Laderaum an Aldera verkaufen (nur bei gedeckter Kasse)</button>
 <button data-action="ore-freight">Bezahlte Erzfracht</button>
 <button data-action="ice-freight">Bezahlte Eisfracht</button>
 <button data-action="produce-water">10 Eis → 10 Wasser (Arbeitslohn)</button>
@@ -23,6 +24,11 @@
 <div class="buttons" aria-label="Original-Core-Zeitschritte">
 <button data-step="1">+1 min</button><button data-step="20">+20 min</button><button data-step="40">+40 min</button><button data-step="50">+50 min</button><button data-step="60">+60 min</button><button data-step="120">+120 min</button>
 </div><p id="message" role="status" aria-live="polite">Die Welt ist pausiert. Keine automatische Arbeit, Einnahme oder Nachfrage.</p>
+</section>
+<section><h2>W5ai – zweiter echter bezahlter Lohnzyklus</h2>
+<p>Nach dem W5ah-Beispiel bei Tick 310: <strong>Erneut Eis fördern</strong> → 50 Minuten → Miner stoppen → <strong>50 echtes Eis aus Miner-Laderaum an Aldera verkaufen</strong> → <strong>eine neue Eisfracht finanzieren</strong> → 60 Minuten. Die zweite Fracht zahlt erst bei wirklicher Flugzeit neue private Löhne. Der Eispilot kann freiwillig 4 vorhandene Wasser kaufen, dann Nadir erneut 10 Wasser für 20 ISK Arbeit herstellen lassen (+20 Minuten), der Pilot weitere 2 Wasser kaufen und nach 40 Minuten bezahlter Rückfahrt weitere 3 Wasser. Keine automatische Auszahlung, keine zweite Geldquelle.</p>
+<p id="paid-minutes" aria-live="polite"></p><p id="ice-contracts"></p>
+<p>Vor jeder neuen Fracht prüft der Original-Core: <strong>50 reales Eis, 490 ISK Nadir-Käuferbudget und 120 ISK Speditions-Lohnreserve</strong>. Reicht das Geld nicht, bleibt der Auftrag blockiert. Alle privaten Käufe sind optional; ungekauftes Wasser und gespartes Geld bleiben bestehen.</p>
 </section>
 <section><h2>Zwei persönliche Kassen</h2><div class="cards">
 <article><h3>Erzpilot</h3><strong id="cash-pilot_erz">0 ISK</strong><p id="ore-work"></p><label>Wasser freiwillig kaufen (Stück) <input type="number" min="1" step="1" id="ore-amount" value="6" inputmode="numeric"></label><button data-action="ore-water" data-buy="ore">Aus Erzpiloten-Kasse kaufen</button></article>

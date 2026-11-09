@@ -1,0 +1,43 @@
+name: W5y – Rule17 original financed freight hub
+on:
+  pull_request:
+    paths:
+      - 'prototypes/w5y/**'
+      - 'prototypes/w5w/app.js'
+      - 'prototypes/legacy-hub/core-adapter.js'
+      - 'tests/w5y-original-w3-freight.test.mjs'
+      - 'tests/w5y-touch.py'
+      - '.github/workflows/w5y-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  w3-core-and-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original W3 money/cargo/flight/seed tests plus all historical regression
+        run: node --test tests/*.test.mjs
+  touch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.62.0
+      - run: python -m playwright install --with-deps chromium
+      - name: Touch: paid W3 freight outward and back, four viewports
+        run: python tests/w5y-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: w5y-touch-evidence
+          path: /tmp/w5y-*.png

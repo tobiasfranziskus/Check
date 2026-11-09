@@ -90,9 +90,9 @@ try:
    page.locator('[data-step="60"]').tap()
    page.locator('[data-step="60"]').tap()
    page.wait_for_function("document.querySelector('#identity').textContent.includes('Tick 350')")
+   assert '100 Erz' in page.locator('#freight-ledger').inner_text(),'newly ferried hull really delivered additional paid cargo'
    page.locator('[data-view="transfer"]').tap()
    assert '680 ISK' in page.locator('#transfer-stats').inner_text(),'real W3 fee income after extra 120 pilot labor'
-   assert '2' in page.locator('#freight-ledger').inner_text() or '100' in page.locator('#freight-ledger').inner_text()
    assert 'Angekommen / noch aktiv' in page.locator('#transfer-ledger').inner_text()
    assert 'Original-Audit OK' in page.locator('#identity').inner_text()
    assert errors==[],errors

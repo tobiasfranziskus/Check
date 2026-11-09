@@ -170,7 +170,27 @@ test('W5x: read-only crisis/decision view and 2D/HQ projection never alter RNG o
  assert.equal(x.state.ledger.miner.consumed,2);
 });
 
-test('W5x: 13 deterministic Rule16 seeds ×90 simulated days, daily money/goods/audit and checkpoint Save/Load',()=>{
+// Independent of m_core_audit: reconcile actual owner accounts, all physical
+// inventory and non-renewable customer funds directly from authoritative state.
+// Do not reuse the original audit outputs as expected values.
+function independentW2Balance(s){
+ const accountValues=Object.values(s.owners).map(x=>x.cash);
+ assert.ok(accountValues.every(x=>Number.isSafeInteger(x)&&x>=0),'invalid independent account');
+ const money=accountValues.reduce((a,b)=>a+b,0);
+ assert.equal(money,27000,'independent account sum');
+ for(const [ware,ledger] of Object.entries(s.ledger)){
+  const physical=Object.values(s.stations).reduce((n,st)=>n+(st.lager[ware]||0),0)
+   +Object.values(s.ships).reduce((n,sh)=>n+(sh.ladung[ware]||0),0);
+  const book=ledger.initial+ledger.mined+ledger.produced+ledger.imported-ledger.consumed-ledger.exported;
+  assert.equal(physical,book,'independent physical stock '+ware);
+ }
+ const paidExport=s.ledger.erz.exported*rules.erzpilot.preis;
+ assert.equal(s.owners.export.cash,20000-paidExport,'independent finite buyer ledger');
+ assert.equal(s.minted,0);assert.equal(s.burned,0);
+ return {money,paidExport};
+}
+
+test('W5x: 13 deterministic Rule16 seeds ×90 simulated days, daily independent money/goods/buyer audit and checkpoint Save/Load',()=>{
  const seeds=[42,7,1,2,3,4,5,6,8,9,11,13,99];
  let worlds=0,checks=0;
  for(const seed of seeds){
@@ -182,6 +202,7 @@ test('W5x: 13 deterministic Rule16 seeds ×90 simulated days, daily money/goods/
    assert.equal(a.total,27000);
    assert.equal(state.minted,0);
    assert.equal(crisis.kaeuferNachweisOk,true);
+   independentW2Balance(state);
    if(day===30||day===60||day===90){
     const h=core.hash(state);
     state=core.loadW2(core.save(state));assert.equal(core.hash(state),h);

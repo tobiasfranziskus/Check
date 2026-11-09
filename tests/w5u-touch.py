@@ -58,7 +58,7 @@ try:
    page.locator('#activate button').tap()
    page.wait_for_function("document.querySelector('#status').textContent.startsWith('Ausgeführt')")
    assert page.locator('#identity').inner_text()!=before_activation
-   assert 'Audit OK' in page.locator('#identity').inner_text()
+   assert 'audit OK' in page.locator('#identity').inner_text()
    with page.expect_download() as info:page.locator('#export').tap()
    downloaded=info.value;file=downloaded.path();saved=pathlib.Path(file).read_text()
    before=page.locator('#identity').inner_text()

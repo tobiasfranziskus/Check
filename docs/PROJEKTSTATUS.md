@@ -1,5 +1,7 @@
 # Aphros Void – Projektstatus
 
+> **[DRAFT / ANALYSE · W5ad, 09.11.2026]** Aufbau auf [#274](https://github.com/tobiasfranziskus/Check/pull/274), `4db5e8d6`; verifizierter `main fd3e9154` bleibt Regel14/Schema8. [W5ad-Bericht](W5AD_FINANZIERTE_ERSATZWIRTSCHAFT.md): gemeinsamer Core, opt-in Forschungsregel192, vollständiges 930-ISK-Ersatzgate, tatsächliche Verluste/Käufe/60-min-Flüge/Folgefrachten; 13 wirtschaftlich verschiedene 90-Tage-Regime plus fünf 365-Tage-Krisen. Teilpfad erfolgreich, Dauerwirtschaft durch monoton gebundene Frachtlöhne rechnerisch unmöglich; keine neue Produktregel, Emission, Migration oder Integration. Nächste kleine Vertrags-/Warengates nur **[OPTION]**. Historischer Stand darunter bleibt als Branch-Historie erhalten.
+
 ## [ANALYSE] B8o/B8p – bezahlte Aufträge und Endnachfrage · 01.11.2026
 
 **[MAIN]** Weiterhin `0d473e6`, v0.12.5/Regel14/Schema8 ohne Produktcodeänderung. Dokumentations-Draft #78 ist noch **nicht integriert**; dieser Abschnitt bezieht sich auf den vorgeschlagenen Docs-Stand.

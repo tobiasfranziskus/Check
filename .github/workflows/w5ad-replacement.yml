@@ -1,0 +1,33 @@
+name: W5ad – financed replacement and 13 economic crises
+on:
+  pull_request:
+    paths:
+      - 'prototypes/w5ac/rule191-w5-ferry-core.js'
+      - 'tests/helpers/w5ad-research.mjs'
+      - 'tests/w5ad-ersatzwirtschaft.test.mjs'
+      - 'tools/w5ad-report.mjs'
+      - 'docs/W5AD_*'
+      - '.github/workflows/w5ad-replacement.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  replacement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Full regression, 13 economic 90d regimes, five 365d crises
+        run: node --test tests/*.test.mjs
+      - name: Independently reproduce report with deterministic replays
+        run: |
+          node tools/w5ad-report.mjs > /tmp/w5ad-results.jsonl
+          cmp docs/W5AD_ERGEBNISSE.jsonl /tmp/w5ad-results.jsonl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: w5ad-accounting-and-hashes
+          path: /tmp/w5ad-results.jsonl

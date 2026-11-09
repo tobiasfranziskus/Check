@@ -77,7 +77,7 @@ test('W5w: 600 ISK real player miner, same original NPC/player mining and fully 
   assert.equal(id,'sh002');assert.equal(check(s).state.ledger.miner.consumed,2);
   assert.equal(preview(s,'shipMine',{ware:'erz'}).ok,true);
   assert.equal(command(s,'shipMine',{ware:'erz'}).ok,true);
-  assert.equal(s.snapshot().finance.contracts.gebunden,0,'reservation starts only with real Core minute');
+  assert.equal(s.snapshot().contracts.gebunden,0,'reservation starts only with real Core minute');
   s.advance(10);s.advance(1);s.advance(1);s.advance(1);
   const x=check(s);
   assert.equal(x.state.tick,13);

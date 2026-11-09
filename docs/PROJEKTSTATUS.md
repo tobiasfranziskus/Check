@@ -2,7 +2,7 @@
 
 > **[MAIN / verifiziert 07.11.2026]** `main` vor dieser rein redaktionellen Bereinigung: [`5a56d9d7`](https://github.com/tobiasfranziskus/Check/commit/5a56d9d7e94a2ad283684b7b912c8b56ca96af53), **v0.12.5 / Regel14 / Schema8**. Keiner der Wirtschafts-R32- oder W5u-Forschungsstände ist in den produktiven Core integriert. Die unverändert historische Statusdatei bleibt unter [`5a56d9d7`](https://github.com/tobiasfranziskus/Check/blob/5a56d9d7e94a2ad283684b7b912c8b56ca96af53/docs/PROJEKTSTATUS.md) und `git show 5a56d9d7e94a2ad283684b7b912c8b56ca96af53:docs/PROJEKTSTATUS.md` erhalten. **Produktpriorität:** [ROADMAP.md](ROADMAP.md); [PR-Index](README.md), [Entwicklungsregeln](../AGENTS.md).
 
-## 0. Ergänzung: überprüfte W1–W4-Integration vom 09.11.2026
+## 0. Ergänzung: überprüfte W1–W5-Integration vom 09.11.2026
 
 **[MAIN]** Aktueller Dokumentationscommit `fd3e915448a2f35fa803db709aff9ce223dddc6f` (konsolidiert #244), produktive `index.html` weiterhin **v0.12.5 / Regel14 / Schema8**. Die unten erhaltene historische Übersicht vom 07.11. ist nicht mit den neueren, ungeprüft für main gebliebenen Drafts gleichzusetzen.
 
@@ -11,6 +11,16 @@
 **[BELEG / ausgeführt · #271 Head `71fc437c`]** [W5aa Node22/Touch-CI #42620615473](https://github.com/tobiasfranziskus/Check/actions/runs/42620615473): **154/154 Node22-JavaScript-Tests, 0 Fehler/Skips**, beide CI-Jobs grün; Chromium-Touch und echtes Regel18-Import-/Export-Szenario in vier Viewportgrößen. Prüfung enthält 13 Seed-Welten × 5 wirklich bezahlte W3-Rundfahrten × 15 wirkliche bezahlte W4-Produktionen (65 Fracht-, 195 Produktionsgeschäfte), zusätzliche **13 × 90 Tage** Original-Core-Geldaudit/Hash-/Save-Replay. Ein einziger wirtschaftlicher Rahmen mit verschiedenen RNG-Seeds, **keine** 13 ökonomisch unterschiedlichen Krisenfälle.
 
 **[FINANZGRENZE / Original-Core-Test]** Nach fünf 50-Erz-Frachten besitzt Nadir 250 Erz und **300 der anfangs 4.000 ISK**. 15 echte W4-Chargen verbrauchen 150 Erz, bezahlen **300 ISK** Raffinerielöhne und produzieren **75 Material**. Es verbleiben **100 Erz, 75 Material, 0 ISK** bei Nadir; die 16. Charge und sechste Fracht scheitern korrekt an eigenem Kapital. Weltweit **33.000 ISK, 0 Mint**. **Keine Materialweiterveräußerung, keine Rentabilitäts- oder Wirtschaftsnachhaltigkeitsfreigabe**. [Vollständiger Draft-Nachweis](https://github.com/tobiasfranziskus/Check/blob/research/w5aa-w4-raffinerie-spielhub-20261109/docs/W5AA_ORIGINAL_W4_RAFFINERIE_SPIELHUB.md). Echte iPad-Safari-/NAS-Abnahme, produktive Migration und W5-Folgekäufer sind offen; keine Merges oder Deployments.
+
+### [DRAFT / W5ab-Integration · 09.11.2026]
+
+**[#273 W5ab](https://github.com/tobiasfranziskus/Check/pull/273)** setzt die Original-W5-Regel19/Schema8 des geprüften Forschungs-PR [#170](https://github.com/tobiasfranziskus/Check/pull/170) auf die Original-W4-Spieloberfläche auf. Die 141.030 Zeichen umfassende Daten-/Core-Sektion aus Commit `c6dea414` wurde für den Forschungs-Hub unmodifiziert extrahiert; eine einzige Core-Welt führt W0–W5 aus. W5-Reiter: voll bezahlter Materialkauf, Werft-Arbeitstreuhand, sichtbare physische Hülle, separater zahlender Speditionskäufer und echte Eigentümer-/Standortbestimmung. **Nicht** im produktiven `main`.
+
+**[TEST / abgeschlossen]** [W5ab-Node22-/Touch-CI #42622718036](https://github.com/tobiasfranziskus/Check/actions/runs/42622718036): **160/160 JavaScript-Tests, 0 Fehler/Skips und vier Chromium-Touchgrößen** (1180×820, 1024×768, 820×1180, 390×844), beide Jobs grün. Neue Tests belegen 13 RNG-Seeds × 90 Tage mit Original-Rule19-Geld-/Waren-/Schiffs-/Lohn-/Eigentümer-Audits, deterministische Hashes sowie Import-/Export-Ablehnung gefälschter oder falscher Regelversionen. **Keine 13 wirtschaftlich unterschiedlichen Szenarien** und keine echte iPad-Safari-/NAS-Abnahme.
+
+**[FINANZEN / echtes Käufer- und Industrie-Gate]** Nach bezahlter W3-Lieferung und W4-5er-Materialcharge kauft `werft_extern` **5 Material für 500 ISK** von Nadir, reserviert aus eigenem Geld **30 ISK** Werftarbeit und stellt nach 30 Arbeitsminuten einen physischen Frachter in Nadir fertig. Die Spedition bezahlt separat **750 ISK** und besitzt danach das Schiff `sh004` in Nadir. Die zweite W3-/W4-/W5-Produktion erstellt eine weitere echte Hülle; die Spedition hat dann **740 ISK**, benötigt **750 ISK** – Kauf ohne Nebenwirkung korrekt verweigert. **33.000 Welt-ISK, Mint 0.** Echter Materialabsatz ist damit belegt, aber keine nachhaltig finanzierte Folge- oder Ersatznachfrage; keine kostenlose Schiffsüberführung. [Technischer Bericht](https://github.com/tobiasfranziskus/Check/blob/research/w5ab-original-w5-schiffbau-spielhub-20261109/docs/W5AB_ORIGINAL_W5_SCHIFFBAU_SPIELHUB.md).
+
+**[MAIN/FREIGABE]** `main` bleibt `fd3e9154` / v0.12.5 / Regel14/Schema8. [W5ab #273](https://github.com/tobiasfranziskus/Check/pull/273) und dieser Docs-only-PR bleiben beide **Draft**, keine Merges, keine Pages-Veröffentlichung, keine produktive Save-Migration.
 
 ## 1. Integrationsstand und schützenswerte Versionen
 

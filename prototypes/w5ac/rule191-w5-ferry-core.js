@@ -595,6 +595,9 @@ function checkShape(state, cmd, rules) {
     }
     if (cmd.type === 'shipHandeln' && s.klasse !== 'frachter') return 'nur Frachter können selbständig handeln';
     if (cmd.type === 'shipMine') {
+      if(rules.w5n&&((cmd.ware==='eis'&&(s.ladung.erz||0)>0)
+        ||(cmd.ware==='erz'&&(s.ladung.eis||0)>0)))
+        return 'Erz- und Eisfracht nicht unbemerkt in derselben Miner-Ladung mischen';
       if(rules.w5n&&cmd.ware==='eis'&&state.erzpilotVertraege?.[s.id])
         return 'Eisabbau erfordert vollstaendig abgeschlossenen Erzauftrag';
       if (s.klasse !== 'miner') return 'nur Miner können fördern';

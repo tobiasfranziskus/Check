@@ -53,7 +53,7 @@ test('W5ah: shortage, independent ownership, no state mutation on denied command
  assert.equal(app.command('ore-water',11).ok,false,'only 10 physical water exist');
  assert.equal(app.command('ice-water',0).ok,false);
  assert.equal(app.command('ore-water',1.5).ok,false);
- assert.equal(app.command('mine-ice',1).ok,false,'miner not free while working or disallowed by source');
+ assert.equal(app.command('ice-freight').ok,false,'the occupied freighter cannot take duplicate ice freight');
  assert.equal(app.command('private-gift',100).ok,false);
  assert.equal(app.advance(0).ok,false);assert.equal(app.advance(1441).ok,false);
  assert.equal(app.snapshot().hash,h,'denied actions must not modify the core');

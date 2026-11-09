@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Aphros Void · W5ag – Miner-Cockpit</title>
+<title>Aphros Void · W5ak – Folgezyklen</title>
 <link rel="stylesheet" href="../w5u/style.css"><link rel="stylesheet" href="../w5w/style.css"><link rel="stylesheet" href="../w5y/style.css"><link rel="stylesheet" href="../w5aa/style.css"><link rel="stylesheet" href="../w5ab/style.css"><link rel="stylesheet" href="../w5ac/style.css">
 <script defer src="../w5ac/rule191-w5-ferry-core.js"></script>
 <script defer src="../legacy-hub/core-adapter.js"></script>
@@ -57,7 +57,9 @@ und öffentlichem Hauptspiel. Keine Speicherung in produktiven Slots; Reload sta
 <h2>Eis → Wasser · persönliche Pilotenlöhne</h2>
 <p>Forschungshypothese Regel195: Erz- und Eispilot besitzen getrennte Konten. Freiwilliger Konsum verwendet nur bereits verdienten eigenen Lohn. Keine automatische Nachfrage.</p>
 <p>Bedienweg: Speditionsfrachter kaufen, eigenen Miner kaufen → Eis fördern → 50 Minuten → Förderung stoppen. Die NPC-Erzcharge mit W3 transportieren → 60 Minuten → Raffinerie → 20 Minuten → Werft → 30 Minuten → Hülle kaufen → 10 Minuten. Jetzt Eisfracht starten → 60 Minuten → Wasser herstellen → 20 Minuten → freiwillig Wasser kaufen → 30 + 10 Minuten Rückflug. Alle Zeitknöpfe oben nutzen denselben Kern.</p>
+<p>Folgezyklus nach abgeschlossenem Rückflug: erneut Eis fördern → 50 Minuten → stoppen → vorhandene Eisladung an Aldera verkaufen → Eisfracht erneut finanzieren. Jeder Verkauf benötigt Alderas vorhandenes Käufergeld; jeder Flug bindet Nadirs Käuferetat und die eigenen Fluglöhne der Spedition neu. Weitere Wasserchargen und private Käufe bleiben freiwillige Einzelbefehle.</p>
 <div class="controls"><button id="ice-mine">Mit ausgewähltem Miner Eis fördern</button><button id="ice-freight">Eisfracht finanzieren</button><button id="water-start">Wasserwerk finanzieren</button></div>
+<label>Eis aus eigener Bordladung verkaufen <input id="ice-sell-amount" type="number" min="1" step="1" value="50"></label><button id="ice-sell">Eis an Aldera verkaufen</button><p id="ice-sell-quote" class="quote" role="status"></p>
 <p id="water-quotes" class="quote"></p><div id="water-state"></div>
 <label>Persönliches Konto <select id="pilot-owner"><option value="pilot_erz">Erzpilot</option><option value="pilot_eis">Eispilot</option></select></label>
 <label>Wassermenge <input id="water-amount" type="number" min="1" step="1" value="1"></label>
@@ -160,6 +162,7 @@ und öffentlichem Hauptspiel. Keine Speicherung in produktiven Slots; Reload sta
 <div class="miner-actions" aria-label="Direkte Minerbefehle">
 <button id="miner-erz">Erz fördern</button><button id="miner-eis">Eis fördern</button><button id="miner-stop">Stoppen / abrechnen</button>
 </div>
+<label>Eismenge verkaufen <input id="miner-sell-amount" type="number" min="1" step="1" value="50"></label><button id="miner-sell">Eis an Aldera verkaufen</button><p id="miner-sell-quote" class="quote" role="status"></p>
 <p id="miner-offers" class="quote" role="status"></p>
 <div class="miner-actions" aria-label="Gemeinsame Weltzeit"><button id="miner-step-1">1 Minute arbeiten</button><button id="miner-step-10">10 Minuten arbeiten</button><button id="miner-step-50">50 Minuten arbeiten</button></div>
 <p>Die Welt ist zwischen Zeitschritten pausiert. Jeder Schritt bewegt alle Schiffe und Betriebe im selben Core.</p>

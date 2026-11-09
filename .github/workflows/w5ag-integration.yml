@@ -11,6 +11,8 @@ on:
       - 'prototypes/legacy-hub/core-adapter.js'
       - 'tests/w5ag*.test.mjs'
       - 'tests/w5ag-touch.py'
+      - 'tests/w5ak*'
+      - 'docs/W5AK_*'
       - 'tests/ui-miner2d*'
       - 'docs/W5AG_*'
       - 'docs/UI_MINER2D_RULE195.md'
@@ -47,10 +49,15 @@ jobs:
         run: python tests/ui-miner2d-touch.py
         env:
           CHROMIUM_PATH: playwright-managed
+      - name: W5ak second real payroll cycle in four touch sizes
+        run: python tests/w5ak-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: w5ag-touch-evidence
           path: |
             /tmp/w5ag-*.png
+            /tmp/w5ak-*.png
             /tmp/ui-miner2d-*.png

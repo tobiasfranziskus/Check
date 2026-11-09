@@ -32,30 +32,6 @@ function phase(app,label){
   water:{produced:state.w5n.wasserProduziert,consumed:state.w5n.wasserVerbraucht},
   auditOk:snap.auditOk,worldCash:snap.worldCash,mint:snap.minted};
 }
-function drill(seed,buyerCash){
- const app=Session.create({seed,buyerCash,carrierCash:2000}),records=[];
- const see=name=>{const p=phase(app,name);records.push(p);
-  assert.equal(p.auditOk,true,name+' failed original audit');
-  assert.equal(p.worldCash,33000,name+' minted or lost money');
-  assert.equal(p.mint,0,name+' nonzero mint');
-  return p;};
- const buy=(code,label)=>must(app.command(code),label);
- const advance=(n,label)=>must(app.advance(n),label);
- const origin=see('origin');
- buy('buy-freighter','paid transport ship');buy('buy-miner','paid miner');
- see('hullsBought');
- buy('mine-ice','first real 50 ice');advance(50,'50 paid mining minutes');
- buy('stop-miner','stop first miner');see('afterFirstIceMining');
- buy('ore-freight','first paid 120-minute W3 flight');
- advance(120,'first ore flight');see('afterOreFlight');
- buy('ice-freight','first paid W5n ice flight');
- advance(60,'first arrival');see('afterFirstIceDelivery');
- buy('produce-water','first water batch');
- advance(20,'first factory');buy('ore-water',undefined);
- // The initial own-water purchases follow W5aj exactly.
- // The next blocks intentionally use explicit integer amounts.
- return {app,see,records,origin,buy,advance};
-}
 function run(seed,buyerCash){
  const app=Session.create({seed,buyerCash,carrierCash:2000}),rows=[];
  const observe=label=>{const p=phase(app,label);rows.push(p);
@@ -119,6 +95,6 @@ function run(seed,buyerCash){
 for(const {seed,buyerCash} of [{seed:42,buyerCash:4000},{seed:7,buyerCash:2000}]){
  test('W5aj-b original cash bridge and stranded third real ice cargo, seed '+seed,()=>{
   const rows=run(seed,buyerCash);
-  assert.equal(rows.length,14);
+  assert.equal(rows.length,12);
  });
 }

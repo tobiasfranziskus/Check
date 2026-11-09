@@ -52,7 +52,7 @@
   const phase=active?.phase==='hin'?'Hinflug – Ware an Bord':active?.phase==='rueck'?'Rückflug – Ware bereits bezahlt':'Kein laufender Auftrag';
   $('freight-status').textContent=(ship?'Frachter '+ship.id+' · '+ship.system+' · '+ship.phase:'Noch kein gekaufter Frachter')+' · '+phase;
   const financial=q.ok?
-   'Original-Core genehmigt: '+num(q.fracht||50)+' Erz, Warenwert '+money(q.erzWert)+
+   'Original-Core genehmigt: '+num(scope.W5yOriginal.rules.w3.fracht)+' Erz, Warenwert '+money(q.erzWert)+
    ', gesamte Transportvergütung '+money(q.frachtGebuehr)+', Käuferbindung '+money(q.gesamt)+
    ', Arbeitsreserve '+money(q.arbeitsKosten)+', je '+num(q.zeit)+' Minuten pro Strecke.':
    'Original-W3-Finanzierungsprüfung verweigert: '+(q.grund||'kein finanzierter Auftrag')+'.';

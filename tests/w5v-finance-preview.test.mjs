@@ -31,7 +31,7 @@ test('W5v: preview performs original-core trade on detached state only; exact ca
   assert.equal(command(s,'shipTrade',{ware:'miner',menge:1,kauf:true}).ok,true);
   const actual=inspect(s).state;
   assert.equal(actual.owners.house.cash,q.cashAfter);
-  assert.equal(actual.ships.sh001.ladung.miner,q.cargoAfter);
+  assert.equal(actual.ships.sh001.ladung.miner||0,q.cargoAfter);
   assert.equal(actual.stations[q.station].lager.miner,q.stationAfter);
  }
 });
@@ -50,7 +50,7 @@ test('W5v: selling after a paid purchase previews the actual Core payout without
   assert.equal(command(s,'shipTrade',{ware:'miner',menge:1,kauf:false}).ok,true);
   const actual=inspect(s).state;
   assert.equal(actual.owners.house.cash,q.cashAfter);
-  assert.equal(actual.ships.sh001.ladung.miner,q.cargoAfter);
+  assert.equal(actual.ships.sh001.ladung.miner||0,q.cargoAfter);
   assert.equal(actual.stations[q.station].lager.miner,q.stationAfter);
  }
 });

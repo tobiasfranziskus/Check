@@ -1,0 +1,11 @@
+/* W5aa: solely visual supplements to W5y and W5w static touch layout. */
+#refinery-stats{margin:14px 0}
+#refinery-stats strong{font-variant-numeric:tabular-nums}
+#refinery-ledger,#refinery-quote,#refinery-demand,#refinery-status{max-width:100%;overflow-wrap:anywhere}
+#refinery .controls{display:flex;flex-wrap:wrap;gap:10px}
+#refinery .controls button{min-height:48px}
+@media(max-width:600px){
+ #refinery h2{font-size:1.2rem}
+ #refinery .controls button{width:100%}
+ #refinery-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

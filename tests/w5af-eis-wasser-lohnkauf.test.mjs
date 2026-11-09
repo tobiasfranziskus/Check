@@ -167,6 +167,22 @@ test('W5af: no money, no ice, no real water, or cross-owner order cannot buy/pro
    'W3 cannot simultaneously reserve freight on top of an ice job');
  audit(core,s,rules);
 });
+test('W5af: an ice-loaded paid miner cannot switch to an overlapping ore load, even if ore is available',()=>{
+ const {core,rules}=Factory.createWaterResearch({carrierCash:2000,buyerCash:4000});
+ const s=core.createW5State(42);
+ yes(core,s,rules,'shipBuy','house',{klasse:'miner',station:'st_aldera'});
+ const miner=Object.values(s.ships).find(x=>x.owner==='house'&&x.klasse==='miner');
+ yes(core,s,rules,'shipMine','house',{schiff:miner.id,ware:'eis'});
+ core.advance(s,10,rules);audit(core,s,rules);
+ assert.equal(s.ships[miner.id].ladung.eis,10);
+ const before=core.hash(s);
+ const wrong=cmd(core,s,rules,'shipMine','house',{schiff:miner.id,ware:'erz'});
+ assert.equal(wrong.ok,false);
+ assert.match(wrong.reason,/Erz- und Eisfracht/);
+ assert.equal(core.hash(s),before);
+ assert.equal(s.ships[miner.id].ladung.eis,10);
+ assert.equal(s.ships[miner.id].ware,'eis');
+});
 test('W5af: fake ownership, water without factory, salary source, buy history and balanced forged transfers cannot load',()=>{
  const {core,rules,s,freighter}=start();
  yes(core,s,rules,'shipFreightIce','transport',{schiff:freighter.id});

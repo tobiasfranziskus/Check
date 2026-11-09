@@ -32,7 +32,12 @@ function mineAgain(s){
  ok(s.command('mine-ice'),'fresh mine assignment, not invented supply');
  ok(s.advance(50),'second 50 actual paid mining minutes');
  ok(s.command('stop-miner'),'mine docked again');
- assert.equal(s.snapshot().iceAldera,50,'a second physically mined batch exists');
+ const end=s.snapshot(),raw=JSON.parse(s.export()),startRaw=JSON.parse(s.export());
+ console.log('W5AI_SECOND_MINE_DIAGNOSTIC '+JSON.stringify({
+  tick:end.tick,iceAldera:end.iceAldera,iceNadir:end.iceNadir,iceMined:raw.w5n.eisAbgebaut,
+  iceSold:raw.w5n.mineVerkauft,ownerCash:end.cash.house,alderaCash:end.cash.st_aldera,
+  miner:end.miner,ledger:raw.ledger.eis,events:end.events}));
+ assert.equal(end.iceAldera,50,'a second physically mined batch exists');
  return started;
 }
 function genuineSecondPayroll(s,{buy=true}={}){

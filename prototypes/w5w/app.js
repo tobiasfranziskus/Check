@@ -31,6 +31,7 @@
  });
  function draw(){
   if(current!=='ship')return;
+  if(globalThis.W5agMiner){globalThis.W5agMiner.draw(snap,graphics,local,angle);return;}
   const s=snap.state.ships[snap.selected];
   $('ship-data').textContent=s?'Schiff '+s.id+' · Besitzer '+s.owner+
    ' · Auftrag '+s.auftrag+' · Erz '+(s.ladung.erz||0)+' · Eis '+(s.ladung.eis||0):
@@ -106,6 +107,7 @@
    mq.ok?(active?'Stop möglich. Bei Ausführung werden gelieferte Erz und unbenutztes Treuhandgeld durch den Originalkern abgerechnet.':
       'Förderung anforderbar. Ab dem nächsten Core-Tick reservieren Station und Eigentümer vorhandene Mittel; keine garantierte Dauer-Nachfrage.'):
    'Original-'+modeName+'-Auftrag abgelehnt: '+mq.reason;
+  globalThis.W5agMiner?.render(snap,session);
   refs();globalThis.W5xExtension?.render(snap);globalThis.W5yExtension?.render(snap);globalThis.W5aaExtension?.render(snap);globalThis.W5abExtension?.render(snap);globalThis.W5acExtension?.render(snap);globalThis.W5agExtension?.render(snap,session);
   $('fleet-data').replaceChildren();
   table($('fleet-data'),['ID','Eigentümer','Klasse','System','Aktivität','Erz an Bord'],
@@ -154,5 +156,6 @@
   finally{if($('import').files[0]===file)$('import').value='';}
  });
  globalThis.W5yExtension?.mount(session,run);globalThis.W5aaExtension?.mount(session,run);globalThis.W5abExtension?.mount(session,run);globalThis.W5acExtension?.mount(session,run);globalThis.W5agExtension?.mount(session,run);
+ globalThis.W5agMiner?.mount(session,run);
  go('mining');update();
 })();

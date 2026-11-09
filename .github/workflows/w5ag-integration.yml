@@ -11,7 +11,9 @@ on:
       - 'prototypes/legacy-hub/core-adapter.js'
       - 'tests/w5ag*.test.mjs'
       - 'tests/w5ag-touch.py'
+      - 'tests/ui-miner2d*'
       - 'docs/W5AG_*'
+      - 'docs/UI_MINER2D_RULE195.md'
       - '.github/workflows/w5ag-integration.yml'
   workflow_dispatch:
 permissions:
@@ -41,8 +43,14 @@ jobs:
         run: python tests/w5ag-touch.py
         env:
           CHROMIUM_PATH: playwright-managed
+      - name: Core-bound Miner2D cockpit in four touch sizes
+        run: python tests/ui-miner2d-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: w5ag-touch-evidence
-          path: /tmp/w5ag-*.png
+          path: |
+            /tmp/w5ag-*.png
+            /tmp/ui-miner2d-*.png

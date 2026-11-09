@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Aphros Void · W5ag – finanzierte Nadir–Aldera-Überführung</title>
+<title>Aphros Void · W5ag – Miner-Cockpit</title>
 <link rel="stylesheet" href="../w5u/style.css"><link rel="stylesheet" href="../w5w/style.css"><link rel="stylesheet" href="../w5y/style.css"><link rel="stylesheet" href="../w5aa/style.css"><link rel="stylesheet" href="../w5ab/style.css"><link rel="stylesheet" href="../w5ac/style.css">
 <script defer src="../w5ac/rule191-w5-ferry-core.js"></script>
 <script defer src="../legacy-hub/core-adapter.js"></script>
@@ -14,6 +14,8 @@
 <script defer src="../w5ab/extension.js"></script>
 <script defer src="../w5ac/extension.js"></script>
 <script defer src="extension.js"></script>
+<link rel="stylesheet" href="miner.css">
+<script defer src="miner.js"></script>
 <script defer src="bootstrap.js"></script>
 <script defer src="../w5w/app.js"></script></head>
 <body>
@@ -42,6 +44,7 @@ und öffentlichem Hauptspiel. Keine Speicherung in produktiven Slots; Reload sta
 <button data-view="station">Station</button>
 <button data-view="fleet">Flotte</button>
 <button data-view="ship">2D-Miner</button>
+<button data-view="map">Karte</button>
 </nav>
 <section class="controls">
 <label>Eigenen Miner auswählen <select id="ship-select" aria-label="Eigenen Miner auswählen"></select></label>
@@ -147,12 +150,28 @@ und öffentlichem Hauptspiel. Keine Speicherung in produktiven Slots; Reload sta
 <section id="station" data-panel hidden></section>
 <section id="fleet" data-panel hidden><h2>Flotte</h2><div id="fleet-data"></div></section>
 <section id="ship" data-panel hidden>
-<h2>Eigener 2D-Miner (Frachtmanagement separat)</h2>
-<p>Schematische Ansicht ohne erfundene Weltraum-Position oder aktive Flugphysik. Erzmenge und Auftragsstatus stammen ausschließlich aus demselben W1-Core.</p>
-<canvas aria-label="Schematische Darstellung des ausgewählten Miners"></canvas>
-<button id="rotate">Ansicht drehen</button>
+<div class="miner-nav"><button data-miner-view="hq">Konzernzentrale</button><button data-miner-view="map">Karte</button><button data-miner-view="station">Stationsansicht</button></div>
+<h2>Miner-Cockpit · direkte Fördersteuerung</h2>
+<p id="miner-location"></p>
+<label>Eigenes Minerschiff <select id="miner-select"></select></label>
+<button id="miner-buy">Miner kaufen</button><p id="miner-buy-quote" class="quote"></p>
+<canvas aria-label="2D-Miner und Ressourcen im aktuellen System; schematische Anordnung"></canvas>
+<p>Die Anordnung zeigt Systemzugehörigkeit, keine Flugkoordinaten. Der Core führt Bergbau in Phase „dock“ aus.</p>
+<div class="miner-actions" aria-label="Direkte Minerbefehle">
+<button id="miner-erz">Erz fördern</button><button id="miner-eis">Eis fördern</button><button id="miner-stop">Stoppen / abrechnen</button>
+</div>
+<p id="miner-offers" class="quote" role="status"></p>
+<div class="miner-actions" aria-label="Gemeinsame Weltzeit"><button id="miner-step-1">1 Minute arbeiten</button><button id="miner-step-10">10 Minuten arbeiten</button><button id="miner-step-50">50 Minuten arbeiten</button></div>
+<p>Die Welt ist zwischen Zeitschritten pausiert. Jeder Schritt bewegt alle Schiffe und Betriebe im selben Core.</p>
+<div id="miner-cargo"></div><div id="miner-finance" class="quote"></div>
+<p id="miner-order"></p><p id="miner-resources"></p>
+<details><summary>Echte Core-Belege und Förderzähler</summary><pre id="miner-evidence"></pre></details>
+<button id="rotate">Kamera drehen</button>
 <label>Zoom <input id="zoom" type="range" min="0.1" max="0.5" value="0.3" step="0.05"></label>
 <p id="ship-data"></p>
+<p class="quote">Freiflug, manuelles Andocken und Stationswechsel des Miners sind in Regel195 nicht freigeschaltet. Die Stationsansicht wechselt nur die Anzeige. Frachter nutzen die vorhandenen finanzierten Fracht- und Überführungsaufträge.</p>
+</section>
+<section id="map" data-panel hidden><h2>Gemeinsame Weltkarte</h2><p>Core-Systeme und Routen, schematisch ohne Flugkoordinaten. Navigation verändert weder Weltzeit noch Spielwelt.</p><div id="miner-map"></div><button data-miner-view="ship">Zum Miner-Cockpit</button><button data-miner-view="hq">Zur Konzernzentrale</button>
 </section></main>
 <noscript>JavaScript ist für das Spiel erforderlich.</noscript>
 </body></html>

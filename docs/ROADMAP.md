@@ -1,5 +1,7 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+> **[DRAFT · UI-Miner2D, 09.11.2026]** Auf [#280 / 500669a0](https://github.com/tobiasfranziskus/Check/pull/280) liefert `feature/ui-miner2d-rule195` die direkte Core-gebundene Erz-/Eissteuerung im Legacy-2D-Cockpit mit gemeinsamer HQ-/Karten-/Miner-Sitzung. Keine Regeländerung. Freiflug und manuelles Docken bleiben mangels freigegebener Core-Funktionen offen; [konkrete Voraussetzungen und Prüfnachweise](UI_MINER2D_RULE195.md). Kein MAIN-/Release-Status; iPad Safari und NAS separat offen.
+
 > **[DRAFT · W5ag-Spielintegration, 09.11.2026]** Separater Forschungsprototyp auf [#278, Head 1b01d3d6](https://github.com/tobiasfranziskus/Check/pull/278), nach Prüfung von #273–#277. Verbindliche Produktplanung ist die [Roadmap auf geprüftem main fd3e9154](https://github.com/tobiasfranziskus/Check/blob/fd3e915448a2f35fa803db709aff9ce223dddc6f/docs/ROADMAP.md); die älteren Abschnitte dieses Forschungsbranches sind historische Belege. Regel195 verbindet den vorhandenen Hub mit Eis/Wasser und privaten Pilotenlöhnen, ohne neue Wirtschaftsregel. [Bedienwege, Nachweise und offene Hauptspielintegration](W5AG_SPIELINTEGRATION.md). Keine Produktmigration, kein Merge/Deployment; echte iPad-Safari-/NAS-Abnahme offen.
 
 

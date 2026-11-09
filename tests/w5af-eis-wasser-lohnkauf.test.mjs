@@ -88,8 +88,9 @@ test('W5af: isolated Rule194, real 50-ice wage-funded mining and real 490/120 IS
  assert.equal(s.tick,110);
  assert.equal(s.w5n.eisGeliefert,50);
  assert.equal(s.stations.st_nadir.lager.eis,50);
- assert.equal(s.owners.st_aldera.cash,core.W5_RULES.owners.find(x=>x.id==='st_aldera').cash
-   -250+250,'source station paid actual mine seller then received 250 for ice at Nadir');
+ assert.equal(s.w5n.mineVerkaufWert,250,'Aldera paid the own miner for real 50 Eis');
+ assert.equal(s.w5n.eisTransferWert,250,'Nadir paid Aldera for the same physically shipped 50 Eis');
+ assert.equal(s.stats.konto.st_aldera.erloes,750,'500 verified ore exports plus 250 actual ice shipment revenue');
  assert.equal(s.owners.fonds_transport.cash,60);
  assert.equal(s.owners.w5n_fracht_kauf.cash,240);
  const saved=core.save(s);assert.equal(core.hash(core.loadW5(saved)),core.hash(s));

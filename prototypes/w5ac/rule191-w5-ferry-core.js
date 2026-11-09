@@ -2262,7 +2262,10 @@ const m_core_w5_transfer=(()=>{
       &&Array.isArray(done)&&new Set(ids).size===ids.length
       &&done.every(x=>validShip(x)&&x.owner===c.owner&&x.minuten===duration
         &&x.kosten===cost&&Number.isSafeInteger(x.start)&&x.start>=0
-        &&x.ankunft===x.start+duration&&x.ankunft<=s.tick)
+        &&x.ankunft===x.start+duration&&x.ankunft<=s.tick
+        &&(s.w3.auftrag?.schiff===x.id
+          ||(s.ships[x.id].system===c.ziel&&s.ships[x.id].phase==='dock'
+            &&s.ships[x.id].auftrag==='halten')))
       &&activeOk&&(!a||!ids.includes(a.id))
       &&w.allocated===finished+(a?.kosten??0)
       &&w.paid===finished+(a?.gearbeitet??0)*c.lohnJeMinute

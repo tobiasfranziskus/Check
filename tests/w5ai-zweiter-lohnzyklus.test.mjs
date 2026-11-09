@@ -32,12 +32,16 @@ function mineAgain(s){
  ok(s.command('mine-ice'),'fresh mine assignment, not invented supply');
  ok(s.advance(50),'second 50 actual paid mining minutes');
  ok(s.command('stop-miner'),'mine docked again');
- const end=s.snapshot(),raw=JSON.parse(s.export()),startRaw=JSON.parse(s.export());
- console.log('W5AI_SECOND_MINE_DIAGNOSTIC '+JSON.stringify({
-  tick:end.tick,iceAldera:end.iceAldera,iceNadir:end.iceNadir,iceMined:raw.w5n.eisAbgebaut,
-  iceSold:raw.w5n.mineVerkauft,ownerCash:end.cash.house,alderaCash:end.cash.st_aldera,
-  miner:end.miner,ledger:raw.ledger.eis,events:end.events}));
- assert.equal(end.iceAldera,50,'a second physically mined batch exists');
+ const end=s.snapshot(),raw=JSON.parse(s.export());
+ assert.equal(raw.w5n.eisAbgebaut,100,'two actual 50-unit paid mining rounds');
+ const miner=Object.values(raw.ships).find(x=>x.owner==='house'&&x.klasse==='miner');
+ assert.equal((miner.ladung.eis||0)+end.iceAldera,50,
+   'the second mined cargo exists either on the miner or in Aldera');
+ if(miner.ladung.eis){
+  const h=end.hash;
+  ok(s.command('sell-ice'),'real post-mining physical sale to Aldera');
+ }
+ assert.equal(s.snapshot().iceAldera,50,'real sale leaves a prepaid source batch');
  return started;
 }
 function genuineSecondPayroll(s,{buy=true}={}){

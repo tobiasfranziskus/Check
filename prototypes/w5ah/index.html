@@ -16,6 +16,7 @@
 <button data-action="mine-ice">50 Eis fördern</button>
 <button data-action="mine-ore">Erz fördern</button>
 <button data-action="stop-miner">Miner stoppen</button>
+<button data-action="sell-ice">50 Eis aus echtem Miner-Laderaum an Aldera verkaufen (nur bei gedeckter Kasse)</button>
 <button data-action="ore-freight">Bezahlte Erzfracht</button>
 <button data-action="ice-freight">Bezahlte Eisfracht</button>
 <button data-action="produce-water">10 Eis → 10 Wasser (Arbeitslohn)</button>
@@ -25,7 +26,7 @@
 </div><p id="message" role="status" aria-live="polite">Die Welt ist pausiert. Keine automatische Arbeit, Einnahme oder Nachfrage.</p>
 </section>
 <section><h2>W5ai – zweiter echter bezahlter Lohnzyklus</h2>
-<p>Nach dem W5ah-Beispiel bei Tick 310: <strong>Erneut Eis fördern</strong> → 50 Minuten → Miner stoppen → <strong>eine neue Eisfracht finanzieren</strong> → 60 Minuten. Die zweite Fracht zahlt erst bei wirklicher Flugzeit neue private Löhne. Der Eispilot kann freiwillig 4 vorhandene Wasser kaufen, dann Nadir erneut 10 Wasser für 20 ISK Arbeit herstellen lassen (+20 Minuten), der Pilot weitere 2 Wasser kaufen und nach 40 Minuten bezahlter Rückfahrt weitere 3 Wasser. Keine automatische Auszahlung, keine zweite Geldquelle.</p>
+<p>Nach dem W5ah-Beispiel bei Tick 310: <strong>Erneut Eis fördern</strong> → 50 Minuten → Miner stoppen → <strong>50 echtes Eis aus Miner-Laderaum an Aldera verkaufen</strong> → <strong>eine neue Eisfracht finanzieren</strong> → 60 Minuten. Die zweite Fracht zahlt erst bei wirklicher Flugzeit neue private Löhne. Der Eispilot kann freiwillig 4 vorhandene Wasser kaufen, dann Nadir erneut 10 Wasser für 20 ISK Arbeit herstellen lassen (+20 Minuten), der Pilot weitere 2 Wasser kaufen und nach 40 Minuten bezahlter Rückfahrt weitere 3 Wasser. Keine automatische Auszahlung, keine zweite Geldquelle.</p>
 <p id="paid-minutes" aria-live="polite"></p><p id="ice-contracts"></p>
 <p>Vor jeder neuen Fracht prüft der Original-Core: <strong>50 reales Eis, 490 ISK Nadir-Käuferbudget und 120 ISK Speditions-Lohnreserve</strong>. Reicht das Geld nicht, bleibt der Auftrag blockiert. Alle privaten Käufe sind optional; ungekauftes Wasser und gespartes Geld bleiben bestehen.</p>
 </section>

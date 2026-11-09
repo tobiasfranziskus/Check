@@ -35,6 +35,9 @@ function create({seed=42,carrierCash=2000,buyerCash=4000}={}){
    case 'mine-ore':return miner
      ?{type:'shipMine',owner:'house',schiff:miner.id,ware:action==='mine-ice'?'eis':'erz'}:null;
    case 'stop-miner':return miner?{type:'shipWait',owner:'house',schiff:miner.id}:null;
+   // Existing W5n original command: a real miner sells physical loaded ice only
+   // if the origin station actually has money and warehouse capacity now.
+   case 'sell-ice':return miner?{type:'shipSellIce',owner:'house',schiff:miner.id,menge:50}:null;
    case 'ore-freight':
    case 'ice-freight':return freighter?{type:action==='ore-freight'?'shipFreight':'shipFreightIce',owner:'transport',schiff:freighter.id}:null;
    case 'produce-water':return {type:'stationWater',owner:'st_nadir',station:'st_nadir'};

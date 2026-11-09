@@ -30,6 +30,8 @@ try:
    assert 'Tick 310' in page.locator('#identity').inner_text()
    assert '8 ISK' in page.locator('#cash-pilot_eis').inner_text()
    tap('[data-action=mine-ice]');tap('[data-step="50"]');tap('[data-action=stop-miner]')
+   tap('[data-action=sell-ice]')
+   assert 'Original-Core-Befehl erfolgreich' in page.locator('#message').inner_text()
    tap('[data-action=ice-freight]');tap('[data-step="60"]')
    assert 'Tick 420' in page.locator('#identity').inner_text()
    assert '68 ISK' in page.locator('#cash-pilot_eis').inner_text()

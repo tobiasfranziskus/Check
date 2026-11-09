@@ -1,0 +1,22 @@
+name: W5ae – wage-financed physical W4 material purchase and 13 different economic regimes
+on:
+  pull_request:
+    paths:
+      - 'prototypes/w5ac/rule191-w5-ferry-core.js'
+      - 'tests/w5ae-*.test.mjs'
+      - 'docs/W5AE_*'
+      - '.github/workflows/w5ae-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  wage-purchase-and-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: All old Rule191/192 and new Rule193 node tests, 13 genuinely different 90d economic regimes
+        run: node --test tests/*.test.mjs

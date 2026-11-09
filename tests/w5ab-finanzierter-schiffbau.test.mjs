@@ -227,7 +227,7 @@ test('W5ab: static single-core hub is Rule19 only, original commands, no writes 
  assert.match(session,/core\.pilotW5Verkauf/);
  assert.match(session,/type:'stationBuildShip',owner:'werft_extern',station:'st_nadir'/);
  assert.match(session,/type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_nadir'/);
- assert.match(adapter,/14,15,16,17,18,19,32/);
+ assert.match(adapter,/14,15,16,17,18,19,32,191/);
  assert.match(app,/W5abExtension\?\.render/);
  assert.match(app,/W5abExtension\?\.mount/);
  assert.match(ext,/scope\.W5abExtension=/);

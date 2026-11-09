@@ -142,7 +142,11 @@ test('W5ae: 100-ISK worker material revenue enables a second fully paid W3 freig
  independent(ca,a,ra);
  assert.equal(a.tick,180);
  assert.equal(a.owners.st_nadir.cash,690);
+ ca.advance(a,50,ra); // Wait until original NPC miners have physically replenished the source.
+ assert.equal(a.tick,230);
+ assert.ok(a.stations.st_aldera.lager.erz>=50,'real source cargo exists; no false scarcity explanation');
  assert.equal(ca.pilotW3Kalkulation(a,no.freightId).ok,false);
+ assert.match(ca.pilotW3Kalkulation(a,no.freightId).grund,/Kaeufer kann Ware/);
  assert.equal(command(ca,a,ra,'shipFreight','transport',{schiff:no.freightId}).ok,false);
  // An optional one-unit real worker purchase requires one ADDITIONAL paid W4
  // batch, but transfers 100 ISK in actual earnings to Nadir as a sale.
@@ -155,6 +159,9 @@ test('W5ae: 100-ISK worker material revenue enables a second fully paid W3 freig
  independent(cb,b,rb);
  assert.equal(b.tick,200);
  assert.equal(b.owners.st_nadir.cash,770,'worker 100 - extra W4 wage20 yields net real +80');
+ cb.advance(b,30,rb); // Same tick230: source ore genuinely arrives in both counterfactual worlds.
+ assert.equal(b.tick,230);
+ assert.ok(b.stations.st_aldera.lager.erz>=50);
  assert.equal(cb.pilotW3Kalkulation(b,yes.freightId).ok,true);
  ok(cb,b,rb,'shipFreight','transport',{schiff:yes.freightId});
  assert.equal(b.owners.w3_kauf_treuhand.cash,740);

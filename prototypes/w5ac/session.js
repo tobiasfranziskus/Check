@@ -43,15 +43,17 @@ function create(seed=42){
    refinery:Object.freeze({audit:Object.freeze({...refinery}),quote:Object.freeze({...core.pilotW4Kalkulation(state)})}),
    shipyard:Object.freeze({audit:Object.freeze({...yard}),quote:Object.freeze({...core.pilotW5Kalkulation(state)}),sale:Object.freeze({...core.pilotW5Verkauf(state)})}),
    transfer:Object.freeze({audit:Object.freeze({...transfer}),
-    quotes:Object.freeze(Object.fromEntries((state.w5?.schiffIds||[]).map(id=>[id,Object.freeze({...core.pilotW5TransferKalkulation(state,id)})])))})};
+    quotes:Object.freeze(Object.fromEntries((state.w5?.schiffIds||[]).map(id=>[id,Object.freeze({...core.pilotW5TransferKalkulation(state,id)})]))),
+    freightQuotes:Object.freeze(Object.fromEntries((state.w5?.schiffIds||[]).map(id=>[id,Object.freeze({...core.pilotW3Kalkulation(state,id)})])))})};
  }
  function build(req){
   if(!req||typeof req!=='object')return {ok:false,reason:'Fehlender Original-Core-Befehl'};
   if(req.type==='freightBuy')
    return {ok:true,command:{type:'shipBuy',owner:'transport',station:'st_aldera',klasse:'frachter'}};
   if(req.type==='freightStart'){
-   const sh=hauler();
-   if(!sh||req.schiff&&req.schiff!==sh.id)return {ok:false,reason:'Kein passender, real gekaufter Frachter'};
+   const sh=req.schiff?state.ships[req.schiff]:hauler();
+   if(!sh||sh.owner!=='transport'||sh.klasse!=='frachter')
+    return {ok:false,reason:'Nur echte eigene Transport-Frachter dürfen W3 fahren'};
    return {ok:true,command:{type:'shipFreight',owner:'transport',schiff:sh.id}};
   }
   if(req.type==='refineStart')return {ok:true,command:{type:'stationRefine',owner:'st_nadir',station:'st_nadir'}};

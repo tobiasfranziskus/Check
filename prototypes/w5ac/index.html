@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aphros Void · W5ac – finanzierte Nadir–Aldera-Überführung</title>
+<link rel="stylesheet" href="../w5u/style.css"><link rel="stylesheet" href="../w5w/style.css"><link rel="stylesheet" href="../w5y/style.css"><link rel="stylesheet" href="../w5aa/style.css"><link rel="stylesheet" href="../w5ab/style.css"><link rel="stylesheet" href="style.css">
+<script defer src="rule191-w5-ferry-core.js"></script>
+<script defer src="../legacy-hub/core-adapter.js"></script>
+<script defer src="session.js"></script>
+<script defer src="../legacy-corporation/corporation.js"></script>
+<script defer src="../legacy-station/station.js"></script>
+<script defer src="../w5u/ship-graphics.js"></script>
+<script defer src="../w5y/extension.js"></script>
+<script defer src="../w5aa/extension.js"></script>
+<script defer src="../w5ab/extension.js"></script>
+<script defer src="extension.js"></script>
+<script defer src="bootstrap.js"></script>
+<script defer src="../w5w/app.js"></script></head>
+<body>
+<header>
+<h1>Aphros Void · W5ac</h1>
+<p><strong>Spielbare Forschungswelt · W0–W5 plus finanzierten Frachterüberführungsflug / Forschungsregel 191 / Schema 8.</strong>
+Ein gemeinsamer Original-Core für Spieler und NPC. Getrennt von W5ab (Regel 19), W5aa (Regel 18), W5z/W5y (Regel 17), W5x (Regel 16), W5w (Regel 15), W5u (Regel 14), C1d (Regel 3314)
+und öffentlichem Hauptspiel. Keine Speicherung in produktiven Slots; Reload startet die Forschung neu.</p>
+</header>
+<section class="controls" aria-label="Sitzung und Schutz">
+<button id="export">W5ac-Forschungssitzung als JSON exportieren</button>
+<label>Nur Regel191-JSON importieren <input id="import" type="file" accept=".json,application/json"></label>
+<button data-step="1">1 Minute</button><button data-step="10">10 Minuten</button><button data-step="20">20 Minuten (Raffineriearbeit)</button><button data-step="30">30 Minuten (Werftarbeit)</button><button data-step="50">50 Minuten (erste Erzcharge)</button><button data-step="60">60 Minuten</button>
+<p id="message" role="status" aria-live="polite">Die isolierte Regel191-Welt ist pausiert. Die Forschung ergänzt W0–W5 um den mit 60 ISK voll finanzierten Original-W5s-b-Frachterflug Nadir–Aldera.</p>
+<p id="identity"></p>
+</section>
+<nav aria-label="Ansichten">
+<button data-view="mining">Bergbau &amp; Finanzierung</button>
+<button data-view="corporation">Konzerne &amp; Markt</button>
+<button data-view="freight">W3 – Frachter &amp; Fracht</button>
+<button data-view="refinery">W4 – Raffinerie &amp; Material</button>
+<button data-view="shipyard">W5 – Schiffbau &amp; Verkauf</button>
+<button data-view="transfer">W5 – Bezahlte Überführung</button>
+<button data-view="hq">Konzernzentrale</button>
+<button data-view="station">Station</button>
+<button data-view="fleet">Flotte</button>
+<button data-view="ship">2D-Miner</button>
+</nav>
+<section class="controls">
+<label>Eigenen Miner auswählen <select id="ship-select" aria-label="Eigenen Miner auswählen"></select></label>
+<button id="buy-miner">Miner aus vorhandener Werftware kaufen</button>
+<button id="start-mining">Erz fördern</button><button id="stop-mining">Förderung stoppen / abrechnen</button>
+<p id="buy-preview" class="quote"></p><p id="mining-preview" class="quote"></p>
+</section>
+<main>
+<section id="mining" data-panel>
+<h2>W5ac-Welt – Finanzierter Erzabbau · gemeinsamer Core</h2>
+<p>Der Käufer reserviert sein vorhandenes ISK-Budget für die Abnahme; der Miner bindet eigenes Arbeitskapital. Eine begonnene Förderung ist noch kein Verkauf. Bei Stopp oder voller Charge werden wirklich gelieferte Einheiten bezahlt und ungenutzte Treuhandmittel zurückerstattet.</p>
+<div class="stats" id="headline-stats"></div>
+<h3>Eigentümer und Vollkosten · Core-Nachweis</h3>
+<div id="finance"></div>
+<h3>Aktive W0-Verträge und Treuhand</h3><div id="contracts"></div>
+<h3>Physische Güter und Ursprung</h3><div id="goods"></div>
+</section>
+<section id="corporation" data-panel hidden>
+<h2>W2–W5 – NPC-Konzerne, Kapital und getrennte Käufer</h2>
+<p>Die Forschungsregel 191 führt W2-Minereigentum, einen eigenfinanzierten Spediteur und die bezahlte W4-Raffinerie zusammen. Die Diagnose unterscheidet Insolvenz, Arbeitsruhe und fehlende Kundennachfrage. Ein hoher Kontostand ist allein kein Kauf- oder Produktionsauftrag.</p>
+<div id="w2-company-stats" class="stats"></div>
+<h3>Investitionsprüfung des Original-Cores</h3>
+<p id="w2-investment" class="quote" role="status" aria-live="polite"></p>
+<h3>Absatz- und Finanzierungsgrenzen</h3>
+<div id="w2-demand"></div>
+<h3>NPC-Miner mit wirklichem Eigentum und laufendem Core-Auftrag</h3>
+<div id="w2-fleet"></div>
+<p id="w2-warning">W3-Transport ist nur bei tatsächlich vorhandener Ware, Käuferetat und vollständig vorfinanzierter Rückreise erlaubt.</p>
+</section>
+<section id="freight" data-panel hidden>
+<h2>W3 – Bezahlte Erz-Lieferung Aldera → Nadir → Aldera</h2>
+<p>Beim Original-W3-Test wird die erste 50er-Erzcharge bei Minute 50 fertig. Bis Minute 60 kann sie bereits vom bisherigen Aldera-Endkunden gekauft worden sein; eine neue Lieferung wartet deshalb auf tatsächlich vorhandene Ware. Forschungs-Testkonsole für die getrennte Spedition <code>transport</code>: Sie kauft ihren Frachter aus eigenem Firmenkapital. Vor dem originalen 60-Minuten-Hinflug bindet Nadir den wirklichen Warenwert und das vollständige Transportentgelt; die Spedition reserviert Löhne für Hin- und Rückflug. Erst echte Ankunft liefert Erz; erst der vollständig bezahlte Rückflug zahlt die Frachtrate aus.</p>
+<div id="freight-stats" class="stats"></div>
+<p id="freight-status" role="status" aria-live="polite"></p>
+<p id="freight-quote" class="quote"></p>
+<h3>Folgefracht und tatsächliche Käuferfinanzierung</h3>
+<p id="freight-demand-gate" class="quote" role="status" aria-live="polite">Die Original-W3-Finanzierungsprüfung entscheidet über jeden nächsten Auftrag neu; kein automatischer Kredit oder Rückfluss aus fremden Eigentümerkassen.</p>
+<div class="controls">
+ <button id="freight-buy">750-ISK-Frachter aus Speditionskapital kaufen</button>
+ <button id="freight-start">Finanzierten Original-Frachtauftrag starten</button>
+</div>
+<p id="freight-buy-note"></p>
+<h3>Original-Core-Belege für Käufer, Spedition, Löhne und Erz</h3>
+<div id="freight-ledger"></div>
+<p>Die neue Oberfläche simuliert weder Verkäufe noch Routen selbst. Zeitfortschritt oben durch den einen W3-Core. Eine neue Lieferung scheitert korrekt, falls Erz, Kapital oder Lagerplätze fehlen. Die hier gezeigte 2D-Ansicht steuert weiterhin nur den eigenen Miner; kein fertiges 2D-Frachtercockpit.</p>
+</section>
+<section id="refinery" data-panel hidden>
+<h2>W4 – Nadir-Raffinerie · W5ac-Regel 191</h2>
+<p>Nur echtes, bereits durch den W3-Frachter in Nadir geliefertes Erz kann verarbeitet werden. Die Originalraffinerie bindet <strong>10 Erz</strong> und reserviert <strong>20 ISK</strong> aus Nadirs eigener Kasse. Nach 20 bezahlten Core-Minuten entstehen <strong>5 Material</strong>. Ohne Erz, Arbeitskapital oder freie Lagerkapazität wird der Auftrag abgewiesen. Ein Folgekäufer entsteht nur, wenn die W5-Werft den Kauf aus ihrer eigenen Kasse wirklich bezahlt. Ein Lagerbestand ist noch kein Umsatz.</p>
+<div id="refinery-stats" class="stats"></div>
+<p id="refinery-status" role="status" aria-live="polite"></p>
+<p id="refinery-quote" class="quote" role="status" aria-live="polite"></p>
+<div class="controls">
+ <button id="refinery-start">Finanzierte Original-Raffineriecharge starten</button>
+</div>
+<h3>Original-Core-Belege: Erzherkunft, Material und Löhne</h3>
+<div id="refinery-ledger"></div>
+<h3>Nachfolge-Nachfrage</h3>
+<p id="refinery-demand" class="quote">Ein Materialverkauf erfolgt nur durch einen tatsächlich finanzierbaren Werftauftrag.</p>
+<p>Der oben angebotene 20-Minuten-Schritt nutzt exakt denselben W4-Core wie Förderer und Frachter. Ein aktiver Produktionsauftrag wird nicht doppelt begonnen. Der W5-Forschungsslot ist vom Hauptspiel, W4 und allen produktiven Spielständen getrennt.</p>
+</section>
+<section id="shipyard" data-panel hidden>
+<h2>W5 – Aus vorhandenem Material bezahlter Frachterbau · W5ac-Regel 191</h2>
+<p>Die vorhandene Werft <code>werft_extern</code> darf nur aus ihrer eigenen Kasse bauen. Der Original-Core kauft <strong>5 tatsächlich erzeugte Material</strong> für <strong>500 ISK</strong> vom Eigentümer Nadir und bindet zusätzlich <strong>30 ISK</strong> für 30 Minuten Werftarbeit. Erst danach entsteht im Nadir-Lager eine physische Frachterhülle. Der anschließende <strong>750-ISK-Kauf</strong> durch <code>transport</code> ist ein eigenständiger, erneut auf volle Deckung geprüfter Vertrag. Keine kostenlose Überführung nach Aldera.</p>
+<div id="yard-stats" class="stats"></div>
+<p id="yard-status" role="status" aria-live="polite"></p>
+<p id="yard-build-quote" class="quote" role="status" aria-live="polite"></p>
+<div class="controls"><button id="yard-build">Werftauftrag mit echtem Material und Lohn finanzieren</button></div>
+<p id="yard-sale-quote" class="quote" role="status" aria-live="polite"></p>
+<div class="controls"><button id="yard-buy">Fertiggebauten Frachter für 750 ISK als Spedition erwerben</button></div>
+<h3>Core-Belege: Eigentum, Material, Werftarbeit und Verkauf</h3>
+<div id="yard-ledger"></div>
+<h3>Finanzierung und verbleibende Nachfrage</h3>
+<p id="yard-demand" class="quote">Ein gebauter Frachter ist zunächst nur eine Ware. Verkauf und Inbetriebnahme benötigen gesondert vorhandenes Käuferkapital.</p>
+<p>Der Betreiberbefehl baut oder kauft nur über den autoritativen Original-Rule19-Core. Die hier sichtbare Frachter-2D-Steuerung wird noch nicht angeboten; ein neu erworbenes Schiff steht tatsächlich in Nadir.</p>
+</section>
+<section id="transfer" data-panel hidden>
+<h2>W5ac – Vollständig bezahlter Frachterflug Nadir → Aldera</h2>
+<p>Nur eine bereits in Nadir tatsächlich gekaufte eigene W5-Hülle kann überführt werden. Ein aktiver W3-Erzauftrag sperrt diese Überführung. Die Core-Route Nadir–Aldera benötigt <strong>60 Minuten</strong> und reserviert vollständig <strong>60 ISK</strong> aus der Speditionskasse. Jeder der 60 Core-Ticks zahlt 1 ISK aus dem Treuhandkonto an den Piloten. Erst danach erreicht das Schiff Aldera. Keine Treibstoffpflicht, keine Gratisflüge und keine Geldschöpfung.</p>
+<div id="transfer-stats" class="stats"></div>
+<label>Gekauften Werftfrachter wählen <select id="transfer-select" aria-label="Gekauften Werftfrachter auswählen"></select></label>
+<p id="transfer-status" role="status" aria-live="polite"></p>
+<p id="transfer-quote" class="quote" role="status" aria-live="polite"></p>
+<div class="controls"><button id="transfer-start">60 ISK Pilotenlohn reservieren und Überführung starten</button></div>
+<h3>Original-Core-Belege: Flug, Lohn, Eigentum und Ankunft</h3>
+<div id="transfer-ledger"></div>
+<p>Diese Forschungsregel 191 ist von Regel19 und produktiven Save-Slots getrennt. Laufende Frachten werden weder abgebrochen noch kostenlos ersetzt.</p>
+</section>
+<section id="hq" data-panel hidden></section>
+<section id="station" data-panel hidden></section>
+<section id="fleet" data-panel hidden><h2>Flotte</h2><div id="fleet-data"></div></section>
+<section id="ship" data-panel hidden>
+<h2>Eigener 2D-Miner (Frachtmanagement separat)</h2>
+<p>Schematische Ansicht ohne erfundene Weltraum-Position oder aktive Flugphysik. Erzmenge und Auftragsstatus stammen ausschließlich aus demselben W1-Core.</p>
+<canvas aria-label="Schematische Darstellung des ausgewählten Miners"></canvas>
+<button id="rotate">Ansicht drehen</button>
+<label>Zoom <input id="zoom" type="range" min="0.1" max="0.5" value="0.3" step="0.05"></label>
+<p id="ship-data"></p>
+</section></main>
+<noscript>JavaScript ist für das Spiel erforderlich.</noscript>
+</body></html>

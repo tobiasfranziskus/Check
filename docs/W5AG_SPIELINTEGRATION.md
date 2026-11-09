@@ -52,3 +52,4 @@ Angebote, Auftragszustände, Geldbindung, Lohnminuten und Käufe sind aus dem Co
 - Neuer Regel195-Chromium-Touchlauf nach der letzten Anzeigeänderung: **4/4 Größen bestanden**. Älterer Regel191-Kompatibilitätslauf: ebenfalls **4/4 bestanden**, einschließlich bezahlter Überführung und echter Folgefracht.
 - Erster Regressionsversuch: ein alter Fehlermeldungstest beanstandete lediglich das eingefügte Leerzeichen in „Regel 191“. Die Meldung wurde kompatibel als „Regel191“ erhalten; der Test blieb unverändert. Danach vollständige Suite erfolgreich.
 - Echte iPad-Safari-/NAS-Tests **nicht ausgeführt, offen**. GitHub-CI erst nach tatsächlichem Abschluss gesondert bewerten.
+- Verbindlicher unveränderter Aufruf `node --test tests/*.test.mjs` auf dem finalen Anwendungscode ebenfalls erfolgreich: **34/34 Dateigruppen**, **0 Fehler / 0 Skips**, 136,8 Sekunden. Der separate Lauf ohne Testisolation oben weist die **191 Einzeltests** aus.

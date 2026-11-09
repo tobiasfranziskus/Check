@@ -1,0 +1,22 @@
+name: W5af – real financed ice, 50-unit cargo, paid water and wage consumption
+on:
+  pull_request:
+    paths:
+      - 'prototypes/w5ac/rule191-w5-ferry-core.js'
+      - 'tests/w5af-*.test.mjs'
+      - 'docs/W5AF_*'
+      - '.github/workflows/w5af-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  w5af-real-water-finance-and-all-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: All original Rule191-193 and new Rule194 tests, thirteen 90d economies and three 365d crises
+        run: node --test tests/*.test.mjs

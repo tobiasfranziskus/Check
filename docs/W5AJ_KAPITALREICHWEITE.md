@@ -32,4 +32,12 @@ Die verschiedenen freiwilligen Wasser-Kauf- und Fabrikmuster ändern dieses konk
 
 **Schlussfolgerung (nur Analyse):** Die am aktuellen konkreten Experiment zuerst bindende Grenze ist **Alderas Rohstoff-Abnahmekasse**, nicht die Eisverfügbarkeit, fehlende Fluglohn-Berechnung oder Nadirs Käuferetat. *Warum* Aldera bis zum Folgeverkauf auf 0 ISK fällt, ist damit noch **nicht** nach Eigentümer-/Buchungsarten aufgeschlüsselt. Nächster gezielter Forschungsschritt: genau diese reale Kassenabnahme mit Core-Buchungsbelegen entlang der Tickfolge erklären, statt Geld aufzufüllen oder neue Regeln einzuführen. Dauerwirtschaft W6 ist **nicht** bewiesen.
 
+## Korrektur durch den nachgelagerten W5aj-b-Draft #284
+
+**[DRAFT/TEST]** [W5aj-b #284](https://github.com/tobiasfranziskus/Check/pull/284) hat den Kassenabfluss unabhängig mit Original-Regel195 belegt. Der hier beobachtete Aldera-Kassenstopp ist **nicht** zwingend endgültig: Bei Tick550 sind **0 ISK frei, 1.000 ISK rechtswirksam im W1-Erz-Käuferauftrag als Treuhandreserve gebunden**. Dies ist eine vorübergehende Konkurrenz zwischen Erz-/Eis-Nachfrage um dieselbe Quellkasse, kein verschwundenes Geld.
+
+Nach **50 zusätzlichen realen Core-Minuten** geben erfüllte W1-Aufträge die 1.000 ISK wieder frei. Der ursprüngliche Miner kann dann die echte dritte 50er-Eischarge für 250 ISK an Aldera verkaufen, während Nadir mit 490 ISK Kauf-/Frachtetat und die Spedition mit 120 ISK Arbeitsreserve einen **dritten vollständigen Flug bis Tick720** bezahlen. Auch Seed7 bestätigt den Nachweis. [W5aj-b-CI #42709357577](https://github.com/tobiasfranziskus/Check/actions/runs/42709357577): **4/4 gezielte Tests, 201/201 Gesamttests erfolgreich**.
+
+Die hier dokumentierten 13/13 sofort blockierten Verkäufe waren als **Momentaufnahme** korrekt, dürfen aber nicht als finale Reichweitenobergrenze interpretiert werden. Nach dem dritten Flug verbleiben beim Nadir-Käufer **2.066 ISK (Seed42)** beziehungsweise **66 ISK (Seed7)**. Quellen-Treuhandfreigabe, Käuferetat, Lager und freiwilliger Absatz sind getrennte Grenzen; ein wieder verfügbarer Quellankauf beweist keine W6-Dauerwirtschaft. Keine automatische Kassenauffüllung oder Freigabe neuer Geldschöpfung.
+
 Echte iPad Safari/NAS nicht Gegenstand dieses reinen Audit-/Forschungsauftrags.

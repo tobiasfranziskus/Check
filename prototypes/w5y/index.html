@@ -22,7 +22,7 @@ und öffentlichem Hauptspiel. Keine Speicherung in produktiven Slots; Reload sta
 <section class="controls" aria-label="Sitzung und Schutz">
 <button id="export">W3-Sitzung als JSON exportieren</button>
 <label>W3-JSON importieren <input id="import" type="file" accept=".json,application/json"></label>
-<button data-step="1">1 Minute</button><button data-step="10">10 Minuten</button><button data-step="60">60 Minuten</button>
+<button data-step="1">1 Minute</button><button data-step="10">10 Minuten</button><button data-step="50">50 Minuten (erste Erzcharge)</button><button data-step="60">60 Minuten</button>
 <p id="message" role="status" aria-live="polite">Die isolierte W3-Forschungswelt ist pausiert. Originalbefehle führen echte Zahlungen, Ware und Hin-/Rückflug aus.</p>
 <p id="identity"></p>
 </section>
@@ -65,7 +65,7 @@ und öffentlichem Hauptspiel. Keine Speicherung in produktiven Slots; Reload sta
 </section>
 <section id="freight" data-panel hidden>
 <h2>W3 – Bezahlte Erz-Lieferung Aldera → Nadir → Aldera</h2>
-<p>Forschungs-Testkonsole für die getrennte Spedition <code>transport</code>: Sie kauft ihren Frachter aus eigenem Firmenkapital. Vor dem originalen 60-Minuten-Hinflug bindet Nadir den wirklichen Warenwert und das vollständige Transportentgelt; die Spedition reserviert Löhne für Hin- und Rückflug. Erst echte Ankunft liefert Erz; erst der vollständig bezahlte Rückflug zahlt die Frachtrate aus.</p>
+<p>Beim Original-W3-Test wird die erste 50er-Erzcharge bei Minute 50 fertig. Bis Minute 60 kann sie bereits vom bisherigen Aldera-Endkunden gekauft worden sein; eine neue Lieferung wartet deshalb auf tatsächlich vorhandene Ware. Forschungs-Testkonsole für die getrennte Spedition <code>transport</code>: Sie kauft ihren Frachter aus eigenem Firmenkapital. Vor dem originalen 60-Minuten-Hinflug bindet Nadir den wirklichen Warenwert und das vollständige Transportentgelt; die Spedition reserviert Löhne für Hin- und Rückflug. Erst echte Ankunft liefert Erz; erst der vollständig bezahlte Rückflug zahlt die Frachtrate aus.</p>
 <div id="freight-stats" class="stats"></div>
 <p id="freight-status" role="status" aria-live="polite"></p>
 <p id="freight-quote" class="quote"></p>

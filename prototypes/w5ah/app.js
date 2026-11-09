@@ -13,6 +13,8 @@ function render(){
  show('stocks','Aldera: '+s.iceAldera+' Eis · Nadir: '+s.iceNadir+' Eis / '+s.waterNadir+' Wasser');
  show('production',s.iceDelivered+' Eis geliefert · '+s.made+' Wasser produziert · '+s.consumed+' Wasser verbraucht · '+s.waterWorks+' Fabrikchargen');
  show('trips',s.oreTrips+' echte Erz-Rundfahrten · '+s.iceTrips+' echte Eis-Rundfahrten');
+ show('paid-minutes',s.paidMinutes+' wirkliche private Lohnminuten · Erz '+s.wages.erz+' ISK / Eis '+s.wages.eis+' ISK');
+ show('ice-contracts',s.iceContracts+' einzelne Eis-Arbeitsverträge · '+s.iceTrips+' vollständig bezahlt · '+(s.iceActive?'eine Eisfracht läuft':'kein laufender Eisvertrag'));
  show('hull',s.freighter?s.freighter.id+' · '+s.freighter.system+' · '+s.freighter.phase:'kein Speditionsfrachter gekauft');
  show('miner',s.miner?s.miner.id+' · '+s.miner.auftrag+' · '+s.miner.phase:'kein eigener Miner gekauft');
  show('price',p+' ISK je echtes Wasser · keine Kaufpflicht');

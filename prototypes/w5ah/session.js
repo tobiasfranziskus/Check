@@ -70,6 +70,10 @@ function create({seed=42,carrierCash=2000,buyerCash=4000}={}){
    iceDelivered:state.w5n.eisGeliefert,price:rules.w5n.wasserPreis,
    oreTrips:state.w3.abgeschlossen,iceTrips:state.w5n.frachtAbgeschlossen,
    waterWorks:state.w5n.fabrikFertig,waterSales:state.w5n.wasserErlos,
+   // Read-only references to the original minute receipts and original contracts.
+   paidMinutes:state.w5ag.payments.length,
+   iceContracts:state.w5ag.iceContracts.length,
+   iceActive:!!state.w5n.frachtauftrag,
    minted:state.minted,worldCash:Object.values(state.owners).reduce((a,o)=>a+o.cash,0),
    auditOk:audit.ok,events:state.ereignisse.slice(-5).map(x=>JSON.parse(JSON.stringify(x)))
   });

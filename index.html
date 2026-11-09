@@ -8193,9 +8193,17 @@ const m_core_c1d = (() => {
        nadir===(c.internalDemandEnabled?s.w5b.lagerFertig-8-(s.c1g?.installed||0):0)
         &&meridian===4-accepted&&cargo===0);
     if(!legit)return false;
-    if(stage==='finished')
-      return sh.phase==='dock'&&sh.system==='aldera'&&sh.auftrag==='halten'
-        &&j.paidMinutes===k.minutes;
+    if(stage==='finished'){
+      // C1d-11: This original second contract is fully settled history.
+      // Its real paid carrier may subsequently execute an independently
+      // funded W3 ore flight. Accept ONLY a current, auditable original W3
+      // assignment for the same ship, never arbitrary movement or free work.
+      const free=sh.phase==='dock'&&sh.system==='aldera'&&sh.auftrag==='halten';
+      const legalW3=s.w3?.auftrag?.schiff===j.ship
+        &&sh.auftrag==='fracht'&&sh.phase==='reise'
+        &&m_core_w3.audit(s,r).ok;
+      return j.paidMinutes===k.minutes&&(free||legalW3);
+    }
     return sh.phase==='reise'&&sh.auftrag==='c1d-bezahlte-fracht'
       &&sh.ziel===(stage==='position'?'st_nadir':
         stage==='delivery'?'st_meridian':'st_aldera')

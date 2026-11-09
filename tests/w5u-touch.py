@@ -36,6 +36,29 @@ try:
    page.locator('#rename input').fill('<img src=x onerror=x>');page.locator('#rename button').tap()
    assert page.locator('img').count()==0
    assert '<img src=x onerror=x>' in page.locator('#selection').inner_text()
+   # W5v: original Core quotes are read-only, update live, and match real purchases.
+   page.locator('#selection').select_option('sh001')
+   before_quote=page.locator('#identity').inner_text()
+   page.locator('#trade select[name=ware]').select_option('miner')
+   page.locator('#trade input[name=menge]').fill('1')
+   page.locator('#trade select[name=kauf]').select_option('true')
+   page.wait_for_function("document.querySelector('#trade-preview').textContent.includes('Kern-Audit OK')")
+   assert 'Eigene Kasse' in page.locator('#trade-preview').inner_text()
+   assert 'ISK' in page.locator('#trade-preview').inner_text()
+   assert page.locator('#identity').inner_text()==before_quote
+   page.locator('#trade input[name=menge]').fill('999999')
+   page.wait_for_function("document.querySelector('#trade-preview').textContent.includes('lehnt den Handel ab')")
+   assert page.locator('#identity').inner_text()==before_quote
+   page.locator('#trade input[name=menge]').fill('1')
+   page.locator('#trade button').tap()
+   page.wait_for_function("document.querySelector('#status').textContent.startsWith('Ausgeführt')")
+   assert page.locator('#identity').inner_text()!=before_quote
+   assert 'Kern-Audit OK' in page.locator('#activate-preview').inner_text()
+   before_activation=page.locator('#identity').inner_text()
+   page.locator('#activate button').tap()
+   page.wait_for_function("document.querySelector('#status').textContent.startsWith('Ausgeführt')")
+   assert page.locator('#identity').inner_text()!=before_activation
+   assert 'Audit OK' in page.locator('#identity').inner_text()
    with page.expect_download() as info:page.locator('#export').tap()
    downloaded=info.value;file=downloaded.path();saved=pathlib.Path(file).read_text()
    before=page.locator('#identity').inner_text()

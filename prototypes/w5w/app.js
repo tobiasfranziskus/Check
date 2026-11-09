@@ -140,7 +140,7 @@
  $('zoom').addEventListener('input',draw);window.addEventListener('resize',draw);
  $('export').addEventListener('click',()=>{
   const url=URL.createObjectURL(new Blob([session.export()],{type:'application/json'})),a=document.createElement('a');
-  a.href=url;a.download='aphros-w5w-forschung-w1-regel15.json';a.click();
+  a.href=url;a.download=rules.rulesVersion===16?'aphros-w5x-forschung-w2-regel16.json':'aphros-w5w-forschung-w1-regel15.json';a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
  });
  $('import').addEventListener('change',async()=>{

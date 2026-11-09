@@ -139,3 +139,37 @@ Bis dahin werden R32-Imports abgelehnt. Kein fertiger W5s-Integrationsstatus.
 **Offen:** echte iPad-Safari-/NAS-Abnahme, Langzeitwirtschaft unter dieser neuen
 Bedienfolge und spätere R32-/W5s-Integration. Chromium-Touch ist keine Safari-
 Freigabe. Kein Merge, kein Deployment, keine Behauptung wirtschaftlicher Freigabe.
+
+## W5v-Finanzierungsvorschau · [DRAFT/UI], 09.11.2026
+
+Separater [PR #266](https://github.com/tobiasfranziskus/Check/pull/266), direkt auf W5u aufgebaut;
+keine Regel-, Save-, Produktions-, KI- oder sonstigen Kernänderungen.
+
+- `W5uSession.preview(intent)` nutzt **exakt den vorhandenen Regel-14-Core**
+  mit `core.load`, `core.execute` und `core.audit` auf einem nur für die
+  Vorschau erzeugten validierten Zustandsklon. Die Live-State-Instanz und
+  ursprüngliche RNG-/Tick-Historie werden nicht mutiert.
+- **Handel:** Zeigt reale Core-Akzeptanz oder Ablehnung sowie sofortige
+  Cash-Abbuchung/-Gutschrift, Ladeeinheiten und Stationslagerbestände.
+  Ein normaler Miner-Kauf im Seed42-Versuch kostete **624 ISK aus vorhandenem
+  Kapital**; 2.000 → 1.376 ISK, eine Miner-Hülle ging vom Stationsbestand
+  2 → 1 in die Bordladung 0 → 1. Dieser Betrag ist **kein pauschaler Kaufpreis**
+  und keine W5/C1d-Preisfreigabe.
+- **Inbetriebnahme:** Zeigt den Unterschied zwischen vorhandenem, wirklich
+  bezahltem Schiff im Frachtraum und einem neuen eigenen Schiff; ohne Hülle
+  verweigert der Original-Core die Aktion. Vorschau selbst stellt keine
+  Hülle in Dienst. Bei tatsächlichem Klick wird erneut validiert.
+- HTML zeigt getrennte, mobil lesbare Statusbereiche mit `aria-live`,
+  ohne HTML-Auswertung der Ablehnungsgründe. Kein weiterer HTTP-Endpunkt,
+  kein Fremdscript und keine Browserpersistenz.
+- Eigene Node-Suite `tests/w5v-finance-preview.test.mjs` und erweiterte
+  viergrößige Chromium-Touchprüfung. **[TEST]** Im direkten, isolierten
+  Original-Core-JS-Harness **5/5 Verhaltensgruppen bestanden**; offizieller
+  GitHub-Node22-Gesamtregressions- und Touch-CI-Abschluss wird separat
+  nach dessen tatsächlichem Ende vermerkt.
+
+**Grenze:** R14 kennt weder die C1d-11-Erztransport-Kapitalquote noch Regel
+3314; W5v enthält **keinen** davon importierten Preis oder NPC-Rat. Die
+Vorschau belegt nur **heute** anwendbare Sofortaktionen, nicht ihren späteren
+wirtschaftlichen Gewinn. Die technische C1d-W5u-Zusammenführung und echte
+iPad-Safari-/NAS-Abnahme sind eigene, weiterhin ausstehende Schritte.

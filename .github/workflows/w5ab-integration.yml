@@ -1,0 +1,46 @@
+name: W5ab – Rule19 paid shipyard in shared original W0-W5 hub
+on:
+  pull_request:
+    paths:
+      - 'prototypes/w5ab/**'
+      - 'prototypes/w5aa/extension.js'
+      - 'prototypes/w5y/extension.js'
+      - 'prototypes/w5w/app.js'
+      - 'prototypes/legacy-hub/core-adapter.js'
+      - 'tests/w5ab-finanzierter-schiffbau.test.mjs'
+      - 'tests/w5ab-rule19-90d.test.mjs'
+      - 'tests/w5ab-touch.py'
+      - '.github/workflows/w5ab-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  w5-original-core-and-all-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original Rule19 material payment, ship build, demand gate, 13x90 day plus all JS tests
+        run: node --test tests/*.test.mjs
+  touch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.62.0
+      - run: python -m playwright install --with-deps chromium
+      - name: 'Touch: paid original W5 hull and second buyer refusal, four viewports'
+        run: python tests/w5ab-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: w5ab-touch-evidence
+          path: /tmp/w5ab-*.png

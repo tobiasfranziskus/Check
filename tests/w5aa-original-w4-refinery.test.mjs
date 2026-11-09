@@ -224,7 +224,7 @@ test('W5aa: static W4 hub uses same original core and readable W3/W4 views witho
  assert.match(js,/core\.pilotW4Stand/);
  assert.match(js,/core\.pilotW4Kalkulation/);
  assert.match(js,/type:'stationRefine',owner:'st_nadir',station:'st_nadir'/);
- assert.match(adapter,/14,15,16,17,18,32/);
+ assert.match(adapter,/14,15,16,17,18,19,32/); // Rule18 remains compatible in W5 extension
  assert.match(app,/W5aaExtension\?\.render/);
  assert.match(app,/W5aaExtension\?\.mount/);
  assert.match(ext,/scope\.W5aaExtension/);

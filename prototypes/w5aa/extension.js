@@ -23,8 +23,8 @@
   holder.append(tbl);root.replaceChildren(holder);
  }
  function render(snapshot){
-  if(snapshot.state.rulesVersion!==18||!snapshot.audit?.ok||!snapshot.refinery?.audit?.ok)
-   throw Error('W5aa: nur Original-W4-Regel18-Audit');
+  if(![18,19].includes(snapshot.state.rulesVersion)||!snapshot.audit?.ok||!snapshot.refinery?.audit?.ok)
+   throw Error('W5aa/W5ab: nur Original-W4/5-Regel18/19-Audit');
   const s=snapshot.state,r=snapshot.refinery.audit,q=snapshot.refinery.quote,work=s.w4;
   $('refinery-stats').replaceChildren(
    field('Echtes, geliefertes Erz in Nadir',quantity(r.erz)),
@@ -57,7 +57,11 @@
    ['Original-W3-Fracht / W4-Raffinerie-Audit',(snapshot.freight.audit.ok&&r.ok)?'Beide OK':'FEHLER'],
    ['Weltgeld / neue ISK',money(snapshot.audit.total)+' / '+quantity(s.minted)]
   ]);
-  $('refinery-demand').textContent='Folgeabsatz noch NICHT finanziert: '+quantity(r.material)+
+  $('refinery-demand').textContent=s.rulesVersion===19?
+   'W5-Materialabsatz tatsächlich durch die eigenfinanzierte Werft gebucht: '+money(s.w5.materialUmsatz)+
+   ' für '+quantity(s.w5.materialVerbraucht)+' verbrauchte Material. Übrig im Nadir-Lager: '+
+   quantity(r.material)+' Material. Der nächste Kauf bleibt an eigenes Werftgeld und echte Hüllen-Nachfrage gebunden; ein Lagerbestand allein ist kein Umsatz.':
+   'Folgeabsatz noch NICHT finanziert: '+quantity(r.material)+
    ' Material sind echte Bestände im Eigentum der Station Nadir, aber bisher gibt es keinen bezahlten Materialverkauf. '+
    'Nadir kann nur aus eigener Kasse weiterproduzieren ('+money(r.station)+'). '+
    'Weder das Speditionskonto noch fremde Export-Etats sind automatische Käufer. '+

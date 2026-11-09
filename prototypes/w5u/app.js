@@ -20,7 +20,36 @@
   local.selected=s.id;local.zoom=Number($('zoom').value);
   gfx.zeichnen({t:snap.state.tick,entities:supported?[{id:s.id,ty:'p',nm:s.rufname||s.id,hull:s.klasse==='miner'?'miner':'trader',x:0,y:0,a:angle}]:[],fields:[],cargo:Object.values(s.ladung).reduce((a,b)=>a+b,0),capacity:rules.economy.cargo},local,0);
  }
- function price(){const s=snap.state.ships[snap.selected],ware=$('trade').elements.ware.value,st=s&&snap.state.systems[s.system]?.station; $('price').textContent=st?'Core-Basispreis je Einheit: '+core.preis(snap.state,st,ware)+' ISK. Gebühren/Reserve und tatsächlicher Gesamtbetrag: Core-Ausführung entscheidet.':'Preis unbekannt';}
+ function quoteLabel(q,action){
+  if(!q.ok)return 'Originalkern lehnt '+action+' ab: '+q.reason+'. Keine Abbuchung oder Warenbewegung.';
+  const cash=Math.abs(q.cashDelta)+' ISK '+(q.cashDelta<0?'Zahlung':q.cashDelta>0?'Eingang':'ohne Kontobewegung');
+  if(q.type==='shipActivate')
+   return 'Vorschau: '+cash+' · Eigene Schiffe '+q.ownedShipsBefore+' → '+q.ownedShipsAfter
+    +' · Hüllen an Bord '+q.cargoBefore+' → '+q.cargoAfter+'. Kern-Audit OK.';
+  return 'Vorschau: '+cash+' · Eigene Kasse '+q.cashBefore+' → '+q.cashAfter+' ISK'
+    +' · '+q.ware+' an Bord '+q.cargoBefore+' → '+q.cargoAfter
+    +(q.station?' · Stationslager '+q.stationBefore+' → '+q.stationAfter:'')
+    +'. Kern-Audit OK.';
+ }
+ function price(){
+  const form=$('trade'),sh=snap.state.ships[snap.selected],ware=form.elements.ware.value,
+    st=sh&&snap.state.systems[sh.system]?.station;
+  $('price').textContent=st?'Core-Basispreis je Einheit: '+core.preis(snap.state,st,ware)
+    +' ISK. Gebühren und Gesamtbetrag stehen in der folgenden Originalkern-Vorschau.':'Preis unbekannt';
+  if(sh){
+   const q=session.preview({type:'shipTrade',schiff:snap.selected,ware,
+      menge:Number(form.elements.menge.value),kauf:form.elements.kauf.value==='true'});
+   $('trade-preview').textContent=quoteLabel(q,'den Handel');
+   const a=session.preview({type:'shipActivate',schiff:snap.selected,
+     klasse:$('activate').elements.klasse.value});
+   $('activate-preview').textContent=quoteLabel(a,'die Inbetriebnahme');
+  }else{
+   $('trade-preview').textContent='Kein eigenes Schiff ausgewählt.';
+   $('activate-preview').textContent='Kein eigenes Schiff ausgewählt.';
+  }
+  // Vorschau ist ein sofortiger, isolierter Core-Zustandsübergang; kein
+  // garantierter Preis in der Zukunft und keine tatsächliche Reservierung.
+ }
  function refresh(){
   snap=session.snapshot();hq.update(snap.bundle.corporation);if(snap.selected)hq.selectShip(snap.selected);station.update(snap.bundle.station);
   $('identity').textContent='Eigentümer '+snap.owner+' · Tick '+snap.state.tick+' · Hash '+snap.hash+' · Geld-/Warenaudit '+(snap.audit.ok?'OK':'FEHLER');
@@ -54,7 +83,11 @@
  options($('move').elements.ziel,Object.keys(rules.world.stations).map(id=>[id,id]));
  options($('trade').elements.ware,Object.keys(rules.economy.waren).map(id=>[id,id]));
  options($('activate').elements.klasse,Object.entries(rules.economy.waren).filter(([,v])=>v.stufe==='schiff').map(([id])=>[id,id]));
- $('trade').elements.ware.addEventListener('change',price);
+ for(const field of ['ware','menge','kauf']){
+  const el=$('trade').elements[field];
+  el.addEventListener(field==='menge'?'input':'change',price);
+ }
+ $('activate').elements.klasse.addEventListener('change',price);
  $('rotate').addEventListener('click',()=>{angle+=Math.PI/4;draw();});$('zoom').addEventListener('input',draw);window.addEventListener('resize',draw);
  $('export').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([session.export()],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='aphros-w5u-forschung-r14.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
  $('import').addEventListener('change',async()=>{const file=$('import').files[0],request=++revision;if(!file)return;try{if(file.size>5*1024*1024)throw Error('Datei größer als 5 MiB');const text=await file.text();if(request!==revision)return;act(()=>session.import(text));}catch(e){if(request===revision)$('status').textContent='Nicht übernommen: '+e.message;}finally{if($('import').files[0]===file)$('import').value='';}});

@@ -27,7 +27,7 @@ try:
    page.locator('[data-view="refinery"]').tap()
    assert page.locator('#refinery-start').is_disabled()
    assert '0' in page.locator('#refinery-stats').inner_text()
-   assert 'noch kein' in page.locator('#refinery-demand').inner_text().lower()
+   assert 'noch NICHT finanziert' in page.locator('#refinery-demand').inner_text()
    page.locator('[data-view="freight"]').tap()
    assert page.locator('#freight-buy').is_enabled()
    page.locator('#freight-buy').tap()
@@ -57,7 +57,7 @@ try:
    assert '3.240 ISK' in stats,'20 paid real wages from Nadir'
    assert '20 ISK' in stats,'20 ISK at original labor owner'
    assert '5 Material' in page.locator('#refinery-ledger').inner_text()
-   assert 'kein bezahlter Materialverkauf' in page.locator('#refinery-demand').inner_text()
+   assert 'keinen bezahlten Materialverkauf' in page.locator('#refinery-demand').inner_text()
    assert 'Original-Audit OK' in page.locator('#identity').inner_text()
    page.locator('[data-step="60"]').tap()
    page.wait_for_function("document.querySelector('#identity').textContent.includes('Tick 190')")

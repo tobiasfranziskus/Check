@@ -1,0 +1,43 @@
+name: W5x – finanzasierter W2-Konzern und Marktabnahme
+on:
+  pull_request:
+    paths:
+      - 'prototypes/w5x/**'
+      - 'prototypes/w5w/app.js'
+      - 'prototypes/legacy-hub/core-adapter.js'
+      - 'tests/w5x-finanzierte-w2-konzerne.test.mjs'
+      - 'tests/w5x-touch.py'
+      - '.github/workflows/w5x-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  w2-original-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original-Core, W1-compatibility, 13 Seeds × 90 Tage, vollständige Node22-Regression
+        run: node --test tests/*.test.mjs
+  touch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.62.0
+      - run: python -m playwright install --with-deps chromium
+      - name: Echt finanzierter NPC-Zweitminer und Käuferstopp in 4 Touchgrößen
+        run: python tests/w5x-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: w5x-touch-screenshots
+          path: /tmp/w5x-*.png

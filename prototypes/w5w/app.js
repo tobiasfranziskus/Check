@@ -1,6 +1,7 @@
 'use strict';
 (()=>{
  const $=id=>document.getElementById(id),session=W5wSession.create(),{rules}=W5wOriginal;
+ const modeName=rules.rulesVersion===16?'W2':'W1';
  const fmt=n=>Number.isSafeInteger(n)?n.toLocaleString('de-DE')+' ISK':'Unbekannt',
   val=x=>x===null||x===undefined?'Unbekannt':typeof x==='object'?JSON.stringify(x):String(x);
  let snap=session.snapshot(),current='mining',revision=0,angle=0;
@@ -97,15 +98,16 @@
   $('stop-mining').disabled=!snap.selected||!active;
   $('buy-miner').disabled=!snap.audit.ok;
   const q=session.preview({type:'shipBuy',station:'st_aldera',klasse:'miner'});
-  $('buy-preview').textContent=q.ok?'Original-W1-Kaufvorschau: '+fmt(q.cashBefore-q.cashAfter)+
+  $('buy-preview').textContent=q.ok?'Original-'+modeName+'-Kaufvorschau: '+fmt(q.cashBefore-q.cashAfter)+
    ' bereits vorhandene ISK; Spielerkasse '+fmt(q.cashBefore)+' → '+fmt(q.cashAfter)+
-   '. Nach Kauf gehört die Hülle dem Spieler.':'Original-W1-Kauf abgelehnt: '+q.reason;
+   '. Nach Kauf gehört die Hülle dem Spieler.':'Original-'+modeName+'-Kauf abgelehnt: '+q.reason;
   const mq=snap.selected?session.preview({type:active?'shipWait':'shipMine',schiff:snap.selected,ware:'erz'}):null;
   $('mining-preview').textContent=!snap.selected?'Noch kein eigenes Minerschiff.':
    mq.ok?(active?'Stop möglich. Bei Ausführung werden gelieferte Erz und unbenutztes Treuhandgeld durch den Originalkern abgerechnet.':
       'Förderung anforderbar. Ab dem nächsten Core-Tick reservieren Station und Eigentümer vorhandene Mittel; keine garantierte Dauer-Nachfrage.'):
-   'Original-W1-Auftrag abgelehnt: '+mq.reason;
-  refs();$('fleet-data').replaceChildren();
+   'Original-'+modeName+'-Auftrag abgelehnt: '+mq.reason;
+  refs();globalThis.W5xExtension?.render(snap);
+  $('fleet-data').replaceChildren();
   table($('fleet-data'),['ID','Eigentümer','Klasse','System','Aktivität','Erz an Bord'],
    Object.values(snap.state.ships).sort((a,b)=>a.id.localeCompare(b.id))
     .map(sh=>[sh.id,sh.owner,sh.klasse,sh.system,sh.auftrag,sh.ladung.erz||0]));
@@ -114,7 +116,7 @@
  function run(fn){
   revision++;
   try{const r=fn();$('message').textContent=r?.ok===false?'Abgelehnt: '+r.reason:
-   'Original-W1-Befehl geprüft und ausgeführt. Geld-, Waren- und Vertragsaudit OK.';}
+   'Original-'+modeName+'-Befehl geprüft und ausgeführt. Geld-, Waren- und Vertragsaudit OK.';}
   catch(e){$('message').textContent='Nicht übernommen: '+e.message;}
   update();
  }
@@ -138,7 +140,7 @@
  $('zoom').addEventListener('input',draw);window.addEventListener('resize',draw);
  $('export').addEventListener('click',()=>{
   const url=URL.createObjectURL(new Blob([session.export()],{type:'application/json'})),a=document.createElement('a');
-  a.href=url;a.download='aphros-w5w-forschung-w1-regel15.json';a.click();
+  a.href=url;a.download=rules.rulesVersion===16?'aphros-w5x-forschung-w2-regel16.json':'aphros-w5w-forschung-w1-regel15.json';a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
  });
  $('import').addEventListener('change',async()=>{

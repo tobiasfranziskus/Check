@@ -57,6 +57,16 @@
    ', Arbeitsreserve '+money(q.arbeitsKosten)+', je '+num(q.zeit)+' Minuten pro Strecke.':
    'Original-W3-Finanzierungsprüfung verweigert: '+(q.grund||'kein finanzierter Auftrag')+'.';
   $('freight-quote').textContent=financial+' Eine Vorschau reserviert noch kein Geld und verspricht keinen zukünftigen Auftrag.';
+  // Only historical, already paid Core receipts – not a second future-price or credit calculator.
+  const historic=w.beauftragt>0?money(w.kaufAusgaben/w.beauftragt):'Noch keine Zahlung';
+  $('freight-demand-gate').textContent='Abgeschlossene und bezahlte Hin-/Rücktransporte: '+num(w.abgeschlossen)+
+   ' · In Nadir tatsächlich angekommen: '+num(w.geliefert)+' Erz.'+
+   ' Bisherige echte Käuferausgaben: '+money(w.kaufAusgaben)+
+   ' · historischer Betrag je begonnenem Auftrag: '+historic+
+   ' · aktuell eigene Käufermittel: '+money(s.owners.st_nadir.cash)+'. '+
+   (q.ok?'Der Original-W3-Core erlaubt jetzt genau einen neuen Auftrag; Ausführung wird erneut geprüft.':
+    'Kein neuer Auftrag laut Original-W3-Core: '+(q.grund||'nicht finanzierbar')+'.')+
+   ' Andere Konzern-, Speditions- oder Exportguthaben sind kein Anspruch des Käufers.';
   const buy=ship?null:scope.W5ySessionForUI.preview({type:'freightBuy'});
   $('freight-buy').disabled=!!ship||!buy?.ok;
   $('freight-buy-note').textContent=ship?'Original-Core: Frachter bereits im Eigentum der Spedition.':

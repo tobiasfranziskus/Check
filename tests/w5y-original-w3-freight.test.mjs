@@ -138,7 +138,7 @@ test('W5y: static touch shell reuses validated HQ/2D and does not introduce a se
  assert.match(session,/core\.createW3State/);
  assert.match(session,/core\.loadW3/);
  assert.match(session,/core\.pilotW3Kalkulation/);
- assert.match(adapter,/14,15,16,17,32/);
+ assert.match(adapter,/14,15,16,17,18,32/); // W5aa adds original Rule18 projection without removing Rule17
  assert.match(extension,/scope\.W5yExtension=/);
  assert.doesNotMatch(session,/localStorage|indexedDB|sessionStorage|setItem|fetch\(/);
  assert.doesNotMatch(html,/https?:\/\//);

@@ -1,8 +1,8 @@
 /* W5ac: Rule191 research derivative of original W5 Rule19 PR #170 at c6dea414, incorporating W5s-b #204 paid ferry.
- * W5ac is a consciously forked Rule191: the Rule19 source is changed ONLY for the isolated paid ferry.
+ * W5ac keeps Rule191 behavior; opt-in W5ad Rule192 reuses this core for financed replacement.
  * One common original core for W0-W5, no parallel simulation.
  */
-(function(scope){
+(function createEngine(scope,research=null){
 const m_data_systeme = (() => {
   function tiefFrieren(obj, seen = new WeakSet()) {
     if (obj === null || typeof obj !== 'object' || seen.has(obj)) return obj;
@@ -364,6 +364,19 @@ const m_data_erzpilot = (() => {
       lohnJeMinute:W4_RULES.w3.arbeitJeMinute,
       reserved:'w5ac_transfer_reserved',pilot:'w5ac_transfer_pilot'},
   };
+  // W5ad uses this SAME core. Genesis allocations are explicit research inputs,
+  // never transfers or rescue during a running economy; total remains 33,000 ISK.
+  if(research){
+    W5_RULES.rulesVersion=192;
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('Unbekannter W5ad-Startparameter');
+    const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
+    if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
+      ||carrierCash+buyerCash>9000)throw TypeError('W5ad: ungueltige Anfangsverteilung');
+    W5_RULES.owners=W5_RULES.owners.map(o=>({...o,cash:o.id==='transport'?carrierCash:
+      o.id==='st_nadir'?buyerCash:o.id==='house'?9000-carrierCash-buyerCash:o.cash}));
+    W5_RULES.w5Replacement={carrierCash,buyerCash};
+  }
   m_data_systeme.tiefFrieren(ERZ_RULES);
   m_data_systeme.tiefFrieren(W2_RULES);
   m_data_systeme.tiefFrieren(W3_RULES);
@@ -483,6 +496,7 @@ const FIELDS = {
   stationRecipe: ['station', 'rezept'], shipRemoveModule: ['schiff', 'modul'],
   shipFreight: ['schiff'], stationRefine: ['station'],
   stationBuildShip: ['station'], shipReposition: ['schiff'],
+  researchShipLoss: ['schiff'], shipReplace: ['verlust','reserve'],
 };
 function checkShape(state, cmd, rules) {
   if (cmd === null || typeof cmd !== 'object' || Array.isArray(cmd)) return 'Befehl ist kein Objekt';
@@ -521,7 +535,8 @@ function checkShape(state, cmd, rules) {
       if (!Object.hasOwn(s.ladung, cmd.klasse) || s.ladung[cmd.klasse] < 1) return 'Schiff nicht im Frachtraum';
     }
     if (rules.w3 && s.klasse === 'frachter' && cmd.type !== 'shipFreight' && cmd.type !== 'shipRename'
-      && !(rules.w5Transfer && cmd.type === 'shipReposition'))
+      && !(rules.w5Transfer && cmd.type === 'shipReposition')
+      && !(rules.w5Replacement && cmd.type === 'researchShipLoss'))
       return 'W3-Frachter ausschließlich per finanziertem Transportauftrag steuern';
     if (cmd.type === 'shipReposition') {
       const p=m_core_w5_transfer.pruefen(state,rules,s);
@@ -587,10 +602,19 @@ function checkShape(state, cmd, rules) {
     const pruefung=m_core_w5.pruefen(state,rules,cmd.owner,cmd.station);
     if (!pruefung.ok) return pruefung.grund;
   }
+  if(cmd.type==='researchShipLoss'){
+    const q=m_core_w5_replacement.lossQuote(state,rules,state.ships[cmd.schiff]);
+    if(!q.ok)return q.grund;
+  }
+  if(cmd.type==='shipReplace'){
+    const q=m_core_w5_replacement.quote(state,rules,cmd.owner,cmd.verlust,cmd.reserve);
+    if(!q.ok)return q.grund;
+  }
   if (rules.erzpilot && !['shipBuy', 'shipMine', 'shipWait', 'shipRename',
     ...(rules.w3 ? ['shipFreight'] : []), ...(rules.w4 ? ['stationRefine'] : []),
     ...(rules.w5 ? ['stationBuildShip'] : []),
-    ...(rules.w5Transfer ? ['shipReposition'] : [])].includes(cmd.type))
+    ...(rules.w5Transfer ? ['shipReposition'] : []),
+    ...(rules.w5Replacement ? ['researchShipLoss','shipReplace'] : [])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if (cmd.type === 'shipBuy') {
     const frachter = !!rules.w3 && cmd.owner === rules.w3.spedition && cmd.klasse === 'frachter';
@@ -626,6 +650,12 @@ function execute(state, cmd, rules) {
   const fehler = checkShape(state, cmd, rules);
   if (fehler) return { ok: false, type: cmd && cmd.type, reason: fehler };
   switch (cmd.type) {
+    case 'researchShipLoss': {
+      m_core_w5_replacement.lose(state,rules,state.ships[cmd.schiff]);break;
+    }
+    case 'shipReplace': {
+      m_core_w5_replacement.replace(state,rules,cmd);break;
+    }
     case 'shipReposition': {
       m_core_w5_transfer.start(state,rules,state.ships[cmd.schiff]);break;
     }
@@ -642,6 +672,8 @@ function execute(state, cmd, rules) {
         owner: cmd.owner, klasse: cmd.klasse, system,
         heimat: system, auftrag: 'halten', ware: null,
       });
+      if(rules.w5Replacement&&cmd.owner===rules.w3.spedition)
+        state.w5ad.purchases.push({id:sh.id,tick:state.tick,station:cmd.station,preis:p});
       if (w5Kauf) {
         state.w5.verkauft++;
         state.w5.schiffIds.push(sh.id);
@@ -1441,7 +1473,7 @@ function schutzgeld(state, rules) {
     buche(state, st, 'kosten', n); buche(state, w.piraten.owner, 'erloes', n);
   }
 }
-return { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewegen };
+return { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewegen, entfernen };
 })();
 
 const m_core_schiffbau = (() => {
@@ -1841,6 +1873,7 @@ const m_core_w3 = (() => {
     state.stations[c.quellStation].lager.erz-=c.fracht;sh.ladung.erz=c.fracht;
     sh.phase='reise';sh.ziel=c.zielStation;sh.ankunft=state.tick+k.zeit;sh.auftrag='fracht';
     w.auftrag={schiff:sh.id,phase:'hin',menge:c.fracht,gearbeitet:0,...k};
+    if(rules.w5Replacement)w.auftrag.start=state.tick;
     w.beauftragt++;
     protokolliere(state,'auftrag',sh.id+': Erz, Kaufetat und beide Flugkosten gesperrt',c.spedition);
     return true;
@@ -1870,6 +1903,8 @@ const m_core_w3 = (() => {
         throw Error('W3: Rueckflug nicht vollstaendig finanziert');
       kauf.cash=0;state.owners[c.spedition].cash+=a.frachtGebuehr;
       buche(state,c.spedition,'erloes',a.frachtGebuehr);w.frachtUmsatz+=a.frachtGebuehr;
+      if(rules.w5Replacement)state.w5ad.freight.push({id:sh.id,start:a.start,
+        end:state.tick,work:a.arbeitsKosten,fee:a.frachtGebuehr,amount:a.menge});
       w.abgeschlossen++;w.auftrag=null;
       sh.system='aldera';sh.phase='dock';sh.ziel=null;sh.ankunft=state.tick;sh.auftrag='halten';
       protokolliere(state,'handel',sh.id+': Rueckfahrt bezahlt; Spedition entlohnt',c.spedition);
@@ -2136,8 +2171,9 @@ const m_core_w5 = (() => {
     const shipIds=w.schiffIds||[];
     const gekaufte=shipIds.every(id=>{
       const sh=state.ships[id];
-      return sh?.klasse===c.klasse && sh.owner===c.kaeufer
-        && sh.heimat==='nadir';
+      return (sh?.klasse===c.klasse && sh.owner===c.kaeufer
+        && sh.heimat==='nadir') || (!!rules.w5Replacement
+          &&state.w5ad?.losses.some(x=>x.id===id&&x.heimat==='nadir'));
     });
     const ok=[escrow,werk,arbeit,werftErloese,werftKosten,
       w.materialVerbraucht,w.materialUmsatz,w.arbeitsGebunden,
@@ -2243,10 +2279,11 @@ const m_core_w5_transfer=(()=>{
     const cost=duration*c.lohnJeMinute;
     const done=w.completed||[],ids=done.map(x=>x.id);
     const finished=done.reduce((n,x)=>n+x.kosten,0);
+    const lost=id=>r.w5Replacement&&s.w5ad?.losses.find(x=>x.id===id);
     const validShip=x=>s.w5.schiffIds.includes(x.id)
-      &&s.ships[x.id]?.owner===c.owner
-      &&s.ships[x.id]?.klasse==='frachter'
-      &&s.ships[x.id]?.heimat===c.quelle;
+      &&(s.ships[x.id]||lost(x.id))?.owner===c.owner
+      &&(s.ships[x.id]||lost(x.id))?.klasse==='frachter'
+      &&(s.ships[x.id]||lost(x.id))?.heimat===c.quelle;
     const activeOk=!a||(validShip(a)&&a.owner===c.owner
       &&a.minuten===duration&&a.lohn===c.lohnJeMinute&&a.kosten===cost
       &&Number.isSafeInteger(a.gearbeitet)&&a.gearbeitet>=0&&a.gearbeitet<duration
@@ -2263,7 +2300,8 @@ const m_core_w5_transfer=(()=>{
       &&done.every(x=>validShip(x)&&x.owner===c.owner&&x.minuten===duration
         &&x.kosten===cost&&Number.isSafeInteger(x.start)&&x.start>=0
         &&x.ankunft===x.start+duration&&x.ankunft<=s.tick
-        &&(s.w3.auftrag?.schiff===x.id
+        &&((lost(x.id)?.tick>=x.ankunft&&lost(x.id)?.system===c.ziel)
+          ||s.w3.auftrag?.schiff===x.id
           ||(s.ships[x.id].system===c.ziel&&s.ships[x.id].phase==='dock'
             &&s.ships[x.id].auftrag==='halten')))
       &&activeOk&&(!a||!ids.includes(a.id))
@@ -2277,6 +2315,124 @@ const m_core_w5_transfer=(()=>{
       ownerCash:s.owners[c.owner]?.cash};
   }
   return {pruefen,start,tick,audit};
+})();
+
+// W5ad: opt-in Rule192 commands; uses the existing purchase, loss, route and labor core.
+// Loss injection is a declared research event, never a new wear/combat rule.
+const m_core_w5_replacement=(()=>{
+  const fail=grund=>({ok:false,grund});
+  const integer=n=>Number.isSafeInteger(n)&&n>=0;
+  function lossQuote(s,r,sh){
+    if(!r.w5Replacement||!s.w5ad)return fail('Nur W5ad-Forschung');
+    if(!sh||sh.owner!==r.w3.spedition||sh.klasse!=='frachter'
+      ||sh.phase!=='dock'||sh.system!=='aldera'||sh.auftrag!=='halten'
+      ||Object.values(sh.ladung).some(n=>n!==0)||s.w3.auftrag||s.w5ac.active)
+      return fail('Verlustgate: nur freier leerer eigener Aldera-Frachter');
+    if(!s.w5ad.purchases.some(p=>p.id===sh.id))return fail('Kaufbeleg fehlt');
+    return {ok:true};
+  }
+  function lose(s,r,sh){
+    const q=lossQuote(s,r,sh);if(!q.ok)throw Error(q.grund);
+    s.w5ad.losses.push({id:sh.id,tick:s.tick,owner:sh.owner,klasse:sh.klasse,
+      system:sh.system,heimat:sh.heimat,cause:'declared-research-loss'});
+    m_core_sicherheit.entfernen(s,r,sh);
+    m_core_state.protokolliere(s,'verlust',sh.id+': deklarierter W5ad-Forschungsverlust',sh.owner);
+  }
+  function quote(s,r,owner,id,reserve=0){
+    if(!r.w5Replacement||!s.w5ad)return fail('Nur W5ad-Forschung');
+    if(owner!==r.w3.spedition)return fail('Keine fremde Konzernkasse');
+    if(!integer(reserve))return fail('Ungueltige freiwillige Liquiditaetsreserve');
+    const loss=s.w5ad.losses.find(x=>x.id===id);
+    if(!loss||s.ships[id])return fail('Kein tatsaechlicher Verlust');
+    if(s.w5ad.assignments.some(x=>x.lost===id))return fail('Verlust bereits zugeordnet');
+    if(s.w3.auftrag||s.w5ac.active)return fail('Arbeit oder Ueberfuehrung noch gebunden');
+    const sale=m_core_w5.verkaufPruefen(s,r);if(!sale.ok)return sale;
+    const minutes=m_core_route.route(r.world,r.w5Transfer.quelle,r.w5Transfer.ziel)?.zeit;
+    const ferry=minutes*r.w5Transfer.lohnJeMinute;
+    const work=m_core_w3.kalkulation(r).arbeitsKosten;
+    const held=Math.max(work,reserve),total=sale.preis+ferry+held;
+    if(!integer(total)||total<=0)return fail('Ungueltige Vollkosten');
+    const cash=s.owners[owner].cash;
+    if(cash<total)return {ok:false,grund:'Eigenkapital unter Kauf + Flug + Arbeitsreserve',
+      cash,price:sale.preis,ferry,work,held,total,shortfall:total-cash};
+    if(s.owners[r.w5Transfer.reserved]?.cash!==0||!m_core_audit.audit(s).ok)
+      return fail('Ungueltige Ausgangsbilanz oder belegtes Flugtreuhand');
+    return {ok:true,cash,price:sale.preis,ferry,work,held,total,minutes};
+  }
+  function replace(s,r,cmd){
+    const q=quote(s,r,cmd.owner,cmd.verlust,cmd.reserve);if(!q.ok)throw Error(q.grund);
+    // All preconditions before the first mutation. Reuse the exact existing commands.
+    const buy=m_core_commands.execute(s,{type:'shipBuy',owner:cmd.owner,
+      klasse:r.w5.klasse,station:r.w5.station},r);
+    if(!buy.ok)throw Error(buy.reason);
+    const id=s.w5.schiffIds.at(-1),sh=s.ships[id];
+    m_core_w5_transfer.start(s,r,sh);
+    s.w5ad.assignments.push({lost:cmd.verlust,id,tick:s.tick,
+      reserve:q.held,cashBefore:q.cash});
+  }
+  function audit(s,r){
+    const b=s.w5ad;
+    if(!b||!Array.isArray(b.purchases)||!Array.isArray(b.losses)
+      ||!Array.isArray(b.assignments)||!Array.isArray(b.freight))return fail('Ersatzbuch fehlt');
+    const {purchases:p,losses:l,assignments:a,freight:f}=b;
+    const unique=(xs,key)=>new Set(xs.map(x=>x[key])).size===xs.length;
+    const initial=r.owners.find(x=>x.id===r.w3.spedition).cash;
+    const price=r.economy.waren.frachter.basis,k=m_core_w3.kalkulation(r);
+    const loss=id=>l.find(x=>x.id===id),purchase=id=>p.find(x=>x.id===id);
+    const ferries=[...s.w5ac.completed,...(s.w5ac.active?[s.w5ac.active]:[])];
+    const ownerOk=Object.values(s.ships).filter(sh=>sh.owner===r.w3.spedition)
+      .every(sh=>sh.klasse==='frachter'&&purchase(sh.id)&&!loss(sh.id));
+    const purchaseOk=unique(p,'id')&&p.length===s.ledger.frachter.consumed
+      &&p.every((x,i)=>integer(x.tick)&&x.tick<=s.tick&&x.preis===price
+        &&(i===0||p[i-1].tick<=x.tick)
+        &&['st_aldera','st_nadir'].includes(x.station)
+        &&(x.station==='st_nadir')===s.w5.schiffIds.includes(x.id)
+        &&((s.ships[x.id]?.owner===r.w3.spedition
+          &&s.ships[x.id]?.klasse==='frachter'
+          &&s.ships[x.id]?.heimat===(x.station==='st_nadir'?'nadir':'aldera'))||loss(x.id)));
+    const lossOk=unique(l,'id')&&l.length===(s.stats.verluste.transport?.frachter??0)
+      &&l.every(x=>!s.ships[x.id]&&purchase(x.id)&&integer(x.tick)
+        &&x.tick>=purchase(x.id).tick&&x.tick<=s.tick&&x.owner===r.w3.spedition
+        &&x.klasse==='frachter'&&x.system==='aldera'
+        &&x.heimat===(purchase(x.id).station==='st_nadir'?'nadir':'aldera')
+        &&x.cause==='declared-research-loss'
+        &&(x.heimat==='aldera'||s.w5ac.completed.some(t=>t.id===x.id&&t.ankunft<=x.tick)));
+    const freightOk=f.length===s.w3.abgeschlossen&&f.every((x,i)=>purchase(x.id)
+      &&integer(x.start)&&x.start>=purchase(x.id).tick&&x.end===x.start+2*k.zeit
+      &&x.end<=s.tick&&x.work===k.arbeitsKosten&&x.fee===k.frachtGebuehr
+      &&x.amount===r.w3.fracht&&(!loss(x.id)||x.end<=loss(x.id).tick)
+      &&(i===0||f[i-1].end<=x.start)
+      &&(purchase(x.id).station==='st_aldera'
+        ||s.w5ac.completed.some(t=>t.id===x.id&&t.ankunft<=x.start)));
+    const assignmentOk=unique(a,'lost')&&unique(a,'id')&&a.every(x=>{
+      const lp=loss(x.lost),np=purchase(x.id),index=p.findIndex(t=>t.id===x.id);
+      const flight=ferries.find(t=>t.id===x.id);
+      // Reconstruct OWN cash before purchase from earlier purchases and completed work.
+      const earned=f.filter(t=>t.end<=x.tick).reduce((n,t)=>n+t.fee-t.work,0);
+      const paidFerries=ferries.filter(t=>t.id!==x.id&&t.start<=x.tick)
+        .reduce((n,t)=>n+t.kosten,0);
+      return lp&&np&&flight&&integer(x.tick)&&x.tick>=lp.tick&&x.tick===np.tick
+        &&np.station==='st_nadir'&&flight.start===x.tick
+        &&integer(x.reserve)&&x.reserve>=k.arbeitsKosten
+        &&x.cashBefore===initial-index*price+earned-paidFerries
+        &&x.cashBefore>=price+flight.kosten+x.reserve;
+    });
+    const active=s.w3.auftrag,sh=active?s.ships[active.schiff]:null;
+    const activeOk=!active||(purchase(active.schiff)&&!loss(active.schiff)
+      &&integer(active.start)&&s.tick===active.start+active.gearbeitet
+      &&sh?.phase==='reise'&&sh.auftrag==='fracht'
+      &&sh.system===(active.phase==='hin'?'aldera':'nadir')
+      &&sh.ziel===(active.phase==='hin'?'st_nadir':'st_aldera')
+      &&sh.ankunft===active.start+(active.phase==='hin'?k.zeit:2*k.zeit));
+    const profileOk=m_core_hash.canonical(b.profile)===m_core_hash.canonical(r.w5Replacement)
+      &&Object.values(s.owners).every(o=>integer(o.cash))
+      &&m_core_hash.canonical(p.filter(x=>x.station==='st_nadir').map(x=>x.id))
+        ===m_core_hash.canonical(s.w5.schiffIds);
+    return {ok:profileOk&&ownerOk&&purchaseOk&&lossOk&&freightOk&&assignmentOk&&activeOk,
+      profileOk,ownerOk,purchaseOk,lossOk,freightOk,assignmentOk,activeOk,
+      lost:l.length,replaced:a.length,deployed:a.filter(x=>f.some(t=>t.id===x.id)).length};
+  }
+  return {lossQuote,lose,quote,replace,audit};
 })();
 
 // W1: rein lesende Vollkosten-/Liquiditaetsrechnung aus gebuchten Originalkonten.
@@ -2726,13 +2882,16 @@ function audit(state) {
     ? m_core_w4.audit(state,istW5 ? m_data_erzpilot.W5_RULES : m_data_erzpilot.W4_RULES) : null;
   const w5 = istW5 ? m_core_w5.audit(state,m_data_erzpilot.W5_RULES) : null;
   const w5transfer = istW5 ? m_core_w5_transfer.audit(state,m_data_erzpilot.W5_RULES) : null;
+  const replacement=istW5&&m_data_erzpilot.W5_RULES.w5Replacement
+    ?m_core_w5_replacement.audit(state,m_data_erzpilot.W5_RULES):null;
+  if(replacement)extra.replacement=replacement;
   if (w5transfer)extra.w5transfer=w5transfer;
   if (w3) extra.w3=w3;
   if (w4) extra.w4=w4;
   if (w5) extra.w5=w5;
   return { ok: isk.ok && goods.ok && vertragsOk && finanzierungsOk
       && wirtschaftOk && (!w3 || w3.ok) && (!w4 || w4.ok) && (!w5 || w5.ok)
-      && (!w5transfer || w5transfer.ok),
+      && (!w5transfer || w5transfer.ok) && (!replacement || replacement.ok),
     total, expected, delta: total - expected, isk, goods, ...extra };
 }
 return { audit };
@@ -2816,6 +2975,8 @@ function createW5State(seed = W5_RULES.startSeed) {
   s.w5={materialUmsatz:0,materialVerbraucht:0,arbeitsGebunden:0,
     arbeitsGezahlt:0,begonnen:0,fertig:0,verkauft:0,schiffIds:[],auftrag:null};
   if(W5_RULES.w5Transfer)s.w5ac={allocated:0,paid:0,active:null,completed:[]};
+  if(W5_RULES.w5Replacement)s.w5ad={profile:{...W5_RULES.w5Replacement},
+    purchases:[],losses:[],assignments:[],freight:[]};
   return s;
 }
 const loadW5 = (json) => loadErz(json,W5_RULES);
@@ -2863,11 +3024,19 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   pilotW3Stand, pilotW3Kalkulation, pilotW4Stand, pilotW4Kalkulation,
   pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf,
   pilotW5TransferStand, pilotW5TransferKalkulation,
+  replacementQuote:(s,id,reserve=0)=>m_core_w5_replacement.quote(s,W5_RULES,
+    W5_RULES.w3.spedition,id,reserve),
   createErzState, createW2State, createW3State, createW4State, createW5State,
   loadErz, loadW2, loadW3, loadW4, loadW5, createState, submit, execute, step, advance, load, preis, faktor };
 })();
 
 
-const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES});
+const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
+  createResearch:options=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options))throw TypeError('W5ad-Parameterobjekt erforderlich');
+    return createEngine({},options);
+  }});
+if(research)return api;
 if(typeof module==='object'&&module.exports)module.exports=api;else scope.W5acOriginal=api;
 })(globalThis);

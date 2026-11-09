@@ -3,15 +3,18 @@
 'use strict';
 const original=typeof module==='object'&&module.exports?require('./rule191-w5-ferry-core.js'):scope.W5acOriginal;
 const adapter=typeof module==='object'&&module.exports?require('../legacy-hub/core-adapter.js'):scope.LegacyCoreAdapter;
-const {core,rules}=original,owner='house';
+const owner='house';
 const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
-function create(seed=42){
+function create(seed=42,profile=null){
+ if(profile!==null&&profile!=="private195")throw Error("Unbekanntes Forschungsprofil");
+ const engine=profile==="private195"?original.createPrivateWageResearch({carrierCash:2000,buyerCash:4000}):original;
+ const {core,rules}=engine;
  let state=core.createW5State(seed),selected=null;
  function validate(json){
   if(typeof json!=='string')throw Error('Nur Original-JSON erlaubt');
   const raw=JSON.parse(json);
-  if(raw?.schema!==8||raw.rulesVersion!==191)
-   throw Error('Nur isolierter Rule191-W5ac-Forschungsstand; Rule19-Altstand und Produkt-Saves bleiben getrennt');
+  if(raw?.schema!==8||raw.rulesVersion!==rules.rulesVersion)
+   throw Error('Nur isolierter Forschungsstand Regel'+rules.rulesVersion+'; andere Profile bleiben getrennt');
   const next=core.loadW5(json),audit=core.audit(next),full=core.pilotWirtschaftsStand(next),freight=core.pilotW3Stand(next),refinery=core.pilotW4Stand(next),yard=core.pilotW5Stand(next),transfer=core.pilotW5TransferStand(next);
   if(!audit.ok||!full?.ok||!freight.ok||!refinery.ok||!yard.ok||!transfer.ok)throw Error('Rule191-Geld-/Fracht-/Material-/Hüllen-/Fluglohn-/Eigentümeraudit fehlgeschlagen');
   const market=core.pilotNpcKrisenLage(next);
@@ -42,12 +45,24 @@ function create(seed=42){
    freight:Object.freeze({audit:Object.freeze({...freight}),quote:Object.freeze({...quote}),shipId:ship?.id||null}),
    refinery:Object.freeze({audit:Object.freeze({...refinery}),quote:Object.freeze({...core.pilotW4Kalkulation(state)})}),
    shipyard:Object.freeze({audit:Object.freeze({...yard}),quote:Object.freeze({...core.pilotW5Kalkulation(state)}),sale:Object.freeze({...core.pilotW5Verkauf(state)})}),
+   water:rules.rulesVersion===195?{price:rules.w5n.wasserPreis,
+    audit:core.pilotWaterStand(state),personal:core.pilotPrivateWageStand(state),
+    freight:core.pilotIceFreightQuote(state,ship?.id),factory:core.pilotWaterFactoryQuote(state)
+   }:null,
    transfer:Object.freeze({audit:Object.freeze({...transfer}),
     quotes:Object.freeze(Object.fromEntries((state.w5?.schiffIds||[]).map(id=>[id,Object.freeze({...core.pilotW5TransferKalkulation(state,id)})]))),
     freightQuotes:Object.freeze(Object.fromEntries((state.w5?.schiffIds||[]).map(id=>[id,Object.freeze({...core.pilotW3Kalkulation(state,id)})])))})};
  }
  function build(req){
   if(!req||typeof req!=='object')return {ok:false,reason:'Fehlender Original-Core-Befehl'};
+  if(rules.rulesVersion===195){
+   if(req.type==='iceFreight')return {ok:true,command:{type:'shipFreightIce',owner:'transport',schiff:hauler()?.id}};
+   if(req.type==='waterStart')return {ok:true,command:{type:'stationWater',owner:'st_nadir',station:'st_nadir'}};
+   if(req.type==='waterBuy'){
+    if(!['pilot_erz','pilot_eis'].includes(req.owner))return {ok:false,reason:'Eigenes Pilotenkonto wählen'};
+    return {ok:true,command:{type:'pilotWaterBuy',owner:req.owner,menge:req.menge}};
+   }
+  }
   if(req.type==='freightBuy')
    return {ok:true,command:{type:'shipBuy',owner:'transport',station:'st_aldera',klasse:'frachter'}};
   if(req.type==='freightStart'){
@@ -70,8 +85,8 @@ function create(seed=42){
   }
   if(!['shipMine','shipWait'].includes(req.type))return {ok:false,reason:'Nicht freigeschalteter W3-Core-Befehl'};
   if(!req.schiff||req.schiff!==selection())return {ok:false,reason:'Eigenen Miner auswählen'};
-  if(req.type==='shipMine'&&req.ware!=='erz')return {ok:false,reason:'Nur echte Erzförderung'};
-  return {ok:true,command:{type:req.type,owner,schiff:req.schiff,...(req.type==='shipMine'?{ware:'erz'}:{})}};
+  if(req.type==='shipMine'&&!['erz',...(rules.rulesVersion===195?['eis']:[])].includes(req.ware))return {ok:false,reason:'Nur echte Erzförderung'};
+  return {ok:true,command:{type:req.type,owner,schiff:req.schiff,...(req.type==='shipMine'?{ware:req.ware}:{})}};
  }
  function simulate(req){
   const cmd=build(req);if(!cmd.ok)return cmd;

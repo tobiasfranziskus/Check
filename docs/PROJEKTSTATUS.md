@@ -1,5 +1,8 @@
 # Aphros Void – Projektstatus
 
+> **[DRAFT · W5ag-Spielintegration, 09.11.2026]** Separater Forschungsprototyp auf [#278, Head 1b01d3d6](https://github.com/tobiasfranziskus/Check/pull/278), nach Prüfung von #273–#277. Verbindliche Produktplanung ist die [Roadmap auf geprüftem main fd3e9154](https://github.com/tobiasfranziskus/Check/blob/fd3e915448a2f35fa803db709aff9ce223dddc6f/docs/ROADMAP.md); die älteren Abschnitte dieses Forschungsbranches sind historische Belege. Regel195 verbindet den vorhandenen Hub mit Eis/Wasser und privaten Pilotenlöhnen, ohne neue Wirtschaftsregel. [Bedienwege, Nachweise und offene Hauptspielintegration](W5AG_SPIELINTEGRATION.md). Keine Produktmigration, kein Merge/Deployment; echte iPad-Safari-/NAS-Abnahme offen.
+
+
 > **[DRAFT / ANALYSE · W5ad, 09.11.2026]** Aufbau auf [#274](https://github.com/tobiasfranziskus/Check/pull/274), `4db5e8d6`; verifizierter `main fd3e9154` bleibt Regel14/Schema8. [W5ad-Bericht](W5AD_FINANZIERTE_ERSATZWIRTSCHAFT.md): gemeinsamer Core, opt-in Forschungsregel192, vollständiges 930-ISK-Ersatzgate, tatsächliche Verluste/Käufe/60-min-Flüge/Folgefrachten; 13 wirtschaftlich verschiedene 90-Tage-Regime plus fünf 365-Tage-Krisen. Teilpfad erfolgreich, Dauerwirtschaft durch monoton gebundene Frachtlöhne rechnerisch unmöglich; keine neue Produktregel, Emission, Migration oder Integration. Nächste kleine Vertrags-/Warengates nur **[OPTION]**. Historischer Stand darunter bleibt als Branch-Historie erhalten.
 
 ## [ANALYSE] B8o/B8p – bezahlte Aufträge und Endnachfrage · 01.11.2026

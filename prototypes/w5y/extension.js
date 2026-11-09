@@ -14,7 +14,7 @@
   wrap.append(t);root.replaceChildren(wrap);
  }
  function render(snap){
-  if(![17,18,19,191].includes(snap.state.rulesVersion)||!snap.freight?.audit?.ok)throw Error('W5y/W5aa ausschließlich Original-Rule17/18');
+  if(![17,18,19,191,195].includes(snap.state.rulesVersion)||!snap.freight?.audit?.ok)throw Error('W5y/W5aa ausschließlich Original-Rule17/18');
   const s=snap.state,c=snap.corporation.crisis,w=s.w3,f=snap.freight.audit,q=snap.freight.quote,ship=s.ships[snap.freight.shipId];
   $('w2-company-stats').replaceChildren(
    field('NPC-Bergbaukasse',money(s.owners.npc3.cash)),

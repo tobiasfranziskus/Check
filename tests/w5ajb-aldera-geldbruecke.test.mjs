@@ -13,6 +13,11 @@ const accounts=['st_aldera','st_nadir','house','npc3','transport','fonds_aldera'
 function phase(app,label){
  const state=JSON.parse(app.export()),snap=app.snapshot();
  const s=state.stations.st_aldera,ledger=state.stats.konto.st_aldera;
+ const held=Object.values(state.owners).filter(x=>x.id.startsWith('erz_treuhand_'))
+  .reduce((sum,x)=>sum+x.cash,0);
+ const active=Object.entries(state.erzpilotVertraege||{}).map(([ship,c])=>({
+  ship,materialCash:state.owners[c.konto]?.cash||0,
+  workCash:state.owners[c.arbeitsKonto]?.cash||0,quantity:c.menge}));
  const tracked=Object.fromEntries(accounts.filter(id=>state.owners[id])
   .map(id=>[id,state.owners[id].cash]));
  const miners=Object.values(state.ships).filter(x=>x.owner==='house'&&x.klasse==='miner');
@@ -21,7 +26,10 @@ function phase(app,label){
   cash:tracked,
   aldera:{cash:tracked.st_aldera,erz:s.lager.erz,eis:s.lager.eis,
    erloese:ledger.erloes,kosten:ledger.kosten,
-   ownersCashBridge:1000+ledger.erloes-ledger.kosten},
+   ownersCashBridge:1000+ledger.erloes-ledger.kosten,
+   sourceErzEscrow:held,liveOreContracts:active,
+   cashPlusErzEscrow:tracked.st_aldera+held,
+   financeBridgeDelta:tracked.st_aldera+held-1000-ledger.erloes+ledger.kosten},
   ice:{mined:state.w5n.eisAbgebaut,sold:state.w5n.mineVerkauft,
    sourceSaleNominal:state.w5n.mineVerkaufWert,
    delivered:state.w5n.eisGeliefert,sourceRevenue:state.w5n.eisTransferWert},
@@ -36,7 +44,10 @@ function run(seed,buyerCash){
  const app=Session.create({seed,buyerCash,carrierCash:2000}),rows=[];
  const observe=label=>{const p=phase(app,label);rows.push(p);
   assert.equal(p.auditOk,true);assert.equal(p.worldCash,33000);
-  assert.equal(p.mint,0);return p;};
+  assert.equal(p.mint,0);
+  assert.equal(p.aldera.financeBridgeDelta,0,
+   'Original-CashBridge: starting ISK + real booked sales - expenses = free ISK + held ore-buyer escrow');
+  return p;};
  const cmd=(action,why,amount)=>must(app.command(action,amount),why);
  const tick=(n,why)=>must(app.advance(n),why);
  observe('start');
@@ -90,11 +101,71 @@ function run(seed,buyerCash){
  assert.equal(engine.core.hash(engine.core.loadW5(app.export())),result.hash);
  console.log('W5AJB_STATION_CASH_TRACE '+JSON.stringify({seed,buyerCash,
   lines:rows,refused:refused.reason}));
- return rows;
+ return {rows,app};
 }
+function probeRealEscrowUnlock(app){
+ const start=phase(app,'beforeWaiting'),initialWages=app.snapshot().wages.eis;
+ const windows=[],beforeCash=start.aldera.cash,beforeEscrow=start.aldera.sourceErzEscrow;
+ assert.equal(beforeCash,0);assert.ok(beforeEscrow>=250,
+   'capital reserved for W1 ore production, rather than vanished from the world');
+ let soldTick=null,reason=null,afterSaleCash=null;
+ for(let i=0;i<48;i++){
+  const snap=app.snapshot();
+  if(snap.cash.st_aldera>=250){
+   const beforeSale=phase(app,'beforeDelayedSale'),saved=app.snapshot().hash;
+   const sold=app.command('sell-ice');
+   if(sold.ok){
+    soldTick=app.snapshot().tick;afterSaleCash=beforeSale.aldera.cash-250;
+    assert.equal(app.snapshot().iceAldera,50,
+     'only physically loaded owned ice can be sold to a solvent source station');
+    break;
+   }
+   reason=sold.reason;
+   assert.equal(app.snapshot().hash,saved,'failed sale does not touch original state');
+  }
+  must(app.advance(10),'ten actual Core minutes, never imaginary income');
+  if(i%6===5){
+   const state=phase(app,'afterWait'+((i+1)*10));
+   assert.equal(state.aldera.financeBridgeDelta,0);
+   windows.push({tick:state.tick,cash:state.aldera.cash,
+    oreEscrow:state.aldera.sourceErzEscrow,
+    activeContracts:state.aldera.liveOreContracts.length,boughtIce:state.ice.sold});
+  }
+ }
+ const now=phase(app,'afterWaitWindow');
+ assert.equal(now.worldCash,33000);assert.equal(now.mint,0);
+ assert.equal(app.snapshot().wages.eis,initialWages,
+  'waiting may process NPC work but cannot pay a private ice-flight pilot');
+ if(soldTick!==null){
+  assert.ok(now.ice.sold>=150);
+  const before=app.snapshot(),flight=app.command('ice-freight');
+  if(flight.ok){
+   must(app.advance(120),'third fully paid original flight after a real ice purchase');
+   assert.equal(app.snapshot().wages.eis,before.wages.eis+120);
+   assert.equal(app.snapshot().iceTrips,before.iceTrips+1);
+   assert.equal(app.snapshot().minted,0);
+  }else reason='Source unlocked but independent Nadir/carrier gate: '+flight.reason;
+ }
+ const end=phase(app,'endOfWaitProbe');
+ console.log('W5AJB_REAL_ESCROW_WAIT '+JSON.stringify({
+  from:start.tick,to:end.tick,originalFree:beforeCash,originalOreEscrow:beforeEscrow,
+  windows,soldTick,afterSaleCash,afterIceSold:end.ice.sold,
+  afterIceDelivered:end.ice.delivered,afterFlights:app.snapshot().iceTrips,
+  endFree:end.aldera.cash,endEscrow:end.aldera.sourceErzEscrow,
+  endNadir:end.cash.st_nadir,reason,worldISK:end.worldCash,mint:end.mint}));
+}
+
 for(const {seed,buyerCash} of [{seed:42,buyerCash:4000},{seed:7,buyerCash:2000}]){
  test('W5aj-b original cash bridge and stranded third real ice cargo, seed '+seed,()=>{
-  const rows=run(seed,buyerCash);
+  const {rows}=run(seed,buyerCash);
   assert.equal(rows.length,12);
+  assert.equal(rows.at(-1).aldera.sourceErzEscrow,1000,
+    'Station has a live W1 buyer escrow; money not lost or emitted');
+  assert.equal(rows.at(-1).aldera.cash,0);
  });
 }
+
+test('W5aj-b: wait for genuine W1 escrow releases; never auto-pay private wages or rescue station',()=>{
+ const {app}=run(42,4000);
+ probeRealEscrowUnlock(app);
+});

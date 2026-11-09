@@ -1,0 +1,11 @@
+:root{color-scheme:dark;font:16px system-ui,-apple-system,sans-serif;background:#111d2a;color:#e8f1fa}
+*{box-sizing:border-box}body{margin:0 auto;padding:env(safe-area-inset-top) max(14px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(14px,env(safe-area-inset-left));max-width:1200px;line-height:1.45}
+header,section{background:#1a2a3b;border:1px solid #354a61;border-radius:12px;padding:16px;margin:14px 0}
+h1{font-size:1.6rem}h2{font-size:1.3rem}h3{font-size:1.08rem}p{overflow-wrap:anywhere}
+.buttons,.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,205px),1fr));gap:10px;margin:12px 0}
+article{background:#243a4f;padding:14px;border-radius:9px;min-width:0}article strong{font-size:1.35rem}article button{width:100%}
+button,input[type=file],label{font:inherit}button{min-height:48px;white-space:normal;background:#285b79;color:white;border:1px solid #8bb8d2;border-radius:8px;padding:10px 12px;cursor:pointer}
+button:disabled{opacity:.5}button:focus-visible,input:focus-visible{outline:3px solid #ffd07b}input[type=number]{width:100%;font:inherit;min-height:44px;padding:8px;margin:5px 0 10px;background:#edf3fb;color:#17283a;border:0;border-radius:6px}
+label{display:block}input[type=file]{max-width:100%;font-size:.85rem}#message{min-height:48px;border-left:4px solid #94bad5;padding:8px;background:#24384c}
+#events{white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto}
+@media (max-width:460px){header,section{padding:12px}h1{font-size:1.35rem}}

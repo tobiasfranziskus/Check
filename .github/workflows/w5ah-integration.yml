@@ -1,0 +1,32 @@
+name: W5ah – playable private pilot accounts and second genuine paid water batch
+on:
+  pull_request:
+    paths:
+      - 'prototypes/w5ah/**'
+      - 'tests/w5ah-*'
+      - '.github/workflows/w5ah-integration.yml'
+      - 'docs/W5AH_*'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-core-and-private-demand:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/*.test.mjs
+  touch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.62.0
+      - run: python -m playwright install --with-deps chromium
+      - run: python tests/w5ah-touch.py

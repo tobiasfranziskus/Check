@@ -31,17 +31,17 @@ Stattdessen erhält die bestehende Nadir-Station einen **einmaligen, aktiven Kau
 | Nach tatsächlichem Einbau | **937 Erz** |
 | Weltweite Geldmenge | **33.000 ISK** |
 | Neue ISK | **0** |
-| Seed-42-Abschlusshash | `41af8dee141bec8b` |
-| Seed-7-Abschlusshash | `2004feb2d7250d0c` |
+| Seed-42-Abschlusshash | `49a7e67f856938ee` |
+| Seed-7-Abschlusshash | `ab4743294aec3ff0` |
 
-**[TEST / direkte Ausführung]** Der vollständige Original-JavaScript-Core wurde im isolierten Prüf-Harness ausgeführt: **6/6 C1d-10-Testgruppen erfolgreich**, beide Seeds mit 1.360 echten Ticks, negativen Berechtigungs-/Fälschungsfällen, Save/Load und je 200 weiteren Ticks deterministischen Audits. Die eigenständigen GitHub-Node22- und Vollregressionsprüfungen sind damit **nicht** ersetzt. Die erste GitHub-Forschungs-CI #42522911304 war rot wegen eines nicht auf Null normalisierten, anfangs fehlenden Modulzählers; dies ist im neueren Code korrigiert. Die korrigierte komplette CI [als aktueller PR-Check](https://github.com/tobiasfranziskus/Check/pull/264/checks) erst nach tatsächlichem Abschluss bewerten.
+**[TEST / direkte Ausführung]** Der vollständige Original-JavaScript-Core wurde im isolierten Prüf-Harness ausgeführt: **6/6 C1d-10-Testgruppen erfolgreich**, beide Seeds mit 1.360 echten Ticks, negativen Berechtigungs-/Fälschungsfällen, Save/Load und je 200 weiteren Ticks deterministischen Audits. Die eigenständigen GitHub-Node22- und Vollregressionsprüfungen sind damit **nicht** ersetzt. Die erste GitHub-Forschungs-CI #42522911304 war rot wegen eines nicht auf Null normalisierten, anfangs fehlenden Modulzählers; dies ist im neueren Code korrigiert. Die korrigierte [Node22-Forschungs-CI #42524393433](https://github.com/tobiasfranziskus/Check/actions/runs/42524393433) ist erfolgreich, ebenso die [vollständige JavaScript-Regression #42524393386](https://github.com/tobiasfranziskus/Check/actions/runs/42524393386): **573/573 Tests bestanden, 0 Fehler/Skips**, sieben erfolgreiche Jobs, ein optionaler Vergleich übersprungen. Die oben genannten Hashes sind die tatsächlichen Node22-/GitHub-CI-Werte (frühere lokale Prüf-Harness-Hashwerte waren nicht maßgeblich).
 
 ## Unabhängigkeit, Risiken und Tests
 
 - Original-Core-Produktions-, Arbeits-, Geld-, Eigentums-, Kapazitäts- und Warenaudits sowie unabhängiger Forschungsprüfer `stationDemandAudit` greifen ineinander. Originalfrachtrundflüge und beide Käuferverträge bleiben vollständig erkennbar.
 - Negative Tests: fremder Eigentümer, falsche Station, doppelte Ausführung, erfundene Ware oder Kontobewegung, manipulierte Titel, Kosten, Einbauzahlen, Journal-Signaturen und Lagerobergrenzen. Save/Load trennt Regel3314 strikt von 3313 und älteren Profilen.
 - Wiederholte echte Seeds 42/7 mit identischem vollständigen C1d8b-Vorlauf, dem neuen zusätzlichen Modul und 200 weiteren Ticks, deterministische Hashes.
-- Test-Datei: `tests/c1d-10-stationsmodulbedarf.test.mjs`; offizielle Node22-Forschungs-CI und Gesamtregression **noch zu prüfen**. Ergebnisse werden erst nach tatsächlichem Lauf als bestanden bezeichnet.
+- Test-Datei: `tests/c1d-10-stationsmodulbedarf.test.mjs`; offizielle Node22-Forschungs-CI und Gesamtregression **inzwischen erfolgreich geprüft**. Ergebnisse werden erst nach tatsächlichem Lauf als bestanden bezeichnet.
 
 ## Grenzen
 

@@ -16,7 +16,7 @@ export const FOLLOWUP_PROFILE='aphros-research:C1d-7:post-settlement-journals-v1
 export const SECOND_BATCH_PROFILE='aphros-research:C1d-8:second-real-manufacturing-v1';
 export const SECOND_EXPORT_PROFILE='aphros-research:C1d-8b:second-paid-delivery-v1';
 export const INTERNAL_DEMAND_PROFILE='aphros-research:C1d-10:paid-station-capacity-v1';
-const SOURCE_SHA='a5ef3e28b3cae245fdd161f3c28cb3bca612631769a2cde3cd5fdfa187af0e31';
+const SOURCE_SHA='aef423e27fb9247d7c9eef63e4a95014cc08a5509a056888c0fac3fa46cf70bd';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const integer=x=>Number.isSafeInteger(x)&&x>=0;
 const check=(ok,message)=>{if(!ok)throw Error('C1b-1: '+message);};
@@ -51,7 +51,7 @@ export function createResearchCore({profile=PROFILE}={}){
   base:m_data_rules.RULES});
  `+source.slice(boundary)+`
 return {api:m_core_index,serialize:m_core_serialize,
-  water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s,parts:m_core_w5b};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow,titleFlow,followupFlow,secondBatchFlow,secondExportFlow,internalDemandFlow}));
+  trade:m_core_handel,w3:m_core_w3,water:m_core_w5n,income:m_core_w5o,wages:m_core_w5s,parts:m_core_w5b};`)(modules=>register(modules,{profile,version,precursor,wageFlow,partsFlow,storageFlow,deliveryFlow,exportFlow,bundleFlow,fundedFlow,titleFlow,followupFlow,secondBatchFlow,secondExportFlow,internalDemandFlow}));
  const rules=core.api.W5R_RULES;
  const fingerprint=sha(core.serialize.save(rules));
  function identity(s){
@@ -129,7 +129,39 @@ return {api:m_core_index,serialize:m_core_serialize,
   }
   return validate(s);
  }
+ // C1d-11 research-only read quote. No issuing orders or mutating state.
+ // All prices, freight costs and physical capacity from the SAME original Core.
+ function stationInvestmentQuote(s){
+  check(internalDemandFlow,'nur C1d-10 station investment research');
+  validate(s);
+  const c=rules.c1g,account=s.owners[c.buyer].cash,
+    unitCost=c.unitPrice,
+    freight=core.w3.kalkulation(rules),
+    ore=s.stations[c.station].lager.erz,
+    capacity=core.trade.obergrenze(s,rules,c.station,'erz'),
+    incoming=rules.w3.fracht,
+    physicallyNeeded=ore+incoming>capacity,
+    availableOre=s.stations[rules.w3.quellStation].lager.erz,
+    ownedOre=s.w5h?.bestand??0,
+    carrier=Object.values(s.ships).find(x=>x.owner===rules.w3.spedition&&x.klasse==='frachter'),
+    actualW3=carrier?core.w3.pruefen(s,rules,carrier):{ok:false,grund:'Frachter fehlt'};
+  return Object.freeze({
+   tick:s.tick,station:c.station,
+   capacity,stock:ore,remainingCapacity:capacity-ore,upcomingUnits:incoming,
+   capacityBottleneck:physicallyNeeded,
+   cash:account,unitPrice:unitCost,w3ContractCost:freight.gesamt,
+   cashAfterInvestment:account-unitCost,
+   fundsForW3Before:account>=freight.gesamt,
+   fundsForW3After:account-unitCost>=freight.gesamt,
+   currentOreSourceUnits:availableOre,ownedOre,
+   originalW3Available:actualW3.ok,w3BlockReason:actualW3.ok?null:actualW3.grund,
+   justifiedAutomaticPurchase:!s.c1g?.installed&&physicallyNeeded
+     &&availableOre>=incoming&&ownedOre>=incoming
+     &&account>=unitCost+freight.gesamt,
+  });
+ }
  return Object.freeze({profile,rules,fingerprint,create,step,execute,audit,save,load,hash:core.api.hash,
+  stationInvestmentQuote,
   // Low-level module entrypoints permit adversarial double-call tests, never browser access.
   diagnostics:Object.freeze({mine:core.water.foerdern,income:core.income.einkommen,demand:core.water.nachfrage,
    oreWages:core.wages.orePilotWage,industryWages:core.wages.industryWage})});

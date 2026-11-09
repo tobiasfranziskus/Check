@@ -56,6 +56,11 @@
    money(quote.lohn)+' Pilotenlohn = '+money(quote.kosten)+' vollständig aus eigener Speditionskasse vorfinanziert. Nur Ausführung bucht.':
    'Original-Rule191-Überführung gesperrt: '+(quote?.grund||'Noch keine eigene bezahlte W5-Schiffshülle')+'.';
   $('transfer-start').disabled=!quote?.ok;
+  const freightQuote=selected?snapshot.transfer.freightQuotes[selected]:null;
+  $('transfer-freight-quote').textContent=freightQuote?.ok?
+   'Original-W3-Folgeauftrag: '+n(snapshot.state.w3?.geliefert||0)+' Erz bereits geliefert; weitere 50 echte Erz, 740 ISK Kundengeld und 120 ISK Lohn für Hin- und Rückflug erforderlich. Der Core prüft dies bei Ausführung erneut.':
+   'Noch kein finanzierter W3-Auftrag für diesen Frachter: '+(freightQuote?.grund||'kein eigener bezahlter Werftfrachter')+'.';
+  $('transfer-freight-start').disabled=!freightQuote?.ok;
   table($('transfer-ledger'),[
    ['Gekaufte Original-W5-Hüllen (IDs)',ids.join(', ')||'Noch keine'],
    ['Für tatsächliche Überführungen kumuliert reserviert',money(t.allocated)],
@@ -76,6 +81,10 @@
   $('transfer-start').addEventListener('click',()=>{
    const ship=$('transfer-select').value;
    run(()=>session.command({type:'transferStart',schiff:ship}));
+  });
+  $('transfer-freight-start').addEventListener('click',()=>{
+   const ship=$('transfer-select').value;
+   run(()=>session.command({type:'freightStart',schiff:ship}));
   });
  }
  scope.W5acExtension=Object.freeze({render,mount});

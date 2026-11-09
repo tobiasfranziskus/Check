@@ -20,4 +20,16 @@ Diese Dateien fügen dem Spiel **keine** NPC-Kaufautomatik, Fiktionstransfers od
 
 Ein endgültiger Stopp ist unter freiwilliger Nachfrage erlaubt. Auch ein erfolgreicher 12-Zyklen-Versuch beweist keine dauerhaft tragfähige Wirtschaft. Die Versuchsgrenze ist **kein** Mining-Auftragslimit im Spiel. Kein neues Geldmodell, keine automatische Käuferrettung, keine Änderung am Core oder der Produkt-Roadmap. Für W6 fehlen unabhängige zivile Nachfrage, bezahlte Ersatz-/Wartungswirtschaft und Krisennachfolge.
 
-**Prüfstatus:** Nach ausgeführter CI mit echten Daten ergänzen. Echte iPad Safari/NAS nicht Gegenstand dieses reinen Audit-/Forschungsauftrags.
+## Ausgeführter Messbefund (Seed-/Kapital-/Konsummatrix, 09.11.2026)
+
+**[TEST / DRAFT]** [W5aj-CI #42706734820](https://github.com/tobiasfranziskus/Check/actions/runs/42706734820) hat die **2/2 gezielten W5aj-Tests** mit 13 × 90 tatsächlichen Spieltagen und einem separaten 365-Tage-Gate **bestanden**. Zusätzlich lief die vollständige Node22-Regression mit **197/197 Einzeltests, 0 Fehler, 0 Skips** erfolgreich. Die übergeordnete JS-Regression [#42706734775](https://github.com/tobiasfranziskus/Check/actions/runs/42706734775) war bei Berichterstellung ebenfalls erfolgreich.
+
+**Überraschend einheitlicher, tatsächlich gemessener Engpass:** Alle 13 wirtschaftlich unterschiedlichen Regime erreichen nach dem ersten vorab eingerichteten Eis-Rundflug **genau einen weiteren real bezahlten Eis-Rundflug** (insgesamt je zwei). Beim folgenden Quellverkauf blockiert der unveränderte Original-Core `shipSellIce`: **Aldera hat 0 ISK** und kann die neu geförderte physische Eisladung des Miners nicht erwerben. Im selben Moment hat **Nadir je nach Regime noch 556 bis 2.844 ISK**. Diese Reserve auf einem anderen Eigentümerkonto ist kein Anspruch auf Umbuchung und darf nicht als Stationsrettung ausgegeben werden.
+
+Die verschiedenen freiwilligen Wasser-Kauf- und Fabrikmuster ändern dieses konkrete Abnahme-Gate in dieser Matrix nicht. Beim Spar-Regime verbleiben z. B. **128 ISK** auf dem privaten Eispiloten-Konto und das Wasser wird **nicht** automatisch gekauft. Auch nach den folgenden 90 Sim-Tagen wird kein neuer Fluglohn oder Privathaushaltsverbrauch ohne echte Aufträge erzeugt. Alle Finanz-/Güter-/Lohn-/Eigentums-Audits und Regel195-Save-/Hashkontrollen bleiben intakt.
+
+**Unabhängiger Gegenbeleg Käuferetat:** Im separaten Krisenfall werden physische 50 Eis tatsächlich von Aldera angekauft, doch Nadir besitzt nur 454 statt erforderlicher 490 ISK. Dieser nächste Eisfrachtauftrag wird ohne Mutation abgelehnt. Nach **365 Sim-Tagen**: Hash `9c2c379458be5d22`, Welt-ISK **33.000**, Mint **0**, kein erfundener zweiter Fluglohn.
+
+**Schlussfolgerung (nur Analyse):** Die am aktuellen konkreten Experiment zuerst bindende Grenze ist **Alderas Rohstoff-Abnahmekasse**, nicht die Eisverfügbarkeit, fehlende Fluglohn-Berechnung oder Nadirs Käuferetat. *Warum* Aldera bis zum Folgeverkauf auf 0 ISK fällt, ist damit noch **nicht** nach Eigentümer-/Buchungsarten aufgeschlüsselt. Nächster gezielter Forschungsschritt: genau diese reale Kassenabnahme mit Core-Buchungsbelegen entlang der Tickfolge erklären, statt Geld aufzufüllen oder neue Regeln einzuführen. Dauerwirtschaft W6 ist **nicht** bewiesen.
+
+Echte iPad Safari/NAS nicht Gegenstand dieses reinen Audit-/Forschungsauftrags.

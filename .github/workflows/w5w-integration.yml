@@ -1,0 +1,44 @@
+name: W5w – finanzierter W1-Bergbau im gemeinsamen Hub
+on:
+  pull_request:
+    paths:
+      - 'prototypes/w5w/**'
+      - 'prototypes/legacy-hub/core-adapter.js'
+      - 'tests/w5w-funded-w1-hub.test.mjs'
+      - 'tests/w5w-touch.py'
+      - '.github/workflows/w5w-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-w1-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vollständige JS Node22-Regressionssuite
+        run: node --test tests/*.test.mjs
+      - name: Explizite 7 W5w-Core-/Save-/Wirtschaftstests
+        run: node --test tests/w5w-funded-w1-hub.test.mjs
+  touch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.62.0
+      - run: python -m playwright install --with-deps chromium
+      - name: HQ/Station/2D und echte W1-Treuhand in 4 Touch-Viewports
+        run: python tests/w5w-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: w5w-touch-screenshots
+          path: /tmp/w5w-*.png

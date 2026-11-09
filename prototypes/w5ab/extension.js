@@ -18,7 +18,7 @@
   holder.append(table);root.replaceChildren(holder);
  }
  function render(snapshot){
-  if(snapshot.state.rulesVersion!==19||!snapshot.audit?.ok||!snapshot.shipyard?.audit?.ok)
+  if(![19,191].includes(snapshot.state.rulesVersion)||!snapshot.audit?.ok||!snapshot.shipyard?.audit?.ok)
    throw Error('W5ab nur originaler Regel19-W5-Core mit vollständigem Audit');
   const s=snapshot.state,y=snapshot.shipyard.audit,q=snapshot.shipyard.quote,offer=snapshot.shipyard.sale,w=s.w5;
   $('yard-stats').replaceChildren(

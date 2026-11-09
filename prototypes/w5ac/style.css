@@ -1,0 +1,12 @@
+/* W5ac: additive touch styles, one shared static browser document. */
+#transfer-stats{margin:14px 0}
+#transfer-stats strong{font-variant-numeric:tabular-nums}
+#transfer-ledger,#transfer-status,#transfer-quote{max-width:100%;overflow-wrap:anywhere}
+#transfer .controls{display:flex;flex-wrap:wrap;gap:10px}
+#transfer .controls button{min-height:48px}
+#transfer-select{max-width:100%}
+@media(max-width:600px){
+ #transfer h2{font-size:1.2rem}
+ #transfer .controls button{width:100%}
+ #transfer-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

@@ -2,6 +2,16 @@
 
 > **[MAIN / verifiziert 07.11.2026]** `main` vor dieser rein redaktionellen Bereinigung: [`5a56d9d7`](https://github.com/tobiasfranziskus/Check/commit/5a56d9d7e94a2ad283684b7b912c8b56ca96af53), **v0.12.5 / Regel14 / Schema8**. Keiner der Wirtschafts-R32- oder W5u-Forschungsstände ist in den produktiven Core integriert. Die unverändert historische Statusdatei bleibt unter [`5a56d9d7`](https://github.com/tobiasfranziskus/Check/blob/5a56d9d7e94a2ad283684b7b912c8b56ca96af53/docs/PROJEKTSTATUS.md) und `git show 5a56d9d7e94a2ad283684b7b912c8b56ca96af53:docs/PROJEKTSTATUS.md` erhalten. **Produktpriorität:** [ROADMAP.md](ROADMAP.md); [PR-Index](README.md), [Entwicklungsregeln](../AGENTS.md).
 
+## 0. Ergänzung: überprüfte W1–W4-Integration vom 09.11.2026
+
+**[MAIN]** Aktueller Dokumentationscommit `fd3e915448a2f35fa803db709aff9ce223dddc6f` (konsolidiert #244), produktive `index.html` weiterhin **v0.12.5 / Regel14 / Schema8**. Die unten erhaltene historische Übersicht vom 07.11. ist nicht mit den neueren, ungeprüft für main gebliebenen Drafts gleichzusetzen.
+
+**[DRAFT / Forschungs-Hub]** Gestapelte Originalkern-Integration [#267 W5w/W1](https://github.com/tobiasfranziskus/Check/pull/267) → [#268 W5x/W2](https://github.com/tobiasfranziskus/Check/pull/268) → [#269 W5y/W3](https://github.com/tobiasfranziskus/Check/pull/269) → [#270 W5z/Folgefrachten](https://github.com/tobiasfranziskus/Check/pull/270) → [#271 W5aa/W4](https://github.com/tobiasfranziskus/Check/pull/271). Die Forschungslaufzeit nutzt **einen** Original-W4-Core (Regel18/Schema8) samt HQ, Station, Konzern-, Bergbau-, echter Fracht- und neuer Raffinerieansicht. Original-W4-Daten und Core unverändert aus #169, Commit `112682b1`; keine produktiven Saves berührt.
+
+**[BELEG / ausgeführt · #271 Head `71fc437c`]** [W5aa Node22/Touch-CI #42620615473](https://github.com/tobiasfranziskus/Check/actions/runs/42620615473): **154/154 Node22-JavaScript-Tests, 0 Fehler/Skips**, beide CI-Jobs grün; Chromium-Touch und echtes Regel18-Import-/Export-Szenario in vier Viewportgrößen. Prüfung enthält 13 Seed-Welten × 5 wirklich bezahlte W3-Rundfahrten × 15 wirkliche bezahlte W4-Produktionen (65 Fracht-, 195 Produktionsgeschäfte), zusätzliche **13 × 90 Tage** Original-Core-Geldaudit/Hash-/Save-Replay. Ein einziger wirtschaftlicher Rahmen mit verschiedenen RNG-Seeds, **keine** 13 ökonomisch unterschiedlichen Krisenfälle.
+
+**[FINANZGRENZE / Original-Core-Test]** Nach fünf 50-Erz-Frachten besitzt Nadir 250 Erz und **300 der anfangs 4.000 ISK**. 15 echte W4-Chargen verbrauchen 150 Erz, bezahlen **300 ISK** Raffinerielöhne und produzieren **75 Material**. Es verbleiben **100 Erz, 75 Material, 0 ISK** bei Nadir; die 16. Charge und sechste Fracht scheitern korrekt an eigenem Kapital. Weltweit **33.000 ISK, 0 Mint**. **Keine Materialweiterveräußerung, keine Rentabilitäts- oder Wirtschaftsnachhaltigkeitsfreigabe**. [Vollständiger Draft-Nachweis](https://github.com/tobiasfranziskus/Check/blob/research/w5aa-w4-raffinerie-spielhub-20261109/docs/W5AA_ORIGINAL_W4_RAFFINERIE_SPIELHUB.md). Echte iPad-Safari-/NAS-Abnahme, produktive Migration und W5-Folgekäufer sind offen; keine Merges oder Deployments.
+
 ## 1. Integrationsstand und schützenswerte Versionen
 
 | Teil | Nachgewiesener Stand |

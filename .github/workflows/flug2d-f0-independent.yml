@@ -1,0 +1,50 @@
+name: "Flug2D F0 – independent Node22 and four-size touch research check"
+on:
+  pull_request:
+    paths:
+      - 'prototypes/flug2d/**'
+      - 'tests/flug2d-*'
+      - 'docs/FLUG2D_*'
+      - '.github/workflows/flug2d-f0-independent.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-core-and-flight-node22:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Isolated F0: reference hashes, integer physics, original Core noninterference"
+        run: node --test tests/flug2d-kern.test.mjs
+      - name: "All existing Rule195, old Rule14, save and economy regressions"
+        run: node --test tests/*.test.mjs
+      - name: "Verify two shipped HTML roots and deterministic standalone builder unchanged"
+        run: node scripts/build-w5-singlefile.mjs --check
+  browser-four-viewports:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Install Playwright as CI-only tool, not a game runtime dependency"
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/flug2d-playwright" playwright@1.62.0
+          node "$RUNNER_TEMP/flug2d-playwright/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: "Real F0 browser touch: four viewports, multi-pointer, dock, replay and JSON"
+        run: node tests/flug2d-touch.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/flug2d-playwright/node_modules/playwright
+          CHROMIUM_PATH: playwright-managed
+      - name: "Archive F0 touch screenshots, no installation to Pages"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flug2d-f0-four-viewport-evidence
+          path: /tmp/flug2d-*.png
+          if-no-files-found: warn

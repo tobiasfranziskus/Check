@@ -51,6 +51,9 @@ function loslassen() {
 // Maus und Bedienungshilfen erhalten und wird nach einem Touch-Auslöser einmal unterdrückt.
 function taste(id, aktion) {
   const el = $(id); let beruehrt = -Infinity;
+  // WebKit kann den Touch-Kompatibilitätsklick als Maus melden.
+  // Nur ein tatsächlicher Maus-pointerdown hebt die Touch-Sperre auf.
+  el.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse') beruehrt = -Infinity; });
   el.addEventListener('pointerup', (e) => {
     if (e.pointerType === 'mouse' || el.disabled || !el.contains(document.elementFromPoint(e.clientX, e.clientY))) return;
     beruehrt = performance.now(); aktion();
@@ -58,7 +61,7 @@ function taste(id, aktion) {
   el.addEventListener('click', (e) => {
     // Tastatur/Bedienungshilfen (detail=0) und echte Maus-Pointer bleiben sofort bedienbar.
     // Nur den Kompatibilitätsklick nach Touch/Stift einmal unterdrücken.
-    if (e.detail !== 0 && e.pointerType !== 'mouse' && performance.now() - beruehrt < 700) {
+    if (e.detail !== 0 && performance.now() - beruehrt < 700) {
       beruehrt = -Infinity; return;
     }
     aktion();

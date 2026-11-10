@@ -39,5 +39,9 @@ module.exports = async function eingabe(browser, url, width, height) {
     assert.equal(await page.evaluate(() => window.i0Ausloesungen), 1);
     assert.deepEqual(errors, []);
     console.log(`FLUG2D_EARLY_INPUT_OK ${width}x${height}`);
+  } catch (error) {
+    console.error('I0_INPUT_FAILED', JSON.stringify({ width, height, errors,
+      pause: await page.locator('#pause').getAttribute('aria-pressed') }));
+    throw error;
   } finally { await context.close(); }
 };

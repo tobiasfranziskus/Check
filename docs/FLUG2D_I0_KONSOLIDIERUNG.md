@@ -16,7 +16,7 @@ Nur die Dokumentation kollidierte mit dem neueren Main-Spielstandschutz; beide I
 
 ## Eingabekorrektur
 
-`beruehrt=0` behandelte die ersten 700 ms wie einen bereits erfolgten Touch. Initialisierung und Rücksetzen verwenden jetzt `-Infinity`. Nur ein zeitnaher Kompatibilitätsklick nach Touch/Stift wird unterdrückt; Tastatur/Bedienungshilfen (`detail=0`) und echte Maus-Pointer bleiben unmittelbar bedienbar. Nichtprimäre Touch-Pointer werden weiterhin angenommen.
+`beruehrt=0` behandelte die ersten 700 ms wie einen bereits erfolgten Touch. Initialisierung und Rücksetzen verwenden jetzt `-Infinity`. Nur ein zeitnaher Kompatibilitätsklick nach Touch/Stift wird unterdrückt; Tastatur/Bedienungshilfen (`detail=0`) und echte Maus-Pointer bleiben unmittelbar bedienbar. Ein echter Maus-`pointerdown` hebt die Touch-Sperre auf, da WebKit den Kompatibilitätsklick selbst als Maus melden kann. Nichtprimäre Touch-Pointer werden weiterhin angenommen.
 
 Der gemeinsame Chromium-/WebKit-Regressionshelfer hält `performance.now()` gezielt bei 100 ms: zwei frühe Mausklicks, Enter/Leertaste, echte Touch-Taps mit Kompatibilitätsklick, unmittelbarer Wechsel zu Tastatur/Maus, wiederholtes Touch und nichtprimärer Touch. Vorhandener echter Chromium-Dual-Touch mit gehaltenem Joystick bleibt erhalten. WebKit prüft zusätzlich Zwischenflug-JSON-Download/Import und Replay.
 
@@ -37,7 +37,8 @@ Alle vier kompletten Endzustände identisch. Keine hardwareabhängigen Zeitgrenz
 
 ## Abnahme
 
-- Vollständige Node22-Regression und Chromium-Matrix laufen; abschließende Zähler und CI-Links folgen nach tatsächlichem Abschluss.
+- Chromium lokal **4/4** einschließlich Frühstart, Dual-Touch, Hash, Replay und Zwischenflug-JSON bestanden. Negativkontrolle: ursprünglicher Handler scheitert am ersten Mausklick. Vollständige Node22-Regression läuft; abschließende CI-Nachweise werden im [Draft-PR #294](https://github.com/tobiasfranziskus/Check/pull/294) mit konkretem Head und Links gepflegt.
+- Erster I0-WebKit-Lauf [42894327707](https://github.com/tobiasfranziskus/Check/actions/runs/42894327707) deckte eine doppelte Touch-Auslösung auf: Der Kompatibilitätsklick war als Maus klassifiziert. Korrektur verwendet echten Maus-pointerdown statt click.pointerType; erneute Cross-Engine-Abnahme erforderlich.
 - Lokal 2.000 Renderframes: kanonischer Zustand und Cache unverändert, vier Sprites/Teilesätze, drei Sternschichten; ca. +124 KiB JS-Heap nach GC, 4,284 ms/Frame (diagnostisch). Fehlendes Grafikmodul: Basisansicht und Abdocken bestanden.
 - Singlefile-Reproduktion: `W5_SINGLEFILE_OK`, 320.217 Zeichen, 7 CSS/15 JS; entspricht aktuellem Main mit Spielstandschutz.
 - Lokaler WebKit-Download tatsächlich versucht, HTTP 403 „Domain forbidden“. Vier WebKit-Größen werden im vorhandenen GitHub-Workflow abgenommen.

@@ -1,6 +1,6 @@
 # G1 – Void-Echoes-Grafik auf F0
 
-**[DRAFT · 10.11.2026]** Isolierte Grafik für `prototypes/flug2d/index.html`, nicht im Hauptspiel. Lokal statisch ausliefern (z. B. `python3 -m http.server 8000`) und `/prototypes/flug2d/` öffnen. „Darstellung“ schaltet zwischen UX08 und der bisherigen F0-Dreiecksgrafik. Fehlt das Grafikmodul, startet die Basisansicht weiterhin. Die Modelllegende zeigt alle drei Klassen auch am gemeinsamen Dockpunkt.
+**[DRAFT · 10.11.2026 · [PR #292](https://github.com/tobiasfranziskus/Check/pull/292)]** Isolierte Grafik für `prototypes/flug2d/index.html`, nicht im Hauptspiel. Lokal statisch ausliefern (z. B. `python3 -m http.server 8000`) und `/prototypes/flug2d/` öffnen. „Darstellung“ schaltet zwischen UX08 und der bisherigen F0-Dreiecksgrafik. Fehlt das Grafikmodul, startet die Basisansicht weiterhin. Die Modelllegende zeigt alle drei Klassen auch am gemeinsamen Dockpunkt.
 
 ![G1-Sandbox in Chromium, 1180×820](assets/g1-flug2d-1180x820.png)
 
@@ -37,7 +37,7 @@ Quelle ist das private Repository **void-echoes**, Commit **`a8e2e36faf8257ac2cc
 - Zusätzlicher Chromium-Speichertest (`node tests/flug2d-grafik-speicher.cjs`): **2.000 Frames**, **3,283 ms/Frame**; nach erzwungener GC JS-Heap 1.780.408 → 1.889.476 Bytes (ca. +107 KiB), Backing Storage 236.609 Bytes konstant, Cache und Core unverändert. Kurzer Einzelansicht-Test, keine allgemeine Leckfreiheit bewiesen. Zusätzlich bestanden: absichtlich blockiertes Grafikmodul → Basisansicht startet und kann weiterhin abdocken (`G1_MISSING_MODULE_FALLBACK_OK`).
 - `node scripts/build-w5-singlefile.mjs --check`: **W5_SINGLEFILE_OK**, 312.912 Zeichen, 7 CSS/14 JS; `git diff` bestätigt unveränderten F0-Kern und Referenzlauf.
 - WebKit lokal **nicht ausgeführt**: Browser fehlt (`webkit-2227/pw_run.sh`), Installationsversuch von Playwright-CDN durch Netzwerkregel mit **403 Domain forbidden** abgewiesen. Erweiterter bestehender WebKit-CI-Test ist vorbereitet; kein grüner Lauf ohne Abschluss behauptet.
-- Vollständiger Node22-Gesamtregressionslauf: Ergebnis wird nach Abschluss ergänzt. Die beiden vorhandenen F0-Workflows prüfen auch die neuen `tests/flug2d-*`-Dateien. Browserprüfungen vergleichen reale Canvas-Ausgaben zwischen UX08/Basis, schalten zurück, rendern 360-mal je Größe und drehen denselben Viewport bei pausiertem Core. Caches und kanonischer Zustand müssen gleich bleiben.
+- Vollständiger Lauf mit Node22 v22.23.4: `node --test tests/*.test.mjs` **221/221 bestanden**, 0 Fehler, 0 Skips, 0 abgebrochen; ca. 375 s. Darin alle elf unveränderten F0-Kerntests und vier neue Grafiktests. Die beiden vorhandenen F0-Workflows prüfen auch die neuen `tests/flug2d-*`-Dateien. Browserprüfungen vergleichen reale Canvas-Ausgaben zwischen UX08/Basis, schalten zurück, rendern 360-mal je Größe und drehen denselben Viewport bei pausiertem Core. Caches und kanonischer Zustand müssen gleich bleiben.
 
 ## Grenzen
 

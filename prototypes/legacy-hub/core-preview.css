@@ -1,0 +1,5 @@
+body[data-core-preview]{grid-template-rows:auto auto auto minmax(0,1fr)}
+#core-input{display:flex;flex-wrap:wrap;gap:8px;padding:8px 12px;min-width:0}
+#core-input label{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
+#core-input input,#core-input button{min-height:48px;max-width:100%;min-width:0;font:inherit}
+#core-status{flex-basis:100%;margin:0;font-size:.85rem}

@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import { v11CoreSource } from './v11-core-source.mjs';
 import assert from 'node:assert/strict';
-const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../versionen/v0.12.5/index.html',import.meta.url),'utf8');
 const text=v11CoreSource(html);
 const fixture=JSON.parse(fs.readFileSync(new URL('../tests/fixtures/economy-geography-v11.json',import.meta.url),'utf8'));
 const seeds=[7,11,1,2,65535,42,1234,98765,3,99,2024,2025,314159];

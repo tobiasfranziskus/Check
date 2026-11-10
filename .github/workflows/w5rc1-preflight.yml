@@ -1,0 +1,89 @@
+name: "W5-RC1 – main-safe integration, Node22, 2D touch"
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'aphros-void.html'
+      - 'scripts/**'
+      - 'versionen/**'
+      - 'prototypes/**'
+      - 'tests/**'
+      - 'spieltest/w5-rc1/**'
+      - 'docs/W5RC1_*'
+      - '.github/workflows/w5rc1-preflight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  main-safe-and-all-node22:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact single-file NAS and GitHub Pages build
+        run: node scripts/build-w5-singlefile.mjs --check
+      - name: Verify archived Rule14 and Rule195 full regression suite
+        run: node --test tests/*.test.mjs
+  ipad-touch-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.62.0
+      - run: python -m playwright install --with-deps chromium
+      - name: "Four touch sizes: W5ag paid W0-W5 shared session"
+        run: python tests/w5ag-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
+      - name: "Four touch sizes: original core bound 2D miner"
+        run: python tests/ui-miner2d-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
+      - name: "Four touch sizes: three genuinely financed W5al ice trips"
+        run: python tests/w5ak-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
+      - name: Four more touch sizes against standalone NAS aphros-void.html
+        run: python tests/w5ak-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
+          W5AK_ENTRY: aphros-void.html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: w5rc1-touch-evidence
+          path: |
+            /tmp/w5ag-*.png
+            /tmp/ui-miner2d-*.png
+            /tmp/w5ak-*.png
+
+  static-nas-preview-package:
+    name: "NAS delivery – exactly one aphros-void.html"
+    needs:
+      - main-safe-and-all-node22
+      - ipad-touch-preflight
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify reproducible single-file HTML and package only that file
+        run: |
+          node scripts/build-w5-singlefile.mjs --check
+          mkdir -p dist-rc1
+          cp aphros-void.html dist-rc1/aphros-void.html
+          test "$(find dist-rc1 -type f | wc -l)" -eq 1
+          test ! -e dist-rc1/index.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aphros-void-nas-einzeldatei
+          path: dist-rc1/aphros-void.html
+          retention-days: 30
+          if-no-files-found: error

@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { v11CoreSource } from '../tools/v11-core-source.mjs';
 
-const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../versionen/main-pre-w5-20261110/index.html',import.meta.url),'utf8');
 const source=html.slice(html.indexOf('<script>')+8,html.indexOf('const m_data_oberflaeche'));
 const { c, r, b, p }=new Function(source+';return {c:m_core_index,r:m_data_rules.RULES,b:m_core_schiffbau,p:m_core_produktion};')();
 

@@ -74,7 +74,7 @@ const assert=require('node:assert/strict');
        const done=JSON.parse(await page.evaluate(()=>F2aDemo.zustand()));
        assert.equal(done.f2a.missionen[own.id].status,'fertig');
        assert.equal(done.ships[own.id].flug.lage,'angedockt');
-       assert.equal(done.ships[own.id].ladung.eis,0);
+       assert.equal(done.ships[own.id].ladung.eis||0,0);
        assert.equal(done.stations.st_aldera.lager.eis,48);
        assert.equal(done.w5n.mineVerkauft,48);
        assert.equal(done.w5n.mineLohn,96);

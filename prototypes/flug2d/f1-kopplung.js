@@ -13,7 +13,14 @@ if (!FACTORY?.createPrivateWageResearch || !FLUG?.schritt)
 const N = FLUG.DATEN.schritteJeMinute;
 const PROFIL = 196;
 
-function erstellen(startkapital = {}) {
+function erstellen(startkapital = {}, optionen = {}) {
+  // F2a darf opt-in eine andere Forschungssave-Kennung verwenden. Der
+  // bisherige F1-Einstieg bleibt bitgleich auf Regel196 und wird nie migriert.
+  if (!optionen || typeof optionen !== 'object' || Array.isArray(optionen)
+    || Object.keys(optionen).some(k => k !== 'researchProfile')
+    || (Object.hasOwn(optionen, 'researchProfile') && optionen.researchProfile !== 197))
+    throw TypeError('F1: unbekanntes oder ungültiges Forschungsprofil');
+  const profil = optionen.researchProfile ?? PROFIL;
   // Die Original-Rule195-Quelldatei bleibt BYTEGLEICH (Singlefile-Reproduzierbarkeit).
   // Der Forschungsvermerk 196 wird nur in serialisierten F1-Ständen verwendet.
   // Für jeden Economy-Aufruf sieht die *selbe* Originalengine Rule195, damit auch
@@ -21,15 +28,15 @@ function erstellen(startkapital = {}) {
   const engine = FACTORY.createPrivateWageResearch(startkapital);
   const wirtschaft = engine.core;
   const econRules = engine.rules;
-  const rules = Object.freeze({ ...econRules, rulesVersion: PROFIL });
+  const rules = Object.freeze({ ...econRules, rulesVersion: profil });
   if (econRules.rulesVersion !== 195 || rules.schema !== 8)
     throw Error('F1: inkompatibler Originalwirtschaftskern');
   function imOriginalCore(state, aktion) {
-    if (state?.rulesVersion !== PROFIL)
+    if (state?.rulesVersion !== profil)
       throw Error('F1: falsche Regelkennung bei Core-Aufruf');
     state.rulesVersion = econRules.rulesVersion;
     try { return aktion(); }
-    finally { state.rulesVersion = PROFIL; }
+    finally { state.rulesVersion = profil; }
   }
   // Nur für das ALTE finanzielle Audit/Laden: dieselbe Welt ohne visuelle Flugfelder.
   function wirtschaftsSicht(state) {
@@ -52,7 +59,7 @@ function erstellen(startkapital = {}) {
     }
   }
   function pruefen(state) {
-    if (state?.rulesVersion !== PROFIL || state?.schema !== rules.schema)
+    if (state?.rulesVersion !== profil || state?.schema !== rules.schema)
       throw Error('F1: inkompatible Regelversion/Schema; keine automatische Migration');
     if (!state.flug || !Number.isSafeInteger(state.flug.schritt))
       throw Error('F1: Flugschrittzähler fehlt');
@@ -80,7 +87,7 @@ function erstellen(startkapital = {}) {
   }
   function createState(seed = rules.startSeed) {
     const state = wirtschaft.createW5State(seed);
-    state.rulesVersion = PROFIL;
+    state.rulesVersion = profil;
     state.flug = { schritt: 0 };
     synchronisieren(state);
     if (!audit(state).ok) throw Error('F1: Anfangszustand nicht konsistent');
@@ -148,7 +155,7 @@ function erstellen(startkapital = {}) {
     // Rule195-Saves dürfen nicht automatisch Regel196 werden und umgekehrt.
     let roh;
     try { roh = JSON.parse(json); } catch (_) { throw Error('F1: JSON nicht lesbar'); }
-    if (roh?.rulesVersion !== PROFIL || roh?.schema !== rules.schema)
+    if (roh?.rulesVersion !== profil || roh?.schema !== rules.schema)
       throw Error('F1: fremde Regelversion oder Schema; keine automatische Migration');
     // Der ORIGINAL-Core prüft die vollständige Rule195-Wirtschaftsprojektion.
     // F1-Feldern und Forschungskennung wird dabei NICHT vertraut.
@@ -157,7 +164,7 @@ function erstellen(startkapital = {}) {
     return roh;
   }
   return Object.freeze({
-    rules, createState, execute, submit, teilschritt, fliegen, minute, advance,
+    rules, researchProfile: profil, createState, execute, submit, teilschritt, fliegen, minute, advance,
     audit, save, load, hash: wirtschaft.hash, canonical: wirtschaft.canonical,
     flugKern: FLUG,
   });

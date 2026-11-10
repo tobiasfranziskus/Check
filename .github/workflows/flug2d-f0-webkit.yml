@@ -25,5 +25,6 @@ jobs:
         run: |
           node tests/flug2d-webkit.cjs
           FLUG_BROWSER=webkit node tests/flug2d-f1-browser.cjs
+          FLUG_BROWSER=webkit node tests/flug2d-f2a-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/flug2d-playwright/node_modules/playwright

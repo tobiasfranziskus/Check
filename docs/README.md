@@ -1,15 +1,16 @@
 # Aphros Void – Repo- und Forschungsindex
 
-> **Stand: 07.11.2026.** Dies ist **nur Navigation**. Einzige verbindliche Produktplanung: [ROADMAP.md](ROADMAP.md). Belegter Stand: [PROJEKTSTATUS.md](PROJEKTSTATUS.md); Regeln: [AGENTS.md](../AGENTS.md). Vor dem Arbeiten die tatsächlichen GitHub-Refs/CI erneut prüfen.
+> **Stand: 10.11.2026.** Dies ist **nur Navigation**. Einzige verbindliche Produktplanung: [ROADMAP.md](ROADMAP.md). Belegter Stand: [PROJEKTSTATUS.md](PROJEKTSTATUS.md); Regeln: [AGENTS.md](../AGENTS.md). Vor dem Arbeiten die tatsächlichen GitHub-Refs/CI erneut prüfen.
 
 ## Welche Version ist was?
 
 | Status | Einstieg | Tatsächlicher Befund |
 |---|---|---|
-| **[MAIN]** | [Hauptbranch](https://github.com/tobiasfranziskus/Check/tree/main) | `v0.12.5`, **Regel14/Schema8**, produktive HTML/JS-Datei `index.html`. Kein R32-Neuaufbau gemergt. |
+| **[MAIN]** | [Hauptbranch](https://github.com/tobiasfranziskus/Check/tree/main) | W0–W5, **Regel195/Schema8**, Save-Schutz aus PR #289; `index.html` und `aphros-void.html` identischer Blob `76f2a070`. Aktueller Main-Head `04124f2b`; der dokumentierte Pages-Deploy belegt noch `ba0c1861`. |
 | **[BACKUP]** | [Version v0.12.5](../versionen/v0.12.5/) / [Backup-Branch](https://github.com/tobiasfranziskus/Check/tree/backup/pages-v0.12.5-20261106) | Unveränderter Spieltest-Archivstand. Weder Index noch produktive Saves mit Drafts überschreiben. |
 | **[DRAFT/ANALYSE] Wirtschaft** | [#243 Gesamtwirtschaft](https://github.com/tobiasfranziskus/Check/pull/243) | Endpunkt des **gestapelten** W0–W5s/R32-Forschungszweigs. Audits grün, Langzeitwirtschaft bei legalem Sparen/fehlender Endnachfrage **nicht** stabil. |
-| **[DRAFT/ANALYSE] Spiel-UI** | [#203 Hub](https://github.com/tobiasfranziskus/Check/pull/203) → [#207 Adapter](https://github.com/tobiasfranziskus/Check/pull/207) → [#234 W5u](https://github.com/tobiasfranziskus/Check/pull/234) | Isolierter Forschungs-Hub mit **Regel14**, nicht R32. Eigenständige UI-Extraktionen #186/#187/#189/#195/#198 bleiben Ausgangsmaterial. |
+| **[DRAFT/ANALYSE] Spiel-UI** | [#203 Hub](https://github.com/tobiasfranziskus/Check/pull/203) → [#207 Adapter](https://github.com/tobiasfranziskus/Check/pull/207) → [#234 W5u](https://github.com/tobiasfranziskus/Check/pull/234) | Historische Legacy-UI-Forschungsquelle mit Regel14; kein aktueller Produkt-Core. |
+| **[DRAFT/ANALYSE] Flug** | [#290 F0](https://github.com/tobiasfranziskus/Check/pull/290) / [#291 Legacy-Audit](https://github.com/tobiasfranziskus/Check/pull/291) | Deterministischer F0-Flugkern bleibt Forschungsbasis; die GitHub-Segmentdateien aus [`void-echoes`](https://github.com/tobiasfranziskus/void-echoes) liefern wirksame UX08-Grafik- und UX01-/UX06-Pointer-Muster, nicht die exportierte HTML-Datei. F1 nicht integriert. |
 | **[OPTION / nicht publiziert]** | [Geplanter W5-Pages-Test](PAGES_SPIELTEST.md) | Das vorhandene Freigabe-/Backupkonzept ist keine Bestätigung einer tatsächlich live veröffentlichten W5-Version. |
 
 ## Warum sind noch so viele Draft-PRs offen?
@@ -36,4 +37,4 @@ Am Beginn der Bereinigung am 07.11.2026 waren **76** PRs offen. Ein Großteil en
 3. **Keinen** Git-History-Rewrite und **keine** Branchlöschungen ohne Beleg der Nichtbenutzung; `versionen/`, `backup/`, Index und Spielstände unverändert.
 4. Historische Langtexte sind vor der Redaktion fest gepinnt: [Roadmap](https://github.com/tobiasfranziskus/Check/blob/5a56d9d7e94a2ad283684b7b912c8b56ca96af53/docs/ROADMAP.md), [Projektstatus](https://github.com/tobiasfranziskus/Check/blob/5a56d9d7e94a2ad283684b7b912c8b56ca96af53/docs/PROJEKTSTATUS.md). Wiederherstellung mit `git show 5a56d9d7:docs/ROADMAP.md` usw. (oder gezielter Revert dieser Dokumentationsänderung).
 
-**Nächster verifizierbarer Entwicklungsauftrag:** R32-Finanzierungs- und Endnachfrageproblem aus #243 beheben **ohne Gratisrettung**, während #234 separat auf echter Hardware abgenommen wird. Nur die [Roadmap](ROADMAP.md) entscheidet über verbindliche Prioritäten.
+**Aktueller Flug-Forschungsstand:** Vor F1 ist die Legacy-Analyse aus [#291](https://github.com/tobiasfranziskus/Check/pull/291) dokumentiert. Claudes F0 bleibt die Fluggrundlage; [#290](https://github.com/tobiasfranziskus/Check/pull/290) ist vor F1 auf aktuellen Main zu aktualisieren. F1 bleibt getrennt, opt-in und ohne Regel195-Wirtschaftskopplung, bis Performance- und Audit-Gates belegt sind. Nur die [Roadmap](ROADMAP.md) entscheidet über verbindliche Prioritäten.

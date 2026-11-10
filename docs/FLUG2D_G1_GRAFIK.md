@@ -39,6 +39,12 @@ Quelle ist das private Repository **void-echoes**, Commit **`a8e2e36faf8257ac2cc
 - WebKit lokal **nicht ausgeführt**: Browser fehlt (`webkit-2227/pw_run.sh`), Installationsversuch von Playwright-CDN durch Netzwerkregel mit **403 Domain forbidden** abgewiesen. Erweiterter bestehender WebKit-CI-Test ist vorbereitet; kein grüner Lauf ohne Abschluss behauptet.
 - Vollständiger Lauf mit Node22 v22.23.4: `node --test tests/*.test.mjs` **221/221 bestanden**, 0 Fehler, 0 Skips, 0 abgebrochen; ca. 375 s. Darin alle elf unveränderten F0-Kerntests und vier neue Grafiktests. Die beiden vorhandenen F0-Workflows prüfen auch die neuen `tests/flug2d-*`-Dateien. Browserprüfungen vergleichen reale Canvas-Ausgaben zwischen UX08/Basis, schalten zurück, rendern 360-mal je Größe und drehen denselben Viewport bei pausiertem Core. Caches und kanonischer Zustand müssen gleich bleiben.
 
+## Korrektur des CI-Fallback-Tests (10.11.2026)
+
+**[DRAFT / PR #292]** Der F0-CI-Lauf [42886286196](https://github.com/tobiasfranziskus/Check/actions/runs/42886286196) auf `322c0c7` scheiterte nach vier erfolgreichen Touchgrößen und dem 2.000-Frame-Teil beim abschließenden Fallback-Abdocken. Der bisherige Test wartete auf Echtzeit-Flugschritte der zweiten Browserseite; eine RAF-/Hintergrundseitenabhängigkeit ist plausibel, ein Defekt der Dock-FSM damit nicht belegt.
+
+`tests/flug2d-grafik-speicher.cjs` pausiert jetzt vor dem Abdocken, prüft `abdocken`, löst über `#minute` genau eine Spielminute aus und prüft unmittelbar `frei`. Keine Timeout-Erhöhung. Bei Fehlern werden Meldung, HUD, kanonischer Zustand und seit Seitenstart gesammelte PageErrors protokolliert; PageErrors führen auch bei erfolgreichem Abdocken zum Fehler. Lokal mit Node22/Chromium bestanden: `G1_MISSING_MODULE_FALLBACK_OK`, 2.000 Frames mit identischen Caches/Core, JS-Heap nach GC 1.806.856 → 1.924.292 Bytes. Diese lokale Prüfung ersetzt nicht die erneute vollständige CI-Abnahme auf dem Korrektur-Head. Flugkern, Grafikmodul, Referenzhashes und Produktdateien bleiben unverändert.
+
 ## Grenzen
 
 Echte iPad-Safari-/NAS-Abnahme ausdrücklich **offen**. Linux-WebKit ersetzt diese nicht. Cache-Grenzen und kurze Renderläufe beweisen keinen stundenlangen Safari-Speicherbetrieb. Gleichzeitige angedockte Schiffe überlagern sich weiterhin an der autoritativen F0-Position; die Modelllegende macht die Klassen trotzdem unterscheidbar. Keine künstlichen Positionsversätze. Spätere Integration mit aktuellem Main/F1 und große Flotten brauchen eine erneute Abnahme.

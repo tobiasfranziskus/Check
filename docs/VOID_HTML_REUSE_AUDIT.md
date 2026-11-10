@@ -1,66 +1,58 @@
-# Legacy-Audit `void.html` vor F1 – Flug, Grafik und Steuerung
+# Legacy-Quellcode-Audit vor F1 – `tobiasfranziskus/void-echoes`
 
-**[ANALYSE / NICHT INTEGRIERT · 10.11.2026]**
+**[ANALYSE · 10.11.2026 · NUR GITHUB-QUELLCODE, NICHT INTEGRIERT]**
 
-Ziel: Vor F1 gezielt feststellen, welche Teile der alten `void.html` für den neuen 2D-Flug wiederverwendbar sind. Das ist eine Bestandsaufnahme, keine Freigabe alter Spielregeln.
+## 0. Korrektur der Quellbasis
 
-## 1. Quellen und aktueller Stand
+Die verbindliche Legacy-Quelle ist das **private GitHub-Repository** [`tobiasfranziskus/void-echoes`](https://github.com/tobiasfranziskus/void-echoes), **nicht** eine exportierte oder hochgeladene `void.html`. Diese Revision ersetzt den früheren Snapshot-basierten Audit. Aktueller `void-echoes/main` in der GitHub-Abfrage: `a8e2e36faf8257ac2cc47780d12ea9e8e1f58b9f`; der Segment-Build meldet `X02-B`. Der Forschungsbranch `x02c` weicht ab und konzentriert sich vor allem auf Wirtschafts-/NPC-Korrekturen; er ist kein neues freigegebenes Flugmodell.
 
-- Geprüfte Quelle: persönliche Projektbibliothek `void.html`, 915.361 Bytes, dort am 30.10.2026 angelegt. Die Datei liegt **nicht** als `void.html` im Root des aktuellen GitHub-`main`; die Untersuchung bezieht sich ausdrücklich auf den Library-Snapshot.
-- Aktueller Produkt-`main`: `04124f2bca27dc33b54be30c07b6a7bbb7387e81` (nach dem Abschluss von PR #289).
-- Claudes F0-Flugkern: Quellcommit `8deaab072c55308caa422a7724990ae2aa608c18`; unabhängige Review-Fassung PR #290, Head `a12a3d00f216f066cd97178926ac3ad52119ecce`.
-- PR #290 ist weiterhin Draft und nicht integriert. Sein Review-Branch basiert auf `7374b29`, liegt gegenüber aktuellem `main` einen Commit zurück und muss vor F1 aktualisiert werden.
+Quelle und Buildstruktur:
+- [`README.md`](https://github.com/tobiasfranziskus/void-echoes/blob/main/README.md) dokumentiert die aufgeteilte statische HTML-Datei: `src/script/`, `src/head/`, `src/body/`, `build/manifest.json`.
+- [`build/manifest.json`](https://github.com/tobiasfranziskus/void-echoes/blob/main/build/manifest.json) legt die Ausführungsreihenfolge verbindlich fest. **Nicht einfach das frühe `sgSprite()` kopieren:** später überschreibt UX08 diesen Renderer.
+- [`docs/SEGMENTE.md`](https://github.com/tobiasfranziskus/void-echoes/blob/main/docs/SEGMENTE.md) indiziert Herkunft, Aufrufe und spätere Überschreibungen; nicht jedes Basis-Segment ist die wirksame Funktion.
+- [`VERSIONS.md`](https://github.com/tobiasfranziskus/void-echoes/blob/main/VERSIONS.md) trennt historische NAS-/iPad-Angaben, archivierte Versionen und neuere Forschungsstände. Kein Deployment aus diesem Audit.
 
-## 2. Ergebnis: Was sich lohnt
+## 1. Gezielte Fundstellen und Priorität
 
-| Bereich | Alte Funktionen / Fundstelle | Empfehlung |
-|---|---|---|
-| Schiffsgeometrie | `SG_SHAPES` (ca. Z. 1160): `rookie`, `interceptor`, `cruiser`, `prospector`, `courier`, `hauler`, `exhumer`, `miner`, `trader`, `hunter`, `pirate` | **Wiederverwenden.** Polygonformen als reine Grafikdaten auf Miner/Frachter/Jäger abbilden. |
-| 2D-Sprites | `sgPolygon()`, `sgSprite()`, `sgShip()` (ca. Z. 1165–1175) | **Wiederverwenden/adaptieren.** Offscreen-Canvas, Sprite-Cache, Farbvarianten, Schiffsdetails und Triebwerksspur. Neuer Renderer liest ausschließlich den F0-Flugzustand. |
-| Raumhintergrund | `sgSkyInit()`, `sgSky()` (ca. Z. 1160–1165) | **Wiederverwenden/adaptieren.** Parallax-Ebenen und Sternmuster sind reine Darstellung; die Erzeugung beim Port ausdrücklich rendererlokal fixieren oder separat deterministisch seeden. Keine Verbindung zum Core-RNG. |
-| Darstellung/HUD | `draw()` (ab ca. Z. 1177) | **Selektiv übernehmen.** Zielrahmen, Auswahl, Entfernungen, Beschriftungen und passende Effekte. Nicht die komplette alte Funktion mit dem alten Weltobjekt kopieren. |
-| Touch-/Pointer-Muster | `txHit()`, `txFlyPoint()` (ca. Z. 3859–3865), `vt01Down/Move/Cancel/Up()` (ca. Z. 4869–4895) | **Muster wiederverwenden.** Pointer Capture, Pointer-Cancel, Mehrfingererkennung, Zoom, Trefferprüfung, Kontextschutz und explizite Bestätigung. Neu an F0-Befehle und den aktuellen UI-Zustand anbinden. |
-| Kamera | `GridRenderer.rotate()`, `zoom()`, Pointer-Gesten (ca. Z. 4800–4890) | Für eine spätere optionale Beobachtung nützlich; nicht Voraussetzung für F1. |
+| Priorität | GitHub-Quelldatei | Konkreter Befund | F1-Empfehlung |
+|---|---|---|---|
+| **A** | [`src/script/390-ux08-vektorgrafik.js`](https://github.com/tobiasfranziskus/void-echoes/blob/main/src/script/390-ux08-vektorgrafik.js) | `GX_MODELS`: 11 definierte Hüllengeometrien mit `role`, `engines`, `scale`; `gxParts()`, `gxCanvas()`, `gxSvg()`. **Wirksame** `sgSprite`-, `sgShip`- sowie Sternhimmel-Überschreibungen. Dieselben Teile für Canvas-Spielgrafik und SVG-Werftvorschau. | Vorrangig als **einheitliches, dekoratives 2D-Modellsystem** adaptieren, nicht älteren `SG_SHAPES`-Stand als aktuelle Optik ausgeben. Separater Grafik-Adapter auf F0. |
+| **A** | [`src/script/080-ve08g-02-sprites.js`](https://github.com/tobiasfranziskus/void-echoes/blob/main/src/script/080-ve08g-02-sprites.js) | `SG_SHAPES`, `sgRandom`, `sgPolygon`, `sgAngle`, `sgSky` und Offscreen-/Canvas-Cache. Spätere Overrides kommen aus UX08. | Nur benötigte geometrische/Canvas-Basishilfen übernehmen. `SG`-/`GX`-Caches bleiben ausschließlich Renderzustand. |
+| **A** | [`src/script/580-ux01-erweiterung.js`](https://github.com/tobiasfranziskus/void-echoes/blob/main/src/script/580-ux01-erweiterung.js) | `vt01Down/Move/Up/Cancel`, `setPointerCapture`, Multi-Touch/Pinch, Doppeltipp, Sichtbarkeits-/Sitzungswechsel, explizite Flugbestätigung. | Saubere Touch-Muster prüfen; **F0-Joystick bleibt**. Alte Input-Handler nicht global einhängen oder Befehle direkt wiederverwenden. |
+| **B** | [`src/script/370-ux06-auswahl.js`](https://github.com/tobiasfranziskus/void-echoes/blob/main/src/script/370-ux06-auswahl.js) | `txHit` projiziert Objekte auf Canvas, `txRadius` berechnet Hit-Zonen; `txChoose` wählt Ziel, `txFlyPoint` löst erst nach eigener Prüfung einen alten `goto`-Befehl aus. | Hit-Testing, UI-Auswahl und explizite Bestätigung in den F0-UI-Adapter übersetzen, nicht alte `act()`-Befehle. |
+| **B** | [`src/script/085-kern-zeichnen-hud.js`](https://github.com/tobiasfranziskus/void-echoes/blob/main/src/script/085-kern-zeichnen-hud.js) | `draw()` zeigt Stationen/Felder/Schiffe, Zielrahmen, Laser-/Bergbau- und Schadenseffekte; `ui()` ist an altes `S` und Wirtschaftsfelder gebunden. | Einzelne HUD-/Effektideen adaptieren, **nicht** `draw()` bzw. `ui()` komplett kopieren. |
+| **B** | [`src/script/360-ux05-cockpit.js`](https://github.com/tobiasfranziskus/void-echoes/blob/main/src/script/360-ux05-cockpit.js) | Präsentations-Cockpit `cpRender` ohne eigene Welt-/Befehlsschreibzugriffe. | Optionale Vorlage für Status/HUD, nur wenn mit F0-Sandbox deutlich besser. |
+| **C** | [`src/script/650-perf01-inputfix01.js`](https://github.com/tobiasfranziskus/void-echoes/blob/main/src/script/650-perf01-inputfix01.js) | Berührungs-Feedback, keine Doppelaktionen, Host-Bestätigung, Performance-Diagnostik und Eingabe-Kontextschutz. | Einzelne UX-/Messideen bei Bedarf wiederverwenden; keine WebRTC-/Host-Protokolle in F1. |
+| **C / später** | [`src/script/550-ve3d02-adapter.js`](https://github.com/tobiasfranziskus/void-echoes/blob/main/src/script/550-ve3d02-adapter.js), [`src/script/570-ve3d02-renderer.js`](https://github.com/tobiasfranziskus/void-echoes/blob/main/src/script/570-ve3d02-renderer.js) | Lesender Weltadapter und separater WebGL-3D-Renderer. | Kein 3D-Import für F1. Adaptermuster ist nützlich, WebGL bleibt optional/spät. |
 
-Die alte Datei enthält außerdem einen separaten 3D-WebGL-Renderer (`GridRenderer`). Er wird für F1 **nicht** übernommen: Das Ziel ist ein persönlich steuerbares 2D-Schiff, und die bestehende Produktarchitektur soll nicht ohne gesonderte Entscheidung um eine 3D-Ansicht erweitert werden.
+**Wichtige Abhängigkeitsfalle:** `390-ux08-vektorgrafik.js` verwendet bereits die frühere `sgPolygon`-Hilfe und `SG.sprites` aus `080-ve08g-02-sprites.js`; zugleich überschreibt es `sgSprite`, `sgShip`, `sgStars`, `sgSkyInit` und `sgSky`. Für Check die benötigten Funktionen als explizite reine Grafikmodule **ohne** globale Überschreibung isolieren. Ein einfaches Copy-paste des späteren Segments ist nicht startbar.
 
-## 3. Was ausdrücklich nicht übernommen wird
+## 2. Alte Flugmechanik: ausschließlich Vergleich, keine Übernahme
 
-| Alte Funktion | Technischer Befund | Entscheidung |
-|---|---|---|
-| `mv()` (ca. Z. 1067) | Fließkomma-Bewegung, `dt`-abhängige Glättung, `Math.hypot`, `Math.atan2` | Nicht übernehmen. Kein plattformübergreifend festgelegter Ganzzahl-Integrator. |
-| `steer()` (ca. Z. 1074) | Alte Autopilotlogik für `goto`, `appr`, `orb`, `warp` | Nicht übernehmen. Nur UX-Ideen für Anflug/Orbit als Referenz nutzen. |
-| `tick()` (ca. Z. 1081) | Vermischt Bewegung, Wirtschaft, Kampf, Module und NPC-Takt | Nicht übernehmen. Verstößt gegen die gewünschte Trennung. |
-| `dock()` / `apply()` (ca. Z. 1066–1135) | Sofortiges Andocken, Entladen, Reparatur/Reset und alte Befehlssemantik | Nicht übernehmen. F0 besitzt eine explizite An-/Abdock-Zustandsmaschine und validierte Core-Befehle. |
-| Warp-/Energiepfad | Alte Warp- und Modulmechanik mit Energieverbrauch | Nicht übernehmen. Kein Bestandteil des normalen F1-Raumflugs. |
-| Alte Welt-, Netzwerk- und Speicherhülle | Globale Zustände, alte Entity-IDs, WebRTC/Signalisierung und eigene Save-Logik | Nicht übernehmen. Kein zweiter Weltzustand und keine parallele Befehls-/Speicherarchitektur. |
+[`src/script/075-kern-simulation.js`](https://github.com/tobiasfranziskus/void-echoes/blob/main/src/script/075-kern-simulation.js):
+- `mv()` nutzt fließkommaabhängige `dt`-Glättung, Geschwindigkeiten und `Math.atan2`; `steer()` steuert `goto`, `appr`, `orb`, `warp` mit alten Entity-IDs und globalem `S`.
+- `tick()` ruft Wirtschaft, Schiffsmodule, Kampf, Bergbau, NPC-Logik und Bewegung in einer gemeinsamen Schleife auf.
+- `dock()` kombiniert Positionierungs-/Dockzustand mit Entladen, Reparatur, Modulen und Regeneration. Die alte `apply()`-Befehlshülle ist damit ebenfalls nicht für Regel195 verwendbar.
+- Alte Warp-/Energie-/Fracht- und Netzwerkregeln passen nicht zum geplanten, autoritativen F0-Flugprofil.
 
-Wichtige Klarstellung: Die alte Datei bietet **keinen vergleichbaren manuellen Analog-Joystick**. Ihre freie Bewegung wird im Wesentlichen über Zielauswahl und Autopilotbefehle ausgelöst. Claudes F0-Sandbox hat bereits einen 168-px-Steuerknüppel, direkte Kurs-/Fahrtbefehle und Touch-/Tastaturbedienung.
+**Fazit:** Null Flugphysik aus `void-echoes` in den neuen Core übernehmen. Vorhandene Routinen dienen nur als UX-/Feature-Vergleich (Zielwahl, Orbit-Darstellung, Blickrichtung).
 
-## 4. Warum F0 die Grundlage bleibt
+## 3. F0 bleibt einzige Flugautorität
 
-F0 verwendet eine eigene, von der alten Simulation getrennte Ganzzahl-Kinematik:
+In [Check PR #290](https://github.com/tobiasfranziskus/Check/pull/290), Quellbranch `claude/inspiring-galileo-0d2mek`, liegt ein separater Forschungs-Flugkern mit festem Ganzzahlintegrator, 60 Teilschritten pro Kernminute, denselben Flugbefehlen für Spieler und NPC, Dock-Zustandsmaschine und separater Sandbox. Die unabhängig gemeldete F0-CI: **11/11 Kern-Tests, 217/217 Node22 gesamt, Chromium 4/4 und WebKit 4/4 mit gleichem Referenzhash**. Das beweist noch nicht die 13×90-Laufzeit oder ein echtes iPad Safari.
 
-- 60 deterministische Flugteilschritte je bestehender Core-Minute.
-- Spieler und NPC benutzen dieselben validierten Befehle und denselben Integrator.
-- Kein Geld, keine Ware, kein Treibstoff, kein RNG und keine Wandzeit im Flugkern.
-- Position, Geschwindigkeit, Kurs, Anflug und Andocken sind auditierbarer Zustand; JSON-Save/Load ist auch während des Flugs vorgesehen.
-- Der unabhängige F0-Review meldet 11/11 isolierte Flugtests, 217/217 Gesamt-Node22-Tests sowie 4/4 Chromium- und 4/4 WebKit-Viewportprüfungen mit demselben Referenzhash. Das ist kein Nachweis für echtes iPad Safari oder die spätere 13×90-Leistung.
+Check-Main zum Zeitpunkt dieses Audits: `04124f2bca27dc33b54be30c07b6a7bbb7387e81`; Regel195-Save-Schutz aus PR #289 integriert. Der PR-#290-Review-Branch stammt noch von `7374b29` und ist vor F1 mit Main abzugleichen.
 
-Die alte Grafik kann auf diesen Kern aufsetzen, nicht umgekehrt. Eine dünne Render-Adapter-Schicht übersetzt F0-Felder wie `x`, `y`, `kurs` und `vx/vy` in die Eingaben der Darstellung. Render-Interpolation, Partikel und Wandzeit bleiben strikt außerhalb von Zustand, Hash und Core.
+## 4. Isolierte Übernahme in den F1-Nachfolgeaufträgen
 
-## 5. Gates vor F1
+1. **F1 Core (eigene Forschungsregel):** F0 auf aktuellen Main abgleichen; nur F0-Kinematik und Fly-Audit integrieren. Ohne neue Ortsbedingungen bleiben Regel195 und seine Geld-/Waren-/Hashreferenzen unverändert.
+2. **Separater Grafikschritt:** `GX_MODELS`/`gxParts`/`gxCanvas` und einen passenden statischen SVG-/Canvas-Renderer adaptieren; `SG`-Sternhimmel als reine Darstellung. Ein kleiner, expliziter Render-Adapter nimmt nur lesend F0-`x/y/kurs/vx/vy` an. Keine Legacy-`S`-, `act`-, `tick`- oder `SG/GX`-Globalzustände.
+3. **Touch-Ergänzung:** F0-Joystick und Buttonsemantik bewahren, nur bislang fehlende Zielauswahl/Pinch-/Pointer-Cancel-Muster nachbauen. Spielbefehle ausschließlich via die F0-Validierung; keine UI-Nebenbuchungen.
+4. **Leistung und Nachweis:** Realistische Schiffsflotten, fest definierte Seeds und 13 × 90 Tage; 60 × 60 × 24 × 90 × 13 = **101.088.000** Flugteilschritte (pro 90-Tage-Welt 7.776.000). Vor allem ID-Sortierung pro Teilschritt und Canvas-Cache auf echten Viewports messen. Wirtschaftliche Durchsatzänderungen erst in F2 separat bewerten.
+5. **Speichersicherheit:** F0-Flugaudit, Import/Export mitten im Flug, Zwischenzustände, ungültige Objekte, Browserkonflikte; kein stiller Regel195→F1-Save-Import. Echte iPad-Safari-/NAS-Abnahme bleibt gesondert offen.
 
-1. **F0-Review aktualisieren:** PR #290 auf aktuellen `main 04124f2` bringen; die dortigen Hinweise auf PR #289 als noch offenen Draft sind nach dessen Abschluss überholt.
-2. **F1 eng halten:** Flugkern als getrenntes, opt-in Forschungsprofil integrieren. Regel195 muss ohne Flugprofil bitgleich bleiben. Keine stille Migration, keine Ortskopplung an Förderung/Verkauf und keine Änderung der Wirtschaft in diesem Schritt.
-3. **Grafik separat anbinden:** Zunächst nur Schiffsformen, 2D-Sprites, Sternenhimmel und passende HUD-Elemente aus `void.html` übernehmen. Keine alte Physik oder alte Weltobjekte.
-4. **Touch nicht doppeln:** F0s bereits getesteten Steuerknüppel und Befehle als Basis behalten. Aus `void.html` nur robuste Pointer-/Auswahl-/Zoom-Muster übernehmen, falls im neuen Cockpit tatsächlich benötigt.
-5. **Leistung vor Wirtschaftsankopplung messen:** 60 Teilschritte je Spielminute bedeuten 7.776.000 Flugschritte je 90-Tage-Welt und 101.088.000 über 13 solche Welten. F0 sortiert aktuell die Schiff-IDs in jedem Flugschritt erneut; Benchmark mit realistischer Flottengröße ist Pflicht. Noch kein solcher 13×90-Flugbenchmark als bestanden belegt.
-6. **Fly-Audit und Save/Load:** Fehlende/fremde/manipulierte Flugfelder, Eigentümerwechsel, Zwischenflug-Save, Andocksequenzen und Regeltrennung testen. Erst danach separate Ortsbedingungen in einem späteren Schritt prüfen.
-7. **Geräteabnahme:** Echte iPad-Safari- und statische NAS-Prüfung bleiben offen; Chromium/WebKit-CI ersetzt diese nicht.
+## 5. Grenzen und Verifikation
 
-## 6. Schlussfolgerung
+Das ist eine **GitHub-Quelltextsichtung**, keine ausgeführte neue Spielintegration und kein erfolgreich gelaufener neuer CI-Job. Die GitHub-Dateien selbst (nicht eine exportierte `void.html`) wurden gelesen; keine unveröffentlichten `x02c`-Mechaniken in F1 importiert. Keine Änderung an `void-echoes`, Check-Produktcode, Saves, Pages oder NAS.
 
-**[EMPFEHLUNG]** F0 bleibt die alleinige Grundlage der Flugmechanik. Aus `void.html` übernehmen wir gezielt visuelle Assets/Algorithmen und ausgewählte Touch-Interaktionsmuster. Die alte Physik, Tick-/Wirtschaftslogik, Dock-/Warpregeln, alte Saves und Netzwerkhülle bleiben ausgeschlossen.
-
-Diese Untersuchung ändert weder Produktcode noch Regel195, Schema, Preise, Spielstände, Pages oder NAS. Sie ist keine Freigabe für F1, Regel196 oder eine Migration.
+**[EMPFEHLUNG]** F0 physikalisch erhalten; aus `void-echoes` nur das wirksame UX08-/SG-Grafiksystem plus geprüfte UX06-/UX01-Eingabemuster zielgerichtet in eigene Check-Module überführen. Ergebnis unter Kontrolle eines einzelnen Wirtschafts- und Flugkerns.

@@ -22,6 +22,8 @@ jobs:
           npm install --no-save --prefix "$RUNNER_TEMP/flug2d-playwright" playwright@1.62.0
           node "$RUNNER_TEMP/flug2d-playwright/node_modules/playwright/cli.js" install --with-deps webkit
       - name: "Cross-engine: Node22 reference hash in WebKit/JavaScriptCore and touch at four sizes"
-        run: node tests/flug2d-webkit.cjs
+        run: |
+          node tests/flug2d-webkit.cjs
+          FLUG_BROWSER=webkit node tests/flug2d-f1-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/flug2d-playwright/node_modules/playwright

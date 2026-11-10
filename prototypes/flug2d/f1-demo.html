@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aphros Void · F1 Forschungsflug mit echter Wirtschaft</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#0b111a;color:#e0e9f3;font:16px/1.4 system-ui,-apple-system,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{padding:9px 12px}
+h1{margin:0;font-size:1.15rem}header p{margin:5px 0 0;font-size:.88rem;color:#b1c4d4}
+main{display:grid;grid-template-columns:minmax(0,1fr) 315px;gap:8px;padding:0 8px 8px;height:calc(100dvh - 120px);min-height:410px}
+#sicht{position:relative;min-height:270px;border:1px solid #657a8c;border-radius:8px;overflow:hidden}
+#raum{display:block;width:100%;height:100%;touch-action:manipulation}
+#hud{position:absolute;left:8px;right:8px;top:7px;margin:0;color:#98f0f0;font-size:.86rem;text-shadow:0 1px 3px #000;pointer-events:none}
+#steuerung{overflow:auto;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+.reihe{display:flex;flex-wrap:wrap;gap:7px}
+button,select{background:#1b3044;border:1px solid #708898;border-radius:8px;color:inherit;font:inherit;min-height:52px;padding:8px;flex:1 1 110px;touch-action:manipulation}
+button:disabled{opacity:.48}button[aria-pressed=true]{background:#245b72}
+p,output{margin:0}
+#meldung{min-height:40px;font-size:.88rem}
+#status,#bilanz{font:13px/1.45 ui-monospace,SFMono-Regular,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+#status{color:#b5c9d7}
+#bilanz{color:#91d7be}
+label{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+summary{min-height:48px;padding:12px 8px;cursor:pointer}
+input[type=file]{max-width:100%;min-height:44px}
+a{color:#9ee6ef}
+@media (max-width:780px),(orientation:portrait){main{height:auto;grid-template-columns:1fr;grid-template-rows:minmax(290px,52vh) auto}}
+</style>
+<script defer src="../w5ac/rule191-w5-ferry-core.js"></script>
+<script defer src="flug-kern.js"></script>
+<script defer src="grafik.js"></script>
+<script defer src="f1-kopplung.js"></script>
+<script defer src="f1-demo.js"></script>
+</head>
+<body>
+<header>
+<h1>Aphros Void – F1: Flug und Wirtschaft</h1>
+<p><strong>Experimentelle Regel196-Sitzung, nicht das Hauptspiel.</strong> Miner werden bezahlt gekauft, Flugbewegung und Originalwirtschaft teilen einen Zustand. Förderung ist in F1 <strong>noch nicht ortsgebunden</strong>. Kein Browser-Autosave; produktive Spielstände werden nie angetastet.</p>
+</header>
+<main>
+<section id="sicht" aria-label="Weltraumkarte mit beweglichen Miner-Schiffen, Erz- und Eisfeld">
+<canvas id="raum" aria-label="Flugkarte. Antippen setzt bei frei fliegendem eigenen Miner einen Zielpunkt."></canvas>
+<p id="hud">F1 wird geladen …</p>
+</section>
+<section id="steuerung">
+<p id="meldung" role="status" aria-live="polite">Kaufe einen Miner, um persönlich zu fliegen.</p>
+<div class="reihe"><button id="kaufen">Miner kaufen (echte ISK)</button><button id="dock" disabled>Abdocken</button></div>
+<div class="reihe"><button id="erz" disabled>Zum Erzfeld</button><button id="eis" disabled>Zum Eisfeld</button></div>
+<div class="reihe"><button id="links" disabled>↶ Kurs −</button><button id="rechts" disabled>↷ Kurs +</button></div>
+<div class="reihe"><button id="langsamer" disabled>Schub −</button><button id="schneller" disabled>Schub +</button></div>
+<div class="reihe"><button id="pause" aria-pressed="true">Weiter</button><button id="tempo">Zeit 1×</button><button id="minute">+1 Spielminute</button></div>
+<output id="bilanz" aria-live="off">Konten und Ware werden geladen …</output>
+<output id="status" aria-live="off">Audits werden geladen …</output>
+<details>
+<summary>Forschungssitzung als JSON sichern / importieren</summary>
+<div class="reihe"><button id="export">F1-JSON exportieren</button><label>F1-JSON laden <input id="import" type="file" accept=".json,application/json"></label></div>
+<p style="font-size:.84rem;color:#b1c4d4">Import ersetzt nur diese F1-Testsession nach Bestätigung. Alte Regel195-Dateien werden abgewiesen. Vorherige Sitzungen sind nicht automatisch gespeichert.</p>
+</details>
+<p style="font-size:.84rem;color:#b1c4d4">Die ersten Miner gehören einem NPC. Dein Miner entsteht erst durch einen bezahlten Kauf. Der NPC fliegt in F1 noch nicht autonom. <a href="index.html">Zur separaten F0-Flugsandbox</a></p>
+</section>
+</main>
+</body></html>

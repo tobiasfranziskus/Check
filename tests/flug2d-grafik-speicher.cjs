@@ -55,25 +55,48 @@ const http = require("http"),
     assert.ok(after.usedSize - before.usedSize < 8 * 1024 * 1024);
     console.log(JSON.stringify({ frames: 2000, before, after, ...result }));
     const fallback = await browser.newPage();
-    await fallback.route("**/grafik.js", (route) => route.abort());
-    await fallback.goto(
-      "http://127.0.0.1:" +
-        server.address().port +
-        "/prototypes/flug2d/index.html",
-    );
-    await fallback.waitForFunction(
-      () =>
-        !!window.FlugSandbox &&
-        document.querySelector("#hud").textContent.includes("angedockt"),
-    );
-    assert.equal(await fallback.locator("#grafik").inputValue(), "basis");
-    assert.equal(await fallback.locator("#grafik").isDisabled(), true);
-    await fallback.locator("#dock").click();
-    await fallback.waitForFunction(
-      () => JSON.parse(FlugSandbox.zustand()).ships.sp1.flug.lage === "frei",
-    );
-    console.log("G1_MISSING_MODULE_FALLBACK_OK");
-    await fallback.close();
+    const pageErrors = [];
+    fallback.on("pageerror", (error) => pageErrors.push(error.stack || error.message));
+    try {
+      await fallback.route("**/grafik.js", (route) => route.abort());
+      await fallback.goto(
+        "http://127.0.0.1:" +
+          server.address().port +
+          "/prototypes/flug2d/index.html",
+      );
+      await fallback.waitForFunction(
+        () =>
+          !!window.FlugSandbox &&
+          document.querySelector("#hud").textContent.includes("angedockt"),
+      );
+      assert.equal(await fallback.locator("#grafik").inputValue(), "basis");
+      assert.equal(await fallback.locator("#grafik").isDisabled(), true);
+      // No wall-time/RAF dependency for the undock sequence on this second page.
+      await fallback.locator("#pause").click();
+      assert.equal(await fallback.locator("#pause").getAttribute("aria-pressed"), "true");
+      await fallback.locator("#dock").click();
+      assert.equal(
+        await fallback.evaluate(() => JSON.parse(FlugSandbox.zustand()).ships.sp1.flug.lage),
+        "abdocken",
+      );
+      await fallback.locator("#minute").click();
+      assert.equal(
+        await fallback.evaluate(() => JSON.parse(FlugSandbox.zustand()).ships.sp1.flug.lage),
+        "frei",
+      );
+      assert.deepEqual(pageErrors, []);
+      console.log("G1_MISSING_MODULE_FALLBACK_OK");
+    } catch (error) {
+      const diagnostics = await fallback.evaluate(() => ({
+        meldung: document.querySelector("#meldung")?.textContent,
+        hud: document.querySelector("#hud")?.textContent,
+        zustand: window.FlugSandbox?.zustand(),
+      })).catch((diagnosticError) => ({ unavailable: diagnosticError.message }));
+      console.error("G1_MISSING_MODULE_FALLBACK_FAILED", JSON.stringify({ ...diagnostics, pageErrors }));
+      throw error;
+    } finally {
+      await fallback.close();
+    }
   } finally {
     if (browser) await browser.close();
     server.close();

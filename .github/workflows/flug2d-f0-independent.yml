@@ -43,6 +43,7 @@ jobs:
         run: |
           node tests/flug2d-touch.cjs
           node tests/flug2d-grafik-speicher.cjs
+          node tests/flug2d-f1-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/flug2d-playwright/node_modules/playwright
           CHROMIUM_PATH: playwright-managed

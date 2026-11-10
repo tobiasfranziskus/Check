@@ -9,7 +9,7 @@ export const SEEDS=[7,11,1,2,65535,42,1234,98765,3,99,2024,2025,314159];
 export const BASE='e0c27a3762d9d6e75d8bcc30ed47621eff2f152b';
 export const PINS={evidence:'6855d76bb374dd777a1b7e30ea52c9a6eca36399',b1:'cec7f93758e4a499c238738ff50adac4416080d4'};
 export function readCore(){
- const html=fs.readFileSync(new URL('../versionen/main-pre-w5-20261110/index.html',import.meta.url),'utf8');
+ const html=fs.readFileSync(new URL('../versionen/v0.12.5/index.html',import.meta.url),'utf8');
  assert.equal(html.includes('v0.12.5'),true,'nur tatsächlichen Regel-13-Kern zulassen');
  return html;
 }

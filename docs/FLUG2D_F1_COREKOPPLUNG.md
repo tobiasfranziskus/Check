@@ -6,7 +6,7 @@
 
 F1 ist als klar getrenntes Opt-in mit **Schema8 / experimenteller Regelversion196** umgesetzt. Dieser Forschungswert ist keine Produktfreigabe und kann vor F1-Abnahme geändert werden. Die alte **Regel195** wird weder in Verhalten noch in Wirtschaftspreisen, RNG, Ledger, Trust Funds, Mining-Aufträgen oder Spielstandsformat verändert.
 
-Die einzige Wirtschaftsautorität bleibt der vorhandene W0–W5-Core aus `prototypes/w5ac/rule191-w5-ferry-core.js`: `createFlightResearch()` erzeugt dieselben Regeln wie `createPrivateWageResearch()`, nur mit einer separaten Forschungskennung. **Keine kopierte Wirtschaftsschleife.** Der kleine Adapter `prototypes/flug2d/f1-kopplung.js` kombiniert ihn im **gleichen Zustand** mit dem vorhandenen F0-`flug-kern.js`:
+Die einzige Wirtschaftsautorität bleibt der **bytegleich unveränderte** W0–W5-Core aus `prototypes/w5ac/rule191-w5-ferry-core.js`. `prototypes/flug2d/f1-kopplung.js` ruft `createPrivateWageResearch()` auf und verwaltet **ausschließlich im F1-Adapter** die Forschungskennung 196. Jeder Wirtschaftsaufruf wird synchron unter der internen Regel195-Kennung ausgeführt und die Forschungskennung anschließend in einem `finally`-Block wiederhergestellt. So bleiben insbesondere die internen Vollkosten-/Endnachfrage-/Treuhand-Audits der originalen Version aktiv. **Keine kopierte Wirtschaftsschleife, keine Änderung am Original-Core.** Im gleichen Zustand laufen F0-`flug-kern.js` und der bestehende Wirtschaftstick:
 
 - `state.flug.schritt` ist 0 bis 59, `state.tick` zählt weiterhin echte Core-Minuten.
 - `teilschritt(state)` ruft F0 genau einmal auf; erst beim Überlauf nach 60 Flugsekunden `wirtschaft.step(state,rules)` **genau einmal**.
@@ -17,7 +17,7 @@ Die einzige Wirtschaftsautorität bleibt der vorhandene W0–W5-Core aus `protot
 
 ## Save, Load und Geldschutz
 
-- `save` und `load` nutzen den originalen Core-Serializer und seinen vollständigen Geld-, Waren-, Vertrags- und Finanzierungs-Audit; zusätzlich wird **jeder vorhandene** F0-Flugkörper streng kontrolliert.
+- `save` nutzt den unveränderten Core-Serializer. `load` prüft die F1-Forschungskennung und führt die vollständige originale Rule195-Ladeprüfung **an einer separaten Wirtschaftsprojektion ohne Flugfelder** aus. Anschließend wird der vollständige Regel196-Zustand inklusive strengem F0-Audit akzeptiert oder abgelehnt. Der Original-Core muss dafür keinerlei neue Regelversion kennen.
 - Regel196-Spielstände enthalten `state.flug` und einen `flug`-Teil bei jedem Miner. Nur Miner dürfen einen solchen Teil besitzen. Fremde Felder, fehlende Körper und ungültige Koordinaten werden abgelehnt.
 - **Keine automatische Migration**: Rule195-JSON wird von F1 verweigert, Rule196-JSON vom unveränderten Rule195-Lader verweigert. Deshalb alte Spielstände und produktive IndexedDB unverändert lassen.
 - Die Regel195-Economy-Ausgabe wird zum Vergleich durch Entfernen ausschließlich der neuen Flugfelder und Rücksetzen **nur der Forschungsregelnummer zur Normalisierung** mit Rule195 verglichen; die eigentlichen Geld-/Waren-/RNG-/Vertragswerte bleiben vollständig im Vergleich enthalten.
@@ -26,9 +26,9 @@ Die einzige Wirtschaftsautorität bleibt der vorhandene W0–W5-Core aus `protot
 
 | Datei | Änderung |
 | --- | --- |
-| `prototypes/w5ac/rule191-w5-ferry-core.js` | isolierte Forschungskonfiguration 196 und `createFlightResearch`, sonst alte Engine |
-| `prototypes/flug2d/f1-kopplung.js` | gemeinsame Uhr, ein Zustand, Flugbefehle/Minute, Finanzierungsschutz, strenges Save/Load |
-| `tests/flug2d-f1.test.mjs` | Tick 59/60, stiller Schnellweg, freier Flug, identischer Wirtschaftspfad, realer Miner-Kauf, Queue, Save/Load, manipulationsfeste Daten, 13 Seed-Gegenläufe |
+| `prototypes/w5ac/rule191-w5-ferry-core.js` | **bytegleich unverändert**; weiterhin dieselbe Originalwirtschaft |
+| `prototypes/flug2d/f1-kopplung.js` | additiver Adapter um originalen Regel195-Core; Forschungshülle196, gemeinsame Uhr, Flugbefehle/Minute, Finanzierungsschutz und strenges Save/Load |
+| `tests/flug2d-f1.test.mjs` | Tick 59/60, stiller Schnellweg, freier Flug, identische Originalwirtschaft, realer Miner-Kauf, Queue, Save/Load, manipulationsfeste Daten, 13 Seed-Gegenläufe |
 | `docs/FLUG2D_F1_COREKOPPLUNG.md` | Architektur, Grenzen, Prüf- und Integrationsgates |
 
 **Gezielter Aufruf:** `node --test tests/flug2d-f1.test.mjs`  
@@ -36,7 +36,7 @@ Die einzige Wirtschaftsautorität bleibt der vorhandene W0–W5-Core aus `protot
 
 ### Offen vor F1-Freigabe
 
-- CI für den zusammengeführten Stand mit G1 / #292 / #293 und neuem `main` (#289-Import-/Save-Schutz).
+- CI für den zusammengeführten Stand mit G1 / #292 / #293 und neuem `main` (#289-Import-/Save-Schutz); `node scripts/build-w5-singlefile.mjs --check` muss explizit grün bleiben. Der erste Entwurf, der die Original-Core-Datei modifizierte, wurde aufgrund dieses Schutzgates verworfen und vollständig aus dem Branch-Diff zurückgenommen.
 - Vollständige **13 × 90 Spieltage** unter den originalen wirtschaftlichen Zahlungs- und Krisenfällen. Die im F1-Test verwendeten **13 × 720 Minuten** sind lediglich kurze technische Gegentests, **keine** 13×90-Tage-Abnahme.
 - Unabhängiger Replay-Hash auf F1 mit Flugbefehlspfaden und Browser-JavaScriptCore-Gegenlauf.
 - Integration der optionalen F1-Autorität in die UI-Hülle sowie Pflege derselben Regelnummer/Save-Version in jeder Singlefile-Fassung.

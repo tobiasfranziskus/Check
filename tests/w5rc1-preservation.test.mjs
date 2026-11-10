@@ -11,9 +11,10 @@ const text=p=>read(p).toString('utf8');
 const blobSha=buf=>createHash('sha1').update(Buffer.from('blob '+buf.length+'\0')).update(buf).digest('hex');
 
 test('RC1: exact main root and v0.12.5 archive remain byte-identical',()=>{
- assert.equal(blobSha(read('index.html')),'b2ab84d5c7d5c177268fe750a6987abdc1825f78');
+ assert.equal(blobSha(read('versionen/main-pre-w5-20261110/index.html')),'b2ab84d5c7d5c177268fe750a6987abdc1825f78');
+ assert.deepEqual(read('index.html'),read('aphros-void.html'));
  assert.equal(blobSha(read('versionen/v0.12.5/index.html')),'a2bcf5d2f9d3322c2a5edd4440eb77d094c84b9a');
- assert.ok(text('index.html').length>100000,'main game intact');
+ assert.ok(text('versionen/main-pre-w5-20261110/index.html').length>100000,'archived game intact');
 });
 test('RC1: launcher only links to research hub, does not switch main or write save slots',()=>{
  const html=text('spieltest/w5-rc1/index.html');

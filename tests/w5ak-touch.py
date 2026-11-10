@@ -13,7 +13,7 @@ try:
   for w,h in [(1180,820),(1024,768),(820,1180),(390,844)]:
    ctx=browser.new_context(viewport={'width':w,'height':h},is_mobile=True,has_touch=True,accept_downloads=True)
    page=ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
-   page.goto(f'http://127.0.0.1:{server.server_port}/prototypes/w5ag/')
+   page.goto(f'http://127.0.0.1:{server.server_port}/'+os.environ.get('W5AK_ENTRY','prototypes/w5ag/'))
    page.wait_for_function("document.querySelector('#identity').textContent.includes('Regel 195')",timeout=15000)
    page.evaluate("localStorage.setItem('w5ag-product-sentinel','keep')")
    def tap(sel):page.locator(sel).tap()

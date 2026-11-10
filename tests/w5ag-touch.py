@@ -54,7 +54,9 @@ try:
    assert 'Original-Audit OK' in page.locator('#identity').inner_text()
    assert errors==[],errors
    page.locator('#water').screenshot(path=f'/tmp/w5ag-{w}x{h}.png')
-   page.reload();page.wait_for_function("document.querySelector('#identity').textContent.includes('Tick 0')")
+   final=export();page.wait_for_function("document.querySelector('#storage-status').textContent.includes('gesichert')")
+   page.reload();page.wait_for_function("!document.body.inert && document.querySelector('#storage-status').textContent.includes('wiederhergestellt')")
+   assert export()==final
    assert page.evaluate("localStorage.getItem('w5ag-product-sentinel')")=='keep'
    ctx.close();print(f'PASS W5ag {w}x{h}: W0-W5, two paid pilots, real water, protected midflight JSON',flush=True)
   browser.close()

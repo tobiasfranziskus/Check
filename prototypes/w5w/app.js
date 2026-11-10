@@ -4,6 +4,13 @@
  const modeName=rules.rulesVersion===195?'W5ag':rules.rulesVersion===191?'W5-Transfer':rules.rulesVersion===19?'W5':rules.rulesVersion===18?'W4':rules.rulesVersion===17?'W3':rules.rulesVersion===16?'W2':'W1';
  const fmt=n=>Number.isSafeInteger(n)?n.toLocaleString('de-DE')+' ISK':'Unbekannt',
   val=x=>x===null||x===undefined?'Unbekannt':typeof x==='object'?JSON.stringify(x):String(x);
+ let storage=null,saveQueue=Promise.resolve(),saveRequest=0;
+ const storageStatus=text=>{if($('storage-status'))$('storage-status').textContent=text;};
+ function persist(manual=false){
+  if(!storage)return;
+  const json=session.export(),request=++saveRequest;storageStatus('Speichern …');
+  saveQueue=saveQueue.then(()=>storage.write(json,manual)).then(()=>{if(request===saveRequest)storageStatus(manual?'Manueller Spielstand und Autosave gesichert.':'Automatisch gesichert.');}).catch(e=>{if(request===saveRequest)storageStatus('Speicherfehler: '+e.message+' JSON bitte extern exportieren.');});
+ }
  let snap=session.snapshot(),current='mining',revision=0,angle=0;
  const canvas=document.querySelector('canvas'),graphics=W5uGraphics.grafik(canvas);
  const local={x:0,y:0,zoom:.3,reduced:true,selected:null};
@@ -120,7 +127,7 @@
   try{const r=fn();$('message').textContent=r?.ok===false?'Abgelehnt: '+r.reason:
    'Original-'+modeName+'-Befehl geprüft und ausgeführt. Geld-, Waren- und Vertragsaudit OK.';}
   catch(e){$('message').textContent='Nicht übernommen: '+e.message;}
-  update();
+  update();persist();
  }
  const go=name=>{
   current=name;document.querySelectorAll('[data-panel]').forEach(n=>n.hidden=n.id!==name);
@@ -140,6 +147,17 @@
  document.querySelectorAll('[data-step]').forEach(b=>b.addEventListener('click',()=>run(()=>session.advance(Number(b.dataset.step)))));
  $('rotate').addEventListener('click',()=>{angle+=Math.PI/4;draw();});
  $('zoom').addEventListener('input',draw);window.addEventListener('resize',draw);
+ function download(json,name){
+  const url=URL.createObjectURL(new Blob([json],{type:'application/json'})),a=document.createElement('a');
+  a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ }
+ $('save')?.addEventListener('click',()=>persist(true));
+ for(const [id,slot] of [['load','manual'],['load-previous','previous']])$(id)?.addEventListener('click',async()=>{
+  const request=++revision;await saveQueue;if(request!==revision)return;
+  try{const json=storage?.read(slot);if(!json)throw Error('Kein Spielstand in diesem Speicherplatz');
+   download(session.export(),'aphros-regel195-vor-laden.json');run(()=>session.import(json));
+  }catch(e){storageStatus('Nicht geladen: '+e.message);}
+ });
  $('export').addEventListener('click',()=>{
   const url=URL.createObjectURL(new Blob([session.export()],{type:'application/json'})),a=document.createElement('a');
   a.href=url;a.download=rules.rulesVersion===195?'aphros-w5ag-regel195.json':rules.rulesVersion===191?'aphros-w5ac-forschung-w5-transfer-regel191.json':rules.rulesVersion===19?'aphros-w5ab-forschung-w5-regel19.json':rules.rulesVersion===18?'aphros-w5aa-forschung-w4-regel18.json':rules.rulesVersion===17?'aphros-w5y-forschung-w3-regel17.json':rules.rulesVersion===16?'aphros-w5x-forschung-w2-regel16.json':'aphros-w5w-forschung-w1-regel15.json';a.click();
@@ -151,6 +169,10 @@
    if(file.size>5*1024*1024)throw Error('Datei größer als 5 MiB');
    const data=await file.text();
    if(request!==revision)return;
+   if(globalThis.W5agStorage){
+    globalThis.W5agStorage.validate(data,()=>W5wSession.create());
+    download(session.export(),'aphros-regel195-vor-import.json');
+   }
    run(()=>session.import(data));
   }catch(e){if(request===revision)$('message').textContent='Nicht übernommen: '+e.message;}
   finally{if($('import').files[0]===file)$('import').value='';}
@@ -158,4 +180,22 @@
  globalThis.W5yExtension?.mount(session,run);globalThis.W5aaExtension?.mount(session,run);globalThis.W5abExtension?.mount(session,run);globalThis.W5acExtension?.mount(session,run);globalThis.W5agExtension?.mount(session,run);
  globalThis.W5agMiner?.mount(session,run);
  go('mining');update();
+ if(globalThis.W5agStorage){
+  document.body.inert=true;
+  (async()=>{
+   try{
+    storage=await W5agStorage.open(globalThis.indexedDB,()=>W5wSession.create());
+    let json;
+    try{json=storage.read('auto');}catch(e){
+     storageStatus('Autosave beschädigt: '+e.message);
+     json=storage.read('previous');
+    }
+    if(json){session.import(json);update();}
+    if(storage.blocked)storageStatus('Speichern gesperrt: beschädigte Daten bleiben erhalten. Gültigen Stand als JSON exportieren.');
+    else if(json)storageStatus('Autosave wiederhergestellt · pausiert · kein Offline-Fortschritt.');
+    else persist();
+   }catch(e){storageStatus('Speicher nicht verfügbar: '+e.message+' JSON exportieren; vorhandene Daten bleiben erhalten.');}
+   finally{document.body.inert=false;}
+  })();
+ }
 })();

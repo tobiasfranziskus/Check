@@ -96,15 +96,18 @@
 </style>
 
 
+
 </head>
 <body>
 <header>
 <h1>Aphros Void – W0–W5</h1>
 <p><strong>Spielbare Forschungswelt · W0–W5 mit Eis, Wasser und persönlichen Pilotenkonten / Forschungsregel 195 / Schema 8.</strong>
 Ein gemeinsamer Original-Core für Spieler und NPC. Getrennt von W5ab (Regel 19), W5aa (Regel 18), W5z/W5y (Regel 17), W5x (Regel 16), W5w (Regel 15), W5u (Regel 14), C1d (Regel 3314)
-und öffentlichem Hauptspiel. Keine Speicherung in produktiven Slots; Reload startet die Forschung neu. Vor Reload oder Import den aktuellen Stand als JSON exportieren. Die Bedienfolge steht unter „Eis, Wasser &amp; Privatkonten“.</p>
+und öffentlichem Hauptspiel. Automatisches Speichern nach jeder Aktion in einer eigenen Regel195-Datenbank. Wiederherstellung bleibt pausiert, ohne Offline-Fortschritt. Browserdaten sind keine NAS-Sicherung; JSON regelmäßig extern sichern. Regel14-Speicher bleiben unberührt. Die Bedienfolge steht unter „Eis, Wasser &amp; Privatkonten“.</p>
 </header>
 <section class="controls" aria-label="Sitzung und Schutz">
+<button id="save">Spielstand speichern</button><button id="load">Manuellen Spielstand laden</button><button id="load-previous">Vorherigen Autosave laden</button>
+<p id="storage-status" role="status" aria-live="polite">Speicher wird geprüft …</p>
 <button id="export">W5ag-Forschungssitzung als JSON exportieren</button>
 <label>Nur Regel195-JSON importieren <input id="import" type="file" accept=".json,application/json"></label>
 <button data-step="1">1 Minute</button><button data-step="10">10 Minuten</button><button data-step="20">20 Minuten (Raffineriearbeit)</button><button data-step="30">30 Minuten (Werftarbeit)</button><button data-step="50">50 Minuten (erste Erzcharge)</button><button data-step="60">60 Minuten</button>
@@ -4967,6 +4970,77 @@ if(typeof module==='object'&&module.exports)module.exports=api;else scope.W5agMi
 })(globalThis);
 
 </script>
+<script data-inlined-from="storage.js">
+/* Browser-only save shell. Never opens legacy databases or migrates rules. */
+(function(scope){
+'use strict';
+const database='aphros-void-regel195-v1',key='world',profile='regel195-schema8';
+function canonical(value){
+ if(Array.isArray(value))return '['+value.map(canonical).join(',')+']';
+ if(value&&typeof value==='object')return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+canonical(value[k])).join(',')+'}';
+ return JSON.stringify(value);
+}
+function checksum(text){let n=2166136261;for(let i=0;i<text.length;i++)n=Math.imul(n^text.charCodeAt(i),16777619);return (n>>>0).toString(16);}
+function validate(text,create){
+ if(typeof text!=='string'||text.length>5*1024*1024)throw Error('Ungültige JSON-Größe');
+ const raw=JSON.parse(text);
+ if(raw?.schema!==8||raw.rulesVersion!==195)throw Error('Nur Regel195 / Schema8; keine Migration');
+ const candidate=create();candidate.import(text);
+ const json=candidate.export();
+ if(canonical(raw)!==canonical(JSON.parse(json)))throw Error('Unvollständiger oder unbekannter Spielstand');
+ return json;
+}
+async function open(indexedDB,create){
+ const db=await new Promise((resolve,reject)=>{
+  const req=indexedDB.open(database,1);
+  req.onupgradeneeded=()=>req.result.createObjectStore('saves');
+  req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+  req.onblocked=()=>reject(Error('Speicher durch anderen Tab blockiert'));
+ });
+ db.onversionchange=()=>db.close();
+ let expected=await new Promise((resolve,reject)=>{
+  const tx=db.transaction('saves','readonly'),r=tx.objectStore('saves').get(key);
+  tx.oncomplete=()=>resolve(r.result);tx.onabort=()=>reject(tx.error);
+ });
+ let blocked=false;
+ function checkHeader(){
+  if(expected!==undefined&&(expected.format!==1||expected.profile!==profile||!Number.isSafeInteger(expected.revision)||expected.revision<1||!expected.slots))throw Error('Inkompatible Speicherhülle');
+ }
+ function read(slot){
+  checkHeader();const entry=expected?.slots[slot];if(entry===undefined)return null;
+  if(!entry||typeof entry.json!=='string'||checksum(entry.json)!==entry.checksum)throw Error('Beschädigter Spielstand: '+slot);
+  return validate(entry.json,create);
+ }
+ try{checkHeader();for(const slot of Object.keys(expected?.slots||{})){
+  if(!['auto','manual','previous'].includes(slot))throw Error('Unbekannter Speicherplatz');read(slot);
+ }}catch(e){blocked=true;}
+ return Object.freeze({read,get blocked(){return blocked;},close:()=>db.close(),
+  async write(text,manual=false){
+   if(blocked)throw Error('Speichern gesperrt: beschädigter/fremder Stand. JSON exportieren; gültige Sicherung laden.');
+   const json=validate(text,create),entry={json,checksum:checksum(json)};
+   const slots={...expected?.slots};
+   if(slots.auto&&slots.auto.json!==json)slots.previous=slots.auto;
+   slots.auto=entry;if(manual)slots.manual=entry;
+   const next={format:1,profile,revision:(expected?.revision||0)+1,slots};
+   await new Promise((resolve,reject)=>{
+    const tx=db.transaction('saves','readwrite'),store=tx.objectStore('saves'),req=store.get(key);
+    let failure=null;
+    req.onsuccess=()=>{
+     if(canonical(req.result)!==canonical(expected)){failure=Error('Anderer Tab hat gespeichert. Zum Schutz gesperrt; JSON exportieren und neu laden.');tx.abort();return;}
+     try{store.put(next,key);}catch(e){failure=e;tx.abort();}
+    };
+    tx.oncomplete=resolve;tx.onabort=()=>reject(failure||tx.error||Error('Speichern abgebrochen'));
+    tx.onerror=()=>{};
+   }).catch(e=>{blocked=true;throw e;});
+   expected=next;
+  }
+ });
+}
+const api=Object.freeze({open,validate,database});
+if(typeof module==='object'&&module.exports)module.exports=api;else scope.W5agStorage=api;
+})(globalThis);
+
+</script>
 <script data-inlined-from="bootstrap.js">
 /* One existing session shell and one Rule195 engine, no parallel simulation. */
 (function(scope){
@@ -4983,6 +5057,13 @@ if(typeof module==='object'&&module.exports)module.exports=api;else scope.W5agMi
  const modeName=rules.rulesVersion===195?'W5ag':rules.rulesVersion===191?'W5-Transfer':rules.rulesVersion===19?'W5':rules.rulesVersion===18?'W4':rules.rulesVersion===17?'W3':rules.rulesVersion===16?'W2':'W1';
  const fmt=n=>Number.isSafeInteger(n)?n.toLocaleString('de-DE')+' ISK':'Unbekannt',
   val=x=>x===null||x===undefined?'Unbekannt':typeof x==='object'?JSON.stringify(x):String(x);
+ let storage=null,saveQueue=Promise.resolve(),saveRequest=0;
+ const storageStatus=text=>{if($('storage-status'))$('storage-status').textContent=text;};
+ function persist(manual=false){
+  if(!storage)return;
+  const json=session.export(),request=++saveRequest;storageStatus('Speichern …');
+  saveQueue=saveQueue.then(()=>storage.write(json,manual)).then(()=>{if(request===saveRequest)storageStatus(manual?'Manueller Spielstand und Autosave gesichert.':'Automatisch gesichert.');}).catch(e=>{if(request===saveRequest)storageStatus('Speicherfehler: '+e.message+' JSON bitte extern exportieren.');});
+ }
  let snap=session.snapshot(),current='mining',revision=0,angle=0;
  const canvas=document.querySelector('canvas'),graphics=W5uGraphics.grafik(canvas);
  const local={x:0,y:0,zoom:.3,reduced:true,selected:null};
@@ -5099,7 +5180,7 @@ if(typeof module==='object'&&module.exports)module.exports=api;else scope.W5agMi
   try{const r=fn();$('message').textContent=r?.ok===false?'Abgelehnt: '+r.reason:
    'Original-'+modeName+'-Befehl geprüft und ausgeführt. Geld-, Waren- und Vertragsaudit OK.';}
   catch(e){$('message').textContent='Nicht übernommen: '+e.message;}
-  update();
+  update();persist();
  }
  const go=name=>{
   current=name;document.querySelectorAll('[data-panel]').forEach(n=>n.hidden=n.id!==name);
@@ -5119,6 +5200,17 @@ if(typeof module==='object'&&module.exports)module.exports=api;else scope.W5agMi
  document.querySelectorAll('[data-step]').forEach(b=>b.addEventListener('click',()=>run(()=>session.advance(Number(b.dataset.step)))));
  $('rotate').addEventListener('click',()=>{angle+=Math.PI/4;draw();});
  $('zoom').addEventListener('input',draw);window.addEventListener('resize',draw);
+ function download(json,name){
+  const url=URL.createObjectURL(new Blob([json],{type:'application/json'})),a=document.createElement('a');
+  a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ }
+ $('save')?.addEventListener('click',()=>persist(true));
+ for(const [id,slot] of [['load','manual'],['load-previous','previous']])$(id)?.addEventListener('click',async()=>{
+  const request=++revision;await saveQueue;if(request!==revision)return;
+  try{const json=storage?.read(slot);if(!json)throw Error('Kein Spielstand in diesem Speicherplatz');
+   download(session.export(),'aphros-regel195-vor-laden.json');run(()=>session.import(json));
+  }catch(e){storageStatus('Nicht geladen: '+e.message);}
+ });
  $('export').addEventListener('click',()=>{
   const url=URL.createObjectURL(new Blob([session.export()],{type:'application/json'})),a=document.createElement('a');
   a.href=url;a.download=rules.rulesVersion===195?'aphros-w5ag-regel195.json':rules.rulesVersion===191?'aphros-w5ac-forschung-w5-transfer-regel191.json':rules.rulesVersion===19?'aphros-w5ab-forschung-w5-regel19.json':rules.rulesVersion===18?'aphros-w5aa-forschung-w4-regel18.json':rules.rulesVersion===17?'aphros-w5y-forschung-w3-regel17.json':rules.rulesVersion===16?'aphros-w5x-forschung-w2-regel16.json':'aphros-w5w-forschung-w1-regel15.json';a.click();
@@ -5130,6 +5222,10 @@ if(typeof module==='object'&&module.exports)module.exports=api;else scope.W5agMi
    if(file.size>5*1024*1024)throw Error('Datei größer als 5 MiB');
    const data=await file.text();
    if(request!==revision)return;
+   if(globalThis.W5agStorage){
+    globalThis.W5agStorage.validate(data,()=>W5wSession.create());
+    download(session.export(),'aphros-regel195-vor-import.json');
+   }
    run(()=>session.import(data));
   }catch(e){if(request===revision)$('message').textContent='Nicht übernommen: '+e.message;}
   finally{if($('import').files[0]===file)$('import').value='';}
@@ -5137,6 +5233,24 @@ if(typeof module==='object'&&module.exports)module.exports=api;else scope.W5agMi
  globalThis.W5yExtension?.mount(session,run);globalThis.W5aaExtension?.mount(session,run);globalThis.W5abExtension?.mount(session,run);globalThis.W5acExtension?.mount(session,run);globalThis.W5agExtension?.mount(session,run);
  globalThis.W5agMiner?.mount(session,run);
  go('mining');update();
+ if(globalThis.W5agStorage){
+  document.body.inert=true;
+  (async()=>{
+   try{
+    storage=await W5agStorage.open(globalThis.indexedDB,()=>W5wSession.create());
+    let json;
+    try{json=storage.read('auto');}catch(e){
+     storageStatus('Autosave beschädigt: '+e.message);
+     json=storage.read('previous');
+    }
+    if(json){session.import(json);update();}
+    if(storage.blocked)storageStatus('Speichern gesperrt: beschädigte Daten bleiben erhalten. Gültigen Stand als JSON exportieren.');
+    else if(json)storageStatus('Autosave wiederhergestellt · pausiert · kein Offline-Fortschritt.');
+    else persist();
+   }catch(e){storageStatus('Speicher nicht verfügbar: '+e.message+' JSON exportieren; vorhandene Daten bleiben erhalten.');}
+   finally{document.body.inert=false;}
+  })();
+ }
 })();
 
 </script>

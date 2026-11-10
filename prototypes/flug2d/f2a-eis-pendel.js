@@ -58,16 +58,18 @@ function erstellen(startkapital = {}) {
       throw Error('F2a: Missionsbuch fehlt');
     for(const [id,m] of Object.entries(buch.missionen)) {
       const s=state.ships[id];
-      const fields=['owner','ware','status','menge','start','ende','verkauft'];
+      const fields=['owner','ware','status','menge','start','ende','verkauft','minedVorher','soldVorher','arbeitVorher'];
       if(!s || s.klasse!=='miner' || !s.flug || !m || typeof m!=='object'
         || Object.keys(m).sort().join()!==fields.sort().join()
         || s.owner!==m.owner || m.ware!==WARE || m.menge!==CHARGE
         || !STUFEN.includes(m.status)
         || !Number.isSafeInteger(m.start) || m.start<0 || m.start>state.tick
         || !(m.ende===null || Number.isSafeInteger(m.ende)&&m.ende>=m.start&&m.ende<=state.tick)
-        || !Number.isSafeInteger(m.verkauft)||m.verkauft<0||m.verkauft>CHARGE)
+        || !Number.isSafeInteger(m.verkauft)||m.verkauft<0||m.verkauft>CHARGE
+        || ![m.minedVorher,m.soldVorher,m.arbeitVorher].every(n=>Number.isSafeInteger(n)&&n>=0))
         throw Error('F2a: ungültiges Missionsbuch für '+id);
-      if(m.status==='fertig' && (m.ende===null || m.verkauft<1 || s.flug.lage!=='angedockt'))
+      if(m.status==='fertig' && (m.ende===null || m.verkauft!==CHARGE || s.flug.lage!=='angedockt'
+        || (s.ladung.eis||0)!==0 || s.phase!=='dock'))
         throw Error('F2a: Lieferung nicht belegbar '+id);
       if(m.status!=='fertig' && m.ende!==null)
         throw Error('F2a: vorzeitig abgeschlossener Auftrag '+id);
@@ -75,6 +77,18 @@ function erstellen(startkapital = {}) {
         throw Error('F2a: Förderung außerhalb des Eisfelds '+id);
       if(m.status==='anflug' && s.flug.lage!=='frei')
         throw Error('F2a: Anflug nicht frei '+id);
+      const abgebaut=state.w5n.eisAbgebaut-m.minedVorher;
+      const verkauft=state.w5n.mineVerkauft-m.soldVorher;
+      if(abgebaut<0 || verkauft<0 || verkauft>abgebaut || abgebaut<verkauft+m.verkauft)
+        throw Error('F2a: finanzielle Eisstatistik inkonsistent '+id);
+      if(m.status!=='fertig' && (abgebaut>CHARGE || verkauft!==0
+        || (s.ladung.eis||0)!==abgebaut))
+        throw Error('F2a: Ladung oder vorzeitiger Verkauf nicht belegbar '+id);
+      if(m.status==='fertig' && (abgebaut<CHARGE || verkauft<CHARGE
+        || state.w5n.mineMinuten-m.arbeitVorher<CHARGE))
+        throw Error('F2a: unvollständige echte Förderung/Abnahme '+id);
+      if(['abdocken','anflug','rueck'].includes(m.status) && s.phase!=='flug')
+        throw Error('F2a: Fliegen ist nicht der Stations-Dockzustand '+id);
       if(s.ladung.eis>CHARGE && m.status!=='fertig')
         throw Error('F2a: vorzeitige volle Eischarge '+id);
     }
@@ -99,6 +113,8 @@ function erstellen(startkapital = {}) {
     if(state.owners[owner].cash<mindestArbeitsgeld ||
        state.owners.st_aldera.cash<mindestKaufgeld)
       return {ok:false,reason:'Arbeitsgeld oder Stations-Kaufetat nicht finanziert'};
+    if(Object.values(mListe(state)).some(m=>m.status!=='fertig'))
+      return {ok:false,reason:'F2a: nur ein vorfinanzierter Pendelauftrag gleichzeitig'};
     if(s.auftrag==='foerdern') wirtschaftsBefehl(state,'shipWait',s);
     const r=f1.execute(state,{type:'shipUndock',owner,schiff:id});
     if(!r.ok)return r;
@@ -108,6 +124,8 @@ function erstellen(startkapital = {}) {
     s.phase = 'flug';
     state.f2a.missionen[id] = {
       owner,ware:WARE,status:'abdocken',menge:CHARGE,start:state.tick,ende:null,verkauft:0,
+      minedVorher:state.w5n.eisAbgebaut,soldVorher:state.w5n.mineVerkauft,
+      arbeitVorher:state.w5n.mineMinuten,
     };
     return {ok:true,schiff:id,ziel:WARE,finanziert:{arbeit:mindestArbeitsgeld,ankauf:mindestKaufgeld}};
   }
@@ -194,6 +212,10 @@ function erstellen(startkapital = {}) {
     pruefen(state);
     if (cmd && AKTIONEN.has(cmd.type))
       return {ok:false,reason:'F2a: Bergbau/Abnahme ausschließlich über örtlich geprüften Pendelauftrag'};
+    const m=cmd?.schiff && mListe(state)[cmd.schiff];
+    if(m && m.status!=='fertig' && typeof cmd.type==='string'
+      && Object.hasOwn(K.BEFEHLE,cmd.type))
+      return {ok:false,reason:'F2a: laufender Pendelauftrag kontrolliert Flug und Andocken'};
     const r=f1.execute(state,cmd);
     if(r.ok)synchronisieren(state);
     return r;
@@ -202,6 +224,9 @@ function erstellen(startkapital = {}) {
     pruefen(state);
     if(cmd&&AKTIONEN.has(cmd.type))
       return {ok:false,reason:'F2a: keine ungeprüften Abbau-/Abnahmekommandos in Wirtschaftsqueue'};
+    const m=cmd?.schiff && mListe(state)[cmd.schiff];
+    if(m && m.status!=='fertig')
+      return {ok:false,reason:'F2a: laufender Pendelauftrag gesperrt für externe Kommandos'};
     return f1.submit(state,cmd);
   }
   function save(state) {

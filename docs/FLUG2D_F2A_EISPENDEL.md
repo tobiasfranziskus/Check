@@ -39,10 +39,20 @@ Der Eigentümer erhält **240 ISK Verkaufserlös**, hat zuvor **96 ISK bezahlte 
 - Start prüft mindestens die vorhandenen **96 ISK Eigentümer-Arbeitskapital** und **240 ISK kaufbereiten Stationsetat**. Die realen Löhne werden weiter je Original-Core-Minute bezahlt; der Stationskauf erst bei Ankunft. Wenn inzwischen das Käuferbudget fehlt, bleibt die Ware im Schiff – kein Kredit/Mint/Rettung.
 - Pro Forschungswelt nur **ein aktiver** Pendelauftrag; vollständig ausgelieferte Aufträge werden nicht unbemerkt wieder gestartet. Parallelwirtschaft, Wiederholaufträge und echte 50er-Kontrakte benötigen separate F2-Stufen.
 
+## Getrennte Browser-Vorschau
+
+Der statische Einstieg ist **[`prototypes/flug2d/f2a-demo.html`](../prototypes/flug2d/f2a-demo.html)** auf dem **Draft-Branch**, nicht auf GitHub Pages oder dem produktiven NAS. Zum Test mit einem lokalen statischen Server: Im Repository `python3 -m http.server 8000` starten, dann `http://localhost:8000/prototypes/flug2d/f2a-demo.html` im Browser öffnen.
+
+Die Oberfläche bietet regulären 600-ISK-Min­er­kauf, Spieler-/NPC-Eispendelauftrag, beschleunigtes Abspielen und einzelne Wirtschaftsminuten, physische Schiffspositionen mit I0-UX08-Grafik, die echten Konten/Waren sowie manuelles JSON-Exportieren und bestätigungspflichtiges Rule197-Importieren. Es gibt **keine IndexedDB-/Autosave-Anbindung**. Die Automatik steuert nur den genehmigten Pendelauftrag; **freie persönliche Steuerung bleibt zunächst in der F1-Sandbox**.
+
+`tests/flug2d-f2a-browser.cjs` prüft echte Touch-Taps, 600-ISK-Kauf, Feldförderung, reale Ankunft und Stationskauf, unverändertes Rendering, Rule197-Save/Load und Zurückweisung eines fremden Rule196-Saves auf vier Chromium- und vier WebKit-Viewports. Hashanker für die vollständig bezahlte Spielerroute ist `dc89d39b6558f503`. Bis GitHub-CI erfolgreich ist, sind diese Browserläufe **offen**.
+
 ## Tests und Grenzen
 
 `node --test tests/flug2d-f2a-eis.test.mjs` überprüft die echte Feldbedingung **pro produktiver Eisminute**, den Null-Fernverkauf vor Andocken, bezahltes Original-`shipSellIce`, 600-ISK-Spielerkauf, Forschungs-Hash/Save-Replay, fremde IDs, manipulierte Missionen und 13 feste Seeds. Vor erfolgreichen GitHub-CI-Läufen nicht als Node22-bestanden bezeichnen.
 
-**Offen vor F2-Freigabe:** echte vollständige **50er-Erz-/Eisauftragsabrechnung ohne Fernverkauf**, alle Miner und echte wiederholte NPC-Verträge, Transport-/Flugarbeitskosten und Käufernachfrage, 13×90-Tage-Wirtschaftskrisen, UI/Touch-/JavaScriptCore-Referenzabnahme der **F2a-Forschung**, echte iPad-/NAS-Geräteabnahme und Produkt-/Save-Migration. Die bestehenden F0/F1-Demos und die Main-Singlefile-Ausgabe bleiben unverändert.
+**Finanzierungsgrenze:** Die 96 ISK decken die originalen **Förderlöhne**, nicht zusätzliche Pilot-/Transportarbeitskosten während des Fluges. Letztere sind noch **nicht vorfinanziert**, daher ist F2a kein vollständiger finanzieller Dauerbetriebsnachweis. Die F2b-Regelentscheidung hierzu bleibt ausdrücklich offen.
+
+**Offen vor F2-Freigabe:** echte vollständige **50er-Erz-/Eisauftragsabrechnung ohne Fernverkauf**, alle Miner und echte wiederholte NPC-Verträge, Transport-/Flugarbeitskosten und Käufernachfrage, 13×90-Tage-Wirtschaftskrisen, Abnahme des neuen F2a-UI in Chromium/WebKit und echte iPad-Safari-Referenzabnahme, echte iPad-/NAS-Geräteabnahme und Produkt-/Save-Migration. Die bestehenden F0/F1-Demos und die Main-Singlefile-Ausgabe bleiben unverändert.
 
 **Kein Merge nach main, keine GitHub-Pages-/NAS-Auslieferung, kein Zugriff auf produktive Save-Slots.**

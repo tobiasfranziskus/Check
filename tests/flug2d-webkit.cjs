@@ -6,7 +6,7 @@ const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const allowed=new Set([
  'prototypes/flug2d/index.html','prototypes/flug2d/flug-kern.js',
- 'prototypes/flug2d/referenz.js','prototypes/flug2d/sandbox.js',
+ 'prototypes/flug2d/referenz.js','prototypes/flug2d/sandbox.js','prototypes/flug2d/grafik.js',
  'prototypes/w5ac/rule191-w5-ferry-core.js'
 ]);
 async function run(){
@@ -46,6 +46,7 @@ async function run(){
    await page.waitForTimeout(250);
    assert.equal(await page.evaluate(()=>FlugSandbox.zustand()),saved,'pause must freeze canonical flight state');
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no horizontal overflow '+width+'x'+height);
+   await require('./flug2d-grafik-browser.cjs')(page,width,height);
    assert.deepEqual(errors,[],'no runtime errors');
    await ctx.close();
    console.log('FLUG2D_WEBKIT_OK '+width+'x'+height+' '+reference.chain);

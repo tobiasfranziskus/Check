@@ -25,6 +25,7 @@ summary{min-height:48px;padding:10px;cursor:pointer}pre{white-space:pre-wrap;ove
 <script defer src="../w5ac/rule191-w5-ferry-core.js"></script>
 <script defer src="flug-kern.js"></script>
 <script defer src="referenz.js"></script>
+<script defer src="grafik.js"></script>
 <script defer src="sandbox.js"></script></head>
 <body>
 <header><h1>Aphros Void · Flug2D-Sandbox</h1>
@@ -41,6 +42,8 @@ summary{min-height:48px;padding:10px;cursor:pointer}pre{white-space:pre-wrap;ove
 <div class="reihe"><button id="erz">Anflug Erzfeld</button><button id="eis">Anflug Eisfeld</button></div>
 <label><input id="tempomat" type="checkbox"> Tempomat: Fahrt beim Loslassen halten</label>
 <div class="reihe"><button id="pause" aria-pressed="false">Pause</button><button id="tempo">Zeit 1×</button><button id="minute">+1 Minute</button></div>
+<label>Darstellung <select id="grafik"><option value="ux08">Void Echoes · UX08</option><option value="basis">F0 · einfache Schiffe</option></select></label>
+<canvas id="modelle" width="288" height="84" style="width:100%;max-width:288px;align-self:center" aria-label="Modelllegende: Miner mit Förderarmen, Frachter mit Containern, Jäger mit Pfeilflügeln"></canvas>
 <label>Zoom <input id="zoom" type="range" min="2" max="40" value="6" aria-label="Zoom der Ansicht"></label>
 <details><summary>Determinismus, Speichern und Laden prüfen</summary>
 <div class="reihe"><button id="referenz">Referenzlauf prüfen</button><button id="replay">Replay dieser Sitzung prüfen</button></div>

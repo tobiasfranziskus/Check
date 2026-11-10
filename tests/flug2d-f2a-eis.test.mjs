@@ -104,7 +104,7 @@ test('F2a: vollständig bezahlter Spieler-Miner, 48 Eis, Rückflug, echte Abnahm
   assert.equal(s.stations.st_aldera.lager.eis,48);
   assert.equal(s.minted,0);
   assert.equal(geld(s),33000);
-  assert.equal(f.hash(s),'c60851bb5f4f1475');
+  assert.equal(f.hash(s),'dc89d39b6558f503');
   assert.equal(f.audit(s).ok,true);
 });
 

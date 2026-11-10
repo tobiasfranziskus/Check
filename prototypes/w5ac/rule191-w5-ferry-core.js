@@ -367,13 +367,15 @@ const m_data_erzpilot = (() => {
   // W5ad uses this SAME core. Genesis allocations are explicit research inputs,
   // never transfers or rescue during a running economy; total remains 33,000 ISK.
   if(research){
-    W5_RULES.rulesVersion=research.personalWages===true?195:research.waterTrade===true?194:research.wageTrade===true?193:192;
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages'].includes(k))
+    W5_RULES.rulesVersion=research.flightF1===true?196:research.personalWages===true?195:research.waterTrade===true?194:research.wageTrade===true?193:192;
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','flightF1'].includes(k))
       || (Object.hasOwn(research,'wageTrade')&&research.wageTrade!==true)
       || (Object.hasOwn(research,'waterTrade')&&research.waterTrade!==true)
       || (research.waterTrade===true&&research.wageTrade!==true)
       || (research.personalWages===true&&(research.waterTrade!==true||research.wageTrade!==true))
-      || (Object.hasOwn(research,'personalWages')&&research.personalWages!==true))
+      || (Object.hasOwn(research,'personalWages')&&research.personalWages!==true)
+       || (Object.hasOwn(research,'flightF1')&&research.flightF1!==true)
+       || (research.flightF1===true&&research.personalWages!==true))
       throw TypeError('Unbekannter W5ad-Startparameter');
     const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
     if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
@@ -3683,6 +3685,15 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
       ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
       throw TypeError('W5ag: nur eigene Anfangskapital-Verteilung');
     return createEngine({},{...options,wageTrade:true,waterTrade:true,personalWages:true});
+  },
+  // F1 research only: Rule196 shares the SAME economy, funds and prices as Rule195.
+  // Its optional flight state and sub-minute stepping are owned by flug2d/f1-kopplung.js.
+  createFlightResearch:options=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('F1: nur eigene Anfangskapital-Verteilung, keine Regel-Flags');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,personalWages:true,flightF1:true});
   }});
 if(research)return api;
 if(typeof module==='object'&&module.exports)module.exports=api;else scope.W5acOriginal=api;

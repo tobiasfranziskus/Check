@@ -70,6 +70,9 @@ const path = require('node:path');
         assert.equal(await page.evaluate(()=>F1Demo.zustand()), JSON.stringify(flight));
         // Save/Load: explicit import with a dialog, no browser storage.
         const before=await page.evaluate(()=>F1Demo.zustand());
+        // Native <details> is closed initially; open it before exercising a real
+        // user-visible export. A hidden button cannot receive a touch tap.
+        await page.locator('#steuerung details summary').tap();
         const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#export').tap()]);
         assert.equal(download.suggestedFilename(),'aphros-f1-forschung-regel196.json');
         page.once('dialog',dlg=>dlg.accept());

@@ -1,5 +1,5 @@
 """Independent real IndexedDB + touch acceptance of the shipped single HTML."""
-import functools, http.server, pathlib, threading, tempfile, json, os
+import functools, http.server, pathlib, threading, tempfile, json, os, contextlib, time
 from playwright.sync_api import sync_playwright
 repo=pathlib.Path(__file__).resolve().parents[1]
 class Quiet(http.server.SimpleHTTPRequestHandler):
@@ -15,6 +15,17 @@ try:
      binary=os.environ.get('CHROMIUM_PATH','/usr/bin/chromium')
      return p.chromium.launch_persistent_context(profile,**({'executable_path':binary} if pathlib.Path(binary).exists() else {}),args=['--no-sandbox'],downloads_path=profile+'/downloads',viewport={'width':w,'height':h},is_mobile=True,has_touch=True,accept_downloads=True)
     ctx=launch();page=ctx.pages[0];errors=[];console=[];page.on('pageerror',lambda e:errors.append(str(e)));page.on('console',lambda m:console.append(m.type+': '+m.text))
+    @contextlib.contextmanager
+    def downloaded():
+     try:
+      with page.expect_download() as d:yield d
+     except Exception:
+      print('LIVE FAILURE',page.evaluate("({identity:document.querySelector('#identity').textContent,message:document.querySelector('#message').textContent,storage:document.querySelector('#storage-status').textContent,input:document.querySelector('#import').value,activation:navigator.userActivation.isActive})"),flush=True)
+      print('DOWNLOADS',downloadLog,flush=True)
+      raise
+    downloadLog=[]
+    def track(d):downloadLog.append([time.monotonic(),d.suggested_filename])
+    page.on('download',track)
     def ready():page.wait_for_function('!document.body.inert && !!globalThis.W5agStorage')
     def saved(revision,json=None):
      page.wait_for_function("""async expected=>{
@@ -25,20 +36,20 @@ try:
     def action(selector):
      revision=record()['revision'];tap(selector);saved(revision+1)
     def load(selector,json):
-     revision=record()['revision'];before=export()
-     with page.expect_download() as d:tap(selector)
+     current=record();revision=current['revision'];before=current['slots']['auto']['json']
+     with downloaded() as d:tap(selector)
      assert pathlib.Path(d.value.path()).read_text()==before
      saved(revision+1,json);assert export()==json
     def import_json(name,json):
-     revision=record()['revision'];before=export()
-     with page.expect_download() as d:
+     current=record();revision=current['revision'];before=current['slots']['auto']['json']
+     with downloaded() as d:
       page.locator('#import').set_input_files({'name':name,'mimeType':'application/json','buffer':json.encode()})
      assert pathlib.Path(d.value.path()).read_text()==before
      saved(revision+1,json);assert export()==json
      page.wait_for_function("document.querySelector('#import').value===''")
     def tap(s):page.locator(s).tap()
     def export():
-     with page.expect_download() as d:tap('#export')
+     with downloaded() as d:tap('#export')
      return pathlib.Path(d.value.path()).read_text()
     def record():return page.evaluate("""async()=>{const d=await new Promise((res,rej)=>{const r=indexedDB.open(W5agStorage.database,1);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});return await new Promise(res=>{const t=d.transaction('saves'),r=t.objectStore('saves').get('world');t.oncomplete=()=>{d.close();res(r.result)}})}""")
     def put(data):page.evaluate("""async data=>{const d=await new Promise(res=>{const r=indexedDB.open(W5agStorage.database,1);r.onsuccess=()=>res(r.result)});await new Promise(res=>{const t=d.transaction('saves','readwrite');t.objectStore('saves').put(data,'world');t.oncomplete=()=>{d.close();res()}})}""",data)
@@ -49,7 +60,7 @@ try:
     manual=export();action('#save');assert record()['slots']['manual']['json']==manual
     action('[data-step="10"]');latest=export();assert latest!=manual
     ctx.close() # Full browser restart with persisted profile.
-    ctx=launch();page=ctx.new_page();page.on('pageerror',lambda e:errors.append(str(e)));page.on('console',lambda m:console.append(m.type+': '+m.text));page.goto(url);ready()
+    ctx=launch();page=ctx.new_page();page.on('pageerror',lambda e:errors.append(str(e)));page.on('console',lambda m:console.append(m.type+': '+m.text));page.on('download',track);page.goto(url);ready()
     assert 'wiederhergestellt' in page.locator('#storage-status').inner_text();assert export()==latest
     page.wait_for_timeout(100);assert export()==latest # No offline tick.
     load('#load',manual)
@@ -97,6 +108,18 @@ try:
     assert record()==afterConflict and export()==beforeConflict
     assert any('Konflikt:' in line for line in console)
     import_json('after-conflict.json',latest)
+    # More than Chromium's rapid-download limit: every requested export must arrive.
+    burst=[]
+    listener=lambda d:burst.append(d)
+    page.on('download',listener)
+    beforeBurst=record()
+    page.evaluate("()=>{for(let i=0;i<12;i++)document.querySelector('#export').click()}")
+    deadline=time.monotonic()+30
+    while len(burst)<12 and time.monotonic()<deadline:page.wait_for_timeout(20)
+    assert len(burst)==12,('missing rapid exports',len(burst),downloadLog)
+    assert all(pathlib.Path(d.path()).read_text()==latest for d in burst)
+    assert record()==beforeBurst
+    page.remove_listener('download',listener)
     # Stale writer loses CAS, even after it restored the same initial snapshot.
     other=ctx.new_page();other.goto(url);other.wait_for_function('!document.body.inert')
     action('[data-step="1"]');kept=record()

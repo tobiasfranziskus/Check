@@ -64,10 +64,8 @@ function scenario(seed){
  good('shipSellIce','house',{schiff:miner.id,menge:50});
  assert.equal(s.tick,360);
  assert.equal(paidBuyer(s),406,'genuine underfunded buyer before demand');
- const quote=core.pilotIceFreightQuote(s,freighter.id);
- assert.equal(quote.gesamt,490,'original buyer escrow requirement');
- assert.equal(quote.arbeit,120,'original carrier labor escrow requirement');
- assert.equal(s.owners.transport.cash>=quote.arbeit,true,'carrier can cover real wages');
+ const closedQuote=core.pilotIceFreightQuote(s,freighter.id);
+ assert.equal(closedQuote.ok,false,'original quote must deny buyer liquidity');
  const blocked=refuse('shipFreightIce','transport',{schiff:freighter.id});
  assert.match(blocked,/Nadir|Kaeufer|Käufer|ISK/);
  assert.equal(s.stations.st_nadir.lager.wasser,10,'water still available');
@@ -82,6 +80,11 @@ function scenario(seed){
  good('pilotWaterBuy','pilot_eis',{menge:1});
  assert.equal(s.owners.pilot_eis.cash,ownerBefore-14,'private wage-funded buying');
  assert.equal(paidBuyer(s),buyerBefore+14,'money returned to the actual buyer station');
+ const quote=core.pilotIceFreightQuote(s,freighter.id);
+ assert.equal(quote.ok,true,'original quote only unlocks after paid consumer demand');
+ assert.equal(quote.gesamt,490,'original buyer escrow requirement');
+ assert.equal(quote.arbeit,120,'original carrier labor escrow requirement');
+ assert.equal(s.owners.transport.cash>=quote.arbeit,true,'carrier can cover real wages');
  assert.equal(paidBuyer(s),quote.gesamt,'threshold is reached by earned wages, not a subsidy');
  assert.equal(s.w5n.wasserVerbraucht,16);
  assert.equal(s.w5n.wasserErlos,224);

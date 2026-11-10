@@ -89,6 +89,39 @@ try:
    assert '240 tatsächlich bezahlte Flugminuten' in page.locator('#water-state').inner_text()
    assert 'Chargen begonnen/fertig: 3/3' in page.locator('#water-state').inner_text()
    assert '58da44b282a654a3' in page.locator('#identity').inner_text()
+   # W5al: W1 ore purchase escrow is not free Aldera cash. Real W1 work
+   # releases it; the same selected miner then performs a third paid ice route.
+   step(20) # Tick500: 1,000 ISK in genuine active W1 ore-buyer escrow.
+   view('water')
+   cash=json.loads(export());locked=sum(o['cash'] for k,o in cash['owners'].items() if k.startswith('erz_treuhand_'))
+   assert cash['tick']==500 and cash['owners']['st_aldera']['cash']==0 and locked==1000
+   assert 'Aldera für Eisankauf frei 0 ISK' in page.locator('#capital-bridge').inner_text()
+   assert 'Erzankäufe gebunden 1000 ISK' in page.locator('#capital-bridge').inner_text()
+   view('ship');tap('#miner-eis');tap('#miner-step-50');tap('#miner-stop')
+   blocked=json.loads(export());assert blocked['tick']==550 and blocked['ships'][sid]['ladung']['eis']==50
+   assert blocked['owners']['st_aldera']['cash']==0
+   assert page.locator('#miner-sell').is_disabled()
+   assert 'Erzankäufe gebunden 1000 ISK' in page.locator('#miner-sell-quote').inner_text()
+   # No forced sale or imaginary transfer: 50 real NPC working minutes mature
+   # the original prepaid ore escrow and restore the station's own free cash.
+   tap('#miner-step-50')
+   free=json.loads(export())
+   assert free['tick']==600 and free['owners']['st_aldera']['cash']==1000
+   assert not page.locator('#miner-sell').is_disabled()
+   tap('#miner-sell')
+   bought=json.loads(export());assert bought['ships'][sid]['ladung'].get('eis',0)==0
+   assert bought['owners']['st_aldera']['cash']==750
+   view('water')
+   assert 'Aldera für Eisankauf frei 750 ISK' in page.locator('#capital-bridge').inner_text()
+   tap('#ice-freight');again=json.loads(export())
+   assert again['owners']['w5n_fracht_kauf']['cash']==490 and again['owners']['w5n_fracht_arbeit']['cash']==120
+   step(60);step(60)
+   third=json.loads(export())
+   assert third['tick']==720 and third['w5n']['frachtAbgeschlossen']==3 and third['w5n']['eisGeliefert']==150
+   assert len(third['w5ag']['payments'])==480 and third['w5ag']['paid']['eis']==360
+   assert third['minted']==0 and sum(o['cash'] for o in third['owners'].values())==33000
+   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(w,h,'w5al')
+
    ledger=json.loads(page.locator('#water-ledger').text_content());assert len(ledger['wasserkaufbelege'])==7
    for selector in ['#ice-sell','#ice-sell-amount','#water-buy']:
     assert page.locator(selector).bounding_box()['height']>=48,(w,h,selector)

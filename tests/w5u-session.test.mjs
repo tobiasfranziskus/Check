@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {createHash} from 'node:crypto';
 const require=createRequire(import.meta.url),{create}=require('../prototypes/w5u/session.js'),{core,rules}=require('../prototypes/w5u/original-core.js');
-const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const html=readFileSync(new URL('../versionen/main-pre-w5-20261110/index.html',import.meta.url),'utf8');
 const check=s=>{const x=s.snapshot();assert.equal(x.audit.ok,true);assert.equal(core.hash(core.load(s.export())),x.hash);assert.equal(core.hash(x.state),x.hash);};
 const cmd=(s,type,args={})=>s.command({type,schiff:s.snapshot().selected,...args});
 test('W5u-Regel14-Core ist historisch bytegleich, Main-Rule14-Daten unverändert und Replay weiterhin stabil',()=>{

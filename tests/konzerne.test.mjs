@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const html = fs.readFileSync(new URL('../versionen/main-pre-w5-20261110/index.html', import.meta.url), 'utf8');
 const start = html.indexOf('const m_data_systeme =');
 const end = html.indexOf('const m_ui_karte_ansicht =');
 assert(start >= 0 && end > start);

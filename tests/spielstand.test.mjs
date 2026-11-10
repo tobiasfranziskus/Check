@@ -5,7 +5,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import { v11CoreSource } from '../tools/v11-core-source.mjs';
 
-const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const html = fs.readFileSync(new URL('../versionen/main-pre-w5-20261110/index.html', import.meta.url), 'utf8');
 const start = html.indexOf('const m_data_systeme =');
 const end = html.indexOf('const m_data_oberflaeche =');
 assert.ok(start >= 0 && end > start);
@@ -67,7 +67,7 @@ test('Beschädigte Spielstände werden nicht als gültige Zustände übernommen'
 
 test('Regelversion 11 wird ohne Waren-, Kassen- oder Schiffsdatenverlust nach 14 migriert', () => {
   const e=engine();
-  const htmlSource=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  const htmlSource=fs.readFileSync(new URL('../versionen/main-pre-w5-20261110/index.html',import.meta.url),'utf8');
   const legacy=new Function(v11CoreSource(htmlSource)+
     ';return {core:m_core_index, rules:m_data_rules.RULES};')();
   const old=legacy.core.createState(42);

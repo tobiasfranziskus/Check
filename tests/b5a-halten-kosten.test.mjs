@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../versionen/main-pre-w5-20261110/index.html',import.meta.url),'utf8');
 const code=html.slice(html.indexOf('<script>')+8,html.indexOf('const m_data_oberflaeche'));
 const e=new Function(code+';return {c:m_core_index,r:m_data_rules.RULES,h:m_core_handel};')();
 const {c,r,h}=e;assert.equal(r.rulesVersion,14);

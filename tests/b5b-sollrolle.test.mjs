@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../versionen/main-pre-w5-20261110/index.html',import.meta.url),'utf8');
 const source=html.slice(html.indexOf('<script>')+8,html.indexOf('const m_data_oberflaeche'));
 const anchor='return { zuschuss, ersatzkauf };';
 assert.equal(source.split(anchor).length,2,'isoliert nur fehlend zur Prüfung exportieren');

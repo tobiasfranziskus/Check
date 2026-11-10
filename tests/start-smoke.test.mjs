@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 
-const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const html = fs.readFileSync(new URL('../versionen/main-pre-w5-20261110/index.html', import.meta.url), 'utf8');
 const script = html.slice(html.indexOf('<script>\n') + 8, html.lastIndexOf('</script>'));
 
 function createBrowser() {

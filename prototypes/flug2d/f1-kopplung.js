@@ -8,19 +8,37 @@ const FACTORY = typeof module === 'object' && module.exports
   ? require('../w5ac/rule191-w5-ferry-core.js') : scope.W5acOriginal;
 const FLUG = typeof module === 'object' && module.exports
   ? require('./flug-kern.js') : scope.FlugKern;
-if (!FACTORY?.createFlightResearch || !FLUG?.schritt)
+if (!FACTORY?.createPrivateWageResearch || !FLUG?.schritt)
   throw Error('F1 benötigt den gemeinsamen Rule196-Forschungskern und F0');
 const N = FLUG.DATEN.schritteJeMinute;
 const PROFIL = 196;
 
 function erstellen(startkapital = {}) {
-  // Erzeugt dieselbe W0–W5-Wirtschaft wie Rule195, nur mit eigener Forschungskennung.
-  // Alle Wirtschaftsbefehle und ihre Minute kommen ausschließlich aus diesem Core.
-  const engine = FACTORY.createFlightResearch(startkapital);
+  // Die Original-Rule195-Quelldatei bleibt BYTEGLEICH (Singlefile-Reproduzierbarkeit).
+  // Der Forschungsvermerk 196 wird nur in serialisierten F1-Ständen verwendet.
+  // Für jeden Economy-Aufruf sieht die *selbe* Originalengine Rule195, damit auch
+  // ihre internen Owner-/Treuhand-/Export-/Finanzierungs-Prüfungen unverändert greifen.
+  const engine = FACTORY.createPrivateWageResearch(startkapital);
   const wirtschaft = engine.core;
-  const rules = engine.rules;
-  if (rules.rulesVersion !== PROFIL || rules.schema !== 8)
-    throw Error('F1: inkonsistentes Forschungsprofil');
+  const econRules = engine.rules;
+  const rules = Object.freeze({ ...econRules, rulesVersion: PROFIL });
+  if (econRules.rulesVersion !== 195 || rules.schema !== 8)
+    throw Error('F1: inkompatibler Originalwirtschaftskern');
+  function imOriginalCore(state, aktion) {
+    if (state?.rulesVersion !== PROFIL)
+      throw Error('F1: falsche Regelkennung bei Core-Aufruf');
+    state.rulesVersion = econRules.rulesVersion;
+    try { return aktion(); }
+    finally { state.rulesVersion = PROFIL; }
+  }
+  // Nur für das ALTE finanzielle Audit/Laden: dieselbe Welt ohne visuelle Flugfelder.
+  function wirtschaftsSicht(state) {
+    const s = JSON.parse(wirtschaft.canonical(state));
+    delete s.flug;
+    for (const sh of Object.values(s.ships || {})) delete sh.flug;
+    s.rulesVersion = econRules.rulesVersion;
+    return s;
+  }
 
   // Bei Kauf eines finanzierten Miners wird dessen Flugkörper im *gleichen* Zustand ergänzt.
   // Alle übrigen Schiffe bleiben bei F1 bewusst unverändert; Frachter/Jäger erst später.
@@ -54,7 +72,7 @@ function erstellen(startkapital = {}) {
   function audit(state) {
     try {
       const flug = pruefen(state);
-      const economie = wirtschaft.audit(state);
+      const economie = wirtschaft.audit(wirtschaftsSicht(state));
       return Object.freeze({ ...economie, ok: economie.ok && flug.ok, flug });
     } catch (e) {
       return { ok: false, fehler: e.message };
@@ -62,6 +80,7 @@ function erstellen(startkapital = {}) {
   }
   function createState(seed = rules.startSeed) {
     const state = wirtschaft.createW5State(seed);
+    state.rulesVersion = PROFIL;
     state.flug = { schritt: 0 };
     synchronisieren(state);
     if (!audit(state).ok) throw Error('F1: Anfangszustand nicht konsistent');
@@ -72,7 +91,7 @@ function erstellen(startkapital = {}) {
     const type = cmd && cmd.type;
     if (typeof type === 'string' && Object.hasOwn(FLUG.BEFEHLE, type))
       return FLUG.ausfuehren(state, cmd);
-    const result = wirtschaft.execute(state, cmd, rules);
+    const result = imOriginalCore(state, () => wirtschaft.execute(state, cmd, econRules));
     if (result.ok) synchronisieren(state);
     return result;
   }
@@ -82,13 +101,13 @@ function erstellen(startkapital = {}) {
     // nachgelagerte zweite Queue neben der vorhandenen Wirtschaftsbefehlsqueue.
     if (cmd && typeof cmd.type === 'string' && Object.hasOwn(FLUG.BEFEHLE, cmd.type))
       return { ok: false, reason: 'F1: Flugbefehl via execute am Flugschritt übergeben' };
-    return wirtschaft.submit(state, cmd, rules);
+    return imOriginalCore(state, () => wirtschaft.submit(state, cmd, econRules));
   }
   // Nur dieser Einstieg ruft den bestehenden Wirtschaftstick auf: bei Schritt 60.
   function teilschritt(state) {
     pruefen(state);
     if (!FLUG.schritt(state)) return null;
-    const result = wirtschaft.step(state, rules);
+    const result = imOriginalCore(state, () => wirtschaft.step(state, econRules));
     synchronisieren(state);
     return result;
   }
@@ -105,7 +124,7 @@ function erstellen(startkapital = {}) {
     // bleibt der gespeicherte Schrittindex nach 60 Teilsekunden gleich.
     const ruhig = Object.values(state.ships).every(s => !s.flug || s.flug.lage === 'angedockt');
     if (ruhig) {
-      const result = wirtschaft.step(state, rules);
+      const result = imOriginalCore(state, () => wirtschaft.step(state, econRules));
       synchronisieren(state);
       return result;
     }
@@ -131,10 +150,11 @@ function erstellen(startkapital = {}) {
     try { roh = JSON.parse(json); } catch (_) { throw Error('F1: JSON nicht lesbar'); }
     if (roh?.rulesVersion !== PROFIL || roh?.schema !== rules.schema)
       throw Error('F1: fremde Regelversion oder Schema; keine automatische Migration');
-    // Der ORIGINAL-Core prüft die vollständige wirtschaftliche Vertragsbilanz.
-    const geladen = wirtschaft.loadW5(json);
-    if (!audit(geladen).ok) throw Error('F1: Wirtschaft/Flug ungültig');
-    return geladen;
+    // Der ORIGINAL-Core prüft die vollständige Rule195-Wirtschaftsprojektion.
+    // F1-Feldern und Forschungskennung wird dabei NICHT vertraut.
+    wirtschaft.loadW5(wirtschaft.canonical(wirtschaftsSicht(roh)));
+    if (!audit(roh).ok) throw Error('F1: Wirtschaft/Flug ungültig');
+    return roh;
   }
   return Object.freeze({
     rules, createState, execute, submit, teilschritt, fliegen, minute, advance,

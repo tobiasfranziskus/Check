@@ -15,7 +15,7 @@ const content=rel=>{
  return fs.readFileSync(file,'utf8');
 };
 assert.equal(css.length,7,'CSS dependency graph changed');
-assert.equal(scripts.length,14,'JS dependency graph changed');
+assert.equal(scripts.length,15,'JS dependency graph changed');
 let out=html;
 for(const c of css)out=out.replace(c.tag,()=>'<style data-inlined-from="'+c.rel+'">\n'+content(c.rel).replace(/<\/style/gi,'<\\/style')+'\n</style>');
 let js='';

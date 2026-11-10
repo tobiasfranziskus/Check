@@ -16,6 +16,7 @@
 <script defer src="extension.js"></script>
 <link rel="stylesheet" href="miner.css">
 <script defer src="miner.js"></script>
+<script defer src="storage.js"></script>
 <script defer src="bootstrap.js"></script>
 <script defer src="../w5w/app.js"></script></head>
 <body>
@@ -23,9 +24,11 @@
 <h1>Aphros Void · W5ag</h1>
 <p><strong>Spielbare Forschungswelt · W0–W5 mit Eis, Wasser und persönlichen Pilotenkonten / Forschungsregel 195 / Schema 8.</strong>
 Ein gemeinsamer Original-Core für Spieler und NPC. Getrennt von W5ab (Regel 19), W5aa (Regel 18), W5z/W5y (Regel 17), W5x (Regel 16), W5w (Regel 15), W5u (Regel 14), C1d (Regel 3314)
-und öffentlichem Hauptspiel. Keine Speicherung in produktiven Slots; Reload startet die Forschung neu. Vor Reload oder Import den aktuellen Stand als JSON exportieren. Die Bedienfolge steht unter „Eis, Wasser &amp; Privatkonten“.</p>
+und öffentlichem Hauptspiel. Automatisches Speichern nach jeder Aktion in einer eigenen Regel195-Datenbank. Wiederherstellung bleibt pausiert, ohne Offline-Fortschritt. Browserdaten sind keine NAS-Sicherung; JSON regelmäßig extern sichern. Regel14-Speicher bleiben unberührt. Die Bedienfolge steht unter „Eis, Wasser &amp; Privatkonten“.</p>
 </header>
 <section class="controls" aria-label="Sitzung und Schutz">
+<button id="save">Spielstand speichern</button><button id="load">Manuellen Spielstand laden</button><button id="load-previous">Vorherigen Autosave laden</button>
+<p id="storage-status" role="status" aria-live="polite">Speicher wird geprüft …</p>
 <button id="export">W5ag-Forschungssitzung als JSON exportieren</button>
 <label>Nur Regel195-JSON importieren <input id="import" type="file" accept=".json,application/json"></label>
 <button data-step="1">1 Minute</button><button data-step="10">10 Minuten</button><button data-step="20">20 Minuten (Raffineriearbeit)</button><button data-step="30">30 Minuten (Werftarbeit)</button><button data-step="50">50 Minuten (erste Erzcharge)</button><button data-step="60">60 Minuten</button>

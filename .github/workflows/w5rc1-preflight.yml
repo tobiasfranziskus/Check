@@ -49,6 +49,10 @@ jobs:
         run: python tests/w5ak-touch.py
         env:
           CHROMIUM_PATH: playwright-managed
+      - name: Rule195 IndexedDB restart, manual slots, JSON and corruption on four touch sizes
+        run: python tests/regel195-storage-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
       - name: Four more touch sizes against standalone NAS aphros-void.html
         run: python tests/w5ak-touch.py
         env:

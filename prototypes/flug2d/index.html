@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aphros Void · Flug2D-Sandbox (Forschung)</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#0b111a;color:#dbe6f0;font:16px/1.4 system-ui,-apple-system,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{padding:8px 12px}h1{font-size:1.1rem;margin:0}header p{margin:4px 0 0;font-size:.9rem;color:#9fb3c8}
+#spiel{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:8px;padding:0 8px 8px;height:calc(100vh - 96px);height:calc(100dvh - 96px);min-height:420px}
+#feld{position:relative;min-height:0;border:1px solid #657a8c;border-radius:8px;overflow:hidden}
+#raum{display:block;width:100%;height:100%;touch-action:none}
+#knueppel{position:absolute;left:16px;bottom:16px;width:168px;height:168px;border-radius:50%;border:2px solid rgba(141,228,237,.7);background:rgba(20,40,60,.45);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#knopf{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(141,228,237,.75);pointer-events:none}
+#hud{position:absolute;left:8px;top:8px;right:8px;margin:0;font-size:.9rem;color:#8de4ed;pointer-events:none;text-shadow:0 0 4px #000}
+#tafel{overflow:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:8px}
+.reihe{display:flex;flex-wrap:wrap;gap:8px}
+button,select,label.datei{min-height:56px;flex:1 1 120px;font:inherit;color:inherit;background:#1b2a3a;border:1px solid #657a8c;border-radius:8px;padding:8px;touch-action:manipulation}
+button:disabled{opacity:.45}button[aria-pressed="true"]{background:#24506a}
+label{display:flex;align-items:center;gap:8px;min-height:48px}input[type=checkbox]{width:28px;height:28px}input[type=range]{flex:1;min-height:44px}
+summary{min-height:48px;padding:10px;cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.8rem;margin:0}
+#meldung,#pruefung{margin:0;font-size:.9rem}
+@media (max-width:760px),(orientation:portrait){#spiel{grid-template-columns:1fr;grid-template-rows:minmax(300px,55vh) auto;height:auto}}
+</style>
+<script defer src="../w5ac/rule191-w5-ferry-core.js"></script>
+<script defer src="flug-kern.js"></script>
+<script defer src="referenz.js"></script>
+<script defer src="grafik.js"></script>
+<script defer src="sandbox.js"></script></head>
+<body>
+<header><h1>Aphros Void · Flug2D-Sandbox</h1>
+<p><strong>Forschungsprototyp, nicht Teil des Hauptspiels.</strong> Nur Flugkinematik: kein Geld, keine Ware, kein Treibstoff, keine Speicherung im Browser. Reload startet neu.</p></header>
+<div id="spiel">
+<div id="feld">
+<canvas id="raum" aria-label="2D-Raum mit Station, Erz- und Eisfeld und Schiffen. Tippen setzt einen Anflugpunkt."></canvas>
+<p id="hud"></p>
+<div id="knueppel" role="application" aria-label="Steuerknüppel: Richtung gibt den Kurs vor, Auslenkung die Fahrt"><div id="knopf"></div></div>
+</div>
+<div id="tafel">
+<p id="meldung" role="status" aria-live="polite">Angedockt an st_aldera. „Abdocken“ startet den Flug.</p>
+<div class="reihe"><button id="dock">Abdocken</button><button id="bremse">Bremsen</button></div>
+<div class="reihe"><button id="erz">Anflug Erzfeld</button><button id="eis">Anflug Eisfeld</button></div>
+<label><input id="tempomat" type="checkbox"> Tempomat: Fahrt beim Loslassen halten</label>
+<div class="reihe"><button id="pause" aria-pressed="false">Pause</button><button id="tempo">Zeit 1×</button><button id="minute">+1 Minute</button></div>
+<label>Darstellung <select id="grafik"><option value="ux08">Void Echoes · UX08</option><option value="basis">F0 · einfache Schiffe</option></select></label>
+<canvas id="modelle" width="288" height="84" style="width:100%;max-width:288px;align-self:center" aria-label="Modelllegende: Miner mit Förderarmen, Frachter mit Containern, Jäger mit Pfeilflügeln"></canvas>
+<label>Zoom <input id="zoom" type="range" min="2" max="40" value="6" aria-label="Zoom der Ansicht"></label>
+<details><summary>Determinismus, Speichern und Laden prüfen</summary>
+<div class="reihe"><button id="referenz">Referenzlauf prüfen</button><button id="replay">Replay dieser Sitzung prüfen</button></div>
+<div class="reihe"><button id="export">Zustand als JSON exportieren</button><label class="datei">JSON importieren <input id="import" type="file" accept=".json,application/json"></label></div>
+<p id="pruefung" role="status" aria-live="polite">Noch nicht geprüft.</p>
+<pre id="zustand"></pre>
+</details>
+<p style="font-size:.85rem;color:#9fb3c8;margin:0">Tastatur: Pfeile links/rechts Kurs, hoch/runter Fahrt, Leertaste Bremsen. np1 ist ein NPC-Miner mit denselben Flugbefehlen.</p>
+</div>
+</div>
+</body></html>

@@ -79,7 +79,7 @@ function erstellen(startkapital = {}) {
         throw Error('F2a: Anflug nicht frei '+id);
       const abgebaut=state.w5n.eisAbgebaut-m.minedVorher;
       const verkauft=state.w5n.mineVerkauft-m.soldVorher;
-      if(abgebaut<0 || verkauft<0 || verkauft>abgebaut || abgebaut<verkauft+m.verkauft)
+      if(abgebaut<0 || verkauft<0 || verkauft>abgebaut || verkauft<m.verkauft)
         throw Error('F2a: finanzielle Eisstatistik inkonsistent '+id);
       if(m.status!=='fertig' && (abgebaut>CHARGE || verkauft!==0
         || (s.ladung.eis||0)!==abgebaut))

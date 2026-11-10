@@ -1,5 +1,8 @@
 # Aphros Void – Check
 
+> **Aktuelle Hauptversion / 10.11.2026:** W0–W5-Regel195/Schema8 als [einzige statische HTML-Datei `aphros-void.html`](aphros-void.html), identisch zur [GitHub-Pages-Startdatei](index.html), freigegeben und auf [main `ba0c1861`](https://github.com/tobiasfranziskus/Check/commit/ba0c1861a664f0655928e85cf834dee75c092a00) integriert. Alte Hauptversion gesichert unter [`versionen/main-pre-w5-20261110/`](versionen/main-pre-w5-20261110/) und im [Backup-Branch](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-w5-20261110). [Release- und Save-Hinweise](docs/W5_SINGLEFILE_RELEASE.md). Echte Safari-/NAS-Abnahme offen. Die weiter unten erhaltenen Hinweise auf Regel14 als `[MAIN]` sind **historisch**, nicht mehr aktuell.
+
+
 **Weltraumwirtschaft, Konzernmanagement und direkt spielbare 2D-Schiffe.** Aphros Void ist ein Browserprojekt mit statischer `index.html`, HTML/CSS/Vanilla JavaScript, deterministischem gemeinsamen Simulationskern und iPad-Safari-/NAS-Zielplattform.
 
 - **Öffentlicher Einstieg:** https://tobiasfranziskus.github.io/Check/ (tatsächlich ausgelieferte Fassung gesondert von lokalen Drafts prüfen)

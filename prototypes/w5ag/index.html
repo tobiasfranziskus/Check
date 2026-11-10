@@ -60,6 +60,8 @@ und öffentlichem Hauptspiel. Keine Speicherung in produktiven Slots; Reload sta
 <p>Folgezyklus nach abgeschlossenem Rückflug: erneut Eis fördern → 50 Minuten → stoppen → vorhandene Eisladung an Aldera verkaufen → Eisfracht erneut finanzieren. Jeder Verkauf benötigt Alderas vorhandenes Käufergeld; jeder Flug bindet Nadirs Käuferetat und die eigenen Fluglöhne der Spedition neu. Weitere Wasserchargen und private Käufe bleiben freiwillige Einzelbefehle.</p>
 <div class="controls"><button id="ice-mine">Mit ausgewähltem Miner Eis fördern</button><button id="ice-freight">Eisfracht finanzieren</button><button id="water-start">Wasserwerk finanzieren</button></div>
 <label>Eis aus eigener Bordladung verkaufen <input id="ice-sell-amount" type="number" min="1" step="1" value="50"></label><button id="ice-sell">Eis an Aldera verkaufen</button><p id="ice-sell-quote" class="quote" role="status"></p>
+<p id="capital-bridge" class="quote" role="status" aria-live="polite"></p>
+<p>Ist Alderas Kasse leer, können bereits bezahlte Erzaufträge Mittel vorübergehend binden. Nur deren wirklicher Abschluss darf Geld freigeben. Ein anderer Käufer oder ein fremdes Eigentümerkonto darf Aldera nicht kostenlos retten.</p>
 <p id="water-quotes" class="quote"></p><div id="water-state"></div>
 <label>Persönliches Konto <select id="pilot-owner"><option value="pilot_erz">Erzpilot</option><option value="pilot_eis">Eispilot</option></select></label>
 <label>Wassermenge <input id="water-amount" type="number" min="1" step="1" value="1"></label>

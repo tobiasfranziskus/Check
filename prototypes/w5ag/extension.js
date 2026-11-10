@@ -11,11 +11,37 @@ function miningLimit(snap,ware){
  if(ware==='eis'&&snap.state.owners.house.cash<rules.w5n.mineLohn)return 'Eigenes Arbeitsgeld für nächste Eis-Förderminute fehlt';
  return null;
 }
+function capitalBridge(snap,rules=scope.W5wOriginal.rules){
+ const state=snap.state,station='st_aldera';
+ // W1 buyer funds belong to real original escrow owners, not free Aldera cash.
+ const contracts=Object.entries(state.erzpilotVertraege||{}).map(([schiff,c])=>
+  Object.freeze({schiff,menge:c.menge,konto:c.konto,
+   buyerHeld:state.owners[c.konto]?.cash||0,workerHeld:state.owners[c.arbeitsKonto]?.cash||0}));
+ const held=contracts.reduce((sum,c)=>sum+c.buyerHeld,0);
+ const initial=rules.owners.find(o=>o.id===station)?.cash;
+ const book=state.stats.konto[station];
+ const booked=initial+book.erloes-book.kosten;
+ const free=state.owners[station].cash;
+ return Object.freeze({free,oreBuyerHeld:held,booked,
+  bridgeOk:booked===free+held,contracts:Object.freeze(contracts),
+  nadirFree:state.owners.st_nadir.cash,
+  carrierFree:state.owners.transport.cash,
+  nextBuyer:snap.water.freight.gesamt,
+  nextWorker:snap.water.freight.arbeit});
+}
+function capitalText(c){
+ return 'Aldera für Eisankauf frei '+c.free+' ISK · für laufende Erzankäufe gebunden '+
+  c.oreBuyerHeld+' ISK (nicht frei; Rückfluss nur nach tatsächlichem Original-Core-Auftragsabschluss)'+
+  ' · Nadir Käuferkasse frei '+c.nadirFree+' ISK, nächste Eisfracht braucht '+
+  c.nextBuyer+' ISK · Spedition frei '+c.carrierFree+' ISK, Fluglohnreserve '+
+  c.nextWorker+' ISK'+(c.bridgeOk?' · Aldera-Kassenbrücke geprüft':' · KASSENABWEICHUNG – keine Finanzierungsfreigabe');
+}
 function renderSale(snap,session,prefix){
- const q=session.preview(saleRequest(snap,prefix));$(prefix).disabled=!q.ok;
+ const q=session.preview(saleRequest(snap,prefix)),c=capitalBridge(snap);
+ $(prefix).disabled=!q.ok||!c.bridgeOk;
  $(prefix+'-quote').textContent=(q.ok?'Verkauf durch Core gedeckt':'Verkauf gesperrt: '+q.reason)+
   ' · Eigene Eisladung '+(snap.state.ships[snap.selected]?.ladung.eis||0)+
-  ' · Aldera Käuferkasse '+snap.state.owners.st_aldera.cash+' ISK. Der Core prüft Menge, Eigentum, Ort, Lager und Käufergeld erneut.';
+  ' · '+capitalText(c)+'. Der Core prüft Menge, Eigentum, Ort, Lager und Käufergeld erneut.';
 }
 function render(snap,session){
  const s=snap.state,w=snap.water;
@@ -40,6 +66,7 @@ function render(snap,session){
  });
  $('water-quotes').textContent=quotes.join(' | ');
  renderSale(snap,session,'ice-sell');
+ $('capital-bridge').textContent=capitalText(capitalBridge(snap));
  const f=w.freight;
  $('water-quotes').textContent+=' | Nadir Käuferkasse '+s.owners.st_nadir.cash+' ISK · Speditionskasse '+s.owners.transport.cash+' ISK'+
   (f.ok?' · Nächste Fracht: '+f.gesamt+' ISK Käuferetat und '+f.arbeit+' ISK Fluglöhne vorab sperren.':' · Fracht gesperrt: '+f.grund);
@@ -66,5 +93,7 @@ function mount(session,run){
  $('ice-sell-amount').addEventListener('input',()=>render(session.snapshot(),session));
  for(const id of ['pilot-owner','water-amount'])$(id).addEventListener('input',()=>render(session.snapshot(),session));
 }
-scope.W5agExtension=Object.freeze({render,mount,renderSale,saleRequest,miningLimit});
+const api=Object.freeze({render,mount,renderSale,saleRequest,miningLimit,capitalBridge,capitalText});
+scope.W5agExtension=api;
+if(typeof module==='object'&&module.exports)module.exports=api;
 })(globalThis);

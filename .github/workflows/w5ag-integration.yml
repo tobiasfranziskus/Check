@@ -41,7 +41,7 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install playwright==1.62.0
       - run: python -m playwright install --with-deps chromium
-      - name: Four touch sizes: paid W0-W5, ice, water, two private buyers and protected imports
+      - name: "Four touch sizes: paid W0-W5, ice, water, two private buyers and protected imports"
         run: python tests/w5ag-touch.py
         env:
           CHROMIUM_PATH: playwright-managed

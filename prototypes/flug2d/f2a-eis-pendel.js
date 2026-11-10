@@ -34,7 +34,8 @@ function erstellen(startkapital = {}) {
   function synchronisieren(state) {
     for (const s of Object.values(state.ships)) {
       if (s.klasse !== 'miner') continue;
-      if (s.auftrag === 'foerdern' && !mListe(state)[s.id])
+      if (s.auftrag === 'foerdern'
+        && (!mListe(state)[s.id] || mListe(state)[s.id].status === 'fertig'))
         wirtschaftsBefehl(state, 'shipWait', s);
     }
   }
@@ -179,6 +180,9 @@ function erstellen(startkapital = {}) {
     // Sobald die Charge produziert wurde, Originalauftrag vor dem nächsten
     // W5n-Tick pausieren – verhindert automatische 50er-Sofortabnahme im Feld.
     vor(state);
+    // NPC-Investition darf nach der 68-Minuten-Lieferung keinen neuen
+    // ungeprüften Dock-Erzauftrag bis zum Folgetick stehen lassen.
+    if(state.flug.schritt===0)synchronisieren(state);
   }
   function teilschritt(state) {
     pruefen(state);

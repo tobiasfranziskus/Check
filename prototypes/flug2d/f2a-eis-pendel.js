@@ -78,6 +78,10 @@ function erstellen(startkapital = {}) {
         throw Error('F2a: Förderung außerhalb des Eisfelds '+id);
       if(m.status==='anflug' && s.flug.lage!=='frei')
         throw Error('F2a: Anflug nicht frei '+id);
+      if(m.status==='abdocken' && s.flug.lage!=='abdocken')
+        throw Error('F2a: Abdockphase ohne Abdocken '+id);
+      if(m.status==='abnahme' && (s.flug.lage!=='angedockt'||s.phase!=='dock'))
+        throw Error('F2a: Eisabnahme nur wirklich am Dock '+id);
       const abgebaut=state.w5n.eisAbgebaut-m.minedVorher;
       const verkauft=state.w5n.mineVerkauft-m.soldVorher;
       if(abgebaut<0 || verkauft<0 || verkauft>abgebaut || verkauft<m.verkauft)
@@ -163,6 +167,8 @@ function erstellen(startkapital = {}) {
         s.phase='dock';m.status='abnahme';
       }
       if(m.status==='abnahme') {
+        if(b.lage!=='angedockt'||s.phase!=='dock')
+          throw Error('F2a: Abnahme außerhalb des Docks strikt verweigert');
         const menge=s.ladung.eis||0;
         if(menge>0){
           // Kein Verkauf vor dem Andocken, keine selbst berechneten Handelsbeträge.

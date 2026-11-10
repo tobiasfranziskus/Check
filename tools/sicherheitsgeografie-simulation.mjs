@@ -8,7 +8,7 @@ import { execFileSync } from 'node:child_process';
 
 const baselineSha='3cff288aa75c2c072c210298e9f81fb7b92a4ec7';
 const baselineHtml=execFileSync('git',['show',baselineSha+':index.html'],{encoding:'utf8',maxBuffer:10*1024*1024});
-const currentHtml=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const currentHtml=fs.readFileSync(new URL('../versionen/main-pre-w5-20261110/index.html',import.meta.url),'utf8');
 const seeds=[7,11,1,2,65535,42,1234,98765,3,99,2024,2025,314159];
 const common=['st_aldera','st_cyris','st_dravos','st_meridian','st_orion','st_veldra'];
 const tradeAnchor="buche(state, schiff.owner, 'kosten', fee);\n  return true;";

@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 const sha='3cff288aa75c2c072c210298e9f81fb7b92a4ec7';
 const originalHtml=execFileSync('git',['show',sha+':index.html'],{encoding:'utf8',maxBuffer:10*1024*1024});
-const fullHtml=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const fullHtml=fs.readFileSync(new URL('../versionen/main-pre-w5-20261110/index.html',import.meta.url),'utf8');
 const old="id: 'meridian', name: 'Meridian', sicherheit: 'gesetzlos',\n      karte: { x: 880, y: 880 }, region: 1300,\n      gates: [{ to: 'veldra', time: 30 }],";
 const modified="id: 'meridian', name: 'Meridian', sicherheit: 'gesetzlos',\n      karte: { x: 880, y: 880 }, region: 1300,\n      gates: [{ to: 'veldra', time: 30 }, { to: 'orion', time: 26 }],";
 assert.equal(originalHtml.split(old).length,2,'eindeutiger Tor-Anker v10');

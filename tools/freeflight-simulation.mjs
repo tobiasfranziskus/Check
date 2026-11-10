@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 
-const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../versionen/main-pre-w5-20261110/index.html',import.meta.url),'utf8');
 const source=html.slice(html.indexOf('<script>')+8,html.indexOf('const m_data_oberflaeche'));
 const fixture=JSON.parse(fs.readFileSync(new URL('../tests/fixtures/economy-security-v10.json',import.meta.url),'utf8'));
 const seeds=[7,11,1,2,65535,42,1234,98765,3,99,2024,2025,314159];

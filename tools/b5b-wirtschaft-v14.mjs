@@ -6,7 +6,7 @@ import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 
 const BASE='e0c27a3762d9d6e75d8bcc30ed47621eff2f152b';
-const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../versionen/main-pre-w5-20261110/index.html',import.meta.url),'utf8');
 const golden=JSON.parse(fs.readFileSync(new URL('../tests/fixtures/economy-priority-v12.json',import.meta.url),'utf8'));
 assert.equal(golden.provenance.sourceRun,41026155660);
 const source=x=>x.slice(x.indexOf('<script>')+8,x.indexOf('const m_data_oberflaeche'));

@@ -1,5 +1,8 @@
 # Aphros Void – Check
 
+> **[PAGES / DEPLOY BESTANDEN · 10.11.2026]** [GitHub Pages Build-/Deploy-Lauf #42840314464](https://github.com/tobiasfranziskus/Check/actions/runs/42840314464) ist **completed/success** für `main ba0c1861`. Öffentlicher Haupteinstieg: https://tobiasfranziskus.github.io/Check/ . Der erfolgreiche Pages-Deploy ist nicht mit einer echten iPad-Safari-Geräteabnahme gleichzusetzen. Die direkt von der Zielwebsite gerenderte Ausgabe konnte hier nicht unabhängig mit Safari geprüft werden. NAS-Datei bleibt vor Ort zu ersetzen.
+
+
 > **Aktuelle Hauptversion / 10.11.2026:** W0–W5-Regel195/Schema8 als [einzige statische HTML-Datei `aphros-void.html`](aphros-void.html), identisch zur [GitHub-Pages-Startdatei](index.html), freigegeben und auf [main `ba0c1861`](https://github.com/tobiasfranziskus/Check/commit/ba0c1861a664f0655928e85cf834dee75c092a00) integriert. Alte Hauptversion gesichert unter [`versionen/main-pre-w5-20261110/`](versionen/main-pre-w5-20261110/) und im [Backup-Branch](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-w5-20261110). [Release- und Save-Hinweise](docs/W5_SINGLEFILE_RELEASE.md). Echte Safari-/NAS-Abnahme offen. Die weiter unten erhaltenen Hinweise auf Regel14 als `[MAIN]` sind **historisch**, nicht mehr aktuell.
 
 

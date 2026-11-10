@@ -1,5 +1,25 @@
 # Aphros Void – belegter technischer Projektstatus
 
+
+> **[DRAFT / aktueller Abgleich · 10.11.2026]** Dieser ergänzte Status entsteht auf dem existierenden [docs-only-PR #272](https://github.com/tobiasfranziskus/Check/pull/272); kein Merge. Geprüfter `main`-Commit: **`fd3e915448a2f35fa803db709aff9ce223dddc6f`**, produktiv v0.12.5 / Regel14 / Schema8. Der unmittelbar folgende alte Text zu `5a56d9d7` bleibt als historischer 07.11.-Stand erhalten; **nicht** als aktueller SHA zu lesen.
+
+## 0A. Belegter aktueller Forschungs- und Qualitätsstand (10.11.2026)
+
+| Kategorie | Prüfbeleg / Grenze |
+| --- | --- |
+| **[MAIN]** | `fd3e9154`, v0.12.5, Regel14/Schema8; die neue Regel195- und W5-Integration ist **nicht** in der produktiven `index.html`, auf Pages oder in produktiven Save-Slots. |
+| **[DRAFT/UI]** | Gestapelte Forschungsoberfläche [#280](https://github.com/tobiasfranziskus/Check/pull/280) → [#282](https://github.com/tobiasfranziskus/Check/pull/282) → [#285](https://github.com/tobiasfranziskus/Check/pull/285) → [#286](https://github.com/tobiasfranziskus/Check/pull/286); gemeinsames HQ/Karte/2D-Miner/Erz- und Eisverkauf/Fracht/Wasser/private Pilotenlöhne auf Original-Regel195, statischer Einstieg `prototypes/w5ag/index.html`. Kein echter manueller 2D-Freiflug oder Dockbefehl. |
+| **[DRAFT/Referenz W5ai]** | [#285-Referenzbericht](https://github.com/tobiasfranziskus/Check/blob/feature/w5ak-wiederholbare-wirtschaft/docs/W5AK_WIEDERHOLBARE_WIRTSCHAFT.md): Tick480, **2** bezahlte Eisrundflüge, **360** Fluglohnminuten (120 Erz, 240 Eis), **30** Wasser produziert, **25** gekauft/verbraucht für **350 ISK**, **5** auf Lager, Weltgeld **33.000 ISK**, Mint **0**, Seed42-Hash `58da44b282a654a3`. Kein Dauerwirtschaftsbeweis. |
+| **[DRAFT/ANALYSE W5aj]** | [#283](https://github.com/tobiasfranziskus/Check/pull/283): **13×90 Tage** und separater **365-Tage**-Krisenfall; in der getesteten sofortigen Befehlsfolge blockiert der nächste Quellankauf. **Kein** allgemeines Zwei-Flüge-Limit. |
+| **[DRAFT/ANALYSE W5aj-b]** | [#284](https://github.com/tobiasfranziskus/Check/pull/284) mit [CI #42709770729](https://github.com/tobiasfranziskus/Check/actions/runs/42709770729): **4/4 gezielt, 201/201 Node22 gesamt**; Aldera bei Tick550 **0 ISK frei + 1.000 ISK für tatsächlich laufende W1-Erzkäufe gebunden**. Die von realer W1-Arbeit nach 50 weiteren Minuten freigegebene Treuhand ermöglicht einen echten dritten 50-Eis-Ankauf und anschließend eine dritte vollständig mit 490/120 ISK vorfinanzierte Rundfracht bis Tick720. |
+| **[DRAFT/UI W5al]** | [#286-Code-Head `ea6c2933` / CI #42762510518](https://github.com/tobiasfranziskus/Check/actions/runs/42762510518): **200/200 Node22-Tests**, 0 Fehler/Skips, und **12/12 Chromium-Touchprüfungen** (W5ag 4/4, Miner2D 4/4, W5ak/W5al 4/4); tatsächlicher dritter Flug, Hash Seed42 `43a9992602f1addd`, Tick720, 150 Eis geliefert, insgesamt 480 entlohnte Flugminuten, Weltgeld 33.000/0 Mint. Dieser Hash gehört zum W5al-Prüfpfad und ist **nicht** der historische W5ai-Tick480-Hash. |
+| **[CI letzter #286-Head]** | Commit `f84fd796` änderte nur Doku und Workflow-Triggerpfade. [JS-Regression #42762878258](https://github.com/tobiasfranziskus/Check/actions/runs/42762878258) **grün**; [W5u #42762877987](https://github.com/tobiasfranziskus/Check/actions/runs/42762877987) **grün**; [W5ag #42762877975](https://github.com/tobiasfranziskus/Check/actions/runs/42762877975) **cancelled**, Touchjob beim Installieren von Chromium abgebrochen, **nicht erfolgreich ausgeführt**. Ursächliche Absicht des Abbruchs nicht belegt. |
+| **[ABNAHME OFFEN]** | Kein tatsächlicher iPad-Safari/WebKit-/NAS-Test, keine produktive Save-Migration, kein Pages-Release und kein W6-Dauerbetrieb. [Separates Geräte-/NAS-Prüfprotokoll](W5AL_IPAD_NAS_ABNAHME.md) ohne vorweggenommenes Ergebnis. |
+
+**Technische Grenze:** `shipSellIce` und die vorhandenen Fracht-/Wasserbefehle prüfen reale Eigentümer, Waren, Auftragsgeld und Arbeitsreserven im selben Regel195-Core. Die W5al-Anzeige liest Original-Treuhandkonten; sie transferiert **kein** Geld. Forschungssaves müssen vor einem Reload als JSON exportiert und in derselben Regelversion wieder geprüft importiert werden. Die statische Pfadstruktur des gesamten Forschungszweigs muss auf dem Testserver erhalten bleiben; ein GitHub-Draft ist keine öffentliche Pages-Veröffentlichung.
+
+
+
 > **[MAIN / verifiziert 07.11.2026]** `main` vor dieser rein redaktionellen Bereinigung: [`5a56d9d7`](https://github.com/tobiasfranziskus/Check/commit/5a56d9d7e94a2ad283684b7b912c8b56ca96af53), **v0.12.5 / Regel14 / Schema8**. Keiner der Wirtschafts-R32- oder W5u-Forschungsstände ist in den produktiven Core integriert. Die unverändert historische Statusdatei bleibt unter [`5a56d9d7`](https://github.com/tobiasfranziskus/Check/blob/5a56d9d7e94a2ad283684b7b912c8b56ca96af53/docs/PROJEKTSTATUS.md) und `git show 5a56d9d7e94a2ad283684b7b912c8b56ca96af53:docs/PROJEKTSTATUS.md` erhalten. **Produktpriorität:** [ROADMAP.md](ROADMAP.md); [PR-Index](README.md), [Entwicklungsregeln](../AGENTS.md).
 
 ## 0. Ergänzung: überprüfte W1–W5-Integration vom 09.11.2026

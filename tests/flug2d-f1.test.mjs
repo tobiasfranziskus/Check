@@ -44,7 +44,8 @@ test('F1: eigenes Regel196-Profil, gleiche 33.000 ISK, keine Core-Duplikation', 
   assert.equal(p.state.flug.schritt, 0);
   assert.ok(Object.values(p.state.ships).filter(x=>x.klasse==='miner').every(x=>x.flug?.lage==='angedockt'));
   wirtschaftGleich(p);
-  assert.throws(() => Legacy.createFlightResearch({ flightF1: false }), /F1:/);
+  assert.equal(typeof Legacy.createFlightResearch, 'undefined', 'Original-Core bleibt ohne F1-Sonderpfad');
+  assert.throws(() => F1.erstellen({ flightF1: false }), /W5ag:/);
   assert.throws(() => Legacy.createPrivateWageResearch({ flightF1: true }), /W5ag:/);
 });
 

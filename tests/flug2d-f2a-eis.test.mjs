@@ -39,6 +39,10 @@ test('F2a: eigenständige Forschung197; weder alter F1- noch Produkt-Save wird �
   assert.throws(()=>f.load(alt.save(alt.createState(3301))),/fremde Regelversion/);
   assert.throws(()=>original.core.loadW5(f.save(s)),/inkompatibel/);
   assert.equal(f.canonical(f.load(f.save(s))),f.canonical(s));
+  const illegal=JSON.parse(f.save(s));
+  illegal.ships.sh001.auftrag='foerdern';
+  assert.throws(()=>f.load(JSON.stringify(illegal)),/F2a: Flug-\/Missions-\/Finanzierungsprüfung/,
+    'Rule197-Import darf ohne Feldmission keinen Dock-Minerjob einschleusen');
 });
 
 test('F2a: 48 bezahlte Feld-Eis-Einheiten bleiben bis zum echten Andocken im Frachtraum',()=>{

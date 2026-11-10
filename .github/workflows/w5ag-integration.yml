@@ -13,6 +13,8 @@ on:
       - 'tests/w5ag-touch.py'
       - 'tests/w5ak*'
       - 'docs/W5AK_*'
+      - 'docs/W5AL_*'
+      - 'tests/w5al*'
       - 'tests/ui-miner2d*'
       - 'docs/W5AG_*'
       - 'docs/UI_MINER2D_RULE195.md'

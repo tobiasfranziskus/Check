@@ -18,4 +18,12 @@ W5aj fand einen sofort gesperrten dritten Eisverkauf bei Tick550. W5aj-b konnte 
 
 Das ist kein Geldmodell-B-Emissionsrecht, keine W6-Nachhaltigkeitsaussage, kein Refactoring des Wirtschaftskerns. Keine gezwungenen privaten Einkäufe, keine Übertragung fremden Geldes, kein Auto-Anschub. Produkt-Main sowie die Forschungsverzweigungen #281–#284 bleiben unverändert. Freiflug und manuelles Docking bleiben Core-Folgethemen; reale iPad-Safari/NAS-Abnahme offen.
 
-**CI-Status:** Nach vollständig ausgeführten Node22- und Chromium-Touchprüfungen ergänzen.
+## Ausgeführte Abnahme am Code-Head `ea6c2933`
+
+- [W5ag/Original-Core/Touch-CI #42762510518](https://github.com/tobiasfranziskus/Check/actions/runs/42762510518): beide Jobs **erfolgreich**. `node --test tests/*.test.mjs` hat **200/200 Einzeltests**, 0 Fehler, 0 Skips bestanden (3 neue W5al-Tests).
+- **Touch: alle 12/12 tatsächlich ausgeführten Chromium-Größenchecks bestanden.** W5ag 4/4, Miner2D 4/4, W5ak/W5al 4/4 (1180×820, 1024×768, 820×1180, 390×844). Der letzte Test führt die erste und zweite Eisfracht, die Kassen-/Erztreuhandsperre, den realen 50-Minuten-Auftragsabschluss, den dritten echten Eisverkauf und den dritten W5n-Rundflug über die Bedienoberfläche aus. Die ursprüngliche W5ai-Tick480-Referenz wird vor dem neuen dritten Flug geprüft.
+- [JavaScript-Regression #42762510460](https://github.com/tobiasfranziskus/Check/actions/runs/42762510460): **erfolgreich**. Alte W5u-Historik/CI wird getrennt bewertet.
+- **Seed42 Original-Core-Referenz nach drittem Flug:** Tick720, Hash `43a9992602f1addd`, 3 vollständig bezahlte Eisrundfahrten und 150 echtes Eis geliefert, insgesamt 480 tatsächlich vergütete Flugminuten (120 Erz/360 Eis), freie Aldera-Kasse 1.000 ISK, Nadir 2.066 ISK, Weltgeld 33.000 ISK, **0 Mint**. Im unabhängigen Seed7 mit identischem Käuferbudget gilt derselbe Ablauf, Hash `4dbd44700abcec1f` (kein abweichendes Käuferstartkapital behauptet).
+- Kassen-Buchidentität wurde bei jedem ausgewiesenen Punkt aus dem gespeicherten Original-Core verifiziert. Bei Tick550 sind 1.000 ISK in W1-Erz-Käufer-Treuhand gebunden; bei Tick600 ist die Reserve durch echte W1-Arbeit frei und Aldera bezahlt die dritte 50-Eis-Charge. **Weder Käufersubvention noch Rückbuchung durch die UI.**
+
+Echte iPad-Safari- und NAS-Abnahme offen. Kein Merge oder Deployment. Dokumentationsänderungen verändern weder Core noch Testreferenzen.

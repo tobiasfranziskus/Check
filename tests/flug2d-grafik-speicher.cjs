@@ -54,7 +54,7 @@ const http = require("http"),
     assert.deepEqual(result.cacheBefore, result.cacheAfter);
     assert.ok(after.usedSize - before.usedSize < 8 * 1024 * 1024);
     console.log(JSON.stringify({ frames: 2000, before, after, ...result }));
-    const fallback = await browser.newPage();
+    const fallback = await browser.newPage({ hasTouch: true });
     const pageErrors = [];
     fallback.on("pageerror", (error) => pageErrors.push(error.stack || error.message));
     try {
@@ -71,15 +71,16 @@ const http = require("http"),
       );
       assert.equal(await fallback.locator("#grafik").inputValue(), "basis");
       assert.equal(await fallback.locator("#grafik").isDisabled(), true);
-      // No wall-time/RAF dependency for the undock sequence on this second page.
-      await fallback.locator("#pause").click();
+      // Touch avoids the existing initial mouse-click debounce (beruehrt = 0).
+      // Explicit steps avoid wall-time/RAF dependence for this second page.
+      await fallback.locator("#pause").tap();
       assert.equal(await fallback.locator("#pause").getAttribute("aria-pressed"), "true");
-      await fallback.locator("#dock").click();
+      await fallback.locator("#dock").tap();
       assert.equal(
         await fallback.evaluate(() => JSON.parse(FlugSandbox.zustand()).ships.sp1.flug.lage),
         "abdocken",
       );
-      await fallback.locator("#minute").click();
+      await fallback.locator("#minute").tap();
       assert.equal(
         await fallback.evaluate(() => JSON.parse(FlugSandbox.zustand()).ships.sp1.flug.lage),
         "frei",

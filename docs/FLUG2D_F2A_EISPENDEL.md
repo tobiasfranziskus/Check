@@ -23,7 +23,7 @@ Eine bestehende, real finanzierte Minerhülle des NPC oder ein **normal über `s
 | Kasse Eigentümer nach Abnahme | 2.544 ISK | 2.544 ISK |
 | Finale Warenlage | +48 Eis im Stationslager, 0 im Miner | ebenso |
 | Weltgeld nach Abnahme | **33.000 ISK**, kein Mint | **33.000 ISK**, kein Mint |
-| Forschungs-Referenzhash Seed 3301 | `1f478521b3490907` | `c60851bb5f4f1475` |
+| Forschungs-Referenzhash Seed 3301 | `1f478521b3490907` | `dc89d39b6558f503` |
 
 Der Eigentümer erhält **240 ISK Verkaufserlös**, hat zuvor **96 ISK bezahlte Bergbauarbeit** getragen. Dieser Deckungsbeitrag von 144 ISK vor Schiffserwerb, Verschleiß, Transportarbeit und anderen Kosten ist **kein Nettogewinn nach Vollkosten** und keine wirtschaftliche Dauerbetriebsfreigabe.
 

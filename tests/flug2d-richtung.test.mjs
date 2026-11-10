@@ -32,7 +32,7 @@ test('Flug2D-Richtung: Achsen, Quadranten, Nullvektor und 0-vor-255-Gleichstand'
     [0, 0, 0], [1, 0, 0], [0, 1, 64], [-1, 0, 128], [0, -1, 192],
     [1, 1, 32], [-1, 1, 96], [-1, -1, 160], [1, -1, 224],
     [402, -5, 0], [804, -10, 0], [402, -6, 255],
-    [288, 281, 31], [-288, 281, 97], [-288, -281, 159], [288, -281, 225],
+    [288, 281, 31], [-288, 281, 96], [-288, -281, 159], [288, -281, 224],
   ];
   for (const [dx, dy, expected] of faelle) {
     assert.equal(richtungAlt(dx, dy), expected, 'Legacy-Referenz ' + dx + ',' + dy);

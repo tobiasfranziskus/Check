@@ -1,5 +1,7 @@
 # Regel195-Spielstände
 
+**[DRAFT / PR-Review-Korrektur · 10.11.2026]** [Unabhängige Abnahme](https://github.com/tobiasfranziskus/Check/pull/289#issuecomment-6773396094): RC1-CI [42853625698](https://github.com/tobiasfranziskus/Check/actions/runs/42853625698) scheiterte beim wiederholten gültigen JSON-Import; bisherige lokale 20/20 waren kein grüner CI-Nachweis. Korrektur serialisiert Laden/Import einschließlich Autosave-Abschluss, meldet konkurrierende Spielaktionen sichtbar und synchronisiert die Abnahme auf tatsächliches IndexedDB-JSON und Revision. Wiederholungsimport, überlappende Lade-/Importereignisse und verzögertes Dateilesen werden mit tatsächlichen Sicherheitsdownloads geprüft. Aktueller identischer SHA-256 beider HTML-Dateien: `0eff39fca499c789dd1b04bf35fac33c75bd6ab510a21bcebfdf14cbe14a05d8`. Neue CI-Abnahme ausstehend; kein Merge/Deployment.
+
 **[DRAFT · 10.11.2026]** [Draft-PR #289](https://github.com/tobiasfranziskus/Check/pull/289), Basis `main 7374b29`. Keine Veröffentlichung durch diesen Auftrag.
 
 ## Bedienung und Schutz
@@ -23,4 +25,4 @@ Unabhängige Node-Validierung: `tests/regel195-storage.test.mjs`. Reales Indexed
 
 Echte iPad-Safari- und NAS-Abnahme bleibt offen. Chromium-/Chrome-Touchemulation ist kein Gerätetest. Lokales System-Chromium 154 stürzte beim Download nach Profil-Neustart ab (SIGSEGV); der Speichertest wird zusätzlich mit separat entpacktem offiziellem Chrome 157 ausgeführt. Der Playwright-Browserdownload war durch die Domainrichtlinie gesperrt. Keine neue Produktabhängigkeit.
 
-**[TEST · lokal 10.11.2026]** Node **v22.23.4**, `node --test tests/*.test.mjs`: **217/217 bestanden, 0 Fehler, 0 Skips**; auch die abschließende vollständige Wiederholung auf dem finalen Produktstand bestand 217/217 (206 bestehende + 11 unabhängige neue Tests). **20/20 Chrome-Touchdurchläufe**: je vier W5ag, Miner2D, W5ak-Prototyp, W5ak-Einzeldatei und Speicherabnahme. `--check`, Dateivergleich und Diffprüfung bestanden. Identischer SHA-256 beider HTML-Dateien: `7987327d288cb540307fd03ce6f130f0b13472c28ec9b76208617c3be72c7c36`. Keine echte Safari-/NAS-Abnahme.
+**[TEST · historischer lokaler Stand `8d77e8a`, 10.11.2026; CI-Abweichung siehe oben]** Node **v22.23.4**, `node --test tests/*.test.mjs`: **217/217 bestanden, 0 Fehler, 0 Skips**; auch die abschließende vollständige Wiederholung auf dem finalen Produktstand bestand 217/217 (206 bestehende + 11 unabhängige neue Tests). **20/20 Chrome-Touchdurchläufe**: je vier W5ag, Miner2D, W5ak-Prototyp, W5ak-Einzeldatei und Speicherabnahme. `--check`, Dateivergleich und Diffprüfung bestanden. Identischer SHA-256 beider HTML-Dateien: `7987327d288cb540307fd03ce6f130f0b13472c28ec9b76208617c3be72c7c36`. Keine echte Safari-/NAS-Abnahme.

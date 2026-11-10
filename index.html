@@ -5057,7 +5057,7 @@ if(typeof module==='object'&&module.exports)module.exports=api;else scope.W5agSt
  const modeName=rules.rulesVersion===195?'W5ag':rules.rulesVersion===191?'W5-Transfer':rules.rulesVersion===19?'W5':rules.rulesVersion===18?'W4':rules.rulesVersion===17?'W3':rules.rulesVersion===16?'W2':'W1';
  const fmt=n=>Number.isSafeInteger(n)?n.toLocaleString('de-DE')+' ISK':'Unbekannt',
   val=x=>x===null||x===undefined?'Unbekannt':typeof x==='object'?JSON.stringify(x):String(x);
- let storage=null,saveQueue=Promise.resolve(),saveRequest=0;
+ let storage=null,saveQueue=Promise.resolve(),saveRequest=0,restoreQueue=Promise.resolve();
  const storageStatus=text=>{if($('storage-status'))$('storage-status').textContent=text;};
  function persist(manual=false){
   if(!storage)return;
@@ -5205,30 +5205,43 @@ if(typeof module==='object'&&module.exports)module.exports=api;else scope.W5agSt
   a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  }
  $('save')?.addEventListener('click',()=>persist(true));
- for(const [id,slot] of [['load','manual'],['load-previous','previous']])$(id)?.addEventListener('click',async()=>{
-  const request=++revision;await saveQueue;if(request!==revision)return;
-  try{const json=storage?.read(slot);if(!json)throw Error('Kein Spielstand in diesem Speicherplatz');
-   download(session.export(),'aphros-regel195-vor-laden.json');run(()=>session.import(json));
-  }catch(e){storageStatus('Nicht geladen: '+e.message);}
- });
+ // Restore operations finish in event order, including their save transaction.
+ function restore(task){
+  restoreQueue=restoreQueue.then(task).catch(e=>{
+   $('message').textContent='Nicht übernommen: '+e.message;
+   console.warn('Spielstand nicht übernommen:',e.message);
+  });
+ }
+ function unchanged(request){
+  if(request!==revision)throw Error('Konflikt: Die Sitzung wurde während des Ladens geändert. Bitte erneut laden/importieren.');
+ }
+ for(const [id,slot] of [['load','manual'],['load-previous','previous']])$(id)?.addEventListener('click',()=>restore(async()=>{
+  const request=revision;await saveQueue;unchanged(request);
+  const json=storage?.read(slot);if(!json)throw Error('Kein Spielstand in diesem Speicherplatz');
+  download(session.export(),'aphros-regel195-vor-laden.json');run(()=>session.import(json));
+  await saveQueue;
+ }));
  $('export').addEventListener('click',()=>{
   const url=URL.createObjectURL(new Blob([session.export()],{type:'application/json'})),a=document.createElement('a');
   a.href=url;a.download=rules.rulesVersion===195?'aphros-w5ag-regel195.json':rules.rulesVersion===191?'aphros-w5ac-forschung-w5-transfer-regel191.json':rules.rulesVersion===19?'aphros-w5ab-forschung-w5-regel19.json':rules.rulesVersion===18?'aphros-w5aa-forschung-w4-regel18.json':rules.rulesVersion===17?'aphros-w5y-forschung-w3-regel17.json':rules.rulesVersion===16?'aphros-w5x-forschung-w2-regel16.json':'aphros-w5w-forschung-w1-regel15.json';a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
  });
- $('import').addEventListener('change',async()=>{
-  const file=$('import').files[0],request=++revision;if(!file)return;
-  try{
-   if(file.size>5*1024*1024)throw Error('Datei größer als 5 MiB');
-   const data=await file.text();
-   if(request!==revision)return;
-   if(globalThis.W5agStorage){
-    globalThis.W5agStorage.validate(data,()=>W5wSession.create());
-    download(session.export(),'aphros-regel195-vor-import.json');
-   }
-   run(()=>session.import(data));
-  }catch(e){if(request===revision)$('message').textContent='Nicht übernommen: '+e.message;}
-  finally{if($('import').files[0]===file)$('import').value='';}
+ $('import').addEventListener('change',()=>{
+  const file=$('import').files[0];if(!file)return;
+  restore(async()=>{
+   const request=revision;
+   try{
+    if(file.size>5*1024*1024)throw Error('Datei größer als 5 MiB');
+    const data=await file.text();
+    await saveQueue;unchanged(request);
+    if(globalThis.W5agStorage){
+     globalThis.W5agStorage.validate(data,()=>W5wSession.create());
+     download(session.export(),'aphros-regel195-vor-import.json');
+    }
+    run(()=>session.import(data));
+    await saveQueue;
+   }finally{if($('import').files[0]===file)$('import').value='';}
+  });
  });
  globalThis.W5yExtension?.mount(session,run);globalThis.W5aaExtension?.mount(session,run);globalThis.W5abExtension?.mount(session,run);globalThis.W5acExtension?.mount(session,run);globalThis.W5agExtension?.mount(session,run);
  globalThis.W5agMiner?.mount(session,run);

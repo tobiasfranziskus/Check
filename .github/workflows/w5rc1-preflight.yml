@@ -64,27 +64,26 @@ jobs:
             /tmp/w5ak-*.png
 
   static-nas-preview-package:
-    name: "NAS/iPad preview archive – no product root"
+    name: "NAS delivery – exactly one aphros-void.html"
     needs:
       - main-safe-and-all-node22
       - ipad-touch-preflight
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Package only standalone research UI, never the productive index or save files
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify reproducible single-file HTML and package only that file
         run: |
-          mkdir -p dist-rc1/spieltest/w5-rc1 dist-rc1/docs
-          cp -R prototypes dist-rc1/prototypes
-          cp spieltest/w5-rc1/index.html dist-rc1/spieltest/w5-rc1/index.html
-          cp spieltest/w5-rc1/README.md dist-rc1/spieltest/w5-rc1/README.md
-          cp docs/W5RC1_MAIN_SAFE_INTEGRATION.md dist-rc1/docs/W5RC1_MAIN_SAFE_INTEGRATION.md
-          test -f dist-rc1/prototypes/w5ag/index.html
-          test -f dist-rc1/spieltest/w5-rc1/index.html
+          node scripts/build-w5-singlefile.mjs --check
+          mkdir -p dist-rc1
+          cp aphros-void.html dist-rc1/aphros-void.html
+          test "$(find dist-rc1 -type f | wc -l)" -eq 1
           test ! -e dist-rc1/index.html
-          test ! -e dist-rc1/versionen
       - uses: actions/upload-artifact@v4
         with:
-          name: w5rc1-static-nas-ipad-preview
-          path: dist-rc1/
-          retention-days: 14
+          name: aphros-void-nas-einzeldatei
+          path: dist-rc1/aphros-void.html
+          retention-days: 30
           if-no-files-found: error

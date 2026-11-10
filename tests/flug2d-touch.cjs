@@ -27,19 +27,30 @@ const erlaubt=['prototypes/flug2d/index.html','prototypes/flug2d/flug-kern.js','
    for(const sel of ['#dock','#bremse','#erz','#eis','#pause','#tempo','#minute','summary']){
     const box=await page.locator(sel).boundingBox();assert.ok(box.height>=48&&box.width>=44,`${sel} ${width}x${height} ${JSON.stringify(box)}`);
    }
-   const stick=await page.locator('#knueppel').boundingBox();
+   let stick=await page.locator('#knueppel').boundingBox();
    assert.ok(stick.width>=160&&stick.x>=0&&stick.y+stick.height<=Math.max(height,await page.evaluate(()=>document.documentElement.scrollHeight)));
    // Angedockt ist der Knüppel wirkungslos: der Kern lehnt Steuerbefehle ab, statt das UI raten zu lassen.
    assert.equal(await page.locator('#erz').isDisabled(),true);
    await page.locator('#tempo').tap();assert.match(await text('#tempo'),/3×/);
    await page.locator('#dock').tap();
    await page.waitForFunction(()=>JSON.parse(FlugSandbox.zustand()).ships.sp1.flug.lage==='frei');
+   // On narrow portraits the page scrolls to reach the action buttons. Any
+   // CDP finger coordinates captured before those taps are stale viewport coordinates.
+   await page.locator('#knueppel').scrollIntoViewIfNeeded();
+   stick=await page.locator('#knueppel').boundingBox();
+   assert.ok(stick.y>=0&&stick.y+stick.height<=height,'Joystick must be visible to touch '+width+'x'+height);
    // Echter Touch-Zug am Steuerknüppel über CDP: Richtung -> Kurs, Auslenkung -> Fahrt.
    const cdp=await context.newCDPSession(page),mx=stick.x+stick.width/2,my=stick.y+stick.height/2;
    const touch=(type,pts)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:pts.map(([x,y])=>({x,y,id:1}))});
    await touch('touchStart',[[mx,my]]);
    for(let i=1;i<=6;i++)await touch('touchMove',[[mx+i*13,my-i*5]]);
-   await page.waitForFunction(()=>{const b=JSON.parse(FlugSandbox.zustand()).ships.sp1.flug;return b.modus==='hand'&&b.sollFahrt===100&&b.vx>20;});
+   try{await page.waitForFunction(()=>{const b=JSON.parse(FlugSandbox.zustand()).ships.sp1.flug;return b.modus==='hand'&&b.sollFahrt===100&&b.vx>20;},{timeout:5000});}
+   catch(e){
+    console.error('FLUG2D_DIAG '+JSON.stringify({width,height,stick,stickNow:await page.locator('#knueppel').boundingBox(),
+     viewport:await page.evaluate(()=>({scrollY,innerHeight,scrollHeight:document.documentElement.scrollHeight})),
+     flight:await sp(),message:await text('#meldung')}));
+    throw e;
+   }
    const zug=await sp();assert.ok(zug.sollKurs>=236&&zug.sollKurs<=246,'Kurs rechts oben: '+zug.sollKurs);assert.ok(zug.vy<0);
    await touch('touchEnd',[]);
    // Loslassen ohne Tempomat = Bremsen bis zum Stillstand.

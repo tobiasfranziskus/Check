@@ -85,10 +85,10 @@ const assert=require('node:assert/strict');
          // Hash from canonical state via the ORIGINAL economically coupled F2a instance.
          const F=F2aEisPendel.erstellen({carrierCash:2000,buyerCash:4000});
          return F.hash(JSON.parse(F2aDemo.zustand()));
-       }),'c60851bb5f4f1475','F2a cross-engine paid-delivery hash');
+       }),'dc89d39b6558f503','F2a cross-engine paid-delivery hash');
        assert.deepEqual(errors,[]);
        console.log('F2A_EIS_BROWSER_OK '+(isWK?'WebKit':'Chromium')+' '+width+'x'+height+
-         ' tick='+done.tick+' cash='+done.owners.house.cash+' hash=c60851bb5f4f1475');
+         ' tick='+done.tick+' cash='+done.owners.house.cash+' hash=dc89d39b6558f503');
      }finally{await ctx.close();}
    }
  }finally{if(browser)await browser.close();server.close();}

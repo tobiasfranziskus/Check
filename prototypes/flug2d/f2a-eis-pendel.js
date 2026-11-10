@@ -57,6 +57,13 @@ function erstellen(startkapital = {}) {
       || !buch.missionen || typeof buch.missionen!=='object'
       || Array.isArray(buch.missionen))
       throw Error('F2a: Missionsbuch fehlt');
+    // Ein gefälschter Forschungsstand darf keinem ungeprüften Miner
+    // einen dockgebundenen Altauftrag zum kostenlosen Ortswechsel geben.
+    for(const sh of Object.values(state.ships)) {
+      if(sh.klasse==='miner' && sh.auftrag==='foerdern'
+        && buch.missionen[sh.id]?.status!=='abbau')
+        throw Error('F2a: unbelegter Bergbauauftrag außerhalb der Feldphase '+sh.id);
+    }
     for(const [id,m] of Object.entries(buch.missionen)) {
       const s=state.ships[id];
       const fields=['owner','ware','status','menge','start','ende','verkauft','minedVorher','soldVorher','arbeitVorher'];

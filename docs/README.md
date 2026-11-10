@@ -10,6 +10,7 @@
 | **[BACKUP]** | [Version v0.12.5](../versionen/v0.12.5/) / [Backup-Branch](https://github.com/tobiasfranziskus/Check/tree/backup/pages-v0.12.5-20261106) | Unveränderter Spieltest-Archivstand. Weder Index noch produktive Saves mit Drafts überschreiben. |
 | **[DRAFT/ANALYSE] Wirtschaft** | [#243 Gesamtwirtschaft](https://github.com/tobiasfranziskus/Check/pull/243) | Endpunkt des **gestapelten** W0–W5s/R32-Forschungszweigs. Audits grün, Langzeitwirtschaft bei legalem Sparen/fehlender Endnachfrage **nicht** stabil. |
 | **[DRAFT/ANALYSE] Spiel-UI** | [#203 Hub](https://github.com/tobiasfranziskus/Check/pull/203) → [#207 Adapter](https://github.com/tobiasfranziskus/Check/pull/207) → [#234 W5u](https://github.com/tobiasfranziskus/Check/pull/234) | Historische Legacy-UI-Forschungsquelle mit Regel14; kein aktueller Produkt-Core. |
+| **[DRAFT/ANALYSE] Flug** | [#290 F0](https://github.com/tobiasfranziskus/Check/pull/290) / [#291 Legacy-Audit](https://github.com/tobiasfranziskus/Check/pull/291) | Deterministischer F0-Flugkern bleibt Forschungsbasis; `void.html` liefert nur Grafik- und Pointer-Muster. F1 nicht integriert. |
 | **[OPTION / nicht publiziert]** | [Geplanter W5-Pages-Test](PAGES_SPIELTEST.md) | Das vorhandene Freigabe-/Backupkonzept ist keine Bestätigung einer tatsächlich live veröffentlichten W5-Version. |
 
 ## Warum sind noch so viele Draft-PRs offen?

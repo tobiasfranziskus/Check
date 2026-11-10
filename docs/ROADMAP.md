@@ -1,5 +1,7 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+> **[DRAFT / G1-Grafik auf isoliertem F0 · 10.11.2026]** Eigener Branch `codex/g1-void-echoes-grafik`, gestapelt auf [#290](https://github.com/tobiasfranziskus/Check/pull/290) (`a12a3d00`): UX08-Miner/Frachter/Jäger, Sternhimmel und Triebwerke als lesendes Grafikmodul in `prototypes/flug2d/`, Basisansicht umschaltbar. [Quellen, Architektur und Prüfgrenzen](FLUG2D_G1_GRAFIK.md). Kein F1-Core-Einbau, keine Produktfreigabe. F0 liegt einen Main-Commit hinter `04124f2b`; Spielstandschutz #289 vor späterer Integration abgleichen. Echte iPad Safari/NAS bleiben offen.
+
 > **[PAGES / DEPLOY BESTANDEN · 10.11.2026]** [GitHub Pages Build-/Deploy-Lauf #42840314464](https://github.com/tobiasfranziskus/Check/actions/runs/42840314464) ist **completed/success** für `main ba0c1861`. Öffentlicher Haupteinstieg: https://tobiasfranziskus.github.io/Check/ . Der erfolgreiche Pages-Deploy ist nicht mit einer echten iPad-Safari-Geräteabnahme gleichzusetzen. Die direkt von der Zielwebsite gerenderte Ausgabe konnte hier nicht unabhängig mit Safari geprüft werden. NAS-Datei bleibt vor Ort zu ersetzen.
 
 

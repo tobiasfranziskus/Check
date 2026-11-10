@@ -3,7 +3,7 @@
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const http=require('node:http'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),assert=require('node:assert/strict');
 const repo=path.resolve(__dirname,'..'),shots=process.env.FLUG2D_SHOTS||os.tmpdir();
-const erlaubt=['prototypes/flug2d/index.html','prototypes/flug2d/flug-kern.js','prototypes/flug2d/referenz.js','prototypes/flug2d/sandbox.js','prototypes/w5ac/rule191-w5-ferry-core.js'];
+const erlaubt=['prototypes/flug2d/index.html','prototypes/flug2d/flug-kern.js','prototypes/flug2d/referenz.js','prototypes/flug2d/sandbox.js','prototypes/flug2d/grafik.js','prototypes/w5ac/rule191-w5-ferry-core.js'];
 (async()=>{
  const server=http.createServer((req,res)=>{
   const name=req.url.split('?')[0].slice(1).replace(/\/$/,'/index.html');
@@ -69,6 +69,7 @@ const erlaubt=['prototypes/flug2d/index.html','prototypes/flug2d/flug-kern.js','
    assert.deepEqual(await zustand(),still);
    await page.locator('#minute').tap();const danach=await zustand();
    assert.equal(danach.tick*60+danach.flug.schritt,still.tick*60+still.flug.schritt+60);
+   await require('./flug2d-grafik-browser.cjs')(page,width,height);
    // Tippen auf den Raum setzt einen Anflugpunkt über denselben validierten Befehl.
    const feld=await page.locator('#raum').boundingBox();
    await page.locator('#raum').tap({position:{x:Math.round(feld.width*.8),y:Math.round(feld.height*.3)}});

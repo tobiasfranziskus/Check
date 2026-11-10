@@ -37,7 +37,9 @@ jobs:
           npm install --no-save --prefix "$RUNNER_TEMP/flug2d-playwright" playwright@1.62.0
           node "$RUNNER_TEMP/flug2d-playwright/node_modules/playwright/cli.js" install --with-deps chromium
       - name: "Real F0 browser touch: four viewports, multi-pointer, dock, replay and JSON"
-        run: node tests/flug2d-touch.cjs
+        run: |
+          node tests/flug2d-touch.cjs
+          node tests/flug2d-grafik-speicher.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/flug2d-playwright/node_modules/playwright
           CHROMIUM_PATH: playwright-managed

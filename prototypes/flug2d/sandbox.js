@@ -10,6 +10,8 @@ const $ = (id) => document.getElementById(id);
 const canvas = $('raum'), g = canvas.getContext('2d'), stick = $('knueppel'), knopf = $('knopf');
 let state = R.welt(), start = core.canonical(state), log = [];
 let pause = false, tempo = 1, rest = 0, zuletzt = null, wunsch = null, zeiger = null, vorher = {};
+const grafik = window.FlugGrafik?.erstellen(g);
+const vektor = () => !!grafik && $('grafik').value === 'ux08';
 const ich = () => state.ships[ICH];
 const melden = (text) => { $('meldung').textContent = text; };
 
@@ -99,6 +101,7 @@ function zeichnen(anteil) {
   if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
   g.setTransform(dpr, 0, 0, dpr, 0, 0); g.fillStyle = '#070b12'; g.fillRect(0, 0, w, h);
   const z = zoom(), [cx, cy] = kamera(anteil), px = (x) => w / 2 + (x - cx) * z, py = (y) => h / 2 + (y - cy) * z;
+  if (vektor()) grafik.himmel(cx, cy, z, w, h);
   const sys = F.DATEN.systeme[ich().system];
   g.font = '13px system-ui,sans-serif'; g.lineWidth = 1.5;
   for (const f of sys.felder) {
@@ -109,14 +112,17 @@ function zeichnen(anteil) {
   g.strokeStyle = '#5f7f95'; g.setLineDash([6, 6]); g.beginPath(); g.arc(px(st.x), py(st.y), F.DATEN.andocken.radius * z, 0, TAU); g.stroke(); g.setLineDash([]);
   g.fillStyle = '#dbe6f0'; g.fillRect(px(st.x) - 9, py(st.y) - 9, 18, 18); g.fillText(st.id, px(st.x) + 14, py(st.y) - 12);
   for (const s of Object.values(state.ships)) {
-    const b = s.flug, v = vorher[s.id] || [b.x, b.y], x = px(v[0] + (b.x - v[0]) * anteil), y = py(v[1] + (b.y - v[1]) * anteil);
+    const b = s.flug, v = vorher[s.id] || [b.x, b.y];
+    const view = vektor() ? FlugGrafik.adapter(s, v, anteil) : null;
+    const [x,y] = view ? FlugGrafik.projektion(view.x, view.y, cx, cy, z, w, h) : [px(v[0] + (b.x-v[0])*anteil),py(v[1] + (b.y-v[1])*anteil)];
     const a = b.kurs / 256 * TAU, gross = s.klasse === 'frachter' ? 13 : s.klasse === 'jaeger' ? 9 : 11;
     if (b.ziel && s.id === ICH) {
       const t = b.ziel.art === 'punkt' ? b.ziel : b.ziel.art === 'station' ? st : sys.felder.find((f) => f.id === b.ziel.id);
       g.strokeStyle = 'rgba(141,228,237,.5)'; g.beginPath(); g.moveTo(x, y); g.lineTo(px(t.x), py(t.y)); g.stroke();
     }
-    g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = s.id === ICH ? '#8de4ed' : s.owner === OWNER ? '#7fb08a' : '#d98c5f';
-    g.beginPath(); g.moveTo(gross, 0); g.lineTo(-gross * .7, -gross * .6); g.lineTo(-gross * .4, 0); g.lineTo(-gross * .7, gross * .6); g.closePath(); g.fill(); g.restore();
+    if (view) grafik.schiff(view, x, y, s.id === ICH ? 0 : s.owner === OWNER ? 1 : 2);
+    else { g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = s.id === ICH ? '#8de4ed' : s.owner === OWNER ? '#7fb08a' : '#d98c5f';
+    g.beginPath(); g.moveTo(gross, 0); g.lineTo(-gross * .7, -gross * .6); g.lineTo(-gross * .4, 0); g.lineTo(-gross * .7, gross * .6); g.closePath(); g.fill(); g.restore(); }
     g.fillStyle = '#dbe6f0'; g.fillText(s.id + ' · ' + s.klasse, x + 12, y + 16);
   }
   const b = ich().flug, fahrt = F.isqrt(b.vx * b.vx + b.vy * b.vy), k = F.DATEN.klassen[ich().klasse];
@@ -176,6 +182,16 @@ $('import').addEventListener('change', async () => {
   } catch (e) { zeigeZustand('Nicht übernommen: ' + e.message); }
   finally { $('import').value = ''; }
 });
-window.FlugSandbox = Object.freeze({ zustand: () => core.canonical(state) });
+// Statische Modelllegende: keine zusätzlichen Flugkörper oder Befehle.
+if (grafik) {
+ const c=$('modelle'), h=c.getContext('2d'), legende=FlugGrafik.erstellen(h);
+ h.font='13px system-ui';h.textAlign='center';
+ for (const [i,klasse] of ['miner','frachter','jaeger'].entries()) {
+  legende.schiff({modell:FlugGrafik.modell(klasse),winkel:-Math.PI/2,bewegt:false},48+i*96,35,i);
+  h.fillStyle='#dbe6f0';h.fillText(['Miner','Frachter','Jäger'][i],48+i*96,74);
+ }
+} else { $('grafik').value='basis'; $('grafik').disabled=true; }
+window.FlugSandbox = Object.freeze({ zustand: () => core.canonical(state),
+ rendern: (anteil=1) => zeichnen(anteil), grafikCache: () => grafik?.cache() });
 requestAnimationFrame(bild);
 })();

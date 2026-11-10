@@ -162,6 +162,7 @@ test('F2a: manipulierte Forschungs-Missionen und 195/196/197-Saves dürfen keine
     t=>{delete t.f2a;},
     t=>{t.f2a.missionen[sh.id].menge=50;},
     t=>{t.f2a.missionen[sh.id].verkauft=48;},
+    t=>{t.f2a.missionen[sh.id].status='abnahme';}, // Fake Verkauf am Eisfeld
     t=>{t.f2a.missionen[sh.id].status='fertig';t.f2a.missionen[sh.id].ende=t.tick;t.f2a.missionen[sh.id].verkauft=48;},
     t=>{t.ships[sh.id].ladung.eis=49;},
     t=>{t.ships[sh.id].phase='flug';},

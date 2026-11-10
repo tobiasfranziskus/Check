@@ -71,7 +71,7 @@ function erstellen(startkapital = {}) {
         throw Error('F2a: Lieferung nicht belegbar '+id);
       if(m.status!=='fertig' && m.ende!==null)
         throw Error('F2a: vorzeitig abgeschlossener Auftrag '+id);
-      if(m.status==='abbau' && (!K.imFeld(s,WARE)||s.flug.lage!=='frei'))
+      if(m.status==='abbau' && (!K.imFeld(s,WARE)||s.flug.lage!=='frei'||s.phase!=='dock'))
         throw Error('F2a: Förderung außerhalb des Eisfelds '+id);
       if(m.status==='anflug' && s.flug.lage!=='frei')
         throw Error('F2a: Anflug nicht frei '+id);
@@ -102,6 +102,10 @@ function erstellen(startkapital = {}) {
     if(s.auftrag==='foerdern') wirtschaftsBefehl(state,'shipWait',s);
     const r=f1.execute(state,{type:'shipUndock',owner,schiff:id});
     if(!r.ok)return r;
+    // Im Original-Core bedeutet phase=dock auch Arbeitsbereitschaft. Unterwegs
+    // nutzen wir eine getrennte, unbewegte Forschungsphase: dadurch kann weder
+    // NPC-Wiederanlauf noch Originalfoerderung beim Rückflug versehentlich starten.
+    s.phase = 'flug';
     state.f2a.missionen[id] = {
       owner,ware:WARE,status:'abdocken',menge:CHARGE,start:state.tick,ende:null,verkauft:0,
     };
@@ -116,21 +120,29 @@ function erstellen(startkapital = {}) {
         m.status='anflug';
       }
       if(m.status==='anflug'&&K.imFeld(s,WARE)) {
+        // Dieselbe Original-Wirtschaft: am *echten* Feld ist die einzelne
+        // Minute bergbaufähig. Für NPC-Dock/Investor gilt nach Rückflug wieder
+        // die gesonderte Forschungsphase 'flug'. Kein W5n-Doppelpfad.
+        s.phase='dock';
         wirtschaftsBefehl(state,'shipMine',s,{ware:WARE});
         m.status='abbau';
       }
       if(m.status==='abbau' && !K.imFeld(s,WARE)) {
         if(s.auftrag==='foerdern')wirtschaftsBefehl(state,'shipWait',s);
+        s.phase='flug';
         // Der vorhandene F0-Anflug darf den Miner zurück zum Eisfeld steuern.
         wirtschaftsBefehl(state,'shipApproach',s,{zielArt:'feld',ziel:'aldera:eis'});
         m.status='anflug';
       }
       if(m.status==='abbau'&&(s.ladung.eis||0)>=CHARGE) {
         if(s.auftrag==='foerdern')wirtschaftsBefehl(state,'shipWait',s);
+        s.phase='flug';
         wirtschaftsBefehl(state,'shipDock',s,{station:'st_aldera'});
         m.status='rueck';
       }
-      if(m.status==='rueck'&&b.lage==='angedockt')m.status='abnahme';
+      if(m.status==='rueck'&&b.lage==='angedockt'){
+        s.phase='dock';m.status='abnahme';
+      }
       if(m.status==='abnahme') {
         const menge=s.ladung.eis||0;
         if(menge>0){

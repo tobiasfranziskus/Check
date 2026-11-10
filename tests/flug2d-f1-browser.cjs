@@ -83,9 +83,37 @@ const path = require('node:path');
         await page.locator('#import').setInputFiles({name:'legacy.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(foreign))});
         await page.waitForFunction(()=>document.querySelector('#meldung').textContent.includes('Import abgewiesen'));
         assert.equal(await page.evaluate(()=>F1Demo.zustand()),before);
+        // Cross-engine F1 research reference: the SAME actually paid
+        // NPC/player Erz/Eis roundtrip pinned in the independent Node22 test.
+        const reference = await page.evaluate(() => {
+          const f = F1Kopplung.erstellen({carrierCash:2000,buyerCash:4000});
+          const s = f.createState(3301);
+          const call = cmd => { const r=f.execute(s,cmd);if(!r.ok)throw Error(r.reason); };
+          call({type:'shipBuy',owner:'house',klasse:'miner',station:'st_aldera'});
+          const ships = Object.values(s.ships);
+          const npc = ships.find(x=>x.owner==='npc3'&&x.klasse==='miner');
+          const own = ships.find(x=>x.owner==='house'&&x.klasse==='miner');
+          for(const x of [npc,own])call({type:'shipUndock',owner:x.owner,schiff:x.id});
+          f.fliegen(s,40);
+          for(const [x,ware] of [[npc,'erz'],[own,'eis']])
+            call({type:'shipApproach',owner:x.owner,schiff:x.id,zielArt:'feld',ziel:'aldera:'+ware});
+          f.fliegen(s,1217);
+          const saved=f.save(s), copy=f.load(saved);
+          for(const x of [npc,own]){
+            const cmd={type:'shipDock',owner:x.owner,schiff:x.id,station:'st_aldera'};
+            call(cmd);const q=f.execute(copy,cmd);if(!q.ok)throw Error(q.reason);
+          }
+          f.fliegen(s,800);f.fliegen(copy,800);
+          return {hash:f.hash(s),equal:f.canonical(s)===f.canonical(copy),
+            audit:f.audit(s).ok,tick:s.tick,schritt:s.flug.schritt};
+        });
+        assert.deepEqual(reference,{hash:'ddb96b7b2164c1fb',equal:true,audit:true,tick:34,schritt:17},
+          'F1 Node/Chromium/WebKit research hash mismatch');
+        assert.equal(await page.evaluate(()=>F1Demo.zustand()),before,
+          'Independent cross-engine replay must not mutate browser gameplay session');
         assert.deepEqual(errors,[]);
         console.log('F1_I0_BROWSER_OK '+(isWK?'WebKit':'Chromium')+' '+width+'x'+height+
-          ' tick='+flight.tick+' cash='+purchased.owners.house.cash);
+          ' tick='+flight.tick+' cash='+purchased.owners.house.cash+' hash='+reference.hash);
       } finally {await context.close();}
     }
   } finally {

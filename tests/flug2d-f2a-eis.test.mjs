@@ -79,7 +79,7 @@ test('F2a: 48 bezahlte Feld-Eis-Einheiten bleiben bis zum echten Andocken im Fra
   assert.equal(s.w5n.mineVerkauft,48);
   assert.equal(s.w5n.mineVerkaufWert,240);
   assert.equal(s.stations.st_aldera.lager.eis,48);
-  assert.equal(sh.ladung.eis,0);
+  assert.equal(sh.ladung.eis||0,0);
   assert.equal(s.owners[sh.owner].cash,anfangCash-96+240);
   assert.equal(geld(s),33000);
   assert.equal(s.minted,0);

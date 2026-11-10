@@ -1,0 +1,53 @@
+name: "W5-RC1 – main-safe integration, Node22, 2D touch"
+on:
+  pull_request:
+    paths:
+      - 'prototypes/**'
+      - 'tests/**'
+      - 'spieltest/w5-rc1/**'
+      - 'docs/W5RC1_*'
+      - '.github/workflows/w5rc1-preflight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  main-safe-and-all-node22:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify unchanged product root, archive, complete economy and Save/Load regressions
+        run: node --test tests/*.test.mjs
+  ipad-touch-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.62.0
+      - run: python -m playwright install --with-deps chromium
+      - name: "Four touch sizes: W5ag paid W0-W5 shared session"
+        run: python tests/w5ag-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
+      - name: "Four touch sizes: original core bound 2D miner"
+        run: python tests/ui-miner2d-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
+      - name: "Four touch sizes: three genuinely financed W5al ice trips"
+        run: python tests/w5ak-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: w5rc1-touch-evidence
+          path: |
+            /tmp/w5ag-*.png
+            /tmp/ui-miner2d-*.png
+            /tmp/w5ak-*.png

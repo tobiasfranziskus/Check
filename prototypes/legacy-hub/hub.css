@@ -1,0 +1,13 @@
+:root{color-scheme:dark;font:16px/1.5 system-ui,sans-serif;color:#e1eaf2;background:#0a1420}
+*{box-sizing:border-box}
+body{margin:0;height:100vh;height:100dvh;display:grid;grid-template-rows:auto auto minmax(0,1fr);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.hub-header{padding:10px 16px;border-bottom:1px solid #3a5368}
+.hub-header>span{font-size:.8rem;letter-spacing:.12em;color:#94e4da}
+.hub-header p{margin:4px 0;font-size:.85rem;color:#f4cf83}
+#hub-nav{display:flex;gap:8px;overflow-x:auto;padding:8px 12px;flex:none}
+#hub-nav button{flex:none;min-height:48px;min-width:48px;font:inherit;color:inherit;background:#132638;border:1px solid #3a5368;border-radius:8px;padding:10px 16px;touch-action:manipulation;cursor:pointer}
+#hub-nav button[aria-current=page]{background:#1b424b;border-color:#77ded0}
+#hub-nav button:focus-visible{outline:3px solid #ffda8a;outline-offset:2px}
+#hub-content{min-height:0;min-width:0;overflow:hidden}
+.hub-view{height:100%;overflow:auto;overscroll-behavior:contain;display:block}
+.hub-view[hidden]{display:none}

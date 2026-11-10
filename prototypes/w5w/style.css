@@ -1,0 +1,13 @@
+/* W5w: no build, static host, touch-first isolation on top of W5u CSS. */
+:root{color-scheme:dark}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0}
+.stats>div{padding:12px;background:#122537;border:1px solid #314d61;border-radius:8px;min-width:0}
+.stats strong{display:block;font-variant-numeric:tabular-nums;font-size:1.3rem;overflow-wrap:anywhere}
+.stats span{display:block;color:#bcd1df}
+.controls{padding:12px;border:1px solid #304d61;border-radius:8px;background:#0d1c2a}
+.controls button{margin:4px}
+.quote{margin:8px 0;padding:10px 12px;border-left:3px solid #65d7ec;background:#102332;min-height:48px}
+#hq{height:700px}#station{min-height:620px}canvas{max-height:430px}
+#mining h2,#mining h3{margin-top:20px}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stats strong{font-size:1.05rem}.controls button{width:100%}#hq{height:760px}}
+@media(max-width:380px){.stats{grid-template-columns:1fr}}

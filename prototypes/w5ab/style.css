@@ -1,0 +1,11 @@
+/* W5ab: additive static tablet/mobile shipyard view. */
+#yard-stats{margin:14px 0}
+#yard-stats strong{font-variant-numeric:tabular-nums}
+#yard-ledger,#yard-build-quote,#yard-sale-quote,#yard-demand,#yard-status{max-width:100%;overflow-wrap:anywhere}
+#shipyard .controls{display:flex;flex-wrap:wrap;gap:10px}
+#shipyard .controls button{min-height:48px}
+@media(max-width:600px){
+ #shipyard h2{font-size:1.2rem}
+ #shipyard .controls button{width:100%}
+ #yard-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

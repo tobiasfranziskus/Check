@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aphros Void · W5t Core-Vorschau</title>
+<link rel="stylesheet" href="hub.css">
+<link rel="stylesheet" href="core-preview.css">
+<script defer src="../legacy-corporation/corporation.js"></script>
+<script defer src="../legacy-corporation/demo.js"></script>
+<script defer src="../legacy-station/station.js"></script>
+<script defer src="../legacy-station/preview.js"></script>
+<script defer src="../legacy-fitting/model.js"></script>
+<script defer src="../legacy-fitting/examples.js"></script>
+<script defer src="../legacy-fitting/view.js"></script>
+<script defer src="../legacy-pilot/pilot.js"></script>
+<script defer src="../legacy-pilot/examples.js"></script>
+<script defer src="../legacy-mining-scanner/scanner.js"></script>
+<script defer src="../legacy-mining-scanner/demo.js"></script>
+<script defer src="core-adapter.js"></script>
+<script defer src="hub.js"></script>
+<script defer src="core-preview.js"></script>
+</head>
+<body data-core-preview>
+<header class="hub-header"><span>APHROS VOID · UI-VORSCHAU</span><p><strong>W5t · Core-Datei lesend anzeigen.</strong> HQ und Station verwenden denselben Import. Fitting, Pilot und Scanner bleiben getrennte DEMOS. Auswahl löst keine Spielaktion aus. Fehlende Daten bleiben unbekannt.</p></header>
+<form id="core-input"><label>Core-JSON <input id="core-file" type="file" accept=".json,application/json" required></label> <label>Eigentümer-ID <input id="core-owner" required value="transport"></label> <button>Snapshot anzeigen</button><p id="core-status" role="status">Noch kein Core-Snapshot geladen.</p></form>
+<nav id="hub-nav" aria-label="Hauptnavigation">
+<button type="button" data-view="corporation">Konzernzentrale</button>
+<button type="button" data-view="station">Station</button>
+<button type="button" data-view="fitting">Fitting</button>
+<button type="button" data-view="pilot">Pilotenakte</button>
+<button type="button" data-view="scanner">Bergbauscanner</button>
+</nav>
+<main id="hub-content" aria-label="UI-Vorschau"></main>
+<noscript>Diese Vorschau benötigt JavaScript.</noscript>
+</body>
+</html>

@@ -1,0 +1,7 @@
+/* W5x read-only corporate status; all other panels share W5w touch styles. */
+#w2-company-stats{margin:14px 0}
+#w2-company-stats strong{font-variant-numeric:tabular-nums}
+#w2-investment{overflow-wrap:anywhere}
+#w2-demand,#w2-fleet{max-width:100%}
+#w2-warning{padding:10px;border-left:3px solid #a0aebd}
+@media(max-width:600px){#corporation h2{font-size:1.2rem}#w2-company-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -3,7 +3,7 @@
  * F1Kopplung (Original-Rule195-Engine) + F0-Positionen im selben Zustand.
  *
  * Der originale W5n-Core verkauft bei einer 50er-Eischarge automatisch:
- * bewusst 48 Eis (24 bezahlte Minuten) abbauen, rechtzeitig pausieren,
+ * bewusst 48 Eis (48 bezahlte Minuten) abbauen, rechtzeitig pausieren,
  * zur Station fliegen und mit ORIGINAL-shipSellIce erst am Dock verkaufen.
  * Das ist ein kleiner echter End-to-End-F2-Nachweis, KEIN W5-Balancing.
  */
@@ -20,7 +20,7 @@ function erstellen(startkapital = {}) {
   const f1 = F1.erstellen(startkapital, {researchProfile: PROFIL});
   const K = f1.flugKern, rules = f1.rules;
   if (rules.rulesVersion !== PROFIL || rules.w5n.charge !== 50
-    || rules.economy.miningRate !== 2 || rules.w5n.mineLohn !== 2
+    || rules.economy.miningRate !== 1 || rules.w5n.mineLohn !== 2
     || rules.w5n.eisPreis !== 5)
     throw Error('F2a: die belegte Eis-Teilcharge passt nicht zu den Forschungsparametern');
 

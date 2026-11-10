@@ -37,11 +37,13 @@ Alle vier kompletten Endzustände identisch. Keine hardwareabhängigen Zeitgrenz
 
 ## Abnahme
 
-- Chromium lokal **4/4** einschließlich Frühstart, Dual-Touch, Hash, Replay und Zwischenflug-JSON bestanden. Negativkontrolle: ursprünglicher Handler scheitert am ersten Mausklick. Vollständige Node22-Regression läuft; abschließende CI-Nachweise werden im [Draft-PR #294](https://github.com/tobiasfranziskus/Check/pull/294) mit konkretem Head und Links gepflegt.
-- Erster I0-WebKit-Lauf [42894327707](https://github.com/tobiasfranziskus/Check/actions/runs/42894327707) deckte eine doppelte Touch-Auslösung auf: Der Kompatibilitätsklick war als Maus klassifiziert. Korrektur verwendet echten Maus-pointerdown statt click.pointerType; erneute Cross-Engine-Abnahme erforderlich.
+- Chromium lokal **4/4** einschließlich Frühstart, Dual-Touch, Hash, Replay und Zwischenflug-JSON bestanden. Negativkontrolle: ursprünglicher Handler scheitert am ersten Mausklick. Abschließende CI-Nachweise werden im [Draft-PR #294](https://github.com/tobiasfranziskus/Check/pull/294) mit konkretem Head und Links gepflegt.
+- Erster I0-WebKit-Lauf [42894327707](https://github.com/tobiasfranziskus/Check/actions/runs/42894327707) deckte eine doppelte Touch-Auslösung auf: Der Kompatibilitätsklick war als Maus klassifiziert. Korrektur verwendet echten Maus-pointerdown statt click.pointerType; erneute Cross-Engine-Abnahme auf `fb01ea02` **bestanden**.
 - Lokal 2.000 Renderframes: kanonischer Zustand und Cache unverändert, vier Sprites/Teilesätze, drei Sternschichten; ca. +124 KiB JS-Heap nach GC, 4,284 ms/Frame (diagnostisch). Fehlendes Grafikmodul: Basisansicht und Abdocken bestanden.
 - Singlefile-Reproduktion: `W5_SINGLEFILE_OK`, 320.217 Zeichen, 7 CSS/15 JS; entspricht aktuellem Main mit Spielstandschutz.
-- Lokaler WebKit-Download tatsächlich versucht, HTTP 403 „Domain forbidden“. Vier WebKit-Größen werden im vorhandenen GitHub-Workflow abgenommen.
+- [Flug2D Node22/Chromium-CI auf `fb01ea02`](https://github.com/tobiasfranziskus/Check/actions/runs/42894608475): **235/235 vollständige Einzeltests**, zusätzlich 11/11 isolierte F0-Tests, 0 Fehler/Skips/Abbrüche; Chromium **4/4**, Frühstart **4/4**, Benchmark-Endzustände identisch, Speicher-/Fallback-/Singlefile-Check erfolgreich.
+- [WebKit-CI auf `fb01ea02`](https://github.com/tobiasfranziskus/Check/actions/runs/42894608432): **4/4**, Frühstart **4/4**, alle vier JavaScriptCore-Kettenhashes `e2674c1ef11678ba`; Replay und Zwischenflug-JSON erfolgreich. Lokal Download tatsächlich versucht, HTTP 403 „Domain forbidden“; dies begrenzt nur den lokalen Lauf, nicht den erfolgreichen CI-Nachweis.
+- Weitere Repository-CI und abschließender Dokumentationshead: [PR #294](https://github.com/tobiasfranziskus/Check/pull/294). Die hier verlinkte Abnahme bezeichnet den konkreten Codehead; der folgende Abschlusscommit ändert nur Dokumentation.
 - Produktive `index.html`, `aphros-void.html`, `src/`, bestehende Prototypkerne, Save-Fixtures und Archive gegenüber Main unverändert. Sandbox verwendet JSON-Dateien und keinen produktiven Browser-Speicherslot. Keine Migration, Wirtschafts-/Preis-/Lohnregel oder zusätzliche Simulationsuhr.
 
 ## Offene F1-Schritte

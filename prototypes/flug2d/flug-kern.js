@@ -74,14 +74,28 @@ function isqrt(n) {
   while ((r + 1) * (r + 1) <= n) r++;
   return r;
 }
-// Kurs zum Vektor ohne atan2: groesstes Skalarprodukt, bei Gleichstand kleinster Index.
+// Identisches Maximum des ganzzahligen Skalarprodukts ohne 256er-Vollsuche.
+// Auf jedem 90-Grad-Sektor sind die Nachbar-Steigungsverhaeltnisse der
+// eingefrorenen VIERTEL-Tabelle monoton (vgl. flug2d-richtung.test.mjs).
+// Deshalb ist das Skalarprodukt im passenden Quadranten unimodal.
+// Gleichstand: immer die kleinste Original-ID, einschliesslich 0 vor 255.
 function richtungZu(dx, dy) {
-  let best = 0, wert = -Infinity;
-  for (let i = 0; i < 256; i++) {
-    const w = dx * cos(i) + dy * sin(i);
-    if (w > wert) { wert = w; best = i; }
+  if (dx === 0 && dy === 0) return 0;
+  let links, rechts;
+  if (dx >= 0 && dy >= 0) { links = 0; rechts = 64; }
+  else if (dx < 0 && dy >= 0) { links = 64; rechts = 128; }
+  else if (dx < 0 && dy < 0) { links = 128; rechts = 192; }
+  else { links = 192; rechts = 256; }
+  const wert = (i) => dx * cos(i) + dy * sin(i);
+  while (links < rechts) {
+    const mitte = (links + rechts) >> 1;
+    if (wert(mitte) < wert(mitte + 1)) links = mitte + 1;
+    else rechts = mitte;
   }
-  return best;
+  // Index 256 entspricht Kurs 0 und hat im alten 0..255-Scan Vorrang.
+  // Beispiel: (dx,dy)=(402,-5) ist Gleichstand zwischen 0 und 255.
+  if (links >= 192 && wert(256) === wert(links)) return 0;
+  return links & 255;
 }
 function drehen(kurs, soll, rate) {
   const d = (soll - kurs) & 255;

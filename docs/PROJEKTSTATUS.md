@@ -1,5 +1,8 @@
 # Aphros Void – belegter technischer Projektstatus
 
+> **[DRAFT / RC1-Abnahme · 10.11.2026]** [Neuer, aus `main fd3e9154` aufgebauter Integrations-Draft #287](https://github.com/tobiasfranziskus/Check/pull/287), finaler geprüfter Head `4a900c55732eb4b2f792b284e9b1430b147ba54f`. Die Daten und getesteten Prototypdateien aus der Forschungskette #280/#282/#285/#286 wurden als **neue Dateien** eingebunden; die produktive `index.html` und `versionen/v0.12.5/index.html` sind bytegleich. [GitHub-Actions-RC1 #42768942266](https://github.com/tobiasfranziskus/Check/actions/runs/42768942266): **204/204 Node22-Tests**, 0 Fehler/Skips, **12/12 Chromium-Touchtests**, alle drei Jobs einschließlich **NAS-/iPad-Testarchiv `w5rc1-static-nas-ipad-preview`** erfolgreich. Das Archiv enthält nur Prototyp-/Spieltest-/Prüfanleitungsdateien, keine produktive Root-`index.html`. Die RC-spezifische Integration korrigierte einen falschen historischen W5u-Testanker (dessen alter Regel14-Blob blieb nach SHA unverändert); keine Wirtschaftskosten, Spielmechaniken oder produktiven Saves angepasst. **[MAIN] weiterhin `fd3e9154`**; echtes Safari-Gerät/NAS, Spieltest, Pages, Merge und produktive Migration bleiben **OFFEN**.
+
+
 
 > **[DRAFT / aktueller Abgleich · 10.11.2026]** Dieser ergänzte Status entsteht auf dem existierenden [docs-only-PR #272](https://github.com/tobiasfranziskus/Check/pull/272); kein Merge. Geprüfter `main`-Commit: **`fd3e915448a2f35fa803db709aff9ce223dddc6f`**, produktiv v0.12.5 / Regel14 / Schema8. Der unmittelbar folgende alte Text zu `5a56d9d7` bleibt als historischer 07.11.-Stand erhalten; **nicht** als aktueller SHA zu lesen.
 

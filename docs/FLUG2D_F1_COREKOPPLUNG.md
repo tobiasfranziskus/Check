@@ -15,6 +15,12 @@ Die einzige Wirtschaftsautorität bleibt der **bytegleich unveränderte** W0–W
 - Nur Miner erhalten einen Flugkörper (initial und nach einem **normal finanzierten** `shipBuy`), Frachter und Jäger bleiben in der alten abstrakten Logik. NPC und Spieler verwenden dieselben F0-Minerschiffbefehle und die gleiche Physik.
 - Noch **keine Ortsbedingungen**: Bergbau und Verkäufe prüfen weiterhin ausschließlich die Bedingungen der originalen Regel195. Das ist F1 und **nicht F2**. Keine Flugkosten und kein Treibstoff.
 
+## Statischer F1-Spieltest (separat vom Hauptspiel)
+
+Der Forschungsstand ist über [`prototypes/flug2d/f1-demo.html`](../prototypes/flug2d/f1-demo.html) in einem statischen Webserver zu öffnen, **nicht** über die produktive `index.html`. Diese optionale Browserhülle nutzt die I0-UX08-Grafik und einen einzigen F1-Zustand: Der Spieler kann einen Miner nur über den originalen finanzierten `shipBuy`-Befehl erwerben, anschließend abdocken, Erz/Eisfelder anfliegen, manuell Kurs/Schub verändern und zum Dock zurückkehren. Die NPC-Miner stehen im gleichen Wirtschaftskern; ein NPC-Flug-Autopilot wird hier noch nicht vorgetäuscht. Kassen, Erz/Eis, Flugaudit und Wirtschaftsminuten werden lesend angezeigt. **Die Förderung ist bewusst noch nicht an den aktuellen Flugort gebunden; dies folgt erst in F2.** Kein Browser-Autosave, keine Produkt-IndexedDB. JSON-Export ist manuell, Import erfordert Forschungsregel196 und explizite Bestätigung.
+
+Mit `node tests/flug2d-f1-browser.cjs` werden in Chromium (und auf CI auch mit `FLUG_BROWSER=webkit`) vier Viewports mit echten Touch-Taps, bezahltem Kauf, Abdocken, Wirtschaftsminute, Erz-Anflug, neutralem UX08-Rendering, Resize sowie Rule196-Export/Import und Zurückweisung von Rule195 geprüft. Diese ergänzenden Browserläufe sind vor ihrem tatsächlichen CI-Abschluss **nicht bestanden**.
+
 ## Save, Load und Geldschutz
 
 - `save` nutzt den unveränderten Core-Serializer. `load` prüft die F1-Forschungskennung und führt die vollständige originale Rule195-Ladeprüfung **an einer separaten Wirtschaftsprojektion ohne Flugfelder** aus. Anschließend wird der vollständige Regel196-Zustand inklusive strengem F0-Audit akzeptiert oder abgelehnt. Der Original-Core muss dafür keinerlei neue Regelversion kennen.
@@ -30,6 +36,8 @@ Die einzige Wirtschaftsautorität bleibt der **bytegleich unveränderte** W0–W
 | `prototypes/flug2d/f1-kopplung.js` | additiver Adapter um originalen Regel195-Core; Forschungshülle196, gemeinsame Uhr, Flugbefehle/Minute, Finanzierungsschutz und strenges Save/Load |
 | `tests/flug2d-f1.test.mjs` | Tick 59/60, stiller Schnellweg, freier Flug, identische Originalwirtschaft, realer Miner-Kauf, Queue, Save/Load, manipulationsfeste Daten, 13 Seed-Gegenläufe |
 | `tests/flug2d-f1-i0.test.mjs` | Kombinationsnachweis: finanzierter Spieler- und NPC-Miner, UX08-Rendering ohne Zustandsänderung, Erz-/Eis-Anflug, Andocken, Replay und F1-Forschungsreferenzhash |
+| `prototypes/flug2d/f1-demo.html`, `f1-demo.js` | F1-Spieltest als statische gesonderte Browserseite, ohne Autosave |
+| `tests/flug2d-f1-browser.cjs` | echtes Chromium-/WebKit-Touch- und Save/Load-Preflight in vier Größen |
 | `docs/FLUG2D_F1_COREKOPPLUNG.md` | Architektur, Grenzen, Prüf- und Integrationsgates |
 
 **Gezielter Aufruf:** `node --test tests/flug2d-f1.test.mjs tests/flug2d-f1-i0.test.mjs`  
@@ -40,7 +48,7 @@ Die einzige Wirtschaftsautorität bleibt der **bytegleich unveränderte** W0–W
 - CI auf diesem zusammengeführten F1-I0-Stand mit G1 / #292 / #293 und neuerem `main` (#289-Import-/Save-Schutz) ausführen; `node scripts/build-w5-singlefile.mjs --check` muss explizit grün bleiben. Der erste Entwurf, der die Original-Core-Datei modifizierte, wurde aufgrund dieses Schutzgates verworfen und vollständig aus dem Branch-Diff zurückgenommen.
 - Vollständige **13 × 90 Spieltage** unter den originalen wirtschaftlichen Zahlungs- und Krisenfällen. Die im F1-Test verwendeten **13 × 720 Minuten** sind lediglich kurze technische Gegentests, **keine** 13×90-Tage-Abnahme.
 - **F1-Forschungsreferenz (Node/V8 bereits vorgerechnet):** `ddb96b7b2164c1fb`, nach 34 Wirtschaftsminuten und 17 Flugteilschritten. Finanziert gekaufter Spieler-Miner und NPC-Miner fliegen zu Eis/Erz und zurück; Save/Load im Zwischenflug, Economy-Projektion identisch zu Regel195. Der Wert ist im neuen Integrationstest verankert, **aber noch keine unabhängige WebKit-Gegenprüfung**.
-- Integration der optionalen F1-Autorität in die UI-Hülle sowie Pflege derselben Regelnummer/Save-Version in jeder Singlefile-Fassung.
+- Forschungsseite und Node-Kopplung sind vorhanden, aber Integration der optionalen F1-Autorität in den **produktiven** UI-Hub bzw. Singlefile-Release samt abgestimmter Save-Schema- und Regelversionsstrategie benötigt eigene Freigabe.
 - Bei F2: echte Miner-Ortsbedingungen (Feld/Dock), NPC-Auftragsautopilot, erweiterte Buchungs-Audits und neue 90-Tage-Economy-Referenzen. F2 würde mit den Forschungswerten etwa 29 % Miner-Durchsatz kosten; das ist **keine** F1-Regeländerung.
 - Echte iPad-Safari-/NAS-Abnahme, insbesondere längerer Gebrauch und Save/Load mit Spielständen vom richtigen Profil.
 

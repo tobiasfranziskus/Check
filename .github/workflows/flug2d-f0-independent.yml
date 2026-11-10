@@ -4,6 +4,7 @@ on:
     paths:
       - 'prototypes/flug2d/**'
       - 'tests/flug2d-*'
+      - 'tests/tools/flug2d-benchmark.cjs'
       - 'docs/FLUG2D_*'
       - '.github/workflows/flug2d-f0-independent.yml'
   workflow_dispatch:
@@ -22,6 +23,8 @@ jobs:
         run: node --test tests/flug2d-kern.test.mjs
       - name: "All existing Rule195, old Rule14, save and economy regressions"
         run: node --test tests/*.test.mjs
+      - name: "I0 old scan vs optimized: 4/20 ships, state equality, diagnostic times only"
+        run: node tests/tools/flug2d-benchmark.cjs --vergleich
       - name: "Verify two shipped HTML roots and deterministic standalone builder unchanged"
         run: node scripts/build-w5-singlefile.mjs --check
   browser-four-viewports:

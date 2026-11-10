@@ -50,12 +50,19 @@ function loslassen() {
 // Finger kein "click". Flugknöpfe lösen deshalb bei pointerup aus; "click" bleibt für Tastatur,
 // Maus und Bedienungshilfen erhalten und wird nach einem Touch-Auslöser einmal unterdrückt.
 function taste(id, aktion) {
-  const el = $(id); let beruehrt = 0;
+  const el = $(id); let beruehrt = -Infinity;
   el.addEventListener('pointerup', (e) => {
     if (e.pointerType === 'mouse' || el.disabled || !el.contains(document.elementFromPoint(e.clientX, e.clientY))) return;
     beruehrt = performance.now(); aktion();
   });
-  el.addEventListener('click', () => { if (performance.now() - beruehrt < 700) { beruehrt = 0; return; } aktion(); });
+  el.addEventListener('click', (e) => {
+    // Tastatur/Bedienungshilfen (detail=0) und echte Maus-Pointer bleiben sofort bedienbar.
+    // Nur den Kompatibilitätsklick nach Touch/Stift einmal unterdrücken.
+    if (e.detail !== 0 && e.pointerType !== 'mouse' && performance.now() - beruehrt < 700) {
+      beruehrt = -Infinity; return;
+    }
+    aktion();
+  });
 }
 stick.addEventListener('pointerdown', (e) => { zeiger = e.pointerId; stick.setPointerCapture(e.pointerId); auslenkung(e); e.preventDefault(); });
 stick.addEventListener('pointermove', (e) => { if (e.pointerId === zeiger) auslenkung(e); });

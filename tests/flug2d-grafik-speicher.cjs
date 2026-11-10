@@ -71,7 +71,7 @@ const http = require("http"),
       );
       assert.equal(await fallback.locator("#grafik").inputValue(), "basis");
       assert.equal(await fallback.locator("#grafik").isDisabled(), true);
-      // Touch avoids the existing initial mouse-click debounce (beruehrt = 0).
+      // Fallback remains operable by touch; early mouse/keyboard has a separate regression.
       // Explicit steps avoid wall-time/RAF dependence for this second page.
       await fallback.locator("#pause").tap();
       assert.equal(await fallback.locator("#pause").getAttribute("aria-pressed"), "true");

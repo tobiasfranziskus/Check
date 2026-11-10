@@ -15,6 +15,7 @@ const erlaubt=['prototypes/flug2d/index.html','prototypes/flug2d/flug-kern.js','
  const browser=await chromium.launch({headless:true,...(fs.existsSync(binary)?{executablePath:binary}:{}),args:['--no-sandbox']});
  try{
   for(const [width,height] of [[1180,820],[1024,768],[820,1180],[390,844]]){
+   await require('./flug2d-eingabe-browser.cjs')(browser,'http://127.0.0.1:'+server.address().port+'/prototypes/flug2d/index.html',width,height);
    const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:true,acceptDownloads:true});
    const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
    await page.goto(`http://127.0.0.1:${server.address().port}/prototypes/flug2d/`);

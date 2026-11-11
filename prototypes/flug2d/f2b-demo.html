@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aphros Void · F2b – bezahlter Eis-Pendelauftrag</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#0a111b;color:#e0eaf4;font:16px/1.4 system-ui,-apple-system,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{padding:8px 12px}h1{font-size:1.15rem;margin:0}header p{font-size:.9rem;color:#a9c1d1;margin:5px 0}
+main{display:grid;grid-template-columns:minmax(0,1fr) 315px;gap:8px;padding:0 8px 10px;height:calc(100dvh - 124px);min-height:415px}
+#sicht{position:relative;min-height:280px;border:1px solid #6b8198;border-radius:8px;overflow:hidden}
+#raum{display:block;width:100%;height:100%;touch-action:manipulation}
+#hud{position:absolute;top:7px;left:8px;right:8px;color:#91e9f5;text-shadow:0 0 5px #000;font-size:.86rem;margin:0;pointer-events:none}
+#tafel{display:flex;flex-direction:column;gap:8px;overflow:auto;-webkit-overflow-scrolling:touch}
+.reihe{display:flex;gap:8px;flex-wrap:wrap}
+button{background:#1c3248;color:inherit;border:1px solid #708c9d;border-radius:8px;font:inherit;min-height:54px;padding:9px;flex:1 1 112px;touch-action:manipulation}
+button:disabled{opacity:.43}button[aria-pressed="true"]{background:#2c5670}
+output{display:block;font:13px/1.5 ui-monospace,SFMono-Regular,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+#meldung{min-height:48px;font-size:.9rem;margin:0}
+details summary{min-height:48px;padding:8px;cursor:pointer}
+input[type=file]{width:100%;min-height:44px}
+a{color:#8fe2f5}
+small{font-size:.84rem;color:#a9c1d1}
+@media(max-width:780px),(orientation:portrait){main{grid-template-columns:1fr;grid-template-rows:minmax(290px,52vh) auto;height:auto}}
+</style>
+<script defer src="../w5ac/rule191-w5-ferry-core.js"></script>
+<script defer src="flug-kern.js"></script>
+<script defer src="grafik.js"></script>
+<script defer src="f1-kopplung.js"></script>
+<script defer src="f2a-eis-pendel.js"></script>
+<script defer src="f2b-vollcharge.js"></script>
+<script defer src="f2b-demo.js"></script>
+</head><body>
+<header><h1>Aphros Void – F2b: volle 50er-Eischarge</h1>
+<p><strong>Forschungsprofil 198, nicht das veröffentlichte Spiel.</strong> Tatsächliche Fahrt zum Eisfeld, 50 × bezahlter Abbau, Rücktransport und erst am Dock bezahlter Verkauf. Erzverträge und bezahlte Pilotarbeit folgen in eigenen Stufen.</p></header>
+<main>
+<section id="sicht" aria-label="Aldera-Flugkarte und reale Minerpositionen">
+<canvas id="raum" aria-label="2D-Raum mit Station, Erz- und Eisfeld und Miner-Schiffen"></canvas>
+<p id="hud">F2b wird geladen …</p></section>
+<section id="tafel">
+<p id="meldung" role="status" aria-live="polite">Beginne einen finanzierten Eisauftrag.</p>
+<div class="reihe"><button id="kaufen">Eigenen Miner kaufen · 600 ISK</button></div>
+<div class="reihe"><button id="spieler">Eigene Eisfahrt starten</button><button id="npc">NPC-Eisfahrt starten</button></div>
+<div class="reihe"><button id="pause" aria-pressed="true">Weiter</button><button id="tempo">Zeit 1×</button><button id="minute">+1 Spielminute</button></div>
+<output id="status">Simulation wird initialisiert …</output>
+<output id="bilanz">Wirtschaftsbilanz wird initialisiert …</output>
+<details><summary>Manuelle Forschungs-JSON-Sicherung</summary>
+<div class="reihe"><button id="export">Rule198-JSON exportieren</button></div>
+<label>Rule198-JSON importieren <input id="import" type="file" accept=".json,application/json"></label>
+<small>Keine automatische Speicherung. Der Import überschreibt diese Testsession nur nach Bestätigung. Regel195/196 wird abgelehnt, produktive Spielstände bleiben unangetastet.</small>
+</details>
+<small>Nur ein Pendelauftrag gleichzeitig. Die Flugautomatik nutzt die gemeinsame F0-Physik. Für manuelle Steuerung die <a href="f1-demo.html">F1-Flugsandbox</a> öffnen.</small>
+</section></main></body></html>

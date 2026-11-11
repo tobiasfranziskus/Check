@@ -115,9 +115,11 @@ test('K1 90 Tage: mindestens 13 wirtschaftlich unterschiedliche Szenarien, nicht
 
 test('K1 Gegenbeispiele: Sparen entzieht dem Kreislauf genau das gehortete Geld – keine verdeckte Stabilisierung', () => {
   const s02 = ergebnisse90.get('S02'), s03 = ergebnisse90.get('S03'), s05 = ergebnisse90.get('S05');
-  // Spieler spart: sein Konzern hält am Ende den Großteil des umlaufenden Geldes.
-  assert.ok(s02.kassen.house > 15000, 'Hort der Spielerfirma: ' + s02.kassen.house);
-  assert.ok(s02.kaeuferliquiditaet.haushalte < 3000, 'Haushalte ohne Kaufkraft: ' + s02.kaeuferliquiditaet.haushalte);
+  // Spieler spart: sein Konzern und seine Privatkonten halten am Ende den Großteil des umlaufenden Geldes.
+  assert.ok(s02.kassen.house + s02.spielerPrivat > 15000, 'Hort des Spielers: ' + (s02.kassen.house + s02.spielerPrivat));
+  assert.equal(s02.dividenden > 0, true, 'NPC-Firmen schütten weiter aus – es hilft nicht');
+  const uebrige = s02.kaeuferliquiditaet.haushalte - s02.spielerPrivat;
+  assert.ok(uebrige < 3000, 'übrige Haushalte ohne Kaufkraft: ' + uebrige);
   // Alle Firmen thesaurieren: Haushalte haben nur Löhne, Dividenden sind null.
   assert.equal(s03.dividenden, 0);
   // Haushalte sparen 60 %: ihr Geld liegt still, obwohl Wasser vorhanden wäre.

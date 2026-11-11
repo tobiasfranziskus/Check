@@ -5,7 +5,7 @@
 ## 1. Ergebnis in fünf Sätzen
 
 1. In K1 läuft **ein vollständig bezahlter Kreislauf** aus Förderung im Feld, Dockverkauf, Fracht, Wasserwerk, Löhnen, freiwilligem Endabsatz und Folgeproduktion – 730 Spieltage lang mit konstant 33.000 ISK, ohne Emission und ohne Rettung.
-2. Er läuft **nur, solange niemand netto spart**. Jede dauerhafte Hortung – durch den Spieler, die Firmen, die Eigentümer oder die Haushalte – beendet ihn nach 3 bis 15 Tagen. Das ist kein Fehler der Umsetzung, sondern folgt aus endlichem Geld ohne Zufluss.
+2. Er läuft **nur, solange niemand netto spart**. Jede dauerhafte Hortung – durch den Spieler, die Firmen, die Eigentümer oder die Haushalte – beendet ihn nach 3 bis 12 Tagen. Das ist kein Fehler der Umsetzung, sondern folgt aus endlichem Geld ohne Zufluss.
 3. **Hüllenersatz** ist für Frachter real nachgewiesen (Erz → Material → Werfthülle → Kauf → bezahlte Überführung). Für Miner gibt es in Regel195 kein Rezept; mit Stilllegung endet die Förderung, sobald das Gründungslager leer ist.
 4. Das Referenzmodell C ist nachgerechnet und stimmt. Die ausgeführte Welt weicht in Geldmenge, Geografie, Warenzahl, Preisen, Rezepten und Außenabnahme davon ab; K1 übernimmt bewusst nur Lohn je Flugminute und Wertverzehr je aktiver Minute.
 5. Für eine endgültige W6-Integration fehlen neun Produktentscheidungen (Abschnitt 7), an erster Stelle die Emissions- bzw. Außenabnahmeregel und die Eigentums- und Ausschüttungsregel.
@@ -119,7 +119,7 @@ Alle Szenarien nutzen den Startwert 42 und unterscheiden sich in den **wirtschaf
 | Nr. | Szenario | Zustand am Ende | Käuferliquidität Nadir / Aldera / Haushalte | Eis gefördert / Wasser produziert | Wasser tatsächlich verkauft | Eisfrachten / Wasserchargen | Löhne gesamt | Kassen house / npc3 / transport / st_aldera / st_nadir / werft_extern | Lager Eis / Wasser | Ersatzkäufe / gebaute Frachter | Handlungsunfähig | Emission | Bindender Engpass |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | S01 | Basis: alle Einkommen werden freiwillig ausgegeben, Spielerfirma schüttet aus | läuft | 4.000 / 1.100 / 19.299 | 53.850 / 53.770 | 53.707 (827.048 ISK) | 1.075 / 5.377 | 373.100 | 3.000 / 2.778 / 2.000 / 1.100 / 4.000 / 530 | 80 / 20 | 0 / 0 | – | 0 | Kein Wasser am Wohnort st_aldera |
-| S02 | Spieler spart unbegrenzt: Spielerfirma thesauriert alle Gewinne | steht seit Tag 16 | 3.588 / 1.100 / 1.512 | 7.400 / 7.230 | 7.107 (109.444 ISK) | 147 / 723 | 56.121 | 21.492 / 2.778 / 2.000 / 1.100 / 3.588 / 530 | 170 / 123 | 0 / 0 | – | 0 | Eislager Nadir voll |
+| S02 | Spieler spart unbegrenzt: Firma thesauriert, Privatkonten geben nichts aus | steht seit Tag 13 | 3.268 / 1.100 / 4.391 | 6.400 / 6.230 | 6.115 (94.108 ISK) | 127 / 623 | 49.470 | 18.912 / 2.799 / 2.000 / 1.100 / 3.268 / 530 | 170 / 115 | 0 / 0 | – | 0 | Eislager Nadir voll |
 | S03 | Kapitalhortung: alle Firmen thesaurieren, Haushalte haben nur Löhne | steht seit Tag 4 | 3.118 / 1.352 / 1.102 | 1.000 / 840 | 722 (11.312 ISK) | 19 / 84 | 12.414 | 4.980 / 15.766 / 4.132 / 1.352 / 3.118 / 2.550 | 160 / 118 | 0 / 0 | – | 0 | Eislager Nadir voll |
 | S04 | Haushalte sparen 30 % jedes Einkommens dauerhaft | steht seit Tag 9 | 3.846 / 1.100 / 19.833 | 3.100 / 2.920 | 2.799 (43.638 ISK) | 61 / 292 | 26.824 | 3.000 / 2.691 / 2.000 / 1.100 / 3.846 / 530 | 180 / 121 | 0 / 0 | – | 0 | Eislager Nadir voll |
 | S05 | Haushalte sparen 60 % jedes Einkommens dauerhaft | steht seit Tag 6 | 3.146 / 1.100 / 20.464 | 1.000 / 840 | 724 (11.408 ISK) | 19 / 84 | 13.791 | 2.826 / 3.000 / 1.934 / 1.100 / 3.146 / 530 | 160 / 116 | 0 / 0 | – | 0 | Eislager Nadir voll |
@@ -139,7 +139,7 @@ Alle Szenarien nutzen den Startwert 42 und unterscheiden sich in den **wirtschaf
 | Nr. | Szenario | Zustand am Ende | Käuferliquidität Nadir / Aldera / Haushalte | Eis gefördert / Wasser produziert | Wasser tatsächlich verkauft | Eisfrachten / Wasserchargen | Löhne gesamt | Kassen house / npc3 / transport / st_aldera / st_nadir / werft_extern | Lager Eis / Wasser | Ersatzkäufe / gebaute Frachter | Handlungsunfähig | Emission | Bindender Engpass |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | S01 | Basis: alle Einkommen werden freiwillig ausgegeben, Spielerfirma schüttet aus | läuft | 4.000 / 1.100 / 19.299 | 218.850 / 218.770 | 218.707 (3.368.046 ISK) | 4.375 / 21.877 | 1.498.400 | 3.000 / 2.778 / 2.000 / 1.100 / 4.000 / 530 | 80 / 20 | 0 / 0 | – | 0 | Kein Wasser am Wohnort st_aldera |
-| S02 | Spieler spart unbegrenzt: Spielerfirma thesauriert alle Gewinne | steht seit Tag 16 | 3.588 / 1.100 / 1.512 | 7.400 / 7.230 | 7.107 (109.444 ISK) | 147 / 723 | 56.121 | 21.492 / 2.778 / 2.000 / 1.100 / 3.588 / 530 | 170 / 123 | 0 / 0 | – | 0 | Eislager Nadir voll |
+| S02 | Spieler spart unbegrenzt: Firma thesauriert, Privatkonten geben nichts aus | steht seit Tag 13 | 3.268 / 1.100 / 4.391 | 6.400 / 6.230 | 6.115 (94.108 ISK) | 127 / 623 | 49.470 | 18.912 / 2.799 / 2.000 / 1.100 / 3.268 / 530 | 170 / 115 | 0 / 0 | – | 0 | Eislager Nadir voll |
 | S05 | Haushalte sparen 60 % jedes Einkommens dauerhaft | steht seit Tag 6 | 3.146 / 1.100 / 20.464 | 1.000 / 840 | 724 (11.408 ISK) | 19 / 84 | 13.791 | 2.826 / 3.000 / 1.934 / 1.100 / 3.146 / 530 | 160 / 116 | 0 / 0 | – | 0 | Eislager Nadir voll |
 | S09 | Begrenzte Nachfrage: Sättigung bei 20 Wasser je Haushalt und Tag | steht seit Tag 320 | 3.894 / 1.100 / 19.476 | 38.600 / 38.430 | 38.315 (590.164 ISK) | 771 / 3.843 | 269.903 | 3.000 / 3.000 / 2.000 / 1.100 / 3.894 / 530 | 170 / 115 | 0 / 0 | – | 0 | Eislager Nadir voll |
 | S12 | Verschleiß mit Stilllegung und real finanziertem Ersatz | steht seit Tag 5 | 4.000 / 1.100 / 12.288 | 1.450 / 1.450 | 1.450 (22.160 ISK) | 29 / 145 | 13.228 | 3.000 / 1.800 / 1.592 / 1.100 / 4.000 / 530 | 0 / 0 | 3 / 2 | house: kein einsatzfähiger Miner | 0 | K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen |
@@ -159,7 +159,7 @@ Alle Szenarien nutzen den Startwert 42 und unterscheiden sich in den **wirtschaf
 
 | Szenario | Stillstand ab | Wohin das Geld floss | Ursache |
 | --- | --- | --- | --- |
-| S02 Spieler spart | Tag 16 | Spielerfirma hält 21.492 ISK, Haushalte 1.512 | 129 ISK Gewinn je Kreislauf verlassen den Umlauf |
+| S02 Spieler spart | Tag 13 | Spielerfirma hält 18.912 ISK, die Privatkonten des Spielers 2.688, alle übrigen Haushalte zusammen 1.703 | 129 ISK Gewinn und 21 ISK Pilotenlohn je Kreislauf verlassen den Umlauf |
 | S03 alle Firmen thesaurieren | Tag 4 | Firmen | 429 ISK je Kreislauf fehlen den Haushalten |
 | S04 Haushalte sparen 30 % | Tag 9 | Haushalte halten 19.833 ISK ungenutzt | Sparziel bindet das Einkommen |
 | S05 Haushalte sparen 60 % | Tag 6 | Haushalte 20.464 ISK | wie S04 |
@@ -198,7 +198,7 @@ Der Erz-Exportkäufer gibt seine 20.000 ISK in den ersten zwei Spieltagen aus. S
 - **Verhalten ist gesetzt.** Spar- und Ausschüttungsquoten sind Szenarioparameter, keine Entscheidungen der Akteure.
 - **Ein Konsumgut.** Haushalte können nur Wasser kaufen.
 - **Kein Kampf, kein Risiko.**
-- **S01 ist ein Grenzfall.** Der Dauerlauf setzt null Nettosparen voraus, auch beim Spieler.
+- **S01 ist ein Grenzfall.** Der Dauerlauf setzt null Nettosparen voraus, auch beim Spieler. Im spielbaren Einstieg ist das **nicht** der Standard: dort gibt die Automatik weder Geld der Spielerfirma noch seiner Privatkonten aus; ohne eigene Ausschüttungen und Käufe des Spielers verläuft die Welt wie S02.
 
 ## 6. Verbindliche Prüfpunkte
 
@@ -226,7 +226,7 @@ Jede Zeile nennt, was K1 als Forschungsannahme gesetzt hat, die berechneten Alte
 
 | Nr. | Entscheidung | K1-Annahme | Berechnete Alternativen | Ohne Entscheidung |
 | --- | --- | --- | --- | --- |
-| E1 | **Geldzufluss / Außenabnahme** (Geldmodell B) | keiner; endlicher Erz-Etat 20.000 ISK | (a) kein Zufluss: Dauerbetrieb nur bei null Nettosparen. (b) erneuerbarer Etat gegen gelieferte Güter: je Tag `s·C/(1−s)` – in K1 803 / 3.960 / 13.860 ISK bei 8 / 30 / 60 %. (c) Etat des Modells (240–400 ISK/Tag) nur zusammen mit dem Modellmaßstab; in K1 trägt er 4,15 % | Sparen des Spielers beendet die Wirtschaft (S02: Tag 16) |
+| E1 | **Geldzufluss / Außenabnahme** (Geldmodell B) | keiner; endlicher Erz-Etat 20.000 ISK | (a) kein Zufluss: Dauerbetrieb nur bei null Nettosparen. (b) erneuerbarer Etat gegen gelieferte Güter: je Tag `s·C/(1−s)` – in K1 803 / 3.960 / 13.860 ISK bei 8 / 30 / 60 %. (c) Etat des Modells (240–400 ISK/Tag) nur zusammen mit dem Modellmaßstab; in K1 trägt er 4,15 % | Sparen des Spielers beendet die Wirtschaft (S02: Stillstand ab Tag 13) |
 | E2 | **Maßstab der Welt** | Regel195-Produktivität: 600 Wasser je Tag | (a) so lassen. (b) Modellzeiten und Modellmengen: das Referenzmodell rechnet mit 286,40 statt 9.240 ISK Endverbrauch je Tag; Durchsatz und Etatbedarf wären entsprechend kleiner | E1 lässt sich nicht beziffern |
 | E3 | **Eigentum und Ausschüttung** | ein Eigentümerhaushalt je Firma; täglich der freie Überschuss über Anfangskapital, Betriebsreserve und Rücklage | (a) so. (b) Anteilsregister mit mehreren Eignern. (c) keine Ausschüttung: Stillstand an Tag 4 (S03) | Firmengewinne haben keinen Rückweg |
 | E4 | **Bezahlte Flugarbeit des Miners** (E4 des Flugentwurfs) | 1 ISK je Minute außerhalb des Docks, 40 ISK Reserve | (a) so: 21 ISK je Kreislauf, der Minergewinn sinkt von 150 auf 129 ISK. (b) kostenlos wie Regel195: Flug wäre unbezahlte Arbeit | Fluglohn bleibt Forschungsannahme |

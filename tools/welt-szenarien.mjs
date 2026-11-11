@@ -11,39 +11,45 @@ const EIGNER = HAUSHALTE.filter((id) => id.startsWith('eigner_'));
 const alle = (ids, wert) => Object.fromEntries(ids.map((id) => [id, wert]));
 const FIRMEN = Object.keys(Welt.DATEN.anteile);
 
+// Verhalten der Spielerfirma ist in jedem Szenario ausdrücklich gesetzt. „aktiv“: die Firma schüttet
+// ihren freien Überschuss aus und die Privatkonten des Spielers geben ihr Einkommen aus.
+const SPIELER = Object.freeze(['eigner_house', 'pilot_house']);
+const aktiv = (extra = {}, quote = 0) => ({ ...extra, ausschuettung: { house: 1000, ...(extra.ausschuettung || {}) },
+  sparquote: { ...alle(SPIELER, quote), ...(extra.sparquote || {}) } });
+
 // ereignisse: [{ tag, politik } | { tag, pendel: 'stop'|'start' } | { tag, verlust: 'frachter' }]
 export const SZENARIEN = Object.freeze([
   { id: 'S01', titel: 'Basis: alle Einkommen werden freiwillig ausgegeben, Spielerfirma schüttet aus',
-    politik: { ausschuettung: { house: 1000 } } },
-  { id: 'S02', titel: 'Spieler spart unbegrenzt: Spielerfirma thesauriert alle Gewinne',
-    politik: { ausschuettung: { house: 0 } } },
+    politik: aktiv() },
+  { id: 'S02', titel: 'Spieler spart unbegrenzt: Firma thesauriert, Privatkonten geben nichts aus',
+    politik: {} },
   { id: 'S03', titel: 'Kapitalhortung: alle Firmen thesaurieren, Haushalte haben nur Löhne',
-    politik: { ausschuettung: alle(FIRMEN, 0) } },
+    politik: { ausschuettung: alle(FIRMEN, 0), sparquote: alle(SPIELER, 0) } },
   { id: 'S04', titel: 'Haushalte sparen 30 % jedes Einkommens dauerhaft',
-    politik: { ausschuettung: { house: 1000 }, sparquoteStandard: 300 } },
+    politik: aktiv({ sparquoteStandard: 300 }, 300) },
   { id: 'S05', titel: 'Haushalte sparen 60 % jedes Einkommens dauerhaft',
-    politik: { ausschuettung: { house: 1000 }, sparquoteStandard: 600 } },
+    politik: aktiv({ sparquoteStandard: 600 }, 600) },
   { id: 'S06', titel: 'Eigentümer horten alle Ausschüttungen, Arbeiter konsumieren',
-    politik: { ausschuettung: { house: 1000 }, sparquote: alle(EIGNER, 1000) } },
+    politik: aktiv({ sparquote: alle(EIGNER, 1000) }) },
   { id: 'S07', titel: 'Knappe Käuferliquidität: Nadir startet mit 600 ISK',
-    kapital: { carrierCash: 2000, buyerCash: 600 }, politik: { ausschuettung: { house: 1000 }, betriebsreserve: { st_nadir: 590 } } },
+    kapital: { carrierCash: 2000, buyerCash: 600 }, politik: aktiv({ betriebsreserve: { st_nadir: 590 } }) },
   { id: 'S08', titel: 'Unterkapitalisierte Spedition: 760 ISK reichen nur für die Hülle',
-    kapital: { carrierCash: 760, buyerCash: 4000 }, politik: { ausschuettung: { house: 1000 } } },
+    kapital: { carrierCash: 760, buyerCash: 4000 }, politik: aktiv() },
   { id: 'S09', titel: 'Begrenzte Nachfrage: Sättigung bei 20 Wasser je Haushalt und Tag',
-    politik: { ausschuettung: { house: 1000 }, bedarfJeTag: 20 } },
+    politik: aktiv({ bedarfJeTag: 20 }) },
   { id: 'S10', titel: 'Rohstoffausfall: Eisförderung ruht von Tag 30 bis 45',
-    politik: { ausschuettung: { house: 1000 } }, ereignisse: [{ tag: 30, pendel: 'stop' }, { tag: 45, pendel: 'start' }] },
+    politik: aktiv(), ereignisse: [{ tag: 30, pendel: 'stop' }, { tag: 45, pendel: 'start' }] },
   { id: 'S11', titel: 'Transportunterbrechung: keine Eisfracht von Tag 30 bis 45',
-    politik: { ausschuettung: { house: 1000 } },
+    politik: aktiv(),
     ereignisse: [{ tag: 30, politik: { eisfracht: false } }, { tag: 45, politik: { eisfracht: true } }] },
   { id: 'S12', titel: 'Verschleiß mit Stilllegung und real finanziertem Ersatz',
-    politik: { ausschuettung: { house: 1000 }, stilllegung: true, werftVorrat: 1 } },
+    politik: aktiv({ stilllegung: true, werftVorrat: 1, spielerErsatz: true }) },
   { id: 'S13', titel: 'Schiffverlust an Tag 20 und Ersatz aus eigener Kasse',
-    politik: { ausschuettung: { house: 1000 }, werftVorrat: 1 }, ereignisse: [{ tag: 20, verlust: 'frachter' }] },
+    politik: aktiv({ werftVorrat: 1 }), ereignisse: [{ tag: 20, verlust: 'frachter' }] },
   { id: 'S14', titel: 'Ungleiches Anfangskapital: Spieler 7.000, Spedition 1.000, Nadir 1.000 ISK',
-    kapital: { carrierCash: 1000, buyerCash: 1000 }, politik: { ausschuettung: { house: 1000 } } },
+    kapital: { carrierCash: 1000, buyerCash: 1000 }, politik: aktiv() },
   { id: 'S15', titel: 'Käuferkonkurrenz um knappes Wasser: Aldera erhält keine Rückfracht',
-    politik: { ausschuettung: { house: 1000 }, rueckfracht: false } },
+    politik: aktiv({ rueckfracht: false }) },
 ]);
 
 const szenarioVon = (id) => {
@@ -144,6 +150,7 @@ export function ausfuehren(id, tage, seed = 42, optionen = {}) {
     id: szenario.id, titel: szenario.titel, tage, seed, hash: welt.hash(state),
     weltgeld: b.weltgeld, emission: b.minted, senke: b.burned,
     kaeuferliquiditaet: b.kaeuferliquiditaet,
+    spielerPrivat: SPIELER.reduce((n, id) => n + o[id].cash, 0), // Eigentümer- und Pilotenkonto des Spielers
     produktion: b.produktion, verkaeufe: b.verkaeufe, auftraege: b.auftraege, loehne: b.loehne,
     dividenden: b.dividenden,
     kassen: Object.fromEntries(FIRMEN.map((f) => [f, b.firmen[f].kasse])),

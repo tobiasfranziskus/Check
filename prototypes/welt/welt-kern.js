@@ -59,7 +59,9 @@ const m_data_kanon = (() => {
     // Verhalten der NPC-Akteure. Wird im Zustand gespeichert; Szenarien ändern nur diese Werte.
     politik: {
       automatik: true,
-      sparquote: {}, sparquoteStandard: 0,           // ‰ des Einkommens, das ein Haushalt nie ausgibt
+      // ‰ des Einkommens, das ein Haushalt nie ausgibt. Die Privatkonten des Spielers geben von
+      // sich aus nichts aus: über sein Geld entscheidet nur der Spieler (Sparfreiheit).
+      sparquote: { eigner_house: 1000, pilot_house: 1000 }, sparquoteStandard: 0,
       bedarfJeTag: 0,                                // 0 = kein Sättigungsdeckel je Haushalt
       ausschuettung: { house: 0, npc3: 1000, transport: 1000, st_aldera: 1000, st_nadir: 1000, werft_extern: 1000 },
       betriebsreserve: { house: 250, npc3: 250, transport: 250, st_aldera: 1100, st_nadir: 700, werft_extern: 530 },
@@ -67,7 +69,7 @@ const m_data_kanon = (() => {
       // Eis-Pendel startet nur, wenn in Aldera keine unverschiffte Charge mehr liegt.
       wasserZielAldera: 100, wasserwerkBis: 115, eisPufferAldera: 50,
       einkaufMinuten: 60, dividendeMinuten: 1440,
-      stilllegung: false, ersatzkauf: true, ersatzVorlaufProzent: 40, werftVorrat: 0,
+      stilllegung: false, ersatzkauf: true, spielerErsatz: false, ersatzVorlaufProzent: 40, werftVorrat: 0,
       eisfracht: true, wasserwerk: true, rueckfracht: true,
       gruendung: true, // NPC-Spedition kauft ihre erste Hülle selbst aus eigenem Kapital
     },
@@ -487,6 +489,7 @@ function erstellen(startkapital = {}) {
       if (p.ersatzkauf) for (const id of ids(k.pendel)) {
         const sh = state.ships[id];
         if (tauglich(sh) || sh.flug.lage !== 'angedockt') continue;
+        if (sh.owner === rules.economy.start.owner && !p.spielerErsatz) continue; // der Spieler kauft selbst
         const r = versuch(state, { type: 'shipBuy', owner: sh.owner, klasse: 'miner', station: rules.erzpilot.station });
         if (r.ok) {
           k.ersatzkaeufe += 1; m_core_flugplan.koerperSync(state);
@@ -577,7 +580,7 @@ function erstellen(startkapital = {}) {
       throw Error('K1: fremde Regelversion oder Schema; keine automatische Migration');
     const k = state.kanon;
     if (!k || k.modell !== KANON.modell || !k.netto || !k.buch || !k.wasser || !k.pendel || !k.flugdienst
-      || !k.verschleiss || !k.haushalte || !k.politik || !k.ersetzt || !state.flug)
+      || !k.verschleiss || !k.haushalte || !k.politik || !state.flug)
       throw Error('K1: Weltbuch unvollständig');
   }
   function audit(state) {
@@ -647,7 +650,7 @@ function erstellen(startkapital = {}) {
     state.kanon = {
       modell: KANON.modell, netto: {}, buch: { belege: 0, summen: {} },
       wasser: { abNadir: 0, konsum: 0, rueckGeladen: 0, rueckGeliefert: 0, verkauftAldera: 0, verkauftNadir: 0 },
-      pendel: {}, flugdienst: {}, verschleiss: {}, haushalte: {}, ersetzt: {}, ersatzkaeufe: 0,
+      pendel: {}, flugdienst: {}, verschleiss: {}, haushalte: {}, ersatzkaeufe: 0,
       fluglohnMinuten: 0, rueckfracht: null, engpass: null,
       politik: JSON.parse(JSON.stringify(KANON.politik)),
     };

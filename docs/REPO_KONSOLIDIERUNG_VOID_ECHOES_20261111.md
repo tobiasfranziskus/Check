@@ -97,3 +97,22 @@ Dieses Dokument basiert auf GitHub-Quellen, PR-Metadaten und den in PRs referenz
 4. **Keine automatische Archivierung:** Das private `void-echoes` bleibt Referenz bis NAS-/Save-Backups und offener X02-C-PR #10 geklärt sind.
 
 **Prüfstatus dieser Ergänzung:** Die Matrix wurde aus dokumentierten GitHub-Quellen abgeleitet; **keine neuen Node-, Browser-, Wirtschafts-Langzeit-, iPad- oder NAS-Tests ausgeführt**. Alle Gates sind zukünftige Abnahmekriterien, keine bestandenen Tests.
+
+
+## 8. Unabhängiger X02-C-Negativbefund aus dem Altspiel
+
+**[ANALYSE / Originalbericht, keine neu ausgeführte Simulation]** Der offene alte [void-echoes-PR #10](https://github.com/tobiasfranziskus/void-echoes/pull/10) und sein [Bericht `docs/X02-C-BERICHT.md`](https://github.com/tobiasfranziskus/void-echoes/blob/x02c/docs/X02-C-BERICHT.md) dokumentieren eine versuchte Liquiditätsreparatur. Im alten Spiel sind Kopfgelder neu geschöpfte ISK, Markt-/Werft-/Industriegebühren fließen statt in permanente Senken teilweise in regionale Fonds; NPC-Jäger erhalten ebenfalls Kopfgeld. Der Altbericht weist zusätzlich auf **Versicherungsauszahlungen als weitere Geldquelle** hin; sie traten in diesen drei automatisierten Läufen nicht auf. Dies ist **nicht** Check-Geldmodell B und darf nicht als zugelassene Emissionsimplementierung übernommen werden.
+
+Die gezählten Charakterisierungstests auf dem Altbranch liefen **14/14** grün, aber die wirtschaftliche Abnahme blieb ausdrücklich **nicht bestanden**. Drei tatsächlich dokumentierte 72-Stunden-Simulationsszenarien mit Startwert 1001 zeigen:
+
+| Altspiel-X02-C-Szenario | Änderung Geldmenge in 72 h | Bergbaueinkommen letzte Stunde | Werft Aldera erfüllt |
+| --- | ---: | ---: | ---: |
+| `koop-aldera` | +15,6 % | 0 ISK | 78,8 % |
+| `ohne-spieler` | −2,4 % | kein Spieler | 33,9 % |
+| `koop-dravos` | +42,4 % | 0 ISK | 35,3 % |
+
+Weitere nachgewiesene Ausfälle: im Szenario `ohne-spieler` laut Bericht ab ungefähr **36 h keine Handelsbewegung mehr**; `koop-dravos` hatte bereits ab Stunde 8 praktisch erschöpfte Dravos-Stationskasse. Die alte Diagnose unterscheidet große, gebundene regionale Fonds von leeren Stations-/Außenhandelskassen und Geldhortung bei Spielern. Eine nominell vorhandene globale Geldmenge finanziert **nicht** den nächsten realen Kaufauftrag. Anders als bei einer gleichmäßig austrocknenden Welt entsteht ein **Eigentümer-/Standort-/Treuhand-Liquiditätsproblem**.
+
+**Folge für den unabhängigen Claude-Review:** In 13×90-Tage- und Krisentests nicht nur `totalMoney` und Nettomint protokollieren, sondern pro zahlendem Eigentümer/Station **freie ISK, gebundene Treuhand, echte Verkäufererlöse, bezahlbare Folgeaufträge, nicht erfüllte Aufträge und reale Warenbestände**. Jede neue Emission ist gegenüber tatsächlicher Lieferung und autorisiertem Weltdeckel zu auditieren. Alte X02-C-Lösungen (Kopfgeldmint, Fondsauffüllung, beliebige Stationsrettung) sind **nicht** in den Check-Core zu übernehmen. Die Zahlen sind ein alter 72-Stunden-Gegenbeweis, weder ein neu ausgeführter Check-Langzeittest noch die Begründung für die Freigabe eines bestimmten C-Modells.
+
+**Repository-Grenze:** Der alte PR #10 bleibt bis zur expliziten Disposition **offen und ungemergt**. Der Altbericht und seine Messdateien bleiben als negative Primärquelle erhalten; keine automatische Archivierung und keine Änderung am Altspiel.

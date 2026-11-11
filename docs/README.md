@@ -2,6 +2,8 @@
 
 > **Stand: 07.11.2026.** Dies ist **nur Navigation**. Einzige verbindliche Produktplanung: [ROADMAP.md](ROADMAP.md). Belegter Stand: [PROJEKTSTATUS.md](PROJEKTSTATUS.md); Regeln: [AGENTS.md](../AGENTS.md). Vor dem Arbeiten die tatsächlichen GitHub-Refs/CI erneut prüfen.
 
+> **[DRAFT · 11.11.2026] Kanonische Welt K1:** [Architektur, Bestandsaufnahme, Spielstand- und Migrationsregeln](KANONISCHE_WELT_K1.md) · [Wirtschaftsvergleich, Szenarien, Entscheidungsübersicht](K1_WIRTSCHAFT_VERGLEICH_UND_TESTS.md) · Einstieg `prototypes/welt/index.html` (Forschungsregel 199, eigene Spielstandablage). Führt #294–#298 und #288 zusammen; Regel195 bleibt Produkt.
+
 ## Welche Version ist was?
 
 | Status | Einstieg | Tatsächlicher Befund |

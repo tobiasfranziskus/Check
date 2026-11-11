@@ -71,18 +71,20 @@ function regel195Datei() {
           return { lage: sh.flug.lage, x: sh.flug.x, y: sh.flug.y, dienst: !!s.kanon.flugdienst[sh.id] }; });
         assert.notEqual(flug.lage, 'angedockt'); assert.ok(flug.x !== 0 || flug.y !== 0, 'Position im Raum'); assert.equal(flug.dienst, true);
         await tippe('#pause');
-        // Gesperrte Handlung: Fernverkauf im Raum wird vom Core abgelehnt und sichtbar gemeldet.
+        // Pendel im Raum beenden: das Schiff bleibt nicht herrenlos, sondern kehrt erst zum Dock zurück.
         await tippe('#pendelStop');
+        await page.waitForFunction(() => /Pendel endet nach Rückkehr/.test(document.getElementById('meldung').textContent));
         await page.evaluate(() => { document.querySelector('details').open = true; });
         const pixel = await page.evaluate(() => { const c = document.getElementById('raum'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
           let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] > 120) n++; return n; });
         assert.ok(pixel > 200, 'Karte gezeichnet: ' + pixel);
         // Zwei Spieltage vorspulen: der Kreislauf produziert und verkauft tatsächlich.
-        await page.evaluate(() => {
-          const s = JSON.parse(window.__welt.zustand());
-          window.__welt.schritte(200);
-        });
-        await tippe('#pendelEis').catch(() => {});
+        await page.evaluate(() => window.__welt.schritte(200));
+        const zurueck = await page.evaluate(() => { const s = JSON.parse(window.__welt.zustand()); const sh = Object.values(s.ships).find((x) => x.owner === 'house');
+          return { lage: sh.flug.lage, pendel: !!s.kanon.pendel[sh.id], ladung: Object.values(sh.ladung).reduce((n, x) => n + x, 0), dienst: !!s.kanon.flugdienst[sh.id] }; });
+        assert.deepEqual(zurueck, { lage: 'angedockt', pendel: false, ladung: 0, dienst: false }, 'zurück im Dock, Ladung verkauft, Flugdienst abgerechnet');
+        await tippe('#pendelEis');
+        await page.waitForFunction(() => /Pendelauftrag Eis/.test(document.getElementById('meldung').textContent));
         await page.evaluate(() => window.__welt.schritte(2880));
         const lauf = await page.evaluate(() => ({ audit: window.__welt.audit(), b: window.__welt.bericht(), hash: window.__welt.hash() }));
         assert.equal(lauf.audit.ok, true, JSON.stringify(lauf.audit.fehler));

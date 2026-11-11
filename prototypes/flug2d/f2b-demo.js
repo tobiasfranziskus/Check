@@ -114,7 +114,7 @@
   $('export').addEventListener('click',()=>sicher(()=>{
     const blob=new Blob([F.save(state)],{type:'application/json'});
     const url=URL.createObjectURL(blob),link=document.createElement('a');
-    link.href=url;link.download='aphros-f2a-forschung-regel198.json';link.click();
+    link.href=url;link.download='aphros-f2b-forschung-regel198.json';link.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
     msg('Forschungsstand Rule198 als JSON exportiert.');
   }));

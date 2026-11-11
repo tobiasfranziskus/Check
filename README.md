@@ -1,5 +1,7 @@
 # Aphros Void – Check
 
+> **[MAIN / aktualisiert 11.11.2026]** [`04124f2b`](https://github.com/tobiasfranziskus/Check/commit/04124f2bca27dc33b54be30c07b6a7bbb7387e81) enthält Regel195/Schema8 und den integrierten Browser-Spielstandschutz aus #289. Flug/UX08/Optimierung stehen **nur in den gestapelten Drafts** [#294](https://github.com/tobiasfranziskus/Check/pull/294) → [#296](https://github.com/tobiasfranziskus/Check/pull/296) → [#297](https://github.com/tobiasfranziskus/Check/pull/297) → [#298](https://github.com/tobiasfranziskus/Check/pull/298). [Neuer Integrations- und Void-Echoes-Archivierungsindex](docs/REPO_KONSOLIDIERUNG_VOID_ECHOES_20261111.md). Darunterstehende ältere Main-/Draft-Aussagen sind historisch.
+
 > **[PAGES / DEPLOY BESTANDEN · 10.11.2026]** [GitHub Pages Build-/Deploy-Lauf #42840314464](https://github.com/tobiasfranziskus/Check/actions/runs/42840314464) ist **completed/success** für `main ba0c1861`. Öffentlicher Haupteinstieg: https://tobiasfranziskus.github.io/Check/ . Der erfolgreiche Pages-Deploy ist nicht mit einer echten iPad-Safari-Geräteabnahme gleichzusetzen. Die direkt von der Zielwebsite gerenderte Ausgabe konnte hier nicht unabhängig mit Safari geprüft werden. NAS-Datei bleibt vor Ort zu ersetzen.
 
 
@@ -9,7 +11,7 @@
 **Weltraumwirtschaft, Konzernmanagement und direkt spielbare 2D-Schiffe.** Aphros Void ist ein Browserprojekt mit statischer `index.html`, HTML/CSS/Vanilla JavaScript, deterministischem gemeinsamen Simulationskern und iPad-Safari-/NAS-Zielplattform.
 
 - **Öffentlicher Einstieg:** https://tobiasfranziskus.github.io/Check/ (tatsächlich ausgelieferte Fassung gesondert von lokalen Drafts prüfen)
-- **[MAIN]** Hauptbranch: `v0.12.5`, **Regel14/Schema8**. Das R32-/W5s-Forschungsmodell ist **nicht** gemergt und nicht Bestandteil des regulären Hauptspiels.
+- **[MAIN]** Hauptbranch: **Regel195/Schema8**, W0–W5-Einzeldatei mit getrenntem Speicher-/Import-Schutz. Das alte Regel14-Spiel ist archiviert. R32-/W5s-Zusatzregeln sind nicht produktiv freigegeben.
 - **[BACKUP]** Bewahrte [v0.12.5-Datei](versionen/v0.12.5/index.html) / [Originalfassung im Backup-Branch](https://github.com/tobiasfranziskus/Check/tree/backup/pages-v0.12.5-20261106).
 - **[DRAFT / Forschung]** [W5s-ao Gesamtwirtschaft #243](https://github.com/tobiasfranziskus/Check/pull/243) auf eigenem Regel32-Branch: der Originalkern bestand Geld-/Waren-/Eigentümeraudits, **der langfristige Wirtschaftskreislauf ist nicht tragfähig**. Keine neue Geldmodell-B-Produktregel.
 - **[DRAFT / Oberfläche]** [W5u #234](https://github.com/tobiasfranziskus/Check/pull/234): getrennter Hub-Prototyp mit Regel14 und speziellen Save-Slots, kein R32-Produkt.

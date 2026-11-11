@@ -55,8 +55,6 @@ const m_data_kanon = (() => {
       { id: 'eigner_transport', kind: 'haushalt' }, { id: 'eigner_st_aldera', kind: 'haushalt' },
       { id: 'eigner_st_nadir', kind: 'haushalt' }, { id: 'eigner_werft', kind: 'haushalt' },
       { id: 'k1_rueckfracht', kind: 'k1-reserve' },
-      { id: 'k1_miner_arbeit', kind: 'k1-reserve' },
-      { id: 'k1_miner_fracht', kind: 'k1-reserve' },
     ],
     // Verhalten der NPC-Akteure. Wird im Zustand gespeichert; Szenarien ändern nur diese Werte.
     politik: {
@@ -669,8 +667,8 @@ function erstellen(startkapital = {}) {
           (sh.owner !== rules.economy.start.owner || p.spielerErsatz)
           && m_core_anlage.buchwert(state, sh) * 100 <= kaufpreis('miner') * p.ersatzVorlaufProzent)?.owner;
         if (besteller && (nadir.material || 0) >= m_core_minerwerft.C.material) {
-          const r = versuch(state, { type: 'stationBuildMiner', owner: rules.w5.werft,
-            station: rules.w5.station, besteller }, true);
+          const r = m_core_minerwerft.bauen(state, { type: 'stationBuildMiner', owner: rules.w5.werft,
+            station: rules.w5.station, besteller });
           if (!r.ok) k.engpass = merke(k.engpass, state.tick, 'Minerwerft: ' + r.reason);
         } else if ((nadir.erz || 0) >= rules.w4.erzJeCharge && !state.w4.auftrag) {
           const q = kern.pilotW4Kalkulation(state);
@@ -814,8 +812,6 @@ function erstellen(startkapital = {}) {
       modell: KANON.modell, netto: {}, buch: { belege: 0, summen: {} },
       wasser: { abNadir: 0, konsum: 0, rueckGeladen: 0, rueckGeliefert: 0, verkauftAldera: 0, verkauftNadir: 0 },
       pendel: {}, flugdienst: {}, verschleiss: {}, haushalte: {}, ersatzkaeufe: 0,
-      minerWerft: { begonnen: 0, fertig: 0, materialVerbraucht: 0, verladen: 0,
-        geliefert: 0, auftrag: null, wartetAuf: null, transport: null },
       fluglohnMinuten: 0, rueckfracht: null, engpass: null,
       politik: JSON.parse(JSON.stringify(KANON.politik)),
     };

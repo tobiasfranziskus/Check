@@ -2662,7 +2662,9 @@ const m_core_w5n=(()=>{
    sh.ladung.eis=(sh.ladung.eis||0)+n;
    s.ledger.eis.mined+=n;
    w.eisAbgebaut+=n;w.mineMinuten++;w.mineLohn+=c.mineLohn;
-   if(sh.ladung.eis>=c.charge){
+   // Research-only: dockgebundene F2b-Eisabnahme. Regel195 bleibt unverändert,
+   // weil ausschließlich die Forschungskonfiguration dieses Flag aktivieren darf.
+   if(sh.ladung.eis>=c.charge && r.w5n.f2bDockOnly!==true){
      const abnahme=Math.min(sh.ladung.eis,aufnehmbar(s,r,c.quellStation,'eis'));
      if(abnahme>=c.charge)verkauf(s,r,sh,abnahme);
    }

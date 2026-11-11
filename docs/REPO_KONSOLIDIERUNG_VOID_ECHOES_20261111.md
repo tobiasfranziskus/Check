@@ -1,5 +1,7 @@
 # Repository-Konsolidierung und Void-Echoes-Übernahme – 11.11.2026
 
+**[ANALYSE / unabhängige W6-Abnahme ergänzt · 11.11.2026]** Die vollständige [historische Fehler- und Prüffallmatrix](W6_HISTORISCHE_FEHLER_ABNAHME_20261111.md) fasst **16** getrennte Fehlerklassen, **G00–G14** als 15 zukünftige Abnahmekriterien und **S01–S13** als 13 ökonomisch verschiedene Prüfregime zusammen. Dazu wurden **25** Primärzahlen-Gleichungen unabhängig nachgerechnet sowie Original-JSON aus X02-C (3 Läufe) und C1b (4 Messdatensätze) geprüft. Keine neuen Simulationen oder Node-/Browser-/Gerätetests; kein Claude-Code geändert.
+
 **[ANALYSE / docs-only, keine Produktfreigabe]** Quellen: GitHub-`Check/main 04124f2bca27dc33b54be30c07b6a7bbb7387e81`, `void-echoes/main a8e2e36faf8257ac2cc47780d12ea9e8e1f58b9f`, aktuelle PR-Metadaten und die tatsächlich im jeweiligen PR dokumentierten CI-Läufe. Der Stand ist ein navigierender Integrations- und Archivierungsentscheid, **keine zweite Roadmap**. Verbindlich bleibt [ROADMAP.md](ROADMAP.md). **Vor Beginn der Bereinigung waren 126 Pull Requests offen** (GitHub-Suche `is:pr is:open`). Nach Anlage von #299 und dem dokumentierten Schließen von vier ersetzten PRs waren **123 PRs offen**. Keine dieser Zahlen bedeutet 123 ausstehende Feature-Merges.
 
 ## 1. Tatsächliche Entwicklungswege

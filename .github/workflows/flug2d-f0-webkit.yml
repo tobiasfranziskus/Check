@@ -1,0 +1,31 @@
+name: "Flug2D F0 – WebKit cross-engine reference and touch"
+on:
+  pull_request:
+    paths:
+      - 'prototypes/flug2d/**'
+      - 'tests/flug2d-*'
+      - '.github/workflows/flug2d-f0-webkit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  webkit-javascriptcore-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Install WebKit only on CI, not for product runtime"
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/flug2d-playwright" playwright@1.62.0
+          node "$RUNNER_TEMP/flug2d-playwright/node_modules/playwright/cli.js" install --with-deps webkit
+      - name: "Cross-engine: Node22 reference hash in WebKit/JavaScriptCore and touch at four sizes"
+        run: |
+          node tests/flug2d-webkit.cjs
+          FLUG_BROWSER=webkit node tests/flug2d-f1-browser.cjs
+          FLUG_BROWSER=webkit node tests/flug2d-f2a-browser.cjs
+          FLUG_BROWSER=webkit node tests/flug2d-f2b-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/flug2d-playwright/node_modules/playwright

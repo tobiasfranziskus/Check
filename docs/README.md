@@ -1,5 +1,7 @@
 # Aphros Void – Repo- und Forschungsindex
 
+> **[AKTUELL / 11.11.2026]** [Repository-Konsolidierung und Void-Echoes-Restübernahme](REPO_KONSOLIDIERUNG_VOID_ECHOES_20261111.md): [MAIN] `04124f2b`, Regel195/Schema8 einschließlich Save-Schutz; Flug- und Grafik-Drafts #294 → #296 → #297 → #298 noch nicht im Produkt. 126 offene PRs wurden als Forschungs- und Reviewverlauf erfasst; alte Stacks nicht pauschal mergen. Die nachfolgende Tabelle ist eine historische Übersicht vom 07.11.2026, **keine aktuelle Main-Aussage**.
+
 > **Stand: 07.11.2026.** Dies ist **nur Navigation**. Einzige verbindliche Produktplanung: [ROADMAP.md](ROADMAP.md). Belegter Stand: [PROJEKTSTATUS.md](PROJEKTSTATUS.md); Regeln: [AGENTS.md](../AGENTS.md). Vor dem Arbeiten die tatsächlichen GitHub-Refs/CI erneut prüfen.
 
 ## Welche Version ist was?

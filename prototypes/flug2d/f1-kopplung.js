@@ -14,13 +14,16 @@ const N = FLUG.DATEN.schritteJeMinute;
 const PROFIL = 196;
 
 function erstellen(startkapital = {}, optionen = {}) {
-  // F2a darf opt-in eine andere Forschungssave-Kennung verwenden. Der
-  // bisherige F1-Einstieg bleibt bitgleich auf Regel196 und wird nie migriert.
-  if (!optionen || typeof optionen !== 'object' || Array.isArray(optionen)
-    || Object.keys(optionen).some(k => k !== 'researchProfile')
-    || (Object.hasOwn(optionen, 'researchProfile') && optionen.researchProfile !== 197))
-    throw TypeError('F1: unbekanntes oder ungültiges Forschungsprofil');
-  const profil = optionen.researchProfile ?? PROFIL;
+  // Strikte, nicht migrierbare Forschungshüllen: F1=196, F2a=197, F2b=198.
+  // Nur Regel198 darf den neuen, optionalen dockgebundenen Verkauf verwenden.
+  const opt = optionen || {};
+  if (typeof opt !== 'object' || Array.isArray(opt)
+    || Object.keys(opt).some(k => !['researchProfile','dockOnlyIce'].includes(k))
+    || (Object.hasOwn(opt,'researchProfile') && ![197,198].includes(opt.researchProfile))
+    || (opt.researchProfile===198) !== (opt.dockOnlyIce===true)
+    || (Object.hasOwn(opt,'dockOnlyIce') && opt.dockOnlyIce!==true))
+    throw TypeError('F1: ungültige Forschungskonfiguration; Eis-Dockbindung nur Rule198');
+  const profil = opt.researchProfile ?? PROFIL;
   // Die Original-Rule195-Quelldatei bleibt BYTEGLEICH (Singlefile-Reproduzierbarkeit).
   // Der Forschungsvermerk 196 wird nur in serialisierten F1-Ständen verwendet.
   // Für jeden Economy-Aufruf sieht die *selbe* Originalengine Rule195, damit auch
@@ -28,7 +31,13 @@ function erstellen(startkapital = {}, optionen = {}) {
   const engine = FACTORY.createPrivateWageResearch(startkapital);
   const wirtschaft = engine.core;
   const econRules = engine.rules;
-  const rules = Object.freeze({ ...econRules, rulesVersion: profil });
+  // Ein und dieselbe Original-Rule195-Wirtschaftsengine. Das zusaetzliche
+  // Flag steuert NUR den neuen Vollchargen-Abnahmepunkt, nie 195/196/197.
+  const wirtschaftsRegeln = opt.dockOnlyIce
+    ? Object.freeze({ ...econRules,
+        w5n: Object.freeze({ ...econRules.w5n, f2bDockOnly: true }) })
+    : econRules;
+  const rules = Object.freeze({ ...wirtschaftsRegeln, rulesVersion: profil });
   if (econRules.rulesVersion !== 195 || rules.schema !== 8)
     throw Error('F1: inkompatibler Originalwirtschaftskern');
   function imOriginalCore(state, aktion) {
@@ -98,7 +107,7 @@ function erstellen(startkapital = {}, optionen = {}) {
     const type = cmd && cmd.type;
     if (typeof type === 'string' && Object.hasOwn(FLUG.BEFEHLE, type))
       return FLUG.ausfuehren(state, cmd);
-    const result = imOriginalCore(state, () => wirtschaft.execute(state, cmd, econRules));
+    const result = imOriginalCore(state, () => wirtschaft.execute(state, cmd, wirtschaftsRegeln));
     if (result.ok) synchronisieren(state);
     return result;
   }
@@ -108,13 +117,13 @@ function erstellen(startkapital = {}, optionen = {}) {
     // nachgelagerte zweite Queue neben der vorhandenen Wirtschaftsbefehlsqueue.
     if (cmd && typeof cmd.type === 'string' && Object.hasOwn(FLUG.BEFEHLE, cmd.type))
       return { ok: false, reason: 'F1: Flugbefehl via execute am Flugschritt übergeben' };
-    return imOriginalCore(state, () => wirtschaft.submit(state, cmd, econRules));
+    return imOriginalCore(state, () => wirtschaft.submit(state, cmd, wirtschaftsRegeln));
   }
   // Nur dieser Einstieg ruft den bestehenden Wirtschaftstick auf: bei Schritt 60.
   function teilschritt(state) {
     pruefen(state);
     if (!FLUG.schritt(state)) return null;
-    const result = imOriginalCore(state, () => wirtschaft.step(state, econRules));
+    const result = imOriginalCore(state, () => wirtschaft.step(state, wirtschaftsRegeln));
     synchronisieren(state);
     return result;
   }
@@ -131,7 +140,7 @@ function erstellen(startkapital = {}, optionen = {}) {
     // bleibt der gespeicherte Schrittindex nach 60 Teilsekunden gleich.
     const ruhig = Object.values(state.ships).every(s => !s.flug || s.flug.lage === 'angedockt');
     if (ruhig) {
-      const result = imOriginalCore(state, () => wirtschaft.step(state, econRules));
+      const result = imOriginalCore(state, () => wirtschaft.step(state, wirtschaftsRegeln));
       synchronisieren(state);
       return result;
     }

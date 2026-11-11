@@ -16,10 +16,17 @@ const PROFIL = 197, WARE = 'eis', CHARGE = 48;
 const STUFEN = Object.freeze(['abdocken', 'anflug', 'abbau', 'rueck', 'abnahme', 'fertig']);
 const AKTIONEN = Object.freeze(new Set(['shipMine','shipSellIce','shipWait']));
 
-function erstellen(startkapital = {}) {
-  const f1 = F1.erstellen(startkapital, {researchProfile: PROFIL});
+function erstellen(startkapital = {}, researchOptions = {}) {
+  const voll = researchOptions?.researchProfile === 198 && researchOptions?.charge === 50
+    && Object.keys(researchOptions).sort().join() === 'charge,researchProfile';
+  if (!researchOptions || typeof researchOptions!=='object' || Array.isArray(researchOptions)
+    || (Object.keys(researchOptions).length && !voll))
+    throw TypeError('F2a: nur das explizite Forschungsprofil 198/50 erlaubt');
+  const profil = voll ? 198 : PROFIL, charge = voll ? 50 : CHARGE;
+  const f1 = F1.erstellen(startkapital, voll
+    ? {researchProfile:198,dockOnlyIce:true} : {researchProfile:PROFIL});
   const K = f1.flugKern, rules = f1.rules;
-  if (rules.rulesVersion !== PROFIL || rules.w5n.charge !== 50
+  if (rules.rulesVersion !== profil || rules.w5n.charge !== 50
     || rules.economy.miningRate !== 1 || rules.w5n.mineLohn !== 2
     || rules.w5n.eisPreis !== 5)
     throw Error('F2a: die belegte Eis-Teilcharge passt nicht zu den Forschungsparametern');
@@ -49,7 +56,7 @@ function erstellen(startkapital = {}) {
     return state;
   }
   function pruefen(state) {
-    if (state?.rulesVersion !== PROFIL || state?.schema !== 8)
+    if (state?.rulesVersion !== profil || state?.schema !== 8)
       throw Error('F2a: fremde Forschungsregel/Schema, keine Migration');
     const buch=state.f2a;
     if (!buch || typeof buch!=='object' || Array.isArray(buch)
@@ -69,14 +76,14 @@ function erstellen(startkapital = {}) {
       const fields=['owner','ware','status','menge','start','ende','verkauft','minedVorher','soldVorher','arbeitVorher'];
       if(!s || s.klasse!=='miner' || !s.flug || !m || typeof m!=='object'
         || Object.keys(m).sort().join()!==fields.sort().join()
-        || s.owner!==m.owner || m.ware!==WARE || m.menge!==CHARGE
+        || s.owner!==m.owner || m.ware!==WARE || m.menge!==charge
         || !STUFEN.includes(m.status)
         || !Number.isSafeInteger(m.start) || m.start<0 || m.start>state.tick
         || !(m.ende===null || Number.isSafeInteger(m.ende)&&m.ende>=m.start&&m.ende<=state.tick)
-        || !Number.isSafeInteger(m.verkauft)||m.verkauft<0||m.verkauft>CHARGE
+        || !Number.isSafeInteger(m.verkauft)||m.verkauft<0||m.verkauft>charge
         || ![m.minedVorher,m.soldVorher,m.arbeitVorher].every(n=>Number.isSafeInteger(n)&&n>=0))
         throw Error('F2a: ungültiges Missionsbuch für '+id);
-      if(m.status==='fertig' && (m.ende===null || m.verkauft!==CHARGE || s.flug.lage!=='angedockt'
+      if(m.status==='fertig' && (m.ende===null || m.verkauft!==charge || s.flug.lage!=='angedockt'
         || (s.ladung.eis||0)!==0 || s.phase!=='dock'))
         throw Error('F2a: Lieferung nicht belegbar '+id);
       if(m.status!=='fertig' && m.ende!==null)
@@ -93,15 +100,15 @@ function erstellen(startkapital = {}) {
       const verkauft=state.w5n.mineVerkauft-m.soldVorher;
       if(abgebaut<0 || verkauft<0 || verkauft>abgebaut || verkauft<m.verkauft)
         throw Error('F2a: finanzielle Eisstatistik inkonsistent '+id);
-      if(m.status!=='fertig' && (abgebaut>CHARGE || verkauft!==0
+      if(m.status!=='fertig' && (abgebaut>charge || verkauft!==0
         || (s.ladung.eis||0)!==abgebaut))
         throw Error('F2a: Ladung oder vorzeitiger Verkauf nicht belegbar '+id);
-      if(m.status==='fertig' && (abgebaut<CHARGE || verkauft<CHARGE
-        || state.w5n.mineMinuten-m.arbeitVorher<CHARGE))
+      if(m.status==='fertig' && (abgebaut<charge || verkauft<charge
+        || state.w5n.mineMinuten-m.arbeitVorher<charge))
         throw Error('F2a: unvollständige echte Förderung/Abnahme '+id);
       if(['abdocken','anflug','rueck'].includes(m.status) && s.phase!=='flug')
         throw Error('F2a: Fliegen ist nicht der Stations-Dockzustand '+id);
-      if(s.ladung.eis>CHARGE && m.status!=='fertig')
+      if(s.ladung.eis>charge && m.status!=='fertig')
         throw Error('F2a: vorzeitige volle Eischarge '+id);
     }
     return true;
@@ -120,8 +127,8 @@ function erstellen(startkapital = {}) {
       || s.system!=='aldera' || s.phase!=='dock'
       || s.flug?.lage!=='angedockt' || !leer(s)
       || mListe(state)[id]) return {ok:false,reason:'Nur eigener, leerer Miner im Aldera-Dock'};
-    const mindestArbeitsgeld=(CHARGE/rules.economy.miningRate)*rules.w5n.mineLohn;
-    const mindestKaufgeld=CHARGE*rules.w5n.eisPreis;
+    const mindestArbeitsgeld=(charge/rules.economy.miningRate)*rules.w5n.mineLohn;
+    const mindestKaufgeld=charge*rules.w5n.eisPreis;
     if(state.owners[owner].cash<mindestArbeitsgeld ||
        state.owners.st_aldera.cash<mindestKaufgeld)
       return {ok:false,reason:'Arbeitsgeld oder Stations-Kaufetat nicht finanziert'};
@@ -135,7 +142,7 @@ function erstellen(startkapital = {}) {
     // NPC-Wiederanlauf noch Originalfoerderung beim Rückflug versehentlich starten.
     s.phase = 'flug';
     state.f2a.missionen[id] = {
-      owner,ware:WARE,status:'abdocken',menge:CHARGE,start:state.tick,ende:null,verkauft:0,
+      owner,ware:WARE,status:'abdocken',menge:charge,start:state.tick,ende:null,verkauft:0,
       minedVorher:state.w5n.eisAbgebaut,soldVorher:state.w5n.mineVerkauft,
       arbeitVorher:state.w5n.mineMinuten,
     };
@@ -164,7 +171,7 @@ function erstellen(startkapital = {}) {
         wirtschaftsBefehl(state,'shipApproach',s,{zielArt:'feld',ziel:'aldera:eis'});
         m.status='anflug';
       }
-      if(m.status==='abbau'&&(s.ladung.eis||0)>=CHARGE) {
+      if(m.status==='abbau'&&(s.ladung.eis||0)>=charge) {
         if(s.auftrag==='foerdern')wirtschaftsBefehl(state,'shipWait',s);
         s.phase='flug';
         wirtschaftsBefehl(state,'shipDock',s,{station:'st_aldera'});

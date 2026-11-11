@@ -69,6 +69,7 @@ const m_data_kanon = (() => {
       einkaufMinuten: 60, dividendeMinuten: 1440,
       stilllegung: false, ersatzkauf: true, ersatzVorlaufProzent: 40, werftVorrat: 0,
       eisfracht: true, wasserwerk: true, rueckfracht: true,
+      gruendung: true, // NPC-Spedition kauft ihre erste Hülle selbst aus eigenem Kapital
     },
   });
   return { KANON, tiefFrieren };
@@ -466,6 +467,11 @@ function erstellen(startkapital = {}) {
       const frachter = flotte(W.frachterOwner, 'frachter');
       const hatte = frachter.length > 0 || state.ledger.frachter.consumed > 0;
       const werftlager = state.stations[rules.w5.station].lager.frachter || 0;
+      if (p.gruendung && !hatte && werftlager + (state.stations[rules.erzpilot.station].lager.frachter || 0) > 0
+        && state.owners[W.frachterOwner].cash >= kaufpreis('frachter')) {
+        const quelle = werftlager > 0 ? rules.w5.station : rules.erzpilot.station;
+        if (versuch(state, { type: 'shipBuy', owner: W.frachterOwner, klasse: 'frachter', station: quelle }).ok) m_core_flugplan.koerperSync(state);
+      }
       if (p.ersatzkauf && hatte && !frachter.some(tauglich)) {
         const quelle = werftlager > 0 ? rules.w5.station : rules.erzpilot.station;
         const r = versuch(state, { type: 'shipBuy', owner: W.frachterOwner, klasse: 'frachter', station: quelle });

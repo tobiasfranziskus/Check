@@ -272,7 +272,8 @@ function erstellen(startkapital = {}) {
       const merken = (grund) => { if (zaehlen) k.engpass = merke(k.engpass, state.tick, grund); };
       for (const id of ids(k.pendel)) {
         const sh = state.ships[id], b = sh.flug, p = k.pendel[id];
-        if (m_core_anlage.stillgelegt(state, sh)) p.beenden = true;
+        if (m_core_anlage.stillgelegt(state, sh) && sh.auftrag === 'foerdern')
+          kern.execute(state, { type: 'shipWait', owner: sh.owner, schiff: id }, rules);
         if (b.lage === 'andocken' || b.lage === 'abdocken' || b.lage === 'transit') continue;
         if (b.lage === 'angedockt' && !dock) continue;
         if (k.flugdienst[id]?.gestrandet) continue;
@@ -293,6 +294,7 @@ function erstellen(startkapital = {}) {
           }
           if (ladungSumme(sh) > 0 && p.ware === 'eis') continue;
           if (p.beenden) { delete k.pendel[id]; continue; }
+          if (m_core_anlage.stillgelegt(state, sh)) continue; // Pendel merken, bis ein echter Ersatzkauf erfolgreich ist
           if (p.ware === 'erz' && sh.auftrag !== 'foerdern') {
             const r = kern.execute(state, { type: 'shipMine', owner: sh.owner, schiff: id, ware: 'erz' }, rules);
             if (!r.ok) { merken('Erzauftrag: ' + r.reason); continue; }
@@ -317,7 +319,7 @@ function erstellen(startkapital = {}) {
         // im freien Flug
         if (p.ware === 'eis' && voll() && sh.auftrag === 'foerdern')
           kern.execute(state, { type: 'shipWait', owner: sh.owner, schiff: id }, rules);
-        const zumDock = voll() || sh.auftrag !== 'foerdern';
+        const zumDock = m_core_anlage.stillgelegt(state, sh) || voll() || sh.auftrag !== 'foerdern';
         const r = FLUG.fuehreZu(state, sh, zumDock
           ? { art: 'station', id: station(sh) } : { art: 'feld', id: sh.system + ':' + p.ware });
         if (r && !r.ok) throw Error('K1-Flugplan: ' + r.reason);

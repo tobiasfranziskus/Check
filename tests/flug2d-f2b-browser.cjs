@@ -65,7 +65,7 @@ const assert=require('node:assert/strict');
        await page.locator('#import').setInputFiles({name:'f2a.json',mimeType:'application/json',buffer:Buffer.from(saved)});
        await page.waitForFunction(()=>document.querySelector('#meldung').textContent.includes('Forschungsstand geladen'));
        assert.equal(await page.evaluate(()=>F2bDemo.zustand()),saved);
-       const foreign=JSON.parse(saved);foreign.rulesVersion=1100;
+       const foreign=JSON.parse(saved);foreign.rulesVersion=197;
        await page.locator('#import').setInputFiles({name:'f1.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(foreign))});
        await page.waitForFunction(()=>document.querySelector('#meldung').textContent.includes('Import abgewiesen'));
        assert.equal(await page.evaluate(()=>F2bDemo.zustand()),saved);

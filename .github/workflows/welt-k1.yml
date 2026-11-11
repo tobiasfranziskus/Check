@@ -31,6 +31,8 @@ jobs:
         run: node --test tests/welt-speicher.test.mjs
       - name: "Referenzmodell C nachgerechnet und Abweichungen der ausgeführten Welt"
         run: node --test tests/referenzmodell-c.test.mjs
+      - name: "K2: finanzierter Minerbau, Rückfracht, Ersatz, Save/Load"
+        run: node --test tests/welt-k2-miner.test.mjs
       - name: "K1-Wirtschaft: 15 Szenarien × 90 Tage, 365- und 730-Tage-Läufe"
         run: node --test tests/welt-wirtschaft.test.mjs
       - name: "Alle bestehenden Regel14-/Regel195-/Flug-Regressionen"

@@ -31,8 +31,12 @@ function momentaufnahmen() {
   return { welt, arbeit, rueckfracht };
 }
 
+// Aufwendige echte S12-Probe einmalig aufbauen; Tests laden jeweils isolierte Kopien.
+let gesicherteProbe;
+function probe() { return gesicherteProbe ||= momentaufnahmen(); }
+
 test('K2-QA: Lohnkonto ist während des Baus gedeckt; Save/Load mitten in der Arbeit reproduziert die exakten Minuten', () => {
-  const { welt: w, arbeit } = momentaufnahmen();
+  const { welt: w, arbeit } = probe();
   const s = w.load(arbeit), b = s.kanon.minerWerft;
   const dauer = w.rules.w5.dauer, lohn = w.rules.w5.lohnJeMinute;
   const vorher = b.auftrag.gearbeitet, fertig = b.fertig, gezahlt = buch(s, 'miner-arbeitslohn');
@@ -54,7 +58,7 @@ test('K2-QA: Lohnkonto ist während des Baus gedeckt; Save/Load mitten in der Ar
 });
 
 test('K2-QA: echte Miner-Rückfracht bindet Käufergeld und bezahlt den Transporteur erst nach Dockankunft', () => {
-  const { welt: w, rueckfracht } = momentaufnahmen();
+  const { welt: w, rueckfracht } = probe();
   const s = w.load(rueckfracht), b = s.kanon.minerWerft;
   const transport = b.transport;
   const schiff = s.ships[transport.schiff];
@@ -82,7 +86,7 @@ test('K2-QA: echte Miner-Rückfracht bindet Käufergeld und bezahlt den Transpor
 });
 
 test('K2-QA: unabhängiger Audit verweigert Geld- und Materialmanipulation in laufender Werft und unterwegs', () => {
-  const { welt: w, arbeit, rueckfracht } = momentaufnahmen();
+  const { welt: w, arbeit, rueckfracht } = probe();
   const faelle = [
     ['Materialbeleg', arbeit, (s) => { s.kanon.minerWerft.materialVerbraucht += 1; }],
     ['Werfttreuhand', arbeit, (s) => { s.owners.k1_miner_arbeit.cash += 1; }],

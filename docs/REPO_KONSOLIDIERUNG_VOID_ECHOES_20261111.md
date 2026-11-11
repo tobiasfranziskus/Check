@@ -59,3 +59,41 @@ Vor der Archivierung:
 ## 6. Prüfgrenzen
 
 Dieses Dokument basiert auf GitHub-Quellen, PR-Metadaten und den in PRs referenzierten bereits ausgeführten CI-Ergebnissen. **In dieser Bereinigungsarbeit wurden keine neuen Node-/Browser-/Safari-/NAS-Tests ausgeführt** (lokaler Git-Zugriff war durch fehlende DNS-Auflösung für github.com blockiert), kein eigener Performancewert behauptet, keine produktiven Dateien editiert und keine Tests oder Spielstände entfernt. Keine Merges oder Deployments.
+
+## 7. Parallele, unabhängige Abnahme der geplanten Einwelt-Integration
+
+**[ANALYSE / Review-Gates, 11.11.2026; keine neue Produktregel]** Diese Prüfliste lässt sich unabhängig von laufender Claude-/Fable-Entwicklung vorbereiten. Sie autorisiert weder neue Wirtschaftswerte noch eine Save-Migration oder einen Merge. Referenz sind aktueller `main 04124f2b`, [Regel195-Speicherschutz](REGEL195_SPIELSTAENDE.md), die Forschungs-PRs #294/#296/#297/#298, Wirtschaftsgegenprobe #288 und das **nicht beschlossene** Modell-C-Konzept #245. Neue Entwicklungen müssen ihre eigenen Head-SHAs und tatsächlich ausgeführten Testergebnisse liefern.
+
+### 7.1 Daten- und Regelidentität nicht verwechseln
+
+- **Kanonische Welt ≠ eine ungeschützte, gemeinsame IndexedDB-Key-Überschreibung.** Erforderlich sind genau ein aktiver autoritativer Simulationszustand, eindeutige Entity-/Auftrags-/Eigentümer-IDs und ein einziges Core-Buchungsjournal. Ein Speichercontainer darf mehrere explizit getrennte Slots, Backups und historische Formate aufnehmen.
+- **Bekannter produktiver Speicher:** Regel195 nutzt IndexedDB `aphros-void-regel195-v1`, Store `saves`, Schlüssel `world`, mit getrennten gesicherten Speicherständen und Exportweg. Historische Regel14-Daten liegen in `aphros-void`; diese Datenbank wird vom Regel195-Code nicht geöffnet, konvertiert oder gelöscht.
+- **Forschungsstände:** Rule196/197/198 besitzen eigenständige Profilkennungen und JSON-Testwege. Es gibt **keinen nachgewiesenen produktiven Import- oder Migrationspfad** von Rule14/196/197/198 nach Rule195. Version, Regelfassung, Save-Schema, Speicherhülle und Browser-Origin müssen getrennt betrachtet werden.
+- **Origin-Grenze:** Safari auf GitHub Pages, lokale Datei, NAS unter HTTP oder HTTPS und anderer Port können getrennte IndexedDB-Speicher besitzen. Ein gleicher Datenbankname erzeugt dort **keine** gemeinsame Online-Datenbank. Synchronisierung setzt bewusst zusätzliche Infrastruktur voraus und gehört nicht zum freigegebenen statischen Spiel.
+- **Rückwärtskompatibilität:** Keine zukünftige Regelversion über ältere Live-Slots speichern. Zunächst JSON-Export, unveränderliche Kopie, explizite Importvalidierung, unabhängiger Audit und reversibler/ablehnender Migrationsentscheid.
+
+### 7.2 Abnahmematrix – auf dem späteren Integrations-Head auszuführen
+
+| Gate | Unabhängig prüfbarer Test | Abbruchsignal |
+| --- | --- | --- |
+| A – ein Weltzustand | Ein Seed, ein Tickzähler, ein Core-RNG und gemeinsame referenzielle IDs zwischen Konzern, Miner, Flug und Station; keine zweite Wirtschaft, keine UI-Buchungen | Zwei divergierende Inventare/Kassen oder parallel laufende Minuten |
+| B – 50 Eis physisch | Bezahlter NPC- und Spieler-Miner: Förderung nur am Feld, 50 Eis während Rückflug an Bord, Auszahlung ausschließlich bei gültigem Dockverkauf; Gegenbefehle atomar abgelehnt | Fernverkauf, frei erzeugte Ware oder falscher Eigentümer |
+| C – tatsächliche Flugkosten | Vor Start bezahlte Arbeits- und Betriebsverpflichtungen einschließlich Rückweg/Abbruch; F2b-Research hat die Flugpilotenlöhne noch nicht vollständig vorfinanziert | Kostenloser Fluglohn, verdeckte Subvention oder negatives Treuhandkonto |
+| D – Wirtschaft und Flug nach Save/Load | Mitten in Förderung, Flug, offener Fracht und Abrechnung exportieren, wiederherstellen und fortsetzen; identischer Endzustand, Geld-, Waren-, RNG- und Eigentümerhash | Abweichender Replay, doppelt erfüllter Auftrag oder verlorene Fracht |
+| E – Speicher-Sentinel | Regel14-Datenbank und alle alten Slots vor/nach Einwelt-Import byteweise bzw. per reproduzierbarem JSON vergleichen | Stille Änderung/Löschung oder automatische Umbenennung |
+| F – defekte/falsche Versionen | Korrupte, zukünftige und fremde Rule14/196/197/198-Dateien abweisen, solange keine nachgewiesene Migration existiert; erfolgreiche Ablehnung ohne Zustandsänderung | Ungeprüfte Konvertierung, Überschreiben oder Verlust des bisher gültigen Saves |
+| G – Browser-Konkurrenz | Wiederholter Import, getrennte Tabs, verzögertes Laden und Schreibkonflikt bei tatsächlichem IndexedDB-Inhalt; Sicherheitsdownload vor Überschreiben | Veralteter Tab schreibt ältere Revision über neuere |
+| H – Bilanzidentität | Jede Buchung mit Zahler, Empfänger, Waren-/Leistungsbeleg und treuhandkorrekter Freigabe; unabhängige Gesamtaudits bei jeder Testphase | Verdeckte Gutschrift oder Geld-/Waren-/Eigentumsdifferenz |
+| I – echte Endnachfrage | Wasser-/Industrieabsatz aus vorhandenem Käufergeld, echte Löhne und optional freiwilliger Verbrauch; nachfolgende Produktion ist real bezahlbar | Erfundene Pflichtkäufe, Gratisnachfrage oder nur nominelle Umsätze |
+| J – W6-Erweiterung | 13 wirtschaftlich verschiedene × 90 Spieltage plus 365-Tage-Krisen: tatsächliche Produktions-/Konsum-/Ersatz-/Insolvenz- und Kapitalpfade protokollieren | Nur identische Seeds, statische Modellgleichungen oder stillgelegte Nachfrage als „erfolgreich“ bezeichnet |
+| K – Emission | Etwaige externe Industrieaufträge nur in isoliertem Forschungsprofil; jede Auszahlung auf reale Liefer-/Dienstleistungsbelege, globales Limit und explizite separate Produktentscheidung prüfen | Ohne Freigabe aktiviertes Modell C, Doppelvergütung oder Rettung eines einzelnen Konzerns |
+| L – Gerät und Auslieferung | Nach grünem Node22-/Chromium-/WebKit-Lauf echte iPad-Safari-, JSON-/Touch- und NAS-Einzeldatei-Prüfung getrennt dokumentieren | Browser-Emulation als echte Geräteabnahme ausgegeben |
+
+### 7.3 Explizite Review-Entscheidungen für den Nutzer
+
+1. **Technisch ohne neue Produktregel überprüfbar:** A bis H einschließlich Regel195-Save-Schutz, sofern ausschließlich bestätigte und finanzierte Core-Abläufe verwendet werden.
+2. **Noch als Forschung abzugrenzen:** dynamische externe Endnachfrage, Wartungs-/Ersatzparameter, Insolvenzpolitik und konkrete Emissionshöhe des Referenzmodells C. Zahlen aus #245 sind [ANNAHME/VORSCHLAG], keine still genehmigten W6-Produkteinstellungen.
+3. **Mergebedingung:** Der Claude-/Fable-Draft muss zu jedem Gate das echte Testergebnis, die ausgeführten Seed-/Zeitläufe und die ungetesteten Grenzen nennen. Ohne Migrationsnachweis bleiben Altformate getrennt und unverändert nutzbar.
+4. **Keine automatische Archivierung:** Das private `void-echoes` bleibt Referenz bis NAS-/Save-Backups und offener X02-C-PR #10 geklärt sind.
+
+**Prüfstatus dieser Ergänzung:** Die Matrix wurde aus dokumentierten GitHub-Quellen abgeleitet; **keine neuen Node-, Browser-, Wirtschafts-Langzeit-, iPad- oder NAS-Tests ausgeführt**. Alle Gates sind zukünftige Abnahmekriterien, keine bestandenen Tests.

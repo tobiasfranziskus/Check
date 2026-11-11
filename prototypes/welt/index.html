@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aphros Void · Kanonische Welt K1 (Forschung)</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#0a111b;color:#e0eaf4;font:16px/1.4 system-ui,-apple-system,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{padding:8px 12px 4px}h1{font-size:1.1rem;margin:0}
+header p{font-size:.86rem;color:#a9c1d1;margin:4px 0}
+nav{display:flex;gap:6px;padding:4px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+nav button{flex:0 0 auto;min-width:96px}
+main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:8px;padding:0 8px 10px;height:calc(100dvh - 150px);min-height:430px}
+#sicht{position:relative;min-height:280px;border:1px solid #6b8197;border-radius:8px;overflow:hidden}
+#raum{display:block;width:100%;height:100%;touch-action:manipulation}
+#hud{position:absolute;top:7px;left:8px;right:8px;color:#91e9f5;text-shadow:0 0 5px #000;font-size:.86rem;margin:0;pointer-events:none}
+#tafel{display:flex;flex-direction:column;gap:8px;overflow:auto;-webkit-overflow-scrolling:touch;min-width:0}
+.reihe{display:flex;gap:8px;flex-wrap:wrap}
+button{background:#1c3248;color:inherit;border:1px solid #708c9d;border-radius:8px;font:inherit;min-height:48px;padding:8px;flex:1 1 104px;touch-action:manipulation}
+button:disabled{opacity:.43}button[aria-pressed="true"]{background:#2c5670;border-color:#9fd6e6}
+section[hidden]{display:none}
+h2{font-size:1rem;margin:6px 0 2px;color:#bfe6f2}
+table{border-collapse:collapse;width:100%;font-size:.84rem}
+th,td{text-align:right;padding:3px 5px;border-bottom:1px solid #263a4d;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+.rollen{overflow-x:auto;-webkit-overflow-scrolling:touch}
+td button{min-height:44px;padding:4px 10px;flex:none}
+#plaetze td:nth-child(5),#plaetze th:nth-child(5){display:none}
+#meldung{min-height:44px;font-size:.9rem;margin:0;padding:6px 8px;background:#12202f;border-radius:8px}
+#meldung.fehler{background:#3a1c1c}
+select,input[type=text],input[type=number]{font:inherit;min-height:48px;padding:6px;background:#12202f;color:inherit;border:1px solid #708c9d;border-radius:8px;flex:1 1 120px;min-width:0}
+input[type=file]{width:100%;min-height:48px}
+details summary{min-height:48px;padding:10px 8px;cursor:pointer}
+small{font-size:.82rem;color:#a9c1d1}
+.warn{color:#ffd28a}
+a{color:#8fe2f5}
+@media(max-width:900px),(orientation:portrait){main{grid-template-columns:1fr;grid-template-rows:minmax(260px,42vh) auto;height:auto}}
+</style>
+<script defer src="../w5ac/rule191-w5-ferry-core.js"></script>
+<script defer src="../flug2d/flug-kern.js"></script>
+<script defer src="../flug2d/grafik.js"></script>
+<script defer src="welt-kern.js"></script>
+<script defer src="welt-speicher.js"></script>
+<script defer src="app.js"></script>
+</head><body>
+<header><h1>Aphros Void – Kanonische Welt K1</h1>
+<p><strong>Forschungsprofil 199, nicht das veröffentlichte Spiel.</strong> Eine Welt für Wirtschaft und Flug: gefördert wird nur im Feld, verkauft nur am Dock, jede Arbeitsminute ist bezahlt. Eigene Spielstandablage; die Stände des Hauptspiels werden nie geöffnet.</p></header>
+<nav aria-label="Ansichten">
+<button data-ansicht="flug" aria-pressed="true">Flug</button><button data-ansicht="konzern">Konzern</button>
+<button data-ansicht="station">Station</button><button data-ansicht="flotte">Flotte</button>
+<button data-ansicht="wirtschaft">Wirtschaft</button><button data-ansicht="spielstand">Spielstand</button>
+</nav>
+<main>
+<section id="sicht" aria-label="Aldera-System: Station, Rohstofffelder und Schiffe">
+<canvas id="raum" aria-label="2D-Raum mit Station, Erz- und Eisfeld und Schiffen"></canvas>
+<p id="hud">Welt wird geladen …</p></section>
+<div id="tafel">
+<p id="meldung" role="status" aria-live="polite">Welt wird geladen …</p>
+<div class="reihe"><button id="pause" aria-pressed="true">Weiter</button><button id="tempo">Zeit 1×</button><button id="minute">+1 Minute</button><button id="stunde">+1 Stunde</button></div>
+
+<section data-seite="flug">
+<h2>Eigener Miner</h2>
+<div class="reihe"><select id="schiff" aria-label="Eigenes Schiff wählen"></select></div>
+<div class="reihe"><button id="pendelEis">Pendelauftrag Eis</button><button id="pendelErz">Pendelauftrag Erz</button><button id="pendelStop">Pendel beenden</button></div>
+<details><summary>Handsteuerung (gleiche Core-Befehle)</summary>
+<div class="reihe"><button id="abdocken">Abdocken</button><button id="zumEis">Zum Eisfeld</button><button id="zumErz">Zum Erzfeld</button><button id="andocken">Andocken</button></div>
+<div class="reihe"><button id="foerdernEis">Eis fördern</button><button id="foerdernErz">Erz fördern</button><button id="warten">Auftrag anhalten</button><button id="verkaufen">Eis am Dock verkaufen</button></div>
+<small>Abdocken bindet 40 ISK Flugreserve. Jede Flugminute kostet 1 ISK Pilotenlohn; gefördert wird nur im Feld, verkauft nur am Dock.</small>
+</details>
+<div id="schiffStatus" class="rollen"></div>
+</section>
+
+<section data-seite="konzern" hidden>
+<h2>Konzerne und Eigentümer</h2><div id="firmen" class="rollen"></div>
+<div class="reihe"><button id="dividende">Eigenen Überschuss ausschütten</button><button id="automatik" aria-pressed="true">NPC-Automatik an</button></div>
+<small>Ausschüttbar ist nur realisierter Überschuss über Anfangskapital, Betriebsreserve und Ersatzrücklage. Der Spieler darf unbegrenzt sparen.</small>
+</section>
+
+<section data-seite="station" hidden>
+<h2>Stationen</h2><div id="stationen" class="rollen"></div>
+<div class="reihe"><button id="kaufMiner">Miner kaufen · 600 ISK</button></div>
+<h2>Privater Wasserkauf des Spielers (Aldera)</h2>
+<div class="reihe"><select id="haushalt" aria-label="Privatkonto"><option value="eigner_house">Eigentümerkonto</option><option value="pilot_house">Pilotenkonto</option></select>
+<input id="wasserMenge" type="number" min="1" max="100" value="1" inputmode="numeric" aria-label="Menge Wasser"><button id="wasserKauf">Wasser kaufen</button></div>
+<small>Freiwillig, aus eigenem Geld, nur am Wohnort und nur aus tatsächlich vorhandenem Bestand.</small>
+</section>
+
+<section data-seite="flotte" hidden><h2>Alle Schiffe dieser Welt</h2><div id="schiffe" class="rollen"></div></section>
+
+<section data-seite="wirtschaft" hidden>
+<h2>Kreislauf</h2><div id="kreislauf" class="rollen"></div>
+<h2>Haushalte</h2><div id="haushalte" class="rollen"></div>
+<h2>Engpässe</h2><div id="engpass" class="rollen"></div>
+</section>
+
+<section data-seite="spielstand" hidden>
+<h2>Spielstand dieser Welt</h2>
+<p id="speicherStatus"><small>Ablage wird geöffnet …</small></p>
+<div class="reihe"><input id="platzName" type="text" maxlength="40" value="Platz 1" aria-label="Name des Speicherplatzes"><button id="speichern">Manuell speichern</button></div>
+<div id="plaetze" class="rollen"></div>
+<div class="reihe"><button id="exportieren">Aktuellen Stand als JSON exportieren</button><button id="neueWelt">Neue Welt beginnen</button></div>
+<label>JSON importieren <input id="importieren" type="file" accept=".json,application/json"></label>
+<details><summary>Regel195-Stand des Hauptspiels ausdrücklich übernehmen</summary>
+<label>Regel195-JSON wählen <input id="regel195" type="file" accept=".json,application/json"></label>
+<small>Die Datei wird vom unveränderten Regel195-Kern geprüft, als unveränderliche Sicherung abgelegt und als <strong>neue</strong> Welt angelegt. Geld, Waren, Schiffe und Verträge werden Feld für Feld verglichen. Der Stand im Hauptspiel bleibt unberührt.</small>
+</details>
+<h2>Unveränderliche Sicherungen</h2><div id="sicherungen" class="rollen"></div>
+<small class="warn">Spielstände liegen nur in diesem Browser und nur für diese Adresse. NAS und GitHub Pages teilen keine Stände – zum Umziehen die JSON-Datei exportieren und dort importieren.</small>
+</section>
+</div></main></body></html>

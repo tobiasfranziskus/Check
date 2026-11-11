@@ -1,0 +1,67 @@
+name: "Kanonische Welt K1 – Node22, Wirtschaftsszenarien und Browser (Forschung)"
+on:
+  pull_request:
+    paths:
+      - 'prototypes/welt/**'
+      - 'prototypes/flug2d/flug-kern.js'
+      - 'prototypes/flug2d/grafik.js'
+      - 'prototypes/w5ac/rule191-w5-ferry-core.js'
+      - 'tools/welt-szenarien.mjs'
+      - 'tools/referenzmodell-c.mjs'
+      - 'tests/welt-*'
+      - 'tests/referenzmodell-c.test.mjs'
+      - 'index.html'
+      - 'aphros-void.html'
+      - '.github/workflows/welt-k1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  kern-wirtschaft-speicher-node22:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "K1-Kern: Ortsbindung, Replay, Save/Load, Manipulationsabwehr"
+        run: node --test tests/welt-kern.test.mjs
+      - name: "K1-Spielstand: Umschlag, Plätze, Sicherungen, Import, Regel195-Übernahme"
+        run: node --test tests/welt-speicher.test.mjs
+      - name: "Referenzmodell C nachgerechnet und Abweichungen der ausgeführten Welt"
+        run: node --test tests/referenzmodell-c.test.mjs
+      - name: "K1-Wirtschaft: 15 Szenarien × 90 Tage, 365- und 730-Tage-Läufe"
+        run: node --test tests/welt-wirtschaft.test.mjs
+      - name: "Alle bestehenden Regel14-/Regel195-/Flug-Regressionen"
+        run: node --test tests/*.test.mjs
+      - name: "Einzeldatei-Build entspricht exakt der Kernquelle"
+        run: node scripts/build-w5-singlefile.mjs --check
+  browser-vier-groessen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Playwright nur als CI-Werkzeug, keine Laufzeitabhängigkeit des Spiels"
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/welt-playwright" playwright@1.62.0
+          node "$RUNNER_TEMP/welt-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
+      - name: "K1 im Browser: Touch, Kreislauf, IndexedDB-Autosave, Export/Import, Regel195-Übernahme"
+        run: node tests/welt-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "Bildschirmfotos der vier Größen archivieren"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: welt-k1-${{ matrix.browser }}
+          path: /tmp/welt-k1-*.png
+          if-no-files-found: warn

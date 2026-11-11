@@ -1,0 +1,890 @@
+/* Aphros Void · Kanonische Welt K1 [DRAFT / Forschungsregel 199, nicht im Produkt].
+ *
+ * EIN Zustand, EIN Tick, EIN Zufallszustand, EIN Speicherformat:
+ *   - Wirtschaft: der unveränderte gemeinsame Kern (prototypes/w5ac/rule191-w5-ferry-core.js),
+ *     als Profil 199 mit Ortsprüfung und benannter Netto-Korrektur seiner Stufen-Audits.
+ *   - Flug: prototypes/flug2d/flug-kern.js (m_data_flug/m_core_flug), 60 Teilschritte je Minute.
+ *   - K1-Zusatzbuchungen: ausschließlich gepaarte, belegte Transfers vorhandener ISK.
+ *
+ * Keine zweite Welt, kein zweiter Wirtschaftstakt, kein Math.random, keine Uhrzeit, kein DOM.
+ * Alle Zahlen unter m_data_kanon sind Forschungsparameter [OPTION], keine Balancingfreigabe.
+ */
+(function (scope) {
+'use strict';
+const NODE = typeof module === 'object' && module.exports;
+const FACTORY = NODE ? require('../w5ac/rule191-w5-ferry-core.js') : scope.W5acOriginal;
+const FLUG = NODE ? require('../flug2d/flug-kern.js') : scope.FlugKern;
+if (!FACTORY || typeof FACTORY.createKanonWelt !== 'function' || !FLUG || typeof FLUG.schritt !== 'function')
+  throw Error('K1 benötigt den gemeinsamen Wirtschaftskern (Profil 199) und den Flugkern');
+
+const m_data_kanon = (() => {
+  function tiefFrieren(obj) {
+    if (obj === null || typeof obj !== 'object' || Object.isFrozen(obj)) return obj;
+    Object.freeze(obj);
+    for (const k of Object.keys(obj)) tiefFrieren(obj[k]);
+    return obj;
+  }
+  const KANON = tiefFrieren({
+    profil: 'K1', regel: 199, schema: 8, modell: 1,
+    // Flugarbeit des Miners: jede Dienstminute außerhalb des Docks ohne Förderlohn kostet
+    // den Eigentümer 1 ISK an den eigenen Piloten. Reserve wird vor dem Abdocken gebunden.
+    flug: { lohnJeMinute: 1, reserveMinuten: 40, nachschussUnter: 5 },
+    // Wasser: Nadir verkauft zum bestehenden Regel195-Preis. Aldera erhält Wasser nur als
+    // bezahlte Rückfracht des Eisfrachters und verkauft mit Einzelhandelsaufschlag.
+    wasser: { preisAldera: 16, rueckfrachtJeEinheit: 1, lagerAldera: 100 },
+    // Nutzungsabhängiger Wertverzehr in Milli-ISK je aktiver Minute (Referenzmodell: D = 0,30).
+    verschleiss: { milliJeMinute: { miner: 300, frachter: 300 } },
+    // Haushalte kaufen nur am Wohnort. Lohnkonten des Kerns sind je ein Haushalt.
+    haushalte: {
+      fonds_aldera: 'st_aldera', pilot_erz: 'st_aldera', pilot_eis: 'st_aldera',
+      w5ac_transfer_pilot: 'st_aldera', pilot_house: 'st_aldera', pilot_npc3: 'st_aldera',
+      eigner_house: 'st_aldera', eigner_npc3: 'st_aldera', eigner_transport: 'st_aldera',
+      eigner_st_aldera: 'st_aldera',
+      w5n_arbeit: 'st_nadir', arbeitskraefte_nadir: 'st_nadir', arbeiter_werft_nadir: 'st_nadir',
+      eigner_st_nadir: 'st_nadir', eigner_werft: 'st_nadir',
+    },
+    // Je Firma genau ein eingetragener Eigentümerhaushalt (Forschungsannahme).
+    anteile: {
+      house: 'eigner_house', npc3: 'eigner_npc3', transport: 'eigner_transport',
+      st_aldera: 'eigner_st_aldera', st_nadir: 'eigner_st_nadir', werft_extern: 'eigner_werft',
+    },
+    piloten: { house: 'pilot_house', npc3: 'pilot_npc3' },
+    neueKonten: [
+      { id: 'pilot_house', kind: 'haushalt' }, { id: 'pilot_npc3', kind: 'haushalt' },
+      { id: 'eigner_house', kind: 'haushalt' }, { id: 'eigner_npc3', kind: 'haushalt' },
+      { id: 'eigner_transport', kind: 'haushalt' }, { id: 'eigner_st_aldera', kind: 'haushalt' },
+      { id: 'eigner_st_nadir', kind: 'haushalt' }, { id: 'eigner_werft', kind: 'haushalt' },
+      { id: 'k1_rueckfracht', kind: 'k1-reserve' },
+    ],
+    // Verhalten der NPC-Akteure. Wird im Zustand gespeichert; Szenarien ändern nur diese Werte.
+    politik: {
+      automatik: true,
+      // ‰ des Einkommens, das ein Haushalt nie ausgibt. Die Privatkonten des Spielers geben von
+      // sich aus nichts aus: über sein Geld entscheidet nur der Spieler (Sparfreiheit).
+      sparquote: { eigner_house: 1000, pilot_house: 1000 }, sparquoteStandard: 0,
+      bedarfJeTag: 0,                                // 0 = kein Sättigungsdeckel je Haushalt
+      ausschuettung: { house: 0, npc3: 1000, transport: 1000, st_aldera: 1000, st_nadir: 1000, werft_extern: 1000 },
+      betriebsreserve: { house: 250, npc3: 250, transport: 250, st_aldera: 1100, st_nadir: 700, werft_extern: 530 },
+      // Nachfragegeführt: Wasserwerk bis kurz unter die Lagergrenze, Aldera bis zum Lagerziel,
+      // Eis-Pendel startet nur, wenn in Aldera keine unverschiffte Charge mehr liegt.
+      wasserZielAldera: 100, wasserwerkBis: 115, eisPufferAldera: 50,
+      einkaufMinuten: 60, dividendeMinuten: 1440,
+      stilllegung: false, ersatzkauf: true, spielerErsatz: false, ersatzVorlaufProzent: 40, werftVorrat: 0,
+      eisfracht: true, wasserwerk: true, rueckfracht: true,
+      gruendung: true, // NPC-Spedition kauft ihre erste Hülle selbst aus eigenem Kapital
+    },
+  });
+  return { KANON, tiefFrieren };
+})();
+
+function erstellen(startkapital = {}) {
+  const { KANON } = m_data_kanon;
+  const ort = Object.freeze({
+    imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
+    angedocktAn: (sh, station) => FLUG.angedocktAn(sh, station),
+  });
+  const engine = FACTORY.createKanonWelt(startkapital, ort);
+  const kern = engine.core, rules = engine.rules;
+  if (rules.rulesVersion !== KANON.regel || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
+    throw Error('K1: unerwartetes Kernprofil');
+  const N = FLUG.DATEN.schritteJeMinute;
+  const W = rules.w5n;
+  const ids = (obj) => Object.keys(obj).sort();
+  const ganz = (n) => Number.isSafeInteger(n) && n >= 0;
+  const hat = (obj, k) => Object.hasOwn(obj, k);
+  const preisVon = (station) => (station === W.zielStation ? W.wasserPreis : KANON.wasser.preisAldera);
+  const kaufpreis = (klasse) => rules.economy.waren[klasse].basis;
+  const startCash = (id) => rules.owners.find((o) => o.id === id)?.cash ?? 0;
+  const ladungSumme = (sh) => Object.values(sh.ladung).reduce((n, x) => n + x, 0);
+
+  // ---------------------------------------------------------------- m_core_buch
+  // Einziger Weg für K1-Geld: gepaarter Transfer vorhandener ISK mit benannter Art.
+  const m_core_buch = (() => {
+    function transfer(state, von, an, betrag, art) {
+      const o = state.owners, k = state.kanon;
+      if (!ganz(betrag) || betrag === 0 || von === an || !o[von] || !o[an] || typeof art !== 'string' || art.includes('|'))
+        throw Error('K1-Buch: ungültige Buchung ' + art);
+      if (o[von].cash < betrag) throw Error('K1-Buch: ungedeckte Buchung ' + art + ' von ' + von);
+      o[von].cash -= betrag; o[an].cash += betrag;
+      k.netto[von] = (k.netto[von] || 0) + betrag;
+      k.netto[an] = (k.netto[an] || 0) - betrag;
+      const key = art + '|' + von + '|' + an;
+      k.buch.summen[key] = (k.buch.summen[key] || 0) + betrag;
+      k.buch.belege += 1;
+    }
+    const summe = (state, art, filter = null) => {
+      let n = 0;
+      for (const key of Object.keys(state.kanon.buch.summen)) {
+        const [a, von, an] = key.split('|');
+        if (a === art && (!filter || filter(von, an))) n += state.kanon.buch.summen[key];
+      }
+      return n;
+    };
+    function audit(state) {
+      const k = state.kanon, soll = {};
+      let ok = ganz(k.buch.belege);
+      for (const key of Object.keys(k.buch.summen)) {
+        const teile = key.split('|'), betrag = k.buch.summen[key];
+        if (teile.length !== 3 || !ganz(betrag) || betrag === 0 || !state.owners[teile[1]] || !state.owners[teile[2]]) ok = false;
+        soll[teile[1]] = (soll[teile[1]] || 0) + betrag;
+        soll[teile[2]] = (soll[teile[2]] || 0) - betrag;
+      }
+      let saldo = 0;
+      for (const id of new Set([...Object.keys(soll), ...Object.keys(k.netto)])) {
+        if ((soll[id] || 0) !== (k.netto[id] || 0) || !Number.isSafeInteger(k.netto[id] ?? 0)) ok = false;
+        saldo += k.netto[id] || 0;
+      }
+      return ok && saldo === 0;
+    }
+    return { transfer, summe, audit };
+  })();
+
+  // -------------------------------------------------------------- m_core_anlage
+  // Nutzungsabhängiger Wertverzehr. Rücklage ist gebundenes Eigengeld, kein Transfer.
+  const m_core_anlage = (() => {
+    const aktiv = (state, id) => state.kanon.verschleiss[id] || 0;
+    const abschreibung = (state, sh) => Math.min(kaufpreis(sh.klasse),
+      Math.floor(aktiv(state, sh.id) * KANON.verschleiss.milliJeMinute[sh.klasse] / 1000));
+    const buchwert = (state, sh) => kaufpreis(sh.klasse) - abschreibung(state, sh);
+    const verbraucht = (state, sh) => buchwert(state, sh) === 0;
+    const stillgelegt = (state, sh) => state.kanon.politik.stilllegung === true && verbraucht(state, sh);
+    const huellen = (state, owner) => ids(state.ships).map((id) => state.ships[id])
+      .filter((sh) => sh.owner === owner && hat(KANON.verschleiss.milliJeMinute, sh.klasse));
+    const anlagewert = (state, owner) => huellen(state, owner).reduce((n, sh) => n + buchwert(state, sh), 0);
+    const ruecklage = (state, owner) => huellen(state, owner).reduce((n, sh) => n + abschreibung(state, sh), 0);
+    return { aktiv, abschreibung, buchwert, verbraucht, stillgelegt, huellen, anlagewert, ruecklage };
+  })();
+
+  // ---------------------------------------------------------------- m_core_flugplan
+  // Flugdienst (Reserve, Lohn) und Brücke Auftrag -> Sollort. Kein eigener Integrator.
+  const m_core_flugplan = (() => {
+    const station = (sh) => FLUG.DATEN.systeme[sh.system].station.id;
+    const dienstKonto = (id) => 'k1_flug_' + id;
+    function koerperSync(state) {
+      for (const id of ids(state.ships)) {
+        const sh = state.ships[id];
+        if (!hat(FLUG.DATEN.klassen, sh.klasse) || !hat(FLUG.DATEN.systeme, sh.system)) continue;
+        if (sh.flug === undefined) {
+          if (sh.phase !== 'dock') throw Error('K1: neues Schiff ohne Dockzustand ' + id);
+          sh.flug = FLUG.koerperAngedockt(sh.system);
+        }
+        const b = sh.flug;
+        if (sh.phase === 'reise' && b.lage !== 'transit') {
+          if (b.lage !== 'angedockt') throw Error('K1: Transit nur aus dem Dock ' + id);
+          sh.flug = { ...FLUG.koerperAngedockt(sh.system), lage: 'transit', anker: null };
+        } else if (sh.phase !== 'reise' && b.lage === 'transit') {
+          sh.flug = FLUG.koerperAngedockt(sh.system);
+        }
+      }
+    }
+    // Ruhender Körper: 60 Teilschritte verändern ihn nachweislich nicht (siehe Test).
+    function ruht(sh) {
+      const b = sh.flug;
+      if (!b || b.lage === 'angedockt' || b.lage === 'transit') return true;
+      if (b.lage !== 'frei' || b.vx !== 0 || b.vy !== 0 || b.sollFahrt !== 0 || b.kurs !== b.sollKurs || b.andocken) return false;
+      if (b.modus !== 'anflug' || !b.ziel) return true;
+      if (b.ziel.art !== 'feld') return false;
+      const f = FLUG.DATEN.systeme[sh.system].felder.find((x) => x.id === b.ziel.id);
+      const dx = f.x - b.x, dy = f.y - b.y, halt = f.radius >> 1;
+      return dx * dx + dy * dy <= halt * halt;
+    }
+    const alleRuhend = (state) => ids(state.ships).every((id) => ruht(state.ships[id]));
+
+    function abdockenPruefen(state, sh) {
+      if (sh.klasse !== 'miner') return 'K1: nur Miner fliegen im System frei; Frachter reisen im bezahlten Transit';
+      if (m_core_anlage.stillgelegt(state, sh)) return 'K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen';
+      const pilot = KANON.piloten[sh.owner];
+      if (!pilot || !state.owners[pilot]) return 'K1: kein Pilotenkonto für diesen Eigentümer';
+      const reserve = KANON.flug.reserveMinuten * KANON.flug.lohnJeMinute;
+      const laufend = state.kanon.flugdienst[sh.id] ? state.owners[dienstKonto(sh.id)].cash : 0;
+      if (state.owners[sh.owner].cash + laufend < reserve) return 'K1: Flugarbeit nicht vorfinanziert (' + reserve + ' ISK Reserve)';
+      return null;
+    }
+    function befehl(state, cmd, intern) {
+      const sh = state.ships[cmd && cmd.schiff];
+      if (!sh || !sh.flug) return { ok: false, type: cmd && cmd.type, reason: 'unbekanntes Schiff' };
+      if (!intern && hat(state.kanon.pendel, sh.id))
+        return { ok: false, type: cmd.type, reason: 'K1: laufender Pendelauftrag steuert Flug und Andocken' };
+      if (sh.klasse !== 'miner') return { ok: false, type: cmd.type, reason: 'K1: nur Miner fliegen im System frei' };
+      const vor = FLUG.pruefen(state, cmd);
+      if (vor) return { ok: false, type: cmd.type, reason: vor };
+      if (cmd.type === 'shipUndock') {
+        const grund = abdockenPruefen(state, sh);
+        if (grund) return { ok: false, type: cmd.type, reason: grund };
+        // Ein in derselben Minute beendeter Dienst läuft weiter; sonst neue Reserve binden.
+        if (!state.kanon.flugdienst[sh.id]) {
+          const konto = dienstKonto(sh.id);
+          if (!state.owners[konto]) state.owners[konto] = { id: konto, kind: 'k1-reserve', cash: 0 };
+          if (state.owners[konto].cash !== 0) throw Error('K1: doppelte Flugreserve ' + sh.id);
+          m_core_buch.transfer(state, sh.owner, konto, KANON.flug.reserveMinuten * KANON.flug.lohnJeMinute, 'flugreserve');
+          state.kanon.flugdienst[sh.id] = { konto, minuten: 0 };
+        }
+      } else if (state.kanon.flugdienst[sh.id]?.gestrandet) {
+        return { ok: false, type: cmd.type, reason: 'K1: Flugarbeit nicht finanziert; Schiff wartet auf Kapital' };
+      }
+      return FLUG.ausfuehren(state, cmd);
+    }
+    // Abrechnung einer Wirtschaftsminute: Lohn, Nachschuss, Stranden, Rückgabe am Dock.
+    function minutenAbrechnung(state, gefoerdert) {
+      const k = state.kanon, lohn = KANON.flug.lohnJeMinute;
+      for (const id of ids(k.flugdienst)) {
+        const d = k.flugdienst[id], sh = state.ships[id], konto = state.owners[d.konto];
+        if (!sh) throw Error('K1: Flugdienst ohne Schiff ' + id);
+        const nachschuss = () => {
+          if (konto.cash >= lohn + KANON.flug.nachschussUnter * lohn) return;
+          const nach = Math.min(state.owners[sh.owner].cash, KANON.flug.reserveMinuten * lohn - konto.cash);
+          if (nach > 0) m_core_buch.transfer(state, sh.owner, d.konto, nach, 'flugreserve');
+        };
+        if (d.gestrandet) {
+          // Stillstand ohne Lohnanspruch; Weiterflug erst, wenn wieder eine Minute gedeckt ist.
+          nachschuss();
+          if (konto.cash >= lohn) delete d.gestrandet;
+        } else {
+          k.verschleiss[id] = (k.verschleiss[id] || 0) + 1;
+          // Förderminute: Arbeit ist bereits über den Bergbaulohn des Kerns bezahlt.
+          if (!gefoerdert[id]) {
+            if (konto.cash < lohn) throw Error('K1: unbezahlte Flugminute ' + id);
+            m_core_buch.transfer(state, d.konto, KANON.piloten[sh.owner], lohn, 'fluglohn');
+            d.minuten += 1; k.fluglohnMinuten += 1;
+          }
+        }
+        if (sh.flug.lage === 'angedockt') {
+          if (konto.cash > 0) m_core_buch.transfer(state, d.konto, sh.owner, konto.cash, 'flugreserve-rueck');
+          delete k.flugdienst[id];
+          continue;
+        }
+        if (d.gestrandet) continue;
+        nachschuss();
+        if (konto.cash < lohn) {
+          // Keine unbezahlte Arbeit: Antrieb aus, bevor eine ungedeckte Minute beginnt.
+          const b = sh.flug;
+          b.modus = 'halt'; b.sollFahrt = 0; b.sollKurs = b.kurs; b.ziel = null; b.andocken = false;
+          d.gestrandet = true;
+          k.engpass = merke(k.engpass, state.tick, 'Flugarbeit nicht finanziert: ' + sh.owner);
+        }
+      }
+    }
+    // Sollort aus dem bestehenden Auftrag; nur für Schiffe mit Pendelauftrag (Automatik).
+    // dock: Handlungen am Dock (Verkauf, neuer Auftrag, Abdocken) nur an Minutengrenzen.
+    // zaehlen: Engpässe genau einmal je Wirtschaftsminute festhalten.
+    function plan(state, dock, zaehlen) {
+      const k = state.kanon;
+      const merken = (grund) => { if (zaehlen) k.engpass = merke(k.engpass, state.tick, grund); };
+      for (const id of ids(k.pendel)) {
+        const sh = state.ships[id], b = sh.flug, p = k.pendel[id];
+        if (b.lage === 'andocken' || b.lage === 'abdocken' || b.lage === 'transit') continue;
+        if (b.lage === 'angedockt' && !dock) continue;
+        if (k.flugdienst[id]?.gestrandet) continue;
+        const voll = () => {
+          const vertrag = state.erzpilotVertraege?.[id];
+          return ladungSumme(sh) >= rules.economy.cargo
+            || (p.ware === 'eis' && (sh.ladung.eis || 0) >= W.charge)
+            || (p.ware === 'erz' && !!vertrag && (sh.ladung.erz || 0) >= vertrag.menge);
+        };
+        if (p.beenden && sh.auftrag === 'foerdern')
+          kern.execute(state, { type: 'shipWait', owner: sh.owner, schiff: id }, rules);
+        if (b.lage === 'angedockt') {
+          if (p.beenden && (p.ware !== 'eis' || !(sh.ladung.eis > 0))) { delete k.pendel[id]; continue; }
+          if (p.ware === 'eis' && (sh.ladung.eis || 0) > 0) {
+            // Verkauf ausschließlich am Dock über den Originalbefehl; scheitert er, bleibt die Ware an Bord.
+            const r = kern.execute(state, { type: 'shipSellIce', owner: sh.owner, schiff: id, menge: sh.ladung.eis }, rules);
+            if (!r.ok) { merken('Eisabnahme Aldera: ' + r.reason); continue; }
+          }
+          if (ladungSumme(sh) > 0 && p.ware === 'eis') continue;
+          if (p.beenden) { delete k.pendel[id]; continue; }
+          if (p.ware === 'eis' && sh.auftrag !== 'foerdern') {
+            if (state.owners[sh.owner].cash < W.charge * W.mineLohn + KANON.flug.reserveMinuten) {
+              merken('Bergbau nicht vorfinanziert: ' + sh.owner); continue;
+            }
+            if ((state.stations[W.quellStation].lager.eis || 0) >= k.politik.eisPufferAldera) continue; // Absatz abwarten, kostenfrei im Dock
+            if (state.owners[W.quellStation].cash < W.charge * W.eisPreis) {
+              merken('Aldera kann nächste Eischarge nicht bezahlen'); continue;
+            }
+            const r = kern.execute(state, { type: 'shipMine', owner: sh.owner, schiff: id, ware: 'eis' }, rules);
+            if (!r.ok) continue;
+          }
+          if (sh.auftrag === 'foerdern' && !voll()) {
+            const r = befehl(state, { type: 'shipUndock', owner: sh.owner, schiff: id }, true);
+            if (!r.ok) merken(r.reason);
+          }
+          continue;
+        }
+        // im freien Flug
+        if (p.ware === 'eis' && voll() && sh.auftrag === 'foerdern')
+          kern.execute(state, { type: 'shipWait', owner: sh.owner, schiff: id }, rules);
+        const zumDock = voll() || sh.auftrag !== 'foerdern';
+        const r = FLUG.fuehreZu(state, sh, zumDock
+          ? { art: 'station', id: station(sh) } : { art: 'feld', id: sh.system + ':' + p.ware });
+        if (r && !r.ok) throw Error('K1-Flugplan: ' + r.reason);
+      }
+    }
+    return { koerperSync, ruht, alleRuhend, befehl, minutenAbrechnung, plan, dienstKonto, station };
+  })();
+
+  function merke(engpass, tick, grund) {
+    const e = engpass || { erster: null, zaehler: {} };
+    if (!e.erster) e.erster = { tick, grund };
+    e.zaehler[grund] = (e.zaehler[grund] || 0) + 1;
+    return e;
+  }
+
+  // -------------------------------------------------------------- m_core_kreislauf
+  // K1-Befehle: Haushaltskauf am Wohnort, Wasser-Rückfracht, Ausschüttung, Pendelauftrag.
+  const m_core_kreislauf = (() => {
+    const BEFEHLE = Object.freeze({
+      householdBuy: ['menge'], dividendPay: ['betrag'],
+      shipShuttle: ['schiff', 'ware'], shipShuttleStop: ['schiff'],
+    });
+    const einkommen = (state, id) => state.owners[id].cash + (state.kanon.haushalte[id]?.ausgegeben || 0);
+    function verfuegbar(state, id) {
+      const p = state.kanon.politik;
+      const quote = hat(p.sparquote, id) ? p.sparquote[id] : p.sparquoteStandard;
+      const gebunden = Math.floor(einkommen(state, id) * quote / 1000);
+      return Math.max(0, state.owners[id].cash - gebunden);
+    }
+    function ausschuettbar(state, firma) {
+      const o = state.owners[firma];
+      if (!o || !hat(KANON.anteile, firma)) return 0;
+      const reserve = state.kanon.politik.betriebsreserve[firma] || 0;
+      const eigenkapital = o.cash + m_core_anlage.anlagewert(state, firma);
+      // Nur realisierter Überschuss über dem eingebrachten Kapital und nie die Ersatzrücklage.
+      return Math.max(0, Math.min(o.cash - reserve - m_core_anlage.ruecklage(state, firma),
+        eigenkapital - startCash(firma)));
+    }
+    function pruefen(state, cmd) {
+      if (cmd === null || typeof cmd !== 'object' || Array.isArray(cmd)) return 'Befehl ist kein Objekt';
+      if (!hat(BEFEHLE, cmd.type)) return 'unbekannter K1-Befehl';
+      const erlaubt = new Set(['type', 'owner', ...BEFEHLE[cmd.type]]);
+      for (const key of Object.keys(cmd)) if (!erlaubt.has(key)) return 'unerlaubtes Feld: ' + key;
+      if (typeof cmd.owner !== 'string' || !state.owners[cmd.owner]) return 'unbekannter Besitzer';
+      if (cmd.type === 'householdBuy') {
+        const wohnort = KANON.haushalte[cmd.owner];
+        if (!wohnort) return 'K1: kein eingetragener Haushalt';
+        if (!ganz(cmd.menge) || cmd.menge === 0) return 'Nur positive ganze Wassermenge';
+        if ((state.stations[wohnort].lager.wasser || 0) < cmd.menge) return 'Am Wohnort ist nicht genug Wasser tatsächlich vorhanden';
+        if (state.owners[cmd.owner].cash < cmd.menge * preisVon(wohnort)) return 'Nicht genug eigenes Geld';
+        return null;
+      }
+      if (cmd.type === 'dividendPay') {
+        if (!hat(KANON.anteile, cmd.owner)) return 'K1: keine Firma mit eingetragenem Eigentümer';
+        if (!ganz(cmd.betrag) || cmd.betrag === 0) return 'Nur positiver ganzer Betrag';
+        if (cmd.betrag > ausschuettbar(state, cmd.owner)) return 'K1: übersteigt realisierten, freien Überschuss';
+        return null;
+      }
+      const sh = state.ships[cmd.schiff];
+      if (!sh || sh.owner !== cmd.owner || sh.klasse !== 'miner' || !sh.flug) return 'Nur eigener Miner mit Flugkörper';
+      if (cmd.type === 'shipShuttle') {
+        if (!rules.world.fields.some((f) => f.system === sh.system && f.ware === cmd.ware)) return 'kein solches Vorkommen im System';
+        if (hat(state.kanon.pendel, sh.id)) return 'K1: Pendelauftrag läuft bereits';
+        if (sh.flug.lage !== 'angedockt') return 'K1: Pendelauftrag nur aus dem Dock';
+        if (cmd.ware === 'eis' && ((sh.ladung.erz || 0) > 0 || state.erzpilotVertraege?.[sh.id])) return 'Erz- und Eisfracht nicht mischen';
+        return null;
+      }
+      return hat(state.kanon.pendel, sh.id) ? null : 'K1: kein laufender Pendelauftrag';
+    }
+    function ausfuehren(state, cmd) {
+      const fehler = pruefen(state, cmd);
+      if (fehler) return { ok: false, type: cmd && cmd.type, reason: fehler };
+      const k = state.kanon;
+      switch (cmd.type) {
+        case 'householdBuy': {
+          const wohnort = KANON.haushalte[cmd.owner], kosten = cmd.menge * preisVon(wohnort);
+          m_core_buch.transfer(state, cmd.owner, wohnort, kosten, 'wasser-einzelhandel');
+          state.stations[wohnort].lager.wasser -= cmd.menge;
+          state.ledger.wasser.consumed += cmd.menge;
+          k.wasser.konsum += cmd.menge;
+          if (wohnort === W.zielStation) { k.wasser.abNadir += cmd.menge; k.wasser.verkauftNadir += cmd.menge; }
+          else k.wasser.verkauftAldera += cmd.menge;
+          const h = (k.haushalte[cmd.owner] ||= { ausgegeben: 0, gekauft: 0, heute: 0, tag: 0 });
+          h.ausgegeben += kosten; h.gekauft += cmd.menge;
+          break;
+        }
+        case 'dividendPay':
+          m_core_buch.transfer(state, cmd.owner, KANON.anteile[cmd.owner], cmd.betrag, 'dividende');
+          break;
+        case 'shipShuttle': k.pendel[cmd.schiff] = { ware: cmd.ware }; break;
+        case 'shipShuttleStop': {
+          const sh = state.ships[cmd.schiff];
+          if (sh.flug.lage === 'angedockt' && ladungSumme(sh) === 0) {
+            if (sh.auftrag === 'foerdern') kern.execute(state, { type: 'shipWait', owner: sh.owner, schiff: sh.id }, rules);
+            delete k.pendel[cmd.schiff];
+          } else k.pendel[cmd.schiff].beenden = true; // kein herrenloses Schiff im Raum
+          break;
+        }
+      }
+      return { ok: true, type: cmd.type };
+    }
+    // Wasser-Rückfracht: Aldera kauft bei Ankunft des Eisfrachters in Nadir reales Wasser,
+    // zahlt Ware und Rückfracht aus eigener Kasse; entladen wird erst am Dock in Aldera.
+    function rueckfracht(state) {
+      const k = state.kanon, a = state.w5n.frachtauftrag, p = k.politik;
+      if (a && a.phase === 'rueck' && !k.rueckfracht && p.rueckfracht) {
+        const sh = state.ships[a.schiff];
+        if (sh.ankunft - a.zeit === state.tick) {
+          const nadir = state.stations[W.zielStation].lager, aldera = state.stations[W.quellStation].lager;
+          const stueck = W.wasserPreis + KANON.wasser.rueckfrachtJeEinheit;
+          const menge = Math.max(0, Math.min(p.wasserZielAldera - aldera.wasser, nadir.wasser,
+            KANON.wasser.lagerAldera - aldera.wasser, rules.economy.cargo - ladungSumme(sh),
+            Math.floor(state.owners[W.quellStation].cash / stueck)));
+          if (menge > 0) {
+            m_core_buch.transfer(state, W.quellStation, W.zielStation, menge * W.wasserPreis, 'wasser-grosshandel');
+            m_core_buch.transfer(state, W.quellStation, 'k1_rueckfracht', menge * KANON.wasser.rueckfrachtJeEinheit, 'rueckfracht-reserve');
+            nadir.wasser -= menge; sh.ladung.wasser = (sh.ladung.wasser || 0) + menge;
+            k.wasser.abNadir += menge; k.wasser.rueckGeladen += menge;
+            k.rueckfracht = { schiff: sh.id, menge, gebuehr: menge * KANON.wasser.rueckfrachtJeEinheit };
+          } else if (p.wasserZielAldera > aldera.wasser && nadir.wasser > 0) {
+            k.engpass = merke(k.engpass, state.tick, 'Aldera kann Wasser-Rückfracht nicht bezahlen');
+          }
+        }
+      }
+      const r = k.rueckfracht;
+      if (r) {
+        const sh = state.ships[r.schiff];
+        if (sh && sh.phase === 'dock' && sh.system === 'aldera' && FLUG.angedocktAn(sh, W.quellStation)) {
+          if ((sh.ladung.wasser || 0) !== r.menge) throw Error('K1: Rückfracht ohne Ware');
+          delete sh.ladung.wasser;
+          state.stations[W.quellStation].lager.wasser += r.menge;
+          k.wasser.rueckGeliefert += r.menge;
+          m_core_buch.transfer(state, 'k1_rueckfracht', sh.owner, r.gebuehr, 'rueckfracht');
+          k.rueckfracht = null;
+        }
+      }
+    }
+    return { BEFEHLE, pruefen, ausfuehren, rueckfracht, ausschuettbar, verfuegbar, einkommen };
+  })();
+
+  // -------------------------------------------------------------- m_core_disponent
+  // NPC-Automatik: wählt nur finanzierte Aufträge und nutzt dieselben validierten Befehle.
+  const m_core_disponent = (() => {
+    const versuch = (state, cmd, k1) => (k1 ? m_core_kreislauf.ausfuehren(state, cmd) : kern.execute(state, cmd, rules));
+    function schritt(state) {
+      const k = state.kanon, p = k.politik;
+      if (!p.automatik) return;
+      // 1. Ersatz: nur als echter Kauf einer real vorhandenen Hülle aus eigener Kasse.
+      //    Frachter stammen aus der Nadir-Werft (Erz -> Material -> Hülle) oder dem Gründungslager,
+      //    Miner ausschließlich aus dem endlichen Gründungslager (Regel195 kennt kein Miner-Rezept).
+      const flotte = (owner, klasse) => ids(state.ships).map((id) => state.ships[id])
+        .filter((sh) => sh.owner === owner && sh.klasse === klasse);
+      const tauglich = (sh) => !m_core_anlage.stillgelegt(state, sh);
+      const frachter = flotte(W.frachterOwner, 'frachter');
+      const hatte = frachter.length > 0 || state.ledger.frachter.consumed > 0;
+      const werftlager = state.stations[rules.w5.station].lager.frachter || 0;
+      if (p.gruendung && !hatte && werftlager + (state.stations[rules.erzpilot.station].lager.frachter || 0) > 0
+        && state.owners[W.frachterOwner].cash >= kaufpreis('frachter')) {
+        const quelle = werftlager > 0 ? rules.w5.station : rules.erzpilot.station;
+        if (versuch(state, { type: 'shipBuy', owner: W.frachterOwner, klasse: 'frachter', station: quelle }).ok) m_core_flugplan.koerperSync(state);
+      }
+      if (p.ersatzkauf && hatte && !frachter.some(tauglich)) {
+        const quelle = werftlager > 0 ? rules.w5.station : rules.erzpilot.station;
+        const r = versuch(state, { type: 'shipBuy', owner: W.frachterOwner, klasse: 'frachter', station: quelle });
+        if (r.ok) { k.ersatzkaeufe += 1; m_core_flugplan.koerperSync(state); }
+        else k.engpass = merke(k.engpass, state.tick, 'Ersatzfrachter: ' + r.reason);
+      }
+      // Überführung einer gekauften Werfthülle nach Aldera: 60 bezahlte Flugminuten des Kerns.
+      for (const sh of flotte(W.frachterOwner, 'frachter')) {
+        if (sh.system !== 'nadir' || sh.phase !== 'dock' || !tauglich(sh)) continue;
+        const q = kern.pilotW5TransferKalkulation(state, sh.id);
+        if (q.ok) versuch(state, { type: 'shipReposition', owner: sh.owner, schiff: sh.id });
+      }
+      if (p.ersatzkauf) for (const id of ids(k.pendel)) {
+        const sh = state.ships[id];
+        if (tauglich(sh) || sh.flug.lage !== 'angedockt') continue;
+        if (sh.owner === rules.economy.start.owner && !p.spielerErsatz) continue; // der Spieler kauft selbst
+        const r = versuch(state, { type: 'shipBuy', owner: sh.owner, klasse: 'miner', station: rules.erzpilot.station });
+        if (r.ok) {
+          k.ersatzkaeufe += 1; m_core_flugplan.koerperSync(state);
+          const neu = flotte(sh.owner, 'miner').at(-1);
+          if (sh.auftrag === 'foerdern') kern.execute(state, { type: 'shipWait', owner: sh.owner, schiff: id }, rules);
+          k.pendel[neu.id] = k.pendel[id]; delete k.pendel[id];
+        } else k.engpass = merke(k.engpass, state.tick, 'Ersatzminer ' + sh.owner + ': ' + r.reason);
+      }
+      // Vorproduktion einer Ersatzhülle, sobald der Buchwert des letzten Frachters zur Neige geht.
+      const rest = frachter.filter(tauglich).reduce((n, sh) => Math.max(n, m_core_anlage.buchwert(state, sh)), 0);
+      const bedarf = hatte && werftlager === 0 && !state.w5.auftrag
+        && (frachter.every((sh) => !tauglich(sh)) || p.werftVorrat > 0
+          || (p.stilllegung && rest * 100 <= kaufpreis('frachter') * p.ersatzVorlaufProzent));
+      if (bedarf) {
+        const nadir = state.stations[rules.w5.station].lager;
+        if ((nadir.material || 0) >= rules.w5.material) {
+          const q = kern.pilotW5Kalkulation(state);
+          if (q.ok) versuch(state, { type: 'stationBuildShip', owner: rules.w5.werft, station: rules.w5.station });
+          else k.engpass = merke(k.engpass, state.tick, 'Werft: ' + q.grund);
+        } else if ((nadir.erz || 0) >= rules.w4.erzJeCharge) {
+          if (!state.w4.auftrag) {
+            const q = kern.pilotW4Kalkulation(state);
+            if (q.ok) versuch(state, { type: 'stationRefine', owner: rules.w4.station, station: rules.w4.station });
+            else k.engpass = merke(k.engpass, state.tick, 'Raffinerie: ' + q.grund);
+          }
+        } else if (!state.w3.auftrag && !state.w5n.frachtauftrag) {
+          const frei = frachter.find((sh) => tauglich(sh) && sh.phase === 'dock' && sh.system === 'aldera' && sh.auftrag === 'halten' && ladungSumme(sh) === 0);
+          if (frei) {
+            const q = kern.pilotW3Kalkulation(state, frei.id);
+            if (q.ok) { versuch(state, { type: 'shipFreight', owner: frei.owner, schiff: frei.id }); }
+            else k.engpass = merke(k.engpass, state.tick, 'Erzfracht für Ersatzbau: ' + q.grund);
+          }
+        }
+      }
+      // 2. Eisfracht Aldera -> Nadir, sobald Charge, Käuferetat und Arbeitsreserve vorhanden sind.
+      if (p.eisfracht && !state.w5n.frachtauftrag && !state.w3.auftrag
+        && (state.stations[W.quellStation].lager.eis || 0) >= W.charge) {
+        const frei = ids(state.ships).map((id) => state.ships[id]).find((sh) => sh.owner === W.frachterOwner
+          && sh.klasse === 'frachter' && sh.phase === 'dock' && sh.system === 'aldera' && sh.auftrag === 'halten'
+          && ladungSumme(sh) === 0 && !m_core_anlage.stillgelegt(state, sh));
+        if (frei) {
+          const q = kern.pilotIceFreightQuote(state, frei.id);
+          if (q.ok) versuch(state, { type: 'shipFreightIce', owner: W.frachterOwner, schiff: frei.id });
+          else k.engpass = merke(k.engpass, state.tick, q.grund);
+        } else k.engpass = merke(k.engpass, state.tick, 'Kein einsatzfähiger Frachter der Spedition in Aldera');
+      }
+      // 3. Wasserwerk: nur bei real geliefertem Eis und nur bis zum Lagerziel.
+      if (p.wasserwerk && !state.w5n.fabrikauftrag
+        && state.stations[W.zielStation].lager.wasser < p.wasserwerkBis
+        && state.stations[W.zielStation].lager.eis >= W.rezeptEis) {
+        const q = kern.pilotWaterFactoryQuote(state);
+        if (q.ok) versuch(state, { type: 'stationWater', owner: W.zielStation, station: W.zielStation });
+        else k.engpass = merke(k.engpass, state.tick, q.grund);
+      }
+      // 4. Freiwillige Haushaltskäufe am Wohnort, versetzt nach Kontonummer.
+      const tag = Math.floor(state.tick / 1440);
+      const haushalte = ids(KANON.haushalte);
+      for (let i = 0; i < haushalte.length; i++) {
+        const id = haushalte[i];
+        if ((state.tick + i * 7) % p.einkaufMinuten !== 0 || !state.owners[id]) continue;
+        const wohnort = KANON.haushalte[id], preis = preisVon(wohnort);
+        const h = (k.haushalte[id] ||= { ausgegeben: 0, gekauft: 0, heute: 0, tag: 0 });
+        if (h.tag !== tag) { h.tag = tag; h.heute = 0; }
+        let menge = Math.min(Math.floor(m_core_kreislauf.verfuegbar(state, id) / preis),
+          state.stations[wohnort].lager.wasser || 0);
+        if (p.bedarfJeTag > 0) menge = Math.min(menge, p.bedarfJeTag - h.heute);
+        if (menge > 0) {
+          const r = versuch(state, { type: 'householdBuy', owner: id, menge }, true);
+          if (r.ok) h.heute += menge;
+        } else if (state.owners[id].cash >= preis && (state.stations[wohnort].lager.wasser || 0) === 0
+          && m_core_kreislauf.verfuegbar(state, id) >= preis) {
+          k.engpass = merke(k.engpass, state.tick, 'Kein Wasser am Wohnort ' + wohnort);
+        }
+      }
+      // 5. Ausschüttung an eingetragene Eigentümer (täglich, nur freier realisierter Überschuss).
+      if (state.tick % p.dividendeMinuten === 0) for (const firma of ids(KANON.anteile)) {
+        const quote = p.ausschuettung[firma] || 0;
+        const betrag = Math.floor(m_core_kreislauf.ausschuettbar(state, firma) * quote / 1000);
+        if (betrag > 0) versuch(state, { type: 'dividendPay', owner: firma, betrag }, true);
+      }
+    }
+    return { schritt };
+  })();
+
+  // ------------------------------------------------------------------ m_core_welt
+  function pruefeForm(state) {
+    if (state === null || typeof state !== 'object' || state.rulesVersion !== KANON.regel || state.schema !== KANON.schema)
+      throw Error('K1: fremde Regelversion oder Schema; keine automatische Migration');
+    const k = state.kanon;
+    if (!k || k.modell !== KANON.modell || !k.netto || !k.buch || !k.wasser || !k.pendel || !k.flugdienst
+      || !k.verschleiss || !k.haushalte || !k.politik || !state.flug)
+      throw Error('K1: Weltbuch unvollständig');
+  }
+  function audit(state) {
+    try {
+      pruefeForm(state);
+      const k = state.kanon, fehler = [];
+      const flug = FLUG.audit(state);
+      if (!flug.ok) fehler.push('Flug: ' + flug.grund);
+      const wirtschaft = kern.audit(state);
+      if (!wirtschaft.ok) fehler.push('Wirtschaft: ' + Object.keys(wirtschaft).filter((x) => wirtschaft[x] && wirtschaft[x].ok === false).join(','));
+      if (!m_core_buch.audit(state)) fehler.push('K1-Buch');
+      if (state.minted !== 0 || state.burned !== 0) fehler.push('Emission/Senke in K1 nicht freigegeben');
+      for (const id of ids(state.owners)) if (!ganz(state.owners[id].cash)) fehler.push('Kasse ' + id);
+      // Wasserbuch: jede Einheit hat Herkunft (Wasserwerk) und Verbleib.
+      const w = k.wasser, an = state.stations[W.quellStation].lager.wasser;
+      const unterwegs = ids(state.ships).reduce((n, id) => n + (state.ships[id].ladung.wasser || 0), 0);
+      if (![w.abNadir, w.konsum, w.rueckGeladen, w.rueckGeliefert, w.verkauftAldera, w.verkauftNadir, an].every(ganz)
+        || w.abNadir !== w.verkauftNadir + w.rueckGeladen || w.rueckGeladen !== w.rueckGeliefert + unterwegs
+        || an !== w.rueckGeliefert - w.verkauftAldera || w.konsum !== w.verkauftNadir + w.verkauftAldera
+        || unterwegs !== (k.rueckfracht ? k.rueckfracht.menge : 0)
+        || state.owners.k1_rueckfracht.cash !== (k.rueckfracht ? k.rueckfracht.gebuehr : 0))
+        fehler.push('Wasserbuch');
+      const einzel = m_core_buch.summe(state, 'wasser-einzelhandel');
+      if (einzel !== w.verkauftNadir * W.wasserPreis + w.verkauftAldera * KANON.wasser.preisAldera
+        || m_core_buch.summe(state, 'wasser-grosshandel') !== w.rueckGeladen * W.wasserPreis
+        || ids(k.haushalte).reduce((n, id) => n + k.haushalte[id].ausgegeben, 0) !== einzel)
+        fehler.push('Wasserzahlungen');
+      // Jede Hülle hat genau einen Körper; Transit folgt der Kernphase; Pendel nur für Miner.
+      for (const id of ids(state.ships)) {
+        const sh = state.ships[id];
+        if (hat(FLUG.DATEN.klassen, sh.klasse) && !sh.flug) fehler.push('Körper fehlt ' + id);
+        if (sh.klasse === 'frachter' && sh.flug && !['angedockt', 'transit'].includes(sh.flug.lage)) fehler.push('Frachter im Freiflug ' + id);
+        if (!ganz(k.verschleiss[id] ?? 0)) fehler.push('Verschleiß ' + id);
+        // Ware an Bord eines Miners setzt echte Förderung voraus (Kernbuch prüft Mengen).
+        if (sh.klasse === 'miner' && sh.phase !== 'dock') fehler.push('Miner in Kernreise ' + id);
+      }
+      for (const id of ids(k.pendel)) if (state.ships[id]?.klasse !== 'miner') fehler.push('Pendel ohne Miner ' + id);
+      // Flugdienst: Reservekonto existiert genau für Schiffe außerhalb des Docks.
+      for (const id of ids(state.ships)) {
+        const sh = state.ships[id], d = k.flugdienst[id];
+        if (sh.klasse !== 'miner' || !sh.flug) continue;
+        const konto = state.owners[m_core_flugplan.dienstKonto(id)];
+        if (!d && konto && konto.cash !== 0) fehler.push('Flugreserve ohne Dienst ' + id);
+        if (!d && sh.flug.lage !== 'angedockt') fehler.push('Flug ohne finanzierten Dienst ' + id);
+        if (d && (!konto || d.konto !== konto.id || !ganz(d.minuten))) fehler.push('Flugdienst ' + id);
+      }
+      for (const id of ids(k.flugdienst)) if (!state.ships[id]) fehler.push('Flugdienst ohne Schiff ' + id);
+      const lohnSoll = m_core_buch.summe(state, 'fluglohn');
+      if (lohnSoll !== k.fluglohnMinuten * KANON.flug.lohnJeMinute) fehler.push('Fluglohn ohne Minutenbeleg');
+      const reserveRein = m_core_buch.summe(state, 'flugreserve'), reserveRaus = m_core_buch.summe(state, 'flugreserve-rueck');
+      const gebunden = ids(state.owners).filter((id) => id.startsWith('k1_flug_')).reduce((n, id) => n + state.owners[id].cash, 0);
+      if (reserveRein - reserveRaus - lohnSoll !== gebunden) fehler.push('Flugreserve');
+      return { ok: fehler.length === 0, fehler, flug, wirtschaft };
+    } catch (e) {
+      return { ok: false, fehler: [e.message] };
+    }
+  }
+
+  function createState(seed = rules.startSeed, optionen = {}) {
+    const opt = optionen || {};
+    if (typeof opt !== 'object' || Array.isArray(opt) || Object.keys(opt).some((x) => x !== 'politik'))
+      throw TypeError('K1: nur {politik} als Startoption');
+    const state = kern.createW5State(seed);
+    for (const o of KANON.neueKonten) state.owners[o.id] = { id: o.id, kind: o.kind, cash: 0 };
+    state.stations[W.quellStation].lager.wasser = 0;
+    state.flug = { schritt: 0 };
+    state.kanon = {
+      modell: KANON.modell, netto: {}, buch: { belege: 0, summen: {} },
+      wasser: { abNadir: 0, konsum: 0, rueckGeladen: 0, rueckGeliefert: 0, verkauftAldera: 0, verkauftNadir: 0 },
+      pendel: {}, flugdienst: {}, verschleiss: {}, haushalte: {}, ersatzkaeufe: 0,
+      fluglohnMinuten: 0, rueckfracht: null, engpass: null,
+      politik: JSON.parse(JSON.stringify(KANON.politik)),
+    };
+    if (opt.politik) politikSetzen(state, opt.politik);
+    m_core_flugplan.koerperSync(state);
+    // Die Kern-Initialisierung beauftragt den NPC-Miner bereits mit Erz: er erhält denselben
+    // Pendelauftrag wie jedes Spielerschiff und muss ab jetzt wirklich zum Feld fliegen.
+    npcPendel(state);
+    const a = audit(state);
+    if (!a.ok) throw Error('K1: Anfangszustand nicht konsistent: ' + a.fehler.join('; '));
+    return state;
+  }
+  function npcPendel(state) {
+    for (const id of ids(state.ships)) {
+      const sh = state.ships[id];
+      if (sh.klasse === 'miner' && sh.owner !== rules.economy.start.owner && sh.auftrag === 'foerdern'
+        && !hat(state.kanon.pendel, id)) state.kanon.pendel[id] = { ware: sh.ware };
+    }
+  }
+  function politikSetzen(state, patch) {
+    const ziel = state.kanon.politik;
+    if (patch === null || typeof patch !== 'object' || Array.isArray(patch)) throw TypeError('K1: Politik muss ein Objekt sein');
+    for (const key of Object.keys(patch)) {
+      if (!hat(KANON.politik, key)) throw TypeError('K1: unbekannter Politikwert ' + key);
+      const muster = KANON.politik[key], wert = patch[key];
+      if (typeof muster === 'boolean') { if (typeof wert !== 'boolean') throw TypeError('K1: ' + key); ziel[key] = wert; }
+      else if (typeof muster === 'number') { if (!ganz(wert)) throw TypeError('K1: ' + key); ziel[key] = wert; }
+      else {
+        if (wert === null || typeof wert !== 'object' || Array.isArray(wert)) throw TypeError('K1: ' + key);
+        for (const id of Object.keys(wert)) {
+          if (!ganz(wert[id]) || (key !== 'betriebsreserve' && wert[id] > 1000)) throw TypeError('K1: ' + key + '.' + id);
+          if (key === 'sparquote' ? !hat(KANON.haushalte, id) : !hat(KANON.anteile, id)) throw TypeError('K1: unbekanntes Konto ' + id);
+          ziel[key][id] = wert[id];
+        }
+      }
+    }
+    if (ziel.einkaufMinuten === 0 || ziel.dividendeMinuten === 0) throw TypeError('K1: Intervall muss positiv sein');
+  }
+
+  function execute(state, cmd) {
+    pruefeForm(state);
+    const type = cmd && cmd.type;
+    if (typeof type === 'string' && hat(FLUG.BEFEHLE, type)) return m_core_flugplan.befehl(state, cmd, false);
+    if (typeof type === 'string' && hat(m_core_kreislauf.BEFEHLE, type)) return m_core_kreislauf.ausfuehren(state, cmd);
+    if (type === 'pilotWaterBuy')
+      return { ok: false, type, reason: 'K1: Wasser nur am Wohnort über householdBuy; kein ortsloser Kauf' };
+    const sh = cmd && typeof cmd.schiff === 'string' ? state.ships[cmd.schiff] : null;
+    if (sh && hat(state.kanon.pendel, sh.id) && ['shipMine', 'shipWait', 'shipSellIce'].includes(type))
+      return { ok: false, type, reason: 'K1: laufender Pendelauftrag steuert Förderung und Abnahme' };
+    if (sh && ['shipFreight', 'shipFreightIce'].includes(type) && m_core_anlage.stillgelegt(state, sh))
+      return { ok: false, type, reason: 'K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen' };
+    const r = kern.execute(state, cmd, rules);
+    if (r.ok) m_core_flugplan.koerperSync(state);
+    return r;
+  }
+  // Abschluss einer Wirtschaftsminute in fester Reihenfolge.
+  function wirtschaftsMinute(state) {
+    const vorher = {};
+    for (const id of ids(state.ships)) vorher[id] = ladungSumme(state.ships[id]);
+    const frachter = ids(state.ships).filter((id) => state.ships[id].klasse === 'frachter' && state.ships[id].phase === 'reise');
+    const ergebnis = kern.step(state, rules);
+    m_core_flugplan.koerperSync(state);
+    npcPendel(state);
+    const gefoerdert = {};
+    for (const id of ids(state.ships)) if (ladungSumme(state.ships[id]) > (vorher[id] ?? 0) && state.ships[id].klasse === 'miner') gefoerdert[id] = true;
+    m_core_flugplan.minutenAbrechnung(state, gefoerdert);
+    for (const id of frachter) state.kanon.verschleiss[id] = (state.kanon.verschleiss[id] || 0) + 1;
+    m_core_kreislauf.rueckfracht(state);
+    m_core_disponent.schritt(state);
+    m_core_flugplan.koerperSync(state);
+    m_core_flugplan.plan(state, true, true);
+    return ergebnis;
+  }
+  function teilschritt(state) {
+    pruefeForm(state);
+    if (state.flug.schritt === 0) m_core_flugplan.plan(state, true, false);
+    if (!FLUG.schritt(state)) { m_core_flugplan.plan(state, false, false); return null; }
+    return wirtschaftsMinute(state);
+  }
+  function minute(state) {
+    pruefeForm(state);
+    if (state.flug.schritt === 0) {
+      m_core_flugplan.plan(state, true, false);
+      // Bitgleiche Abkürzung: ruhende Körper ändern sich in 60 Teilschritten nicht.
+      if (m_core_flugplan.alleRuhend(state)) return wirtschaftsMinute(state);
+    }
+    let r = null;
+    do { r = teilschritt(state); } while (r === null);
+    return r;
+  }
+  function advance(state, minuten) {
+    if (!ganz(minuten) || minuten > 1440 * 3650) throw RangeError('K1: ungültige Zahl an Wirtschaftsminuten');
+    for (let i = 0; i < minuten; i++) minute(state);
+  }
+  function save(state) {
+    const a = audit(state);
+    if (!a.ok) throw Error('K1: ungültigen Zustand nicht speichern: ' + a.fehler.join('; '));
+    return kern.save(state);
+  }
+  function load(json) {
+    let roh;
+    try { roh = JSON.parse(json); } catch (_) { throw Error('K1: JSON nicht lesbar'); }
+    pruefeForm(roh);
+    const state = kern.loadW5(json); // prüft Kernbilanzen einschließlich Netto-Korrektur
+    const a = audit(state);
+    if (!a.ok) throw Error('K1: Welt ungültig: ' + a.fehler.join('; '));
+    return state;
+  }
+
+  // Lesender Bericht für Oberfläche, Tests und Szenarien; verändert nichts.
+  function bericht(state) {
+    const k = state.kanon, w5n = state.w5n, o = state.owners;
+    const firmen = {};
+    for (const f of ids(KANON.anteile)) firmen[f] = {
+      kasse: o[f].cash, anlagewert: m_core_anlage.anlagewert(state, f), ruecklage: m_core_anlage.ruecklage(state, f),
+      ausschuettbar: m_core_kreislauf.ausschuettbar(state, f),
+      ausgeschuettet: m_core_buch.summe(state, 'dividende', (von) => von === f),
+    };
+    const haushalte = {};
+    for (const h of ids(KANON.haushalte)) haushalte[h] = {
+      kasse: o[h].cash, ausgegeben: k.haushalte[h]?.ausgegeben || 0, gekauft: k.haushalte[h]?.gekauft || 0,
+    };
+    const gebunden = ids(o).filter((id) => /treuhand|reserv|^k1_|^w5n_fracht|^w5n_fabrik|^erz_/.test(id)).reduce((n, id) => n + o[id].cash, 0);
+    return {
+      tick: state.tick, tag: Math.floor(state.tick / 1440), weltgeld: ids(o).reduce((n, id) => n + o[id].cash, 0),
+      minted: state.minted, burned: state.burned, gebunden,
+      kaeuferliquiditaet: { st_nadir: o.st_nadir.cash, st_aldera: o.st_aldera.cash, export: o.export.cash,
+        haushalte: ids(KANON.haushalte).reduce((n, id) => n + o[id].cash, 0) },
+      produktion: { eisGefoerdert: w5n.eisAbgebaut, erzGefoerdert: state.ledger.erz.mined, wasserProduziert: w5n.wasserProduziert,
+        materialErzeugt: state.w4.materialErzeugt, frachterGebaut: state.w5.fertig },
+      verkaeufe: { eisAnAldera: w5n.mineVerkauft, wasserNadir: k.wasser.verkauftNadir, wasserAldera: k.wasser.verkauftAldera,
+        wasserErloes: m_core_buch.summe(state, 'wasser-einzelhandel'), erzExportiert: state.ledger.erz.exported },
+      auftraege: { eisfrachten: w5n.frachtAbgeschlossen, eisGeliefert: w5n.eisGeliefert, erzfrachten: state.w3.abgeschlossen, wasserchargen: w5n.fabrikFertig,
+        rueckfrachtWasser: k.wasser.rueckGeliefert },
+      loehne: { bergbau: w5n.mineLohn + state.ledger.erz.mined * rules.erzpilot.minerJeMinute,
+        frachtpiloten: state.w5ag.paid.erz + state.w5ag.paid.eis, wasserwerk: w5n.fabrikBezahlt,
+        minerflug: m_core_buch.summe(state, 'fluglohn') },
+      dividenden: m_core_buch.summe(state, 'dividende'),
+      inventar: { eisAldera: state.stations.st_aldera.lager.eis || 0, eisNadir: state.stations.st_nadir.lager.eis || 0,
+        wasserNadir: state.stations.st_nadir.lager.wasser || 0, wasserAldera: state.stations.st_aldera.lager.wasser || 0,
+        wasserUnterwegs: k.rueckfracht ? k.rueckfracht.menge : 0,
+        minerLager: state.stations.st_aldera.lager.miner || 0, frachterLager: (state.stations.st_aldera.lager.frachter || 0) + (state.stations.st_nadir.lager.frachter || 0) },
+      schiffe: ids(state.ships).map((id) => { const sh = state.ships[id]; return { id, owner: sh.owner, klasse: sh.klasse,
+        aktivMinuten: m_core_anlage.aktiv(state, id), buchwert: m_core_anlage.buchwert(state, sh), stillgelegt: m_core_anlage.stillgelegt(state, sh) }; }),
+      ersatzkaeufe: k.ersatzkaeufe, firmen, haushalte,
+      engpass: k.engpass ? { erster: k.engpass.erster, zaehler: k.engpass.zaehler } : null,
+    };
+  }
+
+  return Object.freeze({
+    rules, daten: KANON, regel: KANON.regel, modell: KANON.modell,
+    createState, politikSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
+    hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
+    ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,
+    buchwert: (state, id) => m_core_anlage.buchwert(state, state.ships[id]),
+  });
+}
+
+// Ausdrückliche, vollständig geprüfte Übernahme eines Regel195-Standes (Schema 8) in K1.
+// Nie automatisch: der Aufrufer übergibt das exportierte JSON. Der Regel195-Stand selbst
+// bleibt unverändert; ein Rückweg existiert nur über die aufbewahrte Originaldatei.
+function ausRegel195(json) {
+  if (typeof json !== 'string' || json.length > 5 * 1024 * 1024) throw Error('K1-Migration: ungültige JSON-Größe');
+  let alt;
+  try { alt = JSON.parse(json); } catch (_) { throw Error('K1-Migration: JSON nicht lesbar'); }
+  if (alt === null || typeof alt !== 'object' || alt.rulesVersion !== 195 || alt.schema !== 8)
+    throw Error('K1-Migration: nur Regel195 / Schema 8; andere Stände bleiben unverändert aufbewahrt');
+  const profil = alt.w5ad && alt.w5ad.profile;
+  if (!profil || !Number.isSafeInteger(profil.carrierCash) || !Number.isSafeInteger(profil.buyerCash))
+    throw Error('K1-Migration: Anfangskapital des Standes nicht belegt');
+  const kapital = { carrierCash: profil.carrierCash, buyerCash: profil.buyerCash };
+  // 1. Der unveränderte Regel195-Kern prüft den Quellstand vollständig.
+  const quelle = FACTORY.createPrivateWageResearch(kapital);
+  const geprueft = quelle.core.loadW5(json);
+  const quellHash = quelle.core.hash(geprueft);
+  // 2. Zielwelt mit demselben Anfangskapital; nur additive Felder und verdichtete Belege.
+  const welt = erstellen(kapital);
+  const neu = JSON.parse(quelle.core.canonical(geprueft));
+  if (neu.flug !== undefined || neu.kanon !== undefined) throw Error('K1-Migration: fremde Felder im Regel195-Stand');
+  for (const id of Object.keys(neu.ships)) if (neu.ships[id].flug !== undefined) throw Error('K1-Migration: fremder Flugkörper');
+  neu.rulesVersion = welt.regel;
+  const leer = welt.createState(1);
+  for (const id of Object.keys(leer.owners)) {
+    if (!Object.hasOwn(neu.owners, id)) {
+      if (leer.owners[id].cash !== 0) throw Error('K1-Migration: neues Konto mit Geld');
+      neu.owners[id] = { ...leer.owners[id] };
+    }
+  }
+  if (Object.hasOwn(neu.stations.st_aldera.lager, 'wasser')) throw Error('K1-Migration: unerwarteter Wasserbestand');
+  neu.stations.st_aldera.lager.wasser = 0;
+  neu.flug = { schritt: 0 };
+  neu.kanon = JSON.parse(JSON.stringify(leer.kanon));
+  neu.kanon.pendel = {};
+  // Belegverdichtung: gleiche Summen, keine Minutenliste (Kern prüft Summe je Vertrag).
+  const fertig = neu.w5ag.iceContracts.filter((c) => c.end !== null);
+  neu.w5ag.iceContracts = neu.w5ag.iceContracts.filter((c) => c.end === null);
+  neu.w5ag.eisFertig = fertig.length;
+  neu.w5ag.payments = [];
+  // Körper: Schiffe im Dock bleiben im Dock (auch mit Förderauftrag – gefördert wird erst im Feld),
+  // Schiffe in bezahlter Kernreise sind im Transit. Keine Position wird erfunden.
+  for (const id of Object.keys(neu.ships).sort()) {
+    const sh = neu.ships[id];
+    if (!Object.hasOwn(FLUG.DATEN.klassen, sh.klasse) || !Object.hasOwn(FLUG.DATEN.systeme, sh.system))
+      throw Error('K1-Migration: Schiff ohne bekannten Ort ' + id);
+    sh.flug = FLUG.koerperAngedockt(sh.system);
+    if (sh.phase === 'reise') { sh.flug.lage = 'transit'; sh.flug.anker = null; }
+    else if (sh.phase !== 'dock') throw Error('K1-Migration: unbekannte Schiffsphase ' + id);
+  }
+  const zustand = welt.load(welt.canonical(neu)); // Kern- und K1-Audit des Zielstands
+  // 3. Unabhängiger Erhaltungsnachweis Feld für Feld.
+  const gleich = (a, b) => quelle.core.canonical(a) === quelle.core.canonical(b);
+  const ohneFlug = (ships) => Object.fromEntries(Object.keys(ships).map((id) => { const { flug, ...rest } = ships[id]; return [id, rest]; }));
+  const altKonten = Object.keys(geprueft.owners);
+  const nachweis = {
+    quellRegel: 195, zielRegel: welt.regel, quellHash, zielHash: welt.hash(zustand), tick: zustand.tick,
+    geldGleich: altKonten.every((id) => zustand.owners[id].cash === geprueft.owners[id].cash)
+      && Object.keys(zustand.owners).filter((id) => !altKonten.includes(id)).every((id) => zustand.owners[id].cash === 0),
+    weltgeld: Object.values(zustand.owners).reduce((n, o) => n + o.cash, 0),
+    warenGleich: Object.keys(geprueft.stations).every((id) => {
+      const { wasser, ...rest } = zustand.stations[id].lager;
+      return id === 'st_aldera' ? wasser === 0 && gleich(rest, geprueft.stations[id].lager) : gleich(zustand.stations[id].lager, geprueft.stations[id].lager);
+    }) && gleich(zustand.ledger, geprueft.ledger),
+    schiffeGleich: gleich(ohneFlug(zustand.ships), geprueft.ships),
+    vertraegeGleich: gleich(zustand.erzpilotVertraege, geprueft.erzpilotVertraege) && gleich(zustand.w3, geprueft.w3)
+      && gleich(zustand.w4, geprueft.w4) && gleich(zustand.w5, geprueft.w5) && gleich(zustand.w5n, geprueft.w5n)
+      && gleich(zustand.w5ac, geprueft.w5ac) && gleich(zustand.w5ad, geprueft.w5ad) && gleich(zustand.w5ae, geprueft.w5ae),
+    loehneGleich: gleich(zustand.w5ag.paid, geprueft.w5ag.paid),
+    zufallGleich: zustand.rng === geprueft.rng && zustand.tick === geprueft.tick && zustand.nextShip === geprueft.nextShip,
+  };
+  for (const feld of ['geldGleich', 'warenGleich', 'schiffeGleich', 'vertraegeGleich', 'loehneGleich', 'zufallGleich'])
+    if (nachweis[feld] !== true) throw Error('K1-Migration: Erhaltungsnachweis fehlgeschlagen (' + feld + ')');
+  return { welt, zustand, kapital, nachweis };
+}
+
+const api = Object.freeze({ erstellen, ausRegel195, DATEN: m_data_kanon.KANON, REGEL: m_data_kanon.KANON.regel, SCHRITTE: FLUG.DATEN.schritteJeMinute });
+if (NODE) module.exports = api; else scope.AphrosWelt = api;
+})(globalThis);

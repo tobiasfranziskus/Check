@@ -295,9 +295,10 @@ function erstellen(startkapital = {}) {
           if (ladungSumme(sh) > 0 && p.ware === 'eis') continue;
           if (p.beenden) { delete k.pendel[id]; continue; }
           if (m_core_anlage.stillgelegt(state, sh)) continue; // Pendel merken, bis ein echter Ersatzkauf erfolgreich ist
-          if (p.ware === 'erz' && sh.auftrag !== 'foerdern') {
+          if (p.ware === 'erz' && p.ersatz && sh.auftrag !== 'foerdern') {
             const r = kern.execute(state, { type: 'shipMine', owner: sh.owner, schiff: id, ware: 'erz' }, rules);
-            if (!r.ok) { merken('Erzauftrag: ' + r.reason); continue; }
+            if (!r.ok) { merken('Erz-Ersatzauftrag: ' + r.reason); continue; }
+            delete p.ersatz;
           }
           if (p.ware === 'eis' && sh.auftrag !== 'foerdern') {
             if (state.owners[sh.owner].cash < W.charge * W.mineLohn + KANON.flug.reserveMinuten) {
@@ -624,7 +625,8 @@ function erstellen(startkapital = {}) {
           k.ersatzkaeufe += 1; m_core_flugplan.koerperSync(state);
           const neu = flotte(sh.owner, 'miner').at(-1);
           if (sh.auftrag === 'foerdern') kern.execute(state, { type: 'shipWait', owner: sh.owner, schiff: id }, rules);
-          k.pendel[neu.id] = { ware: k.pendel[id].ware }; delete k.pendel[id];
+          k.pendel[neu.id] = { ware: k.pendel[id].ware,
+            ...(k.pendel[id].ware === 'erz' ? { ersatz: true } : {}) }; delete k.pendel[id];
         } else k.engpass = merke(k.engpass, state.tick, 'Ersatzminer ' + sh.owner + ': ' + r.reason);
       }
 

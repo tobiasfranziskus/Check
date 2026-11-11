@@ -1,6 +1,6 @@
 # Repository-Konsolidierung und Void-Echoes-Übernahme – 11.11.2026
 
-**[ANALYSE / docs-only, keine Produktfreigabe]** Quellen: GitHub-`Check/main 04124f2bca27dc33b54be30c07b6a7bbb7387e81`, `void-echoes/main a8e2e36faf8257ac2cc47780d12ea9e8e1f58b9f`, aktuelle PR-Metadaten und die tatsächlich im jeweiligen PR dokumentierten CI-Läufe. Der Stand ist ein navigierender Integrations- und Archivierungsentscheid, **keine zweite Roadmap**. Verbindlich bleibt [ROADMAP.md](ROADMAP.md). **Am Prüfzeitpunkt waren 126 Pull Requests offen** (GitHub-Suche `is:pr is:open`). Keine dieser Zahlen bedeutet 126 ausstehende Feature-Merges.
+**[ANALYSE / docs-only, keine Produktfreigabe]** Quellen: GitHub-`Check/main 04124f2bca27dc33b54be30c07b6a7bbb7387e81`, `void-echoes/main a8e2e36faf8257ac2cc47780d12ea9e8e1f58b9f`, aktuelle PR-Metadaten und die tatsächlich im jeweiligen PR dokumentierten CI-Läufe. Der Stand ist ein navigierender Integrations- und Archivierungsentscheid, **keine zweite Roadmap**. Verbindlich bleibt [ROADMAP.md](ROADMAP.md). **Vor Beginn der Bereinigung waren 126 Pull Requests offen** (GitHub-Suche `is:pr is:open`). Nach Anlage von #299 und dem dokumentierten Schließen von vier ersetzten PRs waren **123 PRs offen**. Keine dieser Zahlen bedeutet 123 ausstehende Feature-Merges.
 
 ## 1. Tatsächliche Entwicklungswege
 
@@ -41,7 +41,7 @@ Quellrepository: [`tobiasfranziskus/void-echoes`](https://github.com/tobiasfranz
 
 ## 4. Aufräumen ohne Verlust
 
-1. **Superseded-PRs kennzeichnen und schließen, ohne Branches zu löschen:** #290/#292/#293 sind in #294 zusammengeführt; #295 ist funktional in #296 enthalten. Wichtig: deren Git-Historie, CI und Quelltexte bleiben abrufbar. **#294/#296/#297/#298 nicht schließen**; sie sind die aktive abhängige Linie.
+1. **[ERLEDIGT / PR-BEREINIGUNG]** #290, #292 und #293 nach Hinweis auf die dokumentierte Konsolidierung in #294 sowie #295 nach Hinweis auf die F1-Übernahme in #296 **als ersetzt kommentiert und geschlossen, jeweils ungemergt**. Quellbranches, CI, Diff und Git-Historie bleiben bestehen. **#294/#296/#297/#298 bleiben offen**; sie sind die aktive abhängige Linie.
 2. **Nicht pauschal schließen:** ältere R32-/C1d- und W5-Stacks dokumentieren ungedeckte Kassen, Ersatzwirtschaft, negative 90-/365-Tage-Tests; wahlloses Retargeten/Zusammenmergen würde den Forschungskontext zerstören. Erst eine separate, begründete Verwertungsentscheidung je Endpunkt. #288 und #291 als unabhängige Quellnachweise bewahren.
 3. **Repo-Dateien schützen:** keine alten Versionen/`versionen`, archivierte Regel14-Saves, historische Test-Fixtures, `index.html`/`aphros-void.html` oder Testhashes ausräumen. Keine produktive W6-Regel aus einer Analyse übernehmen.
 4. **Dokumente veralten im alten Langtext:** Am Kopf von README/Roadmap/Projektstatus den neuesten Hauptcommit und die aktive Draftlinie klar markieren; historische Berichte dürfen erhalten bleiben. Dies ist **keine** Erlaubnis zu automatischem Merge/Deployment.
@@ -58,4 +58,4 @@ Vor der Archivierung:
 
 ## 6. Prüfgrenzen
 
-Dieses Dokument basiert auf GitHub-Quellen, PR-Metadaten und den in PRs referenzierten bereits ausgeführten CI-Ergebnissen. **In dieser Bereinigungsarbeit wurden keine neuen Node-/Browser-/Safari-/NAS-Tests ausgeführt**, kein eigener Performancewert behauptet, keine produktiven Dateien editiert und keine Tests oder Spielstände entfernt. Keine Merges oder Deployments.
+Dieses Dokument basiert auf GitHub-Quellen, PR-Metadaten und den in PRs referenzierten bereits ausgeführten CI-Ergebnissen. **In dieser Bereinigungsarbeit wurden keine neuen Node-/Browser-/Safari-/NAS-Tests ausgeführt** (lokaler Git-Zugriff war durch fehlende DNS-Auflösung für github.com blockiert), kein eigener Performancewert behauptet, keine produktiven Dateien editiert und keine Tests oder Spielstände entfernt. Keine Merges oder Deployments.

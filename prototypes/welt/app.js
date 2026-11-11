@@ -110,6 +110,7 @@ function zeigen(alles = false) {
       ['Löhne Bergbau / Frachtpiloten', fmt(b.loehne.bergbau) + ' / ' + fmt(b.loehne.frachtpiloten) + ' ISK'],
       ['Löhne Wasserwerk / Minerflug', fmt(b.loehne.wasserwerk) + ' / ' + fmt(b.loehne.minerflug) + ' ISK'],
       ['Ausschüttungen', fmt(b.dividenden) + ' ISK'], ['Ersatzkäufe / gebaute Frachter', b.ersatzkaeufe + ' / ' + b.produktion.frachterGebaut],
+      ['K2 Miner gebaut / nach Aldera geliefert', b.produktion.minerGebaut + ' / ' + b.produktion.minerGeliefert],
       ['Erz exportiert / Rest Exportetat', fmt(b.verkaeufe.erzExportiert) + ' / ' + fmt(b.kaeuferliquiditaet.export) + ' ISK']]);
     tabelle($('haushalte'), ['Haushalt', 'Wohnort', 'Kasse', 'ausgegeben', 'Wasser gekauft'],
       Object.entries(b.haushalte).map(([id, v]) => [id, welt.daten.haushalte[id] === 'st_aldera' ? 'Aldera' : 'Nadir', fmt(v.kasse), fmt(v.ausgegeben), fmt(v.gekauft)]));

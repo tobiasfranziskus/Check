@@ -2,7 +2,7 @@
 
 > **[ANALYSE / INDEPENDENT REVIEW · 11.11.2026]** Eigenständige Auswertung der vorhandenen **Primärberichte und Messdaten** aus `Check` und `void-echoes`. 25 Geld-/Mengen-/Kostenidentitäten rechnerisch unabhängig geprüft; außerdem die drei archivierten X02-C-Messdatensätze und die vier C1b-1-Messdatensätze direkt eingelesen und ausgewählte Salden daraus rekonstruiert. **Kein neuer Core-, Browser- oder 90-/365-Tage-Simulationslauf.** Kein Entwicklungs-/Produktfreigabeentscheid. Die unten beschriebenen neuen Abnahmetests sind **noch nicht ausgeführt**.
 
-**Repository-Abgrenzung:** `Check/main 04124f2bca27dc33b54be30c07b6a7bbb7387e81` hat Regel195/Schema8, W0–W5 und bestehende Save-Sicherung. Der freie 2D-Flug liegt in Forschungs-PRs #294/#296/#297/#298. `void-echoes∪ ist seit 28.10.2026 eingefroren, der nicht gemergte Alt-PR #10 bei `123875d3173eb2e6f64e60ee47a3a09ad6590ce0` ist **kein** Produktcode für Check. Verbindliche Produktentscheidungen stehen allein in `docs/ROADMAP.md∪. Für die laufende gemeinsame Core-/Weltintegration durch Claude dürfen hier **keine** konkurrierenden Änderungen an Flug, Simulation, Preisen oder Spielstandformat vorgenommen werden.
+**Repository-Abgrenzung:** `Check/main 04124f2bca27dc33b54be30c07b6a7bbb7387e81` hat Regel195/Schema8, W0–W5 und bestehende Save-Sicherung. Der freie 2D-Flug liegt in Forschungs-PRs #294/#296/#297/#298. `void-echoes` ist seit 28.10.2026 eingefroren, der nicht gemergte Alt-PR #10 bei `123875d3173eb2e6f64e60ee47a3a09ad6590ce0` ist **kein** Produktcode für Check. Verbindliche Produktentscheidungen stehen allein in `docs/ROADMAP.md`. Für die laufende gemeinsame Core-/Weltintegration durch Claude dürfen hier **keine** konkurrierenden Änderungen an Flug, Simulation, Preisen oder Spielstandformat vorgenommen werden.
 
 ## 1. Primärquellen und Evidenzklassen
 
@@ -110,7 +110,7 @@
 
 ### F15 – Statische Modell-C-Gleichungen sind kein dynamischer Spielnachweis (C-Ref)
 
-- **[NEU NACHGERECHNET]** Für den vorgeschlagenen statischen Referenzpunkt: `299,029311 + 227,370689 = 526,40 = 286,40 + 240∪ ISK/Tag. Ohne gesetzten Vertragsmechanismus fließen die 240 **nicht** ins Spiel. Historische R32-/Rule195-Welten mit **33.000** ISK und der vorgeschlagene C-Referenzstart mit **55.000** ISK, andere Hüllenpreise (600/750 vs. 1.340/1.690) und andere Rezepte sind verschiedene Versuchsgrundlagen.
+- **[NEU NACHGERECHNET]** Für den vorgeschlagenen statischen Referenzpunkt: `299,029311 + 227,370689 = 526,40 = 286,40 + 240` ISK/Tag. Ohne gesetzten Vertragsmechanismus fließen die 240 **nicht** ins Spiel. Historische R32-/Rule195-Welten mit **33.000** ISK und der vorgeschlagene C-Referenzstart mit **55.000** ISK, andere Hüllenpreise (600/750 vs. 1.340/1.690) und andere Rezepte sind verschiedene Versuchsgrundlagen.
 - **Fehlerklasse:** Rechenstabile Mengenmatrix bei hypothetischem Abnehmer belegt weder geografische Lieferfähigkeit noch tatsächlich verfügbare Betriebskassen und Ersatzhüllen. Auch das C-Modell gibt bei beliebiger Geldhortung keine Stabilitätsgarantie.
 - **[ABNAHME ENTWORFEN]** Keine alten Welt-Saves auf neue Geldverteilung uminterpretieren. Rechnungsmodell, freigegebene Produktparameter und real gebuchte Core-Verträge einzeln vergleichen. Unter dem vorgeschlagenen endlichen Tagesdeckel darf hohe Hortung die Wirtschaft **rechtmäßig** schrumpfen lassen. Ein nicht vom Nutzer freigegebener Emissionspfad muss dauerhaft deaktiviert bleiben.
 
@@ -125,16 +125,16 @@
 
 | Prüfgruppe | Unabhängig nachgerechnete Identitäten |
 | --- | --- |
-| BK12 | `4.000+1.031−3.657−312−1.056=6∪; `44+24−53=15∪ Kostenlücke; `1.031−1.564=−533∪; NPC1 `22.433−17.262−961−5.659−1.500=−2.949∪; NPC2 `14.331−10.491−786−5.556=−2.502∪; `42.000−6.440=35.560∪; `50.000+1.440−6.440=45.000∪ |
-| BK12a | `620+332=952∪; `1.779+1.281=3.060∪; `4.163+2.872=7.035∪ |
-| R32 | `17.786+8.200+6.673=32.659∪; `1.400+248.763−250.152=11∪; `33.000+7.000=40.000∪; `750+60+120=930∪; `930−600=330∪; `1.000×(7−11,80)=−4.800∪; `500×(14−11,80)=1.100∪ |
-| C1b | `234+665+1=900∪ |
-| W5aj | `1.000−250=750∪ nach Freigabe und Einkauf |
-| W6a | `406+5×14=476∪ und `406+6×14=490∪ |
-| F2b | `50×5−50×2=150∪ vor Flug-/Ersatzkosten |
-| C-Ref | `299,029311+227,370689=526,40∪; `526,40−286,40=240∪; `2×(1.690+270+204)=4.328∪ als hypothetischer neuer Doppel-Nachfolgerbedarf ohne Risikopuffer |
+| BK12 | `4.000+1.031−3.657−312−1.056=6`; `44+24−53=15` Kostenlücke; `1.031−1.564=−533`; NPC1 `22.433−17.262−961−5.659−1.500=−2.949`; NPC2 `14.331−10.491−786−5.556=−2.502`; `42.000−6.440=35.560`; `50.000+1.440−6.440=45.000` |
+| BK12a | `620+332=952`; `1.779+1.281=3.060`; `4.163+2.872=7.035` |
+| R32 | `17.786+8.200+6.673=32.659`; `1.400+248.763−250.152=11`; `33.000+7.000=40.000`; `750+60+120=930`; `930−600=330`; `1.000×(7−11,80)=−4.800`; `500×(14−11,80)=1.100` |
+| C1b | `234+665+1=900` |
+| W5aj | `1.000−250=750` nach Freigabe und Einkauf |
+| W6a | `406+5×14=476` und `406+6×14=490` |
+| F2b | `50×5−50×2=150` vor Flug-/Ersatzkosten |
+| C-Ref | `299,029311+227,370689=526,40`; `526,40−286,40=240`; `2×(1.690+270+204)=4.328` als hypothetischer neuer Doppel-Nachfolgerbedarf ohne Risikopuffer |
 
-**[ROHDATEN GEPRÜFT]** Zusätzlich die JSON-Ausgaben von VE-C und C1b unabhängig geparst: VE-C enthält 3×72-h-Protokolle und jeweils `erhaltung.abweichungen=0∪, aber die wirtschaftlichen Abnahmefelder für beide Koop-Welten melden `einkommenLetzteStundeBeideRollen=false∪ sowie für alle drei `werftAlderaMind90=false∪. C1b enthält genau vier 30-/90-Tage-Datensätze; für **jeden** ist die Summe aller ausgewiesenen Eigentümerkassen `33.000∪ und `minted=0∪. Für C1b bei 30 Tagen gilt `217 + 82 + 1 = 300∪, bei 90 Tagen `234 + 665 + 1 = 900∪. **Diese zusätzlichen JSON-Kontrollen sind keine erneute Simulation.**
+**[ROHDATEN GEPRÜFT]** Zusätzlich die JSON-Ausgaben von VE-C und C1b unabhängig geparst: VE-C enthält 3×72-h-Protokolle und jeweils `erhaltung.abweichungen=0`, aber die wirtschaftlichen Abnahmefelder für beide Koop-Welten melden `einkommenLetzteStundeBeideRollen=false` sowie für alle drei `werftAlderaMind90=false`. C1b enthält genau vier 30-/90-Tage-Datensätze; für **jeden** ist die Summe aller ausgewiesenen Eigentümerkassen `33.000` und `minted=0`. Für C1b bei 30 Tagen gilt `217 + 82 + 1 = 300`, bei 90 Tagen `234 + 665 + 1 = 900`. **Diese zusätzlichen JSON-Kontrollen sind keine erneute Simulation.**
 
 ## 4. Verpflichtende neue Abnahmematrix für Claudes Integrations-Head
 
@@ -142,8 +142,8 @@ Für alle Gates sind **Istwert, Quellkommando/Vertrag, Eigentümer-ID, Warengrö
 
 | Gate | Geforderte dynamische Prüfung | Bestehenskriterium / negative Gegenprobe |
 | --- | --- | --- |
-| **G00 – Quelle/Version** | Explizit aktueller `main∪ plus integrativer Head, Abgleich Rule195/196/197/198, Komponenten, RNG/Tick und Herkunft jeder Buchung | Genau **eine** autoritative aktive Core-Welt; keine konkurrierende Wirtschaftsinstanz, niemals ungeprüfter Save-Import |
-| **G01 – Geldbuch** | Für jeden Tick `M_t = M_0 + Σ Mint_belegt − Σ Burn_belegt∪ über alle Eigentümerkassen **inkl. Treuhand, genau einmal gezählt** | Nicht autorisierte Emission, Doppelabrechnung, heimlicher Ownertransfer oder negatives ungedecktes Konto => durchgefallen |
+| **G00 – Quelle/Version** | Explizit aktueller `main` plus integrativer Head, Abgleich Rule195/196/197/198, Komponenten, RNG/Tick und Herkunft jeder Buchung | Genau **eine** autoritative aktive Core-Welt; keine konkurrierende Wirtschaftsinstanz, niemals ungeprüfter Save-Import |
+| **G01 – Geldbuch** | Für jeden Tick `M_t = M_0 + Σ Mint_belegt − Σ Burn_belegt` über alle Eigentümerkassen **inkl. Treuhand, genau einmal gezählt** | Nicht autorisierte Emission, Doppelabrechnung, heimlicher Ownertransfer oder negatives ungedecktes Konto => durchgefallen |
 | **G02 – Waren/Bestände** | Los-/Schiff-/Modul-Herkunft, Warenzufuhr, Produktion, konsumierter, exportierter oder verlorener Bestand, Dock, Frachtvolumen | Kein physisches Doppelverkaufen, Gratisrohstoff/-hülle, Fernhandel am falschen Ort oder fehlender Ersatzverlust |
 | **G03 – Volle Leistungskosten** | Vollkosten für mindestens je ein Erz-, Eis-, Wasser-, Material-, Hüllen- und Frachtlos mit realer Arbeits-/Rückfahrts-/Wartungs-/Ersatzbuchung | Alle **tatsächlich ausgeführten** Leistungen bezahlt oder rechtmäßig als Verbindlichkeit/Schaden anerkannt; keine unfinanzierte Schiffs-/Pilotenminute |
 | **G04 – Reale Käuferbudgets** | Haushalt, Station, Industrie, Werft und Außenkunde mit frei/gebunden getrennt; erzwungene Kaufkraftlücke und vorhandenem Lager | Fehlende Kaufkraft stoppt atomar; Ware bleibt; **kein** automatisch erzwungener Privatkauf oder Eigentümerrettung |
@@ -185,7 +185,7 @@ Die folgenden **noch auszuführenden** Regime sind keine neuen verpflichtenden S
 - **[TECHNISCHE MINDESTABNAHME]** G00–G07 und G13 plus tatsächlich ausgeführte Tests auf dem konkreten Integrations-Head; W0–W5-Funktionen und bestehende Save-/Doppeltab-Sicherung erhalten.
 - **[WIRTSCHAFTLICHE W6-ABNAHME]** Zusätzlich G08–G12 und ökonomisch differenzierte S01–S13, unabhängiger Blick auf Eigentümer-/Betriebskapital, tatsächlich bezahlten Endabsatz, Wartung und physischen Ersatz. Auch bei grünem Audit ist ein gemessener Dauerstillstand **kein** tragfähiger W6-Abschluss.
 - **[PRODUKTENTSCHEIDUNG OFFEN]** Entwurf C und konkrete Exportrechte, Lohnsätze, Preise, Abschreibung, Verschleiß, Eigentümer-/Dividendenrechte und 33k/55k-Neustartprofil sind **nicht** durch diese Analyse freigegeben. Geldmodell B, Sparfreiheit und Insolvenzrecht gelten weiter.
-- **[GERÄTE- UND MERGEFREIGABE OFFEN]** Keine echten iPad-/NAS-Tests durch diese Dokumentationsarbeit, kein Merge nach `main∪, keine Veröffentlichung, kein automatischer Save- oder Versionstransfer.
+- **[GERÄTE- UND MERGEFREIGABE OFFEN]** Keine echten iPad-/NAS-Tests durch diese Dokumentationsarbeit, kein Merge nach `main`, keine Veröffentlichung, kein automatischer Save- oder Versionstransfer.
 
 ## 5. Übergabe an den Integrationsentwickler und unabhängige Prüfer
 

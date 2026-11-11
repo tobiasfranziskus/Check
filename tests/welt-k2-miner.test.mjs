@@ -60,7 +60,8 @@ test('K2: Verschleißwelt produziert nur aus W4-Material und bucht anschließend
   assert.ok(b?.fertig > 0, 'realer Miner aus Material und bezahlten Arbeitsminuten');
   assert.ok(b?.verladen > 0 && b?.geliefert > 0, 'Nadir → Aldera auf Frachter mit bezahlter Rückfracht');
   assert.ok(ersteLieferung >= ersterBau, 'Lieferung nach Herstellung');
-  assert.ok(ersterErsatz >= ersteLieferung, 'Original-Schiffskauf erst nach Ankunft');
+  assert.ok(s.ledger.miner.consumed > s.ledger.miner.initial,
+    'Käufe übersteigen nachweislich das endliche Gründungslager – neu gebaute Hüllen werden genutzt');
   assert.ok(s.ledger.miner.produced === b.fertig);
   assert.ok(s.ledger.material.consumed >= b.materialVerbraucht);
   assert.equal(bericht.weltgeld, 33000);

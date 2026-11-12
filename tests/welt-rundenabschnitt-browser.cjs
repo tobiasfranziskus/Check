@@ -153,6 +153,7 @@ const fs = require('node:fs'), http = require('node:http'), path = require('node
             await tap('#abdocken');
             await page.evaluate(() => window.__welt.schritte(1));
             assert.equal(await page.locator('#pilotAnwenden').isEnabled(), true);
+            await tap('[data-pilot-kurs="0"]'); // Ost statt beibehaltenem Rueckflugkurs
             await page.locator('#pilotFahrt').evaluate(el => {
               el.value = '100';
               el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -161,7 +162,8 @@ const fs = require('node:fs'), http = require('node:http'), path = require('node
             await page.evaluate(() => window.__welt.schritte(70));
             const weit = await assertAudit('echter manueller Langflug');
             assert.ok(weit.miner.flug.x >= 6000000,
-              'Miner hat sich per Originalsteuerung deutlich vom Eisfeld entfernt');
+              'Miner hat sich per Originalsteuerung deutlich vom Eisfeld entfernt: ' +
+              JSON.stringify(weit.miner.flug));
             assert.equal(weit.miner.flug.lage, 'frei');
             await tap('#zumEis'); // Original-Zielflug
             assert.equal(await page.locator('#rundenAbschnitt').isEnabled(), true);

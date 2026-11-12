@@ -17,6 +17,8 @@
 1. Über Original-UI-Befehle mit `window.__welt.schritte` und den exakt erforderlichen einzelnen Core-Minuten.
 2. Über dieselben expliziten Befehle und vier begrenzte Abschnittstastendrücke (Abdocken, Anflug, Förderung bis zur Original-50er-Handelscharge, Dockrückflug) samt ausdrücklich bestätigtem `shipWait` nach dem Abbau.
 
+Zusätzlich startet der Spieler einen originalen langen manuellen Flug weit aus dem Feld heraus. Ein anschließender Zielflug benötigt mehr als 60 Minuten; die Abschnittstaste darf **exakt 60 Minuten**, aber niemals 61 simulieren. Dabei bleiben Eigentum, Geld und Flugphysik unangetastet.
+
 Verglichen werden **vollständiger kanonischer Weltzustand und Referenzhash**, 600-ISK-Kauf, 50 Eis/100 ISK bezahlte Förderarbeit, 250 ISK tatsächlicher Dockankauf, unveränderte Gesamtgeldmenge 33.000 ISK, Mint/Burn 0, unabhängige Geld-/Waren-/Eigentümeraudits, echter Save/Load-Hash und alle vier Hoch-/Querformatgrößen in Chromium und WebKit. Keine automatische nächste Aktion oder Umgehung der Finanzierung.
 
 **[TEST / bei PR-Erstellung offen]** Nur erfolgreiche, tatsächlich abgeschlossene CI-Läufe dürfen hier als bestanden ergänzt werden. Echte iPad-Safari- und NAS-Geräteabnahme bleibt offen.

@@ -52,16 +52,30 @@ const assert = require('node:assert/strict');
         await page.waitForFunction(() => /Miner aus dem Lager/.test(document.getElementById('meldung').textContent));
         await tap('nav button[data-ansicht="flug"]');
         assert.equal(await page.locator('#pilotAnwenden').isDisabled(), true, 'Kursbefehl im Dock gesperrt');
+        assert.equal(await page.locator('#pilotRichtungen button').count(), 8, 'acht Kurs-Kurztasten');
+        assert.equal(await page.locator('[data-pilot-kurs="64"]').isDisabled(), true, 'Richtung im Dock gesperrt');
+        assert.equal(await page.locator('#abdocken').isVisible(), true, 'Abdocken ohne verstecktes Detailmenü sichtbar');
+        assert.equal(await page.locator('#andocken').isDisabled(), true, 'Andocken im Dock gesperrt');
+        assert.equal(await page.locator('#foerdernEis').isVisible(), true, 'Förderaktion unmittelbar im Cockpit sichtbar');
+        assert.equal(await page.locator('#foerdernEis').isDisabled(), true, 'Fördern außerhalb des Feldes gesperrt');
         assert.match(await page.locator('#pilotHinweis').textContent(), /Dock/);
 
-        await page.locator('[data-seite="flug"] details').first().evaluate((d) => { d.open = true; });
         await tap('#abdocken'); // Originalbefehl, echte 40-ISK-Flugreserve
         await page.waitForFunction(() => /Abgedockt/.test(document.getElementById('meldung').textContent));
         await page.evaluate(() => window.__welt.schritte(1)); // 60 physische Flugsekunden, Abdocken fertig
         assert.equal((await miner()).flug.lage, 'frei', 'erst nach originalem Abdockmanöver steuerbar');
         assert.equal(await page.locator('#pilotAnwenden').isDisabled(), false);
         const h0 = await page.evaluate(() => window.__welt.hash());
-
+        assert.equal(await page.locator('#abdocken').isDisabled(), true, 'Abdocken im freien Flug gesperrt');
+        assert.equal(await page.locator('#andocken').isDisabled(), false, 'Andocken im freien Flug verfügbar');
+        assert.equal(await page.locator('#foerdernErz').isDisabled(), true, 'fremdes Feld: keine Förderung');
+        await tap('[data-pilot-kurs="224"]');
+        assert.equal(await page.locator('#pilotKurs').inputValue(), '224', 'Nordost legt nur den Sollkurs im Regler fest');
+        assert.equal(await page.locator('[data-pilot-kurs="224"]').getAttribute('aria-pressed'), 'true');
+        assert.equal(await page.evaluate(() => window.__welt.hash()), h0, 'Kurztasten verändern nicht die Welt');
+        await tap('[data-pilot-kurs="64"]');
+        assert.equal(await page.locator('[data-pilot-kurs="224"]').getAttribute('aria-pressed'), 'false');
+        assert.equal(await page.locator('[data-pilot-kurs="64"]').getAttribute('aria-pressed'), 'true');
         await page.locator('#pilotKurs').evaluate((e) => { e.value = '64'; e.dispatchEvent(new Event('input', { bubbles: true })); });
         await page.locator('#pilotFahrt').evaluate((e) => { e.value = '75'; e.dispatchEvent(new Event('input', { bubbles: true })); });
         assert.equal(await page.locator('#pilotKursWert').textContent(), '64');
@@ -101,6 +115,7 @@ const assert = require('node:assert/strict');
 
         await tap('#pendelEis');
         assert.equal(await page.locator('#pilotAnwenden').isDisabled(), true, 'Pendel sperrt direkte Steuerung');
+        assert.equal(await page.locator('[data-pilot-kurs="64"]').isDisabled(), true, 'Pendel sperrt auch Kurztasten');
         await tap('#pendelStop');
         const hash = await page.evaluate(() => window.__welt.hash());
         await page.evaluate(() => window.__welt.sichern());

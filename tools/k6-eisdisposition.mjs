@@ -156,8 +156,13 @@ export function k6Vergleich(seed = 42, minuten = K6_MINUTEN) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const seed = Number(process.argv[2] || 42), minuten = Number(process.argv[3] || K6_MINUTEN);
-  // Bewusst kompakte Standardausgabe, volle Prüfdaten können aus API importiert werden.
-  const r = k6Vergleich(seed, minuten);
-  console.log('K6_RESULT ' + JSON.stringify({ seed: r.seed, k4TerminalHash: r.k4TerminalHash,
-    varianten: r.varianten.map(({ checkpoints, ...v }) => v) }));
+  if (process.argv.includes('--dauer')) {
+    const { checkpoints, ...r } = k6Ausdauer(seed, minuten);
+    console.log('K6_AUSDAUER ' + JSON.stringify(r));
+  } else {
+    // Bewusst kompakte Standardausgabe, volle Prüfdaten können aus API importiert werden.
+    const r = k6Vergleich(seed, minuten);
+    console.log('K6_RESULT ' + JSON.stringify({ seed: r.seed, k4TerminalHash: r.k4TerminalHash,
+      varianten: r.varianten.map(({ checkpoints, ...v }) => v) }));
+  }
 }

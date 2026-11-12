@@ -85,9 +85,17 @@ const path = require('node:path');
         let anflugMinuten = 0;
         while (!/3\/6 · Eisfeld erreicht/.test(await titel()) && anflugMinuten < 80) {
           assert.match(await titel(), /Anflug zum Feld/);
+          const tickVorher = (await daten()).s.tick;
           await runde(); anflugMinuten++;
+          const jetzt = await daten();
+          assert.equal(jetzt.s.tick, tickVorher + 1,
+            'geführter Minutenschritt muss den originalen Tick ausführen; UI=' +
+            (await titel()) + ', Meldung=' + (await page.locator('#meldung').textContent()));
         }
-        assert.ok(anflugMinuten > 0 && anflugMinuten < 80, 'Eisfeld erreichbar');
+        const nachAnflug = await daten();
+        assert.ok(anflugMinuten > 0 && anflugMinuten < 80,
+          'Eisfeld erreichbar: '+ JSON.stringify({minuten:anflugMinuten, flug:nachAnflug.miner.flug,
+            auftrag:nachAnflug.miner.auftrag, tick:nachAnflug.s.tick, ui:await titel()}));
         assert.equal(await page.locator('#foerdernEis').isDisabled(), false);
 
         const vorMine = await audit('vor realer Förderung');

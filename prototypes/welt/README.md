@@ -12,6 +12,16 @@ Das Repository über einen statischen HTTP(S)-Server ausliefern und `prototypes/
 3. **Weiter** drücken. Die NPC-Spedition kauft ihren Frachter selbst, Nadir produziert Wasser, Haushalte kaufen.
 4. **Konzern → Überschuss ausschütten** und **Station → Wasser kaufen** sind freiwillig. Wer spart, entzieht dem Kreislauf Geld.
 
+## Persönlicher Minerflug (K1-UX, Draft #305)
+
+1. Unter **Station** einen Miner für 600 ISK kaufen.
+2. Unter **Flug → Handsteuerung** den Core-Befehl **Abdocken** ausführen (40 ISK tatsächliche Flugreserve werden gebunden).
+3. Nach dem Abdockmanöver im sichtbaren **Steuerpult** Kurs (0 Ost, 64 Süd, 128 West, 192 Nord) und Sollfahrt (0–100 %) einstellen und bewusst **Manuell steuern** wählen. Der echte `shipSteer`-Befehl setzt die Flugphysik um.
+4. **Bremsen (0 %)** reduziert die Sollfahrt; wegen Trägheit stoppt der Miner nicht sofort. Mit dem bestehenden Befehl **Andocken** physisch zur Station zurückkehren. Fördern funktioniert ausschließlich im entsprechenden Feld und bei ausreichend geringer Geschwindigkeit.
+5. Ein **Pendelauftrag** übernimmt den Flug automatisch; währenddessen sind die manuellen Regler gesperrt. Der Core prüft alle Finanzierungs- und Ortsregeln auch bei manueller Steuerung.
+
+Das Steuerpult liest ausschließlich den echten Zustand und ändert ohne Klick weder Spiel noch Hash. Keine Geldmodell-/Physikänderung, keine produktive Freigabe und keine echte iPad-/NAS-Abnahme.
+
 ## Dateien
 
 | Datei | Aufgabe |

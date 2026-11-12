@@ -233,12 +233,33 @@ function zeigen(alles = false) {
   $('rundenHilfe').hidden = frachter; // Ohne eigenes Schiff weiterhin zur Station leiten.
   $('frachterAufgaben').hidden = !frachter;
   if (frachter) {
-    const hinweis = s.system === 'aldera' && s.phase === 'dock'
-      ? 'Eigener Frachter ' + s.id + ' in Aldera: ' + (s.flug.lage === 'angedockt' ? 'bereits im Dock. 40 ISK Reserve beim Abdocken.' : 'persönlicher Flug im selben autoritativen Weltkern.') +
-        ' Keine Ladung oder Frachtzahlung ohne separaten finanzierten Core-Vertrag.'
-      : 'Für dieses Schiff ist kein Aldera-Handflug erlaubt. Original-Transport und Eigentum bleiben maßgeblich.';
-    if ($('frachterHinweis').textContent !== hinweis) $('frachterHinweis').textContent = hinweis;
-  }
+    const aktiv = state.w5n.frachtauftrag?.schiff === s.id;
+    const bestand = k.spielerFrachten?.auftraege || [];
+    const letzter = bestand.filter((x) => x.schiff === s.id).at(-1);
+    const angebot = !aktiv ? welt.kern.pilotIceFreightQuote(state, s.id) : null;
+    const hinweis = aktiv
+      ? 'Echte Original-W5n-Rundfracht läuft. Das Schiff ist im bezahlten Transit und wird erst nach der Rückkehr wieder frei.'
+      : s.system === 'aldera' && s.phase === 'dock'
+        ? 'Eigener Frachter ' + s.id + ' in Aldera. Handflug nach dem Abdocken oder bezahlter Eisfrachtvertrag direkt vom Dock.'
+        : 'Der Frachter ist nicht frei am Aldera-Dock. Fracht und Handflug bleiben durch den gemeinsamen Kern gesperrt.';
+    const quote = aktiv
+      ? 'Unterwegs: ' + state.w5n.frachtauftrag.phase + ', ' + state.w5n.frachtauftrag.gearbeitet +
+        ' von ' + 2 * welt.rules.w5n.flugMinuten + ' tatsächlich bezahlten Flugminuten.'
+      : angebot?.ok
+        ? 'Finanzierbar: ' + welt.rules.w5n.charge + ' Eis, ' + fmt(angebot.eis) + ' ISK Warenkauf aus Nadir, ' +
+          fmt(angebot.fracht) + ' ISK Frachtentgelt, ' + fmt(angebot.arbeit) +
+          ' ISK eigene Pilotenarbeitsreserve. Der Core bindet alle Mittel beim Annehmen.'
+        : 'Nicht finanzierbar: ' + (angebot?.grund || 'kein verfügbares Originalangebot');
+    const fortschritt = letzter
+      ? 'Eigene Fracht: ' + (letzter.geliefert === null ? 'Eis unterwegs nach Nadir'
+        : '50 Eis real an Nadir geliefert, Tick ' + letzter.geliefert) +
+        (letzter.end === null ? ' · bezahlte Rückfahrt offen' : ' · Rundfahrt bezahlt abgeschlossen bei Tick ' + letzter.end)
+      : 'Noch keine persönliche Fracht abgeschlossen.';
+    for (const [id, text] of [['frachterHinweis', hinweis], ['frachtAngebot', quote], ['frachtFortschritt', fortschritt]])
+      if ($(id).textContent !== text) $(id).textContent = text;
+    $('frachtAnnehmen').disabled = !angebot?.ok
+      || (k.politik.stilllegung && welt.buchwert(state, s.id) === 0);
+  } else $('frachtAnnehmen').disabled = true;
   $('pendelEis').disabled = $('pendelErz').disabled = !miner || !!pendel || imRaum;
   $('pendelStop').disabled = !pendel;
   const bergbauHand = miner && !pendel;
@@ -444,6 +465,11 @@ $('warten').addEventListener('click', schiffBefehl('shipWait', {}, 'Auftrag ange
 $('verkaufen').addEventListener('click', () => { const s = gewaehlt(); if (s) befehl({ type: 'shipSellIce', owner: SPIELER, schiff: s.id, menge: s.ladung.eis || 0 }, 'Eis am Dock an Aldera verkauft.'); });
 $('kaufMiner').addEventListener('click', () => befehl({ type: 'shipBuy', owner: SPIELER, klasse: 'miner', station: 'st_aldera' }, 'Miner aus dem Lager der Station gekauft.'));
 $('kaufFrachter').addEventListener('click', () => befehl({ type: 'shipBuy', owner: SPIELER, klasse: 'frachter', station: 'st_aldera' }, 'Frachter zum Originalpreis aus dem physischen Aldera-Lager gekauft.'));
+$('frachtAnnehmen').addEventListener('click', () => {
+  const s = gewaehlt();
+  if (s?.klasse === 'frachter') befehl({ type: 'shipFreightIce', owner: SPIELER, schiff: s.id },
+    'Original-W5n-Fracht finanziert: reale 50 Eis, vollständige Waren-/Fracht-Treuhand und bezahlter Pilotenlohn.');
+});
 $('dividende').addEventListener('click', () => { const n = welt.ausschuettbar(state, SPIELER); if (n > 0) befehl({ type: 'dividendPay', owner: SPIELER, betrag: n }, fmt(n) + ' ISK an das eigene Eigentümerkonto ausgeschüttet.'); });
 $('wasserKauf').addEventListener('click', () => befehl({ type: 'householdBuy', owner: $('haushalt').value, menge: Number($('wasserMenge').value) }, 'Wasser privat gekauft und verbraucht.'));
 $('automatik').addEventListener('click', () => { sicher(() => welt.politikSetzen(state, { automatik: !state.kanon.politik.automatik })); geaendert = true; zeigen(true); });

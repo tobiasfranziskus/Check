@@ -229,7 +229,8 @@ function zeigen(alles = false) {
   kartenZeigen(s, pendel, k);
   const miner = !!s && s.klasse === 'miner';
   const frachter = !!s && s.klasse === 'frachter';
-  $('minerAuftraege').hidden = $('minerAufgaben').hidden = $('rundenHilfe').hidden = !miner;
+  $('minerAuftraege').hidden = $('minerAufgaben').hidden = !miner;
+  $('rundenHilfe').hidden = frachter; // Ohne eigenes Schiff weiterhin zur Station leiten.
   $('frachterAufgaben').hidden = !frachter;
   if (frachter) {
     const hinweis = s.system === 'aldera' && s.phase === 'dock'

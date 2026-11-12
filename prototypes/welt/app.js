@@ -10,6 +10,7 @@ const canvas = $('raum'), ctx = canvas.getContext('2d'), graph = G.erstellen(ctx
 const SPIELER = 'house', TEMPI = [1, 10, 60];
 let welt = null, state = null, speicher = null, hülle = null;
 let pausiert = true, tempo = 0, letzter = null, rest = 0, geaendert = false, ansicht = 'flug', letzterSave = 0, dauerhaft = true;
+let pilotSchiff = null; // Nur UI-Auswahl: Kurs-/Fahrtregler ändern den Core nicht vor „Manuell steuern“. 
 
 function melde(text, fehler = false) { const m = $('meldung'); m.textContent = text; m.classList.toggle('fehler', fehler); }
 function sicher(f) { try { return f(); } catch (e) { pausiert = true; melde('Angehalten: ' + e.message, true); return null; } }
@@ -40,6 +41,40 @@ function groesse() {
   return [canvas.clientWidth, canvas.clientHeight];
 }
 const lageText = { angedockt: 'im Dock', frei: 'im Raum', andocken: 'dockt an', abdocken: 'dockt ab', transit: 'im Transit' };
+// Sichtbares Cockpit ist ausschließlich Projektion des autoritativen Flugkörpers.
+// Der Benutzer setzt nur bei einem ausdrücklichen Klick den ursprünglichen shipSteer-Befehl ab.
+function pilotWerte() {
+  $('pilotKursWert').textContent = $('pilotKurs').value;
+  $('pilotFahrtWert').textContent = $('pilotFahrt').value + ' %';
+}
+function pilotZeigen(s, pendel, k, o) {
+  const id = s ? s.id : '';
+  if (pilotSchiff !== id) {
+    pilotSchiff = id;
+    $('pilotKurs').value = s ? String(s.flug.sollKurs) : '0';
+    $('pilotFahrt').value = s ? String(s.flug.sollFahrt) : '0';
+    pilotWerte();
+  }
+  const b = s?.flug, dienst = s && k.flugdienst[s.id];
+  const steuerbar = !!b && b.lage === 'frei' && !pendel && !dienst?.gestrandet;
+  for (const element of ['pilotKurs', 'pilotFahrt', 'pilotAnwenden', 'pilotBremsen'])
+    $(element).disabled = !steuerbar;
+  $('pilotPosition').textContent = b ? Math.round(b.x / 1000) + ' / ' + Math.round(b.y / 1000) + ' kP' : '–';
+  $('pilotIst').textContent = b ? b.kurs + ' / ' + Math.round(Math.hypot(b.vx, b.vy)) + ' P/s' : '–';
+  $('pilotLage').textContent = b ? (lageText[b.lage] || b.lage) + ' · ' + (pendel ? 'Pendel ' + pendel.ware : b.modus) : '–';
+  $('pilotReserve').textContent = dienst ? fmt(o[dienst.konto]?.cash ?? 0) + ' ISK' : 'nicht gebunden';
+  let hinweis;
+  if (!s) hinweis = 'Zuerst unter „Station“ einen eigenen Miner kaufen.';
+  else if (pendel) hinweis = 'Der Pendelauftrag steuert automatisch. Für Handflug zuerst „Pendel beenden“ und die Dockrückkehr abwarten.';
+  else if (dienst?.gestrandet) hinweis = 'Flug angehalten: Die Arbeitsreserve ist leer. Der Core prüft eine echte Nachfinanzierung.';
+  else if (b.lage === 'angedockt') hinweis = 'Im Dock: „Handsteuerung“ öffnen und „Abdocken“ drücken. Der Core bindet die echte Flugreserve.';
+  else if (b.lage === 'abdocken' || b.lage === 'andocken') hinweis = 'Dockmanöver läuft – Steuerung erst danach verfügbar.';
+  else if (b.lage !== 'frei') hinweis = 'Der Miner ist derzeit nicht im freien Flug.';
+  else if (welt.flugKern.imFeld(s, 'eis')) hinweis = 'Eisfeld erreicht und langsam genug: Der Originalbefehl „Eis fördern“ kann jetzt geprüft werden.';
+  else if (welt.flugKern.imFeld(s, 'erz')) hinweis = 'Erzfeld erreicht und langsam genug: Der Originalbefehl „Erz fördern“ kann jetzt geprüft werden.';
+  else hinweis = 'Freier Flug: Kurs und Fahrt einstellen, dann „Manuell steuern“. Zur Station mit „Andocken“ zurückkehren.';
+  $('pilotHinweis').textContent = hinweis;
+}
 function zeichnen() {
   const [w, h] = groesse(), K = welt.flugKern, sys = K.DATEN.systeme.aldera;
   const cx = 144000, cy = 224000, z = Math.min(w, h) / 2500000;
@@ -81,6 +116,7 @@ function zeigen(alles = false) {
     wahl.dataset.liste = liste;
   }
   const s = gewaehlt(), pendel = s && k.pendel[s.id], imRaum = s && s.flug.lage !== 'angedockt';
+  pilotZeigen(s, pendel, k, o);
   $('pendelEis').disabled = $('pendelErz').disabled = !s || !!pendel || imRaum;
   $('pendelStop').disabled = !pendel;
   for (const id of ['abdocken', 'zumEis', 'zumErz', 'andocken', 'foerdernEis', 'foerdernErz', 'warten', 'verkaufen']) $(id).disabled = !s || !!pendel;
@@ -150,7 +186,7 @@ async function autosave(grund) {
 }
 function uebernehmen(geladen, text) {
   welt = geladen.welt; state = geladen.state; pausiert = true; rest = 0; geaendert = false;
-  $('schiff').dataset.liste = ''; melde(text); zeigen(true);
+  $('schiff').dataset.liste = ''; pilotSchiff = null; melde(text); zeigen(true);
 }
 async function laden(weltId, platz) {
   if (!confirm('Platz „' + platz + '“ laden? Der aktuelle Stand wird vorher als Autosave gesichert.')) return;
@@ -200,6 +236,21 @@ let langsam = 0;
 setInterval(() => { if (state && ansicht !== 'flug' && ++langsam) sicher(() => zeigen(true)); }, 1000);
 
 // ---------------------------------------------------------------- Bedienung
+$('pilotKurs').addEventListener('input', pilotWerte);
+$('pilotFahrt').addEventListener('input', pilotWerte);
+$('pilotAnwenden').addEventListener('click', () => {
+  const s = gewaehlt(); if (!s) return;
+  befehl({ type: 'shipSteer', owner: SPIELER, schiff: s.id,
+    kurs: Number($('pilotKurs').value), fahrt: Number($('pilotFahrt').value) },
+    'Manueller Flug: Kurs und Sollfahrt vom gemeinsamen Core übernommen.');
+});
+$('pilotBremsen').addEventListener('click', () => {
+  const s = gewaehlt(); if (!s) return;
+  $('pilotKurs').value = String(s.flug.kurs);
+  $('pilotFahrt').value = '0'; pilotWerte();
+  befehl({ type: 'shipSteer', owner: SPIELER, schiff: s.id, kurs: s.flug.kurs, fahrt: 0 },
+    'Bremsung angefordert: 0 % Sollfahrt. Der Miner verzögert physikalisch.');
+});
 const schiffBefehl = (type, extra, text) => () => { const s = gewaehlt(); if (s) befehl({ type, owner: SPIELER, schiff: s.id, ...extra }, text); };
 $('pendelEis').addEventListener('click', schiffBefehl('shipShuttle', { ware: 'eis' }, 'Pendelauftrag Eis: Feld, Förderung, Dockverkauf – alles vorfinanziert.'));
 $('pendelErz').addEventListener('click', schiffBefehl('shipShuttle', { ware: 'erz' }, 'Pendelauftrag Erz angenommen.'));

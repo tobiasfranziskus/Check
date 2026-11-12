@@ -73,9 +73,13 @@ export function k6Versuch(quelle, anzahl, minuten = K6_MINUTEN, chargeLimit = 50
     original({ type: 'shipShuttleStop', owner: 'npc3', schiff: id });
     original({ type: 'shipShuttle', owner: 'npc3', schiff: id, ware: 'eis' });
   }
-  let vorAbsatz = wasserabsatz(s), hashK5 = null;
+  let vorAbsatz = wasserabsatz(s), hashK5 = null, letzterFrachterVerlust = null;
+  const frachterStart = Object.values(s.ships).filter(sh => sh.klasse === 'frachter'
+    && w.buchwert(s, sh.id) > 0).map(sh => sh.id);
   for (let n = 0; n < minuten; n++) {
     w.minute(s);
+    for (const id of frachterStart) if (w.buchwert(s, id) === 0 && !letzterFrachterVerlust)
+      letzterFrachterVerlust = { tick: s.tick, schiff: id };
     for (const id of minerIds) {
       const a = arbeit[id], aktuell = s.ships[id].ladung.eis || 0;
       if (aktuell > a.letzterLaderaum) a.gefuellt += aktuell - a.letzterLaderaum;
@@ -104,7 +108,7 @@ export function k6Versuch(quelle, anzahl, minuten = K6_MINUTEN, chargeLimit = 50
     seed, anzahl, minuten, chargeLimit, tick: s.tick, startHash, hash: w.hash(s),
     k5Hash21865: hashK5, minerIds, arbeit: Object.fromEntries(Object.entries(arbeit)
       .map(([id, a]) => [id, { gefuellt: a.gefuellt, stopTick: a.stopTick }])),
-    befehle, delta, letzterAbsatz, maxOffen, saldo,
+    befehle, delta, letzterAbsatz, letzterFrachterVerlust, maxOffen, saldo,
     kassen: Object.fromEntries(Object.entries(s.owners).map(([id, a]) => [id, a.cash])),
     amEnde: { erz: s.stations.st_aldera.lager.erz || 0, material: s.stations.st_nadir.lager.material || 0,
       eis: s.stations.st_aldera.lager.eis || 0, wasser: s.stations.st_nadir.lager.wasser || 0,

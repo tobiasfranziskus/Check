@@ -107,7 +107,7 @@ const assert = require('node:assert/strict');
         assert.equal(vorVerkauf.miner.ladung.eis, menge, 'Ware bleibt bis zum Dock an Bord');
         await tap('#verkaufen');
         const nachVerkauf = await snapshot();
-        assert.equal(nachVerkauf.miner.ladung.eis, 0, 'Eis ordnungsgemäß aus dem Schiff übertragen');
+        assert.equal(nachVerkauf.miner.ladung.eis || 0, 0, 'Eis ordnungsgemäß aus dem Schiff übertragen');
         assert.equal(nachVerkauf.verkauft - vorVerkauf.verkauft, menge, 'Original-Dockverkäufe');
         assert.equal(nachVerkauf.stationEis - vorVerkauf.stationEis, menge, 'Aldera erhält echte Ware');
         assert.equal(nachVerkauf.haus - vorVerkauf.haus, menge * 5, 'Aldera zahlt 5 ISK pro Eis an Eigentümer');

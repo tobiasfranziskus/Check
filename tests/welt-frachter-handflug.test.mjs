@@ -61,7 +61,7 @@ test('K1/Frachter: realer 2D-Flug mit gebundenem Lohngeld, Save/Load und Dock-R√
   const sh = Object.values(s.ships).find(x => x.owner === 'house' && x.klasse === 'frachter');
   const id = sh.id, money = s.owners.house.cash, wage = s.owners.pilot_house.cash;
   verweigern(w, s, { type:'shipUndock', owner:'transport', schiff:id }, /Besitzer/);
-  verweigern(w, s, { type:'shipFreight', owner:'house', schiff:id }, /W3|Spedition|Transport|Finanzierung|nur/);
+  verweigern(w, s, { type:'shipFreight', owner:'house', schiff:id }, /Bezahlter Frachter|W3|Spedition|Transport|Finanzierung|nur/);
   ausf√ºhren(w, s, 'shipUndock', { schiff:id });
   const konto = s.kanon.flugdienst[id].konto;
   assert.equal(s.owners[konto].cash, w.daten.flug.reserveMinuten * w.daten.flug.lohnJeMinute);

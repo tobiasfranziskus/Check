@@ -151,15 +151,18 @@ const path = require('node:path');
           await step(1); hin++;
         }
         assert.ok(hin > 0 && hin < 60, 'Eisfeld wurde real erreicht');
-        await vergleicheAnsichten(await daten(), 'Feldankunft');
+        const feld = await daten();
+        await vergleicheAnsichten(feld, 'Feldankunft');
         await view('flug');
         await tap('#foerdernEis');
         await step(50);
         const abbau = await daten(), geladen = miner(abbau.state);
         equalAudit(abbau, 'Förderung');
         assert.equal(geladen.ladung.eis, 50, '50 reale Eis auf eigenem Schiff');
-        assert.equal(abbau.state.w5n.mineLohn, 100, '50 bezahlte Original-Förderminuten à 2 ISK');
-        assert.equal(abbau.bericht.verkaeufe.eisAnAldera, 0, 'kein Fernverkauf');
+        assert.ok(abbau.state.w5n.mineLohn - feld.state.w5n.mineLohn >= 100,
+          '50 eigene bezahlte Förderminuten à 2 ISK (gleichzeitige NPC-Löhne erlaubt)');
+        assert.equal(await page.locator('#verkaufen').isDisabled(), true,
+          'kein Fernverkauf während des eigenen Feldflugs');
         await vergleicheAnsichten(abbau, 'Förderung');
 
         await view('flug');
@@ -177,7 +180,8 @@ const path = require('node:path');
         const verkauf = await daten();
         equalAudit(verkauf, 'Dockverkauf');
         assert.equal(miner(verkauf.state).ladung.eis || 0, 0, 'leerer Frachtraum');
-        assert.equal(verkauf.bericht.verkaeufe.eisAnAldera, 50);
+        assert.equal(verkauf.bericht.verkaeufe.eisAnAldera -
+          vorVerkauf.bericht.verkaeufe.eisAnAldera, 50, 'nur neu tatsächlich am Dock verkaufte eigene Ware');
         assert.equal(verkauf.state.owners.house.cash - vorVerkauf.state.owners.house.cash,
           250, 'bezahlter Originalankauf von 50 Eis');
         assert.equal(verkauf.state.stations.st_aldera.lager.eis -

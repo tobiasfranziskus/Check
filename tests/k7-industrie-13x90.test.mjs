@@ -10,7 +10,7 @@ const require=createRequire(import.meta.url);
 const Welt=require('../prototypes/welt/welt-kern.js');
 
 const szenarien=Object.freeze([
-  {id:'K7-01',typ:'Basis: vorhandene NPC-Automatik',politik:{}},
+  {id:'K7-01',typ:'Basis: K7-Ersatz und eigentümerfinanzierte K6-Eisdisposition',politik:{}},
   {id:'K7-02',typ:'NPC-Automatik ausgeschaltet',politik:{automatik:false}},
   {id:'K7-03',typ:'Kein automatischer Ersatzkauf',politik:{ersatzkauf:false}},
   {id:'K7-04',typ:'Stilllegung beim Wertverzehr',politik:{stilllegung:true}},
@@ -21,7 +21,7 @@ const szenarien=Object.freeze([
   {id:'K7-09',typ:'Privatkunden sparen 30 Prozent',politik:{sparquoteStandard:300}},
   {id:'K7-10',typ:'NPC-Unternehmen thesaurieren',politik:{
     ausschuettung:{npc3:0,transport:0,st_aldera:0,st_nadir:0,werft_extern:0}}},
-  {id:'K7-11',typ:'Werft plant Vorratshüllen',politik:{werftVorrat:1}},
+  {id:'K7-11',typ:'K7 ohne Umwidmung – 50 Erz allein erzeugen keine Wasser-Nachfrage',politik:{},eisUmstellen:false},
   {id:'K7-12',typ:'Frühere Ersatzvorschau 80 Prozent',politik:{ersatzVorlaufProzent:80}},
   {id:'K7-13',typ:'Aldera bezieht kein Rückfrachtwasser',politik:{wasserZielAldera:0}},
 ]);
@@ -110,13 +110,37 @@ for(const sc of szenarien){
     assert.ok(s.w5.fertig-initial.frachter>=1,
       'mindestens eine echte, signierte W5-Werftproduktion');
     assert.equal(s.owners.k7_werft_treuhand.cash,0,'nur eingelöste Werftreserve');
+    // K6-Gegenversuch jetzt *nach* realer K7-Lieferung und tatsächlich
+    // bezahltem Ersatzfrachter: npc3 disponiert nur EIGENE vier Miner per
+    // bereits existierenden Originalbefehlen, nicht als geänderte KI-Produktregel.
+    const umgestellt=[];
+    if(sc.eisUmstellen!==false)for(const id of ['sh004','sh005','sh006','sh008']){
+      const sh=s.ships[id];
+      assert.equal(sh.owner,'npc3','nur rechtmäßiges Eigentum umwidmen');
+      assert.equal(sh.flug.lage,'angedockt','kein Teleport bei Umwidmung');
+      const stop=w.execute(s,{type:'shipShuttleStop',owner:'npc3',schiff:id});
+      assert.equal(stop.ok,true,'NPC-Erzpendel stoppen '+id+': '+stop.reason);
+      const start=w.execute(s,{type:'shipShuttle',owner:'npc3',schiff:id,ware:'eis'});
+      assert.equal(start.ok,true,'NPC-Eispendel starten '+id+': '+start.reason);
+      umgestellt.push(id);
+    }
+    audit(w,s,'nach Eigentümer-Umwidmung');
     const beginnWasser=s.kanon.wasser.konsum;
+    const beginnEis=s.w5n.eisAbgebaut;
+    let letzterAbsatztag=0;
     for(let tag=1;tag<=90;tag++){
+      const vor=s.kanon.wasser.konsum;
       w.advance(s,1440);
       audit(w,s,tag);
+      if(s.kanon.wasser.konsum>vor)letzterAbsatztag=tag;
     }
     assert.equal(s.tick,start+500+90*1440);
     const nach=s.kanon.wasser.konsum-beginnWasser;
+    const eisNeu=s.w5n.eisAbgebaut-beginnEis;
+    if(sc.eisUmstellen===false){
+      assert.equal(eisNeu,0,'Kontrolle: kein Eis nach abgelaufenem Exportauftrag');
+      assert.equal(nach,0,'Kontrolle: keine Wasserkäufe aus Phantomware');
+    } else assert.equal(umgestellt.length,4);
     const json=w.save(s),geladen=w.load(json);
     assert.equal(w.hash(geladen),w.hash(s),'90 Tage Save/Load bitgleich');
     assert.equal(geladen.rulesVersion,200);
@@ -127,7 +151,8 @@ for(const sc of szenarien){
     console.log('K7_90_TAGE '+JSON.stringify({id:sc.id,titel:sc.typ,
       tag:90,tick:s.tick,hash:w.hash(s),erzk7:50,materialNeu:s.w4.materialErzeugt-initial.material,
       frachterNeu:s.w5.fertig-initial.frachter,
-      eis:s.w5n.eisAbgebaut,wasserKaeufe:nach,
+      eisNeu,umgestellteMiner:umgestellt,wasserKaeufe:nach,letzterAbsatztag,
+      eisGesamt:s.w5n.eisAbgebaut,
       gesamtWasser:s.kanon.wasser.konsum,
       frachterEinsatzfaehig:Object.values(s.ships).filter(sh=>sh.klasse==='frachter'
         &&sh.owner==='transport'&&w.buchwert(s,sh.id)>0).length,

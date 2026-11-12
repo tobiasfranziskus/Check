@@ -2759,7 +2759,9 @@ const m_core_w5n=(()=>{
    if(s.owners[c.zielStation].cash<p.gesamt)
      return {ok:false,grund:'Nadir kann Eis und Hin-/Rueckfracht nicht bezahlen'};
    if(s.owners[sh.owner].cash<p.arbeit)
-     return {ok:false,grund:'Frachtereigner kann beide Fluege nicht vorfinanzieren'};
+     return {ok:false,grund:sh.owner===c.frachterOwner
+       ? 'Spedition kann Flugarbeit nicht vorfinanzieren'
+       : 'Spieler kann beide Fluege nicht vorfinanzieren'};
    return {ok:true,grund:'Beide Fluege, Ware und Frachttarif finanzierbar',...p};
  }
  function frachtStart(s,r,sh){

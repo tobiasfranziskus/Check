@@ -83,6 +83,11 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K1-Frachter: eigener Kauf, echter Touch-Handflug, Löhne und Dock-Save"
+        run: node tests/welt-frachter-handflug-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
       - name: "K1-Raumkarte: Touch-Zielwahl ohne Nebenwirkung, Originalanflug und Docken"
         run: node tests/welt-kartenflug-browser.cjs
         env:

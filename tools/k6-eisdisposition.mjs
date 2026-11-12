@@ -43,9 +43,9 @@ export function k6Start(seed) {
 // Begrenzter Vergleich: pro gewähltem Miner höchstens 50 NEU geförderte Eis,
 // einmalig beim Start disponiert. Kein Nachstarten durch den Test, kein weiteres
 // Nachfinanzieren; alle späteren Transaktionen nur durch den vorhandenen Core.
-export function k6Versuch(quelle, anzahl, minuten = K6_MINUTEN) {
+export function k6Versuch(quelle, anzahl, minuten = K6_MINUTEN, chargeLimit = 50) {
   if (![0, 1, 2, 4].includes(anzahl) || !Number.isSafeInteger(minuten)
-      || minuten < 350 || minuten > 90 * 1440)
+      || minuten < 350 || minuten > 90 * 1440 || ![50, 500].includes(chargeLimit))
     throw RangeError('K6: unzulässiger begrenzter Test');
   const { w, terminalSave, ausgang, seed, startHash } = quelle;
   const s = w.load(terminalSave), start = zaehler(s), eigentum = eigentuemer(s);
@@ -80,9 +80,9 @@ export function k6Versuch(quelle, anzahl, minuten = K6_MINUTEN) {
       const a = arbeit[id], aktuell = s.ships[id].ladung.eis || 0;
       if (aktuell > a.letzterLaderaum) a.gefuellt += aktuell - a.letzterLaderaum;
       a.letzterLaderaum = aktuell;
-      if (a.gefuellt >= 50 && a.stopTick === null) {
+      if (a.gefuellt >= chargeLimit && a.stopTick === null) {
         // Nur das bereits vorhandene Original-Pendel anhalten. Exakt wie K5.
-        assert.equal(a.gefuellt, 50, 'keine über 50 hinaus gekaufte Testförderung');
+        assert.equal(a.gefuellt, chargeLimit, 'keine über die Testgrenze hinaus gekaufte Förderung');
         original({ type: 'shipShuttleStop', owner: 'npc3', schiff: id });
         a.stopTick = s.tick;
       }
@@ -101,7 +101,7 @@ export function k6Versuch(quelle, anzahl, minuten = K6_MINUTEN) {
   const end = zaehler(s), delta = differenz(start, end), saldo = Object.fromEntries(
     Object.entries(s.owners).map(([id, a]) => [id, a.cash - (kasseVor[id] || 0)]));
   const stand = {
-    seed, anzahl, minuten, tick: s.tick, startHash, hash: w.hash(s),
+    seed, anzahl, minuten, chargeLimit, tick: s.tick, startHash, hash: w.hash(s),
     k5Hash21865: hashK5, minerIds, arbeit: Object.fromEntries(Object.entries(arbeit)
       .map(([id, a]) => [id, { gefuellt: a.gefuellt, stopTick: a.stopTick }])),
     befehle, delta, letzterAbsatz, maxOffen, saldo,
@@ -111,6 +111,13 @@ export function k6Versuch(quelle, anzahl, minuten = K6_MINUTEN) {
       eisFrachtAktiv: !!s.w5n.frachtauftrag, wasserwerkAktiv: !!s.w5n.fabrikauftrag,
       bergbauAktiv: minerIds.filter(id => s.kanon.pendel[id] && !s.kanon.pendel[id].beenden),
       frachterAktiv: Object.values(s.ships).filter(sh => sh.klasse === 'frachter' && w.buchwert(s, sh.id) > 0).map(sh => sh.id),
+      frachter: Object.values(s.ships).filter(sh => sh.klasse === 'frachter').map(sh => ({
+        id: sh.id, buchwert: w.buchwert(s, sh.id), phase: sh.phase,
+        ort: sh.system, auftrag: sh.auftrag, ladung: { ...sh.ladung },
+      })),
+      miner: minerIds.map(id => ({ id, buchwert: w.buchwert(s, id),
+        ladeEis: s.ships[id].ladung.eis || 0, pendel: s.kanon.pendel[id] || null })),
+      engpass: Object.entries(s.kanon.engpass?.zaehler || {}).sort((a, b) => b[1] - a[1]).slice(0, 12),
     },
     geld: geld(s), minted: s.minted, burned: s.burned,
     audit: w.audit(s).ok,
@@ -119,7 +126,7 @@ export function k6Versuch(quelle, anzahl, minuten = K6_MINUTEN) {
   assert.equal(stand.geld, 33000); assert.equal(stand.minted, 0); assert.equal(stand.burned, 0);
   assert.equal(stand.audit, true);
   assert.deepEqual(eigentuemer(s), eigentum, 'keine fremde Hülle oder Eigentumsübertragung');
-  assert.ok(Object.values(arbeit).every(a => a.gefuellt <= 50), 'kein Miner über Testgrenze');
+  assert.ok(Object.values(arbeit).every(a => a.gefuellt <= chargeLimit), 'kein Miner über Testgrenze');
   assert.equal(delta.erz, 0, 'keine neuen Erzaufträge/Exporte nach K5');
   assert.equal(delta.material, 0, 'keine kostenlose Industrieproduktion');
   assert.equal(delta.minerBau, 0, 'keine kostenlose Minerfertigung');
@@ -133,6 +140,12 @@ export function k6Versuch(quelle, anzahl, minuten = K6_MINUTEN) {
   assert.equal(w.hash(geladen), w.hash(fort), 'deterministische Save-Fortsetzung');
   stand.replay = { minuten: 130, hash: w.hash(geladen) };
   return stand;
+}
+
+// K6-Langlauf: keine neue Automatik, keine Nachkäufe, ursprüngliche KI bleibt aktiv.
+// Die 500er-Grenze ist NUR eine Test-Abbruchgrenze, keine Produktionsregel.
+export function k6Ausdauer(seed = 42, minuten = 7000) {
+  return k6Versuch(k6Start(seed), 4, minuten, 500);
 }
 
 export function k6Vergleich(seed = 42, minuten = K6_MINUTEN) {

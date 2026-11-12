@@ -52,6 +52,12 @@ const assert=require('node:assert/strict'),http=require('node:http'),fs=require(
     }
     const mined=await good('wirklich geförderte 50 Eis');
     assert.ok(mined.s.stations.st_aldera.lager.eis>=50);
+    await tap('#pendelStop');
+    let dockMin=0;
+    while((await get()).s.kanon.pendel[miner.id]){
+      await go(5); dockMin+=5; assert.ok(dockMin<150,'Mineroriginalbefehl beendet das Pendel');
+    }
+    assert.equal((await get()).s.ships[miner.id].flug.lage,'angedockt');
     await page.locator('#schiff').selectOption(fr.id);
     assert.equal(await page.locator('#frachterAufgaben').isVisible(),true);
     assert.equal(await page.locator('#frachtAnnehmen').isDisabled(),false,'echtes Angebot');

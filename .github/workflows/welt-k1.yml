@@ -12,6 +12,8 @@ on:
       - 'tests/k5-terminal-diagnose.test.mjs'
       - 'tools/k6-eisdisposition.mjs'
       - 'tests/k6-eisdisposition.test.mjs'
+      - 'tools/k7-industrieerz-gate.mjs'
+      - 'tests/k7-industrieerz-gate.test.mjs'
       - 'tools/k4-ore-allocation.mjs'
       - 'tests/k4-ore-allocation.test.mjs'
       - 'tools/referenzmodell-c.mjs'
@@ -211,4 +213,28 @@ jobs:
             ${{ runner.temp }}/k6-seed7.jsonl
             ${{ runner.temp }}/k6-ausdauer-seed42.jsonl
             ${{ runner.temp }}/k6-ausdauer-seed7.jsonl
+          if-no-files-found: error
+
+  k7-industrielles-erz-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "K7: Industriekassen und exakt fünf abgelehnte Originalaufträge bei erschöpftem Erzexport prüfen"
+        run: |
+          node --test tests/k7-industrieerz-gate.test.mjs
+          node tools/k7-industrieerz-gate.mjs 42 > "$RUNNER_TEMP/k7-seed42.jsonl"
+          node tools/k7-industrieerz-gate.mjs 7 > "$RUNNER_TEMP/k7-seed7.jsonl"
+          grep '^K7_RESULT ' "$RUNNER_TEMP/k7-seed42.jsonl" | cut -c1-1800
+          grep '^K7_RESULT ' "$RUNNER_TEMP/k7-seed7.jsonl" | cut -c1-1800
+      - name: "K7: tatsächliche Original-Kassen, Quoten und Ablehnungsgründe archivieren"
+        uses: actions/upload-artifact@v4
+        with:
+          name: k7-industrieerz-finanzierung-seed42-7
+          path: |
+            ${{ runner.temp }}/k7-seed42.jsonl
+            ${{ runner.temp }}/k7-seed7.jsonl
           if-no-files-found: error

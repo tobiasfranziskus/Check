@@ -3738,6 +3738,8 @@ function createW5State(seed = W5_RULES.startSeed) {
   return s;
 }
 const loadW5 = (json) => loadErz(json,W5_RULES);
+const industryOrePrebook=(s,carrierId,minerId)=>m_core_w3.vorbestellen(s,W5_RULES,carrierId,minerId);
+const industryOreCancel=(s)=>m_core_w3.stornierenVorArbeit(s,W5_RULES);
 const pilotW3Stand = (state) => m_core_w3.audit(state,
   state.rulesVersion===W5_RULES.rulesVersion?W5_RULES:
     state.rulesVersion===W4_RULES.rulesVersion?W4_RULES:W3_RULES);
@@ -3787,6 +3789,7 @@ const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
 return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES,
   pilotAuftragsStand, pilotWirtschaftsStand, pilotNpcInvestition, pilotNpcKrisenLage,
+  industryOrePrebook,industryOreCancel,
   pilotW3Stand, pilotW3Kalkulation, pilotW4Stand, pilotW4Kalkulation,
   pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf,
   pilotW5TransferStand, pilotW5TransferKalkulation,
@@ -3837,6 +3840,15 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
       throw TypeError('K1: nur eigene Anfangskapital-Verteilung');
     return createEngine({},{...options,wageTrade:true,waterTrade:true,
       personalWages:true,kanon:true,ort});
+  },
+  // K7: getrennte Forschungsregel200, keine Rule199-Migration/Produktänderung.
+  createK7Welt:(options,ort)=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('K7: nur eigene Anfangskapital-Verteilung');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,
+      personalWages:true,kanon:true,industryOre:true,ort});
   }});
 if(research)return api;
 if(typeof module==='object'&&module.exports)module.exports=api;else scope.W5acOriginal=api;

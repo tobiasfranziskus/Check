@@ -96,16 +96,14 @@ a{color:#8fe2f5}
 </div>
 <div class="reihe"><button id="pilotAnwenden" disabled>Manuell steuern</button><button id="pilotBremsen" disabled>Bremsen (0 %)</button></div>
 <small>Kursvorgaben und Regler ändern nur die Anzeige. Erst „Manuell steuern“ sendet <code>shipSteer</code> an den gemeinsamen Core. Bremsen benötigt Zeit.</small>
-<h3>Direktaktionen</h3>
-<div class="reihe"><button id="abdocken">Abdocken</button><button id="andocken">Andocken</button></div>
-<div class="reihe"><button id="foerdernEis">Eis fördern</button><button id="foerdernErz">Erz fördern</button></div>
-<small>Fördern ist nur im passenden Feld bei ausreichender Verzögerung möglich. Alle Aktionen verwenden die bestehenden finanzierten Originalbefehle.</small>
+<h3>Bergbaurunde · Eis selbst fördern und verkaufen</h3>
+<div class="reihe"><button id="abdocken">1 · Abdocken</button><button id="zumEis">2 · Zum Eisfeld</button><button id="foerdernEis">3 · Eis fördern</button></div>
+<div class="reihe"><button id="warten">4 · Förderung stoppen</button><button id="andocken">5 · Andocken</button><button id="verkaufen">6 · Eis verkaufen</button></div>
+<small>Die sechs Schritte nutzen ausschließlich bestehende, finanzierte Originalbefehle. Abdocken bindet 40 ISK Flugreserve; jede geflogene Minute bezahlt den Piloten. Nur am Feld wird real gefördert; nur am Dock kauft Aldera tatsächlich vorhandenes Eis.</small>
+<h3>Erzabbau</h3>
+<div class="reihe"><button id="zumErz">Zum Erzfeld</button><button id="foerdernErz">Erz fördern</button></div>
+<small>Erz benötigt ebenso einen gültigen finanzierten Abnehmerauftrag. Ohne Finanzierung gibt es keine kostenlose Förderung.</small>
 </div>
-<details><summary>Weitere Flug- und Warenbefehle</summary>
-<div class="reihe"><button id="zumEis">Zum Eisfeld</button><button id="zumErz">Zum Erzfeld</button></div>
-<div class="reihe"><button id="warten">Auftrag anhalten</button><button id="verkaufen">Eis am Dock verkaufen</button></div>
-<small>Abdocken bindet 40 ISK Flugreserve. Jede Flugminute kostet 1 ISK Pilotenlohn; gefördert wird nur im Feld, verkauft nur am Dock.</small>
-</details>
 <div id="schiffStatus" class="rollen"></div>
 </section>
 

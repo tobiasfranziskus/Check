@@ -35,8 +35,18 @@ function realIce(x) {
     assert.ok(++i<150,'50 wirkliche Eisförderungen, Dockverkauf und Arbeit');
   }
   assert.ok(x.s.stations.st_aldera.lager.eis>=50);
-  pruefe(x.w,x.s,'echte 50 Eis aus Bergbau');
-  return i;
+  // Der Miner bleibt ein eigenständiges finanzierbares Schiff. Für den
+  // isolierten Fracht-Lohnvergleich die laufende freiwillige Bergbaurunde
+  // original beenden und erst nach echter Dockrückkehr weiterprüfen.
+  x.run('house','shipShuttleStop',{schiff:x.miner.id});
+  let rueck=0;
+  while(x.s.kanon.pendel[x.miner.id]){
+    x.w.minute(x.s);
+    assert.ok(++rueck<150,'Miner kehrt über Core-Dockmanöver zurück');
+  }
+  assert.equal(x.s.ships[x.miner.id].flug.lage,'angedockt');
+  pruefe(x.w,x.s,'echte 50 Eis und Miner beendet');
+  return i+rueck;
 }
 function nein(w,s,cmd,reason) {
   const before=w.canonical(s);

@@ -368,8 +368,9 @@ const m_data_erzpilot = (() => {
   // never transfers or rescue during a running economy; total remains 33,000 ISK.
   if(research){
     W5_RULES.rulesVersion=research.personalWages===true?195:research.waterTrade===true?194:research.wageTrade===true?193:192;
-    if(research.kanon===true)W5_RULES.rulesVersion=199;
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort'].includes(k))
+    if(research.kanon===true)W5_RULES.rulesVersion=research.industryOre===true?200:199;
+    if(research.industryOre===true)W5_RULES.k7={industrieErz:true, charge:50};
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre'].includes(k))
       || (Object.hasOwn(research,'kanon')&&(research.kanon!==true||research.personalWages!==true))
       || (Object.hasOwn(research,'ort')!==(research.kanon===true))
       || (research.kanon===true&&(typeof research.ort?.imFeld!=='function'
@@ -378,7 +379,8 @@ const m_data_erzpilot = (() => {
       || (Object.hasOwn(research,'waterTrade')&&research.waterTrade!==true)
       || (research.waterTrade===true&&research.wageTrade!==true)
       || (research.personalWages===true&&(research.waterTrade!==true||research.wageTrade!==true))
-      || (Object.hasOwn(research,'personalWages')&&research.personalWages!==true))
+      || (Object.hasOwn(research,'personalWages')&&research.personalWages!==true)
+      || (Object.hasOwn(research,'industryOre')&&(research.industryOre!==true||research.kanon!==true)))
       throw TypeError('Unbekannter W5ad-Startparameter');
     const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
     if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
@@ -1709,7 +1711,12 @@ const m_core_erzpilot = (() => {
       Math.max(vorhandenesErz, verfuengbareArbeit)));
     // Regel16: Endverbraucher muss auch diese neue Charge nachvollziehbar
     // bezahlen koennen, nicht nur die lokale Station. Gilt fuer Spieler UND NPC.
-    if (cfg.npcInvestor) menge = Math.min(menge, freieEndnachfrage(state, rules, schiff.id));
+    const industrie = rules.k7 && state.w3?.auftrag?.phase === 'vorbestellt'
+      && state.w3.auftrag.industrieMiner === schiff.id
+      && state.kanon?.industrieErz?.phase === 'aktiv'
+      && state.kanon.industrieErz.erzAngenommen === false;
+    if (cfg.npcInvestor && !industrie) menge = Math.min(menge, freieEndnachfrage(state, rules, schiff.id));
+    if (industrie) menge = Math.min(menge, state.w3.auftrag.menge);
     if (menge <= 0) return null;
     const wert = menge * cfg.preis, konto = `erz_treuhand_${schiff.id}`;
     const arbeitsKonto = `erz_arbeit_${schiff.id}`;
@@ -1754,6 +1761,9 @@ const m_core_erzpilot = (() => {
       arbeit.cash = 0;
     }
     delete buch[schiff.id];
+    if (!stornierung && menge > 0 && rules.k7 && state.w3?.auftrag?.phase === 'vorbestellt'
+      && state.w3.auftrag.industrieMiner === schiff.id && state.kanon?.industrieErz?.phase === 'aktiv')
+      state.kanon.industrieErz.erzAngenommen = true;
     return menge;
   }
   function stornieren(state, rules, schiff) {
@@ -1929,7 +1939,10 @@ const m_core_erzpilot = (() => {
       // Kein kostenloses Weiterfördern: Stop ausschließlich bei unbelegter Zukunft.
       // Ein schon bezahlter, noch nicht fertiggestellter Auftrag bleibt unangetastet.
       for (const sh of eigene) {
-        if (sh.auftrag !== 'foerdern' || buch[sh.id]) continue;
+        if (sh.auftrag !== 'foerdern' || buch[sh.id]
+          || (rules.k7 && state.w3?.auftrag?.phase === 'vorbestellt'
+            && state.w3.auftrag.industrieMiner === sh.id
+            && state.kanon?.industrieErz?.phase === 'aktiv' && !state.kanon.industrieErz.erzAngenommen)) continue;
         const res = m_core_commands.execute(state,
           { type: 'shipWait', owner, schiff: sh.id }, rules);
         if (!res.ok) throw Error('W2: Unfinanzierte Betriebsruhe abgelehnt: ' + res.reason);
@@ -3584,6 +3597,7 @@ function createW3State(seed = W3_RULES.startSeed, rules = W3_RULES) {
   s.ledger.erz.initial-=geschenkt;
   s.w3={beauftragt:0,abgeschlossen:0,geliefert:0,kaufAusgaben:0,
     arbeitsKosten:0,frachtUmsatz:0,auftrag:null};
+  if(rules.k7){s.w3.storniert=0;s.w3.stornoRueckzahlung=0;}
   return s;
 }
 function loadErz(json, rules = ERZ_RULES) {

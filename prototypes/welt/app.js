@@ -111,6 +111,9 @@ function zeigen(alles = false) {
       ['Löhne Wasserwerk / Minerflug', fmt(b.loehne.wasserwerk) + ' / ' + fmt(b.loehne.minerflug) + ' ISK'],
       ['Ausschüttungen', fmt(b.dividenden) + ' ISK'], ['Ersatzkäufe / gebaute Frachter', b.ersatzkaeufe + ' / ' + b.produktion.frachterGebaut],
       ['K2 Miner gebaut / nach Aldera geliefert', b.produktion.minerGebaut + ' / ' + b.produktion.minerGeliefert],
+      ['K3 Ersatzfrachter · Material / Werft', (state.stations.st_nadir.lager.material || 0) + ' / ' + welt.kern.pilotW5Kalkulation(state).grund],
+      ['K3 Kaufgeld / Überführung', fmt(o.transport.cash) + ' ISK / ' + (state.w5ac.active ? state.w5ac.active.id + ' unterwegs' : 'kein aktiver Transfer')],
+      ['K3 nächster Auftrag', state.w5n.frachtauftrag ? 'Eisfracht finanziert' : state.w3.auftrag ? 'Erzfracht finanziert' : 'kein aktiver Frachtauftrag'],
       ['Erz exportiert / Rest Exportetat', fmt(b.verkaeufe.erzExportiert) + ' / ' + fmt(b.kaeuferliquiditaet.export) + ' ISK']]);
     tabelle($('haushalte'), ['Haushalt', 'Wohnort', 'Kasse', 'ausgegeben', 'Wasser gekauft'],
       Object.entries(b.haushalte).map(([id, v]) => [id, welt.daten.haushalte[id] === 'st_aldera' ? 'Aldera' : 'Nadir', fmt(v.kasse), fmt(v.ausgegeben), fmt(v.gekauft)]));

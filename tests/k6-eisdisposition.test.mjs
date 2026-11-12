@@ -5,11 +5,21 @@ import assert from 'node:assert/strict';
 import { k6Vergleich, k6Ausdauer, K6_MINUTEN } from '../tools/k6-eisdisposition.mjs';
 
 const K5_HASH = { 42: '032e95033baa5e2c', 7: '49214bdb90ded7a0' };
+const K6_REFERENZ = {
+  42: ['5c4e57d8b06d5181', 'ed130d7ca6e744ee', '47777abf70ab1fc9', 'a8a0f5812b8280e2'],
+  7: ['32801c80b918ed27', '66d05ec75534f8e0', 'c03286bdc5254e18', '87e399c07cbdd58e'],
+};
+const K6_AUSDAUER_HASH = { 42: '8327b03c23f53470', 7: '8ec40bad105101c3' };
 for (const seed of [42, 7]) {
   test('K6 Seed ' + seed + ': ein bis vier echte NPC-Eisminer ohne neues Erz, Kapital oder fremde Eigentümer', () => {
     const r = k6Vergleich(seed);
     assert.equal(r.varianten.length, 4);
     const [basis, einer, zwei, vier] = r.varianten;
+    assert.deepEqual(r.varianten.map(v => v.hash), K6_REFERENZ[seed],
+      'vier unabhängig auf GitHub gemessene K6-Vergleichsreferenzen');
+    assert.deepEqual(r.varianten.map(v => v.delta.wasserKauf), [0, 50, 100, 200],
+      'jede zusätzlich gelieferte Charge wird wirklich bezahlt');
+    assert.deepEqual(r.varianten.map(v => v.delta.eisFracht), [0, 50, 100, 200]);
     assert.deepEqual(r.varianten.map(v => v.anzahl), [0, 1, 2, 4]);
     assert.equal(new Set(r.varianten.map(v => v.startHash)).size, 1, 'alle starten auf identischem K4-Zustand');
     assert.equal(r.k4TerminalHash, basis.startHash);
@@ -68,6 +78,23 @@ for (const seed of [42, 7]) {
   test('K6-Ausdauer Seed ' + seed + ': vier echte NPC-Miner bis zur physischen oder finanziellen Grenze', () => {
     const r = k6Ausdauer(seed);
     assert.equal(r.anzahl, 4); assert.equal(r.chargeLimit, 500);
+    assert.equal(r.hash, K6_AUSDAUER_HASH[seed], 'gemessener K6-Ausdauer-Referenzhash');
+    assert.equal(r.delta.eis, 967, '967 tatsächlich bezahlbare Eis statt bloßer Schiffsverfügbarkeit');
+    assert.equal(r.delta.eisKauf, 967);
+    assert.equal(r.delta.eisFracht, 900, 'genau 18 abgeschlossene und finanzierte 50er-Frachten');
+    assert.equal(r.delta.eisAbschluss, 18);
+    assert.equal(r.delta.wasser, 900);
+    assert.equal(r.delta.wasserKauf, 900, 'alles hergestellte Wasser wurde tatsächlich bezahlt');
+    assert.equal(r.letzterAbsatz.tick, 24505, 'letzter realer Wasserverkauf');
+    assert.equal(r.amEnde.eis, 69, '967 neues + 2 altes Eis - 900 geliefert = 69 Rest');
+    assert.equal(r.amEnde.wasser, 0);
+    assert.deepEqual(r.amEnde.frachterAktiv, [], 'kein einsatzfähiger Frachter nach echtem Verschleiß');
+    assert.equal(r.letzterFrachterVerlust?.schiff, 'sh020',
+      'der letzte vorhandene Speditionsfrachter wurde nicht kostenlos ersetzt');
+    assert.ok(r.letzterFrachterVerlust.tick > 21612 &&
+      r.letzterFrachterVerlust.tick < r.tick);
+    assert.ok(r.amEnde.miner.every(sh => sh.buchwert > 0),
+      'alle vier tatsächlich verfügbaren Miner haben dagegen noch positiven Buchwert');
     assert.equal(r.tick, 21612 + 7000);
     assert.equal(r.minerIds.length, 4);
     assert.equal(r.befehle.filter(x => x.type === 'shipShuttle').length, 4,
@@ -88,6 +115,7 @@ for (const seed of [42, 7]) {
     console.log('K6_AUSDAUER ' + JSON.stringify({
       seed, minuten: r.minuten, tick: r.tick, hash: r.hash, delta: r.delta,
       arbeit: r.arbeit, letzterAbsatz: r.letzterAbsatz,
+      letzterFrachterVerlust: r.letzterFrachterVerlust,
       rest: r.amEnde, kapital: {
         npc3: r.kassen.npc3, aldera: r.kassen.st_aldera, nadir: r.kassen.st_nadir,
         transport: r.kassen.transport,

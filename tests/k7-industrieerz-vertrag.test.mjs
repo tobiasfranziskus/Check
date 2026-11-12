@@ -51,9 +51,12 @@ for(const seed of [42,7]){
     befehl(w,s,{type:'industrialOreAcceptFreight',owner:'transport'});
     gesperrt(w,s,{type:'industrialOreAcceptYard',owner:'house'});
     befehl(w,s,{type:'industrialOreAcceptYard',owner:'werft_extern'});
-    const cashBefore={nadir:s.owners.st_nadir.cash,carrier:s.owners.transport.cash};
+    const cashBefore={nadir:s.owners.st_nadir.cash,carrier:s.owners.transport.cash,
+      vorherW3:s.w3.kaufAusgaben};
     befehl(w,s,{type:'industrialOreCommit',owner:'st_nadir'});
     assert.equal(s.owners.st_nadir.cash,cashBefore.nadir-740);
+    assert.equal(s.w3.kaufAusgaben-cashBefore.vorherW3,740,
+      'einmalige Original-W3-Finanzierung bereits bei Vertragsbeginn');
     assert.equal(s.owners.transport.cash,cashBefore.carrier-120);
     assert.equal(s.owners.w3_kauf_treuhand.cash,740);
     assert.equal(s.owners.w3_arbeit_treuhand.cash,120);
@@ -123,12 +126,31 @@ for(const seed of [42,7]){
     assert.ok(roundAt,'originale Hin- und Rückfracht abgeschlossen');
     assert.ok(refinedAt,'wirklich angeliefertes Erz zu Original-W4-Material verarbeitet');
     assert.ok(builtAt,'physisch aus echtem W4-Material gebauter W5-Frachter');
-    assert.equal(s.w3.kaufAusgaben-vorK7.paid,740,'keine zweite 740er-Bindung');
+    assert.equal(s.w3.kaufAusgaben-vorK7.paid,0,'keine zweite 740er-Bindung beim Feldflug oder Nadir-Verkauf');
     assert.equal(s.w3.abgeschlossen-vorK7.round,1);
     assert.equal(s.kanon.industrieErz.phase,'geliefert');
     assert.equal(s.kanon.industrieErz.werftVerwendet,true);
     assert.equal(s.owners.k7_werft_treuhand.cash,0,'Werftreserve nur für reale Produktion ausgegeben');
     assert.equal(s.w3.auftrag,null);
+    // Ein echter Ersatzfrachter ist erst mit eigener Käuferzahlung und
+    // finanziertem Nadir->Aldera-Überführungsflug einsatzbereit.
+    assert.ok((s.stations.st_nadir.lager.frachter||0)>=1,
+      'W5-Hülle liegt physisch in Nadir und ist noch kein kostenloses Eigentum');
+    const transportVor=s.owners.transport.cash,weltVor=kassensumme(s);
+    befehl(w,s,{type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_nadir'});
+    assert.equal(s.owners.transport.cash,transportVor-750,'Original-Kaufpreis vollständig gezahlt');
+    assert.equal(kassensumme(s),weltVor);
+    const neu=s.w5.schiffIds.at(-1),ersatz=s.ships[neu];
+    assert.ok(ersatz&&ersatz.owner==='transport'&&ersatz.system==='nadir',
+      'physischer, rechtmäßig erworbener Ersatzfrachter');
+    befehl(w,s,{type:'shipReposition',owner:'transport',schiff:neu});
+    let ueberfuehrung=0;
+    while((s.ships[neu].system!=='aldera'||s.ships[neu].phase!=='dock')&&ueberfuehrung<80){
+      w.minute(s);ueberfuehrung++;
+    }
+    assert.equal(ueberfuehrung,60,'Originalüberführung wird voll in 60 Minuten bezahlt');
+    audit(w,s,'neuer Frachter in Aldera');
+    assert.ok(s.w5ac.completed.some(x=>x.id===neu),'vollständiger realer Überführungsbeleg');
     const save=w.save(s),t=w.load(save);
     assert.equal(w.hash(t),w.hash(s));
     for(let i=0;i<130;i++){w.minute(s);w.minute(t);}
@@ -137,7 +159,8 @@ for(const seed of [42,7]){
     console.log('K7_WARENKETTE '+JSON.stringify({seed,minedAt,dockAt,deliveredAt,roundAt,
       refinedAt,builtAt,hash:w.hash(s),tick:s.tick,
       erz:s.ledger.erz.mined-initialMined,lieferungen:s.w3.geliefert,
-      material:s.w4.materialErzeugt,ships:s.w5.fertig,geld:kassensumme(s)}));
+      material:s.w4.materialErzeugt,ships:s.w5.fertig,ersatz:neu,
+      ueberfuehrung,geld:kassensumme(s)}));
   });
 
   test('K7 Seed '+seed+': unbegonnene Bestellung darf ohne Scheinleistung an dieselben Firmen zurück',()=>{

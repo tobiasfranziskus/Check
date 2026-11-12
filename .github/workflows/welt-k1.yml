@@ -79,3 +79,40 @@ jobs:
           name: welt-k1-${{ matrix.browser }}
           path: /tmp/welt-k1-*.png
           if-no-files-found: warn
+k4-vergleich:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "K4: 14 Tage Seed42/7, S12-Basis gegen Original-W3-Aufträge"
+        run: |
+          node tools/k4-ore-allocation.mjs 42 14 > "$RUNNER_TEMP/k4-seed42.json"
+          node tools/k4-ore-allocation.mjs 7 14 > "$RUNNER_TEMP/k4-seed7.json"
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          for (const seed of [42, 7]) {
+            const { basis, vorExport } = JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/k4-seed' + seed + '.json', 'utf8'));
+            for (const [modus, r] of [['basis', basis], ['vorExport', vorExport]]) {
+              console.log('K4_RESULT ' + JSON.stringify({
+                seed, modus, tick: r.tick, hash: r.hash,
+                weltgeld: r.weltgeld, minted: r.minted, burned: r.burned,
+                audit: r.audit, nullsaldo: r.nullsaldo,
+                erz: r.erz, material: r.material, wasser: r.wasser,
+                neueW3: r.manuelleW3Auftraege, quoteAblehnungen: r.quoteAblehnungen,
+                frachterInsgesamt: r.frachter.length,
+                frachterAktiv: r.frachter.filter(s => !s.stillgelegt).length,
+              }));
+            }
+          }
+          NODE
+      - name: "K4: vollständige Seed42/7-Originaldaten archivieren"
+        uses: actions/upload-artifact@v4
+        with:
+          name: k4-s12-14tage-seed42-7
+          path: |
+            ${{ runner.temp }}/k4-seed42.json
+            ${{ runner.temp }}/k4-seed7.json
+          if-no-files-found: error

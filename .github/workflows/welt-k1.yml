@@ -79,7 +79,7 @@ jobs:
           name: welt-k1-${{ matrix.browser }}
           path: /tmp/welt-k1-*.png
           if-no-files-found: warn
-k4-vergleich:
+  k4-vergleich:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

@@ -41,6 +41,10 @@ a{color:#8fe2f5}
 .karten-ziel label{font-size:.9rem;color:#bfe6f2}
 #kartenHinweis{min-height:2em;margin:0;color:#a6effb;font-size:.88rem}
 #pilotHinweis{min-height:2.5em;margin:0;color:#dae8ef}
+.runden-hilfe{padding:10px;border:1px solid #63899b;border-radius:8px;background:#0b2230;display:grid;gap:6px}
+.runden-hilfe strong{color:#b6edfa}
+.runden-hilfe p{margin:0;font-size:.9rem}
+.runden-hilfe button{width:100%;font-weight:600}
 .pilot-daten{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .pilot-daten>div{padding:7px;background:#0a1825;border-radius:6px;min-width:0}
 .pilot-daten strong{display:block;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
@@ -80,6 +84,12 @@ a{color:#8fe2f5}
 <div class="reihe"><button id="pendelEis">Pendelauftrag Eis</button><button id="pendelErz">Pendelauftrag Erz</button><button id="pendelStop">Pendel beenden</button></div>
 <div class="pilot-cockpit" id="pilotCockpit" aria-label="Manuelles Miner-Cockpit">
 <h3>Persönlicher Flug · Steuerpult</h3>
+<div class="runden-hilfe" aria-label="Begleitete Eis-Bergbaurunde">
+<strong id="rundenTitel">Eis-Bergbaurunde</strong>
+<p id="rundenInfo" role="status" aria-live="polite">Der nächste Schritt wird aus dem tatsächlichen Schiffszustand ermittelt.</p>
+<button id="rundenAktion" type="button" disabled>Nächste Aktion</button>
+<small>Ein Tipp führt nur die jeweils angezeigte Originalaktion aus. Flugzeit, Förderung und Zahlungen bleiben echte Core-Vorgänge. Alle Einzelbefehle bleiben verfügbar.</small>
+</div>
 <p id="pilotHinweis" role="status">Eigenen Miner kaufen und im Dock abdocken, um selbst zu steuern.</p>
 <div class="karten-ziel" aria-label="Berührbare Flugzielwahl">
 <label for="kartenZiel">Raumkarte antippen oder Ziel hier auswählen</label>

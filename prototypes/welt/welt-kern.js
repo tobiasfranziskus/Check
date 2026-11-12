@@ -769,6 +769,22 @@ function erstellen(startkapital = {}) {
       if (!m_core_minerwerft.audit(state)) fehler.push('K2-Minerwerft/Transport');
       if (state.minted !== 0 || state.burned !== 0) fehler.push('Emission/Senke in K1 nicht freigegeben');
       for (const id of ids(state.owners)) if (!ganz(state.owners[id].cash)) fehler.push('Kasse ' + id);
+      // Unabhängige Gegenbuchung zum Original-W5ad-Transportkaufjournal:
+      // nur tatsächlich gekaufte, vorhandene Spielerhüllen, niemals Gratis-Spawn.
+      // Optional bei alten K1-Saves ohne Spielerfrachter; keine stille Migration.
+      const spielerHuellen = ids(state.ships).map((id) => state.ships[id])
+        .filter((sh) => sh.owner === rules.economy.start.owner && sh.klasse === 'frachter');
+      const belege = k.spielerFrachterKaeufe ?? [];
+      const frPreis = rules.economy.waren.frachter.basis;
+      if (!Array.isArray(belege) || belege.length !== spielerHuellen.length
+        || new Set(belege.map((x) => x?.id)).size !== belege.length
+        || belege.some((x) => !x || typeof x.id !== 'string' || !ganz(x.tick)
+          || x.tick > state.tick || x.station !== 'st_aldera' || x.preis !== frPreis
+          || state.ships[x.id]?.owner !== rules.economy.start.owner
+          || state.ships[x.id]?.klasse !== 'frachter'
+          || state.ships[x.id]?.heimat !== 'aldera')
+        || state.ledger.frachter.consumed !== (state.w5ad?.purchases?.length ?? 0) + belege.length)
+        fehler.push('Spielerfrachter-Kaufbelege');
       // Wasserbuch: jede Einheit hat Herkunft (Wasserwerk) und Verbleib.
       const w = k.wasser, an = state.stations[W.quellStation].lager.wasser;
       const unterwegs = ids(state.ships).reduce((n, id) => n + (state.ships[id].ladung.wasser || 0), 0);

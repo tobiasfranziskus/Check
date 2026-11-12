@@ -2,7 +2,7 @@
 // Testet 0/1/2/4 unverändert vorhandene npc3-Miner auf exakt demselben K4-Save.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { k6Vergleich, K6_MINUTEN } from '../tools/k6-eisdisposition.mjs';
+import { k6Vergleich, k6Ausdauer, K6_MINUTEN } from '../tools/k6-eisdisposition.mjs';
 
 const K5_HASH = { 42: '032e95033baa5e2c', 7: '49214bdb90ded7a0' };
 for (const seed of [42, 7]) {
@@ -60,6 +60,38 @@ for (const seed of [42, 7]) {
       kapital: { npc3: v.kassen.npc3, aldera: v.kassen.st_aldera,
         nadir: v.kassen.st_nadir, transport: v.kassen.transport },
       weltgeld: v.geld, minted: v.minted, burned: v.burned,
+    }));
+  });
+}
+
+for (const seed of [42, 7]) {
+  test('K6-Ausdauer Seed ' + seed + ': vier echte NPC-Miner bis zur physischen oder finanziellen Grenze', () => {
+    const r = k6Ausdauer(seed);
+    assert.equal(r.anzahl, 4); assert.equal(r.chargeLimit, 500);
+    assert.equal(r.tick, 21612 + 7000);
+    assert.equal(r.minerIds.length, 4);
+    assert.equal(r.befehle.filter(x => x.type === 'shipShuttle').length, 4,
+      'keine versteckten neuen Aufträge oder Rettungsautomatik');
+    assert.equal(r.delta.erz, 0); assert.equal(r.delta.export, 0);
+    assert.equal(r.delta.material, 0); assert.equal(r.delta.minerBau, 0); assert.equal(r.delta.frachter, 0);
+    assert.equal(r.amEnde.erz, 0); assert.equal(r.amEnde.material, 0);
+    assert.equal(r.geld, 33000); assert.equal(r.minted, 0); assert.equal(r.burned, 0);
+    assert.equal(r.audit, true);
+    assert.equal(r.replay.minuten, 130);
+    assert.equal(r.saldo.house, 0); assert.equal(r.saldo.export, 0);
+    assert.ok(Object.values(r.arbeit).every(a => a.gefuellt <= 500));
+    assert.ok(r.delta.eisKauf <= r.delta.eis);
+    assert.ok(r.delta.eisFracht <= r.delta.eisKauf);
+    assert.ok(r.delta.wasser <= r.delta.eisFracht);
+    assert.ok(r.delta.wasserKauf <= r.delta.wasser);
+    assert.ok(r.delta.eis > 0, 'Originalproduktion muss echte Ware liefern');
+    console.log('K6_AUSDAUER ' + JSON.stringify({
+      seed, minuten: r.minuten, tick: r.tick, hash: r.hash, delta: r.delta,
+      arbeit: r.arbeit, letzterAbsatz: r.letzterAbsatz,
+      rest: r.amEnde, kapital: {
+        npc3: r.kassen.npc3, aldera: r.kassen.st_aldera, nadir: r.kassen.st_nadir,
+        transport: r.kassen.transport,
+      }, weltgeld: r.geld, minted: r.minted, burned: r.burned,
     }));
   });
 }

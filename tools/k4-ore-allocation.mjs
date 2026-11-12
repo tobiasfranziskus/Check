@@ -68,7 +68,7 @@ export function laufenK4(seed = 42, maxManuelleAuftraege = 0, tage = 14) {
   if (!Number.isSafeInteger(tage) || tage < 1 || tage > 90) throw new RangeError('K4: Tage außerhalb 1–90');
   const { welt, state } = vorbereiten(S12, seed);
   const orders = [], ablehnungen = {};
-  let saveReplay = null, letzterWasserabsatz = 0;
+  let saveReplay = null, letzterWasserabsatz = 0, letzterWasserabsatzTick = null;
   const minuten = tage * 1440;
 
   for (let i = 0; i < minuten; i++) {

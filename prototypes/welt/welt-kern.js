@@ -1085,14 +1085,17 @@ function erstellen(startkapital = {}) {
       verkaeufe: { eisAnAldera: w5n.mineVerkauft, wasserNadir: k.wasser.verkauftNadir, wasserAldera: k.wasser.verkauftAldera,
         wasserErloes: m_core_buch.summe(state, 'wasser-einzelhandel'), erzExportiert: state.ledger.erz.exported },
       auftraege: { eisfrachten: w5n.frachtAbgeschlossen, eisGeliefert: w5n.eisGeliefert,
-        spielerEisfracht: k.spielerFrachten?.auftraege.filter((x) => x.end !== null).length || 0,
-        spielerFrachtAktiv: k.spielerFrachten?.auftraege.some((x) => x.end === null) || false,
+        ...(k.spielerFrachten ? {
+          spielerEisfracht: k.spielerFrachten.auftraege.filter((x) => x.end !== null).length,
+          spielerFrachtAktiv: k.spielerFrachten.auftraege.some((x) => x.end === null)
+        } : {}),
         erzfrachten: state.w3.abgeschlossen, wasserchargen: w5n.fabrikFertig,
         rueckfrachtWasser: k.wasser.rueckGeliefert },
       loehne: { bergbau: w5n.mineLohn + state.ledger.erz.mined * rules.erzpilot.minerJeMinute,
         frachtpiloten: state.w5ag.paid.erz + state.w5ag.paid.eis, wasserwerk: w5n.fabrikBezahlt,
         minerflug: m_core_buch.summe(state, 'fluglohn'),
-        spielerFrachtpilot: m_core_buch.summe(state, 'spielerfracht-pilot') },
+        ...(k.spielerFrachten
+          ? { spielerFrachtpilot: m_core_buch.summe(state, 'spielerfracht-pilot') } : {}) },
       dividenden: m_core_buch.summe(state, 'dividende'),
       inventar: { eisAldera: state.stations.st_aldera.lager.eis || 0, eisNadir: state.stations.st_nadir.lager.eis || 0,
         wasserNadir: state.stations.st_nadir.lager.wasser || 0, wasserAldera: state.stations.st_aldera.lager.wasser || 0,

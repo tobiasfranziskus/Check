@@ -45,6 +45,8 @@ a{color:#8fe2f5}
 .runden-hilfe strong{color:#b6edfa}
 .runden-hilfe p{margin:0;font-size:.9rem}
 .runden-hilfe button{width:100%;font-weight:600}
+#minerAuftraege[hidden],#minerAufgaben[hidden],#rundenHilfe[hidden],#frachterAufgaben[hidden]{display:none}
+#frachterAufgaben{border:1px solid #63899b;background:#0b2230;border-radius:8px;padding:9px}
 .pilot-daten{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .pilot-daten>div{padding:7px;background:#0a1825;border-radius:6px;min-width:0}
 .pilot-daten strong{display:block;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
@@ -79,12 +81,13 @@ a{color:#8fe2f5}
 <div class="reihe"><button id="pause" aria-pressed="true">Weiter</button><button id="tempo">Zeit 1×</button><button id="minute">+1 Minute</button><button id="stunde">+1 Stunde</button></div>
 
 <section data-seite="flug">
-<h2>Eigener Miner</h2>
+<h2>Eigene Schiffe · Miner und Frachter</h2>
 <div class="reihe"><select id="schiff" aria-label="Eigenes Schiff wählen"></select></div>
-<div class="reihe"><button id="pendelEis">Pendelauftrag Eis</button><button id="pendelErz">Pendelauftrag Erz</button><button id="pendelStop">Pendel beenden</button></div>
-<div class="pilot-cockpit" id="pilotCockpit" aria-label="Manuelles Miner-Cockpit">
+<div id="minerAuftraege"><div class="reihe"><button id="pendelEis">Pendelauftrag Eis</button><button id="pendelErz">Pendelauftrag Erz</button><button id="pendelStop">Pendel beenden</button></div></div>
+<div class="pilot-cockpit" id="pilotCockpit" aria-label="Manuelles Schiffs-Cockpit">
 <h3>Persönlicher Flug · Steuerpult</h3>
-<div class="runden-hilfe" aria-label="Begleitete Eis-Bergbaurunde">
+<div class="reihe" id="schiffDockBefehle"><button id="abdocken">1 · Abdocken</button><button id="andocken">5 · Andocken</button></div>
+<div id="rundenHilfe" class="runden-hilfe" aria-label="Begleitete Eis-Bergbaurunde">
 <strong id="rundenTitel">Eis-Bergbaurunde</strong>
 <p id="rundenInfo" role="status" aria-live="polite">Der nächste Schritt wird aus dem tatsächlichen Schiffszustand ermittelt.</p>
 <button id="rundenAktion" type="button" disabled>Nächste Aktion</button>
@@ -117,13 +120,18 @@ a{color:#8fe2f5}
 </div>
 <div class="reihe"><button id="pilotAnwenden" disabled>Manuell steuern</button><button id="pilotBremsen" disabled>Bremsen (0 %)</button></div>
 <small>Kursvorgaben und Regler ändern nur die Anzeige. Erst „Manuell steuern“ sendet <code>shipSteer</code> an den gemeinsamen Core. Bremsen benötigt Zeit.</small>
-<h3>Bergbaurunde · Eis selbst fördern und verkaufen</h3>
-<div class="reihe"><button id="abdocken">1 · Abdocken</button><button id="zumEis">2 · Zum Eisfeld</button><button id="foerdernEis">3 · Eis fördern</button></div>
-<div class="reihe"><button id="warten">4 · Förderung stoppen</button><button id="andocken">5 · Andocken</button><button id="verkaufen">6 · Eis verkaufen</button></div>
+<div id="minerAufgaben"><h3>Bergbaurunde · Eis selbst fördern und verkaufen</h3>
+<div class="reihe"><button id="zumEis">2 · Zum Eisfeld</button><button id="foerdernEis">3 · Eis fördern</button></div>
+<div class="reihe"><button id="warten">4 · Förderung stoppen</button><button id="verkaufen">6 · Eis verkaufen</button></div>
 <small>Die sechs Schritte nutzen ausschließlich bestehende, finanzierte Originalbefehle. Abdocken bindet 40 ISK Flugreserve; jede geflogene Minute bezahlt den Piloten. Nur am Feld wird real gefördert; nur am Dock kauft Aldera tatsächlich vorhandenes Eis.</small>
 <h3>Erzabbau</h3>
 <div class="reihe"><button id="zumErz">Zum Erzfeld</button><button id="foerdernErz">Erz fördern</button></div>
-<small>Erz benötigt ebenso einen gültigen finanzierten Abnehmerauftrag. Ohne Finanzierung gibt es keine kostenlose Förderung.</small>
+<small>Erz benötigt ebenso einen gültigen finanzierten Abnehmerauftrag. Ohne Finanzierung gibt es keine kostenlose Förderung.</small></div>
+<div id="frachterAufgaben" hidden>
+<h3>Persönlicher 2D-Frachter · Aldera</h3>
+<p id="frachterHinweis">Nur wirklich gekaufte, eigene und nicht für einen W3-Vertrag gebundene Frachter dürfen abdocken. Originales Kurs-, Brems-, Karten- und Dockcockpit; alle Flugminuten bezahlt.</p>
+<small>Diese erste Etappe enthält noch keinen eigenen Frachtauftrag: Die bestehenden finanzierten W3-Erz-/Eistransporte bleiben bei der Spedition. Kein kostenloses Beladen, Warenverkauf oder Ferntransport.</small>
+</div>
 </div>
 <div id="schiffStatus" class="rollen"></div>
 </section>
@@ -136,7 +144,8 @@ a{color:#8fe2f5}
 
 <section data-seite="station" hidden>
 <h2>Stationen</h2><div id="stationen" class="rollen"></div>
-<div class="reihe"><button id="kaufMiner">Miner kaufen · 600 ISK</button></div>
+<div class="reihe"><button id="kaufMiner">Miner kaufen · 600 ISK</button><button id="kaufFrachter">Frachter kaufen · Lagerbestand/Preis werden geprüft</button></div>
+<small>Frachter können nur als echte physische Hülle aus dem Aldera-Lager gekauft werden. Kauft der Spieler den letzten Frachter, fehlt er möglicherweise der NPC-Spedition; es gibt keinen kostenlosen Ersatz.</small>
 <h2>Privater Wasserkauf des Spielers (Aldera)</h2>
 <div class="reihe"><select id="haushalt" aria-label="Privatkonto"><option value="eigner_house">Eigentümerkonto</option><option value="pilot_house">Pilotenkonto</option></select>
 <input id="wasserMenge" type="number" min="1" max="100" value="1" inputmode="numeric" aria-label="Menge Wasser"><button id="wasserKauf">Wasser kaufen</button></div>

@@ -725,7 +725,11 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5ag?['pilotWaterBuy']:[])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if (cmd.type === 'shipBuy') {
-    const frachter = !!rules.w3 && cmd.owner === rules.w3.spedition && cmd.klasse === 'frachter';
+    // K1-Forschung erlaubt dem Spieler ausschliesslich den real bezahlten Kauf
+    // aus vorhandener Aldera-Huelle. Regel195 und alle anderen Profile bleiben unveraendert.
+    const frachter = !!rules.w3 && cmd.klasse === 'frachter'
+      && (cmd.owner === rules.w3.spedition
+        || (!!rules.kanon && cmd.owner === rules.economy.start.owner && cmd.station === rules.erzpilot.station));
     const miner = cmd.klasse === 'miner' && (cmd.owner === 'house' || cmd.owner === 'npc3');
     const w5Kauf = !!rules.w5 && cmd.owner === rules.w5.kaeufer
       && cmd.klasse === rules.w5.klasse && cmd.station === rules.w5.station;
@@ -800,6 +804,10 @@ function execute(state, cmd, rules) {
       });
       if(rules.w5Replacement&&cmd.owner===rules.w3.spedition)
         state.w5ad.purchases.push({id:sh.id,tick:state.tick,station:cmd.station,preis:p});
+      // Zusätzliche physische Spielerhülle: einmaliger Originalkaufbeleg.
+      // Nur K1. Kein Journal bei Regel195 oder anderem Profil.
+      if(rules.kanon && cmd.klasse==='frachter' && cmd.owner===rules.economy.start.owner)
+        (state.kanon.spielerFrachterKaeufe ||= []).push({id:sh.id,tick:state.tick,station:cmd.station,preis:p});
       if (w5Kauf) {
         state.w5.verkauft++;
         state.w5.schiffIds.push(sh.id);
@@ -2064,7 +2072,10 @@ const m_core_w3 = (() => {
     const startBuyer=rules.owners.find(o=>o.id===c.kunde).cash;
     const carrier=state.owners[c.spedition]?.cash,startCarrier=rules.owners.find(o=>o.id===c.spedition).cash;
     const kauf=state.owners.w3_kauf_treuhand?.cash??0,arbeit=state.owners.w3_arbeit_treuhand?.cash??0;
-    const huelle=(state.ledger.frachter?.consumed??0)*rules.economy.waren.frachter.basis;
+    // K1-Draft: Spielerhüllen sind physisch bezahlt, aber nicht aus der W3-Speditionskasse.
+    const huelle=((state.ledger.frachter?.consumed??0)
+      -(rules.kanon ? (state.kanon?.spielerFrachterKaeufe?.length??0) : 0))
+      *rules.economy.waren.frachter.basis;
     const erwarteteBezahlung=w.abgeschlossen*k.gesamt+(a?k.gesamt:0);
     const erwarteteWare=w.abgeschlossen*c.fracht+(a?.phase==='rueck'?c.fracht:0);
     const erwarteteArbeit=w.abgeschlossen*k.arbeitsKosten+(a?.gearbeitet??0)*c.arbeitJeMinute;
@@ -2545,6 +2556,7 @@ const m_core_w5_replacement=(()=>{
     const ownerOk=Object.values(s.ships).filter(sh=>sh.owner===r.w3.spedition)
       .every(sh=>sh.klasse==='frachter'&&purchase(sh.id)&&!loss(sh.id));
     const purchaseOk=unique(p,'id')&&p.length===s.ledger.frachter.consumed
+      -(r.kanon ? (s.kanon?.spielerFrachterKaeufe?.length??0) : 0)
       &&p.every((x,i)=>integer(x.tick)&&x.tick<=s.tick&&x.preis===price
         &&(i===0||p[i-1].tick<=x.tick)
         &&['st_aldera','st_nadir'].includes(x.station)
@@ -3109,7 +3121,10 @@ const m_core_w1_vollkosten = (() => {
       * rules.economy.waren.frachter.basis : 0;
     const foerderArbeit = state.ledger.erz.mined * cfg.minerJeMinute;
     const iceLohn=state.w5n?.mineLohn??0;
-    const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-iceLohn;
+    // K1: eigener Frachterkauf ist Anlagenkauf, keine unbezahlte Bergbauarbeit.
+    const spielerFrachterWert=rules.kanon
+      ?(state.kanon?.spielerFrachterKaeufe?.length??0)*rules.economy.waren.frachter.basis:0;
+    const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-iceLohn-spielerFrachterWert;
     const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
     const fonds = state.owners[fondsId].cash - startCash(fondsId) + m_core_kanon.netto(state, fondsId);
     const stationErz = state.stations[cfg.station].lager.erz;

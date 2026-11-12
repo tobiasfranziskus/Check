@@ -25,8 +25,9 @@ function befehl(cmd, erfolg) {
   zeigen(true);
   return r.ok;
 }
-const eigene = () => Object.values(state.ships).filter((s) => s.owner === SPIELER && s.klasse === 'miner').sort((a, b) => a.id.localeCompare(b.id));
-const gewaehlt = () => state.ships[$('schiff').value] || eigene()[0] || null;
+const eigene = () => Object.values(state.ships).filter((s) =>
+  s.owner === SPIELER && (s.klasse === 'miner' || s.klasse === 'frachter')).sort((a, b) => a.id.localeCompare(b.id));
+const gewaehlt = () => eigene().find((s) => s.id === $('schiff').value) || eigene()[0] || null;
 
 // ---------------------------------------------------------------- Darstellung
 function tabelle(ziel, kopf, zeilen) {
@@ -81,6 +82,9 @@ function rundenZeigen(s, pendel, k) {
     titel = 'Start · Miner kaufen';
     info = 'An der Station kann ein eigener Miner nur mit echtem Käufergeld und vorhandener Hülle gekauft werden.';
     ziel = 'station'; label = 'Zur Station';
+  } else if (s.klasse === 'frachter') {
+    titel = 'Persönlicher Frachterflug';
+    info = 'Freie 2D-Steuerung nur für einen eigenen, ungebundenen Aldera-Frachter. Warenfahrten werden weiterhin im originalen W3-Core vergeben, nicht durch diesen Assistenten.';
   } else if (pendel) {
     titel = 'Pendelauftrag aktiv';
     info = 'Die NPC-Automatik steuert diesen Miner. Für eine persönliche Eisrunde zuerst den Pendelauftrag regulär beenden.';
@@ -171,7 +175,8 @@ function pilotZeigen(s, pendel, k, o) {
   else if (dienst?.gestrandet) hinweis = 'Flug angehalten: Die Arbeitsreserve ist leer. Der Core prüft eine echte Nachfinanzierung.';
   else if (b.lage === 'angedockt') hinweis = 'Im Dock: „Abdocken“ drücken. Der Core bindet die echte Flugreserve; ein Kartenziel kann bereits vorgemerkt werden.';
   else if (b.lage === 'abdocken' || b.lage === 'andocken') hinweis = 'Dockmanöver läuft – Steuerung erst danach verfügbar.';
-  else if (b.lage !== 'frei') hinweis = 'Der Miner ist derzeit nicht im freien Flug.';
+  else if (b.lage !== 'frei') hinweis = 'Das Schiff ist derzeit nicht im freien Flug.';
+  else if (s.klasse === 'frachter') hinweis = 'Eigener Frachter im Aldera-Raum: originale Kurs- und Kartensteuerung, bezahlter Pilotlohn; physisch andocken vor jedem wirtschaftlichen Auftrag.';
   else if (welt.flugKern.imFeld(s, 'eis')) hinweis = 'Eisfeld erreicht und langsam genug: Der Originalbefehl „Eis fördern“ kann jetzt geprüft werden.';
   else if (welt.flugKern.imFeld(s, 'erz')) hinweis = 'Erzfeld erreicht und langsam genug: Der Originalbefehl „Erz fördern“ kann jetzt geprüft werden.';
   else hinweis = 'Freier Flug: Kurs und Fahrt einstellen, dann „Manuell steuern“. Zur Station mit „Andocken“ zurückkehren.';
@@ -214,17 +219,29 @@ function zeigen(alles = false) {
   const liste = eigene().map((s) => s.id).join(), wahl = $('schiff');
   if (wahl.dataset.liste !== liste) {
     const alt = wahl.value;
-    wahl.replaceChildren(...eigene().map((s) => { const op = document.createElement('option'); op.value = s.id; op.textContent = s.id + ' · Miner'; return op; }));
-    if (!eigene().length) { const op = document.createElement('option'); op.value = ''; op.textContent = 'kein eigener Miner'; wahl.appendChild(op); }
-    if (state.ships[alt]) wahl.value = alt;
+    wahl.replaceChildren(...eigene().map((s) => { const op = document.createElement('option'); op.value = s.id; op.textContent = s.id + ' · ' + (s.klasse === 'frachter' ? 'Frachter' : 'Miner'); return op; }));
+    if (!eigene().length) { const op = document.createElement('option'); op.value = ''; op.textContent = 'kein eigenes Schiff'; wahl.appendChild(op); }
+    if (eigene().some((s) => s.id === alt)) wahl.value = alt;
     wahl.dataset.liste = liste;
   }
   const s = gewaehlt(), pendel = s && k.pendel[s.id], imRaum = s && s.flug.lage !== 'angedockt';
   pilotZeigen(s, pendel, k, o);
   kartenZeigen(s, pendel, k);
-  $('pendelEis').disabled = $('pendelErz').disabled = !s || !!pendel || imRaum;
+  const miner = !!s && s.klasse === 'miner';
+  const frachter = !!s && s.klasse === 'frachter';
+  $('minerAuftraege').hidden = $('minerAufgaben').hidden = !miner;
+  $('rundenHilfe').hidden = frachter; // Ohne eigenes Schiff weiterhin zur Station leiten.
+  $('frachterAufgaben').hidden = !frachter;
+  if (frachter) {
+    const hinweis = s.system === 'aldera' && s.phase === 'dock'
+      ? 'Eigener Frachter ' + s.id + ' in Aldera: ' + (s.flug.lage === 'angedockt' ? 'bereits im Dock. 40 ISK Reserve beim Abdocken.' : 'persönlicher Flug im selben autoritativen Weltkern.') +
+        ' Keine Ladung oder Frachtzahlung ohne separaten finanzierten Core-Vertrag.'
+      : 'Für dieses Schiff ist kein Aldera-Handflug erlaubt. Original-Transport und Eigentum bleiben maßgeblich.';
+    if ($('frachterHinweis').textContent !== hinweis) $('frachterHinweis').textContent = hinweis;
+  }
+  $('pendelEis').disabled = $('pendelErz').disabled = !miner || !!pendel || imRaum;
   $('pendelStop').disabled = !pendel;
-  const bergbauHand = !!s && !pendel;
+  const bergbauHand = miner && !pendel;
   $('zumEis').disabled = $('zumErz').disabled = !bergbauHand || s.flug.lage !== 'frei';
   $('warten').disabled = !bergbauHand || s.auftrag !== 'foerdern';
   $('verkaufen').disabled = !bergbauHand || s.flug.lage !== 'angedockt' || !(s.ladung.eis > 0);
@@ -232,10 +249,13 @@ function zeigen(alles = false) {
   // Der Core validiert und finanziert den Auftrag bei Ausführung weiterhin selbst.
   $('abdocken').disabled = !s || !!pendel || s.flug.lage !== 'angedockt';
   $('andocken').disabled = !s || !!pendel || s.flug.lage !== 'frei';
-  $('foerdernEis').disabled = !s || !!pendel || !welt.flugKern.imFeld(s, 'eis');
-  $('foerdernErz').disabled = !s || !!pendel || !welt.flugKern.imFeld(s, 'erz');
+  $('foerdernEis').disabled = !miner || !!pendel || !welt.flugKern.imFeld(s, 'eis');
+  $('foerdernErz').disabled = !miner || !!pendel || !welt.flugKern.imFeld(s, 'erz');
   rundenZeigen(s, pendel, k);
   $('kaufMiner').disabled = o[SPIELER].cash < welt.rules.economy.waren.miner.basis || !(state.stations.st_aldera.lager.miner > 0);
+  $('kaufFrachter').textContent = 'Frachter kaufen · ' + fmt(welt.rules.economy.waren.frachter.basis) + ' ISK';
+  $('kaufFrachter').disabled = o[SPIELER].cash < welt.rules.economy.waren.frachter.basis
+    || !(state.stations.st_aldera.lager.frachter > 0);
   $('dividende').disabled = b.firmen[SPIELER].ausschuettbar <= 0;
   $('automatik').setAttribute('aria-pressed', String(k.politik.automatik));
   $('automatik').textContent = 'NPC-Automatik ' + (k.politik.automatik ? 'an' : 'aus');
@@ -374,6 +394,7 @@ canvas.addEventListener('click', (ev) => {
   }
 });
 $('kartenZiel').addEventListener('change', () => { if (state) zeigen(false); });
+$('schiff').addEventListener('change', () => { if (state) zeigen(false); });
 $('kartenAnflug').addEventListener('click', () => {
   const s = gewaehlt(), ziel = $('kartenZiel').value;
   if (!s || !Object.hasOwn(KARTEN_TEXTE, ziel)) return;
@@ -422,6 +443,7 @@ $('foerdernErz').addEventListener('click', schiffBefehl('shipMine', { ware: 'erz
 $('warten').addEventListener('click', schiffBefehl('shipWait', {}, 'Auftrag angehalten.'));
 $('verkaufen').addEventListener('click', () => { const s = gewaehlt(); if (s) befehl({ type: 'shipSellIce', owner: SPIELER, schiff: s.id, menge: s.ladung.eis || 0 }, 'Eis am Dock an Aldera verkauft.'); });
 $('kaufMiner').addEventListener('click', () => befehl({ type: 'shipBuy', owner: SPIELER, klasse: 'miner', station: 'st_aldera' }, 'Miner aus dem Lager der Station gekauft.'));
+$('kaufFrachter').addEventListener('click', () => befehl({ type: 'shipBuy', owner: SPIELER, klasse: 'frachter', station: 'st_aldera' }, 'Frachter zum Originalpreis aus dem physischen Aldera-Lager gekauft.'));
 $('dividende').addEventListener('click', () => { const n = welt.ausschuettbar(state, SPIELER); if (n > 0) befehl({ type: 'dividendPay', owner: SPIELER, betrag: n }, fmt(n) + ' ISK an das eigene Eigentümerkonto ausgeschüttet.'); });
 $('wasserKauf').addEventListener('click', () => befehl({ type: 'householdBuy', owner: $('haushalt').value, menge: Number($('wasserMenge').value) }, 'Wasser privat gekauft und verbraucht.'));
 $('automatik').addEventListener('click', () => { sicher(() => welt.politikSetzen(state, { automatik: !state.kanon.politik.automatik })); geaendert = true; zeigen(true); });

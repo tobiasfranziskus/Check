@@ -41,6 +41,8 @@ jobs:
           node --test tests/welt-k3-frachter.test.mjs
           node tools/k3-frachter-diagnose.mjs > "$RUNNER_TEMP/k3-diagnose.json"
           diff docs/K3_DIAGNOSE_SEED42.json "$RUNNER_TEMP/k3-diagnose.json"
+      - name: "K1-Spielerfrachter: Originalkauf, Lohngeld, Eigentum und Save/Load"
+        run: node --test tests/welt-frachter-handflug.test.mjs
       - name: "K1-Wirtschaft: 15 Szenarien × 90 Tage, 365- und 730-Tage-Läufe"
         run: node --test tests/welt-wirtschaft.test.mjs
       - name: "Alle bestehenden Regel14-/Regel195-/Flug-Regressionen"
@@ -80,6 +82,11 @@ jobs:
           WELT_BROWSER: ${{ matrix.browser }}
       - name: "K1-Begleitrunde: ein Tipp je Originalaktion, echte Flug-/Bergbaulöhne, Dockverkauf und Save"
         run: node tests/welt-rundenfuehrung-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K1-Frachter: eigener Kauf, echter Touch-Handflug, Löhne und Dock-Save"
+        run: node tests/welt-frachter-handflug-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}

@@ -46,6 +46,9 @@ const lageText = { angedockt: 'im Dock', frei: 'im Raum', andocken: 'dockt an', 
 function pilotWerte() {
   $('pilotKursWert').textContent = $('pilotKurs').value;
   $('pilotFahrtWert').textContent = $('pilotFahrt').value + ' %';
+  // Nur UI: weder Kurstasten noch Regler schreiben vor dem Anwenden in den Weltzustand.
+  for (const taste of document.querySelectorAll('[data-pilot-kurs]'))
+    taste.setAttribute('aria-pressed', String(taste.dataset.pilotKurs === $('pilotKurs').value));
 }
 function pilotZeigen(s, pendel, k, o) {
   const id = s ? s.id : '';
@@ -59,6 +62,7 @@ function pilotZeigen(s, pendel, k, o) {
   const steuerbar = !!b && b.lage === 'frei' && !pendel && !dienst?.gestrandet;
   for (const element of ['pilotKurs', 'pilotFahrt', 'pilotAnwenden', 'pilotBremsen'])
     $(element).disabled = !steuerbar;
+  for (const taste of document.querySelectorAll('[data-pilot-kurs]')) taste.disabled = !steuerbar;
   $('pilotPosition').textContent = b ? Math.round(b.x / 1000) + ' / ' + Math.round(b.y / 1000) + ' kP' : '–';
   $('pilotIst').textContent = b ? b.kurs + ' / ' + Math.round(Math.hypot(b.vx, b.vy)) + ' P/s' : '–';
   $('pilotLage').textContent = b ? (lageText[b.lage] || b.lage) + ' · ' + (pendel ? 'Pendel ' + pendel.ware : b.modus) : '–';
@@ -119,7 +123,13 @@ function zeigen(alles = false) {
   pilotZeigen(s, pendel, k, o);
   $('pendelEis').disabled = $('pendelErz').disabled = !s || !!pendel || imRaum;
   $('pendelStop').disabled = !pendel;
-  for (const id of ['abdocken', 'zumEis', 'zumErz', 'andocken', 'foerdernEis', 'foerdernErz', 'warten', 'verkaufen']) $(id).disabled = !s || !!pendel;
+  for (const id of ['zumEis', 'zumErz', 'warten', 'verkaufen']) $(id).disabled = !s || !!pendel;
+  // Die sichtbaren Direktaktionen lesen nur die vorhandene Fluglage bzw. die Original-Feldprüfung.
+  // Der Core validiert und finanziert den Auftrag bei Ausführung weiterhin selbst.
+  $('abdocken').disabled = !s || !!pendel || s.flug.lage !== 'angedockt';
+  $('andocken').disabled = !s || !!pendel || s.flug.lage !== 'frei';
+  $('foerdernEis').disabled = !s || !!pendel || !welt.flugKern.imFeld(s, 'eis');
+  $('foerdernErz').disabled = !s || !!pendel || !welt.flugKern.imFeld(s, 'erz');
   $('kaufMiner').disabled = o[SPIELER].cash < welt.rules.economy.waren.miner.basis || !(state.stations.st_aldera.lager.miner > 0);
   $('dividende').disabled = b.firmen[SPIELER].ausschuettbar <= 0;
   $('automatik').setAttribute('aria-pressed', String(k.politik.automatik));
@@ -238,6 +248,11 @@ setInterval(() => { if (state && ansicht !== 'flug' && ++langsam) sicher(() => z
 // ---------------------------------------------------------------- Bedienung
 $('pilotKurs').addEventListener('input', pilotWerte);
 $('pilotFahrt').addEventListener('input', pilotWerte);
+for (const taste of document.querySelectorAll('[data-pilot-kurs]')) taste.addEventListener('click', () => {
+  if (taste.disabled) return;
+  $('pilotKurs').value = taste.dataset.pilotKurs;
+  pilotWerte();
+});
 $('pilotAnwenden').addEventListener('click', () => {
   const s = gewaehlt(); if (!s) return;
   befehl({ type: 'shipSteer', owner: SPIELER, schiff: s.id,

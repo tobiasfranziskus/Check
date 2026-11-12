@@ -1,6 +1,6 @@
 # K5 – weshalb K4 ab Tag 16 kein Wasser mehr verkauft
 
-**[DRAFT / ANALYSE · 12.11.2026]** Basis ist ausschließlich K4 [PR #308](https://github.com/tobiasfranziskus/Check/pull/308), vor Arbeitsbeginn erneut geprüft auf **`3030e14890d75dd5496b88b3f254e144dd702abd`**. Eigener Branch: `research/k5-terminal-bottleneck-20261112`, PR-Ziel K4. Keine Produktfreigabe, kein Merge/Deployment, keine produktiven Spielstände.
+**[DRAFT / ANALYSE · 12.11.2026]** Basis ist ausschließlich K4 [PR #308](https://github.com/tobiasfranziskus/Check/pull/308), vor Arbeitsbeginn erneut geprüft auf **`3030e14890d75dd5496b88b3f254e144dd702abd`**. Eigener Branch: `research/k5-terminal-bottleneck-20261112`, [Draft-PR #309](https://github.com/tobiasfranziskus/Check/pull/309), PR-Ziel K4. Keine Produktfreigabe, kein Merge/Deployment, keine produktiven Spielstände.
 
 ## Ergebnis
 
@@ -127,7 +127,14 @@ Neun Originalbefehle werden bei Tick21612 **atomar**, ohne Änderung des kanonis
 
 Save/Load in aktivem Minerflug, aktiver Eisfracht und Wasserwerksarbeit: je **130 Minuten** identische Fortsetzung gegenüber ungespeicherter Kopie, einschließlich derselben Stopentscheidung; überlappende Minuten stimmen zusätzlich mit dem tatsächlichen Hauptlauf überein. Die drei neuen Dateien ändern keine Spiellogik und keinen Browsercode. Eine kleine CI-Ergänzung führt die Diagnose für beide Seeds aus und archiviert vollständige JSONs unter `k5-terminaldiagnose-seed42-7`.
 
-**Aktueller Ausführungsstand:** gezielte Tests und Node22-Gesamtregression laufen; Ergebnisse und K5-CI werden nach Abschluss ergänzt. Browsercode bleibt unverändert; eine lokale neue Chromium-/WebKit- oder echte iPad-Safari-/NAS-Abnahme ist damit nicht behauptet.
+**Tatsächlich ausgeführt, Codecommit `80a8215f39157b02aa46661860bd6495723acbee`:**
+
+- Lokal Node **v22.23.4**, Gesamtregression **332/332 bestanden**, 0 Fehler, 0 Skips, 0 Abbrüche; 475,408 Sekunden. Abschließender gezielter K5-Lauf **2/2 bestanden**, 0 Fehler/Skips/Abbrüche; 104,865 Sekunden. Bestehende Referenzen unverändert.
+- `build-w5-singlefile --check` lokal erfolgreich: `W5_SINGLEFILE_OK`, 325.006 Zeichen, 7 Styles, 15 Scripts. Diff der Produkt-/Cockpit-/Wirtschafts-/Flugdateien und K4-Referenzdateien zur Basis leer.
+- [K5/K1-CI #43180645575](https://github.com/tobiasfranziskus/Check/actions/runs/43180645575): eigener K5-Job **completed/success**, gezielt **2/2**, beide vollständigen 90-Tage-Diagnose-JSONs erzeugt und als [Artefakt `k5-terminaldiagnose-seed42-7`](https://github.com/tobiasfranziskus/Check/actions/runs/43180645575/artifacts/13926486365) archiviert; SHA256 `ae2bf51ee22b363f1fdd46008b3c3934a1d558197457f46d93d1f74bd85e6343`. CI-Hashes und wirtschaftliche Werte entsprechen der lokalen Probe. Auch K4-Vergleich sowie Chromium- und WebKit-Job **completed/success**. Den Abschluss des gesamten Workflows führt die PR-Beschreibung separat nach.
+- Weitere K5-Code-CI: [JavaScript #43180645854](https://github.com/tobiasfranziskus/Check/actions/runs/43180645854), [W5-RC1 #43180645566](https://github.com/tobiasfranziskus/Check/actions/runs/43180645566); Abschlussstatus siehe PR-Beschreibung. Diese Links gehören zum geprüften Codecommit; spätere Dokumentationscommits verändern keine Simulation oder Tests.
+
+Browsercode bleibt unverändert. Die genannten Browserprüfungen liefen auf GitHub; eine lokale neue Chromium-/WebKit- oder echte iPad-Safari-/NAS-Abnahme wird nicht behauptet.
 
 ## Empfehlung
 

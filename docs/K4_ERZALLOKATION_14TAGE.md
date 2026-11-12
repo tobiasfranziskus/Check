@@ -78,7 +78,7 @@ K4 verarbeitet 150 statt 100 Erz zu 75 statt 50 Material; 75 Material gehen voll
 | 42 | `41770a775581f982` / `25df7f614b16fda4` | `134a00c2125b22f5` / `c23397a320fa63ff` |
 | 7 | `9891fcc3e15bdf83` / `f50f8a82ac620947` | `a0e35cbd84a25152` / `4a818a41b592f887` |
 
-Im K4-CI-Job wurden alle acht Langzeit-Kennzahlenzeilen (`K4_LANG`) aus echten Simulationsläufen ausgegeben, jeweils mit `audit=true`, `weltgeld=33000`, `minted=0`, `burned=0`; vollständiges Archiv `k4-s12-lang-30-90-seed42-7`. Der **gesonderte Gesamtlauf** ist unabhängig vom erfolgreichen K4-Vergleichsjob zu beurteilen.
+Im K4-CI-Job wurden alle acht Langzeit-Kennzahlenzeilen (`K4_LANG`) aus echten Simulationsläufen ausgegeben, jeweils mit `audit=true`, `weltgeld=33000`, `minted=0`, `burned=0`; vollständiges Archiv `k4-s12-lang-30-90-seed42-7`. **Abschließende CI auf K4-Langlauf-Codecommit `141ac71a`**: [Run #43177016371](https://github.com/tobiasfranziskus/Check/actions/runs/43177016371) **4/4 Jobs completed/success**, Node22 **330/330** (0 Fehler/Skips), gezielt K4 **2/2**, 15×90/5×365/2×730 K1-Basisregime, Chromium **4/4** und WebKit **4/4** Größen, `W5_SINGLEFILE_OK` (325.006 Zeichen, 7 Styles, 15 Scripts). [W5-RC1 #43177016382](https://github.com/tobiasfranziskus/Check/actions/runs/43177016382) und [historische JS-Regression #43177016435](https://github.com/tobiasfranziskus/Check/actions/runs/43177016435) **completed/success**. Die reinen Dokumentationscommits danach haben keine Produkt- oder Testcodeänderung eingeführt.
 
 ## Prüfbelege und Grenzen
 

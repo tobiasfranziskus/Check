@@ -83,6 +83,11 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K1-Integrationsgate: eine Welt in Konzern, Karte, Flotte, Station, Warenkette und Speicher"
+        run: node tests/welt-gesamtspiel-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
       - name: "Bildschirmfotos der vier Größen archivieren"
         if: always()
         uses: actions/upload-artifact@v4

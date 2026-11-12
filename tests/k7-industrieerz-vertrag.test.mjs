@@ -49,12 +49,16 @@ for(const seed of [42,7]){
     gesperrt(w,s,{type:'industrialOreAcceptFreight',owner:'npc3'});
     befehl(w,s,{type:'industrialOreAcceptMine',owner:'npc3'});
     befehl(w,s,{type:'industrialOreAcceptFreight',owner:'transport'});
+    gesperrt(w,s,{type:'industrialOreAcceptYard',owner:'house'});
+    befehl(w,s,{type:'industrialOreAcceptYard',owner:'werft_extern'});
     const cashBefore={nadir:s.owners.st_nadir.cash,carrier:s.owners.transport.cash};
     befehl(w,s,{type:'industrialOreCommit',owner:'st_nadir'});
     assert.equal(s.owners.st_nadir.cash,cashBefore.nadir-740);
     assert.equal(s.owners.transport.cash,cashBefore.carrier-120);
     assert.equal(s.owners.w3_kauf_treuhand.cash,740);
     assert.equal(s.owners.w3_arbeit_treuhand.cash,120);
+    assert.equal(s.owners.k7_werft_treuhand.cash,530);
+    assert.equal(s.owners.werft_extern.cash,0,'Werft darf zugesagte Rücklage nicht parallel für Miner ausgeben');
     assert.equal(s.w3.auftrag.phase,'vorbestellt');
     assert.equal(s.stations.st_aldera.lager.erz,0);
     assert.equal(s.ledger.erz.mined,2150,'die bis K4 real geförderten 2150 Erz bleiben unangetastet');
@@ -74,6 +78,7 @@ for(const seed of [42,7]){
       {type:'industrialOreOffer',owner:'st_nadir',miner:'sh004',frachter:'sh020'},
       {type:'industrialOreAcceptMine',owner:'npc3'},
       {type:'industrialOreAcceptFreight',owner:'transport'},
+      {type:'industrialOreAcceptYard',owner:'werft_extern'},
       {type:'industrialOreCommit',owner:'st_nadir'},
     ])befehl(w,s,cmd);
     let minedAt=null,dockAt=null,deliveredAt=null,roundAt=null,refinedAt=null,builtAt=null;
@@ -100,8 +105,7 @@ for(const seed of [42,7]){
       }
       if(s.w4.materialErzeugt-vorK7.refined>=5&&!s.w5.auftrag&&s.w5.fertig===vorK7.built
         &&s.stations.st_nadir.lager.material>=5){
-        const q=w.kern.pilotW5Kalkulation(s);
-        if(q.ok)befehl(w,s,{type:'stationBuildShip',owner:'werft_extern',station:'st_nadir'});
+        befehl(w,s,{type:'industrialOreBuildShip',owner:'werft_extern'});
       }
       if(roundAt&&builtAt)break;
       prevHash=w.hash(s);
@@ -122,6 +126,8 @@ for(const seed of [42,7]){
     assert.equal(s.w3.kaufAusgaben-vorK7.paid,740,'keine zweite 740er-Bindung');
     assert.equal(s.w3.abgeschlossen-vorK7.round,1);
     assert.equal(s.kanon.industrieErz.phase,'geliefert');
+    assert.equal(s.kanon.industrieErz.werftVerwendet,true);
+    assert.equal(s.owners.k7_werft_treuhand.cash,0,'Werftreserve nur für reale Produktion ausgegeben');
     assert.equal(s.w3.auftrag,null);
     const save=w.save(s),t=w.load(save);
     assert.equal(w.hash(t),w.hash(s));
@@ -139,11 +145,15 @@ for(const seed of [42,7]){
     befehl(w,s,{type:'industrialOreOffer',owner:'st_nadir',miner:'sh004',frachter:'sh020'});
     befehl(w,s,{type:'industrialOreAcceptMine',owner:'npc3'});
     befehl(w,s,{type:'industrialOreAcceptFreight',owner:'transport'});
-    const cash={buyer:s.owners.st_nadir.cash,carrier:s.owners.transport.cash};
+    befehl(w,s,{type:'industrialOreAcceptYard',owner:'werft_extern'});
+    const cash={buyer:s.owners.st_nadir.cash,carrier:s.owners.transport.cash,
+      werft:s.owners.werft_extern.cash};
     befehl(w,s,{type:'industrialOreCommit',owner:'st_nadir'});
     befehl(w,s,{type:'industrialOreCancel',owner:'st_nadir'});
     assert.equal(s.owners.st_nadir.cash,cash.buyer);
     assert.equal(s.owners.transport.cash,cash.carrier);
+    assert.equal(s.owners.werft_extern.cash,cash.werft);
+    assert.equal(s.owners.k7_werft_treuhand.cash,0);
     assert.equal(s.owners.w3_kauf_treuhand.cash,0);
     assert.equal(s.owners.w3_arbeit_treuhand.cash,0);
     assert.equal(s.w3.auftrag,null);

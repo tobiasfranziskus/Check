@@ -71,7 +71,7 @@ function kartenZeigen(s, pendel, k) {
 // Begleitete Eisrunde: liest nur echte Fluglage/Ladung/Originalregeln und verweist
 // auf die bereits vorhandenen Bedienknöpfe. Kein selbständiger Auftrag und keine
 // Vorwegnahme der Core-Finanzierungs-, Eigentums- oder Abnahmeprüfung.
-function rundenZeigen(s, pendel, k) {
+function rundenVorschlag(s, pendel, k) {
   const b = s?.flug, dienst = s && k.flugdienst[s.id];
   const eis = s?.ladung.eis || 0;
   const ladung = s ? Object.values(s.ladung).reduce((sum, n) => sum + n, 0) : 0;
@@ -137,6 +137,10 @@ function rundenZeigen(s, pendel, k) {
     info = 'Noch keine Eisladung. Der originale Zielflug braucht bezahlte Pilotenarbeit und echte Reisezeit.';
     ziel = 'zumEis'; label = 'Eisfeld anfliegen';
   }
+  return { titel, info, ziel, label };
+}
+function rundenZeigen(s, pendel, k) {
+  const { titel, info, ziel, label } = rundenVorschlag(s, pendel, k);
   const t = $('rundenTitel'), p = $('rundenInfo'), a = $('rundenAktion');
   if (t.textContent !== titel) t.textContent = titel;
   if (p.textContent !== info) p.textContent = info; // Keine VoiceOver-Mutation pro Animationsframe.
@@ -146,6 +150,8 @@ function rundenZeigen(s, pendel, k) {
   a.disabled = !rundenZiel;
   if (a.textContent !== (rundenZiel ? label : 'Keine Aktion verfügbar'))
     a.textContent = rundenZiel ? label : 'Keine Aktion verfügbar';
+  const abschnitt = $('rundenAbschnitt');
+  abschnitt.disabled = !pausiert || rundenZiel !== 'minute';
 }
 function pilotZeigen(s, pendel, k, o) {
   const id = s ? s.id : '';
@@ -388,6 +394,30 @@ $('rundenAktion').addEventListener('click', () => {
   const original = ziel === 'station' ? document.querySelector('nav button[data-ansicht="station"]')
     : ziel ? $(ziel) : null;
   if (original && !original.disabled) original.click();
+});
+// Ein ausdrücklicher Klick ist maximal 60 originalen Welt-Minuten gleichwertig.
+ // Niemals automatisch den nächsten Originalbefehl auslösen (kein Verkauf,
+ // keine neue Förderung, keine Steuerung eines anderen Schiffes).
+$('rundenAbschnitt').addEventListener('click', () => {
+  const ausgewaehlt = gewaehlt();
+  if (!pausiert || !ausgewaehlt || ausgewaehlt.owner !== SPIELER
+    || rundenVorschlag(ausgewaehlt, state.kanon.pendel[ausgewaehlt.id], state.kanon).ziel !== 'minute') return;
+  const id = ausgewaehlt.id;
+  const minuten = sicher(() => {
+    let n = 0;
+    while (n < 60) {
+      const sh = state.ships[id];
+      if (!sh || sh.owner !== SPIELER
+        || rundenVorschlag(sh, state.kanon.pendel[id], state.kanon).ziel !== 'minute') break;
+      welt.minute(state); // exakt der bestehende deterministische Core-Tick
+      geaendert = true;
+      n++;
+    }
+    return n;
+  });
+  zeigen(true);
+  if (minuten !== null && minuten > 0)
+    melde(minuten + ' echte Core-Minute(n) simuliert. Keine Folgeaktion ohne neuen Tipp.');
 });
 $('pilotKurs').addEventListener('input', pilotWerte);
 $('pilotFahrt').addEventListener('input', pilotWerte);

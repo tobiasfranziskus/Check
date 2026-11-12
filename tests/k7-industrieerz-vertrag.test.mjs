@@ -77,17 +77,20 @@ for(const seed of [42,7]){
       {type:'industrialOreCommit',owner:'st_nadir'},
     ])befehl(w,s,cmd);
     let minedAt=null,dockAt=null,deliveredAt=null,roundAt=null,refinedAt=null,builtAt=null;
-    let initialMined=s.ledger.erz.mined;
+    const vorK7={mine:s.ledger.erz.mined,delivered:s.w3.geliefert,
+      round:s.w3.abgeschlossen,refined:s.w4.materialErzeugt,
+      built:s.w5.fertig,paid:s.w3.kaufAusgaben};
+    let initialMined=vorK7.mine;
     let prevHash=w.hash(s);
     for(let n=0;n<1500;n++){
       w.minute(s);
       if(n%60===0) audit(w,s,'K7 Original-Core');
       if(!minedAt&&s.ledger.erz.mined>initialMined)minedAt=s.tick;
       if(!dockAt&&s.kanon.industrieErz.erzAngenommen)dockAt=s.tick;
-      if(!deliveredAt&&s.w3.geliefert>=50)deliveredAt=s.tick;
-      if(!roundAt&&s.w3.abgeschlossen>=1)roundAt=s.tick;
-      if(!refinedAt&&s.w4.materialErzeugt>=5)refinedAt=s.tick;
-      if(!builtAt&&s.w5.fertig>=1)builtAt=s.tick;
+      if(!deliveredAt&&s.w3.geliefert-vorK7.delivered>=50)deliveredAt=s.tick;
+      if(!roundAt&&s.w3.abgeschlossen-vorK7.round>=1)roundAt=s.tick;
+      if(!refinedAt&&s.w4.materialErzeugt-vorK7.refined>=5)refinedAt=s.tick;
+      if(!builtAt&&s.w5.fertig-vorK7.built>=1)builtAt=s.tick;
       // W4 und W5 dürfen durch die vorhandenen Originalbefehle finanziert werden,
       // falls die vorhandene Automatik wegen ihres Schwellenwertes noch abwartet.
       if(!s.w4.auftrag&&s.stations.st_nadir.lager.erz>=10
@@ -95,7 +98,7 @@ for(const seed of [42,7]){
         const q=w.kern.pilotW4Kalkulation(s);
         if(q.ok)befehl(w,s,{type:'stationRefine',owner:'st_nadir',station:'st_nadir'});
       }
-      if(s.w4.materialErzeugt>=5&&!s.w5.auftrag&&s.w5.fertig===0
+      if(s.w4.materialErzeugt-vorK7.refined>=5&&!s.w5.auftrag&&s.w5.fertig===vorK7.built
         &&s.stations.st_nadir.lager.material>=5){
         const q=w.kern.pilotW5Kalkulation(s);
         if(q.ok)befehl(w,s,{type:'stationBuildShip',owner:'werft_extern',station:'st_nadir'});
@@ -116,8 +119,8 @@ for(const seed of [42,7]){
     assert.ok(roundAt,'originale Hin- und Rückfracht abgeschlossen');
     assert.ok(refinedAt,'wirklich angeliefertes Erz zu Original-W4-Material verarbeitet');
     assert.ok(builtAt,'physisch aus echtem W4-Material gebauter W5-Frachter');
-    assert.equal(s.w3.kaufAusgaben,740,'keine zweite 740er-Bindung');
-    assert.equal(s.w3.abgeschlossen,1);
+    assert.equal(s.w3.kaufAusgaben-vorK7.paid,740,'keine zweite 740er-Bindung');
+    assert.equal(s.w3.abgeschlossen-vorK7.round,1);
     assert.equal(s.kanon.industrieErz.phase,'geliefert');
     assert.equal(s.w3.auftrag,null);
     const save=w.save(s),t=w.load(save);

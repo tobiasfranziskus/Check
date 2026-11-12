@@ -54,15 +54,18 @@ function pilotWerte() {
     taste.setAttribute('aria-pressed', String(taste.dataset.pilotKurs === $('pilotKurs').value));
 }
 function kartenZeigen(s, pendel, k) {
-  const ziel = $('kartenZiel').value;
+  const ziel = $('kartenZiel').value, zielText = KARTEN_TEXTE[ziel];
   const steuerbar = !!s && s.flug?.lage === 'frei' && !pendel && !k.flugdienst[s.id]?.gestrandet;
-  $('kartenAnflug').disabled = !steuerbar || !Object.hasOwn(KARTEN_TEXTE, ziel);
-  if (!ziel) $('kartenHinweis').textContent = 'Auf der Karte Eisfeld, Erzfeld oder Dock berühren – oder Ziel in der Liste wählen. Noch kein Flugauftrag.';
-  else if (!s) $('kartenHinweis').textContent = KARTEN_TEXTE[ziel] + ' vorgemerkt. Zuerst einen eigenen Miner kaufen.';
-  else if (pendel) $('kartenHinweis').textContent = KARTEN_TEXTE[ziel] + ' vorgemerkt. Pendelauftrag steuert selbst; erst beenden.';
-  else if (s.flug.lage === 'angedockt') $('kartenHinweis').textContent = KARTEN_TEXTE[ziel] + ' vorgemerkt. Erst „Abdocken“ und das Manöver abwarten.';
-  else if (!steuerbar) $('kartenHinweis').textContent = KARTEN_TEXTE[ziel] + ' vorgemerkt. Handflug aktuell nicht verfügbar.';
-  else $('kartenHinweis').textContent = KARTEN_TEXTE[ziel] + ' vorgemerkt – erst „Zielflug bestätigen“ startet den bezahlten Original-Anflug.';
+  $('kartenAnflug').disabled = !steuerbar || !zielText;
+  let hinweis;
+  if (!zielText) hinweis = 'Auf der Karte Eisfeld, Erzfeld oder Dock berühren – oder Ziel in der Liste wählen. Noch kein Flugauftrag.';
+  else if (!s) hinweis = zielText + ' vorgemerkt. Zuerst einen eigenen Miner kaufen.';
+  else if (pendel) hinweis = zielText + ' vorgemerkt. Pendelauftrag steuert selbst; erst beenden.';
+  else if (s.flug.lage === 'angedockt') hinweis = zielText + ' vorgemerkt. Erst „Abdocken“ und das Manöver abwarten.';
+  else if (!steuerbar) hinweis = zielText + ' vorgemerkt. Handflug aktuell nicht verfügbar.';
+  else hinweis = zielText + ' vorgemerkt – erst „Zielflug bestätigen“ startet den bezahlten Original-Anflug.';
+  // VoiceOver-Livebereich nicht jede Animationsframe erneut mutieren.
+  if ($('kartenHinweis').textContent !== hinweis) $('kartenHinweis').textContent = hinweis;
 }
 function pilotZeigen(s, pendel, k, o) {
   const id = s ? s.id : '';
@@ -92,7 +95,7 @@ function pilotZeigen(s, pendel, k, o) {
   else if (welt.flugKern.imFeld(s, 'eis')) hinweis = 'Eisfeld erreicht und langsam genug: Der Originalbefehl „Eis fördern“ kann jetzt geprüft werden.';
   else if (welt.flugKern.imFeld(s, 'erz')) hinweis = 'Erzfeld erreicht und langsam genug: Der Originalbefehl „Erz fördern“ kann jetzt geprüft werden.';
   else hinweis = 'Freier Flug: Kurs und Fahrt einstellen, dann „Manuell steuern“. Zur Station mit „Andocken“ zurückkehren.';
-  $('pilotHinweis').textContent = hinweis;
+  if ($('pilotHinweis').textContent !== hinweis) $('pilotHinweis').textContent = hinweis;
 }
 function zeichnen() {
   const [w, h] = groesse(), K = welt.flugKern, sys = K.DATEN.systeme.aldera;

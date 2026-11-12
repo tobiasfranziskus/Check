@@ -108,6 +108,46 @@ jobs:
             }
           }
           NODE
+      - name: "K4: 30/90 Tage S12-Krisenprobe, beide Seeds, keine Erfolgsannahme"
+        run: |
+          for tage in 30 90; do
+            for seed in 42 7; do
+              node tools/k4-ore-allocation.mjs "$seed" "$tage" > "$RUNNER_TEMP/k4-${tage}tage-seed${seed}.json"
+            done
+          done
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          import assert from 'node:assert/strict';
+          for (const tage of [30, 90]) for (const seed of [42, 7]) {
+            const { basis, vorExport } = JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/k4-' + tage + 'tage-seed' + seed + '.json', 'utf8'));
+            for (const [modus, r] of [['basis', basis], ['vorExport', vorExport]]) {
+              assert.equal(r.tick, tage * 1440);
+              assert.equal(r.weltgeld, 33000);
+              assert.equal(r.minted, 0);
+              assert.equal(r.burned, 0);
+              assert.equal(r.audit, true);
+              assert.equal(r.nullsaldo, 0);
+              console.log('K4_LANG ' + JSON.stringify({
+                tage, seed, modus, tick: r.tick, hash: r.hash,
+                erz: r.erz, material: r.material, wasser: r.wasser,
+                frachterInsgesamt: r.frachter.length,
+                frachterAktiv: r.frachter.filter(s => !s.stillgelegt).length,
+                w3Interventionen: r.manuelleW3Auftraege.length,
+                weltgeld: r.weltgeld, minted: r.minted, burned: r.burned, audit: r.audit,
+              }));
+            }
+          }
+          NODE
+      - name: "K4: 30-/90-Tage-Originaldaten archivieren"
+        uses: actions/upload-artifact@v4
+        with:
+          name: k4-s12-lang-30-90-seed42-7
+          path: |
+            ${{ runner.temp }}/k4-30tage-seed42.json
+            ${{ runner.temp }}/k4-30tage-seed7.json
+            ${{ runner.temp }}/k4-90tage-seed42.json
+            ${{ runner.temp }}/k4-90tage-seed7.json
+          if-no-files-found: error
       - name: "K4: vollständige Seed42/7-Originaldaten archivieren"
         uses: actions/upload-artifact@v4
         with:

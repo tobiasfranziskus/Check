@@ -17,7 +17,7 @@ function freieFrachter(welt, state) {
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
-function bilanz(welt, state, seed, modus, orders, ablehnungen, saveReplay) {
+function bilanz(welt, state, seed, modus, orders, ablehnungen, saveReplay, letzterWasserabsatzTick) {
   const k = Object.values(state.owners).reduce((n, o) => n + o.cash, 0);
   const audit = welt.audit(state);
   const massen = nachrechnen(welt, state);
@@ -47,7 +47,7 @@ function bilanz(welt, state, seed, modus, orders, ablehnungen, saveReplay) {
       erzeugt: state.w5n.wasserProduziert,
       verkauftNadir: state.kanon.wasser.verkauftNadir,
       verkauftAldera: state.kanon.wasser.verkauftAldera,
-      letzterAbsatzTick: state.k4LetzterWasserAbsatzTick ?? null,
+      letzterAbsatzTick: letzterWasserabsatzTick,
     },
     frachter: Object.values(state.ships).filter((sh) => sh.klasse === 'frachter')
       .map((sh) => ({ id: sh.id, phase: sh.phase, system: sh.system,
@@ -81,13 +81,18 @@ export function laufenK4(seed = 42, maxManuelleAuftraege = 0, tage = 14) {
       if (ship) {
         const quote = welt.kern.pilotW3Kalkulation(state, ship.id);
         if (quote.ok) {
+          const vorAuftrag = {
+            erzVorhanden: state.stations.st_aldera.lager.erz,
+            nadir: state.owners.st_nadir.cash,
+            transport: state.owners.transport.cash,
+          };
           const result = welt.execute(state, { type: 'shipFreight', owner: 'transport', schiff: ship.id });
           assert.equal(result.ok, true, 'K4: gültige W3-Kalkulation muss Originalauftrag akzeptieren: ' + (result.reason || ''));
           assert.ok(welt.audit(state).ok, 'K4: Audit direkt nach Original-W3-Auftrag');
           const event = { tick: state.tick, ship: ship.id,
-            erzVorhanden: state.stations.st_aldera.lager.erz,
-            nadirVorher: state.owners.st_nadir.cash,
-            transportVorher: state.owners.transport.cash,
+            erzVorhanden: vorAuftrag.erzVorhanden,
+            nadirVorher: vorAuftrag.nadir,
+            transportVorher: vorAuftrag.transport,
             preis: quote.erzWert, flugarbeit: quote.arbeitsKosten, frachtgebuehr: quote.frachtGebuehr };
           orders.push(event);
 
@@ -115,13 +120,13 @@ export function laufenK4(seed = 42, maxManuelleAuftraege = 0, tage = 14) {
     const verkauft = state.kanon.wasser.verkauftNadir + state.kanon.wasser.verkauftAldera;
     if (verkauft > letzterWasserabsatz) {
       letzterWasserabsatz = verkauft;
-      state.k4LetzterWasserAbsatzTick = state.tick;
+      letzterWasserabsatzTick = state.tick;
     }
     if (state.tick % 1440 === 0) assert.equal(welt.audit(state).ok, true, 'K4: Tagesaudit Tag ' + (state.tick / 1440));
   }
 
   const result = bilanz(welt, state, seed, maxManuelleAuftraege ? 'vor-export' : 'basis',
-    orders, ablehnungen, saveReplay);
+    orders, ablehnungen, saveReplay, letzterWasserabsatzTick);
   assert.equal(result.weltgeld, 33000, 'K4: Weltgeld muss erhalten bleiben');
   assert.equal(result.minted, 0, 'K4: keine ISK-Emission');
   assert.equal(result.burned, 0, 'K4: keine ISK-Senke');

@@ -145,6 +145,34 @@ const fs = require('node:fs'), http = require('node:http'), path = require('node
           assert.ok(overflow[0] <= overflow[1] + 1, 'Touch-Screen ohne horizontalen Überlauf');
           results.push({ mode: schnell ? 'abschnitt' : 'einzelminuten', hash: gespeichert,
             zustand: JSON.stringify(verkauf.s), tick: verkauf.s.tick });
+
+          if (schnell) {
+            // Grenzfall: Nach echtem manuellen Langflug weit vom Eisfeld entfernt
+            // dauert ein neuer Original-Anflug länger als die UI-Grenze von 60 min.
+            // Die Abschnittstaste darf keinesfalls 61+ Ticks ausführen.
+            await tap('#abdocken');
+            await page.evaluate(() => window.__welt.schritte(1));
+            assert.equal(await page.locator('#pilotAnwenden').isEnabled(), true);
+            await page.locator('#pilotFahrt').evaluate(el => {
+              el.value = '100';
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+            await tap('#pilotAnwenden'); // Original-shipSteer statt Testmanipulation
+            await page.evaluate(() => window.__welt.schritte(70));
+            const weit = await assertAudit('echter manueller Langflug');
+            assert.ok(weit.miner.flug.x >= 6000000,
+              'Miner hat sich per Originalsteuerung deutlich vom Eisfeld entfernt');
+            assert.equal(weit.miner.flug.lage, 'frei');
+            await tap('#zumEis'); // Original-Zielflug
+            assert.equal(await page.locator('#rundenAbschnitt').isEnabled(), true);
+            const vorGrenze = await zustand();
+            await tap('#rundenAbschnitt');
+            const nachGrenze = await assertAudit('60-Minuten-Grenze');
+            assert.equal(nachGrenze.s.tick - vorGrenze.s.tick, 60,
+              'Abschnittstaste führt auch bei fernem Ziel maximal 60 echte Minuten aus');
+            assert.equal(nachGrenze.miner.flug.lage, 'frei',
+              'keine kostenlose Teleportation oder Dockung');
+          }
         } finally { await context.close(); }
       }
       assert.equal(results[0].hash, results[1].hash, 'identischer Original-Referenzhash');

@@ -8,6 +8,8 @@ on:
       - 'prototypes/w5ac/rule191-w5-ferry-core.js'
       - 'tools/welt-szenarien.mjs'
       - 'tools/k3-frachter-diagnose.mjs'
+      - 'tools/k5-terminal-diagnose.mjs'
+      - 'tests/k5-terminal-diagnose.test.mjs'
       - 'tools/k4-ore-allocation.mjs'
       - 'tests/k4-ore-allocation.test.mjs'
       - 'tools/referenzmodell-c.mjs'
@@ -155,4 +157,26 @@ jobs:
           path: |
             ${{ runner.temp }}/k4-seed42.json
             ${{ runner.temp }}/k4-seed7.json
+          if-no-files-found: error
+
+  k5-terminaldiagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "K5: 90 Tage unverändertes K4, Seeds42/7 und genau eine finanzierte 50-Eis-Kette"
+        run: |
+          node --test tests/k5-terminal-diagnose.test.mjs
+          node tools/k5-terminal-diagnose.mjs 42 90 > "$RUNNER_TEMP/k5-seed42.json"
+          node tools/k5-terminal-diagnose.mjs 7 90 > "$RUNNER_TEMP/k5-seed7.json"
+      - name: "K5: Minuten, Eigentümer, Zahlungsbelege und Save/Load archivieren"
+        uses: actions/upload-artifact@v4
+        with:
+          name: k5-terminaldiagnose-seed42-7
+          path: |
+            ${{ runner.temp }}/k5-seed42.json
+            ${{ runner.temp }}/k5-seed7.json
           if-no-files-found: error

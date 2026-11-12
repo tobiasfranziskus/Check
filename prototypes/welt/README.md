@@ -12,6 +12,16 @@ Das Repository über einen statischen HTTP(S)-Server ausliefern und `prototypes/
 3. **Weiter** drücken. Die NPC-Spedition kauft ihren Frachter selbst, Nadir produziert Wasser, Haushalte kaufen.
 4. **Konzern → Überschuss ausschütten** und **Station → Wasser kaufen** sind freiwillig. Wer spart, entzieht dem Kreislauf Geld.
 
+## Manuelles Miner-Cockpit – K1-UX auf K3 (DRAFT)
+
+1. Unter **Station** einen echten Miner aus der eigenen Kasse erwerben.
+2. Unter **Flug → Handsteuerung → Abdocken** den ursprünglichen Befehl ausführen. Dabei werden **40 ISK** im gemeinsamen Core als reale Arbeitsreserve gebunden.
+3. Im direkt sichtbaren **Steuerpult** den Kurs (0 Ost, 64 Süd, 128 West, 192 Nord) und die Sollfahrt (0–100 %) einstellen und **Manuell steuern** drücken. Die Oberfläche sendet ausschließlich `shipSteer` an denselben deterministischen Flug-/Wirtschaftskern.
+4. Mit **Bremsen** (0 % Sollfahrt) verlangsamen, mit Original-**Andocken** zum Dock zurückfliegen. Nur dort und in echten Feldern gelten Original-Verkauf-/Förderregeln.
+5. Ein aktiver Pendelauftrag sperrt die manuelle Steuerung. Die Anzeige zeigt echten Kurs, Geschwindigkeit, Lage und bezahltes Flugbudget. Reglerbewegungen ohne Klick ändern den Simulations-Hash nicht.
+
+Die K3-Wirtschaftsdiagnose wird im Wirtschaftsbereich **unverändert** angezeigt. K3-Materialengpass und alle Negativszenarien bleiben bestehen. Kein neues Produktprofil, kein neuer Speicher- oder Flugkern, kein Main-Deployment.
+
 ## Dateien
 
 | Datei | Aufgabe |

@@ -68,6 +68,11 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K1 Miner-Cockpit: echter Touch-Handflug, Bezahlung, Replay und Save/Load"
+        run: node tests/welt-cockpit-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
       - name: "Bildschirmfotos der vier Größen archivieren"
         if: always()
         uses: actions/upload-artifact@v4

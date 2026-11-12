@@ -105,7 +105,11 @@ function rundenZeigen(s, pendel, k) {
   } else if (b.lage !== 'frei') {
     titel = 'Schiff nicht im freien Flug';
     info = 'Diese Fluglage wird ausschließlich vom Weltkern bestimmt.';
-  } else if (b.modus === 'anflug' && b.ziel) {
+  } else if (b.modus === 'anflug' && b.ziel
+    && !(b.ziel.art === 'feld' && b.ziel.id === 'aldera:eis' && welt.flugKern.imFeld(s, 'eis'))) {
+    // Der Originalregler behält innerhalb des Feld-Haltradius den Modus „anflug“,
+    // obwohl das Schiff schon ruht und die Core-Feldprüfung bereits Abbau erlaubt.
+    // Hier entscheidet die echte Orts-/Tempo-Prüfung, nicht der bloße Modus.
     titel = b.andocken ? '5/6 · Rückflug zum Dock' : '2/6 · Anflug zum Feld';
     info = 'Der bestehende Flugbefehl ist aktiv. Die nächste Minute verursacht nur die im Core vorgesehenen Buchungen.';
     ziel = 'minute'; label = '+1 Minute simulieren';

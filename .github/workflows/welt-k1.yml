@@ -14,6 +14,9 @@ on:
       - 'tests/k6-eisdisposition.test.mjs'
       - 'tools/k7-industrieerz-gate.mjs'
       - 'tests/k7-industrieerz-gate.test.mjs'
+      - 'tests/k7-industrieerz-vertrag.test.mjs'
+      - 'prototypes/w5ac/rule191-w5-ferry-core.js'
+      - 'prototypes/welt/welt-kern.js'
       - 'tools/k4-ore-allocation.mjs'
       - 'tests/k4-ore-allocation.test.mjs'
       - 'tools/referenzmodell-c.mjs'
@@ -238,3 +241,14 @@ jobs:
             ${{ runner.temp }}/k7-seed42.jsonl
             ${{ runner.temp }}/k7-seed7.jsonl
           if-no-files-found: error
+
+  k7-original-vertrag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "K7 Regel200: echte Eigentümerzustimmungen, originaler W3-Erzkauf, W1/W4/W5-Kette, Storno"
+        run: node --test tests/k7-industrieerz-vertrag.test.mjs

@@ -76,6 +76,19 @@ const assert = require('node:assert/strict');
         assert.equal(await page.locator('#kartenZiel').inputValue(), 'aldera:eis', 'Eisfeld per echtem Touch gewählt');
         assert.match(await page.locator('#kartenHinweis').textContent(), /Eisfeld.*vorgemerkt/);
         assert.equal(await hash(), vor, 'Feldwahl vor Abdocken ist rein visuell');
+        const liveMutationen = await page.evaluate(async () => {
+          const meldungen = ['kartenHinweis', 'pilotHinweis'].map(id => document.getElementById(id));
+          const aenderungen = [0, 0];
+          const beobachter = meldungen.map((el, i) => {
+            const observer = new MutationObserver(eintraege => { aenderungen[i] += eintraege.length; });
+            observer.observe(el, { childList: true, characterData: true, subtree: true });
+            return observer;
+          });
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          beobachter.forEach(observer => observer.disconnect());
+          return aenderungen;
+        });
+        assert.deepEqual(liveMutationen, [0, 0], 'VoiceOver-Status ohne Änderungen nicht je Frame neu schreiben');
 
         await tap('#abdocken');
         await schritt();

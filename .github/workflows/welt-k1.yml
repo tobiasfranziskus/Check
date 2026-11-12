@@ -197,12 +197,18 @@ jobs:
         run: |
           node tools/k6-eisdisposition.mjs 42 > "$RUNNER_TEMP/k6-seed42.jsonl"
           node tools/k6-eisdisposition.mjs 7 > "$RUNNER_TEMP/k6-seed7.jsonl"
+          node tools/k6-eisdisposition.mjs 42 7000 --dauer > "$RUNNER_TEMP/k6-ausdauer-seed42.jsonl"
+          node tools/k6-eisdisposition.mjs 7 7000 --dauer > "$RUNNER_TEMP/k6-ausdauer-seed7.jsonl"
           grep '^K6_RESULT ' "$RUNNER_TEMP/k6-seed42.jsonl"
           grep '^K6_RESULT ' "$RUNNER_TEMP/k6-seed7.jsonl"
+          grep '^K6_AUSDAUER ' "$RUNNER_TEMP/k6-ausdauer-seed42.jsonl"
+          grep '^K6_AUSDAUER ' "$RUNNER_TEMP/k6-ausdauer-seed7.jsonl"
       - uses: actions/upload-artifact@v4
         with:
           name: k6-npc-eisdisposition-seed42-7
           path: |
             ${{ runner.temp }}/k6-seed42.jsonl
             ${{ runner.temp }}/k6-seed7.jsonl
+            ${{ runner.temp }}/k6-ausdauer-seed42.jsonl
+            ${{ runner.temp }}/k6-ausdauer-seed7.jsonl
           if-no-files-found: error

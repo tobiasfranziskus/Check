@@ -192,18 +192,14 @@ function erstellen(startkapital = {}) {
 
     // K1-Spielerfrachter: ein gekauftes, unbeladenes Schiff am Aldera-Dock,
     // ohne Frachtvertrag. NPC-Frachter und laufende W3-Transporte bleiben strikt im Transit.
-    const spielerFrachter = (sh) => sh.klasse === 'frachter'
+    const spielerFrachter = (state, sh) => sh.klasse === 'frachter'
       && sh.owner === rules.economy.start.owner && sh.system === 'aldera'
       && sh.phase === 'dock' && sh.auftrag === 'halten'
       && ladungSumme(sh) === 0
-      && stateFreightFrei(sh);
-    function stateFreightFrei(sh) {
-      // Eigentümer und freie Hülle sind notwendig; aktive Originalaufträge dürfen
-      // weder übernommen noch durch 2D-Abdocken aus dem Wirtschaftskern gerissen werden.
-      return true;
-    }
+      && ![state.w3?.auftrag?.schiff, state.w5n?.frachtauftrag?.schiff,
+        state.w5ac?.active?.schiff, state.kanon?.rueckfracht?.schiff].includes(sh.id);
     function abdockenPruefen(state, sh) {
-      if (sh.klasse !== 'miner' && !spielerFrachter(sh))
+      if (sh.klasse !== 'miner' && !spielerFrachter(state, sh))
         return 'K1: nur Miner oder eigene freie Aldera-Frachter dürfen im System abdocken';
       if (m_core_anlage.stillgelegt(state, sh)) return 'K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen';
       const pilot = KANON.piloten[sh.owner];
@@ -218,7 +214,7 @@ function erstellen(startkapital = {}) {
       if (!sh || !sh.flug) return { ok: false, type: cmd && cmd.type, reason: 'unbekanntes Schiff' };
       if (!intern && hat(state.kanon.pendel, sh.id))
         return { ok: false, type: cmd.type, reason: 'K1: laufender Pendelauftrag steuert Flug und Andocken' };
-      if (sh.klasse !== 'miner' && !spielerFrachter(sh))
+      if (sh.klasse !== 'miner' && !spielerFrachter(state, sh))
         return { ok: false, type: cmd.type, reason: 'K1: nur Miner oder eigene freie Aldera-Frachter fliegen im System frei' };
       const vor = FLUG.pruefen(state, cmd);
       if (vor) return { ok: false, type: cmd.type, reason: vor };

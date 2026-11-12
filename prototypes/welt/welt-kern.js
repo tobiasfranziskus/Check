@@ -925,8 +925,13 @@ function erstellen(startkapital = {}, k7 = false) {
       i.signWerft=true;return {ok:true,type};
     }
     if(type==='industrialOreBuildShip'){
-      if(cmd.owner!=='werft_extern'||i.phase!=='geliefert'||!i.signWerft||i.werftVerwendet)
-        return verwerfen('nur signierte Werft darf einmal nach echter Lieferung bauen');
+      // W4-Material entsteht schon bei der echten Hinlieferung. Der bezahlte
+      // Rückflug dauert weiter; seine 240 ISK bleiben bis zur Rückkehr gesperrt.
+      const echtGeliefert=i.phase==='geliefert'
+        ||(i.phase==='aktiv'&&s.w3.auftrag?.phase==='rueck'
+          &&s.w3.auftrag.industrieMiner===i.miner&&i.erzAngenommen);
+      if(cmd.owner!=='werft_extern'||!echtGeliefert||!i.signWerft||i.werftVerwendet)
+        return verwerfen('nur signierte Werft darf einmal nach echter Nadir-Ankunft bauen');
       if(s.owners.k7_werft_treuhand?.cash!==530||s.w5.auftrag
         ||s.kanon.minerWerft?.auftrag||(s.stations.st_nadir.lager.material||0)<5)
         return verwerfen('kein physisches Material oder keine freie W5-Werft');

@@ -10,6 +10,27 @@ export function nachrechnen(w, s) {
   assert.equal(sum(Object.values(kassen)), 33000);
   assert.equal(s.minted, 0); assert.equal(s.burned, 0);
   assert.equal(sum(Object.values(s.kanon.netto)), 0);
+  // K1-Transfers pro Gegenkonto neu summieren; ein Nullsaldo allein genügt nicht.
+  const netto = {};
+  for (const [key, betrag] of Object.entries(s.kanon.buch.summen)) {
+    const [, von, an] = key.split('|');
+    netto[von] = (netto[von] || 0) + betrag;
+    netto[an] = (netto[an] || 0) - betrag;
+  }
+  for (const id of new Set([...Object.keys(netto), ...Object.keys(s.kanon.netto)]))
+    assert.equal(s.kanon.netto[id] || 0, netto[id] || 0, id + ': belegte Eigentümertransfers');
+  for (const id of Object.keys(w.daten.anteile)) {
+    const start = w.rules.owners.find(x => x.id === id)?.cash || 0;
+    const konto = s.stats.konto[id] || {};
+    let reserve = 0;
+    if (id === 'st_aldera') reserve = Object.entries(s.owners).filter(([key]) => key.startsWith('erz_treuhand_')).reduce((n, [, o]) => n + o.cash, 0);
+    if (id === 'transport') reserve = (s.owners.w3_arbeit_treuhand?.cash || 0) + (s.owners.w5n_fracht_arbeit?.cash || 0);
+    if (id === 'werft_extern') reserve = s.owners.w5_arbeit_treuhand?.cash || 0;
+    for (const sh of Object.values(s.ships)) if (sh.owner === id)
+      reserve += s.owners['erz_arbeit_' + sh.id]?.cash || 0;
+    assert.equal(kassen[id] + reserve, start + (konto.erloes || 0) - (konto.kosten || 0)
+      - (netto[id] || 0), id + ': Kasse aus Anfang, realisierten Einnahmen, Kosten und Reserven');
+  }
   const massen = {};
   for (const [ware, l] of Object.entries(s.ledger)) {
     const vorhanden = sum(Object.values(s.stations).map(x => x.lager[ware] || 0))
@@ -33,7 +54,11 @@ export function nachrechnen(w, s) {
 }
 export function moment(w, s) {
   const b = w.bericht(s);
-  return { tick: s.tick, hash: w.hash(s), ...nachrechnen(w, s), firmen: b.firmen,
+  return { tick: s.tick, hash: w.hash(s), ...nachrechnen(w, s), firmen: Object.fromEntries(Object.entries(b.firmen).map(([id, f]) => [id, {
+      ...f, anfang: w.rules.owners.find(x => x.id === id)?.cash || 0,
+      erloes: s.stats.konto[id]?.erloes || 0, kosten: s.stats.konto[id]?.kosten || 0,
+      k1NettoAusgaben: s.kanon.netto[id] || 0,
+    }])) ,
     gebunden: b.gebunden, stationen: structuredClone(s.stations),
     frachter: b.schiffe.filter(x => x.klasse === 'frachter').map(x => ({ ...x,
       system: s.ships[x.id].system, phase: s.ships[x.id].phase, auftrag: s.ships[x.id].auftrag,

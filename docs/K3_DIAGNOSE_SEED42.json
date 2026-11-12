@@ -168,42 +168,66 @@
         "anlagewert": 174,
         "ruecklage": 2226,
         "ausschuettbar": 0,
-        "ausgeschuettet": 10755
+        "ausgeschuettet": 10755,
+        "anfang": 3000,
+        "erloes": 26000,
+        "kosten": 12812,
+        "k1NettoAusgaben": 13362
       },
       "npc3": {
         "kasse": 1662,
         "anlagewert": 2188,
         "ruecklage": 1412,
         "ausschuettbar": 0,
-        "ausgeschuettet": 11843
+        "ausgeschuettet": 11843,
+        "anfang": 3000,
+        "erloes": 20930,
+        "kosten": 7800,
+        "k1NettoAusgaben": 14468
       },
       "st_aldera": {
         "kasse": 1100,
         "anlagewert": 0,
         "ruecklage": 0,
         "ausschuettbar": 0,
-        "ausgeschuettet": 2116
+        "ausgeschuettet": 2116,
+        "anfang": 1000,
+        "erloes": 46680,
+        "kosten": 46930,
+        "k1NettoAusgaben": -350
       },
       "st_nadir": {
         "kasse": 3980,
         "anlagewert": 0,
         "ruecklage": 0,
         "ausschuettbar": 0,
-        "ausgeschuettet": 13990
+        "ausgeschuettet": 13990,
+        "anfang": 4000,
+        "erloes": 2000,
+        "kosten": 62430,
+        "k1NettoAusgaben": -60410
       },
       "transport": {
         "kasse": 4283,
         "anlagewert": 0,
         "ruecklage": 3750,
         "ausschuettbar": 283,
-        "ausgeschuettet": 9841
+        "ausgeschuettet": 9841,
+        "anfang": 2000,
+        "erloes": 25200,
+        "kosten": 16590,
+        "k1NettoAusgaben": 6327
       },
       "werft_extern": {
         "kasse": 530,
         "anlagewert": 0,
         "ruecklage": 0,
         "ausschuettbar": 0,
-        "ausgeschuettet": 3920
+        "ausgeschuettet": 3920,
+        "anfang": 0,
+        "erloes": 9750,
+        "kosten": 2120,
+        "k1NettoAusgaben": 7100
       }
     },
     "gebunden": 20,
@@ -522,42 +546,66 @@
           "anlagewert": 579,
           "ruecklage": 21,
           "ausschuettbar": 108,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 3000,
+          "erloes": 250,
+          "kosten": 700,
+          "k1NettoAusgaben": 21
         },
         "npc3": {
           "kasse": 2869,
           "anlagewert": 555,
           "ruecklage": 45,
           "ausschuettbar": 424,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 3000,
+          "erloes": 750,
+          "kosten": 798,
+          "k1NettoAusgaben": 81
         },
         "st_aldera": {
           "kasse": 500,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 1000,
+          "erloes": 750,
+          "kosten": 1000,
+          "k1NettoAusgaben": 0
         },
         "st_nadir": {
           "kasse": 3740,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 4000,
+          "erloes": 500,
+          "kosten": 760,
+          "k1NettoAusgaben": 0
         },
         "transport": {
           "kasse": 1130,
           "anlagewert": 726,
           "ruecklage": 24,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 2000,
+          "erloes": 0,
+          "kosten": 830,
+          "k1NettoAusgaben": 0
         },
         "werft_extern": {
           "kasse": 1420,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 890,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 0,
+          "erloes": 1950,
+          "kosten": 500,
+          "k1NettoAusgaben": 0
         }
       },
       "gebunden": 592,
@@ -787,42 +835,66 @@
           "anlagewert": 579,
           "ruecklage": 21,
           "ausschuettbar": 108,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 3000,
+          "erloes": 250,
+          "kosten": 700,
+          "k1NettoAusgaben": 21
         },
         "npc3": {
           "kasse": 2998,
           "anlagewert": 546,
           "ruecklage": 54,
           "ausschuettbar": 544,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 3000,
+          "erloes": 1000,
+          "kosten": 816,
+          "k1NettoAusgaben": 102
         },
         "st_aldera": {
           "kasse": 250,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 1000,
+          "erloes": 1000,
+          "kosten": 1250,
+          "k1NettoAusgaben": 0
         },
         "st_nadir": {
           "kasse": 3740,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 4000,
+          "erloes": 500,
+          "kosten": 760,
+          "k1NettoAusgaben": 0
         },
         "transport": {
           "kasse": 1130,
           "anlagewert": 717,
           "ruecklage": 33,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 2000,
+          "erloes": 0,
+          "kosten": 860,
+          "k1NettoAusgaben": 0
         },
         "werft_extern": {
           "kasse": 1420,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 890,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 0,
+          "erloes": 1950,
+          "kosten": 530,
+          "k1NettoAusgaben": 0
         }
       },
       "gebunden": 864,
@@ -1049,42 +1121,66 @@
           "anlagewert": 579,
           "ruecklage": 21,
           "ausschuettbar": 68,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 3000,
+          "erloes": 250,
+          "kosten": 700,
+          "k1NettoAusgaben": 61
         },
         "npc3": {
           "kasse": 2998,
           "anlagewert": 543,
           "ruecklage": 57,
           "ausschuettbar": 541,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 3000,
+          "erloes": 1000,
+          "kosten": 836,
+          "k1NettoAusgaben": 102
         },
         "st_aldera": {
           "kasse": 250,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 1000,
+          "erloes": 1000,
+          "kosten": 1250,
+          "k1NettoAusgaben": 0
         },
         "st_nadir": {
           "kasse": 3250,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 4000,
+          "erloes": 500,
+          "kosten": 1250,
+          "k1NettoAusgaben": 0
         },
         "transport": {
           "kasse": 1250,
           "anlagewert": 714,
           "ruecklage": 36,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 2000,
+          "erloes": 240,
+          "kosten": 870,
+          "k1NettoAusgaben": 0
         },
         "werft_extern": {
           "kasse": 1420,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 890,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 0,
+          "erloes": 1950,
+          "kosten": 530,
+          "k1NettoAusgaben": 0
         }
       },
       "gebunden": 1244,
@@ -1301,42 +1397,66 @@
           "anlagewert": 269,
           "ruecklage": 331,
           "ausschuettbar": 567,
-          "ausgeschuettet": 935
+          "ausgeschuettet": 935,
+          "anfang": 3000,
+          "erloes": 3750,
+          "kosten": 2162,
+          "k1NettoAusgaben": 1290
         },
         "npc3": {
           "kasse": 5435,
           "anlagewert": 0,
           "ruecklage": 600,
           "ausschuettbar": 2435,
-          "ausgeschuettet": 5251
+          "ausgeschuettet": 5251,
+          "anfang": 3000,
+          "erloes": 11470,
+          "kosten": 2908,
+          "k1NettoAusgaben": 6127
         },
         "st_aldera": {
           "kasse": 348,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 1000,
+          "erloes": 14720,
+          "kosten": 15220,
+          "k1NettoAusgaben": 152
         },
         "st_nadir": {
           "kasse": 4770,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 770,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 4000,
+          "erloes": 500,
+          "kosten": 9530,
+          "k1NettoAusgaben": -9800
         },
         "transport": {
           "kasse": 2418,
           "anlagewert": 188,
           "ruecklage": 562,
           "ausschuettbar": 606,
-          "ausgeschuettet": 1005
+          "ausgeschuettet": 1005,
+          "anfang": 2000,
+          "erloes": 3600,
+          "kosten": 2625,
+          "k1NettoAusgaben": 512
         },
         "werft_extern": {
           "kasse": 530,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 890
+          "ausgeschuettet": 890,
+          "anfang": 0,
+          "erloes": 1950,
+          "kosten": 530,
+          "k1NettoAusgaben": 890
         }
       },
       "gebunden": 393,
@@ -1568,42 +1688,66 @@
           "anlagewert": 154,
           "ruecklage": 446,
           "ausschuettbar": 879,
-          "ausgeschuettet": 935
+          "ausgeschuettet": 935,
+          "anfang": 3000,
+          "erloes": 5000,
+          "kosten": 2700,
+          "k1NettoAusgaben": 1575
         },
         "npc3": {
           "kasse": 7290,
           "anlagewert": 1884,
           "ruecklage": 1116,
           "ausschuettbar": 5924,
-          "ausgeschuettet": 5251
+          "ausgeschuettet": 5251,
+          "anfang": 3000,
+          "erloes": 18170,
+          "kosten": 6648,
+          "k1NettoAusgaben": 7232
         },
         "st_aldera": {
           "kasse": 0,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 1000,
+          "erloes": 21920,
+          "kosten": 23170,
+          "k1NettoAusgaben": -250
         },
         "st_nadir": {
           "kasse": 6384,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 2384,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 4000,
+          "erloes": 500,
+          "kosten": 12580,
+          "k1NettoAusgaben": -14464
         },
         "transport": {
           "kasse": 2640,
           "anlagewert": 750,
           "ruecklage": 750,
           "ausschuettbar": 1390,
-          "ausgeschuettet": 1005
+          "ausgeschuettet": 1005,
+          "anfang": 2000,
+          "erloes": 4800,
+          "kosten": 4000,
+          "k1NettoAusgaben": 140
         },
         "werft_extern": {
           "kasse": 2090,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 1560,
-          "ausgeschuettet": 890
+          "ausgeschuettet": 890,
+          "anfang": 0,
+          "erloes": 5100,
+          "kosten": 530,
+          "k1NettoAusgaben": 2480
         }
       },
       "gebunden": 399,
@@ -1859,42 +2003,66 @@
           "anlagewert": 154,
           "ruecklage": 446,
           "ausschuettbar": 879,
-          "ausgeschuettet": 935
+          "ausgeschuettet": 935,
+          "anfang": 3000,
+          "erloes": 5000,
+          "kosten": 2700,
+          "k1NettoAusgaben": 1575
         },
         "npc3": {
           "kasse": 7290,
           "anlagewert": 1884,
           "ruecklage": 1116,
           "ausschuettbar": 5924,
-          "ausgeschuettet": 5251
+          "ausgeschuettet": 5251,
+          "anfang": 3000,
+          "erloes": 18170,
+          "kosten": 6648,
+          "k1NettoAusgaben": 7232
         },
         "st_aldera": {
           "kasse": 0,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 1000,
+          "erloes": 21920,
+          "kosten": 23170,
+          "k1NettoAusgaben": -250
         },
         "st_nadir": {
           "kasse": 6384,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 2384,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 4000,
+          "erloes": 500,
+          "kosten": 12580,
+          "k1NettoAusgaben": -14464
         },
         "transport": {
           "kasse": 2640,
           "anlagewert": 750,
           "ruecklage": 750,
           "ausschuettbar": 1390,
-          "ausgeschuettet": 1005
+          "ausgeschuettet": 1005,
+          "anfang": 2000,
+          "erloes": 4800,
+          "kosten": 4000,
+          "k1NettoAusgaben": 140
         },
         "werft_extern": {
           "kasse": 2090,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 1560,
-          "ausgeschuettet": 890
+          "ausgeschuettet": 890,
+          "anfang": 0,
+          "erloes": 5100,
+          "kosten": 530,
+          "k1NettoAusgaben": 2480
         }
       },
       "gebunden": 399,
@@ -2150,42 +2318,66 @@
           "anlagewert": 153,
           "ruecklage": 447,
           "ausschuettbar": 1147,
-          "ausgeschuettet": 935
+          "ausgeschuettet": 935,
+          "anfang": 3000,
+          "erloes": 5250,
+          "kosten": 2700,
+          "k1NettoAusgaben": 1556
         },
         "npc3": {
           "kasse": 7055,
           "anlagewert": 1866,
           "ruecklage": 1134,
           "ausschuettbar": 5671,
-          "ausgeschuettet": 5251
+          "ausgeschuettet": 5251,
+          "anfang": 3000,
+          "erloes": 18170,
+          "kosten": 6672,
+          "k1NettoAusgaben": 7267
         },
         "st_aldera": {
           "kasse": 0,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 1000,
+          "erloes": 23170,
+          "kosten": 23420,
+          "k1NettoAusgaben": -250
         },
         "st_nadir": {
           "kasse": 6858,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 2858,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 4000,
+          "erloes": 1000,
+          "kosten": 12620,
+          "k1NettoAusgaben": -14478
         },
         "transport": {
           "kasse": 2849,
           "anlagewert": 750,
           "ruecklage": 750,
           "ausschuettbar": 1599,
-          "ausgeschuettet": 1005
+          "ausgeschuettet": 1005,
+          "anfang": 2000,
+          "erloes": 5040,
+          "kosten": 4080,
+          "k1NettoAusgaben": 111
         },
         "werft_extern": {
           "kasse": 1560,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 1030,
-          "ausgeschuettet": 890
+          "ausgeschuettet": 890,
+          "anfang": 0,
+          "erloes": 5100,
+          "kosten": 1030,
+          "k1NettoAusgaben": 2480
         }
       },
       "gebunden": 1337,
@@ -2453,42 +2645,66 @@
           "anlagewert": 153,
           "ruecklage": 447,
           "ausschuettbar": 1147,
-          "ausgeschuettet": 935
+          "ausgeschuettet": 935,
+          "anfang": 3000,
+          "erloes": 5250,
+          "kosten": 2700,
+          "k1NettoAusgaben": 1556
         },
         "npc3": {
           "kasse": 7018,
           "anlagewert": 1839,
           "ruecklage": 1161,
           "ausschuettbar": 5607,
-          "ausgeschuettet": 5251
+          "ausgeschuettet": 5251,
+          "anfang": 3000,
+          "erloes": 18170,
+          "kosten": 6794,
+          "k1NettoAusgaben": 7302
         },
         "st_aldera": {
           "kasse": 278,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 1000,
+          "erloes": 23170,
+          "kosten": 23420,
+          "k1NettoAusgaben": -538
         },
         "st_nadir": {
           "kasse": 6908,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 2908,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 4000,
+          "erloes": 1000,
+          "kosten": 12640,
+          "k1NettoAusgaben": -14548
         },
         "transport": {
           "kasse": 2849,
           "anlagewert": 741,
           "ruecklage": 759,
           "ausschuettbar": 1590,
-          "ausgeschuettet": 1005
+          "ausgeschuettet": 1005,
+          "anfang": 2000,
+          "erloes": 5040,
+          "kosten": 4080,
+          "k1NettoAusgaben": 111
         },
         "werft_extern": {
           "kasse": 1560,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 1030,
-          "ausgeschuettet": 890
+          "ausgeschuettet": 890,
+          "anfang": 0,
+          "erloes": 5100,
+          "kosten": 1060,
+          "k1NettoAusgaben": 2480
         }
       },
       "gebunden": 1163,
@@ -2752,42 +2968,66 @@
           "anlagewert": 153,
           "ruecklage": 447,
           "ausschuettbar": 1147,
-          "ausgeschuettet": 935
+          "ausgeschuettet": 935,
+          "anfang": 3000,
+          "erloes": 5250,
+          "kosten": 2700,
+          "k1NettoAusgaben": 1556
         },
         "npc3": {
           "kasse": 7252,
           "anlagewert": 2411,
           "ruecklage": 1189,
           "ausschuettbar": 5813,
-          "ausgeschuettet": 5251
+          "ausgeschuettet": 5251,
+          "anfang": 3000,
+          "erloes": 19180,
+          "kosten": 7478,
+          "k1NettoAusgaben": 7430
         },
         "st_aldera": {
           "kasse": 224,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 1000,
+          "erloes": 23180,
+          "kosten": 24430,
+          "k1NettoAusgaben": -714
         },
         "st_nadir": {
           "kasse": 6210,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 2210,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 4000,
+          "erloes": 1000,
+          "kosten": 13380,
+          "k1NettoAusgaben": -14590
         },
         "transport": {
           "kasse": 2729,
           "anlagewert": 732,
           "ruecklage": 768,
           "ausschuettbar": 1461,
-          "ausgeschuettet": 1005
+          "ausgeschuettet": 1005,
+          "anfang": 2000,
+          "erloes": 5040,
+          "kosten": 4080,
+          "k1NettoAusgaben": 111
         },
         "werft_extern": {
           "kasse": 2160,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 1630,
-          "ausgeschuettet": 890
+          "ausgeschuettet": 890,
+          "anfang": 0,
+          "erloes": 5700,
+          "kosten": 1060,
+          "k1NettoAusgaben": 2480
         }
       },
       "gebunden": 1257,
@@ -3069,42 +3309,66 @@
           "anlagewert": 153,
           "ruecklage": 447,
           "ausschuettbar": 1107,
-          "ausgeschuettet": 935
+          "ausgeschuettet": 935,
+          "anfang": 3000,
+          "erloes": 5250,
+          "kosten": 2700,
+          "k1NettoAusgaben": 1596
         },
         "npc3": {
           "kasse": 8360,
           "anlagewert": 2267,
           "ruecklage": 1333,
           "ausschuettbar": 6777,
-          "ausgeschuettet": 5251
+          "ausgeschuettet": 5251,
+          "anfang": 3000,
+          "erloes": 20890,
+          "kosten": 7800,
+          "k1NettoAusgaben": 7730
         },
         "st_aldera": {
           "kasse": 464,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 1000,
+          "erloes": 24930,
+          "kosten": 26140,
+          "k1NettoAusgaben": -714
         },
         "st_nadir": {
           "kasse": 6256,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 2256,
-          "ausgeschuettet": 0
+          "ausgeschuettet": 0,
+          "anfang": 4000,
+          "erloes": 1000,
+          "kosten": 13890,
+          "k1NettoAusgaben": -15146
         },
         "transport": {
           "kasse": 2849,
           "anlagewert": 696,
           "ruecklage": 804,
           "ausschuettbar": 1545,
-          "ausgeschuettet": 1005
+          "ausgeschuettet": 1005,
+          "anfang": 2000,
+          "erloes": 5280,
+          "kosten": 4200,
+          "k1NettoAusgaben": 111
         },
         "werft_extern": {
           "kasse": 1630,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 1100,
-          "ausgeschuettet": 890
+          "ausgeschuettet": 890,
+          "anfang": 0,
+          "erloes": 5700,
+          "kosten": 1060,
+          "k1NettoAusgaben": 3010
         }
       },
       "gebunden": 808,
@@ -3373,42 +3637,66 @@
           "anlagewert": 0,
           "ruecklage": 600,
           "ausschuettbar": 792,
-          "ausgeschuettet": 1936
+          "ausgeschuettet": 1936,
+          "anfang": 3000,
+          "erloes": 7000,
+          "kosten": 3404,
+          "k1NettoAusgaben": 2804
         },
         "npc3": {
           "kasse": 1674,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 12,
-          "ausgeschuettet": 11831
+          "ausgeschuettet": 11831,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14456
         },
         "st_aldera": {
           "kasse": 1061,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 364
+          "ausgeschuettet": 364,
+          "anfang": 1000,
+          "erloes": 27680,
+          "kosten": 27930,
+          "k1NettoAusgaben": -311
         },
         "st_nadir": {
           "kasse": 5084,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 1084,
-          "ausgeschuettet": 2256
+          "ausgeschuettet": 2256,
+          "anfang": 4000,
+          "erloes": 1000,
+          "kosten": 18000,
+          "k1NettoAusgaben": -18084
         },
         "transport": {
           "kasse": 2341,
           "anlagewert": 441,
           "ruecklage": 1059,
           "ausschuettbar": 782,
-          "ausgeschuettet": 2534
+          "ausgeschuettet": 2534,
+          "anfang": 2000,
+          "erloes": 6960,
+          "kosten": 5052,
+          "k1NettoAusgaben": 1459
         },
         "werft_extern": {
           "kasse": 530,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 1990
+          "ausgeschuettet": 1990,
+          "anfang": 0,
+          "erloes": 5700,
+          "kosten": 1060,
+          "k1NettoAusgaben": 4110
         }
       },
       "gebunden": 636,
@@ -3678,42 +3966,66 @@
           "anlagewert": 333,
           "ruecklage": 867,
           "ausschuettbar": 789,
-          "ausgeschuettet": 3139
+          "ausgeschuettet": 3139,
+          "anfang": 3000,
+          "erloes": 10000,
+          "kosten": 5264,
+          "k1NettoAusgaben": 4280
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 1245,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 145,
-          "ausgeschuettet": 658
+          "ausgeschuettet": 658,
+          "anfang": 1000,
+          "erloes": 30680,
+          "kosten": 30930,
+          "k1NettoAusgaben": -495
         },
         "st_nadir": {
           "kasse": 4770,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 770,
-          "ausgeschuettet": 3828
+          "ausgeschuettet": 3828,
+          "anfang": 4000,
+          "erloes": 1000,
+          "kosten": 25100,
+          "k1NettoAusgaben": -24870
         },
         "transport": {
           "kasse": 1987,
           "anlagewert": 750,
           "ruecklage": 1500,
           "ausschuettbar": 237,
-          "ausgeschuettet": 3896
+          "ausgeschuettet": 3896,
+          "anfang": 2000,
+          "erloes": 9840,
+          "kosten": 7270,
+          "k1NettoAusgaben": 2503
         },
         "werft_extern": {
           "kasse": 1280,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 750,
-          "ausgeschuettet": 2590
+          "ausgeschuettet": 2590,
+          "anfang": 0,
+          "erloes": 7050,
+          "kosten": 1060,
+          "k1NettoAusgaben": 4710
         }
       },
       "gebunden": 600,
@@ -3996,42 +4308,66 @@
           "anlagewert": 333,
           "ruecklage": 867,
           "ausschuettbar": 789,
-          "ausgeschuettet": 3139
+          "ausgeschuettet": 3139,
+          "anfang": 3000,
+          "erloes": 10000,
+          "kosten": 5264,
+          "k1NettoAusgaben": 4280
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 1245,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 145,
-          "ausgeschuettet": 658
+          "ausgeschuettet": 658,
+          "anfang": 1000,
+          "erloes": 30680,
+          "kosten": 30930,
+          "k1NettoAusgaben": -495
         },
         "st_nadir": {
           "kasse": 4770,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 770,
-          "ausgeschuettet": 3828
+          "ausgeschuettet": 3828,
+          "anfang": 4000,
+          "erloes": 1000,
+          "kosten": 25100,
+          "k1NettoAusgaben": -24870
         },
         "transport": {
           "kasse": 1987,
           "anlagewert": 750,
           "ruecklage": 1500,
           "ausschuettbar": 237,
-          "ausgeschuettet": 3896
+          "ausgeschuettet": 3896,
+          "anfang": 2000,
+          "erloes": 9840,
+          "kosten": 7270,
+          "k1NettoAusgaben": 2503
         },
         "werft_extern": {
           "kasse": 1280,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 750,
-          "ausgeschuettet": 2590
+          "ausgeschuettet": 2590,
+          "anfang": 0,
+          "erloes": 7050,
+          "kosten": 1060,
+          "k1NettoAusgaben": 4710
         }
       },
       "gebunden": 600,
@@ -4314,42 +4650,66 @@
           "anlagewert": 327,
           "ruecklage": 873,
           "ausschuettbar": 743,
-          "ausgeschuettet": 3139
+          "ausgeschuettet": 3139,
+          "anfang": 3000,
+          "erloes": 10000,
+          "kosten": 5304,
+          "k1NettoAusgaben": 4280
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 865,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 658
+          "ausgeschuettet": 658,
+          "anfang": 1000,
+          "erloes": 30930,
+          "kosten": 30930,
+          "k1NettoAusgaben": 135
         },
         "st_nadir": {
           "kasse": 5832,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 1832,
-          "ausgeschuettet": 3828
+          "ausgeschuettet": 3828,
+          "anfang": 4000,
+          "erloes": 1500,
+          "kosten": 25140,
+          "k1NettoAusgaben": -25472
         },
         "transport": {
           "kasse": 1987,
           "anlagewert": 750,
           "ruecklage": 1500,
           "ausschuettbar": 237,
-          "ausgeschuettet": 3896
+          "ausgeschuettet": 3896,
+          "anfang": 2000,
+          "erloes": 9840,
+          "kosten": 7291,
+          "k1NettoAusgaben": 2503
         },
         "werft_extern": {
           "kasse": 750,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 220,
-          "ausgeschuettet": 2590
+          "ausgeschuettet": 2590,
+          "anfang": 0,
+          "erloes": 7050,
+          "kosten": 1560,
+          "k1NettoAusgaben": 4710
         }
       },
       "gebunden": 419,
@@ -4638,42 +4998,66 @@
           "anlagewert": 324,
           "ruecklage": 876,
           "ausschuettbar": 1009,
-          "ausgeschuettet": 3139
+          "ausgeschuettet": 3139,
+          "anfang": 3000,
+          "erloes": 10250,
+          "kosten": 5304,
+          "k1NettoAusgaben": 4261
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 615,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 658
+          "ausgeschuettet": 658,
+          "anfang": 1000,
+          "erloes": 30930,
+          "kosten": 31180,
+          "k1NettoAusgaben": 135
         },
         "st_nadir": {
           "kasse": 5812,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 1812,
-          "ausgeschuettet": 3828
+          "ausgeschuettet": 3828,
+          "anfang": 4000,
+          "erloes": 1500,
+          "kosten": 25160,
+          "k1NettoAusgaben": -25472
         },
         "transport": {
           "kasse": 1987,
           "anlagewert": 750,
           "ruecklage": 1500,
           "ausschuettbar": 237,
-          "ausgeschuettet": 3896
+          "ausgeschuettet": 3896,
+          "anfang": 2000,
+          "erloes": 9840,
+          "kosten": 7321,
+          "k1NettoAusgaben": 2503
         },
         "werft_extern": {
           "kasse": 750,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 220,
-          "ausgeschuettet": 2590
+          "ausgeschuettet": 2590,
+          "anfang": 0,
+          "erloes": 7050,
+          "kosten": 1590,
+          "k1NettoAusgaben": 4710
         }
       },
       "gebunden": 320,
@@ -4957,42 +5341,66 @@
           "anlagewert": 324,
           "ruecklage": 876,
           "ausschuettbar": 969,
-          "ausgeschuettet": 3139
+          "ausgeschuettet": 3139,
+          "anfang": 3000,
+          "erloes": 10250,
+          "kosten": 5304,
+          "k1NettoAusgaben": 4301
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 1287,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 187,
-          "ausgeschuettet": 658
+          "ausgeschuettet": 658,
+          "anfang": 1000,
+          "erloes": 30930,
+          "kosten": 31180,
+          "k1NettoAusgaben": -537
         },
         "st_nadir": {
           "kasse": 5430,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 1430,
-          "ausgeschuettet": 3828
+          "ausgeschuettet": 3828,
+          "anfang": 4000,
+          "erloes": 1500,
+          "kosten": 25710,
+          "k1NettoAusgaben": -25640
         },
         "transport": {
           "kasse": 2089,
           "anlagewert": 732,
           "ruecklage": 1518,
           "ausschuettbar": 321,
-          "ausgeschuettet": 3896
+          "ausgeschuettet": 3896,
+          "anfang": 2000,
+          "erloes": 10080,
+          "kosten": 7410,
+          "k1NettoAusgaben": 2461
         },
         "werft_extern": {
           "kasse": 750,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 220,
-          "ausgeschuettet": 2590
+          "ausgeschuettet": 2590,
+          "anfang": 0,
+          "erloes": 7050,
+          "kosten": 1590,
+          "k1NettoAusgaben": 4710
         }
       },
       "gebunden": 650,
@@ -5285,42 +5693,66 @@
           "anlagewert": 0,
           "ruecklage": 1200,
           "ausschuettbar": 1077,
-          "ausgeschuettet": 4578
+          "ausgeschuettet": 4578,
+          "anfang": 3000,
+          "erloes": 14000,
+          "kosten": 6808,
+          "k1NettoAusgaben": 6115
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 1053,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 658
+          "ausgeschuettet": 658,
+          "anfang": 1000,
+          "erloes": 34680,
+          "kosten": 34930,
+          "k1NettoAusgaben": -303
         },
         "st_nadir": {
           "kasse": 4658,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 658,
-          "ausgeschuettet": 6582
+          "ausgeschuettet": 6582,
+          "anfang": 4000,
+          "erloes": 1500,
+          "kosten": 34560,
+          "k1NettoAusgaben": -33718
         },
         "transport": {
           "kasse": 3724,
           "anlagewert": 189,
           "ruecklage": 2061,
           "ausschuettbar": 1413,
-          "ausgeschuettet": 4559
+          "ausgeschuettet": 4559,
+          "anfang": 2000,
+          "erloes": 13680,
+          "kosten": 9222,
+          "k1NettoAusgaben": 2626
         },
         "werft_extern": {
           "kasse": 220,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 2590
+          "ausgeschuettet": 2590,
+          "anfang": 0,
+          "erloes": 7050,
+          "kosten": 1590,
+          "k1NettoAusgaben": 5240
         }
       },
       "gebunden": 636,
@@ -5614,42 +6046,66 @@
           "anlagewert": 482,
           "ruecklage": 1318,
           "ausschuettbar": 319,
-          "ausgeschuettet": 5782
+          "ausgeschuettet": 5782,
+          "anfang": 3000,
+          "erloes": 15250,
+          "kosten": 7968,
+          "k1NettoAusgaben": 7445
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 1669,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 569,
-          "ausgeschuettet": 658
+          "ausgeschuettet": 658,
+          "anfang": 1000,
+          "erloes": 35930,
+          "kosten": 36180,
+          "k1NettoAusgaben": -919
         },
         "st_nadir": {
           "kasse": 4008,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 8,
-          "ausgeschuettet": 7860
+          "ausgeschuettet": 7860,
+          "anfang": 4000,
+          "erloes": 1500,
+          "kosten": 37530,
+          "k1NettoAusgaben": -36038
         },
         "transport": {
           "kasse": 2296,
           "anlagewert": 750,
           "ruecklage": 2250,
           "ausschuettbar": 0,
-          "ausgeschuettet": 5941
+          "ausgeschuettet": 5941,
+          "anfang": 2000,
+          "erloes": 14880,
+          "kosten": 10600,
+          "k1NettoAusgaben": 3904
         },
         "werft_extern": {
           "kasse": 1280,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 750,
-          "ausgeschuettet": 2880
+          "ausgeschuettet": 2880,
+          "anfang": 0,
+          "erloes": 8400,
+          "kosten": 1590,
+          "k1NettoAusgaben": 5530
         }
       },
       "gebunden": 600,
@@ -5956,42 +6412,66 @@
           "anlagewert": 482,
           "ruecklage": 1318,
           "ausschuettbar": 319,
-          "ausgeschuettet": 5782
+          "ausgeschuettet": 5782,
+          "anfang": 3000,
+          "erloes": 15250,
+          "kosten": 7968,
+          "k1NettoAusgaben": 7445
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 1669,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 569,
-          "ausgeschuettet": 658
+          "ausgeschuettet": 658,
+          "anfang": 1000,
+          "erloes": 35930,
+          "kosten": 36180,
+          "k1NettoAusgaben": -919
         },
         "st_nadir": {
           "kasse": 4008,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 8,
-          "ausgeschuettet": 7860
+          "ausgeschuettet": 7860,
+          "anfang": 4000,
+          "erloes": 1500,
+          "kosten": 37530,
+          "k1NettoAusgaben": -36038
         },
         "transport": {
           "kasse": 2296,
           "anlagewert": 750,
           "ruecklage": 2250,
           "ausschuettbar": 0,
-          "ausgeschuettet": 5941
+          "ausgeschuettet": 5941,
+          "anfang": 2000,
+          "erloes": 14880,
+          "kosten": 10600,
+          "k1NettoAusgaben": 3904
         },
         "werft_extern": {
           "kasse": 1280,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 750,
-          "ausgeschuettet": 2880
+          "ausgeschuettet": 2880,
+          "anfang": 0,
+          "erloes": 8400,
+          "kosten": 1590,
+          "k1NettoAusgaben": 5530
         }
       },
       "gebunden": 600,
@@ -6298,42 +6778,66 @@
           "anlagewert": 476,
           "ruecklage": 1324,
           "ausschuettbar": 273,
-          "ausgeschuettet": 5782
+          "ausgeschuettet": 5782,
+          "anfang": 3000,
+          "erloes": 15250,
+          "kosten": 8008,
+          "k1NettoAusgaben": 7445
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 1434,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 334,
-          "ausgeschuettet": 658
+          "ausgeschuettet": 658,
+          "anfang": 1000,
+          "erloes": 36180,
+          "kosten": 36180,
+          "k1NettoAusgaben": -434
         },
         "st_nadir": {
           "kasse": 5070,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 1070,
-          "ausgeschuettet": 7860
+          "ausgeschuettet": 7860,
+          "anfang": 4000,
+          "erloes": 2000,
+          "kosten": 37570,
+          "k1NettoAusgaben": -36640
         },
         "transport": {
           "kasse": 2296,
           "anlagewert": 750,
           "ruecklage": 2250,
           "ausschuettbar": 0,
-          "ausgeschuettet": 5941
+          "ausgeschuettet": 5941,
+          "anfang": 2000,
+          "erloes": 14880,
+          "kosten": 10621,
+          "k1NettoAusgaben": 3904
         },
         "werft_extern": {
           "kasse": 750,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 220,
-          "ausgeschuettet": 2880
+          "ausgeschuettet": 2880,
+          "anfang": 0,
+          "erloes": 8400,
+          "kosten": 2090,
+          "k1NettoAusgaben": 5530
         }
       },
       "gebunden": 420,
@@ -6646,42 +7150,66 @@
           "anlagewert": 473,
           "ruecklage": 1327,
           "ausschuettbar": 539,
-          "ausgeschuettet": 5782
+          "ausgeschuettet": 5782,
+          "anfang": 3000,
+          "erloes": 15500,
+          "kosten": 8008,
+          "k1NettoAusgaben": 7426
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 1184,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 84,
-          "ausgeschuettet": 658
+          "ausgeschuettet": 658,
+          "anfang": 1000,
+          "erloes": 36180,
+          "kosten": 36430,
+          "k1NettoAusgaben": -434
         },
         "st_nadir": {
           "kasse": 5050,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 1050,
-          "ausgeschuettet": 7860
+          "ausgeschuettet": 7860,
+          "anfang": 4000,
+          "erloes": 2000,
+          "kosten": 37590,
+          "k1NettoAusgaben": -36640
         },
         "transport": {
           "kasse": 2296,
           "anlagewert": 750,
           "ruecklage": 2250,
           "ausschuettbar": 0,
-          "ausgeschuettet": 5941
+          "ausgeschuettet": 5941,
+          "anfang": 2000,
+          "erloes": 14880,
+          "kosten": 10651,
+          "k1NettoAusgaben": 3904
         },
         "werft_extern": {
           "kasse": 750,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 220,
-          "ausgeschuettet": 2880
+          "ausgeschuettet": 2880,
+          "anfang": 0,
+          "erloes": 8400,
+          "kosten": 2120,
+          "k1NettoAusgaben": 5530
         }
       },
       "gebunden": 321,
@@ -6989,42 +7517,66 @@
           "anlagewert": 473,
           "ruecklage": 1327,
           "ausschuettbar": 499,
-          "ausgeschuettet": 5782
+          "ausgeschuettet": 5782,
+          "anfang": 3000,
+          "erloes": 15500,
+          "kosten": 8008,
+          "k1NettoAusgaben": 7466
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 1872,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 772,
-          "ausgeschuettet": 658
+          "ausgeschuettet": 658,
+          "anfang": 1000,
+          "erloes": 36180,
+          "kosten": 36430,
+          "k1NettoAusgaben": -1122
         },
         "st_nadir": {
           "kasse": 4654,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 654,
-          "ausgeschuettet": 7860
+          "ausgeschuettet": 7860,
+          "anfang": 4000,
+          "erloes": 2000,
+          "kosten": 38140,
+          "k1NettoAusgaben": -36794
         },
         "transport": {
           "kasse": 2399,
           "anlagewert": 732,
           "ruecklage": 2268,
           "ausschuettbar": 0,
-          "ausgeschuettet": 5941
+          "ausgeschuettet": 5941,
+          "anfang": 2000,
+          "erloes": 15120,
+          "kosten": 10740,
+          "k1NettoAusgaben": 3861
         },
         "werft_extern": {
           "kasse": 750,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 220,
-          "ausgeschuettet": 2880
+          "ausgeschuettet": 2880,
+          "anfang": 0,
+          "erloes": 8400,
+          "kosten": 2120,
+          "k1NettoAusgaben": 5530
         }
       },
       "gebunden": 650,
@@ -7341,42 +7893,66 @@
           "anlagewert": 35,
           "ruecklage": 1765,
           "ausschuettbar": 250,
-          "ausgeschuettet": 8053
+          "ausgeschuettet": 8053,
+          "anfang": 3000,
+          "erloes": 20500,
+          "kosten": 10068,
+          "k1NettoAusgaben": 10217
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 1153,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 53,
-          "ausgeschuettet": 2088
+          "ausgeschuettet": 2088,
+          "anfang": 1000,
+          "erloes": 41180,
+          "kosten": 41430,
+          "k1NettoAusgaben": -403
         },
         "st_nadir": {
           "kasse": 4682,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 682,
-          "ausgeschuettet": 10918
+          "ausgeschuettet": 10918,
+          "anfang": 4000,
+          "erloes": 2000,
+          "kosten": 49960,
+          "k1NettoAusgaben": -48642
         },
         "transport": {
           "kasse": 2725,
           "anlagewert": 750,
           "ruecklage": 3000,
           "ausschuettbar": 0,
-          "ausgeschuettet": 8036
+          "ausgeschuettet": 8036,
+          "anfang": 2000,
+          "erloes": 19920,
+          "kosten": 13930,
+          "k1NettoAusgaben": 5185
         },
         "werft_extern": {
           "kasse": 750,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 220,
-          "ausgeschuettet": 3100
+          "ausgeschuettet": 3100,
+          "anfang": 0,
+          "erloes": 9150,
+          "kosten": 2120,
+          "k1NettoAusgaben": 6280
         }
       },
       "gebunden": 600,
@@ -7706,42 +8282,66 @@
           "anlagewert": 35,
           "ruecklage": 1765,
           "ausschuettbar": 250,
-          "ausgeschuettet": 8053
+          "ausgeschuettet": 8053,
+          "anfang": 3000,
+          "erloes": 20500,
+          "kosten": 10068,
+          "k1NettoAusgaben": 10217
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 1153,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 53,
-          "ausgeschuettet": 2088
+          "ausgeschuettet": 2088,
+          "anfang": 1000,
+          "erloes": 41180,
+          "kosten": 41430,
+          "k1NettoAusgaben": -403
         },
         "st_nadir": {
           "kasse": 4682,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 682,
-          "ausgeschuettet": 10918
+          "ausgeschuettet": 10918,
+          "anfang": 4000,
+          "erloes": 2000,
+          "kosten": 49960,
+          "k1NettoAusgaben": -48642
         },
         "transport": {
           "kasse": 2725,
           "anlagewert": 750,
           "ruecklage": 3000,
           "ausschuettbar": 0,
-          "ausgeschuettet": 8036
+          "ausgeschuettet": 8036,
+          "anfang": 2000,
+          "erloes": 19920,
+          "kosten": 13930,
+          "k1NettoAusgaben": 5185
         },
         "werft_extern": {
           "kasse": 750,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 220,
-          "ausgeschuettet": 3100
+          "ausgeschuettet": 3100,
+          "anfang": 0,
+          "erloes": 9150,
+          "kosten": 2120,
+          "k1NettoAusgaben": 6280
         }
       },
       "gebunden": 600,
@@ -8071,42 +8671,66 @@
           "anlagewert": 25,
           "ruecklage": 1775,
           "ausschuettbar": 429,
-          "ausgeschuettet": 8053
+          "ausgeschuettet": 8053,
+          "anfang": 3000,
+          "erloes": 20750,
+          "kosten": 10108,
+          "k1NettoAusgaben": 10238
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 1163,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 63,
-          "ausgeschuettet": 2088
+          "ausgeschuettet": 2088,
+          "anfang": 1000,
+          "erloes": 41430,
+          "kosten": 41680,
+          "k1NettoAusgaben": -413
         },
         "st_nadir": {
           "kasse": 4792,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 792,
-          "ausgeschuettet": 10918
+          "ausgeschuettet": 10918,
+          "anfang": 4000,
+          "erloes": 2000,
+          "kosten": 50550,
+          "k1NettoAusgaben": -49342
         },
         "transport": {
           "kasse": 2795,
           "anlagewert": 732,
           "ruecklage": 3018,
           "ausschuettbar": 0,
-          "ausgeschuettet": 8036
+          "ausgeschuettet": 8036,
+          "anfang": 2000,
+          "erloes": 20160,
+          "kosten": 14070,
+          "k1NettoAusgaben": 5175
         },
         "werft_extern": {
           "kasse": 750,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 220,
-          "ausgeschuettet": 3100
+          "ausgeschuettet": 3100,
+          "anfang": 0,
+          "erloes": 9150,
+          "kosten": 2120,
+          "k1NettoAusgaben": 6280
         }
       },
       "gebunden": 650,
@@ -8446,42 +9070,66 @@
           "anlagewert": 0,
           "ruecklage": 1800,
           "ausschuettbar": 529,
-          "ausgeschuettet": 8053
+          "ausgeschuettet": 8053,
+          "anfang": 3000,
+          "erloes": 21000,
+          "kosten": 10212,
+          "k1NettoAusgaben": 10259
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 1163,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 63,
-          "ausgeschuettet": 2088
+          "ausgeschuettet": 2088,
+          "anfang": 1000,
+          "erloes": 41680,
+          "kosten": 41930,
+          "k1NettoAusgaben": -413
         },
         "st_nadir": {
           "kasse": 4502,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 502,
-          "ausgeschuettet": 10918
+          "ausgeschuettet": 10918,
+          "anfang": 4000,
+          "erloes": 2000,
+          "kosten": 51120,
+          "k1NettoAusgaben": -49622
         },
         "transport": {
           "kasse": 2915,
           "anlagewert": 693,
           "ruecklage": 3057,
           "ausschuettbar": 0,
-          "ausgeschuettet": 8036
+          "ausgeschuettet": 8036,
+          "anfang": 2000,
+          "erloes": 20400,
+          "kosten": 14202,
+          "k1NettoAusgaben": 5175
         },
         "werft_extern": {
           "kasse": 750,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 220,
-          "ausgeschuettet": 3100
+          "ausgeschuettet": 3100,
+          "anfang": 0,
+          "erloes": 9150,
+          "kosten": 2120,
+          "k1NettoAusgaben": 6280
         }
       },
       "gebunden": 636,
@@ -8822,42 +9470,66 @@
           "anlagewert": 184,
           "ruecklage": 2216,
           "ausschuettbar": 1073,
-          "ausgeschuettet": 9463
+          "ausgeschuettet": 9463,
+          "anfang": 3000,
+          "erloes": 25750,
+          "kosten": 12772,
+          "k1NettoAusgaben": 12089
         },
         "npc3": {
           "kasse": 1662,
           "anlagewert": 2188,
           "ruecklage": 1412,
           "ausschuettbar": 0,
-          "ausgeschuettet": 11843
+          "ausgeschuettet": 11843,
+          "anfang": 3000,
+          "erloes": 20930,
+          "kosten": 7800,
+          "k1NettoAusgaben": 14468
         },
         "st_aldera": {
           "kasse": 1101,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 1,
-          "ausgeschuettet": 2088
+          "ausgeschuettet": 2088,
+          "anfang": 1000,
+          "erloes": 46430,
+          "kosten": 46680,
+          "k1NettoAusgaben": -351
         },
         "st_nadir": {
           "kasse": 4778,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 778,
-          "ausgeschuettet": 12670
+          "ausgeschuettet": 12670,
+          "anfang": 4000,
+          "erloes": 2000,
+          "kosten": 62350,
+          "k1NettoAusgaben": -61128
         },
         "transport": {
           "kasse": 5360,
           "anlagewert": 0,
           "ruecklage": 3750,
           "ausschuettbar": 1360,
-          "ausgeschuettet": 8481
+          "ausgeschuettet": 8481,
+          "anfang": 2000,
+          "erloes": 24960,
+          "kosten": 16510,
+          "k1NettoAusgaben": 5010
         },
         "werft_extern": {
           "kasse": 530,
           "anlagewert": 0,
           "ruecklage": 0,
           "ausschuettbar": 0,
-          "ausgeschuettet": 3920
+          "ausgeschuettet": 3920,
+          "anfang": 0,
+          "erloes": 9750,
+          "kosten": 2120,
+          "k1NettoAusgaben": 7100
         }
       },
       "gebunden": 600,
@@ -9197,42 +9869,66 @@
         "anlagewert": 174,
         "ruecklage": 2226,
         "ausschuettbar": 0,
-        "ausgeschuettet": 10755
+        "ausgeschuettet": 10755,
+        "anfang": 3000,
+        "erloes": 26000,
+        "kosten": 12812,
+        "k1NettoAusgaben": 13362
       },
       "npc3": {
         "kasse": 1662,
         "anlagewert": 2188,
         "ruecklage": 1412,
         "ausschuettbar": 0,
-        "ausgeschuettet": 11843
+        "ausgeschuettet": 11843,
+        "anfang": 3000,
+        "erloes": 20930,
+        "kosten": 7800,
+        "k1NettoAusgaben": 14468
       },
       "st_aldera": {
         "kasse": 1100,
         "anlagewert": 0,
         "ruecklage": 0,
         "ausschuettbar": 0,
-        "ausgeschuettet": 2804
+        "ausgeschuettet": 2804,
+        "anfang": 1000,
+        "erloes": 46680,
+        "kosten": 46930,
+        "k1NettoAusgaben": -350
       },
       "st_nadir": {
         "kasse": 4000,
         "anlagewert": 0,
         "ruecklage": 0,
         "ausschuettbar": 0,
-        "ausgeschuettet": 14650
+        "ausgeschuettet": 14650,
+        "anfang": 4000,
+        "erloes": 2000,
+        "kosten": 62450,
+        "k1NettoAusgaben": -60450
       },
       "transport": {
         "kasse": 4000,
         "anlagewert": 0,
         "ruecklage": 3750,
         "ausschuettbar": 0,
-        "ausgeschuettet": 10124
+        "ausgeschuettet": 10124,
+        "anfang": 2000,
+        "erloes": 25200,
+        "kosten": 16590,
+        "k1NettoAusgaben": 6610
       },
       "werft_extern": {
         "kasse": 530,
         "anlagewert": 0,
         "ruecklage": 0,
         "ausschuettbar": 0,
-        "ausgeschuettet": 3920
+        "ausgeschuettet": 3920,
+        "anfang": 0,
+        "erloes": 9750,
+        "kosten": 2120,
+        "k1NettoAusgaben": 7100
       }
     },
     "gebunden": 0,

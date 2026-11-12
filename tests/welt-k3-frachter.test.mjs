@@ -11,15 +11,18 @@ function ablehnen(w, s, cmd) {
 }
 const bauen = { type: 'stationBuildShip', owner: 'werft_extern', station: 'st_nadir' };
 for (const seed of [42, 7]) test('K3 S12 Seed ' + seed + ': reale Ersatzkette, Zwischenstände und terminaler Materialengpass', () => {
-  const gates = new Set(); let folge = false, produziert = false, wasserVorher;
+  const gates = new Set(); let folge = false, produziert = false, wasserVorher, eisVorher, geliefert = false;
   const r = diagnose(seed, 14 * 1440, (w, s) => {
     let art;
     if (s.w5.auftrag?.gearbeitet === 12) art = 'werft';
     if (s.w5ac.active?.gearbeitet === 12) art = 'transfer';
     if (s.w5n.frachtauftrag && s.w5.schiffIds.includes(s.w5n.frachtauftrag.schiff)) {
-      art = 'folge'; folge = true; wasserVorher ??= s.w5n.wasserProduziert;
+      art = 'folge'; folge = true; eisVorher ??= s.w5n.eisGeliefert;
+      if (!geliefert && s.w5n.eisGeliefert > eisVorher) {
+        geliefert = true; wasserVorher = s.w5n.wasserProduziert;
+      }
     }
-    if (folge && s.w5n.wasserProduziert > wasserVorher) produziert = true;
+    if (folge && geliefert && s.w5n.wasserProduziert > wasserVorher) produziert = true;
     if (art && !gates.has(art)) {
       gates.add(art);
       const a = w.load(w.save(s)), b = w.load(w.save(s));
@@ -41,6 +44,10 @@ for (const seed of [42, 7]) test('K3 S12 Seed ' + seed + ': reale Ersatzkette, Z
   });
   assert.deepEqual([...gates].sort(), ['folge', 'transfer', 'werft']);
   assert.equal(produziert, true, 'nach echtem Ersatztransport wieder Wasser aus geliefertem Eis');
+  const unterwegs = r.ereignisse.find(e=>e.art==='stilllegung' && e.schiff==='sh014');
+  assert.equal(unterwegs.tick,12885);
+  assert.equal(unterwegs.frachter.find(x=>x.id==='sh014').phase,'reise');
+  assert.equal(r.ersterStillstand.frachter.find(x=>x.id==='sh014').phase,'dock');
   assert.equal(r.ersterStillstand.tick, 12965);
   assert.equal(r.zuletzt.eis.tick, 12965); assert.equal(r.zuletzt.absatz.tick, 13045);
   assert.equal(r.ende.w5.fertig, 4); assert.equal(r.ende.w5.verkauft, 4);
@@ -62,10 +69,15 @@ test('K3: terminale Befehle lehnen ohne Teleport, Wiederbelebung oder Fremdfinan
     {type:'shipFreight',owner:'transport',schiff:'sh014'},
     {type:'shipReposition',owner:'transport',schiff:'sh014'},
   ]) ablehnen(w,s,cmd);
+  const umgebucht=structuredClone(s);
+  umgebucht.owners.transport.cash--; umgebucht.owners.werft_extern.cash++;
+  assert.throws(()=>nachrechnen(w,umgebucht), /Kasse aus Anfang/,
+    'auch geldmengenneutrale fremde Eigentümerumbuchung wird unabhängig erkannt');
   const vorher=w.hash(s); w.advance(s,1440); assert.equal(s.w5.fertig,4);
   assert.notEqual(w.hash(s),vorher); assert.equal(w.audit(s).ok,true);
   const korrupt=structuredClone(s); korrupt.owners.w5ac_transfer_reserved.cash++;
   assert.equal(w.audit(korrupt).ok,false); assert.throws(()=>w.save(korrupt));
+  assert.throws(()=>w.load(JSON.stringify(korrupt)), /ungültig|fehlerhaft|Bilanz|ungedeckt/);
 });
 
 test('K3: 529 statt 530 ISK Werftdeckung wird ohne Buchung abgelehnt (isolierte Negativmutation)', () => {

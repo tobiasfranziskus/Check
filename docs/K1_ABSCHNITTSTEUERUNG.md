@@ -6,7 +6,7 @@
 
 - Im pausierten K1-Cockpit kann der Spieler einen bereits ausdrücklich gestarteten Flug- oder Bergbauabschnitt mit **einem** Tippen fortsetzen statt jede Minute einzeln zu bestätigen.
 - Ausgeführt werden ausschließlich die vorhandenen `welt.minute(state)`-Schritte, **höchstens 60 pro Tipp**. Nach jeder originalen Wirtschafts-/Flugminute wird erneut derselbe Schiffseigentümer, Pendelstatus, Finanzierungsstatus und die aktuelle vorgeschlagene Aktion geprüft.
-- Die Simulation hält an, sobald ein neuer Spielerentschluss erforderlich ist, beispielsweise vor `shipApproach`, `shipMine`, `shipDock` oder `shipSellIce`. Weder neuer Auftrag noch Kauf, Verkauf, Schiffsauswahl oder notwendige Lohnfinanzierung wird automatisch erzeugt.
+- Die Simulation hält an, sobald ein neuer Spielerentschluss erforderlich ist, beispielsweise vor `shipApproach`, `shipMine`, `shipDock` oder `shipSellIce`. Weder neuer Auftrag noch Kauf, Verkauf, Schiffsauswahl oder notwendige Lohnfinanzierung wird automatisch erzeugt. **50 Eis sind eine freiwillige UI-Handelscharge, keine Kapazitäts- oder Abbauobergrenze:** Der Core lässt den Miner bei ausreichend Geld und Frachtraum weiterfördern; der Spieler bestätigt den Stopp ausdrücklich mit `shipWait`.
 - Die ursprünglichen Einzelknöpfe, der +1-Minute-Knopf, Zeittempo und sämtliche Konzern- und Speicheransichten bleiben vorhanden. Während freilaufender Echtzeitsimulation ist die Abschnittstaste deaktiviert. Der UI-Zustand wird **nicht** gespeichert.
 - Kein Framework, kein zweiter Simulationstakt, keine Änderung an Core, Geld, Ware, Schiffswerten, Schema, Versionskennung oder bestehenden Speicherdaten. Spieler-Spareinlagen bleiben frei. Bei Kapitalmangel oder gestrandetem Schiff wird kein Rettungsmechanismus eingeführt.
 
@@ -15,7 +15,7 @@
 `tests/welt-rundenabschnitt-browser.cjs` fährt die vollständige Eisrunde auf zwei frischen Welten:
 
 1. Über Original-UI-Befehle mit `window.__welt.schritte` und den exakt erforderlichen einzelnen Core-Minuten.
-2. Über dieselben expliziten Befehle und vier begrenzte Abschnittstastendrücke (Abdocken, Anflug, Förderung bis zum Laderaum, Dockrückflug).
+2. Über dieselben expliziten Befehle und vier begrenzte Abschnittstastendrücke (Abdocken, Anflug, Förderung bis zur Original-50er-Handelscharge, Dockrückflug) samt ausdrücklich bestätigtem `shipWait` nach dem Abbau.
 
 Verglichen werden **vollständiger kanonischer Weltzustand und Referenzhash**, 600-ISK-Kauf, 50 Eis/100 ISK bezahlte Förderarbeit, 250 ISK tatsächlicher Dockankauf, unveränderte Gesamtgeldmenge 33.000 ISK, Mint/Burn 0, unabhängige Geld-/Waren-/Eigentümeraudits, echter Save/Load-Hash und alle vier Hoch-/Querformatgrößen in Chromium und WebKit. Keine automatische nächste Aktion oder Umgehung der Finanzierung.
 

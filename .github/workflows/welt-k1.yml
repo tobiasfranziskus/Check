@@ -15,6 +15,8 @@ on:
       - 'tools/k7-industrieerz-gate.mjs'
       - 'tests/k7-industrieerz-gate.test.mjs'
       - 'tests/k7-industrieerz-vertrag.test.mjs'
+      - 'tests/k7-vertragsabwehr.test.mjs'
+      - 'tests/k7-industrie-13x90.test.mjs'
       - 'prototypes/w5ac/rule191-w5-ferry-core.js'
       - 'prototypes/welt/welt-kern.js'
       - 'tools/k4-ore-allocation.mjs'
@@ -252,3 +254,5 @@ jobs:
           node-version: '22'
       - name: "K7 Regel200: echte Eigentümerzustimmungen, originaler W3-Erzkauf, W1/W4/W5-Kette, Storno"
         run: node --test tests/k7-industrieerz-vertrag.test.mjs
+      - name: "K7 Regel200: Migrationsschutz, Vertragsmanipulation und atomare Abwehr"
+        run: node --test tests/k7-vertragsabwehr.test.mjs

@@ -2036,10 +2036,82 @@ const m_core_w3 = (() => {
     protokolliere(state,'auftrag',sh.id+': Erz, Kaufetat und beide Flugkosten gesperrt',c.spedition);
     return true;
   }
+  // K7 Forschungsregel200: die *Original*-W3-Treuhand vor der Erzförderung
+  // genau einmal finanzieren. Vorbestellung darf kein Phantom-Erz verladen.
+  function vorbestellen(state,rules,frachterId,minerId) {
+    if (!rules.k7 || state.rulesVersion !== rules.rulesVersion) throw Error('K7 nur mit Forschungsregel 200');
+    const w=state.w3,c=rules.w3,sh=state.ships[frachterId],mi=state.ships[minerId],k=kalkulation(rules);
+    if(w.auftrag||state.w5n?.frachtauftrag) throw Error('K7: bestehende Frachtreserve');
+    if(!sh||sh.owner!==c.spedition||sh.klasse!=='frachter'||sh.system!=='aldera'
+      ||sh.phase!=='dock'||sh.auftrag!=='halten'||Object.values(sh.ladung).some(n=>n!==0))
+      throw Error('K7: Spedition besitzt keinen freien Frachter in Aldera');
+    if(!mi||mi.owner!==rules.erzpilot.npcInvestor||mi.klasse!=='miner'
+      ||mi.system!=='aldera'||mi.phase!=='dock'||mi.flug?.lage!=='angedockt'
+      ||Object.values(mi.ladung).some(n=>n!==0)
+      ||state.erzpilotVertraege?.[minerId])
+      throw Error('K7: Miner nicht rechtmäßig verfügbar');
+    if(state.owners[c.kunde].cash<k.gesamt||state.owners[c.spedition].cash<k.arbeitsKosten
+      ||state.owners[rules.erzpilot.station].cash<k.erzWert
+      ||state.owners[mi.owner].cash<rules.erzpilot.minerJeMinute*c.fracht)
+      throw Error('K7: nicht alle Firmen können Vorbestellung, Ankauf und Arbeit decken');
+    if(state.stations[c.zielStation].lager.erz+c.fracht
+      >obergrenze(state,rules,c.zielStation,'erz')) throw Error('K7: kein Nadir-Lagerplatz');
+    const ka='w3_kauf_treuhand',ar='w3_arbeit_treuhand';
+    if((state.owners[ka]?.cash||0)||(state.owners[ar]?.cash||0))throw Error('K7: Doppelreservierung');
+    // W3-Kaufkosten/Quoten werden beim PREORDER und nie erneut beim Flug gebucht.
+    if(!state.owners[ka])state.owners[ka]={id:ka,kind:'w3-reserve',cash:0};
+    if(!state.owners[ar])state.owners[ar]={id:ar,kind:'w3-reserve',cash:0};
+    state.owners[c.kunde].cash-=k.gesamt;state.owners[ka].cash+=k.gesamt;
+    w.kaufAusgaben+=k.gesamt;buche(state,c.kunde,'kosten',k.gesamt);
+    state.owners[c.spedition].cash-=k.arbeitsKosten;state.owners[ar].cash+=k.arbeitsKosten;
+    w.auftrag={schiff:sh.id,industrieMiner:minerId,phase:'vorbestellt',
+      menge:c.fracht,gearbeitet:0,...k};
+    w.beauftragt++;
+    protokolliere(state,'auftrag',sh.id+': K7 industrielle Erz-Vorbestellung; echte W3-Kauf-/Frachtlohnreserven',c.kunde);
+    return true;
+  }
+  // Storno ausschließlich vor Beginn jeglicher realer W1-Arbeit und bei dockenden,
+  // unbeladenen Schiffen. Bereits bezahlte Leistung oder Ware darf nie verschwinden.
+  function stornierenVorArbeit(state,rules) {
+    const w=state.w3,a=w?.auftrag,c=rules.w3;
+    if(!rules.k7||a?.phase!=='vorbestellt')throw Error('K7: kein unbegonnener Vertrag');
+    const mi=state.ships[a.industrieMiner],sh=state.ships[a.schiff];
+    if(!mi||!sh||mi.flug?.lage!=='angedockt'||sh.phase!=='dock'
+      ||Object.values(mi.ladung).some(x=>x!==0)
+      ||state.erzpilotVertraege?.[mi.id])
+      throw Error('K7: reale Förderung/Flug begonnen; nicht kostenlos stornierbar');
+    const ka=state.owners.w3_kauf_treuhand,ar=state.owners.w3_arbeit_treuhand;
+    if(ka?.cash!==a.gesamt||ar?.cash!==a.arbeitsKosten)
+      throw Error('K7: Treuhand bereits verwendet');
+    state.owners[c.kunde].cash+=a.gesamt;ka.cash=0;
+    state.owners[c.spedition].cash+=a.arbeitsKosten;ar.cash=0;
+    w.storniert++;w.stornoRueckzahlung+=a.gesamt;
+    buche(state,c.kunde,'erloes',a.gesamt);
+    w.auftrag=null;
+    protokolliere(state,'auftrag','K7: unbegonnener Auftrag vollständig an Zahlende erstattet',c.kunde);
+  }
   function tick(state,rules) {
     const w=state.w3,a=w?.auftrag;
     if(!a)return;
     const c=rules.w3,sh=state.ships[a.schiff];
+    if (rules.k7 && a.phase==='vorbestellt') {
+      // Kein Erz vorfinanzierungsfrei erfunden: echte Aldera-Lagerware und
+      // Nachweis des tatsächlichen W1-Vertragsabschlusses sind erforderlich.
+      const v=state.kanon?.industrieErz;
+      if(!v||v.phase!=='aktiv'||v.miner!==a.industrieMiner)
+        throw Error('K7: unbefugter W3-Industrieauftrag');
+      if(!v.erzAngenommen || (state.stations[c.quellStation].lager.erz||0)<c.fracht)
+        return;
+      if(state.w5n?.frachtauftrag||sh.phase!=='dock'||sh.system!=='aldera'
+        ||sh.auftrag!=='halten'||Object.values(sh.ladung).some(n=>n!==0))
+        return; // echte W3-Kollision: auf freien Frachter warten
+      state.stations[c.quellStation].lager.erz-=c.fracht;
+      sh.ladung.erz=c.fracht;sh.phase='reise';sh.ziel=c.zielStation;
+      sh.ankunft=state.tick+a.zeit;sh.auftrag='fracht';
+      a.phase='hin';a.start=state.tick;
+      protokolliere(state,'auftrag',sh.id+': physische K7-Erzcharge erstmals geladen; W3-Geld nicht erneut reserviert',c.spedition);
+      return; // Erste Arbeitsminute erst im nächsten Tick
+    }
     const arbeit=state.owners.w3_arbeit_treuhand,kauf=state.owners.w3_kauf_treuhand;
     if(!sh||sh.phase!=='reise'||!arbeit||!kauf||arbeit.cash<c.arbeitJeMinute)
       throw Error('W3: Nicht bezahlter Flug');
@@ -2078,27 +2150,29 @@ const m_core_w3 = (() => {
     const carrier=state.owners[c.spedition]?.cash,startCarrier=rules.owners.find(o=>o.id===c.spedition).cash;
     const kauf=state.owners.w3_kauf_treuhand?.cash??0,arbeit=state.owners.w3_arbeit_treuhand?.cash??0;
     const huelle=(state.ledger.frachter?.consumed??0)*rules.economy.waren.frachter.basis;
-    const erwarteteBezahlung=w.abgeschlossen*k.gesamt+(a?k.gesamt:0);
+    const storniert=rules.k7?w.storniert:0,stornoRueck=rules.k7?w.stornoRueckzahlung:0;
+    const erwarteteBezahlung=(w.abgeschlossen+storniert+(a?1:0))*k.gesamt;
     const erwarteteWare=w.abgeschlossen*c.fracht+(a?.phase==='rueck'?c.fracht:0);
     const erwarteteArbeit=w.abgeschlossen*k.arbeitsKosten+(a?.gearbeitet??0)*c.arbeitJeMinute;
     const ok=[buyer,carrier,kauf,arbeit,w.kaufAusgaben,w.geliefert,w.arbeitsKosten,
       w.frachtUmsatz,w.beauftragt,w.abgeschlossen,huelle].every(Number.isSafeInteger)
       && buyer>=0&&carrier>=0
-      && buyer+m_core_kanon.netto(state,c.kunde)+w.kaufAusgaben+(state.w4?.gebucht??0)
+      && buyer+m_core_kanon.netto(state,c.kunde)+w.kaufAusgaben-stornoRueck+(state.w4?.gebucht??0)
         -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)===startBuyer
       && w.kaufAusgaben===erwarteteBezahlung && w.geliefert===erwarteteWare
       && w.arbeitsKosten===erwarteteArbeit
       && w.frachtUmsatz===w.abgeschlossen*k.frachtGebuehr
-      && w.beauftragt===w.abgeschlossen+(a?1:0)
+      && w.beauftragt===w.abgeschlossen+storniert+(a?1:0)
+      && (!rules.k7||(Number.isSafeInteger(storniert)&&storniert>=0&&stornoRueck===storniert*k.gesamt))
       && state.stations[c.zielStation].lager.erz
         ===w.geliefert-(state.w4?.erzVerbraucht??0)
       &&(rules.w5ag
          ?state.owners[c.arbeitsFonds].cash+m_core_kanon.netto(state,c.arbeitsFonds)===0&&(state.w5ae?.spent??0)===0
          :state.owners[c.arbeitsFonds].cash+(state.w5ae?.spent??0)
            +(state.w5n?.wasserErlos??0)===w.arbeitsKosten+(state.w5n?.frachtLohn??0))
-      && kauf===(a?(a.phase==='hin'?a.gesamt:a.frachtGebuehr):0)
+      && kauf===(a?(a.phase==='hin'||a.phase==='vorbestellt'?a.gesamt:a.frachtGebuehr):0)
       && arbeit===(a?k.arbeitsKosten-a.gearbeitet*c.arbeitJeMinute:0)
       && carrier+m_core_kanon.netto(state,c.spedition)+arbeit+(state.owners.w5ac_transfer_reserved?.cash??0)
         +(state.w5ac?.paid??0)+(state.owners.w5n_fracht_arbeit?.cash??0)
@@ -2108,12 +2182,15 @@ const m_core_w3 = (() => {
         && a.arbeitsKosten===k.arbeitsKosten&&a.frachtGebuehr===k.frachtGebuehr
         && a.gesamt===k.gesamt&&a.gearbeitet>=0&&a.gearbeitet<=2*k.zeit
         && state.ships[a.schiff]?.owner===c.spedition
-        && (state.ships[a.schiff]?.ladung.erz??0)===(a.phase==='hin'?c.fracht:0)));
+        && (state.ships[a.schiff]?.ladung.erz??0)===(a.phase==='hin'?c.fracht:0)
+        && (!rules.k7||a.phase!=='vorbestellt'
+          ||(state.kanon?.industrieErz?.phase==='aktiv'
+            && state.kanon.industrieErz.miner===a.industrieMiner))));
     return {ok,buyer,carrier,kaufTreuhand:kauf,arbeitTreuhand:arbeit,
       oreDelivered:w.geliefert,paidWork:w.arbeitsKosten,freightRevenue:w.frachtUmsatz,
       status:a?.phase??'frei'};
   }
-  return {kalkulation,pruefen,starten,tick,audit};
+  return {kalkulation,pruefen,starten,vorbestellen,stornierenVorArbeit,tick,audit};
 })();
 
 // W4: Erz in Nadir zu Material verarbeiten. Kein externer Zahlmeister und

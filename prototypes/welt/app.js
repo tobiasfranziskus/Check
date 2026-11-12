@@ -10,6 +10,7 @@ const canvas = $('raum'), ctx = canvas.getContext('2d'), graph = G.erstellen(ctx
 const SPIELER = 'house', TEMPI = [1, 10, 60];
 let welt = null, state = null, speicher = null, hülle = null;
 let pausiert = true, tempo = 0, letzter = null, rest = 0, geaendert = false, ansicht = 'flug', letzterSave = 0, dauerhaft = true;
+let rundenZiel = null; // Nur UI-Vorschlag: nie ein eigener Core-Befehl.
 let pilotSchiff = null; // UI-Auswahl: weder Kursregler noch Kartenziel ändern den Core vor Bestätigung.
 const KARTEN_MITTE = Object.freeze({ x: 144000, y: 224000 });
 const KARTEN_TEXTE = Object.freeze({ 'st_aldera': 'Aldera-Dock', 'aldera:eis': 'Eisfeld', 'aldera:erz': 'Erzfeld' });
@@ -66,6 +67,81 @@ function kartenZeigen(s, pendel, k) {
   else hinweis = zielText + ' vorgemerkt – erst „Zielflug bestätigen“ startet den bezahlten Original-Anflug.';
   // VoiceOver-Livebereich nicht jede Animationsframe erneut mutieren.
   if ($('kartenHinweis').textContent !== hinweis) $('kartenHinweis').textContent = hinweis;
+}
+// Begleitete Eisrunde: liest nur echte Fluglage/Ladung/Originalregeln und verweist
+// auf die bereits vorhandenen Bedienknöpfe. Kein selbständiger Auftrag und keine
+// Vorwegnahme der Core-Finanzierungs-, Eigentums- oder Abnahmeprüfung.
+function rundenZeigen(s, pendel, k) {
+  const b = s?.flug, dienst = s && k.flugdienst[s.id];
+  const eis = s?.ladung.eis || 0;
+  const ladung = s ? Object.values(s.ladung).reduce((sum, n) => sum + n, 0) : 0;
+  const raum = welt.rules.economy.cargo;
+  let titel, info, ziel = null, label = '';
+  if (!s) {
+    titel = 'Start · Miner kaufen';
+    info = 'An der Station kann ein eigener Miner nur mit echtem Käufergeld und vorhandener Hülle gekauft werden.';
+    ziel = 'station'; label = 'Zur Station';
+  } else if (pendel) {
+    titel = 'Pendelauftrag aktiv';
+    info = 'Die NPC-Automatik steuert diesen Miner. Für eine persönliche Eisrunde zuerst den Pendelauftrag regulär beenden.';
+  } else if (dienst?.gestrandet) {
+    titel = 'Flug angehalten · Reserve fehlt';
+    info = 'Keine kostenlose Rettung. Eine neue Finanzierung muss der Core prüfen.';
+  } else if (b.lage === 'angedockt' && eis > 0) {
+    titel = '6/6 · Eis am Dock verkaufen';
+    info = fmt(eis) + ' selbst geförderte Eis an Bord. Aldera muss den Kauf aus eigener Kasse finanzieren.';
+    ziel = 'verkaufen'; label = 'Eisverkauf prüfen';
+  } else if (b.lage === 'angedockt' && ladung > 0) {
+    titel = 'Andere Ware an Bord';
+    info = 'Dieser Assistent führt nur durch Eisrunden. Für andere Ladung die vorhandenen Fachaktionen nutzen.';
+  } else if (b.lage === 'angedockt') {
+    titel = '1/6 · Abdocken';
+    info = 'Der Core muss die bezahlte Flugreserve vor dem Start binden. Der Miner bleibt bis zur Ausführung im Dock.';
+    ziel = 'abdocken'; label = 'Abdocken prüfen';
+  } else if (b.lage === 'abdocken' || b.lage === 'andocken') {
+    titel = b.lage === 'abdocken' ? 'Abdockmanöver läuft' : '5/6 · Andockmanöver läuft';
+    info = 'Das Manöver benötigt echte Simulationszeit. Mit +1 Minute läuft der Originalkern weiter.';
+    ziel = 'minute'; label = '+1 Minute simulieren';
+  } else if (b.lage !== 'frei') {
+    titel = 'Schiff nicht im freien Flug';
+    info = 'Diese Fluglage wird ausschließlich vom Weltkern bestimmt.';
+  } else if (b.modus === 'anflug' && b.ziel) {
+    titel = b.andocken ? '5/6 · Rückflug zum Dock' : '2/6 · Anflug zum Feld';
+    info = 'Der bestehende Flugbefehl ist aktiv. Die nächste Minute verursacht nur die im Core vorgesehenen Buchungen.';
+    ziel = 'minute'; label = '+1 Minute simulieren';
+  } else if (s.auftrag === 'foerdern' && s.ware !== 'eis') {
+    titel = 'Erzförderung aktiv';
+    info = 'Die Eisrunde greift nicht in einen laufenden Erzauftrag ein. Über „Förderung stoppen“ lässt er sich beenden.';
+  } else if (s.auftrag === 'foerdern' && ladung < raum) {
+    titel = '3/6 · Eis wird gefördert';
+    info = fmt(eis) + ' Eis an Bord; ' + fmt(raum - ladung) + ' Ladeeinheiten frei. Der Bergbaulohn wird für echte Minuten bezahlt.';
+    ziel = 'minute'; label = '+1 Förderminute';
+  } else if (s.auftrag === 'foerdern') {
+    titel = '4/6 · Laderaum voll';
+    info = fmt(eis) + ' Eis an Bord. Den Förderauftrag stoppen, bevor der Rückflug beginnt.';
+    ziel = 'warten'; label = 'Förderung stoppen';
+  } else if (eis > 0 || ladung >= raum) {
+    titel = '5/6 · Mit Ladung zurück';
+    info = fmt(eis) + ' Eis an Bord. Verkauf ist nur nach einer echten Andockung möglich.';
+    ziel = 'andocken'; label = 'Zum Dock zurück';
+  } else if (welt.flugKern.imFeld(s, 'eis')) {
+    titel = '3/6 · Eisfeld erreicht';
+    info = 'Der Miner befindet sich wirklich im Eisfeld und ist langsam genug. Der Core entscheidet über den finanzierten Förderauftrag.';
+    ziel = 'foerdernEis'; label = 'Eisförderung prüfen';
+  } else {
+    titel = '2/6 · Zum Eisfeld';
+    info = 'Noch keine Eisladung. Der originale Zielflug braucht bezahlte Pilotenarbeit und echte Reisezeit.';
+    ziel = 'zumEis'; label = 'Eisfeld anfliegen';
+  }
+  const t = $('rundenTitel'), p = $('rundenInfo'), a = $('rundenAktion');
+  if (t.textContent !== titel) t.textContent = titel;
+  if (p.textContent !== info) p.textContent = info; // Keine VoiceOver-Mutation pro Animationsframe.
+  const original = ziel === 'station' ? document.querySelector('nav button[data-ansicht="station"]')
+    : ziel ? $(ziel) : null;
+  rundenZiel = original && !original.disabled ? ziel : null;
+  a.disabled = !rundenZiel;
+  if (a.textContent !== (rundenZiel ? label : 'Keine Aktion verfügbar'))
+    a.textContent = rundenZiel ? label : 'Keine Aktion verfügbar';
 }
 function pilotZeigen(s, pendel, k, o) {
   const id = s ? s.id : '';
@@ -154,6 +230,7 @@ function zeigen(alles = false) {
   $('andocken').disabled = !s || !!pendel || s.flug.lage !== 'frei';
   $('foerdernEis').disabled = !s || !!pendel || !welt.flugKern.imFeld(s, 'eis');
   $('foerdernErz').disabled = !s || !!pendel || !welt.flugKern.imFeld(s, 'erz');
+  rundenZeigen(s, pendel, k);
   $('kaufMiner').disabled = o[SPIELER].cash < welt.rules.economy.waren.miner.basis || !(state.stations.st_aldera.lager.miner > 0);
   $('dividende').disabled = b.firmen[SPIELER].ausschuettbar <= 0;
   $('automatik').setAttribute('aria-pressed', String(k.politik.automatik));
@@ -300,6 +377,13 @@ $('kartenAnflug').addEventListener('click', () => {
     ? { type: 'shipDock', owner: SPIELER, schiff: s.id, station: ziel }
     : { type: 'shipApproach', owner: SPIELER, schiff: s.id, zielArt: 'feld', ziel };
   befehl(cmd, 'Original-Flugauftrag bestätigt: ' + KARTEN_TEXTE[ziel] + '. Nur echte bezahlte Flugminuten.');
+});
+$('rundenAktion').addEventListener('click', () => {
+  // Nur eine explizite Benutzeraktion, genau ein vorhandener Original-Handler.
+  const ziel = rundenZiel;
+  const original = ziel === 'station' ? document.querySelector('nav button[data-ansicht="station"]')
+    : ziel ? $(ziel) : null;
+  if (original && !original.disabled) original.click();
 });
 $('pilotKurs').addEventListener('input', pilotWerte);
 $('pilotFahrt').addEventListener('input', pilotWerte);

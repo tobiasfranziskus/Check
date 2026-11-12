@@ -45,6 +45,7 @@ a{color:#8fe2f5}
 .runden-hilfe strong{color:#b6edfa}
 .runden-hilfe p{margin:0;font-size:.9rem}
 .runden-hilfe button{width:100%;font-weight:600}
+#frachtAnnehmen{min-height:48px}
 #minerAuftraege[hidden],#minerAufgaben[hidden],#rundenHilfe[hidden],#frachterAufgaben[hidden]{display:none}
 #frachterAufgaben{border:1px solid #63899b;background:#0b2230;border-radius:8px;padding:9px}
 .pilot-daten{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
@@ -87,6 +88,7 @@ a{color:#8fe2f5}
 <div class="pilot-cockpit" id="pilotCockpit" aria-label="Manuelles Schiffs-Cockpit">
 <h3>Persönlicher Flug · Steuerpult</h3>
 <div class="reihe" id="schiffDockBefehle"><button id="abdocken">1 · Abdocken</button><button id="andocken">5 · Andocken</button></div>
+<div class="reihe"><button id="frachtAnnehmen" type="button" disabled>Finanzierten 50-Eis-Frachtvertrag annehmen (eigener Frachter)</button></div>
 <div id="rundenHilfe" class="runden-hilfe" aria-label="Begleitete Eis-Bergbaurunde">
 <strong id="rundenTitel">Eis-Bergbaurunde</strong>
 <p id="rundenInfo" role="status" aria-live="polite">Der nächste Schritt wird aus dem tatsächlichen Schiffszustand ermittelt.</p>
@@ -128,9 +130,15 @@ a{color:#8fe2f5}
 <div class="reihe"><button id="zumErz">Zum Erzfeld</button><button id="foerdernErz">Erz fördern</button></div>
 <small>Erz benötigt ebenso einen gültigen finanzierten Abnehmerauftrag. Ohne Finanzierung gibt es keine kostenlose Förderung.</small></div>
 <div id="frachterAufgaben" hidden>
-<h3>Persönlicher 2D-Frachter · Aldera</h3>
-<p id="frachterHinweis">Nur wirklich gekaufte, eigene und nicht für einen W3-Vertrag gebundene Frachter dürfen abdocken. Originales Kurs-, Brems-, Karten- und Dockcockpit; alle Flugminuten bezahlt.</p>
-<small>Diese erste Etappe enthält noch keinen eigenen Frachtauftrag: Die bestehenden finanzierten W3-Erz-/Eistransporte bleiben bei der Spedition. Kein kostenloses Beladen, Warenverkauf oder Ferntransport.</small>
+<h3>Eigener Frachter · Handflug und bezahlte Eisfracht</h3>
+<p id="frachterHinweis">Ein eigenes Schiff darf in Aldera selbst geflogen werden. Einen Transportvertrag kann es nur physisch am Dock beginnen.</p>
+<div class="runden-hilfe" aria-label="Echter Eisfrachtvertrag">
+<strong>50 Eis · Aldera → Nadir → Aldera</strong>
+<p id="frachtAngebot" role="status" aria-live="polite">Original-W5n-Vertrag wird aus vorhandener Ware und realem Geld geprüft.</p>
+<small>Zur Vertragsannahme die Frachtaktion oben im gemeinsamen Steuerpult verwenden.</small>
+<p id="frachtFortschritt">Noch keine persönliche Fracht abgeschlossen.</p>
+<small>Nadir finanziert Eis und Frachtgebühr vorab; der eigene Konzern finanziert die volle Pilotenarbeit. Echte 60 Minuten Hinflug, Ablieferung an Nadir und 60 Minuten bezahlter Rückflug. Original-W5n-Transit, kein vorgetäuschter freier 2D-Flug zwischen Systemen.</small>
+</div>
 </div>
 </div>
 <div id="schiffStatus" class="rollen"></div>

@@ -594,6 +594,88 @@ function erstellen(startkapital = {}) {
   })();
 
   // -------------------------------------------------------------- m_core_disponent
+  // ---------------------------------------------------------------- m_core_spielerfracht
+  // Der Original-W5n-Kern bleibt einziger Transportintegrator. K1 dokumentiert
+  // Spieler-Eigentum und leitet jede BEZAHLTE W5ag-Pilotenminute durch ein
+  // gepaartes Geldbuch vom Original-Verrechnungskonto an pilot_house weiter.
+  const m_core_spielerfracht = (() => {
+    const owner = rules.economy.start.owner, clearing = rules.w5ag.pilots.eis;
+    const pilot = KANON.piloten[owner];
+    function starten(s, sh) {
+      const a = s.w5n.frachtauftrag;
+      if (!a || a.schiff !== sh.id || sh.owner !== owner)
+        throw Error('K1/F4: Original-Eisfrachtauftrag fehlt');
+      const f = s.kanon.spielerFrachten ||= { auftraege: [], lohn: 0, gebuehr: 0 };
+      if (f.auftraege.some(x => x.end === null)) throw Error('K1/F4: Doppelauftrag');
+      f.auftraege.push({ schiff: sh.id, start: s.tick, end: null, geliefert: null,
+        menge: a.menge, eis: a.eis, arbeit: a.arbeit, fracht: a.fracht, zeit: a.zeit });
+    }
+    function minute(s, vor, lohnVor, geliefertVor, gebuehrVor) {
+      if (!vor || s.ships[vor.schiff]?.owner !== owner) return;
+      const f = s.kanon.spielerFrachten, x = f?.auftraege.at(-1);
+      if (!x || x.schiff !== vor.schiff || x.end !== null)
+        throw Error('K1/F4: Spielerfracht ohne Originalvertrag');
+      const lohn = s.w5n.frachtLohn - lohnVor;
+      if (lohn !== W.fliegerLohn) throw Error('K1/F4: Flugminute nicht entlohnt');
+      m_core_buch.transfer(s, clearing, pilot, lohn, 'spielerfracht-pilot');
+      f.lohn += lohn;
+      if (s.w5n.eisGeliefert !== geliefertVor) {
+        if (x.geliefert !== null || s.w5n.eisGeliefert - geliefertVor !== x.menge
+          || s.tick !== x.start + x.zeit) throw Error('K1/F4: Lieferbeleg fehlerhaft');
+        x.geliefert = s.tick;
+      }
+      const gebuehr = s.w5n.frachtUmsatz - gebuehrVor;
+      if (gebuehr) {
+        if (gebuehr !== x.fracht || x.geliefert !== x.start + x.zeit
+          || s.tick !== x.start + 2 * x.zeit
+          || s.w5n.frachtauftrag?.schiff === x.schiff)
+          throw Error('K1/F4: Frachtentgelt ohne Rundfahrt');
+        x.end = s.tick; f.gebuehr += gebuehr;
+      }
+    }
+    function audit(s) {
+      const f = s.kanon.spielerFrachten, a = s.w5n.frachtauftrag;
+      if (!f) return !a || s.ships[a.schiff]?.owner !== owner;
+      if (!Array.isArray(f.auftraege) || !ganz(f.lohn) || !ganz(f.gebuehr)) return false;
+      const dauer = 2 * W.flugMinuten, arbeit = dauer * W.fliegerLohn;
+      const fracht = dauer * W.frachtJeMinute, eis = W.charge * W.eisPreis;
+      let lohn = 0, gebuehr = 0, aktiv = 0;
+      const gesehen = new Set();
+      for (let i = 0; i < f.auftraege.length; i++) {
+        const x = f.auftraege[i], sh = s.ships[x?.schiff], offen = x?.end === null;
+        const key = x?.schiff + '|' + x?.start;
+        if (!sh || sh.owner !== owner || sh.klasse !== 'frachter'
+          || sh.heimat !== 'aldera' || !ganz(x.start) || x.start > s.tick
+          || x.menge !== W.charge || x.eis !== eis || x.arbeit !== arbeit
+          || x.fracht !== fracht || x.zeit !== W.flugMinuten
+          || gesehen.has(key) || (i && f.auftraege[i-1].start > x.start)) return false;
+        gesehen.add(key);
+        if (offen) {
+          if (++aktiv !== 1 || i !== f.auftraege.length - 1 || !a
+            || a.schiff !== x.schiff || !ganz(a.gearbeitet)
+            || a.gearbeitet >= dauer || s.tick !== x.start + a.gearbeitet
+            || sh.phase !== 'reise' || sh.flug?.lage !== 'transit'
+            || x.geliefert !== (a.phase === 'rueck' ? x.start + x.zeit : null))
+            return false;
+          lohn += a.gearbeitet * W.fliegerLohn;
+        } else {
+          if (!ganz(x.end) || x.end !== x.start + dauer
+            || x.geliefert !== x.start + x.zeit || x.end > s.tick) return false;
+          lohn += arbeit; gebuehr += fracht;
+        }
+      }
+      if (a && s.ships[a.schiff]?.owner === owner && aktiv !== 1) return false;
+      return f.lohn === lohn && f.gebuehr === gebuehr
+        && m_core_buch.summe(s, 'spielerfracht-pilot',
+          (von, an) => von === clearing && an === pilot) === lohn
+        && m_core_buch.summe(s, 'spielerfracht-pilot') === lohn
+        && s.w5n.frachtBeauftragt >= f.auftraege.length
+        && s.w5n.frachtAbgeschlossen >= f.auftraege.length - aktiv
+        && s.w5n.frachtLohn >= lohn && s.w5n.frachtUmsatz >= gebuehr;
+    }
+    return { starten, minute, audit };
+  })();
+
   // NPC-Automatik: wählt nur finanzierte Aufträge und nutzt dieselben validierten Befehle.
   const m_core_disponent = (() => {
     const versuch = (state, cmd, k1) => (k1 ? m_core_kreislauf.ausfuehren(state, cmd) : kern.execute(state, cmd, rules));
@@ -767,6 +849,7 @@ function erstellen(startkapital = {}) {
       if (!wirtschaft.ok) fehler.push('Wirtschaft: ' + Object.keys(wirtschaft).filter((x) => wirtschaft[x] && wirtschaft[x].ok === false).join(','));
       if (!m_core_buch.audit(state)) fehler.push('K1-Buch');
       if (!m_core_minerwerft.audit(state)) fehler.push('K2-Minerwerft/Transport');
+      if (!m_core_spielerfracht.audit(state)) fehler.push('K1-Spielerfracht/Vertragslohn');
       if (state.minted !== 0 || state.burned !== 0) fehler.push('Emission/Senke in K1 nicht freigegeben');
       for (const id of ids(state.owners)) if (!ganz(state.owners[id].cash)) fehler.push('Kasse ' + id);
       // Unabhängige Gegenbuchung zum Original-W5ad-Transportkaufjournal:
@@ -907,7 +990,11 @@ function erstellen(startkapital = {}) {
     if (type === 'stationBuildShip' && state.kanon.minerWerft?.auftrag)
       return { ok: false, type, reason: 'K2: Werft baut einen Miner' };
     const r = kern.execute(state, cmd, rules);
-    if (r.ok) m_core_flugplan.koerperSync(state);
+    if (r.ok) {
+      if (type === 'shipFreightIce' && sh?.owner === rules.economy.start.owner)
+        m_core_spielerfracht.starten(state, sh);
+      m_core_flugplan.koerperSync(state);
+    }
     return r;
   }
   // Abschluss einer Wirtschaftsminute in fester Reihenfolge.
@@ -915,7 +1002,14 @@ function erstellen(startkapital = {}) {
     const vorher = {};
     for (const id of ids(state.ships)) vorher[id] = ladungSumme(state.ships[id]);
     const frachter = ids(state.ships).filter((id) => state.ships[id].klasse === 'frachter' && state.ships[id].phase === 'reise');
+    const vorherEisauftrag = state.w5n.frachtauftrag
+      ? { schiff: state.w5n.frachtauftrag.schiff } : null;
+    const vorherEislohn = state.w5n.frachtLohn;
+    const vorherEisgeliefert = state.w5n.eisGeliefert;
+    const vorherEisgebuehr = state.w5n.frachtUmsatz;
     const ergebnis = kern.step(state, rules);
+    m_core_spielerfracht.minute(state, vorherEisauftrag, vorherEislohn,
+      vorherEisgeliefert, vorherEisgebuehr);
     m_core_minerwerft.tick(state);
     m_core_flugplan.koerperSync(state);
     npcPendel(state);
@@ -990,11 +1084,18 @@ function erstellen(startkapital = {}) {
         minerGebaut: k.minerWerft?.fertig || 0, minerGeliefert: k.minerWerft?.geliefert || 0 },
       verkaeufe: { eisAnAldera: w5n.mineVerkauft, wasserNadir: k.wasser.verkauftNadir, wasserAldera: k.wasser.verkauftAldera,
         wasserErloes: m_core_buch.summe(state, 'wasser-einzelhandel'), erzExportiert: state.ledger.erz.exported },
-      auftraege: { eisfrachten: w5n.frachtAbgeschlossen, eisGeliefert: w5n.eisGeliefert, erzfrachten: state.w3.abgeschlossen, wasserchargen: w5n.fabrikFertig,
+      auftraege: { eisfrachten: w5n.frachtAbgeschlossen, eisGeliefert: w5n.eisGeliefert,
+        ...(k.spielerFrachten ? {
+          spielerEisfracht: k.spielerFrachten.auftraege.filter((x) => x.end !== null).length,
+          spielerFrachtAktiv: k.spielerFrachten.auftraege.some((x) => x.end === null)
+        } : {}),
+        erzfrachten: state.w3.abgeschlossen, wasserchargen: w5n.fabrikFertig,
         rueckfrachtWasser: k.wasser.rueckGeliefert },
       loehne: { bergbau: w5n.mineLohn + state.ledger.erz.mined * rules.erzpilot.minerJeMinute,
         frachtpiloten: state.w5ag.paid.erz + state.w5ag.paid.eis, wasserwerk: w5n.fabrikBezahlt,
-        minerflug: m_core_buch.summe(state, 'fluglohn') },
+        minerflug: m_core_buch.summe(state, 'fluglohn'),
+        ...(k.spielerFrachten
+          ? { spielerFrachtpilot: m_core_buch.summe(state, 'spielerfracht-pilot') } : {}) },
       dividenden: m_core_buch.summe(state, 'dividende'),
       inventar: { eisAldera: state.stations.st_aldera.lager.eis || 0, eisNadir: state.stations.st_nadir.lager.eis || 0,
         wasserNadir: state.stations.st_nadir.lager.wasser || 0, wasserAldera: state.stations.st_aldera.lager.wasser || 0,

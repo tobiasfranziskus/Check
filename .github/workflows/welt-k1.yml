@@ -8,6 +8,8 @@ on:
       - 'prototypes/w5ac/rule191-w5-ferry-core.js'
       - 'tools/welt-szenarien.mjs'
       - 'tools/k3-frachter-diagnose.mjs'
+      - 'tools/k4-ore-allocation.mjs'
+      - 'tests/k4-ore-allocation.test.mjs'
       - 'tools/referenzmodell-c.mjs'
       - 'tests/welt-*'
       - 'tests/referenzmodell-c.test.mjs'
@@ -41,6 +43,8 @@ jobs:
           node --test tests/welt-k3-frachter.test.mjs
           node tools/k3-frachter-diagnose.mjs > "$RUNNER_TEMP/k3-diagnose.json"
           diff docs/K3_DIAGNOSE_SEED42.json "$RUNNER_TEMP/k3-diagnose.json"
+      - name: "K4: zeitlich vorgezogene, vollständig finanzierte Original-Erzfracht"
+        run: node --test tests/k4-ore-allocation.test.mjs
       - name: "K1-Wirtschaft: 15 Szenarien × 90 Tage, 365- und 730-Tage-Läufe"
         run: node --test tests/welt-wirtschaft.test.mjs
       - name: "Alle bestehenden Regel14-/Regel195-/Flug-Regressionen"
@@ -75,3 +79,80 @@ jobs:
           name: welt-k1-${{ matrix.browser }}
           path: /tmp/welt-k1-*.png
           if-no-files-found: warn
+  k4-vergleich:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "K4: 14 Tage Seed42/7, S12-Basis gegen Original-W3-Aufträge"
+        run: |
+          node tools/k4-ore-allocation.mjs 42 14 > "$RUNNER_TEMP/k4-seed42.json"
+          node tools/k4-ore-allocation.mjs 7 14 > "$RUNNER_TEMP/k4-seed7.json"
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          for (const seed of [42, 7]) {
+            const { basis, vorExport } = JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/k4-seed' + seed + '.json', 'utf8'));
+            for (const [modus, r] of [['basis', basis], ['vorExport', vorExport]]) {
+              console.log('K4_RESULT ' + JSON.stringify({
+                seed, modus, tick: r.tick, hash: r.hash,
+                weltgeld: r.weltgeld, minted: r.minted, burned: r.burned,
+                audit: r.audit, nullsaldo: r.nullsaldo,
+                erz: r.erz, material: r.material, wasser: r.wasser,
+                neueW3: r.manuelleW3Auftraege, quoteAblehnungen: r.quoteAblehnungen,
+                frachterInsgesamt: r.frachter.length,
+                frachterAktiv: r.frachter.filter(s => !s.stillgelegt).length,
+              }));
+            }
+          }
+          NODE
+      - name: "K4: 30/90 Tage S12-Krisenprobe, beide Seeds, keine Erfolgsannahme"
+        run: |
+          for tage in 30 90; do
+            for seed in 42 7; do
+              node tools/k4-ore-allocation.mjs "$seed" "$tage" > "$RUNNER_TEMP/k4-${tage}tage-seed${seed}.json"
+            done
+          done
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          import assert from 'node:assert/strict';
+          for (const tage of [30, 90]) for (const seed of [42, 7]) {
+            const { basis, vorExport } = JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/k4-' + tage + 'tage-seed' + seed + '.json', 'utf8'));
+            for (const [modus, r] of [['basis', basis], ['vorExport', vorExport]]) {
+              assert.equal(r.tick, tage * 1440);
+              assert.equal(r.weltgeld, 33000);
+              assert.equal(r.minted, 0);
+              assert.equal(r.burned, 0);
+              assert.equal(r.audit, true);
+              assert.equal(r.nullsaldo, 0);
+              console.log('K4_LANG ' + JSON.stringify({
+                tage, seed, modus, tick: r.tick, hash: r.hash,
+                erz: r.erz, material: r.material, wasser: r.wasser,
+                frachterInsgesamt: r.frachter.length,
+                frachterAktiv: r.frachter.filter(s => !s.stillgelegt).length,
+                w3Interventionen: r.manuelleW3Auftraege.length,
+                weltgeld: r.weltgeld, minted: r.minted, burned: r.burned, audit: r.audit,
+              }));
+            }
+          }
+          NODE
+      - name: "K4: 30-/90-Tage-Originaldaten archivieren"
+        uses: actions/upload-artifact@v4
+        with:
+          name: k4-s12-lang-30-90-seed42-7
+          path: |
+            ${{ runner.temp }}/k4-30tage-seed42.json
+            ${{ runner.temp }}/k4-30tage-seed7.json
+            ${{ runner.temp }}/k4-90tage-seed42.json
+            ${{ runner.temp }}/k4-90tage-seed7.json
+          if-no-files-found: error
+      - name: "K4: vollständige Seed42/7-Originaldaten archivieren"
+        uses: actions/upload-artifact@v4
+        with:
+          name: k4-s12-14tage-seed42-7
+          path: |
+            ${{ runner.temp }}/k4-seed42.json
+            ${{ runner.temp }}/k4-seed7.json
+          if-no-files-found: error

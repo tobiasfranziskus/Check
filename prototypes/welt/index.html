@@ -34,6 +34,16 @@ details summary{min-height:48px;padding:10px 8px;cursor:pointer}
 small{font-size:.82rem;color:#a9c1d1}
 .warn{color:#ffd28a}
 a{color:#8fe2f5}
+.pilot-cockpit{border:1px solid #456984;background:#101f30;border-radius:10px;padding:10px;display:grid;gap:10px;margin:6px 0 12px}
+.pilot-cockpit h3{font-size:1rem;color:#bfe6f2;margin:0}
+#pilotHinweis{min-height:2.5em;margin:0;color:#dae8ef}
+.pilot-daten{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.pilot-daten>div{padding:7px;background:#0a1825;border-radius:6px;min-width:0}
+.pilot-daten strong{display:block;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.pilot-regler{display:grid;grid-template-columns:1fr;gap:8px}
+.pilot-regler label{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.pilot-regler output{font-variant-numeric:tabular-nums;color:#a6effb}
+.pilot-regler input[type=range]{width:100%;min-height:48px;accent-color:#7ce4f4;touch-action:pan-y}
 @media(max-width:900px),(orientation:portrait){main{grid-template-columns:1fr;grid-template-rows:minmax(260px,42vh) auto;height:auto}}
 </style>
 <script defer src="../w5ac/rule191-w5-ferry-core.js"></script>
@@ -62,6 +72,24 @@ a{color:#8fe2f5}
 <h2>Eigener Miner</h2>
 <div class="reihe"><select id="schiff" aria-label="Eigenes Schiff wählen"></select></div>
 <div class="reihe"><button id="pendelEis">Pendelauftrag Eis</button><button id="pendelErz">Pendelauftrag Erz</button><button id="pendelStop">Pendel beenden</button></div>
+<div class="pilot-cockpit" id="pilotCockpit" aria-label="Manuelles Miner-Cockpit">
+<h3>Persönlicher Flug · Steuerpult</h3>
+<p id="pilotHinweis" role="status">Eigenen Miner kaufen und im Dock abdocken, um selbst zu steuern.</p>
+<div class="pilot-daten" aria-label="Tatsächliche Flugdaten">
+<div><small>Position</small><strong id="pilotPosition">–</strong></div>
+<div><small>Istkurs / Geschwindigkeit</small><strong id="pilotIst">–</strong></div>
+<div><small>Fluglage / Auftrag</small><strong id="pilotLage">–</strong></div>
+<div><small>Bezahlte Flugreserve</small><strong id="pilotReserve">–</strong></div>
+</div>
+<div class="pilot-regler">
+<div><label for="pilotKurs">Kurs (0 = Ost, 64 = Süd, 128 = West, 192 = Nord) <output id="pilotKursWert" for="pilotKurs">0</output></label>
+<input id="pilotKurs" type="range" min="0" max="255" step="1" value="0"></div>
+<div><label for="pilotFahrt">Sollfahrt in Prozent <output id="pilotFahrtWert" for="pilotFahrt">0</output></label>
+<input id="pilotFahrt" type="range" min="0" max="100" step="5" value="0"></div>
+</div>
+<div class="reihe"><button id="pilotAnwenden" disabled>Manuell steuern</button><button id="pilotBremsen" disabled>Bremsen (0 %)</button></div>
+<small>Direkte 2D-Kurs- und Fahrtsteuerung über <code>shipSteer</code> im gemeinsamen Flug-/Wirtschaftskern. Erst „Abdocken“ unter Handsteuerung ausführen. Bremsen benötigt Zeit; laufende Pendelaufträge steuern selbst.</small>
+</div>
 <details><summary>Handsteuerung (gleiche Core-Befehle)</summary>
 <div class="reihe"><button id="abdocken">Abdocken</button><button id="zumEis">Zum Eisfeld</button><button id="zumErz">Zum Erzfeld</button><button id="andocken">Andocken</button></div>
 <div class="reihe"><button id="foerdernEis">Eis fördern</button><button id="foerdernErz">Erz fördern</button><button id="warten">Auftrag anhalten</button><button id="verkaufen">Eis am Dock verkaufen</button></div>

@@ -104,6 +104,12 @@ for(const seed of [42,7]){
       prevHash=w.hash(s);
     }
     audit(w,s,'K7 positive Industriekette');
+    console.log('K7_DIAGNOSE '+JSON.stringify({seed,tick:s.tick,minedAt,dockAt,deliveredAt,roundAt,
+      oreDelta:s.ledger.erz.mined-initialMined,miner:((sh)=>({id:sh.id,owner:sh.owner,
+        auftrag:sh.auftrag,system:sh.system,phase:sh.phase,flug:sh.flug,ladung:sh.ladung}))
+        (s.ships.sh004),
+      contract:s.kanon.industrieErz,w3:s.w3.auftrag,
+      w1:s.erzpilotVertraege?.sh004,engpass:s.kanon.engpass?.aktuell || s.kanon.engpass}));
     assert.ok(minedAt,'tatsächlich bezahlter W1-Bergbau');
     assert.ok(dockAt,'50 physische Erz am Dock an Aldera verkauft');
     assert.ok(deliveredAt,'genau einmal mit bestehender W3-Käufertreuhand bezahlt');

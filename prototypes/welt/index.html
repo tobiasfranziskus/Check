@@ -12,7 +12,7 @@ nav{display:flex;gap:6px;padding:4px 8px;overflow-x:auto;-webkit-overflow-scroll
 nav button{flex:0 0 auto;min-width:96px}
 main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:8px;padding:0 8px 10px;height:calc(100dvh - 150px);min-height:430px}
 #sicht{position:relative;min-height:280px;border:1px solid #6b8197;border-radius:8px;overflow:hidden}
-#raum{display:block;width:100%;height:100%;touch-action:manipulation}
+#raum{display:block;width:100%;height:100%;touch-action:manipulation;cursor:crosshair}
 #hud{position:absolute;top:7px;left:8px;right:8px;color:#91e9f5;text-shadow:0 0 5px #000;font-size:.86rem;margin:0;pointer-events:none}
 #tafel{display:flex;flex-direction:column;gap:8px;overflow:auto;-webkit-overflow-scrolling:touch;min-width:0}
 .reihe{display:flex;gap:8px;flex-wrap:wrap}
@@ -36,6 +36,10 @@ small{font-size:.82rem;color:#a9c1d1}
 a{color:#8fe2f5}
 .pilot-cockpit{border:1px solid #456984;background:#101f30;border-radius:10px;padding:10px;display:grid;gap:10px;margin:6px 0 12px}
 .pilot-cockpit h3{font-size:1rem;color:#bfe6f2;margin:0}
+.karten-ziel{display:grid;gap:6px;border:1px solid #456984;border-radius:8px;padding:8px}
+.karten-ziel .reihe{align-items:stretch}
+.karten-ziel label{font-size:.9rem;color:#bfe6f2}
+#kartenHinweis{min-height:2em;margin:0;color:#a6effb;font-size:.88rem}
 #pilotHinweis{min-height:2.5em;margin:0;color:#dae8ef}
 .pilot-daten{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .pilot-daten>div{padding:7px;background:#0a1825;border-radius:6px;min-width:0}
@@ -64,7 +68,7 @@ a{color:#8fe2f5}
 </nav>
 <main>
 <section id="sicht" aria-label="Aldera-System: Station, Rohstofffelder und Schiffe">
-<canvas id="raum" aria-label="2D-Raum mit Station, Erz- und Eisfeld und Schiffen"></canvas>
+<canvas id="raum" aria-label="2D-Raum: Aldera-Dock und Rohstofffelder antippen, um ein Flugziel auszuwählen"></canvas>
 <p id="hud">Welt wird geladen …</p></section>
 <div id="tafel">
 <p id="meldung" role="status" aria-live="polite">Welt wird geladen …</p>
@@ -77,6 +81,13 @@ a{color:#8fe2f5}
 <div class="pilot-cockpit" id="pilotCockpit" aria-label="Manuelles Miner-Cockpit">
 <h3>Persönlicher Flug · Steuerpult</h3>
 <p id="pilotHinweis" role="status">Eigenen Miner kaufen und im Dock abdocken, um selbst zu steuern.</p>
+<div class="karten-ziel" aria-label="Berührbare Flugzielwahl">
+<label for="kartenZiel">Raumkarte antippen oder Ziel hier auswählen</label>
+<div class="reihe"><select id="kartenZiel" aria-label="Ziel für eigenen Miner vormerken">
+<option value="">Noch kein Ziel gewählt</option><option value="aldera:eis">Eisfeld</option><option value="aldera:erz">Erzfeld</option><option value="st_aldera">Aldera-Dock</option>
+</select><button id="kartenAnflug" type="button" disabled>Zielflug bestätigen</button></div>
+<p id="kartenHinweis" role="status">Berührung oder Auswahl merkt nur ein Ziel vor. Erst die Bestätigung sendet den Original-Flugbefehl.</p>
+</div>
 <div class="pilot-daten" aria-label="Tatsächliche Flugdaten">
 <div><small>Position</small><strong id="pilotPosition">–</strong></div>
 <div><small>Istkurs / Geschwindigkeit</small><strong id="pilotIst">–</strong></div>

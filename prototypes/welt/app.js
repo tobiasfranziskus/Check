@@ -10,7 +10,10 @@ const canvas = $('raum'), ctx = canvas.getContext('2d'), graph = G.erstellen(ctx
 const SPIELER = 'house', TEMPI = [1, 10, 60];
 let welt = null, state = null, speicher = null, hülle = null;
 let pausiert = true, tempo = 0, letzter = null, rest = 0, geaendert = false, ansicht = 'flug', letzterSave = 0, dauerhaft = true;
-let pilotSchiff = null; // Nur UI-Auswahl: Kurs-/Fahrtregler ändern den Core nicht vor „Manuell steuern“. 
+let pilotSchiff = null; // UI-Auswahl: weder Kursregler noch Kartenziel ändern den Core vor Bestätigung.
+const KARTEN_MITTE = Object.freeze({ x: 144000, y: 224000 });
+const KARTEN_TEXTE = Object.freeze({ 'st_aldera': 'Aldera-Dock', 'aldera:eis': 'Eisfeld', 'aldera:erz': 'Erzfeld' });
+const kartenSkala = (w, h) => Math.min(w, h) / 2500000;
 
 function melde(text, fehler = false) { const m = $('meldung'); m.textContent = text; m.classList.toggle('fehler', fehler); }
 function sicher(f) { try { return f(); } catch (e) { pausiert = true; melde('Angehalten: ' + e.message, true); return null; } }
@@ -50,10 +53,25 @@ function pilotWerte() {
   for (const taste of document.querySelectorAll('[data-pilot-kurs]'))
     taste.setAttribute('aria-pressed', String(taste.dataset.pilotKurs === $('pilotKurs').value));
 }
+function kartenZeigen(s, pendel, k) {
+  const ziel = $('kartenZiel').value, zielText = KARTEN_TEXTE[ziel];
+  const steuerbar = !!s && s.flug?.lage === 'frei' && !pendel && !k.flugdienst[s.id]?.gestrandet;
+  $('kartenAnflug').disabled = !steuerbar || !zielText;
+  let hinweis;
+  if (!zielText) hinweis = 'Auf der Karte Eisfeld, Erzfeld oder Dock berühren – oder Ziel in der Liste wählen. Noch kein Flugauftrag.';
+  else if (!s) hinweis = zielText + ' vorgemerkt. Zuerst einen eigenen Miner kaufen.';
+  else if (pendel) hinweis = zielText + ' vorgemerkt. Pendelauftrag steuert selbst; erst beenden.';
+  else if (s.flug.lage === 'angedockt') hinweis = zielText + ' vorgemerkt. Erst „Abdocken“ und das Manöver abwarten.';
+  else if (!steuerbar) hinweis = zielText + ' vorgemerkt. Handflug aktuell nicht verfügbar.';
+  else hinweis = zielText + ' vorgemerkt – erst „Zielflug bestätigen“ startet den bezahlten Original-Anflug.';
+  // VoiceOver-Livebereich nicht jede Animationsframe erneut mutieren.
+  if ($('kartenHinweis').textContent !== hinweis) $('kartenHinweis').textContent = hinweis;
+}
 function pilotZeigen(s, pendel, k, o) {
   const id = s ? s.id : '';
   if (pilotSchiff !== id) {
     pilotSchiff = id;
+    $('kartenZiel').value = ''; // Bei Schiffs-/Weltwechsel keine alte, ungeprüfte Zielvormerkung übernehmen.
     $('pilotKurs').value = s ? String(s.flug.sollKurs) : '0';
     $('pilotFahrt').value = s ? String(s.flug.sollFahrt) : '0';
     pilotWerte();
@@ -71,17 +89,17 @@ function pilotZeigen(s, pendel, k, o) {
   if (!s) hinweis = 'Zuerst unter „Station“ einen eigenen Miner kaufen.';
   else if (pendel) hinweis = 'Der Pendelauftrag steuert automatisch. Für Handflug zuerst „Pendel beenden“ und die Dockrückkehr abwarten.';
   else if (dienst?.gestrandet) hinweis = 'Flug angehalten: Die Arbeitsreserve ist leer. Der Core prüft eine echte Nachfinanzierung.';
-  else if (b.lage === 'angedockt') hinweis = 'Im Dock: „Handsteuerung“ öffnen und „Abdocken“ drücken. Der Core bindet die echte Flugreserve.';
+  else if (b.lage === 'angedockt') hinweis = 'Im Dock: „Abdocken“ drücken. Der Core bindet die echte Flugreserve; ein Kartenziel kann bereits vorgemerkt werden.';
   else if (b.lage === 'abdocken' || b.lage === 'andocken') hinweis = 'Dockmanöver läuft – Steuerung erst danach verfügbar.';
   else if (b.lage !== 'frei') hinweis = 'Der Miner ist derzeit nicht im freien Flug.';
   else if (welt.flugKern.imFeld(s, 'eis')) hinweis = 'Eisfeld erreicht und langsam genug: Der Originalbefehl „Eis fördern“ kann jetzt geprüft werden.';
   else if (welt.flugKern.imFeld(s, 'erz')) hinweis = 'Erzfeld erreicht und langsam genug: Der Originalbefehl „Erz fördern“ kann jetzt geprüft werden.';
   else hinweis = 'Freier Flug: Kurs und Fahrt einstellen, dann „Manuell steuern“. Zur Station mit „Andocken“ zurückkehren.';
-  $('pilotHinweis').textContent = hinweis;
+  if ($('pilotHinweis').textContent !== hinweis) $('pilotHinweis').textContent = hinweis;
 }
 function zeichnen() {
   const [w, h] = groesse(), K = welt.flugKern, sys = K.DATEN.systeme.aldera;
-  const cx = 144000, cy = 224000, z = Math.min(w, h) / 2500000;
+  const cx = KARTEN_MITTE.x, cy = KARTEN_MITTE.y, z = kartenSkala(w, h);
   ctx.clearRect(0, 0, w, h); ctx.fillStyle = '#06101b'; ctx.fillRect(0, 0, w, h);
   graph.himmel(cx, cy, z, w, h);
   const p = (x, y) => G.projektion(x, y, cx, cy, z, w, h);
@@ -91,10 +109,12 @@ function zeichnen() {
     ctx.strokeStyle = f.ware === 'eis' ? '#8dd9f4' : '#c08c62'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(x, y, Math.max(6, f.radius * z), 0, Math.PI * 2); ctx.stroke();
     ctx.fillStyle = ctx.strokeStyle; ctx.fillText(f.ware === 'eis' ? 'Eisfeld' : 'Erzfeld', x + 8, y - 12);
+    if ($('kartenZiel').value === f.id) { ctx.beginPath(); ctx.strokeStyle = '#ffe59b'; ctx.lineWidth = 3; ctx.arc(x, y, Math.max(25, f.radius * z + 5), 0, Math.PI * 2); ctx.stroke(); }
   }
   const [sx, sy] = p(sys.station.x, sys.station.y);
   ctx.strokeStyle = '#6a8f9e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(sx, sy, 14, 0, Math.PI * 2); ctx.stroke();
   ctx.fillStyle = '#d3e8ec'; ctx.fillText('Aldera · Dock', sx + 18, sy - 8);
+  if ($('kartenZiel').value === sys.station.id) { ctx.beginPath(); ctx.strokeStyle = '#ffe59b'; ctx.lineWidth = 3; ctx.arc(sx, sy, 25, 0, Math.PI * 2); ctx.stroke(); }
   let imDock = 0;
   for (const s of Object.values(state.ships).sort((a, b) => a.id.localeCompare(b.id))) {
     if (!s.flug || s.system !== 'aldera' || s.flug.lage === 'transit') continue;
@@ -121,6 +141,7 @@ function zeigen(alles = false) {
   }
   const s = gewaehlt(), pendel = s && k.pendel[s.id], imRaum = s && s.flug.lage !== 'angedockt';
   pilotZeigen(s, pendel, k, o);
+  kartenZeigen(s, pendel, k);
   $('pendelEis').disabled = $('pendelErz').disabled = !s || !!pendel || imRaum;
   $('pendelStop').disabled = !pendel;
   const bergbauHand = !!s && !pendel;
@@ -249,6 +270,37 @@ let langsam = 0;
 setInterval(() => { if (state && ansicht !== 'flug' && ++langsam) sicher(() => zeigen(true)); }, 1000);
 
 // ---------------------------------------------------------------- Bedienung
+// Auswahl per Tap oder Tastatur ist ausschließlich eine vorläufige UI-Markierung.
+// Auf der Karte stehen nur die echten Core-Station und die echten Core-Felder zur Wahl.
+canvas.addEventListener('click', (ev) => {
+  if (!state || ansicht !== 'flug') return;
+  const rect = canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const w = canvas.clientWidth, h = canvas.clientHeight, z = kartenSkala(w, h);
+  const px = (ev.clientX - rect.left) * w / rect.width, py = (ev.clientY - rect.top) * h / rect.height;
+  const sys = welt.flugKern.DATEN.systeme.aldera;
+  const ziele = [{ id: sys.station.id, x: sys.station.x, y: sys.station.y, radius: 30 },
+    ...sys.felder.map(f => ({ id: f.id, x: f.x, y: f.y, radius: Math.max(30, f.radius * z) }))];
+  let kandidat = null, abstand = Infinity;
+  for (const ziel of ziele) {
+    const [x, y] = G.projektion(ziel.x, ziel.y, KARTEN_MITTE.x, KARTEN_MITTE.y, z, w, h);
+    const d = (x - px) ** 2 + (y - py) ** 2;
+    if (d <= ziel.radius ** 2 && d < abstand) { kandidat = ziel.id; abstand = d; }
+  }
+  if (kandidat && Object.hasOwn(KARTEN_TEXTE, kandidat)) {
+    $('kartenZiel').value = kandidat;
+    zeigen(false);
+  }
+});
+$('kartenZiel').addEventListener('change', () => { if (state) zeigen(false); });
+$('kartenAnflug').addEventListener('click', () => {
+  const s = gewaehlt(), ziel = $('kartenZiel').value;
+  if (!s || !Object.hasOwn(KARTEN_TEXTE, ziel)) return;
+  const cmd = ziel === 'st_aldera'
+    ? { type: 'shipDock', owner: SPIELER, schiff: s.id, station: ziel }
+    : { type: 'shipApproach', owner: SPIELER, schiff: s.id, zielArt: 'feld', ziel };
+  befehl(cmd, 'Original-Flugauftrag bestätigt: ' + KARTEN_TEXTE[ziel] + '. Nur echte bezahlte Flugminuten.');
+});
 $('pilotKurs').addEventListener('input', pilotWerte);
 $('pilotFahrt').addEventListener('input', pilotWerte);
 for (const taste of document.querySelectorAll('[data-pilot-kurs]')) taste.addEventListener('click', () => {

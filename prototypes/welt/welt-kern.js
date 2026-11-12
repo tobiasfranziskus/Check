@@ -77,15 +77,15 @@ const m_data_kanon = (() => {
   return { KANON, tiefFrieren };
 })();
 
-function erstellen(startkapital = {}) {
+function erstellen(startkapital = {}, k7 = false) {
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
     angedocktAn: (sh, station) => FLUG.angedocktAn(sh, station),
   });
-  const engine = FACTORY.createKanonWelt(startkapital, ort);
+  const engine = k7 ? FACTORY.createK7Welt(startkapital, ort) : FACTORY.createKanonWelt(startkapital, ort);
   const kern = engine.core, rules = engine.rules;
-  if (rules.rulesVersion !== KANON.regel || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
+  if (rules.rulesVersion !== (k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
     throw Error('K1: unerwartetes Kernprofil');
   const N = FLUG.DATEN.schritteJeMinute;
   const W = rules.w5n;
@@ -740,7 +740,7 @@ function erstellen(startkapital = {}) {
 
   // ------------------------------------------------------------------ m_core_welt
   function pruefeForm(state) {
-    if (state === null || typeof state !== 'object' || state.rulesVersion !== KANON.regel || state.schema !== KANON.schema)
+    if (state === null || typeof state !== 'object' || state.rulesVersion !== rules.rulesVersion || state.schema !== KANON.schema)
       throw Error('K1: fremde Regelversion oder Schema; keine automatische Migration');
     const k = state.kanon;
     if (!k || k.modell !== KANON.modell || !k.netto || !k.buch || !k.wasser || !k.pendel || !k.flugdienst
@@ -751,6 +751,14 @@ function erstellen(startkapital = {}) {
     try {
       pruefeForm(state);
       const k = state.kanon, fehler = [];
+      if (k7) {
+        const i=k.industrieErz, a=state.w3?.auftrag;
+        if(!i||!['frei','angebot','aktiv','geliefert','storniert'].includes(i.phase)
+          ||(i.phase==='aktiv'&&(!a||a.industrieMiner!==i.miner||!i.signMiner||!i.signFracht))
+          ||(a?.phase==='vorbestellt'&&(i.phase!=='aktiv'||!i.signMiner||!i.signFracht||i.miner!==a.industrieMiner))
+          ||(i.phase==='geliefert'&&a?.industrieMiner===i.miner)
+          ||(i.phase==='angebot'&&a?.industrieMiner)) fehler.push('K7-Industrieerzkette/Signaturen');
+      }
       const flug = FLUG.audit(state);
       if (!flug.ok) fehler.push('Flug: ' + flug.grund);
       const wirtschaft = kern.audit(state);
@@ -824,6 +832,7 @@ function erstellen(startkapital = {}) {
     // Die Kern-Initialisierung beauftragt den NPC-Miner bereits mit Erz: er erhält denselben
     // Pendelauftrag wie jedes Spielerschiff und muss ab jetzt wirklich zum Feld fliegen.
     npcPendel(state);
+    if (k7) state.kanon.industrieErz = { phase: 'frei' };
     const a = audit(state);
     if (!a.ok) throw Error('K1: Anfangszustand nicht konsistent: ' + a.fehler.join('; '));
     return state;
@@ -855,9 +864,96 @@ function erstellen(startkapital = {}) {
     if (ziel.einkaufMinuten === 0 || ziel.dividendeMinuten === 0) throw TypeError('K1: Intervall muss positiv sein');
   }
 
+  // K7: drei getrennt durch Original-Firmenrechte signierte Vertragsparteien.
+  // Ein Angebot und die Signaturen erzeugen keine Ware, Geld oder Schiff.
+  function k7Befehl(s, cmd) {
+    const type=cmd?.type, i=s.kanon.industrieErz, angebot=i?.phase==='angebot';
+    const erlaubte={
+      industrialOreOffer:['type','owner','miner','frachter'],
+      industrialOreAcceptMine:['type','owner'],
+      industrialOreAcceptFreight:['type','owner'],
+      industrialOreCommit:['type','owner'],
+      industrialOreCancel:['type','owner'],
+    };
+    if(!hat(erlaubte,type)||!cmd||typeof cmd!=='object'||Array.isArray(cmd)
+      ||Object.keys(cmd).some(k=>!erlaubte[type].includes(k))
+      ||Object.keys(cmd).length!==erlaubte[type].length)
+      return {ok:false,type,reason:'K7: unerlaubte Vertragsform'};
+    const verwerfen=reason=>({ok:false,type,reason:'K7: '+reason});
+    if(type==='industrialOreOffer'){
+      if(cmd.owner!=='st_nadir')return verwerfen('nur realer Industriekäufer darf bestellen');
+      if(!['frei','geliefert','storniert'].includes(i.phase))return verwerfen('Vertrag bereits vorhanden');
+      if(s.w3.auftrag||s.w5n.frachtauftrag)return verwerfen('bereits laufende Fracht');
+      const mi=s.ships[cmd.miner],fr=s.ships[cmd.frachter];
+      if(!mi||mi.owner!=='npc3'||mi.klasse!=='miner'||!fr||fr.owner!=='transport'
+        ||fr.klasse!=='frachter'||m_core_anlage.stillgelegt(s,mi)||m_core_anlage.stillgelegt(s,fr))
+        return verwerfen('fremdes oder verschlissenes Schiff');
+      if(mi.system!=='aldera'||mi.flug?.lage!=='angedockt'
+        ||Object.values(mi.ladung).some(x=>x!==0)||s.erzpilotVertraege?.[mi.id]
+        ||fr.system!=='aldera'||fr.phase!=='dock'||fr.auftrag!=='halten'
+        ||Object.values(fr.ladung).some(x=>x!==0))return verwerfen('Schiffe nicht frei im Dock');
+      if(s.owners.st_nadir.cash<740)return verwerfen('Nadir kann Kauf und Rundfracht nicht vorfinanzieren');
+      s.kanon.industrieErz={phase:'angebot',miner:mi.id,frachter:fr.id,
+        signMiner:false,signFracht:false,erzAngenommen:false,erstellt:s.tick};
+      return {ok:true,type};
+    }
+    if(type==='industrialOreAcceptMine'){
+      if(cmd.owner!=='npc3'||!angebot)return verwerfen('nur Bergbaueigentümer darf unterschreiben');
+      if(i.signMiner)return verwerfen('Bergbau bereits unterschrieben');
+      if(s.ships[i.miner]?.owner!=='npc3'||s.owners.npc3.cash<100)
+        return verwerfen('echte Bergbauarbeit nicht gedeckt');
+      i.signMiner=true;return {ok:true,type};
+    }
+    if(type==='industrialOreAcceptFreight'){
+      if(cmd.owner!=='transport'||!angebot)return verwerfen('nur Spedition darf unterschreiben');
+      if(i.signFracht)return verwerfen('Transport bereits unterschrieben');
+      if(s.ships[i.frachter]?.owner!=='transport'||s.owners.transport.cash<120)
+        return verwerfen('echte Frachtarbeit nicht gedeckt');
+      i.signFracht=true;return {ok:true,type};
+    }
+    if(type==='industrialOreCommit'){
+      if(cmd.owner!=='st_nadir'||!angebot||!i.signMiner||!i.signFracht)
+        return verwerfen('nur der Käufer bestätigt nach beiden Eigentümerzustimmungen');
+      const mi=s.ships[i.miner],fr=s.ships[i.frachter];
+      if(!mi||!fr||mi.owner!=='npc3'||fr.owner!=='transport'
+        ||mi.flug?.lage!=='angedockt'||fr.phase!=='dock'
+        ||Object.values(mi.ladung).some(x=>x!==0)||s.erzpilotVertraege?.[mi.id]
+        ||(s.kanon.pendel[i.miner]&&s.kanon.pendel[i.miner].ware!=='erz'))
+        return verwerfen('Einsatzschiffe/Erzauftrag nicht mehr verfügbar');
+      if(s.owners.npc3.cash<100||s.owners.st_aldera.cash<500
+        ||s.owners.st_nadir.cash<740||s.owners.transport.cash<120)
+        return verwerfen('unvollständig vorfinanzierte Firmenkette');
+      try { kern.industryOrePrebook(s,i.frachter,i.miner); }
+      catch(e){return verwerfen(e.message);}
+      i.phase='aktiv';
+      const m=kern.execute(s,{type:'shipMine',owner:'npc3',schiff:i.miner,ware:'erz'},rules);
+      if(!m.ok)throw Error('K7: nach Vorfinanzierung abgelehnter Eigentümerauftrag: '+m.reason);
+      s.kanon.pendel[i.miner]={ware:'erz'};
+      return {ok:true,type};
+    }
+    if(type==='industrialOreCancel'){
+      if(cmd.owner!=='st_nadir')return verwerfen('nur echter Auftraggeber darf stornieren');
+      if(angebot){s.kanon.industrieErz={phase:'storniert'};return {ok:true,type};}
+      if(i.phase!=='aktiv'||s.w3.auftrag?.phase!=='vorbestellt')
+        return verwerfen('nach Lieferung nur ordentliche Abwicklung, keine Gratisstornierung');
+      const mi=s.ships[i.miner];
+      if(mi?.flug?.lage!=='angedockt'||Object.values(mi.ladung).some(x=>x!==0)
+        ||s.erzpilotVertraege?.[mi.id])return verwerfen('bezahlte Arbeit oder Waren vorhanden');
+      try{kern.industryOreCancel(s);}
+      catch(e){return verwerfen(e.message);}
+      const stop=kern.execute(s,{type:'shipWait',owner:'npc3',schiff:i.miner},rules);
+      if(!stop.ok)throw Error('K7: gebuchtes Storno ohne Miner-Stopp: '+stop.reason);
+      delete s.kanon.pendel[i.miner];
+      s.kanon.industrieErz={phase:'storniert'};
+      return {ok:true,type};
+    }
+    return verwerfen('unbekannte Vertragsaktion');
+  }
+
   function execute(state, cmd) {
     pruefeForm(state);
     const type = cmd && cmd.type;
+    if(k7&&typeof type==='string'&&type.startsWith('industrialOre'))return k7Befehl(state,cmd);
     if (typeof type === 'string' && hat(FLUG.BEFEHLE, type)) return m_core_flugplan.befehl(state, cmd, false);
     if (type === 'stationBuildMiner') return m_core_minerwerft.bauen(state, cmd);
     if (typeof type === 'string' && hat(m_core_kreislauf.BEFEHLE, type)) return m_core_kreislauf.ausfuehren(state, cmd);
@@ -880,6 +976,9 @@ function erstellen(startkapital = {}) {
     for (const id of ids(state.ships)) vorher[id] = ladungSumme(state.ships[id]);
     const frachter = ids(state.ships).filter((id) => state.ships[id].klasse === 'frachter' && state.ships[id].phase === 'reise');
     const ergebnis = kern.step(state, rules);
+    if(k7&&state.kanon.industrieErz?.phase==='aktiv'
+      &&state.w3.auftrag===null&&state.w3.abgeschlossen>0
+      &&state.kanon.industrieErz.erzAngenommen)state.kanon.industrieErz.phase='geliefert';
     m_core_minerwerft.tick(state);
     m_core_flugplan.koerperSync(state);
     npcPendel(state);
@@ -972,13 +1071,34 @@ function erstellen(startkapital = {}) {
   }
 
   return Object.freeze({
-    rules, daten: KANON, regel: KANON.regel, modell: KANON.modell,
+    rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
     createState, politikSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,
     buchwert: (state, id) => m_core_anlage.buchwert(state, state.ships[id]),
   });
 }
+
+// K7: nur auf ausdrücklichen Aufruf eine unabhängig geprüfte Rule199-Quelle
+// in ein SEPARATES Forschungsregel200-Objekt kopieren. Das Quell-JSON bleibt unverändert.
+function ausRegel199K7(json) {
+  if(typeof json!=='string'||json.length>5*1024*1024)throw Error('K7: JSON-Größe');
+  const quelle=erstellen(),alt=quelle.load(json),quellHash=quelle.hash(alt);
+  if(alt.w3.auftrag||Object.keys(alt.erzpilotVertraege||{}).length)
+    throw Error('K7: nur vertragsfreie Ursprungswelt explizit übernehmen');
+  const profil=alt.w5ad?.profile;
+  if(!profil||!ganzZahl(profil.carrierCash)||!ganzZahl(profil.buyerCash))
+    throw Error('K7: nicht belegte Anfangsfinanzierung');
+  const welt=erstellen({carrierCash:profil.carrierCash,buyerCash:profil.buyerCash},true);
+  const s=JSON.parse(json);
+  s.rulesVersion=200;s.w3.storniert=0;s.w3.stornoRueckzahlung=0;
+  s.kanon.industrieErz={phase:'frei'};
+  const a=welt.audit(s);
+  if(!a.ok)throw Error('K7: Forschungstransfer verletzt Buch-/Eigentumsaudit: '+a.fehler.join('; '));
+  if(quelle.hash(alt)!==quellHash)throw Error('K7: Quellstand manipuliert');
+  return {welt,zustand:s,quellHash};
+}
+const ganzZahl=n=>Number.isSafeInteger(n)&&n>=0;
 
 // Ausdrückliche, vollständig geprüfte Übernahme eines Regel195-Standes (Schema 8) in K1.
 // Nie automatisch: der Aufrufer übergibt das exportierte JSON. Der Regel195-Stand selbst
@@ -1056,6 +1176,8 @@ function ausRegel195(json) {
   return { welt, zustand, kapital, nachweis };
 }
 
-const api = Object.freeze({ erstellen, ausRegel195, DATEN: m_data_kanon.KANON, REGEL: m_data_kanon.KANON.regel, SCHRITTE: FLUG.DATEN.schritteJeMinute });
+const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapital,true),
+  ausRegel195, ausRegel199K7,
+  DATEN: m_data_kanon.KANON, REGEL: m_data_kanon.KANON.regel, SCHRITTE: FLUG.DATEN.schritteJeMinute });
 if (NODE) module.exports = api; else scope.AphrosWelt = api;
 })(globalThis);

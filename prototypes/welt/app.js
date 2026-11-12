@@ -116,6 +116,14 @@ function rundenVorschlag(s, pendel, k) {
   } else if (s.auftrag === 'foerdern' && s.ware !== 'eis') {
     titel = 'Erzförderung aktiv';
     info = 'Die Eisrunde greift nicht in einen laufenden Erzauftrag ein. Über „Förderung stoppen“ lässt er sich beenden.';
+  } else if (s.auftrag === 'foerdern' && eis >= welt.rules.w5n.charge) {
+    // Handelscharge ist KEINE physische Kapazitätsgrenze; freier Bergbau
+    // bleibt über die Einzelbefehle beliebig fortsetzbar. Die begleitete
+    // Runde verlangt einen ausdrücklich bestätigten Förderstopp.
+    titel = '4/6 · Handelscharge erreicht';
+    info = fmt(eis) + ' Eis an Bord. Die Original-W5-Charge ist ' +
+      fmt(welt.rules.w5n.charge) + ' Eis; du kannst auch freiwillig weiterfördern.';
+    ziel = 'warten'; label = 'Förderung stoppen';
   } else if (s.auftrag === 'foerdern' && ladung < raum) {
     titel = '3/6 · Eis wird gefördert';
     info = fmt(eis) + ' Eis an Bord; ' + fmt(raum - ladung) + ' Ladeeinheiten frei. Der Bergbaulohn wird für echte Minuten bezahlt.';

@@ -1,5 +1,8 @@
 # Aphros Void – zentrale Produkt-Roadmap
 
+> **[DRAFT / INTEGRATION · 12.11.2026]** [PR #306](https://github.com/tobiasfranziskus/Check/pull/306) kombiniert auf dem **K3-Forschungszweig** [#304](https://github.com/tobiasfranziskus/Check/pull/304) das persönlich touchgesteuerte K1-Miner-Cockpit [#305](https://github.com/tobiasfranziskus/Check/pull/305) mit der bestehenden Frachter-/Materialdiagnose. `shipSteer`, Kurs-/Fahrtregler, Bremsen, Position, Fluglohnreserve und K2-/K3-Status lesen dieselbe autoritative Forschungswelt. **Keine neue Wirtschafts- oder Produktregel:** K3-S12 bleibt nach vier real finanzierten Ersatzfrachtern an verfügbarem Erz/Material blockiert (letzter Wasserabsatz Tag 10). [Integrationsprüfplan](K3_K1_COCKPIT_INTEGRATION.md). Die Browser-/Node22-CI des neuen kombinierten Codes ist bis zum nachgewiesenen Abschluss **offen**; alte erfolgreiche Einzelprüfungen sind kein gemeinsamer Abnahmenachweis. [MAIN] weiterhin `04124f2b`, keine Veröffentlichung und kein Eingriff in produktive Saves.
+
+
 > **[DRAFT / ANALYSE · K3, 12.11.2026]** [Draft-PR #304](https://github.com/tobiasfranziskus/Check/pull/304) zu [Issue #303](https://github.com/tobiasfranziskus/Check/issues/303): unabhängige S12-Diagnose auf K2 `d7fe3974` belegt vier bereits bezahlte Frachternachfolgen; terminal fehlen Material und nutzbare Lieferkapazität, nicht Speditionsgeld. [K3-Negativbeweis und Prüfgrenzen](K3_FINANZIERTE_FRACHTERNACHFOLGE.md). Keine neue Regel, keine Produkt-/W6-Freigabe.
 
 

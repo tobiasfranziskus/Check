@@ -2753,6 +2753,7 @@ const m_core_w5_wage_trade=(()=>{
            ===s.w3.arbeitsKosten+(s.w5n?.frachtLohn??0))
       &&s.stats.konto[cfg.buyer].kosten===w.spent+(r.w5ag?0:(s.w5n?.wasserErlos??0))
       &&s.stats.konto[cfg.seller].erloes===(s.w5?.materialUmsatz??0)+w.spent+(s.w5n?.wasserErlos??0)
+        +(r.k7?(s.w3?.stornoRueckzahlung||0):0)
       &&seller+m_core_kanon.netto(s,cfg.seller)+(s.w3.kaufAusgaben-(s.w3.stornoRueckzahlung||0))+s.w4.gebucht
          -(s.w5?.materialUmsatz??0)-w.spent
          +(s.w5n?.kaufAusgaben??0)+(s.w5n?.fabrikGebucht??0)

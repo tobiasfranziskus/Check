@@ -57,7 +57,7 @@ for(const seed of [42,7]){
     assert.equal(s.owners.w3_arbeit_treuhand.cash,120);
     assert.equal(s.w3.auftrag.phase,'vorbestellt');
     assert.equal(s.stations.st_aldera.lager.erz,0);
-    assert.equal(s.ledger.erz.mined,0,'keine Phantomförderung');
+    assert.equal(s.ledger.erz.mined,2150,'die bis K4 real geförderten 2150 Erz bleiben unangetastet');
     audit(w,s,'nach Vorbestellung');
     gesperrt(w,s,{type:'industrialOreCommit',owner:'st_nadir'});
     gesperrt(w,s,{type:'industrialOreOffer',owner:'st_nadir',miner:'sh005',frachter:'sh020'});

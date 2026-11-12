@@ -137,10 +137,17 @@ test('K1 Gegenbeispiele: fehlendes Kapital, fehlende Nachfolge und nicht herstel
   assert.equal(s08.auftraege.eisfrachten, 0);
   assert.match(s08.handlungsunfaehig.join(), /transport: 10 ISK < 120 ISK/);
   assert.equal(s08.bindenderEngpass, 'Spedition kann Flugarbeit nicht vorfinanzieren');
-  // Verschleiß: Frachter wird aus echter Produktion ersetzt, Miner nur aus dem endlichen Gründungslager.
+  // K2-Verschleiß: echte Miner aus W4-Material, Werftlohn und bezahlter Rückfracht.
+  // Die neue Miner-Kette verschiebt den bindenden Engpass: ohne finanzierten
+  // Folgefrachter bleibt auch diese Welt noch vor Tag 90 stehen.
   assert.ok(s12.frachterGebaut >= 1 && s12.ersatzkaeufe >= 2);
-  assert.equal(s12.inventar.minerLager, 0, 'Gründungslager erschöpft');
-  assert.match(s12.handlungsunfaehig.join(), /kein einsatzfähiger Miner/);
+  assert.ok(s12.produktion.minerGebaut >= 1 && s12.produktion.minerGeliefert >= 1,
+    'Mindestens eine tatsächlich gebaute UND gelieferte Minerhülle');
+  assert.equal(s12.produktion.minerGebaut, s12.produktion.minerGeliefert,
+    'Warenherkunft: jede gebaute Minerhülle tatsächlich transportiert');
+  assert.equal(s12.inventar.minerLager, 0, 'keine frei erfundene Ersatzreserve');
+  assert.match(s12.handlungsunfaehig.join(), /transport: kein einsatzfähiger Frachter/,
+    'kein falscher Dauernachweis: neuer bindender Engpass ist die Frachter-Nachfolge');
   // Schiffverlust: Ersatz aus Erz → Material → Werfthülle, aus eigener Kasse gekauft und bezahlt überführt.
   assert.equal(s13.ersatzkaeufe, 1); assert.ok(s13.frachterGebaut >= 1); assert.ok(s13.auftraege.erzfrachten >= 1);
   assert.equal(s13.produktion.materialErzeugt % 5, 0); assert.ok(s13.produktion.materialErzeugt >= 5);

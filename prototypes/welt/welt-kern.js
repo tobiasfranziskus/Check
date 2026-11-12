@@ -272,6 +272,8 @@ function erstellen(startkapital = {}) {
       const merken = (grund) => { if (zaehlen) k.engpass = merke(k.engpass, state.tick, grund); };
       for (const id of ids(k.pendel)) {
         const sh = state.ships[id], b = sh.flug, p = k.pendel[id];
+        if (m_core_anlage.stillgelegt(state, sh) && sh.auftrag === 'foerdern')
+          kern.execute(state, { type: 'shipWait', owner: sh.owner, schiff: id }, rules);
         if (b.lage === 'andocken' || b.lage === 'abdocken' || b.lage === 'transit') continue;
         if (b.lage === 'angedockt' && !dock) continue;
         if (k.flugdienst[id]?.gestrandet) continue;
@@ -292,6 +294,12 @@ function erstellen(startkapital = {}) {
           }
           if (ladungSumme(sh) > 0 && p.ware === 'eis') continue;
           if (p.beenden) { delete k.pendel[id]; continue; }
+          if (m_core_anlage.stillgelegt(state, sh)) continue; // Pendel merken, bis ein echter Ersatzkauf erfolgreich ist
+          if (p.ware === 'erz' && p.ersatz && sh.auftrag !== 'foerdern') {
+            const r = kern.execute(state, { type: 'shipMine', owner: sh.owner, schiff: id, ware: 'erz' }, rules);
+            if (!r.ok) { merken('Erz-Ersatzauftrag: ' + r.reason); continue; }
+            delete p.ersatz;
+          }
           if (p.ware === 'eis' && sh.auftrag !== 'foerdern') {
             if (state.owners[sh.owner].cash < W.charge * W.mineLohn + KANON.flug.reserveMinuten) {
               merken('Bergbau nicht vorfinanziert: ' + sh.owner); continue;
@@ -312,7 +320,7 @@ function erstellen(startkapital = {}) {
         // im freien Flug
         if (p.ware === 'eis' && voll() && sh.auftrag === 'foerdern')
           kern.execute(state, { type: 'shipWait', owner: sh.owner, schiff: id }, rules);
-        const zumDock = voll() || sh.auftrag !== 'foerdern';
+        const zumDock = m_core_anlage.stillgelegt(state, sh) || voll() || sh.auftrag !== 'foerdern';
         const r = FLUG.fuehreZu(state, sh, zumDock
           ? { art: 'station', id: station(sh) } : { art: 'feld', id: sh.system + ':' + p.ware });
         if (r && !r.ok) throw Error('K1-Flugplan: ' + r.reason);
@@ -453,6 +461,128 @@ function erstellen(startkapital = {}) {
     return { BEFEHLE, pruefen, ausfuehren, rueckfracht, ausschuettbar, verfuegbar, einkommen };
   })();
 
+
+  // K2: Kanonischer Minerbau, keine zweite Simulation. W4-Ware und ISK verbleiben
+  // in den Original-Stationen/Konten; alle K2-Zahlungen sind gepaarte K1-Belege.
+  const m_core_minerwerft = (() => {
+    const C = Object.freeze({ station: rules.w5.station, werft: rules.w5.werft,
+      arbeiter: rules.w5.arbeiter, material: rules.w5.material,
+      preisMaterial: rules.w5.materialPreis, dauer: rules.w5.dauer,
+      lohn: rules.w5.lohnJeMinute, kauf: kaufpreis('miner'),
+      fracht: W.flugMinuten * rules.w3.arbeitJeMinute });
+    const leer = () => ({ begonnen: 0, fertig: 0, materialVerbraucht: 0,
+      verladen: 0, geliefert: 0, auftrag: null, wartetAuf: null, transport: null });
+    function konto(s, id) {
+      if (!s.owners[id]) s.owners[id] = { id, kind: 'k1-reserve', cash: 0 };
+      return s.owners[id];
+    }
+    function pruefen(s, cmd) {
+      if (!cmd || typeof cmd !== 'object' || Array.isArray(cmd) || cmd.type !== 'stationBuildMiner'
+        || Object.keys(cmd).some((k) => !['type', 'owner', 'station', 'besteller'].includes(k)))
+        return 'K2: ungültige Befehlsform';
+      if (cmd.owner !== C.werft || cmd.station !== C.station
+        || !['house', 'npc3'].includes(cmd.besteller))
+        return 'K2: Nur Nadir-Werft und bekannte Eigentümer';
+      const b = s.kanon.minerWerft;
+      if (s.w5.auftrag || b?.auftrag || b?.wartetAuf || b?.transport
+        || (s.stations[C.station].lager.miner || 0) > 0) return 'K2: Werft/Lieferung belegt';
+      if ((s.stations[C.station].lager.material || 0) < C.material)
+        return 'K2: reales W4-Material fehlt';
+      if (s.owners[C.werft].cash < C.material * C.preisMaterial + C.dauer * C.lohn)
+        return 'K2: Material und Arbeitsminuten nicht vorfinanziert';
+      if (s.owners[cmd.besteller].cash < C.kauf + C.fracht)
+        return 'K2: Eigentümer kann Hülle und Rückfracht nicht zahlen';
+      if ((s.stations[W.quellStation].lager.miner || 0) > 0)
+        return 'K2: Miner liegen schon in Aldera';
+      return null;
+    }
+    function bauen(s, cmd) {
+      const fehler = pruefen(s, cmd);
+      if (fehler) return { ok: false, type: 'stationBuildMiner', reason: fehler };
+      const b = (s.kanon.minerWerft ||= leer());
+      if (konto(s, 'k1_miner_arbeit').cash !== 0) throw Error('K2: Werfttreuhand doppelt');
+      m_core_buch.transfer(s, C.werft, C.station, C.material * C.preisMaterial, 'miner-material');
+      m_core_buch.transfer(s, C.werft, 'k1_miner_arbeit', C.dauer * C.lohn, 'miner-arbeitsreserve');
+      s.stations[C.station].lager.material -= C.material;
+      s.ledger.material.consumed += C.material;
+      b.materialVerbraucht += C.material; b.begonnen++;
+      b.auftrag = { besteller: cmd.besteller, gearbeitet: 0 };
+      return { ok: true, type: 'stationBuildMiner' };
+    }
+    function tick(s) {
+      const b = s.kanon.minerWerft, a = b?.auftrag;
+      if (!a) return;
+      if ((s.owners.k1_miner_arbeit?.cash || 0) < C.lohn) throw Error('K2: Lohnreserve fehlt');
+      m_core_buch.transfer(s, 'k1_miner_arbeit', C.arbeiter, C.lohn, 'miner-arbeitslohn');
+      a.gearbeitet++;
+      if (a.gearbeitet === C.dauer) {
+        if (s.owners.k1_miner_arbeit.cash !== 0 || (s.stations[C.station].lager.miner || 0) !== 0)
+          throw Error('K2: Minerfertigung ohne Lohn-/Lagerabschluss');
+        s.stations[C.station].lager.miner = 1;
+        s.ledger.miner.produced++;
+        b.fertig++; b.wartetAuf = a.besteller; b.auftrag = null;
+      }
+    }
+    // Frachter nimmt die bezahlte Hülle physisch auf dem ohnehin finanzierten
+    // Nadir->Aldera-Rückweg mit; Käufer trägt die zusätzliche Frachtgebühr.
+    function transport(s) {
+      const b = s.kanon.minerWerft, a = s.w5n.frachtauftrag;
+      if (!b) return;
+      if (a?.phase === 'rueck' && b.wartetAuf && !b.transport) {
+        const sh = s.ships[a.schiff];
+        if (sh && sh.system === 'nadir' && sh.ankunft - a.zeit === s.tick
+          && (s.stations[C.station].lager.miner || 0) === 1
+          && ladungSumme(sh) + 1 <= rules.economy.cargo
+          && s.owners[b.wartetAuf].cash >= C.kauf + C.fracht) {
+          if (konto(s, 'k1_miner_fracht').cash !== 0) throw Error('K2: Frachttreuhand doppelt');
+          m_core_buch.transfer(s, b.wartetAuf, 'k1_miner_fracht', C.fracht, 'miner-frachtreserve');
+          s.stations[C.station].lager.miner--;
+          sh.ladung.miner = (sh.ladung.miner || 0) + 1;
+          b.transport = { schiff: sh.id, besteller: b.wartetAuf };
+          b.wartetAuf = null; b.verladen++;
+        }
+      }
+      const t = b.transport, sh = t && s.ships[t.schiff];
+      if (t && sh && sh.phase === 'dock' && sh.system === 'aldera'
+        && FLUG.angedocktAn(sh, W.quellStation)) {
+        if (sh.ladung.miner !== 1) throw Error('K2: Frachtminer verschwunden');
+        delete sh.ladung.miner;
+        s.stations[W.quellStation].lager.miner++;
+        m_core_buch.transfer(s, 'k1_miner_fracht', sh.owner, C.fracht, 'miner-fracht');
+        b.geliefert++; b.transport = null;
+      }
+    }
+    function audit(s) {
+      const b = s.kanon.minerWerft, nadir = s.stations[C.station].lager.miner || 0;
+      if (!b) return s.ledger.miner.produced === 0 && nadir === 0;
+      const a = b.auftrag, t = b.transport, l = b.fertig * C.dauer * C.lohn + (a?.gearbeitet || 0) * C.lohn;
+      const anBord = Object.values(s.ships).reduce((n, sh) => n + (sh.ladung.miner || 0), 0);
+      return [b.begonnen, b.fertig, b.verladen, b.geliefert, b.materialVerbraucht,
+        nadir, s.stations[W.quellStation].lager.miner || 0, a?.gearbeitet || 0].every(ganz)
+        && b.begonnen === b.fertig + (a ? 1 : 0)
+        && b.materialVerbraucht === b.begonnen * C.material
+        && b.verladen === b.geliefert + (t ? 1 : 0)
+        && b.fertig >= b.verladen && b.fertig - b.verladen <= 1
+        && nadir === b.fertig - b.verladen
+        && (b.fertig > b.verladen ? ['house', 'npc3'].includes(b.wartetAuf) : b.wartetAuf === null)
+        && (!a || (a.gearbeitet < C.dauer && ['house', 'npc3'].includes(a.besteller)))
+        && m_core_buch.summe(s, 'miner-material') === b.begonnen * C.material * C.preisMaterial
+        && m_core_buch.summe(s, 'miner-arbeitsreserve') === b.begonnen * C.dauer * C.lohn
+        && m_core_buch.summe(s, 'miner-arbeitslohn') === l
+        && (s.owners.k1_miner_arbeit?.cash || 0) === b.begonnen * C.dauer * C.lohn - l
+        && m_core_buch.summe(s, 'miner-frachtreserve') === b.verladen * C.fracht
+        && m_core_buch.summe(s, 'miner-fracht') === b.geliefert * C.fracht
+        && (s.owners.k1_miner_fracht?.cash || 0) === (b.verladen - b.geliefert) * C.fracht
+        && s.ledger.miner.produced === b.fertig
+        && (s.stations[W.quellStation].lager.miner || 0)
+            === s.ledger.miner.initial + b.geliefert - s.ledger.miner.consumed
+        && anBord === (t ? 1 : 0)
+        && (!t || (['house', 'npc3'].includes(t.besteller)
+          && s.ships[t.schiff]?.ladung.miner === 1));
+    }
+    return { C, pruefen, bauen, tick, transport, audit };
+  })();
+
   // -------------------------------------------------------------- m_core_disponent
   // NPC-Automatik: wählt nur finanzierte Aufträge und nutzt dieselben validierten Befehle.
   const m_core_disponent = (() => {
@@ -495,12 +625,22 @@ function erstellen(startkapital = {}) {
           k.ersatzkaeufe += 1; m_core_flugplan.koerperSync(state);
           const neu = flotte(sh.owner, 'miner').at(-1);
           if (sh.auftrag === 'foerdern') kern.execute(state, { type: 'shipWait', owner: sh.owner, schiff: id }, rules);
-          k.pendel[neu.id] = k.pendel[id]; delete k.pendel[id];
+          k.pendel[neu.id] = { ware: k.pendel[id].ware,
+            ...(k.pendel[id].ware === 'erz' ? { ersatz: true } : {}) }; delete k.pendel[id];
         } else k.engpass = merke(k.engpass, state.tick, 'Ersatzminer ' + sh.owner + ': ' + r.reason);
       }
+
+      // Die Werft priorisiert den drohenden Minerausfall gegenüber Vorratsfrachtern.
+      const minerGefahr = p.stilllegung && p.ersatzkauf && ids(k.pendel).some((id) => {
+        const sh = state.ships[id];
+        return sh && (sh.owner !== rules.economy.start.owner || p.spielerErsatz)
+          && m_core_anlage.buchwert(state, sh) * 100 <= kaufpreis('miner') * p.ersatzVorlaufProzent;
+      }) && (state.stations[W.quellStation].lager.miner || 0) === 0
+        && !(k.minerWerft?.auftrag || k.minerWerft?.wartetAuf || k.minerWerft?.transport);
       // Vorproduktion einer Ersatzhülle, sobald der Buchwert des letzten Frachters zur Neige geht.
       const rest = frachter.filter(tauglich).reduce((n, sh) => Math.max(n, m_core_anlage.buchwert(state, sh)), 0);
       const bedarf = hatte && werftlager === 0 && !state.w5.auftrag
+        && !state.kanon.minerWerft?.auftrag && !minerGefahr
         && (frachter.every((sh) => !tauglich(sh)) || p.werftVorrat > 0
           || (p.stilllegung && rest * 100 <= kaufpreis('frachter') * p.ersatzVorlaufProzent));
       if (bedarf) {
@@ -521,6 +661,30 @@ function erstellen(startkapital = {}) {
             const q = kern.pilotW3Kalkulation(state, frei.id);
             if (q.ok) { versuch(state, { type: 'shipFreight', owner: frei.owner, schiff: frei.id }); }
             else k.engpass = merke(k.engpass, state.tick, 'Erzfracht für Ersatzbau: ' + q.grund);
+          }
+        }
+      }
+
+      if (minerGefahr) {
+        const nadir = state.stations[rules.w5.station].lager;
+        const besteller = ids(k.pendel).map((id) => state.ships[id]).find((sh) =>
+          (sh.owner !== rules.economy.start.owner || p.spielerErsatz)
+          && m_core_anlage.buchwert(state, sh) * 100 <= kaufpreis('miner') * p.ersatzVorlaufProzent)?.owner;
+        if (besteller && (nadir.material || 0) >= m_core_minerwerft.C.material) {
+          const r = m_core_minerwerft.bauen(state, { type: 'stationBuildMiner', owner: rules.w5.werft,
+            station: rules.w5.station, besteller });
+          if (!r.ok) k.engpass = merke(k.engpass, state.tick, 'Minerwerft: ' + r.reason);
+        } else if ((nadir.erz || 0) >= rules.w4.erzJeCharge && !state.w4.auftrag) {
+          const q = kern.pilotW4Kalkulation(state);
+          if (q.ok) versuch(state, { type: 'stationRefine', owner: rules.w4.station, station: rules.w4.station });
+          else k.engpass = merke(k.engpass, state.tick, 'Miner-Material: ' + q.grund);
+        } else if (!state.w3.auftrag && !state.w5n.frachtauftrag) {
+          const frei = frachter.find((sh) => tauglich(sh) && sh.phase === 'dock'
+            && sh.system === 'aldera' && sh.auftrag === 'halten' && ladungSumme(sh) === 0);
+          if (frei) {
+            const q = kern.pilotW3Kalkulation(state, frei.id);
+            if (q.ok) versuch(state, { type: 'shipFreight', owner: frei.owner, schiff: frei.id });
+            else k.engpass = merke(k.engpass, state.tick, 'Miner-Erzfracht: ' + q.grund);
           }
         }
       }
@@ -592,6 +756,7 @@ function erstellen(startkapital = {}) {
       const wirtschaft = kern.audit(state);
       if (!wirtschaft.ok) fehler.push('Wirtschaft: ' + Object.keys(wirtschaft).filter((x) => wirtschaft[x] && wirtschaft[x].ok === false).join(','));
       if (!m_core_buch.audit(state)) fehler.push('K1-Buch');
+      if (!m_core_minerwerft.audit(state)) fehler.push('K2-Minerwerft/Transport');
       if (state.minted !== 0 || state.burned !== 0) fehler.push('Emission/Senke in K1 nicht freigegeben');
       for (const id of ids(state.owners)) if (!ganz(state.owners[id].cash)) fehler.push('Kasse ' + id);
       // Wasserbuch: jede Einheit hat Herkunft (Wasserwerk) und Verbleib.
@@ -694,6 +859,7 @@ function erstellen(startkapital = {}) {
     pruefeForm(state);
     const type = cmd && cmd.type;
     if (typeof type === 'string' && hat(FLUG.BEFEHLE, type)) return m_core_flugplan.befehl(state, cmd, false);
+    if (type === 'stationBuildMiner') return m_core_minerwerft.bauen(state, cmd);
     if (typeof type === 'string' && hat(m_core_kreislauf.BEFEHLE, type)) return m_core_kreislauf.ausfuehren(state, cmd);
     if (type === 'pilotWaterBuy')
       return { ok: false, type, reason: 'K1: Wasser nur am Wohnort über householdBuy; kein ortsloser Kauf' };
@@ -702,6 +868,8 @@ function erstellen(startkapital = {}) {
       return { ok: false, type, reason: 'K1: laufender Pendelauftrag steuert Förderung und Abnahme' };
     if (sh && ['shipFreight', 'shipFreightIce'].includes(type) && m_core_anlage.stillgelegt(state, sh))
       return { ok: false, type, reason: 'K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen' };
+    if (type === 'stationBuildShip' && state.kanon.minerWerft?.auftrag)
+      return { ok: false, type, reason: 'K2: Werft baut einen Miner' };
     const r = kern.execute(state, cmd, rules);
     if (r.ok) m_core_flugplan.koerperSync(state);
     return r;
@@ -712,6 +880,7 @@ function erstellen(startkapital = {}) {
     for (const id of ids(state.ships)) vorher[id] = ladungSumme(state.ships[id]);
     const frachter = ids(state.ships).filter((id) => state.ships[id].klasse === 'frachter' && state.ships[id].phase === 'reise');
     const ergebnis = kern.step(state, rules);
+    m_core_minerwerft.tick(state);
     m_core_flugplan.koerperSync(state);
     npcPendel(state);
     const gefoerdert = {};
@@ -719,6 +888,7 @@ function erstellen(startkapital = {}) {
     m_core_flugplan.minutenAbrechnung(state, gefoerdert);
     for (const id of frachter) state.kanon.verschleiss[id] = (state.kanon.verschleiss[id] || 0) + 1;
     m_core_kreislauf.rueckfracht(state);
+    m_core_minerwerft.transport(state);
     m_core_disponent.schritt(state);
     m_core_flugplan.koerperSync(state);
     m_core_flugplan.plan(state, true, true);
@@ -780,7 +950,8 @@ function erstellen(startkapital = {}) {
       kaeuferliquiditaet: { st_nadir: o.st_nadir.cash, st_aldera: o.st_aldera.cash, export: o.export.cash,
         haushalte: ids(KANON.haushalte).reduce((n, id) => n + o[id].cash, 0) },
       produktion: { eisGefoerdert: w5n.eisAbgebaut, erzGefoerdert: state.ledger.erz.mined, wasserProduziert: w5n.wasserProduziert,
-        materialErzeugt: state.w4.materialErzeugt, frachterGebaut: state.w5.fertig },
+        materialErzeugt: state.w4.materialErzeugt, frachterGebaut: state.w5.fertig,
+        minerGebaut: k.minerWerft?.fertig || 0, minerGeliefert: k.minerWerft?.geliefert || 0 },
       verkaeufe: { eisAnAldera: w5n.mineVerkauft, wasserNadir: k.wasser.verkauftNadir, wasserAldera: k.wasser.verkauftAldera,
         wasserErloes: m_core_buch.summe(state, 'wasser-einzelhandel'), erzExportiert: state.ledger.erz.exported },
       auftraege: { eisfrachten: w5n.frachtAbgeschlossen, eisGeliefert: w5n.eisGeliefert, erzfrachten: state.w3.abgeschlossen, wasserchargen: w5n.fabrikFertig,
@@ -795,7 +966,7 @@ function erstellen(startkapital = {}) {
         minerLager: state.stations.st_aldera.lager.miner || 0, frachterLager: (state.stations.st_aldera.lager.frachter || 0) + (state.stations.st_nadir.lager.frachter || 0) },
       schiffe: ids(state.ships).map((id) => { const sh = state.ships[id]; return { id, owner: sh.owner, klasse: sh.klasse,
         aktivMinuten: m_core_anlage.aktiv(state, id), buchwert: m_core_anlage.buchwert(state, sh), stillgelegt: m_core_anlage.stillgelegt(state, sh) }; }),
-      ersatzkaeufe: k.ersatzkaeufe, firmen, haushalte,
+      ersatzkaeufe: k.ersatzkaeufe, minerWerft: k.minerWerft || null, firmen, haushalte,
       engpass: k.engpass ? { erster: k.engpass.erster, zaehler: k.engpass.zaehler } : null,
     };
   }

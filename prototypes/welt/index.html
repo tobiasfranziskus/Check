@@ -44,6 +44,8 @@ a{color:#8fe2f5}
 .pilot-regler label{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .pilot-regler output{font-variant-numeric:tabular-nums;color:#a6effb}
 .pilot-regler input[type=range]{width:100%;min-height:48px;accent-color:#7ce4f4;touch-action:pan-y}
+.pilot-direkt{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.pilot-direkt button{min-width:0;min-height:48px;padding:6px 2px;font-size:.88rem;flex:none}
 @media(max-width:900px),(orientation:portrait){main{grid-template-columns:1fr;grid-template-rows:minmax(260px,42vh) auto;height:auto}}
 </style>
 <script defer src="../w5ac/rule191-w5-ferry-core.js"></script>
@@ -87,12 +89,21 @@ a{color:#8fe2f5}
 <div><label for="pilotFahrt">Sollfahrt in Prozent <output id="pilotFahrtWert" for="pilotFahrt">0</output></label>
 <input id="pilotFahrt" type="range" min="0" max="100" step="5" value="0"></div>
 </div>
-<div class="reihe"><button id="pilotAnwenden" disabled>Manuell steuern</button><button id="pilotBremsen" disabled>Bremsen (0 %)</button></div>
-<small>Direkte 2D-Kurs- und Fahrtsteuerung über <code>shipSteer</code> im gemeinsamen Flug-/Wirtschaftskern. Erst „Abdocken“ unter Handsteuerung ausführen. Bremsen benötigt Zeit; laufende Pendelaufträge steuern selbst.</small>
+<small>Kurs per Touch wählen (0 = Ost, 64 = Süd, 128 = West, 192 = Nord):</small>
+<div class="pilot-direkt" id="pilotRichtungen" role="group" aria-label="Kursvorgaben für den Miner">
+<button type="button" data-pilot-kurs="192" aria-label="Kurs Nord">↑ N</button><button type="button" data-pilot-kurs="224" aria-label="Kurs Nordost">↗ NO</button><button type="button" data-pilot-kurs="0" aria-label="Kurs Ost">→ O</button><button type="button" data-pilot-kurs="32" aria-label="Kurs Südost">↘ SO</button>
+<button type="button" data-pilot-kurs="64" aria-label="Kurs Süd">↓ S</button><button type="button" data-pilot-kurs="96" aria-label="Kurs Südwest">↙ SW</button><button type="button" data-pilot-kurs="128" aria-label="Kurs West">← W</button><button type="button" data-pilot-kurs="160" aria-label="Kurs Nordwest">↖ NW</button>
 </div>
-<details><summary>Handsteuerung (gleiche Core-Befehle)</summary>
-<div class="reihe"><button id="abdocken">Abdocken</button><button id="zumEis">Zum Eisfeld</button><button id="zumErz">Zum Erzfeld</button><button id="andocken">Andocken</button></div>
-<div class="reihe"><button id="foerdernEis">Eis fördern</button><button id="foerdernErz">Erz fördern</button><button id="warten">Auftrag anhalten</button><button id="verkaufen">Eis am Dock verkaufen</button></div>
+<div class="reihe"><button id="pilotAnwenden" disabled>Manuell steuern</button><button id="pilotBremsen" disabled>Bremsen (0 %)</button></div>
+<small>Kursvorgaben und Regler ändern nur die Anzeige. Erst „Manuell steuern“ sendet <code>shipSteer</code> an den gemeinsamen Core. Bremsen benötigt Zeit.</small>
+<h3>Direktaktionen</h3>
+<div class="reihe"><button id="abdocken">Abdocken</button><button id="andocken">Andocken</button></div>
+<div class="reihe"><button id="foerdernEis">Eis fördern</button><button id="foerdernErz">Erz fördern</button></div>
+<small>Fördern ist nur im passenden Feld bei ausreichender Verzögerung möglich. Alle Aktionen verwenden die bestehenden finanzierten Originalbefehle.</small>
+</div>
+<details><summary>Weitere Flug- und Warenbefehle</summary>
+<div class="reihe"><button id="zumEis">Zum Eisfeld</button><button id="zumErz">Zum Erzfeld</button></div>
+<div class="reihe"><button id="warten">Auftrag anhalten</button><button id="verkaufen">Eis am Dock verkaufen</button></div>
 <small>Abdocken bindet 40 ISK Flugreserve. Jede Flugminute kostet 1 ISK Pilotenlohn; gefördert wird nur im Feld, verkauft nur am Dock.</small>
 </details>
 <div id="schiffStatus" class="rollen"></div>

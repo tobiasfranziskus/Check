@@ -105,8 +105,15 @@ const fs = require('node:fs'), http = require('node:http'), path = require('node
             '50 × 2 ISK reale Förderlöhne');
           assert.equal(abbau.s.w5n.mineVerkauft, vorher.s.w5n.mineVerkauft,
             'kein Verkauf im Feld');
-          assert.equal(abbau.miner.auftrag, 'halten',
-            'Core beendet Förderung bei voller Ladung');
+          assert.equal(abbau.miner.auftrag, 'foerdern',
+            'Core begrenzt die freie Förderung NICHT künstlich auf eine Handelscharge');
+          assert.match(await page.locator('#rundenTitel').textContent(),
+            /Handelscharge erreicht/, 'UI empfiehlt freiwilligen Stopp bei Original-50er-W5-Charge');
+          assert.equal(await page.locator('#rundenAbschnitt').isDisabled(), true,
+            'nach realer Handelscharge kein automatischer Weiterabbau');
+          await tap(schnell ? '#rundenAktion' : '#warten');
+          assert.equal((await zustand()).miner.auftrag, 'halten',
+            'Spieler bestätigt den Original-Förderstopp');
           assert.equal(await page.locator('#rundenAbschnitt').isDisabled(), true,
             'kein automatischer Rückflug');
           await tap(schnell ? '#rundenAktion' : '#andocken');

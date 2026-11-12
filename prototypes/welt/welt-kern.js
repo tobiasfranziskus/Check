@@ -766,6 +766,18 @@ function erstellen(startkapital = {}, k7 = false) {
       const k = state.kanon, fehler = [];
       if (k7) {
         const i=k.industrieErz, a=state.w3?.auftrag;
+        const beteiligte=i && ['angebot','aktiv','geliefert'].includes(i.phase);
+        // Vertrags-IDs sind reale Eigentumsrechte, nicht vom JSON-Importer
+        // beliebig neu verteilbare Namen. Auch nach der Lieferung prüfen.
+        if(beteiligte && (state.ships[i.miner]?.owner!=='npc3'
+          ||state.ships[i.miner]?.klasse!=='miner'
+          ||state.ships[i.frachter]?.owner!=='transport'
+          ||state.ships[i.frachter]?.klasse!=='frachter'
+          ||!Number.isSafeInteger(i.erstellt)||i.erstellt<0||i.erstellt>state.tick
+          ||typeof i.signMiner!=='boolean'||typeof i.signFracht!=='boolean'
+          ||typeof i.signWerft!=='boolean'||typeof i.werftVerwendet!=='boolean'
+          ||typeof i.erzAngenommen!=='boolean'))
+          fehler.push('K7-Vertrag: unwirksame Eigentümer-/Unterschriftsbelege');
         if(i && ['aktiv','geliefert'].includes(i.phase)
           &&sicherK7Reserve(state,i)!==(i.werftVerwendet?0:K7_PREIS.werft))
           fehler.push('K7-Werftreserve nicht einmalig aus eigenem Vermögen gebunden');

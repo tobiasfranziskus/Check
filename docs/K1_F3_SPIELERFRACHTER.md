@@ -1,6 +1,6 @@
 # F3 – Persönlicher 2D-Frachter in der kanonischen K1-Forschungswelt
 
-**[DRAFT / 12.11.2026]** [PR #318](https://github.com/tobiasfranziskus/Check/pull/318), Basis #316 (`a056b93e`), Codehead `c6bbd150`, nicht integriert. Aktuelles Produkt auf `main 04124f2b` (Regel195/Schema8) unverändert. Keine automatische Übernahme von K4–K7.
+**[DRAFT / 12.11.2026]** [PR #318](https://github.com/tobiasfranziskus/Check/pull/318), Basis #316 (`a056b93e`), abgenommener Codehead `1f18a0b23be7cb2d57f7fe33c408588a4d875f64`, nicht integriert. Aktuelles Produkt auf `main 04124f2b` (Regel195/Schema8) unverändert. Keine automatische Übernahme von K4–K7.
 
 ## Kleine vollständig finanzierte Spielfunktion
 1. Ein in Aldera **wirklich lagernder**, endlicher `frachter` darf ausschließlich vom Spieler über `shipBuy` gekauft werden. Preis und Buchungen stammen aus dem originalen W5-/W3-Kern (750 ISK; Käuferkasse belastet, Werftkasse erhält ISK, Lager reduziert, physische neue Schiff-ID, Eigentum `house`). Der NPC verliert ggf. den Zugang zu dieser knappen Hülle; keine Gratisersatzproduktion.
@@ -20,7 +20,14 @@
 
 **Nachfolgende Korrektur:** Getrenntes, prüfbares K1-Spieler-Frachterkaufjournal; alle drei ursprünglichen wirtschaftlichen Gleichungen werden nun unter `rules.kanon` um den tatsächlich anderen Eigentümer ergänzt, nicht abgeschaltet. Tests für echte Währungen/Waren, neue Flugminute, Original-W3-Sperren, alten Regel195-Start, manipulierte Schiffe/Belege und Save/Load wurden ergänzt.
 
-**Noch nicht als abgeschlossen behaupten:** [K1-CI #43271328129](https://github.com/tobiasfranziskus/Check/actions/runs/43271328129) (dedizierter K1-Frachter-Node22-Test, 15×90/5×365/2×730, bestehende 328+ Tests, Chromium+WebKit je vier Touchgrößen), [RC1](https://github.com/tobiasfranziskus/Check/actions/runs/43271328173) und [historische JS-Regression](https://github.com/tobiasfranziskus/Check/actions/runs/43271328340). Abschlussstatus auf dem letzten Codehead gesondert nachtragen. Echte iPad-Safari-/NAS-Abnahme bleibt offen.
+**Abschluss [TEST / bestanden auf Code-Head `1f18a0b23be7cb2d57f7fe33c408588a4d875f64`]:**
+- [K1-CI #43272542407](https://github.com/tobiasfranziskus/Check/actions/runs/43272542407): alle **3/3 GitHub-Jobs completed/success**. **331/331 Node22-Tests**, 0 Fehler/Skips, 15 wirtschaftlich unterschiedliche Szenarien × 90 Tage, fünf × 365 und zwei × 730 Tage einschließlich Wirtschafts-/Finanzierungs-/Schiffs-/Waren-/Save- und Referenzhash-Audits. Dedizierte Tests belegen Originalkauf, echte Kassen/Inventar/Schiffseigentum, 40-ISK-Reserve, bezahlte Pilotenminuten, negatives fremdes W3-Vertragsrecht, physische Dockrückkehr und Save/Load.
+- Neuer Frachter-Touch-Browsertest **Chromium 4/4 und WebKit 4/4** in 1180×820, 1024×768, 820×1180, 390×844. Acht tatsächlich abgeschlossene UI-Flüge mit originalfinanziertem 750-ISK-Schiff `sh002`, realem Beschleunigen, Bremsen/Rückflug zum Dock, 0 Mint/Burn, Weltgeld 33.000 ISK und wiederhergestelltem Spielstand. **Alle acht Endzustände Tick 8, Hash `721f240ba9d74695`**. Vorhandene Miner-, Karten- und Gesamtspiel-Browsertests weiterhin grün.
+- [RC1 #43272542268](https://github.com/tobiasfranziskus/Check/actions/runs/43272542268) **completed/success** inklusive originaler Rule14-/Rule195-Gates, Chromium-Touch-Preflight und NAS-Einzeldatei-Artefakt. [Historische JS-Regressions-CI #43272542305](https://github.com/tobiasfranziskus/Check/actions/runs/43272542305) **completed/success**. `node scripts/build-w5-singlefile.mjs --check`: `W5_SINGLEFILE_OK` mit 326.122 Zeichen, 7 Styles, 15 Scripts.
+- Nach den Auditkorrekturen legten die CI-Läufe #43271165827 und #43271328129 die letzte UI-Ursache offen: Abdocken/Andocken war bisher nur im Minerbereich sichtbar. Der final geprüfte Code verschob beide Originalbefehle in das gemeinsame Cockpit – **keine zweite Befehlsimplementierung**. Die negativen Vorläufe bleiben ausdrücklich negativ.
+- Diese Testbelege gehören zum oben genannten **Code-Head**. Nachträgliche rein dokumentarische Commits ändern den Produkt- und Testcode nicht und dürfen nicht mit einer erneuten CI-Abnahme verwechselt werden.
+
+**Abnahmelücke:** Echtes iPad Safari und privater NAS-Server nicht vor Ort getestet; veröffentlichte Rule195-Einzeldatei nur durch GitHub-CI/Chromium-Preflight, nicht durch produktive Geräteabnahme bestätigt.
 
 ## Nächstes belegbares Spielbarkeitsgate
 Ausreichend finanzierten, vom **richtigen Eigentümer** autorisierten persönlichen Frachterauftrag mit vorhandener Ware, einmaligem Kauf-/Frachtgeld, beidseitiger Dockprüfung und einem wirklichen Lieferbeleg verbinden. Bei nicht finanzierbarem Vertrag oder unbelegbarer Preis-/Frachtkette ausdrücklich abbrechen, keine Scheinauszahlung.

@@ -86,6 +86,7 @@ a{color:#8fe2f5}
 <div id="minerAuftraege"><div class="reihe"><button id="pendelEis">Pendelauftrag Eis</button><button id="pendelErz">Pendelauftrag Erz</button><button id="pendelStop">Pendel beenden</button></div></div>
 <div class="pilot-cockpit" id="pilotCockpit" aria-label="Manuelles Schiffs-Cockpit">
 <h3>Persönlicher Flug · Steuerpult</h3>
+<div class="reihe" id="schiffDockBefehle"><button id="abdocken">1 · Abdocken</button><button id="andocken">5 · Andocken</button></div>
 <div id="rundenHilfe" class="runden-hilfe" aria-label="Begleitete Eis-Bergbaurunde">
 <strong id="rundenTitel">Eis-Bergbaurunde</strong>
 <p id="rundenInfo" role="status" aria-live="polite">Der nächste Schritt wird aus dem tatsächlichen Schiffszustand ermittelt.</p>
@@ -120,8 +121,8 @@ a{color:#8fe2f5}
 <div class="reihe"><button id="pilotAnwenden" disabled>Manuell steuern</button><button id="pilotBremsen" disabled>Bremsen (0 %)</button></div>
 <small>Kursvorgaben und Regler ändern nur die Anzeige. Erst „Manuell steuern“ sendet <code>shipSteer</code> an den gemeinsamen Core. Bremsen benötigt Zeit.</small>
 <div id="minerAufgaben"><h3>Bergbaurunde · Eis selbst fördern und verkaufen</h3>
-<div class="reihe"><button id="abdocken">1 · Abdocken</button><button id="zumEis">2 · Zum Eisfeld</button><button id="foerdernEis">3 · Eis fördern</button></div>
-<div class="reihe"><button id="warten">4 · Förderung stoppen</button><button id="andocken">5 · Andocken</button><button id="verkaufen">6 · Eis verkaufen</button></div>
+<div class="reihe"><button id="zumEis">2 · Zum Eisfeld</button><button id="foerdernEis">3 · Eis fördern</button></div>
+<div class="reihe"><button id="warten">4 · Förderung stoppen</button><button id="verkaufen">6 · Eis verkaufen</button></div>
 <small>Die sechs Schritte nutzen ausschließlich bestehende, finanzierte Originalbefehle. Abdocken bindet 40 ISK Flugreserve; jede geflogene Minute bezahlt den Piloten. Nur am Feld wird real gefördert; nur am Dock kauft Aldera tatsächlich vorhandenes Eis.</small>
 <h3>Erzabbau</h3>
 <div class="reihe"><button id="zumErz">Zum Erzfeld</button><button id="foerdernErz">Erz fördern</button></div>

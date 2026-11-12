@@ -92,6 +92,11 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K1/F4: persönlicher Eisfrachtvertrag, Original-W5n-Treuhand und 120 bezahlte Minuten"
+        run: node tests/welt-spieler-eisfracht-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
       - name: "K1-Raumkarte: Touch-Zielwahl ohne Nebenwirkung, Originalanflug und Docken"
         run: node tests/welt-kartenflug-browser.cjs
         env:

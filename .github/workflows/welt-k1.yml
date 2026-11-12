@@ -10,6 +10,8 @@ on:
       - 'tools/k3-frachter-diagnose.mjs'
       - 'tools/k5-terminal-diagnose.mjs'
       - 'tests/k5-terminal-diagnose.test.mjs'
+      - 'tools/k6-eisdisposition.mjs'
+      - 'tests/k6-eisdisposition.test.mjs'
       - 'tools/k4-ore-allocation.mjs'
       - 'tests/k4-ore-allocation.test.mjs'
       - 'tools/referenzmodell-c.mjs'
@@ -179,4 +181,28 @@ jobs:
           path: |
             ${{ runner.temp }}/k5-seed42.json
             ${{ runner.temp }}/k5-seed7.json
+          if-no-files-found: error
+
+  k6-eisdisposition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "K6: Original-NPC-0/1/2/4-Miner mit unabhängigen Seed42/7-Audits und K5-Referenzhash"
+        run: node --test tests/k6-eisdisposition.test.mjs
+      - name: "K6: vollständige Zahlungen, Waren, Restvermögen und Krisen zur Prüfung archivieren"
+        run: |
+          node tools/k6-eisdisposition.mjs 42 > "$RUNNER_TEMP/k6-seed42.jsonl"
+          node tools/k6-eisdisposition.mjs 7 > "$RUNNER_TEMP/k6-seed7.jsonl"
+          grep '^K6_RESULT ' "$RUNNER_TEMP/k6-seed42.jsonl"
+          grep '^K6_RESULT ' "$RUNNER_TEMP/k6-seed7.jsonl"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: k6-npc-eisdisposition-seed42-7
+          path: |
+            ${{ runner.temp }}/k6-seed42.jsonl
+            ${{ runner.temp }}/k6-seed7.jsonl
           if-no-files-found: error

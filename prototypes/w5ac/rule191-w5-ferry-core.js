@@ -2218,7 +2218,7 @@ const m_core_w4 = (() => {
     if (state.owners[c.station].cash < budget)
       return {ok:false,grund:'Nadir kann die gesamte Arbeitscharge nicht bezahlen'};
     const start=rules.owners.find(o=>o.id===c.station).cash;
-    if(state.owners[c.station].cash+m_core_kanon.netto(state,c.station)+state.w3.kaufAusgaben+w.gebucht
+    if(state.owners[c.station].cash+m_core_kanon.netto(state,c.station)+(state.w3.kaufAusgaben-(state.w3.stornoRueckzahlung||0))+w.gebucht
       -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)!==start)
@@ -2293,7 +2293,7 @@ const m_core_w4 = (() => {
       && w.begonnen===w.abgeschlossen+(a?1:0)
       && w.gebucht===w.begonnen*p && w.gezahlt===erwarteterLohn
       && worker+m_core_kanon.netto(state,c.arbeitOwner)===w.gezahlt&&escrow===w.gebucht-w.gezahlt
-      && station+m_core_kanon.netto(state,c.station)+state.w3.kaufAusgaben+w.gebucht
+      && station+m_core_kanon.netto(state,c.station)+(state.w3.kaufAusgaben-(state.w3.stornoRueckzahlung||0))+w.gebucht
         -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)===start
@@ -2444,7 +2444,7 @@ const m_core_w5 = (() => {
       && gekaufte
       && w3VerkaufteFrachter>=w.verkauft
       && werkEinnahmen+m_core_kanon.netto(state,c.werft)===old + werftErloese-werftKosten
-      && state.owners[c.station].cash+m_core_kanon.netto(state,c.station)+state.w3.kaufAusgaben
+      && state.owners[c.station].cash+m_core_kanon.netto(state,c.station)+(state.w3.kaufAusgaben-(state.w3.stornoRueckzahlung||0))
         +state.w4.gebucht-w.materialUmsatz-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)
@@ -2670,12 +2670,16 @@ const m_core_w5_replacement=(()=>{
         &&x.cashBefore>=price+flight.kosten+x.reserve;
     });
     const active=s.w3.auftrag,sh=active?s.ships[active.schiff]:null;
-    const activeOk=!active||(purchase(active.schiff)&&!loss(active.schiff)
+    const activeOk=!active||(r.k7&&active.phase==='vorbestellt'
+      ?(purchase(active.schiff)&&!loss(active.schiff)&&sh?.phase==='dock'
+        &&sh.system==='aldera'&&sh.auftrag==='halten'&&active.gearbeitet===0
+        &&Object.values(sh.ladung).every(n=>n===0))
+      :(purchase(active.schiff)&&!loss(active.schiff)
       &&integer(active.start)&&s.tick===active.start+active.gearbeitet
       &&sh?.phase==='reise'&&sh.auftrag==='fracht'
       &&sh.system===(active.phase==='hin'?'aldera':'nadir')
       &&sh.ziel===(active.phase==='hin'?'st_nadir':'st_aldera')
-      &&sh.ankunft===active.start+(active.phase==='hin'?k.zeit:2*k.zeit));
+      &&sh.ankunft===active.start+(active.phase==='hin'?k.zeit:2*k.zeit)));
     const profileOk=m_core_hash.canonical(b.profile)===m_core_hash.canonical(r.w5Replacement)
       &&Object.values(s.owners).every(o=>integer(o.cash))
       &&m_core_hash.canonical(p.filter(x=>x.station==='st_nadir').map(x=>x.id))
@@ -2749,7 +2753,7 @@ const m_core_w5_wage_trade=(()=>{
            ===s.w3.arbeitsKosten+(s.w5n?.frachtLohn??0))
       &&s.stats.konto[cfg.buyer].kosten===w.spent+(r.w5ag?0:(s.w5n?.wasserErlos??0))
       &&s.stats.konto[cfg.seller].erloes===(s.w5?.materialUmsatz??0)+w.spent+(s.w5n?.wasserErlos??0)
-      &&seller+m_core_kanon.netto(s,cfg.seller)+s.w3.kaufAusgaben+s.w4.gebucht
+      &&seller+m_core_kanon.netto(s,cfg.seller)+(s.w3.kaufAusgaben-(s.w3.stornoRueckzahlung||0))+s.w4.gebucht
          -(s.w5?.materialUmsatz??0)-w.spent
          +(s.w5n?.kaufAusgaben??0)+(s.w5n?.fabrikGebucht??0)
          -(s.w5n?.wasserErlos??0)
@@ -3101,7 +3105,7 @@ const m_core_w5ag=(()=>{
     let contractOk=Array.isArray(ore)&&Array.isArray(ice);
     for(const t of ore)
       contractOk=add('erz',t.id,t.start,t.end)&&contractOk;
-    if(f3?.auftrag){
+    if(f3?.auftrag && f3.auftrag.phase!=='vorbestellt'){
       const a=f3.auftrag;
       contractOk=add('erz',a.schiff,a.start,a.start+a.gearbeitet)&&contractOk;
     }

@@ -725,7 +725,11 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5ag?['pilotWaterBuy']:[])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if (cmd.type === 'shipBuy') {
-    const frachter = !!rules.w3 && cmd.owner === rules.w3.spedition && cmd.klasse === 'frachter';
+    // K1-Forschung erlaubt dem Spieler ausschliesslich den real bezahlten Kauf
+    // aus vorhandener Aldera-Huelle. Regel195 und alle anderen Profile bleiben unveraendert.
+    const frachter = !!rules.w3 && cmd.klasse === 'frachter'
+      && (cmd.owner === rules.w3.spedition
+        || (!!rules.kanon && cmd.owner === rules.economy.start.owner && cmd.station === rules.erzpilot.station));
     const miner = cmd.klasse === 'miner' && (cmd.owner === 'house' || cmd.owner === 'npc3');
     const w5Kauf = !!rules.w5 && cmd.owner === rules.w5.kaeufer
       && cmd.klasse === rules.w5.klasse && cmd.station === rules.w5.station;

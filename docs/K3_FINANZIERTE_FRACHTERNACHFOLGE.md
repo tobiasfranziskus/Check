@@ -10,7 +10,7 @@ Der Beweis gilt für **S12 mit unveränderten Regeln und seiner Befehlsfolge ab 
 
 ## K3a: minutengenaue Diagnose
 
-Reproduktion: `node tools/k3-frachter-diagnose.mjs 42`. Vollständige maschinenlesbare Ausgabe: [K3_DIAGNOSE_SEED42.json](K3_DIAGNOSE_SEED42.json). Keine Log-String-Schätzung: jeder Simulationsminute folgen unabhängige Geld-, Waren-, Hüllen-, Werftarbeits- und Transferreservegleichungen. Die Ausgabe enthält je Bau/Kauf/Überführung/Stilllegung sämtliche Eigentümerkassen, Rücklagen (als Teil der Kasse), offene Verträge, Lager, Fracht und Hash.
+Reproduktion: `node tools/k3-frachter-diagnose.mjs 42`. Vollständige maschinenlesbare Ausgabe: [K3_DIAGNOSE_SEED42.json](K3_DIAGNOSE_SEED42.json). Keine Log-String-Schätzung: jeder Simulationsminute folgen unabhängige Geld-, Waren-, Hüllen-, Werftarbeits- und Transferreservegleichungen. Die Ausgabe enthält je Bau/Kauf/Überführung/Stilllegung sämtliche Eigentümerkassen, Rücklagen (als Teil der Kasse), offene Verträge, Lager, Fracht und Hash. Die sechs Firmenkassen werden separat aus Anfangskapital, realisierten Originalerlösen/-kosten, tatsächlich noch gebundenen Arbeits-/Erzkaufmitteln und aus Gegenkonten neu summierten K1-Transfers rekonstruiert; eine ausgeglichene illegale Umbuchung wird ausdrücklich negativ getestet.
 
 | Hülle (Eigentümer transport) | Kauf | Überführung Nadir–Aldera | erste Stilllegung |
 | --- | ---: | --- | ---: |
@@ -50,6 +50,44 @@ Bei Tick20160 unveränderte K2-Hashes: Seed42 `841f4d541a8a464b`, Seed7 `2521d0c
 
 ## K3d: tatsächliche Abnahme
 
-Abgeschlossene Testzahlen und CI-Links werden nach den Läufen ergänzt. Vorgeschrieben sind Node22-Gesamtsuite, Build-Check und vorhandene 15×90-/5×365-/2×730-Tage-Matrix. Negative Erwartungen bleiben erhalten. Der K1-Workflow prüft zusätzlich den K3-Test und reproduziert die JSON-Ausgabe bytegleich; Chromium und WebKit prüfen je vier Touchgrößen einschließlich JSON/IndexedDB-Wege.
+**Ausgeführt auf Codecommit `0250c134bc00ace5c29ad5499c86714ce90387fd`:**
+
+- K3: **4/4 Tests**, 0 Fehler, 0 übersprungen; Seeds42/7, minutenweise unabhängige Kassen-/Material-/Hüllenprüfungen, Save/Load in drei aktiven Phasen. Die unveränderten Simulationsergebnisse sind oben festgehalten. JSON-Ausgabe in CI bytegleich reproduziert.
+- [K1/K3-CI #43165866836](https://github.com/tobiasfranziskus/Check/actions/runs/43165866836): **completed/success**, einschließlich Gesamtregression und Build-Check; dedizierte K3-Prüfung und **15 wirtschaftlich verschiedene 90-Tage-Szenarien, 5×365, 2×730 Tage erfolgreich**. Chromium **4/4** und WebKit **4/4** Touchgrößen erfolgreich, einschließlich geschützter JSON-/IndexedDB-Wege. Das ist Browserautomatisierung, keine Geräteabnahme.
+- `node scripts/build-w5-singlefile.mjs --check`: lokal erfolgreich (`W5_SINGLEFILE_OK`, 325006 Zeichen, 7 Styles, 15 Scripts).
+- Node v22.23.4: `node --test tests/*.test.mjs` lokal **328/328 bestanden, 0 Fehler, 0 übersprungen, 0 abgebrochen**, Laufzeit 292,825 Sekunden. Auf dem Abschlusscode ausgeführt, einschließlich aller historischen Regressionen und der folgenden 22 Wirtschaftswelten.
+
+Matrix ohne aufgeweichte Erwartungen: S01/S07/S09/S10/S11/S13/S14 laufen bis Tag90; S02–S06/S08/S12/S15 sind erwartete Negativfälle. In den 365-Tage-Proben läuft nur S01; S02/S05/S09/S12 stehen. Bei 730 Tagen läuft S01, S04 steht. Das unveränderte S12-Ergebnis ist kein W6-Dauernachweis. Die historische Gesamtsuite wird zusätzlich ausgeführt; andere RNG-Seeds werden ausdrücklich nicht als zusätzliche Wirtschaftsregime gezählt.
 
 Lokal wurde Playwright1.62.0 installiert; der Browserdownload scheiterte mit HTTP403 `Domain forbidden` für cdn.playwright.dev. Daher keine behauptete lokale Browserabnahme. Echte iPad-Safari-/NAS-Gerätetests nicht ausgeführt. Kein Merge, Deployment, W6-Nachhaltigkeitsbeweis oder Eingriff in produktive Saves.
+
+### Tatsächlich ausgeführte Wirtschaftsmatrix (Seed42)
+
+| Szenario | Tage | Letzter Wasserabsatz (Tag) | Am Ende aktiv | Hash |
+| --- | ---: | ---: | --- | --- |
+| S01 | 90 | 90 | ja | `b5c745ed039c67ee` |
+| S02 | 90 | 12 | **nein** | `b7c4f1ca56c52931` |
+| S03 | 90 | 3 | **nein** | `06ec56c7e25c4370` |
+| S04 | 90 | 8 | **nein** | `5f0650e998754319` |
+| S05 | 90 | 5 | **nein** | `d49e025f8f42dcd9` |
+| S06 | 90 | 3 | **nein** | `131fb9f00dc168b5` |
+| S07 | 90 | 90 | ja | `d15bc704c9e4711f` |
+| S08 | 90 | 0 | **nein** | `251555c3b414c781` |
+| S09 | 90 | 90 | ja | `88048bd46d86b156` |
+| S10 | 90 | 90 | ja | `cf65f9fb7b256ab9` |
+| S11 | 90 | 90 | ja | `7552ed2151190051` |
+| S12 | 90 | 10 | **nein** | `25df7f614b16fda4` |
+| S13 | 90 | 90 | ja | `ab932bd828e97a8f` |
+| S14 | 90 | 90 | ja | `470986144450fa40` |
+| S15 | 90 | 2 | **nein** | `0ddb519f847d06f3` |
+| S01 | 365 | 365 | ja | `f4e5edc7157b2e94` |
+| S02 | 365 | 12 | **nein** | `2c03d6c7d8fa6e18` |
+| S05 | 365 | 5 | **nein** | `5162234cf8c611cc` |
+| S09 | 365 | 319 | **nein** | `4339bc9ed48a120a` |
+| S12 | 365 | 10 | **nein** | `a5492026bc2f6e70` |
+| S01 | 730 | 730 | ja | `b6e57ee624fa43fe` |
+| S04 | 730 | 8 | **nein** | `aa5bc05a4ced7fc2` |
+
+Unveränderte Core-Quellen (SHA256): `welt-kern.js` `efd811156fcc89d4ec336b7100b591e98ed47eae791e6ae10b6773cc2d434dac`; `rule191-w5-ferry-core.js` `2ba8bf8dfd49a5652dbbe83b3d5ba9d84a2398b90f67b6e972edca9dfd92eb4a`. Git-Diff zur Basis für beide Quellen und beide Root-Einzeldateien ist leer. Nach dem geprüften Codecommit folgen ausschließlich Dokumentationsänderungen.
+
+**Abschließender GitHub-Status für Codecommit `0250c134`:** K1/K3 [43165866836](https://github.com/tobiasfranziskus/Check/actions/runs/43165866836), W5-RC1 [43165866933](https://github.com/tobiasfranziskus/Check/actions/runs/43165866933) und historische JS-Regression [43165866817](https://github.com/tobiasfranziskus/Check/actions/runs/43165866817) jeweils **completed/success**. Liefer-PR: [Draft #304](https://github.com/tobiasfranziskus/Check/pull/304), Ziel ausschließlich K2-Forschungsbranch.

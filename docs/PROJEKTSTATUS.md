@@ -1,6 +1,6 @@
 # Aphros Void – belegter technischer Projektstatus
 
-> **[DRAFT / ANALYSE · K3, 12.11.2026]** [Issue #303](https://github.com/tobiasfranziskus/Check/issues/303): unabhängige S12-Diagnose auf K2 `d7fe3974` belegt vier bereits bezahlte Frachternachfolgen; terminal fehlen Material und nutzbare Lieferkapazität, nicht Speditionsgeld. [K3-Negativbeweis und Prüfgrenzen](K3_FINANZIERTE_FRACHTERNACHFOLGE.md). Keine neue Regel, keine Produkt-/W6-Freigabe.
+> **[DRAFT / ANALYSE · K3, 12.11.2026]** [Draft-PR #304](https://github.com/tobiasfranziskus/Check/pull/304) zu [Issue #303](https://github.com/tobiasfranziskus/Check/issues/303): unabhängige S12-Diagnose auf K2 `d7fe3974` belegt vier bereits bezahlte Frachternachfolgen; terminal fehlen Material und nutzbare Lieferkapazität, nicht Speditionsgeld. [K3-Negativbeweis und Prüfgrenzen](K3_FINANZIERTE_FRACHTERNACHFOLGE.md). Keine neue Regel, keine Produkt-/W6-Freigabe.
 
 **[DRAFT / TEST K2-QA · 12.11.2026]** [PR #302](https://github.com/tobiasfranziskus/Check/pull/302) ergänzt auf dem K2-Forschungszweig #301 drei zusätzliche unabhängige Regressionstests für vorfinanzierte Werftminuten, reale Miner-Rückfracht samt 60-ISK-Treuhand, deterministisches Save/Load und manipulierte Zwischenstände; [dedizierter GitHub-Node22-Schritt #43122599030](https://github.com/tobiasfranziskus/Check/actions/runs/43122599030) **completed/success**. Gesamte CI-, Browser- und iPad-/NAS-Abnahme gesondert beurteilen; K2 und K1 sind keine veröffentlichten Produktregeln, W6 nicht nachgewiesen. [Prüfbericht](K2_QA_ZWISCHENZUSTAENDE.md).
 

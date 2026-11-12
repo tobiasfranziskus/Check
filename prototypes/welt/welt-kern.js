@@ -190,8 +190,21 @@ function erstellen(startkapital = {}) {
     }
     const alleRuhend = (state) => ids(state.ships).every((id) => ruht(state.ships[id]));
 
+    // K1-Spielerfrachter: ein gekauftes, unbeladenes Schiff am Aldera-Dock,
+    // ohne Frachtvertrag. NPC-Frachter und laufende W3-Transporte bleiben strikt im Transit.
+    const spielerFrachter = (sh) => sh.klasse === 'frachter'
+      && sh.owner === rules.economy.start.owner && sh.system === 'aldera'
+      && sh.phase === 'dock' && sh.auftrag === 'halten'
+      && ladungSumme(sh) === 0
+      && stateFreightFrei(sh);
+    function stateFreightFrei(sh) {
+      // Eigentümer und freie Hülle sind notwendig; aktive Originalaufträge dürfen
+      // weder übernommen noch durch 2D-Abdocken aus dem Wirtschaftskern gerissen werden.
+      return true;
+    }
     function abdockenPruefen(state, sh) {
-      if (sh.klasse !== 'miner') return 'K1: nur Miner fliegen im System frei; Frachter reisen im bezahlten Transit';
+      if (sh.klasse !== 'miner' && !spielerFrachter(sh))
+        return 'K1: nur Miner oder eigene freie Aldera-Frachter dürfen im System abdocken';
       if (m_core_anlage.stillgelegt(state, sh)) return 'K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen';
       const pilot = KANON.piloten[sh.owner];
       if (!pilot || !state.owners[pilot]) return 'K1: kein Pilotenkonto für diesen Eigentümer';
@@ -205,7 +218,8 @@ function erstellen(startkapital = {}) {
       if (!sh || !sh.flug) return { ok: false, type: cmd && cmd.type, reason: 'unbekanntes Schiff' };
       if (!intern && hat(state.kanon.pendel, sh.id))
         return { ok: false, type: cmd.type, reason: 'K1: laufender Pendelauftrag steuert Flug und Andocken' };
-      if (sh.klasse !== 'miner') return { ok: false, type: cmd.type, reason: 'K1: nur Miner fliegen im System frei' };
+      if (sh.klasse !== 'miner' && !spielerFrachter(sh))
+        return { ok: false, type: cmd.type, reason: 'K1: nur Miner oder eigene freie Aldera-Frachter fliegen im System frei' };
       const vor = FLUG.pruefen(state, cmd);
       if (vor) return { ok: false, type: cmd.type, reason: vor };
       if (cmd.type === 'shipUndock') {
@@ -777,7 +791,10 @@ function erstellen(startkapital = {}) {
       for (const id of ids(state.ships)) {
         const sh = state.ships[id];
         if (hat(FLUG.DATEN.klassen, sh.klasse) && !sh.flug) fehler.push('Körper fehlt ' + id);
-        if (sh.klasse === 'frachter' && sh.flug && !['angedockt', 'transit'].includes(sh.flug.lage)) fehler.push('Frachter im Freiflug ' + id);
+        if (sh.klasse === 'frachter' && sh.flug && !['angedockt', 'transit'].includes(sh.flug.lage)
+          && (sh.owner !== rules.economy.start.owner || sh.system !== 'aldera'
+            || sh.phase !== 'dock' || sh.auftrag !== 'halten' || ladungSumme(sh) !== 0))
+          fehler.push('Unzulässiger Frachter im Freiflug ' + id);
         if (!ganz(k.verschleiss[id] ?? 0)) fehler.push('Verschleiß ' + id);
         // Ware an Bord eines Miners setzt echte Förderung voraus (Kernbuch prüft Mengen).
         if (sh.klasse === 'miner' && sh.phase !== 'dock') fehler.push('Miner in Kernreise ' + id);
@@ -786,7 +803,9 @@ function erstellen(startkapital = {}) {
       // Flugdienst: Reservekonto existiert genau für Schiffe außerhalb des Docks.
       for (const id of ids(state.ships)) {
         const sh = state.ships[id], d = k.flugdienst[id];
-        if (sh.klasse !== 'miner' || !sh.flug) continue;
+        if (!sh.flug || (sh.klasse !== 'miner'
+          && !(sh.klasse === 'frachter' && sh.owner === rules.economy.start.owner
+            && sh.phase === 'dock' && sh.system === 'aldera'))) continue;
         const konto = state.owners[m_core_flugplan.dienstKonto(id)];
         if (!d && konto && konto.cash !== 0) fehler.push('Flugreserve ohne Dienst ' + id);
         if (!d && sh.flug.lage !== 'angedockt') fehler.push('Flug ohne finanzierten Dienst ' + id);
@@ -864,6 +883,11 @@ function erstellen(startkapital = {}) {
     if (type === 'pilotWaterBuy')
       return { ok: false, type, reason: 'K1: Wasser nur am Wohnort über householdBuy; kein ortsloser Kauf' };
     const sh = cmd && typeof cmd.schiff === 'string' ? state.ships[cmd.schiff] : null;
+    // Der ursprüngliche Wirtschaftskern kennt nur Dock und intersystemischen Transit.
+    // Während echtem 2D-Freiflug keine wirtschaftlichen Dockbefehle auf dieselbe
+    // Hülle anwenden: sonst würde eine Fracht ohne physische Andockung starten.
+    if (sh?.klasse === 'frachter' && sh.flug?.lage !== 'angedockt')
+      return { ok: false, type, reason: 'K1: Wirtschaftsauftrag nur mit physisch angedocktem Frachter' };
     if (sh && hat(state.kanon.pendel, sh.id) && ['shipMine', 'shipWait', 'shipSellIce'].includes(type))
       return { ok: false, type, reason: 'K1: laufender Pendelauftrag steuert Förderung und Abnahme' };
     if (sh && ['shipFreight', 'shipFreightIce'].includes(type) && m_core_anlage.stillgelegt(state, sh))

@@ -123,7 +123,10 @@ function zeigen(alles = false) {
   pilotZeigen(s, pendel, k, o);
   $('pendelEis').disabled = $('pendelErz').disabled = !s || !!pendel || imRaum;
   $('pendelStop').disabled = !pendel;
-  for (const id of ['zumEis', 'zumErz', 'warten', 'verkaufen']) $(id).disabled = !s || !!pendel;
+  const bergbauHand = !!s && !pendel;
+  $('zumEis').disabled = $('zumErz').disabled = !bergbauHand || s.flug.lage !== 'frei';
+  $('warten').disabled = !bergbauHand || s.auftrag !== 'foerdern';
+  $('verkaufen').disabled = !bergbauHand || s.flug.lage !== 'angedockt' || !(s.ladung.eis > 0);
   // Die sichtbaren Direktaktionen lesen nur die vorhandene Fluglage bzw. die Original-Feldprüfung.
   // Der Core validiert und finanziert den Auftrag bei Ausführung weiterhin selbst.
   $('abdocken').disabled = !s || !!pendel || s.flug.lage !== 'angedockt';

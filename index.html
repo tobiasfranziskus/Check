@@ -2365,6 +2365,9 @@ const m_core_w3 = (() => {
       && arbeit===(a?k.arbeitsKosten-a.gearbeitet*c.arbeitJeMinute:0)
       && carrier+m_core_kanon.netto(state,c.spedition)+arbeit+(state.owners.w5ac_transfer_reserved?.cash??0)
         +(state.w5ac?.paid??0)+(state.owners.w5n_fracht_arbeit?.cash??0)
+        -(rules.kanon && state.w5n?.frachtauftrag
+          && state.ships[state.w5n.frachtauftrag.schiff]?.owner===rules.economy.start.owner
+            ?(state.owners.w5n_fracht_arbeit?.cash??0):0)
         +(state.w5n?.frachtLohn??0)-(state.kanon?.spielerFrachten?.lohn??0)
         -(state.w5n?.frachtUmsatz??0)+(state.kanon?.spielerFrachten?.gebuehr??0)
         ===startCarrier-huelle-w.arbeitsKosten+w.frachtUmsatz
@@ -3382,7 +3385,12 @@ const m_core_w1_vollkosten = (() => {
     }, 0);
     const abnahmeGebunden = Object.values(vertraege).reduce((sum, v) =>
       sum + (state.owners[v.konto]?.cash ?? NaN), 0);
-    const haus = saldo('house', arbeitsGebunden('house'));
+    // K1: Eine vom Spieler vorausbezahlte W5n-Arbeitsreserve ist weiterhin
+    // SEIN gebundenes Geld, nicht wirtschaftlicher Aufwand vor Lohnleistung.
+    const spielerFrachtGebunden = rules.kanon && state.w5n?.frachtauftrag
+      && state.ships[state.w5n.frachtauftrag.schiff]?.owner === rules.economy.start.owner
+      ? (state.owners.w5n_fracht_arbeit?.cash ?? 0) : 0;
+    const haus = saldo('house', arbeitsGebunden('house') + spielerFrachtGebunden);
     const npc = saldo('npc3', arbeitsGebunden('npc3'));
     const station = saldo(cfg.station, abnahmeGebunden);
     const verkauf = saldo(cfg.werftOwner,

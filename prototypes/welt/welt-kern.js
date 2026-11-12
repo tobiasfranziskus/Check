@@ -747,15 +747,19 @@ function erstellen(startkapital = {}, k7 = false) {
       || !k.verschleiss || !k.haushalte || !k.politik || !state.flug)
       throw Error('K1: Weltbuch unvollständig');
   }
+  const sicherK7Reserve=(state,i)=>state.owners.k7_werft_treuhand?.cash??0;
   function audit(state) {
     try {
       pruefeForm(state);
       const k = state.kanon, fehler = [];
       if (k7) {
         const i=k.industrieErz, a=state.w3?.auftrag;
+        if(i && ['aktiv','geliefert'].includes(i.phase)
+          &&sicherK7Reserve(state,i)!==(i.werftVerwendet?0:530))
+          fehler.push('K7-Werftreserve nicht einmalig aus eigenem Vermögen gebunden');
         if(!i||!['frei','angebot','aktiv','geliefert','storniert'].includes(i.phase)
-          ||(i.phase==='aktiv'&&(!a||a.industrieMiner!==i.miner||!i.signMiner||!i.signFracht))
-          ||(a?.phase==='vorbestellt'&&(i.phase!=='aktiv'||!i.signMiner||!i.signFracht||i.miner!==a.industrieMiner))
+          ||(i.phase==='aktiv'&&(!a||a.industrieMiner!==i.miner||!i.signMiner||!i.signFracht||!i.signWerft))
+          ||(a?.phase==='vorbestellt'&&(i.phase!=='aktiv'||!i.signMiner||!i.signFracht||!i.signWerft||i.miner!==a.industrieMiner))
           ||(i.phase==='geliefert'&&a?.industrieMiner===i.miner)
           ||(i.phase==='angebot'&&a?.industrieMiner)) fehler.push('K7-Industrieerzkette/Signaturen');
       }
@@ -872,6 +876,8 @@ function erstellen(startkapital = {}, k7 = false) {
       industrialOreOffer:['type','owner','miner','frachter'],
       industrialOreAcceptMine:['type','owner'],
       industrialOreAcceptFreight:['type','owner'],
+      industrialOreAcceptYard:['type','owner'],
+      industrialOreBuildShip:['type','owner'],
       industrialOreCommit:['type','owner'],
       industrialOreCancel:['type','owner'],
     };
@@ -894,7 +900,8 @@ function erstellen(startkapital = {}, k7 = false) {
         ||Object.values(fr.ladung).some(x=>x!==0))return verwerfen('Schiffe nicht frei im Dock');
       if(s.owners.st_nadir.cash<740)return verwerfen('Nadir kann Kauf und Rundfracht nicht vorfinanzieren');
       s.kanon.industrieErz={phase:'angebot',miner:mi.id,frachter:fr.id,
-        signMiner:false,signFracht:false,erzAngenommen:false,erstellt:s.tick};
+        signMiner:false,signFracht:false,signWerft:false,
+        werftVerwendet:false,erzAngenommen:false,erstellt:s.tick};
       return {ok:true,type};
     }
     if(type==='industrialOreAcceptMine'){
@@ -911,8 +918,26 @@ function erstellen(startkapital = {}, k7 = false) {
         return verwerfen('echte Frachtarbeit nicht gedeckt');
       i.signFracht=true;return {ok:true,type};
     }
+    if(type==='industrialOreAcceptYard'){
+      if(cmd.owner!=='werft_extern'||!angebot)return verwerfen('nur Werfteigentümer darf unterschreiben');
+      if(i.signWerft)return verwerfen('Werft bereits unterschrieben');
+      if(s.owners.werft_extern.cash<530)return verwerfen('reales Werftmaterial und bezahlte Arbeitsminuten nicht gedeckt');
+      i.signWerft=true;return {ok:true,type};
+    }
+    if(type==='industrialOreBuildShip'){
+      if(cmd.owner!=='werft_extern'||i.phase!=='geliefert'||!i.signWerft||i.werftVerwendet)
+        return verwerfen('nur signierte Werft darf einmal nach echter Lieferung bauen');
+      if(s.owners.k7_werft_treuhand?.cash!==530||s.w5.auftrag
+        ||s.kanon.minerWerft?.auftrag||(s.stations.st_nadir.lager.material||0)<5)
+        return verwerfen('kein physisches Material oder keine freie W5-Werft');
+      m_core_buch.transfer(s,'k7_werft_treuhand','werft_extern',530,'k7-werftreserve-ausloesen');
+      const q=kern.execute(s,{type:'stationBuildShip',owner:'werft_extern',station:'st_nadir'},rules);
+      if(!q.ok)throw Error('K7: Werkbudget gedeckt, aber Original-W5-Befehl abgelehnt: '+q.reason);
+      i.werftVerwendet=true;
+      return {ok:true,type};
+    }
     if(type==='industrialOreCommit'){
-      if(cmd.owner!=='st_nadir'||!angebot||!i.signMiner||!i.signFracht)
+      if(cmd.owner!=='st_nadir'||!angebot||!i.signMiner||!i.signFracht||!i.signWerft)
         return verwerfen('nur der Käufer bestätigt nach beiden Eigentümerzustimmungen');
       const mi=s.ships[i.miner],fr=s.ships[i.frachter];
       if(!mi||!fr||mi.owner!=='npc3'||fr.owner!=='transport'
@@ -921,10 +946,15 @@ function erstellen(startkapital = {}, k7 = false) {
         ||(s.kanon.pendel[i.miner]&&s.kanon.pendel[i.miner].ware!=='erz'))
         return verwerfen('Einsatzschiffe/Erzauftrag nicht mehr verfügbar');
       if(s.owners.npc3.cash<100||s.owners.st_aldera.cash<500
-        ||s.owners.st_nadir.cash<740||s.owners.transport.cash<120)
+        ||s.owners.st_nadir.cash<740||s.owners.transport.cash<120
+        ||s.owners.werft_extern.cash<530)
         return verwerfen('unvollständig vorfinanzierte Firmenkette');
       try { kern.industryOrePrebook(s,i.frachter,i.miner); }
       catch(e){return verwerfen(e.message);}
+      if(!s.owners.k7_werft_treuhand)
+        s.owners.k7_werft_treuhand={id:'k7_werft_treuhand',kind:'k7-reserve',cash:0};
+      if(s.owners.k7_werft_treuhand.cash!==0)throw Error('K7: bereits gebundene Werfttreuhand');
+      m_core_buch.transfer(s,'werft_extern','k7_werft_treuhand',530,'k7-werftreserve');
       i.phase='aktiv';
       const m=kern.execute(s,{type:'shipMine',owner:'npc3',schiff:i.miner,ware:'erz'},rules);
       if(!m.ok)throw Error('K7: nach Vorfinanzierung abgelehnter Eigentümerauftrag: '+m.reason);
@@ -939,8 +969,11 @@ function erstellen(startkapital = {}, k7 = false) {
       const mi=s.ships[i.miner];
       if(mi?.flug?.lage!=='angedockt'||Object.values(mi.ladung).some(x=>x!==0)
         ||s.erzpilotVertraege?.[mi.id])return verwerfen('bezahlte Arbeit oder Waren vorhanden');
+      if(i.werftVerwendet||s.owners.k7_werft_treuhand?.cash!==530)
+        return verwerfen('bezahlte Werftleistung bereits begonnen');
       try{kern.industryOreCancel(s);}
       catch(e){return verwerfen(e.message);}
+      m_core_buch.transfer(s,'k7_werft_treuhand','werft_extern',530,'k7-werftreserve-rueck');
       const stop=kern.execute(s,{type:'shipWait',owner:'npc3',schiff:i.miner},rules);
       if(!stop.ok)throw Error('K7: gebuchtes Storno ohne Miner-Stopp: '+stop.reason);
       delete s.kanon.pendel[i.miner];

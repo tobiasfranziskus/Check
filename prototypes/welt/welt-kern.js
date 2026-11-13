@@ -756,7 +756,7 @@ function erstellen(startkapital = {}) {
       const proof=t?.freigaben?.[sh.id];
       if(!valide(proof,s)||!t.historie.some(x=>same(x,proof)))
         return {ok:false,type:typ,reason:'Torfracht: kein nachgewiesener bezahlter Toranflug'};
-      return {ok:true,type:typ,proof};
+      return {ok:true,type:typ,proof:{...proof}};
     }
     function starten(s,cmd){
       const check=darfFracht(s,cmd);
@@ -787,7 +787,8 @@ function erstellen(startkapital = {}) {
       }
       for(const [id,e] of Object.entries(t.freigaben)){
         if(id!==e?.schiff||!valide(e,s)||!t.historie.some(x=>same(x,e)))return false;
-        if(s.w5n.frachtauftrag?.schiff===id)return false;
+        // Auch ein regulaerer F4-Vertrag darf ohne Torpflicht laufen; seine
+        // vorherige Torfreigabe bleibt bis zur bewussten F6-Wahl ungenutzt.
       }
       let paid=0;
       for(const c of s.kanon.spielerFrachten?.auftraege||[])if(c.tor!==undefined){

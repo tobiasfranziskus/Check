@@ -324,8 +324,8 @@ for (const seed of [42,7]) {
     assert.equal(bruecke.neueW5Produktion,1);
     assert.equal(bruecke.neueW5Verkaeufe,1,
       'W5-Sale nur für den VORHER unverkauften 7. Frachter');
-    assert.equal(bruecke.lagerFrachter,1,
-      'der neue 8. Bau bleibt korrekt unverkauft im physischen Lager');
+    assert.equal(bruecke.lagerFrachter,2,
+      '8. Bau ergänzt den bestehenden fungiblen Lagerbestand ohne Gratisverkauf');
     const saved=w.save(s),loaded=w.load(saved);
     for(let n=0;n<70;n++){w.minute(s);w.minute(loaded);}
     assert.equal(w.hash(s),w.hash(loaded),'K10: Wiederholung bis zur Finanzierungsgrenze');
@@ -496,8 +496,9 @@ function cycle(w,s,number) {
  * K10-Bruecke: Vermeidet jede verdeckte Kapitalzufuhr. Wenn das W5-Lager
  * nach dem siebten *wirklichen* Bau unverkauft ist, muss eine ACHTE echte
  * W1->W3-Leistung die Spedition mindestens um 14 ISK staerken; erst
- * dann darf sie den VORHER produzierten Rumpf kaufen und ueberfuehren.
- * Die 8. Werftproduktion wird separat voll bezahlt und bleibt gelagert.
+ * dann darf sie eine VORHER physisch vorhandene Lagerhuelle kaufen und ueberfuehren.
+ * Da W5 nur aggregiertes Lager besitzt, ist keine individuelle Chargen-ID
+ * fuer den gekauften Frachter nachweisbar. Der 8. Bau wird separat bezahlt.
  */
 function liquiditaetsBruecke(w,s){
   const r=w.rules,alt=s.w5.verkauft,altFertig=s.w5.fertig;
@@ -515,7 +516,9 @@ function liquiditaetsBruecke(w,s){
     geld:gesamt(s),minted:s.minted,burned:s.burned,
     hash:w.hash(s),...extra});
   assert.ok(vor<r.w5.verkaufsPreis);
-  assert.equal((s.stations.st_nadir.lager.frachter||0),1,'K10: unverkaufter echter 7. Werftrumpf');
+  assert.equal((s.stations.st_nadir.lager.frachter||0),2,
+    'K10: echte zwei nicht verkaufte Werftrümpfe einschließlich älterer Lagerware');
+  assert.equal(s.w5.fertig-s.w5.verkauft,2,'K10: unabhängig passendes W5-Lagerbuch');
   const vorNichtkauf=w.canonical(s);
   const abgewiesen=w.execute(s,{type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_nadir'});
   assert.equal(abgewiesen.ok,false,'K10: Geldmangel ist rechtlich bindend');
@@ -563,7 +566,7 @@ function liquiditaetsBruecke(w,s){
   if(s.w3.auftrag || s.w3.geliefert!==liefer+50 ||s.kanon.industrieErz.phase!=='geliefert')
     return end('acht-transport-unvollstaendig','Original-W3-Rueckweg noch offen');
   assert.equal(s.ledger.erz.mined-erz,50,'K10: keine fiktive achte Erzlieferung');
-  assert.equal(s.stations.st_nadir.lager.frachter,1,'Lager noch mit 7. Rumpf belegt');
+  assert.equal(s.stations.st_nadir.lager.frachter,2,'W5-Lager mit zwei bezahlten Hüllen belegt');
   const nachFracht=s.owners.transport.cash;
   if(nachFracht<r.w5.verkaufsPreis)
     return end('acht-transport-zu-wenig-lohn','Fracht bringt noch kein Kaufbudget',{zahlungNachFracht:nachFracht});
@@ -586,7 +589,8 @@ function liquiditaetsBruecke(w,s){
   assert.equal(s.ships[id].system,'aldera');
   pruefe(w,s,'K10 7. gekaufter Rumpf nach weiterem realen Charter');
   // Die ACHTE W5-Produktion erfordert ihre EIGENE unterschriebene Reserve
-  // und ein neues echtes W4-Material; kein Verkauf des 8. Rumpfs ohne Budget.
+  // und neues echtes W4-Material. Eigentumszuordnung des verkauften
+  // Lagerfrachter zu einem einzelnen historischen Bau wird nicht behauptet.
   const q=w.kern.pilotW4Kalkulation(s);
   if(!q.ok)return end('achte-w4-gesperrt',q.grund,{zahlungNachFracht:nachFracht,ueberfuehrung:route.minuten});
   befehl(w,s,{type:'stationRefine',owner:'st_nadir',station:'st_nadir'});
@@ -596,7 +600,8 @@ function liquiditaetsBruecke(w,s){
   for(let n=0;n<=r.w5.dauer&&s.w5.auftrag;n++)w.minute(s);
   assert.equal(s.w5.fertig-altFertig,1,'K10: auch 8. W5-Rumpf voll bezahlt gebaut');
   assert.equal(s.w5.verkauft-alt,1,'8. Rumpf darf nicht gratis ueberschrieben werden');
-  assert.equal(s.stations.st_nadir.lager.frachter,1);
+  assert.equal(s.stations.st_nadir.lager.frachter,2);
+  assert.equal(s.w5.fertig-s.w5.verkauft,2);
   const beforeLast=w.canonical(s),again=w.execute(s,{type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_nadir'});
   assert.equal(again.ok,false);
   assert.equal(w.canonical(s),beforeLast);

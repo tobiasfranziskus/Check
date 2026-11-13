@@ -81,9 +81,9 @@ const assert=require('node:assert/strict'),http=require('node:http'),fs=require(
     assert.equal(proof.s.kanon.tor.freigaben[fr.id].schiff,fr.id);
     assert.equal(await page.locator('#torFracht').isDisabled(),true,'nicht ohne Dock');
     await tap('#andocken');
-    let dockMin=0;
+    let torDockMin=0;
     while((await get()).s.ships[fr.id].flug.lage!=='angedockt'){
-      await go(1);assert.ok(++dockMin<80,'Original-Dockmanöver des Frachters');
+      await go(1);assert.ok(++torDockMin<80,'Original-Dockmanöver des Frachters');
     }
     const docked=await good('real zurück am Aldera Dock');
     assert.equal(docked.s.kanon.flugdienst[fr.id],undefined,'Flugreserve ordnungsgemäß zurückgezahlt');
@@ -136,7 +136,7 @@ const assert=require('node:assert/strict'),http=require('node:http'),fs=require(
     assert.deepEqual(errors,[],'keine Browserfehler');
     const size=await page.evaluate(()=>[document.documentElement.scrollWidth,innerWidth]);
     assert.ok(size[0]<=size[1]+1,'kein horizontaler Überlauf');
-    console.log('K1_TORFREIGABE_OK '+JSON.stringify({browser:kind,width,height,ship:fr.id,gateMinutes:gateMin,dockMinutes:dockMin,
+    console.log('K1_TORFREIGABE_OK '+JSON.stringify({browser:kind,width,height,ship:fr.id,gateMinutes:gateMin,dockMinutes:torDockMin,
       minuten:loaded.s.tick,geliefert:loaded.s.w5n.eisGeliefert,
       frachtEntgelt:240,pilotLohn:120,hash:loaded.hash}));
    }finally{await context.close();}

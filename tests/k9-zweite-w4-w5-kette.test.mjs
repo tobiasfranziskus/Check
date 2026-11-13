@@ -126,7 +126,7 @@ for (const seed of [42,7]) {
       w4Erz:s.w4.erzVerbraucht,w4Lohn:s.w4.gezahlt,
       w5Fertig:s.w5.fertig,w5Verkauft:s.w5.verkauft,
       w5Material:s.w5.materialVerbraucht,w5Lohn:s.w5.arbeitsGezahlt,
-      frachterProduziert:s.ledger.frachter.produced};
+      frachterProduziert:s.ledger.frachter.produced, frachterVerbraucht:s.ledger.frachter.consumed};
     let angebot=null;
     for(let n=0;n<=360&&!angebot;n++){
       let result=angebotVersuchen(w,s);
@@ -258,7 +258,7 @@ for (const seed of [42,7]) {
     assert.equal(reise,quote.minutes,'Original-Überführung ohne Teleport');
     assert.ok(s.w5ac.completed.some(x=>x.id===neu),'bezahlte Überführung verbucht');
     assert.equal(s.ships[neu].owner,'transport');
-    assert.equal(s.ledger.frachter.consumed-secondBase.w5Verkauft>=1,true);
+    assert.equal(s.ledger.frachter.consumed-secondBase.frachterVerbraucht,1, 'genau eine gekaufte Hülle verbraucht');
     pruefe(w,s,'K9 zweite W5-Hülle einsatzbereit');
     const save=w.save(s),loaded=w.load(save),savedHash=w.hash(s);
     assert.equal(w.hash(loaded),savedHash);

@@ -248,15 +248,30 @@ for (const seed of [42,7]) {
     assert.equal(s.w5.verkauft-secondBase.w5Verkauft,1);
     const neu=s.w5.schiffIds.at(-1),sh=s.ships[neu];
     assert.ok(sh&&sh.owner==='transport'&&sh.system==='nadir'&&sh.phase==='dock');
+    assert.ok(!firstNames.includes(neu),'K9: tatsächlicher neuer Schiffskörper, keine Doppel-ID');
     const quote=w.kern.pilotW5TransferKalkulation(s,neu);
     assert.equal(quote.ok,true,quote.grund);
+    const vorFlug={transport:s.owners.transport.cash,
+      escrow:s.owners[reg.w5Transfer.reserved].cash,
+      allocated:s.w5ac.allocated,paid:s.w5ac.paid};
     befehl(w,s,{type:'shipReposition',owner:'transport',schiff:neu});
+    assert.equal(s.owners.transport.cash,vorFlug.transport-quote.kosten,
+      'K9: tatsächlicher Besitzer sichert Fluglohn vor Start');
+    assert.equal(s.owners[reg.w5Transfer.reserved].cash,vorFlug.escrow+quote.kosten,
+      'K9: vorfinanzierte Original-Flugtreuhand');
+    assert.equal(s.w5ac.allocated,vorFlug.allocated+quote.kosten);
     let reise=0;
     while((s.ships[neu].system!=='aldera'||s.ships[neu].phase!=='dock')&&reise<120){
       w.minute(s);reise++;
     }
     assert.equal(reise,quote.minuten,'Original-Überführung ohne Teleport');
-    assert.ok(s.w5ac.completed.some(x=>x.id===neu),'bezahlte Überführung verbucht');
+    const belegt=s.w5ac.completed.find(x=>x.id===neu);
+    assert.ok(belegt,'bezahlte Überführung verbucht');
+    assert.equal(belegt.kosten,quote.kosten,'Original-Flugbeleg mit echten Kosten');
+    assert.equal(belegt.minuten,quote.minuten,'Flugbeleg ohne Teleport');
+    assert.equal(s.w5ac.paid,vorFlug.paid+quote.kosten,
+      'K9: alle Fluglohnminuten einzeln aus Treuhand bezahlt');
+    assert.equal(s.owners[reg.w5Transfer.reserved].cash,0,'nach Überführung kein Restbetrag');
     assert.equal(s.ships[neu].owner,'transport');
     assert.equal(s.ledger.frachter.consumed-secondBase.frachterVerbraucht,1, 'genau eine gekaufte Hülle verbraucht');
     pruefe(w,s,'K9 zweite W5-Hülle einsatzbereit');

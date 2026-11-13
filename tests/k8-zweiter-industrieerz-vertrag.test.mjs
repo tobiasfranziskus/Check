@@ -44,7 +44,8 @@ function bauUndKauf(w,s,anfang){
   // Stationslager liegt. Vor dem Kauf ausschließlich den echten
   // Produktions-/Verkaufszähler und physischen Bestand prüfen.
   const unverkauft=s.w5.fertig-s.w5.verkauft;
-  if(unverkauft>0 && (s.stations.st_nadir.lager.frachter||0)>=1
+  if(s.w5.verkauft===anfang.verkauft && unverkauft>0
+    && (s.stations.st_nadir.lager.frachter||0)>=1
     &&s.owners.transport.cash>=w.rules.w5.verkaufsPreis)
     befehl(w,s,{type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_nadir'});
   if(s.w5.verkauft<=anfang.verkauft)return;
@@ -75,7 +76,7 @@ function ersterErfolg(seed,politik={}){
   assert.equal(s.ledger.erz.mined-anfang.mined,50,'50 bezahlte, physische Erz');
   assert.ok(s.w4.materialErzeugt-anfang.material>=5,'Originalraffinerie');
   assert.ok(s.w5.fertig-anfang.fertig>=1,'originaler Werftbau');
-  assert.ok(s.w5.verkauft-anfang.verkauft>=1,'neu gebaute Hülle physisch für 750 ISK verkauft');
+  assert.equal(s.w5.verkauft-anfang.verkauft,1,'exakt eine zusätzliche 750-ISK-Hülle rechtmäßig gekauft');
   const ersatzId=s.w5.schiffIds.at(-1),ersatz=s.ships[ersatzId];
   assert.ok(ersatz&&ersatz.owner==='transport','realer Eigentumsübergang des Neubaus');
   assert.ok(s.w5ac.completed.some(x=>x.id===ersatzId),'Neubau gegen bezahlte Arbeit nach Aldera überführt');

@@ -1,4 +1,4 @@
-**[DRAFT / K13+F6-Integration · 13.11.2026]** Auf [integration/k13-f6-spielwirtschaft-20261113](https://github.com/tobiasfranziskus/Check/tree/integration/k13-f6-spielwirtschaft-20261113) wurden Regel200-Wirtschaft und F6-Gameplay in einer getrennten Forschungsquelle zusammengebracht. Die neue gemeinsame Node-/Chromium-/WebKit-CI ist **noch nicht abgenommen**; [Einzelheiten](K13_F6_SPIELWIRTSCHAFT_INTEGRATION.md). `main`-Regel195-Produkt und produktive Spielstände unverändert.
+**[DRAFT / K13+F6-Integration · 13.11.2026]** Auf [integration/k13-f6-spielwirtschaft-20261113](https://github.com/tobiasfranziskus/Check/tree/integration/k13-f6-spielwirtschaft-20261113) wurden Regel200-Wirtschaft und F6-Gameplay in einer getrennten Forschungsquelle zusammengebracht. Separater Regel200-Spieltest `spieltest/k13-f6/index.html` mit eigener Save-Hülle und Browser-Smoke-Test angelegt. Die gemeinsame Node-/Chromium-/WebKit-CI ist **noch nicht abgenommen**; [Einzelheiten](K13_F6_SPIELWIRTSCHAFT_INTEGRATION.md). `main`-Regel195-Produkt und produktive Spielstände unverändert.
 
 # Aphros Void – belegter technischer Projektstatus
 

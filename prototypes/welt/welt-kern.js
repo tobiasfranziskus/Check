@@ -83,7 +83,12 @@ function erstellen(startkapital = {}, k7 = false) {
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
     angedocktAn: (sh, station) => FLUG.angedocktAn(sh, station),
   });
-  const engine = k7 ? FACTORY.createK7Welt(startkapital, ort) : FACTORY.createKanonWelt(startkapital, ort);
+  // Regel200 hat eine eigene, ausdrücklich geladene Forschungsquelle. Die Regel195-
+  // Einzeldatei bündelt nur die unveränderte Originalquelle aus w5ac.
+  const k7Factory = k7 ? (NODE ? require('./rule200-k7-industry-core.js') : scope.W5acK7) : null;
+  if (k7 && (!k7Factory || typeof k7Factory.createK7Welt !== 'function'))
+    throw Error('K7: Forschungsregel200-Quelle nicht geladen');
+  const engine = k7 ? k7Factory.createK7Welt(startkapital, ort) : FACTORY.createKanonWelt(startkapital, ort);
   const kern = engine.core, rules = engine.rules;
   if (rules.rulesVersion !== (k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
     throw Error('K1: unerwartetes Kernprofil');

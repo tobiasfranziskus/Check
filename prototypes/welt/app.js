@@ -161,20 +161,26 @@ function pilotZeigen(s, pendel, k, o) {
     pilotWerte();
   }
   const b = s?.flug, dienst = s && k.flugdienst[s.id];
-  const steuerbar = !!b && b.lage === 'frei' && !pendel && !dienst?.gestrandet;
+  const transit = !!s && b?.lage === 'transit'
+    && state.w5n.frachtauftrag?.schiff === s.id
+    && k.spielerFrachten?.auftraege?.some(x => x.schiff === s.id && x.end === null);
+  const steuerbar = !!b && (b.lage === 'frei' && !pendel && !dienst?.gestrandet || transit);
   for (const element of ['pilotKurs', 'pilotFahrt', 'pilotAnwenden', 'pilotBremsen'])
     $(element).disabled = !steuerbar;
   for (const taste of document.querySelectorAll('[data-pilot-kurs]')) taste.disabled = !steuerbar;
   $('pilotPosition').textContent = b ? Math.round(b.x / 1000) + ' / ' + Math.round(b.y / 1000) + ' kP' : '–';
   $('pilotIst').textContent = b ? b.kurs + ' / ' + Math.round(Math.hypot(b.vx, b.vy)) + ' P/s' : '–';
   $('pilotLage').textContent = b ? (lageText[b.lage] || b.lage) + ' · ' + (pendel ? 'Pendel ' + pendel.ware : b.modus) : '–';
-  $('pilotReserve').textContent = dienst ? fmt(o[dienst.konto]?.cash ?? 0) + ' ISK' : 'nicht gebunden';
+  $('pilotReserve').textContent = transit
+    ? fmt(o.w5n_fracht_arbeit?.cash ?? 0) + ' ISK · bezahlter W5n-Lohn'
+    : dienst ? fmt(o[dienst.konto]?.cash ?? 0) + ' ISK' : 'nicht gebunden';
   let hinweis;
   if (!s) hinweis = 'Zuerst unter „Station“ einen eigenen Miner kaufen.';
   else if (pendel) hinweis = 'Der Pendelauftrag steuert automatisch. Für Handflug zuerst „Pendel beenden“ und die Dockrückkehr abwarten.';
   else if (dienst?.gestrandet) hinweis = 'Flug angehalten: Die Arbeitsreserve ist leer. Der Core prüft eine echte Nachfinanzierung.';
   else if (b.lage === 'angedockt') hinweis = 'Im Dock: „Abdocken“ drücken. Der Core bindet die echte Flugreserve; ein Kartenziel kann bereits vorgemerkt werden.';
   else if (b.lage === 'abdocken' || b.lage === 'andocken') hinweis = 'Dockmanöver läuft – Steuerung erst danach verfügbar.';
+  else if (transit) hinweis = 'Bezahlter Fracht-Transitkorridor: Kurs und Sollfahrt bewegen den echten 2D-Flugkörper. Die Original-W5n-Route liefert nach 60 Minuten; Manöver verändern weder Lieferzeit noch Geld.';
   else if (b.lage !== 'frei') hinweis = 'Das Schiff ist derzeit nicht im freien Flug.';
   else if (s.klasse === 'frachter') hinweis = 'Eigener Frachter im Aldera-Raum: originale Kurs- und Kartensteuerung, bezahlter Pilotlohn; physisch andocken vor jedem wirtschaftlichen Auftrag.';
   else if (welt.flugKern.imFeld(s, 'eis')) hinweis = 'Eisfeld erreicht und langsam genug: Der Originalbefehl „Eis fördern“ kann jetzt geprüft werden.';
@@ -184,6 +190,35 @@ function pilotZeigen(s, pendel, k, o) {
 }
 function zeichnen() {
   const [w, h] = groesse(), K = welt.flugKern, sys = K.DATEN.systeme.aldera;
+  const fr = gewaehlt(), a = state.w5n.frachtauftrag;
+  const imKorridor = fr?.flug.lage === 'transit' && a?.schiff === fr.id
+    && state.kanon.spielerFrachten?.auftraege?.some(x => x.schiff === fr.id && x.end === null);
+  if (imKorridor) {
+    // Reine Projektion EINES echten Flugkörpers aus dem gemeinsamen Core, keine
+    // Kosmetik-Position: Kurs/Fahrt beeinflussen dieselben x/y/vx/vy wie in Aldera.
+    // Der Fortschrittsbalken zeigt getrennt die unveränderte W5n-Zeit.
+    const b = fr.flug, zoom = Math.min(w, h) / 1800000;
+    const cx = 0, cy = 0;
+    ctx.clearRect(0, 0, w, h); ctx.fillStyle = '#06101b'; ctx.fillRect(0, 0, w, h);
+    graph.himmel(cx, cy, zoom, w, h);
+    ctx.lineWidth = 1.5; ctx.strokeStyle = '#285b70';
+    ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2);
+    ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
+    const [x, y] = G.projektion(b.x, b.y, cx, cy, zoom, w, h);
+    graph.schiff(G.adapter(fr), x, y, 0);
+    const hin = a.phase === 'hin', abschnitt = hin ? a.gearbeitet : a.gearbeitet - a.zeit;
+    const ziel = hin ? 'Nadir' : 'Aldera';
+    const rand = Math.min(16, w / 24), balken = Math.max(60, w - rand * 2);
+    ctx.fillStyle = '#a9eaff'; ctx.font = '13px system-ui';
+    ctx.fillText('2D-Transitkorridor · nach ' + ziel, rand, 22);
+    ctx.fillStyle = '#284453'; ctx.fillRect(rand, 33, balken, 8);
+    ctx.fillStyle = '#72d2e3'; ctx.fillRect(rand, 33, balken * Math.max(0, Math.min(1, abschnitt / a.zeit)), 8);
+    $('hud').textContent = 'K1-Regel199 · ' + ziel + ': ' + fmt(abschnitt) + '/' + a.zeit
+      + ' echte bezahlte Transitminuten · manueller 2D-Kurs ' + b.kurs
+      + ' · X ' + Math.round(b.x / 1000) + ', Y ' + Math.round(b.y / 1000) + ' kP'
+      + ' · W5n-Ankunft bleibt zeitgebunden' + (pausiert ? ' · pausiert' : '');
+    return;
+  }
   const cx = KARTEN_MITTE.x, cy = KARTEN_MITTE.y, z = kartenSkala(w, h);
   ctx.clearRect(0, 0, w, h); ctx.fillStyle = '#06101b'; ctx.fillRect(0, 0, w, h);
   graph.himmel(cx, cy, z, w, h);
@@ -238,7 +273,7 @@ function zeigen(alles = false) {
     const letzter = bestand.filter((x) => x.schiff === s.id).at(-1);
     const angebot = !aktiv ? welt.kern.pilotIceFreightQuote(state, s.id) : null;
     const hinweis = aktiv
-      ? 'Echte Original-W5n-Rundfracht läuft. Das Schiff ist im bezahlten Transit und wird erst nach der Rückkehr wieder frei.'
+      ? 'Original-W5n-Rundfracht läuft: echte 2D-Kurs-/Bremsmanöver im Korridor möglich. Ankunft und Zahlung erfolgen unverändert nach 60+60 bezahlten Kernminuten.'
       : s.system === 'aldera' && s.phase === 'dock'
         ? 'Eigener Frachter ' + s.id + ' in Aldera. Handflug nach dem Abdocken oder bezahlter Eisfrachtvertrag direkt vom Dock.'
         : 'Der Frachter ist nicht frei am Aldera-Dock. Fracht und Handflug bleiben durch den gemeinsamen Kern gesperrt.';
@@ -396,6 +431,10 @@ setInterval(() => { if (state && ansicht !== 'flug' && ++langsam) sicher(() => z
 // Auf der Karte stehen nur die echten Core-Station und die echten Core-Felder zur Wahl.
 canvas.addEventListener('click', (ev) => {
   if (!state || ansicht !== 'flug') return;
+  const gewählt = gewaehlt();
+  // Der Transportkorridor zeigt keine Aldera-Felder; Klicks dürfen dort nicht
+  // als scheinbare Dock- oder Förderziele interpretiert werden.
+  if (gewählt?.flug.lage === 'transit' && state.w5n.frachtauftrag?.schiff === gewählt.id) return;
   const rect = canvas.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
   const w = canvas.clientWidth, h = canvas.clientHeight, z = kartenSkala(w, h);
@@ -449,7 +488,7 @@ $('pilotBremsen').addEventListener('click', () => {
   $('pilotKurs').value = String(s.flug.kurs);
   $('pilotFahrt').value = '0'; pilotWerte();
   befehl({ type: 'shipSteer', owner: SPIELER, schiff: s.id, kurs: s.flug.kurs, fahrt: 0 },
-    'Bremsung angefordert: 0 % Sollfahrt. Der Miner verzögert physikalisch.');
+    'Bremsung angefordert: 0 % Sollfahrt. Der Flugkörper verzögert physikalisch.');
 });
 const schiffBefehl = (type, extra, text) => () => { const s = gewaehlt(); if (s) befehl({ type, owner: SPIELER, schiff: s.id, ...extra }, text); };
 $('pendelEis').addEventListener('click', schiffBefehl('shipShuttle', { ware: 'eis' }, 'Pendelauftrag Eis: Feld, Förderung, Dockverkauf – alles vorfinanziert.'));

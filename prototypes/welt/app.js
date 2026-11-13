@@ -357,6 +357,22 @@ function zeigen(alles = false) {
     Object.entries(s.ladung).filter(([, n]) => n > 0).map(([ware, n]) => n + ' ' + ware).join(', ') || '–',
     k.flugdienst[s.id] ? fmt(o[k.flugdienst[s.id].konto].cash) + ' ISK' : '–', fmt(welt.buchwert(state, s.id)) + ' ISK']]);
   else $('schiffStatus').replaceChildren();
+  if (istK7 && $('industrieSchalten')) {
+    const ia = k.industrieErz, auto = k.industrieAuto === true;
+    $('industrieSchalten').textContent = auto
+      ? 'NPC-Industrieautomatik ausschalten' : 'NPC-Industrie freiwillig einschalten';
+    $('industrieSchalten').setAttribute('aria-pressed', String(auto));
+    const sign = ia.signMiner && ia.signFracht && ia.signWerft;
+    $('industrieStatus').textContent = 'Original-K7-Vertrag: ' + (ia.phase || 'unbekannt')
+      + (sign ? ' · alle drei Eigentümer haben unterschrieben' : '')
+      + (ia.erzAngenommen ? ' · Erz physisch am Dock angenommen' : '')
+      + (ia.werftVerwendet ? ' · echte Werftreserve verwendet' : '')
+      + ' · Reserve Werft: ' + fmt(o.k7_werft_treuhand?.cash || 0) + ' ISK'
+      + ' · Nadir: ' + fmt(o.st_nadir.cash) + ' ISK'
+      + ' · Spedition: ' + fmt(o.transport.cash) + ' ISK'
+      + ' · NPC-Industrie: ' + (auto ? (k.politik.automatik ? 'freigegeben' : 'NPC-Automatik pausiert')
+        : 'aus (keine automatische Vertragsunterzeichnung)');
+  }
   if (!alles && ansicht === 'flug') return;
   if (ansicht === 'konzern') tabelle($('firmen'), ['Firma', 'Kasse', 'Anlagewert', 'Ersatzrücklage', 'ausschüttbar', 'ausgeschüttet', 'Eigentümerkonto'],
     Object.entries(b.firmen).map(([f, v]) => [f === SPIELER ? f + ' (Spieler)' : f, fmt(v.kasse), fmt(v.anlagewert), fmt(v.ruecklage), fmt(v.ausschuettbar), fmt(v.ausgeschuettet), fmt(o[welt.daten.anteile[f]].cash)]));
@@ -433,7 +449,7 @@ async function neueWelt(frage) {
   try {
     if (state) await autosave();
     await speicher.neueWelt(w.save(s));
-    uebernehmen({ welt: w, state: s }, 'Neue Welt angelegt (33.000 ISK, Regel 199). Pausiert.');
+    uebernehmen({ welt: w, state: s }, 'Neue Welt angelegt (33.000 ISK, Regel ' + w.regel + '). Pausiert.');
   } catch (e) { welt = w; state = s; melde('Welt läuft ohne Ablage: ' + e.message, true); zeigen(true); }
 }
 function dateiLesen(input, f) {
@@ -565,6 +581,16 @@ $('torFracht').addEventListener('click', () => {
 });
 $('dividende').addEventListener('click', () => { const n = welt.ausschuettbar(state, SPIELER); if (n > 0) befehl({ type: 'dividendPay', owner: SPIELER, betrag: n }, fmt(n) + ' ISK an das eigene Eigentümerkonto ausgeschüttet.'); });
 $('wasserKauf').addEventListener('click', () => befehl({ type: 'householdBuy', owner: $('haushalt').value, menge: Number($('wasserMenge').value) }, 'Wasser privat gekauft und verbraucht.'));
+if (istK7 && $('industrieSchalten')) $('industrieSchalten').addEventListener('click', () => {
+  const aktiviert = state.kanon.industrieAuto !== true;
+  const r = sicher(() => welt.industrieAutoSetzen(state, aktiviert));
+  if (!r?.ok) return;
+  geaendert = true;
+  melde(aktiviert
+    ? 'K7-NPC-Industriepolitik aktiviert. Nur echte Eigentümerverträge und vollständig gedeckte Originalaufträge.'
+    : 'K7-NPC-Industriepolitik pausiert. Bereits vorfinanzierte Arbeiten werden nicht annulliert.');
+  zeigen(true);
+});
 $('automatik').addEventListener('click', () => { sicher(() => welt.politikSetzen(state, { automatik: !state.kanon.politik.automatik })); geaendert = true; zeigen(true); });
 $('pause').addEventListener('click', () => { pausiert = !pausiert; $('pause').textContent = pausiert ? 'Weiter' : 'Pause'; $('pause').setAttribute('aria-pressed', String(pausiert)); if (pausiert) autosave(); });
 $('tempo').addEventListener('click', () => { tempo = (tempo + 1) % TEMPI.length; $('tempo').textContent = 'Zeit ' + TEMPI[tempo] + '×'; });

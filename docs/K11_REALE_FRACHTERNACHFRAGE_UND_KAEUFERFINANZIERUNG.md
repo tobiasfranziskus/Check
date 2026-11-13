@@ -1,46 +1,47 @@
-# K11 – Echter Frachterbedarf, fehlendes Käuferbudget und unverkaufter Bestand
+# K11 – Echter Frachterbedarf, Käuferfinanzierung und unverkaufter Bestand
 
-**[DRAFT / ANALYSE · 13.11.2026]** [PR #326](https://github.com/tobiasfranziskus/Check/pull/326), gestapelt auf K10 [#325](https://github.com/tobiasfranziskus/Check/pull/325). Isolierte Forschungsregel200, **keine** Änderungen am Kern, an produktivem Rule195, Dateien `index.html`/`aphros-void.html`, Preisen, Eigentumsrechten, Konten, W0–W6-Roadmap oder Nutzerspeicherständen.
+**[DRAFT / ANALYSE · 13.11.2026]** [PR #326](https://github.com/tobiasfranziskus/Check/pull/326) auf K10 #325. Nur Tests, Dokumentation und CI, kein Wirtschaftskern-/Produkt-/Regel195-/Spielstandseingriff.
 
-## Prüfziel und echte Ausgangswelt
+## Korrektur der ersten K11-Finanzdiagnose
 
-K10 hatte bis zu acht real finanzierte W1→W3→W4→W5-Industrieaufträge gezeigt, aber am Ende **zwei physisch vorhandene, unverkaufte W5-Frachter** hinterlassen. Die K11-Frage ist deshalb ausdrücklich **nicht** „Kann man noch mehr Schiffe bauen?“, sondern „Gibt es im bestehenden Markt eine reale, bezahlbare Leistung und einen benötigten, berechtigten Käufer für diese Schiffe?“.
+**[KORREKTUR · Quellprüfung nach dem ersten K11-Lauf]** Der erste K11-Bericht und die ursprüngliche PR-Beschreibung haben **fälschlich `fonds_transport` als Käufer der nächsten 50-Eis-Fracht** behandelt und daraus eine angeblich zweite **490-ISK-Käuferlücke** abgeleitet. Das war **sachlich falsch**. Die tatsächlich verwendete Originalfunktion `m_core_w5n.pruefenFracht` in `prototypes/welt/rule200-k7-industry-core.js` prüft **`s.owners[c.zielStation].cash`**, mit `c.zielStation='st_nadir'`. Die tatsächliche finanzierende Käuferkasse ist also die **Station Nadir**, nicht das separate `c.kunde='fonds_transport'` der älteren Lohn-/Auditkonfiguration. Für die Buchung `frachtStart` wird der Betrag ebenfalls **von `s.owners[c.zielStation]` abgezogen** und dem Original-Kauftreuhandkonto gutgeschrieben.
 
-`tools/k11-k10-endstand.mjs` rekonstruiert aus ursprünglichen Krisenseeds **42 und 7** die komplette K7/K8/K9/K10-Kette bis zur echten achten W3-Fracht, bezahlten 7. Lagerabnahme, 60 Arbeitsminuten Nadir→Aldera und zusätzlich gebauter achter Werfthülle. Kein Save wird künstlich verändert, keine gratis Startschiffe, kein direkter Buchungszugriff. Save/Load, Weltgeld, Produkt-/Eigentumsledger und Core-Audits werden auf diesem Endzustand verifiziert. Etwaige gleichnamige alte Frachter werden durch das vorhandene, fungible W5-Lagerbuch gezählt, nicht individuellen Fertigungschargen zugeordnet.
+In K11 hat Nadir **3.440 ISK ohne** und **3.920 ISK mit** Stilllegung nach dem 720-Minuten-Versuch – genug für **490 ISK** Original-Eis-/Frachterrechnung. Der `fonds_transport` liegt zwar bei **0 ISK**, ist aber **nicht die für `pruefenFracht` zuständige Käuferkasse**. Sein Nullbestand beweist *keinen* zweiten Käuferausfall. Der validierte, aktuelle Test berechnet daher `iceBuyerAccount=c.zielStation`, `iceBuyerShortfall=0` und führt `c.kunde` lediglich als getrenntes historisches Lohnfondskonto.
 
-K11 schaltet anschließend für **720 Spielminuten je Seed und Politik** die vorhandene Originalautomatik ein: (A) neue Stilllegung aus, Ersatzkäufe und Eisfracht eingeschaltet, (B) echte Stilllegung ein, Ersatzkäufe und Eisfracht eingeschaltet. Es wird **kein** neues Angebot, Warenkauf, Firmenkapital oder künstlicher Frachterverlust erzeugt. Jeder Tick prüft die getrennten W3-/Eis-Frachtbücher auf Doppelbelegung, regelmäßig den unabhängigen Gesamtaudit. Manipulationsversuche mit ungedeckten/unberechtigten Käufen müssen atomar abgewiesen werden.
+**Der tatsächliche einzelne nachgewiesene Finanzierungsgate ist der 120-ISK-Crewfonds der Spedition**: Bei `transport.cash=46` fehlen **74 ISK**. Diese Korrektur betrifft die Interpretation der Daten, nicht die Geld-/Warenaudits oder den K11-Fortlauf selbst. Originalprotokolle früherer Rot-/Grün-Läufe bleiben als historische Ergebnisse erhalten; die frühere falsche Interpretation gilt ausdrücklich nicht als belegter Befund.
 
-## [TEST] Wirklich ausgeführte K11-Läufe
+## Original-K10-Ausgangszustand und K11-Tests
 
-[Erster K11-Job, K1-Workflow #43398418683](https://github.com/tobiasfranziskus/Check/actions/runs/43398418683) auf Codehead `aad819a0`: **2/2 Seedtests bestanden**, die vier Politikläufe wurden tatsächlich ausgeführt. [K11-Ergänzungsprüfung #43398667338](https://github.com/tobiasfranziskus/Check/actions/runs/43398667338), Codehead `3438f897`: **2/2 Seeds, vier Varianten erfolgreich**, unabhängig berechnete volle W5n-Käufer-/Frachtkosten aus den Originalregeln. Zu diesem Bericht wurde auf einem folgenden Codehead der explizite Vergleich der Käufer-/Crewdefizite als Regressionstest ergänzt; **der aktuelle Head ist erst nach eigener erfolgreicher CI abgenommen**.
+`tools/k11-k10-endstand.mjs` erzeugt den tatsächlichen Krisenstand auf Seeds 42/7 bis nach acht finanzierten K7/K8/K9/K10-Industrieverträgen und dem bezahlten physischen W5-Kauf/60-Minuten-Überführung. In `tests/k11-realer-frachterbedarf.test.mjs` werden für beide Seeds zwei Varianten **je 720 Spielminuten** untersucht: (A) Original-Stilllegung aus, `ersatzkauf`/`eisfracht` an; (B) Original-Stilllegung ein, Ersatz-/Eisautomatik an. Ausschließlich zugelassene Originalregeln und echte Haushalts-, Produktions- und Eigentumsvorgänge, keine künstlichen Kassen-/Warenkontenänderungen.
 
-| K11-Gegenversuch | Seed 42 | Seed 7 |
+| Gemessener Zustand | Seed 42 | Seed 7 |
 | --- | ---: | ---: |
-| Zeitpunkt nach K10-Achterzyklus | Tick 24446 | Tick 24446 |
-| Frachter im Speditionseigentum | 18 | 18 |
-| Davon nach Original-Verschleißbuchwert einsatzfähig | 10 | 10 |
-| Davon frei und einsatzbereit in Aldera | 10 | 10 |
-| Physischer W5-Lagerbestand, unverkauft | 2 | 2 |
-| Speditionskasse | **46 ISK** | **46 ISK** |
-| Für Eisflugcrew erforderliche echte Vorfinanzierung | **120 ISK** | **120 ISK** |
-| Fehlende Fluglohnreserve | **74 ISK** | **74 ISK** |
-| Originaler Eis-/Frachtkäufer `fonds_transport` | **0 ISK** | **0 ISK** |
-| Käuferbudget für 50 Eis und zwei Flüge | **490 ISK** | **490 ISK** |
-| Fehlende Käuferdeckung | **490 ISK** | **490 ISK** |
+| Tick zu Versuchsbeginn | 24.446 | 24.446 |
+| Speditionsfrachter im Eigentum | 18 | 18 |
+| Davon 10 mit positivem Originalbuchwert und in Aldera einsatzbereit | 10 | 10 |
+| Echte, unverkaufte W5-Lagerhüllen | 2 | 2 |
+| Speditionskasse nach 720 Min. | **46 ISK** | **46 ISK** |
+| Originale W5n-Flugarbeitsreserve | 120 ISK | 120 ISK |
+| Tatsächlicher Crew-Fehlbetrag | **74 ISK** | **74 ISK** |
+| Echte Käuferkasse `st_nadir` ohne Stilllegung | **3.440 ISK** | **3.440 ISK** |
+| Original-Käuferreserve (250 Warenwert + 240 Fracht) | 490 ISK | 490 ISK |
+| Tatsächlicher Käufer-Fehlbetrag | **0 ISK** | **0 ISK** |
+| Separater historischer `fonds_transport` | 0 ISK, **nicht Käufer** | 0 ISK, **nicht Käufer** |
+| Zusätzlich begonnene W3-/Eisfrachten oder W5-Käufe in beiden Varianten | 0 / 0 | 0 / 0 |
 | Weltgeld / Mint / Burn | 33.000 / 0 / 0 ISK | 33.000 / 0 / 0 ISK |
 
-**Betriebsvariante A – ohne Stilllegung:** In Aldera entstehen aus realer Förderarbeit innerhalb 720 Minuten **52 Eis** (Anfang: 2). Die Original-`pilotIceFreightQuote` lehnt die nun mengenmäßig mögliche 50er-Fracht ab: **„Spedition kann Flugarbeit nicht vorfinanzieren“**; unabhängig ist das eigentliche Käuferkonto **mit 0 von 490 ISK völlig leer**. Ergebnis in Seed42 und Seed7: **0 W3-Aufträge, 0 Eisfrachten, 0 neue W5-Käufe**, zwei unverkaufte Hüllen bleiben.
+**Variante A, Stilllegung aus:** Nach 720 Minuten sind **52 Eis** in Aldera gelagert (anfangs 2). Das erfüllt die 50er-Warenmenge, und Nadir kann die 490 ISK Käuferrechnung bezahlen; trotzdem lehnt `pilotIceFreightQuote` zurecht ab: **„Spedition kann Flugarbeit nicht vorfinanzieren“**. Kein zusätzlicher Frachterkauf, kein zusätzlicher W3-/Eisauftrag.
 
-**Betriebsvariante B – Original-Stilllegung aktiviert:** Die bestehenden Miner-/Transportbedingungen lassen in dieser Beobachtungszeit nur **2 Eis** in Aldera stehen. Damit ist zusätzlich schon die erforderliche 50er-Warencharge nicht vorhanden. In Seeds42/7 ebenfalls **0 echte Frachtaufträge, 0 Frachterkäufe, 2 unverkaufte Hüllen**, bei weiterhin 10 nicht vollständig verschlissenen Speditionsfrachtern. Die legitime Ersatzautomatik löst **keine** zusätzliche Bestellung aus. In allen vier Teilversuchen (zwei Seeds × zwei Betriebsvarianten) laufen 720 Minuten und 45-Minuten-Hashreplays mit 33.000 ISK, Mint/Burn0 und korrektem Waren-, Eigentums- und Treuhandaudit.
+**Variante B, Stilllegung ein:** Eislager bleibt bei **2**, wodurch bereits die Warencharge fehlt; auch hier kein neuer W3-/Eisauftrag, kein neuer W5-Kauf. In beiden Varianten sind bereits **10 einsatzfähige Frachter** vorhanden – kein durch weitere Produktion heilbarer Kapazitätsmangel.
 
-Die beobachtete Lohn-/Geldknappheit ergibt sich nicht aus der Zahl verfügbarer Frachter. Die 490 ISK Kauf-/Transportetat müssen vom **richtigen ursprünglichen Käufer** stammen und die 120 ISK Crewtreuhand vom **richtigen Speditionseigentümer**. Eine freie Weltgeldsumme von 33.000 ISK oder 18 Flottenhüllen ist **keine Finanzierungserlaubnis**. Freiwillige Eigentümerdividenden sind bisher nur Auszahlung an den Eigentümer; im gegebenen K1-Kern existiert kein freigegebener Befehl für eine umgekehrte Kapitalisierung oder einen erfundenen Warenabsatz.
+## Wirklich ausgeführte Prüfungen und Abgrenzung
 
-## Bedeutung für die Roadmap und Optionen
+- [K11-Start-Workflow #43398418683](https://github.com/tobiasfranziskus/Check/actions/runs/43398418683) – **2/2 gezielte K11-Seedtests erfolgreich**, vier 720-Minuten-Varianten inklusive Audit, Save/Load, Hash-Replay. Die damalige **Käuferinterpretation war irreführend**, nicht die Simulationswerte.
+- [K11-Käuferkonten-Messung #43398667338](https://github.com/tobiasfranziskus/Check/actions/runs/43398667338) – 2/2 gezielte Seedtests erfolgreich, die als `iceBuyerAccount` benannte Variable zeigte jedoch noch **die falsche Feldwahl**. Diese Testsemantik wurde explizit korrigiert und wird für eine erneute CI getrennt geprüft.
+- Negativbefehle prüfen atomare Ablehnung ungedeckter oder unberechtigter W5-Schiffskäufe; jede tatsächlich ausgeführte Runde prüft W0-Geldsumme, Warenledger, Core-Audit, Crewkosten sowie identische Save/Load-/Replay-Hashes. Änderungen an wirtschaftlichen Regeln oder Ausgangsgeldern waren **nicht nötig**.
 
-**[ANALYSE / NEGATIVNACHWEIS]** Der aktuelle Forschungsstand leidet hier **nicht an fehlenden Frachterhüllen**, sondern zugleich an **fehlender echter Nachfrage-/Abnehmerfinanzierung (490 ISK)** und **fehlender Crewliquidität der Spedition (74 ISK)**. Eine weitere automatische W5-Produktion oder künstlicher Kauf erzeugt zusätzliche Lagerware ohne rechtmäßigen Absatz. Auch bloß zusätzliche 74 ISK Speditionsmittel würden **den leeren Käuferetat nicht heilen**.
+## Nächster sinnvolles Gate – K12
 
-**[BESCHLOSSEN / UNVERÄNDERT]** Unbegrenzte Spieler-Sparfreiheit, Insolvenzen, keine Gratisware, kein freies Minting, nur finanzierte reale Dienstleistungen, Original-W0–W6-Reihenfolge.
+**[ANALYSE]** Vor einer neuen W6-Produktregel ist zu prüfen, ob der Spedition **74 ISK in einer bestehenden rechtmäßigen Leistungskette** zufließen können, ohne dass sie die dafür notwendigen 120 ISK Fluglohn bereits selbst vorfinanzieren muss. Ein weiterer Industrie-Erzvertrag benötigt seinerseits voll gedeckte Transportarbeit; einen solchen Kreis darf man **nicht per kostenloser Starthilfe öffnen**. Wasserverkäufe vergüten grundsätzlich Nadir beziehungsweise die liefernde Station, nicht unmittelbar die Spedition; private Pilotenlöhne bleiben Eigentum der Piloten. Ein freiwilliges Firmenkapital-/Vertragsfinanzierungsinstrument ist derzeit **nicht freigegeben** und würde gesonderte Wirtschaftsbeschlüsse, Audits und Folgeprüfungen benötigen.
 
-**[OPTION / FOLGENDE FORSCHUNG]** Zuerst die echten Geldströme des bisherigen Eis-/Wasser-Endmarktes auf Rückfinanzierung des vorhandenen Käufers prüfen: Wie kann ein bereits vorhandener solventer Auftraggeber durch Warenverkäufe, reale Verträge oder rechtmäßig finanzierte Eigentümerentscheidungen zusätzliche Transporte nachfragen? Ohne produktive Entscheidung **keine** Treuhandzulassung ohne Deckung, keine Reserveausweitung, keine kostenlose Nachfrage. Bei positivem, belegtem Mechanismus auf derselben Krise ein gezieltes Gegenbeispiel mit mindestens einer tatsächlich gekauften 50er-Eisfracht, Warenlieferung und vollständigen Löhnen prüfen – anschließend 13×90, 365/730 und reale Browser-/iPad-/NAS-Abnahme.
-
-Die K11-Forschung ist **keine** automatische W6-Nachhaltigkeitsfreigabe; die zwei Seeddurchläufe über je 720 Minuten sind kein statistischer 90-Tage-Produktionsnachweis. **Kein Merge und kein Deployment.**
+**[BESCHLOSSEN]** Geldmodell B, Spieler-Sparfreiheit, echte Vollkosten, Insolvenzen und keine stillen Geldtransfers bleiben unverändert. Keine automatische Produktauslieferung, kein Merge, keine iPad-/NAS-Abnahme.

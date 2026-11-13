@@ -63,7 +63,12 @@ const assert = require('node:assert/strict');
         await tap('nav button[data-ansicht="station"]');
         await tap('#kaufMiner');
         await tap('nav button[data-ansicht="flug"]');
-        assert.equal(await page.locator('#kartenZiel option').count(), 4);
+        // Die vier bisherigen Auswahlwerte müssen bytegleich erhalten bleiben;
+        // F6 ergänzt ausschließlich das echte, getrennt prüfbare Torziel.
+        const optionen = await page.locator('#kartenZiel option').evaluateAll(
+          elements => elements.map(e => e.value));
+        assert.deepEqual(optionen,
+          ['', 'aldera:eis', 'aldera:erz', 'st_aldera', 'aldera:tor']);
         assert.equal(await page.locator('#kartenAnflug').isDisabled(), true, 'ohne bestätigtes Ziel kein Auftrag');
         const vor = await hash();
 

@@ -3,7 +3,14 @@
  * oder Kapazitätsformeln; alle Zahlen stammen aus welt.bericht() bzw. dem Zustand. */
 (() => {
 'use strict';
-const Welt = window.AphrosWelt, Speicher = window.AphrosWeltSpeicher, G = window.FlugGrafik;
+const BasisWelt = window.AphrosWelt, Speicher = window.AphrosWeltSpeicher, G = window.FlugGrafik;
+// K7 ist ein ausdruecklich opt-in geoeffneter Forschungsstand. Keine Migration
+// aus Regel195 und vor allem keine gemeinsame IndexedDB mit dem K1-Spieltest.
+const istK7 = document.documentElement.dataset.forschungsprofil === 'k7';
+const Welt = istK7 ? Object.freeze({
+  ...BasisWelt, erstellen: BasisWelt.erstellenK7,
+  ausRegel195: () => { throw Error('K7: Keine Regel195-Migration freigegeben'); }
+}) : BasisWelt;
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => Number(n).toLocaleString('de-DE');
 const canvas = $('raum'), ctx = canvas.getContext('2d'), graph = G.erstellen(ctx);
@@ -599,6 +606,10 @@ window.addEventListener('pagehide', () => { if (geaendert) autosave(); });
 
 // ---------------------------------------------------------------- Start
 (async () => {
+  if (istK7) {
+    const migration = $('regel195');
+    if (migration) { migration.disabled = true; migration.title = 'K7: Produktspielstand-Migration nicht erlaubt'; }
+  }
   hülle = Speicher.erstellen(Welt);
   let ablage;
   try { if (!window.indexedDB) throw Error('IndexedDB fehlt'); ablage = Speicher.indexedDbAblage(window.indexedDB); await ablage.lesen(); }

@@ -24,6 +24,8 @@ on:
       - 'tests/k10-dritter-industriezyklus.test.mjs'
       - 'tests/k11-realer-frachterbedarf.test.mjs'
       - 'tests/k12-eisfracht-geldkreislauf.test.mjs'
+      - 'tests/k13-zwei-echte-finanzbruecken.test.mjs'
+      - 'tools/k13-finanzbruecke.mjs'
       - 'tools/k11-k10-endstand.mjs'
       - 'prototypes/w5ac/rule191-w5-ferry-core.js'
       - 'prototypes/welt/welt-kern.js'
@@ -319,3 +321,14 @@ jobs:
           node-version: '22'
       - name: "K12: echte Eisfracht-Käuferkasse und 74-ISK-Crewblockade, keine Gratisanzahlung"
         run: node --test tests/k12-eisfracht-geldkreislauf.test.mjs
+
+  k13-zwei-echte-finanzbruecken:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "K13: unterschriebene Original-Eisfracht aus Kundenlohnvorschuss vs Eigentuemereinlage"
+        run: node --test tests/k13-zwei-echte-finanzbruecken.test.mjs

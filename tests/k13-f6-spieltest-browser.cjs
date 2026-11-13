@@ -52,6 +52,17 @@ const path = require('node:path');
         assert.equal(b.state.owners.house.cash,a.state.owners.house.cash-750);
         assert.equal(b.state.stations.st_aldera.lager.frachter,a.state.stations.st_aldera.lager.frachter-1);
         assert.equal(Object.values(b.state.ships).filter(x=>x.owner==='house'&&x.klasse==='frachter').length,1);
+        // Opt-in only: authorizes deterministic NPC policy, never a forged
+        // station/ship signature via browser events.
+        await tap('nav button[data-ansicht="wirtschaft"]');
+        assert.equal(await page.locator('#k7Industrie').isVisible(),true);
+        assert.equal(await page.locator('#industrieSchalten').getAttribute('aria-pressed'),'false');
+        await tap('#industrieSchalten');
+        assert.equal(await page.locator('#industrieSchalten').getAttribute('aria-pressed'),'true');
+        let opt=await get();
+        assert.equal(opt.state.kanon.industrieAuto,true);
+        assert.equal(opt.audit.ok,true,JSON.stringify(opt.audit.fehler));
+        assert.equal(Object.values(opt.state.owners).reduce((n,x)=>n+x.cash,0),33000);
         await page.evaluate(()=>window.__welt.schritte(3));
         b=await get();
         assert.equal(b.audit.ok,true,JSON.stringify(b.audit.fehler));

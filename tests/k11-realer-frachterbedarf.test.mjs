@@ -22,8 +22,16 @@ function foto(w,s){
   const waehle=frei.at(0);
   const eisQuote=waehle?w.kern.pilotIceFreightQuote(s,waehle.id):null;
   const erzQuote=waehle?w.kern.pilotW3Kalkulation(s,waehle.id):null;
+  const c=w.rules.w5n,fluglohn=2*c.flugMinuten*c.fliegerLohn;
+  const kundenauftrag=c.charge*c.eisPreis+2*c.flugMinuten*c.frachtJeMinute;
   return {
     tick:s.tick,
+    iceWorkRequired:fluglohn,
+    iceBuyerRequired:kundenauftrag,
+    iceBuyerAccount:c.kunde,
+    iceBuyerISK:s.owners[c.kunde].cash,
+    iceCrewShortfall:Math.max(0,fluglohn-s.owners.transport.cash),
+    iceBuyerShortfall:Math.max(0,kundenauftrag-s.owners[c.kunde].cash),
     frachterImEigentum:fl.length,neueGekaufte:s.w5.verkauft,
     brauchbareFrachter:tauglich.length,freieFrachterAldera:frei.length,
     transportFrachterIds:fl.map(sh=>sh.id),
@@ -123,5 +131,19 @@ for (const seed of [42,7]) {
       assert.equal(resultate.length,2);
       assert.equal(resultate[0].vorher.werftlager,2);
       assert.equal(resultate[1].vorher.werftlager,2);
+      for(const r of resultate){
+        assert.equal(r.maximalBelegteJobs,0,
+          'K11: in 720 Minuten kein echter W3/W5n-Frachtauftrag finanzierbar');
+        assert.equal(r.belegteMinuten,0);
+        assert.equal(r.neuerW5Absatz,0,'K11: trotz zwei realer Lagerhüllen kein zusätzlicher Kauf');
+        assert.equal(r.neueAutomatischeErsatzkaeufe,0,
+          'K11: gesunde vorhandene Frachter erfordern keine weitere Ersatzbeschaffung');
+        assert.equal(r.nachher.brauchbareFrachter,10,'10 originale gebrauchte Frachter fahrbereit');
+        assert.equal(r.nachher.offeneW5,2);
+        assert.equal(r.nachher.speditionISK,46);
+        assert.equal(r.nachher.iceWorkRequired,120);
+        assert.equal(r.nachher.iceCrewShortfall,74,
+          'K11: der reale Eis-Pilotenfonds ist 74 ISK unterfinanziert');
+      }
     });
 }

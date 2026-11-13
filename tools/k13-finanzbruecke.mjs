@@ -124,11 +124,13 @@ export function brueckePruefen(w,s){
       return fehler('K13: Kundenforderung nicht/mehrfach zurückgebucht');
   }
   const done=s.w5n.frachtAbgeschlossen-c.base;
-  if(!ganz(done)||done>1||((c.phase==='abgeschlossen')!==(done===1)))
+  if(!ganz(done)||done>1||(c.phase==='abgeschlossen'&&done!==1))
     return fehler('K13: Vertragserfuellung und Rechnungsabschluss unvereinbar');
-  if(c.phase==='aktiv' && s.w5n.frachtauftrag?.schiff!==c.schiff)
+  if(c.phase==='aktiv' && done===0 &&s.w5n.frachtauftrag?.schiff!==c.schiff)
     return fehler('K13: noch nicht geleistete Fahrt ohne echten Auftrag');
-  if(c.phase==='abgeschlossen' &&
+  if(c.phase==='aktiv' && done===1 &&s.w5n.frachtauftrag!==null)
+    return fehler('K13: Erfuellung ohne freigegebene Original-Fracht');
+  if(done===1 &&
     (s.w5n.eisGeliefert-c.iceBase!==w.rules.w5n.charge
       ||s.w5n.frachtUmsatz-c.revenuesBase!==c.freight
       ||s.w5ag.paid.eis-c.paidBase!==c.crew))

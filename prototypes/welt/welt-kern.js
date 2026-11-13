@@ -226,7 +226,7 @@ function erstellen(startkapital = {}) {
         && state.w5n?.frachtauftrag?.schiff === sh.id
         && state.kanon.spielerFrachten?.auftraege?.some(x => x.schiff === sh.id && x.end === null);
       if (sh.klasse !== 'miner' && !spielerFrachter(state, sh) && !transitSteuerung)
-        return { ok: false, type: cmd.type, reason: 'K1: nur eigene freie Frachter oder bezahlter Spieler-Frachttransit steuerbar' };
+        return { ok: false, type: cmd.type, reason: 'K1: nur Miner oder eigene freie Aldera-Frachter fliegen im System frei' };
       const vor = FLUG.pruefen(state, cmd);
       if (vor) return { ok: false, type: cmd.type, reason: vor };
       if (cmd.type === 'shipUndock') {

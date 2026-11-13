@@ -15,6 +15,11 @@ const snap=s=>({
   transportSpent:s.stats.konto.transport.kosten,
   nadirCash:s.owners.st_nadir.cash,alderaCash:s.owners.st_aldera.cash,
   fondTransportCash:s.owners.fonds_transport.cash,icePilotCash:s.owners.pilot_eis.cash,
+  transportShareholderCash:s.owners.eigner_transport.cash,
+  transportPaidDividends:s.kanon.buch.summen['dividende|transport|eigner_transport']||0,
+  waterRetailPaid:Object.entries(s.kanon.buch.summen).filter(([key])=>key.startsWith('wasser-einzelhandel|'))
+    .reduce((sum,[,amount])=>sum+amount,0),
+  waterSoldHouseholds:s.kanon.wasser.konsum,
   iceMinerCash:s.owners.npc3.cash,
   iceAtAldera:s.stations.st_aldera.lager.eis,iceAtNadir:s.stations.st_nadir.lager.eis,
   waterNadir:s.stations.st_nadir.lager.wasser,waterAldera:s.stations.st_aldera.lager.wasser,
@@ -73,6 +78,12 @@ for(const seed of [42,7]){
     'kein neu produziertes Wasser für freien Verbraucherhandel');
   assert.equal(end.iceFreightRevenue,start.iceFreightRevenue,
     'keine unverdienten 240-ISK-Frachthonorare');
+  assert.equal(end.transportPaidDividends,start.transportPaidDividends,
+    'im Testfenster keine versteckte Reinvestition aus ausgeschüttetem Gewinn');
+  assert.equal(end.waterRetailPaid,start.waterRetailPaid,
+    'ohne zusätzlich hergestelltes Wasser auch kein neuer echter Wassermarktumsatz');
+  assert.ok(Number.isSafeInteger(end.transportPaidDividends));
+  assert.ok(Number.isSafeInteger(end.waterRetailPaid));
   assert.equal(end.transportCash,46);
   assert.equal(end.nadirCash,3440);
   assert.equal(end.fondTransportCash,0,'getrennte historische Lohnfondskasse');

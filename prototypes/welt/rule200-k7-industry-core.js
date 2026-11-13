@@ -727,7 +727,11 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5ag?['pilotWaterBuy']:[])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if (cmd.type === 'shipBuy') {
-    const frachter = !!rules.w3 && cmd.owner === rules.w3.spedition && cmd.klasse === 'frachter';
+    // K1-Forschung erlaubt dem Spieler ausschliesslich den real bezahlten Kauf
+    // aus vorhandener Aldera-Huelle. Regel195 und alle anderen Profile bleiben unveraendert.
+    const frachter = !!rules.w3 && cmd.klasse === 'frachter'
+      && (cmd.owner === rules.w3.spedition
+        || (!!rules.kanon && cmd.owner === rules.economy.start.owner && cmd.station === rules.erzpilot.station));
     const miner = cmd.klasse === 'miner' && (cmd.owner === 'house' || cmd.owner === 'npc3');
     const w5Kauf = !!rules.w5 && cmd.owner === rules.w5.kaeufer
       && cmd.klasse === rules.w5.klasse && cmd.station === rules.w5.station;
@@ -802,6 +806,10 @@ function execute(state, cmd, rules) {
       });
       if(rules.w5Replacement&&cmd.owner===rules.w3.spedition)
         state.w5ad.purchases.push({id:sh.id,tick:state.tick,station:cmd.station,preis:p});
+      // Zusätzliche physische Spielerhülle: einmaliger Originalkaufbeleg.
+      // Nur K1. Kein Journal bei Regel195 oder anderem Profil.
+      if(rules.kanon && cmd.klasse==='frachter' && cmd.owner===rules.economy.start.owner)
+        (state.kanon.spielerFrachterKaeufe ||= []).push({id:sh.id,tick:state.tick,station:cmd.station,preis:p});
       if (w5Kauf) {
         state.w5.verkauft++;
         state.w5.schiffIds.push(sh.id);
@@ -2149,7 +2157,10 @@ const m_core_w3 = (() => {
     const startBuyer=rules.owners.find(o=>o.id===c.kunde).cash;
     const carrier=state.owners[c.spedition]?.cash,startCarrier=rules.owners.find(o=>o.id===c.spedition).cash;
     const kauf=state.owners.w3_kauf_treuhand?.cash??0,arbeit=state.owners.w3_arbeit_treuhand?.cash??0;
-    const huelle=(state.ledger.frachter?.consumed??0)*rules.economy.waren.frachter.basis;
+    // Spielerhuellen: voll bezahlt, aber nicht aus der Speditionskasse.
+    const huelle=((state.ledger.frachter?.consumed??0)
+      -(rules.kanon ? (state.kanon?.spielerFrachterKaeufe?.length??0) : 0))
+      *rules.economy.waren.frachter.basis;
     const storniert=rules.k7?w.storniert:0,stornoRueck=rules.k7?w.stornoRueckzahlung:0;
     const erwarteteBezahlung=(w.abgeschlossen+storniert+(a?1:0))*k.gesamt;
     const erwarteteWare=w.abgeschlossen*c.fracht+(a?.phase==='rueck'?c.fracht:0);
@@ -2176,7 +2187,11 @@ const m_core_w3 = (() => {
       && arbeit===(a?k.arbeitsKosten-a.gearbeitet*c.arbeitJeMinute:0)
       && carrier+m_core_kanon.netto(state,c.spedition)+arbeit+(state.owners.w5ac_transfer_reserved?.cash??0)
         +(state.w5ac?.paid??0)+(state.owners.w5n_fracht_arbeit?.cash??0)
-        +(state.w5n?.frachtLohn??0)-(state.w5n?.frachtUmsatz??0)
+        -(rules.kanon && state.w5n?.frachtauftrag
+          && state.ships[state.w5n.frachtauftrag.schiff]?.owner===rules.economy.start.owner
+            ?(state.owners.w5n_fracht_arbeit?.cash??0):0)
+        +(state.w5n?.frachtLohn??0)-(state.kanon?.spielerFrachten?.lohn??0)
+        -(state.w5n?.frachtUmsatz??0)+(state.kanon?.spielerFrachten?.gebuehr??0)
         ===startCarrier-huelle-w.arbeitsKosten+w.frachtUmsatz
       && (!a||(a.menge===c.fracht&&a.zeit===k.zeit&&a.erzWert===k.erzWert
         && a.arbeitsKosten===k.arbeitsKosten&&a.frachtGebuehr===k.frachtGebuehr
@@ -2635,6 +2650,7 @@ const m_core_w5_replacement=(()=>{
     const ownerOk=Object.values(s.ships).filter(sh=>sh.owner===r.w3.spedition)
       .every(sh=>sh.klasse==='frachter'&&purchase(sh.id)&&!loss(sh.id));
     const purchaseOk=unique(p,'id')&&p.length===s.ledger.frachter.consumed
+      -(r.kanon ? (s.kanon?.spielerFrachterKaeufe?.length??0) : 0)
       &&p.every((x,i)=>integer(x.tick)&&x.tick<=s.tick&&x.preis===price
         &&(i===0||p[i-1].tick<=x.tick)
         &&['st_aldera','st_nadir'].includes(x.station)
@@ -2822,18 +2838,25 @@ const m_core_w5n=(()=>{
      return {ok:false,grund:'Eisroute nur in W5af/Rule194'};
    const c=r.w5n,w=s.w5n,p=preise(r);
    if(w.frachtauftrag||s.w3.auftrag)return {ok:false,grund:'Frachter bereits gebunden'};
-   if(!sh||sh.klasse!=='frachter'||sh.owner!==c.frachterOwner
+   // K1/Draft: derselbe Originalauftrag darf auch durch den rechtmaessigen
+   // Spieler-Eigentuemer ausgefuehrt werden. W5/Regel195 bleibt Speditionsrecht.
+   const spieler=r.kanon&&sh?.owner===r.economy.start.owner;
+   if(!sh||sh.klasse!=='frachter'||(sh.owner!==c.frachterOwner&&!spieler)
      ||sh.phase!=='dock'||sh.system!=='aldera'||sh.auftrag!=='halten'
-     ||Object.values(sh.ladung).some(n=>n!==0))
-     return {ok:false,grund:'Eigener leerer Frachter in Aldera erforderlich'};
+     ||Object.values(sh.ladung).some(n=>n!==0)
+     ||(spieler&&(!sh.flug||sh.flug.lage!=='angedockt'
+       ||sh.flug.anker!==c.quellStation)))
+     return {ok:false,grund:'Eigener leerer Frachter am Aldera-Dock erforderlich'};
    if((s.stations[c.quellStation].lager.eis||0)<c.charge)
      return {ok:false,grund:'Noch keine echte 50er-Eischarge im Quelllager'};
    if((s.stations[c.zielStation].lager.eis||0)+c.charge>obergrenze(s,r,c.zielStation,'eis'))
      return {ok:false,grund:'Eislager Nadir voll'};
    if(s.owners[c.zielStation].cash<p.gesamt)
      return {ok:false,grund:'Nadir kann Eis und Hin-/Rueckfracht nicht bezahlen'};
-   if(s.owners[c.frachterOwner].cash<p.arbeit)
-     return {ok:false,grund:'Spedition kann Flugarbeit nicht vorfinanzieren'};
+   if(s.owners[sh.owner].cash<p.arbeit)
+     return {ok:false,grund:sh.owner===c.frachterOwner
+       ? 'Spedition kann Flugarbeit nicht vorfinanzieren'
+       : 'Spieler kann beide Fluege nicht vorfinanzieren'};
    return {ok:true,grund:'Beide Fluege, Ware und Frachttarif finanzierbar',...p};
  }
  function frachtStart(s,r,sh){
@@ -2845,7 +2868,7 @@ const m_core_w5n=(()=>{
    if(geld.cash||arbeit.cash)throw Error('W5n doppelte Reservierung');
    s.owners[c.zielStation].cash-=p.gesamt;geld.cash+=p.gesamt;
    buche(s,c.zielStation,'kosten',p.gesamt);
-   s.owners[c.frachterOwner].cash-=p.arbeit;arbeit.cash+=p.arbeit;
+   s.owners[sh.owner].cash-=p.arbeit;arbeit.cash+=p.arbeit;
    s.stations[c.quellStation].lager.eis-=c.charge;
    sh.ladung.eis=c.charge;
    sh.phase='reise';sh.ziel=c.zielStation;sh.ankunft=s.tick+p.zeit;sh.auftrag='eisfracht';
@@ -2889,7 +2912,7 @@ const m_core_w5n=(()=>{
      work.cash-=c.fliegerLohn;
      if(r.w5ag)m_core_w5ag.pay(s,r,'eis',c.fliegerLohn,sh.id);
      else s.owners.fonds_transport.cash+=c.fliegerLohn;
-     w.frachtLohn+=c.fliegerLohn;buche(s,c.frachterOwner,'kosten',c.fliegerLohn);
+     w.frachtLohn+=c.fliegerLohn;buche(s,sh.owner,'kosten',c.fliegerLohn);
      a.gearbeitet++;
      if(s.tick===sh.ankunft){
        if(a.phase==='hin'){
@@ -2906,8 +2929,8 @@ const m_core_w5n=(()=>{
          if(sh.ziel!==c.quellStation||kauf.cash!==a.fracht
            ||work.cash!==0||a.gearbeitet!==2*a.zeit)
            throw Error('W5n Rueckfahrt unbezahlt');
-         kauf.cash=0;s.owners[c.frachterOwner].cash+=a.fracht;
-         buche(s,c.frachterOwner,'erloes',a.fracht);
+         kauf.cash=0;s.owners[sh.owner].cash+=a.fracht;
+         buche(s,sh.owner,'erloes',a.fracht);
          w.frachtUmsatz+=a.fracht;w.frachtAbgeschlossen++;
          if(r.w5ag)m_core_w5ag.iceEnd(s,r,sh.id);
          w.frachtauftrag=null;
@@ -3019,7 +3042,9 @@ const m_core_w5n=(()=>{
      &&(s.owners.w5n_fracht_arbeit?.cash||0)===(a?p.arbeit-a.gearbeitet*c.fliegerLohn:0)
      &&(!a||(a.eis===p.eis&&a.fracht===p.fracht&&a.arbeit===p.arbeit
        &&a.zeit===p.zeit&&a.gearbeitet>=0&&a.gearbeitet<2*p.zeit
-       &&s.ships[a.schiff]?.owner===c.frachterOwner))
+       &&(s.ships[a.schiff]?.owner===c.frachterOwner
+         ||(r.kanon&&s.ships[a.schiff]?.owner===r.economy.start.owner
+           &&s.kanon?.spielerFrachten?.auftraege?.some(x=>x.schiff===a.schiff&&x.end===null)))))
      &&w.fabrikBegonnen===w.fabrikFertig+(f?1:0)
      &&w.fabrikGebucht===w.fabrikBegonnen*factoryCost
      &&w.fabrikBezahlt===w.fabrikFertig*factoryCost+(f?.gearbeitet??0)*c.fabrikLohn
@@ -3192,7 +3217,12 @@ const m_core_w1_vollkosten = (() => {
     }, 0);
     const abnahmeGebunden = Object.values(vertraege).reduce((sum, v) =>
       sum + (state.owners[v.konto]?.cash ?? NaN), 0);
-    const haus = saldo('house', arbeitsGebunden('house'));
+    // K1: Eine vom Spieler vorausbezahlte W5n-Arbeitsreserve ist weiterhin
+    // SEIN gebundenes Geld, nicht wirtschaftlicher Aufwand vor Lohnleistung.
+    const spielerFrachtGebunden = rules.kanon && state.w5n?.frachtauftrag
+      && state.ships[state.w5n.frachtauftrag.schiff]?.owner === rules.economy.start.owner
+      ? (state.owners.w5n_fracht_arbeit?.cash ?? 0) : 0;
+    const haus = saldo('house', arbeitsGebunden('house') + spielerFrachtGebunden);
     const npc = saldo('npc3', arbeitsGebunden('npc3'));
     const station = saldo(cfg.station, abnahmeGebunden);
     const verkauf = saldo(cfg.werftOwner,
@@ -3204,7 +3234,11 @@ const m_core_w1_vollkosten = (() => {
       * rules.economy.waren.frachter.basis : 0;
     const foerderArbeit = state.ledger.erz.mined * cfg.minerJeMinute;
     const iceLohn=state.w5n?.mineLohn??0;
-    const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-iceLohn;
+    // K1: eigener Frachterkauf ist Anlagenkauf, keine unbezahlte Bergbauarbeit.
+    const spielerFrachterWert=rules.kanon
+      ?(state.kanon?.spielerFrachterKaeufe?.length??0)*rules.economy.waren.frachter.basis:0;
+    const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-iceLohn
+      -spielerFrachterWert-(state.kanon?.spielerFrachten?.lohn??0);
     const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
     const fonds = state.owners[fondsId].cash - startCash(fondsId) + m_core_kanon.netto(state, fondsId);
     const stationErz = state.stations[cfg.station].lager.erz;

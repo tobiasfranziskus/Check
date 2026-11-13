@@ -141,6 +141,11 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K13/F6: isolierter Rule200-Browser mit bezahltem Spielerfrachter"
+        run: node tests/k13-f6-spieltest-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
       - name: "Bildschirmfotos der vier Größen archivieren"
         if: always()
         uses: actions/upload-artifact@v4

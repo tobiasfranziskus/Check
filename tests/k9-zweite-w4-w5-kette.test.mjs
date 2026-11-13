@@ -255,7 +255,7 @@ for (const seed of [42,7]) {
     while((s.ships[neu].system!=='aldera'||s.ships[neu].phase!=='dock')&&reise<120){
       w.minute(s);reise++;
     }
-    assert.equal(reise,quote.minutes,'Original-Überführung ohne Teleport');
+    assert.equal(reise,quote.minuten,'Original-Überführung ohne Teleport');
     assert.ok(s.w5ac.completed.some(x=>x.id===neu),'bezahlte Überführung verbucht');
     assert.equal(s.ships[neu].owner,'transport');
     assert.equal(s.ledger.frachter.consumed-secondBase.frachterVerbraucht,1, 'genau eine gekaufte Hülle verbraucht');

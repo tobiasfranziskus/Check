@@ -69,8 +69,21 @@ const path = require('node:path');
         assert.equal(b.bericht.weltgeld,33000);
         assert.equal(b.state.minted,0);
         assert.equal(b.state.burned,0);
+        // Actually persist the optional NPC mandate, reload from the isolated
+        // Rule200 IndexedDB and compare the canonical world hash.
+        await page.evaluate(() => window.__welt.sichern());
+        const savedHash=b.hash;
+        await page.reload();
+        await page.waitForFunction(()=>window.__welt &&
+          /wiederhergestellt/.test(document.getElementById('meldung').textContent));
+        const loaded=await get();
+        assert.equal(loaded.state.rulesVersion,200);
+        assert.equal(loaded.state.kanon.industrieAuto,true);
+        assert.equal(loaded.hash,savedHash,'Rule200 Auto-Save+Reload preserves world hash');
+        assert.equal(loaded.audit.ok,true,JSON.stringify(loaded.audit.fehler));
+        assert.equal(loaded.db,'aphros-void-welt-k13-f6-v1');
         assert.deepEqual(errors,[]);
-        console.log('K13_F6_BROWSER_OK',kind,width,height,b.hash);
+        console.log('K13_F6_BROWSER_OK',kind,width,height,loaded.hash);
       } finally { await context.close(); }
     }
   } finally { await browser.close(); await new Promise(done=>server.close(done)); }

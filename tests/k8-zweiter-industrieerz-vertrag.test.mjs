@@ -28,7 +28,7 @@ function unterschreiben(w,s,miner='sh004',frachter='sh020'){
     {type:'industrialOreCommit',owner:'st_nadir'}
   ])befehl(w,s,cmd);
 }
-function bauUndKauf(w,s,anfang){
+function bauUndKauf(w,s,anfang,kaufLimit){
   if(s.stations.st_nadir.lager.erz>=10 && !s.w4.auftrag
     && s.w4.materialErzeugt-anfang.material<5){
     const q=w.kern.pilotW4Kalkulation(s);
@@ -44,7 +44,7 @@ function bauUndKauf(w,s,anfang){
   // Stationslager liegt. Vor dem Kauf ausschließlich den echten
   // Produktions-/Verkaufszähler und physischen Bestand prüfen.
   const unverkauft=s.w5.fertig-s.w5.verkauft;
-  if(s.w5.verkauft===anfang.verkauft && unverkauft>0
+  if(s.w5.verkauft-anfang.verkauft<kaufLimit && unverkauft>0
     && (s.stations.st_nadir.lager.frachter||0)>=1
     &&s.owners.transport.cash>=w.rules.w5.verkaufsPreis)
     befehl(w,s,{type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_nadir'});
@@ -56,7 +56,7 @@ function bauUndKauf(w,s,anfang){
     if(q.ok)befehl(w,s,{type:'shipReposition',owner:'transport',schiff:neu});
   }
 }
-function ersterErfolg(seed,politik={}){
+function ersterErfolg(seed,politik={},kaufLimit=1){
   const {terminalSave}=k6Start(seed);
   const {welt:w,zustand:s}=Welt.ausRegel199K7(terminalSave);
   if(Object.keys(politik).length)w.politikSetzen(s,politik);
@@ -68,7 +68,7 @@ function ersterErfolg(seed,politik={}){
   assert.equal(s.owners.k7_werft_treuhand.cash,530);
   for(let n=0;n<600;n++){
     w.minute(s);
-    bauUndKauf(w,s,anfang);
+    bauUndKauf(w,s,anfang,kaufLimit);
     if(n%60===0)pruefe(w,s,'K8-Vorgeschichte '+n);
   }
   pruefe(w,s,'K8 erster Vertrag');
@@ -76,7 +76,7 @@ function ersterErfolg(seed,politik={}){
   assert.equal(s.ledger.erz.mined-anfang.mined,50,'50 bezahlte, physische Erz');
   assert.ok(s.w4.materialErzeugt-anfang.material>=5,'Originalraffinerie');
   assert.ok(s.w5.fertig-anfang.fertig>=1,'originaler Werftbau');
-  assert.equal(s.w5.verkauft-anfang.verkauft,1,'exakt eine zusätzliche 750-ISK-Hülle rechtmäßig gekauft');
+  assert.equal(s.w5.verkauft-anfang.verkauft,kaufLimit,'nur tatsächlich vorhandene Hüllen zum vollständigen Originalpreis gekauft');
   const ersatzId=s.w5.schiffIds.at(-1),ersatz=s.ships[ersatzId];
   assert.ok(ersatz&&ersatz.owner==='transport','realer Eigentumsübergang des Neubaus');
   assert.ok(s.w5ac.completed.some(x=>x.id===ersatzId),'Neubau gegen bezahlte Arbeit nach Aldera überführt');
@@ -102,12 +102,15 @@ for(const seed of [42,7]){
   test('K8 Folgevertrag auf echter Krisenwelt Seed '+seed,
     {timeout:8*60*1000},()=>{
       const standard=ersterErfolg(seed);
-      const ohneFrueheErsatzkaeufe=ersterErfolg(seed,{ersatzkauf:false});
       const varianten=[
-        {modus:'unveraenderte NPC-Automatik',basis:standard,disposition:false},
-        {modus:'Eigentuemer-Disposition',basis:standard,disposition:true},
-        {modus:'Ersatzbeschaffung vorab pausiert',basis:ohneFrueheErsatzkaeufe,disposition:true}
+        {modus:'NPC-Automatik / 1 Kauf',basis:standard,disposition:false},
+        {modus:'Eigentuemer-Disposition / 1 Kauf',basis:standard,disposition:true}
       ];
+      // Ausschließlich physisch vorhandene, zum Originalpreis bezahlte
+      // Frachterkäufe – keine Überweisung oder bloß vorgemerkte Bestellung.
+      for(const kaufLimit of [1,2,3,4,5])
+        varianten.push({modus:'Ersatzkauf pausiert / '+kaufLimit+' Kauf',
+          basis:ersterErfolg(seed,{ersatzkauf:false},kaufLimit),disposition:true});
       for(const versuch of varianten){
         const {w,vorlage,anfang}=versuch.basis,modus=versuch.modus;
         const s=w.load(vorlage),start=s.tick,geliefert=s.w3.geliefert;

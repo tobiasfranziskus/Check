@@ -105,6 +105,17 @@ function drehen(kurs, soll, rate) {
 const ids = (obj) => Object.keys(obj).sort();
 const feld = (flug, system, id) => (flug.systeme[system]?.felder || []).find((f) => f.id === id) || null;
 
+// Nur der belegte K1-Spielertransport darf im bezahlten W5n-Transit denselben
+// Flugregler nutzen. NPC-Transits, Regel195 und fremde Schiffe bleiben unbeweglich.
+// Das ist Korridor-Manoevrierung; die wirtschaftliche Ankunft berechnet allein W5n.
+function steuerbarerTransit(state, sh) {
+  const a=state.w5n?.frachtauftrag, f=state.kanon?.spielerFrachten?.auftraege;
+  return state.rulesVersion===199 && sh?.klasse==='frachter' && sh.owner==='house'
+    && sh.phase==='reise' && sh.auftrag==='eisfracht' && sh.flug?.lage==='transit'
+    && a?.schiff===sh.id && Array.isArray(f)
+    && f.some(x=>x?.schiff===sh.id && x.end===null);
+}
+
 function koerperAngedockt(system, flug = FLUG) {
   const st = flug.systeme[system].station;
   return { x: st.x, y: st.y, vx: 0, vy: 0, kurs: 0, lage: 'angedockt', anker: st.id, rest: 0,
@@ -121,7 +132,8 @@ function pruefen(state, cmd, flug = FLUG) {
   if (typeof cmd.owner !== 'string' || s.owner !== cmd.owner) return 'Schiff gehört nicht dem Besitzer';
   if (!b || !Object.hasOwn(flug.klassen, s.klasse)) return 'Schiff hat keinen Flugkörper';
   if (cmd.type === 'shipUndock') return b.lage === 'angedockt' ? null : 'Schiff ist nicht angedockt';
-  if (b.lage !== 'frei') return 'Schiff ist nicht im freien Flug';
+  if (b.lage !== 'frei' && !(cmd.type==='shipSteer' && steuerbarerTransit(state,s)))
+    return 'Schiff ist nicht im freien Flug';
   const sys = flug.systeme[s.system];
   if (cmd.type === 'shipSteer') {
     if (!ganz(cmd.kurs, 0, 255)) return 'Kurs muss ganze Zahl 0..255 sein';
@@ -203,7 +215,8 @@ function schritt(state, flug = FLUG) {
   for (const id of ids(state.ships)) {
     const s = state.ships[id], b = s.flug;
     if (!b) continue;
-    if (b.lage === 'frei') bewegen(flug, s);
+    if (b.lage === 'frei' || (steuerbarerTransit(state,s) && b.modus==='hand'))
+      bewegen(flug, s);
     else if (b.lage === 'andocken') {
       const st = flug.systeme[s.system].station;
       b.rest -= 1;
@@ -266,7 +279,14 @@ function audit(state, flug = FLUG) {
     if ((b.lage === 'transit') !== (s.phase === 'reise')) return fehler(id + ': Transit passt nicht zur Core-Phase');
     const fest = b.lage === 'angedockt' || b.lage === 'andocken' || b.lage === 'abdocken';
     if (fest !== (b.anker !== null) || (fest && b.anker !== sys.station.id)) return fehler(id + ': Anker passt nicht zur Lage');
-    if (b.lage !== 'frei' && (b.vx !== 0 || b.vy !== 0)) return fehler(id + ': Geschwindigkeit außerhalb des freien Flugs');
+    if (b.lage !== 'frei' && !steuerbarerTransit(state,s)
+      && (b.vx !== 0 || b.vy !== 0))
+      return fehler(id + ': Geschwindigkeit außerhalb des freien Flugs');
+    if (b.lage === 'transit' && !steuerbarerTransit(state,s)
+      && (b.modus==='hand' || b.sollFahrt!==0))
+      return fehler(id + ': unbefugte Transitsteuerung');
+    if (b.lage === 'transit' && (b.andocken || b.ziel!==null))
+      return fehler(id + ': Transit mit verbotener Dock-/Zielfreigabe');
     if (b.lage === 'angedockt' && (b.x !== sys.station.x || b.y !== sys.station.y)) return fehler(id + ': angedockt, aber nicht am Dock');
     const sequenz = b.lage === 'andocken' || b.lage === 'abdocken';
     if (!ganz(b.rest, sequenz ? 1 : 0, sequenz ? flug.andocken.schritte : 0)) return fehler(id + ': Sequenzzähler ungültig');

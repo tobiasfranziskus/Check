@@ -144,6 +144,15 @@ for (const seed of [42,7]) {
         assert.equal(r.nachher.iceWorkRequired,120);
         assert.equal(r.nachher.iceCrewShortfall,74,
           'K11: der reale Eis-Pilotenfonds ist 74 ISK unterfinanziert');
+        assert.equal(r.nachher.iceBuyerRequired,490);
+        assert.equal(r.nachher.iceBuyerAccount,'fonds_transport');
+        assert.equal(r.nachher.iceBuyerISK,0,
+          'K11: Original-W5n-Käufer hat keinerlei finanzierte Nachfrage');
+        assert.equal(r.nachher.iceBuyerShortfall,490,
+          'K11: Käuferdefizit kommt UNABHÄNGIG vom fehlenden Frachtlohn hinzu');
+        assert.equal(r.nachher.neueGekaufte,r.vorher.neueGekaufte);
+        assert.ok(r.nachher.freieFrachterAldera>=1);
+        assert.equal(r.nachher.weltgeld,33000);
       }
     });
 }

@@ -82,7 +82,8 @@ for(const seed of [42,7]){
         assert.equal(t.owners.w5n_fracht_arbeit.cash,120);
         assert.equal(t.owners.w5n_fracht_kauf.cash,490);
         assert.equal(t.owners.transport.cash,origCash.transport+amount-120);
-        assert.equal(t.owners[src].cash,origCash[src==='st_nadir'?'nadir':'shareholder']-amount);
+        assert.equal(t.owners[src].cash,origCash[src==='st_nadir'?'nadir':'shareholder']-amount-(src==='st_nadir'?490:0),
+          'K13: Kundenkonto zahlt zusätzlich zum echten Vorschuss die ORIGINAL 490-ISK-Treuhandrechnung');
         assert.equal(betrag(t,art+'|'+src+'|transport'),amount);
         assert.equal(brueckePruefen(w,t).ok,true);
         audit(w,t,'K13 '+modus+' nach echtem Original-Frachtstart');

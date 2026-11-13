@@ -26,6 +26,11 @@ function originalNachK12(seed){
   assert.equal(s.owners.transport.cash,46);
   assert.equal(s.owners.eigner_transport.cash,261);
   assert.equal(s.w5n.frachtauftrag,null);
+  // Zwei Finanzierungsprofile werden mit EXAKT EINEM vom Eigentuemer
+  // unterschriebenen Originalauftrag verglichen. Original-NPC-Auto-
+  // Frachtfolge wird danach als eigener Positiv-/Langzeitversuch geprueft.
+  // Ein bestehender manuell signierter shipFreightIce bleibt zugelassen.
+  w.politikSetzen(s,{eisfracht:false});
   audit(w,s,'K13 Ausgang voller 50-Eis-Bestand');
   return {w,s};
 }

@@ -45,6 +45,8 @@ jobs:
         run: node --test tests/welt-frachter-handflug.test.mjs
       - name: "K1/F4: echte Spieler-Eisfracht, W5n-Treuhand, 120 Minuten und Manipulationsabwehr"
         run: node --test tests/welt-spieler-eisfracht.test.mjs
+      - name: "K1/F5: 2D-Korridorphysik, Original-W5n-Zeit/Arbeit, Replay und Negativprüfungen"
+        run: node --test tests/welt-transitkorridor.test.mjs
       - name: "K1-Wirtschaft: 15 Szenarien × 90 Tage, 365- und 730-Tage-Läufe"
         run: node --test tests/welt-wirtschaft.test.mjs
       - name: "Alle bestehenden Regel14-/Regel195-/Flug-Regressionen"
@@ -94,6 +96,11 @@ jobs:
           WELT_BROWSER: ${{ matrix.browser }}
       - name: "K1/F4: persönlicher Eisfrachtvertrag, Original-W5n-Treuhand und 120 bezahlte Minuten"
         run: node tests/welt-spieler-eisfracht-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K1/F5: bezahlten Frachtkorridor mit echtem 2D-Kurs in vier Touchgrößen steuern"
+        run: node tests/welt-transitkorridor-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}

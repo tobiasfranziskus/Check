@@ -180,7 +180,11 @@ function erstellen(startkapital = {}) {
     // Ruhender Körper: 60 Teilschritte verändern ihn nachweislich nicht (siehe Test).
     function ruht(sh) {
       const b = sh.flug;
-      if (!b || b.lage === 'angedockt' || b.lage === 'transit') return true;
+      if (!b || b.lage === 'angedockt') return true;
+      // Transit ohne manuelle Bewegung bleibt wie bisher ein günstiger Core-Minutenlauf.
+      // Bei echtem Korridormanöver darf der 60-Schritte-Integrator nie übersprungen werden.
+      if (b.lage === 'transit') return b.modus !== 'hand'
+        || (b.vx===0 && b.vy===0 && b.sollFahrt===0 && b.kurs===b.sollKurs);
       if (b.lage !== 'frei' || b.vx !== 0 || b.vy !== 0 || b.sollFahrt !== 0 || b.kurs !== b.sollKurs || b.andocken) return false;
       if (b.modus !== 'anflug' || !b.ziel) return true;
       if (b.ziel.art !== 'feld') return false;
@@ -214,7 +218,14 @@ function erstellen(startkapital = {}) {
       if (!sh || !sh.flug) return { ok: false, type: cmd && cmd.type, reason: 'unbekanntes Schiff' };
       if (!intern && hat(state.kanon.pendel, sh.id))
         return { ok: false, type: cmd.type, reason: 'K1: laufender Pendelauftrag steuert Flug und Andocken' };
-      if (sh.klasse !== 'miner' && !spielerFrachter(state, sh))
+      // Ein bereits voll finanziertes F4-Frachtgeschäft kann im Original-W5n-
+      // Korridor physisch gesteuert werden. Keine weiteren Flug-/Dockbefehle,
+      // keine fremden Schiffe, kein neuer Vertrag und keine Zusatzlohnreserve.
+      const transitSteuerung = cmd.type === 'shipSteer' && sh.klasse === 'frachter'
+        && sh.owner === rules.economy.start.owner && sh.flug.lage === 'transit'
+        && state.w5n?.frachtauftrag?.schiff === sh.id
+        && state.kanon.spielerFrachten?.auftraege?.some(x => x.schiff === sh.id && x.end === null);
+      if (sh.klasse !== 'miner' && !spielerFrachter(state, sh) && !transitSteuerung)
         return { ok: false, type: cmd.type, reason: 'K1: nur Miner oder eigene freie Aldera-Frachter fliegen im System frei' };
       const vor = FLUG.pruefen(state, cmd);
       if (vor) return { ok: false, type: cmd.type, reason: vor };

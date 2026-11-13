@@ -116,7 +116,8 @@ test('F5: Manöver verändern weder originalen W5n-Zahlungszeitpunkt noch 50-Eis
   assert.equal(x.s.kanon.spielerFrachten.lohn,120);
   assert.equal(x.s.kanon.spielerFrachten.gebuehr,240);
   assert.equal(x.s.stations.st_nadir.lager.eis,50);
-  assert.equal(x.s.owners.house.cash,old.house+120);
+  assert.equal(x.s.owners.house.cash,old.house+240,
+    'Original-Frachtentgelt komplett erst NACH Rückkehr; die 120 Arbeits-ISK wurden bereits vor Start ausgebucht');
   assert.equal(x.s.owners.pilot_house.cash,old.pilot+120);
   assert.equal(x.s.owners.st_nadir.cash,old.nadir);
   assert.equal(x.w.hash(x.s),y.w.hash(y.s),

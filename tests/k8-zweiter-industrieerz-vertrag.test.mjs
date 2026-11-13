@@ -39,11 +39,16 @@ function bauUndKauf(w,s,anfang){
     && s.stations.st_nadir.lager.material>=5)
     befehl(w,s,{type:'industrialOreBuildShip',owner:'werft_extern'});
   if(!s.kanon.industrieErz.werftVerwendet||s.w5.fertig<=anfang.fertig)return;
-  const neu=s.w5.schiffIds.at(-1);
-  if(!s.ships[neu] && (s.stations.st_nadir.lager.frachter||0)>=1
+  // Das W5-Verkaufsbuch enthält historische Frachter-IDs. Die jüngste ID
+  // kann also ein ALTES Schiff sein, während ein NEUER Frachter nur im
+  // Stationslager liegt. Vor dem Kauf ausschließlich den echten
+  // Produktions-/Verkaufszähler und physischen Bestand prüfen.
+  const unverkauft=s.w5.fertig-s.w5.verkauft;
+  if(unverkauft>0 && (s.stations.st_nadir.lager.frachter||0)>=1
     &&s.owners.transport.cash>=w.rules.w5.verkaufsPreis)
     befehl(w,s,{type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_nadir'});
-  const sh=s.ships[neu];
+  if(s.w5.verkauft<=anfang.verkauft)return;
+  const neu=s.w5.schiffIds.at(-1),sh=s.ships[neu];
   if(sh&&sh.owner==='transport'&&sh.system==='nadir'&&sh.phase==='dock'
     &&sh.auftrag==='halten'){
     const q=w.kern.pilotW5TransferKalkulation(s,neu);
@@ -54,7 +59,7 @@ function ersterErfolg(seed){
   const {terminalSave}=k6Start(seed);
   const {welt:w,zustand:s}=Welt.ausRegel199K7(terminalSave);
   const anfang={mined:s.ledger.erz.mined,geliefert:s.w3.geliefert,
-    material:s.w4.materialErzeugt,fertig:s.w5.fertig,kauf:s.w3.kaufAusgaben};
+    material:s.w4.materialErzeugt,fertig:s.w5.fertig,verkauft:s.w5.verkauft,kauf:s.w3.kaufAusgaben};
   unterschreiben(w,s);
   assert.equal(s.owners.w3_kauf_treuhand.cash,740);
   assert.equal(s.owners.w3_arbeit_treuhand.cash,120);
@@ -69,6 +74,10 @@ function ersterErfolg(seed){
   assert.equal(s.ledger.erz.mined-anfang.mined,50,'50 bezahlte, physische Erz');
   assert.ok(s.w4.materialErzeugt-anfang.material>=5,'Originalraffinerie');
   assert.ok(s.w5.fertig-anfang.fertig>=1,'originaler Werftbau');
+  assert.ok(s.w5.verkauft-anfang.verkauft>=1,'neu gebaute Hülle physisch für 750 ISK verkauft');
+  const ersatzId=s.w5.schiffIds.at(-1),ersatz=s.ships[ersatzId];
+  assert.ok(ersatz&&ersatz.owner==='transport','realer Eigentumsübergang des Neubaus');
+  assert.ok(s.w5ac.completed.some(x=>x.id===ersatzId),'Neubau gegen bezahlte Arbeit nach Aldera überführt');
   assert.equal(s.w3.kaufAusgaben-anfang.kauf,740,'Originalkäufer nur einmal belastet');
   assert.equal(s.kanon.industrieErz.phase,'geliefert');
   assert.equal(s.owners.k7_werft_treuhand.cash,0);
@@ -154,7 +163,8 @@ for(const seed of [42,7]){
         pruefe(w,s,'K8 Replay');
         console.log('K8_FOLGEVERTRAG '+JSON.stringify({seed,modus,phase,grund,
           startTick:start,endTick:s.tick,angebot:auswahl&&{miner:auswahl.miner,frachter:auswahl.frachter},
-          letzteAngebotsgruende:hinweis,versucht,ersteLieferung:50,
+          letzteAngebotsgruende:hinweis,versucht,ersteLieferung:50,neuerErsatz:s.w5.schiffIds.at(-1),
+          werftVerkaufNeu:s.w5.verkauft-anfang.verkauft,
           zweiteLieferung:s.w3.geliefert-geliefert,
           kaeuferBelastet:s.w3.kaufAusgaben-kauf,
           erzSeitVersuch:s.ledger.erz.mined-ledger,

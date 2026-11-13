@@ -21,6 +21,7 @@ on:
       - 'tests/k7-industrie-13x90.test.mjs'
       - 'tests/k8-zweiter-industrieerz-vertrag.test.mjs'
       - 'tests/k9-zweite-w4-w5-kette.test.mjs'
+      - 'tests/k10-dritter-industriezyklus.test.mjs'
       - 'prototypes/w5ac/rule191-w5-ferry-core.js'
       - 'prototypes/welt/welt-kern.js'
       - 'tools/k4-ore-allocation.mjs'
@@ -282,3 +283,14 @@ jobs:
           node-version: '22'
       - name: "K9: zweite industrielle Erzlieferung zu W4-Material, W5-Eigentumskauf und bezahltem Ersatzflug"
         run: node --test tests/k9-zweite-w4-w5-kette.test.mjs
+
+  k10-dritter-industriezyklus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "K10: Seed42/7 dritter und Folgevertraege, komplette W1-W5-Kette und Finanzierungsgrenze"
+        run: node --test tests/k10-dritter-industriezyklus.test.mjs

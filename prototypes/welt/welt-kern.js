@@ -29,6 +29,10 @@ const m_data_kanon = (() => {
     // Flugarbeit des Miners: jede Dienstminute außerhalb des Docks ohne Förderlohn kostet
     // den Eigentümer 1 ISK an den eigenen Piloten. Reserve wird vor dem Abdocken gebunden.
     flug: { lohnJeMinute: 1, reserveMinuten: 40, nachschussUnter: 5 },
+    // F6 [DRAFT/OPTION]: Sichtbares, physisch anzufliegendes Abflugtor in Aldera.
+    // Kein kostenloser Systemwechsel: erst bezahlter 2D-Anflug, physische
+    // Geschwindigkeitsprüfung und Rückdockung erlauben den OPTIONALEN Torvertrag.
+    tor: { x: 576000, y: -288000, radius: 64000, tempo: 192 },
     // Wasser: Nadir verkauft zum bestehenden Regel195-Preis. Aldera erhält Wasser nur als
     // bezahlte Rückfracht des Eisfrachters und verkauft mit Einzelhandelsaufschlag.
     wasser: { preisAldera: 16, rueckfrachtJeEinheit: 1, lagerAldera: 100 },
@@ -687,6 +691,118 @@ function erstellen(startkapital = {}) {
     return { starten, minute, audit };
   })();
 
+  // ----------------------------------------------------------- m_core_torfreigabe
+  // K1/F6: optionale, echte Abflug-Navigation, NICHT die W5n-Ankunft.
+  // Jeder Torbeleg stammt aus bezahltem Original-2D-Handflug. Erst danach darf
+  // der Spieler selbst den speziellen Original-W5n-Vertrag im Dock annehmen.
+  // Historische F4-/F5-Verträge und Saves ohne tor-Feld bleiben identisch.
+  const m_core_torfreigabe = (() => {
+    const owner=rules.economy.start.owner, tor=KANON.tor;
+    const inner=(sh)=> {
+      if(!sh?.flug) return false;
+      const b=sh.flug, dx=b.x-tor.x,dy=b.y-tor.y;
+      return dx*dx+dy*dy<=tor.radius*tor.radius
+        && b.vx*b.vx+b.vy*b.vy<=tor.tempo*tor.tempo;
+    };
+    const owned=(s,sh)=>!!sh && sh.owner===owner && sh.klasse==='frachter'
+      && sh.system==='aldera' && sh.phase==='dock'
+      && sh.auftrag==='halten' && ladungSumme(sh)===0
+      && !m_core_anlage.stillgelegt(s,sh);
+    const valide=(e,s)=>e && typeof e==='object' && !Array.isArray(e)
+      && Object.keys(e).sort().join()==='arbeit,schiff,tick,vx,vy,x,y'
+      && typeof e.schiff==='string' && ganz(e.tick) && e.tick<=s.tick
+      && ganz(e.arbeit) && e.arbeit>0 && e.arbeit<=e.tick
+      && [e.x,e.y,e.vx,e.vy].every(Number.isSafeInteger)
+      && (e.x-tor.x)**2+(e.y-tor.y)**2<=tor.radius**2
+      && e.vx**2+e.vy**2<=tor.tempo**2
+      && s.ships[e.schiff]?.owner===owner
+      && s.ships[e.schiff]?.klasse==='frachter';
+    const key=(x)=>x.schiff+'|'+x.tick+'|'+x.arbeit;
+    const same=(x,y)=>!!x&&!!y&&key(x)===key(y)
+      && x.x===y.x&&x.y===y.y&&x.vx===y.vx&&x.vy===y.vy;
+    function pruefen(s,sh) {
+      if(!owned(s,sh))return {ok:false,grund:'Nur eigener freier Aldera-Frachter darf das Abflugtor bestaetigen'};
+      if(sh.flug.lage!=='frei')return {ok:false,grund:'Torabnahme nur im echten freien 2D-Flug'};
+      const dienst=s.kanon.flugdienst[sh.id];
+      if(!dienst||dienst.gestrandet||!ganz(dienst.minuten)||dienst.minuten===0
+        ||!s.owners[dienst.konto]||s.owners[dienst.konto].cash<1)
+        return {ok:false,grund:'Tor-Anflug nur mit tatsaechlich finanzierter Pilotenarbeit'};
+      if(!inner(sh))return {ok:false,grund:'Torposition oder Anflugtempo nicht erreicht'};
+      if(s.kanon.tor?.freigaben?.[sh.id])
+        return {ok:false,grund:'Torfreigabe bereits vorhanden'};
+      return {ok:true,grund:'Bezahlter Anflug und Original-Flugtempo bestaetigt'};
+    }
+    function check(s,cmd) {
+      const sh=s.ships[cmd?.schiff],typ='shipGateCheck';
+      if(!cmd||typeof cmd!=='object'||Array.isArray(cmd)
+        ||Object.keys(cmd).some(k=>!['type','owner','schiff'].includes(k))
+        ||cmd.owner!==owner||cmd.owner!==sh?.owner)
+        return {ok:false,type:typ,reason:'Torabnahme: nur rechtmaessiger Schiffeigentuemer'};
+      const r=pruefen(s,sh);if(!r.ok)return {ok:false,type:typ,reason:r.grund};
+      const d=s.kanon.flugdienst[sh.id],b=sh.flug;
+      const e={schiff:sh.id,tick:s.tick,arbeit:d.minuten,x:b.x,y:b.y,vx:b.vx,vy:b.vy};
+      const t=s.kanon.tor ||= {historie:[],freigaben:{},genutzt:0};
+      t.historie.push(e);t.freigaben[sh.id]={...e};
+      return {ok:true,type:typ};
+    }
+    function darfFracht(s,cmd){
+      const sh=s.ships[cmd?.schiff],t=s.kanon.tor,typ='shipFreightGateIce';
+      if(!cmd||typeof cmd!=='object'||Array.isArray(cmd)
+        ||Object.keys(cmd).some(k=>!['type','owner','schiff'].includes(k))
+        ||cmd.owner!==owner||cmd.owner!==sh?.owner)
+        return {ok:false,type:typ,reason:'Torfracht: fremdes oder unbekanntes Schiff'};
+      if(!owned(s,sh)||sh.flug.lage!=='angedockt'||sh.flug.anker!=='st_aldera')
+        return {ok:false,type:typ,reason:'Torfracht: zuerst physisch zum Aldera-Dock zurueckkehren'};
+      const proof=t?.freigaben?.[sh.id];
+      if(!valide(proof,s)||!t.historie.some(x=>same(x,proof)))
+        return {ok:false,type:typ,reason:'Torfracht: kein nachgewiesener bezahlter Toranflug'};
+      return {ok:true,type:typ,proof};
+    }
+    function starten(s,cmd){
+      const check=darfFracht(s,cmd);
+      if(!check.ok)return check;
+      // In exakt demselben Core-Execute startet der bereits bestehende,
+      // vollstaendig finanzierte Original-W5n-Vertrag. Bei Ablehnung keinerlei
+      // Mutationen am Torbuch. Erst ERFOLG konsumiert den Torbeleg.
+      const r=execute(s,{type:'shipFreightIce',owner:cmd.owner,schiff:cmd.schiff});
+      if(!r.ok)return {ok:false,type:'shipFreightGateIce',reason:r.reason};
+      const a=s.kanon.spielerFrachten?.auftraege.at(-1);
+      if(!a||a.schiff!==cmd.schiff||a.end!==null)throw Error('F6: Originalauftrag fehlt nach Start');
+      const t=s.kanon.tor;
+      a.tor={...check.proof};delete t.freigaben[cmd.schiff];t.genutzt++;
+      return {ok:true,type:'shipFreightGateIce'};
+    }
+    function audit(s) {
+      const t=s.kanon.tor;
+      if(t===undefined)return !(s.kanon.spielerFrachten?.auftraege||[]).some(x=>x.tor!==undefined);
+      if(!t||typeof t!=='object'||Array.isArray(t)
+        ||Object.keys(t).sort().join()!=='freigaben,genutzt,historie'
+        ||!Array.isArray(t.historie)||!t.freigaben||typeof t.freigaben!=='object'
+        ||Array.isArray(t.freigaben)||!ganz(t.genutzt))return false;
+      const keys=new Set(),used=new Set();
+      for(const [i,e] of t.historie.entries()){
+        if(!valide(e,s)||keys.has(key(e))
+          ||(i&&t.historie[i-1].tick>e.tick))return false;
+        keys.add(key(e));
+      }
+      for(const [id,e] of Object.entries(t.freigaben)){
+        if(id!==e?.schiff||!valide(e,s)||!t.historie.some(x=>same(x,e)))return false;
+        if(s.w5n.frachtauftrag?.schiff===id)return false;
+      }
+      let paid=0;
+      for(const c of s.kanon.spielerFrachten?.auftraege||[])if(c.tor!==undefined){
+        const e=c.tor;
+        if(!valide(e,s)||!t.historie.some(x=>same(x,e))||used.has(key(e))
+          ||e.schiff!==c.schiff||e.tick>=c.start) return false;
+        used.add(key(e));paid++;
+        if(t.freigaben[e.schiff]&&same(t.freigaben[e.schiff],e))return false;
+      }
+      return paid===t.genutzt && keys.size===used.size+Object.keys(t.freigaben).length
+        && t.historie.every(e=>used.has(key(e))||same(t.freigaben[e.schiff],e));
+    }
+    return { pruefen, check, darfFracht, starten, audit };
+  })();
+
   // NPC-Automatik: wählt nur finanzierte Aufträge und nutzt dieselben validierten Befehle.
   const m_core_disponent = (() => {
     const versuch = (state, cmd, k1) => (k1 ? m_core_kreislauf.ausfuehren(state, cmd) : kern.execute(state, cmd, rules));
@@ -861,6 +977,7 @@ function erstellen(startkapital = {}) {
       if (!m_core_buch.audit(state)) fehler.push('K1-Buch');
       if (!m_core_minerwerft.audit(state)) fehler.push('K2-Minerwerft/Transport');
       if (!m_core_spielerfracht.audit(state)) fehler.push('K1-Spielerfracht/Vertragslohn');
+      if (!m_core_torfreigabe.audit(state)) fehler.push('K1-Bezahltes-Tor/Vertragsfreigabe');
       if (state.minted !== 0 || state.burned !== 0) fehler.push('Emission/Senke in K1 nicht freigegeben');
       for (const id of ids(state.owners)) if (!ganz(state.owners[id].cash)) fehler.push('Kasse ' + id);
       // Unabhängige Gegenbuchung zum Original-W5ad-Transportkaufjournal:
@@ -984,6 +1101,8 @@ function erstellen(startkapital = {}) {
     pruefeForm(state);
     const type = cmd && cmd.type;
     if (typeof type === 'string' && hat(FLUG.BEFEHLE, type)) return m_core_flugplan.befehl(state, cmd, false);
+    if (type === 'shipGateCheck') return m_core_torfreigabe.check(state,cmd);
+    if (type === 'shipFreightGateIce') return m_core_torfreigabe.starten(state,cmd);
     if (type === 'stationBuildMiner') return m_core_minerwerft.bauen(state, cmd);
     if (typeof type === 'string' && hat(m_core_kreislauf.BEFEHLE, type)) return m_core_kreislauf.ausfuehren(state, cmd);
     if (type === 'pilotWaterBuy')
@@ -1123,6 +1242,7 @@ function erstellen(startkapital = {}) {
     rules, daten: KANON, regel: KANON.regel, modell: KANON.modell,
     createState, politikSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
+    torPruefen: m_core_torfreigabe.pruefen, torFrachtPruefen: m_core_torfreigabe.darfFracht,
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,
     buchwert: (state, id) => m_core_anlage.buchwert(state, state.ships[id]),
   });

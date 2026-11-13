@@ -9,7 +9,7 @@
 - Sichtbar auf allen Touchgrößen: eigene echte Schiffsposition, Sollkurs/Fahrt, Bremsmanöver, kamera-gefolgte 2D-Sterne und **separater Balken zur zeitgebundenen W5n-Ankunft**. Karte im Transportkorridor darf keine Aldera-Rohstofffelder als klickbare Transitziele anbieten.
 
 ## Belegter Prüfstand
-**[TEST / abgeschlossen auf Code-Head `af1ab413`]** [K1-CI #43377621060](https://github.com/tobiasfranziskus/Check/actions/runs/43377621060): 3/3 K1-Jobs erfolgreich; 3 neue F5-Tests, 15×90/5×365/2×730 und Chromium/WebKit jeweils vier Touchgrößen grün, Endhash `6e18cd4def7d7659`.
+**[TEST / abgeschlossen auf Code-Head `af1ab413`]** [K1-CI #43377621060](https://github.com/tobiasfranziskus/Check/actions/runs/43377621060): 3/3 K1-Jobs erfolgreich, **339/339 Node22-Tests (0 Fehler/Skips)**; 3 neue F5-Tests, 15×90/5×365/2×730 und Chromium/WebKit jeweils vier Touchgrößen grün, Endhash `6e18cd4def7d7659`.
 
 **[TEST / gezielt bestanden]** 3 F5-Node22-Tests zeigen echte substep-Position und Geschwindigkeit, Abweisung fremder, ungültiger oder physisch verbotener Befehle, fehlendes Gratisgeld, getrenntes `flug`- und Original-W5n-Ledger, volle 120-Minuten-Liefer-/Rückfahrt, identischen Endhash gegenüber einer ungesteuerten Referenzwelt, Save/Load mit realem Transittempo sowie manipulierte Verträge, Geschwindigkeit und Eigentum.
 

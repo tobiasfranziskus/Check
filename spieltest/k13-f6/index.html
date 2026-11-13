@@ -67,7 +67,7 @@ a{color:#8fe2f5}
 <script defer src="../../prototypes/welt/app.js"></script>
 </head><body>
 <header><h1>Aphros Void – K13/F6 Spielwirtschaft · Regel200-Forschung</h1>
-<p><strong>Forschungsprofil 199, nicht das veröffentlichte Spiel.</strong> Eine Welt für Wirtschaft und Flug: gefördert wird nur im Feld, verkauft nur am Dock, jede Arbeitsminute ist bezahlt. Eigene Spielstandablage; die Stände des Hauptspiels werden nie geöffnet.</p></header>
+<p><strong>Regel200-Forschungsprofil – nicht das veröffentlichte Hauptspiel.</strong> Eine Welt für Wirtschaft und Flug: gefördert wird nur im Feld, verkauft nur am Dock, jede Arbeitsminute ist bezahlt. Eigene Spielstandablage; die Stände des Hauptspiels werden nie geöffnet.</p></header>
 <nav aria-label="Ansichten">
 <button data-ansicht="flug" aria-pressed="true">Flug</button><button data-ansicht="konzern">Konzern</button>
 <button data-ansicht="station">Station</button><button data-ansicht="flotte">Flotte</button>
@@ -171,6 +171,12 @@ a{color:#8fe2f5}
 
 <section data-seite="wirtschaft" hidden>
 <h2>Kreislauf</h2><div id="kreislauf" class="rollen"></div>
+<section id="k7Industrie" class="runden-hilfe" aria-label="K7: finanzierte NPC-Industrieverträge">
+<h3>K7 · NPC-Industrie mit echten Verträgen (Forschung)</h3>
+<p id="industrieStatus" role="status" aria-live="polite">Noch kein Industrieauftrag; Warenbestände, Schiffseigentümer und Kassen werden vom Original-Core geprüft.</p>
+<button id="industrieSchalten" type="button" aria-pressed="false">NPC-Industrie freiwillig einschalten</button>
+<small>Nur die NPC-Dispositionspolitik wird umgeschaltet. Nadir, Bergbauunternehmen, Spedition und Werft unterschreiben im Core selbst und nur bei vollständiger Vorfinanzierung. Keine Spielerunterschrift für fremde Firmen, kein Gratisgeld. Eine physische W5-Hülle kostet beim Kauf weiterhin echtes Geld.</small>
+</section>
 <h2>Haushalte</h2><div id="haushalte" class="rollen"></div>
 <h2>Engpässe</h2><div id="engpass" class="rollen"></div>
 </section>
@@ -182,9 +188,9 @@ a{color:#8fe2f5}
 <div id="plaetze" class="rollen"></div>
 <div class="reihe"><button id="exportieren">Aktuellen Stand als JSON exportieren</button><button id="neueWelt">Neue Welt beginnen</button></div>
 <label>JSON importieren <input id="importieren" type="file" accept=".json,application/json"></label>
-<details><summary>Regel195-Stand des Hauptspiels ausdrücklich übernehmen</summary>
+<details><summary>Regel195-Übernahme im Regel200-Spieltest gesperrt</summary>
 <label>Regel195-JSON wählen <input id="regel195" type="file" accept=".json,application/json"></label>
-<small>Die Datei wird vom unveränderten Regel195-Kern geprüft, als unveränderliche Sicherung abgelegt und als <strong>neue</strong> Welt angelegt. Geld, Waren, Schiffe und Verträge werden Feld für Feld verglichen. Der Stand im Hauptspiel bleibt unberührt.</small>
+<small>Die Regel195-Übernahme ist hier deaktiviert. Regel200 benutzt eine separate IndexedDB und einen separaten JSON-Umschlag; alte Spielstände verbleiben unverändert im jeweiligen Spiel.</small>
 </details>
 <h2>Unveränderliche Sicherungen</h2><div id="sicherungen" class="rollen"></div>
 <small class="warn">Spielstände liegen nur in diesem Browser und nur für diese Adresse. NAS und GitHub Pages teilen keine Stände – zum Umziehen die JSON-Datei exportieren und dort importieren.</small>

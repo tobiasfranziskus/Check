@@ -13,7 +13,8 @@ let pausiert = true, tempo = 0, letzter = null, rest = 0, geaendert = false, ans
 let rundenZiel = null; // Nur UI-Vorschlag: nie ein eigener Core-Befehl.
 let pilotSchiff = null; // UI-Auswahl: weder Kursregler noch Kartenziel ändern den Core vor Bestätigung.
 const KARTEN_MITTE = Object.freeze({ x: 144000, y: 224000 });
-const KARTEN_TEXTE = Object.freeze({ 'st_aldera': 'Aldera-Dock', 'aldera:eis': 'Eisfeld', 'aldera:erz': 'Erzfeld' });
+const KARTEN_TEXTE = Object.freeze({ 'st_aldera': 'Aldera-Dock', 'aldera:eis': 'Eisfeld',
+  'aldera:erz': 'Erzfeld', 'aldera:tor': 'Aldera-Sprungtor' });
 const kartenSkala = (w, h) => Math.min(w, h) / 2500000;
 
 function melde(text, fehler = false) { const m = $('meldung'); m.textContent = text; m.classList.toggle('fehler', fehler); }
@@ -58,11 +59,14 @@ function pilotWerte() {
 function kartenZeigen(s, pendel, k) {
   const ziel = $('kartenZiel').value, zielText = KARTEN_TEXTE[ziel];
   const steuerbar = !!s && s.flug?.lage === 'frei' && !pendel && !k.flugdienst[s.id]?.gestrandet;
-  $('kartenAnflug').disabled = !steuerbar || !zielText;
+  $('kartenAnflug').disabled = !steuerbar || !zielText
+    || (ziel === 'aldera:tor' && s?.klasse !== 'frachter');
   let hinweis;
   if (!zielText) hinweis = 'Auf der Karte Eisfeld, Erzfeld oder Dock berühren – oder Ziel in der Liste wählen. Noch kein Flugauftrag.';
-  else if (!s) hinweis = zielText + ' vorgemerkt. Zuerst einen eigenen Miner kaufen.';
+  else if (!s) hinweis = zielText + ' vorgemerkt. Zuerst ein eigenes Schiff kaufen.';
   else if (pendel) hinweis = zielText + ' vorgemerkt. Pendelauftrag steuert selbst; erst beenden.';
+  else if (ziel === 'aldera:tor' && s.klasse !== 'frachter')
+    hinweis = 'Das Sprungtor ist nur Ziel für den eigenen finanzierten Frachter.';
   else if (s.flug.lage === 'angedockt') hinweis = zielText + ' vorgemerkt. Erst „Abdocken“ und das Manöver abwarten.';
   else if (!steuerbar) hinweis = zielText + ' vorgemerkt. Handflug aktuell nicht verfügbar.';
   else hinweis = zielText + ' vorgemerkt – erst „Zielflug bestätigen“ startet den bezahlten Original-Anflug.';
@@ -233,6 +237,12 @@ function zeichnen() {
     ctx.fillStyle = ctx.strokeStyle; ctx.fillText(f.ware === 'eis' ? 'Eisfeld' : 'Erzfeld', x + 8, y - 12);
     if ($('kartenZiel').value === f.id) { ctx.beginPath(); ctx.strokeStyle = '#ffe59b'; ctx.lineWidth = 3; ctx.arc(x, y, Math.max(25, f.radius * z + 5), 0, Math.PI * 2); ctx.stroke(); }
   }
+  const tor = welt.daten.tor;
+  const [gx, gy] = p(tor.x, tor.y);
+  ctx.strokeStyle = $('kartenZiel').value === 'aldera:tor' ? '#ffe59b' : '#8ad8bb';
+  ctx.lineWidth = $('kartenZiel').value === 'aldera:tor' ? 3 : 1.5;
+  ctx.beginPath(); ctx.arc(gx, gy, Math.max(8, tor.radius * z), 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#9fe6d1'; ctx.fillText('Sprungtor · Aldera', gx + 8, gy - 10);
   const [sx, sy] = p(sys.station.x, sys.station.y);
   ctx.strokeStyle = '#6a8f9e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(sx, sy, 14, 0, Math.PI * 2); ctx.stroke();
   ctx.fillStyle = '#d3e8ec'; ctx.fillText('Aldera · Dock', sx + 18, sy - 8);
@@ -296,7 +306,25 @@ function zeigen(alles = false) {
       if ($(id).textContent !== text) $(id).textContent = text;
     $('frachtAnnehmen').disabled = !angebot?.ok
       || (k.politik.stilllegung && welt.buchwert(state, s.id) === 0);
-  } else $('frachtAnnehmen').disabled = true;
+    const torCheck = welt.torPruefen(state, s);
+    const torFracht = welt.torFrachtPruefen(state, {type:'shipFreightGateIce',
+      owner:SPIELER, schiff:s.id});
+    const clearance = k.tor?.freigaben?.[s.id];
+    const torText = clearance
+      ? 'Aldera-Tor physisch geprüft, Tick ' + clearance.tick
+        + ' nach ' + clearance.arbeit + ' tatsächlich bezahlten Handflugminuten.'
+        + (s.flug.lage === 'angedockt' ? ' Am Dock kann die TOR-Fracht beauftragt werden.'
+          : ' Jetzt zum Aldera-Dock zurückkehren und physisch andocken.')
+      : 'Aldera-Tor (' + fmt(welt.daten.tor.x/1000) + ' / '
+        + fmt(welt.daten.tor.y/1000) + ' kP): ' + torCheck.grund;
+    if ($('torHinweis').textContent !== torText) $('torHinweis').textContent = torText;
+    $('torPruefen').disabled = !torCheck.ok;
+    $('torFracht').disabled = !torFracht.ok || !angebot?.ok;
+  } else {
+    $('frachtAnnehmen').disabled = true;
+    $('torPruefen').disabled = true;
+    $('torFracht').disabled = true;
+  }
   $('pendelEis').disabled = $('pendelErz').disabled = !miner || !!pendel || imRaum;
   $('pendelStop').disabled = !pendel;
   const bergbauHand = miner && !pendel;
@@ -442,8 +470,10 @@ canvas.addEventListener('click', (ev) => {
   const w = canvas.clientWidth, h = canvas.clientHeight, z = kartenSkala(w, h);
   const px = (ev.clientX - rect.left) * w / rect.width, py = (ev.clientY - rect.top) * h / rect.height;
   const sys = welt.flugKern.DATEN.systeme.aldera;
+  const tor = welt.daten.tor;
   const ziele = [{ id: sys.station.id, x: sys.station.x, y: sys.station.y, radius: 30 },
-    ...sys.felder.map(f => ({ id: f.id, x: f.x, y: f.y, radius: Math.max(30, f.radius * z) }))];
+    ...sys.felder.map(f => ({ id: f.id, x: f.x, y: f.y, radius: Math.max(30, f.radius * z) })),
+    { id: 'aldera:tor', x: tor.x, y: tor.y, radius: Math.max(30, tor.radius * z) }];
   let kandidat = null, abstand = Infinity;
   for (const ziel of ziele) {
     const [x, y] = G.projektion(ziel.x, ziel.y, KARTEN_MITTE.x, KARTEN_MITTE.y, z, w, h);
@@ -460,9 +490,12 @@ $('schiff').addEventListener('change', () => { if (state) zeigen(false); });
 $('kartenAnflug').addEventListener('click', () => {
   const s = gewaehlt(), ziel = $('kartenZiel').value;
   if (!s || !Object.hasOwn(KARTEN_TEXTE, ziel)) return;
+  const tor = welt.daten.tor;
   const cmd = ziel === 'st_aldera'
     ? { type: 'shipDock', owner: SPIELER, schiff: s.id, station: ziel }
-    : { type: 'shipApproach', owner: SPIELER, schiff: s.id, zielArt: 'feld', ziel };
+    : ziel === 'aldera:tor'
+      ? { type: 'shipFlyTo', owner: SPIELER, schiff: s.id, x: tor.x, y: tor.y }
+      : { type: 'shipApproach', owner: SPIELER, schiff: s.id, zielArt: 'feld', ziel };
   befehl(cmd, 'Original-Flugauftrag bestätigt: ' + KARTEN_TEXTE[ziel] + '. Nur echte bezahlte Flugminuten.');
 });
 $('rundenAktion').addEventListener('click', () => {
@@ -510,6 +543,16 @@ $('frachtAnnehmen').addEventListener('click', () => {
   const s = gewaehlt();
   if (s?.klasse === 'frachter') befehl({ type: 'shipFreightIce', owner: SPIELER, schiff: s.id },
     'Original-W5n-Fracht finanziert: reale 50 Eis, vollständige Waren-/Fracht-Treuhand und bezahlter Pilotenlohn.');
+});
+$('torPruefen').addEventListener('click', () => {
+  const s = gewaehlt();
+  if (s?.klasse === 'frachter') befehl({type:'shipGateCheck',owner:SPIELER,schiff:s.id},
+    'Sprungtor-Freigabe nur nach physischem 2D-Anflug und wirklich bezahlten Flugminuten erteilt.');
+});
+$('torFracht').addEventListener('click', () => {
+  const s = gewaehlt();
+  if (s?.klasse === 'frachter') befehl({type:'shipFreightGateIce',owner:SPIELER,schiff:s.id},
+    'Original-W5n-Eisfracht mit verbrauchter echter Torfreigabe finanziert.');
 });
 $('dividende').addEventListener('click', () => { const n = welt.ausschuettbar(state, SPIELER); if (n > 0) befehl({ type: 'dividendPay', owner: SPIELER, betrag: n }, fmt(n) + ' ISK an das eigene Eigentümerkonto ausgeschüttet.'); });
 $('wasserKauf').addEventListener('click', () => befehl({ type: 'householdBuy', owner: $('haushalt').value, menge: Number($('wasserMenge').value) }, 'Wasser privat gekauft und verbraucht.'));

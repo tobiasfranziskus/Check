@@ -263,7 +263,7 @@ function zeichnen() {
     if (s.flug.lage !== 'angedockt') { ctx.fillStyle = s.owner === SPIELER ? '#aaf5ff' : '#c7e4bc'; ctx.fillText(s.id, x + 12, y + 20); }
   }
   const transit = Object.values(state.ships).filter((s) => s.flug?.lage === 'transit').length;
-  $('hud').textContent = 'Regel 199 · Tag ' + (Math.floor(state.tick / 1440) + 1) + ', Minute ' + fmt(state.tick % 1440)
+  $('hud').textContent = 'Regel ' + welt.rules.rulesVersion + ' · Tag ' + (Math.floor(state.tick / 1440) + 1) + ', Minute ' + fmt(state.tick % 1440)
     + (transit ? ' · ' + transit + ' Frachter im Transit Aldera ↔ Nadir' : '') + (pausiert ? ' · pausiert' : '');
 }
 function zeigen(alles = false) {
@@ -378,7 +378,9 @@ function zeigen(alles = false) {
       ['K3 Ersatzfrachter · Material / Werft', (state.stations.st_nadir.lager.material || 0) + ' / ' + welt.kern.pilotW5Kalkulation(state).grund],
       ['K3 Kaufgeld / Überführung', fmt(o.transport.cash) + ' ISK / ' + (state.w5ac.active ? state.w5ac.active.id + ' unterwegs' : 'kein aktiver Transfer')],
       ['K3 nächster Auftrag', state.w5n.frachtauftrag ? 'Eisfracht finanziert' : state.w3.auftrag ? 'Erzfracht finanziert' : 'kein aktiver Frachtauftrag'],
-      ['Erz exportiert / Rest Exportetat', fmt(b.verkaeufe.erzExportiert) + ' / ' + fmt(b.kaeuferliquiditaet.export) + ' ISK']]);
+      ['Erz exportiert / Rest Exportetat', fmt(b.verkaeufe.erzExportiert) + ' / ' + fmt(b.kaeuferliquiditaet.export) + ' ISK'],
+      ...(istK7 ? [['K7-Industrievertrag (Original-Core)', k.industrieErz?.phase || 'noch kein Vertrag'],
+        ['K7-Werfttreuhand (gebundene ISK)', fmt(o.k7_werft_treuhand?.cash || 0) + ' ISK']] : [])]);
     tabelle($('haushalte'), ['Haushalt', 'Wohnort', 'Kasse', 'ausgegeben', 'Wasser gekauft'],
       Object.entries(b.haushalte).map(([id, v]) => [id, welt.daten.haushalte[id] === 'st_aldera' ? 'Aldera' : 'Nadir', fmt(v.kasse), fmt(v.ausgegeben), fmt(v.gekauft)]));
     const e = b.engpass ? Object.entries(b.engpass.zaehler).sort((x, y) => y[1] - x[1]).slice(0, 8) : [];

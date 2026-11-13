@@ -84,6 +84,12 @@ for(const seed of [42,7]){
     'ohne zusätzlich hergestelltes Wasser auch kein neuer echter Wassermarktumsatz');
   assert.ok(Number.isSafeInteger(end.transportPaidDividends));
   assert.ok(Number.isSafeInteger(end.waterRetailPaid));
+  assert.equal(end.transportPaidDividends,14613,
+    'K12: Original-Firmengewinne wurden wirklich an ihren Eigentümer ausgeschüttet');
+  assert.equal(end.transportShareholderCash,261,
+    'K12: Eigentümergeld ist vorhanden, aber kein automatisch einzahlbarer Firmenbestand');
+  assert.equal(end.waterRetailPaid,128158,
+    'K12: kumulierte reale Wasserzahlungen sind nicht aktuelle Speditionsliquidität');
   assert.equal(end.transportCash,46);
   assert.equal(end.nadirCash,3440);
   assert.equal(end.fondTransportCash,0,'getrennte historische Lohnfondskasse');
@@ -124,6 +130,20 @@ for(const seed of [42,7]){
   assert.equal(hypothese.buyerTotal,
     hypothese.buyerPaysGoods+hypothese.freightToCrew+hypothese.freightAfterCrew);
   assert.equal(hypothese.carrierCashAfterPotentialService,166);
+  const rekapitalisierungNurOption={
+    status:'NUR_RECHENMODELL_KEIN_KAPITALEINLAGE_BEFEHL',
+    shareholderCash:end.transportShareholderCash,
+    freiwilligNoetigeEinlage:p.crewShortfall,
+    shareholderCashDanach:end.transportShareholderCash-p.crewShortfall,
+    transportKasseDanach:p.carrierAvailable+p.crewShortfall
+  };
+  assert.equal(rekapitalisierungNurOption.shareholderCashDanach,187);
+  assert.equal(rekapitalisierungNurOption.transportKasseDanach,120);
+  // Keine stillschweigende Einlage, weil der Originalkern gar keinen
+  // autorisierten Gegenbuchungsbefehl fuer dieses Eigentümerrecht besitzt.
+  const fake=w.execute(s,{type:'equityContribution',owner:'eigner_transport',
+    company:'transport',amount:p.crewShortfall});
+  assert.equal(fake.ok,false,'K12: kein erfundener Kapitalzuschuss durch unbekannten Befehl');
   // Die fehlende echte Anzahlung wird AUF KEIN KONTO gebucht.
   assert.equal(w.canonical(s),cashBefore);
   const json=w.save(s),again=w.load(json),startHash=w.hash(s);
@@ -136,7 +156,7 @@ for(const seed of [42,7]){
     atmRejected:cmd.reason,
     legalOwnerDividends:reserve,
     oldFundNeverCustomer:true,
-    possibleAdvance: hypothese,
+    possibleAdvance: hypothese,possibleVoluntaryEquity:rekapitalisierungNurOption,
     money:total(s),minted:s.minted,burned:s.burned,referenceHash:w.hash(s)};
   console.log('K12_GELDKREIS '+JSON.stringify(out));
  });

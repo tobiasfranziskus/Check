@@ -6,7 +6,7 @@
 
 - Ein Weltzustand: K7/Regel200 nutzt die isolierte K1-/K7-Quelle `prototypes/welt/rule200-k7-industry-core.js`; F6 ergänzt diesen getrennten Forschungskern um den selbst finanzierten Spielerfrachter, echte 2D-Steuerung im Transit und die Torfreigabe.
 - Ein Tick: Nach dem ursprünglichen `kern.step` folgen F6-Spielerfracht-Lohnabrechnung und K7-Vertragsstatus. Zusätzliche Flugsteuerung erzeugt keinen zweiten wirtschaftlichen Tick.
-- Das bestehende Touch-Cockpit `prototypes/welt/index.html` lädt nun ebenfalls die isolierte Regel199/200-Quelle und bleibt zunächst im standardmäßigen Regel199-Profil. K7 wird ausschließlich über `Welt.erstellenK7()` aktiviert. Die Browser-Oberfläche für die gesamte K7-Industrie und einen eigenen, eindeutig getrennten Save-Ursprung ist **noch nicht umgesetzt**.
+- Das K1-Touch-Cockpit `prototypes/welt/index.html` nutzt weiter Regel199. Der neue separate Spieltest `spieltest/k13-f6/index.html` aktiviert K7/Regel200 über denselben Forschungs-Core mit eigenem IndexedDB-Ursprung `aphros-void-welt-k13-f6-v1` und eigenem JSON-Umschlag. Vollständig spielbare K7-Industrieverträge fehlen noch.
 - Vorhandene Regel195-Produktdateien (`index.html`, `aphros-void.html`) und Original-W5-Source (`prototypes/w5ac/rule191-w5-ferry-core.js`) bleiben gegenüber `main 04124f2b` unverändert. Keine Migration und kein Deployment.
 - K13-Kundenvorschuss und Eigentümereinlage bleiben **[OPTION / ANALYSE]** in ihrem getrennten Forschungsadapter; keine Finanzierungsvorgabe, keine heimliche automatische Entnahme aus Privatkonten.
 
@@ -17,12 +17,12 @@ Der F6-Forschungszweig enthielt Anpassungen in einer mit Regel195 geteilten Date
 ## Qualitätssicherung
 
 - Neue Node-Integration: `tests/k13-f6-gemeinsamer-spielkern.test.mjs` prüft Rule200 + F6-Funktionen, Startaudit, Weltgeld, Replay, Hash und Save/Load sowie explizite Regel199-Abgrenzung.
-- Alle Original-`tests/*.test.mjs`, K7–K13-Wirtschaftstestgruppen, 15×90-, 5×365- und 2×730-Tage-Szenarien, die W5-Einzeldatei-Buildprüfung und neun F6-Browsertests sind im K1-Workflow vorgesehen.
+- Alle Original-`tests/*.test.mjs`, K7–K13-Wirtschaftstestgruppen, 15×90-, 5×365- und 2×730-Tage-Szenarien, die W5-Einzeldatei-Buildprüfung, neun F6-Browsertests und ein zusätzlicher Regel200-Browser-Test (vier Größen je Engine) sind im K1-Workflow vorgesehen.
 - Bis zu einem tatsächlich abgeschlossenen Lauf **keine** dieser neuen Integrationsprüfungen als bestanden werten.
 - Negative Befunde dokumentieren; keine pauschale Rettung und keine Referenzhashanpassung nur für grünes CI.
 
 ## Weiterer Integrationsschritt
 
-Erst nach einem grünen gemeinsamen Core-Gate: eigene K7-Spieltest-Oberfläche mit vom K1-Browser isoliertem Speicher, echten autorisierten Konzern-/NPC-Verträgen, persönlich finanziertem Bergbau und Fracht bis zum Produktions-/W5-Kaufabschluss. Danach End-to-End-Geld-/Waren-/Eigentumsprüfung und Touchabnahme. Keine automatische Regel200-Produktfreigabe.
+Der isolierte Regel200-Spieltest-Einstieg ist implementiert und erhält einen eigenen Browser-Smoke-Test. Nach einem grünen Core-Gate folgen die autorisierten NPC-/Industrieverträge sowie der vollständige Spielerablauf bis zum Produktions-/W5-Kaufabschluss. Danach End-to-End-Geld-/Waren-/Eigentumsprüfung und Touchabnahme. Keine automatische Regel200-Produktfreigabe.
 
 Offen: echte iPad-Safari-/NAS-Geräteabnahme, reale navigationsabhängige Nadir-Ankunft, nachhaltiges W6-Endkundengeld, Beschluss zu K13-Finanzierungsoptionen.

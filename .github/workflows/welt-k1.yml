@@ -19,6 +19,7 @@ on:
       - 'tests/k7-industrieerz-vertrag.test.mjs'
       - 'tests/k7-vertragsabwehr.test.mjs'
       - 'tests/k7-industrie-13x90.test.mjs'
+      - 'tests/k8-zweiter-industrieerz-vertrag.test.mjs'
       - 'prototypes/w5ac/rule191-w5-ferry-core.js'
       - 'prototypes/welt/welt-kern.js'
       - 'tools/k4-ore-allocation.mjs'
@@ -258,3 +259,14 @@ jobs:
         run: node --test tests/k7-industrieerz-vertrag.test.mjs
       - name: "K7 Regel200: Migrationsschutz, Vertragsmanipulation und atomare Abwehr"
         run: node --test tests/k7-vertragsabwehr.test.mjs
+
+  k8-zweiter-industrieauftrag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "K8: zwei Krisenseeds und zwei Finanzierungs-/Dispositionsregime, reale zweite Bestellung"
+        run: node --test tests/k8-zweiter-industrieerz-vertrag.test.mjs

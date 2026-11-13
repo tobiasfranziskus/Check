@@ -9,7 +9,8 @@ const industrie = require('../prototypes/welt/rule200-k7-industry-core.js');
 const Welt = require('../prototypes/welt/welt-kern.js');
 
 test('K7: Original Rule195/199 source does not export Rule200 factory', () => {
-  assert.equal(typeof original.createKanonWelt, 'function');
+  assert.equal(Object.hasOwn(original, 'createKanonWelt'), false);
+  assert.equal(typeof industrie.createKanonWelt, 'function');
   assert.equal(Object.hasOwn(original, 'createK7Welt'), false);
   assert.equal(typeof industrie.createK7Welt, 'function');
 });

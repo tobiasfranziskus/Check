@@ -75,7 +75,7 @@ a{color:#8fe2f5}
 </nav>
 <main>
 <section id="sicht" aria-label="2D-Flugkarte: Aldera-System oder bezahlter intersystemischer Frachtkorridor">
-<canvas id="raum" aria-label="2D-Raum: Aldera-Ziele oder echter steuerbarer Fracht-Transitkorridor; Korridorziele bleiben zeitgebunden"></canvas>
+<canvas id="raum" aria-label="2D-Raum: Aldera-Dock, Förderfelder und navigierbares Aldera-Sprungtor; Frachtkorridorziele bleiben zeitgebunden"></canvas>
 <p id="hud">Welt wird geladen …</p></section>
 <div id="tafel">
 <p id="meldung" role="status" aria-live="polite">Welt wird geladen …</p>
@@ -99,7 +99,7 @@ a{color:#8fe2f5}
 <div class="karten-ziel" aria-label="Berührbare Flugzielwahl">
 <label for="kartenZiel">Raumkarte antippen oder Ziel hier auswählen</label>
 <div class="reihe"><select id="kartenZiel" aria-label="Ziel für eigenen Miner vormerken">
-<option value="">Noch kein Ziel gewählt</option><option value="aldera:eis">Eisfeld</option><option value="aldera:erz">Erzfeld</option><option value="st_aldera">Aldera-Dock</option>
+<option value="">Noch kein Ziel gewählt</option><option value="aldera:eis">Eisfeld</option><option value="aldera:erz">Erzfeld</option><option value="st_aldera">Aldera-Dock</option><option value="aldera:tor">Aldera-Sprungtor (Frachter)</option>
 </select><button id="kartenAnflug" type="button" disabled>Zielflug bestätigen</button></div>
 <p id="kartenHinweis" role="status">Berührung oder Auswahl merkt nur ein Ziel vor. Erst die Bestätigung sendet den Original-Flugbefehl.</p>
 </div>
@@ -137,7 +137,13 @@ a{color:#8fe2f5}
 <p id="frachtAngebot" role="status" aria-live="polite">Original-W5n-Vertrag wird aus vorhandener Ware und realem Geld geprüft.</p>
 <small>Zur Vertragsannahme die Frachtaktion oben im gemeinsamen Steuerpult verwenden. Im bezahlten Transit lassen sich Kurs, Fahrt und Bremsen nun auch in der 2D-Korridoransicht selbst steuern.</small>
 <p id="frachtFortschritt">Noch keine persönliche Fracht abgeschlossen.</p>
-<small>Nadir finanziert Eis und Frachtgebühr vorab; der eigene Konzern finanziert die volle Pilotenarbeit. Der gemeinsame 2D-Integrator ermöglicht echte Flugmanöver während der beiden bezahlten Korridorabschnitte. Die wirtschaftliche Ankunft nach 60+60 Minuten und die Warenübergabe bestimmt weiter der Original-W5n-Kern: noch keine Sprungtor-, Navigations- oder Dock-Abnahme am Zielsystem.</small>
+<div class="runden-hilfe" aria-label="F6: wirklich bezahlte Navigationsprüfung am Sprungtor">
+<strong>F6 · Toranflug vor der Fracht</strong>
+<p id="torHinweis" role="status" aria-live="polite">Mit einem eigenen Frachter unter bezahltem 2D-Handflug das Aldera-Tor erreichen, langsam werden und die Lage tatsächlich vom Core bestätigen lassen.</p>
+<div class="reihe"><button id="torPruefen" type="button" disabled>Sprungtor-Anflug bestätigen</button><button id="torFracht" type="button" disabled>Torberechtigte 50-Eis-Fracht annehmen</button></div>
+<small>1. Regulär abdocken (40 ISK Lohnreserve). 2. Aldera-Tor auf Karte auswählen und Zielflug bestätigen. 3. Im Radius langsam genug ankommen, mit dem Original-Core die Torposition bestätigen. 4. Zum Aldera-Dock zurückkehren. 5. Optionalen W5n-Frachtvertrag ausdrücklich annehmen. Frühere F4-Verträge bleiben unabhängig möglich.</small>
+</div>
+<small>Nadir finanziert Eis und Frachtgebühr vorab; der eigene Konzern finanziert die volle Pilotenarbeit. Ein gesonderter, tatsächlich bezahlter Anflug am Aldera-Sprungtor wird jetzt für die optionale F6-Abflugfreigabe geprüft. Der 2D-Korridorflug bleibt spielbar. Die wirtschaftliche Ankunft nach 60+60 Minuten und die Warenübergabe bestimmt weiter der Original-W5n-Kern: noch keine navigationsabhängige Nadir-Landung oder tatsächlicher Gate-Transit.</small>
 </div>
 </div>
 </div>

@@ -28,10 +28,12 @@ function foto(w,s){
     tick:s.tick,
     iceWorkRequired:fluglohn,
     iceBuyerRequired:kundenauftrag,
-    iceBuyerAccount:c.kunde,
-    iceBuyerISK:s.owners[c.kunde].cash,
+    iceBuyerAccount:c.zielStation,
+    iceBuyerISK:s.owners[c.zielStation].cash,
+    legacyLaborFund:c.kunde,
+    legacyLaborFundISK:s.owners[c.kunde].cash,
     iceCrewShortfall:Math.max(0,fluglohn-s.owners.transport.cash),
-    iceBuyerShortfall:Math.max(0,kundenauftrag-s.owners[c.kunde].cash),
+    iceBuyerShortfall:Math.max(0,kundenauftrag-s.owners[c.zielStation].cash),
     frachterImEigentum:fl.length,neueGekaufte:s.w5.verkauft,
     brauchbareFrachter:tauglich.length,freieFrachterAldera:frei.length,
     transportFrachterIds:fl.map(sh=>sh.id),
@@ -145,11 +147,15 @@ for (const seed of [42,7]) {
         assert.equal(r.nachher.iceCrewShortfall,74,
           'K11: der reale Eis-Pilotenfonds ist 74 ISK unterfinanziert');
         assert.equal(r.nachher.iceBuyerRequired,490);
-        assert.equal(r.nachher.iceBuyerAccount,'fonds_transport');
-        assert.equal(r.nachher.iceBuyerISK,0,
-          'K11: Original-W5n-Käufer hat keinerlei finanzierte Nachfrage');
-        assert.equal(r.nachher.iceBuyerShortfall,490,
-          'K11: Käuferdefizit kommt UNABHÄNGIG vom fehlenden Frachtlohn hinzu');
+        assert.equal(r.nachher.iceBuyerAccount,'st_nadir',
+          'K11-KORREKTUR: pruefenFracht belastet die physische Nadir-Zielstation');
+        assert.ok(r.nachher.iceBuyerISK>=490,
+          'K11-KORREKTUR: Nadir ist als Originalkunde voll finanzierungsfähig');
+        assert.equal(r.nachher.iceBuyerShortfall,0,
+          'K11-KORREKTUR: KEINE vermeintliche zweite Käuferlücke');
+        assert.equal(r.nachher.legacyLaborFund,'fonds_transport');
+        assert.equal(r.nachher.legacyLaborFundISK,0,
+          'K11: separater Fonds ist bei W5ag-Privatpiloten nur historische Kontenreferenz');
         assert.equal(r.nachher.neueGekaufte,r.vorher.neueGekaufte);
         assert.ok(r.nachher.freieFrachterAldera>=1);
         assert.equal(r.nachher.weltgeld,33000);

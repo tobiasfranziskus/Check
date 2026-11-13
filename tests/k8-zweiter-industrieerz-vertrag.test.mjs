@@ -55,9 +55,10 @@ function bauUndKauf(w,s,anfang){
     if(q.ok)befehl(w,s,{type:'shipReposition',owner:'transport',schiff:neu});
   }
 }
-function ersterErfolg(seed){
+function ersterErfolg(seed,politik={}){
   const {terminalSave}=k6Start(seed);
   const {welt:w,zustand:s}=Welt.ausRegel199K7(terminalSave);
+  if(Object.keys(politik).length)w.politikSetzen(s,politik);
   const anfang={mined:s.ledger.erz.mined,geliefert:s.w3.geliefert,
     material:s.w4.materialErzeugt,fertig:s.w5.fertig,verkauft:s.w5.verkauft,kauf:s.w3.kaufAusgaben};
   unterschreiben(w,s);
@@ -99,12 +100,19 @@ function angebotVersuchen(w,s){
 for(const seed of [42,7]){
   test('K8 Folgevertrag auf echter Krisenwelt Seed '+seed,
     {timeout:8*60*1000},()=>{
-      const {w,vorlage,anfang}=ersterErfolg(seed);
-      for(const modus of ['unveraenderte NPC-Automatik','Eigentuemer-Disposition']){
+      const standard=ersterErfolg(seed);
+      const ohneFrueheErsatzkaeufe=ersterErfolg(seed,{ersatzkauf:false});
+      const varianten=[
+        {modus:'unveraenderte NPC-Automatik',basis:standard,disposition:false},
+        {modus:'Eigentuemer-Disposition',basis:standard,disposition:true},
+        {modus:'Ersatzbeschaffung vorab pausiert',basis:ohneFrueheErsatzkaeufe,disposition:true}
+      ];
+      for(const versuch of varianten){
+        const {w,vorlage,anfang}=versuch.basis,modus=versuch.modus;
         const s=w.load(vorlage),start=s.tick,geliefert=s.w3.geliefert;
         const kauf=s.w3.kaufAusgaben,beauftragt=s.w3.beauftragt;
         const ledger=s.ledger.erz.mined;
-        if(modus==='Eigentuemer-Disposition'){
+        if(versuch.disposition){
           // Nur vorhandene, dafür berechtigte Befehle; keine Geldänderung.
           w.politikSetzen(s,{eisfracht:false});
           for(const sh of Object.values(s.ships).filter(x=>x.owner==='npc3'&&x.klasse==='miner')){
@@ -155,6 +163,8 @@ for(const seed of [42,7]){
             }else {grund=res.reason;assert.equal(w.canonical(s),vor);}
           }
         }
+        if(grund && s.kanon.industrieErz.phase==='angebot')
+          befehl(w,s,{type:'industrialOreCancel',owner:'st_nadir'});
         pruefe(w,s,'K8 Abschlusssaldo');
         const gespeichert=w.save(s),geladen=w.load(gespeichert);
         assert.equal(w.hash(geladen),w.hash(s),'getrennter Regel200-Save/Load');
@@ -171,7 +181,12 @@ for(const seed of [42,7]){
           kassen:{nadir:s.owners.st_nadir.cash,aldera:s.owners.st_aldera.cash,
             spedition:s.owners.transport.cash,npc3:s.owners.npc3.cash,
             werft:s.owners.werft_extern.cash,export:s.owners.export.cash},
-          geld:gesamt(s),minted:s.minted,burned:s.burned,hash:w.hash(s)}));
+          geld:gesamt(s),minted:s.minted,burned:s.burned,hash:w.hash(s),
+          werftEigner:s.owners.eigner_werft?.cash??null,
+          minerWerft:s.kanon.minerWerft?{
+            begonnen:s.kanon.minerWerft.begonnen??null,
+            fertig:s.kanon.minerWerft.fertig??null,
+            gebunden:s.kanon.minerWerft.auftrag!==null}:null}));
       }
   });
 }

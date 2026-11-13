@@ -14,6 +14,16 @@
 
 Der F6-Forschungszweig enthielt Anpassungen in einer mit Regel195 geteilten Datei. Diese Anpassungen werden **nur in die K7-isolierte Quellkopie** übertragen. Bei gemeinsamen W3-/W4-/W5-Audits bleiben die speziellen K7-Storno-/Treuhandkorrekturen erhalten, während der tatsächlich vom Spieler bezahlte Frachterkauf aus der Speditions-Bilanz herausgerechnet wird.
 
+## K13/F6b – opt-in NPC-Industrie im spielbaren Regel200-Forschungsprofil
+
+**[DRAFT/OPTION · keine Produktregel]** Die eigenständige Testseite `spieltest/k13-f6/index.html` erhält den Schalter **„NPC-Industrie freiwillig einschalten“**. Er ändert ausschließlich die gespeicherte K7-Forschungspolitik `kanon.industrieAuto` (optional; bei alten K7-Ständen fehlt das Feld und das ursprüngliche Verhalten bleibt unverändert). Es gibt keinen Spielerknopf, der sich als `st_nadir`, `npc3`, `transport` oder `werft_extern` ausgibt.
+
+Bei tatsächlicher Freigabe durch den Spieler disponiert ausschließlich der **gemeinsame K7-Core** mit den bereits vorhandenen `industrialOreOffer`, `industrialOreAcceptMine`, `industrialOreAcceptFreight`, `industrialOreAcceptYard`, `industrialOreCommit` und `industrialOreBuildShip`. Die NPCs benötigen jeweils korrektes Eigentum an echten, verfügbaren Schiffen sowie Kassen für Bergbau, Warenkauf, Käuferetats, Transportlohn und Werftarbeit. Jede fehlende Voraussetzung verhindert den Folgeauftrag – ohne Beihilfe, Minting oder kostenlose Materialproduktion. Die K7-Werftreserve ist an die echte Warenanlieferung in Nadir gekoppelt. Die Lagerzielprüfung verhindert einen Auftrag ohne physisches Nachfrageziel. Die NPC-Automatik kann jederzeit abgestellt werden; bereits rechtsgültig finanzierte Verträge bleiben bestehen und werden nicht gratis storniert.
+
+Die Regel200-Browseroberfläche zeigt Vertragsphase, drei Unterschriften, tatsächliche Wareneingänge, Reserven und Kassen. Ein eigener Touch-Browsertest prüft den opt-in-Schalter; die neue Node22-Testdatei `tests/k13-f6-npc-industrie.test.mjs` prüft Seeds 42/7 von dem belegten K6-Stoppzustand bis zur vollständig realen W3-/W4-/W5-Kette und mit Replay, Geld-/Eigentumsprüfung und negativen Regel199-Gates.
+
+**QA-Status bei Erstellung dieser Ergänzung:** neue Tests auf dem aktualisierten Code-Head **noch nicht abgeschlossen**. Die positive K7-Einzelregel-Prüfung aus den älteren PRs ist kein Beweis für die neue NPC-Automatik.
+
 ## Qualitätssicherung
 
 - Neue Node-Integration: `tests/k13-f6-gemeinsamer-spielkern.test.mjs` prüft Rule200 + F6-Funktionen, Startaudit, Weltgeld, Replay, Hash und Save/Load sowie explizite Regel199-Abgrenzung.

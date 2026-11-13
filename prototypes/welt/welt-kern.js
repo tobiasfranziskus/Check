@@ -1392,8 +1392,9 @@ function erstellen(startkapital = {}, k7 = false) {
     for (const id of frachter) state.kanon.verschleiss[id] = (state.kanon.verschleiss[id] || 0) + 1;
     m_core_kreislauf.rueckfracht(state);
     m_core_minerwerft.transport(state);
-    m_core_disponent.schritt(state);
+    // Signed K7-W5 reserve takes priority over discretionary NPC shipbuilding.
     industrieAutoSchritt(state);
+    m_core_disponent.schritt(state);
     m_core_flugplan.koerperSync(state);
     m_core_flugplan.plan(state, true, true);
     return ergebnis;

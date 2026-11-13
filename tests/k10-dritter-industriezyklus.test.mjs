@@ -308,6 +308,24 @@ for (const seed of [42,7]) {
     assert.equal(serien[0].newHulls,1);
     assert.equal(serien[0].soldHulls,1);
     assert.equal(serien[0].ferryMinutes,60);
+    assert.equal(positiv,4,'K10: Folgezyklen 3, 4, 5 und 6 wirklich verkauft');
+    assert.equal(serien.at(-1).number,7,'K10: erster W5-Kaufengpass konkret in Runde 7');
+    assert.equal(serien.at(-1).status,'frachter-kauf-gesperrt');
+    assert.equal(serien.at(-1).kassenNachher.transport,736,
+      'K10: Spedition fehlen beim originalen Kaufpreis exakt 14 ISK');
+    const bruecke=liquiditaetsBruecke(w,w.load(w.save(s)));
+    console.log('K10_BRUECKE '+JSON.stringify({seed,...bruecke}));
+    assert.equal(bruecke.status,'kauf-nach-echter-w3-fracht',
+      'K10: keine Rettungszahlung, nur eine neue bezahlte Charter kann die vorige Hülle refinanzieren');
+    assert.equal(bruecke.zahlungVorher,736);
+    assert.ok(bruecke.zahlungNachFracht>=750);
+    assert.equal(bruecke.gekauft,1);
+    assert.equal(bruecke.ueberfuehrung,60);
+    assert.equal(bruecke.neueW5Produktion,1);
+    assert.equal(bruecke.neueW5Verkaeufe,1,
+      'W5-Sale nur für den VORHER unverkauften 7. Frachter');
+    assert.equal(bruecke.lagerFrachter,1,
+      'der neue 8. Bau bleibt korrekt unverkauft im physischen Lager');
     const saved=w.save(s),loaded=w.load(saved);
     for(let n=0;n<70;n++){w.minute(s);w.minute(loaded);}
     assert.equal(w.hash(s),w.hash(loaded),'K10: Wiederholung bis zur Finanzierungsgrenze');
@@ -471,4 +489,125 @@ function cycle(w,s,number) {
   return auditEnd('komplett',null,{ship:id,ferryMinutes:minutes,
     fighterFee:ferry.kosten,offer:{miner:offer.miner,freighter:offer.frachter},
     searchHints:hints});
+}
+
+
+/**
+ * K10-Bruecke: Vermeidet jede verdeckte Kapitalzufuhr. Wenn das W5-Lager
+ * nach dem siebten *wirklichen* Bau unverkauft ist, muss eine ACHTE echte
+ * W1->W3-Leistung die Spedition mindestens um 14 ISK staerken; erst
+ * dann darf sie den VORHER produzierten Rumpf kaufen und ueberfuehren.
+ * Die 8. Werftproduktion wird separat voll bezahlt und bleibt gelagert.
+ */
+function liquiditaetsBruecke(w,s){
+  const r=w.rules,alt=s.w5.verkauft,altFertig=s.w5.fertig;
+  const vor=s.owners.transport.cash,erz=s.ledger.erz.mined,
+    liefer=s.w3.geliefert,material=s.w4.materialErzeugt;
+  const end=(status,grund=null,extra={})=>({status,grund,
+    zahlungVorher:vor,zahlungNachFracht:extra.zahlungNachFracht??s.owners.transport.cash,
+    gekauft:s.w5.verkauft-alt,
+    neueW5Produktion:s.w5.fertig-altFertig,
+    neueW5Verkaeufe:s.w5.verkauft-alt,
+    lagerFrachter:s.stations.st_nadir.lager.frachter||0,
+    endTick:s.tick,erzExtra:s.ledger.erz.mined-erz,
+    lieferExtra:s.w3.geliefert-liefer,
+    materialExtra:s.w4.materialErzeugt-material,
+    geld:gesamt(s),minted:s.minted,burned:s.burned,
+    hash:w.hash(s),...extra});
+  assert.ok(vor<r.w5.verkaufsPreis);
+  assert.equal((s.stations.st_nadir.lager.frachter||0),1,'K10: unverkaufter echter 7. Werftrumpf');
+  const vorNichtkauf=w.canonical(s);
+  const abgewiesen=w.execute(s,{type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_nadir'});
+  assert.equal(abgewiesen.ok,false,'K10: Geldmangel ist rechtlich bindend');
+  assert.equal(w.canonical(s),vorNichtkauf,'K10: atomar abgelehnter Vorkauf');
+  w.politikSetzen(s,{eisfracht:false});
+  for(const sh of Object.values(s.ships).filter(x=>x.owner==='npc3'&&x.klasse==='miner')){
+    if(!s.kanon.pendel[sh.id])continue;
+    const canon=w.canonical(s),stop=w.execute(s,{type:'shipShuttleStop',owner:'npc3',schiff:sh.id});
+    if(!stop.ok)assert.equal(w.canonical(s),canon);
+  }
+  let offer=null;
+  for(let n=0;n<=400&&!offer;n++){
+    const v=angebotVersuchen(w,s);
+    if(v.miner)offer=v;
+    else if(n<400)w.minute(s);
+  }
+  if(!offer)return end('acht-angebot-gesperrt','Kein weiterer Eigentümervertrag');
+  for(const [type,owner] of [
+    ['industrialOreAcceptMine','npc3'],
+    ['industrialOreAcceptFreight','transport'],
+    ['industrialOreAcceptYard','werft_extern']
+  ]){
+    const prev=w.canonical(s),v=w.execute(s,{type,owner});
+    if(!v.ok){
+      assert.equal(w.canonical(s),prev);
+      befehl(w,s,{type:'industrialOreCancel',owner:'st_nadir'});
+      return end('acht-unterschrift-gesperrt',v.reason);
+    }
+  }
+  const prev=w.canonical(s),committed=w.execute(s,{type:'industrialOreCommit',owner:'st_nadir'});
+  if(!committed.ok){
+    assert.equal(w.canonical(s),prev);
+    befehl(w,s,{type:'industrialOreCancel',owner:'st_nadir'});
+    return end('acht-commit-gesperrt',committed.reason);
+  }
+  assert.equal(s.owners.k7_werft_treuhand.cash,530);
+  assert.equal(s.owners.w3_kauf_treuhand.cash,740);
+  assert.equal(s.owners.w3_arbeit_treuhand.cash,120);
+  for(let n=0;n<600;n++){
+    w.minute(s);
+    if(n%100===0)pruefe(w,s,'K10 8. echter W3-Transport');
+    if(s.w3.auftrag===null &&s.w3.geliefert===liefer+50&&
+      s.kanon.industrieErz.phase==='geliefert')break;
+  }
+  if(s.w3.auftrag || s.w3.geliefert!==liefer+50 ||s.kanon.industrieErz.phase!=='geliefert')
+    return end('acht-transport-unvollstaendig','Original-W3-Rueckweg noch offen');
+  assert.equal(s.ledger.erz.mined-erz,50,'K10: keine fiktive achte Erzlieferung');
+  assert.equal(s.stations.st_nadir.lager.frachter,1,'Lager noch mit 7. Rumpf belegt');
+  const nachFracht=s.owners.transport.cash;
+  if(nachFracht<r.w5.verkaufsPreis)
+    return end('acht-transport-zu-wenig-lohn','Fracht bringt noch kein Kaufbudget',{zahlungNachFracht:nachFracht});
+  const transportBefore=s.owners.transport.cash,yardBefore=s.owners.werft_extern.cash;
+  befehl(w,s,{type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_nadir'});
+  assert.equal(s.owners.transport.cash,transportBefore-r.w5.verkaufsPreis);
+  assert.equal(s.owners.werft_extern.cash,yardBefore+r.w5.verkaufsPreis);
+  assert.equal(s.w5.verkauft-alt,1);
+  const id=s.w5.schiffIds.at(-1),sh=s.ships[id];
+  assert.ok(sh&&sh.owner==='transport'&&sh.system==='nadir');
+  const route=w.kern.pilotW5TransferKalkulation(s,id);
+  assert.equal(route.ok,true,route.grund);
+  const transportBeforeFlight=s.owners.transport.cash;
+  befehl(w,s,{type:'shipReposition',owner:'transport',schiff:id});
+  assert.equal(s.owners.transport.cash,transportBeforeFlight-route.kosten);
+  assert.equal(s.owners[r.w5Transfer.reserved].cash,route.kosten);
+  for(let n=0;n<120 && !s.w5ac.completed.some(x=>x.id===id);n++)w.minute(s);
+  assert.ok(s.w5ac.completed.some(x=>x.id===id),'K10: 7. Schiff fliegt nach Eigentuemerwechsel');
+  assert.equal(s.owners[r.w5Transfer.reserved].cash,0);
+  assert.equal(s.ships[id].system,'aldera');
+  pruefe(w,s,'K10 7. gekaufter Rumpf nach weiterem realen Charter');
+  // Die ACHTE W5-Produktion erfordert ihre EIGENE unterschriebene Reserve
+  // und ein neues echtes W4-Material; kein Verkauf des 8. Rumpfs ohne Budget.
+  const q=w.kern.pilotW4Kalkulation(s);
+  if(!q.ok)return end('achte-w4-gesperrt',q.grund,{zahlungNachFracht:nachFracht,ueberfuehrung:route.minuten});
+  befehl(w,s,{type:'stationRefine',owner:'st_nadir',station:'st_nadir'});
+  for(let n=0;n<=r.w4.dauer&&s.w4.auftrag;n++)w.minute(s);
+  assert.equal(s.w4.materialErzeugt-material,5);
+  befehl(w,s,{type:'industrialOreBuildShip',owner:'werft_extern'});
+  for(let n=0;n<=r.w5.dauer&&s.w5.auftrag;n++)w.minute(s);
+  assert.equal(s.w5.fertig-altFertig,1,'K10: auch 8. W5-Rumpf voll bezahlt gebaut');
+  assert.equal(s.w5.verkauft-alt,1,'8. Rumpf darf nicht gratis ueberschrieben werden');
+  assert.equal(s.stations.st_nadir.lager.frachter,1);
+  const beforeLast=w.canonical(s),again=w.execute(s,{type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_nadir'});
+  assert.equal(again.ok,false);
+  assert.equal(w.canonical(s),beforeLast);
+  pruefe(w,s,'K10 8. W5-Neubau legal gelagert, Kauf gesperrt');
+  const hash=w.hash(s);
+  assert.equal(w.hash(w.load(w.save(s))),hash,'K10: Brueckenstrategie save/load');
+  const loaded=w.load(w.save(s));
+  for(let n=0;n<50;n++){w.minute(s);w.minute(loaded);}
+  assert.equal(w.hash(s),w.hash(loaded),'K10: nach Achter-Zyklus deterministisch');
+  pruefe(w,s,'K10 Brueckenwiederholung');
+  return end('kauf-nach-echter-w3-fracht',null,{zahlungNachFracht:nachFracht,
+    ueberfuehrung:route.minuten,gekaufterRumpf:id,gekauft:1,
+    anfangFehlbetrag:r.w5.verkaufsPreis-vor});
 }

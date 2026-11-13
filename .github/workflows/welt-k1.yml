@@ -23,6 +23,7 @@ on:
       - 'tests/k9-zweite-w4-w5-kette.test.mjs'
       - 'tests/k10-dritter-industriezyklus.test.mjs'
       - 'tests/k11-realer-frachterbedarf.test.mjs'
+      - 'tests/k12-eisfracht-geldkreislauf.test.mjs'
       - 'tools/k11-k10-endstand.mjs'
       - 'prototypes/w5ac/rule191-w5-ferry-core.js'
       - 'prototypes/welt/welt-kern.js'
@@ -307,3 +308,14 @@ jobs:
           node-version: '22'
       - name: "K11: echte Lagerhüllen, freie Eigentümerfrachter, bezahlte Nachfrage und Original-Stilllegung vergleichen"
         run: node --test tests/k11-realer-frachterbedarf.test.mjs
+
+  k12-eisfracht-geldkreislauf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "K12: echte Eisfracht-Käuferkasse und 74-ISK-Crewblockade, keine Gratisanzahlung"
+        run: node --test tests/k12-eisfracht-geldkreislauf.test.mjs

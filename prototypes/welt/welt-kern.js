@@ -987,6 +987,8 @@ function erstellen(startkapital = {}, k7 = false) {
       pruefeForm(state);
       const k = state.kanon, fehler = [];
       if (k7) {
+        if (k.industrieAuto !== undefined && typeof k.industrieAuto !== 'boolean')
+          fehler.push('K7-Industrieautomatik: ungültige Einstellung');
         const i=k.industrieErz, a=state.w3?.auftrag;
         const beteiligte=i && ['angebot','aktiv','geliefert'].includes(i.phase);
         // Vertrags-IDs sind reale Eigentumsrechte, nicht vom JSON-Importer
@@ -1262,6 +1264,78 @@ function erstellen(startkapital = {}, k7 = false) {
     return verwerfen('unbekannte Vertragsaktion');
   }
 
+  // K7 research-only: independent NPC signers use the existing validated K7
+  // commands. The player's browser only changes the optional policy flag;
+  // it cannot sign on behalf of NPC companies or create cash, ships or ore.
+  function industrieAutoSchritt(s) {
+    if (!k7 || s.kanon.industrieAuto !== true || s.kanon.politik.automatik !== true) return;
+    const i = s.kanon.industrieErz, nadir = s.stations[rules.w5.station].lager;
+    if (i.phase === 'aktiv' || i.phase === 'geliefert') {
+      // Production may begin only after the existing physical Nadir arrival
+      // and after full original W4 work funding has been checked.
+      if (i.erzAngenommen && !i.werftVerwendet) {
+        if (!s.w4.auftrag && !s.w5.auftrag && !s.kanon.minerWerft?.auftrag
+          && (nadir.material || 0) < rules.w5.material
+          && (nadir.erz || 0) >= rules.w4.erzJeCharge) {
+          const q = kern.pilotW4Kalkulation(s);
+          if (q.ok) kern.execute(s, { type:'stationRefine', owner:rules.w4.station,
+            station:rules.w4.station }, rules);
+        }
+        if (!s.w4.auftrag && !s.w5.auftrag && !s.kanon.minerWerft?.auftrag
+          && (nadir.material || 0) >= rules.w5.material)
+          k7Befehl(s, { type:'industrialOreBuildShip', owner:rules.w5.werft });
+      }
+      // The active contract must finish; the NPCs cannot replace its
+      // signatures or issue a second W3 escrow in parallel.
+      if (i.phase !== 'geliefert' || !i.werftVerwendet) return;
+    }
+    if (!['frei','storniert','geliefert'].includes(i.phase)
+      || s.w3.auftrag || s.w5n.frachtauftrag || s.w4.auftrag || s.w5.auftrag
+      || s.kanon.minerWerft?.auftrag) return;
+    // A limited warehouse target is physical demand, not invented ISK.
+    if ((nadir.frachter || 0) >= rules.world.stations[rules.w5.station].ziel.frachter)
+      return;
+    if (s.owners.npc3.cash < K7_PREIS.bergbau
+      || s.owners.st_aldera.cash < K7_PREIS.alderakauf
+      || s.owners.st_nadir.cash < K7_PREIS.nadiraufwand
+      || s.owners.transport.cash < K7_PREIS.frachtlohn
+      || s.owners.werft_extern.cash < K7_PREIS.werft) return;
+    const miner = ids(s.ships).map(id=>s.ships[id]).find(sh =>
+      sh.owner === 'npc3' && sh.klasse === 'miner' && sh.system === 'aldera'
+      && sh.flug?.lage === 'angedockt' && !m_core_anlage.stillgelegt(s, sh)
+      && ladungSumme(sh) === 0 && !s.erzpilotVertraege?.[sh.id]
+      && (!s.kanon.pendel[sh.id] || s.kanon.pendel[sh.id].ware === 'erz'));
+    const frachter = ids(s.ships).map(id=>s.ships[id]).find(sh =>
+      sh.owner === 'transport' && sh.klasse === 'frachter'
+      && sh.system === 'aldera' && sh.phase === 'dock'
+      && sh.auftrag === 'halten' && !m_core_anlage.stillgelegt(s, sh)
+      && ladungSumme(sh) === 0);
+    if (!miner || !frachter) return;
+    const befehle = [
+      {type:'industrialOreOffer',owner:'st_nadir',miner:miner.id,frachter:frachter.id},
+      {type:'industrialOreAcceptMine',owner:'npc3'},
+      {type:'industrialOreAcceptFreight',owner:'transport'},
+      {type:'industrialOreAcceptYard',owner:'werft_extern'},
+      {type:'industrialOreCommit',owner:'st_nadir'},
+    ];
+    for (const cmd of befehle) {
+      const r = k7Befehl(s, cmd);
+      if (!r.ok) {
+        if (s.kanon.industrieErz.phase === 'angebot')
+          k7Befehl(s, {type:'industrialOreCancel',owner:'st_nadir'});
+        return;
+      }
+    }
+  }
+  function industrieAutoSetzen(s, aktiviert) {
+    pruefeForm(s);
+    if (!k7) throw Error('K7-Automatik ist ausschließlich Regel200-Forschung');
+    if (typeof aktiviert !== 'boolean') throw TypeError('K7-Automatik verlangt Boolean');
+    s.kanon.industrieAuto = aktiviert;
+    if (aktiviert) industrieAutoSchritt(s);
+    return {ok:true, aktiviert};
+  }
+
   function execute(state, cmd) {
     pruefeForm(state);
     const type = cmd && cmd.type;
@@ -1319,6 +1393,7 @@ function erstellen(startkapital = {}, k7 = false) {
     m_core_kreislauf.rueckfracht(state);
     m_core_minerwerft.transport(state);
     m_core_disponent.schritt(state);
+    industrieAutoSchritt(state);
     m_core_flugplan.koerperSync(state);
     m_core_flugplan.plan(state, true, true);
     return ergebnis;
@@ -1409,7 +1484,7 @@ function erstellen(startkapital = {}, k7 = false) {
 
   return Object.freeze({
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
-    createState, politikSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
+    createState, politikSetzen, industrieAutoSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
     torPruefen: m_core_torfreigabe.pruefen, torFrachtPruefen: m_core_torfreigabe.darfFracht,
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,

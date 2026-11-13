@@ -5,7 +5,7 @@
 (function (scope) {
 'use strict';
 const FACTORY = typeof module === 'object' && module.exports
-  ? require('../w5ac/rule191-w5-ferry-core.js') : scope.W5acOriginal;
+  ? require('../welt/rule200-k7-industry-core.js') : scope.W5acK7;
 const FLUG = typeof module === 'object' && module.exports
   ? require('./flug-kern.js') : scope.FlugKern;
 if (!FACTORY?.createPrivateWageResearch || !FLUG?.schritt)
@@ -24,7 +24,8 @@ function erstellen(startkapital = {}, optionen = {}) {
     || (Object.hasOwn(opt,'dockOnlyIce') && opt.dockOnlyIce!==true))
     throw TypeError('F1: ungültige Forschungskonfiguration; Eis-Dockbindung nur Rule198');
   const profil = opt.researchProfile ?? PROFIL;
-  // Die Original-Rule195-Quelldatei bleibt BYTEGLEICH (Singlefile-Reproduzierbarkeit).
+  // Nur die isolierte Forschungsquelle kennt den F2b-Dock-Hook. Die
+  // produktive Rule195-Quelldatei bleibt BYTEGLEICH (Singlefile-Build).
   // Der Forschungsvermerk 196 wird nur in serialisierten F1-Ständen verwendet.
   // Für jeden Economy-Aufruf sieht die *selbe* Originalengine Rule195, damit auch
   // ihre internen Owner-/Treuhand-/Export-/Finanzierungs-Prüfungen unverändert greifen.

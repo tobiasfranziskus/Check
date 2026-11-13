@@ -6,6 +6,8 @@ on:
       - 'prototypes/flug2d/flug-kern.js'
       - 'prototypes/flug2d/grafik.js'
       - 'prototypes/w5ac/rule191-w5-ferry-core.js'
+      - 'prototypes/welt/rule200-k7-industry-core.js'
+      - 'tests/k7-core-isolation.test.mjs'
       - 'tools/welt-szenarien.mjs'
       - 'tools/k3-frachter-diagnose.mjs'
       - 'tools/k5-terminal-diagnose.mjs'

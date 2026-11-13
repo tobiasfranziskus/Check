@@ -368,19 +368,12 @@ const m_data_erzpilot = (() => {
   // never transfers or rescue during a running economy; total remains 33,000 ISK.
   if(research){
     W5_RULES.rulesVersion=research.personalWages===true?195:research.waterTrade===true?194:research.wageTrade===true?193:192;
-    if(research.kanon===true)W5_RULES.rulesVersion=research.industryOre===true?200:199;
-    if(research.industryOre===true)W5_RULES.k7={industrieErz:true, charge:50};
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre'].includes(k))
-      || (Object.hasOwn(research,'kanon')&&(research.kanon!==true||research.personalWages!==true))
-      || (Object.hasOwn(research,'ort')!==(research.kanon===true))
-      || (research.kanon===true&&(typeof research.ort?.imFeld!=='function'
-        ||typeof research.ort?.angedocktAn!=='function'))
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages'].includes(k))
       || (Object.hasOwn(research,'wageTrade')&&research.wageTrade!==true)
       || (Object.hasOwn(research,'waterTrade')&&research.waterTrade!==true)
       || (research.waterTrade===true&&research.wageTrade!==true)
       || (research.personalWages===true&&(research.waterTrade!==true||research.wageTrade!==true))
-      || (Object.hasOwn(research,'personalWages')&&research.personalWages!==true)
-      || (Object.hasOwn(research,'industryOre')&&(research.industryOre!==true||research.kanon!==true)))
+      || (Object.hasOwn(research,'personalWages')&&research.personalWages!==true))
       throw TypeError('Unbekannter W5ad-Startparameter');
     const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
     if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
@@ -417,8 +410,6 @@ const m_data_erzpilot = (() => {
         wagePerMinute:W5_RULES.w3.arbeitJeMinute
       };
     }
-    // K1 / Regel 199: kanonische Welt. Nur Kennung; Parameter und Buch liegen in m_core_welt.
-    if(research.kanon===true)W5_RULES.kanon={profil:'K1'};
     if(research.wageTrade===true){
       // New hypothetical contract: a collectively owned wage fund purchases
       // REAL W4 material and physically holds it, rather than pretending a
@@ -456,23 +447,6 @@ const clamp = (lo, hi, x) => (x < lo ? lo : x > hi ? hi : x);
 const ids = (obj) => Object.keys(obj).sort();
 const anzahl = (obj, k) => (Object.hasOwn(obj, k) ? obj[k] : 0);
 return { div, clamp, ids, anzahl };
-})();
-
-// K1 (Forschungsregel 199): Haken der kanonischen Welt im SELBEN Kern.
-// Ohne research.kanon gilt netto=0 und jede Ortsprüfung ist wahr: Regel14–198 bleiben bitgleich.
-const m_core_kanon = (() => {
-  const ORT = research && research.kanon === true ? research.ort : null;
-  // Kumulierter Netto-Abfluss (positiv) bzw. -Zufluss (negativ) eines Kontos aus
-  // belegten K1-Zusatzbuchungen. Die Stufen-Audits rekonstruieren weiterhin nur ihre
-  // eigenen Flüsse; dieser eine benannte Korrekturterm verbindet beide Bücher.
-  const netto = (s, id) => (s && s.kanon && Object.hasOwn(s.kanon.netto, id) ? s.kanon.netto[id] : 0);
-  // Wasser, das Nadir über K1 verlässt (Einzelhandel vor Ort + Rückfracht), und K1-Endverbrauch.
-  const wasserAbNadir = (s) => (s && s.kanon ? s.kanon.wasser.abNadir : 0);
-  const wasserKonsum = (s) => (s && s.kanon ? s.kanon.wasser.konsum : 0);
-  const imFeld = (sh, ware) => !ORT || !sh.flug || ORT.imFeld(sh, ware);
-  const amDock = (sh, station) => !ORT || !sh.flug || ORT.angedocktAn(sh, station);
-  const aktiv = () => !!ORT;
-  return { netto, wasserAbNadir, wasserKonsum, imFeld, amDock, aktiv };
 })();
 
 const m_core_state = (() => {
@@ -1096,12 +1070,6 @@ function foerderung(state, rules) {
       s.auftrag = 'halten'; s.ware = null;
       continue;
     }
-    if (!m_core_kanon.imFeld(s, ware)) {
-      // K1: ohne Aufenthalt im Rohstofffeld keine Förderung. Ein erfüllter
-      // Erzauftrag wird erst am Dock der Abnahmestation abgerechnet.
-      if (rules.erzpilot && ware === 'erz') m_core_erzpilot.abliefern(state, rules, s);
-      continue;
-    }
     if (rules.erzpilot) {
       if(rules.w5n&&ware==='eis')m_core_w5n.foerdern(state,rules,s);
       else m_core_erzpilot.foerdern(state, rules, s);
@@ -1711,12 +1679,7 @@ const m_core_erzpilot = (() => {
       Math.max(vorhandenesErz, verfuengbareArbeit)));
     // Regel16: Endverbraucher muss auch diese neue Charge nachvollziehbar
     // bezahlen koennen, nicht nur die lokale Station. Gilt fuer Spieler UND NPC.
-    const industrie = rules.k7 && state.w3?.auftrag?.phase === 'vorbestellt'
-      && state.w3.auftrag.industrieMiner === schiff.id
-      && state.kanon?.industrieErz?.phase === 'aktiv'
-      && state.kanon.industrieErz.erzAngenommen === false;
-    if (cfg.npcInvestor && !industrie) menge = Math.min(menge, freieEndnachfrage(state, rules, schiff.id));
-    if (industrie) menge = Math.min(menge, state.w3.auftrag.menge);
+    if (cfg.npcInvestor) menge = Math.min(menge, freieEndnachfrage(state, rules, schiff.id));
     if (menge <= 0) return null;
     const wert = menge * cfg.preis, konto = `erz_treuhand_${schiff.id}`;
     const arbeitsKonto = `erz_arbeit_${schiff.id}`;
@@ -1739,11 +1702,7 @@ const m_core_erzpilot = (() => {
     if (!v) return 0;
     const menge = Math.min(v.menge, anzahl(schiff.ladung, 'erz'));
     if (!stornierung && menge < v.menge) return 0;
-    // K1: Ware bleibt bis zur Übergabe am Dock an Bord; ein Storno im Raum gibt
-    // nur die Treuhandbeträge zurück und verkauft nichts aus der Ferne.
-    const amDock = m_core_kanon.amDock(schiff, cfg.station);
-    if (!stornierung && !amDock) return 0;
-    if (menge > 0 && amDock) {
+    if (menge > 0) {
       if (!handel(state, rules, schiff, cfg.station, 'erz', menge, false))
         throw Error('Reservierter Erzauftrag kann nicht bezahlt werden');
       state.stats.handel += 1;
@@ -1761,20 +1720,11 @@ const m_core_erzpilot = (() => {
       arbeit.cash = 0;
     }
     delete buch[schiff.id];
-    if (!stornierung && menge > 0 && rules.k7 && state.w3?.auftrag?.phase === 'vorbestellt'
-      && state.w3.auftrag.industrieMiner === schiff.id && state.kanon?.industrieErz?.phase === 'aktiv')
-      state.kanon.industrieErz.erzAngenommen = true;
     return menge;
   }
   function stornieren(state, rules, schiff) {
     if (!rules.erzpilot) return 0;
     return abschliessen(state, rules, schiff, true);
-  }
-  // K1: Abnahme eines bereits vollständig geförderten Auftrags am Dock.
-  function abliefern(state, rules, schiff) {
-    const v = vertragsbuch(state)[schiff.id];
-    if (!v || anzahl(schiff.ladung, 'erz') < v.menge) return 0;
-    return abschliessen(state, rules, schiff);
   }
   function foerdern(state, rules, schiff) {
     const cfg = rules.erzpilot;
@@ -1939,10 +1889,7 @@ const m_core_erzpilot = (() => {
       // Kein kostenloses Weiterfördern: Stop ausschließlich bei unbelegter Zukunft.
       // Ein schon bezahlter, noch nicht fertiggestellter Auftrag bleibt unangetastet.
       for (const sh of eigene) {
-        if (sh.auftrag !== 'foerdern' || buch[sh.id]
-          || (rules.k7 && state.w3?.auftrag?.phase === 'vorbestellt'
-            && state.w3.auftrag.industrieMiner === sh.id
-            && state.kanon?.industrieErz?.phase === 'aktiv' && !state.kanon.industrieErz.erzAngenommen)) continue;
+        if (sh.auftrag !== 'foerdern' || buch[sh.id]) continue;
         const res = m_core_commands.execute(state,
           { type: 'shipWait', owner, schiff: sh.id }, rules);
         if (!res.ok) throw Error('W2: Unfinanzierte Betriebsruhe abgelehnt: ' + res.reason);
@@ -1973,7 +1920,7 @@ const m_core_erzpilot = (() => {
       n + (v.arbeitsKonto ? state.owners[v.arbeitsKonto].cash : 0), 0);
     return { auftraege: ids(buch).length, gebunden, arbeitsGebunden, frei, reserviert: reserviert(state) };
   }
-  return { beauftragen, stornieren, abliefern, foerdern, exportiere, auftragsStand,
+  return { beauftragen, stornieren, foerdern, exportiere, auftragsStand,
     investitionsPruefung, npcInvestieren, krisenLage, krisenSteuern };
 })();
 
@@ -2011,7 +1958,7 @@ const m_core_w3 = (() => {
     if(state.owners[c.spedition].cash<k.arbeitsKosten)
       return {ok:false,grund:'Spedition kann die Flugloehne nicht decken'};
     const start=rules.owners.find(o=>o.id===c.kunde).cash;
-    if(state.owners[c.kunde].cash+m_core_kanon.netto(state,c.kunde)+w.kaufAusgaben+(state.w4?.gebucht??0)
+    if(state.owners[c.kunde].cash+w.kaufAusgaben+(state.w4?.gebucht??0)
       -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)!==start)
@@ -2036,82 +1983,10 @@ const m_core_w3 = (() => {
     protokolliere(state,'auftrag',sh.id+': Erz, Kaufetat und beide Flugkosten gesperrt',c.spedition);
     return true;
   }
-  // K7 Forschungsregel200: die *Original*-W3-Treuhand vor der Erzförderung
-  // genau einmal finanzieren. Vorbestellung darf kein Phantom-Erz verladen.
-  function vorbestellen(state,rules,frachterId,minerId) {
-    if (!rules.k7 || state.rulesVersion !== rules.rulesVersion) throw Error('K7 nur mit Forschungsregel 200');
-    const w=state.w3,c=rules.w3,sh=state.ships[frachterId],mi=state.ships[minerId],k=kalkulation(rules);
-    if(w.auftrag||state.w5n?.frachtauftrag) throw Error('K7: bestehende Frachtreserve');
-    if(!sh||sh.owner!==c.spedition||sh.klasse!=='frachter'||sh.system!=='aldera'
-      ||sh.phase!=='dock'||sh.auftrag!=='halten'||Object.values(sh.ladung).some(n=>n!==0))
-      throw Error('K7: Spedition besitzt keinen freien Frachter in Aldera');
-    if(!mi||mi.owner!==rules.erzpilot.npcInvestor||mi.klasse!=='miner'
-      ||mi.system!=='aldera'||mi.phase!=='dock'||mi.flug?.lage!=='angedockt'
-      ||Object.values(mi.ladung).some(n=>n!==0)
-      ||state.erzpilotVertraege?.[minerId])
-      throw Error('K7: Miner nicht rechtmäßig verfügbar');
-    if(state.owners[c.kunde].cash<k.gesamt||state.owners[c.spedition].cash<k.arbeitsKosten
-      ||state.owners[rules.erzpilot.station].cash<k.erzWert
-      ||state.owners[mi.owner].cash<rules.erzpilot.minerJeMinute*c.fracht)
-      throw Error('K7: nicht alle Firmen können Vorbestellung, Ankauf und Arbeit decken');
-    if(state.stations[c.zielStation].lager.erz+c.fracht
-      >obergrenze(state,rules,c.zielStation,'erz')) throw Error('K7: kein Nadir-Lagerplatz');
-    const ka='w3_kauf_treuhand',ar='w3_arbeit_treuhand';
-    if((state.owners[ka]?.cash||0)||(state.owners[ar]?.cash||0))throw Error('K7: Doppelreservierung');
-    // W3-Kaufkosten/Quoten werden beim PREORDER und nie erneut beim Flug gebucht.
-    if(!state.owners[ka])state.owners[ka]={id:ka,kind:'w3-reserve',cash:0};
-    if(!state.owners[ar])state.owners[ar]={id:ar,kind:'w3-reserve',cash:0};
-    state.owners[c.kunde].cash-=k.gesamt;state.owners[ka].cash+=k.gesamt;
-    w.kaufAusgaben+=k.gesamt;buche(state,c.kunde,'kosten',k.gesamt);
-    state.owners[c.spedition].cash-=k.arbeitsKosten;state.owners[ar].cash+=k.arbeitsKosten;
-    w.auftrag={schiff:sh.id,industrieMiner:minerId,phase:'vorbestellt',
-      menge:c.fracht,gearbeitet:0,...k};
-    w.beauftragt++;
-    protokolliere(state,'auftrag',sh.id+': K7 industrielle Erz-Vorbestellung; echte W3-Kauf-/Frachtlohnreserven',c.kunde);
-    return true;
-  }
-  // Storno ausschließlich vor Beginn jeglicher realer W1-Arbeit und bei dockenden,
-  // unbeladenen Schiffen. Bereits bezahlte Leistung oder Ware darf nie verschwinden.
-  function stornierenVorArbeit(state,rules) {
-    const w=state.w3,a=w?.auftrag,c=rules.w3;
-    if(!rules.k7||a?.phase!=='vorbestellt')throw Error('K7: kein unbegonnener Vertrag');
-    const mi=state.ships[a.industrieMiner],sh=state.ships[a.schiff];
-    if(!mi||!sh||mi.flug?.lage!=='angedockt'||sh.phase!=='dock'
-      ||Object.values(mi.ladung).some(x=>x!==0)
-      ||state.erzpilotVertraege?.[mi.id])
-      throw Error('K7: reale Förderung/Flug begonnen; nicht kostenlos stornierbar');
-    const ka=state.owners.w3_kauf_treuhand,ar=state.owners.w3_arbeit_treuhand;
-    if(ka?.cash!==a.gesamt||ar?.cash!==a.arbeitsKosten)
-      throw Error('K7: Treuhand bereits verwendet');
-    state.owners[c.kunde].cash+=a.gesamt;ka.cash=0;
-    state.owners[c.spedition].cash+=a.arbeitsKosten;ar.cash=0;
-    w.storniert++;w.stornoRueckzahlung+=a.gesamt;
-    buche(state,c.kunde,'erloes',a.gesamt);
-    w.auftrag=null;
-    protokolliere(state,'auftrag','K7: unbegonnener Auftrag vollständig an Zahlende erstattet',c.kunde);
-  }
   function tick(state,rules) {
     const w=state.w3,a=w?.auftrag;
     if(!a)return;
     const c=rules.w3,sh=state.ships[a.schiff];
-    if (rules.k7 && a.phase==='vorbestellt') {
-      // Kein Erz vorfinanzierungsfrei erfunden: echte Aldera-Lagerware und
-      // Nachweis des tatsächlichen W1-Vertragsabschlusses sind erforderlich.
-      const v=state.kanon?.industrieErz;
-      if(!v||v.phase!=='aktiv'||v.miner!==a.industrieMiner)
-        throw Error('K7: unbefugter W3-Industrieauftrag');
-      if(!v.erzAngenommen || (state.stations[c.quellStation].lager.erz||0)<c.fracht)
-        return;
-      if(state.w5n?.frachtauftrag||sh.phase!=='dock'||sh.system!=='aldera'
-        ||sh.auftrag!=='halten'||Object.values(sh.ladung).some(n=>n!==0))
-        return; // echte W3-Kollision: auf freien Frachter warten
-      state.stations[c.quellStation].lager.erz-=c.fracht;
-      sh.ladung.erz=c.fracht;sh.phase='reise';sh.ziel=c.zielStation;
-      sh.ankunft=state.tick+a.zeit;sh.auftrag='fracht';
-      a.phase='hin';a.start=state.tick;
-      protokolliere(state,'auftrag',sh.id+': physische K7-Erzcharge erstmals geladen; W3-Geld nicht erneut reserviert',c.spedition);
-      return; // Erste Arbeitsminute erst im nächsten Tick
-    }
     const arbeit=state.owners.w3_arbeit_treuhand,kauf=state.owners.w3_kauf_treuhand;
     if(!sh||sh.phase!=='reise'||!arbeit||!kauf||arbeit.cash<c.arbeitJeMinute)
       throw Error('W3: Nicht bezahlter Flug');
@@ -2150,31 +2025,29 @@ const m_core_w3 = (() => {
     const carrier=state.owners[c.spedition]?.cash,startCarrier=rules.owners.find(o=>o.id===c.spedition).cash;
     const kauf=state.owners.w3_kauf_treuhand?.cash??0,arbeit=state.owners.w3_arbeit_treuhand?.cash??0;
     const huelle=(state.ledger.frachter?.consumed??0)*rules.economy.waren.frachter.basis;
-    const storniert=rules.k7?w.storniert:0,stornoRueck=rules.k7?w.stornoRueckzahlung:0;
-    const erwarteteBezahlung=(w.abgeschlossen+storniert+(a?1:0))*k.gesamt;
+    const erwarteteBezahlung=w.abgeschlossen*k.gesamt+(a?k.gesamt:0);
     const erwarteteWare=w.abgeschlossen*c.fracht+(a?.phase==='rueck'?c.fracht:0);
     const erwarteteArbeit=w.abgeschlossen*k.arbeitsKosten+(a?.gearbeitet??0)*c.arbeitJeMinute;
     const ok=[buyer,carrier,kauf,arbeit,w.kaufAusgaben,w.geliefert,w.arbeitsKosten,
       w.frachtUmsatz,w.beauftragt,w.abgeschlossen,huelle].every(Number.isSafeInteger)
       && buyer>=0&&carrier>=0
-      && buyer+m_core_kanon.netto(state,c.kunde)+w.kaufAusgaben-stornoRueck+(state.w4?.gebucht??0)
+      && buyer+w.kaufAusgaben+(state.w4?.gebucht??0)
         -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)===startBuyer
       && w.kaufAusgaben===erwarteteBezahlung && w.geliefert===erwarteteWare
       && w.arbeitsKosten===erwarteteArbeit
       && w.frachtUmsatz===w.abgeschlossen*k.frachtGebuehr
-      && w.beauftragt===w.abgeschlossen+storniert+(a?1:0)
-      && (!rules.k7||(Number.isSafeInteger(storniert)&&storniert>=0&&stornoRueck===storniert*k.gesamt))
+      && w.beauftragt===w.abgeschlossen+(a?1:0)
       && state.stations[c.zielStation].lager.erz
         ===w.geliefert-(state.w4?.erzVerbraucht??0)
       &&(rules.w5ag
-         ?state.owners[c.arbeitsFonds].cash+m_core_kanon.netto(state,c.arbeitsFonds)===0&&(state.w5ae?.spent??0)===0
+         ?state.owners[c.arbeitsFonds].cash===0&&(state.w5ae?.spent??0)===0
          :state.owners[c.arbeitsFonds].cash+(state.w5ae?.spent??0)
            +(state.w5n?.wasserErlos??0)===w.arbeitsKosten+(state.w5n?.frachtLohn??0))
-      && kauf===(a?(a.phase==='hin'||a.phase==='vorbestellt'?a.gesamt:a.frachtGebuehr):0)
+      && kauf===(a?(a.phase==='hin'?a.gesamt:a.frachtGebuehr):0)
       && arbeit===(a?k.arbeitsKosten-a.gearbeitet*c.arbeitJeMinute:0)
-      && carrier+m_core_kanon.netto(state,c.spedition)+arbeit+(state.owners.w5ac_transfer_reserved?.cash??0)
+      && carrier+arbeit+(state.owners.w5ac_transfer_reserved?.cash??0)
         +(state.w5ac?.paid??0)+(state.owners.w5n_fracht_arbeit?.cash??0)
         +(state.w5n?.frachtLohn??0)-(state.w5n?.frachtUmsatz??0)
         ===startCarrier-huelle-w.arbeitsKosten+w.frachtUmsatz
@@ -2182,15 +2055,12 @@ const m_core_w3 = (() => {
         && a.arbeitsKosten===k.arbeitsKosten&&a.frachtGebuehr===k.frachtGebuehr
         && a.gesamt===k.gesamt&&a.gearbeitet>=0&&a.gearbeitet<=2*k.zeit
         && state.ships[a.schiff]?.owner===c.spedition
-        && (state.ships[a.schiff]?.ladung.erz??0)===(a.phase==='hin'?c.fracht:0)
-        && (!rules.k7||a.phase!=='vorbestellt'
-          ||(state.kanon?.industrieErz?.phase==='aktiv'
-            && state.kanon.industrieErz.miner===a.industrieMiner))));
+        && (state.ships[a.schiff]?.ladung.erz??0)===(a.phase==='hin'?c.fracht:0)));
     return {ok,buyer,carrier,kaufTreuhand:kauf,arbeitTreuhand:arbeit,
       oreDelivered:w.geliefert,paidWork:w.arbeitsKosten,freightRevenue:w.frachtUmsatz,
       status:a?.phase??'frei'};
   }
-  return {kalkulation,pruefen,starten,vorbestellen,stornierenVorArbeit,tick,audit};
+  return {kalkulation,pruefen,starten,tick,audit};
 })();
 
 // W4: Erz in Nadir zu Material verarbeiten. Kein externer Zahlmeister und
@@ -2218,7 +2088,7 @@ const m_core_w4 = (() => {
     if (state.owners[c.station].cash < budget)
       return {ok:false,grund:'Nadir kann die gesamte Arbeitscharge nicht bezahlen'};
     const start=rules.owners.find(o=>o.id===c.station).cash;
-    if(state.owners[c.station].cash+m_core_kanon.netto(state,c.station)+(state.w3.kaufAusgaben-(state.w3.stornoRueckzahlung||0))+w.gebucht
+    if(state.owners[c.station].cash+state.w3.kaufAusgaben+w.gebucht
       -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)!==start)
@@ -2292,8 +2162,8 @@ const m_core_w4 = (() => {
       && station>=0&&worker>=0&&escrow>=0
       && w.begonnen===w.abgeschlossen+(a?1:0)
       && w.gebucht===w.begonnen*p && w.gezahlt===erwarteterLohn
-      && worker+m_core_kanon.netto(state,c.arbeitOwner)===w.gezahlt&&escrow===w.gebucht-w.gezahlt
-      && station+m_core_kanon.netto(state,c.station)+(state.w3.kaufAusgaben-(state.w3.stornoRueckzahlung||0))+w.gebucht
+      && worker===w.gezahlt&&escrow===w.gebucht-w.gezahlt
+      && station+state.w3.kaufAusgaben+w.gebucht
         -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)===start
@@ -2302,7 +2172,7 @@ const m_core_w4 = (() => {
       && state.ledger.erz.consumed===w.erzVerbraucht
       && state.ledger.material.produced===w.materialErzeugt
       && erz===state.w3.geliefert-w.erzVerbraucht
-      && material===w.materialErzeugt-(state.w5?.materialVerbraucht??0)-(state.w5ae?.purchased??0)-(state.kanon?.minerWerft?.materialVerbraucht??0)
+      && material===w.materialErzeugt-(state.w5?.materialVerbraucht??0)-(state.w5ae?.purchased??0)
       && (!a || (a.erz===c.erzJeCharge&&a.material===c.materialJeCharge
         && a.arbeitsBudget===p&&Number.isSafeInteger(a.gearbeitet)
         && a.gearbeitet>=0&&a.gearbeitet<c.dauer));
@@ -2435,16 +2305,16 @@ const m_core_w5 = (() => {
       && w.arbeitsGezahlt===w.fertig*p.arbeitKosten
         +(a?.gearbeitet??0)*c.lohnJeMinute
       && escrow===w.arbeitsGebunden-w.arbeitsGezahlt
-      && arbeit+m_core_kanon.netto(state,c.arbeiter)===w.arbeitsGezahlt
-      && state.ledger.material.consumed===w.materialVerbraucht+(state.kanon?.minerWerft?.materialVerbraucht??0)
-      && st.material===state.w4.materialErzeugt-w.materialVerbraucht-(state.w5ae?.purchased??0)-(state.kanon?.minerWerft?.materialVerbraucht??0)
+      && arbeit===w.arbeitsGezahlt
+      && state.ledger.material.consumed===w.materialVerbraucht
+      && st.material===state.w4.materialErzeugt-w.materialVerbraucht-(state.w5ae?.purchased??0)
       && state.ledger.frachter.produced===w.fertig
       && st.frachter===w.fertig-w.verkauft
       && w.verkauft===shipIds.length&&w.verkauft<=w.fertig
       && gekaufte
       && w3VerkaufteFrachter>=w.verkauft
-      && werkEinnahmen+m_core_kanon.netto(state,c.werft)===old + werftErloese-werftKosten
-      && state.owners[c.station].cash+m_core_kanon.netto(state,c.station)+(state.w3.kaufAusgaben-(state.w3.stornoRueckzahlung||0))
+      && werkEinnahmen===old + werftErloese-werftKosten
+      && state.owners[c.station].cash+state.w3.kaufAusgaben
         +state.w4.gebucht-w.materialUmsatz-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)
@@ -2552,13 +2422,12 @@ const m_core_w5_transfer=(()=>{
         &&x.ankunft===x.start+duration&&x.ankunft<=s.tick
         &&((lost(x.id)?.tick>=x.ankunft&&lost(x.id)?.system===c.ziel)
           ||s.w3.auftrag?.schiff===x.id
-          ||(!!r.kanon&&s.w5n?.frachtauftrag?.schiff===x.id)
           ||(s.ships[x.id].system===c.ziel&&s.ships[x.id].phase==='dock'
             &&s.ships[x.id].auftrag==='halten')))
       &&activeOk&&(!a||!ids.includes(a.id))
       &&w.allocated===finished+(a?.kosten??0)
       &&w.paid===finished+(a?.gearbeitet??0)*c.lohnJeMinute
-      &&reserved===w.allocated-w.paid&&worker+m_core_kanon.netto(s,c.pilot)===w.paid;
+      &&reserved===w.allocated-w.paid&&worker===w.paid;
     return {ok,allocated:w.allocated,paid:w.paid,reserved,worker,
       active:!!a,completed:done.length,shipId:a?.id??null,
       remaining:a?duration-a.gearbeitet:0,
@@ -2619,8 +2488,7 @@ const m_core_w5_replacement=(()=>{
     const id=s.w5.schiffIds.at(-1),sh=s.ships[id];
     m_core_w5_transfer.start(s,r,sh);
     s.w5ad.assignments.push({lost:cmd.verlust,id,tick:s.tick,
-      reserve:q.held,cashBefore:q.cash,
-      ...(s.kanon?{netto:m_core_kanon.netto(s,cmd.owner)}:{})});
+      reserve:q.held,cashBefore:q.cash});
   }
   function audit(s,r){
     const b=s.w5ad;
@@ -2666,20 +2534,16 @@ const m_core_w5_replacement=(()=>{
       return lp&&np&&flight&&integer(x.tick)&&x.tick>=lp.tick&&x.tick===np.tick
         &&np.station==='st_nadir'&&flight.start===x.tick
         &&integer(x.reserve)&&x.reserve>=k.arbeitsKosten
-        &&x.cashBefore+(x.netto??0)===initial-index*price+earned-paidFerries
+        &&x.cashBefore===initial-index*price+earned-paidFerries
         &&x.cashBefore>=price+flight.kosten+x.reserve;
     });
     const active=s.w3.auftrag,sh=active?s.ships[active.schiff]:null;
-    const activeOk=!active||(r.k7&&active.phase==='vorbestellt'
-      ?(purchase(active.schiff)&&!loss(active.schiff)&&sh?.phase==='dock'
-        &&sh.system==='aldera'&&sh.auftrag==='halten'&&active.gearbeitet===0
-        &&Object.values(sh.ladung).every(n=>n===0))
-      :(purchase(active.schiff)&&!loss(active.schiff)
+    const activeOk=!active||(purchase(active.schiff)&&!loss(active.schiff)
       &&integer(active.start)&&s.tick===active.start+active.gearbeitet
       &&sh?.phase==='reise'&&sh.auftrag==='fracht'
       &&sh.system===(active.phase==='hin'?'aldera':'nadir')
       &&sh.ziel===(active.phase==='hin'?'st_nadir':'st_aldera')
-      &&sh.ankunft===active.start+(active.phase==='hin'?k.zeit:2*k.zeit)));
+      &&sh.ankunft===active.start+(active.phase==='hin'?k.zeit:2*k.zeit));
     const profileOk=m_core_hash.canonical(b.profile)===m_core_hash.canonical(r.w5Replacement)
       &&Object.values(s.owners).every(o=>integer(o.cash))
       &&m_core_hash.canonical(p.filter(x=>x.station==='st_nadir').map(x=>x.id))
@@ -2748,13 +2612,12 @@ const m_core_w5_wage_trade=(()=>{
       &&w.spent===w.purchased*cfg.preis
       &&inv===w.purchased
       &&(r.w5ag
-        ?fund+m_core_kanon.netto(s,cfg.buyer)===0&&w.spent===0
+        ?fund===0&&w.spent===0
         :fund+w.spent+(s.w5n?.wasserErlos??0)
            ===s.w3.arbeitsKosten+(s.w5n?.frachtLohn??0))
       &&s.stats.konto[cfg.buyer].kosten===w.spent+(r.w5ag?0:(s.w5n?.wasserErlos??0))
       &&s.stats.konto[cfg.seller].erloes===(s.w5?.materialUmsatz??0)+w.spent+(s.w5n?.wasserErlos??0)
-        +(r.k7?(s.w3?.stornoRueckzahlung||0):0)
-      &&seller+m_core_kanon.netto(s,cfg.seller)+(s.w3.kaufAusgaben-(s.w3.stornoRueckzahlung||0))+s.w4.gebucht
+      &&seller+s.w3.kaufAusgaben+s.w4.gebucht
          -(s.w5?.materialUmsatz??0)-w.spent
          +(s.w5n?.kaufAusgaben??0)+(s.w5n?.fabrikGebucht??0)
          -(s.w5n?.wasserErlos??0)
@@ -2775,7 +2638,6 @@ const m_core_w5n=(()=>{
  const beitrag=(s)=>s.w5n;
  function ankaufbar(s,r,sh,n){
    return !!r.w5n&&sh?.klasse==='miner'&&sh.system==='aldera'
-     &&m_core_kanon.amDock(sh,r.w5n.quellStation)
      &&Number.isSafeInteger(n)&&n>0&&(sh.ladung.eis||0)>=n
      &&n<=aufnehmbar(s,r,r.w5n.quellStation,'eis');
  }
@@ -2800,9 +2662,7 @@ const m_core_w5n=(()=>{
    sh.ladung.eis=(sh.ladung.eis||0)+n;
    s.ledger.eis.mined+=n;
    w.eisAbgebaut+=n;w.mineMinuten++;w.mineLohn+=c.mineLohn;
-   // Research-only: dockgebundene F2b-Eisabnahme. Regel195 bleibt unverändert,
-   // weil ausschließlich die Forschungskonfiguration dieses Flag aktivieren darf.
-   if(sh.ladung.eis>=c.charge && r.w5n.f2bDockOnly!==true && !m_core_kanon.aktiv()){
+   if(sh.ladung.eis>=c.charge){
      const abnahme=Math.min(sh.ladung.eis,aufnehmbar(s,r,c.quellStation,'eis'));
      if(abnahme>=c.charge)verkauf(s,r,sh,abnahme);
    }
@@ -2992,13 +2852,13 @@ const m_core_w5n=(()=>{
      &&w.mineVerkauft===s.stations[c.quellStation].lager.eis+iceRoute+w.eisGeliefert
      &&iceRoute===(a?.phase==='hin'?c.charge:0)
      &&s.stations[c.zielStation].lager.eis===w.eisGeliefert-w.eisVerbraucht
-     &&s.stations[c.zielStation].lager.wasser===w.wasserProduziert-w.wasserVerbraucht-m_core_kanon.wasserAbNadir(s)
+     &&s.stations[c.zielStation].lager.wasser===w.wasserProduziert-w.wasserVerbraucht
      &&w.eisVerbraucht===s.ledger.eis.consumed
      &&w.wasserProduziert===s.ledger.wasser.produced
-     &&w.wasserVerbraucht+m_core_kanon.wasserKonsum(s)===s.ledger.wasser.consumed
+     &&w.wasserVerbraucht===s.ledger.wasser.consumed
      &&w.wasserErlos===w.wasserVerbraucht*c.wasserPreis
      &&(r.w5ag
-       ?s.owners[c.kunde].cash+m_core_kanon.netto(s,c.kunde)===0&&(s.w5ae?.spent??0)===0
+       ?s.owners[c.kunde].cash===0&&(s.w5ae?.spent??0)===0
        :s.owners[c.kunde].cash+(s.w5ae?.spent??0)+w.wasserErlos
           ===s.w3.arbeitsKosten+w.frachtLohn)
       &&Array.isArray(w.kaufDeals)
@@ -3023,7 +2883,7 @@ const m_core_w5n=(()=>{
      &&w.fabrikBegonnen===w.fabrikFertig+(f?1:0)
      &&w.fabrikGebucht===w.fabrikBegonnen*factoryCost
      &&w.fabrikBezahlt===w.fabrikFertig*factoryCost+(f?.gearbeitet??0)*c.fabrikLohn
-     &&s.owners.w5n_arbeit.cash+m_core_kanon.netto(s,'w5n_arbeit')===w.fabrikBezahlt
+     &&s.owners.w5n_arbeit.cash===w.fabrikBezahlt
      &&(s.owners.w5n_fabrik_arbeit?.cash||0)===w.fabrikGebucht-w.fabrikBezahlt
      &&w.eisVerbraucht===w.fabrikFertig*c.rezeptEis
      &&w.wasserProduziert===w.fabrikFertig*c.rezeptWasser
@@ -3066,8 +2926,7 @@ const m_core_w5ag=(()=>{
     s.owners[id].cash+=amount;
     buche(s,id,'erloes',amount);
     p.paid[kind]+=amount;
-    // K1 verdichtet: Summe je Vertrag statt eines Eintrags je Flugminute.
-    if(!r.kanon)p.payments.push({tick:s.tick,kind,owner:id,schiff:ship,isk:amount});
+    p.payments.push({tick:s.tick,kind,owner:id,schiff:ship,isk:amount});
   }
   function iceStart(s,r,ship){
     const p=s.w5ag,a=s.w5n?.frachtauftrag;
@@ -3081,8 +2940,6 @@ const m_core_w5ag=(()=>{
       ||s.tick!==v.start+2*r.w5n.flugMinuten)
       throw Error('W5ag: Eislohn ohne echte 120-Minuten-Rundfracht');
     v.end=s.tick;
-    // K1 verdichtet abgeschlossene Verträge zu einem Zähler.
-    if(r.kanon){p.iceContracts.pop();p.eisFertig=(p.eisFertig||0)+1;}
   }
   function audit(s,r){
     const cfg=r.w5ag,p=s.w5ag;
@@ -3092,21 +2949,17 @@ const m_core_w5ag=(()=>{
     const ore=s.w5ad?.freight??[],ice=p.iceContracts,
       w=s.w5n,f3=s.w3;
     const expected=[];
-    const kompakt=!!r.kanon,minuten={erz:0,eis:0};
-    const eisFertig=kompakt?(p.eisFertig||0):0;
     const add=(kind,ship,start,end)=>{
       if(!valid(start)||!valid(end)||end<start||end>s.tick)return false;
-      minuten[kind]+=end-start;
-      if(!kompakt)for(let tick=start+1;tick<=end;tick++)
+      for(let tick=start+1;tick<=end;tick++)
         expected.push({tick,kind,owner:cfg.pilots[kind],
           schiff:ship,isk:cfg.wagePerMinute});
       return true;
     };
-    minuten.eis+=eisFertig*2*r.w5n.flugMinuten;
     let contractOk=Array.isArray(ore)&&Array.isArray(ice);
     for(const t of ore)
       contractOk=add('erz',t.id,t.start,t.end)&&contractOk;
-    if(f3?.auftrag && f3.auftrag.phase!=='vorbestellt'){
+    if(f3?.auftrag){
       const a=f3.auftrag;
       contractOk=add('erz',a.schiff,a.start,a.start+a.gearbeitet)&&contractOk;
     }
@@ -3121,14 +2974,13 @@ const m_core_w5ag=(()=>{
           :t.end===t.start+2*r.w5n.flugMinuten)
         &&add('eis',t.schiff,t.start,t.start+worked)&&contractOk;
     }
-    contractOk=contractOk&&valid(eisFertig)
-      &&ice.filter(x=>x.end!==null).length+eisFertig===w.frachtAbgeschlossen
+    contractOk=contractOk
+      &&ice.filter(x=>x.end!==null).length===w.frachtAbgeschlossen
       &&ice.filter(x=>x.end===null).length===(w.frachtauftrag?1:0)
-      &&ice.length+eisFertig===w.frachtBeauftragt
+      &&ice.length===w.frachtBeauftragt
       &&ore.length===f3.abgeschlossen;
     expected.sort((a,b)=>a.tick-b.tick||a.kind.localeCompare(b.kind));
-    const paymentsOk=kompakt?p.payments.length===0
-      :expected.length===p.payments.length
+    const paymentsOk=expected.length===p.payments.length
       &&expected.every((d,i)=>{
         const got=p.payments[i];
         return got&&got.tick===d.tick&&got.kind===d.kind
@@ -3141,15 +2993,15 @@ const m_core_w5ag=(()=>{
     }
     const wagesOk=valid(p.paid.erz)&&valid(p.paid.eis)
       &&p.paid.erz===f3.arbeitsKosten&&p.paid.eis===w.frachtLohn
-      &&p.paid.erz===minuten.erz*cfg.wagePerMinute
-      &&p.paid.eis===minuten.eis*cfg.wagePerMinute;
+      &&p.paid.erz===expected.filter(x=>x.kind==='erz').length*cfg.wagePerMinute
+      &&p.paid.eis===expected.filter(x=>x.kind==='eis').length*cfg.wagePerMinute;
     const ownerOk=['erz','eis'].every(kind=>{
       const id=cfg.pilots[kind],wallet=s.owners[id],
         stats=s.stats.konto[id],earned=p.paid[kind],cost=spent[kind];
       return wallet?.kind==='private-pilot'&&valid(wallet.cash)
-        &&wallet.cash+m_core_kanon.netto(s,id)===earned-cost
+        &&wallet.cash===earned-cost
         &&stats?.erloes===earned&&stats?.kosten===cost;
-    })&&s.owners[cfg.fonds]?.cash+m_core_kanon.netto(s,cfg.fonds)===0
+    })&&s.owners[cfg.fonds]?.cash===0
       &&s.stats.konto[cfg.fonds]?.kosten===0
       &&s.w5ae?.spent===0;
     return {ok:contractOk&&paymentsOk&&wagesOk&&ownerOk,
@@ -3159,8 +3011,8 @@ const m_core_w5ag=(()=>{
       cashOre:s.owners[cfg.pilots.erz]?.cash,
       cashIce:s.owners[cfg.pilots.eis]?.cash,
       pooledCash:s.owners[cfg.fonds]?.cash,
-      paidMinutes:kompakt?minuten.erz+minuten.eis:p.payments.length,
-      iceContracts:ice.length+eisFertig};
+      paidMinutes:p.payments.length,
+      iceContracts:ice.length};
   }
   return {pay,iceStart,iceEnd,audit};
 })();
@@ -3179,7 +3031,7 @@ const m_core_w1_vollkosten = (() => {
       const anfang = startCash(id);
       const erloese = statistik?.erloes, kosten = statistik?.kosten, frei = konto?.cash;
       const netto = erloese - kosten;
-      const kassenDelta = frei + gebunden - anfang + m_core_kanon.netto(state, id);
+      const kassenDelta = frei + gebunden - anfang;
       const ok = [anfang, erloese, kosten, frei, gebunden, netto, kassenDelta]
         .every(Number.isSafeInteger) && anfang >= 0 && erloese >= 0 && kosten >= 0
         && frei >= 0 && gebunden >= 0 && netto === kassenDelta;
@@ -3206,7 +3058,7 @@ const m_core_w1_vollkosten = (() => {
     const iceLohn=state.w5n?.mineLohn??0;
     const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-iceLohn;
     const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
-    const fonds = state.owners[fondsId].cash - startCash(fondsId) + m_core_kanon.netto(state, fondsId);
+    const fonds = state.owners[fondsId].cash - startCash(fondsId);
     const stationErz = state.stations[cfg.station].lager.erz;
     const wertUnverkauft = stationErz * cfg.preis; // Nur kalkulatorischer Wert, KEIN Geld.
     const beschaffung = station.kosten;
@@ -3679,7 +3531,6 @@ function createW3State(seed = W3_RULES.startSeed, rules = W3_RULES) {
   s.ledger.erz.initial-=geschenkt;
   s.w3={beauftragt:0,abgeschlossen:0,geliefert:0,kaufAusgaben:0,
     arbeitsKosten:0,frachtUmsatz:0,auftrag:null};
-  if(rules.k7){s.w3.storniert=0;s.w3.stornoRueckzahlung=0;}
   return s;
 }
 function loadErz(json, rules = ERZ_RULES) {
@@ -3743,8 +3594,6 @@ function createW5State(seed = W5_RULES.startSeed) {
   return s;
 }
 const loadW5 = (json) => loadErz(json,W5_RULES);
-const industryOrePrebook=(s,carrierId,minerId)=>m_core_w3.vorbestellen(s,W5_RULES,carrierId,minerId);
-const industryOreCancel=(s)=>m_core_w3.stornierenVorArbeit(s,W5_RULES);
 const pilotW3Stand = (state) => m_core_w3.audit(state,
   state.rulesVersion===W5_RULES.rulesVersion?W5_RULES:
     state.rulesVersion===W4_RULES.rulesVersion?W4_RULES:W3_RULES);
@@ -3794,7 +3643,6 @@ const { patrouille, ueberfall, piratenErsatz } = m_core_sicherheit;
 const { ersatzkauf, zuschuss } = m_core_schiffbau;
 return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES,
   pilotAuftragsStand, pilotWirtschaftsStand, pilotNpcInvestition, pilotNpcKrisenLage,
-  industryOrePrebook,industryOreCancel,
   pilotW3Stand, pilotW3Kalkulation, pilotW4Stand, pilotW4Kalkulation,
   pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf,
   pilotW5TransferStand, pilotW5TransferKalkulation,
@@ -3835,25 +3683,6 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
       ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
       throw TypeError('W5ag: nur eigene Anfangskapital-Verteilung');
     return createEngine({},{...options,wageTrade:true,waterTrade:true,personalWages:true});
-  },
-  // K1 / Regel 199: derselbe Kern mit Ortsprüfung und Netto-Korrektur. Die
-  // Ortsfunktionen stammen aus dem Flugkern; Regel195 bleibt davon unberührt.
-  createKanonWelt:(options,ort)=>{
-    if(options==null)options={};
-    if(typeof options!=='object'||Array.isArray(options)
-      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
-      throw TypeError('K1: nur eigene Anfangskapital-Verteilung');
-    return createEngine({},{...options,wageTrade:true,waterTrade:true,
-      personalWages:true,kanon:true,ort});
-  },
-  // K7: getrennte Forschungsregel200, keine Rule199-Migration/Produktänderung.
-  createK7Welt:(options,ort)=>{
-    if(options==null)options={};
-    if(typeof options!=='object'||Array.isArray(options)
-      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
-      throw TypeError('K7: nur eigene Anfangskapital-Verteilung');
-    return createEngine({},{...options,wageTrade:true,waterTrade:true,
-      personalWages:true,kanon:true,industryOre:true,ort});
   }});
 if(research)return api;
 if(typeof module==='object'&&module.exports)module.exports=api;else scope.W5acOriginal=api;

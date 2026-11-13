@@ -197,8 +197,10 @@ function zeichnen() {
     // Reine Projektion EINES echten Flugkörpers aus dem gemeinsamen Core, keine
     // Kosmetik-Position: Kurs/Fahrt beeinflussen dieselben x/y/vx/vy wie in Aldera.
     // Der Fortschrittsbalken zeigt getrennt die unveränderte W5n-Zeit.
+    // Kamera folgt dem echten Flugkörper, damit ein 60-Minuten-Kurs bei
+    // jeder Displaygröße sichtbar bleibt; nur die Ansicht bewegt sich.
     const b = fr.flug, zoom = Math.min(w, h) / 1800000;
-    const cx = 0, cy = 0;
+    const cx = b.x, cy = b.y;
     ctx.clearRect(0, 0, w, h); ctx.fillStyle = '#06101b'; ctx.fillRect(0, 0, w, h);
     graph.himmel(cx, cy, zoom, w, h);
     ctx.lineWidth = 1.5; ctx.strokeStyle = '#285b70';

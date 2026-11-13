@@ -8,7 +8,7 @@ const BasisWelt = window.AphrosWelt, Speicher = window.AphrosWeltSpeicher, G = w
 // aus Regel195 und vor allem keine gemeinsame IndexedDB mit dem K1-Spieltest.
 const istK7 = document.documentElement.dataset.forschungsprofil === 'k7';
 const Welt = istK7 ? Object.freeze({
-  ...BasisWelt, erstellen: BasisWelt.erstellenK7,
+  ...BasisWelt, REGEL: 200, erstellen: BasisWelt.erstellenK7,
   ausRegel195: () => { throw Error('K7: Keine Regel195-Migration freigegeben'); }
 }) : BasisWelt;
 const $ = (id) => document.getElementById(id);

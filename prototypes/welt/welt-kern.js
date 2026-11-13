@@ -1273,7 +1273,10 @@ function erstellen(startkapital = {}, k7 = false) {
     if (i.phase === 'aktiv' || i.phase === 'geliefert') {
       // Production may begin only after the existing physical Nadir arrival
       // and after full original W4 work funding has been checked.
-      if (i.erzAngenommen && !i.werftVerwendet) {
+      const amNadirGeliefert = i.phase === 'geliefert'
+        || (s.w3.auftrag?.phase === 'rueck'
+          && s.w3.auftrag?.industrieMiner === i.miner);
+      if (i.erzAngenommen && amNadirGeliefert && !i.werftVerwendet) {
         if (!s.w4.auftrag && !s.w5.auftrag && !s.kanon.minerWerft?.auftrag
           && (nadir.material || 0) < rules.w5.material
           && (nadir.erz || 0) >= rules.w4.erzJeCharge) {

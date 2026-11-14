@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071225">
+<title>Aphros Void · J4c echter bezahlter Jäger · Forschung</title>
+<style>
+:root{color-scheme:dark;font:16px/1.42 system-ui,-apple-system,BlinkMacSystemFont,sans-serif;background:#071225;color:#e0eaf7}
+*{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) max(12px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(12px,env(safe-area-inset-left))}
+body>header{max-width:1240px;margin:0 auto;padding:14px 0 6px}
+h1{font-size:clamp(1.3rem,3vw,1.9rem);margin:0 0 4px;font-weight:750;letter-spacing:.02em}
+h2{font-size:1.03rem;margin:0 0 10px}
+p{margin:.35em 0 .7em}.sub{color:#a7bbd0;font-size:.91rem}
+mark{background:#3d3943;color:#e5cba9;border-radius:4px;padding:2px 6px}
+main{max-width:1240px;margin:12px auto;display:grid;grid-template-columns:minmax(0,1.75fr) minmax(290px,1fr);gap:14px}
+section,aside,.panel{border:1px solid #33485f;background:#0e1d32;border-radius:12px;padding:14px}
+section>canvas{display:block;width:100%;height:min(56vh,520px);min-height:320px;border-radius:9px;border:1px solid #253e58;touch-action:pan-y}
+.status{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 14px;font-variant-numeric:tabular-nums}
+.status div{border-bottom:1px solid #273a50;padding:6px 0}.status span{display:block;font-size:.79rem;color:#91abc3}
+.status strong{display:block;font-size:.99rem;overflow-wrap:anywhere}
+.left{display:grid;gap:14px;align-content:start}
+.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+button,.file-btn{appearance:none;border:1px solid #58728b;border-radius:8px;min-height:50px;padding:10px;background:#1b344f;color:#fff;font:600 1rem system-ui;cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible{outline:3px solid #83e7f3;outline-offset:3px}button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:#176d77;border-color:#45b0b6}
+button.alert{background:#624c2d;border-color:#a38b52}
+input[type=file]{width:100%;max-width:100%;border:1px dashed #58728b;border-radius:8px;padding:12px;min-height:54px;background:#142943}
+input[type=range]{width:100%;height:40px;accent-color:#53dacf}
+.slider label{display:flex;justify-content:space-between;gap:10px}
+.slider{margin:7px 0 14px}
+#meldung{padding:10px 12px;background:#12384a;border-radius:8px;border-left:4px solid #44c0bf;min-height:48px;overflow-wrap:anywhere}
+.fehler{color:#ffc5a4!important;border-color:#f5a774!important}
+#audit{font-size:.81rem;color:#b3e4d1;overflow-wrap:anywhere}
+.note{font-size:.86rem;color:#b8cce0}.note strong{color:#d9eaf2}
+footer{max-width:1240px;margin:0 auto 22px;font-size:.86rem;color:#a5b9cd}
+@media(max-width:900px){main{grid-template-columns:1fr}section>canvas{height:48vh;min-height:290px}.status{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:580px){.status{grid-template-columns:repeat(2,minmax(0,1fr))}.controls{grid-template-columns:1fr 1fr}section,aside,.panel{padding:11px}section>canvas{height:42vh}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+<h1>Aphros Void <span style="color:#6ad3d6">/ J4c – selbst finanzierter Jäger</span></h1>
+<p class="sub"><mark>FORSCHUNG · Regel204</mark> Original-Wirtschaftskern, Original-F6-Physik, bezahlter Pilotenlohn · kein Echtgeldkampf</p>
+</header>
+<main>
+<div class="left">
+<section aria-label="Zweidimensionaler Jägerraum">
+<h2>2D-Flugraum · Nadir</h2>
+<canvas id="raum" width="850" height="500" role="img" aria-label="2D-Raumkarte mit bezahltem Spieler-Jäger, Station Nadir und rein geometrischem Trainingsmarker"></canvas>
+<p class="note">Die gelbe Jägerspitze ist dein tatsächlich gekaufter Schiffskörper. Das Fadenkreuz ist nur ein Navigationspunkt, <strong>kein kostenloser Pirat und kein Kampfobjekt</strong>.</p>
+<div class="status">
+<div><span>Schiff / Besitzer</span><strong id="schiff">–</strong></div>
+<div><span>Flugstatus</span><strong id="lage">–</strong></div>
+<div><span>Position X / Y</span><strong id="ort">–</strong></div>
+<div><span>Geschwindigkeit</span><strong id="fahrt">–</strong></div>
+<div><span>Kurs</span><strong id="kurs">–</strong></div>
+<div><span>Simulationszeit</span><strong id="tick">–</strong></div>
+</div>
+</section>
+<section aria-label="Pilotsteuerung">
+<h2>Steuerpult · gleicher autoritativer F6-Befehlskern</h2>
+<div class="controls">
+<button id="play" class="primary">Flugzeit starten</button>
+<button id="abdocken" disabled>Vom Nadir-Dock lösen</button>
+<button id="ziel" disabled>Zum Marker fliegen</button>
+<button id="andocken" disabled>Wirklich andocken</button>
+</div>
+<div class="slider">
+<label for="kurswert"><span>Handkurs (0–255)</span><strong id="kursanzeige">0</strong></label>
+<input id="kurswert" type="range" min="0" max="255" step="1" value="0">
+<label for="tempo"><span>Sollgeschwindigkeit</span><strong id="tempoanzeige">0 %</strong></label>
+<input id="tempo" type="range" min="0" max="100" step="5" value="0">
+<button id="steuern" class="primary" disabled style="width:100%">Handkurs und Schub anwenden</button>
+</div>
+</section>
+</div>
+<aside>
+<h2>Verifizierten Jägerstand laden</h2>
+<p class="note">Kein kostenloses Probeschiff: Diese Oberfläche lädt nur einen <strong>vollständig auditierten Regel203- oder Regel204-Weltspielstand mit tatsächlich für 900 ISK gekauftem Jäger</strong>. Den authentischen Testspielstand gibt es als CI-Artefakt.</p>
+<label for="datei" class="sub">JSON-Spielstand auswählen</label>
+<input id="datei" type="file" accept=".json,application/json">
+<div id="unterschrift" hidden style="margin-top:12px">
+<p class="note">Dieser Spielstand verwendet Regel203. Nur mit deiner ausdrücklichen Bestätigung wird eine gesonderte Regel204-Kopie im Speicher angelegt. Die Ursprungsdatei bleibt unangetastet.</p>
+<button id="uebernahme" class="alert" style="width:100%">Regel203 ausdrücklich in Forschung204 übernehmen</button>
+</div>
+<p id="meldung" role="status" aria-live="polite">Bitte zuerst einen bezahlten Forschungs-Spielstand importieren.</p>
+<hr style="border:0;border-top:1px solid #33485f;margin:16px 0">
+<h2>Wirtschaft &amp; Pilotendienst</h2>
+<div class="status">
+<div><span>Spielerkasse</span><strong id="cash">–</strong></div>
+<div><span>Pilotenkonto</span><strong id="pilotgeld">–</strong></div>
+<div><span>Gebundener Fluglohn</span><strong id="reserve">–</strong></div>
+<div><span>Jäger-Buchwert</span><strong id="wert">–</strong></div>
+<div><span>Aktiver Verschleiß</span><strong id="verschleiss">–</strong></div>
+<div><span>Weltgeld gesamt</span><strong id="weltgeld">–</strong></div>
+</div>
+<p id="hps" class="note">Kein Kampf in diesem Gate.</p>
+<p id="audit" role="status" aria-live="polite">Kein Weltstand geladen.</p>
+<button id="export" style="width:100%">Geprüften JSON-Spielstand exportieren</button>
+<p class="note">Kein Autosave. Vor Schließen oder Verlassen des Browserfensters immer exportieren. Bestehende Hauptspiel- und Testversionen werden nicht überschrieben.</p>
+</aside>
+</main>
+<footer>
+<p><strong>[DRAFT]</strong> Statische HTML-/JS-Prototypansicht, keine Produktversion und kein Regel204-Release. Touchbuttons ab 50px, iPad-Querformat und kleinere Ansichten. 40 ISK Flugreserve, 1 ISK je tatsächlich verstrichener Wirtschaftsminute; keine Treibstoffkosten, keine NPC-Kopfgelder. Echte iPad-Safari-/NAS-Abnahme erforderlich.</p>
+</footer>
+<script src="../flug2d/flug-kern.js"></script>
+<script src="../welt/rule200-k7-industry-core.js"></script>
+<script src="../welt/j2b-silizium-core.js"></script>
+<script src="../welt/j3-bauteil-core.js"></script>
+<script src="../welt/j4b-jaeger-werft-core.js"></script>
+<script src="../welt/welt-kern.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

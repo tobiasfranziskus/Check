@@ -387,7 +387,7 @@ const m_data_erzpilot = (() => {
         ...W5_RULES.economy.waren,silizium:{stufe:'rohstoff',basis:24}
       }};
     }
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger'].includes(k))
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug'].includes(k))
       || (Object.hasOwn(research,'kanon')&&(research.kanon!==true||research.personalWages!==true))
       || (Object.hasOwn(research,'ort')!==(research.kanon===true))
       || (research.kanon===true&&(typeof research.ort?.imFeld!=='function'
@@ -400,7 +400,8 @@ const m_data_erzpilot = (() => {
       || (Object.hasOwn(research,'industryOre')&&(research.industryOre!==true||research.kanon!==true))
       || (Object.hasOwn(research,'silizium')&&(research.silizium!==true||research.industryOre!==true))
       || (Object.hasOwn(research,'bauteile')&&(research.bauteile!==true||research.silizium!==true))
-      || (Object.hasOwn(research,'jaeger')&&(research.jaeger!==true||research.bauteile!==true)))
+      || (Object.hasOwn(research,'jaeger')&&(research.jaeger!==true||research.bauteile!==true))
+      || (Object.hasOwn(research,'jaegerFlug')&&(research.jaegerFlug!==true||research.jaeger!==true)))
       throw TypeError('Unbekannter W5ad-Startparameter');
     const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
     if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
@@ -473,6 +474,13 @@ const m_data_erzpilot = (() => {
         }}};
       W5_RULES.owners=[...W5_RULES.owners,
         {id:'j4_jaeger_arbeiter',kind:'labor',cash:0}];
+    }
+    if(research.jaegerFlug===true){
+      // J4c: tatsächliche, bezahlte eigene Jägerhülle im EINEN F6-Körper.
+      // Forschungswert fuer Verschleiß aus dem vorhandenen 300‰-K1-Maß.
+      W5_RULES.rulesVersion=204;
+      W5_RULES.j4c=Object.freeze({owner:'house',station:'st_nadir',
+        verschleissMilliJeMinute:300});
     }
     if(research.kanon===true)W5_RULES.kanon={profil:'K1'};
     if(research.wageTrade===true){
@@ -4009,6 +4017,15 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
       personalWages:true,kanon:true,ort});
   },
   // K7: getrennte Forschungsregel200, keine Rule199-Migration/Produktänderung.
+  createJ4cWelt:(options,ort)=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('J4c: nur nachweisbare Anfangskassen');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,
+      personalWages:true,kanon:true,industryOre:true,
+      silizium:true,bauteile:true,jaeger:true,jaegerFlug:true,ort});
+  },
   createJ4bWelt:(options,ort)=>{
     if(options==null)options={};
     if(typeof options!=='object'||Array.isArray(options)

@@ -7,7 +7,7 @@
 (function(scope){
 'use strict';
 const create=({rules,transfer,summe,ganz})=>{
-  if(rules.rulesVersion!==203||!rules.j4)
+  if(![203,204].includes(rules.rulesVersion)||!rules.j4)
     throw Error('J4b: nur explizites Regel203-Profil');
   const C=rules.j4,L=C.dauer*C.lohnJeMinute;
   const leer=()=>({begonnen:0,fertig:0,verkauft:0,materialVerbraucht:0,
@@ -126,7 +126,11 @@ const create=({rules,transfer,summe,ganz})=>{
         ||e.station!==C.station||e.preis!==C.verkaufspreis
         ||!sh||sh.owner!==e.owner||sh.klasse!=='jaeger'
         ||sh.heimat!=='nadir'||sh.system!=='nadir'
-        ||sh.phase!=='dock'||sh.flug?.anker!==C.station)return false;
+        ||sh.phase!=='dock' || !sh.flug
+        || (sh.flug.lage==='angedockt'
+           ? sh.flug.anker!==C.station
+           : (!rules.j4c || !s.kanon.flugdienst[e.id]
+              || !['abdocken','frei','andocken'].includes(sh.flug.lage))))return false;
       names.add(e.id);
     }
     if(Object.values(s.ships).filter(sh=>sh.klasse==='jaeger'&&sh.owner==='house').length!==b.verkauft)

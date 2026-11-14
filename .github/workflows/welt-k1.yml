@@ -39,7 +39,10 @@ on:
       - 'tests/j3-*'
       - 'tests/j4a-*'
       - 'tests/j4b-*'
+      - 'tests/j4c-*'
       - 'tools/j4b-*'
+      - 'tools/j4c-*'
+      - 'prototypes/j4c/**'
       - 'tests/referenzmodell-c.test.mjs'
       - 'index.html'
       - 'aphros-void.html'
@@ -48,6 +51,25 @@ on:
 permissions:
   contents: read
 jobs:
+  j4c-fighter-flight-node22:
+    name: "J4c Fokus – bezahlter Jäger, realer F6-Flug und Pilotenlohn"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "J4c beide Seeds: bezahlte sh023-Hülle, 2D-Steuerung, Fluglohn, Verschleiß, Dock, Save und Fraud"
+        run: node --test tests/j4c-bezahlter-jaegerflug.test.mjs
+      - name: "J4c: zwei authentisch fertig bezahlte Rule204-Forschungs-Spielstände exportieren"
+        run: node tools/j4c-authentisches-beispiel.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: j4c-bezahlter-spielerjaeger-regel204-beide-seeds
+          path: artifacts/j4c-jaeger/*.json
+          if-no-files-found: error
+          retention-days: 14
   j4b-fighter-paid-node22:
     name: "J4b Fokus – 8 Bauteile, 4 Material, 32 Werftlöhne und echter 900-ISK-Jäger"
     runs-on: ubuntu-latest
@@ -98,6 +120,8 @@ jobs:
         run: node --test tests/j4a-erzbeschaffung-probe.test.mjs
       - name: "J4b: finanziert gebauter und original bezahlter persönlicher Jäger"
         run: node --test tests/j4b-finanzierter-jaegerbau.test.mjs
+      - name: "J4c: F6-Flug eines original bezahlten Spieler-Jägers"
+        run: node --test tests/j4c-bezahlter-jaegerflug.test.mjs
       - name: "K3: unabhängige Frachterkette, Zwischenstände, Negativbeweis"
         run: |
           node --test tests/welt-k3-frachter.test.mjs
@@ -131,6 +155,11 @@ jobs:
           node "$RUNNER_TEMP/welt-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
       - name: "K1 im Browser: Touch, Kreislauf, IndexedDB-Autosave, Export/Import, Regel195-Übernahme"
         run: node tests/welt-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "J4c: tatsächliches Touch-Cockpit mit bezahltem Jäger (vier Größen)"
+        run: node tests/j4c-cockpit-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}

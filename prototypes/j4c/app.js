@@ -79,6 +79,7 @@ function anzeigeFlug(){
  const d=Kampf.stand(duell);
  $('duell-start').disabled=b.lage!=='frei'||duell?.status==='aktiv'
    ||(patrouille&&['bereit','flug'].includes(patrouille.status));
+ $('duell-anflug').disabled=!duell||duell.status!=='aktiv'||b.lage!=='frei';
  $('duell-ziel').disabled=!duell||duell.status!=='aktiv'||b.lage!=='frei';
  $('duell-feuer').disabled=!duell||duell.status!=='aktiv'||b.lage!=='frei';
  $('duell-status').textContent=d.status;
@@ -183,6 +184,10 @@ $('duell-start').addEventListener('click',()=>{
   meldung('Original-F8-E-Duell auf dem bezahlten Jäger gestartet. Zuerst zur virtuellen Drohne fliegen, physisch ausrichten und selbst feuern.');
   anzeigen();
  }catch(e){meldung('Duellstart verweigert: '+e.message,true);}
+});
+$('duell-anflug').addEventListener('click',()=>{
+ if(!duell||duell.status!=='aktiv')return;
+ befehl('shipFlyTo',{x:Kampf.TREFFER.K.zielX,y:Kampf.TREFFER.K.zielY});
 });
 $('duell-ziel').addEventListener('click',()=>{
  if(!duell||duell.status!=='aktiv')return;

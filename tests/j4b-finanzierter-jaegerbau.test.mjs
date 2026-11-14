@@ -79,6 +79,15 @@ async function kompletterJ4b(seed){
  assert.deepEqual(s.kanon.jaeger.kaeufe,[{id:sh.id,tick:s.tick,owner:'house',station:'st_nadir',preis:900}]);
  assert.equal(geld(s),33000);assert.equal(s.minted,0);assert.equal(s.burned,0);
  audit(w,s,'J4b Original-Schiff, Werftlohn, stationärer Kauf');
+ const bericht=w.bericht(s);
+ assert.equal(bericht.produktion.jaegerGebaut,1);
+ assert.equal(bericht.produktion.jaegerVerkauft,1);
+ assert.equal(bericht.inventar.jaegerLager,0);
+ assert.equal(bericht.loehne.jaegerWerft,32);
+ assert.equal(bericht.schiffe.find(x=>x.id===sh.id)?.buchwert,900,
+   '900-ISK-Jäger ist realer Firmenanlagenwert, nicht unbelegter UI-Zustand');
+ assert.ok(Number.isSafeInteger(bericht.firmen.house.anlagewert));
+ assert.ok(bericht.firmen.house.anlagewert>=900);
  const save=w.save(s),loaded=w.load(save);
  assert.equal(w.hash(loaded),w.hash(s));
  assert.deepEqual(loaded,s);

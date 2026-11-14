@@ -36,6 +36,7 @@ on:
       - 'tests/k13-f6-*'
       - 'tests/j2a-*'
       - 'tests/j2b-*'
+      - 'tests/j3-*'
       - 'tests/referenzmodell-c.test.mjs'
       - 'index.html'
       - 'aphros-void.html'
@@ -66,6 +67,8 @@ jobs:
         run: node --test tests/j2a-nadir-minerkauf.test.mjs
       - name: "J2b: 8 endliche Silizium mit realem F6-Anflug, Lohn, Käuferetats und Save/Load"
         run: node --test tests/j2b-silizium-physisch.test.mjs
+      - name: "J3: bezahlte Bauteile aus originalem W4-Material + physischem J2b-Silizium"
+        run: node --test tests/j3-finanzierte-bauteile.test.mjs
       - name: "K3: unabhängige Frachterkette, Zwischenstände, Negativbeweis"
         run: |
           node --test tests/welt-k3-frachter.test.mjs

@@ -36,6 +36,7 @@ input[type=range]{width:100%;min-height:44px;accent-color:#83e4f1}
 <script defer src="../flug2d/flug-kern.js"></script>
 <script defer src="../flug2d/grafik.js"></script>
 <script defer src="f8-treffer.js"></script>
+<script defer src="f8-duell.js"></script>
 <script defer src="f8-trainer.js"></script>
 <script defer src="app.js"></script>
 </head>
@@ -45,7 +46,9 @@ input[type=range]{width:100%;min-height:44px;accent-color:#83e4f1}
   <p class="warn"><strong>[ANALYSE / Flugübung, nicht Spielwirtschaft]</strong>
     Dieser Trainingsjäger ist ausschließlich ein temporärer Flugkörper im Test. Er ist
     <strong>kein</strong> gekauftes oder hergestelltes Schiff in Regel200.
-    Eine <strong>unbewaffnete Testdrohne</strong> dient nur der Zielübung. Kein realer Piratengegner, kein Regel200-Schaden, keine ISK, Kopfgelder, Piloten-XP oder Spielstandsänderung.</p>
+    Eine Trainingsdrohne ist wahlweise unbewaffnet oder besitzt im Duell eine simulierte Gegenwaffe.
+    <strong>Kein realer Pirat, keine wirtschaftliche Jägerhülle, keine ISK, Kopfgelder,
+    Piloten-XP, Reparatur oder Spielstandsänderung.</strong></p>
 </header>
 <main>
   <section class="stats" aria-label="Autoritativer F6-Flugkern">
@@ -56,6 +59,8 @@ input[type=range]{width:100%;min-height:44px;accent-color:#83e4f1}
     <div><strong id="erfolg">Offen</strong><span>Marke langsam erreicht?</span></div>
     <div><strong id="zielHp">135 / 135</strong><span>Trainingsdrohne: Hüllenpunkte</span></div>
     <div><strong id="treffer">0 / 0</strong><span>Treffer / Schüsse (Übung)</span></div>
+    <div><strong id="pilotHp">96 / 96</strong><span>Trainingsjäger: Hüllenpunkte</span></div>
+    <div><strong id="duellErgebnis">Zielübung</strong><span>Simulierter Duellausgang</span></div>
   </section>
   <section class="stage" aria-label="Jägerflugkarte">
     <canvas id="raum" aria-label="Spieler-Jäger, Station in Aldera und Trainingsmarke"></canvas>
@@ -85,11 +90,12 @@ input[type=range]{width:100%;min-height:44px;accent-color:#83e4f1}
       240 P pro Flugschritt abbremsen. Der Erfolg hängt nur vom Flugkörper ab.</p>
     </div>
     <div class="panel">
-      <h2>F8-B · 2D-Zieltraining</h2>
+      <h2>F8-E · 2D-Jäger- und Duelltraining</h2>
       <label for="zielModus">Trainingsziel
         <select id="zielModus" aria-label="Bewegliches oder stehendes Trainingsziel wählen">
           <option value="stationaer">Stehende Drohne (Einsteiger)</option>
           <option value="beweglich">Bewegliche Drohne (Kreisflug)</option>
+          <option value="duell">2D-Duell: Drohne schießt zurück</option>
         </select>
       </label>
       <div class="actions">
@@ -97,11 +103,15 @@ input[type=range]{width:100%;min-height:44px;accent-color:#83e4f1}
         <button id="feuern" disabled>Zielübung: Feuern</button>
       </div>
       <p class="info" id="bewegungStatus" role="status">Der Zielmodus kann nur vor Beginn des Trainings geändert werden.
-        Zum beweglichen Ziel den Kurs wiederholt erfassen und selbst feuern.</p>
+        Zum beweglichen Ziel den Kurs wiederholt erfassen und selbst feuern.
+        Im Duell schießt die Übungsdrohne auf die aktuelle Jägerposition. Wegsteuern und Ausweichen sind möglich.</p>
       <p class="info" id="schussStatus" role="status">45 Übungsschaden, 16 Sekunden Schussabstand,
         20.000 Punkte Flugstrecke pro Sekunde, maximal 35 Sekunden Projektilzeit.
         Treffer entstehen ausschließlich aus 2D-Positionen des gemeinsamen Flugkerns.
-        Keine echte Munition, Kampfschiffe, Geldprämie oder wirtschaftliche Abschussbuchung.</p>
+        Keine echte Munition, Kampfschiffe, Geldprämie oder wirtschaftliche Abschussbuchung.
+        Duell-Modus: 96 Trainingshüllenpunkte, 24 Übungsschaden je Gegentreffer und
+        36 Sekunden zwischen Drohnenschüssen. Ein verlorenes Duell kann nur mit
+        „Neue Übung“ neu begonnen werden; kein kostenloses Spielwelt-Reparatursystem.</p>
     </div>
     <div class="panel">
       <h2>Trainingstakt</h2>

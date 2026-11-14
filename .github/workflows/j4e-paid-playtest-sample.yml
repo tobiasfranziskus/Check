@@ -1,0 +1,55 @@
+name: "J4e – finanzierten öffentlichen Testspielstand erzeugen (Integrationsbranch)"
+on:
+  push:
+    branches:
+      - integration/j4e-main-playtest-20261114
+    paths:
+      - '.github/workflows/j4e-paid-playtest-sample.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  generate-authentic-sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Wirkliche finanzierte 900-ISK-Jägerproduktion (Seed 42/7)"
+        run: node tools/j4c-authentisches-beispiel.mjs
+      - name: "Unabhängige Save-/Audit-/Weltgeld-Prüfung und statisches Beispiel bereitstellen"
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const assert=require('node:assert/strict');
+          const Welt=require('./prototypes/welt/welt-kern.js');
+          const filename='artifacts/j4c-jaeger/aphros-j4c-echt-finanziert-seed-42-regel204.json';
+          const json=fs.readFileSync(filename,'utf8');
+          const raw=JSON.parse(json);
+          const p=raw.w5ad.profile;
+          const welt=Welt.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+          const s=welt.load(json);
+          assert.equal(welt.audit(s).ok,true,JSON.stringify(welt.audit(s).fehler));
+          assert.equal(s.rulesVersion,204);
+          assert.equal(s.ships.sh023.owner,'house');
+          assert.equal(s.ships.sh023.klasse,'jaeger');
+          assert.equal(s.ships.sh023.flug.lage,'angedockt');
+          assert.equal(s.kanon.jaeger.kaeufe[0].preis,900);
+          assert.equal(s.minted,0);assert.equal(s.burned,0);
+          assert.equal(Object.values(s.owners).reduce((sum,x)=>sum+x.cash,0),33000);
+          assert.equal(welt.save(s),json,'keine Mutation der originalen Save-Datei');
+          fs.copyFileSync(filename,'prototypes/j4c/beispiel-jaeger-seed42.json');
+          console.log('J4E_STATIC_SAMPLE_OK',welt.hash(s),json.length);
+          NODE
+      - name: "Beispiel nur auf dem separaten Integrationsbranch versionieren"
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add prototypes/j4c/beispiel-jaeger-seed42.json
+          git diff --cached --exit-code && exit 0 || true
+          git commit -m "testdata(J4e): reproducible fully paid seed42 Rule204 sample"
+          git push origin HEAD:integration/j4e-main-playtest-20261114

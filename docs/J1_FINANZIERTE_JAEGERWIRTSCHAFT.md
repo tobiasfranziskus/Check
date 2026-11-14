@@ -1,6 +1,6 @@
 # J1 – finanzierte Jägerwirtschaft: belegter Teilfortschritt
 
-**[DRAFT / ANALYSE · 14.11.2026] Nicht implementierte Einsatzkette.** Dieser Auftrag erreicht die ausdrücklich vorgesehene Abbruchregel: Im tatsächlich laufenden Regel200-Profil fehlen Produktionsgüter und ihre ausführbaren Beschaffungswege. Kein Jäger wurde erzeugt, gekauft oder eingesetzt. Keine vollständige Jägerwirtschaft und keine Nachhaltigkeit nachgewiesen.
+**[DRAFT / ANALYSE · 14.11.2026] [PR #335](https://github.com/tobiasfranziskus/Check/pull/335). Nicht implementierte Einsatzkette.** Dieser Auftrag erreicht die ausdrücklich vorgesehene Abbruchregel: Im tatsächlich laufenden Regel200-Profil fehlen Produktionsgüter und ihre ausführbaren Beschaffungswege. Kein Jäger wurde erzeugt, gekauft oder eingesetzt. Keine vollständige Jägerwirtschaft und keine Nachhaltigkeit nachgewiesen.
 
 ## Geprüfte Basis und Dateigrenzen
 
@@ -86,7 +86,8 @@ Keine F8-Oberflächenintegration in diesem Draft. Ein Folgeauftrag muss insbeson
 - **13 politische Wirtschaftsprofile × 90 Tage**, jeweils zwei vollständige identische Läufe mit täglichem Hashvergleich sowie Audit, Geld-/Warenprüfung und finalem Save/Load: **1/1 Testgruppe bestanden**, 0 Fehler/Skips, 220.253 ms. Start aus realer K6/K7-Kette mit neuer Erzlieferung und bezahlter W4/W5-Fertigung; keine neuen Startgüter. Alle Endstände Tick151404, **33.000 ISK, Mint/Burn0, 0 Jäger, 0 Einsätze**. Rohdaten: [j1-90tage-ergebnisse.jsonl](j1-90tage-ergebnisse.jsonl). Das sind 13 unterschiedliche wirtschaftliche Politikvorgaben, keine 13 erfolgreichen Jägerwirtschaften. Gleiche Endhashes bei Basis/Stilllegung zeigen, dass einzelne Vorgaben im blockierten Endstand keine zusätzliche Wirkung haben.
 - `node scripts/build-w5-singlefile.mjs --check`: **W5_SINGLEFILE_OK**, 320.217 Zeichen, 7 Styles, 15 Scripts.
 - Abschließender gemeinsamer Lauf `node --test tests/j1-*.test.mjs` mit dem vollständigen unabhängigen Warenabgleich: **2/2 Dateitests bestanden**, 0 Fehler/Skips, 220.415 ms; darin nochmals die gesamte 13×90-Tage-Matrix.
-- Gesamte Bestandsregression läuft noch; nicht als bestanden gewertet. Der Glob wurde vor Anlage der beiden neuen J1-Testdateien gestartet, diese sind separat wie oben geprüft.
+- Vollständiger beauftragter Bestandslauf `node --test tests/*.test.mjs` unter Node22 v22.23.4: **77/77 Dateitests bestanden**, 0 Fehler, 0 Skips, 0 abgebrochen, 1.173.158 ms. Der Glob wurde vor Anlage der beiden neuen J1-Testdateien gestartet; deren abschließender gemeinsamer Lauf ist oben separat mit **2/2** belegt. Damit sind alle **79 aktuell vorhandenen Testdateien** geprüft. Die bestandenen älteren 365-/730-Tage-K1-Szenarien sind Bestandsregression und kein Jäger-Nachhaltigkeitsnachweis.
+- Abschlussdiff gegen `f2951c7`: genau fünf neue J1-Dateien, keine geänderte Bestandsdatei; `git diff --check` ohne Fehler. Lokale Testergebnisse, keine Behauptung abgeschlossener GitHub-CI.
 
 Reproduktion unter Node22:
 

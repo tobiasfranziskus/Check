@@ -41,6 +41,8 @@ on:
       - 'tests/j4b-*'
       - 'tests/j4c-*'
       - 'tests/j4d-*'
+      - 'tests/j4e-*'
+      - 'prototypes/f8-jaeger/**'
       - 'tools/j4b-*'
       - 'tools/j4c-*'
       - 'prototypes/j4c/**'
@@ -52,6 +54,17 @@ on:
 permissions:
   contents: read
 jobs:
+  j4e-paid-duel-node22:
+    name: "J4e Fokus – echter bezahlter Jäger und originales F8-E-Duell"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "J4e Seed42/7: echte 900-ISK-Produktion, physischer F6-Kampftrainer, Lohn, Save, Niederlage"
+        run: node --test tests/j4e-bezahltes-duell.test.mjs
   j4d-paid-patrol-node22:
     name: "J4d Fokus – echter bezahlter Jäger, 3 F6-Bojen, Rückdock, Audit"
     runs-on: ubuntu-latest
@@ -134,6 +147,8 @@ jobs:
         run: node --test tests/j4b-finanzierter-jaegerbau.test.mjs
       - name: "J4c: F6-Flug eines original bezahlten Spieler-Jägers"
         run: node --test tests/j4c-bezahlter-jaegerflug.test.mjs
+      - name: "J4e: bezahltes Duell mit Original-F8-E-Physik und Geld-/Speicher-Audit"
+        run: node --test tests/j4e-bezahltes-duell.test.mjs
       - name: "K3: unabhängige Frachterkette, Zwischenstände, Negativbeweis"
         run: |
           node --test tests/welt-k3-frachter.test.mjs
@@ -172,6 +187,11 @@ jobs:
           WELT_BROWSER: ${{ matrix.browser }}
       - name: "J4c: tatsächliches Touch-Cockpit mit bezahltem Jäger (vier Größen)"
         run: node tests/j4c-cockpit-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "J4e: echtes bezahltes F8-E-Duell im Touch-Cockpit (vier Größen)"
+        run: node tests/j4e-duell-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}

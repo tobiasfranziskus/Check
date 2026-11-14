@@ -26,6 +26,22 @@ for(const s of scripts){
 out=out.replace('</body>',js+'\n</body>')
  .replace('<title>Aphros Void · W5ak – Folgezyklen</title>','<title>Aphros Void – W0–W5 · Spielbare Entwicklungsversion</title>')
  .replace('<h1>Aphros Void · W5ag</h1>','<h1>Aphros Void – W0–W5</h1>');
+// W5ag-Legacy-Schattenkomponenten mussten bislang zwei CSS-Dateien nachladen.
+// In der Root- und NAS-Einzeldatei müssen die echten CSS-Quellen stattdessen
+// exakt und reproduzierbar in den zugehörigen ShadowRoots eingebettet sein.
+const linkBlock=`  const link=document.createElement('link');link.rel='stylesheet';link.href=css;
+  const mountRoot=document.createElement('div');shadow.append(link,mountRoot);`;
+const shadowCss={corporation:content('../legacy-corporation/corporation.css'),
+  station:content('../legacy-station/station.css')};
+const inlineBlock=`  const style=document.createElement('style');
+  style.textContent=css==='../legacy-corporation/corporation.css'?
+    ${JSON.stringify(shadowCss.corporation)}:
+    css==='../legacy-station/station.css'?${JSON.stringify(shadowCss.station)}:
+    (()=>{throw Error('Unbekannte Legacy-Shadow-CSS-Quelle: '+css)})();
+  const mountRoot=document.createElement('div');shadow.append(style,mountRoot);`;
+assert.equal(out.split(linkBlock).length,2,'Legacy-Schattenkomponenten müssen genau einmal vorkommen');
+out=out.replace(linkBlock,inlineBlock);
+assert.doesNotMatch(out,/document\.createElement\('link'\);link\.rel='stylesheet';link\.href=css/);
 out='<!-- Aphros Void / single-file Rule195 W0-W5: Generated from same original core, no asset URLs. -->\n'+out;
 // GitHub Pages erhält nur die statische Spielmodus-Navigation; NAS bleibt eine
 // eigenständige W0–W5-Datei ohne nicht mitgelieferte J4e-Dateipfade.

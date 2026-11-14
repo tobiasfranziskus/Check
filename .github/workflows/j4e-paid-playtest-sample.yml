@@ -52,4 +52,7 @@ jobs:
           git add prototypes/j4c/beispiel-jaeger-seed42.json
           git diff --cached --exit-code && exit 0 || true
           git commit -m "testdata(J4e): reproducible fully paid seed42 Rule204 sample"
+          # Andere unabhängige Commits am Integrationsbranch erhalten.
+          git fetch origin integration/j4e-main-playtest-20261114
+          git rebase origin/integration/j4e-main-playtest-20261114
           git push origin HEAD:integration/j4e-main-playtest-20261114

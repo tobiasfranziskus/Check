@@ -9,14 +9,18 @@ const FLUG=typeof module==='object'&&module.exports
   ?require('../flug2d/flug-kern.js'):scope.FlugKern;
 const TREFFER=typeof module==='object'&&module.exports
   ?require('./f8-treffer.js'):scope.F8Treffertraining;
+const DUELL=typeof module==='object'&&module.exports
+  ?require('./f8-duell.js'):scope.F8DuellTraining;
 const ID='f8_training_only',MARKER=Object.freeze({x:720000,y:-288000,radius:48000,tempo:240});
 const ganz=n=>Number.isSafeInteger(n);
 function neu(){
   const schiff={id:ID,owner:'house',klasse:'jaeger',system:'aldera',
     heimat:'aldera',phase:'dock',auftrag:'training',
     flug:FLUG.koerperAngedockt('aldera')};
+  const zielprobe=TREFFER.neu();
+  zielprobe.gegner=DUELL.neu();
   return {schema:0,profil:'F8_FLUGUEBUNG_OHNE_WIRTSCHAFT',flug:{schritt:0},
-    ships:{[ID]:schiff},sekunden:0,minuten:0,erreicht:null,zielprobe:TREFFER.neu()};
+    ships:{[ID]:schiff},sekunden:0,minuten:0,erreicht:null,zielprobe};
 }
 function audit(s){
   if(!s||s.schema!==0||s.profil!=='F8_FLUGUEBUNG_OHNE_WIRTSCHAFT'
@@ -30,10 +34,14 @@ function audit(s){
     ||Object.keys(s).sort().join()!=='erreicht,flug,minuten,profil,schema,sekunden,ships,zielprobe')
     return {ok:false,grund:'F8: kein unveraenderter, isolierter Uebungszustand'};
   const f=FLUG.audit(s);
-  return !f.ok?f:TREFFER.audit(s);
+  if(!f.ok)return f;
+  const z=TREFFER.audit(s);
+  return !z.ok?z:DUELL.audit(s);
 }
 function befehl(s,cmd){
   const ok=audit(s);if(!ok.ok)throw Error(ok.grund);
+  if(s.zielprobe.modus==='duell'&&s.zielprobe.gegner.pilotHp===0)
+    return {ok:false,type:cmd?.type,reason:'Trainingsjäger deaktiviert; nur Übungsneustart möglich'};
   const ret=cmd?.type==='fighterFire'
     ?TREFFER.feuern(s,cmd,s.ships[ID])
     :cmd?.type==='fighterTargetMode'
@@ -53,6 +61,7 @@ function schritt(s,anzahl=1){
     FLUG.schritt(s);
     s.sekunden++;s.minuten=Math.floor(s.sekunden/FLUG.DATEN.schritteJeMinute);
     TREFFER.schritt(s);
+    DUELL.schritt(s,s.ships[ID]);
     const b=s.ships[ID].flug,dx=b.x-MARKER.x,dy=b.y-MARKER.y;
     if(s.erreicht===null&&b.lage==='frei'
       &&dx*dx+dy*dy<=MARKER.radius*MARKER.radius
@@ -70,9 +79,12 @@ function status(s){
     erreicht:s.erreicht,bremsbereit:FLUG.isqrt(b.vx*b.vx+b.vy*b.vy)<=MARKER.tempo,
     zielHp:s.zielprobe.hp,treffer:s.zielprobe.treffer,schuesse:s.zielprobe.schuesse,
     naechsterSchuss:s.zielprobe.naechster,projektile:s.zielprobe.geschosse.length,
-    zielModus:s.zielprobe.modus,zielPosition:TREFFER.zielposition(s)});
+    zielModus:s.zielprobe.modus,zielPosition:TREFFER.zielposition(s),
+    pilotHp:s.zielprobe.gegner.pilotHp,gegnerSchuesse:s.zielprobe.gegner.schuesse,
+    gegnerTreffer:s.zielprobe.gegner.treffer,gegnerGeschosse:s.zielprobe.gegner.geschosse.length,
+    duellErgebnis:DUELL.ergebnis(s)});
 }
-const api=Object.freeze({ID,MARKER,flug:FLUG,TRAINING: TREFFER.K,neu,befehl,schritt,audit,status,
+const api=Object.freeze({ID,MARKER,flug:FLUG,TRAINING: TREFFER.K,DUELL:DUELL.K,neu,befehl,schritt,audit,status,
   // Keine Welt-Save-API, keine bestaetigten Kopfgeld- oder Kampfauftraege.
   begrenzung:'Nur Fluguebung und Schiessziel; kein wirtschaftlich finanziertes Schiff oder echter Kampf'});
 if(typeof module==='object'&&module.exports)module.exports=api;

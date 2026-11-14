@@ -26,19 +26,29 @@ function anzeigen(){
   $('erfolg').textContent=v.erreicht===null?'Offen':'Erreicht bei '+v.erreicht+' s';
   $('zielHp').textContent=v.zielHp+' / '+T.TRAINING.maxHp;
   $('treffer').textContent=v.treffer+' / '+v.schuesse;
+  $('pilotHp').textContent=v.pilotHp+' / '+T.DUELL.pilotMaxHp;
+  $('duellErgebnis').textContent=v.duellErgebnis==='sieg'?'Duell gewonnen (Übung)'
+    :v.duellErgebnis==='niederlage'?'Übungsjäger deaktiviert'
+      :v.duellErgebnis==='aktiv'?'Duell läuft':'Zielübung';
   $('zielModus').value=v.zielModus;
   $('zielModus').disabled=s.sekunden!==0;
-  $('bewegungStatus').textContent=(v.zielModus==='beweglich'
+  $('bewegungStatus').textContent=(v.zielModus==='duell'
+    ?'2D-Duell mit drohendem Gegenfeuer · '
+    :v.zielModus==='beweglich'
     ?'Drohne in Bewegung (Kreisbahn) · ':'Drohne steht · ')
     +'Position '+fmt(v.zielPosition.x)+' / '+fmt(v.zielPosition.y)
     +'. Ziel erfassen dreht den Jäger zur aktuellen Position, ein Treffer braucht echte 2D-Projektilnähe.';
   $('kursWert').textContent=$('kurs').value;
   $('fahrtWert').textContent=$('fahrt').value;
-  $('steuern').disabled=$('bremsen').disabled=$('marke').disabled=$('andocken').disabled=b.lage!=='frei';
-  $('abdocken').disabled=b.lage!=='angedockt';
-  $('feuern').disabled=b.lage!=='frei'||v.zielHp===0||s.sekunden<v.naechsterSchuss;
-  $('zielErfassen').disabled=b.lage!=='frei'||v.zielHp===0;
-  $('schussStatus').textContent=v.zielHp===0
+  const verloren=v.duellErgebnis==='niederlage';
+  $('steuern').disabled=$('bremsen').disabled=$('marke').disabled=$('andocken').disabled=
+    b.lage!=='frei'||verloren;
+  $('abdocken').disabled=b.lage!=='angedockt'||verloren;
+  $('feuern').disabled=b.lage!=='frei'||verloren||v.zielHp===0||s.sekunden<v.naechsterSchuss;
+  $('zielErfassen').disabled=b.lage!=='frei'||verloren||v.zielHp===0;
+  $('schussStatus').textContent=verloren
+    ?'Trainingsjäger im Duell deaktiviert. Keine weitere Steuerung; neue Übung erforderlich.'
+    :v.zielHp===0
     ?'Trainingsziel deaktiviert – drei echte 2D-Treffer protokolliert; keine ISK/XP.'
     :s.sekunden<v.naechsterSchuss
       ?'Trainingswaffe lädt noch '+(v.naechsterSchuss-s.sekunden)+' Flugsekunden.'
@@ -69,7 +79,7 @@ function malen(){
   // entlang einer deterministischen Kreisbahn fliegen (kein NPC/keine Wirtschaft).
   ctx.strokeStyle='#668c9e';ctx.lineWidth=1;ctx.beginPath();
   ctx.arc(...marke,Math.max(8,ziel.radius*zoom),0,Math.PI*2);ctx.stroke();
-  if(s.zielprobe.modus==='beweglich'){
+  if(s.zielprobe.modus!=='stationaer'){
     ctx.strokeStyle='rgba(234,187,114,.30)';ctx.setLineDash([4,7]);
     ctx.beginPath();ctx.arc(...marke,T.TRAINING.orbitRadius*zoom,0,Math.PI*2);ctx.stroke();
     ctx.setLineDash([]);
@@ -82,6 +92,12 @@ function malen(){
   ctx.fillText('Aldera-Dock',station[0]+14,station[1]-15);
   ctx.fillText('Flugmarke',marke[0]+7,marke[1]+18);
   ctx.fillText('Drohne · '+s.zielprobe.hp+' HP',drohne[0]-25,drohne[1]-20);
+  // Gegenfeuer ist reiner Trainingszustand und benutzt den selben F6-Tick.
+  ctx.fillStyle='#ff7878';
+  for(const p of s.zielprobe.gegner.geschosse){
+    const [px,py]=punkt(p.x,p.y);
+    ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fill();
+  }
   // Projektile sind echte, je Flugsekunde fortgeschriebene Ganzzahl-Kernobjekte,
   // keine Grafiktreffer und keine wirtschaftlichen Raumschiffe.
   ctx.fillStyle='#ffc985';
@@ -102,6 +118,12 @@ function laufen(zeit){
   const schritte=Math.min(8,Math.floor(rueckstand/(1000/60)));
   if(schritte){T.schritt(s,schritte);rueckstand-=schritte*(1000/60)}
   if(schritte)anzeigen();
+  if(T.status(s).duellErgebnis==='niederlage'){
+    laeuft=false;letztesBild=0;rueckstand=0;
+    melden('Übungsjäger deaktiviert: nur „Neue Übung“ startet einen frischen Trainingslauf.');
+    anzeigen();
+    return;
+  }
   frame=requestAnimationFrame(laufen);
 }
 function starten(){if(laeuft)return;laeuft=true;letztesBild=0;rueckstand=0;anzeigen();frame=requestAnimationFrame(laufen)}

@@ -17,8 +17,8 @@ function neu(){return {modus:'stationaer',hp:K.maxHp,schuesse:0,treffer:0,naechs
   geschosse:[],belege:[]};}
 function audit(s){
   const q=s.zielprobe;
-  if(!keys(q,['modus','hp','schuesse','treffer','naechster','geschosse','belege'])
-    ||!['stationaer','beweglich'].includes(q.modus)
+  if(!keys(q,['modus','hp','schuesse','treffer','naechster','geschosse','belege','gegner'])
+    ||!['stationaer','beweglich','duell'].includes(q.modus)
     ||!ganz(q.hp,0,K.maxHp)||!ganz(q.schuesse)||!ganz(q.treffer,0,3)
     ||!ganz(q.naechster)||q.hp!==K.maxHp-q.treffer*K.schaden
     ||!Array.isArray(q.geschosse)||!Array.isArray(q.belege)
@@ -60,7 +60,7 @@ function zielposition(s){
     y:K.zielY+Math.trunc(F.sin(winkel)*K.orbitRadius/F.DATEN.einheit)};
 }
 function modusSetzen(s,modus){
-  if(!['stationaer','beweglich'].includes(modus))
+  if(!['stationaer','beweglich','duell'].includes(modus))
     return {ok:false,type:'fighterTargetMode',reason:'Unbekannter Trainingszielmodus'};
   if(s.sekunden!==0||s.zielprobe.schuesse!==0)
     return {ok:false,type:'fighterTargetMode',reason:'Moduswechsel nur vor Trainingsstart'};

@@ -132,3 +132,35 @@ test('J2b: Unterfinanzierung, Besitzerfehler und fehlendes Feld bleiben atomar',
     assert.throws(()=>w.load(JSON.stringify(x)),'Import-Schutz');
   }
 });
+
+test('J2b: endlicher zweiter 8er-Auftrag verbraucht genau den Rest, niemals Gratis-Respawn',async()=>{
+  const {w,s,miner}=await einmal(42);
+  const C=w.rules.j2b,old=s.kanon.silizium.vorrat;
+  assert.equal(old,8);
+  assert.equal(w.execute(s,cmd('siliconMineStart',miner)).ok,true);
+  assert.equal(w.execute(s,cmd('shipUndock',miner)).ok,true);
+  w.minute(s);
+  assert.equal(w.execute(s,cmd('shipFlyTo',miner,{x:C.feld.x,y:C.feld.y})).ok,true);
+  for(let n=0;n<500&&s.kanon.silizium.gefoerdert<16;n++){
+    w.minute(s);
+    if(n%10===0)gut(w,s,'endliches Silizium/Folgeauftrag '+n);
+  }
+  assert.equal(s.kanon.silizium.gefoerdert,16);
+  assert.equal(s.kanon.silizium.vorrat,0,'Feld endgueltig erschoepft');
+  assert.equal(s.ships[miner].ladung.silizium,8);
+  assert.equal(w.execute(s,cmd('shipDock',miner,{station:'st_nadir'})).ok,true);
+  for(let n=0;n<500&&s.ships[miner].flug.lage!=='angedockt';n++)w.minute(s);
+  assert.equal(s.ships[miner].flug.lage,'angedockt');
+  assert.equal(w.execute(s,cmd('siliconSell',miner)).ok,true);
+  gut(w,s,'zweiter Abschluss');
+  assert.equal(s.stations.st_nadir.lager.silizium,16);
+  assert.equal(s.kanon.silizium.verkauft,16);
+  assert.equal(s.kanon.silizium.arbeitsMinuten,128);
+  assert.equal(s.kanon.silizium.belege.length,2);
+  assert.equal(s.kanon.silizium.belege.reduce((n,b)=>n+b.preis,0),384);
+  assert.equal(s.kanon.silizium.belege.reduce((n,b)=>n+b.arbeit,0),256);
+  assert.equal(geld(s),33000);
+  assert.equal(s.minted,0);assert.equal(s.burned,0);
+  ablehnen(w,s,cmd('siliconMineStart',miner));
+  assert.equal(w.hash(w.load(w.save(s))),w.hash(s));
+});

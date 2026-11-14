@@ -25,7 +25,7 @@ const create=({rules,transfer,summe,ganz})=>{
       return 'J4b: Werft belegt oder Auftragsbuch fehlt';
     if(st.lager.bauteil<C.bauteile||st.lager.material<C.material)
       return 'J4b: acht echte Bauteile und vier echte Material fehlen';
-    if(st.lager.jaeger+b.fertig-b.verkauft>=C.lagerMax)
+    if((st.lager.jaeger||0)>=C.lagerMax)
       return 'J4b: Jägerlager voll';
     if(s.owners[C.owner].cash<L||s.owners.j4_arbeit_treuhand?.cash>0)
       return 'J4b: 32 ISK Arbeit fehlen oder doppelt gebunden';

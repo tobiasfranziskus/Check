@@ -243,7 +243,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         && b.preis===rules.j4.verkaufspreis);
     function abdockenPruefen(state, sh) {
       if (sh.klasse !== 'miner' && !spielerFrachter(state, sh) && !spielerJaeger(state, sh))
-        return 'K1: nur Miner oder persönlich bezahlte freie Schiffe dürfen abdocken';
+        return jaegerFlug ? 'J4c: nur eigene bezahlte freie Schiffe dürfen abdocken' : 'K1: nur Miner oder eigene freie Aldera-Frachter dürfen im System abdocken';
       if (m_core_anlage.stillgelegt(state, sh)) return 'K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen';
       const pilot = KANON.piloten[sh.owner];
       if (!pilot || !state.owners[pilot]) return 'K1: kein Pilotenkonto für diesen Eigentümer';
@@ -267,7 +267,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           || (k7 && state.w5ac?.active?.id === sh.id && state.w5ac.active.owner === sh.owner));
       if (sh.klasse !== 'miner' && !spielerFrachter(state, sh)
         && !spielerJaeger(state, sh) && !transitSteuerung)
-        return { ok: false, type: cmd.type, reason: 'K1: nur eigene wirtschaftlich bezahlte Schiffe dürfen fliegen' };
+        return { ok: false, type: cmd.type, reason: jaegerFlug
+          ? 'J4c: nur eigene bezahlte Schiffe dürfen fliegen'
+          : 'K1: nur Miner oder eigene freie Aldera-Frachter fliegen im System frei' };
       const vor = FLUG.pruefen(state, cmd);
       if (vor) return { ok: false, type: cmd.type, reason: vor };
       if (cmd.type === 'shipUndock') {

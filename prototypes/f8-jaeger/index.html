@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aphros Void · F8 Jägerflug – isolierte Flugübung</title>
+<style>
+:root{color-scheme:dark;font:16px/1.45 system-ui,sans-serif;background:#070f1b;color:#e2ecf6}
+*{box-sizing:border-box}
+body{max-width:1280px;margin:auto;padding:clamp(10px,2vw,24px);padding-bottom:max(20px,env(safe-area-inset-bottom))}
+header,section{margin-bottom:12px}
+h1{font-size:clamp(1.35rem,2.7vw,2rem);margin:8px 0}
+h2{font-size:1.15rem}
+p{margin:8px 0}
+.warn{border-left:3px solid #e4b475;padding:10px;background:#241f1a}
+.stage{position:relative;border:1px solid #52677a;border-radius:12px;overflow:hidden;background:#030712}
+canvas{display:block;width:100%;height:clamp(270px,48vh,610px);touch-action:pan-y}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}
+.stats div{border:1px solid #34495f;background:#101f30;border-radius:8px;padding:9px}
+.stats strong,.stats span{display:block}
+.stats strong{font-size:1.15rem;font-variant-numeric:tabular-nums}
+.stats span{font-size:.82rem;color:#b5cce0}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px}
+.panel{padding:12px;border:1px solid #34495f;border-radius:10px;background:#101b29}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+button,select,input{font:inherit}
+button{min-height:48px;padding:9px 13px;border:1px solid #65869f;background:#1a354a;color:inherit;border-radius:8px;cursor:pointer;flex:1 1 125px}
+button:disabled{opacity:.5}
+button:focus-visible,input:focus-visible{outline:3px solid #b4f5ff}
+label{display:grid;gap:6px;margin:10px 0}
+input[type=range]{width:100%;min-height:44px;accent-color:#83e4f1}
+#meldung{min-height:50px;padding:9px;border:1px solid #304f5f;border-radius:8px}
+.info{font-size:.86rem;color:#bed2e5}
+@media(max-width:600px){body{padding:9px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}canvas{height:330px}}
+</style>
+<script defer src="../flug2d/flug-kern.js"></script>
+<script defer src="../flug2d/grafik.js"></script>
+<script defer src="f8-trainer.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<header>
+  <h1>F8 · Persönlicher 2D-Jägerflug</h1>
+  <p class="warn"><strong>[ANALYSE / Flugübung, nicht Spielwirtschaft]</strong>
+    Dieser Trainingsjäger ist ausschließlich ein temporärer Flugkörper im Test. Er ist
+    <strong>kein</strong> gekauftes oder hergestelltes Schiff in Regel200.
+    Keine Gegner, Treffer, Piloten-XP oder Kopfgelder. Keine ISK- oder Spielstandsänderung.</p>
+</header>
+<main>
+  <section class="stats" aria-label="Autoritativer F6-Flugkern">
+    <div><strong id="uhr">0:00</strong><span>Trainingsminute : Sekunde</span></div>
+    <div><strong id="geschwindigkeit">0</strong><span>Geschwindigkeit (P/Schritt)</span></div>
+    <div><strong id="entfernung">–</strong><span>Abstand zur Trainingsmarke (P)</span></div>
+    <div><strong id="lage">angedockt</strong><span>Echter Flugkernzustand</span></div>
+    <div><strong id="erfolg">Offen</strong><span>Marke langsam erreicht?</span></div>
+  </section>
+  <section class="stage" aria-label="Jägerflugkarte">
+    <canvas id="raum" aria-label="Spieler-Jäger, Station in Aldera und Trainingsmarke"></canvas>
+  </section>
+  <section class="controls">
+    <div class="panel">
+      <h2>Steuern</h2>
+      <label for="kurs">Kurs <output id="kursWert">0</output> / 255
+        <input id="kurs" type="range" min="0" max="255" value="0">
+      </label>
+      <label for="fahrt">Sollfahrt <output id="fahrtWert">0</output> %
+        <input id="fahrt" type="range" min="0" max="100" step="5" value="0">
+      </label>
+      <div class="actions">
+        <button id="steuern" disabled>Manuellen Kurs setzen</button>
+        <button id="bremsen" disabled>Auf 0 % bremsen</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Flugbefehle</h2>
+      <div class="actions">
+        <button id="abdocken">Abdocken</button>
+        <button id="marke" disabled>Trainingsmarke anfliegen</button>
+        <button id="andocken" disabled>Zur Station andocken</button>
+      </div>
+      <p class="info">Aufgabe: die markierte Position erreichen und bis auf höchstens
+      240 P pro Flugschritt abbremsen. Der Erfolg hängt nur vom Flugkörper ab.</p>
+    </div>
+    <div class="panel">
+      <h2>Trainingstakt</h2>
+      <div class="actions">
+        <button id="start">Flug starten</button>
+        <button id="pause">Pause</button>
+        <button id="sekunde">1 Sekunde</button>
+        <button id="minute">1 Minute</button>
+        <button id="neu">Neue Übung</button>
+      </div>
+      <p class="info">Jede Sekunde wird mit dem bestehenden F6-Ganzzahlkern berechnet.
+      60 Flugschritte ergeben eine Simulationsminute; bei Pause ändert sich nichts.</p>
+    </div>
+  </section>
+  <p id="meldung" role="status" aria-live="polite">Flugübung bereit. Am Dock kann abgedockt werden.</p>
+</main>
+</body>
+</html>

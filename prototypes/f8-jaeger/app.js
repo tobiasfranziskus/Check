@@ -35,7 +35,7 @@ function anzeigen(){
   $('bewegungStatus').textContent=(v.zielModus==='duell'
     ?'2D-Duell mit drohendem Gegenfeuer · '
     :v.zielModus==='beweglich'
-    ?'Drohne in Bewegung (Kreisbahn) · ':'Drohne steht · '))
+    ?'Drohne in Bewegung (Kreisbahn) · ':'Drohne steht · ')
     +'Position '+fmt(v.zielPosition.x)+' / '+fmt(v.zielPosition.y)
     +'. Ziel erfassen dreht den Jäger zur aktuellen Position, ein Treffer braucht echte 2D-Projektilnähe.';
   $('kursWert').textContent=$('kurs').value;

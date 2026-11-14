@@ -2384,7 +2384,9 @@ const m_core_w4 = (() => {
       && state.ledger.erz.consumed===w.erzVerbraucht
       && state.ledger.material.produced===w.materialErzeugt
       && erz===state.w3.geliefert-w.erzVerbraucht
-      && material===w.materialErzeugt-(state.w5?.materialVerbraucht??0)-(state.w5ae?.purchased??0)-(state.kanon?.minerWerft?.materialVerbraucht??0)
+      && material===w.materialErzeugt-(state.w5?.materialVerbraucht??0)-(state.w5ae?.purchased??0)
+        -(state.kanon?.minerWerft?.materialVerbraucht??0)
+        -(state.kanon?.bauteile?.materialVerbraucht??0)
       && (!a || (a.erz===c.erzJeCharge&&a.material===c.materialJeCharge
         && a.arbeitsBudget===p&&Number.isSafeInteger(a.gearbeitet)
         && a.gearbeitet>=0&&a.gearbeitet<c.dauer));
@@ -2520,8 +2522,12 @@ const m_core_w5 = (() => {
         +(a?.gearbeitet??0)*c.lohnJeMinute
       && escrow===w.arbeitsGebunden-w.arbeitsGezahlt
       && arbeit+m_core_kanon.netto(state,c.arbeiter)===w.arbeitsGezahlt
-      && state.ledger.material.consumed===w.materialVerbraucht+(state.kanon?.minerWerft?.materialVerbraucht??0)
-      && st.material===state.w4.materialErzeugt-w.materialVerbraucht-(state.w5ae?.purchased??0)-(state.kanon?.minerWerft?.materialVerbraucht??0)
+      && state.ledger.material.consumed===w.materialVerbraucht
+        +(state.kanon?.minerWerft?.materialVerbraucht??0)
+        +(state.kanon?.bauteile?.materialVerbraucht??0)
+      && st.material===state.w4.materialErzeugt-w.materialVerbraucht-(state.w5ae?.purchased??0)
+        -(state.kanon?.minerWerft?.materialVerbraucht??0)
+        -(state.kanon?.bauteile?.materialVerbraucht??0)
       && state.ledger.frachter.produced===w.fertig
       && st.frachter===w.fertig-w.verkauft
       && w.verkauft===shipIds.length&&w.verkauft<=w.fertig

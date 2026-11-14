@@ -168,12 +168,15 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   const m_core_anlage = (() => {
     const aktiv = (state, id) => state.kanon.verschleiss[id] || 0;
     const abschreibung = (state, sh) => Math.min(kaufpreis(sh.klasse),
-      Math.floor(aktiv(state, sh.id) * KANON.verschleiss.milliJeMinute[sh.klasse] / 1000));
+      // J4b-Jäger bleiben bis zur expliziten F8-Flugintegration angedockt.
+      // Keine frei erfundene Abschreibung oder Wartung, aber realer Anlagewert.
+      Math.floor(aktiv(state, sh.id) * (KANON.verschleiss.milliJeMinute[sh.klasse] ?? 0) / 1000));
     const buchwert = (state, sh) => kaufpreis(sh.klasse) - abschreibung(state, sh);
     const verbraucht = (state, sh) => buchwert(state, sh) === 0;
     const stillgelegt = (state, sh) => state.kanon.politik.stilllegung === true && verbraucht(state, sh);
     const huellen = (state, owner) => ids(state.ships).map((id) => state.ships[id])
-      .filter((sh) => sh.owner === owner && hat(KANON.verschleiss.milliJeMinute, sh.klasse));
+      .filter((sh) => sh.owner === owner && (hat(KANON.verschleiss.milliJeMinute, sh.klasse)
+        || (jaeger && sh.klasse === 'jaeger')));
     const anlagewert = (state, owner) => huellen(state, owner).reduce((n, sh) => n + buchwert(state, sh), 0);
     const ruecklage = (state, owner) => huellen(state, owner).reduce((n, sh) => n + abschreibung(state, sh), 0);
     return { aktiv, abschreibung, buchwert, verbraucht, stillgelegt, huellen, anlagewert, ruecklage };
@@ -1524,7 +1527,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         haushalte: ids(KANON.haushalte).reduce((n, id) => n + o[id].cash, 0) },
       produktion: { eisGefoerdert: w5n.eisAbgebaut, erzGefoerdert: state.ledger.erz.mined, wasserProduziert: w5n.wasserProduziert,
         materialErzeugt: state.w4.materialErzeugt, frachterGebaut: state.w5.fertig,
-        minerGebaut: k.minerWerft?.fertig || 0, minerGeliefert: k.minerWerft?.geliefert || 0 },
+        minerGebaut: k.minerWerft?.fertig || 0, minerGeliefert: k.minerWerft?.geliefert || 0,
+        ...(jaeger ? { jaegerGebaut:k.jaeger.fertig,jaegerVerkauft:k.jaeger.verkauft } : {}) },
       verkaeufe: { eisAnAldera: w5n.mineVerkauft, wasserNadir: k.wasser.verkauftNadir, wasserAldera: k.wasser.verkauftAldera,
         wasserErloes: m_core_buch.summe(state, 'wasser-einzelhandel'), erzExportiert: state.ledger.erz.exported },
       auftraege: { eisfrachten: w5n.frachtAbgeschlossen, eisGeliefert: w5n.eisGeliefert,
@@ -1537,13 +1541,15 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       loehne: { bergbau: w5n.mineLohn + state.ledger.erz.mined * rules.erzpilot.minerJeMinute,
         frachtpiloten: state.w5ag.paid.erz + state.w5ag.paid.eis, wasserwerk: w5n.fabrikBezahlt,
         minerflug: m_core_buch.summe(state, 'fluglohn'),
+        ...(jaeger ? {jaegerWerft:m_core_buch.summe(state, 'j4-arbeitslohn')} : {}),
         ...(k.spielerFrachten
           ? { spielerFrachtpilot: m_core_buch.summe(state, 'spielerfracht-pilot') } : {}) },
       dividenden: m_core_buch.summe(state, 'dividende'),
       inventar: { eisAldera: state.stations.st_aldera.lager.eis || 0, eisNadir: state.stations.st_nadir.lager.eis || 0,
         wasserNadir: state.stations.st_nadir.lager.wasser || 0, wasserAldera: state.stations.st_aldera.lager.wasser || 0,
         wasserUnterwegs: k.rueckfracht ? k.rueckfracht.menge : 0,
-        minerLager: state.stations.st_aldera.lager.miner || 0, frachterLager: (state.stations.st_aldera.lager.frachter || 0) + (state.stations.st_nadir.lager.frachter || 0) },
+        minerLager: state.stations.st_aldera.lager.miner || 0, frachterLager: (state.stations.st_aldera.lager.frachter || 0) + (state.stations.st_nadir.lager.frachter || 0),
+        ...(jaeger ? {jaegerLager:state.stations.st_nadir.lager.jaeger} : {}) },
       schiffe: ids(state.ships).map((id) => { const sh = state.ships[id]; return { id, owner: sh.owner, klasse: sh.klasse,
         aktivMinuten: m_core_anlage.aktiv(state, id), buchwert: m_core_anlage.buchwert(state, sh), stillgelegt: m_core_anlage.stillgelegt(state, sh) }; }),
       ersatzkaeufe: k.ersatzkaeufe, minerWerft: k.minerWerft || null, firmen, haushalte,

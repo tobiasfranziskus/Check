@@ -33,8 +33,8 @@ function laden(json,freigabe){
   if(!neu.welt.audit(neu.zustand).ok)throw Error('K1/J4-Audit nicht bestanden');
   // Atomarer Sitzungswechsel: erst den *neuen* Weltstand vollständig validieren,
   // dann ausdrücklich vor Verlust einer ungesicherten aktuellen Sitzung warnen.
-  if(welt&&!window.confirm('Der neue, geprüfte Jägerstand ersetzt die aktuelle Sitzung im Arbeitsspeicher.\\n'
-    +'Bitte den bisherigen Stand zuerst mit „Geprüften JSON-Spielstand exportieren“ sichern.\\n'
+  if(welt&&!window.confirm('Der neue, geprüfte Jägerstand ersetzt die aktuelle Sitzung im Arbeitsspeicher. '
+    +'Bitte den bisherigen Stand zuerst mit „Geprüften JSON-Spielstand exportieren“ sichern. '
     +'Jetzt wirklich zur neuen Sitzung wechseln?')){
    $('datei').value='';
    meldung('Sitzungswechsel abgebrochen; deine bisherige Jägersitzung bleibt unverändert.');

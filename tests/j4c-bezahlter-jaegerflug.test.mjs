@@ -55,7 +55,7 @@ async function flug(seed){
  const f=w.execute(s,cmd('shipFlyTo',{x:180000,y:-100000}));
  assert.equal(f.ok,true,JSON.stringify(f));
  const vor={x:s.ships[id].flug.x,y:s.ships[id].flug.y};
- for(let i=0;i<160;i++){
+ for(let i=0;i<220;i++){
   w.teilschritt(s);
   if(s.flug.schritt===0)audit(w,s,'F6-minutengrenze physischer Flug');
  }

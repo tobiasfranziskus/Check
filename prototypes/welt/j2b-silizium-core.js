@@ -5,7 +5,7 @@
 (function(scope){
 'use strict';
 const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
-  if(rules.rulesVersion!==201||!rules.j2b)throw Error('J2b: nur Regel201-Forschungsprofil');
+  if(![201,202].includes(rules.rulesVersion)||!rules.j2b)throw Error('J2b: nur Regel201/202-Forschungsprofil');
   const C=rules.j2b,W=C.charge*C.minutenJeEinheit*C.lohnJeMinute,
     P=C.charge*C.preis;
   const leer=()=>({vorrat:C.feld.vorrat,auftraege:0,gefoerdert:0,
@@ -104,8 +104,8 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
       ||b.arbeitsMinuten!==b.gefoerdert*C.minutenJeEinheit
         +(a?a.gearbeitet-a.gefoerdert*C.minutenJeEinheit:0)
       ||!l||l.initial!==0||l.mined!==b.gefoerdert||l.produced!==0
-      ||l.consumed!==0||l.imported!==0||l.exported!==0
-      ||s.stations[C.station].lager.silizium!==b.verkauft
+      ||l.consumed!==(s.kanon.bauteile?.siliziumVerbraucht||0)||l.imported!==0||l.exported!==0
+      ||s.stations[C.station].lager.silizium!==b.verkauft-(s.kanon.bauteile?.siliziumVerbraucht||0)
       ||summe(s,'silizium-arbeitsreserve')!==b.auftraege*W
       ||summe(s,'silizium-arbeitslohn')!==b.arbeitsMinuten*C.lohnJeMinute
       ||summe(s,'silizium-kaufreserve')!==b.auftraege*P

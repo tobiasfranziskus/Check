@@ -13,10 +13,10 @@ const Welt=require('../prototypes/welt/welt-kern.js');
 
 test('öffentliche Root-W0–W5 verlinkt J4e, ohne das NAS-Spiel oder die Speicherhülle zu ändern',()=>{
  const pages=read('index.html'),nas=read('aphros-void.html');
- const nav=/<nav aria-label="Spielmodi"[\\s\\S]*?<\\/nav>\\n/g;
+ const nav=/<nav aria-label="Spielmodi"[\s\S]*?<\/nav>\n/g;
  assert.equal([...pages.matchAll(nav)].length,1,'genau ein öffentlicher Jäger-Einstieg');
  assert.equal(pages.replace(nav,''),nas,'nur Pages-only-Navigation, NAS-Core bitgenau');
- assert.match(pages,/href="prototypes\\/j4c\\/index\\.html"/);
+ assert.ok(pages.includes('href="prototypes/j4c/index.html"'),'Root verlinkt Jägercockpit');
  assert.match(pages,/id="storage-status"/,'alte W0–W5-Speicherhülle bleibt erhalten');
  assert.ok(fs.existsSync(path.join(root,'prototypes/j4c/index.html')));
  assert.ok(fs.existsSync(path.join(root,'prototypes/j4c/beispiel-jaeger-seed42.json')));
@@ -43,6 +43,6 @@ test('J4e-Beispiel ist echtes auditiertes J4b/J4c-Wirtschaftsergebnis mit 900-IS
  assert.equal(Object.values(spiel.owners).reduce((sum,owner)=>sum+owner.cash,0),33000);
  assert.equal(welt.save(spiel),json,'Spielstand ist kein modifizierter synthetischer Ersatz');
  const app=read('prototypes/j4c/app.js');
- assert.match(app,/fetch\\('beispiel-jaeger-seed42\\.json'/);
- assert.match(app,/laden\\(json,false\\)/,'Beispiel wird durch regulären Save-Validator geladen');
+ assert.ok(app.includes("fetch('beispiel-jaeger-seed42.json'"),'öffentlicher Beispiel-Loader vorhanden');
+ assert.ok(app.includes('laden(json,false)'),'Beispiel durch regulären Save-Validator geladen');
 });

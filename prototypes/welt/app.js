@@ -37,6 +37,44 @@ const eigene = () => Object.values(state.ships).filter((s) =>
   s.owner === SPIELER && (s.klasse === 'miner' || s.klasse === 'frachter')).sort((a, b) => a.id.localeCompare(b.id));
 const gewaehlt = () => eigene().find((s) => s.id === $('schiff').value) || eigene()[0] || null;
 
+function nadirWerftZeigen() {
+  // Das Bedienfeld ist ausschließlich im getrennten Rule200-Forschungseinstieg
+  // vorhanden. Ohne erfolgreiches F7-Core-Gate wird keine Kaufoption angeboten.
+  if (!istK7 || !$('nadirWerft')) return;
+  const erlaubt = welt.f7Werftfrachter === true;
+  const schiffe = eigene().filter((sh) => sh.klasse === 'frachter'
+    && sh.system === 'nadir' && sh.phase === 'dock'
+    && sh.flug?.lage === 'angedockt');
+  const auswahl = $('nadirSchiff'), ids = schiffe.map((sh) => sh.id).join(',');
+  if (auswahl.dataset.liste !== ids) {
+    const alt = auswahl.value;
+    auswahl.replaceChildren(...schiffe.map((sh) => {
+      const o = document.createElement('option'); o.value = sh.id;
+      o.textContent = sh.id + ' · dein Frachter in Nadir'; return o;
+    }));
+    if (!schiffe.length) {
+      const o = document.createElement('option'); o.value = '';
+      o.textContent = 'Kein eigener Nadir-Frachter vorhanden'; auswahl.appendChild(o);
+    } else if (schiffe.some((sh) => sh.id === alt)) auswahl.value = alt;
+    auswahl.dataset.liste = ids;
+  }
+  const preis = welt.rules.economy.waren.frachter.basis;
+  const lager = state.stations.st_nadir.lager.frachter || 0;
+  const cash = state.owners[SPIELER].cash;
+  $('nadirKauf').textContent = 'Nadir-Werftfrachter kaufen · ' + fmt(preis) + ' ISK';
+  $('nadirKauf').disabled = !erlaubt || lager < 1 || cash < preis;
+  $('nadirUeberfuehrung').disabled = !erlaubt || !schiffe.some((sh) => sh.id === auswahl.value);
+  $('nadirWerftStatus').textContent = 'W5 hat ' + fmt(state.w5.fertig)
+    + ' Frachter gebaut · aktuell im Nadir-Lager: ' + fmt(lager)
+    + ' · eigenes Firmenkonto: ' + fmt(cash) + ' ISK · Originalpreis: '
+    + fmt(preis) + ' ISK · eigene Frachter im Nadir-Dock: ' + schiffe.length
+    + (erlaubt ? (lager < 1 ? ' · Kein kaufbarer Werftbestand vorhanden'
+      : cash < preis ? ' · Eigenes Kapital reicht für den Kauf nicht aus'
+      : ' · Kauf nur nach erneuter Finanzierungskontrolle im Core')
+      : ' · F7 ist noch nicht in den Wirtschaftskern integriert; alle F7-Aktionen gesperrt');
+}
+
+
 // ---------------------------------------------------------------- Darstellung
 function tabelle(ziel, kopf, zeilen) {
   const t = document.createElement('table'), h = t.createTHead().insertRow();
@@ -373,6 +411,7 @@ function zeigen(alles = false) {
       + ' · NPC-Industrie: ' + (auto ? (k.politik.automatik ? 'freigegeben' : 'NPC-Automatik pausiert')
         : 'aus (keine automatische Vertragsunterzeichnung)');
   }
+  nadirWerftZeigen();
   if (!alles && ansicht === 'flug') return;
   if (ansicht === 'konzern') tabelle($('firmen'), ['Firma', 'Kasse', 'Anlagewert', 'Ersatzrücklage', 'ausschüttbar', 'ausgeschüttet', 'Eigentümerkonto'],
     Object.entries(b.firmen).map(([f, v]) => [f === SPIELER ? f + ' (Spieler)' : f, fmt(v.kasse), fmt(v.anlagewert), fmt(v.ruecklage), fmt(v.ausschuettbar), fmt(v.ausgeschuettet), fmt(o[welt.daten.anteile[f]].cash)]));
@@ -564,6 +603,24 @@ $('warten').addEventListener('click', schiffBefehl('shipWait', {}, 'Auftrag ange
 $('verkaufen').addEventListener('click', () => { const s = gewaehlt(); if (s) befehl({ type: 'shipSellIce', owner: SPIELER, schiff: s.id, menge: s.ladung.eis || 0 }, 'Eis am Dock an Aldera verkauft.'); });
 $('kaufMiner').addEventListener('click', () => befehl({ type: 'shipBuy', owner: SPIELER, klasse: 'miner', station: 'st_aldera' }, 'Miner aus dem Lager der Station gekauft.'));
 $('kaufFrachter').addEventListener('click', () => befehl({ type: 'shipBuy', owner: SPIELER, klasse: 'frachter', station: 'st_aldera' }, 'Frachter zum Originalpreis aus dem physischen Aldera-Lager gekauft.'));
+
+if (istK7 && $('nadirWerft')) {
+  $('nadirSchiff').addEventListener('change', nadirWerftZeigen);
+  $('nadirKauf').addEventListener('click', () => {
+    if (welt.f7Werftfrachter !== true) return;
+    befehl({ type:'shipBuy', owner:SPIELER, klasse:'frachter', station:'st_nadir' },
+      'Eigener Werftfrachter aus echtem Nadir-Lager zum Originalpreis gekauft.');
+  });
+  $('nadirUeberfuehrung').addEventListener('click', () => {
+    if (welt.f7Werftfrachter !== true) return;
+    const id = $('nadirSchiff').value, sh = state.ships[id];
+    if (!sh || sh.owner !== SPIELER || sh.klasse !== 'frachter'
+      || sh.system !== 'nadir' || sh.phase !== 'dock') return;
+    befehl({ type:'shipReposition', owner:SPIELER, schiff:id },
+      'Bezahlte Nadir-Aldera-Überführung im Original-Core beauftragt.');
+  });
+}
+
 $('frachtAnnehmen').addEventListener('click', () => {
   const s = gewaehlt();
   if (s?.klasse === 'frachter') befehl({ type: 'shipFreightIce', owner: SPIELER, schiff: s.id },

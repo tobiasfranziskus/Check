@@ -1,0 +1,38 @@
+name: "J4e – deterministische Root-/NAS-Neugenerierung (nur Integrationsbranch)"
+on:
+  push:
+    branches:
+      - integration/j4e-main-playtest-20261114
+    paths:
+      - '.github/workflows/j4e-rebuild-root.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Original Rule195-Kern einschließlich Shadow-CSS reproduzierbar bündeln"
+        run: |
+          node scripts/build-w5-singlefile.mjs --write
+          node scripts/build-w5-singlefile.mjs --check
+      - name: "Nur beide generierten HTML-Dateien sicher zum Integrationsbranch committen"
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html aphros-void.html
+          if git diff --cached --quiet; then echo "Build-Dateien bereits synchron"; exit 0; fi
+          git commit -m "fix(release): regenerate W0-W5 bundle with embedded ShadowRoot CSS"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin integration/j4e-main-playtest-20261114
+            git rebase origin/integration/j4e-main-playtest-20261114
+            if git push origin HEAD:integration/j4e-main-playtest-20261114; then exit 0; fi
+            sleep 2
+          done
+          echo "Aktualisierung wurde wegen konkurrierender Commits abgebrochen" >&2
+          exit 1

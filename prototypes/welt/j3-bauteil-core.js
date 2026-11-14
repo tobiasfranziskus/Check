@@ -8,7 +8,7 @@
 (function(scope){
 'use strict';
 const create=({rules,transfer,summe,ganz})=>{
-  if(![202,203].includes(rules.rulesVersion)||!rules.j3)throw Error('J3: nur isolierte Regel202/203');
+  if(![202,203,204].includes(rules.rulesVersion)||!rules.j3)throw Error('J3: nur isolierte Regel202/203');
   const C=rules.j3,PAID=C.dauer*C.lohnJeMinute;
   const leer=()=>({begonnen:0,abgeschlossen:0,materialVerbraucht:0,
     siliziumVerbraucht:0,bauteile:0,arbeitsGebunden:0,arbeitsGezahlt:0,

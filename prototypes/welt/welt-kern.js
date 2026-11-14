@@ -596,15 +596,35 @@ function erstellen(startkapital = {}, k7 = false) {
       const b = s.kanon.minerWerft, nadir = s.stations[C.station].lager.miner || 0;
       if (!b) return s.ledger.miner.produced === 0 && nadir === 0;
       const a = b.auftrag, t = b.transport, l = b.fertig * C.dauer * C.lohn + (a?.gearbeitet || 0) * C.lohn;
+      // J2a: Der vollständig finanzierte K2-Miner kann entweder nach Aldera
+      // transportiert ODER an den bereits eingetragenen Besteller lokal verkauft
+      // werden; niemals gleichzeitig. Alte K2-Saves haben diese Felder nicht.
+      const lokal = b.lokalGekauft ?? 0, kauefe = b.lokaleKaeufe ?? [];
+      const idSet = new Set();
+      const kauefeOk = Array.isArray(kauefe) && kauefe.length === lokal
+        && kauefe.every((k) => {
+          const sh = s.ships[k?.id];
+          if (!k || Object.keys(k).sort().join() !== 'id,owner,preis,station,tick'
+            || typeof k.id !== 'string' || idSet.has(k.id)
+            || !ganz(k.tick) || k.tick > s.tick || k.station !== C.station
+            || !['house','npc3'].includes(k.owner) || k.preis !== C.kauf
+            || !sh || sh.id !== k.id || sh.owner !== k.owner || sh.klasse !== 'miner'
+            || sh.system !== 'nadir' || sh.heimat !== 'nadir') return false;
+          idSet.add(k.id); return true;
+        });
+      const nadirAktiv = Object.values(s.ships).filter((sh) =>
+        sh.klasse === 'miner' && sh.heimat === 'nadir');
       const anBord = Object.values(s.ships).reduce((n, sh) => n + (sh.ladung.miner || 0), 0);
-      return [b.begonnen, b.fertig, b.verladen, b.geliefert, b.materialVerbraucht,
+      return ganz(lokal) && kauefeOk && nadirAktiv.length === lokal
+        && nadirAktiv.every((sh) => idSet.has(sh.id))
+        && [b.begonnen, b.fertig, b.verladen, b.geliefert, b.materialVerbraucht,
         nadir, s.stations[W.quellStation].lager.miner || 0, a?.gearbeitet || 0].every(ganz)
         && b.begonnen === b.fertig + (a ? 1 : 0)
         && b.materialVerbraucht === b.begonnen * C.material
         && b.verladen === b.geliefert + (t ? 1 : 0)
-        && b.fertig >= b.verladen && b.fertig - b.verladen <= 1
-        && nadir === b.fertig - b.verladen
-        && (b.fertig > b.verladen ? ['house', 'npc3'].includes(b.wartetAuf) : b.wartetAuf === null)
+        && b.fertig >= b.verladen + lokal && b.fertig - b.verladen - lokal <= 1
+        && nadir === b.fertig - b.verladen - lokal
+        && (nadir > 0 ? ['house', 'npc3'].includes(b.wartetAuf) : b.wartetAuf === null)
         && (!a || (a.gearbeitet < C.dauer && ['house', 'npc3'].includes(a.besteller)))
         && m_core_buch.summe(s, 'miner-material') === b.begonnen * C.material * C.preisMaterial
         && m_core_buch.summe(s, 'miner-arbeitsreserve') === b.begonnen * C.dauer * C.lohn
@@ -615,7 +635,7 @@ function erstellen(startkapital = {}, k7 = false) {
         && (s.owners.k1_miner_fracht?.cash || 0) === (b.verladen - b.geliefert) * C.fracht
         && s.ledger.miner.produced === b.fertig
         && (s.stations[W.quellStation].lager.miner || 0)
-            === s.ledger.miner.initial + b.geliefert - s.ledger.miner.consumed
+            === s.ledger.miner.initial + b.geliefert + lokal - s.ledger.miner.consumed
         && anBord === (t ? 1 : 0)
         && (!t || (['house', 'npc3'].includes(t.besteller)
           && s.ships[t.schiff]?.ladung.miner === 1));

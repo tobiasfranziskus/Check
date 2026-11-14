@@ -565,6 +565,8 @@ const FIELDS = {
   stationRecipe: ['station', 'rezept'], shipRemoveModule: ['schiff', 'modul'],
   shipFreight: ['schiff'], stationRefine: ['station'],
   stationBuildShip: ['station'], shipReposition: ['schiff'],
+  // J2a/Regel200-Forschung: lokale Abholung nur fertig produzierter K2-Miner.
+  stationClaimMinerLocal: ['station'],
   researchShipLoss: ['schiff'], shipReplace: ['verlust','reserve'],
   workerMaterialBuy: ['menge'],
   shipFreightIce:['schiff'],shipSellIce:['schiff','menge'],
@@ -724,8 +726,22 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5Replacement ? ['researchShipLoss','shipReplace'] : []),
     ...(rules.w5WageTrade ? ['workerMaterialBuy'] : []),
     ...(rules.w5n?['shipSellIce','shipFreightIce','stationWater','workerWaterBuy']:[]),
-    ...(rules.w5ag?['pilotWaterBuy']:[])].includes(cmd.type))
+    ...(rules.w5ag?['pilotWaterBuy']:[]),
+    ...(rules.k7?['stationClaimMinerLocal']:[])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
+  if (cmd.type === 'stationClaimMinerLocal') {
+    // Keine Änderung des bestehenden shipBuy: die alten K2-Rückfracht-/J2-
+    // Negativreferenzen bleiben dadurch bitgleich. Nur aktives K7-Regel200.
+    const b = state.kanon?.minerWerft;
+    if (!rules.k7 || !rules.kanon || !b || cmd.station !== rules.w5.station
+      || !['house','npc3'].includes(cmd.owner)
+      || b.auftrag || b.transport || b.wartetAuf !== cmd.owner
+      || (state.stations[cmd.station]?.lager?.miner || 0) !== 1
+      || b.fertig - b.verladen - (b.lokalGekauft || 0) !== 1)
+      return 'K2/J2a: Nur der echte vorgemerkte Nadir-Miner darf lokal gekauft werden';
+    if (state.owners[cmd.owner].cash < rules.economy.waren.miner.basis)
+      return 'K2/J2a: 600 ISK für den eigenen Miner fehlen';
+  }
   if (cmd.type === 'shipBuy') {
     // K1: bezahlter Aldera-Kauf; K7 zusätzlich reale W5-Nadir-Hüllen.
     // Regel195 und alle anderen Profile bleiben unverändert.
@@ -793,25 +809,36 @@ function execute(state, cmd, rules) {
     case 'shipReposition': {
       m_core_w5_transfer.start(state,rules,state.ships[cmd.schiff]);break;
     }
-    case 'shipBuy': {
-      const p = rules.economy.waren[cmd.klasse].basis;
+    case 'shipBuy':
+    case 'stationClaimMinerLocal': {
+      const localMiner = cmd.type === 'stationClaimMinerLocal';
+      const klasse = localMiner ? 'miner' : cmd.klasse;
+      const p = rules.economy.waren[klasse].basis;
       state.owners[cmd.owner].cash -= p;
       state.owners[rules.erzpilot.werftOwner].cash += p;
-      state.stations[cmd.station].lager[cmd.klasse] -= 1;
-      state.ledger[cmd.klasse].consumed += 1;
+      state.stations[cmd.station].lager[klasse] -= 1;
+      state.ledger[klasse].consumed += 1;
       const w5Kauf = !!rules.w5 && cmd.station === rules.w5.station
-        && cmd.klasse === rules.w5.klasse && (cmd.owner === rules.w5.kaeufer
+        && klasse === rules.w5.klasse && (cmd.owner === rules.w5.kaeufer
           || (!!rules.k7 && cmd.owner === rules.economy.start.owner));
-      const system = w5Kauf ? 'nadir' : 'aldera';
+      const system = w5Kauf || localMiner ? 'nadir' : 'aldera';
       const sh = m_core_state.neuesSchiff(state, {
-        owner: cmd.owner, klasse: cmd.klasse, system,
+        owner: cmd.owner, klasse, system,
         heimat: system, auftrag: 'halten', ware: null,
       });
+      if(localMiner){
+        const b=state.kanon.minerWerft;
+        b.lokalGekauft=(b.lokalGekauft||0)+1;
+        (b.lokaleKaeufe ||= []).push({
+          id:sh.id,tick:state.tick,owner:cmd.owner,station:cmd.station,preis:p
+        });
+        b.wartetAuf=null;
+      }
       if(rules.w5Replacement&&cmd.owner===rules.w3.spedition)
         state.w5ad.purchases.push({id:sh.id,tick:state.tick,station:cmd.station,preis:p});
       // Zusätzliche physische Spielerhülle: einmaliger Originalkaufbeleg.
       // Nur K1. Kein Journal bei Regel195 oder anderem Profil.
-      if(rules.kanon && cmd.klasse==='frachter' && cmd.owner===rules.economy.start.owner)
+      if(rules.kanon && klasse==='frachter' && cmd.owner===rules.economy.start.owner)
         (state.kanon.spielerFrachterKaeufe ||= []).push({id:sh.id,tick:state.tick,station:cmd.station,preis:p});
       if (w5Kauf) {
         state.w5.verkauft++;

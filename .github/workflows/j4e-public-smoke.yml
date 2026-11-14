@@ -1,0 +1,52 @@
+name: "J4e öffentlicher Spieltest – Root, finanzierter Jäger, Touch & Save"
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'aphros-void.html'
+      - 'scripts/build-w5-singlefile.mjs'
+      - 'prototypes/j4c/**'
+      - 'prototypes/flug2d/flug-kern.js'
+      - 'prototypes/f8-jaeger/**'
+      - 'prototypes/welt/**'
+      - 'tests/j4e-*'
+      - 'tests/w5singlefile.test.mjs'
+      - 'tests/w5rc1-preservation.test.mjs'
+      - '.github/workflows/j4e-public-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  root-and-paid-sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Pages-Navigation reproduzierbar, NAS-W0–W5 unverändert"
+        run: node scripts/build-w5-singlefile.mjs --check
+      - name: "J4e öffentlicher Einstieg: kaufbelegtes Seed42 JSON, W0–W5-Erhalt"
+        run: node --test tests/j4e-oeffentlicher-spieltest.test.mjs tests/w5singlefile.test.mjs tests/w5rc1-preservation.test.mjs
+  genuine-fighter-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Playwright ausschließlich als CI-Werkzeug"
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/j4e-playwright" playwright@1.62.0
+          node "$RUNNER_TEMP/j4e-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
+      - name: "Vier Touchgrößen: Root → Jägerstart → 900-ISK-Schiff → F8-Training → Save"
+        run: node tests/j4e-duell-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}

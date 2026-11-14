@@ -89,6 +89,7 @@ function anzeigeFlug(){
  $('duell-gegentor').textContent=d.gegnerTreffer+' / 4';
  $('duell-sekunden').textContent=format(d.sekunden)+' s';
  $('duell-distanz').textContent=format(Math.round(Math.hypot(d.ziel.x-b.x,d.ziel.y-b.y)))+' P';
+ $('duell-sektor').textContent=format(Math.round(Math.hypot(Kampf.TREFFER.K.zielX-b.x,Kampf.TREFFER.K.zielY-b.y)))+' P';
  $('patrouille-ziel').textContent=patrouille?.stufe===Kurs.TORE.length?'Original-F6: Nadir andocken':'Original-F6: nächstes Ziel anfliegen';
  const audit=welt.audit(weltzustand);
  $('audit').textContent=audit.ok?'Wirtschaft / Waren / Eigentum / Flug: OK':'AUDITFEHLER: '+audit.fehler.join('; ');

@@ -15,6 +15,7 @@ const NODE = typeof module === 'object' && module.exports;
 const FACTORY = NODE ? require('./rule200-k7-industry-core.js') : scope.W5acK7;
 const FLUG = NODE ? require('../flug2d/flug-kern.js') : scope.FlugKern;
 const J2B = NODE ? require('./j2b-silizium-core.js') : scope.J2bSilizium;
+const J3 = NODE ? require('./j3-bauteil-core.js') : scope.J3Bauteile;
 if (!FACTORY || typeof FACTORY.createKanonWelt !== 'function' || !FLUG || typeof FLUG.schritt !== 'function')
   throw Error('K1 benötigt den gemeinsamen Wirtschaftskern (Profil 199) und den Flugkern');
 
@@ -82,7 +83,7 @@ const m_data_kanon = (() => {
   return { KANON, tiefFrieren };
 })();
 
-function erstellen(startkapital = {}, k7 = false, silizium = false) {
+function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false) {
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
@@ -90,10 +91,11 @@ function erstellen(startkapital = {}, k7 = false, silizium = false) {
   });
   // Ein Forschungsquellstand für K1 (Regel199) oder explizit K7 (Regel200).
   // Niemals die produktive Regel195-Einzeldatei überschreiben.
-  const engine = k7 ? (silizium ? FACTORY.createJ2bWelt(startkapital, ort)
+  const engine = k7 ? (bauteile ? FACTORY.createJ3Welt(startkapital,ort) :
+    silizium ? FACTORY.createJ2bWelt(startkapital, ort)
     : FACTORY.createK7Welt(startkapital, ort)) : FACTORY.createKanonWelt(startkapital, ort);
   const kern = engine.core, rules = engine.rules;
-  if (rules.rulesVersion !== (silizium ? 201 : k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
+  if (rules.rulesVersion !== (bauteile ? 202 : silizium ? 201 : k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
     throw Error('K1: unerwartetes Kernprofil');
   const N = FLUG.DATEN.schritteJeMinute;
   const W = rules.w5n;
@@ -650,6 +652,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false) {
   const m_core_silizium = silizium ? J2B.create({rules,FLUG,
     transfer:m_core_buch.transfer,summe:m_core_buch.summe,ganz,ladungSumme,
     stillgelegt:m_core_anlage.stillgelegt,pilot:KANON.piloten}) : null;
+  const m_core_bauteile = bauteile ? J3.create({rules,
+    transfer:m_core_buch.transfer,summe:m_core_buch.summe,ganz}) : null;
 
   // -------------------------------------------------------------- m_core_disponent
   // ---------------------------------------------------------------- m_core_spielerfracht
@@ -1047,6 +1051,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false) {
       if (!m_core_buch.audit(state)) fehler.push('K1-Buch');
       if (!m_core_minerwerft.audit(state)) fehler.push('K2-Minerwerft/Transport');
       if (silizium && !m_core_silizium.audit(state)) fehler.push('J2b-Silizium-/Geld-/Feldbuch');
+      if (bauteile && !m_core_bauteile.audit(state)) fehler.push('J3-Bauteil-/Material-/Lohnbuch');
       if (!m_core_spielerfracht.audit(state)) fehler.push('K1-Spielerfracht/Vertragslohn');
       if (!m_core_torfreigabe.audit(state)) fehler.push('K1-Bezahltes-Tor/Vertragsfreigabe');
       if (state.minted !== 0 || state.burned !== 0) fehler.push('Emission/Senke in K1 nicht freigegeben');
@@ -1140,6 +1145,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false) {
     npcPendel(state);
     if (k7) state.kanon.industrieErz = { phase: 'frei' };
     if (silizium) state.kanon.silizium = m_core_silizium.leer();
+    if (bauteile) state.kanon.bauteile = m_core_bauteile.leer();
     const a = audit(state);
     if (!a.ok) throw Error('K1: Anfangszustand nicht konsistent: ' + a.fehler.join('; '));
     return state;
@@ -1374,6 +1380,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false) {
   function execute(state, cmd) {
     pruefeForm(state);
     const type = cmd && cmd.type;
+    if(bauteile&&type==='stationBuildParts')
+      return m_core_bauteile.ausfuehren(state,cmd);
     if(silizium&&['siliconMineStart','siliconSell'].includes(type))
       return m_core_silizium.ausfuehren(state,cmd);
     if(k7&&typeof type==='string'&&type.startsWith('industrialOre'))return k7Befehl(state,cmd);
@@ -1422,6 +1430,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false) {
       &&state.kanon.industrieErz.erzAngenommen)state.kanon.industrieErz.phase='geliefert';
     m_core_minerwerft.tick(state);
     if(silizium)m_core_silizium.minute(state);
+    if(bauteile)m_core_bauteile.minute(state);
     m_core_flugplan.koerperSync(state);
     npcPendel(state);
     const gefoerdert = {};
@@ -1524,6 +1533,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false) {
   return Object.freeze({
     ...(k7 ? {f7Werftfrachter:true} : {}),
     ...(silizium ? {j2bSilizium:true,siliziumFeld:rules.j2b.feld} : {}),
+    ...(bauteile ? {j3Bauteile:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
     createState, politikSetzen, industrieAutoSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
@@ -1531,6 +1541,35 @@ function erstellen(startkapital = {}, k7 = false, silizium = false) {
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,
     buchwert: (state, id) => m_core_anlage.buchwert(state, state.ships[id]),
   });
+}
+
+// J3: Keine Migration des alten 201-Saves im Ladepfad. Nur ein explizit
+// gewaehlter, vollstaendig gepruefter Quellstand erhaelt neue leere Felder.
+function ausRegel201J3(json){
+  if(typeof json!=='string'||json.length>5*1024*1024)
+    throw Error('J3: ungültiges Quell-JSON');
+  const raw=JSON.parse(json),p=raw.w5ad?.profile;
+  if(raw.rulesVersion!==201||raw.schema!==8
+    ||!Number.isSafeInteger(p?.carrierCash)||!Number.isSafeInteger(p?.buyerCash))
+    throw Error('J3: ausschliesslich Regel201 mit belegtem Kapital');
+  const kapital={carrierCash:p.carrierCash,buyerCash:p.buyerCash};
+  const quelle=erstellen(kapital,true,true),alt=quelle.load(json),
+    quellHash=quelle.hash(alt);
+  const ziel=erstellen(kapital,true,true,true),
+    neu=JSON.parse(quelle.canonical(alt));
+  if(neu.ledger.bauteil||neu.stations.st_nadir.lager.bauteil!==undefined
+    ||neu.kanon.bauteile||neu.owners.j3_bauteil_arbeiter)
+    throw Error('J3: fremdes Bauteil-/Besitz-Startkapital');
+  neu.rulesVersion=202;
+  neu.ledger.bauteil={initial:0,mined:0,produced:0,consumed:0,imported:0,exported:0};
+  neu.stations.st_nadir.lager.bauteil=0;
+  neu.kanon.bauteile={begonnen:0,abgeschlossen:0,materialVerbraucht:0,
+    siliziumVerbraucht:0,bauteile:0,arbeitsGebunden:0,
+    arbeitsGezahlt:0,belege:[],auftrag:null};
+  neu.owners.j3_bauteil_arbeiter={id:'j3_bauteil_arbeiter',kind:'labor',cash:0};
+  const zustand=ziel.load(ziel.canonical(neu));
+  if(quelle.hash(alt)!==quellHash)throw Error('J3: ursprünglicher Hash verändert');
+  return {welt:ziel,zustand,quellHash};
 }
 
 // J2b: expliziter, nicht automatisch migrierender 200→201-Forschungsversuch.
@@ -1655,7 +1694,8 @@ function ausRegel195(json) {
 
 const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapital,true),
   erstellenJ2b:(kapital={})=>erstellen(kapital,true,true),
-  ausRegel195, ausRegel199K7, ausRegel200J2b,
+  erstellenJ3:(kapital={})=>erstellen(kapital,true,true,true),
+  ausRegel195, ausRegel199K7, ausRegel200J2b, ausRegel201J3,
   DATEN: m_data_kanon.KANON, REGEL: m_data_kanon.KANON.regel, SCHRITTE: FLUG.DATEN.schritteJeMinute });
 if (NODE) module.exports = api; else scope.AphrosWelt = api;
 })(globalThis);

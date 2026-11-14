@@ -2,10 +2,10 @@
  * Kein lokales Autosave, keine Spawn-Funktion. Import NUR aus vollem, auditiertem JSON.
  */
 (()=>{'use strict';
-const W=globalThis.AphrosWelt;
-if(!W)throw Error('J4c: Original-Welt- und Flugskripte fehlen');
+const W=globalThis.AphrosWelt, Kurs=globalThis.J4dPatrouille;
+if(!W||!Kurs)throw Error('J4d: Original-Welt, F6 oder Patrouillenmodul fehlen');
 const $=id=>document.getElementById(id),canvas=$('raum'),ctx=canvas.getContext('2d');
-let welt=null,weltzustand=null,pilot=null,aktion=null,ursprung='',spielt=false,geschw=45;
+let welt=null,weltzustand=null,pilot=null,aktion=null,ursprung='',spielt=false,geschw=45,patrouille=null;
 const meldung=(text,fehler=false)=>{$('meldung').textContent=text;$('meldung').className=fehler?'fehler':'';};
 const geld=()=>Object.values(weltzustand.owners).reduce((n,o)=>n+o.cash,0);
 function passendenJaeger(s){
@@ -32,11 +32,11 @@ function laden(json,freigabe){
   if(!sh)throw Error('Kein tatsächlich für 900 ISK gekaufter Spieler-Jäger im Save');
   if(!neu.welt.audit(neu.zustand).ok)throw Error('K1/J4-Audit nicht bestanden');
   welt=neu.welt;weltzustand=neu.zustand;pilot=sh.id;ursprung=neu.quellHash;
-  spielt=false;$('play').textContent='Flugzeit starten';aktion=null;
+  spielt=false;$('play').textContent='Flugzeit starten';aktion=null;patrouille=null;
   $('datei').value='';$('unterschrift').hidden=true;
   meldung('Geprüfter, real bezahlter Jäger '+pilot+' geladen · Quellhash '+ursprung);
   anzeigen();
- }catch(e){meldung('Laden abgebrochen: '+e.message,true);welt=null;weltzustand=null;pilot=null;spielt=false;anzeigen();}
+ }catch(e){meldung('Laden abgebrochen: '+e.message,true);welt=null;weltzustand=null;pilot=null;patrouille=null;spielt=false;anzeigen();}
 }
 function befehl(typ,extra={}){
  if(!welt||!pilot){meldung('Zuerst einen echten J4b-/J4c-Spielstand laden',true);return;}
@@ -69,6 +69,14 @@ function anzeigeFlug(){
  $('abdocken').disabled=b.lage!=='angedockt';
  $('ziel').disabled=b.lage!=='frei';
  $('steuern').disabled=b.lage!=='frei';
+ $('patrouille-start').disabled=b.lage!=='angedockt';
+ $('patrouille-ziel').disabled=!patrouille||!['bereit','flug'].includes(patrouille.status)||b.lage!=='frei';
+ const p=Kurs.stand(patrouille);
+ $('patrouille-status').textContent=p.status;
+ $('patrouille-fortschritt').textContent=p.erreicht+' / '+Kurs.TORE.length;
+ $('patrouille-naechstes').textContent=p.ziel;
+ $('patrouille-zeit').textContent=format(p.zeit)+' s · '+format(p.weg)+' P';
+ $('patrouille-ziel').textContent=patrouille?.stufe===Kurs.TORE.length?'Original-F6: Nadir andocken':'Original-F6: nächstes Ziel anfliegen';
  const audit=welt.audit(weltzustand);
  $('audit').textContent=audit.ok?'Wirtschaft / Waren / Eigentum / Flug: OK':'AUDITFEHLER: '+audit.fehler.join('; ');
  $('audit').className=audit.ok?'':'fehler';
@@ -95,10 +103,15 @@ function zeichnen(){
   ctx.strokeRect(sx-15*dpr,sy-15*dpr,30*dpr,30*dpr);
   ctx.font=(12*dpr)+'px system-ui';ctx.fillStyle='#95fee1';ctx.fillText('NADIR · STATION',sx+24*dpr,sy-18*dpr);
  }
- const [tx,ty]=point(220000,-145000);
- ctx.strokeStyle='#e9b36d';ctx.beginPath();ctx.moveTo(tx-8*dpr,ty);ctx.lineTo(tx+8*dpr,ty);
- ctx.moveTo(tx,ty-8*dpr);ctx.lineTo(tx,ty+8*dpr);ctx.stroke();
- ctx.fillStyle='#d7a56f';ctx.font=(11*dpr)+'px system-ui';ctx.fillText('TRAININGSZIEL (KEIN NPC)',tx+12*dpr,ty+8*dpr);
+ for(let i=0;i<Kurs.TORE.length;i++){
+  const marke=Kurs.TORE[i], [mx,my]=point(marke.x,marke.y);
+  const offen=!!patrouille&&patrouille.stufe===i&&['bereit','flug'].includes(patrouille.status);
+  ctx.strokeStyle=patrouille&&i<patrouille.stufe?'#67e0b2':offen?'#ffe39d':'#6c849f';
+  ctx.lineWidth=(offen?3:1.6)*dpr;
+  ctx.beginPath();ctx.arc(mx,my,10*dpr,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='#dce9f8';ctx.font=(11*dpr)+'px system-ui';
+  ctx.fillText((i+1)+'. '+marke.name,mx+13*dpr,my-9*dpr);
+ }
  if(b){
   ctx.save();ctx.translate(w/2,h/2);ctx.rotate(b.kurs*Math.PI/128);
   ctx.fillStyle='#ffe39d';ctx.strokeStyle='#fff';
@@ -120,6 +133,20 @@ $('datei').addEventListener('change',async e=>{
  }catch(err){meldung(err.message,true);}
 });
 $('uebernahme').addEventListener('click',()=>{if(aktion)laden(aktion,true);});
+$('patrouille-start').addEventListener('click',()=>{
+ try {
+  if(!welt||!pilot)throw Error('Zuerst echten finanzierten Jäger laden');
+  patrouille=Kurs.beginnen(weltzustand,pilot);
+  meldung('Patrouille vorbereitet. Echt abdocken und dann die drei Kontrollbojen bei maximal 300 P/s erreichen.');
+  anzeigen();
+ }catch(e){meldung('Patrouille abgelehnt: '+e.message,true);}
+});
+$('patrouille-ziel').addEventListener('click',()=>{
+ if(!patrouille||!['bereit','flug'].includes(patrouille.status))return;
+ const z=Kurs.ziel(patrouille);
+ if(patrouille.stufe===Kurs.TORE.length)befehl('shipDock',{station:'st_nadir'});
+ else befehl('shipFlyTo',{x:z.x,y:z.y});
+});
 $('abdocken').addEventListener('click',()=>befehl('shipUndock'));
 $('andocken').addEventListener('click',()=>befehl('shipDock',{station:'st_nadir'}));
 $('ziel').addEventListener('click',()=>befehl('shipFlyTo',{x:220000,y:-145000}));
@@ -142,7 +169,7 @@ $('export').addEventListener('click',()=>{
 setInterval(()=>{
  if(!spielt||!welt)return;
  try{
-  for(let i=0;i<geschw;i++)welt.teilschritt(weltzustand);
+  for(let i=0;i<geschw;i++){welt.teilschritt(weltzustand);if(patrouille)Kurs.beobachten(patrouille,weltzustand);}
   anzeigen();
  }catch(e){spielt=false;$('play').textContent='Flugzeit starten';meldung('Welt angehalten: '+e.message,true);}
 },700);

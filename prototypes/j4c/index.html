@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#071225">
-<title>Aphros Void · J4c echter bezahlter Jäger · Forschung</title>
+<title>Aphros Void · J4d bezahlter Jäger-Patrouillenflug · Forschung</title>
 <style>
 :root{color-scheme:dark;font:16px/1.42 system-ui,-apple-system,BlinkMacSystemFont,sans-serif;background:#071225;color:#e0eaf7}
 *{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) max(12px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(12px,env(safe-area-inset-left))}
@@ -40,15 +40,15 @@ footer{max-width:1240px;margin:0 auto 22px;font-size:.86rem;color:#a5b9cd}
 </head>
 <body>
 <header>
-<h1>Aphros Void <span style="color:#6ad3d6">/ J4c – selbst finanzierter Jäger</span></h1>
+<h1>Aphros Void <span style="color:#6ad3d6">/ J4d – echte Jägerpatrouille</span></h1>
 <p class="sub"><mark>FORSCHUNG · Regel204</mark> Original-Wirtschaftskern, Original-F6-Physik, bezahlter Pilotenlohn · kein Echtgeldkampf</p>
 </header>
 <main>
 <div class="left">
 <section aria-label="Zweidimensionaler Jägerraum">
-<h2>2D-Flugraum · Nadir</h2>
+<h2>2D-Flugraum · Nadir / Patrouille</h2>
 <canvas id="raum" width="850" height="500" role="img" aria-label="2D-Raumkarte mit bezahltem Spieler-Jäger, Station Nadir und rein geometrischem Trainingsmarker"></canvas>
-<p class="note">Die gelbe Jägerspitze ist dein tatsächlich gekaufter Schiffskörper. Das Fadenkreuz ist nur ein Navigationspunkt, <strong>kein kostenloser Pirat und kein Kampfobjekt</strong>.</p>
+<p class="note">Die gelbe Jägerspitze ist der tatsächlich gekaufte Jäger. Drei Kontrollbojen sind rein geometrische Flugziele, keine kostenlosen Gegner, Waren oder Belohnungsquellen.</p>
 <div class="status">
 <div><span>Schiff / Besitzer</span><strong id="schiff">–</strong></div>
 <div><span>Flugstatus</span><strong id="lage">–</strong></div>
@@ -73,6 +73,21 @@ footer{max-width:1240px;margin:0 auto 22px;font-size:.86rem;color:#a5b9cd}
 <input id="tempo" type="range" min="0" max="100" step="5" value="0">
 <button id="steuern" class="primary" disabled style="width:100%">Handkurs und Schub anwenden</button>
 </div>
+</section>
+<section aria-label="Patrouillenmission">
+<h2>J4d · Bezahlte Flugpatrouille, drei echte Kontrollpunkte</h2>
+<p class="note">Am Nadir-Dock starten, regulär abdocken, drei Bojen in Reihenfolge <strong>mit höchstens 300 P/s</strong> anfliegen und danach wirklich in Nadir andocken. Jede simulierte Flugminute zahlt weiterhin den originalen Pilotendienst; die Übung selbst verspricht kein Geld, keine Erfahrungspunkte und keine Ausrüstung.</p>
+<div class="controls">
+<button id="patrouille-start" class="primary" disabled>Patrouille am Dock beginnen</button>
+<button id="patrouille-ziel" disabled>Nächstes Ziel anfliegen</button>
+</div>
+<div class="status">
+<div><span>Patrouillenstatus</span><strong id="patrouille-status">Nicht gestartet</strong></div>
+<div><span>Kontrollpunkte</span><strong id="patrouille-fortschritt">0 / 3</strong></div>
+<div><span>Nächstes Ziel</span><strong id="patrouille-naechstes">Außenposten Alpha</strong></div>
+<div><span>Dauer / reale F6-Strecke</span><strong id="patrouille-zeit">0 s · 0 P</strong></div>
+</div>
+<p class="note">Der Fortschritt wird ausschließlich aus den wirklichen F6-Koordinaten und Weltsekunden gelesen und ist nur für diese Sitzung gültig. Nach einem Reload beginnt die Übung erneut; nur der auditierte Weltzustand wird als JSON gesichert.</p>
 </section>
 </div>
 <aside>
@@ -110,6 +125,7 @@ footer{max-width:1240px;margin:0 auto 22px;font-size:.86rem;color:#a5b9cd}
 <script src="../welt/j3-bauteil-core.js"></script>
 <script src="../welt/j4b-jaeger-werft-core.js"></script>
 <script src="../welt/welt-kern.js"></script>
+<script src="patrouille.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -40,6 +40,7 @@ on:
       - 'tests/j4a-*'
       - 'tests/j4b-*'
       - 'tests/j4c-*'
+      - 'tests/j4d-*'
       - 'tools/j4b-*'
       - 'tools/j4c-*'
       - 'prototypes/j4c/**'
@@ -51,6 +52,17 @@ on:
 permissions:
   contents: read
 jobs:
+  j4d-paid-patrol-node22:
+    name: "J4d Fokus – echter bezahlter Jäger, 3 F6-Bojen, Rückdock, Audit"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "J4d: vollständige bezahlte 900-ISK-Jägerkette, reale Flug- und Tempogates, Lohn, Save"
+        run: node --test tests/j4d-patrouille.test.mjs
   j4c-fighter-flight-node22:
     name: "J4c Fokus – bezahlter Jäger, realer F6-Flug und Pilotenlohn"
     runs-on: ubuntu-latest

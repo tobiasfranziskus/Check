@@ -388,7 +388,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         if (r && !r.ok) throw Error('K1-Flugplan: ' + r.reason);
       }
     }
-    return { koerperSync, ruht, alleRuhend, befehl, minutenAbrechnung, plan, dienstKonto, station };
+    return { koerperSync, ruht, alleRuhend, befehl, minutenAbrechnung, plan, dienstKonto, station, spielerJaeger };
   })();
 
   function merke(engpass, tick, grund) {
@@ -1127,7 +1127,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         if (!sh.flug || (sh.klasse !== 'miner'
           && !(sh.klasse === 'frachter' && sh.owner === rules.economy.start.owner
             && sh.phase === 'dock' && sh.system === 'aldera')
-          && !spielerJaeger(state,sh))) continue;
+          && !m_core_flugplan.spielerJaeger(state,sh))) continue;
         const konto = state.owners[m_core_flugplan.dienstKonto(id)];
         if (!d && konto && konto.cash !== 0) fehler.push('Flugreserve ohne Dienst ' + id);
         if (!d && sh.flug.lage !== 'angedockt') fehler.push('Flug ohne finanzierten Dienst ' + id);

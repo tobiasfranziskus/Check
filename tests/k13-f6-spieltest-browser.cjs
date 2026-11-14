@@ -45,6 +45,13 @@ const path = require('node:path');
         const first=a.hash;
         await tap('nav button[data-ansicht="station"]');
         assert.equal((await get()).hash,first,'Nur Ansichtswechsel darf Core nicht verändern');
+        // F7-UI darf vor validierter Core-Verfügbarkeit keine Nadir-Käufe
+        // oder Eigentumstransfers vortäuschen. Das echte Nadir-Lager entscheidet.
+        assert.equal(await page.locator('#nadirWerft').isVisible(),true);
+        assert.equal(await page.locator('#nadirUeberfuehrung').isDisabled(),true);
+        if ((a.state.stations.st_nadir.lager.frachter || 0) === 0)
+          assert.equal(await page.locator('#nadirKauf').isDisabled(),true);
+        assert.equal((await get()).hash,first,'F7-Anzeige bleibt strikt lesend');
         assert.ok(a.state.stations.st_aldera.lager.frachter>0);
         await tap('#kaufFrachter');
         let b=await get();

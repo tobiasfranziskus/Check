@@ -130,7 +130,7 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
       ||a.gefoerdert!==Math.floor(a.gearbeitet/C.minutenJeEinheit)
       ||a.menge!==C.charge||!['house','npc3'].includes(a.owner)
       ||s.ships[a.schiff]?.owner!==a.owner
-      ||s.ships[a.schiff]?.ladung.silizium!==(a.gefoerdert||0)
+      ||(s.ships[a.schiff]?.ladung.silizium||0)!==a.gefoerdert
       ||!s.kanon.minerWerft?.lokaleKaeufe?.some(k=>k.id===a.schiff)))return false;
     return true;
   }

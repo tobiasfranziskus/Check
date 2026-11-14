@@ -74,13 +74,7 @@ test('J4a: inspect real signed supply capacity after seven original paid parts',
   const offer={type:'industrialOreOffer',owner:'st_nadir',miner:miner.id,frachter:carrier.id};
   const offered=w.execute(s,offer);
   console.log('J4A_OFFER '+JSON.stringify({seed,offered,min:miner.id,fr:carrier.id}));
-  if(!offered.ok){
-    console.log('J4A_BLOCKER '+JSON.stringify({seed,reason:offered.reason,
-      miner:{id:miner.id,book:w.buchwert(s,miner.id)},
-      carrier:{id:carrier.id,book:w.buchwert(s,carrier.id)}}));
-    assert.equal(w.audit(s).ok,true,JSON.stringify(w.audit(s)));
-    continue;
-  }
+  assert.equal(offered.ok,true,'Original-K7-Angebot trotz einsatzfähiger Bestände: '+JSON.stringify(offered));
   for(const cmd of [
     {type:'industrialOreAcceptMine',owner:'npc3'},
     {type:'industrialOreAcceptFreight',owner:'transport'},
@@ -100,5 +94,69 @@ test('J4a: inspect real signed supply capacity after seven original paid parts',
   }
   console.log('J4A_AFTER '+JSON.stringify({seed,delivered,...snapshot(s),audit:w.audit(s)}));
   assert.ok(delivered,'need real 50-ore delivery for funded materials');
+  assert.equal(s.stations.st_nadir.lager.erz,50);
+  // Bestehender Frachtvertrag benötigt die bezahlte Rückroute, nicht
+  // sofort beim Nadir-Ankunftstick eine Gratisstornierung.
+  for(let t=0;t<300&&s.w3.auftrag;t++){
+    w.minute(s);
+    if(t%12===0)assert.equal(w.audit(s).ok,true,JSON.stringify(w.audit(s)));
+  }
+  assert.equal(s.w3.auftrag,null,'vollständig finanzierten Rückflug abwarten');
+  assert.equal(s.kanon.industrieErz.phase,'geliefert');
+  const vorn={
+    ore:s.stations.st_nadir.lager.erz,
+    material:s.stations.st_nadir.lager.material,
+    bauteile:s.stations.st_nadir.lager.bauteil,
+    silizium:s.stations.st_nadir.lager.silizium,
+    werftReserve:s.owners.k7_werft_treuhand.cash
+  };
+  for(let n=0;n<2;n++){
+    const cmd={type:'stationRefine',owner:'st_nadir',station:'st_nadir'};
+    const started=w.execute(s,cmd);
+    assert.equal(started.ok,true,'Original-W4 aus tatsächlich angeliefertem Erz: '+JSON.stringify(started));
+    for(let t=0;t<w.rules.w4.dauer;t++){
+      w.minute(s);
+      assert.equal(w.audit(s).ok,true,JSON.stringify(w.audit(s)));
+    }
+  }
+  assert.equal(s.stations.st_nadir.lager.material,vorn.material+10);
+  assert.equal(s.stations.st_nadir.lager.erz,vorn.ore-20);
+  const part=w.execute(s,{type:'stationBuildParts',owner:'st_nadir',station:'st_nadir'});
+  assert.equal(part.ok,true,'echte 2 Material/1 Silizium + 8 ISK: '+JSON.stringify(part));
+  for(let t=0;t<8;t++){
+    w.minute(s);
+    assert.equal(w.audit(s).ok,true,JSON.stringify(w.audit(s)));
+  }
+  assert.equal(s.stations.st_nadir.lager.bauteil,8);
+  assert.equal(s.stations.st_nadir.lager.silizium,0);
+  assert.equal(s.stations.st_nadir.lager.material,9);
+  // Ein originales K7-Angebot enthält rechtmäßig 530 ISK reservierte
+  // Werftkapital. Das muss in den Original-W5-Schiffbau fließen, nicht
+  // auf einem künstlich unvollständigen Forschungsauftrag hängenbleiben.
+  const werk=w.execute(s,{type:'industrialOreBuildShip',owner:'werft_extern'});
+  assert.equal(werk.ok,true,'bereits signierte Original-W5-Werft soll finanziert bauen: '+JSON.stringify(werk));
+  for(let t=0;t<w.rules.w5.dauer;t++){
+    w.minute(s);
+    assert.equal(w.audit(s).ok,true,JSON.stringify(w.audit(s)));
+  }
+  assert.equal(s.kanon.industrieErz.werftVerwendet,true);
+  assert.equal(s.owners.k7_werft_treuhand.cash,0,'kein gebundenes Restkapital');
+  assert.equal(s.stations.st_nadir.lager.material,4,'echte 4 Material für Jägerhülle');
+  assert.equal(s.stations.st_nadir.lager.bauteil,8,'acht Bauteile vollständig produziert');
+  assert.ok(s.stations.st_nadir.lager.frachter>=1,'K7-Werft baut echte zusätzliche Frachterhülle');
+  assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),33000);
+  assert.equal(s.minted,0);assert.equal(s.burned,0);
+  assert.equal(w.hash(w.load(w.save(s))),w.hash(s));
+  assert.equal(w.audit(s).ok,true,JSON.stringify(w.audit(s)));
+  console.log('J4A_JAEGER_INPUTS_FINANZIERT '+JSON.stringify({seed,
+    vorher:vorn,nachher:{
+      ore:s.stations.st_nadir.lager.erz,
+      material:s.stations.st_nadir.lager.material,
+      silizium:s.stations.st_nadir.lager.silizium,
+      bauteil:s.stations.st_nadir.lager.bauteil,
+      frachter:s.stations.st_nadir.lager.frachter,
+      werftReserve:s.owners.k7_werft_treuhand.cash,
+      geld:Object.values(s.owners).reduce((n,o)=>n+o.cash,0)},
+    hash:w.hash(s),tick:s.tick}));
  }
 });

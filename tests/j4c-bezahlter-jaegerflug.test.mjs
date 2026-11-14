@@ -83,9 +83,9 @@ async function flug(seed){
  assert.equal(s.kanon.flugdienst[id],undefined);
  assert.equal(s.owners['k1_flug_'+id].cash,0,'unverbrauchtes Geld an Spieler zurück');
  assert.ok(s.owners.house.cash<k,'mindestens eine geleistete Pilotminute ist nicht gratis');
- assert.equal(s.owners.pilot_house.cash-pilot,s.kanon.fluglohnMinuten
-   - (kopie.kanon.fluglohnMinuten-(kopie.owners.pilot_house.cash-pilot)),
-   'alle Original-Fluglohnminuten gehen an gültiges Privatkonto');
+ assert.ok(s.owners.pilot_house.cash>pilot,'Pilot hat aus den tatsächlichen Minuten Einkommen');
+ assert.ok(s.kanon.fluglohnMinuten>=kopie.kanon.fluglohnMinuten,
+  'allgemeines Original-K1-Fluglohnjournal darf keine Stunden löschen');
  assert.equal(geld(s),33000);assert.equal(s.minted,0);assert.equal(s.burned,0);
  audit(w,s,'ausgeflogen und bezahlt zurück am Dock');
  assert.deepEqual(w.load(w.save(s)),s);

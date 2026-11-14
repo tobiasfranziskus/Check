@@ -58,6 +58,19 @@ const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
        let reached=await get();
        assert.equal(reached.audit.ok,true);
        assert.notEqual(reached.status.erreicht,null,'Marke langsam physisch erreicht');
+       assert.equal(await page.locator('#feuern').isDisabled(),false);
+       for(let n=1;n<=3;n++){
+         await tap('feuern');
+         assert.equal(await page.locator('#feuern').isDisabled(),true,'Schuss-/Cooldown-Gate');
+         await page.evaluate(()=>window.__f8.schritte(16));
+         const shot=await get();
+         assert.equal(shot.audit.ok,true,JSON.stringify(shot.audit));
+         assert.equal(shot.state.zielprobe.treffer,n,'echter 2D-Treffer');
+         assert.equal(shot.state.zielprobe.hp,135-n*45,'Trefferschaden nur im Trainingskern');
+         assert.equal(shot.state.zielprobe.belege.length,n);
+       }
+       assert.equal(await page.locator('#feuern').isDisabled(),true,'zerstörtes Trainingsziel');
+       assert.match(await page.locator('#schussStatus').innerText(),/Trainingsziel deaktiviert/);
        await tap('andocken');
        await page.evaluate(()=>window.__f8.schritte(750));
        let docked=await get();

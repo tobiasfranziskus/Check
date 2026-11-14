@@ -72,7 +72,7 @@ jobs:
       - name: "K13/F6: gemeinsamer K7-/F6-Kern, Replay und getrennte Forschungsprofile"
         run: node --test tests/k13-f6-gemeinsamer-spielkern.test.mjs
       - name: "F8-A: Jaegerflug unter dem gemeinsamen F6-Integerintegrator"
-        run: node --test tests/f8-jaeger-fluguebung.test.mjs
+        run: node --test tests/f8-jaeger-fluguebung.test.mjs tests/f8-jaeger-treffer.test.mjs
       - name: "K1-Wirtschaft: 15 Szenarien × 90 Tage, 365- und 730-Tage-Läufe"
         run: node --test tests/welt-wirtschaft.test.mjs
       - name: "Alle bestehenden Regel14-/Regel195-/Flug-Regressionen"

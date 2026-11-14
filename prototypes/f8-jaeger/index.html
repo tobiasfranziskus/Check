@@ -35,6 +35,7 @@ input[type=range]{width:100%;min-height:44px;accent-color:#83e4f1}
 </style>
 <script defer src="../flug2d/flug-kern.js"></script>
 <script defer src="../flug2d/grafik.js"></script>
+<script defer src="f8-treffer.js"></script>
 <script defer src="f8-trainer.js"></script>
 <script defer src="app.js"></script>
 </head>
@@ -44,7 +45,7 @@ input[type=range]{width:100%;min-height:44px;accent-color:#83e4f1}
   <p class="warn"><strong>[ANALYSE / Flugübung, nicht Spielwirtschaft]</strong>
     Dieser Trainingsjäger ist ausschließlich ein temporärer Flugkörper im Test. Er ist
     <strong>kein</strong> gekauftes oder hergestelltes Schiff in Regel200.
-    Keine Gegner, Treffer, Piloten-XP oder Kopfgelder. Keine ISK- oder Spielstandsänderung.</p>
+    Eine <strong>unbewaffnete Testdrohne</strong> dient nur der Zielübung. Kein realer Piratengegner, kein Regel200-Schaden, keine ISK, Kopfgelder, Piloten-XP oder Spielstandsänderung.</p>
 </header>
 <main>
   <section class="stats" aria-label="Autoritativer F6-Flugkern">
@@ -53,6 +54,8 @@ input[type=range]{width:100%;min-height:44px;accent-color:#83e4f1}
     <div><strong id="entfernung">–</strong><span>Abstand zur Trainingsmarke (P)</span></div>
     <div><strong id="lage">angedockt</strong><span>Echter Flugkernzustand</span></div>
     <div><strong id="erfolg">Offen</strong><span>Marke langsam erreicht?</span></div>
+    <div><strong id="zielHp">135 / 135</strong><span>Trainingsdrohne: Hüllenpunkte</span></div>
+    <div><strong id="treffer">0 / 0</strong><span>Treffer / Schüsse (Übung)</span></div>
   </section>
   <section class="stage" aria-label="Jägerflugkarte">
     <canvas id="raum" aria-label="Spieler-Jäger, Station in Aldera und Trainingsmarke"></canvas>
@@ -80,6 +83,14 @@ input[type=range]{width:100%;min-height:44px;accent-color:#83e4f1}
       </div>
       <p class="info">Aufgabe: die markierte Position erreichen und bis auf höchstens
       240 P pro Flugschritt abbremsen. Der Erfolg hängt nur vom Flugkörper ab.</p>
+    </div>
+    <div class="panel">
+      <h2>F8-B · 2D-Zieltraining</h2>
+      <div class="actions"><button id="feuern" disabled>Zielübung: Feuern</button></div>
+      <p class="info" id="schussStatus" role="status">45 Übungsschaden, 16 Sekunden Schussabstand,
+        20.000 Punkte Flugstrecke pro Sekunde, maximal 35 Sekunden Projektilzeit.
+        Treffer entstehen ausschließlich aus 2D-Positionen des gemeinsamen Flugkerns.
+        Keine echte Munition, Kampfschiffe, Geldprämie oder wirtschaftliche Abschussbuchung.</p>
     </div>
     <div class="panel">
       <h2>Trainingstakt</h2>

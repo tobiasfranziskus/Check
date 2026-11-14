@@ -2117,7 +2117,8 @@ const m_core_w3 = (() => {
     if(state.owners[c.kunde].cash+m_core_kanon.netto(state,c.kunde)+w.kaufAusgaben+(state.w4?.gebucht??0)
       -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
-        -(state.w5n?.wasserErlos??0)!==start)
+        -(state.w5n?.wasserErlos??0)
+        -(state.kanon?.jaeger?.verkauft??0)*(rules.j4?.verkaufspreis??0)!==start)
       return {ok:false,grund:'W3: unbelegtes Kaeufergeld'};
     return {ok:true,grund:'Vollstaendig vorfinanziert',...k};
   }
@@ -2266,7 +2267,8 @@ const m_core_w3 = (() => {
       && buyer+m_core_kanon.netto(state,c.kunde)+w.kaufAusgaben-stornoRueck+(state.w4?.gebucht??0)
         -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
-        -(state.w5n?.wasserErlos??0)===startBuyer
+        -(state.w5n?.wasserErlos??0)
+        -(state.kanon?.jaeger?.verkauft??0)*(rules.j4?.verkaufspreis??0)===startBuyer
       && w.kaufAusgaben===erwarteteBezahlung && w.geliefert===erwarteteWare
       && w.arbeitsKosten===erwarteteArbeit
       && w.frachtUmsatz===w.abgeschlossen*k.frachtGebuehr
@@ -2332,7 +2334,8 @@ const m_core_w4 = (() => {
     if(state.owners[c.station].cash+m_core_kanon.netto(state,c.station)+(state.w3.kaufAusgaben-(state.w3.stornoRueckzahlung||0))+w.gebucht
       -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
-        -(state.w5n?.wasserErlos??0)!==start)
+        -(state.w5n?.wasserErlos??0)
+        -(state.kanon?.jaeger?.verkauft??0)*(rules.j4?.verkaufspreis??0)!==start)
       return {ok:false,grund:'Nadir: nicht nachgewiesenes Produktionskapital'};
     return {ok:true,grund:'Erz und vollständige Arbeitskasse reservierbar',
       erz:c.erzJeCharge,material:c.materialJeCharge,arbeit:budget,dauer:c.dauer};
@@ -2407,7 +2410,8 @@ const m_core_w4 = (() => {
       && station+m_core_kanon.netto(state,c.station)+(state.w3.kaufAusgaben-(state.w3.stornoRueckzahlung||0))+w.gebucht
         -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
-        -(state.w5n?.wasserErlos??0)===start
+        -(state.w5n?.wasserErlos??0)
+        -(state.kanon?.jaeger?.verkauft??0)*(rules.j4?.verkaufspreis??0)===start
       && w.erzVerbraucht===w.abgeschlossen*c.erzJeCharge
       && w.materialErzeugt===w.abgeschlossen*c.materialJeCharge
       && state.ledger.erz.consumed===w.erzVerbraucht
@@ -2889,10 +2893,12 @@ const m_core_w5_wage_trade=(()=>{
       &&s.stats.konto[cfg.buyer].kosten===w.spent+(r.w5ag?0:(s.w5n?.wasserErlos??0))
       &&s.stats.konto[cfg.seller].erloes===(s.w5?.materialUmsatz??0)+w.spent+(s.w5n?.wasserErlos??0)
         +(r.k7?(s.w3?.stornoRueckzahlung||0):0)
+        +(s.kanon?.jaeger?.verkauft??0)*(r.j4?.verkaufspreis??0)
       &&seller+m_core_kanon.netto(s,cfg.seller)+(s.w3.kaufAusgaben-(s.w3.stornoRueckzahlung||0))+s.w4.gebucht
          -(s.w5?.materialUmsatz??0)-w.spent
          +(s.w5n?.kaufAusgaben??0)+(s.w5n?.fabrikGebucht??0)
          -(s.w5n?.wasserErlos??0)
+         -(s.kanon?.jaeger?.verkauft??0)*(r.j4?.verkaufspreis??0)
          ===r.owners.find(o=>o.id===cfg.seller).cash;
     return {ok:good,workerCash:fund,stationCash:seller,
       materialOwned:inv,materialPurchased:w.purchased,
@@ -3356,8 +3362,10 @@ const m_core_w1_vollkosten = (() => {
     // K1: eigener Frachterkauf ist Anlagenkauf, keine unbezahlte Bergbauarbeit.
     const spielerFrachterWert=rules.kanon
       ?(state.kanon?.spielerFrachterKaeufe?.length??0)*rules.economy.waren.frachter.basis:0;
+    const spielerJaegerWert=rules.j4
+      ?(state.kanon?.jaeger?.verkauft??0)*rules.j4.verkaufspreis:0;
     const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-iceLohn
-      -spielerFrachterWert-(state.kanon?.spielerFrachten?.lohn??0)
+      -spielerFrachterWert-spielerJaegerWert-(state.kanon?.spielerFrachten?.lohn??0)
       -(rules.k7?m_core_w5_transfer.spielerKosten(state,rules):0);
     const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
     const fonds = state.owners[fondsId].cash - startCash(fondsId) + m_core_kanon.netto(state, fondsId);

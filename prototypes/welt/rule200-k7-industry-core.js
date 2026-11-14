@@ -387,7 +387,7 @@ const m_data_erzpilot = (() => {
         ...W5_RULES.economy.waren,silizium:{stufe:'rohstoff',basis:24}
       }};
     }
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium'].includes(k))
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile'].includes(k))
       || (Object.hasOwn(research,'kanon')&&(research.kanon!==true||research.personalWages!==true))
       || (Object.hasOwn(research,'ort')!==(research.kanon===true))
       || (research.kanon===true&&(typeof research.ort?.imFeld!=='function'
@@ -398,7 +398,8 @@ const m_data_erzpilot = (() => {
       || (research.personalWages===true&&(research.waterTrade!==true||research.wageTrade!==true))
       || (Object.hasOwn(research,'personalWages')&&research.personalWages!==true)
       || (Object.hasOwn(research,'industryOre')&&(research.industryOre!==true||research.kanon!==true))
-      || (Object.hasOwn(research,'silizium')&&(research.silizium!==true||research.industryOre!==true)))
+      || (Object.hasOwn(research,'silizium')&&(research.silizium!==true||research.industryOre!==true))
+      || (Object.hasOwn(research,'bauteile')&&(research.bauteile!==true||research.silizium!==true)))
       throw TypeError('Unbekannter W5ad-Startparameter');
     const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
     if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
@@ -436,6 +437,23 @@ const m_data_erzpilot = (() => {
       };
     }
     // K1 / Regel 199: kanonische Welt. Nur Kennung; Parameter und Buch liegen in m_core_welt.
+    if(research.bauteile===true){
+      // J3: Rezept exakt aus dem vorhandenen R14-r_bauteil. Kein Gratis-Vorrat.
+      W5_RULES.rulesVersion=202;
+      W5_RULES.j3=Object.freeze({station:'st_nadir',owner:'st_nadir',
+        arbeit:'j3_bauteil_arbeiter',material:2,silizium:1,
+        proCharge:1,dauer:8,lohnJeMinute:1,preisBauteil:75});
+      W5_RULES.world={...W5_RULES.world,stations:{
+        ...W5_RULES.world.stations,st_nadir:{
+          ...W5_RULES.world.stations.st_nadir,
+          ziel:{...W5_RULES.world.stations.st_nadir.ziel,bauteil:0}
+        }}};
+      W5_RULES.economy={...W5_RULES.economy,waren:{
+        ...W5_RULES.economy.waren,bauteil:{stufe:'bauteil',basis:75}
+      }};
+      W5_RULES.owners=[...W5_RULES.owners,
+        {id:'j3_bauteil_arbeiter',kind:'labor',cash:0}];
+    }
     if(research.kanon===true)W5_RULES.kanon={profil:'K1'};
     if(research.wageTrade===true){
       // New hypothetical contract: a collectively owned wage fund purchases
@@ -3944,6 +3962,15 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
       personalWages:true,kanon:true,ort});
   },
   // K7: getrennte Forschungsregel200, keine Rule199-Migration/Produktänderung.
+  createJ3Welt:(options,ort)=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('J3: nur originale Kapitalverteilung');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,
+      personalWages:true,kanon:true,industryOre:true,
+      silizium:true,bauteile:true,ort});
+  },
   createJ2bWelt:(options,ort)=>{
     if(options==null)options={};
     if(typeof options!=='object'||Array.isArray(options)

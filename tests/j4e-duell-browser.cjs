@@ -59,7 +59,7 @@ const Welt=require('../prototypes/welt/welt-kern.js');
     assert.match(await page.locator('#meldung').textContent(),/shipFlyTo bestätigt/);
     await tap('play');
     await page.waitForFunction(()=>{
-      const s=document.querySelector('#duell-distanz').textContent;
+      const s=document.querySelector('#duell-sektor').textContent;
       const n=Number(s.replace(/[^0-9]/g,''));
       return n>0&&n<7500;
     },null,{timeout:20000});

@@ -26,3 +26,18 @@ test('previous main remains available as playable archive without changing its o
  assert.ok(old.length>500000);
  assert.notEqual(old,read('index.html'));
 });
+
+test('Legacy-ShadowRoots sind aus den unveränderten Original-CSS-Quellen inline gestylt, ohne Netz-404',()=>{
+ for(const [path,marker] of [
+  ['prototypes/legacy-corporation/corporation.css','../legacy-corporation/corporation.css'],
+  ['prototypes/legacy-station/station.css','../legacy-station/station.css']]){
+  const original=read(path),serialisiert=JSON.stringify(original);
+  assert.ok(original.length>1000,marker+' muss echte Styles enthalten');
+  for(const page of ['index.html','aphros-void.html']){
+   const html=read(page);
+   assert.ok(html.includes(serialisiert),page+' hat den originalen ShadowRoot-Style '+marker);
+   assert.ok(html.includes("style.textContent=css==="),page+' muss echte CSS im ShadowRoot binden');
+   assert.doesNotMatch(html,/document\.createElement\('link'\);link\.rel='stylesheet';link\.href=css/,'kein externer Shadow-CSS-Laufzeitrequest');
+  }
+ }
+});

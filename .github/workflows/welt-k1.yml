@@ -37,6 +37,7 @@ on:
       - 'tests/j2a-*'
       - 'tests/j2b-*'
       - 'tests/j3-*'
+      - 'tests/j4a-*'
       - 'tests/referenzmodell-c.test.mjs'
       - 'index.html'
       - 'aphros-void.html'
@@ -45,6 +46,17 @@ on:
 permissions:
   contents: read
 jobs:
+  j4a-originalbelege-node22:
+    name: "J4a Fokus – reale K7-Erzfinanzierung und Nadir-Anlieferung"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "J4a Originalverträge, Eigentum und positive/negative 50-Erz-Logik"
+        run: node --test tests/j4a-erzbeschaffung-probe.test.mjs
   kern-wirtschaft-speicher-node22:
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -69,6 +81,8 @@ jobs:
         run: node --test tests/j2b-silizium-physisch.test.mjs
       - name: "J3: bezahlte Bauteile aus originalem W4-Material + physischem J2b-Silizium"
         run: node --test tests/j3-finanzierte-bauteile.test.mjs
+      - name: "J4a: reale 50-Erz-Finanzierungs- und Frachtprobe ohne Warenrettung"
+        run: node --test tests/j4a-erzbeschaffung-probe.test.mjs
       - name: "K3: unabhängige Frachterkette, Zwischenstände, Negativbeweis"
         run: |
           node --test tests/welt-k3-frachter.test.mjs

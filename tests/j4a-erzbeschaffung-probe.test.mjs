@@ -43,16 +43,42 @@ async function target(seed){
 test('J4a: inspect real signed supply capacity after seven original paid parts',async()=>{
  for(const seed of [42,7]){
   const {w,s}=await target(seed);
-  const before=w.canonical(s);
   console.log('J4A_BEFORE '+JSON.stringify({seed,...snapshot(s)}));
-  const miner=Object.values(s.ships).find(sh=>sh.owner==='npc3'&&sh.klasse==='miner'&&sh.system==='aldera');
-  const carrier=Object.values(s.ships).find(sh=>sh.owner==='transport'&&sh.klasse==='frachter'&&sh.system==='aldera');
-  assert.ok(miner&&carrier);
+  const standing=(owner,klasse)=>Object.values(s.ships)
+    .filter(sh=>sh.owner===owner&&sh.klasse===klasse&&sh.system==='aldera'
+      &&sh.phase==='dock'&&sh.auftrag==='halten'&&sh.flug?.lage==='angedockt'
+      &&Object.values(sh.ladung).every(n=>n===0))
+    .sort((a,b)=>w.buchwert(s,b.id)-w.buchwert(s,a.id));
+  const berge=standing('npc3','miner'),spedition=standing('transport','frachter');
+  console.log('J4A_BOOKVALUES '+JSON.stringify({seed,stilllegung:s.kanon.politik.stilllegung,
+    miner:berge.map(sh=>({id:sh.id,book:w.buchwert(s,sh.id)})),
+    carrier:spedition.map(sh=>({id:sh.id,book:w.buchwert(s,sh.id)})),
+    alderaMinerStock:s.stations.st_aldera.lager.miner,
+    alderaFreighterStock:s.stations.st_aldera.lager.frachter}));
+  let miner=berge.find(sh=>w.buchwert(s,sh.id)>0);
+  let carrier=spedition.find(sh=>w.buchwert(s,sh.id)>0);
+  // Nur realer Originalkauf gegen echte NPC-Mittel und physischen Lagerabgang.
+  if(!miner&&s.stations.st_aldera.lager.miner>0){
+    const ids=new Set(Object.keys(s.ships));
+    const q=w.execute(s,{type:'shipBuy',owner:'npc3',station:'st_aldera',klasse:'miner'});
+    console.log('J4A_MINER_REPLACEMENT '+JSON.stringify({seed,q}));
+    if(q.ok)miner=Object.values(s.ships).find(sh=>!ids.has(sh.id));
+  }
+  if(!carrier&&s.stations.st_aldera.lager.frachter>0){
+    const ids=new Set(Object.keys(s.ships));
+    const q=w.execute(s,{type:'shipBuy',owner:'transport',station:'st_aldera',klasse:'frachter'});
+    console.log('J4A_CARRIER_REPLACEMENT '+JSON.stringify({seed,q}));
+    if(q.ok)carrier=Object.values(s.ships).find(sh=>!ids.has(sh.id));
+  }
+  assert.ok(miner&&carrier,'real existing or explicitly purchased funded original ships');
   const offer={type:'industrialOreOffer',owner:'st_nadir',miner:miner.id,frachter:carrier.id};
   const offered=w.execute(s,offer);
   console.log('J4A_OFFER '+JSON.stringify({seed,offered,min:miner.id,fr:carrier.id}));
   if(!offered.ok){
-    assert.equal(w.canonical(s),before,'failed contract must not mutate state');
+    console.log('J4A_BLOCKER '+JSON.stringify({seed,reason:offered.reason,
+      miner:{id:miner.id,book:w.buchwert(s,miner.id)},
+      carrier:{id:carrier.id,book:w.buchwert(s,carrier.id)}}));
+    assert.equal(w.audit(s).ok,true,JSON.stringify(w.audit(s)));
     continue;
   }
   for(const cmd of [

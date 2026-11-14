@@ -370,7 +370,24 @@ const m_data_erzpilot = (() => {
     W5_RULES.rulesVersion=research.personalWages===true?195:research.waterTrade===true?194:research.wageTrade===true?193:192;
     if(research.kanon===true)W5_RULES.rulesVersion=research.industryOre===true?200:199;
     if(research.industryOre===true)W5_RULES.k7={industrieErz:true, charge:50};
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre'].includes(k))
+    // J2b ausschliesslich explizites Forschungsprofil 201. Die bestehende
+    // Regel200, alte Hashes und Spielstaende kennen diese Ware NICHT.
+    if(research.silizium===true){
+      W5_RULES.rulesVersion=201;
+      W5_RULES.j2b=Object.freeze({ware:'silizium',station:'st_nadir',
+        feld:{system:'nadir',x:720000,y:-480000,radius:144000,vorrat:16},
+        charge:8, minutenJeEinheit:8, lohnJeMinute:2, preis:24});
+      W5_RULES.world={...W5_RULES.world,
+        fields:[...W5_RULES.world.fields,{system:'nadir',ware:'silizium',miner:0}],
+        stations:{...W5_RULES.world.stations,st_nadir:{
+          ...W5_RULES.world.stations.st_nadir,
+          ziel:{...W5_RULES.world.stations.st_nadir.ziel,silizium:0}
+        }}};
+      W5_RULES.economy={...W5_RULES.economy,waren:{
+        ...W5_RULES.economy.waren,silizium:{stufe:'rohstoff',basis:24}
+      }};
+    }
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium'].includes(k))
       || (Object.hasOwn(research,'kanon')&&(research.kanon!==true||research.personalWages!==true))
       || (Object.hasOwn(research,'ort')!==(research.kanon===true))
       || (research.kanon===true&&(typeof research.ort?.imFeld!=='function'
@@ -380,7 +397,8 @@ const m_data_erzpilot = (() => {
       || (research.waterTrade===true&&research.wageTrade!==true)
       || (research.personalWages===true&&(research.waterTrade!==true||research.wageTrade!==true))
       || (Object.hasOwn(research,'personalWages')&&research.personalWages!==true)
-      || (Object.hasOwn(research,'industryOre')&&(research.industryOre!==true||research.kanon!==true)))
+      || (Object.hasOwn(research,'industryOre')&&(research.industryOre!==true||research.kanon!==true))
+      || (Object.hasOwn(research,'silizium')&&(research.silizium!==true||research.industryOre!==true)))
       throw TypeError('Unbekannter W5ad-Startparameter');
     const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
     if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
@@ -3926,6 +3944,14 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
       personalWages:true,kanon:true,ort});
   },
   // K7: getrennte Forschungsregel200, keine Rule199-Migration/Produktänderung.
+  createJ2bWelt:(options,ort)=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('J2b: nur nachweisbare Anfangskapitalverteilung');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,
+      personalWages:true,kanon:true,industryOre:true,silizium:true,ort});
+  },
   createK7Welt:(options,ort)=>{
     if(options==null)options={};
     if(typeof options!=='object'||Array.isArray(options)

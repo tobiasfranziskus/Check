@@ -110,10 +110,15 @@ const feld = (flug, system, id) => (flug.systeme[system]?.felder || []).find((f)
 // Das ist Korridor-Manoevrierung; die wirtschaftliche Ankunft berechnet allein W5n.
 function steuerbarerTransit(state, sh) {
   const a=state.w5n?.frachtauftrag, f=state.kanon?.spielerFrachten?.auftraege;
-  return state.rulesVersion===199 && sh?.klasse==='frachter' && sh.owner==='house'
-    && sh.phase==='reise' && sh.auftrag==='eisfracht' && sh.flug?.lage==='transit'
-    && a?.schiff===sh.id && Array.isArray(f)
+  const ferry=state.w5ac?.active;
+  const ice=(state.rulesVersion===199 || state.rulesVersion===200)
+    && sh.auftrag==='eisfracht' && a?.schiff===sh.id && Array.isArray(f)
     && f.some(x=>x?.schiff===sh.id && x.end===null);
+  const transfer=state.rulesVersion===200 && ferry?.id===sh.id
+    && ferry.owner===sh.owner && sh.auftrag==='w5ac-ueberfuehrung'
+    && state.w5?.schiffIds.includes(sh.id);
+  return sh?.klasse==='frachter' && sh.owner==='house'
+    && sh.phase==='reise' && sh.flug?.lage==='transit' && (ice || transfer);
 }
 
 function koerperAngedockt(system, flug = FLUG) {

@@ -219,7 +219,7 @@ function erstellen(startkapital = {}, k7 = false) {
       && sh.phase === 'dock' && sh.auftrag === 'halten'
       && ladungSumme(sh) === 0
       && ![state.w3?.auftrag?.schiff, state.w5n?.frachtauftrag?.schiff,
-        state.w5ac?.active?.schiff, state.kanon?.rueckfracht?.schiff].includes(sh.id);
+        state.w5ac?.active?.id, state.kanon?.rueckfracht?.schiff].includes(sh.id);
     function abdockenPruefen(state, sh) {
       if (sh.klasse !== 'miner' && !spielerFrachter(state, sh))
         return 'K1: nur Miner oder eigene freie Aldera-Frachter dürfen im System abdocken';
@@ -241,8 +241,9 @@ function erstellen(startkapital = {}, k7 = false) {
       // keine fremden Schiffe, kein neuer Vertrag und keine Zusatzlohnreserve.
       const transitSteuerung = cmd.type === 'shipSteer' && sh.klasse === 'frachter'
         && sh.owner === rules.economy.start.owner && sh.flug.lage === 'transit'
-        && state.w5n?.frachtauftrag?.schiff === sh.id
-        && state.kanon.spielerFrachten?.auftraege?.some(x => x.schiff === sh.id && x.end === null);
+        && ((state.w5n?.frachtauftrag?.schiff === sh.id
+          && state.kanon.spielerFrachten?.auftraege?.some(x => x.schiff === sh.id && x.end === null))
+          || (k7 && state.w5ac?.active?.id === sh.id && state.w5ac.active.owner === sh.owner));
       if (sh.klasse !== 'miner' && !spielerFrachter(state, sh) && !transitSteuerung)
         return { ok: false, type: cmd.type, reason: 'K1: nur Miner oder eigene freie Aldera-Frachter fliegen im System frei' };
       const vor = FLUG.pruefen(state, cmd);
@@ -1031,10 +1032,11 @@ function erstellen(startkapital = {}, k7 = false) {
       if (!Array.isArray(belege) || belege.length !== spielerHuellen.length
         || new Set(belege.map((x) => x?.id)).size !== belege.length
         || belege.some((x) => !x || typeof x.id !== 'string' || !ganz(x.tick)
-          || x.tick > state.tick || x.station !== 'st_aldera' || x.preis !== frPreis
+          || x.tick > state.tick || !['st_aldera',...(k7?['st_nadir']:[])].includes(x.station) || x.preis !== frPreis
           || state.ships[x.id]?.owner !== rules.economy.start.owner
           || state.ships[x.id]?.klasse !== 'frachter'
-          || state.ships[x.id]?.heimat !== 'aldera')
+          || state.ships[x.id]?.heimat !== (x.station==='st_nadir'?'nadir':'aldera')
+          || (k7 && (x.station==='st_nadir') !== state.w5.schiffIds.includes(x.id)))
         || state.ledger.frachter.consumed !== (state.w5ad?.purchases?.length ?? 0) + belege.length)
         fehler.push('Spielerfrachter-Kaufbelege');
       // Wasserbuch: jede Einheit hat Herkunft (Wasserwerk) und Verbleib.
@@ -1487,6 +1489,7 @@ function erstellen(startkapital = {}, k7 = false) {
   }
 
   return Object.freeze({
+    ...(k7 ? {f7Werftfrachter:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
     createState, politikSetzen, industrieAutoSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,

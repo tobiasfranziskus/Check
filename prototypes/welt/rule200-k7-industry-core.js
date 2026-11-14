@@ -727,18 +727,20 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5ag?['pilotWaterBuy']:[])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if (cmd.type === 'shipBuy') {
-    // K1-Forschung erlaubt dem Spieler ausschliesslich den real bezahlten Kauf
-    // aus vorhandener Aldera-Huelle. Regel195 und alle anderen Profile bleiben unveraendert.
+    // K1: bezahlter Aldera-Kauf; K7 zusätzlich reale W5-Nadir-Hüllen.
+    // Regel195 und alle anderen Profile bleiben unverändert.
     const frachter = !!rules.w3 && cmd.klasse === 'frachter'
       && (cmd.owner === rules.w3.spedition
-        || (!!rules.kanon && cmd.owner === rules.economy.start.owner && cmd.station === rules.erzpilot.station));
+        || (!!rules.kanon && cmd.owner === rules.economy.start.owner && (cmd.station === rules.erzpilot.station
+          || (!!rules.k7 && cmd.station === rules.w5.station))));
     const miner = cmd.klasse === 'miner' && (cmd.owner === 'house' || cmd.owner === 'npc3');
-    const w5Kauf = !!rules.w5 && cmd.owner === rules.w5.kaeufer
+    const w5Kauf = !!rules.w5 && (cmd.owner === rules.w5.kaeufer
+      || (!!rules.k7 && cmd.owner === rules.economy.start.owner))
       && cmd.klasse === rules.w5.klasse && cmd.station === rules.w5.station;
     if (!rules.erzpilot || (!frachter && !miner) || (cmd.station !== rules.erzpilot.station && !w5Kauf))
       return 'Komplettkauf nur fuer finanzierte Miner oder Frachter am Handelsplatz';
     if ((state.stations[cmd.station].lager[cmd.klasse] || 0) < 1) return 'kein Komplettschiff auf Lager';
-    if (w5Kauf && !m_core_w5.verkaufPruefen(state,rules).ok)
+    if (w5Kauf && !m_core_w5.verkaufPruefen(state,rules,cmd.owner).ok)
       return 'W5-Schiffskauf nicht belegbar';
     if (state.owners[cmd.owner].cash < rules.economy.waren[cmd.klasse].basis) return 'zu wenig ISK';
   }
@@ -798,7 +800,8 @@ function execute(state, cmd, rules) {
       state.stations[cmd.station].lager[cmd.klasse] -= 1;
       state.ledger[cmd.klasse].consumed += 1;
       const w5Kauf = !!rules.w5 && cmd.station === rules.w5.station
-        && cmd.klasse === rules.w5.klasse && cmd.owner === rules.w5.kaeufer;
+        && cmd.klasse === rules.w5.klasse && (cmd.owner === rules.w5.kaeufer
+          || (!!rules.k7 && cmd.owner === rules.economy.start.owner));
       const system = w5Kauf ? 'nadir' : 'aldera';
       const sh = m_core_state.neuesSchiff(state, {
         owner: cmd.owner, klasse: cmd.klasse, system,
@@ -2186,7 +2189,8 @@ const m_core_w3 = (() => {
       && kauf===(a?(a.phase==='hin'||a.phase==='vorbestellt'?a.gesamt:a.frachtGebuehr):0)
       && arbeit===(a?k.arbeitsKosten-a.gearbeitet*c.arbeitJeMinute:0)
       && carrier+m_core_kanon.netto(state,c.spedition)+arbeit+(state.owners.w5ac_transfer_reserved?.cash??0)
-        +(state.w5ac?.paid??0)+(state.owners.w5n_fracht_arbeit?.cash??0)
+        +(state.w5ac?.paid??0)-(rules.k7?m_core_w5_transfer.spielerKosten(state,rules):0)
+        +(state.owners.w5n_fracht_arbeit?.cash??0)
         -(rules.kanon && state.w5n?.frachtauftrag
           && state.ships[state.w5n.frachtauftrag.schiff]?.owner===rules.economy.start.owner
             ?(state.owners.w5n_fracht_arbeit?.cash??0):0)
@@ -2408,15 +2412,15 @@ const m_core_w5 = (() => {
       'Nadir-Werft: ein '+c.klasse+' real gebaut, '+a.material
       +' Material und '+a.arbeitKosten+' ISK Lohn',c.werft);
   }
-  function verkaufPruefen(state,rules) {
+  function verkaufPruefen(state,rules,owner=rules.w5.kaeufer) {
     const c=rules.w5, w=state.w5;
     if(!w) return {ok:false,grund:'W5-Auftragsbuch fehlt'};
     if(!audit(state,rules).ok)
       return {ok:false,grund:'Werftbilanz nicht gueltig'};
     if((state.stations[c.station].lager[c.klasse]||0)<1)
       return {ok:false,grund:'Kein bezahltes Fertigschiff'};
-    if(state.owners[c.kaeufer].cash<c.verkaufsPreis)
-      return {ok:false,grund:'Transportkonzern kann Frachter nicht bezahlen'};
+    if(state.owners[owner]?.cash<c.verkaufsPreis)
+      return {ok:false,grund:'Käufer kann Frachter nicht bezahlen'};
     return {ok:true,grund:'Fertigschiff und Kaufmittel vorhanden',
       preis:c.verkaufsPreis};
   }
@@ -2434,7 +2438,9 @@ const m_core_w5 = (() => {
     const shipIds=w.schiffIds||[];
     const gekaufte=shipIds.every(id=>{
       const sh=state.ships[id];
-      return (sh?.klasse===c.klasse && sh.owner===c.kaeufer
+      return (sh?.klasse===c.klasse && (sh.owner===c.kaeufer
+        || (!!rules.k7 && sh.owner===rules.economy.start.owner
+          &&state.kanon?.spielerFrachterKaeufe?.some(x=>x.id===id&&x.station===c.station)))
         && sh.heimat==='nadir') || (!!rules.w5Replacement
           &&state.w5ad?.losses.some(x=>x.id===id&&x.heimat==='nadir'));
     });
@@ -2482,10 +2488,17 @@ const m_core_w5 = (() => {
 // Exactly one core tick/route, fully prepaid owner wage escrow, no teleport/ISK emission.
 const m_core_w5_transfer=(()=>{
   const {buche}=m_core_handel,{protokolliere}=m_core_state;
+  const ownerOk=(r,owner)=>owner===r.w5Transfer.owner
+    || (!!r.k7 && owner===r.economy.start.owner);
+  function spielerKosten(s,r){
+    if(!r.k7)return 0;
+    return [...s.w5ac.completed,...(s.w5ac.active?[s.w5ac.active]:[])]
+      .filter(x=>x.owner===r.economy.start.owner).reduce((n,x)=>n+x.kosten,0);
+  }
   function pruefen(s,r,sh){
     const cfg=r.w5Transfer,w=s.w5ac;
     if(!cfg||s.rulesVersion!==r.rulesVersion||!w||!s.w5)return {ok:false,grund:'W5ac-Regel191 nicht aktiv'};
-    if(!sh||sh.owner!==cfg.owner||sh.klasse!=='frachter'||sh.heimat!==cfg.quelle
+    if(!sh||!ownerOk(r,sh.owner)||sh.klasse!=='frachter'||sh.heimat!==cfg.quelle
       ||sh.system!==cfg.quelle||sh.phase!=='dock'||sh.auftrag!=='halten'
       ||Object.values(sh.ladung).some(n=>n!==0))
       return {ok:false,grund:'Nur freie eigene gekaufte W5-Huelle in Nadir'};
@@ -2497,7 +2510,7 @@ const m_core_w5_transfer=(()=>{
     if(!Number.isSafeInteger(minuten)||minuten<=0||!Number.isSafeInteger(lohn)||lohn<=0
       ||!Number.isSafeInteger(kosten)||kosten<=0)
       return {ok:false,grund:'Keine gueltige bezahlbare Flugroute'};
-    if(s.owners[cfg.owner].cash<kosten)return {ok:false,grund:'Pilotenlohn nicht voll vorfinanzierbar'};
+    if(s.owners[sh.owner].cash<kosten)return {ok:false,grund:'Pilotenlohn nicht voll vorfinanzierbar'};
     if(s.owners[cfg.reserved]?.cash!==0)return {ok:false,grund:'Schon vorhandenes Flugtreuhand'};
     return {ok:true,grund:'Gekaufter freier Frachter, voll finanzierter Pilotenlohn',
       schiff:sh.id,von:cfg.quelle,nach:cfg.ziel,minuten,lohn,kosten};
@@ -2505,19 +2518,19 @@ const m_core_w5_transfer=(()=>{
   function start(s,r,sh){
     const q=pruefen(s,r,sh);if(!q.ok)throw Error(q.grund);
     const c=r.w5Transfer,w=s.w5ac;
-    s.owners[c.owner].cash-=q.kosten;s.owners[c.reserved].cash+=q.kosten;
+    s.owners[sh.owner].cash-=q.kosten;s.owners[c.reserved].cash+=q.kosten;
     w.allocated+=q.kosten;
-    buche(s,c.owner,'kosten',q.kosten);
-    w.active={id:sh.id,owner:c.owner,start:s.tick,minuten:q.minuten,
+    buche(s,sh.owner,'kosten',q.kosten);
+    w.active={id:sh.id,owner:sh.owner,start:s.tick,minuten:q.minuten,
       lohn:q.lohn,kosten:q.kosten,gearbeitet:0};
     sh.phase='reise';sh.ziel=c.zielStation;sh.ankunft=s.tick+q.minuten;
     sh.auftrag='w5ac-ueberfuehrung';
-    protokolliere(s,'auftrag',sh.id+': '+q.kosten+' ISK fuer '+q.minuten+' Flugminuten treuhaenderisch gebunden',c.owner);
+    protokolliere(s,'auftrag',sh.id+': '+q.kosten+' ISK fuer '+q.minuten+' Flugminuten treuhaenderisch gebunden',sh.owner);
   }
   function tick(s,r){
     const c=r.w5Transfer,w=s.w5ac,a=w?.active;if(!a)return;
     const sh=s.ships[a.id],reserved=s.owners[c.reserved],worker=s.owners[c.pilot];
-    if(!sh||sh.owner!==c.owner||sh.klasse!=='frachter'
+    if(!sh||sh.owner!==a.owner||!ownerOk(r,a.owner)||sh.klasse!=='frachter'
       ||sh.phase!=='reise'||sh.auftrag!=='w5ac-ueberfuehrung'
       ||sh.system!==c.quelle||sh.ziel!==c.zielStation
       ||sh.ankunft!==a.start+a.minuten||a.gearbeitet>=a.minuten
@@ -2533,7 +2546,7 @@ const m_core_w5_transfer=(()=>{
       w.completed.push({id:a.id,owner:a.owner,start:a.start,
         ankunft:s.tick,minuten:a.minuten,kosten:a.kosten});
       w.active=null;sh.auftrag='halten';
-      protokolliere(s,'auftrag',sh.id+': Nadir-Aldera nach '+a.minuten+' voll bezahlten Minuten',c.owner);
+      protokolliere(s,'auftrag',sh.id+': Nadir-Aldera nach '+a.minuten+' voll bezahlten Minuten',a.owner);
     }
   }
   function audit(s,r){
@@ -2546,10 +2559,13 @@ const m_core_w5_transfer=(()=>{
     const finished=done.reduce((n,x)=>n+x.kosten,0);
     const lost=id=>r.w5Replacement&&s.w5ad?.losses.find(x=>x.id===id);
     const validShip=x=>s.w5.schiffIds.includes(x.id)
-      &&(s.ships[x.id]||lost(x.id))?.owner===c.owner
+      &&(x.owner!==r.economy.start.owner || !r.k7
+        || s.kanon?.spielerFrachterKaeufe?.some(p=>p.id===x.id
+          &&p.station===r.w5.station&&p.tick<=x.start))
+      &&(s.ships[x.id]||lost(x.id))?.owner===x.owner&&ownerOk(r,x.owner)
       &&(s.ships[x.id]||lost(x.id))?.klasse==='frachter'
       &&(s.ships[x.id]||lost(x.id))?.heimat===c.quelle;
-    const activeOk=!a||(validShip(a)&&a.owner===c.owner
+    const activeOk=!a||(validShip(a)&&ownerOk(r,a.owner)
       &&a.minuten===duration&&a.lohn===c.lohnJeMinute&&a.kosten===cost
       &&Number.isSafeInteger(a.gearbeitet)&&a.gearbeitet>=0&&a.gearbeitet<duration
       &&s.tick===a.start+a.gearbeitet
@@ -2562,7 +2578,7 @@ const m_core_w5_transfer=(()=>{
       Number.isSafeInteger(x)&&x>=0)
       &&duration>0&&cost>0
       &&Array.isArray(done)&&new Set(ids).size===ids.length
-      &&done.every(x=>validShip(x)&&x.owner===c.owner&&x.minuten===duration
+      &&done.every(x=>validShip(x)&&ownerOk(r,x.owner)&&x.minuten===duration
         &&x.kosten===cost&&Number.isSafeInteger(x.start)&&x.start>=0
         &&x.ankunft===x.start+duration&&x.ankunft<=s.tick
         &&((lost(x.id)?.tick>=x.ankunft&&lost(x.id)?.system===c.ziel)
@@ -2580,7 +2596,7 @@ const m_core_w5_transfer=(()=>{
       routeMinutes:duration,perMinute:c.lohnJeMinute,
       ownerCash:s.owners[c.owner]?.cash};
   }
-  return {pruefen,start,tick,audit};
+  return {pruefen,start,tick,audit,spielerKosten};
 })();
 
 // W5ad: opt-in Rule192 commands; uses the existing purchase, loss, route and labor core.
@@ -2677,7 +2693,7 @@ const m_core_w5_replacement=(()=>{
       const flight=ferries.find(t=>t.id===x.id);
       // Reconstruct OWN cash before purchase from earlier purchases and completed work.
       const earned=f.filter(t=>t.end<=x.tick).reduce((n,t)=>n+t.fee-t.work,0);
-      const paidFerries=ferries.filter(t=>t.id!==x.id&&t.start<=x.tick)
+      const paidFerries=ferries.filter(t=>t.owner===r.w3.spedition&&t.id!==x.id&&t.start<=x.tick)
         .reduce((n,t)=>n+t.kosten,0);
       return lp&&np&&flight&&integer(x.tick)&&x.tick>=lp.tick&&x.tick===np.tick
         &&np.station==='st_nadir'&&flight.start===x.tick
@@ -2699,7 +2715,8 @@ const m_core_w5_replacement=(()=>{
     const profileOk=m_core_hash.canonical(b.profile)===m_core_hash.canonical(r.w5Replacement)
       &&Object.values(s.owners).every(o=>integer(o.cash))
       &&m_core_hash.canonical(p.filter(x=>x.station==='st_nadir').map(x=>x.id))
-        ===m_core_hash.canonical(s.w5.schiffIds);
+        ===m_core_hash.canonical(s.w5.schiffIds.filter(id=>!r.k7
+          ||!s.kanon?.spielerFrachterKaeufe?.some(x=>x.id===id)));
     return {ok:profileOk&&ownerOk&&purchaseOk&&lossOk&&freightOk&&assignmentOk&&activeOk,
       profileOk,ownerOk,purchaseOk,lossOk,freightOk,assignmentOk,activeOk,
       lost:l.length,replaced:a.length,deployed:a.filter(x=>f.some(t=>t.id===x.id)).length};
@@ -3238,7 +3255,8 @@ const m_core_w1_vollkosten = (() => {
     const spielerFrachterWert=rules.kanon
       ?(state.kanon?.spielerFrachterKaeufe?.length??0)*rules.economy.waren.frachter.basis:0;
     const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-iceLohn
-      -spielerFrachterWert-(state.kanon?.spielerFrachten?.lohn??0);
+      -spielerFrachterWert-(state.kanon?.spielerFrachten?.lohn??0)
+      -(rules.k7?m_core_w5_transfer.spielerKosten(state,rules):0);
     const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
     const fonds = state.owners[fondsId].cash - startCash(fondsId) + m_core_kanon.netto(state, fondsId);
     const stationErz = state.stations[cfg.station].lager.erz;

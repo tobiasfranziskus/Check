@@ -1,0 +1,33 @@
+# F3 – Persönlicher 2D-Frachter in der kanonischen K1-Forschungswelt
+
+**[DRAFT / 12.11.2026]** [PR #318](https://github.com/tobiasfranziskus/Check/pull/318), Basis #316 (`a056b93e`), abgenommener Codehead `1f18a0b23be7cb2d57f7fe33c408588a4d875f64`, nicht integriert. Aktuelles Produkt auf `main 04124f2b` (Regel195/Schema8) unverändert. Keine automatische Übernahme von K4–K7.
+
+## Kleine vollständig finanzierte Spielfunktion
+1. Ein in Aldera **wirklich lagernder**, endlicher `frachter` darf ausschließlich vom Spieler über `shipBuy` gekauft werden. Preis und Buchungen stammen aus dem originalen W5-/W3-Kern (750 ISK; Käuferkasse belastet, Werftkasse erhält ISK, Lager reduziert, physische neue Schiff-ID, Eigentum `house`). Der NPC verliert ggf. den Zugang zu dieser knappen Hülle; keine Gratisersatzproduktion.
+2. Nur dieser eigene, **unbeladene**, nicht vertraglich gebundene Frachter darf in Aldera `shipUndock` und die vorhandenen `shipSteer`/`shipApproach`/`shipDock` verwenden. Der bestehende Flugkern simuliert tatsächlich Position, Beschleunigung, Bremse und Dockanflug. Ein ursprünglicher `transport`-Frachter bleibt für Spielerbefehle tabu.
+3. Der Original-K1-Flugdienst bindet vor dem Start 40 ISK aus der tatsächlich verfügbaren Eigentümerkasse. Entlohnte Minuten gehen an das bestehende persönliche Pilotenkonto `pilot_house`. Bei legalem Andocken wird ausschließlich unverbrauchte Reserve zurückgegeben; Verschleiß wird protokolliert. Keine gewöhnliche Treibstoffmechanik.
+4. Jeder Wirtschafts-/W3-Befehl auf einem bereits abgedockten Frachter wird im K1-Wrapper **vor** dem Wirtschafts-Kern atomar abgelehnt. Deshalb kein Teleport, Fernladen oder Umgehen der gültigen W3-Arbeitstreuhand.
+5. K1-eigener optionaler Kaufbeleg `kanon.spielerFrachterKaeufe` dokumentiert nur echte Käuferhüllen. Der Core trennt im Forschungsprofil W3-Speditionsinvestitionen von bereits bezahlten Spielerhüllen; unabhängiger K1-Audit vergleicht alle Belege mit echten Schiff-IDs, Lager-/Ledgerzählern, Eigentümer und Preis. Alte Regel199-Spielstände ohne dieses Feld bleiben akzeptiert; keine Regel195-Migration.
+6. Touch-Oberfläche: gemeinsame Auswahl eigener Miner/Frachter, Original-Kurs-/Brems- und Raumkarte, physischer Kauf in Station, keine Miner-Förderknöpfe im Frachtermodus. Die begleitete Miner-Eisrunde bleibt bei fehlendem Schiff sichtbar.
+
+## Noch ausdrücklich nicht enthalten
+- **Kein persönlich abgeschlossener, bezahlter W3-Frachtvertrag**, keine eigenmächtigen Käufe/Verkäufe fremder Ware, keine reale 2D-Inter-System-Reise Aldera–Nadir. W3-NPC-Spedition fährt weiterhin ihren abstrakten, vollständig finanzierten Originaltransit.
+- Kein neues Geld, keine neuen Güter, keine kostenlose Hülle, keine geänderten Preise und keine direkte Spielerübernahme von NPC-Schiffen.
+- Keine Produktfreigabe, kein `main`-Merge, keine Pages-/NAS-Aktualisierung, kein Eingriff in den produktiven Browser-Spielstand.
+
+## Prüfgrenzen und negative Befunde
+**Ausgeführt, zunächst negativ:** [K1-CI #43270175234](https://github.com/tobiasfranziskus/Check/actions/runs/43270175234) zeigte unmittelbar nach dem neuen Käufer-Frachterkauf **drei legitime Auditwarnungen**: W1-Vollkosten, W3-Speditionseigentum und W5ad-Ersatzbuch ordneten sämtliche gekauften Frachter noch der Spedition zu. [K1-CI #43270427638](https://github.com/tobiasfranziskus/Check/actions/runs/43270427638) bestätigte den Befund; zusätzlich wurde der genaue Original-W3-Ablehnungsgrund für unberechtigte Spielerfracht festgestellt. Diese Läufe gelten **nicht als bestanden**.
+
+**Nachfolgende Korrektur:** Getrenntes, prüfbares K1-Spieler-Frachterkaufjournal; alle drei ursprünglichen wirtschaftlichen Gleichungen werden nun unter `rules.kanon` um den tatsächlich anderen Eigentümer ergänzt, nicht abgeschaltet. Tests für echte Währungen/Waren, neue Flugminute, Original-W3-Sperren, alten Regel195-Start, manipulierte Schiffe/Belege und Save/Load wurden ergänzt.
+
+**Abschluss [TEST / bestanden auf Code-Head `1f18a0b23be7cb2d57f7fe33c408588a4d875f64`]:**
+- [K1-CI #43272542407](https://github.com/tobiasfranziskus/Check/actions/runs/43272542407): alle **3/3 GitHub-Jobs completed/success**. **331/331 Node22-Tests**, 0 Fehler/Skips, 15 wirtschaftlich unterschiedliche Szenarien × 90 Tage, fünf × 365 und zwei × 730 Tage einschließlich Wirtschafts-/Finanzierungs-/Schiffs-/Waren-/Save- und Referenzhash-Audits. Dedizierte Tests belegen Originalkauf, echte Kassen/Inventar/Schiffseigentum, 40-ISK-Reserve, bezahlte Pilotenminuten, negatives fremdes W3-Vertragsrecht, physische Dockrückkehr und Save/Load.
+- Neuer Frachter-Touch-Browsertest **Chromium 4/4 und WebKit 4/4** in 1180×820, 1024×768, 820×1180, 390×844. Acht tatsächlich abgeschlossene UI-Flüge mit originalfinanziertem 750-ISK-Schiff `sh002`, realem Beschleunigen, Bremsen/Rückflug zum Dock, 0 Mint/Burn, Weltgeld 33.000 ISK und wiederhergestelltem Spielstand. **Alle acht Endzustände Tick 8, Hash `721f240ba9d74695`**. Vorhandene Miner-, Karten- und Gesamtspiel-Browsertests weiterhin grün.
+- [RC1 #43272542268](https://github.com/tobiasfranziskus/Check/actions/runs/43272542268) **completed/success** inklusive originaler Rule14-/Rule195-Gates, Chromium-Touch-Preflight und NAS-Einzeldatei-Artefakt. [Historische JS-Regressions-CI #43272542305](https://github.com/tobiasfranziskus/Check/actions/runs/43272542305) **completed/success**. `node scripts/build-w5-singlefile.mjs --check`: `W5_SINGLEFILE_OK` mit 326.122 Zeichen, 7 Styles, 15 Scripts.
+- Nach den Auditkorrekturen legten die CI-Läufe #43271165827 und #43271328129 die letzte UI-Ursache offen: Abdocken/Andocken war bisher nur im Minerbereich sichtbar. Der final geprüfte Code verschob beide Originalbefehle in das gemeinsame Cockpit – **keine zweite Befehlsimplementierung**. Die negativen Vorläufe bleiben ausdrücklich negativ.
+- Diese Testbelege gehören zum oben genannten **Code-Head**. Nachträgliche rein dokumentarische Commits ändern den Produkt- und Testcode nicht und dürfen nicht mit einer erneuten CI-Abnahme verwechselt werden.
+
+**Abnahmelücke:** Echtes iPad Safari und privater NAS-Server nicht vor Ort getestet; veröffentlichte Rule195-Einzeldatei nur durch GitHub-CI/Chromium-Preflight, nicht durch produktive Geräteabnahme bestätigt.
+
+## Nächstes belegbares Spielbarkeitsgate
+Ausreichend finanzierten, vom **richtigen Eigentümer** autorisierten persönlichen Frachterauftrag mit vorhandener Ware, einmaligem Kauf-/Frachtgeld, beidseitiger Dockprüfung und einem wirklichen Lieferbeleg verbinden. Bei nicht finanzierbarem Vertrag oder unbelegbarer Preis-/Frachtkette ausdrücklich abbrechen, keine Scheinauszahlung.

@@ -33,6 +33,7 @@ on:
       - 'tests/k4-ore-allocation.test.mjs'
       - 'tools/referenzmodell-c.mjs'
       - 'tests/welt-*'
+      - 'tests/k13-f6-*'
       - 'tests/referenzmodell-c.test.mjs'
       - 'index.html'
       - 'aphros-void.html'
@@ -66,6 +67,8 @@ jobs:
           diff docs/K3_DIAGNOSE_SEED42.json "$RUNNER_TEMP/k3-diagnose.json"
       - name: "K4: zeitlich vorgezogene, vollständig finanzierte Original-Erzfracht"
         run: node --test tests/k4-ore-allocation.test.mjs
+      - name: "K13/F6: gemeinsamer K7-/F6-Kern, Replay und getrennte Forschungsprofile"
+        run: node --test tests/k13-f6-gemeinsamer-spielkern.test.mjs
       - name: "K1-Wirtschaft: 15 Szenarien × 90 Tage, 365- und 730-Tage-Läufe"
         run: node --test tests/welt-wirtschaft.test.mjs
       - name: "Alle bestehenden Regel14-/Regel195-/Flug-Regressionen"
@@ -90,6 +93,56 @@ jobs:
           node "$RUNNER_TEMP/welt-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
       - name: "K1 im Browser: Touch, Kreislauf, IndexedDB-Autosave, Export/Import, Regel195-Übernahme"
         run: node tests/welt-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K13/F6: welt-cockpit-browser.cjs"
+        run: node tests/welt-cockpit-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K13/F6: welt-miner-bergbaurunde-browser.cjs"
+        run: node tests/welt-miner-bergbaurunde-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K13/F6: welt-rundenfuehrung-browser.cjs"
+        run: node tests/welt-rundenfuehrung-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K13/F6: welt-frachter-handflug-browser.cjs"
+        run: node tests/welt-frachter-handflug-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K13/F6: welt-spieler-eisfracht-browser.cjs"
+        run: node tests/welt-spieler-eisfracht-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K13/F6: welt-transitkorridor-browser.cjs"
+        run: node tests/welt-transitkorridor-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K13/F6: welt-torfreigabe-browser.cjs"
+        run: node tests/welt-torfreigabe-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K13/F6: welt-kartenflug-browser.cjs"
+        run: node tests/welt-kartenflug-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K13/F6: welt-gesamtspiel-browser.cjs"
+        run: node tests/welt-gesamtspiel-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "K13/F6: isolierter Rule200-Browser mit bezahltem Spielerfrachter"
+        run: node tests/k13-f6-spieltest-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/welt-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}

@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="de" data-forschungsprofil="k7"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aphros Void · K13/F6 – 2D-Spiel und Regel200-Wirtschaft (Forschung)</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#0a111b;color:#e0eaf4;font:16px/1.4 system-ui,-apple-system,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{padding:8px 12px 4px}h1{font-size:1.1rem;margin:0}
+header p{font-size:.86rem;color:#a9c1d1;margin:4px 0}
+nav{display:flex;gap:6px;padding:4px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+nav button{flex:0 0 auto;min-width:96px}
+main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:8px;padding:0 8px 10px;height:calc(100dvh - 150px);min-height:430px}
+#sicht{position:relative;min-height:280px;border:1px solid #6b8197;border-radius:8px;overflow:hidden}
+#raum{display:block;width:100%;height:100%;touch-action:manipulation;cursor:crosshair}
+#hud{position:absolute;top:7px;left:8px;right:8px;color:#91e9f5;text-shadow:0 0 5px #000;font-size:.86rem;margin:0;pointer-events:none}
+#tafel{display:flex;flex-direction:column;gap:8px;overflow:auto;-webkit-overflow-scrolling:touch;min-width:0}
+.reihe{display:flex;gap:8px;flex-wrap:wrap}
+button{background:#1c3248;color:inherit;border:1px solid #708c9d;border-radius:8px;font:inherit;min-height:48px;padding:8px;flex:1 1 104px;touch-action:manipulation}
+button:disabled{opacity:.43}button[aria-pressed="true"]{background:#2c5670;border-color:#9fd6e6}
+section[hidden]{display:none}
+h2{font-size:1rem;margin:6px 0 2px;color:#bfe6f2}
+table{border-collapse:collapse;width:100%;font-size:.84rem}
+th,td{text-align:right;padding:3px 5px;border-bottom:1px solid #263a4d;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+.rollen{overflow-x:auto;-webkit-overflow-scrolling:touch}
+td button{min-height:44px;padding:4px 10px;flex:none}
+#plaetze td:nth-child(5),#plaetze th:nth-child(5){display:none}
+#meldung{min-height:44px;font-size:.9rem;margin:0;padding:6px 8px;background:#12202f;border-radius:8px}
+#meldung.fehler{background:#3a1c1c}
+select,input[type=text],input[type=number]{font:inherit;min-height:48px;padding:6px;background:#12202f;color:inherit;border:1px solid #708c9d;border-radius:8px;flex:1 1 120px;min-width:0}
+input[type=file]{width:100%;min-height:48px}
+details summary{min-height:48px;padding:10px 8px;cursor:pointer}
+small{font-size:.82rem;color:#a9c1d1}
+.warn{color:#ffd28a}
+a{color:#8fe2f5}
+.pilot-cockpit{border:1px solid #456984;background:#101f30;border-radius:10px;padding:10px;display:grid;gap:10px;margin:6px 0 12px}
+.pilot-cockpit h3{font-size:1rem;color:#bfe6f2;margin:0}
+.karten-ziel{display:grid;gap:6px;border:1px solid #456984;border-radius:8px;padding:8px}
+.karten-ziel .reihe{align-items:stretch}
+.karten-ziel label{font-size:.9rem;color:#bfe6f2}
+#kartenHinweis{min-height:2em;margin:0;color:#a6effb;font-size:.88rem}
+#pilotHinweis{min-height:2.5em;margin:0;color:#dae8ef}
+.runden-hilfe{padding:10px;border:1px solid #63899b;border-radius:8px;background:#0b2230;display:grid;gap:6px}
+.runden-hilfe strong{color:#b6edfa}
+.runden-hilfe p{margin:0;font-size:.9rem}
+.runden-hilfe button{width:100%;font-weight:600}
+#frachtAnnehmen,#torPruefen,#torFracht{min-height:48px}
+#minerAuftraege[hidden],#minerAufgaben[hidden],#rundenHilfe[hidden],#frachterAufgaben[hidden]{display:none}
+#frachterAufgaben{border:1px solid #63899b;background:#0b2230;border-radius:8px;padding:9px}
+.pilot-daten{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.pilot-daten>div{padding:7px;background:#0a1825;border-radius:6px;min-width:0}
+.pilot-daten strong{display:block;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.pilot-regler{display:grid;grid-template-columns:1fr;gap:8px}
+.pilot-regler label{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.pilot-regler output{font-variant-numeric:tabular-nums;color:#a6effb}
+.pilot-regler input[type=range]{width:100%;min-height:48px;accent-color:#7ce4f4;touch-action:pan-y}
+.pilot-direkt{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.pilot-direkt button{min-width:0;min-height:48px;padding:6px 2px;font-size:.88rem;flex:none}
+@media(max-width:900px),(orientation:portrait){main{grid-template-columns:1fr;grid-template-rows:minmax(260px,42vh) auto;height:auto}}
+</style>
+<script defer src="../../prototypes/welt/rule200-k7-industry-core.js"></script>
+<script defer src="../../prototypes/flug2d/flug-kern.js"></script>
+<script defer src="../../prototypes/flug2d/grafik.js"></script>
+<script defer src="../../prototypes/welt/welt-kern.js"></script>
+<script defer src="welt-speicher.js"></script>
+<script defer src="../../prototypes/welt/app.js"></script>
+</head><body>
+<header><h1>Aphros Void – K13/F6 Spielwirtschaft · Regel200-Forschung</h1>
+<p><strong>Regel200-Forschungsprofil – nicht das veröffentlichte Hauptspiel.</strong> Eine Welt für Wirtschaft und Flug: gefördert wird nur im Feld, verkauft nur am Dock, jede Arbeitsminute ist bezahlt. Eigene Spielstandablage; die Stände des Hauptspiels werden nie geöffnet.</p></header>
+<nav aria-label="Ansichten">
+<button data-ansicht="flug" aria-pressed="true">Flug</button><button data-ansicht="konzern">Konzern</button>
+<button data-ansicht="station">Station</button><button data-ansicht="flotte">Flotte</button>
+<button data-ansicht="wirtschaft">Wirtschaft</button><button data-ansicht="spielstand">Spielstand</button>
+</nav>
+<main>
+<section id="sicht" aria-label="2D-Flugkarte: Aldera-System oder bezahlter intersystemischer Frachtkorridor">
+<canvas id="raum" aria-label="2D-Raum: Aldera-Dock, Förderfelder und navigierbares Aldera-Sprungtor; Frachtkorridorziele bleiben zeitgebunden"></canvas>
+<p id="hud">Welt wird geladen …</p></section>
+<div id="tafel">
+<p id="meldung" role="status" aria-live="polite">Welt wird geladen …</p>
+<div class="reihe"><button id="pause" aria-pressed="true">Weiter</button><button id="tempo">Zeit 1×</button><button id="minute">+1 Minute</button><button id="stunde">+1 Stunde</button></div>
+
+<section data-seite="flug">
+<h2>Eigene Schiffe · Miner und Frachter</h2>
+<div class="reihe"><select id="schiff" aria-label="Eigenes Schiff wählen"></select></div>
+<div id="minerAuftraege"><div class="reihe"><button id="pendelEis">Pendelauftrag Eis</button><button id="pendelErz">Pendelauftrag Erz</button><button id="pendelStop">Pendel beenden</button></div></div>
+<div class="pilot-cockpit" id="pilotCockpit" aria-label="Manuelles Schiffs-Cockpit">
+<h3>Persönlicher Flug · Steuerpult</h3>
+<div class="reihe" id="schiffDockBefehle"><button id="abdocken">1 · Abdocken</button><button id="andocken">5 · Andocken</button></div>
+<div class="reihe"><button id="frachtAnnehmen" type="button" disabled>Finanzierten 50-Eis-Frachtvertrag annehmen (eigener Frachter)</button></div>
+<div class="reihe"><button id="torPruefen" type="button" disabled>Sprungtor-Anflug bestätigen</button><button id="torFracht" type="button" disabled>Torberechtigte 50-Eis-Fracht annehmen</button></div>
+<div id="rundenHilfe" class="runden-hilfe" aria-label="Begleitete Eis-Bergbaurunde">
+<strong id="rundenTitel">Eis-Bergbaurunde</strong>
+<p id="rundenInfo" role="status" aria-live="polite">Der nächste Schritt wird aus dem tatsächlichen Schiffszustand ermittelt.</p>
+<button id="rundenAktion" type="button" disabled>Nächste Aktion</button>
+<small>Ein Tipp führt nur die jeweils angezeigte Originalaktion aus. Flugzeit, Förderung und Zahlungen bleiben echte Core-Vorgänge. Alle Einzelbefehle bleiben verfügbar.</small>
+</div>
+<p id="pilotHinweis" role="status">Eigenen Miner kaufen und im Dock abdocken, um selbst zu steuern.</p>
+<div class="karten-ziel" aria-label="Berührbare Flugzielwahl">
+<label for="kartenZiel">Raumkarte antippen oder Ziel hier auswählen</label>
+<div class="reihe"><select id="kartenZiel" aria-label="Ziel für eigenen Miner vormerken">
+<option value="">Noch kein Ziel gewählt</option><option value="aldera:eis">Eisfeld</option><option value="aldera:erz">Erzfeld</option><option value="st_aldera">Aldera-Dock</option><option value="aldera:tor">Aldera-Sprungtor (Frachter)</option>
+</select><button id="kartenAnflug" type="button" disabled>Zielflug bestätigen</button></div>
+<p id="kartenHinweis" role="status">Berührung oder Auswahl merkt nur ein Ziel vor. Erst die Bestätigung sendet den Original-Flugbefehl.</p>
+</div>
+<div class="pilot-daten" aria-label="Tatsächliche Flugdaten">
+<div><small>Position</small><strong id="pilotPosition">–</strong></div>
+<div><small>Istkurs / Geschwindigkeit</small><strong id="pilotIst">–</strong></div>
+<div><small>Fluglage / Auftrag</small><strong id="pilotLage">–</strong></div>
+<div><small>Bezahlte Flugreserve</small><strong id="pilotReserve">–</strong></div>
+</div>
+<div class="pilot-regler">
+<div><label for="pilotKurs">Kurs (0 = Ost, 64 = Süd, 128 = West, 192 = Nord) <output id="pilotKursWert" for="pilotKurs">0</output></label>
+<input id="pilotKurs" type="range" min="0" max="255" step="1" value="0"></div>
+<div><label for="pilotFahrt">Sollfahrt in Prozent <output id="pilotFahrtWert" for="pilotFahrt">0</output></label>
+<input id="pilotFahrt" type="range" min="0" max="100" step="5" value="0"></div>
+</div>
+<small>Kurs per Touch wählen (0 = Ost, 64 = Süd, 128 = West, 192 = Nord):</small>
+<div class="pilot-direkt" id="pilotRichtungen" role="group" aria-label="Kursvorgaben für den Miner">
+<button type="button" data-pilot-kurs="192" aria-label="Kurs Nord">↑ N</button><button type="button" data-pilot-kurs="224" aria-label="Kurs Nordost">↗ NO</button><button type="button" data-pilot-kurs="0" aria-label="Kurs Ost">→ O</button><button type="button" data-pilot-kurs="32" aria-label="Kurs Südost">↘ SO</button>
+<button type="button" data-pilot-kurs="64" aria-label="Kurs Süd">↓ S</button><button type="button" data-pilot-kurs="96" aria-label="Kurs Südwest">↙ SW</button><button type="button" data-pilot-kurs="128" aria-label="Kurs West">← W</button><button type="button" data-pilot-kurs="160" aria-label="Kurs Nordwest">↖ NW</button>
+</div>
+<div class="reihe"><button id="pilotAnwenden" disabled>Manuell steuern</button><button id="pilotBremsen" disabled>Bremsen (0 %)</button></div>
+<small>Kursvorgaben und Regler ändern nur die Anzeige. Erst „Manuell steuern“ sendet <code>shipSteer</code> an den gemeinsamen Core. Bremsen benötigt Zeit.</small>
+<div id="minerAufgaben"><h3>Bergbaurunde · Eis selbst fördern und verkaufen</h3>
+<div class="reihe"><button id="zumEis">2 · Zum Eisfeld</button><button id="foerdernEis">3 · Eis fördern</button></div>
+<div class="reihe"><button id="warten">4 · Förderung stoppen</button><button id="verkaufen">6 · Eis verkaufen</button></div>
+<small>Die sechs Schritte nutzen ausschließlich bestehende, finanzierte Originalbefehle. Abdocken bindet 40 ISK Flugreserve; jede geflogene Minute bezahlt den Piloten. Nur am Feld wird real gefördert; nur am Dock kauft Aldera tatsächlich vorhandenes Eis.</small>
+<h3>Erzabbau</h3>
+<div class="reihe"><button id="zumErz">Zum Erzfeld</button><button id="foerdernErz">Erz fördern</button></div>
+<small>Erz benötigt ebenso einen gültigen finanzierten Abnehmerauftrag. Ohne Finanzierung gibt es keine kostenlose Förderung.</small></div>
+<div id="frachterAufgaben" hidden>
+<h3>Eigener Frachter · Handflug und bezahlte Eisfracht</h3>
+<p id="frachterHinweis">Ein eigenes Schiff darf in Aldera selbst geflogen werden. Einen Transportvertrag kann es nur physisch am Dock beginnen.</p>
+<div class="runden-hilfe" aria-label="Echter Eisfrachtvertrag">
+<strong>50 Eis · Aldera → Nadir → Aldera</strong>
+<p id="frachtAngebot" role="status" aria-live="polite">Original-W5n-Vertrag wird aus vorhandener Ware und realem Geld geprüft.</p>
+<small>Zur Vertragsannahme die Frachtaktion oben im gemeinsamen Steuerpult verwenden. Im bezahlten Transit lassen sich Kurs, Fahrt und Bremsen nun auch in der 2D-Korridoransicht selbst steuern.</small>
+<p id="frachtFortschritt">Noch keine persönliche Fracht abgeschlossen.</p>
+<div class="runden-hilfe" aria-label="F6: wirklich bezahlte Navigationsprüfung am Sprungtor">
+<strong>F6 · Toranflug vor der Fracht</strong>
+<p id="torHinweis" role="status" aria-live="polite">Mit einem eigenen Frachter unter bezahltem 2D-Handflug das Aldera-Tor erreichen, langsam werden und die Lage tatsächlich vom Core bestätigen lassen.</p>
+<small>Torprüfung und gesonderte Frachtannahme über die zwei Knöpfe im gemeinsamen Steuerpult oben.</small>
+<small>1. Regulär abdocken (40 ISK Lohnreserve). 2. Aldera-Tor auf Karte auswählen und Zielflug bestätigen. 3. Im Radius langsam genug ankommen, mit dem Original-Core die Torposition bestätigen. 4. Zum Aldera-Dock zurückkehren. 5. Optionalen W5n-Frachtvertrag ausdrücklich annehmen. Frühere F4-Verträge bleiben unabhängig möglich.</small>
+</div>
+<small>Nadir finanziert Eis und Frachtgebühr vorab; der eigene Konzern finanziert die volle Pilotenarbeit. Ein gesonderter, tatsächlich bezahlter Anflug am Aldera-Sprungtor wird jetzt für die optionale F6-Abflugfreigabe geprüft. Der 2D-Korridorflug bleibt spielbar. Die wirtschaftliche Ankunft nach 60+60 Minuten und die Warenübergabe bestimmt weiter der Original-W5n-Kern: noch keine navigationsabhängige Nadir-Landung oder tatsächlicher Gate-Transit.</small>
+</div>
+</div>
+</div>
+<div id="schiffStatus" class="rollen"></div>
+</section>
+
+<section data-seite="konzern" hidden>
+<h2>Konzerne und Eigentümer</h2><div id="firmen" class="rollen"></div>
+<div class="reihe"><button id="dividende">Eigenen Überschuss ausschütten</button><button id="automatik" aria-pressed="true">NPC-Automatik an</button></div>
+<small>Ausschüttbar ist nur realisierter Überschuss über Anfangskapital, Betriebsreserve und Ersatzrücklage. Der Spieler darf unbegrenzt sparen.</small>
+</section>
+
+<section data-seite="station" hidden>
+<h2>Stationen</h2><div id="stationen" class="rollen"></div>
+<div class="reihe"><button id="kaufMiner">Miner kaufen · 600 ISK</button><button id="kaufFrachter">Frachter kaufen · Lagerbestand/Preis werden geprüft</button></div>
+<small>Der Aldera-Kauf verwendet ausschließlich echte vorhandene Lagerhüllen. Eine vom Spieler gekaufte Hülle fehlt dem NPC-Bestand; es gibt keinen kostenlosen Ersatz.</small>
+<section id="nadirWerft" class="runden-hilfe" aria-label="F7: Eigener Werftfrachter aus Nadir">
+<h3>F7 · Deinen eigenen Werftfrachter abholen (Forschung)</h3>
+<p id="nadirWerftStatus" role="status" aria-live="polite">Die echte Werftproduktion und der Kauf aus dem Nadir-Lager werden erst im Forschungs-Core geprüft.</p>
+<button id="nadirKauf" type="button" disabled>Physisch gebauten Frachter in Nadir kaufen</button>
+<label for="nadirSchiff">Dein Frachter am Nadir-Dock</label>
+<select id="nadirSchiff" aria-label="Eigener Nadir-Frachter zur bezahlten Überführung"><option value="">Kein eigener Nadir-Frachter vorhanden</option></select>
+<button id="nadirUeberfuehrung" type="button" disabled>Bezahlte Überführung nach Aldera beauftragen</button>
+<small>Beide Befehle müssen vom autoritativen Regel200-Core freigegeben werden. Die Hülle kostet den regulären ISK-Preis und jede Überführung bindet echte Arbeitsmittel. Ohne realen Lagerbestand, ausreichend Geld oder die noch fehlende F7-Core-Freigabe bleiben die Aktionen gesperrt. Keine automatische Übernahme fremder Schiffe.</small>
+</section>
+<h2>Privater Wasserkauf des Spielers (Aldera)</h2>
+<div class="reihe"><select id="haushalt" aria-label="Privatkonto"><option value="eigner_house">Eigentümerkonto</option><option value="pilot_house">Pilotenkonto</option></select>
+<input id="wasserMenge" type="number" min="1" max="100" value="1" inputmode="numeric" aria-label="Menge Wasser"><button id="wasserKauf">Wasser kaufen</button></div>
+<small>Freiwillig, aus eigenem Geld, nur am Wohnort und nur aus tatsächlich vorhandenem Bestand.</small>
+</section>
+
+<section data-seite="flotte" hidden><h2>Alle Schiffe dieser Welt</h2><div id="schiffe" class="rollen"></div></section>
+
+<section data-seite="wirtschaft" hidden>
+<h2>Kreislauf</h2><div id="kreislauf" class="rollen"></div>
+<section id="k7Industrie" class="runden-hilfe" aria-label="K7: finanzierte NPC-Industrieverträge">
+<h3>K7 · NPC-Industrie mit echten Verträgen (Forschung)</h3>
+<p id="industrieStatus" role="status" aria-live="polite">Noch kein Industrieauftrag; Warenbestände, Schiffseigentümer und Kassen werden vom Original-Core geprüft.</p>
+<button id="industrieSchalten" type="button" aria-pressed="false">NPC-Industrie freiwillig einschalten</button>
+<small>Nur die NPC-Dispositionspolitik wird umgeschaltet. Nadir, Bergbauunternehmen, Spedition und Werft unterschreiben im Core selbst und nur bei vollständiger Vorfinanzierung. Keine Spielerunterschrift für fremde Firmen, kein Gratisgeld. Eine physische W5-Hülle kostet beim Kauf weiterhin echtes Geld.</small>
+</section>
+<h2>Haushalte</h2><div id="haushalte" class="rollen"></div>
+<h2>Engpässe</h2><div id="engpass" class="rollen"></div>
+</section>
+
+<section data-seite="spielstand" hidden>
+<h2>Spielstand dieser Welt</h2>
+<p id="speicherStatus"><small>Ablage wird geöffnet …</small></p>
+<div class="reihe"><input id="platzName" type="text" maxlength="40" value="Platz 1" aria-label="Name des Speicherplatzes"><button id="speichern">Manuell speichern</button></div>
+<div id="plaetze" class="rollen"></div>
+<div class="reihe"><button id="exportieren">Aktuellen Stand als JSON exportieren</button><button id="neueWelt">Neue Welt beginnen</button></div>
+<label>JSON importieren <input id="importieren" type="file" accept=".json,application/json"></label>
+<details><summary>Regel195-Übernahme im Regel200-Spieltest gesperrt</summary>
+<label>Regel195-JSON wählen <input id="regel195" type="file" accept=".json,application/json"></label>
+<small>Die Regel195-Übernahme ist hier deaktiviert. Regel200 benutzt eine separate IndexedDB und einen separaten JSON-Umschlag; alte Spielstände verbleiben unverändert im jeweiligen Spiel.</small>
+</details>
+<h2>Unveränderliche Sicherungen</h2><div id="sicherungen" class="rollen"></div>
+<small class="warn">Spielstände liegen nur in diesem Browser und nur für diese Adresse. NAS und GitHub Pages teilen keine Stände – zum Umziehen die JSON-Datei exportieren und dort importieren.</small>
+</section>
+</div></main></body></html>

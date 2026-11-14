@@ -29,6 +29,10 @@ const m_data_kanon = (() => {
     // Flugarbeit des Miners: jede Dienstminute außerhalb des Docks ohne Förderlohn kostet
     // den Eigentümer 1 ISK an den eigenen Piloten. Reserve wird vor dem Abdocken gebunden.
     flug: { lohnJeMinute: 1, reserveMinuten: 40, nachschussUnter: 5 },
+    // F6 [DRAFT/OPTION]: Sichtbares, physisch anzufliegendes Abflugtor in Aldera.
+    // Kein kostenloser Systemwechsel: erst bezahlter 2D-Anflug, physische
+    // Geschwindigkeitsprüfung und Rückdockung erlauben den OPTIONALEN Torvertrag.
+    tor: { x: 576000, y: -288000, radius: 64000, tempo: 192 },
     // Wasser: Nadir verkauft zum bestehenden Regel195-Preis. Aldera erhält Wasser nur als
     // bezahlte Rückfracht des Eisfrachters und verkauft mit Einzelhandelsaufschlag.
     wasser: { preisAldera: 16, rueckfrachtJeEinheit: 1, lagerAldera: 100 },
@@ -194,7 +198,11 @@ function erstellen(startkapital = {}, k7 = false) {
     // Ruhender Körper: 60 Teilschritte verändern ihn nachweislich nicht (siehe Test).
     function ruht(sh) {
       const b = sh.flug;
-      if (!b || b.lage === 'angedockt' || b.lage === 'transit') return true;
+      if (!b || b.lage === 'angedockt') return true;
+      // Transit ohne manuelle Bewegung bleibt wie bisher ein günstiger Core-Minutenlauf.
+      // Bei echtem Korridormanöver darf der 60-Schritte-Integrator nie übersprungen werden.
+      if (b.lage === 'transit') return b.modus !== 'hand'
+        || (b.vx===0 && b.vy===0 && b.sollFahrt===0 && b.kurs===b.sollKurs);
       if (b.lage !== 'frei' || b.vx !== 0 || b.vy !== 0 || b.sollFahrt !== 0 || b.kurs !== b.sollKurs || b.andocken) return false;
       if (b.modus !== 'anflug' || !b.ziel) return true;
       if (b.ziel.art !== 'feld') return false;
@@ -204,8 +212,17 @@ function erstellen(startkapital = {}, k7 = false) {
     }
     const alleRuhend = (state) => ids(state.ships).every((id) => ruht(state.ships[id]));
 
+    // K1-Spielerfrachter: ein gekauftes, unbeladenes Schiff am Aldera-Dock,
+    // ohne Frachtvertrag. NPC-Frachter und laufende W3-Transporte bleiben strikt im Transit.
+    const spielerFrachter = (state, sh) => sh.klasse === 'frachter'
+      && sh.owner === rules.economy.start.owner && sh.system === 'aldera'
+      && sh.phase === 'dock' && sh.auftrag === 'halten'
+      && ladungSumme(sh) === 0
+      && ![state.w3?.auftrag?.schiff, state.w5n?.frachtauftrag?.schiff,
+        state.w5ac?.active?.schiff, state.kanon?.rueckfracht?.schiff].includes(sh.id);
     function abdockenPruefen(state, sh) {
-      if (sh.klasse !== 'miner') return 'K1: nur Miner fliegen im System frei; Frachter reisen im bezahlten Transit';
+      if (sh.klasse !== 'miner' && !spielerFrachter(state, sh))
+        return 'K1: nur Miner oder eigene freie Aldera-Frachter dürfen im System abdocken';
       if (m_core_anlage.stillgelegt(state, sh)) return 'K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen';
       const pilot = KANON.piloten[sh.owner];
       if (!pilot || !state.owners[pilot]) return 'K1: kein Pilotenkonto für diesen Eigentümer';
@@ -219,7 +236,15 @@ function erstellen(startkapital = {}, k7 = false) {
       if (!sh || !sh.flug) return { ok: false, type: cmd && cmd.type, reason: 'unbekanntes Schiff' };
       if (!intern && hat(state.kanon.pendel, sh.id))
         return { ok: false, type: cmd.type, reason: 'K1: laufender Pendelauftrag steuert Flug und Andocken' };
-      if (sh.klasse !== 'miner') return { ok: false, type: cmd.type, reason: 'K1: nur Miner fliegen im System frei' };
+      // Ein bereits voll finanziertes F4-Frachtgeschäft kann im Original-W5n-
+      // Korridor physisch gesteuert werden. Keine weiteren Flug-/Dockbefehle,
+      // keine fremden Schiffe, kein neuer Vertrag und keine Zusatzlohnreserve.
+      const transitSteuerung = cmd.type === 'shipSteer' && sh.klasse === 'frachter'
+        && sh.owner === rules.economy.start.owner && sh.flug.lage === 'transit'
+        && state.w5n?.frachtauftrag?.schiff === sh.id
+        && state.kanon.spielerFrachten?.auftraege?.some(x => x.schiff === sh.id && x.end === null);
+      if (sh.klasse !== 'miner' && !spielerFrachter(state, sh) && !transitSteuerung)
+        return { ok: false, type: cmd.type, reason: 'K1: nur Miner oder eigene freie Aldera-Frachter fliegen im System frei' };
       const vor = FLUG.pruefen(state, cmd);
       if (vor) return { ok: false, type: cmd.type, reason: vor };
       if (cmd.type === 'shipUndock') {
@@ -598,6 +623,201 @@ function erstellen(startkapital = {}, k7 = false) {
   })();
 
   // -------------------------------------------------------------- m_core_disponent
+  // ---------------------------------------------------------------- m_core_spielerfracht
+  // Der Original-W5n-Kern bleibt einziger Transportintegrator. K1 dokumentiert
+  // Spieler-Eigentum und leitet jede BEZAHLTE W5ag-Pilotenminute durch ein
+  // gepaartes Geldbuch vom Original-Verrechnungskonto an pilot_house weiter.
+  const m_core_spielerfracht = (() => {
+    const owner = rules.economy.start.owner, clearing = rules.w5ag.pilots.eis;
+    const pilot = KANON.piloten[owner];
+    function starten(s, sh) {
+      const a = s.w5n.frachtauftrag;
+      if (!a || a.schiff !== sh.id || sh.owner !== owner)
+        throw Error('K1/F4: Original-Eisfrachtauftrag fehlt');
+      const f = s.kanon.spielerFrachten ||= { auftraege: [], lohn: 0, gebuehr: 0 };
+      if (f.auftraege.some(x => x.end === null)) throw Error('K1/F4: Doppelauftrag');
+      f.auftraege.push({ schiff: sh.id, start: s.tick, end: null, geliefert: null,
+        menge: a.menge, eis: a.eis, arbeit: a.arbeit, fracht: a.fracht, zeit: a.zeit });
+    }
+    function minute(s, vor, lohnVor, geliefertVor, gebuehrVor) {
+      if (!vor || s.ships[vor.schiff]?.owner !== owner) return;
+      const f = s.kanon.spielerFrachten, x = f?.auftraege.at(-1);
+      if (!x || x.schiff !== vor.schiff || x.end !== null)
+        throw Error('K1/F4: Spielerfracht ohne Originalvertrag');
+      const lohn = s.w5n.frachtLohn - lohnVor;
+      if (lohn !== W.fliegerLohn) throw Error('K1/F4: Flugminute nicht entlohnt');
+      m_core_buch.transfer(s, clearing, pilot, lohn, 'spielerfracht-pilot');
+      f.lohn += lohn;
+      if (s.w5n.eisGeliefert !== geliefertVor) {
+        if (x.geliefert !== null || s.w5n.eisGeliefert - geliefertVor !== x.menge
+          || s.tick !== x.start + x.zeit) throw Error('K1/F4: Lieferbeleg fehlerhaft');
+        x.geliefert = s.tick;
+      }
+      const gebuehr = s.w5n.frachtUmsatz - gebuehrVor;
+      if (gebuehr) {
+        if (gebuehr !== x.fracht || x.geliefert !== x.start + x.zeit
+          || s.tick !== x.start + 2 * x.zeit
+          || s.w5n.frachtauftrag?.schiff === x.schiff)
+          throw Error('K1/F4: Frachtentgelt ohne Rundfahrt');
+        x.end = s.tick; f.gebuehr += gebuehr;
+      }
+    }
+    function audit(s) {
+      const f = s.kanon.spielerFrachten, a = s.w5n.frachtauftrag;
+      if (!f) return !a || s.ships[a.schiff]?.owner !== owner;
+      if (!Array.isArray(f.auftraege) || !ganz(f.lohn) || !ganz(f.gebuehr)) return false;
+      const dauer = 2 * W.flugMinuten, arbeit = dauer * W.fliegerLohn;
+      const fracht = dauer * W.frachtJeMinute, eis = W.charge * W.eisPreis;
+      let lohn = 0, gebuehr = 0, aktiv = 0;
+      const gesehen = new Set();
+      for (let i = 0; i < f.auftraege.length; i++) {
+        const x = f.auftraege[i], sh = s.ships[x?.schiff], offen = x?.end === null;
+        const key = x?.schiff + '|' + x?.start;
+        if (!sh || sh.owner !== owner || sh.klasse !== 'frachter'
+          || sh.heimat !== 'aldera' || !ganz(x.start) || x.start > s.tick
+          || x.menge !== W.charge || x.eis !== eis || x.arbeit !== arbeit
+          || x.fracht !== fracht || x.zeit !== W.flugMinuten
+          || gesehen.has(key) || (i && f.auftraege[i-1].start > x.start)) return false;
+        gesehen.add(key);
+        if (offen) {
+          if (++aktiv !== 1 || i !== f.auftraege.length - 1 || !a
+            || a.schiff !== x.schiff || !ganz(a.gearbeitet)
+            || a.gearbeitet >= dauer || s.tick !== x.start + a.gearbeitet
+            || sh.phase !== 'reise' || sh.flug?.lage !== 'transit'
+            || x.geliefert !== (a.phase === 'rueck' ? x.start + x.zeit : null))
+            return false;
+          lohn += a.gearbeitet * W.fliegerLohn;
+        } else {
+          if (!ganz(x.end) || x.end !== x.start + dauer
+            || x.geliefert !== x.start + x.zeit || x.end > s.tick) return false;
+          lohn += arbeit; gebuehr += fracht;
+        }
+      }
+      if (a && s.ships[a.schiff]?.owner === owner && aktiv !== 1) return false;
+      return f.lohn === lohn && f.gebuehr === gebuehr
+        && m_core_buch.summe(s, 'spielerfracht-pilot',
+          (von, an) => von === clearing && an === pilot) === lohn
+        && m_core_buch.summe(s, 'spielerfracht-pilot') === lohn
+        && s.w5n.frachtBeauftragt >= f.auftraege.length
+        && s.w5n.frachtAbgeschlossen >= f.auftraege.length - aktiv
+        && s.w5n.frachtLohn >= lohn && s.w5n.frachtUmsatz >= gebuehr;
+    }
+    return { starten, minute, audit };
+  })();
+
+  // ----------------------------------------------------------- m_core_torfreigabe
+  // K1/F6: optionale, echte Abflug-Navigation, NICHT die W5n-Ankunft.
+  // Jeder Torbeleg stammt aus bezahltem Original-2D-Handflug. Erst danach darf
+  // der Spieler selbst den speziellen Original-W5n-Vertrag im Dock annehmen.
+  // Historische F4-/F5-Verträge und Saves ohne tor-Feld bleiben identisch.
+  const m_core_torfreigabe = (() => {
+    const owner=rules.economy.start.owner, tor=KANON.tor;
+    const inner=(sh)=> {
+      if(!sh?.flug) return false;
+      const b=sh.flug, dx=b.x-tor.x,dy=b.y-tor.y;
+      return dx*dx+dy*dy<=tor.radius*tor.radius
+        && b.vx*b.vx+b.vy*b.vy<=tor.tempo*tor.tempo;
+    };
+    const owned=(s,sh)=>!!sh && sh.owner===owner && sh.klasse==='frachter'
+      && sh.system==='aldera' && sh.phase==='dock'
+      && sh.auftrag==='halten' && ladungSumme(sh)===0
+      && !m_core_anlage.stillgelegt(s,sh);
+    const valide=(e,s)=>e && typeof e==='object' && !Array.isArray(e)
+      && Object.keys(e).sort().join()==='arbeit,schiff,tick,vx,vy,x,y'
+      && typeof e.schiff==='string' && ganz(e.tick) && e.tick<=s.tick
+      && ganz(e.arbeit) && e.arbeit>0 && e.arbeit<=e.tick
+      && [e.x,e.y,e.vx,e.vy].every(Number.isSafeInteger)
+      && (e.x-tor.x)**2+(e.y-tor.y)**2<=tor.radius**2
+      && e.vx**2+e.vy**2<=tor.tempo**2
+      && s.ships[e.schiff]?.owner===owner
+      && s.ships[e.schiff]?.klasse==='frachter';
+    const key=(x)=>x.schiff+'|'+x.tick+'|'+x.arbeit;
+    const same=(x,y)=>!!x&&!!y&&key(x)===key(y)
+      && x.x===y.x&&x.y===y.y&&x.vx===y.vx&&x.vy===y.vy;
+    function pruefen(s,sh) {
+      if(!owned(s,sh))return {ok:false,grund:'Nur eigener freier Aldera-Frachter darf das Abflugtor bestaetigen'};
+      if(sh.flug.lage!=='frei')return {ok:false,grund:'Torabnahme nur im echten freien 2D-Flug'};
+      const dienst=s.kanon.flugdienst[sh.id];
+      if(!dienst||dienst.gestrandet||!ganz(dienst.minuten)||dienst.minuten===0
+        ||!s.owners[dienst.konto]||s.owners[dienst.konto].cash<1)
+        return {ok:false,grund:'Tor-Anflug nur mit tatsaechlich finanzierter Pilotenarbeit'};
+      if(!inner(sh))return {ok:false,grund:'Torposition oder Anflugtempo nicht erreicht'};
+      if(s.kanon.tor?.freigaben?.[sh.id])
+        return {ok:false,grund:'Torfreigabe bereits vorhanden'};
+      return {ok:true,grund:'Bezahlter Anflug und Original-Flugtempo bestaetigt'};
+    }
+    function check(s,cmd) {
+      const sh=s.ships[cmd?.schiff],typ='shipGateCheck';
+      if(!cmd||typeof cmd!=='object'||Array.isArray(cmd)
+        ||Object.keys(cmd).some(k=>!['type','owner','schiff'].includes(k))
+        ||cmd.owner!==owner||cmd.owner!==sh?.owner)
+        return {ok:false,type:typ,reason:'Torabnahme: nur rechtmaessiger Schiffeigentuemer'};
+      const r=pruefen(s,sh);if(!r.ok)return {ok:false,type:typ,reason:r.grund};
+      const d=s.kanon.flugdienst[sh.id],b=sh.flug;
+      const e={schiff:sh.id,tick:s.tick,arbeit:d.minuten,x:b.x,y:b.y,vx:b.vx,vy:b.vy};
+      const t=s.kanon.tor ||= {historie:[],freigaben:{},genutzt:0};
+      t.historie.push(e);t.freigaben[sh.id]={...e};
+      return {ok:true,type:typ};
+    }
+    function darfFracht(s,cmd){
+      const sh=s.ships[cmd?.schiff],t=s.kanon.tor,typ='shipFreightGateIce';
+      if(!cmd||typeof cmd!=='object'||Array.isArray(cmd)
+        ||Object.keys(cmd).some(k=>!['type','owner','schiff'].includes(k))
+        ||cmd.owner!==owner||cmd.owner!==sh?.owner)
+        return {ok:false,type:typ,reason:'Torfracht: fremdes oder unbekanntes Schiff'};
+      if(!owned(s,sh)||sh.flug.lage!=='angedockt'||sh.flug.anker!=='st_aldera')
+        return {ok:false,type:typ,reason:'Torfracht: zuerst physisch zum Aldera-Dock zurueckkehren'};
+      const proof=t?.freigaben?.[sh.id];
+      if(!valide(proof,s)||!t.historie.some(x=>same(x,proof)))
+        return {ok:false,type:typ,reason:'Torfracht: kein nachgewiesener bezahlter Toranflug'};
+      return {ok:true,type:typ,proof:{...proof}};
+    }
+    function starten(s,cmd){
+      const check=darfFracht(s,cmd);
+      if(!check.ok)return check;
+      // In exakt demselben Core-Execute startet der bereits bestehende,
+      // vollstaendig finanzierte Original-W5n-Vertrag. Bei Ablehnung keinerlei
+      // Mutationen am Torbuch. Erst ERFOLG konsumiert den Torbeleg.
+      const r=execute(s,{type:'shipFreightIce',owner:cmd.owner,schiff:cmd.schiff});
+      if(!r.ok)return {ok:false,type:'shipFreightGateIce',reason:r.reason};
+      const a=s.kanon.spielerFrachten?.auftraege.at(-1);
+      if(!a||a.schiff!==cmd.schiff||a.end!==null)throw Error('F6: Originalauftrag fehlt nach Start');
+      const t=s.kanon.tor;
+      a.tor={...check.proof};delete t.freigaben[cmd.schiff];t.genutzt++;
+      return {ok:true,type:'shipFreightGateIce'};
+    }
+    function audit(s) {
+      const t=s.kanon.tor;
+      if(t===undefined)return !(s.kanon.spielerFrachten?.auftraege||[]).some(x=>x.tor!==undefined);
+      if(!t||typeof t!=='object'||Array.isArray(t)
+        ||Object.keys(t).sort().join()!=='freigaben,genutzt,historie'
+        ||!Array.isArray(t.historie)||!t.freigaben||typeof t.freigaben!=='object'
+        ||Array.isArray(t.freigaben)||!ganz(t.genutzt))return false;
+      const keys=new Set(),used=new Set();
+      for(const [i,e] of t.historie.entries()){
+        if(!valide(e,s)||keys.has(key(e))
+          ||(i&&t.historie[i-1].tick>e.tick))return false;
+        keys.add(key(e));
+      }
+      for(const [id,e] of Object.entries(t.freigaben)){
+        if(id!==e?.schiff||!valide(e,s)||!t.historie.some(x=>same(x,e)))return false;
+        // Auch ein regulaerer F4-Vertrag darf ohne Torpflicht laufen; seine
+        // vorherige Torfreigabe bleibt bis zur bewussten F6-Wahl ungenutzt.
+      }
+      let paid=0;
+      for(const c of s.kanon.spielerFrachten?.auftraege||[])if(c.tor!==undefined){
+        const e=c.tor;
+        if(!valide(e,s)||!t.historie.some(x=>same(x,e))||used.has(key(e))
+          ||e.schiff!==c.schiff||e.tick>=c.start) return false;
+        used.add(key(e));paid++;
+        if(t.freigaben[e.schiff]&&same(t.freigaben[e.schiff],e))return false;
+      }
+      return paid===t.genutzt && keys.size===used.size+Object.keys(t.freigaben).length
+        && t.historie.every(e=>used.has(key(e))||same(t.freigaben[e.schiff],e));
+    }
+    return { pruefen, check, darfFracht, starten, audit };
+  })();
+
   // NPC-Automatik: wählt nur finanzierte Aufträge und nutzt dieselben validierten Befehle.
   const m_core_disponent = (() => {
     const versuch = (state, cmd, k1) => (k1 ? m_core_kreislauf.ausfuehren(state, cmd) : kern.execute(state, cmd, rules));
@@ -767,6 +987,8 @@ function erstellen(startkapital = {}, k7 = false) {
       pruefeForm(state);
       const k = state.kanon, fehler = [];
       if (k7) {
+        if (k.industrieAuto !== undefined && typeof k.industrieAuto !== 'boolean')
+          fehler.push('K7-Industrieautomatik: ungültige Einstellung');
         const i=k.industrieErz, a=state.w3?.auftrag;
         const beteiligte=i && ['angebot','aktiv','geliefert'].includes(i.phase);
         // Vertrags-IDs sind reale Eigentumsrechte, nicht vom JSON-Importer
@@ -795,8 +1017,26 @@ function erstellen(startkapital = {}, k7 = false) {
       if (!wirtschaft.ok) fehler.push('Wirtschaft: ' + Object.keys(wirtschaft).filter((x) => wirtschaft[x] && wirtschaft[x].ok === false).join(','));
       if (!m_core_buch.audit(state)) fehler.push('K1-Buch');
       if (!m_core_minerwerft.audit(state)) fehler.push('K2-Minerwerft/Transport');
+      if (!m_core_spielerfracht.audit(state)) fehler.push('K1-Spielerfracht/Vertragslohn');
+      if (!m_core_torfreigabe.audit(state)) fehler.push('K1-Bezahltes-Tor/Vertragsfreigabe');
       if (state.minted !== 0 || state.burned !== 0) fehler.push('Emission/Senke in K1 nicht freigegeben');
       for (const id of ids(state.owners)) if (!ganz(state.owners[id].cash)) fehler.push('Kasse ' + id);
+      // Unabhängige Gegenbuchung zum Original-W5ad-Transportkaufjournal:
+      // nur tatsächlich gekaufte, vorhandene Spielerhüllen, niemals Gratis-Spawn.
+      // Optional bei alten K1-Saves ohne Spielerfrachter; keine stille Migration.
+      const spielerHuellen = ids(state.ships).map((id) => state.ships[id])
+        .filter((sh) => sh.owner === rules.economy.start.owner && sh.klasse === 'frachter');
+      const belege = k.spielerFrachterKaeufe ?? [];
+      const frPreis = rules.economy.waren.frachter.basis;
+      if (!Array.isArray(belege) || belege.length !== spielerHuellen.length
+        || new Set(belege.map((x) => x?.id)).size !== belege.length
+        || belege.some((x) => !x || typeof x.id !== 'string' || !ganz(x.tick)
+          || x.tick > state.tick || x.station !== 'st_aldera' || x.preis !== frPreis
+          || state.ships[x.id]?.owner !== rules.economy.start.owner
+          || state.ships[x.id]?.klasse !== 'frachter'
+          || state.ships[x.id]?.heimat !== 'aldera')
+        || state.ledger.frachter.consumed !== (state.w5ad?.purchases?.length ?? 0) + belege.length)
+        fehler.push('Spielerfrachter-Kaufbelege');
       // Wasserbuch: jede Einheit hat Herkunft (Wasserwerk) und Verbleib.
       const w = k.wasser, an = state.stations[W.quellStation].lager.wasser;
       const unterwegs = ids(state.ships).reduce((n, id) => n + (state.ships[id].ladung.wasser || 0), 0);
@@ -815,7 +1055,10 @@ function erstellen(startkapital = {}, k7 = false) {
       for (const id of ids(state.ships)) {
         const sh = state.ships[id];
         if (hat(FLUG.DATEN.klassen, sh.klasse) && !sh.flug) fehler.push('Körper fehlt ' + id);
-        if (sh.klasse === 'frachter' && sh.flug && !['angedockt', 'transit'].includes(sh.flug.lage)) fehler.push('Frachter im Freiflug ' + id);
+        if (sh.klasse === 'frachter' && sh.flug && !['angedockt', 'transit'].includes(sh.flug.lage)
+          && (sh.owner !== rules.economy.start.owner || sh.system !== 'aldera'
+            || sh.phase !== 'dock' || sh.auftrag !== 'halten' || ladungSumme(sh) !== 0))
+          fehler.push('Unzulässiger Frachter im Freiflug ' + id);
         if (!ganz(k.verschleiss[id] ?? 0)) fehler.push('Verschleiß ' + id);
         // Ware an Bord eines Miners setzt echte Förderung voraus (Kernbuch prüft Mengen).
         if (sh.klasse === 'miner' && sh.phase !== 'dock') fehler.push('Miner in Kernreise ' + id);
@@ -824,7 +1067,9 @@ function erstellen(startkapital = {}, k7 = false) {
       // Flugdienst: Reservekonto existiert genau für Schiffe außerhalb des Docks.
       for (const id of ids(state.ships)) {
         const sh = state.ships[id], d = k.flugdienst[id];
-        if (sh.klasse !== 'miner' || !sh.flug) continue;
+        if (!sh.flug || (sh.klasse !== 'miner'
+          && !(sh.klasse === 'frachter' && sh.owner === rules.economy.start.owner
+            && sh.phase === 'dock' && sh.system === 'aldera'))) continue;
         const konto = state.owners[m_core_flugplan.dienstKonto(id)];
         if (!d && konto && konto.cash !== 0) fehler.push('Flugreserve ohne Dienst ' + id);
         if (!d && sh.flug.lage !== 'angedockt') fehler.push('Flug ohne finanzierten Dienst ' + id);
@@ -1019,16 +1264,98 @@ function erstellen(startkapital = {}, k7 = false) {
     return verwerfen('unbekannte Vertragsaktion');
   }
 
+  // K7 research-only: independent NPC signers use the existing validated K7
+  // commands. The player's browser only changes the optional policy flag;
+  // it cannot sign on behalf of NPC companies or create cash, ships or ore.
+  function industrieAutoSchritt(s) {
+    if (!k7 || s.kanon.industrieAuto !== true || s.kanon.politik.automatik !== true) return;
+    const i = s.kanon.industrieErz, nadir = s.stations[rules.w5.station].lager;
+    if (i.phase === 'aktiv' || i.phase === 'geliefert') {
+      // Production may begin only after the existing physical Nadir arrival
+      // and after full original W4 work funding has been checked.
+      const amNadirGeliefert = i.phase === 'geliefert'
+        || (s.w3.auftrag?.phase === 'rueck'
+          && s.w3.auftrag?.industrieMiner === i.miner);
+      if (i.erzAngenommen && amNadirGeliefert && !i.werftVerwendet) {
+        if (!s.w4.auftrag && !s.w5.auftrag && !s.kanon.minerWerft?.auftrag
+          && (nadir.material || 0) < rules.w5.material
+          && (nadir.erz || 0) >= rules.w4.erzJeCharge) {
+          const q = kern.pilotW4Kalkulation(s);
+          if (q.ok) kern.execute(s, { type:'stationRefine', owner:rules.w4.station,
+            station:rules.w4.station }, rules);
+        }
+        if (!s.w4.auftrag && !s.w5.auftrag && !s.kanon.minerWerft?.auftrag
+          && (nadir.material || 0) >= rules.w5.material)
+          k7Befehl(s, { type:'industrialOreBuildShip', owner:rules.w5.werft });
+      }
+      // The active contract must finish; the NPCs cannot replace its
+      // signatures or issue a second W3 escrow in parallel.
+      if (i.phase !== 'geliefert' || !i.werftVerwendet) return;
+    }
+    if (!['frei','storniert','geliefert'].includes(i.phase)
+      || s.w3.auftrag || s.w5n.frachtauftrag || s.w4.auftrag || s.w5.auftrag
+      || s.kanon.minerWerft?.auftrag) return;
+    // A limited warehouse target is physical demand, not invented ISK.
+    if ((nadir.frachter || 0) >= rules.world.stations[rules.w5.station].ziel.frachter)
+      return;
+    if (s.owners.npc3.cash < K7_PREIS.bergbau
+      || s.owners.st_aldera.cash < K7_PREIS.alderakauf
+      || s.owners.st_nadir.cash < K7_PREIS.nadiraufwand
+      || s.owners.transport.cash < K7_PREIS.frachtlohn
+      || s.owners.werft_extern.cash < K7_PREIS.werft) return;
+    const miner = ids(s.ships).map(id=>s.ships[id]).find(sh =>
+      sh.owner === 'npc3' && sh.klasse === 'miner' && sh.system === 'aldera'
+      && sh.flug?.lage === 'angedockt' && !m_core_anlage.stillgelegt(s, sh)
+      && ladungSumme(sh) === 0 && !s.erzpilotVertraege?.[sh.id]
+      && (!s.kanon.pendel[sh.id] || s.kanon.pendel[sh.id].ware === 'erz'));
+    const frachter = ids(s.ships).map(id=>s.ships[id]).find(sh =>
+      sh.owner === 'transport' && sh.klasse === 'frachter'
+      && sh.system === 'aldera' && sh.phase === 'dock'
+      && sh.auftrag === 'halten' && !m_core_anlage.stillgelegt(s, sh)
+      && ladungSumme(sh) === 0);
+    if (!miner || !frachter) return;
+    const befehle = [
+      {type:'industrialOreOffer',owner:'st_nadir',miner:miner.id,frachter:frachter.id},
+      {type:'industrialOreAcceptMine',owner:'npc3'},
+      {type:'industrialOreAcceptFreight',owner:'transport'},
+      {type:'industrialOreAcceptYard',owner:'werft_extern'},
+      {type:'industrialOreCommit',owner:'st_nadir'},
+    ];
+    for (const cmd of befehle) {
+      const r = k7Befehl(s, cmd);
+      if (!r.ok) {
+        if (s.kanon.industrieErz.phase === 'angebot')
+          k7Befehl(s, {type:'industrialOreCancel',owner:'st_nadir'});
+        return;
+      }
+    }
+  }
+  function industrieAutoSetzen(s, aktiviert) {
+    pruefeForm(s);
+    if (!k7) throw Error('K7-Automatik ist ausschließlich Regel200-Forschung');
+    if (typeof aktiviert !== 'boolean') throw TypeError('K7-Automatik verlangt Boolean');
+    s.kanon.industrieAuto = aktiviert;
+    if (aktiviert) industrieAutoSchritt(s);
+    return {ok:true, aktiviert};
+  }
+
   function execute(state, cmd) {
     pruefeForm(state);
     const type = cmd && cmd.type;
     if(k7&&typeof type==='string'&&type.startsWith('industrialOre'))return k7Befehl(state,cmd);
     if (typeof type === 'string' && hat(FLUG.BEFEHLE, type)) return m_core_flugplan.befehl(state, cmd, false);
+    if (type === 'shipGateCheck') return m_core_torfreigabe.check(state,cmd);
+    if (type === 'shipFreightGateIce') return m_core_torfreigabe.starten(state,cmd);
     if (type === 'stationBuildMiner') return m_core_minerwerft.bauen(state, cmd);
     if (typeof type === 'string' && hat(m_core_kreislauf.BEFEHLE, type)) return m_core_kreislauf.ausfuehren(state, cmd);
     if (type === 'pilotWaterBuy')
       return { ok: false, type, reason: 'K1: Wasser nur am Wohnort über householdBuy; kein ortsloser Kauf' };
     const sh = cmd && typeof cmd.schiff === 'string' ? state.ships[cmd.schiff] : null;
+    // Der ursprüngliche Wirtschaftskern kennt nur Dock und intersystemischen Transit.
+    // Während echtem 2D-Freiflug keine wirtschaftlichen Dockbefehle auf dieselbe
+    // Hülle anwenden: sonst würde eine Fracht ohne physische Andockung starten.
+    if (sh?.klasse === 'frachter' && sh.flug?.lage !== 'angedockt')
+      return { ok: false, type, reason: 'K1: Wirtschaftsauftrag nur mit physisch angedocktem Frachter' };
     if (sh && hat(state.kanon.pendel, sh.id) && ['shipMine', 'shipWait', 'shipSellIce'].includes(type))
       return { ok: false, type, reason: 'K1: laufender Pendelauftrag steuert Förderung und Abnahme' };
     if (sh && ['shipFreight', 'shipFreightIce'].includes(type) && m_core_anlage.stillgelegt(state, sh))
@@ -1036,7 +1363,11 @@ function erstellen(startkapital = {}, k7 = false) {
     if (type === 'stationBuildShip' && state.kanon.minerWerft?.auftrag)
       return { ok: false, type, reason: 'K2: Werft baut einen Miner' };
     const r = kern.execute(state, cmd, rules);
-    if (r.ok) m_core_flugplan.koerperSync(state);
+    if (r.ok) {
+      if (type === 'shipFreightIce' && sh?.owner === rules.economy.start.owner)
+        m_core_spielerfracht.starten(state, sh);
+      m_core_flugplan.koerperSync(state);
+    }
     return r;
   }
   // Abschluss einer Wirtschaftsminute in fester Reihenfolge.
@@ -1044,7 +1375,14 @@ function erstellen(startkapital = {}, k7 = false) {
     const vorher = {};
     for (const id of ids(state.ships)) vorher[id] = ladungSumme(state.ships[id]);
     const frachter = ids(state.ships).filter((id) => state.ships[id].klasse === 'frachter' && state.ships[id].phase === 'reise');
+    const vorherEisauftrag = state.w5n.frachtauftrag
+      ? { schiff: state.w5n.frachtauftrag.schiff } : null;
+    const vorherEislohn = state.w5n.frachtLohn;
+    const vorherEisgeliefert = state.w5n.eisGeliefert;
+    const vorherEisgebuehr = state.w5n.frachtUmsatz;
     const ergebnis = kern.step(state, rules);
+    m_core_spielerfracht.minute(state, vorherEisauftrag, vorherEislohn,
+      vorherEisgeliefert, vorherEisgebuehr);
     if(k7&&state.kanon.industrieErz?.phase==='aktiv'
       &&state.w3.auftrag===null&&state.w3.abgeschlossen>0
       &&state.kanon.industrieErz.erzAngenommen)state.kanon.industrieErz.phase='geliefert';
@@ -1057,6 +1395,8 @@ function erstellen(startkapital = {}, k7 = false) {
     for (const id of frachter) state.kanon.verschleiss[id] = (state.kanon.verschleiss[id] || 0) + 1;
     m_core_kreislauf.rueckfracht(state);
     m_core_minerwerft.transport(state);
+    // Signed K7-W5 reserve takes priority over discretionary NPC shipbuilding.
+    industrieAutoSchritt(state);
     m_core_disponent.schritt(state);
     m_core_flugplan.koerperSync(state);
     m_core_flugplan.plan(state, true, true);
@@ -1122,11 +1462,18 @@ function erstellen(startkapital = {}, k7 = false) {
         minerGebaut: k.minerWerft?.fertig || 0, minerGeliefert: k.minerWerft?.geliefert || 0 },
       verkaeufe: { eisAnAldera: w5n.mineVerkauft, wasserNadir: k.wasser.verkauftNadir, wasserAldera: k.wasser.verkauftAldera,
         wasserErloes: m_core_buch.summe(state, 'wasser-einzelhandel'), erzExportiert: state.ledger.erz.exported },
-      auftraege: { eisfrachten: w5n.frachtAbgeschlossen, eisGeliefert: w5n.eisGeliefert, erzfrachten: state.w3.abgeschlossen, wasserchargen: w5n.fabrikFertig,
+      auftraege: { eisfrachten: w5n.frachtAbgeschlossen, eisGeliefert: w5n.eisGeliefert,
+        ...(k.spielerFrachten ? {
+          spielerEisfracht: k.spielerFrachten.auftraege.filter((x) => x.end !== null).length,
+          spielerFrachtAktiv: k.spielerFrachten.auftraege.some((x) => x.end === null)
+        } : {}),
+        erzfrachten: state.w3.abgeschlossen, wasserchargen: w5n.fabrikFertig,
         rueckfrachtWasser: k.wasser.rueckGeliefert },
       loehne: { bergbau: w5n.mineLohn + state.ledger.erz.mined * rules.erzpilot.minerJeMinute,
         frachtpiloten: state.w5ag.paid.erz + state.w5ag.paid.eis, wasserwerk: w5n.fabrikBezahlt,
-        minerflug: m_core_buch.summe(state, 'fluglohn') },
+        minerflug: m_core_buch.summe(state, 'fluglohn'),
+        ...(k.spielerFrachten
+          ? { spielerFrachtpilot: m_core_buch.summe(state, 'spielerfracht-pilot') } : {}) },
       dividenden: m_core_buch.summe(state, 'dividende'),
       inventar: { eisAldera: state.stations.st_aldera.lager.eis || 0, eisNadir: state.stations.st_nadir.lager.eis || 0,
         wasserNadir: state.stations.st_nadir.lager.wasser || 0, wasserAldera: state.stations.st_aldera.lager.wasser || 0,
@@ -1141,8 +1488,9 @@ function erstellen(startkapital = {}, k7 = false) {
 
   return Object.freeze({
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
-    createState, politikSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
+    createState, politikSetzen, industrieAutoSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
+    torPruefen: m_core_torfreigabe.pruefen, torFrachtPruefen: m_core_torfreigabe.darfFracht,
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,
     buchwert: (state, id) => m_core_anlage.buchwert(state, state.ships[id]),
   });

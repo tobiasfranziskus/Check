@@ -456,14 +456,16 @@ const m_data_erzpilot = (() => {
         {id:'j3_bauteil_arbeiter',kind:'labor',cash:0}];
     }
     if(research.jaeger===true){
-      const r=W5_RULES.economy.rezepte.r_jaeger;
+      const r=m_data_economy.ECONOMY.rezepte.r_jaeger;
       W5_RULES.rulesVersion=203;
       W5_RULES.j4=Object.freeze({
         station:'st_nadir',owner:'st_nadir',arbeiter:'j4_jaeger_arbeiter',
         material:r.ein.material,bauteile:r.ein.bauteil,dauer:r.dauer,
         lohnJeMinute:W5_RULES.w5.lohnJeMinute,
-        verkaufspreis:W5_RULES.economy.waren.jaeger.basis,lagerMax:2
+        verkaufspreis:m_data_economy.ECONOMY.waren.jaeger.basis,lagerMax:2
       });
+      W5_RULES.economy={...W5_RULES.economy,waren:{
+        ...W5_RULES.economy.waren,jaeger:{...m_data_economy.ECONOMY.waren.jaeger}}};
       W5_RULES.world={...W5_RULES.world,stations:{
         ...W5_RULES.world.stations,st_nadir:{
           ...W5_RULES.world.stations.st_nadir,

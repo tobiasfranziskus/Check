@@ -18,13 +18,18 @@ const Welt=require('../prototypes/welt/welt-kern.js');
  assert.equal(proven.ships.sh023.owner,'house');
  assert.equal(proven.ledger.jaeger.consumed,1);
  const server=http.createServer((req,res)=>{
-  const dest=path.resolve(root,'.'+new URL(req.url,'http://localhost').pathname);
-  if(!dest.startsWith(root+'/prototypes/')||!/[.]((html)|(js)|(css))$/.test(dest)){
-   res.writeHead(404).end();return;
-  }
-  try{res.setHeader('Content-Type',dest.endsWith('.js')?'text/javascript':'text/html');
-   res.end(fs.readFileSync(dest));}
-  catch(_){res.writeHead(404).end();}
+  const pathname=new URL(req.url,'http://localhost').pathname;
+  const dest=pathname==='/'?path.join(root,'index.html'):path.resolve(root,'.'+pathname);
+  const pagesRoot=pathname==='/'||pathname==='/index.html';
+  const asset=dest.startsWith(root+path.sep+'prototypes'+path.sep)
+   &&/[.]((html)|(js)|(css)|(json))$/.test(dest);
+  if(!pagesRoot&&!asset){res.writeHead(404).end();return;}
+  try{
+   const ext=path.extname(dest),types={'.js':'text/javascript','.html':'text/html','.json':'application/json','.css':'text/css'};
+   res.setHeader('Content-Type',types[ext]||'text/plain');
+   res.setHeader('Cache-Control','no-store');
+   res.end(fs.readFileSync(dest));
+  }catch(_){res.writeHead(404).end();}
  });
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const browserKind=process.env.WELT_BROWSER==='webkit'?'webkit':'chromium';
@@ -40,7 +45,12 @@ const Welt=require('../prototypes/welt/welt-kern.js');
     await node.scrollIntoViewIfNeeded();await node.tap();
    };
    try{
-    await page.goto('http://127.0.0.1:'+server.address().port+'/prototypes/j4c/index.html');
+    await page.goto('http://127.0.0.1:'+server.address().port+'/');
+    assert.match(await page.locator('h1').first().textContent(),/W0–W5/);
+    const href=await page.locator('nav[aria-label="Spielmodi"] a').getAttribute('href');
+    assert.equal(href,'prototypes/j4c/index.html','öffentliches Hauptspiel verlinkt den Jäger');
+    await page.locator('nav[aria-label="Spielmodi"] a').tap();
+    await page.waitForURL('**/prototypes/j4c/index.html');
     assert.equal(await page.locator('#duell-start').isDisabled(),true);
     assert.equal(await page.locator('#duell-feuer').isDisabled(),true);
     // Öffentlicher Startknopf: echte, vorfinanzierte statische Welt statt CI-Download.

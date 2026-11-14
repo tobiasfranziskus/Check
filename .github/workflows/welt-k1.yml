@@ -46,6 +46,17 @@ on:
 permissions:
   contents: read
 jobs:
+  j4a-originalbelege-node22:
+    name: "J4a Fokus – reale K7-Erzfinanzierung und Nadir-Anlieferung"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "J4a Originalverträge, Eigentum und positive/negative 50-Erz-Logik"
+        run: node --test tests/j4a-erzbeschaffung-probe.test.mjs
   kern-wirtschaft-speicher-node22:
     runs-on: ubuntu-latest
     timeout-minutes: 40

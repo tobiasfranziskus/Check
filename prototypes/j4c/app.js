@@ -31,12 +31,27 @@ function laden(json,freigabe){
   const sh=passendenJaeger(neu.zustand);
   if(!sh)throw Error('Kein tatsächlich für 900 ISK gekaufter Spieler-Jäger im Save');
   if(!neu.welt.audit(neu.zustand).ok)throw Error('K1/J4-Audit nicht bestanden');
+  // Atomarer Sitzungswechsel: erst den *neuen* Weltstand vollständig validieren,
+  // dann ausdrücklich vor Verlust einer ungesicherten aktuellen Sitzung warnen.
+  if(welt&&!window.confirm('Der neue, geprüfte Jägerstand ersetzt die aktuelle Sitzung im Arbeitsspeicher.\\n'
+    +'Bitte den bisherigen Stand zuerst mit „Geprüften JSON-Spielstand exportieren“ sichern.\\n'
+    +'Jetzt wirklich zur neuen Sitzung wechseln?')){
+   $('datei').value='';
+   meldung('Sitzungswechsel abgebrochen; deine bisherige Jägersitzung bleibt unverändert.');
+   anzeigen();return false;
+  }
   welt=neu.welt;weltzustand=neu.zustand;pilot=sh.id;ursprung=neu.quellHash;
   spielt=false;$('play').textContent='Flugzeit starten';aktion=null;patrouille=null;duell=null;
   $('datei').value='';$('unterschrift').hidden=true;
   meldung('Geprüfter, real bezahlter Jäger '+pilot+' geladen · Quellhash '+ursprung);
-  anzeigen();
- }catch(e){meldung('Laden abgebrochen: '+e.message,true);welt=null;weltzustand=null;pilot=null;patrouille=null;duell=null;spielt=false;anzeigen();}
+  anzeigen();return true;
+ }catch(e){
+  // Nie den vorherigen validen Weltstand oder seine Spielzeit/Flugmission
+  // durch fehlerhafte Dateien/Importe/Netzantworten auf null zurücksetzen.
+  $('datei').value='';
+  meldung('Laden abgebrochen: '+e.message+' · Vorherige Sitzung erhalten.',true);
+  anzeigen();return false;
+ }
 }
 function befehl(typ,extra={}){
  if(!welt||!pilot){meldung('Zuerst einen echten J4b-/J4c-Spielstand laden',true);return;}
@@ -170,7 +185,10 @@ $('datei').addEventListener('change',async e=>{
    $('unterschrift').hidden=false;aktion=json;
    meldung('Regel203 erkannt. Bitte die getrennte Forschungsübernahme ausdrücklich bestätigen.');
   }else{aktion=null;laden(json,false);}
- }catch(err){meldung(err.message,true);}
+ }catch(err){
+  aktion=null;$('unterschrift').hidden=true;$('datei').value='';
+  meldung('Import abgebrochen: '+err.message+' · Vorherige Sitzung erhalten.',true);
+ }
 });
 $('uebernahme').addEventListener('click',()=>{if(aktion)laden(aktion,true);});
 $('patrouille-start').addEventListener('click',()=>{

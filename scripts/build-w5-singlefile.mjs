@@ -32,7 +32,7 @@ out='<!-- Aphros Void / single-file Rule195 W0-W5: Generated from same original 
 const pagesNavigation="<nav aria-label=\"Spielmodi\" style=\"padding:12px;border:2px solid #65d7ec;border-radius:9px;margin:12px 0;background:#102332\">\n <a href=\"prototypes/j4c/index.html\" style=\"display:inline-block;min-height:50px;padding:12px 18px;border-radius:8px;background:#176d77;color:#fff;font-weight:700;text-decoration:none\">Jäger selbst fliegen · Patrouille &amp; Duell</a>\n <span style=\"display:block;margin-top:8px\">Neu: echter bezahlter 2D-Jäger (Regel204) mit Startknopf für den unabhängig geprüften, vollständig finanzierten Beispielspielstand. W0–W5-Hauptspiel und dessen Speicher bleiben getrennt erhalten. Jäger-Spielstand vor Verlassen als JSON exportieren.</span>\n</nav>";
 const heading="<h1>Aphros Void – W0–W5</h1>";
 assert.ok(out.includes(heading),'W0–W5 Spieltitel fehlt');
-const pages=out.replace(heading,heading+'\\n'+pagesNavigation);
+const pages=out.replace(heading,heading+String.fromCharCode(10)+pagesNavigation);
 assert.doesNotMatch(out,/<script[^>]*\bsrc\s*=|<link[^>]*\brel="stylesheet"[^>]*\bhref\s*=/);
 for(const [name,expected] of [['index.html',pages],['aphros-void.html',out]]){
  const dest=path.join(root,name);

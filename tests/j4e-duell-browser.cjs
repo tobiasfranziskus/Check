@@ -3,14 +3,14 @@
 'use strict';
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),os=require('node:os');
-const {execFileSync}=require('node:child_process'),assert=require('node:assert/strict');
+const assert=require('node:assert/strict');
 const Welt=require('../prototypes/welt/welt-kern.js');
 (async()=>{
  const root=path.resolve(__dirname,'..');
- const filename=path.join(root,'artifacts/j4c-jaeger/aphros-j4c-echt-finanziert-seed-42-regel204.json');
- if(!fs.existsSync(filename))
-  execFileSync(process.execPath,[path.join(root,'tools/j4c-authentisches-beispiel.mjs')],
-   {cwd:root,timeout:150000,stdio:'pipe'});
+ // Statischer, aus realer Finanzierungskette erzeugter JSON-Beleg bleibt im Release.
+ // Forschungswerkzeuge laufen nicht als Build-Schritt oder im Browser.
+ const filename=path.join(root,'prototypes/j4c/beispiel-jaeger-seed42.json');
+ assert.ok(fs.existsSync(filename),'finanziertes Beispiel muss im Repository liegen');
  const proven=JSON.parse(fs.readFileSync(filename,'utf8'));
  const w=Welt.erstellenJ4c({carrierCash:proven.w5ad.profile.carrierCash,
   buyerCash:proven.w5ad.profile.buyerCash});

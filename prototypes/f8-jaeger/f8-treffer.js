@@ -8,15 +8,17 @@
 const F=typeof module==='object'&&module.exports
   ?require('../flug2d/flug-kern.js'):scope.FlugKern;
 const K=Object.freeze({schaden:45,maxHp:135,tempo:20000,leben:35,
-  abstand:22000,intervall:16,zielX:720000,zielY:-288000});
+  abstand:22000,intervall:16,zielX:720000,zielY:-288000,
+  orbitRadius:96000,orbitSekundenJeWinkel:5});
 const ganz=(x,lo=0,hi=Number.MAX_SAFE_INTEGER)=>Number.isSafeInteger(x)&&x>=lo&&x<=hi;
 const keys=(x,k)=>x&&typeof x==='object'&&!Array.isArray(x)
   &&Object.keys(x).sort().join()===k.slice().sort().join();
-function neu(){return {hp:K.maxHp,schuesse:0,treffer:0,naechster:0,
+function neu(){return {modus:'stationaer',hp:K.maxHp,schuesse:0,treffer:0,naechster:0,
   geschosse:[],belege:[]};}
 function audit(s){
   const q=s.zielprobe;
-  if(!keys(q,['hp','schuesse','treffer','naechster','geschosse','belege'])
+  if(!keys(q,['modus','hp','schuesse','treffer','naechster','geschosse','belege'])
+    ||!['stationaer','beweglich'].includes(q.modus)
     ||!ganz(q.hp,0,K.maxHp)||!ganz(q.schuesse)||!ganz(q.treffer,0,3)
     ||!ganz(q.naechster)||q.hp!==K.maxHp-q.treffer*K.schaden
     ||!Array.isArray(q.geschosse)||!Array.isArray(q.belege)
@@ -48,6 +50,23 @@ function audit(s){
   if(q.geschosse.length>3)return {ok:false,grund:'F8-B: zu viele gleichzeitige Geschosse'};
   return {ok:true,grund:'F8-B: konsistentes Trainingsschussbuch'};
 }
+// Rein aus dem gespeicherten Simulationssekundenzähler berechnet, ganzzahlig
+// und Node/V8/WebKit gleich. Keine neue NPC-Uhr, keine Position im Renderer.
+function zielposition(s){
+  if(s.zielprobe.modus==='stationaer')
+    return {x:K.zielX,y:K.zielY};
+  const winkel=Math.floor(s.sekunden/K.orbitSekundenJeWinkel)&255;
+  return {x:K.zielX+Math.trunc(F.cos(winkel)*K.orbitRadius/F.DATEN.einheit),
+    y:K.zielY+Math.trunc(F.sin(winkel)*K.orbitRadius/F.DATEN.einheit)};
+}
+function modusSetzen(s,modus){
+  if(!['stationaer','beweglich'].includes(modus))
+    return {ok:false,type:'fighterTargetMode',reason:'Unbekannter Trainingszielmodus'};
+  if(s.sekunden!==0||s.zielprobe.schuesse!==0)
+    return {ok:false,type:'fighterTargetMode',reason:'Moduswechsel nur vor Trainingsstart'};
+  s.zielprobe.modus=modus;
+  return {ok:true,type:'fighterTargetMode',modus};
+}
 function feuern(s,cmd,schiff){
   if(!keys(cmd,['type','owner','schiff'])||cmd.type!=='fighterFire'
     ||cmd.owner!=='house'||cmd.schiff!==schiff.id||schiff.klasse!=='jaeger')
@@ -67,9 +86,10 @@ function feuern(s,cmd,schiff){
 function schritt(s){
   const q=s.zielprobe;
   const rest=[];
+  const ziel=zielposition(s);
   for(const p of q.geschosse){
     p.x+=p.vx;p.y+=p.vy;p.rest--;
-    const dx=p.x-K.zielX,dy=p.y-K.zielY;
+    const dx=p.x-ziel.x,dy=p.y-ziel.y;
     if(q.hp>0&&dx*dx+dy*dy<=K.abstand*K.abstand){
       q.hp=Math.max(0,q.hp-K.schaden);
       q.treffer++;q.belege.push({schuss:p.id,tick:s.sekunden,schaden:K.schaden,hp:q.hp});
@@ -77,7 +97,7 @@ function schritt(s){
   }
   q.geschosse=rest;
 }
-const api=Object.freeze({K,neu,audit,feuern,schritt});
+const api=Object.freeze({K,neu,audit,feuern,schritt,zielposition,modusSetzen});
 if(typeof module==='object'&&module.exports)module.exports=api;
 else scope.F8Treffertraining=api;
 })(globalThis);

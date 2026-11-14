@@ -5,7 +5,7 @@
 (function(scope){
 'use strict';
 const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
-  if(![201,202].includes(rules.rulesVersion)||!rules.j2b)throw Error('J2b: nur Regel201/202-Forschungsprofil');
+  if(![201,202,203].includes(rules.rulesVersion)||!rules.j2b)throw Error('J2b: nur Regel201/202-Forschungsprofil');
   const C=rules.j2b,W=C.charge*C.minutenJeEinheit*C.lohnJeMinute,
     P=C.charge*C.preis;
   const leer=()=>({vorrat:C.feld.vorrat,auftraege:0,gefoerdert:0,

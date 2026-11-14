@@ -387,7 +387,7 @@ const m_data_erzpilot = (() => {
         ...W5_RULES.economy.waren,silizium:{stufe:'rohstoff',basis:24}
       }};
     }
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile'].includes(k))
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger'].includes(k))
       || (Object.hasOwn(research,'kanon')&&(research.kanon!==true||research.personalWages!==true))
       || (Object.hasOwn(research,'ort')!==(research.kanon===true))
       || (research.kanon===true&&(typeof research.ort?.imFeld!=='function'
@@ -399,7 +399,8 @@ const m_data_erzpilot = (() => {
       || (Object.hasOwn(research,'personalWages')&&research.personalWages!==true)
       || (Object.hasOwn(research,'industryOre')&&(research.industryOre!==true||research.kanon!==true))
       || (Object.hasOwn(research,'silizium')&&(research.silizium!==true||research.industryOre!==true))
-      || (Object.hasOwn(research,'bauteile')&&(research.bauteile!==true||research.silizium!==true)))
+      || (Object.hasOwn(research,'bauteile')&&(research.bauteile!==true||research.silizium!==true))
+      || (Object.hasOwn(research,'jaeger')&&(research.jaeger!==true||research.bauteile!==true)))
       throw TypeError('Unbekannter W5ad-Startparameter');
     const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
     if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
@@ -453,6 +454,25 @@ const m_data_erzpilot = (() => {
       }};
       W5_RULES.owners=[...W5_RULES.owners,
         {id:'j3_bauteil_arbeiter',kind:'labor',cash:0}];
+    }
+    if(research.jaeger===true){
+      const r=m_data_economy.ECONOMY.rezepte.r_jaeger;
+      W5_RULES.rulesVersion=203;
+      W5_RULES.j4=Object.freeze({
+        station:'st_nadir',owner:'st_nadir',arbeiter:'j4_jaeger_arbeiter',
+        material:r.ein.material,bauteile:r.ein.bauteil,dauer:r.dauer,
+        lohnJeMinute:W5_RULES.w5.lohnJeMinute,
+        verkaufspreis:m_data_economy.ECONOMY.waren.jaeger.basis,lagerMax:2
+      });
+      W5_RULES.economy={...W5_RULES.economy,waren:{
+        ...W5_RULES.economy.waren,jaeger:{...m_data_economy.ECONOMY.waren.jaeger}}};
+      W5_RULES.world={...W5_RULES.world,stations:{
+        ...W5_RULES.world.stations,st_nadir:{
+          ...W5_RULES.world.stations.st_nadir,
+          ziel:{...W5_RULES.world.stations.st_nadir.ziel,jaeger:0}
+        }}};
+      W5_RULES.owners=[...W5_RULES.owners,
+        {id:'j4_jaeger_arbeiter',kind:'labor',cash:0}];
     }
     if(research.kanon===true)W5_RULES.kanon={profil:'K1'};
     if(research.wageTrade===true){
@@ -789,9 +809,15 @@ function checkShape(state, cmd, rules) {
     const w5Kauf = !!rules.w5 && (cmd.owner === rules.w5.kaeufer
       || (!!rules.k7 && cmd.owner === rules.economy.start.owner))
       && cmd.klasse === rules.w5.klasse && cmd.station === rules.w5.station;
-    if (!rules.erzpilot || (!frachter && !miner) || (cmd.station !== rules.erzpilot.station && !w5Kauf))
+    const jaegerKauf=!!rules.j4 && cmd.klasse==='jaeger' && cmd.owner==='house'
+      && cmd.station===rules.j4.station;
+    if (!rules.erzpilot || (!frachter && !miner && !jaegerKauf)
+      || (cmd.station !== rules.erzpilot.station && !w5Kauf && !jaegerKauf))
       return 'Komplettkauf nur fuer finanzierte Miner oder Frachter am Handelsplatz';
     if ((state.stations[cmd.station].lager[cmd.klasse] || 0) < 1) return 'kein Komplettschiff auf Lager';
+    if (jaegerKauf && (state.kanon?.jaeger?.auftrag
+      || state.kanon?.jaeger?.fertig - state.kanon?.jaeger?.verkauft < 1))
+      return 'J4b: nur tatsächlich gebaute Jäger verkaufen';
     if (w5Kauf && !m_core_w5.verkaufPruefen(state,rules,cmd.owner).ok)
       return 'W5-Schiffskauf nicht belegbar';
     if (state.owners[cmd.owner].cash < rules.economy.waren[cmd.klasse].basis) return 'zu wenig ISK';
@@ -851,13 +877,16 @@ function execute(state, cmd, rules) {
       const klasse = localMiner ? 'miner' : cmd.klasse;
       const p = rules.economy.waren[klasse].basis;
       state.owners[cmd.owner].cash -= p;
-      state.owners[rules.erzpilot.werftOwner].cash += p;
+      const jaegerKauf=!!rules.j4&&klasse==='jaeger'
+        &&cmd.station===rules.j4.station;
+      const verkaeufer=jaegerKauf?rules.j4.owner:rules.erzpilot.werftOwner;
+      state.owners[verkaeufer].cash += p;
       state.stations[cmd.station].lager[klasse] -= 1;
       state.ledger[klasse].consumed += 1;
       const w5Kauf = !!rules.w5 && cmd.station === rules.w5.station
         && klasse === rules.w5.klasse && (cmd.owner === rules.w5.kaeufer
           || (!!rules.k7 && cmd.owner === rules.economy.start.owner));
-      const system = w5Kauf || localMiner ? 'nadir' : 'aldera';
+      const system = w5Kauf || localMiner || jaegerKauf ? 'nadir' : 'aldera';
       const sh = m_core_state.neuesSchiff(state, {
         owner: cmd.owner, klasse, system,
         heimat: system, auftrag: 'halten', ware: null,
@@ -881,7 +910,7 @@ function execute(state, cmd, rules) {
         state.w5.schiffIds.push(sh.id);
       }
       m_core_handel.buche(state, cmd.owner, 'kosten', p);
-      m_core_handel.buche(state, rules.erzpilot.werftOwner, 'erloes', p);
+      m_core_handel.buche(state, verkaeufer, 'erloes', p);
       m_core_state.protokolliere(state, 'dienst', `${sh.id} als Komplettschiff fuer ${p} ISK gekauft`, cmd.owner);
       break;
     }
@@ -2088,7 +2117,8 @@ const m_core_w3 = (() => {
     if(state.owners[c.kunde].cash+m_core_kanon.netto(state,c.kunde)+w.kaufAusgaben+(state.w4?.gebucht??0)
       -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
-        -(state.w5n?.wasserErlos??0)!==start)
+        -(state.w5n?.wasserErlos??0)
+        -(state.kanon?.jaeger?.verkauft??0)*(rules.j4?.verkaufspreis??0)!==start)
       return {ok:false,grund:'W3: unbelegtes Kaeufergeld'};
     return {ok:true,grund:'Vollstaendig vorfinanziert',...k};
   }
@@ -2237,7 +2267,8 @@ const m_core_w3 = (() => {
       && buyer+m_core_kanon.netto(state,c.kunde)+w.kaufAusgaben-stornoRueck+(state.w4?.gebucht??0)
         -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
-        -(state.w5n?.wasserErlos??0)===startBuyer
+        -(state.w5n?.wasserErlos??0)
+        -(state.kanon?.jaeger?.verkauft??0)*(rules.j4?.verkaufspreis??0)===startBuyer
       && w.kaufAusgaben===erwarteteBezahlung && w.geliefert===erwarteteWare
       && w.arbeitsKosten===erwarteteArbeit
       && w.frachtUmsatz===w.abgeschlossen*k.frachtGebuehr
@@ -2303,7 +2334,8 @@ const m_core_w4 = (() => {
     if(state.owners[c.station].cash+m_core_kanon.netto(state,c.station)+(state.w3.kaufAusgaben-(state.w3.stornoRueckzahlung||0))+w.gebucht
       -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
-        -(state.w5n?.wasserErlos??0)!==start)
+        -(state.w5n?.wasserErlos??0)
+        -(state.kanon?.jaeger?.verkauft??0)*(rules.j4?.verkaufspreis??0)!==start)
       return {ok:false,grund:'Nadir: nicht nachgewiesenes Produktionskapital'};
     return {ok:true,grund:'Erz und vollständige Arbeitskasse reservierbar',
       erz:c.erzJeCharge,material:c.materialJeCharge,arbeit:budget,dauer:c.dauer};
@@ -2378,7 +2410,8 @@ const m_core_w4 = (() => {
       && station+m_core_kanon.netto(state,c.station)+(state.w3.kaufAusgaben-(state.w3.stornoRueckzahlung||0))+w.gebucht
         -(state.w5?.materialUmsatz??0)-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
-        -(state.w5n?.wasserErlos??0)===start
+        -(state.w5n?.wasserErlos??0)
+        -(state.kanon?.jaeger?.verkauft??0)*(rules.j4?.verkaufspreis??0)===start
       && w.erzVerbraucht===w.abgeschlossen*c.erzJeCharge
       && w.materialErzeugt===w.abgeschlossen*c.materialJeCharge
       && state.ledger.erz.consumed===w.erzVerbraucht
@@ -2387,6 +2420,7 @@ const m_core_w4 = (() => {
       && material===w.materialErzeugt-(state.w5?.materialVerbraucht??0)-(state.w5ae?.purchased??0)
         -(state.kanon?.minerWerft?.materialVerbraucht??0)
         -(state.kanon?.bauteile?.materialVerbraucht??0)
+        -(state.kanon?.jaeger?.materialVerbraucht??0)
       && (!a || (a.erz===c.erzJeCharge&&a.material===c.materialJeCharge
         && a.arbeitsBudget===p&&Number.isSafeInteger(a.gearbeitet)
         && a.gearbeitet>=0&&a.gearbeitet<c.dauer));
@@ -2525,9 +2559,11 @@ const m_core_w5 = (() => {
       && state.ledger.material.consumed===w.materialVerbraucht
         +(state.kanon?.minerWerft?.materialVerbraucht??0)
         +(state.kanon?.bauteile?.materialVerbraucht??0)
+        +(state.kanon?.jaeger?.materialVerbraucht??0)
       && st.material===state.w4.materialErzeugt-w.materialVerbraucht-(state.w5ae?.purchased??0)
         -(state.kanon?.minerWerft?.materialVerbraucht??0)
         -(state.kanon?.bauteile?.materialVerbraucht??0)
+        -(state.kanon?.jaeger?.materialVerbraucht??0)
       && state.ledger.frachter.produced===w.fertig
       && st.frachter===w.fertig-w.verkauft
       && w.verkauft===shipIds.length&&w.verkauft<=w.fertig
@@ -2538,6 +2574,7 @@ const m_core_w5 = (() => {
         +state.w4.gebucht-w.materialUmsatz-(state.w5ae?.spent??0)
         +(state.w5n?.kaufAusgaben??0)+(state.w5n?.fabrikGebucht??0)
         -(state.w5n?.wasserErlos??0)
+          -(state.kanon?.jaeger?.verkauft??0)*(rules.j4?.verkaufspreis??0)
           ===rules.owners.find(o=>o.id===c.station).cash
       && (!a || (a.material===p.material && a.materialKosten===p.materialKosten
         && a.arbeitKosten===p.arbeitKosten && Number.isSafeInteger(a.gearbeitet)
@@ -2856,10 +2893,12 @@ const m_core_w5_wage_trade=(()=>{
       &&s.stats.konto[cfg.buyer].kosten===w.spent+(r.w5ag?0:(s.w5n?.wasserErlos??0))
       &&s.stats.konto[cfg.seller].erloes===(s.w5?.materialUmsatz??0)+w.spent+(s.w5n?.wasserErlos??0)
         +(r.k7?(s.w3?.stornoRueckzahlung||0):0)
+        +(s.kanon?.jaeger?.verkauft??0)*(r.j4?.verkaufspreis??0)
       &&seller+m_core_kanon.netto(s,cfg.seller)+(s.w3.kaufAusgaben-(s.w3.stornoRueckzahlung||0))+s.w4.gebucht
          -(s.w5?.materialUmsatz??0)-w.spent
          +(s.w5n?.kaufAusgaben??0)+(s.w5n?.fabrikGebucht??0)
          -(s.w5n?.wasserErlos??0)
+         -(s.kanon?.jaeger?.verkauft??0)*(r.j4?.verkaufspreis??0)
          ===r.owners.find(o=>o.id===cfg.seller).cash;
     return {ok:good,workerCash:fund,stationCash:seller,
       materialOwned:inv,materialPurchased:w.purchased,
@@ -3323,8 +3362,10 @@ const m_core_w1_vollkosten = (() => {
     // K1: eigener Frachterkauf ist Anlagenkauf, keine unbezahlte Bergbauarbeit.
     const spielerFrachterWert=rules.kanon
       ?(state.kanon?.spielerFrachterKaeufe?.length??0)*rules.economy.waren.frachter.basis:0;
+    const spielerJaegerWert=rules.j4
+      ?(state.kanon?.jaeger?.verkauft??0)*rules.j4.verkaufspreis:0;
     const belegteArbeit = haus.kosten + npc.kosten - bezahlteHuelle-iceLohn
-      -spielerFrachterWert-(state.kanon?.spielerFrachten?.lohn??0)
+      -spielerFrachterWert-spielerJaegerWert-(state.kanon?.spielerFrachten?.lohn??0)
       -(rules.k7?m_core_w5_transfer.spielerKosten(state,rules):0);
     const fondsId = rules.world.systems[rules.world.stations[cfg.station].system].fonds;
     const fonds = state.owners[fondsId].cash - startCash(fondsId) + m_core_kanon.netto(state, fondsId);
@@ -3968,6 +4009,15 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
       personalWages:true,kanon:true,ort});
   },
   // K7: getrennte Forschungsregel200, keine Rule199-Migration/Produktänderung.
+  createJ4bWelt:(options,ort)=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('J4b: nur ursprüngliche Kapitalverteilung');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,
+      personalWages:true,kanon:true,industryOre:true,
+      silizium:true,bauteile:true,jaeger:true,ort});
+  },
   createJ3Welt:(options,ort)=>{
     if(options==null)options={};
     if(typeof options!=='object'||Array.isArray(options)

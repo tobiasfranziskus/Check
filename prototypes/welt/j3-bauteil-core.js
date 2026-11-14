@@ -8,7 +8,7 @@
 (function(scope){
 'use strict';
 const create=({rules,transfer,summe,ganz})=>{
-  if(rules.rulesVersion!==202||!rules.j3)throw Error('J3: nur isolierte Regel202');
+  if(![202,203].includes(rules.rulesVersion)||!rules.j3)throw Error('J3: nur isolierte Regel202/203');
   const C=rules.j3,PAID=C.dauer*C.lohnJeMinute;
   const leer=()=>({begonnen:0,abgeschlossen:0,materialVerbraucht:0,
     siliziumVerbraucht:0,bauteile:0,arbeitsGebunden:0,arbeitsGezahlt:0,
@@ -80,9 +80,10 @@ const create=({rules,transfer,summe,ganz})=>{
         ||!ganz(a.gearbeitet)||a.gearbeitet>=C.dauer))
       ||s.ledger.bauteil?.initial!==0
       ||s.ledger.bauteil?.produced!==b.bauteile
-      ||s.ledger.bauteil?.mined!==0||s.ledger.bauteil?.consumed!==0
+      ||s.ledger.bauteil?.mined!==0
+      ||s.ledger.bauteil?.consumed!==(s.kanon.jaeger?.bauteileVerbraucht||0)
       ||s.ledger.bauteil?.imported!==0||s.ledger.bauteil?.exported!==0
-      ||s.stations[C.station].lager.bauteil!==b.bauteile
+      ||s.stations[C.station].lager.bauteil!==b.bauteile-(s.kanon.jaeger?.bauteileVerbraucht||0)
       ||summe(s,'j3-arbeitsreserve')!==b.arbeitsGebunden
       ||summe(s,'j3-arbeitslohn')!==b.arbeitsGezahlt
       ||(s.owners.j3_arbeit_treuhand?.cash||0)!==

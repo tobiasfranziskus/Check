@@ -84,7 +84,7 @@ const m_data_kanon = (() => {
   return { KANON, tiefFrieren };
 })();
 
-function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false) {
+function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false) {
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
@@ -92,12 +92,13 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   });
   // Ein Forschungsquellstand für K1 (Regel199) oder explizit K7 (Regel200).
   // Niemals die produktive Regel195-Einzeldatei überschreiben.
-  const engine = k7 ? (jaeger ? FACTORY.createJ4bWelt(startkapital,ort) :
+  const engine = k7 ? (jaegerFlug ? FACTORY.createJ4cWelt(startkapital,ort) :
+    jaeger ? FACTORY.createJ4bWelt(startkapital,ort) :
     bauteile ? FACTORY.createJ3Welt(startkapital,ort) :
     silizium ? FACTORY.createJ2bWelt(startkapital, ort)
     : FACTORY.createK7Welt(startkapital, ort)) : FACTORY.createKanonWelt(startkapital, ort);
   const kern = engine.core, rules = engine.rules;
-  if (rules.rulesVersion !== (jaeger ? 203 : bauteile ? 202 : silizium ? 201 : k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
+  if (rules.rulesVersion !== (jaegerFlug ? 204 : jaeger ? 203 : bauteile ? 202 : silizium ? 201 : k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
     throw Error('K1: unerwartetes Kernprofil');
   const N = FLUG.DATEN.schritteJeMinute;
   const W = rules.w5n;
@@ -170,7 +171,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     const abschreibung = (state, sh) => Math.min(kaufpreis(sh.klasse),
       // J4b-Jäger bleiben bis zur expliziten F8-Flugintegration angedockt.
       // Keine frei erfundene Abschreibung oder Wartung, aber realer Anlagewert.
-      Math.floor(aktiv(state, sh.id) * (KANON.verschleiss.milliJeMinute[sh.klasse] ?? 0) / 1000));
+      Math.floor(aktiv(state, sh.id) * (jaegerFlug && sh.klasse==='jaeger'
+        ? rules.j4c.verschleissMilliJeMinute
+        : (KANON.verschleiss.milliJeMinute[sh.klasse] ?? 0)) / 1000));
     const buchwert = (state, sh) => kaufpreis(sh.klasse) - abschreibung(state, sh);
     const verbraucht = (state, sh) => buchwert(state, sh) === 0;
     const stillgelegt = (state, sh) => state.kanon.politik.stilllegung === true && verbraucht(state, sh);
@@ -229,9 +232,18 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       && ladungSumme(sh) === 0
       && ![state.w3?.auftrag?.schiff, state.w5n?.frachtauftrag?.schiff,
         state.w5ac?.active?.id, state.kanon?.rueckfracht?.schiff].includes(sh.id);
+    // Nur eine nachweislich physisch gekaufte J4b-Hülle darf in Regel204
+    // fliegen; kein Trainer-, Piraten- oder fremdes Sicherheits-Schiff.
+    const spielerJaeger = (state, sh) => jaegerFlug && sh.klasse==='jaeger'
+      && sh.owner===rules.j4c.owner && sh.system==='nadir'
+      && sh.heimat==='nadir' && sh.phase==='dock'
+      && sh.auftrag==='halten' && ladungSumme(sh)===0
+      && state.kanon.jaeger?.kaeufe.some(b=>b.id===sh.id
+        && b.owner===sh.owner && b.station===rules.j4c.station
+        && b.preis===rules.j4.verkaufspreis);
     function abdockenPruefen(state, sh) {
-      if (sh.klasse !== 'miner' && !spielerFrachter(state, sh))
-        return 'K1: nur Miner oder eigene freie Aldera-Frachter dürfen im System abdocken';
+      if (sh.klasse !== 'miner' && !spielerFrachter(state, sh) && !spielerJaeger(state, sh))
+        return 'K1: nur Miner oder persönlich bezahlte freie Schiffe dürfen abdocken';
       if (m_core_anlage.stillgelegt(state, sh)) return 'K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen';
       const pilot = KANON.piloten[sh.owner];
       if (!pilot || !state.owners[pilot]) return 'K1: kein Pilotenkonto für diesen Eigentümer';
@@ -253,8 +265,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         && ((state.w5n?.frachtauftrag?.schiff === sh.id
           && state.kanon.spielerFrachten?.auftraege?.some(x => x.schiff === sh.id && x.end === null))
           || (k7 && state.w5ac?.active?.id === sh.id && state.w5ac.active.owner === sh.owner));
-      if (sh.klasse !== 'miner' && !spielerFrachter(state, sh) && !transitSteuerung)
-        return { ok: false, type: cmd.type, reason: 'K1: nur Miner oder eigene freie Aldera-Frachter fliegen im System frei' };
+      if (sh.klasse !== 'miner' && !spielerFrachter(state, sh)
+        && !spielerJaeger(state, sh) && !transitSteuerung)
+        return { ok: false, type: cmd.type, reason: 'K1: nur eigene wirtschaftlich bezahlte Schiffe dürfen fliegen' };
       const vor = FLUG.pruefen(state, cmd);
       if (vor) return { ok: false, type: cmd.type, reason: vor };
       if (cmd.type === 'shipUndock') {
@@ -1113,7 +1126,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         const sh = state.ships[id], d = k.flugdienst[id];
         if (!sh.flug || (sh.klasse !== 'miner'
           && !(sh.klasse === 'frachter' && sh.owner === rules.economy.start.owner
-            && sh.phase === 'dock' && sh.system === 'aldera'))) continue;
+            && sh.phase === 'dock' && sh.system === 'aldera')
+          && !spielerJaeger(state,sh))) continue;
         const konto = state.owners[m_core_flugplan.dienstKonto(id)];
         if (!d && konto && konto.cash !== 0) fehler.push('Flugreserve ohne Dienst ' + id);
         if (!d && sh.flug.lage !== 'angedockt') fehler.push('Flug ohne finanzierten Dienst ' + id);
@@ -1562,6 +1576,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(silizium ? {j2bSilizium:true,siliziumFeld:rules.j2b.feld} : {}),
     ...(bauteile ? {j3Bauteile:true} : {}),
     ...(jaeger ? {j4bFinanzierterJaeger:true} : {}),
+    ...(jaegerFlug ? {j4cBezahlterJaegerflug:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
     createState, politikSetzen, industrieAutoSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
@@ -1569,6 +1584,28 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,
     buchwert: (state, id) => m_core_anlage.buchwert(state, state.ships[id]),
   });
+}
+
+// J4c: Kein neuer Wirtschaftswert außer der ausdrücklichen Regelversion.
+ // Nur ein vollständig geprüftes Original-203-JSON kann zum bezahlten Flugbetrieb.
+function ausRegel203J4c(json){
+  if(typeof json!=='string'||json.length>5*1024*1024)
+    throw Error('J4c: ungültiges Forschungs-JSON');
+  const roh=JSON.parse(json),p=roh.w5ad?.profile;
+  if(roh.rulesVersion!==203||roh.schema!==8
+    ||!Number.isSafeInteger(p?.carrierCash)||!Number.isSafeInteger(p?.buyerCash))
+    throw Error('J4c: nur gültiger Regel203-Spielstand');
+  const kapital={carrierCash:p.carrierCash,buyerCash:p.buyerCash};
+  const quelle=erstellen(kapital,true,true,true,true),alt=quelle.load(json);
+  const quellHash=quelle.hash(alt);
+  // Flugdaten sind bereits die Original-F6-Körper der bezahlten J4b-Schiffe.
+  // Kein hinzugefügtes Schiff, kein Konto, kein Material, keine Gehaltsbuchung.
+  const ziel=erstellen(kapital,true,true,true,true,true);
+  const neu=JSON.parse(quelle.canonical(alt));
+  neu.rulesVersion=204;
+  const zustand=ziel.load(ziel.canonical(neu));
+  if(quelle.hash(alt)!==quellHash)throw Error('J4c: alter Quellhash verändert');
+  return {welt:ziel,zustand,quellHash};
 }
 
 // J4b: explizite 202→203-Forschungsübernahme, kein stiller Save-Wechsel.
@@ -1756,7 +1793,8 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   erstellenJ2b:(kapital={})=>erstellen(kapital,true,true),
   erstellenJ3:(kapital={})=>erstellen(kapital,true,true,true),
   erstellenJ4b:(kapital={})=>erstellen(kapital,true,true,true,true),
-  ausRegel195, ausRegel199K7, ausRegel200J2b, ausRegel201J3, ausRegel202J4b,
+  erstellenJ4c:(kapital={})=>erstellen(kapital,true,true,true,true,true),
+  ausRegel195, ausRegel199K7, ausRegel200J2b, ausRegel201J3, ausRegel202J4b, ausRegel203J4c,
   DATEN: m_data_kanon.KANON, REGEL: m_data_kanon.KANON.regel, SCHRITTE: FLUG.DATEN.schritteJeMinute });
 if (NODE) module.exports = api; else scope.AphrosWelt = api;
 })(globalThis);

@@ -150,6 +150,17 @@ function zeichnen(){
  ctx.font=(11*dpr)+'px system-ui';ctx.fillStyle='#c1d6e9';ctx.fillText('EIN ZUSTAND · ECHTE F6-KINEMATIK · KEIN TREIBSTOFF',12*dpr,18*dpr);
 }
 function anzeigen(){anzeigeFlug();zeichnen();}
+$('beispiel').addEventListener('click',async()=>{
+ const knopf=$('beispiel');
+ knopf.disabled=true;meldung('Echten finanzierten Jägerstand laden und unabhängig prüfen …');
+ try{
+  const res=await fetch('beispiel-jaeger-seed42.json',{cache:'no-store'});
+  if(!res.ok)throw Error('Beispielwelt fehlt ('+res.status+'). Kein Ersatzjäger wird erzeugt.');
+  const json=await res.text();
+  laden(json,false);
+ }catch(e){meldung('Beispiel nicht verfügbar: '+e.message,true);}
+ finally{knopf.disabled=false;}
+});
 $('datei').addEventListener('change',async e=>{
  const f=e.target.files?.[0];if(!f)return;
  try{

@@ -119,3 +119,50 @@ test('J3: ausgewaehltes Folgeprofil niemals als J2b-/Regel200-Spielstand akzepti
  assert.throws(()=>Welt.ausRegel201J3(w.save(s)),'Regel202 nicht als Regel201 migrieren');
  assert.equal(s.rulesVersion,202);good(w,s,'separate Forschungsregeln');
 });
+
+
+test('J3/J4-Grenze: alle vorhandenen Rohstoffe ausschliesslich durch echte W4-Chargen nutzen, nichts erfinden',async()=>{
+ const {welt:w,zustand:s,nachweis}=await j3Quelle(42);
+ const oreStart=s.stations.st_nadir.lager.erz,matStart=s.stations.st_nadir.lager.material;
+ let refine=0,parts=0;
+ for(let gate=0;gate<32;gate++){
+   const st=s.stations.st_nadir.lager;
+   if(st.material>=2&&st.silizium>=1&&s.owners.st_nadir.cash>=8){
+     const r=w.execute(s,c());assert.equal(r.ok,true,JSON.stringify(r));
+     for(let i=0;i<8;i++)w.minute(s);
+     parts++;good(w,s,'J3 weiterer physischer Bauteilabschluss '+parts);
+   }else if(st.material<2&&st.erz>=10){
+     const r=w.execute(s,{type:'stationRefine',owner:'st_nadir',station:'st_nadir'});
+     if(!r.ok)break; // realer Kapital-/Produktionsengpass, keine Rettung
+     for(let i=0;i<20;i++)w.minute(s);
+     refine++;good(w,s,'W4 Folgecharge aus echtem Erz '+refine);
+   }else break;
+ }
+ const rem=s.stations.st_nadir.lager;
+ const vorgemerkt={
+   parts,additionalRefinements:refine,
+   oreStart,materialStart:matStart,oreLeft:rem.erz,
+   materialLeft:rem.material,siliconLeft:rem.silizium,
+   siliconMineSource:s.kanon.silizium.gefoerdert,
+   partWorkMinutes:s.kanon.bauteile.arbeitsGezahlt,
+   totalCash:money(s),mint:s.minted,burn:s.burned,
+   fighterPartsMissing:Math.max(0,8-parts),
+   fighterExtraMaterialMissing:Math.max(0,4-rem.material),
+   seed:42,hash:w.hash(s)
+ };
+ assert.ok(parts>=2,'mindestens zwei echte Bauteile');
+ assert.ok(parts<=8,'nicht mehr Teile als echt verfuegbares Silizium');
+ assert.equal(s.kanon.bauteile.siliziumVerbraucht,parts);
+ assert.equal(s.kanon.bauteile.materialVerbraucht,2*parts);
+ assert.equal(s.kanon.bauteile.arbeitsGezahlt,8*parts);
+ assert.equal(rem.material,matStart+refine*5-parts*2);
+ assert.equal(rem.erz,oreStart-refine*10);
+ assert.equal(rem.silizium,8-parts);
+ assert.equal(money(s),33000);
+ assert.equal(s.minted,0);assert.equal(s.burned,0);
+ good(w,s,'J3 Ende des bezahlbaren Original-W3-Erzbudgets');
+ const original=w.canonical(s);
+ if(rem.material<2||rem.silizium<1||s.owners.st_nadir.cash<8)reject(w,s,c());
+ assert.equal(w.canonical(s),original);
+ console.log('J3_J4_ECHTER_MATERIALENGPASS',JSON.stringify(vorgemerkt));
+});

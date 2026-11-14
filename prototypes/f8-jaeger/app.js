@@ -24,10 +24,18 @@ function anzeigen(){
   $('entfernung').textContent=fmt(v.distanz);
   $('lage').textContent=v.lage;
   $('erfolg').textContent=v.erreicht===null?'Offen':'Erreicht bei '+v.erreicht+' s';
+  $('zielHp').textContent=v.zielHp+' / '+T.TRAINING.maxHp;
+  $('treffer').textContent=v.treffer+' / '+v.schuesse;
   $('kursWert').textContent=$('kurs').value;
   $('fahrtWert').textContent=$('fahrt').value;
   $('steuern').disabled=$('bremsen').disabled=$('marke').disabled=$('andocken').disabled=b.lage!=='frei';
   $('abdocken').disabled=b.lage!=='angedockt';
+  $('feuern').disabled=b.lage!=='frei'||v.zielHp===0||s.sekunden<v.naechsterSchuss;
+  $('schussStatus').textContent=v.zielHp===0
+    ?'Trainingsziel deaktiviert – drei echte 2D-Treffer protokolliert; keine ISK/XP.'
+    :s.sekunden<v.naechsterSchuss
+      ?'Trainingswaffe lädt noch '+(v.naechsterSchuss-s.sekunden)+' Flugsekunden.'
+      :'Trainingslaser bereit. Beim Schuss werden Position, Kurs und Projektilbahn im Kern geprüft.';
   $('start').disabled=laeuft;$('pause').disabled=!laeuft;
   malen();
 }
@@ -49,11 +57,18 @@ function malen(){
   ctx.strokeStyle='rgba(102,213,239,.24)';ctx.setLineDash([6,7]);
   ctx.beginPath();ctx.moveTo(...station);ctx.lineTo(...marke);ctx.stroke();ctx.setLineDash([]);
   ctx.fillStyle='#91ccd7';ctx.beginPath();ctx.arc(...station,12,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='#eabb72';ctx.lineWidth=2;ctx.beginPath();
+  ctx.strokeStyle=s.zielprobe.hp===0?'#7d9da5':'#eabb72';ctx.lineWidth=2;ctx.beginPath();
   ctx.arc(...marke,Math.max(11,ziel.radius*zoom),0,Math.PI*2);ctx.stroke();
   ctx.font='14px system-ui';ctx.fillStyle='#d7e7f5';
   ctx.fillText('Aldera-Dock',station[0]+14,station[1]-15);
-  ctx.fillText('Trainingsmarke',marke[0]-25,marke[1]-20);
+  ctx.fillText('Trainingsdrohne · '+s.zielprobe.hp+' HP',marke[0]-25,marke[1]-20);
+  // Projektile sind echte, je Flugsekunde fortgeschriebene Ganzzahl-Kernobjekte,
+  // keine Grafiktreffer und keine wirtschaftlichen Raumschiffe.
+  ctx.fillStyle='#ffc985';
+  for(const p of s.zielprobe.geschosse){
+    const [px,py]=punkt(p.x,p.y);
+    ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fill();
+  }
   ctx.strokeStyle='#88edff';ctx.lineWidth=1;
   ctx.beginPath();ctx.arc(...fighter,34,0,Math.PI*2);ctx.stroke();
   graph.schiff(G.adapter(sh()),fighter[0],fighter[1],0);
@@ -78,6 +93,7 @@ $('bremsen').addEventListener('click',()=>{$('fahrt').value='0';befehl('shipStee
 $('abdocken').addEventListener('click',()=>befehl('shipUndock'));
 $('marke').addEventListener('click',()=>befehl('shipFlyTo',{x:T.MARKER.x,y:T.MARKER.y}));
 $('andocken').addEventListener('click',()=>befehl('shipDock',{station:'st_aldera'}));
+$('feuern').addEventListener('click',()=>befehl('fighterFire'));
 $('start').addEventListener('click',starten);
 $('pause').addEventListener('click',stoppen);
 $('sekunde').addEventListener('click',()=>{stoppen();T.schritt(s,1);anzeigen()});

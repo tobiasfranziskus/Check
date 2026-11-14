@@ -86,7 +86,18 @@ input[type=range]{width:100%;min-height:44px;accent-color:#83e4f1}
     </div>
     <div class="panel">
       <h2>F8-B · 2D-Zieltraining</h2>
-      <div class="actions"><button id="feuern" disabled>Zielübung: Feuern</button></div>
+      <label for="zielModus">Trainingsziel
+        <select id="zielModus" aria-label="Bewegliches oder stehendes Trainingsziel wählen">
+          <option value="stationaer">Stehende Drohne (Einsteiger)</option>
+          <option value="beweglich">Bewegliche Drohne (Kreisflug)</option>
+        </select>
+      </label>
+      <div class="actions">
+        <button id="zielErfassen" disabled>Richtung zur Drohne erfassen</button>
+        <button id="feuern" disabled>Zielübung: Feuern</button>
+      </div>
+      <p class="info" id="bewegungStatus" role="status">Der Zielmodus kann nur vor Beginn des Trainings geändert werden.
+        Zum beweglichen Ziel den Kurs wiederholt erfassen und selbst feuern.</p>
       <p class="info" id="schussStatus" role="status">45 Übungsschaden, 16 Sekunden Schussabstand,
         20.000 Punkte Flugstrecke pro Sekunde, maximal 35 Sekunden Projektilzeit.
         Treffer entstehen ausschließlich aus 2D-Positionen des gemeinsamen Flugkerns.

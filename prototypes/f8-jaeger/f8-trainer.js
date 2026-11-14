@@ -35,7 +35,13 @@ function audit(s){
 function befehl(s,cmd){
   const ok=audit(s);if(!ok.ok)throw Error(ok.grund);
   const ret=cmd?.type==='fighterFire'
-    ?TREFFER.feuern(s,cmd,s.ships[ID]):FLUG.ausfuehren(s,cmd);
+    ?TREFFER.feuern(s,cmd,s.ships[ID])
+    :cmd?.type==='fighterTargetMode'
+      ?(cmd.owner==='house'&&cmd.schiff===ID
+        &&Object.keys(cmd).sort().join()==='modus,owner,schiff,type'
+          ?TREFFER.modusSetzen(s,cmd.modus)
+          :{ok:false,type:'fighterTargetMode',reason:'Ungültiger Zielmodus-Befehl'})
+      :FLUG.ausfuehren(s,cmd);
   if(!ret.ok)return ret;
   const check=audit(s);if(!check.ok)throw Error(check.grund);
   return ret;
@@ -63,7 +69,8 @@ function status(s){
     sollFahrt:b.sollFahrt,distanz:FLUG.isqrt(dx*dx+dy*dy),
     erreicht:s.erreicht,bremsbereit:FLUG.isqrt(b.vx*b.vx+b.vy*b.vy)<=MARKER.tempo,
     zielHp:s.zielprobe.hp,treffer:s.zielprobe.treffer,schuesse:s.zielprobe.schuesse,
-    naechsterSchuss:s.zielprobe.naechster,projektile:s.zielprobe.geschosse.length});
+    naechsterSchuss:s.zielprobe.naechster,projektile:s.zielprobe.geschosse.length,
+    zielModus:s.zielprobe.modus,zielPosition:TREFFER.zielposition(s)});
 }
 const api=Object.freeze({ID,MARKER,flug:FLUG,TRAINING: TREFFER.K,neu,befehl,schritt,audit,status,
   // Keine Welt-Save-API, keine bestaetigten Kopfgeld- oder Kampfauftraege.

@@ -47,7 +47,7 @@ const befund = J1.inspect(welt, state);
 const geladen = J1.loadChecked(welt, welt.save(state));
 ```
 
-`inspect` liefert fehlende registrierte Güter/Rezepte/Vorkommen, tatsächliche Linien, Werftklasse, reale Jäger-IDs, Konto-/Emissionsprüfung und Core-Audit. Zusätzlich rekonstruiert es Lager/Fracht gegen Warenledger außerhalb laufender Warenbindungen und weist unbekannte Ledger, Lagerwaren, Schiffsklassen und Eigentümer zurück. Es erzeugt keinen Wirtschaftszustand, keine Uhr, Befehle, Reserve oder Auszahlung. `status:'BLOCKED'` und sämtliche `implemented:false` sind die feste Ergebniskennzeichnung dieser J1-Analyseversion, **kein zukünftiger allgemeiner Freigabealgorithmus**.
+`inspect` liefert fehlende registrierte Güter/Rezepte/Vorkommen, tatsächliche Linien, Werftklasse, reale Jäger-IDs, Konto-/Emissionsprüfung und Core-Audit. Zusätzlich rekonstruiert es Lager/Fracht sowie vorhandenes W5ae-Inventar gegen Warenledger und weist unbekannte Ledger, Lagerwaren, Schiffsklassen und Eigentümer zurück. Es erzeugt keinen Wirtschaftszustand, keine Uhr, Befehle, Reserve oder Auszahlung. `status:'BLOCKED'` und sämtliche `implemented:false` sind die feste Ergebniskennzeichnung dieser J1-Analyseversion, **kein zukünftiger allgemeiner Freigabealgorithmus**.
 
 `loadChecked` lädt mit dem Original-Weltloader und prüft danach die zusätzliche J1-Evidenz. Der Original-Loader akzeptiert einzelne unbekannte Zusatzwarenfelder; diese Lücke wird im separaten Prüflader abgefangen. Dieser Wrapper ist **nicht** im Produkt-/F8-Savepfad installiert. Er schützt gegen die getesteten Manipulationen, bietet aber keine kryptografische Authentizität beliebig vollständig umgeschriebener JSON-Welten. Keine geänderten Savefelder oder Migrationen.
 
@@ -85,6 +85,7 @@ Keine F8-Oberflächenintegration in diesem Draft. Ein Folgeauftrag muss insbeson
 - Seeds42/7: 120 Originalminuten nach den atomar abgelehnten Befehlen; Hashes `9f3decc1bc502233` / `0a500c4d4814e76b`. Unabhängiger Gegenlauf direkt mit dem unveränderten Weltkern ohne J1-Modul liefert dieselben Referenzen. Save/Load und zweiter Befehls-/Zeitlauf gleich.
 - **13 politische Wirtschaftsprofile × 90 Tage**, jeweils zwei vollständige identische Läufe mit täglichem Hashvergleich sowie Audit, Geld-/Warenprüfung und finalem Save/Load: **1/1 Testgruppe bestanden**, 0 Fehler/Skips, 220.253 ms. Start aus realer K6/K7-Kette mit neuer Erzlieferung und bezahlter W4/W5-Fertigung; keine neuen Startgüter. Alle Endstände Tick151404, **33.000 ISK, Mint/Burn0, 0 Jäger, 0 Einsätze**. Rohdaten: [j1-90tage-ergebnisse.jsonl](j1-90tage-ergebnisse.jsonl). Das sind 13 unterschiedliche wirtschaftliche Politikvorgaben, keine 13 erfolgreichen Jägerwirtschaften. Gleiche Endhashes bei Basis/Stilllegung zeigen, dass einzelne Vorgaben im blockierten Endstand keine zusätzliche Wirkung haben.
 - `node scripts/build-w5-singlefile.mjs --check`: **W5_SINGLEFILE_OK**, 320.217 Zeichen, 7 Styles, 15 Scripts.
+- Abschließender gemeinsamer Lauf `node --test tests/j1-*.test.mjs` mit dem vollständigen unabhängigen Warenabgleich: **2/2 Dateitests bestanden**, 0 Fehler/Skips, 220.415 ms; darin nochmals die gesamte 13×90-Tage-Matrix.
 - Gesamte Bestandsregression läuft noch; nicht als bestanden gewertet. Der Glob wurde vor Anlage der beiden neuen J1-Testdateien gestartet, diese sind separat wie oben geprüft.
 
 Reproduktion unter Node22:

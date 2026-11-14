@@ -25,14 +25,10 @@ function inspect(welt, state) {
     if (!Object.hasOwn(rules.economy.waren, ware)) errors.push('UNREGISTERED_LEDGER:' + ware);
     const stock = Object.values(state.stations).reduce((n, st) => n + (st.lager[ware] || 0), 0)
       + Object.values(state.ships).reduce((n, sh) => n + (sh.ladung[ware] || 0), 0);
-    // Original Core also accounts for goods bound in ongoing contracts.
-    // Compare the simple equation only when none are in progress.
-    if (!state.w4?.auftrag && !state.w5?.auftrag && !state.w3?.auftrag
-      && !state.kanon.minerWerft?.auftrag && !state.kanon.rueckfracht) {
-      const expected = ledger.initial + ledger.mined + ledger.produced + ledger.imported
-        - ledger.consumed - ledger.exported;
-      if (stock !== expected) errors.push('GOODS:' + ware);
-    }
+    const held = state.w5ae?.inventory?.[ware] || 0;
+    const expected = ledger.initial + ledger.mined + ledger.produced + ledger.imported
+      - ledger.consumed - ledger.exported;
+    if (stock + held !== expected) errors.push('GOODS:' + ware);
   }
   for (const st of Object.values(state.stations))
     for (const [ware, amount] of Object.entries(st.lager))

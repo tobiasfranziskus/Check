@@ -160,7 +160,16 @@ a{color:#8fe2f5}
 <section data-seite="station" hidden>
 <h2>Stationen</h2><div id="stationen" class="rollen"></div>
 <div class="reihe"><button id="kaufMiner">Miner kaufen · 600 ISK</button><button id="kaufFrachter">Frachter kaufen · Lagerbestand/Preis werden geprüft</button></div>
-<small>Frachter können nur als echte physische Hülle aus dem Aldera-Lager gekauft werden. Kauft der Spieler den letzten Frachter, fehlt er möglicherweise der NPC-Spedition; es gibt keinen kostenlosen Ersatz.</small>
+<small>Der Aldera-Kauf verwendet ausschließlich echte vorhandene Lagerhüllen. Eine vom Spieler gekaufte Hülle fehlt dem NPC-Bestand; es gibt keinen kostenlosen Ersatz.</small>
+<section id="nadirWerft" class="runden-hilfe" aria-label="F7: Eigener Werftfrachter aus Nadir">
+<h3>F7 · Deinen eigenen Werftfrachter abholen (Forschung)</h3>
+<p id="nadirWerftStatus" role="status" aria-live="polite">Die echte Werftproduktion und der Kauf aus dem Nadir-Lager werden erst im Forschungs-Core geprüft.</p>
+<button id="nadirKauf" type="button" disabled>Physisch gebauten Frachter in Nadir kaufen</button>
+<label for="nadirSchiff">Dein Frachter am Nadir-Dock</label>
+<select id="nadirSchiff" aria-label="Eigener Nadir-Frachter zur bezahlten Überführung"><option value="">Kein eigener Nadir-Frachter vorhanden</option></select>
+<button id="nadirUeberfuehrung" type="button" disabled>Bezahlte Überführung nach Aldera beauftragen</button>
+<small>Beide Befehle müssen vom autoritativen Regel200-Core freigegeben werden. Die Hülle kostet den regulären ISK-Preis und jede Überführung bindet echte Arbeitsmittel. Ohne realen Lagerbestand, ausreichend Geld oder die noch fehlende F7-Core-Freigabe bleiben die Aktionen gesperrt. Keine automatische Übernahme fremder Schiffe.</small>
+</section>
 <h2>Privater Wasserkauf des Spielers (Aldera)</h2>
 <div class="reihe"><select id="haushalt" aria-label="Privatkonto"><option value="eigner_house">Eigentümerkonto</option><option value="pilot_house">Pilotenkonto</option></select>
 <input id="wasserMenge" type="number" min="1" max="100" value="1" inputmode="numeric" aria-label="Menge Wasser"><button id="wasserKauf">Wasser kaufen</button></div>

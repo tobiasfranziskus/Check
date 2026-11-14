@@ -108,7 +108,7 @@ test('F8e: enemy projectile, HP, receipts and mode tamper detected',()=>{
   c=>{c.zielprobe.gegner.belege[0].hp=100},
   c=>{c.zielprobe.gegner.belege[0].schuss=999},
   c=>{c.zielprobe.gegner.belege.push({...c.zielprobe.gegner.belege[0]})},
-  c=>{c.zielprobe.gegner.geschosse[0].rest=100},
+  c=>{c.zielprobe.gegner.geschosse.push({id:1,x:0,y:0,vx:0,vy:0,rest:100})},
   c=>{c.zielprobe.gegner.naechster=999999},
   c=>{c.zielprobe.gegner.magic=true},
   c=>{c.zielprobe.modus='stationaer'},

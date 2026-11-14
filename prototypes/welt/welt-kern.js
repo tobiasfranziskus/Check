@@ -1581,11 +1581,11 @@ function ausRegel202J4b(json){
     neu=JSON.parse(quelle.canonical(alt));
   if(neu.kanon.jaeger||neu.stations.st_nadir.lager.jaeger!==undefined
     ||neu.owners.j4_jaeger_arbeiter
-    ||neu.ledger.jaeger?.initial!==0||neu.ledger.jaeger?.produced!==0
-    ||neu.ledger.jaeger?.consumed!==0
+    ||neu.ledger.jaeger!==undefined
     ||Object.values(neu.ships).some(sh=>sh.klasse==='jaeger'))
     throw Error('J4b: fremde Jäger-/Einkommens-Startware');
   neu.rulesVersion=203;
+  neu.ledger.jaeger={initial:0,mined:0,produced:0,consumed:0,imported:0,exported:0};
   neu.stations.st_nadir.lager.jaeger=0;
   neu.kanon.jaeger={
     begonnen:0,fertig:0,verkauft:0,materialVerbraucht:0,bauteileVerbraucht:0,

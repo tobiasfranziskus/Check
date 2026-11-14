@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#071225">
-<title>Aphros Void · J4d bezahlter Jäger-Patrouillenflug · Forschung</title>
+<title>Aphros Void · J4e bezahlter Jäger und F8-E-Duell · Forschung</title>
 <style>
 :root{color-scheme:dark;font:16px/1.42 system-ui,-apple-system,BlinkMacSystemFont,sans-serif;background:#071225;color:#e0eaf7}
 *{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) max(12px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(12px,env(safe-area-inset-left))}
@@ -40,13 +40,13 @@ footer{max-width:1240px;margin:0 auto 22px;font-size:.86rem;color:#a5b9cd}
 </head>
 <body>
 <header>
-<h1>Aphros Void <span style="color:#6ad3d6">/ J4d – echte Jägerpatrouille</span></h1>
+<h1>Aphros Void <span style="color:#6ad3d6">/ J4e – bezahlter Jäger und Duell</span></h1>
 <p class="sub"><mark>FORSCHUNG · Regel204</mark> Original-Wirtschaftskern, Original-F6-Physik, bezahlter Pilotenlohn · kein Echtgeldkampf</p>
 </header>
 <main>
 <div class="left">
 <section aria-label="Zweidimensionaler Jägerraum">
-<h2>2D-Flugraum · Nadir / Patrouille</h2>
+<h2>2D-Flugraum · Nadir / Patrouille / Duell</h2>
 <canvas id="raum" width="850" height="500" role="img" aria-label="2D-Raumkarte mit bezahltem Spieler-Jäger, Station Nadir und rein geometrischem Trainingsmarker"></canvas>
 <p class="note">Die gelbe Jägerspitze ist der tatsächlich gekaufte Jäger. Drei Kontrollbojen sind rein geometrische Flugziele, keine kostenlosen Gegner, Waren oder Belohnungsquellen.</p>
 <div class="status">
@@ -89,6 +89,26 @@ footer{max-width:1240px;margin:0 auto 22px;font-size:.86rem;color:#a5b9cd}
 </div>
 <p class="note">Der Fortschritt wird ausschließlich aus den wirklichen F6-Koordinaten und Weltsekunden gelesen und ist nur für diese Sitzung gültig. Nach einem Reload beginnt die Übung erneut; nur der auditierte Weltzustand wird als JSON gesichert.</p>
 </section>
+<section aria-label="2D-Jägerduell-Trainingsmission">
+<h2>J4e · F8-E-Duell auf dem gekauften Original-Jäger</h2>
+<p class="note">Nur bei <strong>echtem, vorfinanziertem F6-Freiflug</strong>: virtuelle bewegliche Drohne im Nadir-Sektor, drei eigene geometrische Projektiltreffer bis zum Sieg. Der Gegner feuert automatisch zurück; vier echte <em>Trainings-Treffer</em> bedeuten eine Übungsniederlage. Nach einer Trainingsniederlage bleibt das wirkliche Schiff unbeschädigt und darf auf eigene Kosten zurück zum Dock fliegen.</p>
+<div class="controls">
+<button id="duell-start" class="primary" disabled>Duell im freien Flug starten</button>
+<button id="duell-ziel" disabled>Auf virtuelle Drohne zielen (F6)</button>
+<button id="duell-feuer" class="alert" disabled>F8-E-Projektil abfeuern</button>
+</div>
+<p class="note">Zuerst mit „Zum Marker fliegen“ in Richtung der Trainingsdrohne navigieren (sie liegt bei ungefähr 720.000 / −288.000 P). Mit „Auf virtuelle Drohne zielen“ wird derselbe originale F6-Kursbefehl wie von Hand erteilt; vor dem Schießen muss der echte Jäger physisch fertig drehen. Projektile, Gegner und HP sind ausschließlich vorübergehende Trainingsobjekte, keine realen Waren/Munitions-/Schadensbuchungen.</p>
+<div class="status">
+<div><span>Duellstatus</span><strong id="duell-status">nicht gestartet</strong></div>
+<div><span>Eigene Trainings-HP</span><strong id="duell-hp">96 / 96</strong></div>
+<div><span>Drohnen-HP</span><strong id="duell-zielhp">135 / 135</strong></div>
+<div><span>Eigene Treffer</span><strong id="duell-treffer">0 / 3</strong></div>
+<div><span>Gegentreffer</span><strong id="duell-gegentor">0 / 4</strong></div>
+<div><span>Trainingssekunden</span><strong id="duell-sekunden">0 s</strong></div>
+<div><span>F6-Distanz zur Drohne</span><strong id="duell-distanz">–</strong></div>
+</div>
+<p class="note">Ein F8-Duell ist kein echter Pirateneinsatz und erzeugt keine ISK, XP, Beute oder kostenlose Reparatur. Übungsprojektil- und HP-Journal sind <strong>nicht persistente</strong> Daten; der exportierte JSON-Spielstand sichert ausschließlich die auditierte Originalwirtschaft einschließlich realer Flugkosten.</p>
+</section>
 </div>
 <aside>
 <h2>Verifizierten Jägerstand laden</h2>
@@ -117,7 +137,7 @@ footer{max-width:1240px;margin:0 auto 22px;font-size:.86rem;color:#a5b9cd}
 </aside>
 </main>
 <footer>
-<p><strong>[DRAFT]</strong> Statische HTML-/JS-Prototypansicht, keine Produktversion und kein Regel204-Release. Touchbuttons ab 50px, iPad-Querformat und kleinere Ansichten. 40 ISK Flugreserve, 1 ISK je tatsächlich verstrichener Wirtschaftsminute; keine Treibstoffkosten, keine NPC-Kopfgelder. Echte iPad-Safari-/NAS-Abnahme erforderlich.</p>
+<p><strong>[DRAFT / J4e]</strong> Statische HTML-/JS-Prototypansicht mit Original-F8-E-Duelltraining, keine Produktversion und kein Regel204-Release. Touchbuttons ab 50px, iPad-Querformat und kleinere Ansichten. 40 ISK Flugreserve, 1 ISK je tatsächlich verstrichener Wirtschaftsminute; keine Treibstoffkosten, keine NPC-Kopfgelder. Echte iPad-Safari-/NAS-Abnahme erforderlich.</p>
 </footer>
 <script src="../flug2d/flug-kern.js"></script>
 <script src="../welt/rule200-k7-industry-core.js"></script>
@@ -126,6 +146,9 @@ footer{max-width:1240px;margin:0 auto 22px;font-size:.86rem;color:#a5b9cd}
 <script src="../welt/j4b-jaeger-werft-core.js"></script>
 <script src="../welt/welt-kern.js"></script>
 <script src="patrouille.js"></script>
+<script src="../f8-jaeger/f8-treffer.js"></script>
+<script src="../f8-jaeger/f8-duell.js"></script>
+<script src="duell.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

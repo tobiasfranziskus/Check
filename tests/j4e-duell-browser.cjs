@@ -43,8 +43,10 @@ const Welt=require('../prototypes/welt/welt-kern.js');
     await page.goto('http://127.0.0.1:'+server.address().port+'/prototypes/j4c/index.html');
     assert.equal(await page.locator('#duell-start').isDisabled(),true);
     assert.equal(await page.locator('#duell-feuer').isDisabled(),true);
-    await page.locator('#datei').setInputFiles(filename);
+    // Öffentlicher Startknopf: echte, vorfinanzierte statische Welt statt CI-Download.
+    await tap('beispiel');
     await page.waitForFunction(()=>document.querySelector('#schiff').textContent.includes('sh023'));
+    assert.match(await page.locator('#meldung').textContent(),/real bezahlter Jäger/);
     assert.match(await page.locator('#weltgeld').textContent(),/33[.]000 ISK/);
     await tap('abdocken');assert.match(await page.locator('#reserve').textContent(),/40 ISK/);
     await tap('play');

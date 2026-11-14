@@ -565,6 +565,8 @@ const FIELDS = {
   stationRecipe: ['station', 'rezept'], shipRemoveModule: ['schiff', 'modul'],
   shipFreight: ['schiff'], stationRefine: ['station'],
   stationBuildShip: ['station'], shipReposition: ['schiff'],
+  // J2a/Regel200-Forschung: lokale Abholung nur fertig produzierter K2-Miner.
+  stationClaimMinerLocal: ['station'],
   researchShipLoss: ['schiff'], shipReplace: ['verlust','reserve'],
   workerMaterialBuy: ['menge'],
   shipFreightIce:['schiff'],shipSellIce:['schiff','menge'],
@@ -724,8 +726,22 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5Replacement ? ['researchShipLoss','shipReplace'] : []),
     ...(rules.w5WageTrade ? ['workerMaterialBuy'] : []),
     ...(rules.w5n?['shipSellIce','shipFreightIce','stationWater','workerWaterBuy']:[]),
-    ...(rules.w5ag?['pilotWaterBuy']:[])].includes(cmd.type))
+    ...(rules.w5ag?['pilotWaterBuy']:[]),
+    ...(rules.k7?['stationClaimMinerLocal']:[])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
+  if (cmd.type === 'stationClaimMinerLocal') {
+    // Keine Änderung des bestehenden shipBuy: die alten K2-Rückfracht-/J2-
+    // Negativreferenzen bleiben dadurch bitgleich. Nur aktives K7-Regel200.
+    const b = state.kanon?.minerWerft;
+    if (!rules.k7 || !rules.kanon || !b || cmd.station !== rules.w5.station
+      || !['house','npc3'].includes(cmd.owner)
+      || b.auftrag || b.transport || b.wartetAuf !== cmd.owner
+      || (state.stations[cmd.station]?.lager?.miner || 0) !== 1
+      || b.fertig - b.verladen - (b.lokalGekauft || 0) !== 1)
+      return 'K2/J2a: Nur der echte vorgemerkte Nadir-Miner darf lokal gekauft werden';
+    if (state.owners[cmd.owner].cash < rules.economy.waren.miner.basis)
+      return 'K2/J2a: 600 ISK für den eigenen Miner fehlen';
+  }
   if (cmd.type === 'shipBuy') {
     // K1: bezahlter Aldera-Kauf; K7 zusätzlich reale W5-Nadir-Hüllen.
     // Regel195 und alle anderen Profile bleiben unverändert.
@@ -734,19 +750,10 @@ function checkShape(state, cmd, rules) {
         || (!!rules.kanon && cmd.owner === rules.economy.start.owner && (cmd.station === rules.erzpilot.station
           || (!!rules.k7 && cmd.station === rules.w5.station))));
     const miner = cmd.klasse === 'miner' && (cmd.owner === 'house' || cmd.owner === 'npc3');
-    // J2a [DRAFT/Regel200]: nur DIE in K2 wirklich gebaute und noch für
-    // diesen Besteller vorgemerkte Hülle lokal übernehmen. Kein Startschiff,
-    // keine unfreie Nadir-Ware, kein fremder/zweiter Komplettkauf.
-    const bK2 = state.kanon?.minerWerft;
-    const nadirMiner = !!rules.k7 && !!rules.kanon && miner
-      && cmd.station === rules.w5.station && bK2?.wartetAuf === cmd.owner
-      && bK2.auftrag === null && bK2.transport === null
-      && (state.stations[cmd.station]?.lager.miner || 0) === 1
-      && bK2.fertig - bK2.verladen - (bK2.lokalGekauft || 0) === 1;
     const w5Kauf = !!rules.w5 && (cmd.owner === rules.w5.kaeufer
       || (!!rules.k7 && cmd.owner === rules.economy.start.owner))
       && cmd.klasse === rules.w5.klasse && cmd.station === rules.w5.station;
-    if (!rules.erzpilot || (!frachter && !miner) || (cmd.station !== rules.erzpilot.station && !w5Kauf && !nadirMiner))
+    if (!rules.erzpilot || (!frachter && !miner) || (cmd.station !== rules.erzpilot.station && !w5Kauf))
       return 'Komplettkauf nur fuer finanzierte Miner oder Frachter am Handelsplatz';
     if ((state.stations[cmd.station].lager[cmd.klasse] || 0) < 1) return 'kein Komplettschiff auf Lager';
     if (w5Kauf && !m_core_w5.verkaufPruefen(state,rules,cmd.owner).ok)
@@ -802,24 +809,24 @@ function execute(state, cmd, rules) {
     case 'shipReposition': {
       m_core_w5_transfer.start(state,rules,state.ships[cmd.schiff]);break;
     }
-    case 'shipBuy': {
-      const p = rules.economy.waren[cmd.klasse].basis;
+    case 'shipBuy':
+    case 'stationClaimMinerLocal': {
+      const localMiner = cmd.type === 'stationClaimMinerLocal';
+      const klasse = localMiner ? 'miner' : cmd.klasse;
+      const p = rules.economy.waren[klasse].basis;
       state.owners[cmd.owner].cash -= p;
       state.owners[rules.erzpilot.werftOwner].cash += p;
-      state.stations[cmd.station].lager[cmd.klasse] -= 1;
-      state.ledger[cmd.klasse].consumed += 1;
+      state.stations[cmd.station].lager[klasse] -= 1;
+      state.ledger[klasse].consumed += 1;
       const w5Kauf = !!rules.w5 && cmd.station === rules.w5.station
-        && cmd.klasse === rules.w5.klasse && (cmd.owner === rules.w5.kaeufer
+        && klasse === rules.w5.klasse && (cmd.owner === rules.w5.kaeufer
           || (!!rules.k7 && cmd.owner === rules.economy.start.owner));
-      const nadirMiner = !!rules.k7 && !!rules.kanon
-        && cmd.klasse === 'miner' && cmd.station === rules.w5.station
-        && state.kanon?.minerWerft?.wartetAuf === cmd.owner;
-      const system = w5Kauf || nadirMiner ? 'nadir' : 'aldera';
+      const system = w5Kauf || localMiner ? 'nadir' : 'aldera';
       const sh = m_core_state.neuesSchiff(state, {
-        owner: cmd.owner, klasse: cmd.klasse, system,
+        owner: cmd.owner, klasse, system,
         heimat: system, auftrag: 'halten', ware: null,
       });
-      if(nadirMiner){
+      if(localMiner){
         const b=state.kanon.minerWerft;
         b.lokalGekauft=(b.lokalGekauft||0)+1;
         (b.lokaleKaeufe ||= []).push({
@@ -831,7 +838,7 @@ function execute(state, cmd, rules) {
         state.w5ad.purchases.push({id:sh.id,tick:state.tick,station:cmd.station,preis:p});
       // Zusätzliche physische Spielerhülle: einmaliger Originalkaufbeleg.
       // Nur K1. Kein Journal bei Regel195 oder anderem Profil.
-      if(rules.kanon && cmd.klasse==='frachter' && cmd.owner===rules.economy.start.owner)
+      if(rules.kanon && klasse==='frachter' && cmd.owner===rules.economy.start.owner)
         (state.kanon.spielerFrachterKaeufe ||= []).push({id:sh.id,tick:state.tick,station:cmd.station,preis:p});
       if (w5Kauf) {
         state.w5.verkauft++;

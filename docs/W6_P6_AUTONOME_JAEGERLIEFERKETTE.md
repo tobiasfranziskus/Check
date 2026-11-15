@@ -16,7 +16,7 @@
 
 ## Gemeinsame Schlussabnahme nach P5-Härtung (Forschungs-Head `a44d2a8b`)
 
-**[ANALYSE / POSITIV – NICHT MAIN]** Nach Synchronisierung mit der vollständigen P5-Kauf-/Belegmanipulationsprüfung ist der gesamte W6/P6-Stack erneut ausgeführt worden: **341/341 Node22-Einzeltests, 0 Fehler, 0 Skips**, einschließlich aller unveränderten 13×90-Szenarien, der zusätzlichen P5-Positiv- und Negativprüfungen und des neuen 90-Tage-Einzelfalls. [Vollständiger Node22-Lauf](https://github.com/tobiasfranziskus/Check/actions/runs/43739119740/job/132887900856) (Job-ID im verlinkten Workflow gegebenenfalls direkt über den Run aufrufen). Single-File-Check `W5_SINGLEFILE_OK`; Chromium/WebKit und die ausgeführten Wirtschafts-/Touch-Checks `success`; der bedingte Sicherheitsgeografie-Vergleich war `skipped`, **nicht** bestanden. Keine echte iPad-Safari-/NAS-Geräteabnahme.
+**[ANALYSE / POSITIV – NICHT MAIN]** Nach Synchronisierung mit der vollständigen P5-Kauf-/Belegmanipulationsprüfung ist der gesamte W6/P6-Stack erneut ausgeführt worden: **341/341 Node22-Einzeltests, 0 Fehler, 0 Skips**, einschließlich aller unveränderten 13×90-Szenarien, der zusätzlichen P5-Positiv- und Negativprüfungen und des neuen 90-Tage-Einzelfalls. [Vollständiger Node22-Lauf](https://github.com/tobiasfranziskus/Check/actions/runs/43739119740/job/132888155109). Single-File-Check `W5_SINGLEFILE_OK`; Chromium/WebKit und die ausgeführten Wirtschafts-/Touch-Checks `success`; der bedingte Sicherheitsgeografie-Vergleich war `skipped`, **nicht** bestanden. Keine echte iPad-Safari-/NAS-Geräteabnahme.
 
 **Im zusätzlichen S02/P5-Opt-in-Szenario bis Tag 90**:
 - **2 vollständig finanziert gebaute J4-Jäger**, davon **1 real für 900 ISK** von `house` gekauft; weiteres Exemplar als echte Lagerware.

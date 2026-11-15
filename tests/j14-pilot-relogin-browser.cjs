@@ -78,7 +78,8 @@ const initial=()=>{
     assert.equal(w.audit(s).ok,true);
     assert.equal(s.kanon.silizium.auftrag.schiff,source.minerId);
     assert.equal(s.ships[source.minerId].owner,'house');
-    assert.equal(s.ships[source.minerId].flug.lage,'frei');
+    assert.equal(s.ships[source.minerId].flug.lage,'abdocken',
+     'Original-Core-Abdockphase ist noch nicht frei; keine Flugteleportation');
     assert.equal(Object.values(s.owners).reduce((v,o)=>v+o.cash,0),33000);
     assert.equal(s.minted,0);assert.equal(s.burned,0);
     await page.reload();

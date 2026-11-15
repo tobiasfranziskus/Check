@@ -82,7 +82,7 @@ module.exports = { SZENARIEN, start, pruefen, kennzahlen, lauf };
 if (require.main === module) {
   const wahl = process.argv[2] || 'alle', tage = Number(process.argv[3] || 90);
   for (const sz of SZENARIEN.filter((x) => wahl === 'alle' || x.id === wahl)) {
-    const { welt, zustand, verlauf, ...r } = lauf(sz, tage, tage > 90 ? 365 : 30);
+    const { welt, zustand, verlauf, ...r } = lauf(sz, tage, tage > 90 ? 73 : 30);
     console.log(JSON.stringify({ ...r, verlauf: verlauf.map((v) => ({ tag: v.tag, hash: v.hash, eis: v.eis, wasserErloes: v.wasserErloes, ersatz: v.ersatz })) }));
   }
 }

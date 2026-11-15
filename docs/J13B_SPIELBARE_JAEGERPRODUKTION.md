@@ -1,0 +1,71 @@
+# J13b – spielbare Eigenbeiträge und genaue Produktionssperre
+
+**15.11.2026 · [DRAFT / begrenzter spielbarer Teil]** Basis: aktueller `main 52d0fe60` (J13a, #391). Kein Merge oder Deployment durch Codex. Roadmap/Projektstatus wurden gelesen; gemäß ausdrücklicher Dateigrenze bleiben sie unverändert. Dieser Bericht ist der Statusnachtrag für die unabhängige Integration.
+
+## Ergebnis und Grenze
+
+Im regulären Karriere-Tab **Jägerprojekt** können Spieler die bereits validierten eigenen Aufträge jetzt unmittelbar ausführen. Jeder Klick verwendet erneut `session.angebote()` und `session.ausfuehren(id)`; die bestehende J8-Transaktion prüft Finanzierung, Originalbefehle, Audit und Save/Load vor der Zustandsübernahme. Dieselben Autosave-, Export-, Kauf- und Cockpitwege bleiben erhalten. Keine zusätzlichen Core-Befehle oder Befehlsrechte.
+
+- Originale Käufe von Aldera-Miner/Frachter, Nadir-Frachter und vorgemerkt gebautem Nadir-Miner. Der bislang in P1 herausgefilterte originale Nadir-Frachterkauf wird auch unter „Aufträge“ sichtbar.
+- Eigene Eisförderung, ordentliches Pendelbeenden, finanzierte F4/F6-Fracht.
+- Eigene J2b-Förderung und Verkauf, sobald ein rechtmäßig gekaufter lokaler Nadir-K2-Miner existiert. Ein Aldera-Miner erfüllt dieses Gate nicht.
+- Eigene Siliziumverkäufe werden ausschließlich aus Originalbelegen gelesen; fremde Verkäufe sind separat gezählt. Es gibt keinen gespeicherten UI-Projektfortschritt.
+- K7/W4/J3/J4 zeigen die wirklich vom Core auf temporären Save/Load-Klonen zurückgewiesenen `house`-Aufträge samt zuständigen Eigentümern. Es gibt dafür keinen Befehlsbutton.
+
+**Keine erste Jägerhülle aus einer frischen Karriere produziert.** Die neue Oberfläche macht vorhandene Spielerbeiträge ausführbar. Eis/F4 sind Wasserwirtschaft und kein Ersatz für Erz, Material oder Bauteile. Sie werden nicht als Jägerfertigungsfortschritt gezählt.
+
+## Reproduzierbarer regulärer Spielpfad
+
+1. Root → Neue Karriere → Prolog → Karriere beginnen; kein Dateiimport. Start: `house` 3.000 ISK, gesamte Welt 33.000 ISK.
+2. Tab Jägerprojekt → Aldera-Frachter für 750 ISK und Aldera-Miner für 600 ISK kaufen (in dieser Reihenfolge für die Referenz). `house` danach 1.650 ISK.
+3. Eigene Eisförderung starten, zweimal **+60 Minuten**. Reales Feld wird abgebaut, Waren und Arbeit gebucht.
+4. F4-Eisfracht mit dem eigenen Frachter starten. 50 echtes Eis werden verladen; 120 ISK Crewlohn und 240 ISK Frachtentgelt sind gebunden. Optional sofort sichern und neu laden.
+5. Zweimal **+60 Minuten**. F4-Rundfracht abgeschlossen, Lohn 120 / Entgelt 240 ISK. Original-J11-Referenzhash unverändert **`e4514490aedc13bd`**, Weltgeld 33.000, Mint/Burn 0. Eigene Flotte und Cockpit über den bestehenden Flottentab.
+6. Nadir-K2-Kauf und Jägerkauf bleiben gesperrt, solange keine rechtmäßig produzierte und passend vorgemerkte Hülle vorhanden ist. Kein freier Nadir-Miner und kein Siliziumauftrag aus dem Aldera-Miner.
+
+Dieser Pfad ist ein vollständig finanzierter spielbarer Versorgungsweg, **kein reproduzierbarer Jägerbau**.
+
+## Exakte früheste Sperre und Finanzierungsbefund
+
+| Stufe | Vorhandener Originalbefehl | Recht / Befund |
+| --- | --- | --- |
+| K7 | `industrialOreOffer/AcceptMine/AcceptFreight/AcceptYard/Commit` | Angebot/Commit nur Nadir; Unterschriften getrennt `npc3`, `transport`, `werft_extern`. Die K7-Schiffsauswahl ist auf NPC3-Miner und Transport-Frachter beschränkt. Ein eigener Miner ersetzt diese Parteien nicht. |
+| W4 | `stationRefine` | Nadir-Materialeigentümer; keine house-Prokura. |
+| J2b | `siliconMineStart`, `siliconSell` | house zulässig, aber ausschließlich mit wirklich lokal gekaufter Nadir-K2-Hülle; K2-Werft und Vormerkung muss das Werftunternehmen ausführen. |
+| J3 | `stationBuildParts` | Nur `st_nadir`; 2 Material + 1 Silizium + 8 ISK vorfinanzierter Lohn pro Teil. |
+| J4 | `stationBuildFighter` | Nur `st_nadir`; 8 Bauteile + 4 Material + 32 ISK Lohn. |
+| Kauf | `shipBuy` | house, reale fertige Nadir-Hülle und 900 eigene ISK; kein Kauf ohne Hülle. |
+
+Der erste Karriereblocker ist **fehlendes Firmenbefehlsrecht**, nicht pauschal ein aktuelles 500-ISK-Defizit. Frischer Seed42: Aldera besitzt 1.000 ISK bei 500 ISK erforderlichem K7-Erzankauf. Die UI berechnet die jeweilige Lücke aus diesen aktuellen Werten; sie behauptet nicht, dass jeder Start bereits 500 ISK unterfinanziert sei.
+
+Der historische zweite K7-Vertrag aus J10d (#376) scheitert bei **0/500 ISK Aldera**; dieser bestehende Befund wurde nicht durch eine neue Spielerfinanzierung gelöst. J13b reproduziert diesen separaten Forschungsstand nicht als Karrierepfad. Weder die vier unabhängigen Unterschriften noch ein Aldera-Kapitalvertrag sind als Spielerrecht vorhanden.
+
+Geprüfte Alternativen: `householdBuy` mit `owner:'house'` wird als „kein eingetragener Haushalt“ abgewiesen. Spieler dürfen nicht stattdessen Piloten/Anteilseigner unterschreiben. Ein einfacher `shipMine`-Befehl ist kein Ersatz für den K7-Vertrag: im geprüften Karriereversuch verbleibt der house-Miner nach 300 Minuten am Dock ohne Erz; nur der NPC-Pendel erhält einen Erzvertrag. Deshalb kein scheinbar produktiver Erzbutton. Die bestehende Wasserwirtschaft kann reale Erlöse erzeugen, autorisiert aber keine fremden Industrieaufträge und belegt keine vollständige zweite K7-Finanzierung.
+
+## Prüfungen und Kompatibilität
+
+Neue `tests/j13b-spielbare-produktion.test.mjs`: tatsächliche Angebote, vier fremde Produktionsrechte, atomare Signaturablehnung, unterfinanzierter Miner-Kauf, realer Eis/F4-Pfad, unabhängige Summen für Geld und alle Ledger-Waren, Frachter-Kaufbelege und Eigentum, Save/Load im Transit und deterministischer Replay gegen den unveränderten Originalhash. Negative Kapitalmanipulation ausschließlich in einer verworfenen Testkopie, niemals in gültiger Karriere.
+
+Erweiterter bestehender P1-Browsertest: direkter Miner-Kauf aus J13b samt 48px-Touchfläche, bestehendes Cockpit/Export/Resume, zusätzlich vollständiger J13b-Projekt-F4-Pfad mit Transit-Resume, tatsächlicher Referenz und gesperrtem Jäger-/K2-Kauf in Chromium und WebKit je vier Größen (1180×820, 1024×768, 820×1180, 390×844).
+
+Lokale Browserinstallation scheiterte an der Netzfreigabe (`403 Domain forbidden` für Playwright-Downloadhosts). Browser-Abnahme wird über den vorhandenen P1-CI-Workflow auf dem Draft-PR ausgeführt; ein nicht ausgeführter Check zählt nicht als bestanden. Endgültige Ergebnisse werden nachgetragen.
+
+Unverändert: `prototypes/welt/**`, `prototypes/flug2d/**`, W6-Forschung, Original-Core-/Preis-/Rezept-/Startregeln, Original-Referenzhashes, Schema8/Regel204, alte Speicherplätze, Root und NAS-Einzeldatei. Echte iPad-Safari-/NAS-Geräteabnahme offen. Keine 13×90-/365-/730-Tage-W6-Nachhaltigkeit behauptet.
+
+### Bedingter J2b-Nachweis und bestehende Pilotengrenze
+
+Ein weiterer J13b-Test verwendet ausschließlich die vorhandene, separat signierte `j10b-k2-kauf-fixture.cjs`: echte K7/W4/K2-Vorgeschichte, dann house-Kauf, eigener bezahlter Flug zum Original-Siliziumfeld, Förderung von 8 Einheiten, Rückflug, Verkauf und unabhängige Waren-/Geldzählungen. Diese Fixture ist **kein regulärer Startweg** und wird nicht vom Produkt geladen. Der Browsertest prüft dazu den rechtmäßigen K2-Kauf und die Cockpitöffnung nach Auftragserteilung.
+
+Der Siliziumknopf wählt vor der Bindung des J2b-Auftrags den vorhandenen Piloten mit der Original-J8-Wechselprüfung, ohne Orts-/Eigentumsgates zu umgehen, und öffnet anschließend das bestehende Cockpit. Ein bereits ausgewählter Pilot darf über die Flotte zu seinem laufenden Schiff zurückkehren. **Bestehende Grenze:** J8 speichert die Pilotenauswahl nicht im Core-Save. Nach Dateiimport/Reload einer Mehrschiffwelt mit bereits gebundenem Siliziumauftrag kann die ursprüngliche neue Pilotenauswahl gesperrt bleiben. J13b ändert keine Save-/J8-Regeln und behauptet für diesen bedingten Sonderzustand keine vollständige Cockpit-Wiederaufnahme; der Core-Save selbst bleibt validierbar und unverändert. Der reguläre F4-Projektpfad wird einschließlich Transit-Wiederaufnahme geprüft.
+
+## Ausgeführtes Abschluss-Gate
+
+Geprüfter Produkt-/Test-Head: **`3ecbb76cc05d9f13f64d65ffefc04f616153fd13`**; Draft-PR **[#395](https://github.com/tobiasfranziskus/Check/pull/395)** gegen weiterhin aktuellen `main 52d0fe6053b2846284e356e574f158f9c4eaf2fc`. Nachfolgender Commit ergänzt ausschließlich diesen Bericht.
+
+- **Node22: 308/308 Tests, 0 Fehler, 0 Skips**, darunter 4/4 neue J13b-Tests. [W5-RC1 #43737013095](https://github.com/tobiasfranziskus/Check/actions/runs/43737013095), Job `132881733559`; vollständiges TAP-Protokoll geprüft. Dieselbe CI bestätigt Root-/NAS-Einzeldatei, Touch-Preflight und separate NAS-Auslieferungsprüfung erfolgreich. Lokal ebenfalls `W5_SINGLEFILE_OK` und sauberer Scope-/Syntax-/Diff-Check.
+- **Chromium und WebKit je vier Touchgrößen bestanden**: [P1 #43737013090](https://github.com/tobiasfranziskus/Check/actions/runs/43737013090), Jobs `132881735400` / `132881735344`. Pro Engine jeweils vier originale P1-Flug-/Speicherpfade, vier J13b-F4-Projektpfade und vier bedingte K2-Pilotentests; danach vier bestehende J11-Karrierepfade. In beiden Engine-Logs alle vier `J13B_PROJECT_BROWSER_OK` mit Originalhash **`e4514490aedc13bd`** und alle vier `J13B_CONDITIONAL_K2_BROWSER_OK` geprüft. Keine Geräte-Safari-Behauptung.
+- **Originalreferenzen erhalten:** authentischer P1-Start `674400c1d181fcf2`, bezahlter erster Node-Flug `8785c85f6873661a`, F4-Endstand `e4514490aedc13bd`. Keine bestehenden Sollwerte geändert.
+- **Wirtschaftsregression:** [#43737013105](https://github.com/tobiasfranziskus/Check/actions/runs/43737013105) alle ausgeführten Jobs erfolgreich; `sicherheitsgeografie-vergleich` blieb bedingt **skipped** und zählt nicht als getestet. Diese historischen Regressionen sind kein neuer W6-Nachhaltigkeitsnachweis.
+- Dateigrenze eingehalten: ausschließlich `prototypes/spiel/**`, neuer J13b-Test, bestehender P1-Browsertest und diese neue Dokumentation. Keine Änderung an den verbindlichen Planungsdateien außerhalb des ausdrücklich erlaubten Scopes.
+
+**Übergabe:** unabhängige Integration/Abnahme durch ChatGPT. Kein Codex-Merge, kein Deployment. Offene Produktblocker und die bestehende bedingte J2b-Reload-Grenze sind oben ausgewiesen; keine Finanzierung oder Befehlsberechtigung erfunden.

@@ -102,15 +102,25 @@ function auftrag(id){
  try{
   const a=session.angebote().find(x=>x.id===id);
   if(!a||!a.ok)throw Error(a?.reason||'Der Original-Core erlaubt diesen Auftrag nicht');
+  // J2b binds the miner to a job. Select its lawful pilot BEFORE binding;
+  // afterwards the existing fleet gate rejects a new cockpit selection.
+  const siliziumSchiff=id.startsWith('sil-start-')?id.slice('sil-start-'.length):null;
+  if(siliziumSchiff){
+   if(!raum)throw Error('Für Siliziumarbeit ist das vorhandene Cockpit erforderlich');
+   const pilot=session.uebernehmen(siliziumSchiff,raum.laeuft());
+   if(!pilot.ok)throw Error(pilot.reason);
+  }
   const result=session.ausfuehren(id);
   if(!result.ok)throw Error(result.reason);
   speichern();anzeigen();
   hinweis('Auftrag gebucht: '+a.label+'. Konten und Eigentümer sind neu geprüft.');
+  if(siliziumSchiff)pilotieren(siliziumSchiff);
  }catch(e){hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
 }
 const namen=[
  ['buy-st_aldera-miner','Deinen ersten Miner kaufen','Aus einem wirklich vorhandenen Aldera-Werftlager, für 600 ISK.'],
  ['buy-st_aldera-frachter','Frachter erwerben','Ein eigener Frachter wird nur aus wirklichem Lagerbestand und deinem Kapital gekauft.'],
+ ['buy-st_nadir-frachter','Nadir-Frachter erwerben','Nur eine wirklich vorhandene Hülle aus dem Nadir-Lager kaufen.'],
  ['buy-st_nadir-miner','Nadir-Miner übernehmen','Nur falls die Werft einen fertigen Miner mit Vormerkung für dich produziert hat.'],
  ['buy-st_nadir-jaeger','Jäger kaufen','Erst wenn Nadir eine echte, vollständig bezahlte Jägerhülle besitzt.']
 ];
@@ -206,6 +216,35 @@ function wirtschaftsbericht(a,s,angebote){
 }
 // J13 – alle Voraussetzungen werden nur gelesen; ein Kauf folgt ausschliesslich
 // dem bereits vorhandenen, unmittelbar erneut geprueften house-Originalauftrag.
+function jaegerBeitraege(){
+ const projekt=scope.J13Spielerprojekt.erstellen(session);
+ $('jaeger-beitrag-hinweis').textContent=projekt.hinweis;
+ const host=$('jaeger-beitrag-aktionen'),blocks=[];
+ for(const gruppe of projekt.gruppen){
+  const section=d.createElement('section'),h=d.createElement('h5');
+  h.textContent=gruppe.titel;section.append(h);
+  for(const a of gruppe.angebote){
+   const box=d.createElement('div'),b=d.createElement('button'),p=d.createElement('small');
+   box.className='order';b.type='button';b.dataset.j13Action=a.id;
+   b.textContent=titel(a);b.disabled=!a.ok;
+   p.textContent=a.label+' · '+(a.ok?'Original-Core: ausführbar':'Gesperrt: '+a.reason);
+   b.addEventListener('click',()=>auftrag(a.id));box.append(b,p);section.append(box);
+  }
+  blocks.push(section);
+ }
+ host.replaceChildren(...blocks);
+ $('jaeger-rohstoffe').textContent='Eigene belegte Siliziumverkäufe: '+projekt.silizium.eigeneVerkaeufe+
+   ' · Alle Siliziumverkäufe an Nadir: '+projekt.silizium.verkauft+'.';
+ $('jaeger-sperren').replaceChildren(...projekt.sperren.map(s=>{
+  const p=d.createElement('p');p.textContent=s.titel+' · Eigentümer: '+s.eigentuemer+
+   ' · house: '+(s.ok?'Core erlaubt den Auftrag':s.grund);return p;
+ }));
+ const a=projekt.aldera;
+ $('jaeger-finanzierung').textContent='Neuer K7-Erzankauf: Aldera besitzt '+fmt(a.kasse)+
+  ' von '+fmt(a.erzkauf)+' ISK; aktuell fehlen '+fmt(a.fehlend)+
+  ' ISK. Diese Liquiditätsprüfung ersetzt keine Firmenzustimmung. '+
+  'Die bekannte 500-ISK-Lücke im zweiten Forschungsvertrag ist dadurch nicht gelöst.';
+}
 function jaegerBericht(zustand,angebote){
  if(!scope.J13Werftakte)throw Error('J13: die originale Produktionsakte fehlt');
  const kauf=angebote.find(a=>a.id==='buy-st_nadir-jaeger');
@@ -267,6 +306,7 @@ function anzeigen(){
  }));
  wirtschaftsbericht(a,s,alleAngebote);
  jaegerBericht(s,alleAngebote);
+ jaegerBeitraege();
  const pilots=session.piloten();
  const own=a.schiffe;
  $('spielerschiffe').replaceChildren(...(own.length?own.map(sh=>{
@@ -275,9 +315,10 @@ function anzeigen(){
    p.textContent='Ort: '+sh.system+' · '+sh.flug+' · Ladung: '+sh.ladung;
    const pilot=pilots.find(x=>x.id===sh.id);
    b.type='button';b.textContent='Selbst fliegen →';b.dataset.pilot=sh.id;
-   b.disabled=!pilot?.erlaubt||!raum;
+   const bereitsPilot=session.pilotStatus()===sh.id;
+   b.disabled=(!pilot?.erlaubt&&!bereitsPilot)||!raum;
    b.addEventListener('click',()=>pilotieren(sh.id));
-   if(!pilot?.erlaubt){const m=d.createElement('small');m.textContent=pilot?.grund||'Cockpit für diese Schiffsklasse noch nicht verfügbar';box.append(h,p,b,m);}
+   if(!pilot?.erlaubt&&!bereitsPilot){const m=d.createElement('small');m.textContent=pilot?.grund||'Cockpit für diese Schiffsklasse noch nicht verfügbar';box.append(h,p,b,m);}
    else box.append(h,p,b);
    return box;
  }):[(()=>{const p=d.createElement('p');p.textContent='Noch kein Schiff. Beginne mit dem Kauf eines wirklich vorhandenen Aldera-Miners.';return p;})()]));

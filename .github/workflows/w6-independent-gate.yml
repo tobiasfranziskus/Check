@@ -1,0 +1,47 @@
+name: "W6 – unabhängige Abnahme gegen J11+P1 (ohne Aktivierung)"
+on:
+  pull_request:
+    paths:
+      - 'prototypes/welt/welt-kern.js'
+      - 'tests/w6-*'
+      - 'tools/w6-*'
+      - '.github/workflows/w6-independent-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-policy-and-j11-node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Audit: Öffentliche Karriere darf kein W6 automatisch einschalten"
+        run: node --test tests/w6-independent-j11-gates.test.mjs
+      - name: "Referenz: echter J11-Frachter und F4-Lohn sind unverändert"
+        run: node --test tests/j11-frachter.test.mjs
+      - name: "Originale NAS-/Pages-Einzeldatei bleibt bytegleich"
+        run: node scripts/build-w5-singlefile.mjs --check
+  independent-p1-j11-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Playwright ausschließlich als temporäres CI-Werkzeug"
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/w6-playwright" playwright@1.62.0
+          node "$RUNNER_TEMP/w6-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
+      - name: "Originaler Spielerweg: 750-ISK-Frachter, 600-ISK-Miner, F4-Runde, Geld-, Save- und Eigentuemaudit – vier Touchgrößen"
+        run: node tests/p1-j11-career-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/w6-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}

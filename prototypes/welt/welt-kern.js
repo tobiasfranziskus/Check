@@ -84,7 +84,7 @@ const m_data_kanon = (() => {
   return { KANON, tiefFrieren };
 })();
 
-function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false) {
+function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false) {
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
@@ -92,13 +92,14 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   });
   // Ein Forschungsquellstand für K1 (Regel199) oder explizit K7 (Regel200).
   // Niemals die produktive Regel195-Einzeldatei überschreiben.
-  const engine = k7 ? (jaegerFlug ? FACTORY.createJ4cWelt(startkapital,ort) :
+  const engine = k7 ? (p8bZweiFelder ? FACTORY.createP8bWelt(startkapital,ort) :
+    jaegerFlug ? FACTORY.createJ4cWelt(startkapital,ort) :
     jaeger ? FACTORY.createJ4bWelt(startkapital,ort) :
     bauteile ? FACTORY.createJ3Welt(startkapital,ort) :
     silizium ? FACTORY.createJ2bWelt(startkapital, ort)
     : FACTORY.createK7Welt(startkapital, ort)) : FACTORY.createKanonWelt(startkapital, ort);
   const kern = engine.core, rules = engine.rules;
-  if (rules.rulesVersion !== (jaegerFlug ? 204 : jaeger ? 203 : bauteile ? 202 : silizium ? 201 : k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
+  if (rules.rulesVersion !== (p8bZweiFelder ? 205 : jaegerFlug ? 204 : jaeger ? 203 : bauteile ? 202 : silizium ? 201 : k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
     throw Error('K1: unerwartetes Kernprofil');
   const N = FLUG.DATEN.schritteJeMinute;
   const W = rules.w5n;
@@ -1688,7 +1689,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   // Nadir-NPC3-Siliziumkette; bestehende S01/S02-Referenzen bleiben ohne Aufruf bitgleich.
   function npcSiliziumSetzen(s, aktiviert) {
     pruefeForm(s);
-    if(!k7 || !silizium || !jaeger)throw Error('W6/P5 nur im Regel204-Jaegerprofil');
+    if(!k7 || !silizium || !jaeger)throw Error('W6/P5 nur im Regel204/205-Jaegerprofil');
     if(typeof aktiviert!=='boolean')throw TypeError('W6/P5 nur Boolean');
     if(s.kanon.npcAuto===undefined || !s.kanon.npc)
       throw Error('W6/P5 zuerst die Original-NPC-Firmenpolitik aktivieren oder deaktivieren');
@@ -1905,6 +1906,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(bauteile ? {j3Bauteile:true} : {}),
     ...(jaeger ? {j4bFinanzierterJaeger:true} : {}),
     ...(jaegerFlug ? {j4cBezahlterJaegerflug:true} : {}),
+    ...(p8bZweiFelder ? {p8bZweiEndlicheFelder:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
     createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
@@ -2122,6 +2124,9 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   erstellenJ3:(kapital={})=>erstellen(kapital,true,true,true),
   erstellenJ4b:(kapital={})=>erstellen(kapital,true,true,true,true),
   erstellenJ4c:(kapital={})=>erstellen(kapital,true,true,true,true,true),
+  // Nur experimenteller Rule205-Bergbau in zwei getrennten Nadir-Feldern.
+  // Kein Produkt-/Save-Autoupgrade, keine Dravos-Miner und keine Zusatz-ISK.
+  erstellenP8b:(kapital={})=>erstellen(kapital,true,true,true,true,true,true),
   ausRegel195, ausRegel199K7, ausRegel200J2b, ausRegel201J3, ausRegel202J4b, ausRegel203J4c,
   DATEN: m_data_kanon.KANON, REGEL: m_data_kanon.KANON.regel, SCHRITTE: FLUG.DATEN.schritteJeMinute });
 if (NODE) module.exports = api; else scope.AphrosWelt = api;

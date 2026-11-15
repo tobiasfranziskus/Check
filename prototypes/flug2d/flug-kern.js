@@ -43,6 +43,11 @@ const m_data_flug = (() => {
         ],
       },
       nadir: { station: { id: 'st_nadir', x: 0, y: 0 }, felder: [] },
+      // P8c/Rule206 only: optional location; Rule204 has no Dravos system.
+      // Physics alone grants no ship, cargo, security or mining rights.
+      dravos: {station:{id:'st_dravos',x:0,y:0},felder:[
+        {id:'dravos:silizium',ware:'silizium',x:720000,y:-480000,radius:144000}
+      ]},
     },
   });
   return { VIERTEL, FLUG };

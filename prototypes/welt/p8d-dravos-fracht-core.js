@@ -169,7 +169,7 @@ function create({rules,kern,transfer,summe,ladungSumme,stillgelegt,flugSync,sili
   function audit(s){
     const p=s.kanon.p8d;
     if(!p||typeof p!=='object'||Array.isArray(p)
-      ||Object.keys(p).sort().join()!=='auftrag,angebote,belege,gebuehrBezahlt,geliefert,lohnBezahlt,lohnGebunden'
+      ||Object.keys(p).sort().join()!=='angebote,auftrag,belege,gebuehrBezahlt,geliefert,lohnBezahlt,lohnGebunden'
       ||!Array.isArray(p.belege)
       ||!['angebote','gebuehrBezahlt','geliefert','lohnBezahlt','lohnGebunden'].every(k=>ganz(p[k])))
       return false;

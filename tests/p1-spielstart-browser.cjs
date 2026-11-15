@@ -7,6 +7,34 @@ const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const W=require('../prototypes/welt/welt-kern.js');
 const OLD=require('../prototypes/w5ac/session.js');
 const SLOT='aphros-void:spielerkarriere:regel204:v1';
+async function siliziumPilot(browser,base,width,height,kind){
+ // Conditional integration check only: independently signed original K2 fixture.
+ // The regular career/project path above never imports it or signs for NPCs.
+ const fixture=require('./j10b-k2-kauf-fixture.cjs').erzeugen('house');
+ const context=await browser.newContext({viewport:{width,height},hasTouch:true});
+ await context.addInitScript(({key,save})=>localStorage.setItem(key,save),{key:SLOT,save:fixture.save});
+ const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(String(e)));
+ try{
+  await page.goto(base+'/prototypes/spiel/index.html');await page.locator('#fortsetzen').tap();
+  await page.locator('#tab-jaeger').tap();
+  await page.locator('[data-j13-action="buy-st_nadir-miner"]').tap();
+  const paid=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  const m=Object.values(paid.ships).find(s=>s.owner==='house'&&s.system==='nadir'&&s.klasse==='miner');
+  assert.ok(m);
+  await page.locator('[data-j13-action="sil-start-'+m.id+'"]').tap();
+  assert.equal(await page.locator('#raumbereich').isVisible(),true,'select legitimate pilot before binding J2b');
+  const raw=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  assert.equal(raw.kanon.silizium.auftrag.schiff,m.id);
+  assert.equal(raw.kanon.silizium.auftrag.owner,'house');
+  assert.equal(raw.minted,0);assert.equal(raw.burned,0);
+  await page.locator('#raum-konzern').tap();await page.locator('#tab-flotte').tap();
+  assert.equal(await page.locator('[data-pilot="'+m.id+'"]').isEnabled(),true,'current lawful pilot can return');
+  await page.locator('[data-pilot="'+m.id+'"]').tap();
+  assert.equal(await page.locator('#raumbereich').isVisible(),true);
+  assert.deepEqual(errors,[]);
+  console.log('J13B_CONDITIONAL_K2_BROWSER_OK',JSON.stringify({kind,width,height,miner:m.id}));
+ }finally{await context.close();}
+}
 async function projektPfad(browser,base,width,height,kind){
  const context=await browser.newContext({viewport:{width,height},hasTouch:true});
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(String(e)));
@@ -194,6 +222,7 @@ async function projektPfad(browser,base,width,height,kind){
     }));
    }finally{await ctx.close();}
    await projektPfad(browser,base,width,height,kind);
+   await siliziumPilot(browser,base,width,height,kind);
   }
  }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

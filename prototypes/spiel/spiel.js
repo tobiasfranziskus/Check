@@ -102,10 +102,19 @@ function auftrag(id){
  try{
   const a=session.angebote().find(x=>x.id===id);
   if(!a||!a.ok)throw Error(a?.reason||'Der Original-Core erlaubt diesen Auftrag nicht');
+  // J2b binds the miner to a job. Select its lawful pilot BEFORE binding;
+  // afterwards the existing fleet gate rejects a new cockpit selection.
+  const siliziumSchiff=id.startsWith('sil-start-')?id.slice('sil-start-'.length):null;
+  if(siliziumSchiff){
+   if(!raum)throw Error('Für Siliziumarbeit ist das vorhandene Cockpit erforderlich');
+   const pilot=session.uebernehmen(siliziumSchiff,raum.laeuft());
+   if(!pilot.ok)throw Error(pilot.reason);
+  }
   const result=session.ausfuehren(id);
   if(!result.ok)throw Error(result.reason);
   speichern();anzeigen();
   hinweis('Auftrag gebucht: '+a.label+'. Konten und Eigentümer sind neu geprüft.');
+  if(siliziumSchiff)pilotieren(siliziumSchiff);
  }catch(e){hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
 }
 const namen=[
@@ -306,9 +315,10 @@ function anzeigen(){
    p.textContent='Ort: '+sh.system+' · '+sh.flug+' · Ladung: '+sh.ladung;
    const pilot=pilots.find(x=>x.id===sh.id);
    b.type='button';b.textContent='Selbst fliegen →';b.dataset.pilot=sh.id;
-   b.disabled=!pilot?.erlaubt||!raum;
+   const bereitsPilot=session.pilotStatus()===sh.id;
+   b.disabled=(!pilot?.erlaubt&&!bereitsPilot)||!raum;
    b.addEventListener('click',()=>pilotieren(sh.id));
-   if(!pilot?.erlaubt){const m=d.createElement('small');m.textContent=pilot?.grund||'Cockpit für diese Schiffsklasse noch nicht verfügbar';box.append(h,p,b,m);}
+   if(!pilot?.erlaubt&&!bereitsPilot){const m=d.createElement('small');m.textContent=pilot?.grund||'Cockpit für diese Schiffsklasse noch nicht verfügbar';box.append(h,p,b,m);}
    else box.append(h,p,b);
    return box;
  }):[(()=>{const p=d.createElement('p');p.textContent='Noch kein Schiff. Beginne mit dem Kauf eines wirklich vorhandenen Aldera-Miners.';return p;})()]));

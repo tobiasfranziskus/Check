@@ -63,3 +63,30 @@ test('J13b: missing finance and foreign signatures fail atomically in the origin
  assert.equal(JSON.stringify(poor),before);
  assert.equal(j.exportieren(),initial);audit(j);
 });
+test('J13b: after independently funded K2 production, own silicon is physically mined and sold',()=>{
+ // Existing lawful, separately signed multi-company research fixture; NOT a
+ // player-start shortcut and never a product-side signature or UI import.
+ const fixture=require('./j10b-k2-kauf-fixture.cjs').erzeugen('house');
+ const j=J8.erstellen();j.oeffnen204(fixture.save,true);
+ action(j,'buy-st_nadir-miner');
+ const m=j.piloten().find(sh=>sh.klasse==='miner'&&sh.system==='nadir')||
+  Object.values(j.zustandReferenz().ships).find(sh=>sh.owner==='house'&&sh.system==='nadir');
+ assert.ok(m);
+ assert.equal(j.uebernehmen(m.id).ok,true);
+ action(j,'sil-start-'+m.id);
+ const command=(type,extra={})=>{const r=j.flugBefehl({type,owner:'house',schiff:m.id,...extra});assert.equal(r.ok,true,r.reason);};
+ command('shipUndock');j.weiterspielen(1);
+ const feld=j.weltReferenz().rules.j2b.feld;
+ command('shipFlyTo',{x:feld.x,y:feld.y});
+ let minutes=0;
+ while(j.zustandReferenz().kanon.silizium.auftrag.gefoerdert<8){assert.ok(minutes++<400);j.weiterspielen(1);}
+ command('shipDock',{station:'st_nadir'});
+ while(j.zustandReferenz().ships[m.id].flug.lage!=='angedockt'){assert.ok(minutes++<500);j.weiterspielen(1);}
+ audit(j);
+ const before=j.zustandReferenz().stations.st_nadir.lager.silizium||0;
+ action(j,'sil-sell-'+m.id);
+ assert.equal(P.erstellen(j).silizium.eigeneVerkaeufe,8);
+ assert.equal(j.zustandReferenz().stations.st_nadir.lager.silizium,before+8);
+ assert.equal(j.zustandReferenz().kanon.jaeger.fertig,0);
+ for(const gate of P.erstellen(j).sperren)assert.equal(gate.ok,false);
+});

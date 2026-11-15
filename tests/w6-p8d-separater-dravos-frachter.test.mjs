@@ -54,9 +54,19 @@ test('P8d S02: getrennte Schiffe, reale Ladequittung, 0 Mint, voller Frachterloh
  const {w,s}=neu();
  assert.deepEqual(w.npcAutoSetzen(s,true),{ok:true,aktiviert:true});
  assert.deepEqual(w.npcSiliziumSetzen(s,true),{ok:true,aktiviert:true});
- let hinSave=null,geladenSave=null,vorherBuch=0;
+ let hinSave=null,geladenSave=null,buys=0;
  for(let t=20;t<=90*1440;t+=20){
    w.advance(s,20);
+   // Wie im belegten P8c-Referenzversuch: echte Lagerabnahme zu Original-900-ISK,
+   // keine erfundenen Kaeufer oder Gratis-Abrufe. Ohne Nachfrage stoppt die Kette.
+   if(s.stations.st_nadir.lager.jaeger>0&&s.owners.house.cash>=900&&buys<3){
+     const oldHouse=s.owners.house.cash,oldStation=s.owners.st_nadir.cash;
+     const buy=w.execute(s,{type:'shipBuy',owner:'house',klasse:'jaeger',station:'st_nadir'});
+     assert.equal(buy.ok,true,JSON.stringify(buy));
+     assert.equal(oldHouse-s.owners.house.cash,900);
+     assert.equal(s.owners.st_nadir.cash-oldStation,900);
+     buys++;
+   }
    const a=s.kanon.p8d.auftrag;
    if(a?.phase==='hin'&&a.lohnBezahlt>0&&!hinSave){
      hinSave=w.save(s);
@@ -112,7 +122,7 @@ test('P8d S02: getrennte Schiffe, reale Ladequittung, 0 Mint, voller Frachterloh
    assert.equal(w.audit(forged).ok,false,'Manipulation muss entdeckt werden');
    assert.throws(()=>w.load(JSON.stringify(forged)));
  }
- console.log('P8D_SEPARATE_DRAVOS_FREIGHT',JSON.stringify({
+ console.log('P8D_SEPARATE_DRAVOS_FREIGHT',JSON.stringify({buys,
   hash:w.hash(s),belege:p.belege.length,menge:p.geliefert,lohn:p.lohnBezahlt,
   fracht:p.gebuehrBezahlt,gueter:s.kanon.silizium.felder['dravos-silizium'].verkauft,
   jaeger:s.kanon.jaeger.fertig,weltgeld:geld(s),mint:s.minted,burn:s.burned}));

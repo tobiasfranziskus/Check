@@ -656,7 +656,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
             || !ganz(k.tick) || k.tick > s.tick || k.station !== C.station
             || !['house','npc3'].includes(k.owner) || k.preis !== C.kauf
             || !sh || sh.id !== k.id || sh.owner !== k.owner || sh.klasse !== 'miner'
-            || (sh.system !== 'nadir' && !(p8cDravos && sh.system === 'dravos'
+            || (sh.system !== 'nadir' && !((p8cDravos||p8dFracht) && sh.system === 'dravos'
               && s.kanon.p8c?.reisen?.some(x=>x.schiff===sh.id
                 && x.nach==='dravos'&&x.ende!==null)))
             || sh.heimat !== 'nadir') return false;
@@ -719,7 +719,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       &&sh.heimat==='nadir'&&s.kanon.minerWerft?.lokaleKaeufe
         ?.some(x=>x.id===sh.id&&x.owner===owner&&x.preis===kaufpreis('miner'));
     function pruefen(s,cmd){
-      if(!p8cDravos)return 'P8c: diese Welt kennt kein Dravos';
+      if(!p8cDravos&&!p8dFracht)return 'P8c: diese Welt kennt kein Dravos';
       if(!cmd||typeof cmd!=='object'||Array.isArray(cmd)
         ||Object.keys(cmd).sort().join()!=='owner,schiff,type,ziel'
         ||cmd.type!=='shipTravelDravos'||cmd.owner!==owner
@@ -767,7 +767,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       return {ok:true,type:cmd.type,schiff:sh.id,von,nach,dauer:r.zeit,reserviert:kosten};
     }
     function minute(s){
-      if(!p8cDravos)return;
+      if(!p8cDravos&&!p8dFracht)return;
       const p=s.kanon.p8c,a=p.auftrag;if(!a)return;
       const sh=s.ships[a.schiff];
       if(!berechtigt(s,sh)||s.owners[konto]?.cash<minutenpreis)
@@ -787,7 +787,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         throw Error('P8c: fehlendes originales W3-Transitschiff');
     }
     function audit(s){
-      if(!p8cDravos)return s.kanon.p8c===undefined;
+      if(!p8cDravos&&!p8dFracht)return s.kanon.p8c===undefined;
       const p=s.kanon.p8c;
       if(!p||typeof p!=='object'||Array.isArray(p)
         ||Object.keys(p).sort().join()!=='auftrag,bezahlt,gebunden,minuten,reisen'
@@ -1264,7 +1264,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         s.felder?.[f.id]?.vorrat>=C.charge):C.feld;
       const lokal=ids(state.ships).map(id=>state.ships[id]).find(sh=>
         sh.owner==='npc3' && sh.klasse==='miner' && sh.heimat==='nadir'
-        && (sh.system==='nadir'||(p8cDravos&&sh.system==='dravos'))
+        && (sh.system==='nadir'||((p8cDravos||p8dFracht)&&sh.system==='dravos'))
         && !m_core_anlage.stillgelegt(state,sh));
       // Eine bereits vom Eigenbetrieb begonnene Produktion wird sauber fertig
       // verkauft; alle Befehle bleiben unabhaengig autorisiert und auditierbar.
@@ -1295,7 +1295,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           if(auftrag.gefoerdert>=auftrag.menge){
             // Geerntetes Dravos-Silizium muss real im Miner-Frachtraum
             // bleiben und per bezahlter Original-W3-Reise zum Nadir-Kaeufer.
-            const dock=p8cDravos&&aktivFeld.system==='dravos'
+            const dock=(p8cDravos||p8dFracht)&&aktivFeld.system==='dravos'
               &&lokal.system==='dravos'?'st_dravos':C.station;
             if(flug.lage==='frei' && !(flug.andocken && flug.ziel?.art==='station'))
               befehl(state,'npc3',{type:'shipDock',schiff:id,station:dock});
@@ -1321,7 +1321,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         if((lager.jaeger||0)>=1 || k.jaeger?.auftrag
           || vorhanden>=C4.bauteile || s.vorrat<C.charge)return;
         if(flug.lage!=='angedockt')return;
-        if(p8cDravos&&feldWahl?.system!==lokal.system){
+        if((p8cDravos||p8dFracht)&&feldWahl?.system!==lokal.system){
           if(lokal.system!=='nadir')return;
           const trip=befehl(state,'npc3',{type:'shipTravelDravos',
             schiff:id,ziel:'st_dravos'});
@@ -1425,7 +1425,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         'npc3:siliconMineStart', 'npc3:shipUndock', 'npc3:shipFlyTo',
         'npc3:shipDock', 'npc3:siliconSell',
       ]);
-      if(p8cDravos)erlaubt.add('npc3:shipTravelDravos');
+      if(p8cDravos||p8dFracht)erlaubt.add('npc3:shipTravelDravos');
       const gueltigerZaehler = (key, value, bereich) => {
         if (!ganz(value) || value === 0 || value > state.tick) return false;
         if (bereich !== 'pausen') return erlaubt.has(key);
@@ -1570,7 +1570,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         // Ware an Bord eines Miners setzt echte Förderung voraus (Kernbuch prüft Mengen).
         // P8c: die aus EINEM bezahlten, buchgeprueften 40-Minuten-Vertrag
         // laufende Schiffskernreise ist keine unberechtigte Miner-Fernfahrt.
-        const p8cUnterwegs=p8cDravos && sh.klasse==='miner'
+        const p8cUnterwegs=(p8cDravos||p8dFracht) && sh.klasse==='miner'
           &&sh.phase==='reise'&&sh.flug?.lage==='transit'
           &&k.p8c?.auftrag?.schiff===id;
         if (sh.klasse === 'miner' && sh.phase !== 'dock'&&!p8cUnterwegs)
@@ -1589,7 +1589,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         // Der P8c-Frachtpilot verwendet statt der K1-Freiflugreserve ein
         // separat vollfinanziertes Original-K1-Lohnbuch; dieselbe Reise wird
         // zusaetzlich durch m_core_p8c_reise.audit streng geprueft.
-        const p8cBezahlt=p8cDravos&&sh.klasse==='miner'
+        const p8cBezahlt=(p8cDravos||p8dFracht)&&sh.klasse==='miner'
           &&sh.phase==='reise'&&sh.flug.lage==='transit'
           &&k.p8c?.auftrag?.schiff===id;
         if (!d && sh.flug.lage !== 'angedockt' && !p8cBezahlt)

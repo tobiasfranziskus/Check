@@ -37,3 +37,15 @@ Neues `tests/w6-p5-autonome-siliziumkette.test.mjs`:
 - Neue NPC-Disposition und die W6-Werftreserve/Stilllegung sind **nicht produktiv freigegeben**. Keine Geldemission, keine neuen Kaufrechte, kein unfinanziertes Schiff oder Hilfe für insolvente Unternehmen.
 - Keine neue Produkt-UI, keine Save-Migration oder neue Regelnummer, kein Merge/Pages/NAS. Die neue optionale Save-Struktur ist auf dem **separaten Forschungsbranch** bewusst noch nicht produktiv aktiviert.
 - 13×90-Szenarien prüfen unverändert die bisherige Politik **ohne** P5-Opt-in. Ein eigener 90-/365-/730-Tage-Krisennachweis für aktiviertes P5 wird bei späterem produktivem Integrationsvorschlag zwingend nötig.
+
+## Tatsächlich ausgeführte unabhängige Zwischenabnahme
+
+**Geprüfter P5-Code-Head `e02d7725`: 338/338 Node22-Einzeltests, 0 Fehler, 0 Skips**, einschließlich der vorhandenen 13 unterschiedlichen 90-Tage-Szenarien und der eigenständig signierten P4-Kaufkette. Das ausführbare `tests/w6-p5-end2end-jaeger.test.mjs` erbrachte erstmals ohne manuelle NPC-Befehle nach Opt-in: vollständige NPC3-Siliziumlieferung, acht bezahlte J3-Bauteile, den aus echten Waren und eigener Nadir-Kasse gebauten ersten J4-Jäger **bis Tick 12140** und den anschließend vom Spieler regulär für **900 ISK** erworbenen Jäger `sh013`. Hash vor Kauf `c194cb42b5a2a7bd`, nach Kauf `a3521cc879ea9618`; `house` danach 2.100 ISK, Weltgeld 33.000 ISK, Mint/Burn 0. Save/Load und unabhängiger Replay exakt kanonisch gleich.
+
+[Node22-Log im CI-Gate](https://github.com/tobiasfranziskus/Check/actions/runs/43738063042/job/132884954291).
+
+**Zusätzliche QA nach `e02d7725`, noch separat abzunehmen:** Ein erweiterter P5-Belegabgleich verweigert gefälschte autonome Verkäufe, lokale Käufe und Werftentscheidungen ohne passende Original-J2b-/K2-Journale. Ein neuer Negativtest stellt einen positiven, aber erfundenen Siliziumverkaufszähler her. Ein grüner CI-Lauf auf `e02d7725` ist keine Abnahme dieser nachträglich ergänzten Härtung.
+
+## Noch ausstehend
+
+Selbst dieser erfolgreiche Produktionsweg ist **kein W6-Endnachweis**: P5 ist nur im separaten Forschungsprofil eingeschaltet, das Siliziumfeld ist nach spätestens 16 Einheiten erschöpft, und die 13 bisherigen 90-Tage-Szenarien aktivieren P5 nicht. Eine tragfähige wiederholbare Jäger-/Ersatzteilwirtschaft mit real finanziertem Nachschub und Industrie-Endnachfrage sowie Krisenprüfungen benötigt spätere eigenständige Untersuchungen und Freigaben. 

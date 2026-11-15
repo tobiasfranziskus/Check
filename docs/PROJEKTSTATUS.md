@@ -1,4 +1,18 @@
-# J9 – Konzern und persönlicher Miner im selben Regel204-Spiel · 15.11.2026
+# Aphros Void – aktueller Projektstatus [MAIN/J10a] · 15.11.2026
+
+**[MAIN]** [J10a-PR #368](https://github.com/tobiasfranziskus/Check/pull/368) ist nach vollständigem Gate als `main 1a8d9cdcfae60ce42ba1d49af3928e4befe5accd` integriert. Vorheriger `main 9082b22a` ist unter [Backup](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-j10a-werft-finanzcheck-20261115) erhalten. **[PAGES]** [Deploy #43699888790](https://github.com/tobiasfranziskus/Check/actions/runs/43699888790) completed/success für genau diesen Commit.
+
+**[SPIELBAR]** Die bereits integrierte [einzige Regel204-Konzern-/Minerwelt](../prototypes/verbund/konzern.html) besitzt nun ein **Jäger-Werftfinanzierungsfenster**. Es zeigt echte Nadir-Waren und getrennte Firmenkassen, das Original-Rezept **8 Bauteile + 4 Material + 32 Minuten bezahlte Arbeit**, rechnerisch **20 Material und 8 Silizium** bei vollständiger Rohwarenherstellung, sowie die wirklichen Core-Gates für Raffinerie, J3, J4, K7 und 900-ISK-Kauf. Ein Spieler kann **nur** eine bereits fertig vorhandene und aus `house` bezahlbare Jägerhülle erwerben; für NPC-/Nadir-/Werftaufträge gibt es **keine** fremden Spielerbefehle.
+
+**[NEGATIVER J10a-NACHWEIS / SEED42, FRISCHE REGEL195→204-KOPIE]** Tick0: `transport` 2.000, `werft_extern` 600 ISK, kein Transportfrachter und kein Erz in Nadir. Tick1: bestehende NPC-Gründungsautomatik kauft `sh002` für echte **750 ISK**, Transport 1.250, Werft 1.350 ISK. Gleichzeitig startet `npc3/sh001` selbst seinen Erz-Pendelauftrag; K7 benötigt einen freien, leeren Miner am Dock. Tick131: **50 Erz auf dem im Flug befindlichen NPC-Miner**, Frachter am Dock, **0 Nadir-Erz, 0 Jäger**, K7-Prüfung: „Schiffe nicht frei im Dock“. Weder Geld- noch Materialmangel wird durch einen Rettungstransfer gelöst. **Weltgeld 33.000 ISK, Mint/Burn 0**. Der Engpass liegt in der getrennten Firmen-/Auftragskoordination.
+
+**[QA / FINALER J10a-HEAD `ac73ca05`]** [Node22 #43699452973](https://github.com/tobiasfranziskus/Check/actions/runs/43699452973): **289/289 Tests**, 0 Fehler, 0 Skips, Touch-/NAS-Erhalt bestanden. [Browser #43699453082](https://github.com/tobiasfranziskus/Check/actions/runs/43699453082): Chromium und WebKit, je **3 J10-Touchgrößen** plus J9/J4e/RAUM-Regressionsprüfung, echter Miner-Kauf, abgelehnter Jägerkauf ohne Hülle und kein NPC-Befehlsbutton. [Wirtschafts-JS #43699452983](https://github.com/tobiasfranziskus/Check/actions/runs/43699452983) completed/success; bedingt `skipped` bleibt ungetestet. Echte iPad-Safari-/NAS-Geräteabnahme und langfristige W6-Wirtschaft bleiben offen.
+
+**[NÄCHSTER SCHRITT / J10b]** Die bestehende optionale K7-Industrieautopolitik (im Produkt nicht ohne Freigabe aktivieren) gegen die laufende NPC-Erz-Pendel- und Transportwirtschaft prüfen: rechtmäßige Eigentümerzustimmungen, freie Schiffe am richtigen Ort, vollständig gedeckte Löhne/Erz- und Werftkäufe; keine entgeltlose Stop-/Teleport-Aktion. Danach erst den ersten Jäger aus der normalen Konzernwelt versuchen.
+
+---
+
+## Historischer Stand J9 – Konzern und persönlicher Miner im selben Regel204-Spiel · 15.11.2026
 
 **[MAIN]** [PR #366](https://github.com/tobiasfranziskus/Check/pull/366) ist nach vollständig bestandenem Integrations-Gate auf **`main 8d3e1eebd1bcc28f8a68a3689a8957ee837203ef`** gemergt. Vorheriger `main 1ff291f5` mit bereinigter Doku ist unter [backup/main-before-j9-konzern-raum-20261115](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-j9-konzern-raum-20261115) gesichert.
 
@@ -14,7 +28,7 @@
 
 ---
 
-# Aphros Void – aktueller belegter Projektstatus
+## Historische J8-Bestandsaufnahme vor J9/J10a
 
 **Aktualisiert: 15.11.2026.** Die historische vollständige Statuschronik wurde **ohne Datenverlust** nach [archiv/PROJEKTSTATUS_HISTORIE_BIS_20261115.md](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261115.md) übernommen. Historische DRAFT-Aussagen sind keine aktuelle Releasebeschreibung.
 

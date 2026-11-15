@@ -66,8 +66,22 @@ function liste(w,s,aktiv,sitzung){
 }
 
 // RAUM-1-Rollenwechsel: auch ein tatsächlich vorhandener, eigener F6-Miner
-// darf am selben Dock übernommen werden. Frachter bleiben bewusst gesperrt:
-// der vorhandene Nadir-Frachter ist im freien F6 nicht steuerbar.
+// und ein tatsächlich gekaufter Aldera-Frachter dürfen am selben Dock übernommen werden.
+function vertragsKonflikt(s,id){
+  return !!s.kanon?.pendel?.[id] ||
+    [s.w3?.auftrag?.schiff,s.w5n?.frachtauftrag?.schiff,
+     s.w5ac?.active?.id,s.kanon?.rueckfracht?.schiff,
+     s.kanon?.silizium?.auftrag?.schiff].includes(id);
+}
+function rollenGrund(s,sh){
+  if(vertragsKonflikt(s,sh.id))return 'Laufenden Vertrag vor Schiffwechsel abschließen';
+  if(sh.klasse==='frachter'){
+    if(!s.kanon?.spielerFrachterKaeufe?.some(k=>k.id===sh.id))
+      return 'Frachter ohne Original-Kaufbeleg';
+    if(sh.system!=='aldera')return 'Original-Core erlaubt freien Frachterflug nur in Aldera';
+  }
+  return null;
+}
 function pruefenRolle(w,s,aktiv,ziel,sitzung){
   if(w?.regel!==204||s?.rulesVersion!==204||!s?.ships)
     return ablehnung('Nur die originale Regel204-Welt ist zulässig');
@@ -79,8 +93,12 @@ function pruefenRolle(w,s,aktiv,ziel,sitzung){
   const a=s.ships[aktiv],b=s.ships[ziel];
   if(!a||!b||a.owner!=='house'||b.owner!=='house')
     return ablehnung('Nur eigenes, physisch vorhandenes Schiff');
-  if(!['jaeger','miner'].includes(a.klasse)||!['jaeger','miner'].includes(b.klasse))
-    return ablehnung('Dieses Cockpit unterstützt noch keinen freien Frachterflug');
+  if(!['jaeger','miner','frachter'].includes(a.klasse)||!['jaeger','miner','frachter'].includes(b.klasse))
+    return ablehnung('Unbekannte Cockpitklasse');
+  for(const sh of [a,b]){
+    const grund=rollenGrund(s,sh);
+    if(grund)return ablehnung(grund);
+  }
   if((a.klasse==='jaeger'&&!gekauft(s,aktiv))
      ||(b.klasse==='jaeger'&&!gekauft(s,ziel)))
     return ablehnung('Jäger ohne tatsächlich nachgewiesenen Kaufbeleg');
@@ -101,7 +119,7 @@ function pruefenRolle(w,s,aktiv,ziel,sitzung){
     trainingsanzeigenZuruecksetzen:!!(sitzung.patrouille||sitzung.duell)});
 }
 
-const API=Object.freeze({pruefen,liste,pruefenRolle});
+const API=Object.freeze({pruefen,liste,pruefenRolle,vertragsKonflikt,rollenGrund});
 if(typeof module==='object'&&module.exports)module.exports=API;
 else scope.J6FlottenWechsel=API;
 })(typeof globalThis==='object'?globalThis:this);

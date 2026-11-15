@@ -13,6 +13,7 @@ on:
       - 'tests/j9-*'
       - 'tests/j10a-*'
       - 'tests/j10b-*'
+      - 'tests/j11-*'
       - 'prototypes/flug2d/flug-kern.js'
       - 'prototypes/f8-jaeger/**'
       - 'prototypes/welt/**'
@@ -100,3 +101,14 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}
+      - name: "J11: Frachterkauf, Flugreserve, echte F4-Fracht und vier Touchgrößen"
+        run: node tests/j11-frachter-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: j11-screenshots-${{ matrix.browser }}
+          path: docs/j11-screenshots/${{ matrix.browser }}-*.png
+          if-no-files-found: warn

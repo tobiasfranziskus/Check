@@ -44,3 +44,8 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/p1-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}
+      - name: "J11+P1: echter Spielstart, bezahlter Frachter und Miner, Eisauftrag, F4-Rundfracht und Save"
+        run: node tests/p1-j11-career-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/p1-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}

@@ -118,7 +118,9 @@ function titel(a){return namen.find(x=>x[0]===a.id)?.[1]||(
  a.id.startsWith('ice-')?'Eisförderung beginnen':
  a.id.startsWith('stop-')?'Automatischen Pendelauftrag beenden':
  a.id.startsWith('sil-start-')?'Silizium fördern':
- a.id.startsWith('sil-sell-')?'Silizium verkaufen':a.label);
+ a.id.startsWith('sil-sell-')?'Silizium verkaufen':
+ a.id.startsWith('freight-')?'F4 · Bezahlte Eisfracht ausführen':
+ a.id.startsWith('gate-freight-')?'F6 · Eisfracht mit Torbeleg':a.label);
 }
 function info(a){return namen.find(x=>x[0]===a.id)?.[2]||a.label;}
 function datum(ms){return Math.floor(ms/1440)+' Tage · '+(ms%1440)+' Minuten';}
@@ -151,7 +153,7 @@ function anzeigen(){
    :mission.find(m=>!m.done).text;
  const allowed=new Set(namen.map(n=>n[0]));
  const offers=session.angebote().filter(o=>allowed.has(o.id)
-   ||/^(ice-|stop-|sil-start-|sil-sell-)/.test(o.id));
+   ||/^(ice-|stop-|sil-start-|sil-sell-|freight-|gate-freight-)/.test(o.id));
  $('spieleraktionen').replaceChildren(...offers.map(o=>{
   const box=d.createElement('div'),button=d.createElement('button'),small=d.createElement('small');
   box.className='order';
@@ -209,6 +211,10 @@ function cockpitBinden(){
    zustand:()=>session?session.zustandReferenz():null,
    jaeger:()=>session?session.pilotStatus():null,bojen:[],
    patrouille:()=>null,patrouilleStand:()=>({status:'nicht gestartet',erreicht:0}),duellStand:()=>null,
+   // J11: transfer control through the same session, never by a second player world.
+   uebernehmen:(id,spielt)=>session.uebernehmen(id,spielt),
+   // Authoritative funding quotes on temporary audited clones; no NPC impersonation.
+   angebot:cmd=>session.flugAngebot(cmd),
    schritte:n=>{
       const minutes=session.flugSchritte(n);flugSchritte+=n;flugSeitSicherung+=minutes;
       if(minutes>0)flugerfahrung=true;

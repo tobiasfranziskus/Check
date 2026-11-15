@@ -1,0 +1,279 @@
+/* P1 · Spielerlebnis-Hülle. Keine zweite Welt, kein eigener Wirtschafts-Tick.
+ * Verwendet ausschliesslich originale Regel195-Quelle, validierte J8-Session,
+ * RAUM-1-Cockpit und separat geschützte eigene Karriere-Speicherstellen.
+ */
+(function(scope){
+'use strict';
+const d=scope.document,$=id=>d.getElementById(id);
+const SLOT='aphros-void:spielerkarriere:regel204:v1';
+const BACKUP=SLOT+':vorherige';
+const MAX=5*1024*1024;
+const fmt=n=>Number(n).toLocaleString('de-DE');
+let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung=0;
+let cockpitGenutzt=false,flugerfahrung=false;
+const safeText=(s)=>String(s==null?'':s);
+const error=(e)=>safeText(e&&e.message?e.message:e);
+
+function speichern(copyOld=false){
+ if(!session)return false;
+ const json=session.exportieren();
+ if(json.length>MAX)throw Error('Karrierestand übersteigt 5 MB. Bitte als JSON exportieren.');
+ // Get, set and backup are deliberately isolated from every existing Rule195 slot.
+ try {
+   if(copyOld){const old=scope.localStorage.getItem(SLOT);if(old)scope.localStorage.setItem(BACKUP,old);}
+   scope.localStorage.setItem(SLOT,json);
+   return true;
+ }catch(e){
+   hinweis('Lokales Sichern nicht möglich. Bitte den JSON-Export verwenden: '+error(e),true);
+   return false;
+ }
+}
+function gespeicherte(key=SLOT){
+ try{return scope.localStorage.getItem(key)||null;}catch{return null;}
+}
+function menustand(){
+ $('fortsetzen').disabled=!gespeicherte();
+ const old=$('vorige-karriere');
+ if(old)old.hidden=!gespeicherte(BACKUP);
+}
+function screen(id){
+ ansicht=id;
+ for(const name of ['startseite','briefing','spielwelt','raumbereich'])$(name).hidden=name!==id;
+ if(id!=='raumbereich'&&raum)raum.deaktivieren();
+ $('open-menu').hidden=id==='startseite';
+ $('mode-indicator').textContent=id==='startseite'?'OFFLINE · ALDERA-SEKTOR':
+   id==='briefing'?'PROLOG · ALDERA-SEKTOR':'ONLINE · ALDERA-SEKTOR';
+ if(id==='spielwelt'&&session)anzeigen();
+ scope.scrollTo?.(0,0);
+}
+function hinweis(message,fail=false){
+ const text=safeText(message);
+ const id=ansicht==='spielwelt'||ansicht==='raumbereich'?'welt-meldung':
+   ansicht==='briefing'?'briefing-meldung':'menumeldung';
+ $(id).textContent=text;
+ $(id).classList.toggle('error',!!fail);
+}
+function neueSitzung(){
+ return scope.J8KonzernSitzung.erstellen();
+}
+function aktiveSitzung(nachricht){
+ if(!session)throw Error('Es wurde noch keine Karriere gestartet.');
+ screen('spielwelt');
+ hinweis(nachricht||'Willkommen in Aldera. Dein Konzern wartet auf seinen ersten Auftrag.');
+ menustand();
+}
+function startNeu(){
+ const vorher=gespeicherte();
+ if(vorher&&!scope.confirm('Hier besteht schon eine Karriere. Die bisherige Version bleibt als „Vorherige Karriere“ gesichert. Trotzdem eine neue Karriere beginnen?'))return;
+ try{
+  if(!scope.W5acSession||!scope.J8KonzernSitzung)throw Error('Original-Wirtschaftskern wurde nicht geladen');
+  // A genuine Rule195 starting world, not a prefilled 204 test fixture.
+  const original195=scope.W5acSession.create(42,'private195').export();
+  const neu=neueSitzung();
+  const a=neu.starten195(original195,true);
+  if(a.regel!==204||a.weltgeld!==33000)throw Error('Ausgangswelt nicht autoritativ validiert');
+  session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;
+  const ok=speichern(!!vorher);
+  aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK in der gesamten Wirtschaft. Kein kostenloses Schiff.');
+  if(!ok)hinweis('Karriere gestartet. Lokales Speichern nicht verfügbar; bitte sofort JSON exportieren.',true);
+ }catch(e){hinweis('Start verweigert: '+error(e),true);}
+}
+function ladeSitzung(json,auswahl,backup=false){
+ if(typeof json!=='string'||json.length<1||json.length>MAX)
+   throw Error('Ungültige Größe des Karriere-Spielstands.');
+ if(session)throw Error('Laufende Karriere zuerst als JSON exportieren und die Seite neu öffnen.');
+ const neu=neueSitzung();
+ const a=neu.oeffnen204(json,true); // Strict Core validation; no auto migration.
+ if(a.regel!==204||a.weltgeld!==33000)throw Error('Weltgeld- und Regel-Audit verweigert den Stand');
+ if(auswahl==='datei'){
+   if(gespeicherte()&&!scope.confirm('Der neue Datei-Spielstand ersetzt die aktive Karriere-Speicherstelle. Die bisherige Karriere wird zusätzlich gesichert. Fortfahren?'))return;
+ }
+ session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;
+ if(auswahl==='datei'||backup)speichern(!!gespeicherte());
+ aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Der Original-Core hat deinen Spielstand geprüft.');
+}
+function weiter(n){
+ try{
+  session.weiterspielen(n);speichern();anzeigen();
+  hinweis(n+' bezahlte Weltminuten vergangen. Alle Waren und Konten stammen aus dem Original-Core.');
+ }catch(e){hinweis('Zeitfortschritt verweigert: '+error(e),true);}
+}
+function auftrag(id){
+ try{
+  const a=session.angebote().find(x=>x.id===id);
+  if(!a||!a.ok)throw Error(a?.reason||'Der Original-Core erlaubt diesen Auftrag nicht');
+  const result=session.ausfuehren(id);
+  if(!result.ok)throw Error(result.reason);
+  speichern();anzeigen();
+  hinweis('Auftrag gebucht: '+a.label+'. Konten und Eigentümer sind neu geprüft.');
+ }catch(e){hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
+}
+const namen=[
+ ['buy-st_aldera-miner','Deinen ersten Miner kaufen','Aus einem wirklich vorhandenen Aldera-Werftlager, für 600 ISK.'],
+ ['buy-st_aldera-frachter','Frachter erwerben','Ein eigener Frachter wird nur aus wirklichem Lagerbestand und deinem Kapital gekauft.'],
+ ['buy-st_nadir-miner','Nadir-Miner übernehmen','Nur falls die Werft einen fertigen Miner mit Vormerkung für dich produziert hat.'],
+ ['buy-st_nadir-jaeger','Jäger kaufen','Erst wenn Nadir eine echte, vollständig bezahlte Jägerhülle besitzt.']
+];
+function titel(a){return namen.find(x=>x[0]===a.id)?.[1]||(
+ a.id.startsWith('ice-')?'Eisförderung beginnen':
+ a.id.startsWith('stop-')?'Automatischen Pendelauftrag beenden':
+ a.id.startsWith('sil-start-')?'Silizium fördern':
+ a.id.startsWith('sil-sell-')?'Silizium verkaufen':a.label);
+}
+function info(a){return namen.find(x=>x[0]===a.id)?.[2]||a.label;}
+function datum(ms){return Math.floor(ms/1440)+' Tage · '+(ms%1440)+' Minuten';}
+function missions(){
+ const state=session.zustandReferenz(),mine=Object.values(state.ships).some(s=>s.owner==='house'&&s.klasse==='miner');
+ const pilot=!!session.pilotStatus();
+ const eigenesFrachtgut=Object.values(state.ships).some(sh=>sh.owner==='house'&&Object.values(sh.ladung||{}).some(n=>n>0));
+ return [
+  {done:mine,text:'Einen eigenen Miner aus echten Beständen kaufen'},
+  {done:pilot||cockpitGenutzt,text:'Ins Cockpit steigen – ein Schiff, eine Welt'},
+  {done:(state.kanon.fluglohnMinuten||0)>0||flugerfahrung,text:'Abdocken und den ersten bezahlten Flug beginnen'},
+  {done:eigenesFrachtgut||!!state.kanon.silizium?.belege?.length,text:'Eigenes Eis oder Silizium wirklich gewinnen'}
+ ];
+}
+function anzeigen(){
+ if(!session)return;
+ const a=session.ansicht(),s=session.zustandReferenz();
+ $('hausgeld').textContent=fmt(a.hausgeld)+' ISK';
+ $('zeit').textContent=datum(a.tick);
+ $('weltgeld').textContent=fmt(a.weltgeld)+' ISK';
+ $('aldera-kasse').textContent=fmt(s.owners.st_aldera.cash)+' ISK';
+ $('nadir-kasse').textContent=fmt(s.owners.st_nadir.cash)+' ISK';
+ $('schiff-anzahl').textContent=String(a.schiffe.length);
+ const mission=missions();
+ $('missions').replaceChildren(...mission.map(m=>{
+   const li=d.createElement('li');li.textContent=m.text;if(m.done)li.className='done';return li;
+ }));
+ $('missions-text').textContent=mission.every(m=>m.done)
+   ?'Du hast die ersten Etappen gemeistert. Die Wirtschaft gehört niemandem allein – dein nächster Auftrag liegt bei dir.'
+   :mission.find(m=>!m.done).text;
+ const allowed=new Set(namen.map(n=>n[0]));
+ const offers=session.angebote().filter(o=>allowed.has(o.id)
+   ||/^(ice-|stop-|sil-start-|sil-sell-)/.test(o.id));
+ $('spieleraktionen').replaceChildren(...offers.map(o=>{
+  const box=d.createElement('div'),button=d.createElement('button'),small=d.createElement('small');
+  box.className='order';
+  button.type='button';button.dataset.action=o.id;button.textContent=titel(o);button.disabled=!o.ok;
+  small.textContent=o.ok?info(o):'Zurzeit gesperrt: '+o.reason;
+  if(o.ok)small.className='available';
+  button.addEventListener('click',()=>auftrag(o.id));
+  box.append(button,small);return box;
+ }));
+ const pilots=session.piloten();
+ const own=a.schiffe;
+ $('spielerschiffe').replaceChildren(...(own.length?own.map(sh=>{
+   const box=d.createElement('div'),h=d.createElement('strong'),p=d.createElement('p'),b=d.createElement('button');
+   box.className='ship';h.textContent=sh.klasse.toUpperCase()+' · '+sh.id;
+   p.textContent='Ort: '+sh.system+' · '+sh.flug+' · Ladung: '+sh.ladung;
+   const pilot=pilots.find(x=>x.id===sh.id);
+   b.type='button';b.textContent='Selbst fliegen →';b.dataset.pilot=sh.id;
+   b.disabled=!pilot?.erlaubt||!raum;
+   b.addEventListener('click',()=>pilotieren(sh.id));
+   if(!pilot?.erlaubt){const m=d.createElement('small');m.textContent=pilot?.grund||'Cockpit für diese Schiffsklasse noch nicht verfügbar';box.append(h,p,b,m);}
+   else box.append(h,p,b);
+   return box;
+ }):[(()=>{const p=d.createElement('p');p.textContent='Noch kein Schiff. Beginne mit dem Kauf eines wirklich vorhandenen Aldera-Miners.';return p;})()]));
+}
+function pilotieren(id){
+ try{
+  if(!raum)throw Error('2D-Cockpit steht nicht zur Verfügung');
+  const r=session.uebernehmen(id,raum.laeuft());
+  if(!r.ok)throw Error(r.reason);
+  cockpitGenutzt=true;speichern();raum.sitzungGewechselt();
+  screen('raumbereich');raum.aktivieren();
+  hinweis('Du steuerst jetzt '+id+'. Das Schiff bleibt in der ursprünglichen Welt.');
+ }catch(e){hinweis('Cockpit gesperrt: '+error(e),true);}
+}
+function saveDownload(){
+ if(!session)return;
+ try{
+  const json=session.exportieren(),url=scope.URL.createObjectURL(new Blob([json],{type:'application/json;charset=utf-8'}));
+  const a=d.createElement('a');a.href=url;a.download='aphros-void-karriere-'+session.ansicht().tick+'.json';
+  d.body.append(a);a.click();a.remove();
+  scope.setTimeout(()=>scope.URL.revokeObjectURL(url),1000);
+  hinweis('Deine geprüfte Karriere wurde als eigene JSON-Datei bereitgestellt.');
+ }catch(e){hinweis('Export nicht möglich: '+error(e),true);}
+}
+function retour(ziel){
+ if(raum)raum.deaktivieren();
+ if(session){speichern();screen('spielwelt');hinweis('Wieder auf der Kommandobrücke. Die Welt ist angehalten.');}
+ else screen('startseite');
+}
+function cockpitBinden(){
+ if(!scope.RaumCockpit||!scope.RaumSzene||!scope.RaumGrafik)return;
+ try{
+  raum=scope.RaumCockpit.verbinden({
+   welt:()=>session?session.weltReferenz():null,
+   zustand:()=>session?session.zustandReferenz():null,
+   jaeger:()=>session?session.pilotStatus():null,bojen:[],
+   patrouille:()=>null,patrouilleStand:()=>({status:'nicht gestartet',erreicht:0}),duellStand:()=>null,
+   schritte:n=>{
+      const minutes=session.flugSchritte(n);flugSchritte+=n;flugSeitSicherung+=minutes;
+      if(minutes>0)flugerfahrung=true;
+      if(flugSeitSicherung>=5){flugSeitSicherung=0;speichern();}
+      return minutes;
+   },
+   ausfuehren:cmd=>{
+     const r=session.flugBefehl(cmd);
+     if(r.ok){flugerfahrung=true;speichern();}
+     return r;
+   },
+   audit:()=>session.flugAudit(),
+   patrouilleStarten:()=>({ok:false,reason:'Keine freigegebene Patrouille in dieser Karriere'}),
+   duellStarten:()=>({ok:false,reason:'Kein Trainingsduell ohne echte Jägerfreigabe'}),
+   feuern:()=>({ok:false,reason:'Kein kostenloses Kampfmaterial'}),
+   exportieren:saveDownload,
+   ansicht:retour,
+   meldung:(m,fail)=>hinweis(m,fail),
+   flugschreiber:()=>({format:'aphros-raum-flugschreiber-1',regel:204,
+       schritte:flugSchritte,vollstaendig:false,
+       hinweis:'Diese Spielerlebnishülle speichert keinen vollständigen Replay-Befehlsstrom.',
+       eintraege:[]})
+  });
+ }catch(e){raum=null;console.error('P1 cockpit bridge:',e);}
+}
+$('neues-spiel').addEventListener('click',()=>screen('briefing'));
+$('karriere-starten').addEventListener('click',startNeu);
+$('fortsetzen').addEventListener('click',()=>{try{
+   if(session){aktiveSitzung('Deine laufende Karriere ist geöffnet.');return;}
+   const json=gespeicherte();if(!json)throw Error('Keine Karriere gespeichert');
+   ladeSitzung(json,'lokal');
+ }catch(e){hinweis('Karriere nicht geöffnet: '+error(e),true);}});
+$('vorige-karriere')?.addEventListener('click',()=>{try{
+   if(session)throw Error('Erst die aktuelle Karriere als JSON sichern und neu laden');
+   const json=gespeicherte(BACKUP);if(!json)throw Error('Keine vorherige Sicherung vorhanden');
+   ladeSitzung(json,'backup',true);
+ }catch(e){hinweis('Vorherige Karriere nicht geöffnet: '+error(e),true);}});
+$('import-aktion').addEventListener('click',()=>$('import-datei').click());
+$('import-datei').addEventListener('change',async e=>{
+ const input=e.currentTarget; // Safari clears event.currentTarget after await.
+ const f=input?.files?.[0];if(!f)return;
+ try{
+   if(f.size>MAX)throw Error('Datei größer als 5 MB');
+   const json=await f.text();ladeSitzung(json,'datei');
+ }catch(err){hinweis('Datei nicht geladen: '+error(err),true);}
+ finally{input.value='';}
+});
+$('open-menu').addEventListener('click',()=>{
+ if(ansicht==='raumbereich'&&raum?.laeuft()){hinweis('Flugzeit vor dem Wechsel pausieren.',true);return;}
+ if(session)speichern();
+ if(raum)raum.deaktivieren();
+ screen('startseite');menustand();
+});
+$('welt-sichern').addEventListener('click',()=>{
+ try{const ok=speichern();hinweis(ok?'Karriere lokal gesichert.':'Bitte JSON exportieren.',!ok);}
+ catch(e){hinweis(error(e),true);}
+});
+$('welt-export').addEventListener('click',saveDownload);
+for(const b of d.querySelectorAll('[data-advance]'))b.addEventListener('click',()=>weiter(Number(b.dataset.advance)));
+for(const b of d.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>{
+ for(const p of ['auftraege','flotte','universum']){
+  $('panel-'+p).hidden=p!==b.dataset.tab;
+  $('tab-'+p).setAttribute('aria-pressed',String(p===b.dataset.tab));
+ }
+});
+scope.addEventListener('pagehide',()=>{if(session){try{speichern();}catch(_){/* local export stays available */}}});
+cockpitBinden();menustand();screen('startseite');
+})(globalThis);

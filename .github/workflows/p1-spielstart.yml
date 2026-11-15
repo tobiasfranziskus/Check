@@ -1,0 +1,46 @@
+name: "P1 – Echtes neues Spiel, Konzernprolog und RAUM-Cockpit"
+on:
+  pull_request:
+    paths:
+      - 'prototypes/spiel/**'
+      - 'tests/p1-*'
+      - 'scripts/build-w5-singlefile.mjs'
+      - 'index.html'
+      - '.github/workflows/p1-spielstart.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  no-file-start-and-core-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "P1 realer Regel195-Spielstart und bezahlter F6-Minerflug"
+        run: node --test tests/p1-spieleinstieg.test.mjs
+      - name: "Öffentliche Root-Navigation reproduzierbar; NAS-W0–W5 unverändert"
+        run: node scripts/build-w5-singlefile.mjs --check
+  real-game-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Playwright nur im CI installieren"
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/p1-playwright" playwright@1.62.0
+          node "$RUNNER_TEMP/p1-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
+      - name: "4 Touchgrößen: Root → Prolog → neue echte Karriere → bezahlter Miner → Cockpit → Save/Load"
+        run: node tests/p1-spielstart-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/p1-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}

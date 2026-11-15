@@ -1393,6 +1393,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         'npc3:siliconMineStart', 'npc3:shipUndock', 'npc3:shipFlyTo',
         'npc3:shipDock', 'npc3:siliconSell',
       ]);
+      if(p8cDravos)erlaubt.add('npc3:shipTravelDravos');
       const gueltigerZaehler = (key, value, bereich) => {
         if (!ganz(value) || value === 0 || value > state.tick) return false;
         if (bereich !== 'pausen') return erlaubt.has(key);
@@ -1486,6 +1487,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       if (!m_core_buch.audit(state)) fehler.push('K1-Buch');
       if (!m_core_minerwerft.audit(state)) fehler.push('K2-Minerwerft/Transport');
       if (silizium && !m_core_silizium.audit(state)) fehler.push('J2b-Silizium-/Geld-/Feldbuch');
+      if (!m_core_p8c_reise.audit(state)) fehler.push('P8c: authentische Dravos-Fracht-/Piloten-Kassenbelege');
       if (bauteile && !m_core_bauteile.audit(state)) fehler.push('J3-Bauteil-/Material-/Lohnbuch');
       if (jaeger && !m_core_jaeger.audit(state)) fehler.push('J4b-Jägerherstellung-/Eigentums-/Lohnbuch');
       if (!m_core_spielerfracht.audit(state)) fehler.push('K1-Spielerfracht/Vertragslohn');
@@ -1858,6 +1860,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       return m_core_bauteile.ausfuehren(state,cmd);
     if(p8cDravos&&type==='shipTravelDravos')
       return m_core_p8c_reise.starten(state,cmd);
+    if(p8cDravos&&type==='shipMove'&&state.ships[cmd?.schiff]?.heimat==='nadir')
+      return {ok:false,type,reason:'P8c: fernreisende K2-Huellen brauchen bezahlte Dravos-Reise'};
     if(silizium&&['siliconMineStart','siliconSell'].includes(type))
       return m_core_silizium.ausfuehren(state,cmd);
     if(k7&&typeof type==='string'&&type.startsWith('industrialOre'))return k7Befehl(state,cmd);
@@ -1914,6 +1918,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       &&state.kanon.industrieErz.erzAngenommen)state.kanon.industrieErz.phase='geliefert';
     m_core_minerwerft.tick(state);
     if(silizium)m_core_silizium.minute(state);
+    if(p8cDravos)m_core_p8c_reise.minute(state);
     if(bauteile)m_core_bauteile.minute(state);
     if(jaeger)m_core_jaeger.minute(state);
     m_core_flugplan.koerperSync(state);

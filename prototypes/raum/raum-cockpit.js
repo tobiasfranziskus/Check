@@ -78,6 +78,7 @@ function verbinden(B) {
       ? J6.pruefenRolle(B.welt(),s,Z.aktiv,id,sitzung)
       : {ok:!S.wechselGrund(s,Z.aktiv,id),reason:S.wechselGrund(s,Z.aktiv,id)};
     if (!ergebnis.ok) { meldung('Schiffwechsel nicht möglich: ' + ergebnis.reason, true); return; }
+    if(B.uebernehmen){const r=B.uebernehmen(id,Z.laeuft);if(!r.ok){meldung(r.reason,true);return;}}
     Z.aktiv = id; Z.auswahl = null; Z.vorher = null;
     meldung('Steuerung übernommen: ' + (S.KLASSENNAME[s.ships[id].klasse] || s.ships[id].klasse) + ' ' + id + ' · gleicher Weltstand, gleiche Kasse');
     hud(true);
@@ -278,6 +279,7 @@ function verbinden(B) {
     setzen('raum-lage', (LAGE[a.lage] || a.lage) + (a.gestrandet ? ' · NICHT FINANZIERT' : ''));
     setzen('raum-fahrt', fmt(a.fahrt) + ' P/s · Kurs ' + a.kurs + '/256');
     let zusatz = 'Fracht: ' + a.ladung;
+    if(a.klasse==='frachter'&&a.lage==='transit')zusatz+=' · Vertragsfahrt: Regel204 sperrt freie Steuerung; Lieferung und Rückkehr im Original-Core';
     if (sz.bergbau && sz.bergbau.auftrag) zusatz = 'Silizium ' + sz.bergbau.auftrag.gefoerdert + '/' + sz.bergbau.auftrag.menge + (sz.bergbau.imFeld ? ' · Förderlage erreicht' : frei ? ' · im Feld unter ' + sz.bergbau.regel.abbauTempo + ' P/s halten' : '');
     else if (jaeger && p.status !== 'nicht gestartet') zusatz = 'Patrouille ' + p.status + ' · ' + p.erreicht + '/' + B.bojen.length;
     if (jaeger && d && d.status !== 'nicht gestartet') zusatz = 'Training ' + d.status + ' · Treffer ' + d.treffer + '/3 · Gegentreffer ' + d.gegnerTreffer + '/4';
@@ -300,6 +302,7 @@ function verbinden(B) {
       const dist = o ? o.distanz : Math.round(Math.hypot(punkt.x - a.x, punkt.y - a.y));
       setzen('raum-zielinfo', fmt(dist) + ' P' + (o && o.art === 'station' ? ' · Lager (nicht Spielereigentum): ' + o.lager : o && o.art === 'boje' ? ' · höchstens ' + o.maxTempo + ' P/s' : o && o.vorrat !== undefined ? ' · Vorrat ' + o.vorrat : o && o.art === 'schiff' ? ' · ' + o.owner + ' · ' + o.ladung : ''));
       const akt = S.aktionen(sz, Z.auswahl);
+      if(a.klasse==='frachter'&&o?.art==='tor'&&B.angebot){const q=B.angebot(S.befehl(B.welt(),sz,'torpruefen'));akt.push({id:'torpruefen',text:'Bezahlten Toranflug bestätigen'+(q.ok?'':' · '+q.reason),aktiv:q.ok});}
       neuBauen('ziel', JSON.stringify([Z.auswahl, akt]), $('raum-zielaktionen'), () => akt.map((x) => knopf(x.text, x.id === 'anfliegen' ? 'primary' : '', () => tun(x.id, Z.auswahl), !x.aktiv, 'ziel-' + x.id)));
     }
     // Dockkarte (Stationsansicht)
@@ -310,6 +313,13 @@ function verbinden(B) {
       neuBauen('dock', sig, $('raum-dockinhalt'), () => {
         const teile = [absatz('Lager der Station (nicht Spielereigentum): ' + st.lager, 'note')];
         teile.push(knopf('Abdocken · bindet Flugreserve (' + F.reserveMinuten + ' min × ' + F.lohnJeMinute + ' ISK)', 'primary', () => tun('abdocken'), false, 'dock-abdocken'));
+        if (a.klasse==='frachter' && B.angebot) {
+          for(const [id,text] of [['eisfracht','F4 · bezahlte Eis-Rundfracht'],['torfracht','F6 · Eis-Rundfracht mit Torbeleg']]) {
+            const q=B.angebot(S.befehl(B.welt(),sz,id));
+            teile.push(knopf(text, '', ()=>tun(id), !q.ok, 'dock-'+id));
+            teile.push(absatz(q.ok?'Original-Core: aktuell finanzierbar':q.reason,'note'));
+          }
+        }
         if (bb) {
           const r = bb.regel;
           teile.push(absatz('Bergbau laut Kernregel: Charge ' + r.charge + ' Silizium · ' + r.minutenJeEinheit + ' min je Einheit · Lohn ' + r.lohnJeMinute + ' ISK/min · Ankauf ' + r.preis + ' ISK je Einheit · Feldvorrat ' + bb.vorrat, 'note'));

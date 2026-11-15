@@ -52,8 +52,8 @@ function sitzungPruefen(welt, s) {
   if (eigeneJäger.length && !kauf)
     throw Error('RAUM: kein tatsächlich gekaufter Spielerjäger im Weltstand');
   if (kauf) return kauf.id;
-  if (!Object.values(s.ships || {}).some(sh => sh.owner === OWNER && sh.klasse === 'miner' && sh.flug))
-    throw Error('RAUM: noch kein rechtmäßig erworbener eigener Miner oder Jäger');
+  if (!Object.values(s.ships || {}).some(sh => sh.owner === OWNER && ['miner','frachter'].includes(sh.klasse) && sh.flug))
+    throw Error('RAUM: noch kein rechtmäßig erworbener eigener Miner, Frachter oder Jäger');
   if (!welt.audit(s).ok) throw Error('RAUM: Minerübernahme verlangt vollständiges Original-Core-Audit');
   return null; // Kein künstlicher Jäger – Jägertraining bleibt gesperrt.
 }
@@ -118,7 +118,7 @@ function erzeugen(welt, s, aktivId, extra) {
     if (!k || o.system !== sh.system) continue;
     const basis = { id, klasse: o.klasse, owner: o.owner, eigen: o.owner === OWNER, aktiv: id === aktivId,
       ladung: ladungText(o.ladung), auftrag: o.auftrag };
-    if (k.lage === 'transit') { transit++; continue; }
+    if (k.lage === 'transit') { transit++; if(id!==aktivId)continue; }
     if (k.lage === 'angedockt') { gedockt.push(basis); continue; }
     objekte.push({ ...basis, art: 'schiff', name: (KLASSENNAME[o.klasse] || o.klasse) + ' ' + id,
       x: k.x, y: k.y, vx: k.vx, vy: k.vy, kurs: k.kurs, lage: k.lage, radius: 0,
@@ -133,7 +133,7 @@ function erzeugen(welt, s, aktivId, extra) {
     for (const p of d.gegnerGeschosse) effekte.gegnerGeschosse.push({ x: p.x, y: p.y });
   }
   const dienst = s.kanon.flugdienst[aktivId];
-  const zentrum = b.lage === 'transit' ? { x: sys.station.x, y: sys.station.y } : { x: b.x, y: b.y };
+  const zentrum = { x: b.x, y: b.y };
   for (const o of objekte) {
     const dx = o.x - zentrum.x, dy = o.y - zentrum.y;
     o.distanz = Math.round(Math.sqrt(dx * dx + dy * dy));
@@ -217,6 +217,9 @@ function befehl(welt, szene, aktion, ziel) {
     case 'ausrichten':
       if (!punkt || (punkt.x === a.x && punkt.y === a.y)) return null;
       return { type: 'shipSteer', ...basis, kurs: F.richtungZu(punkt.x - a.x, punkt.y - a.y), fahrt: 0 };
+    case 'eisfracht': return { type: 'shipFreightIce', ...basis };
+    case 'torpruefen': return { type: 'shipGateCheck', ...basis };
+    case 'torfracht': return { type: 'shipFreightGateIce', ...basis };
     case 'siliziumAuftrag': return { type: 'siliconMineStart', ...basis };
     case 'siliziumVerkauf': return { type: 'siliconSell', ...basis };
     default: return null;

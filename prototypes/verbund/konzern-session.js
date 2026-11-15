@@ -36,6 +36,10 @@ function haushaltPlan(s){
      hinzu('sil-sell-'+sh.id,'Silizium mit '+sh.id+' verkaufen',{type:'siliconSell',schiff:sh.id});
    }
  }
+ for(const sh of Object.values(s.ships).filter(x=>x.owner==='house'&&x.klasse==='frachter')){
+   hinzu('freight-'+sh.id,'F4 · bezahlte Eis-Rundfracht mit '+sh.id,{type:'shipFreightIce',schiff:sh.id});
+   hinzu('gate-freight-'+sh.id,'F6 · Eis-Rundfracht mit Torbeleg '+sh.id,{type:'shipFreightGateIce',schiff:sh.id});
+ }
  for(const [station,klasse] of [
    ['st_aldera','miner'],
    ['st_aldera','frachter'],['st_nadir','frachter'],['st_nadir','jaeger']
@@ -121,7 +125,7 @@ function erstellen(){
    return Object.freeze({
      herkunft,quelleHash,regel:204,tick:s.tick,hash:welt.hash(s),
      weltgeld:gleichesGeld(s),hausgeld:s.owners.house.cash,schiffe,stationen,
-     eigenerJaeger:jaeger.length, pilotierbar:schiffe.some(sh=>['jaeger','miner'].includes(sh.klasse)),
+     eigenerJaeger:jaeger.length, pilotierbar:schiffe.some(sh=>['jaeger','miner','frachter'].includes(sh.klasse)),
      ausgabe:'Regel204 – manuelle JSON-Sicherung, kein automatischer Rückweg nach Regel195'
    });
  }
@@ -169,18 +173,20 @@ function erstellen(){
    requireState();
    const copy=pruefen(welt,zustand);
    const own=Object.values(copy.ships).filter(sh=>
-     sh.owner==='house'&&['miner','jaeger'].includes(sh.klasse)&&sh.flug);
+     sh.owner==='house'&&['miner','jaeger','frachter'].includes(sh.klasse)&&sh.flug);
    return Object.freeze(own.sort((a,b)=>a.id.localeCompare(b.id)).map(sh=>{
      // Nach Import einer Welt mit nur einem eigenen Schiff darf dieser eine
      // vorhandene Pilot sein laufendes Schiff wieder übernehmen. Kein Ortswechsel.
      const einzelnWiederAnmelden=!pilot&&own.length===1;
-     const erlaubt=!copy.kanon.pendel?.[sh.id]&&
-       (sh.flug.lage==='angedockt'||einzelnWiederAnmelden);
+     const grund=J6.rollenGrund(copy,sh);
+     const transitResume=einzelnWiederAnmelden&&sh.klasse==='frachter'&&sh.flug.lage==='transit';
+     const erlaubt=(!grund&&sh.flug.lage==='angedockt')||
+       (einzelnWiederAnmelden&&!copy.kanon.pendel?.[sh.id]&&(sh.klasse!=='frachter'||transitResume||!grund));
      return Object.freeze({
        id:sh.id,klasse:sh.klasse,system:sh.system,lage:sh.flug.lage,
        erlaubt,
        grund:copy.kanon.pendel?.[sh.id]?'Autonomer Pendelauftrag zunächst beenden'
-         :!erlaubt?'Vor einem Wechsel vollständig andocken':null
+         :!erlaubt?(grund||'Vor einem Wechsel vollständig andocken'):null
      });
    }));
  }
@@ -189,7 +195,7 @@ function erstellen(){
    if(typeof id!=='string'||spielt||!J6||typeof J6.pruefenRolle!=='function')
      return {ok:false,reason:'Flugzeit anhalten und gültigen Piloten wählen'};
    const eigener=piloten().find(x=>x.id===id);
-   if(!eigener)return {ok:false,reason:'Nur wirklich gekaufte eigene Miner/Jäger'};
+   if(!eigener)return {ok:false,reason:'Nur wirklich gekaufte eigene Miner/Jäger/Frachter'};
    if(pilot===id)return {ok:true,pilot:id};
    if(!eigener.erlaubt)return {ok:false,reason:eigener.grund};
    if(pilot){
@@ -203,14 +209,19 @@ function erstellen(){
  }
  const flugBefehle=new Set([
    'shipUndock','shipDock','shipApproach','shipFlyTo','shipSteer',
-   'siliconMineStart','siliconSell'
+   'siliconMineStart','siliconSell','shipFreightIce','shipGateCheck','shipFreightGateIce'
  ]);
+ function flugAngebot(cmd){
+   requireState();
+   if(cmd?.schiff!==pilot||cmd?.owner!=='house'||!flugBefehle.has(cmd?.type))return {ok:false,reason:'Kein eigener Pilot'};
+   return angebot(cmd);
+ }
  function flugBefehl(cmd){
    requireState();
    if(!cmd||typeof cmd!=='object'||Array.isArray(cmd)||
       cmd.owner!=='house'||cmd.schiff!==pilot||!flugBefehle.has(cmd.type)||
       !zustand.ships[pilot]||zustand.ships[pilot].owner!=='house'||
-      !['jaeger','miner'].includes(zustand.ships[pilot].klasse))
+      !['jaeger','miner','frachter'].includes(zustand.ships[pilot].klasse))
      return {ok:false,reason:'Nur gültige eigene Pilotenkernbefehle'};
    if(zustand.kanon.pendel?.[pilot])
      return {ok:false,reason:'Autonomer Pendelauftrag vor persönlicher Steuerung beenden'};
@@ -240,7 +251,7 @@ function erstellen(){
 
  function exportieren(){requireState();return welt.save(zustand);}
  return Object.freeze({starten195,oeffnen204,ansicht,angebote,ausfuehren,weiterspielen,exportieren,
-  piloten,uebernehmen,pilotStatus,flugBefehl,flugSchritte,weltReferenz,zustandReferenz,flugAudit});
+  piloten,uebernehmen,pilotStatus,flugBefehl,flugAngebot,flugSchritte,weltReferenz,zustandReferenz,flugAudit});
 }
 const API=Object.freeze({erstellen});
 if(NODE)module.exports=API;else scope.J8KonzernSitzung=API;

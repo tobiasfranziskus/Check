@@ -78,6 +78,7 @@ const W=require('../prototypes/welt/welt-kern.js');
    await page.locator('[data-j9-pilot="'+fid+'"]').click();
    await page.locator('[data-raum="dock-eisfracht"]').click();
    assert.match(await page.locator('#raum-lage').textContent(),/Transit/);
+   assert.match(await page.locator('#raum-reserve').textContent(),/120 ISK Vertragslohn/);
    assert.match(await page.locator('#raum-ladung').textContent(),/Regel204 sperrt freie Steuerung/);
    assert.equal(await page.locator('#raum-knueppel').evaluate(x=>x.classList.contains('aus')),true);
    assert.equal(await page.locator('#raum-andocken').isHidden(),true);

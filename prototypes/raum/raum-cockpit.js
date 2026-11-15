@@ -287,7 +287,7 @@ function verbinden(B) {
     else if (jaeger && p.status !== 'nicht gestartet') zusatz = 'Patrouille ' + p.status + ' · ' + p.erreicht + '/' + B.bojen.length;
     if (jaeger && d && d.status !== 'nicht gestartet') zusatz = 'Training ' + d.status + ' · Treffer ' + d.treffer + '/3 · Gegentreffer ' + d.gegnerTreffer + '/4';
     setzen('raum-ladung', zusatz);
-    setzen('raum-kasse', fmt(sz.kasse) + ' ISK'); setzen('raum-reserve', fmt(a.reserve) + ' ISK');
+    setzen('raum-kasse', fmt(sz.kasse) + ' ISK'); setzen('raum-reserve', fmt(sz.fracht?sz.fracht.lohnReserve:a.reserve) + ' ISK' + (sz.fracht?' Vertragslohn':''));
     setzen('raum-zeit', 'Min ' + fmt(sz.tick) + ' + ' + sz.sekunde + ' s');
     setzen('raum-audit', Z.auditOk ? 'Audit OK · Welt ' + fmt(sz.weltgeld) + ' ISK' : 'AUDITFEHLER');
     $('raum-audit').className = Z.auditOk ? '' : 'fehler';

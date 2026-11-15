@@ -153,6 +153,11 @@ function erzeugen(welt, s, aktivId, extra) {
     kasse: s.owners[OWNER].cash, pilotenkasse: s.owners.pilot_house ? s.owners.pilot_house.cash : 0,
     weltgeld: Object.keys(s.owners).reduce((n, id) => n + s.owners[id].cash, 0),
     station: sys.station.id, objekte, gedockt, transit, effekte,
+    fracht: s.w5n?.frachtauftrag?.schiff===aktivId ? {
+      phase:s.w5n.frachtauftrag.phase,
+      lohnReserve:s.owners.w5n_fracht_arbeit?.cash||0,
+      kaufReserve:s.owners.w5n_fracht_kauf?.cash||0
+    } : null,
     bergbau: sh.klasse === 'miner' ? bergbau(welt, s, sh) : null,
   });
 }

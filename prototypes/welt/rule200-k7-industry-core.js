@@ -387,7 +387,7 @@ const m_data_erzpilot = (() => {
         ...W5_RULES.economy.waren,silizium:{stufe:'rohstoff',basis:24}
       }};
     }
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug'].includes(k))
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug','siliziumZweitesFeld'].includes(k))
       || (Object.hasOwn(research,'kanon')&&(research.kanon!==true||research.personalWages!==true))
       || (Object.hasOwn(research,'ort')!==(research.kanon===true))
       || (research.kanon===true&&(typeof research.ort?.imFeld!=='function'
@@ -401,7 +401,9 @@ const m_data_erzpilot = (() => {
       || (Object.hasOwn(research,'silizium')&&(research.silizium!==true||research.industryOre!==true))
       || (Object.hasOwn(research,'bauteile')&&(research.bauteile!==true||research.silizium!==true))
       || (Object.hasOwn(research,'jaeger')&&(research.jaeger!==true||research.bauteile!==true))
-      || (Object.hasOwn(research,'jaegerFlug')&&(research.jaegerFlug!==true||research.jaeger!==true)))
+      || (Object.hasOwn(research,'jaegerFlug')&&(research.jaegerFlug!==true||research.jaeger!==true))
+      || (Object.hasOwn(research,'siliziumZweitesFeld')&&
+        (research.siliziumZweitesFeld!==true||research.jaegerFlug!==true)))
       throw TypeError('Unbekannter W5ad-Startparameter');
     const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
     if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
@@ -481,6 +483,17 @@ const m_data_erzpilot = (() => {
       W5_RULES.rulesVersion=204;
       W5_RULES.j4c=Object.freeze({owner:'house',station:'st_nadir',
         verschleissMilliJeMinute:300});
+    }
+    // W6/P8b [DRAFT / RESEARCH RULE205]: eine ZWEITE, raeumlich getrennte,
+    // ENDLICHE Nadir-Geologie. Explizite Versuchsauswahl, niemals in Rule204.
+    // Keine Schiffe, Kassen, Siliziumware oder Rettung bei der Initialisierung.
+    // Dravos wird dadurch NICHT erschlossen oder als Lieferweg simuliert.
+    if(research.siliziumZweitesFeld===true){
+      W5_RULES.rulesVersion=205;
+      W5_RULES.j2b=Object.freeze({...W5_RULES.j2b,
+        feld:Object.freeze({...W5_RULES.j2b.feld,id:'nadir-primaer'}),
+        nebenfeld:Object.freeze({id:'nadir-sekundaer',system:'nadir',
+          x:-720000,y:-480000,radius:144000,vorrat:16})});
     }
     if(research.kanon===true)W5_RULES.kanon={profil:'K1'};
     if(research.wageTrade===true){
@@ -4017,6 +4030,16 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
       personalWages:true,kanon:true,ort});
   },
   // K7: getrennte Forschungsregel200, keine Rule199-Migration/Produktänderung.
+  createP8bWelt:(options,ort)=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('P8b: nur nachweisbare Anfangskassen');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,
+      personalWages:true,kanon:true,industryOre:true,
+      silizium:true,bauteile:true,jaeger:true,jaegerFlug:true,
+      siliziumZweitesFeld:true,ort});
+  },
   createJ4cWelt:(options,ort)=>{
     if(options==null)options={};
     if(typeof options!=='object'||Array.isArray(options)

@@ -72,9 +72,10 @@ function erstellen(){
    if(raw.rulesVersion!==195||raw.schema!==8)throw Error('Nur Regel195/Schema8 zulässig');
    const report=J7.untersuchen(text);
    if(!report.ok)throw Error('J7 blockiert '+report.stufe+': '+report.reason);
-   let lauf=text,letzter=null;
+   let lauf=text,letzter=null,quellHash=null;
    for(let i=0;i<KETTE.length;i++){
      letzter=KETTE[i](lauf);
+     if(i===0)quellHash=letzter.quellHash; // Original-195-Hash, nicht 199-Zielhash
      if(letzter.welt.hash(letzter.zustand)!==report.schritte[i].hash)
        throw Error('J8: der Original-Referenzhash weicht in Stufe '+i+' ab');
      lauf=letzter.welt.save(letzter.zustand);
@@ -85,7 +86,7 @@ function erstellen(){
    // bekommt keine zusätzliche Hülle; J7 meldet deshalb keinen Startjäger.
    if(report.eigenerJägerGekauft||Object.values(letzter.zustand.ships).some(sh=>sh.klasse==='jaeger'))
      throw Error('J8: Quelldaten dürfen keinen bereits herbeigezauberten Jäger enthalten');
-   return aktivieren(letzter.welt,letzter.zustand,'Kopie aus Regel195',report.schritte[0].hash);
+   return aktivieren(letzter.welt,letzter.zustand,'Kopie aus Regel195',quellHash);
  }
  function oeffnen204(text,bestaetigt){
    if(bestaetigt!==true)throw Error('J8: ausdrückliche Spielstandauswahl erforderlich');

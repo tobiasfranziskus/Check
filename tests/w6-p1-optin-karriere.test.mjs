@@ -52,8 +52,10 @@ test('W6/X1: aktiver S02-Karrierestart ist finanziert, speicherbar, reproduzierb
  assert.equal(reopened.regel,204);
  assert.equal(welt.canonical(s),copy.weltReferenz().canonical(copy.zustandReferenz()));
  assert.equal(copy.zustandReferenz().kanon.npcSilizium.aktiv,true);
- neu.weiterspielen(1440);
- copy.weiterspielen(1440);
+ for(let i=0;i<24;i++){
+  neu.weiterspielen(60);
+  copy.weiterspielen(60);
+ }
  assert.equal(welt.canonical(neu.zustandReferenz()),
     copy.weltReferenz().canonical(copy.zustandReferenz()));
  pruefen(welt,neu.zustandReferenz());

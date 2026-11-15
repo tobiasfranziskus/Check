@@ -1,6 +1,6 @@
 # W6/P8b – Forschungsregel205: zwei endliche, räumlich getrennte Siliziumfelder
 
-**[DRAFT / ANALYSE, 15.11.2026] – KEINE Produkt-/Balancingfreigabe, kein 205-Save auf Pages aktiv.**
+**[DRAFT / ANALYSE / QA ABGESCHLOSSEN, 15.11.2026] – KEINE Produkt-/Balancingfreigabe, kein 205-Save auf Pages aktiv.**
 
 ## Ziel, Herkunft, Abgrenzung
 
@@ -24,9 +24,47 @@
 - Vollständiges Node22-Gate und eindeutige Manipulations-/Unterfinanzierungssperren. Separater CI-Workflow `.github/workflows/w6-p8b-rule205.yml` führt den neuen Versuch auf dem jeweiligen Draft-Head aus.
 - Chromium/WebKit-Touch- und echte iPad-/NAS-Abnahme **nicht** automatisch als erledigt zählen; in dieser Stufe sind keine neuen öffentlichen Browserpfade/Schaltflächen enthalten.
 
+## Tatsächlich verifizierte CI-Abnahme – Research-Head `511a4c1e748c1d7b77d8e47f61800a226de3d077`
+
+**[BELEGT]** Alle 16 tatsächlich gestarteten GitHub-Checks wurden erfolgreich beendet. `sicherheitsgeografie-vergleich` war bedingt **skipped**, kein fiktives Bestehen.
+
+- [Main-safe Node22-Gesamtsuite](https://github.com/tobiasfranziskus/Check/actions/runs/43753837954): **356/356** Testfälle bestanden, **0 Fehler, 0 Skips**, einschließlich alter P5/P6-/W0–W6-/Save-/Eigentums-/Krisenregressionen. Original204-S02-P6-90-Tage-Hash **`686355895f27fbb8`** bitgleich.
+- [Gezielter Regel205-Workflow](https://github.com/tobiasfranziskus/Check/pull/408/checks): **4/4** neue direkte Original-/Konvertierungs-/Manipulations-/Zweifeld-Tests und **6/6** Rule204-P5/P6-Gegenprüfungen grün. **Aktiver 204→205-Import** einer bereits abgebauten, abgerechneten und erneut arbeitenden 204-Charge bei **Tick 12.159** belegt: Quelle hat bereits 9 Einheiten wirklich gefördert, erste Charge bezahlt; der zusätzliche Boden bleibt unberührt, Cash/Ware/Hüllen/Schiffsphysik/RNG/Tick bleiben beim Transfer unverändert. Original-Quellhash vor dem Transfer `c9d8d355d5ef1451` im frischen S02-Profil, neuer initialer 205-Hash `4d1747912ae6accc`.
+- [W6/P8b: 13×90 und 365 Spieltage, GitHub Actions #43753837865](https://github.com/tobiasfranziskus/Check/actions/runs/43753837865): `completed/success` mit unabhängigen Geld-/Waren-/Eigentumsaudits mindestens alle 15 Tage; vier unveränderte J2b-/J3-/J4-/K1-Verträge und unveränderte 33.000 ISK Geldmenge. Original-Spieler `house` kauft **nur** existierende fertige Jäger für jeweils **900 ISK** und spart das übrige Geld; die KI bucht keine zusätzlichen Verkäufe oder Rettungen.
+  - [Roher 13×90-Datensatz mit Szenariohashes](https://github.com/tobiasfranziskus/Check/actions/runs/43753837865/artifacts/14177282917).
+  - [S02-365-Rohdatensatz und Original-JSON-Saves](https://github.com/tobiasfranziskus/Check/actions/runs/43753837865/artifacts/14177153497). Artefakt-Aufbewahrung sieben Tage.
+
+### 13 tatsächlich ausgeführte 90-Tage-Szenarien
+
+| Profil | Physisch gefördertes Silizium primär/sekundär | Jäger gebaut | Käufe house | Bezahlte Ersatzkäufe | Einordnung |
+| --- | ---: | ---: | ---: | ---: | --- |
+| S01 | 0 / 0 | 0 | 0 | 0 | Eis/Wasser aktiv, ohne Ersatzbeschaffung |
+| **S02** | **16 / 16** | **4** | **3** | **93** | Zwei Felder/aktive Ersatzwirtschaft; Hash `c6a5b9b9b3b7579a` |
+| S03 | 16 / 0 | 1 | 1 | 12 | Finanzierungs-/Ersatzengpass |
+| S04 | 8 / 0 | 0 | 0 | 4 | Eingeschränkter Konsum, keine zweite Charge |
+| S05 | 0 / 0 | 0 | 0 | 2 | Kaufkraftlücke bei hoher Sparquote |
+| S06 | 0 / 0 | 0 | 0 | 4 | Kein ausreichender Firmenkreislauf ohne Ausschüttung |
+| S07 | 0 / 0 | 0 | 0 | 0 | Ersatzpolitik aus |
+| S08 | 0 / 0 | 0 | 0 | 2 | Keine Wasser-Rückfracht |
+| S09 | 0 / 0 | 0 | 0 | 2 | Wasserwerk aus |
+| S10 | 0 / 0 | 0 | 0 | 4 | Keine Betriebsreserve |
+| **S11** | **16 / 16** | **4** | **3** | **68** | Zwei Felder/aktive Ersatzwirtschaft; Hash `74236d59cc89451b` |
+| S12 | 0 / 0 | 0 | 0 | 2 | Lager-/Versorgungsknappheit |
+| S13 | 0 / 0 | 0 | 0 | 4 | Eis/Wasser teilweise aktiv, kein Jägerbau |
+
+**Negativbefund:** Die zusätzlichen 16 Siliziumeinheiten verbessern nach 90 Tagen **nur S02 und S11** bis zu vier finanzierten J4-Hüllen. In elf weiteren Regimen entsteht kein dritter Jäger; nachfrageseitig, werftseitig oder geldseitig fehlen Voraussetzungen. Kein Szenario erhielt neue ISK; alle 13 finanziellen/physikalischen Audits sind grün, aber **nicht alle Regime wirtschaftlich tragfähig**.
+
+### 365-Tage-Langlauf S02 mit zwei endlichen Quellen
+
+**[BELEGT]** Finale `365×1.440` Original-Wirtschaftsminuten, Hash **`e7001bb97dfb4df2`**: exakt **32** ursprünglich in zwei real getrennten Lagerstätten geförderte/verkaufte Siliziumeinheiten, **4** regulär gefertigte Jäger, **3** tatsächlich für zusammen **2.700 ISK** vom Spieler gekaufte Jäger, **1** fertige Hülle weiter im Nadir-Lager, **379** real finanzierte Ersatzkäufe. Eisförderung **209.104**, Wasserumsatz **3.140.100 ISK**, erfasste Lohnsumme `W6.kennzahlen(...).loehne` **1.492.805 ISK**; Hausgeld **300 ISK**. **Weltgeld 33.000 ISK, Mint/Burn 0**, keine gebuchten Nachschüsse.
+
+Beide Felder sind im Langlauf vollständig **erschöpft**. Der Eis-/Wasser-/Ersatzkreislauf ist danach weiter aktiv, die Jägerindustrie hat ohne eine neue physische Quelle keinen unbegrenzten Nachschub. Dieser Erfolg belegt **365 Tage**, nicht zusätzlich einen 730-Tage-205-Lauf.
+
+**[OFFEN / PRODUKTENTSCHEIDUNG]** Die 16 zusätzlichen Einheiten an einer zweiten *Nadir*-Position sind **nur ein Forschungsparameter**. Kein tatsächlicher Dravos-Rohstofftransport, keine produktive Regel205-Freigabe, kein neuer 204-Save oder automatischer Wechsel. Für die echte Dravos-Kette bleiben das nachprüfbare Transitsystem, Fracht-/Eigentumsvertrag, Ankaufskasse, sichere Save-Migration, Risikokosten und reale Browser-/iPad-/NAS-Abnahme nötig.
+
 ## Ergebnisstatus und nächste Ausbaustufe
 
-Bis CI tatsächlich bestanden ist, bleiben Aussagen über den dritten Jäger **Hypothesen** und keine Testresultate.
+Der dritte und vierte Jäger sind für das S02-**Forschungsprofil205** in 90 und 365 Tagen tatsächlich nachgewiesen (oben); das gilt **nicht** als automatische W6-Gesamtnachhaltigkeit, als Dravos-Lieferung oder als Genehmigung für weitere Rohstoffe.
 
 Selbst ein erfolgreicher 205-Versuch beweist nicht die physische Durchführbarkeit der **Dravos-Lieferkette**, die längerfristige Kapitaldeckung oder Nachhaltigkeit aller 13 Krisenszenarien. Für Dravos sind ein separater, sichtbar spielbarer, tatsächlich finanzierter Zwei-/Drei-Systeme-Transport, neue endliche Feldgröße, lückenlose ISK- und Waren-/Eigentumsübernahme und eine ausdrücklich freigegebene produktive Regel-/Save-Migration notwendig.
 

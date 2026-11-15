@@ -96,6 +96,19 @@ test('J6 erlaubt nur die bezahlte zweite Jägerhülle am selben Dock; kein Telep
   assert.equal(s.kanon.jaeger.kaeufe.length,2);
   assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),33000);
   assert.equal(s.minted,0);assert.equal(s.burned,0);
+  // Mit zwei gültig gekauften Schiffen auch alle temporären Blockaden prüfen.
+  const verboten=[
+    {spielt:true,patrouille:null,duell:null},
+    {spielt:false,patrouille:{status:'bereit'},duell:null},
+    {spielt:false,patrouille:{status:'flug'},duell:null},
+    {spielt:false,patrouille:null,duell:{status:'aktiv'}}
+  ];
+  for(const status of verboten){
+    const block=unveraendert(w,s,()=>J6.pruefen(w,s,'sh023','sh025',status));
+    assert.equal(block.ok,false,'Kein Wechsel bei Flugzeit oder aktiver Mission');
+  }
+  const fehlend=unveraendert(w,s,()=>J6.pruefen(w,s,'sh023','sh025',null));
+  assert.equal(fehlend.ok,false,'Unvollständiger Sitzungsstatus ist kein Freibrief');
   const hin=unveraendert(w,s,()=>J6.pruefen(w,s,'sh023','sh025',sitzung()));
   assert.deepEqual(hin,{ok:true,pilot:'sh025',vorher:'sh023',station:'st_nadir',
     trainingsanzeigenZuruecksetzen:false});
@@ -109,6 +122,13 @@ test('J6 erlaubt nur die bezahlte zweite Jägerhülle am selben Dock; kein Telep
   assert.equal(s.ships.sh023.flug.anker,'st_nadir');
   assert.equal(s.ships.sh025.flug.anker,'st_nadir');
   assert.equal(s.owners.house.cash,678);
+  // Nach echter Abdockanweisung ist die andere Hülle nicht mehr physisch erreichbar.
+  const abdocken=w.execute(s,{type:'shipUndock',owner:'house',schiff:'sh023'});
+  assert.equal(abdocken.ok,true,JSON.stringify(abdocken));
+  const ausserhalb=unveraendert(w,s,()=>J6.pruefen(w,s,'sh023','sh025',sitzung()));
+  assert.equal(ausserhalb.ok,false);
+  assert.match(ausserhalb.reason,/angedockt/);
+  assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),33000);
 });
 
 test('J6 lehnt manipuliertes Eigentum und fehlende Audit-Nachweise ab',()=>{

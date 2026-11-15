@@ -2,7 +2,7 @@
 const {chromium,webkit}=require('playwright');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const assert=require('node:assert/strict');
-const root=path.resolve(__dirname,'..');
+const root=path.resolve(__dirname,'../..');
 const scripts=['flug2d/flug-kern.js','welt/rule200-k7-industry-core.js','welt/j2b-silizium-core.js',
  'welt/j3-bauteil-core.js','welt/j4b-jaeger-werft-core.js','welt/welt-kern.js','j6w/wirtschaft.js'];
 const server=http.createServer((req,res)=>{

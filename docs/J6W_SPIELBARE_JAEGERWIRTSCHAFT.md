@@ -1,6 +1,6 @@
 # J6-W – ausführbare Jägerwirtschaftsschnittstelle
 
-**[DRAFT / API, nicht integriert]** Branch `codex/j6w-spielbare-jaegerwirtschaft`, Basis aktueller `main 399a36ab38c1f6bf4b1b0d40f6a1254d4a52d434`, am 15.11.2026 per Fetch geprüft. AGENTS, Roadmap, Projektstatus, J5-W-Bericht, J5-W-Tests und Original-Regel204-Wirtschafts-/Flugpfad geprüft. #351 und #354 sind integriert; der offene #356 bearbeitet Flottenwechsel. Historische Forschungs-PRs bleiben Quellen, keine zusätzlich übernommenen Abhängigkeiten. Kein Merge, Deployment, Migration oder Schreiben eines Spielstands.
+**[DRAFT / API, nicht integriert · [PR #357](https://github.com/tobiasfranziskus/Check/pull/357)]** Branch `codex/j6w-spielbare-jaegerwirtschaft`, Basis aktueller `main 399a36ab38c1f6bf4b1b0d40f6a1254d4a52d434`, am 15.11.2026 per Fetch geprüft. AGENTS, Roadmap, Projektstatus, J5-W-Bericht, J5-W-Tests und Original-Regel204-Wirtschafts-/Flugpfad geprüft. #351 und #354 sind integriert; der offene #356 bearbeitet Flottenwechsel. Historische Forschungs-PRs bleiben Quellen, keine zusätzlich übernommenen Abhängigkeiten. Kein Merge, Deployment, Migration oder Schreiben eines Spielstands.
 
 ## Ergebnis
 
@@ -63,7 +63,20 @@ Negative Gegenproben: fehlende Bauteile/Material/Erz; Werftunterschrift bei 290/
 
 Pro Minute vollständiger Core-Audit und unabhängig summierte Geldmenge, physische Waren gegen Ledger, vorhandene Eigentümerkonten und Jägeranzahl gegen Kaufbelege. Exakte zusätzliche Arbeitszahlungen und Original-Kaufpreis geprüft. Deterministisches Doppelreplay, Vergleich mit direktem Core, Save/Load an Befehls-/Arbeitsgrenzen. Importangriffe gegen Ware, Silizium, Fracht, Lohn, Zeit, Gratispreis, Eigentum, Schiffzahl, geldmengenneutrale illegale Umbuchung, Mint und Schema; defektes JSON. Abgetrennte Lageprojektionen und Angebote verändern den Originalsave nicht.
 
-Tatsächliche Schlussresultate werden nach Abschluss der laufenden Regression ergänzt. Frühere fehlgeschlagene Testfassungen (doppelter Testvariablenname, fehlendes Stationsfeld beim Dockbefehl) wurden korrigiert; sie gelten nicht als bestandene Prüfungen. Ein Aufruf mit dem von Node22 nicht unterstützten Flag `--test-isolation=none` startete keine Tests; korrekter Zusatzlauf verwendet `--experimental-test-isolation=none`.
+Tatsächlich ausgeführte Prüfungen (Node **v22.23.4**):
+
+- Vorprüfung mit dem Repository-Befehl: **45/45 Testdateien**, 0 Fehler/Skips/Abbrüche, 194197 ms.
+- Erster Gesamtlauf mit neuer API: **46/46 Testdateien**, 0 Fehler/Skips/Abbrüche, 416999 ms; vor abschließender Katalogergänzung, wird nicht als Endstand ausgegeben.
+
+- Direkter API-Fokus `node tests/j6w-spielbare-jaegerwirtschaft.test.mjs`: **6/6 Einzeltests**, 0 Fehler/Skips/Abbrüche, 61982 ms im abschließenden parallelen Prüfzeitraum.
+- `J6W_BROWSER=chromium node prototypes/j6w/browser-pruefung.cjs`: **erfolgreich**, echter Chromium über lokalen HTTP-Server, browserseitiger UMD-Import aller Originalmodule, 47 Angebote, neutraler Quellhash, echte Förderreservierung, Originalaudit und Save/Load; 33.000 ISK, Mint/Burn 0. Keine UI-/Touch-Abnahme daraus ableiten.
+- Versuch mit beiden Browserengines: Chromium erfolgreich; **WebKit nicht gestartet**, weil `webkit-2336/pw_run.sh` nicht installiert ist. Dieser kombinierte Aufruf endete deshalb mit Fehler. Ein erster sandboxierter HTTP-Aufruf konnte wegen `listen EPERM` nicht starten; anschließend autorisierter lokaler Browserlauf erfolgreich. Keine echte iPad-Safari-/NAS-Abnahme.
+- Ergänzender Gesamtlauf `node --test --experimental-test-isolation=none tests/*.test.mjs`: **252/252 Einzeltests**, 0 Fehler/Skips/Abbrüche, 392678 ms. Dieser Lauf startete vor der abschließenden Katalogergänzung um den Nadir-Frachterkauf; keine Behauptung eines zweiten 252-Tests-Laufs auf dem Endstand.
+- Abschließender Repository-Prüfbefehl `node --test tests/*.test.mjs` auf dem endgültigen API-/Katalogstand: **46/46 Testdateien bestanden**, 0 Fehler, 0 Skips, 0 Abbrüche, 345311 ms. Der Standardrunner zählt hier Dateisuiten; die 252 inneren Tests werden ausschließlich dem gesonderten oben bezeichneten Lauf zugerechnet.
+
+ `git diff --check` erfolgreich. Remote-main vor PR-Erstellung erneut geprüft: weiterhin `399a36ab`. GitHub-Actions auf dem neuen PR-Head werden hier nicht als bestanden behauptet.
+
+Frühere fehlgeschlagene Testfassungen (doppelter Testvariablenname, fehlendes Stationsfeld beim Dockbefehl) wurden korrigiert; sie gelten nicht als bestandene Prüfungen. Ein Aufruf mit dem von Node22 nicht unterstützten Flag `--test-isolation=none` startete keine Tests; korrekter Zusatzlauf verwendet `--experimental-test-isolation=none`.
 
 Keine neuen Wirtschaftsszenarien: Wirtschaftsregeln unverändert. Historische 13×90-Tage-Prüfungen der Gesamtregression sind keine Nachhaltigkeitsabnahme dieser endlichen Regel204-Folgeproduktion.
 
@@ -72,7 +85,7 @@ Keine neuen Wirtschaftsszenarien: Wirtschaftsregeln unverändert. Historische 13
 - `prototypes/j6w/wirtschaft.js`: eigenständige API.
 - `prototypes/welt/welt-kern.js`: ausschließlich lesender Export vorhandener K7-Preise.
 - `tests/j6w-spielbare-jaegerwirtschaft.test.mjs`: API-Gesamtkette und negative Gegenversuche.
-- `tests/j6w-browser.cjs`: optionaler HTTP-/UMD-Modultest (Playwright als vorhandenes Entwicklungswerkzeug).
+- `prototypes/j6w/browser-pruefung.cjs`: optionaler HTTP-/UMD-Modultest (Playwright als vorhandenes Entwicklungswerkzeug).
 - Dieser Bericht.
 
 **Schnittstellenanforderung außerhalb der erlaubten Dateigrenzen:** ChatGPT/Faible laden das neue Script in der vorhandenen Jägersitzung und binden `angebote`, `lage`, `ausfuehren` an die Konzernansicht an. Vor Ausführung Flug/Training wie bisher pausieren; den bestehenden autoritativen Minutentakt benutzen, nach Rückmeldung Ansicht aktualisieren. Keine `advance`-Schleife, neue Startwelt, stiller Akteurswechsel oder Save-Migration im Klickhandler. DOM-Ausgabe wie bisher escapen. Bestehende Import-/Exporthülle unverändert nutzen; neue Kontexte nach Sitzungswechsel mit der aktuellen Weltinstanz erzeugen. Angebotsermittlung nur bei Bedarf, nicht in jedem Flugframe: vollständiges Save-Audit ist bewusst gründlich.

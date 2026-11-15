@@ -52,7 +52,54 @@ function anzeigeKonzern(){
   st=>[st.id+' · '+st.system,st.lager]);
  tabellenzeilen('konzern-betriebe',k.betriebskassen,
   b=>[b.id,format(b.cash)+' ISK']);
+ anzeigeSpielerWirtschaft();
 }
+// J6-W: ausschließlich eigene, legitim verfügbare Wirtschaftsbefehle in der Konzernansicht.
+// Alle NPC-/Stationsfirmen bleiben getrennte Entscheidungsträger. Das aktuelle Angebot ist
+// unverbindlich; der Original-Core validiert unmittelbar vor jeder Buchung erneut.
+function anzeigeSpielerWirtschaft(){
+ const feld=$('j6-w-angebote'), info=$('j6-w-nadir');
+ if(!feld||!info||!welt||!weltzustand)return;
+ const API=globalThis.J6wWirtschaft;
+ if(!API){feld.textContent='Wirtschafts-API nicht geladen';return;}
+ try {
+  const house=API.erstellen(welt,'house'),nadir=API.erstellen(welt,'st_nadir');
+  const l=house.lage(weltzustand),regeln=l.regeln.jaeger;
+  const material=weltzustand.stations.st_nadir.lager;
+  info.textContent='Nadir-Werft (fremder Eigentümer): '+(material.jaeger||0)+' fertige Jäger im Lager · '
+   +(material.bauteil||0)+' Bauteile · '+(material.material||0)+' Material. '
+   +'Neubau: '+regeln.bauteile+' Bauteile + '+regeln.material+' Material + '+regeln.dauer
+   +' bezahlte Minuten. '+nadir.angebot(weltzustand,{type:'stationBuildFighter',station:'st_nadir'}).reason
+   +'. Stationsaufträge sind keine Spielerbefehle.';
+  const daten=[
+   ['Siliziumauftrag · eigener Miner sh022',{type:'siliconMineStart',schiff:'sh022'}],
+   ['Silizium nach Rückdockung verkaufen',{type:'siliconSell',schiff:'sh022'}],
+   ['Jäger in Nadir kaufen (900 ISK)',{type:'shipBuy',station:'st_nadir',klasse:'jaeger'}],
+   ['Vorhandenen Frachter in Nadir kaufen',{type:'shipBuy',station:'st_nadir',klasse:'frachter'}],
+  ];
+  const nodes=[];
+  for(const [bezeichnung,anfrage] of daten){
+   const angebot=house.angebot(weltzustand,anfrage);
+   const zeile=document.createElement('div');zeile.className='j6-w-zeile';
+   const taste=document.createElement('button');taste.type='button';taste.textContent=bezeichnung;
+   taste.disabled=!angebot.ok;taste.className=angebot.ok?'primary':'';
+   const status=document.createElement('span');status.className='note';
+   status.textContent=angebot.ok?'Finanziert und nach Original-Core zulässig':'Gesperrt: '+(angebot.reason||'Core-Gate');
+   taste.addEventListener('click',()=>{
+    if(ansicht!=='konzern'||spielt){meldung('Wirtschaftsbefehl nur bei angehaltener Konzernansicht',true);return;}
+    const akt=API.erstellen(welt,'house').angebot(weltzustand,anfrage);
+    if(!akt.ok){meldung('Auftrag nicht mehr zulässig: '+akt.reason,true);anzeigen();return;}
+    const ergebnis=weltBefehl(akt.befehl);
+    meldung(ergebnis.ok?'Echter Spielerauftrag ausgeführt: '+bezeichnung
+      :'Core-Sperre: '+ergebnis.reason,!ergebnis.ok);
+    anzeigen();
+   });
+   zeile.append(taste,status);nodes.push(zeile);
+  }
+  feld.replaceChildren(...nodes);
+ }catch(e){feld.textContent='Wirtschaftsübersicht konnte nicht auditiert werden: '+e.message;}
+}
+
 function wechseln(ziel){
  if(!['cockpit','konzern','raum'].includes(ziel)||ziel===ansicht)return;
  if(ziel==='raum'&&!raum)return;

@@ -19,3 +19,11 @@ Erwarteter Referenzzustand: Tick 22806, zwei gekaufte Jäger, 33.000 ISK Weltgel
 **CI-Status:** Vor der tatsächlichen GitHub-Prüfung nicht als bestanden kennzeichnen; Node22-Gesamtsuite und Browser-/WebKit-/Touch-Gates auf dem gemeinsamen Head notwendig. Es gibt noch keine bedienbare integrierte Wirtschaftskonsole; diese folgt erst mit der grafischen Faible-/ChatGPT-Integration.
 
 Kein Merge, kein Deployment und keine Änderung an produktiven Spielständen.
+
+## Aktueller kombinierter Gameplay-Draft (RAUM-1 + J6, 15.11.2026)
+
+Der Grafik-Draft #358 ist inzwischen mit identischem Source-Blob in den J6-I-Integrationsbranch übernommen. Wegen eigener, schwächerer RAUM-1-Wechselregeln wurde ein gemeinsamer Gate-Pfad `J6FlottenWechsel.pruefenRolle` geschaffen: Nur eigene, vollständig physisch am selben Dock befindliche Jäger/Miner; keine Nadir-Frachterflüge; keine ungepauste Zeit, laufende Patrouille/Trainingsduelle, offenen Fluglohnreserven oder fehlerhaften World-Audits. Die originalen J6-`pruefen`-Tests für reine Jäger↔Jäger-Auswahl bleiben erhalten. Die grafische Raumansicht bindet diesen neuen Pfad ein; Flight-, Wirtschaftskern und Original-Saveformat bleiben unverändert.
+
+**Sichtbarer Spielerpfad:** In derselben Regel204-Konzernansicht zeigt `J6wWirtschaft.angebot` die wirkliche aktuelle Entscheidungslage für einen eigenen Siliziumauftrag, den Verkauf nach Dockrückkehr sowie einen realen Jäger-/Frachterkauf. Das UI setzt `owner:'house'` und verwendet nach erneuter Angebotsprüfung den Original-Core über den zentral protokollierenden `weltBefehl`. Nadir-Werftlager und die getrennten Material-/Kostenbedingungen sind lediglich lesend sichtbar. **Keine** Fabriksteuerung, NPC-Unterschrift oder Firmenkasse wird zum Spielerprivileg erklärt.
+
+Die Grafikmodule/J4c-App wurden auf einem gemeinsamen Integrationsbranch **erst nach** dem separat ausgeführten Faible-Draft übernommen. Dies ändert weder den Faible-Quellbranch noch den Codex-Quellbranch. Für den kombinierten Endhead müssen sämtliche Node22-, Browser-/WebKit-, Touch- und Wirtschaftstests **erneut** erfolgreich abschließen. Noch kein Merge/Deployment.

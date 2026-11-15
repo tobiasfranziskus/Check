@@ -229,7 +229,13 @@ footer{max-width:1240px;margin:0 auto 22px;font-size:.86rem;color:#a5b9cd}
 <div><h2>Betriebskassen · verschiedene Eigentümer</h2>
 <table aria-label="Betriebskassen"><thead><tr><th>Kontoinhaber</th><th>ISK</th></tr></thead><tbody id="konzern-betriebe"></tbody></table></div>
 </div>
-<p class="note">Die Kassen anderer Unternehmen und Stationslager gehören nicht automatisch dem Spieler. Diese erste J5-Ansicht erteilt bewusst keine Konzernbefehle; ein künftiger Auftrag muss den bestehenden autoritativen Core und seine Finanzierungs-/Eigentumsprüfung verwenden.</p>
+<p class="note">Die Kassen anderer Unternehmen und Stationslager gehören nicht dem Spieler. Die folgenden Aktionen verwenden ausschließlich den eigenen Konto-/Eigentümerkontext <strong>house</strong> und den Original-Core. NPC-Unternehmen behalten ihre Entscheidungsrechte.</p>
+<div class="panel" id="j6-w-konzern">
+<h2>J6-W · Eigene Aufträge und Finanzierung</h2>
+<p class="note">Vorfinanzierter Siliziumabbau und rechtmäßig verfügbare Schiffsankäufe. Laufende Arbeit braucht weiterhin echte Weltzeit. Für Produktion und fremde Vertragsunterschriften sind gesonderte Eigentümerentscheidungen erforderlich.</p>
+<p id="j6-w-nadir" class="note">Nadir-Werftdaten werden aus der geladenen Welt geprüft.</p>
+<div id="j6-w-angebote" aria-label="Geprüfte Spieleraufträge" style="display:grid;gap:10px"></div>
+</div>
 <button id="konzern-zurueck" class="primary">Zum gleichen Jägercockpit zurück</button>
 </section>
 <footer>

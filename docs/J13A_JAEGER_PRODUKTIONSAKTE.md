@@ -1,8 +1,8 @@
 # J13a – Jäger-Produktionsakte in der echten Karriere
 
-**15.11.2026 · [J13a / Integrations-PR #391]**
+**15.11.2026 · [MAIN/J13a · 52d0fe60]**
 
-Ausgangsbasis: `main 22146ac4c6a1d166677655f32e8bc19c892d97bc` (J12). Diese Stufe ist **kein vollständig produzierter Spielerjäger**. Sie macht erstmals die bestehende, aber noch nicht durchgängig finanzierte Produktionskette als spielbezogenes Ziel nachvollziehbar.
+Ausgangsbasis vor der Änderung: `main 22146ac4c6a1d166677655f32e8bc19c892d97bc` (J12). [J13a-Integrations-PR #391](https://github.com/tobiasfranziskus/Check/pull/391) ist inzwischen als [`main 52d0fe60`](https://github.com/tobiasfranziskus/Check/commit/52d0fe6053b2846284e356e574f158f9c4eaf2fc) integriert, Vorversion gesichert. Diese Stufe ist **kein vollständig produzierter Spielerjäger**. Sie macht erstmals die bestehende, aber noch nicht durchgängig finanzierte Produktionskette als spielbezogenes Ziel nachvollziehbar.
 
 ## Technischer Vertrag und Spielerwirkung
 
@@ -27,7 +27,7 @@ Neu: `tests/j13-jaeger-akte.test.mjs` prüft einen echten unveränderten Regel19
 
 Die bestehende `tests/p1-spielstart-browser.cjs` prüft J13 vor dem bekannten echten P1-Flug-/Save-Weg in **Chromium und WebKit, je vier Touchgrößen**: Tab sichtbar, fünf Stufen, echte Jägerpreise, kein Kauf ohne Hülle, kein finanzieller Seiteneffekt.
 
-**Ausgeführtes Abschluss-Gate auf Feature-Head `36ed3819`:** [W5/Node22/Root/NAS/Touch #43729228526](https://github.com/tobiasfranziskus/Check/actions/runs/43729228526) **304/304 Tests, 0 Fehler, 0 Skips**, inklusive **3/3 neue J13-Prüfungen**, NAS-Einzeldatei `W5_SINGLEFILE_OK` und Touch-Preflight. [P1-Browser #43729228624](https://github.com/tobiasfranziskus/Check/actions/runs/43729228624): **Chromium + WebKit je vier Touchgrößen**, acht erfolgreiche P1-Rundläufe mit J13-Jägerakte und acht anschließende J11-Pfadrunden (tatsächlich 4/Engine und Testart). F4-Endhash unverändert `e4514490aedc13bd`, Weltgeld 33.000 ISK, Mint/Burn 0. [Wirtschaftsregression #43729228532](https://github.com/tobiasfranziskus/Check/actions/runs/43729228532): ausgeführte Jobs erfolgreich; der bedingte Sicherheitsgeografie-Job blieb **skipped** und wird ausdrücklich nicht als getestet gewertet. Reiner Dokumentations-Nachtrag nach den geprüften Code-Commits. Das separate main-Integrations-Gate und tatsächlicher Pages-Deploy sind danach noch unabhängig zu belegen. Echte iPad-Safari- und private NAS-Geräteabnahme weiterhin offen.
+**Ausgeführtes Abschluss-Gate auf Feature-Head `36ed3819`:** [W5/Node22/Root/NAS/Touch #43729228526](https://github.com/tobiasfranziskus/Check/actions/runs/43729228526) **304/304 Tests, 0 Fehler, 0 Skips**, inklusive **3/3 neue J13-Prüfungen**, NAS-Einzeldatei `W5_SINGLEFILE_OK` und Touch-Preflight. [P1-Browser #43729228624](https://github.com/tobiasfranziskus/Check/actions/runs/43729228624): **Chromium + WebKit je vier Touchgrößen**, acht erfolgreiche P1-Rundläufe mit J13-Jägerakte und acht anschließende J11-Pfadrunden (tatsächlich 4/Engine und Testart). F4-Endhash unverändert `e4514490aedc13bd`, Weltgeld 33.000 ISK, Mint/Burn 0. [Wirtschaftsregression #43729228532](https://github.com/tobiasfranziskus/Check/actions/runs/43729228532): ausgeführte Jobs erfolgreich; der bedingte Sicherheitsgeografie-Job blieb **skipped** und wird ausdrücklich nicht als getestet gewertet. Reiner Dokumentations-Nachtrag nach den geprüften Code-Commits. Das [separate Integrations-Gate #43729585557](https://github.com/tobiasfranziskus/Check/actions/runs/43729585557), [P1-Chromium/WebKit #43729585566](https://github.com/tobiasfranziskus/Check/actions/runs/43729585566) und [ausgeführte Wirtschaftsjobs #43729585461](https://github.com/tobiasfranziskus/Check/actions/runs/43729585461) sind ebenfalls grün. Der Pages-Deploy zum Merge-SHA `52d0fe60` ist noch nicht unabhängig belegt. Echte iPad-Safari- und private NAS-Geräteabnahme weiterhin offen.
 
 ## Nachfolgender sachlicher Blocker
 

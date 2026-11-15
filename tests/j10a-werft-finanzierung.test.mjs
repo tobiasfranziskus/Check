@@ -110,7 +110,24 @@ test('J10a: bestehende NPC-Gründungs- und Lieferautomatik über echte Zeit prü
      id:sh.id,klasse:sh.klasse,system:sh.system,lage:sh.flug?.lage||sh.phase
    }));
    console.log('J10A_AUTOMATIK',JSON.stringify({
-     label,tick:t.tick,house:t.kassen.house,nadir:t.kassen.st_nadir,
+     label,tick:t.tick,industrieAuto:s.kanon.industrieAuto,
+     politikAutomatik:s.kanon.politik.automatik,
+     miner:s.ships[t.k7.angebotMiner]?{
+       id:t.k7.angebotMiner,system:s.ships[t.k7.angebotMiner].system,
+       phase:s.ships[t.k7.angebotMiner].phase,
+       flug:s.ships[t.k7.angebotMiner].flug?.lage,
+       ladung:s.ships[t.k7.angebotMiner].ladung,
+       auftrag:s.ships[t.k7.angebotMiner].auftrag,
+       pendel:s.kanon.pendel?.[t.k7.angebotMiner]||null
+     }:null,
+     transporter:s.ships[t.k7.angebotFrachter]?{
+       id:t.k7.angebotFrachter,system:s.ships[t.k7.angebotFrachter].system,
+       phase:s.ships[t.k7.angebotFrachter].phase,
+       flug:s.ships[t.k7.angebotFrachter].flug?.lage,
+       ladung:s.ships[t.k7.angebotFrachter].ladung,
+       auftrag:s.ships[t.k7.angebotFrachter].auftrag
+     }:null,
+     label2:'K7-Angebotsprüfung ohne Core-Mutation',house:t.kassen.house,nadir:t.kassen.st_nadir,
      transportKasse:t.kassen.transport,werft:t.kassen.werft_extern,
      transport,erzNadir:t.lager.erz,jaeger:t.lager.jaeger,
      angebotFrachter:t.k7.angebotFrachter,

@@ -107,10 +107,28 @@ function ladeSitzung(json,auswahl,backup=false){
  aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Der Original-Core hat deinen Spielstand geprüft.');
 }
 function weiter(n){
+ let vorher=null;
  try{
-  session.weiterspielen(n);speichern();anzeigen();
+  if(n===1440){
+   // Kein neuer schneller Wirtschaftstick: 24 echte, einzeln validierte 60-Minuten-Schritte.
+   // Falls eine wirtschaftliche Sperre dazwischen auftritt, alten Save atomar bewahren.
+   vorher=session.exportieren();
+   for(let i=0;i<24;i++)session.weiterspielen(60);
+  }else session.weiterspielen(n);
+  speichern();anzeigen();
   hinweis(n+' bezahlte Weltminuten vergangen. Alle Waren und Konten stammen aus dem Original-Core.');
- }catch(e){hinweis('Zeitfortschritt verweigert: '+error(e),true);}
+ }catch(e){
+  if(vorher!==null){
+   try{
+    const restore=neueSitzung();restore.oeffnen204(vorher,true);
+    session=restore;anzeigen();
+   }catch(restoreError){
+    hinweis('Tagesfortschritt fehlgeschlagen; bitte letzte JSON-Sicherung verwenden: '+error(restoreError),true);
+    return;
+   }
+  }
+  hinweis('Zeitfortschritt verweigert: '+error(e),true);
+ }
 }
 function auftrag(id){
  try{

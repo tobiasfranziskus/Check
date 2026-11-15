@@ -18,6 +18,22 @@ Aus einer gültigen separaten Regel195→204-Kopie hat die reale Spedition 2.000
 
 Dieser Gegenpfad ist **keine** neue autonome NPC-Entscheidungsregel und darf nicht als "Spieler besitzt fremde Firmenrechte" interpretiert werden. Er demonstriert nur, welche rechtmäßigen, tatsächlich finanzierbaren Maßnahmen **jeweils eigenständig** getroffen werden *könnten*. Ohne getrennt autorisierte Unternehmenskoordination darf der Browser keinesfalls den Vertrag per einer einzigen Haus-Schaltfläche unterschreiben.
 
+## Tatsächlich ausgeführter Nachweis auf PR-Head `0d1d544c`
+
+**[ANALYSE / DRAFT, NICHT IN MAIN]** [Node22 #43701511219](https://github.com/tobiasfranziskus/Check/actions/runs/43701511219) **292/292 Tests, 0 Fehler, 0 Skips** und vollständiger Root-/NAS-Erhaltungs-Preflight, [JS-/Wirtschaftsregression #43701511223](https://github.com/tobiasfranziskus/Check/actions/runs/43701511223) completed/success. Kein Browser-UI wurde geändert, deshalb keine neu behauptete Browserprüfung; vorhandene J10a-/J9-UI-Abnahme bleibt eine frühere Integration.
+
+- **Alternative Tick0:** `transport` kauft `sh002` für reale **750 ISK**. Einzelne Original-K7-Vertragserklärungen werden nacheinander und mit jeweils **fester Unternehmeridentität** abgegeben: `st_nadir`, `npc3`, `transport`, `werft_extern`, danach `st_nadir`-Abschluss. Fremde Signaturen können nicht mit einem `house`-Konto vorgetäuscht werden. Der vorzeitige Commit ohne Signaturen scheitert atomar.
+- Nach dem validierten Tick0-Signierpfad: Käuferkasse **3.260 ISK**, Spedition **1.130 ISK**, Bergbau **2.400 ISK**, externe Werft **820 ISK**, separat gebundene Werfttreuhand **530 ISK**. Zustandshash **`ceaad6b127e32d6e`**. Jeder Wert stammt aus Original-Core- und J6-Buchungen; kein neues Kapital.
+- **Tick191:** Die Original-W3-Fracht hat wirklich **50 Erz** angeliefert, W4 **10 Erz zu 5 Material** raffiniert und die signierte W5-Werft **einen echten zusätzlichen Frachter** fertiggestellt. Ledger zeigt `frachter.produced=1`; 40 Erz verbleiben bei Nadir, **kein Material/Silizium/Bauteil vorliegend, 0 neue Jäger**. Hash **`850095f3a7780270`**, `house=3000`, `st_nadir=3740`, `werft_extern=1420`, Weltgeld **33.000**, Mint/Burn **0**.
+- **Unveränderter Standardlauf Tick131:** Spedition hat denselben legalen 750-ISK-Frachter, NPC-Erzminer `sh001` führt **50 Erz im freien Flug**, K7-Phase bleibt `frei`, 0 Erz nach Nadir; Original-Core lehnt Angebot als „Schiffe nicht frei im Dock“ ab. Referenzhash **`5634a67cd3433c14`**. Das ist die **konkrete kausale Differenz**: getrennte Eigentümerentscheidung **vor** dem NPC-Abdockvorgang.
+- Die gültige Regel195-Quelldatei bleibt unverändert; Replay/Save/Load und unabhängige Geld-, Waren-, Schiffs-/Eigentums-Audits sind bestanden. Die Forschung sagt ausdrücklich **nicht**, dass der NPC selbstständig solche Verträge anbieten würde oder ein erster Jäger in der Produktwelt fertiggestellt worden sei.
+
+**Nächster begrenzter Nachweis:** Neben dem realen W5-Frachter benötigt die erste Jägerkette mindestens **20 Material und 8 Silizium**. Ein physisch in Nadir gebauter/gekaufter K2-Miner kostet eigenes Material, Werftlohn und 600 ISK Käufergeld; die K2-Bauprüfung sperrt außerdem bei verbleibendem Aldera-Minerlager. Hier erst die Bestände/Finanzierung und weitere 10 Erz oder zweite Lieferung nachweisen, keine Gratis-Rohstoffe/Teleport. Danach 8×J3 und J4 separat belegen.
+
+**Produktentscheidung bleibt offen:** Eine Priorität für Industriebedarf vor bestehendem NPC-Pendel wäre eine Änderung der Unternehmer-/Disponentenpolitik. Weder `industrieAutoSetzen(true)` noch ein neuer NPC-Autobefehl wird hier in produktiven Spielständen aktiviert.
+
+---
+
 ## Für die spätere Entscheidung
 
 Die optionale bestehende `welt.industrieAutoSetzen(...)`-Forschung bleibt ohne Produktfreigabe **deaktiviert**. Eine neue Prioritätsregel "Bergbau-/Industrievertragsanfrage vor autonomem Erzpendel" ist eine wirtschaftliche NPC-Produktentscheidung und wird hier weder still implementiert noch aktiviert. Erst nach positivem Vorversuch/Unterfinanzierungs- und Krisentest eine konkrete, vom Nutzer getrennt freizugebende Designoption vorstellen.

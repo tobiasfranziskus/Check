@@ -44,8 +44,13 @@ const Welt=require('../prototypes/welt/welt-kern.js');
   await dl.saveAs(dest);const raw=fs.readFileSync(dest,'utf8');fs.unlinkSync(dest);
   const w=Welt.erstellenJ4c({carrierCash:profile.carrierCash,buyerCash:profile.buyerCash}),s=w.load(raw);
   assert.equal(s.kanon.silizium.auftrag.schiff,'sh022','echter eigener Miner');
-  assert.ok(s.owners.house.cash<JSON.parse(original).owners.house.cash);
-  assert.equal(s.owners.st_nadir.cash,JSON.parse(original).owners.st_nadir.cash);
+  const vorher=JSON.parse(original);
+  // Original-J2b reserviert beim Start 128 ISK Arbeitslohn des Spielers
+  // UND 192 ISK realen Käuferetats von Nadir. Keine unfinanzierten Waren.
+  assert.equal(vorher.owners.house.cash-s.owners.house.cash,128);
+  assert.equal(vorher.owners.st_nadir.cash-s.owners.st_nadir.cash,192);
+  assert.equal(s.owners.k1_silizium_arbeit.cash,128);
+  assert.equal(s.owners.k1_silizium_kauf.cash,192);
   assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),33000);
   assert.equal(s.minted,0);assert.equal(s.burned,0);assert.equal(w.audit(s).ok,true);
   assert.equal(errors.length,0,errors.join('\n'));

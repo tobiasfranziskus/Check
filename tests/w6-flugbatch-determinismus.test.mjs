@@ -66,3 +66,17 @@ test('W6: nach einem originalfinanzierten neuen Schiff wird die Batch-ID-Liste n
   gleich(welt, schnell, einzeln);
   assert.equal(welt.hash(welt.load(welt.save(schnell))), welt.hash(schnell), 'Save/Load unveraendert');
 });
+
+test('W6 S02: historische angedockte Ersatzhuellen bleiben im Flugbatch bitgleich', () => {
+  const {welt, s} = W6.start(S02);
+  welt.advance(s, 12*1440);
+  const schiffe = Object.keys(s.ships).length;
+  assert.ok(schiffe >= 8, 'echte durch Originalwirtschaft entstandene Hullen statt synthetischer Spawns');
+  assert.ok(Object.values(s.ships).some((sh) => sh.flug?.lage === 'angedockt'));
+  const einzeln = welt.load(welt.save(s));
+  for (let m=0; m<30; m++) {
+    welt.minute(s);
+    einzelnFertig(welt, einzeln, 1);
+  }
+  gleich(welt, s, einzeln);
+});

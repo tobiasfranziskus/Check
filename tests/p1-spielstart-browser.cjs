@@ -7,6 +7,70 @@ const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const W=require('../prototypes/welt/welt-kern.js');
 const OLD=require('../prototypes/w5ac/session.js');
 const SLOT='aphros-void:spielerkarriere:regel204:v1';
+async function siliziumPilot(browser,base,width,height,kind){
+ // Conditional integration check only: independently signed original K2 fixture.
+ // The regular career/project path above never imports it or signs for NPCs.
+ const fixture=require('./j10b-k2-kauf-fixture.cjs').erzeugen('house');
+ const context=await browser.newContext({viewport:{width,height},hasTouch:true});
+ await context.addInitScript(({key,save})=>localStorage.setItem(key,save),{key:SLOT,save:fixture.save});
+ const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(String(e)));
+ try{
+  await page.goto(base+'/prototypes/spiel/index.html');await page.locator('#fortsetzen').tap();
+  await page.locator('#tab-jaeger').tap();
+  await page.locator('[data-j13-action="buy-st_nadir-miner"]').tap();
+  const paid=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  const m=Object.values(paid.ships).find(s=>s.owner==='house'&&s.system==='nadir'&&s.klasse==='miner');
+  assert.ok(m);
+  await page.locator('[data-j13-action="sil-start-'+m.id+'"]').tap();
+  assert.equal(await page.locator('#raumbereich').isVisible(),true,'select legitimate pilot before binding J2b');
+  const raw=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  assert.equal(raw.kanon.silizium.auftrag.schiff,m.id);
+  assert.equal(raw.kanon.silizium.auftrag.owner,'house');
+  assert.equal(raw.minted,0);assert.equal(raw.burned,0);
+  await page.locator('#raum-konzern').tap();await page.locator('#tab-flotte').tap();
+  assert.equal(await page.locator('[data-pilot="'+m.id+'"]').isEnabled(),true,'current lawful pilot can return');
+  await page.locator('[data-pilot="'+m.id+'"]').tap();
+  assert.equal(await page.locator('#raumbereich').isVisible(),true);
+  assert.deepEqual(errors,[]);
+  console.log('J13B_CONDITIONAL_K2_BROWSER_OK',JSON.stringify({kind,width,height,miner:m.id}));
+ }finally{await context.close();}
+}
+async function projektPfad(browser,base,width,height,kind){
+ const context=await browser.newContext({viewport:{width,height},hasTouch:true});
+ const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(String(e)));
+ try{
+  await page.goto(base+'/prototypes/spiel/index.html');
+  await page.locator('#neues-spiel').tap();await page.locator('#karriere-starten').tap();
+  await page.locator('#tab-jaeger').tap();
+  for(const id of ['buy-st_aldera-frachter','buy-st_aldera-miner'])
+   await page.locator('[data-j13-action="'+id+'"]').tap();
+  const paid=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  const m=Object.values(paid.ships).find(s=>s.owner==='house'&&s.klasse==='miner');
+  const f=Object.values(paid.ships).find(s=>s.owner==='house'&&s.klasse==='frachter');
+  assert.equal(paid.owners.house.cash,1650);
+  await page.locator('[data-j13-action="ice-'+m.id+'"]').tap();
+  assert.equal(await page.locator('#panel-jaeger').isVisible(),true);
+  for(let i=0;i<2;i++)await page.locator('[data-advance="60"]').tap();
+  const freight=page.locator('[data-j13-action="freight-'+f.id+'"]');
+  assert.equal(await freight.isEnabled(),true);await freight.tap();
+  const transit=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+  await page.reload();await page.locator('#fortsetzen').tap();
+  assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),transit);
+  for(let i=0;i<2;i++)await page.locator('[data-advance="60"]').tap();
+  const text=await page.evaluate(k=>localStorage.getItem(k),SLOT),raw=JSON.parse(text),p=raw.w5ad.profile;
+  const w=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash}),end=w.load(text);
+  assert.equal(w.audit(end).ok,true);assert.equal(w.hash(end),'e4514490aedc13bd');
+  assert.equal(end.kanon.spielerFrachten.lohn,120);assert.equal(end.kanon.spielerFrachten.gebuehr,240);
+  assert.equal(Object.values(end.owners).reduce((n,o)=>n+o.cash,0),33000);
+  assert.equal(end.minted,0);assert.equal(end.burned,0);assert.equal(end.kanon.jaeger.fertig,0);
+  await page.locator('#tab-jaeger').tap();
+  assert.equal(await page.locator('#jaeger-kaufweg').isDisabled(),true);
+  assert.equal(await page.locator('[data-j13-action="buy-st_nadir-miner"]').isDisabled(),true);
+  assert.match(await page.locator('#jaeger-rohstoffe').textContent(),/Eigene belegte Siliziumverkäufe: 0/);
+  assert.deepEqual(errors,[]);
+  console.log('J13B_PROJECT_BROWSER_OK',JSON.stringify({kind,width,height,hash:w.hash(end),jaeger:0,money:33000}));
+ }finally{await context.close();}
+}
 (async()=>{
  const root=path.resolve(__dirname,'..');
  const server=http.createServer((req,res)=>{
@@ -89,9 +153,14 @@ const SLOT='aphros-void:spielerkarriere:regel204:v1';
     assert.match(await page.locator('#jaeger-autoritaet').textContent(),/Nur Nadir darf J3\/J4/);
     assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),rawStart,
       'reading a fighter project must not execute any company contract');
-    await page.locator('#tab-auftraege').tap();
-    const buy=page.locator('[data-action="buy-st_aldera-miner"]');
+    // J13b: project actions are original player orders, revalidated on click.
+    assert.match(await page.locator('#jaeger-sperren').textContent(),/K7-Erzvertrag.*nur realer Industriekäufer/s);
+    assert.match(await page.locator('#jaeger-beitrag-hinweis').textContent(),/ersetzen weder Erz/);
+    assert.equal(await page.locator('[data-j13-action="buy-st_nadir-miner"]').isDisabled(),true);
+    assert.equal(await page.locator('#jaeger-sperren button').count(),0);
+    const buy=page.locator('[data-j13-action="buy-st_aldera-miner"]');
     assert.equal(await buy.isEnabled(),true,'first genuine miner must be available');
+    const touch=await buy.boundingBox();assert.ok(touch.height>=48);
     await buy.tap();
     assert.match(await page.locator('#hausgeld').textContent(),/2[.,]400\s*ISK/);
     assert.equal(await page.locator('#schiff-anzahl').textContent(),'1');
@@ -99,6 +168,9 @@ const SLOT='aphros-void:spielerkarriere:regel204:v1';
     const s=w.load(paid),ship=Object.values(s.ships).find(x=>x.owner==='house'&&x.klasse==='miner');
     assert.ok(ship);assert.equal(s.owners.house.cash,2400);assert.equal(w.audit(s).ok,true);
     assert.equal(s.minted,0);assert.equal(s.burned,0);
+    assert.equal(await page.locator('[data-j13-action="ice-'+ship.id+'"]').isEnabled(),true);
+    assert.equal(await page.locator('[data-j13-action="sil-start-'+ship.id+'"]').count(),0,
+      'an Aldera miner is not a lawful Nadir K2 miner');
     await page.locator('#tab-flotte').tap();
     const enter=page.locator('[data-pilot="'+ship.id+'"]');
     assert.equal(await enter.isEnabled(),true);
@@ -149,6 +221,8 @@ const SLOT='aphros-void:spielerkarriere:regel204:v1';
        paid:600,reservedFlightSalary:40,money:33000,noFileUploadAtStart:true
     }));
    }finally{await ctx.close();}
+   await projektPfad(browser,base,width,height,kind);
+   await siliziumPilot(browser,base,width,height,kind);
   }
  }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -326,4 +326,49 @@ test('J10b/K2: paid original Nadir miner built from delivered ore and purchased 
    noMoneyMint:s.minted===0&&s.burned===0
  }));
 
+ // J10d experimental continuation: the actual npc3 OWNER voluntarily ends
+ // the existing ore shuttle. The original F6 controller must physically
+ // bring the miner home while paying every minute; never teleport or seize.
+ const stop=w.execute(s,{type:'shipShuttleStop',owner:'npc3',schiff:'sh001'});
+ assert.equal(stop.ok,true,JSON.stringify(stop));
+ audits(w,s);
+ const pending=s.kanon.pendel.sh001;
+ assert.ok(pending && pending.beenden===true,'NPC owner-requested stop waits for a real dock');
+ const stopStart=s.tick;
+ wait(w,s,()=>s.ships.sh001.flug.lage==='angedockt'
+   && !s.kanon.pendel.sh001,1200);
+ assert.equal(s.ships.sh001.system,'aldera');
+ assert.equal(Object.values(s.ships.sh001.ladung).reduce((a,x)=>a+x,0),0);
+ assert.equal(s.ships.sh001.owner,'npc3');
+ assert.equal(s.ships.sh002.owner,'transport');
+ assert.equal(s.ships.sh002.phase,'dock');
+ const dockHash=w.hash(s);
+ // Clearing the first W5 warehouse hull by its legal sale is required for
+ // a new signed K7 order (which contractually builds another W5 freighter).
+ const stockBefore=nadir.frachter;
+ assert.equal(stockBefore,1);
+ ownerCommand(w,s,'transport',{type:'shipBuy',station:'st_nadir',klasse:'frachter'});
+ assert.equal(nadir.frachter,stockBefore-1);
+ assert.ok(s.owners.transport.cash>=0);
+ const beforeSecond=w.hash(s);
+ const q=J6.erstellen(w,'st_nadir').angebot(s,{type:'industrialOreOffer',miner:'sh001',frachter:'sh002'});
+ assert.equal(w.hash(s),beforeSecond,'second K7 quote remains read-only');
+ assert.equal(q.ok,true,JSON.stringify(q));
+ ownerCommand(w,s,'st_nadir',{type:'industrialOreOffer',miner:'sh001',frachter:'sh002'});
+ for(const [owner,type] of [
+   ['npc3','industrialOreAcceptMine'],
+   ['transport','industrialOreAcceptFreight'],
+   ['werft_extern','industrialOreAcceptYard']
+ ]) ownerCommand(w,s,owner,{type});
+ ownerCommand(w,s,'st_nadir',{type:'industrialOreCommit'});
+ assert.equal(s.kanon.industrieErz.phase,'aktiv');
+ const secondSign=w.hash(s);
+ assert.equal(w.hash(w.load(w.save(s))),secondSign);
+ console.log('J10D_SECOND_K7_SIGNED',JSON.stringify({
+   tick:s.tick,naturalDockMinutes:s.tick-stopStart,originalDockHash:dockHash,
+   newWarehouseHullBought:true,miner:'sh001',frachter:'sh002',
+   buyerCash:s.owners.st_nadir.cash,carrierCash:s.owners.transport.cash,
+   yardCash:s.owners.werft_extern.cash,money:33000,hash:secondSign
+ }));
+
 });

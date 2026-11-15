@@ -1550,7 +1550,13 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           fehler.push('Unzulässiger Frachter im Freiflug ' + id);
         if (!ganz(k.verschleiss[id] ?? 0)) fehler.push('Verschleiß ' + id);
         // Ware an Bord eines Miners setzt echte Förderung voraus (Kernbuch prüft Mengen).
-        if (sh.klasse === 'miner' && sh.phase !== 'dock') fehler.push('Miner in Kernreise ' + id);
+        // P8c: die aus EINEM bezahlten, buchgeprueften 40-Minuten-Vertrag
+        // laufende Schiffskernreise ist keine unberechtigte Miner-Fernfahrt.
+        const p8cUnterwegs=p8cDravos && sh.klasse==='miner'
+          &&sh.phase==='reise'&&sh.flug?.lage==='transit'
+          &&k.p8c?.auftrag?.schiff===id;
+        if (sh.klasse === 'miner' && sh.phase !== 'dock'&&!p8cUnterwegs)
+          fehler.push('Miner in Kernreise ' + id);
       }
       for (const id of ids(k.pendel)) if (state.ships[id]?.klasse !== 'miner') fehler.push('Pendel ohne Miner ' + id);
       // Flugdienst: Reservekonto existiert genau für Schiffe außerhalb des Docks.
@@ -1562,7 +1568,14 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           && !m_core_flugplan.spielerJaeger(state,sh))) continue;
         const konto = state.owners[m_core_flugplan.dienstKonto(id)];
         if (!d && konto && konto.cash !== 0) fehler.push('Flugreserve ohne Dienst ' + id);
-        if (!d && sh.flug.lage !== 'angedockt') fehler.push('Flug ohne finanzierten Dienst ' + id);
+        // Der P8c-Frachtpilot verwendet statt der K1-Freiflugreserve ein
+        // separat vollfinanziertes Original-K1-Lohnbuch; dieselbe Reise wird
+        // zusaetzlich durch m_core_p8c_reise.audit streng geprueft.
+        const p8cBezahlt=p8cDravos&&sh.klasse==='miner'
+          &&sh.phase==='reise'&&sh.flug.lage==='transit'
+          &&k.p8c?.auftrag?.schiff===id;
+        if (!d && sh.flug.lage !== 'angedockt' && !p8cBezahlt)
+          fehler.push('Flug ohne finanzierten Dienst ' + id);
         if (d && (!konto || d.konto !== konto.id || !ganz(d.minuten))) fehler.push('Flugdienst ' + id);
       }
       for (const id of ids(k.flugdienst)) if (!state.ships[id]) fehler.push('Flugdienst ohne Schiff ' + id);

@@ -7,7 +7,9 @@
     "researchHead": "a95d0df70ff02aad1be4cdd1dab637c3228f22ab",
     "code": "d5c570f98cdee28ec36044176cfa12c946fab3bf",
     "main": "4d36a37d7c23b11151a4514df7841eef5eef9d01",
-    "coreAndReferenceFixturesUnchanged": true
+    "coreAndReferenceFixturesUnchanged": true,
+    "mainAtCompletion": "22146ac4c6a1d166677655f32e8bc19c892d97bc",
+    "concurrentMainChange": "J12 integration #387, outside this research verification; no rebase or integration performed"
   },
   "resources": {
     "cpuQuota": 2,

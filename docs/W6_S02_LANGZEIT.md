@@ -1,6 +1,6 @@
 # W6-S02 – unabhängige Langzeit- und Performanceprüfung
 
-**[ANALYSE / NICHT MAIN] · 15.11.2026 · [Draft-PR #389](https://github.com/tobiasfranziskus/Check/pull/389).** Folgeprüfung des erhaltenen [QA-PR #385](https://github.com/tobiasfranziskus/Check/pull/385). Vor Beginn frisch abgerufen: Forschungshead `a95d0df70ff02aad1be4cdd1dab637c3228f22ab`, `main 4d36a37d7c23b11151a4514df7841eef5eef9d01`. Seit geprüftem Code `d5c570f98cdee28ec36044176cfa12c946fab3bf` lagen ausschließlich Dokumentationsänderungen vor.
+**[ANALYSE / NICHT MAIN] · 15.11.2026 · [Draft-PR #389](https://github.com/tobiasfranziskus/Check/pull/389).** Folgeprüfung des erhaltenen [QA-PR #385](https://github.com/tobiasfranziskus/Check/pull/385). Vor Beginn frisch abgerufen: Forschungshead `a95d0df70ff02aad1be4cdd1dab637c3228f22ab`, `main 4d36a37d7c23b11151a4514df7841eef5eef9d01`. Seit geprüftem Code `d5c570f98cdee28ec36044176cfa12c946fab3bf` lagen ausschließlich Dokumentationsänderungen vor. Abschlusskontrolle: `main` ist während der Prüfung separat durch [J12/#387](https://github.com/tobiasfranziskus/Check/pull/387) auf `22146ac4c6a1d166677655f32e8bc19c892d97bc` vorgerückt; Forschungsbasis unverändert. Diese Prüfung testet den Forschungsbranch, nicht die neue J12-Integration.
 
 ## Tatsächlich abgeschlossene Ergebnisse
 

@@ -305,5 +305,25 @@ test('J10b/K2: paid original Nadir miner built from delivered ore and purchased 
    worldMoney:Object.values(s.owners).reduce((sum,o)=>sum+o.cash,0),
    hash:w.hash(s),blockedBy:eighth.reason
  }));
+ // Probe the NEXT legitimate K7 order without changing any NPC disposition:
+ // buyer and transport may only inquire, never forge npc3/yard signatures.
+ const startHash=w.hash(s);
+ const next=J6.erstellen(w,'st_nadir').angebot(s,{type:'industrialOreOffer',miner:'sh001',frachter:'sh002'});
+ const yardSale=J6.erstellen(w,'transport').angebot(s,{type:'shipBuy',station:'st_nadir',klasse:'frachter'});
+ assert.equal(w.hash(s),startHash,'pure offers must not change money, stocks or ship location');
+ console.log('J10C_SECOND_SUPPLY_GATES',JSON.stringify({
+   tick:s.tick,industryPhase:s.kanon.industrieErz.phase,
+   miner:{id:s.ships.sh001?.id,ort:s.ships.sh001?.system,
+     lage:s.ships.sh001?.flug?.lage,ladung:s.ships.sh001?.ladung,
+     pendel:s.kanon.pendel.sh001?.ware||null},
+   carrier:{id:s.ships.sh002?.id,ort:s.ships.sh002?.system,
+     phase:s.ships.sh002?.phase,auftrag:s.ships.sh002?.auftrag},
+   nadirFreighterStock:s.stations.st_nadir.lager.frachter,
+   buyerCash:s.owners.st_nadir.cash,carrierCash:s.owners.transport.cash,
+   yardCash:s.owners.werft_extern.cash,
+   newK7:{ok:next.ok,reason:next.reason||null},
+   yardStockSale:{ok:yardSale.ok,reason:yardSale.reason||null},
+   noMoneyMint:s.minted===0&&s.burned===0
+ }));
 
 });

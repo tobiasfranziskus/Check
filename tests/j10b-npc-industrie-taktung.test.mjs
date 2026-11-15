@@ -189,7 +189,14 @@ test('J10b/K2: paid original Nadir miner built from delivered ore and purchased 
   assert.match(firstAttempt.reason,/Aldera/);
   for(let k=0;k<oldMineStock;k++){
    const owner=k===0?'house':'npc3';
-   ownerCommand(w,s,owner,{type:'shipBuy',station:'st_aldera',klasse:'miner'});
+   // J6-W-Katalog bietet bisher nur Jäger/Frachter an. Das eigenständige
+   // Original-Core-Schiffskaufrecht für Miner ist bereits vorhanden, inkl.
+   // physischem Lager, Besitzer, 600-ISK-Kasse und vollständigem Audit.
+   const pre=w.hash(s);
+   const r=w.execute(s,{type:'shipBuy',owner,station:'st_aldera',klasse:'miner'});
+   assert.equal(r.ok,true,JSON.stringify({owner,r}));
+   audits(w,s);
+   assert.notEqual(w.hash(s),pre);
   }
  }
  assert.equal(s.stations.st_aldera.lager.miner||0,0);

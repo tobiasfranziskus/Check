@@ -9,6 +9,7 @@
 3. **Technische Wahrheit:** [PROJEKTSTATUS.md](PROJEKTSTATUS.md), nur jüngste und sachlich betroffene Berichte mit Commit/CI/Save-Belegen; [AGENTS.md](../AGENTS.md) für verpflichtende Entwicklungs-/Release-Gates.
 4. **Gewählten Codebereich gezielt öffnen** und seine echten Tests/Abhängigkeiten prüfen. **Nicht** auf Verdacht `docs/archiv/`, alle Prototypen oder sämtliche alten PRs einlesen.
 5. **[P0-Aufräumprozess](PROJEKTLEITUNG_SUPERVISION.md)**, [P0-Inventur und PR-Triage](P0_GROSSPUTZ_PR_TRIAGE.md) und [Wiederverwendungskatalog Void Echoes](VOID_ECHOES_CODEKATALOG.md) nur bei entsprechendem Bedarf.
+6. **[P0-Prototyp-/Test-Abhängigkeiten](P0_PROTOTYP_TEST_ABHAENGIGKEITEN.md)** vor jeder geplanten Archivierung/Dateiverschiebung konsultieren; Root-Build, Legacy-Tests und öffentliche Neben-Einstiege schützen.
 
 ## Produktcode und passende Einstiege
 

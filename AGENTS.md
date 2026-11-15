@@ -18,6 +18,14 @@ Diese Regeln gelten für das gesamte Repository. Konkrete Anweisungen des Nutzer
 
 **Für tägliche Automationsberichte gilt weiterhin:** Rein informative oder docs-only-Abgleichs-PRs können bei Abweichungen erstellt werden, aber **der Bericht selbst** darf ohne gesonderten konkreten Entwicklungs-/Integrationsauftrag keine Merges/Veröffentlichungen auslösen. Die stehende Freigabe betrifft die reguläre projektverantwortliche Entwicklungsarbeit mit vollständigem Gate.
 
+## Geführter Fortschritt und täglicher Repository-Putzplan [BESCHLOSSEN 15.11.2026]
+
+- **Projektführung statt PR-Menge:** Die Spielbarkeits-Meilensteine **P0–P6** in `docs/ROADMAP.md` steuern die kurz- bis mittelfristige Produktintegration **parallel** zur unveränderten verbindlichen Wirtschaftsfolge W0–W6. Ein kleines, nutzbares Gesamtsystem hat Vorrang vor weiteren isolierten Demonstratoren. Bestehende Autorität, Wirtschaftssicherheit und Freigabepflichten bleiben unangetastet.
+- **Jeden Morgen um 06:30 Europe/Berlin:** den wirklichen `main`-SHA und Pages-Deploy sowie `docs/ROADMAP.md`, `docs/PROJEKTSTATUS.md`, offene PRs/Forschungsbranches, Tests/CI und konkrete Nutzerpfade neu prüfen. Gegenstand der Supervision: (1) Beleglage und Ampel je P0–P6/W0–W6, (2) PR-Triage mit Nachfolgernachweis und Kollisionsrisiko, (3) Blocker/Entscheidungen, (4) genau 2–4 priorisierte nächste Schritte mit Abnahmekriterium.
+- **Reale Aufräumarbeit, aber ohne Datenverlust:** überholte PRs anhand Hauptstand/Nachfolger/CI verlässlich identifizieren; Forschungsbranches, Hashes, Berichte, Tags, Saves und relevante Tests bewahren. Keine pauschalen Branchlöschungen, keine PR-Schließung nur wegen Alters. Automatische Supervision darf bei tatsächlicher Dokumentationsabweichung einen **einzigen** geeigneten docs-only-Draft-PR erstellen/fortführen; im Morgenlauf **keine PR-Merges, Deployments, produktiven Codeänderungen, Regel-/Balanceaktivierungen oder destruktiven Aufräumaktionen**. Notwendige Schließungen und Änderungen an Produktcode begründet als getrennte Arbeitspakete ausweisen.
+- **Systemanweisungen synchron halten:** `docs/CHATGPT_PROJEKTANWEISUNGEN.md` ist die kopierbare Vorlage, `AGENTS.md` die Repository-Regel, `docs/ROADMAP.md` allein die Produktentscheidung. ChatGPT-Projekteinstellungen können durch einen GitHub-Commit **nicht** automatisch aktualisiert werden.
+- **Umfang und Grenzen des täglichen Prozesses:** technische Prüfungen/Änderungen nur dann als ausgeführt melden, wenn die jeweilige Ausführung wirklich stattgefunden hat; kein stilles Erfinden von Lint/CI/Gerätetests. Detailliertes SOP und Checkliste in [docs/PROJEKTLEITUNG_SUPERVISION.md](docs/PROJEKTLEITUNG_SUPERVISION.md).
+
 ## Produkt und Technik
 
 - Aphros Void bleibt eine statisch auslieferbare Anwendung aus HTML, CSS und Vanilla JavaScript. `index.html` enthält Oberfläche, Styles und JavaScript-Module. Kein Framework, npm-Laufzeitpaket, CDN, Build-Zwang oder Backend ohne ausdrücklichen Auftrag.
@@ -46,6 +54,14 @@ Diese Regeln gelten für das gesamte Repository. Konkrete Anweisungen des Nutzer
 - Querformat ist ein wichtiger Nutzungspfad. Hochformat und schmale/geteilte Ansichten müssen bedienbar bleiben. Safari-Viewport, Safe Areas, virtuelle Tastatur und vorhandene CSS-Fallbacks beachten.
 - Geöffnete Befehlsgruppen und Eingaben nicht durch Tick-Neuzeichnen verlieren. Pause, Geschwindigkeiten, Zeitschritte, Flottenauswahl und Kauf/Aktivierung nach betroffenen UI-Änderungen prüfen.
 - NAS-Auslieferung per HTTP(S) ohne zusätzliche Serverlogik erhalten. Keine absoluten lokalen Pfade, geheimen Zugangsdaten oder maschinenspezifischen URLs in Produktcode aufnehmen.
+
+### Verbindliche iPad-Ersatzabnahme bis zur späten echten Geräteprüfung [BESCHLOSSEN 15.11.2026]
+
+- Für betroffene Spieloberflächen **Chromium und WebKit** mit repräsentativen iPad-/schmalen Größen **1180×820, 1024×768, 820×1180 und 390×844**; zusätzlich, wenn vorhanden, Quer-/Hochformatwechsel, DPR/Zoom, Safe Areas, geteilte Ansichten und virtuelle Tastatur. Viewport allein ist kein echter Safari-Gerätetest.
+- **Eingaben in echten Browserläufen** emulieren: Tippen, langes Drücken, Ziehen/Loslassen am Schubregler, Pointer-Cancel, Zwei-Finger-Pinch, Scrollen, Zielmenüs, Fokus/Hardwaretastatur, Rücknavigation, unsichtbare/überlappende Touchflächen und Wechsel Cockpit ↔ Konzern. Für Autopilot/Orbit/Folgen auch Abbruch durch Handflug, bewegtes/verlorenes Ziel, Anfluggrenzen und reproduzierbare Kurs-/Geschwindigkeitsänderungen.
+- **Sitzungs-/Speichersicherheit:** IndexedDB/Storage/Reload, JSON Import/Export, Alt-Spielstände, Manipulationsabwehr, Browser-Hintergrund/Resume und verhinderte Überschreibung bei ungültigem Import. Statische HTTP-/GitHub-Pages-/NAS-kompatible Auslieferung testen; ein echter privater NAS-Server gilt nicht als getestet, wenn nicht erreichbar.
+- **Core-Wirtschaft unabhängig auditiert:** Originalseed/Hash, Geld-/Waren-/Schiffs-/Eigentumssummen, finanzierte Flug- und Produktionskette, volle/knappe Kassen und passende Krisenfälle; neue Spieleraktionen dürfen keine Doppelberechnung im UI vornehmen.
+- Im Bericht die Ebenen **Node/Simulationskern**, **Chromium-Touchsimulation**, **WebKit-Touchsimulation**, **Pages/HTTP-Smoke** und **echtes iPad-Safari-/NAS-Gerät** getrennt protokollieren, einschließlich fehlgeschlagener und ausgelassener Prüfungen. **Bis zur späteren physischen Abnahme gilt iPad-Safari als OFFEN**, auch bei vollständig grüner Browsermatrix. Dies blockiert gewöhnliche geprüfte Spieltest-Integrationen nicht pauschal, bleibt aber eine sichtbare Release-Restschuld.
 
 ## Arbeitsablauf und Abnahme
 

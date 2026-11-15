@@ -1,6 +1,6 @@
 # Aphros Void – Repository-, Forschungs- und Archivindex
 
-**Stand: 15.11.2026. Nur Navigation, nicht zweite Roadmap.** [Verbindliche Roadmap](ROADMAP.md) · [Technischer Status](PROJEKTSTATUS.md) · [AGENTS.md](../AGENTS.md) · [Root-README](../README.md).
+**Stand: 15.11.2026. Nur Navigation, nicht zweite Roadmap.** [Verbindliche Roadmap](ROADMAP.md) · [Tägliche Projektleitung & Putzplan](PROJEKTLEITUNG_SUPERVISION.md) · [Technischer Status](PROJEKTSTATUS.md) · [AGENTS.md](../AGENTS.md) · [Root-README](../README.md).
 
 ## Aktueller Produktstand
 

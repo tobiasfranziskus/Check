@@ -49,7 +49,9 @@ const server=http.createServer((req,res)=>{
    await page.waitForURL('**/prototypes/legacy-hub/archiv/core-preview.html');
    await page.locator('#core-file').setInputFiles(path.join(root,'tests/fixtures/w5t/r32-seed42.json'));
    await page.locator('#core-input button').tap();
-   await page.waitForFunction(() => document.getElementById('core-status').textContent.includes('Core-Snapshot'));
+   // 'Noch kein Core-Snapshot geladen' enthält bereits 'Core-Snapshot':
+   // auf den fertigen, überprüften Importstatus warten, nicht bloß das Wort.
+   await page.waitForFunction(() => document.getElementById('core-status').textContent.startsWith('Core-Snapshot · Tick '));
    assert.equal(await page.locator('.legacy-corporation h1').count()>0,true);
    assert.equal(await page.evaluate('document.documentElement.scrollWidth<=innerWidth'),true);
    assert.deepEqual(missing,[]);

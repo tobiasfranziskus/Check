@@ -1242,7 +1242,13 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     function audit(state, fehler) {
       const k = state.kanon, n = k.npc;
       if (k.npcAuto !== undefined && typeof k.npcAuto !== 'boolean') fehler.push('W6-Firmenpolitik: ungültige Einstellung');
-      if (n === undefined) { if (k.npcAuto !== undefined) fehler.push('W6-Firmenpolitik: Entscheidungsbuch fehlt'); return; }
+      // Save-Manipulationsschutz: Ein neues P5-Feld ohne das autonome
+      // Original-Entscheidungsbuch ist kein gueltiger optionaler Altstand.
+      if (n === undefined) {
+        if (k.npcAuto !== undefined || k.npcSilizium !== undefined)
+          fehler.push('W6-Firmenpolitik: Entscheidungsbuch fehlt');
+        return;
+      }
       // QA-Härtung zu #382: auch positive, aber unmögliche Eigenbefehls-Zähler
       // dürfen nicht als angeblich authentische NPC-Entscheidungen geladen werden.
       // Ein neuer Regel204-Stand ohne npc-Felder bleibt unverändert.
@@ -1684,6 +1690,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     pruefeForm(s);
     if(!k7 || !silizium || !jaeger)throw Error('W6/P5 nur im Regel204-Jaegerprofil');
     if(typeof aktiviert!=='boolean')throw TypeError('W6/P5 nur Boolean');
+    if(s.kanon.npcAuto===undefined || !s.kanon.npc)
+      throw Error('W6/P5 zuerst die Original-NPC-Firmenpolitik aktivieren oder deaktivieren');
     if(!aktiviert && (s.kanon.npcSilizium?.werftauftrag
       || s.kanon.silizium?.auftrag?.owner==='npc3'))
       throw Error('W6/P5: laufenden finanzierten NPC-Auftrag zuerst abschliessen');

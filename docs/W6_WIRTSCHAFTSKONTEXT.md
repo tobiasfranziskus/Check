@@ -1,6 +1,6 @@
 # W6 – Wirtschaftskontext und opt-in NPC-Firmenpolitik [DRAFT · 15.11.2026]
 
-**Status: [DRAFT], nicht in `main`, im Produkt nicht aktiviert.** Basis `main 17090ec6`. Draft-PR: #PR_NUMMER. Verbindlich bleiben [ROADMAP](ROADMAP.md), [PROJEKTSTATUS](PROJEKTSTATUS.md) und [AGENTS.md](../AGENTS.md). Zahlen unten stammen aus tatsächlich ausgeführten Läufen (Seed 42, frische Regel195→204-Kopie, Weltgeld 33.000 ISK, Mint/Burn 0); Rohdaten in [W6_ERGEBNISSE.jsonl](W6_ERGEBNISSE.jsonl).
+**Status: [DRAFT], nicht in `main`, im Produkt nicht aktiviert.** Basis `main 17090ec6`. Draft-PR: #382. Verbindlich bleiben [ROADMAP](ROADMAP.md), [PROJEKTSTATUS](PROJEKTSTATUS.md) und [AGENTS.md](../AGENTS.md). Zahlen unten stammen aus tatsächlich ausgeführten Läufen (Seed 42, frische Regel195→204-Kopie, Weltgeld 33.000 ISK, Mint/Burn 0); Rohdaten in [W6_ERGEBNISSE.jsonl](W6_ERGEBNISSE.jsonl).
 
 ## 1. Relevanter Code
 

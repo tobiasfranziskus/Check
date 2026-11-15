@@ -71,6 +71,49 @@ async function projektPfad(browser,base,width,height,kind){
   console.log('J13B_PROJECT_BROWSER_OK',JSON.stringify({kind,width,height,hash:w.hash(end),jaeger:0,money:33000}));
  }finally{await context.close();}
 }
+// W6/X1: sichtbarer, ausdruecklicher S02-Karriere-Opt-in ohne Altstandmigration.
+// Jede Touchgroesse benutzt denselben echten P1-Rootweg und den Original-204-Core.
+async function w6Optin(browser,base,width,height,kind){
+ const context=await browser.newContext({viewport:{width,height},hasTouch:true});
+ const page=await context.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(String(e)));
+ try{
+  await page.goto(base+'/prototypes/spiel/index.html');
+  await page.locator('#neues-spiel').tap();
+  const label=page.locator('label[for="w6-npc-start"]');
+  const box=await label.boundingBox();assert.ok(box?.height>=72,'Touchziel fuer W6-Opt-in');
+  assert.equal(await page.locator('#w6-npc-start').isChecked(),false);
+  await label.tap();
+  assert.equal(await page.locator('#w6-npc-start').isChecked(),true);
+  await page.locator('#karriere-starten').tap();
+  assert.equal(await page.locator('#spielwelt').isVisible(),true);
+  assert.equal(await page.locator('#w6-status').isVisible(),true);
+  const raw=await page.evaluate(k=>localStorage.getItem(k),SLOT),s=JSON.parse(raw);
+  const p=s.w5ad.profile,w=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+  assert.equal(s.kanon.npcAuto,true);
+  assert.deepEqual(s.kanon.npcSilizium,{aktiv:true,werftauftrag:false});
+  assert.equal(s.kanon.politik.stilllegung,true);
+  assert.equal(s.kanon.politik.betriebsreserve.werft_extern,1060);
+  assert.equal(s.tick,0);assert.equal(s.owners.house.cash,3000);
+  assert.equal(w.audit(w.load(raw)).ok,true);
+  assert.equal(Object.values(s.owners).reduce((a,o)=>a+o.cash,0),33000);
+  await page.locator('[data-advance="60"]').tap();
+  await page.locator('[data-advance="1440"]').tap();
+  const after=await page.evaluate(k=>localStorage.getItem(k),SLOT),s2=JSON.parse(after);
+  assert.equal(s2.tick,1500,'+1 Spieltag verwendet exakt 24 Original-60-Minuten-Schritte');
+  assert.equal(s2.kanon.npcAuto,true);
+  assert.equal(w.audit(w.load(after)).ok,true);
+  assert.equal(s2.minted,0);assert.equal(s2.burned,0);
+  await page.reload();
+  await page.locator('#fortsetzen').tap();
+  assert.equal(await page.locator('#w6-status').isVisible(),true);
+  assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),after,
+    'W6-Save wird bei Resume weder migriert noch still veraendert');
+  assert.deepEqual(errors,[]);
+  console.log('W6_P1_OPTIN_BROWSER_OK',JSON.stringify({kind,width,height,
+    tick:s2.tick,hash:w.hash(w.load(after)),weltgeld:33000,originalHaus:3000}));
+ }finally{await context.close();}
+}
 (async()=>{
  const root=path.resolve(__dirname,'..');
  const server=http.createServer((req,res)=>{
@@ -223,6 +266,7 @@ async function projektPfad(browser,base,width,height,kind){
    }finally{await ctx.close();}
    await projektPfad(browser,base,width,height,kind);
    await siliziumPilot(browser,base,width,height,kind);
+   await w6Optin(browser,base,width,height,kind);
   }
  }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

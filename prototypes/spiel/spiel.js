@@ -68,13 +68,27 @@ function startNeu(){
  try{
   if(!scope.W5acSession||!scope.J8KonzernSitzung)throw Error('Original-Wirtschaftskern wurde nicht geladen');
   // A genuine Rule195 starting world, not a prefilled 204 test fixture.
+  const w6Aktiv=$('w6-npc-start')?.checked===true;
   const original195=scope.W5acSession.create(42,'private195').export();
   const neu=neueSitzung();
   const a=neu.starten195(original195,true);
   if(a.regel!==204||a.weltgeld!==33000)throw Error('Ausgangswelt nicht autoritativ validiert');
+  if(w6Aktiv){
+   const welt=neu.weltReferenz(),zustand=neu.zustandReferenz();
+   if(typeof welt.politikSetzen!=='function'||typeof welt.npcAutoSetzen!=='function'
+     ||typeof welt.npcSiliziumSetzen!=='function')throw Error('W6-Firmenpolitik nicht vollständig installiert');
+   // Freigegebenes S02-Forschungsprofil. Eine Politik ist Verhalten, weder Geldquelle noch Ware.
+   welt.politikSetzen(zustand,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
+   welt.npcAutoSetzen(zustand,true);
+   welt.npcSiliziumSetzen(zustand,true);
+   const audit=welt.audit(zustand);
+   if(!audit.ok)throw Error('W6: Wirtschaftsprüfung verweigert Start: '+audit.fehler.join('; '));
+  }
   session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;
   const ok=speichern(!!vorher);
-  aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK in der gesamten Wirtschaft. Kein kostenloses Schiff.');
+  aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(w6Aktiv
+   ?'W6-NPC-Konzerne arbeiten auf eigene Rechnung; jeder Auftrag bleibt finanziert.'
+   :'Unveränderte Karriere ohne NPC-W6-Automatik.')+' Kein kostenloses Schiff.');
   if(!ok)hinweis('Karriere gestartet. Lokales Speichern nicht verfügbar; bitte sofort JSON exportieren.',true);
  }catch(e){hinweis('Start verweigert: '+error(e),true);}
 }
@@ -93,10 +107,28 @@ function ladeSitzung(json,auswahl,backup=false){
  aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Der Original-Core hat deinen Spielstand geprüft.');
 }
 function weiter(n){
+ let vorher=null;
  try{
-  session.weiterspielen(n);speichern();anzeigen();
+  if(n===1440){
+   // Kein neuer schneller Wirtschaftstick: 24 echte, einzeln validierte 60-Minuten-Schritte.
+   // Falls eine wirtschaftliche Sperre dazwischen auftritt, alten Save atomar bewahren.
+   vorher=session.exportieren();
+   for(let i=0;i<24;i++)session.weiterspielen(60);
+  }else session.weiterspielen(n);
+  speichern();anzeigen();
   hinweis(n+' bezahlte Weltminuten vergangen. Alle Waren und Konten stammen aus dem Original-Core.');
- }catch(e){hinweis('Zeitfortschritt verweigert: '+error(e),true);}
+ }catch(e){
+  if(vorher!==null){
+   try{
+    const restore=neueSitzung();restore.oeffnen204(vorher,true);
+    session=restore;anzeigen();
+   }catch(restoreError){
+    hinweis('Tagesfortschritt fehlgeschlagen; bitte letzte JSON-Sicherung verwenden: '+error(restoreError),true);
+    return;
+   }
+  }
+  hinweis('Zeitfortschritt verweigert: '+error(e),true);
+ }
 }
 function auftrag(id){
  try{
@@ -278,6 +310,9 @@ function jaegerBericht(zustand,angebote){
 function anzeigen(){
  if(!session)return;
  const a=session.ansicht(),s=session.zustandReferenz();
+ // Status stammt ausschließlich aus dem gespeicherten Core, nicht aus einem UI-Schalter.
+ const w6Status=$('w6-status');
+ if(w6Status)w6Status.hidden=!(s.kanon.npcAuto===true&&s.kanon.npcSilizium?.aktiv===true);
  $('hausgeld').textContent=fmt(a.hausgeld)+' ISK';
  $('zeit').textContent=datum(a.tick);
  $('weltgeld').textContent=fmt(a.weltgeld)+' ISK';

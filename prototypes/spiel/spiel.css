@@ -79,7 +79,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,.import-button:focus-vi
 .ships .ship strong{display:block;color:#ecf6ff;font-size:1.1rem}.ship p{margin:7px 0 12px;color:#bdd1df}.ship button{width:100%}
 .sectors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.sectors article{min-height:115px;display:flex;flex-direction:column;padding:17px;background:#122639;border:1px solid #35586b;border-radius:9px}.sectors article strong{font-size:1.18rem}.sectors article span{color:var(--muted);font-size:.84rem}
 .world-stat{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:11px 0;border-top:1px solid #31485c;font-size:.9rem}.world-stat span{color:var(--muted)}.world-stat strong{font-variant-numeric:tabular-nums}
-.time-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:18px}.time-buttons button{padding:8px;font-size:.85rem;min-height:46px}
+.time-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:18px}.time-buttons button{padding:8px;font-size:.85rem;min-height:46px}
 .game-message{margin-top:17px;border:1px solid #3e6674;background:#102c40d9;border-radius:10px;padding:14px 16px;color:#bfebeb;min-height:50px}
 .page-footer{padding:18px clamp(18px,4vw,70px);border-top:1px solid #304453;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:.78rem;color:#92aabb}
 .page-footer>span:first-child{letter-spacing:.14em;font-weight:800;color:var(--gold)}
@@ -125,6 +125,13 @@ body.raum-aktiv .world{display:none}
 @media(max-width:900px){.factions{grid-template-columns:repeat(2,minmax(0,1fr))}.splash{grid-template-columns:1fr;min-height:calc(100svh - 110px)}.hero-side{max-width:530px}.planet{width:70vw;right:-20vw}.game-grid{grid-template-columns:1fr}.world-right{grid-column:auto}.briefing-bottom{align-items:stretch;flex-direction:column}}
 @media(max-width:600px){.topline{padding:12px 17px;min-height:67px}.topline-status{display:none}.splash{padding:37px 20px 50px;gap:16px}.splash h1{font-size:clamp(4rem,20vw,6rem)}.lead{margin-top:22px}.menu-actions{flex-direction:column;gap:10px}.menu-actions>*{width:100%}.hero-side{margin-top:15px}.chapter{padding:22px 16px 55px}.factions{grid-template-columns:1fr}.faction{min-height:210px}.world{padding:20px 10px}.worldbar-right{gap:8px}.world-balance{padding:3px 9px}.world-center{padding:0 12px 16px}.sectors{grid-template-columns:1fr}.page-footer{font-size:.74rem}.worldbar h2{font-size:2rem}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+/* W6: explicit, touch-accessible new-career consent; no existing saves are changed. */
+.w6-start-option{display:flex;gap:14px;align-items:center;border:1px solid #3c637a;border-radius:12px;padding:17px;margin:15px 0;cursor:pointer;line-height:1.45;background:rgba(20,53,70,.62)}
+.w6-start-option input{min-width:24px;width:24px;height:24px;accent-color:#a0ebcc;flex-shrink:0}
+.w6-start-option span{display:grid;gap:7px}
+.w6-start-option small{color:var(--muted);font-size:.88rem}
+.w6-world-indicator{border:1px solid #397c72;border-radius:8px;padding:9px 10px;font-size:.75rem;color:#a0ebcc;font-weight:700}
+@media(max-width:600px){.w6-start-option{min-height:72px;margin:10px 0}.w6-world-indicator{font-size:.7rem}}
 /* J13b: dieselben bezahlten Aufträge auch im Projekt erreichbar. */
 #jaeger-beitrag-aktionen{display:grid;grid-template-columns:1fr;gap:12px;min-width:0}
 #jaeger-beitrag-aktionen section{min-width:0}

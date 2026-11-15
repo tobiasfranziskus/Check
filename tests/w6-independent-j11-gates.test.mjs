@@ -81,3 +81,35 @@ test('QA W6/J11: switching off opt-in leaves authentic player cash untouched',()
  audit(w,s);
  assert.equal(w.hash(w.load(w.save(s))),w.hash(s));
 });
+
+test('QA W6: legacy stilllegung dividend reserve stays the full depreciation unless NPC opt-in is really running',()=>{
+ const policy=W6.SZENARIEN.find(x=>x.id==='S02').politik;
+ const {welt:w,s}=W6.start(policy);
+ w.advance(s,14400); // real ten-day wear-and-replacement world, never a fabricated hull.
+ audit(w,s);
+ const beforeMoney=money(s),beforeShips=structuredClone(s.ships),beforeLedger=structuredClone(s.ledger);
+ w.npcAutoSetzen(s,false);
+ const reported=w.bericht(s).schiffe;
+ let replacements=0;
+ for(const owner of ['npc3','transport']){
+   const owned=reported.filter(sh=>sh.owner===owner);
+   const price=klasse=>w.rules.economy.waren[klasse].basis;
+   const allDepreciation=owned.reduce((sum,sh)=>sum+price(sh.klasse)-sh.buchwert,0);
+   const bookedValue=owned.reduce((sum,sh)=>sum+sh.buchwert,0);
+   const initialCash=w.rules.owners.find(o=>o.id===owner).cash;
+   const retained=s.kanon.politik.betriebsreserve[owner]||0;
+   const classic=Math.max(0,Math.min(
+     s.owners[owner].cash-retained-allDepreciation,
+     s.owners[owner].cash+bookedValue-initialCash
+   ));
+   assert.equal(w.ausschuettbar(s,owner),classic,
+     'existing classic reserve rule must survive W6 disable: '+owner);
+   replacements+=owned.filter(sh=>sh.buchwert===0).length;
+ }
+ assert.ok(replacements>=2,'replaced consumed hulls are genuinely present in this finance case');
+ assert.deepEqual(money(s),beforeMoney);
+ assert.deepEqual(s.ships,beforeShips);
+ assert.deepEqual(s.ledger,beforeLedger);
+ audit(w,s);
+ assert.equal(w.hash(w.load(w.save(s))),w.hash(s));
+});

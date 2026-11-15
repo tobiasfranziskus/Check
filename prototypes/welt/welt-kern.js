@@ -1108,6 +1108,100 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         && !befehl(state, BERGBAU, { type: 'shipShuttleStop', schiff: kandidat.id }).ok) return;
       befehl(state, BERGBAU, { type: 'shipShuttle', schiff: kandidat.id, ware: 'eis' });
     }
+    // W6/P5 [ANALYSE / OPT-IN]: Nur originale NPC3-, Werft- und J2b-Befehle.
+    // Ein gemerkter K2-Auftrag verhindert die Aneignung fremder Ersatzminer-
+    // Bestellungen, selbst wenn der bestellte Eigentümer ebenfalls NPC3 ist.
+    // Das Feld, die Preise, Pilotenloehne und die eigentliche Ware bleiben Original.
+    function siliziumKette(state) {
+      const k=state.kanon, ziel=k.npcSilizium;
+      if(!ziel?.aktiv || !silizium || !jaeger)return;
+      const b=k.minerWerft, s=k.silizium;
+      if(!b || !s)return;
+      const C=rules.j2b, C3=rules.j3, C4=rules.j4,
+        lager=state.stations[C.station].lager;
+      const lokal=ids(state.ships).map(id=>state.ships[id]).find(sh=>
+        sh.owner==='npc3' && sh.klasse==='miner' && sh.heimat==='nadir'
+        && sh.system==='nadir' && !m_core_anlage.stillgelegt(state,sh));
+      // Eine bereits vom Eigenbetrieb begonnene Produktion wird sauber fertig
+      // verkauft; alle Befehle bleiben unabhaengig autorisiert und auditierbar.
+      if(ziel.werftauftrag){
+        if(b.wartetAuf==='npc3' && (lager.miner||0)===1){
+          const r=befehl(state,'npc3',{type:'stationClaimMinerLocal',station:C.station});
+          if(r.ok)ziel.werftauftrag=false;
+          else pause(state,'npc3','Nadir-K2-Originalkauf: '+r.reason);
+        }else if(b.transport?.besteller==='npc3'){
+          // Ein urspruenglicher W5-Ruecktransport kann den Vorrang erhalten.
+          // Keine illegale Umleitung und kein nochmaliger Anspruch auf die Huelle.
+          ziel.werftauftrag=false;
+          pause(state,'npc3','K2-Miner auf legitimer Aldera-Rueckfracht');
+        }else if(!b.auftrag && b.wartetAuf!=='npc3'){
+          ziel.werftauftrag=false;
+          pause(state,'npc3','K2-Minerauftrag nicht mehr lokal verfuegbar');
+        }
+        return;
+      }
+      const auftrag=s.auftrag, eigener=auftrag?.owner==='npc3' &&
+        state.ships[auftrag.schiff]?.heimat==='nadir';
+      if(auftrag && !eigener)return; // laufender Spielerauftrag wird nie uebernommen
+      if(lokal){
+        const flug=lokal.flug, id=lokal.id;
+        if(eigener){
+          if(auftrag.gefoerdert>=auftrag.menge){
+            if(flug.lage==='frei' && !(flug.andocken && flug.ziel?.art==='station'))
+              befehl(state,'npc3',{type:'shipDock',schiff:id,station:C.station});
+            else if(flug.lage==='angedockt')
+              befehl(state,'npc3',{type:'siliconSell',schiff:id});
+          }else if(flug.lage==='angedockt'){
+            befehl(state,'npc3',{type:'shipUndock',schiff:id});
+          }else if(flug.lage==='frei' && !m_core_silizium.feld(lokal)
+            && !(flug.modus==='anflug' && flug.ziel?.art==='punkt'
+              && flug.ziel.x===C.feld.x && flug.ziel.y===C.feld.y)){
+            befehl(state,'npc3',{type:'shipFlyTo',schiff:id,x:C.feld.x,y:C.feld.y});
+          }
+          return;
+        }
+        const vorhanden=(lager.silizium||0)+(lager.bauteil||0)
+          +(k.bauteile?.auftrag ? C3.proCharge : 0);
+        if((lager.jaeger||0)>=1 || k.jaeger?.auftrag
+          || vorhanden>=C4.bauteile || s.vorrat<C.charge)return;
+        if(flug.lage!=='angedockt')return;
+        const cmd={type:'siliconMineStart',schiff:id,owner:'npc3'};
+        const grund=m_core_silizium.pruefen(state,cmd);
+        if(grund){pause(state,'npc3','Silizium nicht finanziert: '+grund);return;}
+        if(befehl(state,'npc3',{type:'siliconMineStart',schiff:id}).ok)
+          befehl(state,'npc3',{type:'shipUndock',schiff:id});
+        return;
+      }
+      if(s.vorrat<C.charge || (lager.jaeger||0)>=1 || k.jaeger?.auftrag
+        || (lager.silizium||0)+(lager.bauteil||0)
+          +(k.bauteile?.auftrag ? C3.proCharge : 0)>=C4.bauteile)return;
+      // Ersatz fuer die funktionierende Aldera-Eiswirtschaft hat Vorrang.
+      const aldera=ids(state.ships).map(id=>state.ships[id]).filter(sh=>
+        sh.owner==='npc3' && sh.klasse==='miner' && sh.heimat==='aldera'
+        && !m_core_anlage.stillgelegt(state,sh));
+      if(aldera.length===0 || (k.politik.stilllegung &&
+        aldera.every(sh=>m_core_anlage.buchwert(state,sh)*100
+          <=kaufpreis('miner')*k.politik.ersatzVorlaufProzent))){
+        pause(state,'npc3','Silizium wartet auf lebenswichtigen Ersatzminer');
+        return;
+      }
+      if(b.auftrag||b.wartetAuf||b.transport || (lager.miner||0)>0)return;
+      const kapital=m_core_minerwerft.C.kauf+m_core_minerwerft.C.fracht
+        +C.charge*C.minutenJeEinheit*C.lohnJeMinute
+        +KANON.flug.reserveMinuten*KANON.flug.lohnJeMinute;
+      if(state.owners.npc3.cash<kapital ||
+        state.owners[C.station].cash<C.charge*C.preis){
+        pause(state,'npc3','Siliziuminvestition oder Kauf nicht finanziert');
+        return;
+      }
+      const bestellung={type:'stationBuildMiner',owner:m_core_minerwerft.C.werft,
+        station:m_core_minerwerft.C.station,besteller:'npc3'};
+      const grund=m_core_minerwerft.pruefen(state,bestellung);
+      if(grund){pause(state,'npc3','K2-Werftslot: '+grund);return;}
+      if(befehl(state,bestellung.owner,{type:bestellung.type,
+        station:bestellung.station,besteller:'npc3'}).ok)
+        ziel.werftauftrag=true;
+    }
     // Nadir-Industrie: verarbeitet nur real vorhandenes, bezahltes Material/Silizium; das
     // Material für die nächste Werfthülle (zahlende Ersatznachfrage) bleibt unangetastet.
     function industrie(state) {
@@ -1142,6 +1236,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       const k = state.kanon;
       if (k.npcAuto !== true || k.politik.automatik !== true) return;
       bergbau(state);
+      siliziumKette(state);
       industrie(state);
     }
     function audit(state, fehler) {
@@ -1154,12 +1249,23 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       const erlaubt = new Set([
         'npc3:shipShuttle', 'npc3:shipShuttleStop', 'npc3:shipBuy',
         'st_nadir:stationRefine', 'st_nadir:stationBuildParts', 'st_nadir:stationBuildFighter',
+        'werft_extern:stationBuildMiner', 'npc3:stationClaimMinerLocal',
+        'npc3:siliconMineStart', 'npc3:shipUndock', 'npc3:shipFlyTo',
+        'npc3:shipDock', 'npc3:siliconSell',
       ]);
       const gueltigerZaehler = (key, value, bereich) => {
         if (!ganz(value) || value === 0 || value > state.tick) return false;
         if (bereich !== 'pausen') return erlaubt.has(key);
         return (key.startsWith('npc3: ') || key.startsWith('st_nadir: ')) && key.length > 8;
       };
+      const ziel=k.npcSilizium, wm=k.minerWerft;
+      if(ziel!==undefined && (!ziel || typeof ziel!=='object' || Array.isArray(ziel)
+        || Object.keys(ziel).sort().join()!=='aktiv,werftauftrag'
+        || typeof ziel.aktiv!=='boolean' || typeof ziel.werftauftrag!=='boolean'
+        || (!ziel.aktiv && ziel.werftauftrag)
+        || (ziel.werftauftrag && wm?.auftrag?.besteller!=='npc3'
+          && wm?.wartetAuf!=='npc3')))
+        fehler.push('W6/P5: Nadir-Silizium-Dispositionsbeleg ungültig');
       if (k.npcAuto === undefined || n === null || typeof n !== 'object' || Array.isArray(n)
         || Object.keys(n).sort().join() !== 'abgelehnt,befehle,pausen'
         || ['befehle', 'abgelehnt', 'pausen'].some((bereich) => {
@@ -1551,6 +1657,20 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     return {ok:true, aktiviert};
   }
 
+  // W6/P5 [DRAFT/ANALYSE]: weiteres opt-in nur fuer die bereits originalfinanzierte
+  // Nadir-NPC3-Siliziumkette; bestehende S01/S02-Referenzen bleiben ohne Aufruf bitgleich.
+  function npcSiliziumSetzen(s, aktiviert) {
+    pruefeForm(s);
+    if(!k7 || !silizium || !jaeger)throw Error('W6/P5 nur im Regel204-Jaegerprofil');
+    if(typeof aktiviert!=='boolean')throw TypeError('W6/P5 nur Boolean');
+    if(!aktiviert && (s.kanon.npcSilizium?.werftauftrag
+      || s.kanon.silizium?.auftrag?.owner==='npc3'))
+      throw Error('W6/P5: laufenden finanzierten NPC-Auftrag zuerst abschliessen');
+    s.kanon.npcSilizium={aktiv:aktiviert,
+      werftauftrag:s.kanon.npcSilizium?.werftauftrag??false};
+    return {ok:true,aktiviert};
+  }
+
   // W6 [DRAFT/OPTION]: schaltet nur die gespeicherte Firmenpolitik; bucht selbst nichts.
   function npcAutoSetzen(s, aktiviert) {
     pruefeForm(s);
@@ -1757,7 +1877,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(jaeger ? {j4bFinanzierterJaeger:true} : {}),
     ...(jaegerFlug ? {j4cBezahlterJaegerflug:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
-    createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
+    createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
     torPruefen: m_core_torfreigabe.pruefen, torFrachtPruefen: m_core_torfreigabe.darfFracht,
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,

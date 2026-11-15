@@ -126,6 +126,11 @@ const Welt=require('../prototypes/welt/welt-kern.js');
     assert.equal((await zustand()).laeuft,false,'kein verdecktes Weitersimulieren');
     const tickPause=await text('#konzern-tick'),kassePause=await text('#konzern-cash');
     assert.match(await text('#konzern-weltgeld'),/33[.]000 ISK/);
+    // J6-W: Spielerangebote sichtbar, Werftrechte fremder Firmen nicht nutzbar.
+    assert.equal(await page.locator('#j6-w-angebote button').count(),4);
+    assert.match(await text('#j6-w-nadir'),/fremder Eigentümer/);
+    assert.equal(await page.locator('#j6-w-angebote button').nth(0).isEnabled(),true);
+    assert.equal(await page.locator('#j6-w-angebote button').nth(2).isDisabled(),true);
     assert.ok((await text('#konzern-schiffe')).includes('sh023'));
     assert.match(await text('#konzern-reserve'),/\d+ ISK/);
     await page.waitForTimeout(700);
@@ -173,10 +178,11 @@ const Welt=require('../prototypes/welt/welt-kern.js');
      assert.match(await text('#raum-meldung'),/Silizium an Station Nadir verkauft/);
      silizium=8;
     }else{
-     // Der Kern verweigert dem Nadir-Frachter den Flug; die Oberfläche zeigt die Begründung und ändert nichts.
-     await tap('[data-raum="wechsel-sh021"]');
-     await tap('[data-raum="dock-abdocken"]');
-     assert.match(await text('#raum-meldung'),/Kern lehnt ab: .*bezahlte Schiffe/);
+     // Auf dieser F6-Basis darf ein gekaufter Nadir-Frachter NICHT frei pilotiert werden.
+     const frachter=page.locator('[data-raum="wechsel-sh021"]');
+     assert.equal(await frachter.isDisabled(),true,'Nadir-Frachtercockpit gesperrt');
+     assert.match(await frachter.textContent(),/Frachter|keinen freien Frachterflug/);
+     assert.match(await text('#raum-schiff'),/Miner sh022/);
      assert.match(await text('#raum-lage'),/Im Dock/);
     }
     assert.match(await text('#raum-audit'),/Audit OK · Welt 33[.]000 ISK/);

@@ -13,6 +13,7 @@ on:
       - 'tests/j4e-*'
       - 'tests/j5-*'
       - 'tests/raum-*'
+      - 'tests/j6i-*'
       - 'tests/w5singlefile.test.mjs'
       - 'tests/w5rc1-preservation.test.mjs'
       - '.github/workflows/j4e-public-smoke.yml'
@@ -55,6 +56,11 @@ jobs:
           WELT_BROWSER: ${{ matrix.browser }}
       - name: "RAUM-1 Raumcockpit: vier Touchgrößen, Leinwand-Tipp, Knüppel, Konzernwechsel, Bergbau, Replay, ohne Canvas"
         run: node tests/raum-cockpit-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "J6-I Konzernwirtschaft: echter Spielerauftrag und JSON-Audit"
+        run: node tests/j6i-wirtschaft-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}

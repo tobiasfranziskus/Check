@@ -264,4 +264,46 @@ test('J10b/K2: paid original Nadir miner built from delivered ore and purchased 
   workCost:s.kanon.silizium.belege[0].arbeit,
   worldMoney:33000,minted:s.minted,burned:s.burned,hash:w.hash(s)
  }));
+ // J10c: convert the ACTUALLY remaining 30 Nadir ore into W4 material
+ // and eight genuine J2b silicon into as many payable J3 parts as possible.
+ // No stock grant, no second free ore delivery, no altered NPC policy.
+ const nadir=s.stations.st_nadir.lager;
+ assert.equal(nadir.erz,30,'remaining ore after K7 frachter and K2 miner');
+ for(let i=0;i<3;i++){
+   ownerCommand(w,s,'st_nadir',{type:'stationRefine',station:'st_nadir'});
+   wait(w,s,()=>!s.w4.auftrag,100);
+ }
+ assert.equal(nadir.erz,0);
+ assert.equal(nadir.material,15,'three real W4 batches of five material');
+ assert.equal(nadir.silizium,8);
+ for(let i=0;i<7;i++){
+   ownerCommand(w,s,'st_nadir',{type:'stationBuildParts',station:'st_nadir'});
+   wait(w,s,()=>!s.kanon.bauteile.auftrag,100);
+ }
+ assert.equal(nadir.material,1);
+ assert.equal(nadir.silizium,1);
+ assert.equal(nadir.bauteil,7);
+ assert.equal(s.kanon.bauteile.abgeschlossen,7);
+ assert.equal(s.ledger.bauteil.produced,7);
+ const preFailure=w.hash(s);
+ const eighth=J6.erstellen(w,'st_nadir').ausfuehren(s,{type:'stationBuildParts',station:'st_nadir'});
+ assert.equal(eighth.ok,false);
+ assert.match(eighth.reason,/Material/i,'no free material to complete eighth part');
+ const fighter=J6.erstellen(w,'st_nadir').ausfuehren(s,{type:'stationBuildFighter',station:'st_nadir'});
+ assert.equal(fighter.ok,false);
+ assert.match(fighter.reason,/Bauteile|Material/i,'J4 requires eight parts AND four material');
+ assert.equal(w.hash(s),preFailure,'failed orders must be atomic');
+ assert.equal(s.kanon.jaeger.fertig,0);
+ audits(w,s);
+ assert.equal(w.hash(w.load(w.save(s))),w.hash(s));
+ assert.equal(initial195,OLD.create(42,'private195').export());
+ console.log('J10C_FINANCED_PARTS_MATERIAL_BLOCKER',JSON.stringify({
+   tick:s.tick,parts:7,paidJ3Minutes:s.kanon.bauteile.arbeitsGezahlt,
+   siliconRemaining:nadir.silizium,materialRemaining:nadir.material,
+   extraMaterialNeeded:5,extraOreAtOriginalW4Recipe:10,
+   missingParts:1,forgedMint:s.minted,forgedBurn:s.burned,
+   worldMoney:Object.values(s.owners).reduce((sum,o)=>sum+o.cash,0),
+   hash:w.hash(s),blockedBy:eighth.reason
+ }));
+
 });

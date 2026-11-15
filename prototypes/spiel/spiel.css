@@ -79,7 +79,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,.import-button:focus-vi
 .ships .ship strong{display:block;color:#ecf6ff;font-size:1.1rem}.ship p{margin:7px 0 12px;color:#bdd1df}.ship button{width:100%}
 .sectors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.sectors article{min-height:115px;display:flex;flex-direction:column;padding:17px;background:#122639;border:1px solid #35586b;border-radius:9px}.sectors article strong{font-size:1.18rem}.sectors article span{color:var(--muted);font-size:.84rem}
 .world-stat{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:11px 0;border-top:1px solid #31485c;font-size:.9rem}.world-stat span{color:var(--muted)}.world-stat strong{font-variant-numeric:tabular-nums}
-.time-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:18px}.time-buttons button{padding:8px;font-size:.85rem;min-height:46px}
+.time-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:18px}.time-buttons button{padding:8px;font-size:.85rem;min-height:46px}
 .game-message{margin-top:17px;border:1px solid #3e6674;background:#102c40d9;border-radius:10px;padding:14px 16px;color:#bfebeb;min-height:50px}
 .page-footer{padding:18px clamp(18px,4vw,70px);border-top:1px solid #304453;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:.78rem;color:#92aabb}
 .page-footer>span:first-child{letter-spacing:.14em;font-weight:800;color:var(--gold)}

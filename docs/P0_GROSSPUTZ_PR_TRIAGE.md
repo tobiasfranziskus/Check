@@ -13,6 +13,12 @@
 | [#412](https://github.com/tobiasfranziskus/Check/pull/412) | **Aktive gestapelte W6/P8c-Forschung** | Regel206 Dravos-Orion-Nadir; GitHub Actions auf jüngstem Stand gesondert prüfen. Nicht mit aktueller Regel204-Karriere verwechseln. **Nicht schließen/mergen.** |
 | [#332–#337](https://github.com/tobiasfranziskus/Check/pull/337) | **F8-Jägerprototypen, teilweise gestapelt** | Kein pauschales Löschen: Für P4 möglicherweise noch einzigartige Treffer-/Gegenfeuerfunktion; Funktionsvergleich zu `main` und Browserabnahme vor Triage. |
 
+## Zweite PR-Metadaten-Stichprobe: nicht voreilig schließen
+
+**[ANALYSE, nur PR-Beschreibungen/Basen geprüft, keine unabhängige Code-Diff-Abnahme]:** Die älteren K1-PRs sind **nicht pauschal redundant**. [#318](https://github.com/tobiasfranziskus/Check/pull/318) (originalfinanzierter 2D-Frachter) und [#319](https://github.com/tobiasfranziskus/Check/pull/319) (50-Eis-Rundfracht) haben scheinbare Nachfolger im inzwischen integrierten P1/J11 [#383](https://github.com/tobiasfranziskus/Check/pull/383). **Erst** nach konkretem Dateidiff-/Testvergleich können sie einzeln geschlossen werden. [#320](https://github.com/tobiasfranziskus/Check/pull/320) enthält dagegen **persönliche 2D-Steuerung während des bezahlten W5n-Transits**, die in `main` gerade gesperrt bleibt; [#321](https://github.com/tobiasfranziskus/Check/pull/321) eine noch nicht produktive **physische Torfreigabe**. Beide als potenziell wiederverwendbare Forschung erhalten.
+
+Die gestapelten Touch-PRs [#310](https://github.com/tobiasfranziskus/Check/pull/310) (direkte Befehle/Kurswahl), [#311](https://github.com/tobiasfranziskus/Check/pull/311) (berührbare Karte mit expliziter Zielflugbestätigung), [#312](https://github.com/tobiasfranziskus/Check/pull/312) (durchgängige K1-Cockpit-/Wirtschafts-/Save-QA) und [#317](https://github.com/tobiasfranziskus/Check/pull/317) (bis zum nächsten Entscheidungspunkt schrittweiser Original-Core-Zeitlauf) können für P1/P2 noch eigene UX-/Testkenntnisse enthalten. **Keine Schließung ohne Funktionsnachfolger.** Das ist der Hauptgrund für eine qualifizierte statt quantitative PR-Bereinigung.
+
 ## Nächste P0-Pakete
 
 1. **PR-Triage in Gruppen von 10–20** auf Basis PR-Metadaten und Code-Nachfolger. Nur bei belegtem Ersatz und ohne einzigartige Funktion schließen, immer mit Verweis; Git-Branches/CI/Spielstände niemals löschen.

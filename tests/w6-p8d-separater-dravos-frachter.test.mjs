@@ -73,6 +73,15 @@ test('P8d S02: getrennte Schiffe, reale Ladequittung, 0 Mint, voller Frachterloh
  }
  unabhaengig(w,s);
  const p=s.kanon.p8d;
+ console.log('P8D_DIAGNOSE',JSON.stringify({tag:90,p8d:p,
+  silizium:{auftrag:s.kanon.silizium.auftrag,felder:s.kanon.silizium.felder},
+  p8c:s.kanon.p8c,npcSilizium:s.kanon.npcSilizium,
+  kassen:{npc3:s.owners.npc3.cash,transport:s.owners.transport.cash,
+    gebuehr:s.owners.k1_p8d_fracht.cash,lohn:s.owners.k1_p8d_pilot.cash},
+  frachter:Object.values(s.ships).filter(sh=>sh.owner==='transport'&&sh.klasse==='frachter')
+    .map(x=>({id:x.id,system:x.system,phase:x.phase,auftrag:x.auftrag,ladung:x.ladung,flug:x.flug?.lage})),
+  miner:Object.values(s.ships).filter(sh=>sh.owner==='npc3'&&sh.heimat==='nadir')
+    .map(x=>({id:x.id,system:x.system,phase:x.phase,ladung:x.ladung,flug:x.flug?.lage}))}));
  assert.ok(p.belege.length>=1,'mindestens eine echte Dravos-Nadir-Fremdfracht');
  assert.ok(hinSave&&geladenSave,'physische Zwischenzustaende vorhanden');
  assert.equal(p.gebuehrBezahlt,p.belege.reduce((n,a)=>n+a.gebuehr,0));

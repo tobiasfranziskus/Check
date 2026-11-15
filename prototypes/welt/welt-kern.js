@@ -1251,7 +1251,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         s.felder?.[f.id]?.vorrat>=C.charge):C.feld;
       const lokal=ids(state.ships).map(id=>state.ships[id]).find(sh=>
         sh.owner==='npc3' && sh.klasse==='miner' && sh.heimat==='nadir'
-        && sh.system==='nadir' && !m_core_anlage.stillgelegt(state,sh));
+        && (sh.system==='nadir'||(p8cDravos&&sh.system==='dravos'))
+        && !m_core_anlage.stillgelegt(state,sh));
       // Eine bereits vom Eigenbetrieb begonnene Produktion wird sauber fertig
       // verkauft; alle Befehle bleiben unabhaengig autorisiert und auditierbar.
       if(ziel.werftauftrag){
@@ -1279,10 +1280,17 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           const aktivFeld=C.nebenfeld?[C.feld,C.nebenfeld].find(f=>f.id===auftrag.feld):C.feld;
           if(!aktivFeld)throw Error('P8b: fremde Quelle im gebuchten Minerauftrag');
           if(auftrag.gefoerdert>=auftrag.menge){
+            // Geerntetes Dravos-Silizium muss real im Miner-Frachtraum
+            // bleiben und per bezahlter Original-W3-Reise zum Nadir-Kaeufer.
+            const dock=p8cDravos&&aktivFeld.system==='dravos'
+              &&lokal.system==='dravos'?'st_dravos':C.station;
             if(flug.lage==='frei' && !(flug.andocken && flug.ziel?.art==='station'))
-              befehl(state,'npc3',{type:'shipDock',schiff:id,station:C.station});
-            else if(flug.lage==='angedockt')
-              befehl(state,'npc3',{type:'siliconSell',schiff:id});
+              befehl(state,'npc3',{type:'shipDock',schiff:id,station:dock});
+            else if(flug.lage==='angedockt'){
+              if(p8cDravos&&lokal.system==='dravos')
+                befehl(state,'npc3',{type:'shipTravelDravos',schiff:id,ziel:'st_nadir'});
+              else befehl(state,'npc3',{type:'siliconSell',schiff:id});
+            }
           }else if(flug.lage==='angedockt'){
             befehl(state,'npc3',{type:'shipUndock',schiff:id});
           }else if(flug.lage==='frei' && !m_core_silizium.feld(lokal,auftrag.feld)
@@ -1297,6 +1305,13 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         if((lager.jaeger||0)>=1 || k.jaeger?.auftrag
           || vorhanden>=C4.bauteile || s.vorrat<C.charge)return;
         if(flug.lage!=='angedockt')return;
+        if(p8cDravos&&feldWahl?.system!==lokal.system){
+          if(lokal.system!=='nadir')return;
+          const trip=befehl(state,'npc3',{type:'shipTravelDravos',
+            schiff:id,ziel:'st_dravos'});
+          if(!trip.ok)pause(state,'npc3','P8c Dravos-Fahrt nicht finanziert: '+trip.reason);
+          return;
+        }
         const cmd={type:'siliconMineStart',schiff:id,owner:'npc3',
           ...(C.nebenfeld?{feld:feldWahl?.id}:{})};
         const grund=m_core_silizium.pruefen(state,cmd);

@@ -1666,9 +1666,15 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       // Bitgleiche Abkürzung: ruhende Körper ändern sich in 60 Teilschritten nicht.
       if (m_core_flugplan.alleRuhend(state)) return wirtschaftsMinute(state);
     }
-    // Einmal pro Wirtschaftsminute statt bei jedem der bis zu 60 Teilschritte.
-    // Bei Save/Load oder einem externen Teilschritt wird neu aufgebaut.
-    const sortierteSchiffIds = ids(state.ships);
+    // Die bis zu 60 Flugschritte benutzen nur bewegliche Koerper und Schiffe,
+    // die der Dock-Flugplan innerhalb dieser Minute noch abdocken lassen kann.
+    // Historische angedockte Hüllen sind in jedem Flugschritt reine No-Ops.
+    // Neue Hüllen/Pendelauftraege entstehen erst am Ende einer Wirtschaftsminute;
+    // teilschritt() ausserhalb dieses synchronen Batchs bleibt unveraendert.
+    const sortierteSchiffIds = ids(state.ships).filter((id) => {
+      const b = state.ships[id].flug;
+      return b && (b.lage !== 'angedockt' || hat(state.kanon.pendel, id));
+    });
     let r = null;
     do { r = teilschrittIntern(state, sortierteSchiffIds); } while (r === null);
     return r;

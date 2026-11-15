@@ -233,4 +233,35 @@ test('J10b/K2: paid original Nadir miner built from delivered ore and purchased 
   producedMiners:s.ledger.miner.produced,initialMinerPurchases:oldMineStock,
   worldMoney:33000,minted:s.minted,burned:s.burned,hash:w.hash(s)
  }));
+ // The original Nadir field must actually be mined by the bought hull,
+ // after reserving its real labor and F6 flight service. No silicon grant.
+ const newMiner=created[0].id;
+ const silBefore=s.kanon.silizium.gefoerdert;
+ const houseBefore=s.owners.house.cash;
+ ownerCommand(w,s,'house',{type:'siliconMineStart',schiff:newMiner});
+ ownerCommand(w,s,'house',{type:'shipUndock',schiff:newMiner});
+ w.minute(s);audits(w,s);
+ ownerCommand(w,s,'house',{type:'shipFlyTo',schiff:newMiner,x:720000,y:-480000});
+ wait(w,s,()=>s.kanon.silizium.auftrag?.gefoerdert===8,1000);
+ assert.equal(s.kanon.silizium.gefoerdert-silBefore,8);
+ assert.equal(s.ships[newMiner].ladung.silizium,8);
+ ownerCommand(w,s,'house',{type:'shipDock',schiff:newMiner,station:'st_nadir'});
+ wait(w,s,()=>s.ships[newMiner].flug.lage==='angedockt',300);
+ ownerCommand(w,s,'house',{type:'siliconSell',schiff:newMiner});
+ assert.equal(s.stations.st_nadir.lager.silizium,8);
+ assert.equal(s.kanon.silizium.belege.length,1);
+ assert.equal(s.kanon.silizium.belege[0].arbeit,128);
+ assert.equal(s.kanon.silizium.belege[0].preis,192);
+ assert.equal(s.ships[newMiner].ladung.silizium||0,0);
+ assert.equal(s.kanon.silizium.auftrag,null);
+ assert.equal(s.kanon.jaeger.fertig,0);
+ assert.equal(w.hash(w.load(w.save(s))),w.hash(s));
+ console.log('J10B_REAL_SILICON',JSON.stringify({
+  tick:s.tick,ownedMiner:newMiner,silicon:s.stations.st_nadir.lager.silizium,
+  preHouseCash:houseBefore,postHouseCash:s.owners.house.cash,
+  paidWorkMinutes:s.kanon.silizium.arbeitsMinuten,
+  salePrice:s.kanon.silizium.belege[0].preis,
+  workCost:s.kanon.silizium.belege[0].arbeit,
+  worldMoney:33000,minted:s.minted,burned:s.burned,hash:w.hash(s)
+ }));
 });

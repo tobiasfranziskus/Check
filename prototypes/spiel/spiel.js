@@ -247,12 +247,13 @@ $('vorige-karriere')?.addEventListener('click',()=>{try{
    ladeSitzung(json,'backup',true);
  }catch(e){hinweis('Vorherige Karriere nicht geöffnet: '+error(e),true);}});
 $('import-datei').addEventListener('change',async e=>{
- const f=e.currentTarget.files?.[0];if(!f)return;
+ const input=e.currentTarget; // Safari clears event.currentTarget after await.
+ const f=input?.files?.[0];if(!f)return;
  try{
    if(f.size>MAX)throw Error('Datei größer als 5 MB');
    const json=await f.text();ladeSitzung(json,'datei');
  }catch(err){hinweis('Datei nicht geladen: '+error(err),true);}
- finally{e.currentTarget.value='';}
+ finally{input.value='';}
 });
 $('open-menu').addEventListener('click',()=>{
  if(ansicht==='raumbereich'&&raum?.laeuft()){hinweis('Flugzeit vor dem Wechsel pausieren.',true);return;}

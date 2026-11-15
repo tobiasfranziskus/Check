@@ -54,7 +54,7 @@ const Welt=require('../prototypes/welt/welt-kern.js');
    const zustand=()=>page.evaluate(()=>RaumCockpit.sitzung.zustand());
    try{
     await page.goto(basis+'/');
-    await page.locator('nav[aria-label="Spielmodi"] a').tap();
+    await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/j4c/index.html"]').tap();
     await page.waitForURL('**/prototypes/j4c/index.html');
     assert.equal(await page.locator('#ansicht-raum').isVisible(),true,'Raumcockpit-Umschalter sichtbar');
     // Ohne Weltstand: keine Welt, kein Schiff, kein Flug.

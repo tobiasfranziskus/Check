@@ -307,6 +307,42 @@ function jaegerBericht(zustand,angebote){
     :'Kein Kauf: '+(akte.kauf.grund||'keine vollständige finanzierte Hülle')+
      '. Nur Nadir darf J3/J4-Arbeit beauftragen; keine fremden Aufträge werden hier signiert.';
 }
+// P8a: Transparenz der TATSAECHLICHEN Quelle statt erfundener Nachschuborder.
+function siliziumBericht(zustand){
+ if(!scope.P8SiliziumVersorgung)throw Error('P8a: lesender Versorgungspruefer fehlt');
+ const lage=scope.P8SiliziumVersorgung.erstellen(session.weltReferenz(),zustand);
+ const host=$('p8-silizium-lage');
+ if(!host)return;
+ const zeile=(titel,info)=>{
+  const p=d.createElement('p'),b=d.createElement('strong');
+  b.textContent=titel+': ';p.append(b,d.createTextNode(info));return p;
+ };
+ const f=lage.rohstoff,l=lage.lager,g=lage.finanzierung,w=lage.weg;
+ const beschaffung=w.dravosAktiv
+  ?'Ein weiteres System ist im Regel204-Profil vorhanden, aber kein bezahlter Silizium-Frachtvertrag ist eingerichtet.'
+  :'Dravos ist in der allgemeinen Karte verzeichnet, aber kein aktives Regel204-Foerder-/Frachtziel. Neue endliche Quellen sind noch nicht erschlossen.';
+ host.replaceChildren(
+  zeile('Endliches Nadir-Feld',fmt(f.rest)+' / '+fmt(f.gesamt)+' Silizium verbleiben · '+fmt(f.gefoerdert)+
+   ' physisch gefoerdert · '+fmt(f.verkauft)+' bezahlt an Nadir verkauft · '+fmt(f.moeglicheNeueChargen)+
+   ' volle '+fmt(f.charge)+'er-Chargen im Boden'),
+  zeile('Vorhandene Ware',fmt(l.siliziumNadir)+' Silizium im Nadir-Lager · '+
+   fmt(l.siliziumSchiffe)+' in echten Schiffsraeumen · '+fmt(l.bauteileNadir)+' fertige J3-Teile · '+
+   fmt(l.jaegerNadir)+' verkaufsfaehige Jaeger · '+fmt(l.fertigeJaeger)+' Jaeger gesamt gebaut'),
+  zeile('Laufender Abbau',f.auftrag?
+   'Eigentuemer '+f.auftrag.owner+' · Miner '+f.auftrag.schiff+' · '+
+   fmt(f.auftrag.gefoerdert)+' / '+fmt(f.auftrag.menge)+' Einheiten wirklich gefoerdert'
+   :'Kein laufender J2b-Foerderauftrag'),
+  zeile('Vorfinanzierung je weiterer Originalcharge',
+   fmt(g.arbeitJeCharge)+' ISK Bergbaulohn · '+fmt(g.ankaufJeCharge)+
+   ' ISK Nadir-Ankauf · mindestens '+fmt(g.flugreserve)+
+   ' ISK Flugreserve bei neuer Ausfahrt. Kassen: npc3 '+fmt(g.npc3Kasse)+
+   ' ISK, Nadir '+fmt(g.nadirKasse)+' ISK; eigene bezahlte Nadir-Miner: '+
+   fmt(g.anzahlRechtmaessigerNpcNadirMiner)+'. Das ist keine bindende Kaufzusage.'),
+  zeile('Weitere Siliziumfelder im aktiven Kern',fmt(w.fremdeAktiveSiliziumFelder)+
+   ' · '+beschaffung),
+  zeile('Lieferstatus',lage.stand)
+ );
+}
 function anzeigen(){
  if(!session)return;
  const a=session.ansicht(),s=session.zustandReferenz();
@@ -342,6 +378,7 @@ function anzeigen(){
  wirtschaftsbericht(a,s,alleAngebote);
  jaegerBericht(s,alleAngebote);
  jaegerBeitraege();
+ siliziumBericht(s);
  const pilots=session.piloten();
  const own=a.schiffe;
  $('spielerschiffe').replaceChildren(...(own.length?own.map(sh=>{

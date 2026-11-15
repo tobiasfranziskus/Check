@@ -15,33 +15,36 @@ function erstellen(welt,zustand,kaufangebot){
  const fehl=(bedarf,vorrat)=>Math.max(0,bedarf-vorrat);
  const gebauteTeile=menge('bauteil'), material=menge('material'),
        silizium=menge('silizium'), lagerJaeger=menge('jaeger');
+ const eigene=Object.values(s.ships).filter(sh=>sh.owner==='house'&&sh.klasse==='jaeger').length;
+ const werftInArbeit=!!j.auftrag;
+ const ersteHuelleVersorgt=werftInArbeit||lagerJaeger>0||eigene>0;
  const teileImBau=b.auftrag?1:0;
- const teileNoch=fehl(r.j4.bauteile,gebauteTeile+teileImBau);
- const materialNoch=fehl(r.j4.material+teileNoch*r.j3.material,material);
- const siliziumNoch=fehl(teileNoch*r.j3.silizium,silizium);
+ const teileNoch=ersteHuelleVersorgt?0:fehl(r.j4.bauteile,gebauteTeile+teileImBau);
+ const materialNoch=ersteHuelleVersorgt?0:fehl(r.j4.material+teileNoch*r.j3.material,material);
+ const siliziumNoch=ersteHuelleVersorgt?0:fehl(teileNoch*r.j3.silizium,silizium);
  const arbeitJ3=r.j3.dauer*r.j3.lohnJeMinute;
  const arbeitJ4=r.j4.dauer*r.j4.lohnJeMinute;
- const eigene=Object.values(s.ships).filter(sh=>sh.owner==='house'&&sh.klasse==='jaeger').length;
  const angebot=kaufangebot&&kaufangebot.id==='buy-st_nadir-jaeger'?kaufangebot:null;
  const k7=s.kanon.industrieErz;
  const ankauf=welt.industriePreise?.alderakauf??null;
  const alderakasse=s.owners.st_aldera?.cash??null;
- const werftInArbeit=!!j.auftrag;
  const status=(titel,stand,hinweis)=>Object.freeze({titel,stand,hinweis});
  const schritte=[
   status('Erz und W4-Material',materialNoch===0?'erfuellt':'offen',
-   material+' Material in Nadir · '+materialNoch+' fuer die restliche Kette fehlen. K7-Erzphase: '+(k7?.phase||'keine')+'.'),
+   material+' Material in Nadir · '+(ersteHuelleVersorgt?'Material fuer diese Huelle bereits verbaut/finanziert':
+    materialNoch+' fuer die noch offene Fertigung fehlen')+'. K7-Erzphase: '+(k7?.phase||'keine')+'.'),
   status('J2b-Silizium',siliziumNoch===0?'erfuellt':'offen',
-   silizium+' Silizium in Nadir · '+siliziumNoch+' fuer die noch fehlenden Teile fehlen. Feldrest: '+(s.kanon.silizium?.vorrat??'unbekannt')+'.'),
-  status('J3-Bauteile',gebauteTeile>=r.j4.bauteile?'erfuellt':b.auftrag?'laeuft':'offen',
+   silizium+' Silizium in Nadir · '+(ersteHuelleVersorgt?'Silizium fuer diese Huelle bereits verarbeitet':
+    siliziumNoch+' fuer die noch fehlenden Teile fehlen')+'. Feldrest: '+(s.kanon.silizium?.vorrat??'unbekannt')+'.'),
+  status('J3-Bauteile',ersteHuelleVersorgt||gebauteTeile>=r.j4.bauteile?'erfuellt':b.auftrag?'laeuft':'offen',
    gebauteTeile+' von '+r.j4.bauteile+' Bauteilen im Nadir-Lager'+
    (b.auftrag?' · 1 Bauteil wird finanziert gefertigt':'')+
    '. Eine neue Charge kostet '+r.j3.material+' Material, '+r.j3.silizium+
-   ' Silizium und '+arbeitJ3+' ISK vorfinanzierten Lohn.'),
+   ' Silizium und '+arbeitJ3+' ISK vorfinanzierten Lohn (Nadir-Kasse: '+s.owners.st_nadir.cash+' ISK).'),
   status('J4-Jaegerwerft',lagerJaeger>0||eigene>0?'erfuellt':werftInArbeit?'laeuft':'offen',
    lagerJaeger+' fertige Huelle(n) im Lager · '+(werftInArbeit?'Werftauftrag arbeitet':'kein laufender Werftauftrag')+
    '. Ein neuer Bau braucht '+r.j4.bauteile+' Bauteile, '+r.j4.material+
-   ' Material und '+arbeitJ4+' ISK Nadir-Arbeitslohn.'),
+   ' Material und '+arbeitJ4+' ISK Nadir-Arbeitslohn (Kasse: '+s.owners.st_nadir.cash+' ISK).'),
   status('Dein 900-ISK-Kauf',eigene>0?'erfuellt':angebot?.ok?'bereit':'offen',
    eigene+' eigene Jaeger · house-Kasse '+s.owners.house.cash+' ISK · Preis '+
    r.j4.verkaufspreis+' ISK. '+(angebot?.ok?'Original-Core bestaetigt den Kauf':

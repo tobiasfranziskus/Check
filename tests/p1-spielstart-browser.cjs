@@ -98,8 +98,9 @@ async function w6Optin(browser,base,width,height,kind){
   assert.equal(w.audit(w.load(raw)).ok,true);
   assert.equal(Object.values(s.owners).reduce((a,o)=>a+o.cash,0),33000);
   await page.locator('[data-advance="60"]').tap();
+  await page.locator('[data-advance="1440"]').tap();
   const after=await page.evaluate(k=>localStorage.getItem(k),SLOT),s2=JSON.parse(after);
-  assert.equal(s2.tick,60);
+  assert.equal(s2.tick,1500,'+1 Spieltag verwendet exakt 24 Original-60-Minuten-Schritte');
   assert.equal(s2.kanon.npcAuto,true);
   assert.equal(w.audit(w.load(after)).ok,true);
   assert.equal(s2.minted,0);assert.equal(s2.burned,0);

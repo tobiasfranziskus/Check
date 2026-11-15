@@ -47,7 +47,27 @@
 
 - **I Erweiterungen:** weitere Schiffe/Fraktionen/Systeme; Multiplayer optional und erst nach stabilem Einzelspiel, kein Backend-Zwang.
 
-## 5. Aktuelle Prioritäten, Stand 15.11.2026
+## 5. Geführter Produktfortschritt – spielbare Meilensteine [BESCHLOSSEN 15.11.2026]
+
+**Strategie:** Die abgeschlossene *technische* W0–W5-Basis und die unfertige W6-Wirtschaft werden nicht mit zusätzlichen isolierten Prototypen verwechselt. Die **einzige Wirtschaftsstufenfolge W0→W6 aus Abschnitt 2 bleibt verbindlich**. Parallel dazu steuern die folgenden **Spielerlebnis-Meilensteine P0–P6** die Integration von X4-artigem Management, Void-/EVE-Echoes-Bedienung und deterministischer Wirtschaft. Dies sind **Produktabnahmeziele, keine Behauptungen über bereits implementierte Funktionen**. Die Reihenfolge kann durch neue belegte Blocker angepasst werden; neue Wirtschaftsbilanzen, Emissionen und Balanceentscheidungen bleiben gesondert freigabepflichtig.
+
+| Spieler-Meilenstein | Konkreter spielbarer Nachweis | Stand und nächste Grenze |
+| --- | --- | --- |
+| **P0 – Entwicklungsbasis und Ordnung** | Eine verbindliche Roadmap, belegter Hauptstand, navigierbarer Quellen-/PR-Index, wenige wirklich aktive Arbeits-PRs; historisch wertvolle Branches und Tests bleiben unangetastet | **[IN ARBEIT]** docs-Archiv und erste PR-Bereinigung vorhanden; sehr viele alte gestapelte Drafts noch zu triagieren |
+| **P1 – Klarer Spieleinstieg und Tutorial** | Öffentliches Root führt ohne Entwicklerjargon zu Neue Karriere/Fortsetzen/Import; geführter echter Kauf→Cockpit→Flug→Abbau→Verkauf→Kassenkontrolle. Diagnoseberichte bleiben optional erreichbar | **[MAIN TEILWEISE]** Karrierestart und vier Anfangsmissionen existieren, altes W0–W5-Root ist überladen; [UX-Aufgabe #410](https://github.com/tobiasfranziskus/Check/issues/410) |
+| **P2 – Schiffsführung wie Void Echoes** | Gemeinsames iPad-Zielmenü für Miner/Frachter/Jäger: Annähern, Orbit mit Radius, Folgen mit Abstand, Aufschalten, Andocken; manueller Trägheitsflug jederzeit übernehmbar; gültiger Core-/Save-Zustand | **[MAIN TEILWEISE]** Anflug, Andocken, Handflug; **[BESCHLOSSEN / OFFEN]** Orbit, Folgen, Aufschalten; historischen Void-Echoes-Code gezielt wiederverwenden |
+| **P3 – Erste wiederholbare Spielerwirtschaft** | Eigenes Schiff real kaufen, Ware ortsgebunden gewinnen, bezahlen, transportieren, rechtmäßig verkaufen, mit Erlösen eine neue Entscheidung/Investition finanzieren; Unterfinanzierung sichtbar statt versteckter Rettung | **[MAIN TEILWEISE]** Eisrunde, F4-Fracht und Kassen vorhanden, wiederholbares attraktives Karriereziel und W4/W5-Folgekette nicht voll verfügbar |
+| **P4 – Erstes echtes Jäger-Gameplay** | Rechtmäßig erwerbbarer Jäger, verständliches Training, reale Flug- und Zielmechanik; produktiver Kampf erst mit legitim finanzierter Ausrüstung, Schaden und Reparatur, ohne Gratismunition oder fiktive Beute | **[MAIN TEILWEISE / DRAFT]** Jägerwirtschaft und Forschungs-Duelle, im öffentlichen P1-Kampf noch gesperrt |
+| **P5 – Konzernmanager, NPCs, Konvois und W6** | Spieler vergibt bezahlte Aufträge, steuert Flotte und Produktion; NPC-Firmen handeln aus eigenen Kassen, können scheitern; Folgen/Formation unterstützt finanzierte Eskorte; 13×90 und geeignete 365/730-Läufe prüfen Dauerwirtschaft | **[MAIN TEILWEISE / W6 OFFEN]** S02-Opt-in mit 730-Tage-Teilkreislauf, 8 Krisenregime problematisch, begrenztes Silizium; P8b/P8c nur Forschung |
+| **P6 – Expandierendes Universum** | Weitere wirklich befliegbare und finanzierte Systeme, Ressourcen/Stationen, echte Piraten-/Sicherheitszonen, Bergung, Fraktionen und vielfältige Aufträge | **[OPTION / LANGFRISTIG]** Kartenmetadaten sind keine aktive Welt; Multiplayer bleibt später optional |
+
+**Arbeitsgewichtung als Steuerungsrichtwert [PLANUNG, nicht mechanisch erzwingen]:** etwa **50 % spielbare Integration/UX, 35 % Wirtschaft und W6-Nachweis, 15 % Qualität/Repository-Pflege**. Keine Expansion nur für einen grünen Test: Jede größere Arbeitsphase muss eine **neue sinnvolle Spielentscheidung oder Tätigkeit** oder einen klaren, entscheidungsrelevanten Negativbefund liefern.
+
+**Integrationsgate je Spieler-Meilenstein:** selbst von der öffentlichen Root spielbar; erster valider, real finanzierter Nutzerpfad; unveränderte/kompatible Saves und Altzugänge; deterministische Core-, Geld-, Waren-, Schiffs- und Eigentumsprüfungen; Chromium/WebKit-Touchmatrix und klare Dokumentation des tatsächlichen `main`- und Pages-Status. Echtgeräte-Abnahme darf bis zur späten Produktphase ausstehen, **wird niemals als simuliert bestanden bezeichnet**.
+
+**Tägliche Supervision:** Der bestehende 06:30-Europe/Berlin-Projektbericht kontrolliert vor jeder neuen Arbeit `main`, Roadmap, Status, PR-Stack, CI, Spielerpfade und die nächste Abhängigkeit. Nicht-destruktiver Aufräumplan, Dokumentationsabgleich und QA-Matrix sind in [PROJEKTLEITUNG_SUPERVISION.md](PROJEKTLEITUNG_SUPERVISION.md) beschrieben. Er darf belegte docs-only-Draft-PRs anlegen, **keine täglichen Code-Merges, Deployments oder selbst erfundenen Produktentscheidungen** durchführen.
+
+## 6. Technischer Entwicklungsverlauf und offene Prioritäten, Stand 15.11.2026
 
 **[MAIN / J14 SPIELBAR UND VERÖFFENTLICHT]** [PR #404](https://github.com/tobiasfranziskus/Check/pull/404): Ein nach Import bereits an echte Haus-Siliziumarbeit gebundener Nadir-Miner lässt sich auch mit mehreren eigenen Schiffen wieder persönlich fliegen. Übernahme nur mit Originalauftrag und rechtmäßigem K2-Kaufbeleg; kein Teleport, fremdes Eigentum oder neues Save-Feld. Integriert in `main b0cbb9b0`, [Pages-Deploy #43748187835](https://github.com/tobiasfranziskus/Check/actions/runs/43748187835) **`completed/success`**. 348/348 Node22, Chromium/WebKit je vier Touchgrößen und alle tatsächlich gestarteten 16 CI-Gates grün (bedingtes Sicherheitsgeografie-Gate skipped).
 
@@ -77,7 +97,7 @@
 9. **[ANALYSE / OFFEN]** Endnachfrage und Ersatzkreisläufe mit getrennten Firmen/Haushalten, 13 **wirtschaftlich unterschiedlichen** 90-Tage-Szenarien, 365/730-Tage-Krisen; echte Unterfinanzierung nicht wegoptimieren.
 10. **[QUALITÄT]** Regel195/204/Schema8 und JSON/IndexedDB schützen; Node22, Seed-Hashes, Geld-/Waren-/Eigentums-/Schiffsaudits, Chromium/WebKit je vier Touchgrößen bei größerer Integration; echtes iPad Safari und NAS weiterhin gesondert abnehmen.
 
-## 6. Integrations- und Veröffentlichungsregeln
+## 7. Integrations- und Veröffentlichungsregeln
 
 **[MAIN / J14 / PAGES]** J14 wurde aus dem originalfinanziert geprüften [PR #404](https://github.com/tobiasfranziskus/Check/pull/404) über Merge-Commit **`b0cbb9b0d69d1a94a89d1f75e8c7839d9758d14f`** übernommen. Die [gesicherte Vorversion](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-j14-multiship-pilot-20261115) zeigt exakt auf `25375049`. Das separate [GitHub-Pages-Deployment #43748187835](https://github.com/tobiasfranziskus/Check/actions/runs/43748187835) wurde für exakt diesen Codecommit **erfolgreich beendet**. Keine anderen Wirtschafts-/Speicherregeln, keine Änderung des vorhandenen 730-Tage-Forschungsbranches.
 

@@ -387,7 +387,7 @@ const m_data_erzpilot = (() => {
         ...W5_RULES.economy.waren,silizium:{stufe:'rohstoff',basis:24}
       }};
     }
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug','siliziumZweitesFeld','siliziumDravos'].includes(k))
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug','siliziumZweitesFeld','siliziumDravos','siliziumFracht'].includes(k))
       || (Object.hasOwn(research,'kanon')&&(research.kanon!==true||research.personalWages!==true))
       || (Object.hasOwn(research,'ort')!==(research.kanon===true))
       || (research.kanon===true&&(typeof research.ort?.imFeld!=='function'
@@ -405,7 +405,9 @@ const m_data_erzpilot = (() => {
       || (Object.hasOwn(research,'siliziumZweitesFeld')&&
         (research.siliziumZweitesFeld!==true||research.jaegerFlug!==true))
       || (Object.hasOwn(research,'siliziumDravos')&&
-        (research.siliziumDravos!==true||research.siliziumZweitesFeld!==true)))
+        (research.siliziumDravos!==true||research.siliziumZweitesFeld!==true))
+      || (Object.hasOwn(research,'siliziumFracht')&&
+        (research.siliziumFracht!==true||research.siliziumDravos!==true)))
       throw TypeError('Unbekannter W5ad-Startparameter');
     const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
     if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
@@ -524,6 +526,16 @@ const m_data_erzpilot = (() => {
         {id:'fonds_dravos',kind:'fund',cash:0}];
       W5_RULES.economy={...W5_RULES.economy,
         region:{...W5_RULES.economy.region,dravos:900}};
+    }
+    // P8d/Rule207: kein neues Geld und keine Schiffsschenkung.
+    // Entkoppelte Fracht mit vorhandener npc3- und transport-Kasse.
+    if(research.siliziumFracht===true){
+      W5_RULES.rulesVersion=207;
+      W5_RULES.p8d=Object.freeze({minerOwner:'npc3',frachterOwner:'transport',
+        ware:'silizium',quelle:'dravos',ziel:'nadir'});
+      W5_RULES.owners=[...W5_RULES.owners,
+        {id:'k1_p8d_fracht',kind:'k1-reserve',cash:0},
+        {id:'k1_p8d_pilot',kind:'k1-reserve',cash:0}];
     }
     if(research.kanon===true)W5_RULES.kanon={profil:'K1'};
     if(research.wageTrade===true){
@@ -718,7 +730,9 @@ function checkShape(state, cmd, rules) {
     if (rules.w3 && s.klasse === 'frachter' && cmd.type !== 'shipFreight' && cmd.type !== 'shipRename'
       && !(rules.w5Transfer && cmd.type === 'shipReposition')
       && !(rules.w5Replacement && cmd.type === 'researchShipLoss')
-      && !(rules.w5n && cmd.type === 'shipFreightIce'))
+      && !(rules.w5n && cmd.type === 'shipFreightIce')
+      && !(rules.rulesVersion===207 && cmd.type==='shipMove'
+        && state.kanon?.p8d?.auftrag?.frachter===s.id))
       return 'W3-Frachter ausschließlich per finanziertem Transportauftrag steuern';
     if(cmd.type==='shipFreightIce'){
       const q=m_core_w5n.pruefenFracht(state,rules,s);
@@ -835,7 +849,7 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5n?['shipSellIce','shipFreightIce','stationWater','workerWaterBuy']:[]),
     ...(rules.w5ag?['pilotWaterBuy']:[]),
     ...(rules.k7?['stationClaimMinerLocal']:[]),
-    ...(rules.rulesVersion===206?['shipMove']:[])].includes(cmd.type))
+    ...([206,207].includes(rules.rulesVersion)?['shipMove']:[])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if (cmd.type === 'stationClaimMinerLocal') {
     // Keine Änderung des bestehenden shipBuy: die alten K2-Rückfracht-/J2-
@@ -4061,6 +4075,16 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
       personalWages:true,kanon:true,ort});
   },
   // K7: getrennte Forschungsregel200, keine Rule199-Migration/Produktänderung.
+  createP8dWelt:(options,ort)=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('P8d: nur originale Kassen, keine Gratis-Huellen');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,
+      personalWages:true,kanon:true,industryOre:true,
+      silizium:true,bauteile:true,jaeger:true,jaegerFlug:true,
+      siliziumZweitesFeld:true,siliziumDravos:true,siliziumFracht:true,ort});
+  },
   createP8cWelt:(options,ort)=>{
     if(options==null)options={};
     if(typeof options!=='object'||Array.isArray(options)

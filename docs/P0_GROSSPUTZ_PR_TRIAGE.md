@@ -21,6 +21,12 @@ Die gestapelten Touch-PRs [#310](https://github.com/tobiasfranziskus/Check/pull/
 
 **[NUTZERKLARSTELLUNG 15.11.2026]** Im alten `void-echoes` existierte **keine Folgen-/Abstandseinstellung**; das ist ein neues P2-Ziel und wurde im Codekatalog/Roadmap ausdrücklich korrigiert.
 
+## Archiv-Batch W5s-f bis W5s-w – 18 geprüfte PRs geschlossen
+
+**[GEPRÜFT / 15.11.2026]** Historische, eng gestapelte W5s-Forschungs-PRs **#209–#219 und #221–#227** (18 PRs) wurden **einzeln per GitHub-Compare** gegen den erhaltenen offenen Nachfolger [#243](https://github.com/tobiasfranziskus/Check/pull/243), Head `e921fd29cf4a`, geprüft. **Bei jedem einzelnen Head: `status=ahead` und `behind_by=0`** – nachweisbare Commit-Vorfahren. Alle 18 nach jeweiligem PR-Kommentar **ohne Merge geschlossen**. Ursprüngliche Branches, Commit-Geschichte, Tests, Nachweise und fehlgeschlagene Forschungsbefunde bleiben erreichbar. Die späteren PRs #228–#243, die aktuellen W6/P8b-/P8c-Forschungs-PRs und die F8-Prototypen sind **nicht** geschlossen. Getrennter PR #220 war keine Kettenglied. [Vollständiger Herkunfts-/Wiederherstellungsindex](archiv/W5S_PR_KETTE_20261115.md).
+
+**PR-Zahlen (punktueller Vergleich):** 160 offene vor dem ersten Großputz; nach #248/#307 noch 158; durch neuen docs-only-Draft #414 zunächst 159; nach diesem 18er-Batch rechnerisch **141 offene PRs**, GitHub-Livezahl separat nachprüfen. Eine PR-Schließung ist ausdrücklich **kein Produkt-Merge**.
+
 ## Nächste P0-Pakete
 
 1. **PR-Triage in Gruppen von 10–20** auf Basis PR-Metadaten und Code-Nachfolger. Nur bei belegtem Ersatz und ohne einzigartige Funktion schließen, immer mit Verweis; Git-Branches/CI/Spielstände niemals löschen.

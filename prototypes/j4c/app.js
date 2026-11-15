@@ -2,10 +2,10 @@
  * Kein lokales Autosave, keine Spawn-Funktion. Import NUR aus vollem, auditiertem JSON.
  */
 (()=>{'use strict';
-const W=globalThis.AphrosWelt, Kurs=globalThis.J4dPatrouille, Kampf=globalThis.J4eDuell;
-if(!W||!Kurs||!Kampf)throw Error('J4e: Original-Welt, F6 oder F8-Trainingsmodule fehlen');
+const W=globalThis.AphrosWelt, Kurs=globalThis.J4dPatrouille, Kampf=globalThis.J4eDuell, Lage=globalThis.J5KonzernLage;
+if(!W||!Kurs||!Kampf||!Lage)throw Error('J5: Original-Welt, F6, F8 oder reine Konzernprojektion fehlen');
 const $=id=>document.getElementById(id),canvas=$('raum'),ctx=canvas.getContext('2d');
-let welt=null,weltzustand=null,pilot=null,aktion=null,ursprung='',spielt=false,geschw=45,patrouille=null,duell=null;
+let welt=null,weltzustand=null,pilot=null,aktion=null,ursprung='',spielt=false,geschw=45,patrouille=null,duell=null,ansicht='cockpit';
 const meldung=(text,fehler=false)=>{$('meldung').textContent=text;$('meldung').className=fehler?'fehler':'';};
 const geld=()=>Object.values(weltzustand.owners).reduce((n,o)=>n+o.cash,0);
 function passendenJaeger(s){
@@ -14,6 +14,55 @@ function passendenJaeger(s){
    &&sh.klasse==='jaeger'&&sh.system==='nadir');
 }
 const format=n=>Number(n).toLocaleString('de-DE');
+// Kein zweiter Controller/Weltzustand: alle Tabellen lesen ausschließlich weltzustand.
+function tabellenzeilen(id,eintraege,werte){
+ const body=$(id);
+ const zeilen=eintraege.map(e=>{
+  const tr=document.createElement('tr');
+  for(const wert of werte(e)){
+   const td=document.createElement('td');
+   td.textContent=String(wert); // niemals fremde Konto-/Schiffsdaten als HTML parsen
+   tr.append(td);
+  }
+  return tr;
+ });
+ body.replaceChildren(...zeilen);
+}
+function anzeigeKonzern(){
+ if(!welt||!weltzustand){
+  $('konzern-hinweis').textContent='Bitte zuerst einen finanzierten Jägerstand im Cockpit laden.';
+  for(const id of ['konzern-schiffe','konzern-stationen','konzern-betriebe'])$(id).replaceChildren();
+  return;
+ }
+ const k=Lage.erzeugen(weltzustand,pilot);
+ $('konzern-hinweis').textContent='Aktiver eigener Jäger '+k.pilot+' · Regel '+k.regel+
+  ' · nur lesende Ansicht des Originalzustands';
+ $('konzern-cash').textContent=format(k.spielerkasse)+' ISK';
+ $('konzern-pilotcash').textContent=format(k.pilotenkasse)+' ISK';
+ $('konzern-eignercash').textContent=format(k.eigentuemerhaushalt)+' ISK';
+ $('konzern-reserve').textContent=format(k.fluglohnreserve)+' ISK';
+ $('konzern-weltgeld').textContent=format(k.weltgeld)+' ISK';
+ $('konzern-tick').textContent=format(k.tick)+' min + '+k.sekunde+' s';
+ tabellenzeilen('konzern-schiffe',k.schiffe,
+  sh=>[sh.id,sh.klasse+' · '+sh.system,sh.lage,sh.ladung]);
+ tabellenzeilen('konzern-stationen',k.stationen,
+  st=>[st.id+' · '+st.system,st.lager]);
+ tabellenzeilen('konzern-betriebe',k.betriebskassen,
+  b=>[b.id,format(b.cash)+' ISK']);
+}
+function wechseln(ziel){
+ if(!['cockpit','konzern'].includes(ziel)||ziel===ansicht)return;
+ // Niemals unbemerkt hinter einer verdeckten Flugansicht simulieren.
+ if(ziel==='konzern'&&spielt){
+  spielt=false;$('play').textContent='Flugzeit starten';
+ }
+ ansicht=ziel;
+ $('spielbereich').hidden=ziel!=='cockpit';
+ $('konzernbereich').hidden=ziel!=='konzern';
+ $('ansicht-cockpit').setAttribute('aria-pressed',String(ziel==='cockpit'));
+ $('ansicht-konzern').setAttribute('aria-pressed',String(ziel==='konzern'));
+ anzeigen();
+}
 function laden(json,freigabe){
  try{
   if(typeof json!=='string'||json.length>5*1024*1024)throw Error('JSON zu groß oder leer');
@@ -164,7 +213,10 @@ function zeichnen(){
  }
  ctx.font=(11*dpr)+'px system-ui';ctx.fillStyle='#c1d6e9';ctx.fillText('EIN ZUSTAND · ECHTE F6-KINEMATIK · KEIN TREIBSTOFF',12*dpr,18*dpr);
 }
-function anzeigen(){anzeigeFlug();zeichnen();}
+function anzeigen(){anzeigeFlug();if(ansicht==='konzern')anzeigeKonzern();else zeichnen();}
+$('ansicht-cockpit').addEventListener('click',()=>wechseln('cockpit'));
+$('ansicht-konzern').addEventListener('click',()=>wechseln('konzern'));
+$('konzern-zurueck').addEventListener('click',()=>wechseln('cockpit'));
 $('beispiel').addEventListener('click',async()=>{
  const knopf=$('beispiel');
  knopf.disabled=true;meldung('Echten finanzierten Jägerstand laden und unabhängig prüfen …');
@@ -257,6 +309,6 @@ setInterval(()=>{
   anzeigen();
  }catch(e){spielt=false;$('play').textContent='Flugzeit starten';meldung('Welt angehalten: '+e.message,true);}
 },700);
-window.addEventListener('resize',zeichnen);
+window.addEventListener('resize',()=>{if(ansicht==='cockpit')zeichnen();});
 anzeigen();
 })();

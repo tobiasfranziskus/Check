@@ -16,7 +16,15 @@ GitHub: **https://github.com/tobiasfranziskus/Check**. **`docs/ROADMAP.md` auf `
 
 **Weiterhin gesondert vom Nutzer zu entscheiden:** Grundsatz-/Balanceentscheidungen, neue Geldschöpfungsregeln, kostenlose Ressourcen, destruktive/inkompatible Migration, dauerhafter Multiplayer und NAS-Veröffentlichung. GitHub Pages aktualisiert kein privates NAS. Ein grüner Forschungs-PR ist weder integriert noch automatisch öffentlich; echte iPad-Safari-Abnahme bleibt von Browser-CI verschieden. `AGENTS.md` definiert das volle Gate.
 
-**Stand bei Beschluss:** Öffentliches Root-Spiel weiterhin Regel195/W0–W5 auf `main 04124f2b`; J4e-Forschungsstack [#346](https://github.com/tobiasfranziskus/Check/pull/346) trotz grüner Fokustests noch nicht als integrierte Root-Version freigegeben.
+## Beschluss 15.11.2026 – eigenständig geführter Spielerfortschritt und morgendliche Supervision
+
+**[BESCHLOSSEN]** Die W0–W6-Wirtschaftsreihenfolge bleibt die einzige verbindliche Wirtschaftsstruktur. Zusätzlich legt `docs/ROADMAP.md` die Spieler-Meilensteine **P0–P6** fest: P0 Repository/aktive PRs ordnen; P1 Root-Start, geführter Karriere-/Managementeinstieg und Tutorial; P2 bewährte Void-Echoes-Steuerung für Miner/Frachter/Jäger mit Annähern, Orbit (Radius), Folgen (Abstand), Aufschalten und Andocken unter echter Trägheit; P3 eigenfinanzierte, wiederholbare Spieler-Erwerbsschleife; P4 rechtmäßig finanzierter Jäger und echtes Kampftraining/Kampf; P5 Konzernmanagement, NPC-/W6-Dauerwirtschaft, bezahlte Konvois; P6 lebendige weitere Systeme, Aufträge und Fraktionen. **Kein fertiges P2/P4/P5 vorgeben, solange nur Prototypen existieren.** Multiplayer bleibt später optional.
+
+**[BESCHLOSSEN]** Bei Planung/Entwicklung den unmittelbaren Spielnutzen priorisieren; als Richtwert 50 % spielbare Integration, 35 % Wirtschaft, 15 % Ordnung/QA, angepasst an reale Blocker. Nicht endlos W6 reparieren und Miner/Frachter/Jäger/Konzernkarriere vertagen. Nach jedem größeren Schritt muss mindestens ein neuer, wirklich bedienbarer Spielerpfad oder ein harter, entscheidungsrelevanter Befund vorliegen.
+
+**[BESCHLOSSEN]** Die tägliche Supervision 06:30 `Europe/Berlin` prüft aktuellen `main`, Pages, Roadmap, Status, offene PRs, Forschung, Tests und Risiken. Nicht-destruktiver **Putzplan**: doppelte/stale PRs mit überprüfbarem Nachfolger identifizieren; wertvolle Branches, Spielstände und Testnachweise bewahren; nur notwendige docs-only-Draft-PRs erstellen/aktualisieren; niemals in der Automationsausführung mergen, deployen, Spielcode/Balancing ändern oder historische Forschung löschen. Bericht: Status/Änderungen, P0–P6 und W0–W6, Erreicht/nächste Schritte (2–4), CI-/QA-Evidenz, Entscheidungen, ein priorisiertes Umsetzungspaket und ggf. Codex-Einsatz. Anleitung: `docs/PROJEKTLEITUNG_SUPERVISION.md`. Kein kosmetisches tägliches Commit.
+
+**[BESCHLOSSEN] iPad-Abnahme:** Die echte manuelle iPad-Safari-Abnahme ist bis zu einer späteren fortgeschrittenen Releasephase zurückgestellt. Stattdessen strenge **Chromium + WebKit** Touch-/Pointer-/Pinch-/Orientierungs- und Storage-Tests mit 1180×820, 1024×768, 820×1180, 390×844 sowie Save/Load/JSON/Fehlerfälle; HTTP/Pages und NAS-Einzeldatei prüfen. Gesondert echte iPad-/NAS-Abnahme bleibt stets **OFFEN**, niemals als bestanden aus Browseremulation ausgeben. Einzelheiten `AGENTS.md`.
 
 ## Spielvision und technische Grenzen
 
@@ -33,7 +41,7 @@ Zielplattform: **iPad Safari und statische NAS-Auslieferung** einer `index.html`
 5. **Roadmap pflegen:** Bei relevanten Entscheidungen/Arbeitspaketen `docs/ROADMAP.md` und den belegten `docs/PROJEKTSTATUS.md` im passenden PR nachführen. Statusänderungen mit Commit/PR/Testergebnis begründen; keine kosmetischen Doppel-PRs, keine automatischen Merges.
 6. **KI-Arbeitsteilung:** ChatGPT übernimmt Projektleitung, Programmierung, Integration, Wirtschaftsanalyse und Tests möglichst selbstständig. Codex ist das **einzige ergänzende Codingwerkzeug** und wird nur bei begründetem Bedarf mit konkretem kopierfertigem Auftrag, Branch-/Dateigrenzen, Hoch/Extra-hoch-Denktiefe, Tests und eigenem Draft-PR eingesetzt. Claude erhält keine neuen Arbeiten. Ergebnisse unabhängig prüfen.
 
-## Täglicher Projektbericht – 06:30 Europe/Berlin
+## Tägliche Projektleitung und Putzplan – 06:30 Europe/Berlin
 
 Die bestehende Automatisierung soll **`main`, Roadmap, Projektstatus, PRs und CI** abgleichen. Berichte knapp über **(1) integrierten Stand, (2) nachgewiesene Fortschritte, (3) Roadmap-Phasen, (4) Erreichtes/nächste Schritte als Checkliste, (5) Entscheidungen, Risiken und passenden Codex-Auftrag**. Bei wesentlichen Roadmap-Abweichungen einen **docs-only-PR** vorschlagen oder erstellen, niemals selbst mergen oder Spielmechaniken verändern. Auch ohne Änderungen kompakt berichten.
 

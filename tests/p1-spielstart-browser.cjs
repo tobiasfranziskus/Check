@@ -68,7 +68,7 @@ const SLOT='aphros-void:spielerkarriere:regel204:v1';
     assert.match(report,/Bergbau.*npc3/);
     assert.match(report,/Außenwerft.*werft_extern/);
     assert.match(report,/33[.,]000 ISK/);
-    assert.match(report,/Mint\/Burn:\\s*0 \/ 0 ISK/);
+    assert.match(report,/Mint\/Burn:\s*0 \/ 0 ISK/);
     const link=terminal.locator('[data-j12-offer="buy-st_aldera-miner"]');
     assert.equal(await link.count(),1);
     await link.tap();

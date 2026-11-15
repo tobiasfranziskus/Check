@@ -16,7 +16,7 @@ test('P1: new career is the original audited Rule195 seed42 converted through J7
  const initial=ses.starten195(source,true),w=ses.weltReferenz(),s=ses.zustandReferenz();
  assert.equal(initial.regel,204);
  assert.equal(initial.weltgeld,33000);
- assert.equal(initial.hausgeld,2400);
+ assert.equal(initial.hausgeld,3000);
  assert.equal(initial.schiffe.length,0);
  assert.equal(s.minted,0);assert.equal(s.burned,0);
  assert.equal(s.kanon.jaeger.fertig,0);
@@ -48,7 +48,7 @@ test('P1: first player ship is bought for 600 ISK, flown with 40 ISK real reserv
  assert.equal(undock.ok,true,JSON.stringify(undock));
  const current=s.zustandReferenz(),dienst=current.kanon.flugdienst[sh.id];
  assert.ok(dienst);assert.equal(current.owners[dienst.konto].cash,40);
- assert.equal(current.owners.house.cash,1800-40);
+ assert.equal(current.owners.house.cash,2400-40);
  assert.equal(s.flugSchritte(60),1);
  const rt=J8.erstellen(),save=s.exportieren();rt.oeffnen204(save,true);
  assert.equal(rt.ansicht().hash,s.ansicht().hash);

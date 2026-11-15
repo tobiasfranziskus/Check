@@ -42,7 +42,14 @@ test('J10a: nach echter 195→204-Kopie sind alle fremden Werft-/Vertragssperren
     'k7-yard':{type:'industrialOreAcceptYard'},
     'k7-commit':{type:'industrialOreCommit'}
    };
-   if(x.id==='k7-offer')cmdById['k7-offer']={type:'industrialOreOffer',miner:t.k7.angebotMiner,frachter:t.k7.angebotFrachter};
+   if(x.id==='k7-offer'){
+     if(!t.k7.angebotMiner||!t.k7.angebotFrachter){
+       assert.equal(x.ok,false);
+       assert.match(x.grund,/Vorprüfung:.*Frachter|Vorprüfung:.*Miner/i);
+       continue; // Bei fehlendem physischem Frachter keinen fiktiven Corebefehl testen.
+     }
+     cmdById['k7-offer']={type:'industrialOreOffer',miner:t.k7.angebotMiner,frachter:t.k7.angebotFrachter};
+   }
    const check=J6.erstellen(w,x.eigentuemer).angebot(s,cmdById[x.id]);
    assert.equal(x.ok,check.ok,x.id);
    assert.equal(x.grund,check.reason||null,x.id);

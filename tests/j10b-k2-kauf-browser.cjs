@@ -9,7 +9,7 @@ const {erzeugen}=require('./j10b-k2-kauf-fixture.cjs');
  const sample=erzeugen('house'),root=path.resolve(__dirname,'..');
  const server=http.createServer((req,res)=>{
   const p=new URL(req.url,'http://localhost').pathname,file=path.resolve(root,'.'+p);
-  if(!file.startsWith(root+path.sep+'prototypes'+path.sep)){res.writeHead(404).end();return;}
+  if(file!==path.join(root,'index.html')&&!file.startsWith(root+path.sep+'prototypes'+path.sep)){res.writeHead(404).end();return;}
   try{
    const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css'};
    res.setHeader('Content-Type',mime[path.extname(file)]||'text/plain');res.end(fs.readFileSync(file));
@@ -25,7 +25,13 @@ const {erzeugen}=require('./j10b-k2-kauf-fixture.cjs');
    const ctx=await browser.newContext({viewport:{width,height},hasTouch:true,acceptDownloads:true});
    const page=await ctx.newPage(),errors=[];
    page.on('pageerror',e=>errors.push(String(e)));
-   await page.goto(url);
+   // Actual public root entry – no hidden prototype-only test shortcut.
+   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html');
+   const corporateLink=page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/verbund/konzern.html"]');
+   assert.equal(await corporateLink.count(),1);
+   assert.equal(await corporateLink.isVisible(),true);
+   await corporateLink.click();
+   await page.waitForURL(url);
    assert.equal(await page.locator('#start204').isDisabled(),true);
    await page.locator('#quelle204').setInputFiles({
     name:'originalfinanzierter-k2-spielstand.json',mimeType:'application/json',buffer:Buffer.from(sample.save)

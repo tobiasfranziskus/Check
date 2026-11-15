@@ -45,6 +45,10 @@ function local(from,raw){
 function directAssets(p){
  const source=read(p),found=[];
  if(p.endsWith('.html')){
+  // Eine archivierte Demo darf weiterhin Ressourcen aus ihrem ursprünglichen
+  // Verzeichnis laden. HTML-<base href> auf relative Asset-Pfade anwenden.
+  const baseHref=/<base\s+[^>]*href\s*=\s*["']([^"']+)["']/i.exec(source)?.[1];
+  const assetOrigin=baseHref ? (local(p,baseHref.endsWith('/') ? baseHref+'__base__.html' : baseHref) || p) : p;
   for(const m of source.matchAll(/<(script|link)\b[^>]*>/gi)){
    const tag=m[0],type=m[1].toLowerCase();
    const attr=(name)=>{
@@ -52,7 +56,7 @@ function directAssets(p){
     return rx.exec(tag)?.[1];
    };
    if(type==='link'&&!/\bstylesheet\b/i.test(attr('rel')||''))continue;
-   const dep=local(p,attr(type==='script'?'src':'href'));
+   const dep=local(assetOrigin,attr(type==='script'?'src':'href'));
    if(dep)found.push(dep);
   }
  }
@@ -84,6 +88,7 @@ function closure(seeds){
 const publicGraph=closure(publicHtml);
 const buildGraph=closure(buildSources);
 const demoGraph=closure(historicalHtml);
+const archivedHub=closure(['prototypes/legacy-hub/archiv/index.html','prototypes/legacy-hub/archiv/core-preview.html']);
 const testAndCi=tracked.filter(p=>p.startsWith('tests/')||p.startsWith('.github/workflows/')||p==='scripts/build-w5-singlefile.mjs');
 const testBodies=testAndCi.map(p=>[p,read(p)]);
 const testRefs=new Map();
@@ -114,11 +119,13 @@ const guarded={
  demo_direct_or_transitive:report.filter(x=>x.demo).length,
  manual_review:report.filter(x=>x.category==='MANUAL_REVIEW').length,
  missing_static_assets:missing,
+ missing_archived_hub_assets:archivedHub.missing,
  public_entrypoints:publicHtml,
  build_sources:buildSources
 };
 if(process.argv.includes('--check')){
  if(missing.length)throw Error('P0 dangling public/build assets: '+missing.join('; '));
+ if(archivedHub.missing.length)throw Error('P0 dangling archived hub assets: '+archivedHub.missing.join('; '));
  for(const p of required){
   if(!publicGraph.files.has(p))throw Error('P0 required public runtime module missing: '+p);
  }

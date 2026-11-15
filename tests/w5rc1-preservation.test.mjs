@@ -12,7 +12,11 @@ const blobSha=buf=>createHash('sha1').update(Buffer.from('blob '+buf.length+'\0'
 
 test('RC1: exact main root and v0.12.5 archive remain byte-identical',()=>{
  assert.equal(blobSha(read('versionen/main-pre-w5-20261110/index.html')),'b2ab84d5c7d5c177268fe750a6987abdc1825f78');
- assert.deepEqual(read('index.html'),read('aphros-void.html'));
+ const mainPages=text('index.html'),nas=text('aphros-void.html');
+ const pagesNav=/<nav aria-label="Spielmodi"[\s\S]*?<\/nav>\n/g;
+ assert.equal([...mainPages.matchAll(pagesNav)].length,1,'Pages has precisely one integrated J4e entry');
+ assert.equal(mainPages.replace(pagesNav,''),nas,'old standalone NAS content unchanged except permitted Pages navigation');
+ assert.doesNotMatch(nas,/aria-label="Spielmodi"/);
  assert.equal(blobSha(read('versionen/v0.12.5/index.html')),'a2bcf5d2f9d3322c2a5edd4440eb77d094c84b9a');
  assert.ok(text('versionen/main-pre-w5-20261110/index.html').length>100000,'archived game intact');
 });

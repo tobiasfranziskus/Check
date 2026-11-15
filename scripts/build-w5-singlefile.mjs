@@ -26,11 +26,33 @@ for(const s of scripts){
 out=out.replace('</body>',js+'\n</body>')
  .replace('<title>Aphros Void · W5ak – Folgezyklen</title>','<title>Aphros Void – W0–W5 · Spielbare Entwicklungsversion</title>')
  .replace('<h1>Aphros Void · W5ag</h1>','<h1>Aphros Void – W0–W5</h1>');
+// W5ag-Legacy-Schattenkomponenten mussten bislang zwei CSS-Dateien nachladen.
+// In der Root- und NAS-Einzeldatei müssen die echten CSS-Quellen stattdessen
+// exakt und reproduzierbar in den zugehörigen ShadowRoots eingebettet sein.
+const linkBlock=`  const link=document.createElement('link');link.rel='stylesheet';link.href=css;
+  const mountRoot=document.createElement('div');shadow.append(link,mountRoot);`;
+const shadowCss={corporation:content('../legacy-corporation/corporation.css'),
+  station:content('../legacy-station/station.css')};
+const inlineBlock=`  const style=document.createElement('style');
+  style.textContent=css==='../legacy-corporation/corporation.css'?
+    ${JSON.stringify(shadowCss.corporation)}:
+    css==='../legacy-station/station.css'?${JSON.stringify(shadowCss.station)}:
+    (()=>{throw Error('Unbekannte Legacy-Shadow-CSS-Quelle: '+css)})();
+  const mountRoot=document.createElement('div');shadow.append(style,mountRoot);`;
+assert.equal(out.split(linkBlock).length,2,'Legacy-Schattenkomponenten müssen genau einmal vorkommen');
+out=out.replace(linkBlock,inlineBlock);
+assert.doesNotMatch(out,/document\.createElement\('link'\);link\.rel='stylesheet';link\.href=css/);
 out='<!-- Aphros Void / single-file Rule195 W0-W5: Generated from same original core, no asset URLs. -->\n'+out;
+// GitHub Pages erhält nur die statische Spielmodus-Navigation; NAS bleibt eine
+// eigenständige W0–W5-Datei ohne nicht mitgelieferte J4e-Dateipfade.
+const pagesNavigation="<nav aria-label=\"Spielmodi\" style=\"padding:12px;border:2px solid #65d7ec;border-radius:9px;margin:12px 0;background:#102332\">\n <a href=\"prototypes/j4c/index.html\" style=\"display:inline-block;min-height:50px;padding:12px 18px;border-radius:8px;background:#176d77;color:#fff;font-weight:700;text-decoration:none\">Jäger selbst fliegen · Patrouille &amp; Duell</a>\n <span style=\"display:block;margin-top:8px\">Neu: echter bezahlter 2D-Jäger (Regel204) mit Startknopf für den unabhängig geprüften, vollständig finanzierten Beispielspielstand. W0–W5-Hauptspiel und dessen Speicher bleiben getrennt erhalten. Jäger-Spielstand vor Verlassen als JSON exportieren.</span>\n</nav>";
+const heading="<h1>Aphros Void – W0–W5</h1>";
+assert.ok(out.includes(heading),'W0–W5 Spieltitel fehlt');
+const pages=out.replace(heading,heading+String.fromCharCode(10)+pagesNavigation);
 assert.doesNotMatch(out,/<script[^>]*\bsrc\s*=|<link[^>]*\brel="stylesheet"[^>]*\bhref\s*=/);
-for(const name of ['index.html','aphros-void.html']){
+for(const [name,expected] of [['index.html',pages],['aphros-void.html',out]]){
  const dest=path.join(root,name);
- if(process.argv.includes('--write'))fs.writeFileSync(dest,out);
- else assert.equal(fs.readFileSync(dest,'utf8'),out,name+' must exactly match source build');
+ if(process.argv.includes('--write'))fs.writeFileSync(dest,expected);
+ else assert.equal(fs.readFileSync(dest,'utf8'),expected,name+' must exactly match source build + approved navigation');
 }
-console.log('W5_SINGLEFILE_OK '+JSON.stringify({chars:out.length,styles:css.length,scripts:scripts.length}));
+console.log('W5_SINGLEFILE_OK '+JSON.stringify({chars:out.length,styles:css.length,scripts:scripts.length,pagesNavigation:true}));

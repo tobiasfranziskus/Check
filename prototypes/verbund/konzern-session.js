@@ -37,12 +37,17 @@ function haushaltPlan(s){
    }
  }
  for(const [station,klasse] of [
-   ['st_aldera','miner'],['st_nadir','miner'],
+   ['st_aldera','miner'],
    ['st_aldera','frachter'],['st_nadir','frachter'],['st_nadir','jaeger']
  ]){
    hinzu('buy-'+station+'-'+klasse,klasse+' in '+station+' kaufen (nur vorhandene, finanzierbare Hülle)',
     {type:'shipBuy',station,klasse});
  }
+ // J10b: echte lokale Nadir-K2-Hülle nur mit rechtmäßigem K2-Vormerkbeleg.
+ // Normales Komplettschiff-shipBuy deckt Nadir-Miner ausdrücklich nicht ab.
+ hinzu('buy-st_nadir-miner',
+   'Für house vormerkten, fertig gebauten Nadir-Miner für 600 ISK kaufen',
+   {type:'stationClaimMinerLocal',station:'st_nadir'});
  return plan;
 }
 function erstellen(){

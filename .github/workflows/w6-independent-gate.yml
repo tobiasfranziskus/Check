@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: '22'
       - name: "Audit: Öffentliche Karriere darf kein W6 automatisch einschalten"
-        run: node --test tests/w6-independent-j11-gates.test.mjs
+        run: node --test tests/w6-independent-j11-gates.test.mjs tests/w6-independent-completion.test.mjs
       - name: "Referenz: echter J11-Frachter und F4-Lohn sind unverändert"
         run: node --test tests/j11-frachter.test.mjs
       - name: "Originale NAS-/Pages-Einzeldatei bleibt bytegleich"

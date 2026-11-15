@@ -61,12 +61,15 @@ function kennzahlen(welt, s) {
     spieler: o.house.cash, groessteKonten: grenze };
 }
 function lauf(sz, tage = 90, schritt = 30) {
+  if (!Number.isSafeInteger(tage) || tage < 1 || !Number.isSafeInteger(schritt) || schritt < 1)
+    throw new RangeError('Tage und Prüfraster müssen positive ganze Zahlen sein');
   const { welt, s } = start(sz.politik), verlauf = [];
   let fehler = [];
-  for (let tag = schritt; tag <= tage && fehler.length === 0; tag += schritt) {
+  for (let tag = Math.min(schritt, tage); fehler.length === 0; tag = Math.min(tag + schritt, tage)) {
     welt.advance(s, tag * 1440 - s.tick);
     fehler = pruefen(welt, s);
     verlauf.push({ tag, hash: welt.hash(s), ...kennzahlen(welt, s) });
+    if (tag === tage) break;
   }
   const ende = verlauf.at(-1), vor = verlauf.at(-2) || ende;
   return { id: sz.id, name: sz.name, tage, ok: fehler.length === 0, fehler, hash: welt.hash(s),
@@ -81,6 +84,7 @@ function lauf(sz, tage = 90, schritt = 30) {
 module.exports = { SZENARIEN, start, pruefen, kennzahlen, lauf };
 if (require.main === module) {
   const wahl = process.argv[2] || 'alle', tage = Number(process.argv[3] || 90);
+  if (wahl !== 'alle' && !SZENARIEN.some(x => x.id === wahl)) throw new RangeError('Unbekanntes Szenario: ' + wahl);
   for (const sz of SZENARIEN.filter((x) => wahl === 'alle' || x.id === wahl)) {
     const { welt, zustand, verlauf, ...r } = lauf(sz, tage, tage > 90 ? 73 : 30);
     console.log(JSON.stringify({ ...r, verlauf: verlauf.map((v) => ({ tag: v.tag, hash: v.hash, eis: v.eis, wasserErloes: v.wasserErloes, ersatz: v.ersatz })) }));

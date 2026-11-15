@@ -1,4 +1,12 @@
-**[DRAFT / J5 Konzern/Pilot im selben Regel204-Zustand · 15.11.2026]** Eigener Branch `feature/j5-eine-welt-konzernpilot-20261115` ab `main acaf2526`. Neue reine Zustandsprojektion, Flotten-/Kassen-/Stationsübersicht und Cockpitwechsel im vorhandenen J4e-Spieltest; keine neuen Core-Buchungen, keine neue Wirtschaftsregel, keine Saves geändert. Node- und Chromium/WebKit-Touchabnahmen sind als Quelltests ergänzt, **noch nicht als erfolgreich behauptet**. [Technischer Umfang](J5_KONZERN_PILOT_EINE_WELT.md). Regel195- und Regel204-Welten bleiben getrennt.
+# J5 integriert und auf GitHub Pages veröffentlicht – 15.11.2026
+
+**[MAIN]** [PR #351](https://github.com/tobiasfranziskus/Check/pull/351) wurde per Squash nach `main 8abacbce03319eaea4ec89332b06e57ea569ba76` gemergt. Die Jäger-Sitzung (Regel204) enthält nun zusätzlich eine lesende Konzern-/Flotten-/Kassen-/Stationsansicht aus demselben autoritativen Kern; beim Wechsel wird die Flugsimulation pausiert und der laufende Pilot-/Trainingszustand behalten. Der ursprüngliche Main ist unverändert auf [`backup/main-before-j5-konzern-20261115`](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-j5-konzern-20261115) gesichert (`acaf2526`). **Keine** Änderung an Regeln, Produktions-/Geld-/Eigentumsbuchungen, Regel195-Saves oder Root-NAS-W0–W5-Spielcode.
+
+**[CI / FINALER J5-HEAD `a8f9cb97`]** [W5-RC1 #43683117493](https://github.com/tobiasfranziskus/Check/actions/runs/43683117493) **completed/success**, vollständiges Node22 **239/239**, Touch- und NAS-Einzeldatei-Gate erfolgreich. [J4e/J5 #43683117502](https://github.com/tobiasfranziskus/Check/actions/runs/43683117502) **completed/success**, gezielter Node22-Lauf **28/28**, Chromium/WebKit je **4/4** Touchgrößen mit Cockpit-/Konzernumschaltung, Flugpause, Duellerhalt, Original-Import/Export und unabhängigen Sicherheitsbrowserchecks. [JS #43683117510](https://github.com/tobiasfranziskus/Check/actions/runs/43683117510) **completed/success**. Ein bedingt nicht geplanter Job war `skipped` und gilt nicht als ausgeführter Test.
+
+**[PAGES]** Der [GitHub-Pages-Deploy #43683377783](https://github.com/tobiasfranziskus/Check/actions/runs/43683377783) ist für `8abacbce` **completed/success**. Öffentlicher Haupteinstieg: https://tobiasfranziskus.github.io/Check/ . Eine tatsächliche Sichtprüfung dieser URL im echten iPad-Safari-Browser oder ein Deployment auf dem privaten NAS wurden nicht durchgeführt. Regel195 und Regel204 haben weiterhin getrennte Spielstände; gemeinsame Produktwelt und langfristige W6-Wirtschaft bleiben offen. [Technischer J5-Bericht](J5_KONZERN_PILOT_EINE_WELT.md).
+
+---
 
 # J4e-Integration nach main – belegter Stand am 15.11.2026
 

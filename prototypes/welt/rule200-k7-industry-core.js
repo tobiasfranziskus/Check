@@ -834,7 +834,8 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5WageTrade ? ['workerMaterialBuy'] : []),
     ...(rules.w5n?['shipSellIce','shipFreightIce','stationWater','workerWaterBuy']:[]),
     ...(rules.w5ag?['pilotWaterBuy']:[]),
-    ...(rules.k7?['stationClaimMinerLocal']:[])].includes(cmd.type))
+    ...(rules.k7?['stationClaimMinerLocal']:[]),
+    ...(rules.rulesVersion===206?['shipMove']:[])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if (cmd.type === 'stationClaimMinerLocal') {
     // Keine Änderung des bestehenden shipBuy: die alten K2-Rückfracht-/J2-

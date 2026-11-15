@@ -40,6 +40,11 @@
 - **F Industrie:** Module, Ersatzteile, werftseitige Schiffe, Außenposten sowie bezahlte Infrastruktur und Versorgung.
 - **G UI/Spielerort:** Nahtloses Konzernterminal, Karte, Station, Flotte, Markt, Produktions-/Personalübersicht und Pilotenstandort.
 - **H Persönliches Flugspiel:** Miner, Frachter, Jäger; echtes 2D-Fliegen, Docken, Wechsel, Förderung, Transporte und Kampf im selben Weltkern.
+
+**[BESCHLOSSEN / SPIELER-ZIELSTEUERUNG 15.11.2026]** Die bewährte **Void-Echoes-Zielbedienung** wird der gemeinsame Standard für persönlich fliegbare **Miner, Frachter und Jäger**. Nach Auswahl eines zulässigen Objekts bietet das Touch-Zielmenü die passenden Aktionen **Annähern**, **Orbit** (mit Radiusangabe), **Folgen** (mit frei einstellbarem Abstand zu einem beweglichen Schiff), **Aufschalten** (Zielerfassung) und **Andocken**. Der vorhandene **Handflug mit spürbarer Trägheit** bleibt erhalten; Handsteuerung/Stop übernehmen jederzeit von einer Automatik. Abstände, verfügbare Ziele, Beschleunigung, Wendigkeit und Anflugdynamik folgen dem autoritativen deterministischen Core, nicht UI-Simulationen, Teleports oder idealisierten Formationssprüngen. **Folgen** ist der vorbereitende Flugbefehl für spätere finanzierte Konvoi-/Eskortmissionen, nicht bereits eine freigegebene NPC-Missions- oder Kampfregel. Alte Void-Echoes-Funktionen vor Neuimplementierung auf Wiederverwendung prüfen; keine fremden Assets übernehmen.
+
+**[ANALYSE / NOCH NICHT IN MAIN]** Der aktuelle Regel204-RAUM-1-Kern ermöglicht bereits Zielanflug via `shipApproach`/`shipFlyTo`, Andocken und manuelles `shipSteer`. Gleichwertige **Orbit-/Folgen-/Aufschaltbefehle** für die öffentliche P1-Karriere sind noch nicht belegt. Die neue Zielbedienung ist erst nach separat geprüfter Umsetzung **[MAIN]**; bis dahin fehlende Funktionen als nicht verfügbar kennzeichnen, nicht scheinbar anbieten. Für neue Core-Befehle sind Seed-Replay, Referenzhash, Spielstands-/Eigentums-/Geldschutz, Touch/WebKit und Abbruchfälle Pflicht. Die UI-Ergänzung gehört mit dem vereinbarten **einfacheren Spieleinstieg und geführtem Konzern-Tutorial** in [UX-Aufgabe #410](https://github.com/tobiasfranziskus/Check/issues/410).
+
 - **I Erweiterungen:** weitere Schiffe/Fraktionen/Systeme; Multiplayer optional und erst nach stabilem Einzelspiel, kein Backend-Zwang.
 
 ## 5. Aktuelle Prioritäten, Stand 15.11.2026

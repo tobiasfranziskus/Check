@@ -59,9 +59,12 @@ test('P8c: Fremdtransport, erfundene Mine und ungebuchte W3-Route werden ohne Mu
 });
 test('P8c: 90 echte S02-Tage, 4 finanzierte J4, Dravos-Miner fliegt zweimal bezahlt hin und zurueck',()=>{
  const {w,s}=create();let buys=0,midTrip=null,tickStart=null;
- for(let t=120;t<=90*1440;t+=120){
-  w.advance(s,120);
-  if(s.kanon.p8c.auftrag && !midTrip){
+ // 20-Minuten-Beobachtungsraster: echte 40-Minuten-Reisen sind kuerzer
+ // als das sonst uebliche 120-Minuten-Wirtschaftscheckpoint-Raster.
+ for(let t=20;t<=90*1440;t+=20){
+  w.advance(s,20);
+  if(s.kanon.p8c.auftrag?.bezahlt>0
+    &&s.kanon.p8c.auftrag.bezahlt<s.kanon.p8c.auftrag.dauer &&!midTrip){
    midTrip=w.save(s);tickStart=s.tick;
    assert.ok(s.kanon.p8c.auftrag.bezahlt>0);
    assert.ok(s.kanon.p8c.auftrag.bezahlt<s.kanon.p8c.auftrag.dauer);

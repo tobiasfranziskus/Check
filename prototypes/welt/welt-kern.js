@@ -1266,6 +1266,27 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         || (ziel.werftauftrag && wm?.auftrag?.besteller!=='npc3'
           && wm?.wartetAuf!=='npc3')))
         fehler.push('W6/P5: Nadir-Silizium-Dispositionsbeleg ungültig');
+      // Die neuen W6/P5-Entscheidungszaehler koennen keinen realen K2-Kauf,
+      // keinen J2b-Auftrag und keinen bezahlten Warenverkauf vortaeuschen.
+      // Auch wenn ein rechtmaessiger NPC3 ausserhalb der Autopolitik manuell
+      // handelt, darf das Entscheidungsbuch nur BESTEHENDE Belege zaehlen.
+      if(n && typeof n==='object' && !Array.isArray(n) && n.befehle
+        && typeof n.befehle==='object' && !Array.isArray(n.befehle)){
+        const anzahl=key=>n.befehle[key]||0;
+        const p5=['werft_extern:stationBuildMiner','npc3:stationClaimMinerLocal',
+          'npc3:siliconMineStart','npc3:siliconSell',
+          'npc3:shipUndock','npc3:shipFlyTo','npc3:shipDock'];
+        const lokaleNpc3=(wm?.lokaleKaeufe||[]).filter(x=>x.owner==='npc3').length;
+        const verkauftNpc3=(k.silizium?.belege||[]).filter(x=>x.owner==='npc3').length;
+        const aktivNpc3=k.silizium?.auftrag?.owner==='npc3' ? 1 : 0;
+        if((!ziel && p5.some(key=>anzahl(key)>0))
+          || anzahl('werft_extern:stationBuildMiner')>(wm?.begonnen||0)
+          || anzahl('npc3:stationClaimMinerLocal')>lokaleNpc3
+          || anzahl('npc3:siliconMineStart')>verkauftNpc3+aktivNpc3
+          || anzahl('npc3:siliconSell')>verkauftNpc3
+          || (ziel?.werftauftrag && anzahl('werft_extern:stationBuildMiner')===0))
+          fehler.push('W6/P5: NPC-Entscheidungen ohne Original-Kauf-/Warenbelege');
+      }
       if (k.npcAuto === undefined || n === null || typeof n !== 'object' || Array.isArray(n)
         || Object.keys(n).sort().join() !== 'abgelehnt,befehle,pausen'
         || ['befehle', 'abgelehnt', 'pausen'].some((bereich) => {

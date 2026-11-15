@@ -89,5 +89,12 @@ test('W6/P5: Manipulation und laufende Fremdauftraege bleiben gesperrt',()=>{
   assert.equal(w.audit(q).ok,false,'P5-Option wird im Originalbuch validiert');
   assert.throws(()=>w.load(JSON.stringify(q)));
  }
+ // Ein hinzugelogenes positives Entscheidungsprotokoll darf nicht mit
+ // legitimen Werft-/Siliziumbelegen verwechselt werden (hier Tick > 1).
+ w.advance(s,200);
+ const falsch=JSON.parse(w.save(s));
+ falsch.kanon.npc.befehle['npc3:siliconSell']=1;
+ assert.equal(w.audit(falsch).ok,false,'erfundener NPC-Verkauf ohne J2b-Quittung');
+ assert.throws(()=>w.load(JSON.stringify(falsch)));
  sauber(w,s);
 });

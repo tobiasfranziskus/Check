@@ -52,7 +52,10 @@ function verbinden(B) {
   const TEXT = { shipUndock: 'Abdocken eingeleitet – Flugreserve gebunden', shipDock: 'Andockanflug läuft',
     shipApproach: 'Autopilot: Anflug', shipFlyTo: 'Autopilot: Kurs gesetzt', shipSteer: 'Handsteuerung',
     siliconMineStart: 'Siliziumauftrag angenommen – Lohn und Ankauf sind vorfinanziert',
-    siliconSell: 'Silizium an Station Nadir verkauft' };
+    siliconSell: 'Silizium an Station Nadir verkauft',
+    shipFreightIce: 'Bezahlte Eis-Rundfracht angenommen – Zeit starten für Vertragsfahrt',
+    shipGateCheck: 'Bezahlter Toranflug vom Original-Core bestätigt',
+    shipFreightGateIce: 'Torfracht angenommen – Zeit starten für Vertragsfahrt' };
   function tun(aktion, ziel, leise) {
     const sz = szene();
     if (!sz) { meldung('Zuerst einen finanzierten Jägerstand laden', true); return null; }

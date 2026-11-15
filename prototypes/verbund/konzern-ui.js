@@ -133,7 +133,7 @@ function darstellen(a=session.ansicht()){
   taste.disabled=!raum||!p.erlaubt;
   const info=d.createElement('small');
   info.textContent=p.erlaubt
-   ?'Eigene auditierte Hülle · Kopie derselben Welt, Lohnreserve beim Abdocken'
+   ?'Eigene auditierte Hülle · dieselbe Welt, Lohnreserve beim Abdocken'
    :'Gesperrt: '+p.grund;
   taste.addEventListener('click',()=>{
    if(!raum){status('Grafisches Cockpit nicht verfügbar',true);return;}
@@ -146,7 +146,7 @@ function darstellen(a=session.ansicht()){
  });
  $('j9-piloten').replaceChildren(...(nodes.length?nodes:[(()=>{
    const p=d.createElement('p');p.className='note';
-   p.textContent='Noch kein eigenes Schiff. Erst einen tatsächlich vorhandenen Miner bezahlen und kaufen.';
+   p.textContent='Noch kein eigenes Schiff. Erst einen vorhandenen Miner oder Aldera-Frachter bezahlen und kaufen.';
    return p;
  })()]));
 

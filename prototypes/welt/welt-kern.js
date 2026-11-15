@@ -1646,12 +1646,19 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     m_core_flugplan.plan(state, true, true);
     return ergebnis;
   }
-  function teilschritt(state) {
+  // Nur die von minute() intern verwendete Variante nimmt ein einmal sortiertes
+  // ID-Array entgegen. Zwischen Wirtschaftsminuten erzeugt der Flugplan keine
+  // Huelle; der wirtschaftliche Tick darf neue Schiffe erst NACH Flugschritt 60
+  // kaufen/erzeugen. Externe teilschritt()-Aufrufe sortieren weiterhin selbst.
+  function teilschrittIntern(state, sortierteSchiffIds = null) {
     pruefeForm(state);
     if (state.flug.schritt === 0) m_core_flugplan.plan(state, true, false);
-    if (!FLUG.schritt(state)) { m_core_flugplan.plan(state, false, false); return null; }
+    if (!FLUG.schritt(state, FLUG.DATEN, sortierteSchiffIds)) {
+      m_core_flugplan.plan(state, false, false); return null;
+    }
     return wirtschaftsMinute(state);
   }
+  function teilschritt(state) { return teilschrittIntern(state); }
   function minute(state) {
     pruefeForm(state);
     if (state.flug.schritt === 0) {
@@ -1659,8 +1666,11 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       // Bitgleiche Abkürzung: ruhende Körper ändern sich in 60 Teilschritten nicht.
       if (m_core_flugplan.alleRuhend(state)) return wirtschaftsMinute(state);
     }
+    // Einmal pro Wirtschaftsminute statt bei jedem der bis zu 60 Teilschritte.
+    // Bei Save/Load oder einem externen Teilschritt wird neu aufgebaut.
+    const sortierteSchiffIds = ids(state.ships);
     let r = null;
-    do { r = teilschritt(state); } while (r === null);
+    do { r = teilschrittIntern(state, sortierteSchiffIds); } while (r === null);
     return r;
   }
   function advance(state, minuten) {

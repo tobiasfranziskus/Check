@@ -135,6 +135,75 @@ function missions(){
   {done:eigenesFrachtgut||!!state.kanon.silizium?.belege?.length,text:'Eigenes Eis oder Silizium wirklich gewinnen'}
  ];
 }
+// J12: read-only station and company report from the SAME validated Rule204 session.
+// No separate economy, NPC signatures, speculative prices, or unvalidated purchase paths.
+function tabZeigen(name){
+ if(!['auftraege','flotte','universum'].includes(name))return;
+ for(const p of ['auftraege','flotte','universum']){
+  $('panel-'+p).hidden=p!==name;
+  $('tab-'+p).setAttribute('aria-pressed',String(p===name));
+ }
+}
+function wirtschaftsbericht(a,s,angebote){
+ const host=$('sektorwirtschaft');
+ if(!host)return;
+ const section=(label)=>{
+  const block=d.createElement('section'),h=d.createElement('h4');
+  block.className='economy-section';h.textContent=label;block.append(h);return block;
+ };
+ const karte=(parent,name,zeilen)=>{
+  const card=d.createElement('article'),h=d.createElement('h5');
+  card.className='economy-card';h.textContent=name;card.append(h);
+  for(const [key,value] of zeilen){
+   const line=d.createElement('div'),k=d.createElement('span'),v=d.createElement('strong');
+   line.className='economy-line';k.textContent=key;v.textContent=value;
+   line.append(k,v);card.append(line);
+  }
+  parent.append(card);return card;
+ };
+ const lager=section('Stationen · physische Bestände');
+ for(const st of a.stationen){
+  const cash=s.owners[st.id]?.cash;
+  karte(lager,st.id+' · '+st.system,[
+   ['Lager',st.lager],
+   ['Eigene Stationskasse',Number.isSafeInteger(cash)?fmt(cash)+' ISK':'Kein eigenes Konto']
+  ]);
+ }
+ const firmen=section('Unabhängige Unternehmen');
+ for(const [id,name] of [['npc3','Bergbau · npc3'],['transport','Spedition · transport'],['werft_extern','Außenwerft · werft_extern']]){
+  const owner=s.owners[id];if(!owner)continue;
+  const schiffe=Object.values(s.ships).filter(x=>x.owner===id);
+  const klassen=[...new Set(schiffe.map(x=>x.klasse))].sort()
+    .map(klasse=>klasse+': '+schiffe.filter(x=>x.klasse===klasse).length).join(' · ')||'Keine eigenen Schiffe';
+  karte(firmen,name,[['Firmenkasse',fmt(owner.cash)+' ISK'],
+   ['Eigene Flotte',klassen]]);
+ }
+ const werft=section('Werft · tatsächlich geprüfte Kaufangebote');
+ const kauf=angebote.filter(o=>namen.some(n=>n[0]===o.id));
+ for(const angebot of kauf){
+  const card=karte(werft,titel(angebot),[
+   ['Core-Status',angebot.ok?'Kauf derzeit möglich':'Gesperrt'],
+   ['Begründung',angebot.ok?info(angebot):angebot.reason||'Original-Core verweigert den Kauf']
+  ]);
+  if(angebot.ok){
+   const link=d.createElement('button');
+   link.type='button';link.className='economy-go';link.dataset.j12Offer=angebot.id;
+   link.textContent='Zum geprüften Kaufangebot';
+   link.addEventListener('click',()=>{
+    tabZeigen('auftraege');
+    const target=[...$('spieleraktionen').querySelectorAll('[data-action]')]
+      .find(x=>x.dataset.action===angebot.id);
+    target?.focus();
+   });
+   card.append(link);
+  }
+ }
+ const footer=d.createElement('p');
+ footer.className='economy-foot';
+ footer.textContent='Weltgeld: '+fmt(a.weltgeld)+' ISK · Mint/Burn: '+fmt(s.minted)+' / '+fmt(s.burned)+
+  ' ISK. Angezeigte Kaufangebote sind Momentaufnahmen; erst der Original-Core bucht einen Auftrag.';
+ host.replaceChildren(lager,firmen,werft,footer);
+}
 function anzeigen(){
  if(!session)return;
  const a=session.ansicht(),s=session.zustandReferenz();
@@ -152,7 +221,8 @@ function anzeigen(){
    ?'Du hast die ersten Etappen gemeistert. Die Wirtschaft gehört niemandem allein – dein nächster Auftrag liegt bei dir.'
    :mission.find(m=>!m.done).text;
  const allowed=new Set(namen.map(n=>n[0]));
- const offers=session.angebote().filter(o=>allowed.has(o.id)
+ const alleAngebote=session.angebote();
+ const offers=alleAngebote.filter(o=>allowed.has(o.id)
    ||/^(ice-|stop-|sil-start-|sil-sell-|freight-|gate-freight-)/.test(o.id));
  $('spieleraktionen').replaceChildren(...offers.map(o=>{
   const box=d.createElement('div'),button=d.createElement('button'),small=d.createElement('small');
@@ -163,6 +233,7 @@ function anzeigen(){
   button.addEventListener('click',()=>auftrag(o.id));
   box.append(button,small);return box;
  }));
+ wirtschaftsbericht(a,s,alleAngebote);
  const pilots=session.piloten();
  const own=a.schiffe;
  $('spielerschiffe').replaceChildren(...(own.length?own.map(sh=>{
@@ -274,12 +345,7 @@ $('welt-sichern').addEventListener('click',()=>{
 });
 $('welt-export').addEventListener('click',saveDownload);
 for(const b of d.querySelectorAll('[data-advance]'))b.addEventListener('click',()=>weiter(Number(b.dataset.advance)));
-for(const b of d.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>{
- for(const p of ['auftraege','flotte','universum']){
-  $('panel-'+p).hidden=p!==b.dataset.tab;
-  $('tab-'+p).setAttribute('aria-pressed',String(p===b.dataset.tab));
- }
-});
+for(const b of d.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>tabZeigen(b.dataset.tab));
 scope.addEventListener('pagehide',()=>{if(session){try{speichern();}catch(_){/* local export stays available */}}});
 cockpitBinden();menustand();screen('startseite');
 })(globalThis);

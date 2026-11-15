@@ -57,6 +57,25 @@ const SLOT='aphros-void:spielerkarriere:regel204:v1';
     assert.equal(st.rulesVersion,204);assert.equal(st.tick,0);
     assert.equal(st.minted,0);assert.equal(st.burned,0);
     assert.equal(Object.values(st.owners).reduce((n,o)=>n+o.cash,0),33000);
+    // J12: the Universe tab is now a live, read-only terminal in the SAME career.
+    await page.locator('#tab-universum').tap();
+    assert.equal(await page.locator('#panel-universum').isVisible(),true);
+    const terminal=page.locator('#sektorwirtschaft');
+    assert.equal(await terminal.locator('.economy-card').count()>=6,true);
+    const report=await terminal.textContent();
+    assert.match(report,/st_aldera/);
+    assert.match(report,/st_nadir/);
+    assert.match(report,/Bergbau.*npc3/);
+    assert.match(report,/Außenwerft.*werft_extern/);
+    assert.match(report,/33[.,]000 ISK/);
+    assert.match(report,/Mint\/Burn:\s*0 \/ 0 ISK/);
+    const link=terminal.locator('[data-j12-offer="buy-st_aldera-miner"]');
+    assert.equal(await link.count(),1);
+    await link.tap();
+    assert.equal(await page.locator('#panel-auftraege').isVisible(),true);
+    assert.equal(await page.locator('[data-action="buy-st_aldera-miner"]').isEnabled(),true);
+    assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),rawStart,
+      'the economy terminal cannot silently buy ships or change money');
     const buy=page.locator('[data-action="buy-st_aldera-miner"]');
     assert.equal(await buy.isEnabled(),true,'first genuine miner must be available');
     await buy.tap();

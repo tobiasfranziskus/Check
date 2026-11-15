@@ -108,7 +108,15 @@ test('P8b: Original-NPC3 foerdert legal aus zwei real getrennten Feldern; dritte
  assert.equal(s.ledger.silizium.consumed,s.kanon.bauteile.siliziumVerbraucht);
  assert.equal(w.hash(w.load(w.save(s))),w.hash(s));
  const restore=w.load(checkpoint);
- w.advance(restore,60*1440);
+ let replayBought=restore.kanon.jaeger.kaeufe.filter(x=>x.owner==='house').length;
+ for(let t=restore.tick+120;t<=90*1440;t+=120){
+  w.advance(restore,120);
+  if(restore.stations.st_nadir.lager.jaeger>0 &&
+    restore.owners.house.cash>=900 && replayBought<3){
+   assert.equal(w.execute(restore,{type:'shipBuy',owner:'house',klasse:'jaeger',station:'st_nadir'}).ok,true);
+   replayBought++;
+  }
+ }
  audit(w,restore);
  assert.equal(w.hash(restore),w.hash(s));
  assert.equal(w.canonical(restore),w.canonical(s));

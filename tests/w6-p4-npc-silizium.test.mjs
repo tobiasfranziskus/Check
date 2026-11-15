@@ -36,7 +36,7 @@ test('W6/P4: NPC3 kauft, foerdert und verkauft Silizium mit ausschliesslich eige
  bis(w,s,()=>(s.stations.st_aldera.lager.miner||0)===0&&!s.w4.auftrag&&!s.w5.auftrag
   &&!b()?.auftrag&&!b()?.wartetAuf&&!b()?.transport
   &&((nadir.material||0)>=5||(nadir.erz||0)>=10)
-  &&s.owners.npc3.cash>=w.rules.economy.waren.miner.basis+b().lokalGekauft*0
+  &&s.owners.npc3.cash>=w.rules.economy.waren.miner.basis
   ,12000,'freie finanzierte Nadir-Werft fuer NPC3');
  if((nadir.material||0)<5) {
    signiere(w,s,'st_nadir',{type:'stationRefine',station:'st_nadir'});

@@ -153,7 +153,7 @@ function run(days=730,output=null,opts={}) {
     end.waterSalesISK>last.waterSalesISK&&end.paidWagesISK>last.paidWagesISK;
   const finished={
     mode:'S02+P5',days,complete:true,elapsedSeconds:(performance.now()-start)/1000,
-    initialMoney:ORIGINAL_GELD,firstFighterPurchaseTick,first90Hash:at90.hash,
+    initialMoney:ORIGINAL_GELD,firstFighterPurchaseTick:firstPurchaseTick,first90Hash:at90.hash,
     lastHash:end.hash,siliconEnd:end.siliconRemaining,fightersBuilt:end.fightersBuilt,
     fightersPurchasedByHouse:end.playerFighterPurchases,
     replacements:end.replacements,activeLast30,

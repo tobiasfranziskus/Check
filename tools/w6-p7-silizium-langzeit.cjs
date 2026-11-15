@@ -63,7 +63,7 @@ function snapshot(w, s) {
     partsWarehouse:lag.bauteil || 0,
     replacements:b.ersatz,iceMined:b.eis,waterSalesISK:b.wasserErloes,
     paidWagesISK:b.loehne,oreMined:b.erz,materialMade:b.material,
-    hullsTotal:hulls.length,hullsRetired:hulls.filter(x=>s.kanon.verschleiss[x.id]!==undefined).length,
+    hullsTotal:hulls.length,hullsWithWearLedger:hulls.filter(x=>s.kanon.verschleiss[x.id]!==undefined).length,
     accounts:byOwner,
     topPauses:Object.entries(s.kanon.npc.pausen).sort((a,b)=>b[1]-a[1]).slice(0,5),
     topBottlenecks:s.kanon.engpass

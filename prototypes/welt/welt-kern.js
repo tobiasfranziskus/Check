@@ -84,7 +84,7 @@ const m_data_kanon = (() => {
   return { KANON, tiefFrieren };
 })();
 
-function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false) {
+function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false) {
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
@@ -92,14 +92,15 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   });
   // Ein Forschungsquellstand für K1 (Regel199) oder explizit K7 (Regel200).
   // Niemals die produktive Regel195-Einzeldatei überschreiben.
-  const engine = k7 ? (p8bZweiFelder ? FACTORY.createP8bWelt(startkapital,ort) :
+  const engine = k7 ? (p8cDravos ? FACTORY.createP8cWelt(startkapital,ort) :
+    p8bZweiFelder ? FACTORY.createP8bWelt(startkapital,ort) :
     jaegerFlug ? FACTORY.createJ4cWelt(startkapital,ort) :
     jaeger ? FACTORY.createJ4bWelt(startkapital,ort) :
     bauteile ? FACTORY.createJ3Welt(startkapital,ort) :
     silizium ? FACTORY.createJ2bWelt(startkapital, ort)
     : FACTORY.createK7Welt(startkapital, ort)) : FACTORY.createKanonWelt(startkapital, ort);
   const kern = engine.core, rules = engine.rules;
-  if (rules.rulesVersion !== (p8bZweiFelder ? 205 : jaegerFlug ? 204 : jaeger ? 203 : bauteile ? 202 : silizium ? 201 : k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
+  if (rules.rulesVersion !== (p8cDravos ? 206 : p8bZweiFelder ? 205 : jaegerFlug ? 204 : jaeger ? 203 : bauteile ? 202 : silizium ? 201 : k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
     throw Error('K1: unerwartetes Kernprofil');
   const N = FLUG.DATEN.schritteJeMinute;
   const W = rules.w5n;
@@ -653,7 +654,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
             || !ganz(k.tick) || k.tick > s.tick || k.station !== C.station
             || !['house','npc3'].includes(k.owner) || k.preis !== C.kauf
             || !sh || sh.id !== k.id || sh.owner !== k.owner || sh.klasse !== 'miner'
-            || sh.system !== 'nadir' || sh.heimat !== 'nadir') return false;
+            || (sh.system !== 'nadir' && !(p8cDravos && sh.system === 'dravos'
+              && s.kanon.p8c?.reisen?.some(x=>x.schiff===sh.id
+                && x.nach==='dravos'&&x.ende!==null)))
+            || sh.heimat !== 'nadir') return false;
           idSet.add(k.id); return true;
         });
       const nadirAktiv = Object.values(s.ships).filter((sh) =>
@@ -1460,6 +1464,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (silizium) state.kanon.silizium = m_core_silizium.leer();
     if (bauteile) state.kanon.bauteile = m_core_bauteile.leer();
     if (jaeger) state.kanon.jaeger = m_core_jaeger.leer();
+    if (p8cDravos) state.kanon.p8c = m_core_p8c_reise.leer();
     const a = audit(state);
     if (!a.ok) throw Error('K1: Anfangszustand nicht konsistent: ' + a.fehler.join('; '));
     return state;
@@ -1731,6 +1736,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     }
     if(bauteile&&type==='stationBuildParts')
       return m_core_bauteile.ausfuehren(state,cmd);
+    if(p8cDravos&&type==='shipTravelDravos')
+      return m_core_p8c_reise.starten(state,cmd);
     if(silizium&&['siliconMineStart','siliconSell'].includes(type))
       return m_core_silizium.ausfuehren(state,cmd);
     if(k7&&typeof type==='string'&&type.startsWith('industrialOre'))return k7Befehl(state,cmd);
@@ -1916,6 +1923,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(jaeger ? {j4bFinanzierterJaeger:true} : {}),
     ...(jaegerFlug ? {j4cBezahlterJaegerflug:true} : {}),
     ...(p8bZweiFelder ? {p8bZweiEndlicheFelder:true} : {}),
+    ...(p8cDravos ? {p8cEchteDravosExpedition:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
     createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
@@ -2180,6 +2188,8 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   // Nur experimenteller Rule205-Bergbau in zwei getrennten Nadir-Feldern.
   // Kein Produkt-/Save-Autoupgrade, keine Dravos-Miner und keine Zusatz-ISK.
   erstellenP8b:(kapital={})=>erstellen(kapital,true,true,true,true,true,true),
+  // Ausschliesslich isolierte, nicht produktiv freigegebene Rule206-Expedition.
+  erstellenP8c:(kapital={})=>erstellen(kapital,true,true,true,true,true,false,true),
   ausRegel195, ausRegel199K7, ausRegel200J2b, ausRegel201J3, ausRegel202J4b, ausRegel203J4c, ausRegel204P8b,
   DATEN: m_data_kanon.KANON, REGEL: m_data_kanon.KANON.regel, SCHRITTE: FLUG.DATEN.schritteJeMinute });
 if (NODE) module.exports = api; else scope.AphrosWelt = api;

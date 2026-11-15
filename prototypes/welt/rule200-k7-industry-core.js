@@ -2762,6 +2762,25 @@ const m_core_w5_transfer=(()=>{
         &&((lost(x.id)?.tick>=x.ankunft&&lost(x.id)?.system===c.ziel)
           ||s.w3.auftrag?.schiff===x.id
           ||(!!r.kanon&&s.w5n?.frachtauftrag?.schiff===x.id)
+          // Rule207: legitime Anschlussverwendung einer bereits mit W5ac
+          // bezahlten Werft-Huelle. W5ac-Kauf-/Flugjournal bleibt unveraendert;
+          // der NEUE Fremdfrachtbeleg wird separat vom P8d-K1-Audit geprueft.
+          ||(r.rulesVersion===207&&s.ships[x.id]?.owner==='transport'
+            &&((s.kanon?.p8d?.auftrag?.frachter===x.id&&(()=>{
+              const a=s.kanon.p8d.auftrag,sh=s.ships[x.id];
+              return (a.phase==='hin'&&sh.phase==='reise'
+                  &&sh.ziel==='st_dravos')
+                ||(a.phase==='rueck'&&sh.phase==='reise'
+                  &&sh.ziel==='st_nadir')
+                ||(['laden','rueckBereit'].includes(a.phase)
+                  &&sh.system==='dravos'&&sh.phase==='dock'
+                  &&sh.auftrag==='halten')
+                ||(a.phase==='ankunft'&&sh.system==='nadir'
+                  &&sh.phase==='dock'&&sh.auftrag==='halten');
+            })())||(s.kanon?.p8d?.belege?.some(b=>b.frachter===x.id
+                &&b.phase==='fertig')&&s.ships[x.id].system==='nadir'
+                &&s.ships[x.id].phase==='dock'
+                &&s.ships[x.id].auftrag==='halten')))
           ||(s.ships[x.id].system===c.ziel&&s.ships[x.id].phase==='dock'
             &&s.ships[x.id].auftrag==='halten')))
       &&activeOk&&(!a||!ids.includes(a.id))

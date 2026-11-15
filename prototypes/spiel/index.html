@@ -52,8 +52,13 @@
   <article class="faction"><span class="faction-icon">▣</span><span class="faction-type">HANDEL / INDUSTRIE</span><h3>Aldera & Nadir</h3><p>Aldera handelt mit Rohstoffen. In Nadir warten Raffinerien und Werften – wenn sie finanziert werden.</p><span class="faction-foot">Stationen: st_aldera · st_nadir</span></article>
   <article class="faction"><span class="faction-icon">⇢</span><span class="faction-type">LOGISTIK / SCHIFFBAU</span><h3>Spedition & Werft</h3><p>Ohne bezahlten Transport bleibt Erz liegen. Ohne Material und Arbeiter baut die Werft kein Schiff.</p><span class="faction-foot">Firmen: transport · werft_extern</span></article>
  </div>
+ <label class="w6-start-option" for="w6-npc-start">
+  <input id="w6-npc-start" type="checkbox">
+  <span><strong>W6: Autonome NPC-Wirtschaft im Testprofil S02 starten</strong>
+   <small>Nur für diese neue Karriere. NPC-Konzerne bezahlen Bergbau, Transporte, Ersatzschiffe, Bauteile und bis zu zwei Jäger selbst. Keine Gratiswaren oder neuen ISK; reale Krisen bleiben möglich. Bestehende Spielstände werden nicht umgestellt.</small></span>
+ </label>
  <div class="briefing-bottom">
-  <div><strong>Dein erstes Ziel: einen Miner erwerben und selbst fliegen.</strong><p>Keine Datei hochladen, keine Testdaten auswählen. Du startest mit dem unveränderten wirtschaftlichen Anfangszustand und triffst deine eigenen Entscheidungen.</p></div>
+  <div><strong>Dein erstes Ziel: einen Miner erwerben und selbst fliegen.</strong><p>Wähle oben, ob NPC-Firmen ihre Industrie eigenständig betreiben sollen. Ohne Auswahl bleibt der bisherige unveränderte Karriere-Start erhalten.</p></div>
   <button id="karriere-starten" class="primary" type="button">Karriere in Aldera beginnen <span aria-hidden="true">→</span></button>
  </div>
  <p id="briefing-meldung" class="statusline" role="status" aria-live="polite"></p>
@@ -62,7 +67,7 @@
 <section id="spielwelt" class="world" hidden>
  <div class="worldbar">
   <div><span class="eyebrow">DEIN KONZERN / ALDERA-SEKTOR</span><h2>Kommandobrücke</h2></div>
-  <div class="worldbar-right"><span class="world-balance"><small>DEIN KAPITAL</small><strong id="hausgeld">–</strong></span><span class="world-balance"><small>WELTZEIT</small><strong id="zeit">–</strong></span><button id="welt-sichern" type="button" class="ghost">Sichern</button></div>
+  <div class="worldbar-right"><span id="w6-status" class="w6-world-indicator" hidden>W6 · NPC-Wirtschaft aktiv</span><span class="world-balance"><small>DEIN KAPITAL</small><strong id="hausgeld">–</strong></span><span class="world-balance"><small>WELTZEIT</small><strong id="zeit">–</strong></span><button id="welt-sichern" type="button" class="ghost">Sichern</button></div>
  </div>
  <div class="game-grid">
   <section class="task-panel" aria-label="Missionsjournal">

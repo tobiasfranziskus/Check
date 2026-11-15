@@ -19,6 +19,8 @@
 
 Die gestapelten Touch-PRs [#310](https://github.com/tobiasfranziskus/Check/pull/310) (direkte Befehle/Kurswahl), [#311](https://github.com/tobiasfranziskus/Check/pull/311) (berührbare Karte mit expliziter Zielflugbestätigung), [#312](https://github.com/tobiasfranziskus/Check/pull/312) (durchgängige K1-Cockpit-/Wirtschafts-/Save-QA) und [#317](https://github.com/tobiasfranziskus/Check/pull/317) (bis zum nächsten Entscheidungspunkt schrittweiser Original-Core-Zeitlauf) können für P1/P2 noch eigene UX-/Testkenntnisse enthalten. **Keine Schließung ohne Funktionsnachfolger.** Das ist der Hauptgrund für eine qualifizierte statt quantitative PR-Bereinigung.
 
+**[NUTZERKLARSTELLUNG 15.11.2026]** Im alten `void-echoes` existierte **keine Folgen-/Abstandseinstellung**; das ist ein neues P2-Ziel und wurde im Codekatalog/Roadmap ausdrücklich korrigiert.
+
 ## Nächste P0-Pakete
 
 1. **PR-Triage in Gruppen von 10–20** auf Basis PR-Metadaten und Code-Nachfolger. Nur bei belegtem Ersatz und ohne einzigartige Funktion schließen, immer mit Verweis; Git-Branches/CI/Spielstände niemals löschen.

@@ -1925,6 +1925,50 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   });
 }
 
+// W6/P8b: AUSSCHLIESSLICH explizite Regel204→205-Forschungsuebernahme.
+// Die neue zweite Lagerstaette ist zuerst nur unerschlossener BODEN und keine
+// zusaetzliche Ware, keine Kasse, kein Schiff, kein Anfangslohn, kein Auftrag.
+// Bestehende 204-JSON werden nie beim Laden still veraendert.
+function ausRegel204P8b(json){
+  if(typeof json!=='string'||json.length>5*1024*1024)
+    throw Error('P8b: ungueltiges Quell-JSON');
+  const roh=JSON.parse(json),p=roh?.w5ad?.profile;
+  if(roh?.rulesVersion!==204||roh?.schema!==8
+    ||!Number.isSafeInteger(p?.carrierCash)||!Number.isSafeInteger(p?.buyerCash))
+    throw Error('P8b: ausdruecklich nur gueltige Regel204-Quelle');
+  const kapital={carrierCash:p.carrierCash,buyerCash:p.buyerCash};
+  const quelle=erstellen(kapital,true,true,true,true,true),alt=quelle.load(json);
+  const quellHash=quelle.hash(alt),altCanonical=quelle.canonical(alt);
+  const welt=erstellen(kapital,true,true,true,true,true,true);
+  const f=welt.rules.j2b.feld,z=welt.rules.j2b.nebenfeld;
+  if(alt.kanon.silizium.gefoerdert>f.vorrat
+    ||alt.kanon.silizium.vorrat!==f.vorrat-alt.kanon.silizium.gefoerdert)
+    throw Error('P8b: Quellfeld nicht vollstaendig auditiert');
+  const neu=JSON.parse(altCanonical),b=neu.kanon.silizium;
+  neu.rulesVersion=205;
+  b.felder={
+    [f.id]:{vorrat:f.vorrat-b.gefoerdert,gefoerdert:b.gefoerdert,
+      verkauft:b.verkauft},
+    [z.id]:{vorrat:z.vorrat,gefoerdert:0,verkauft:0}
+  };
+  b.vorrat+=z.vorrat;
+  b.belege=b.belege.map(x=>({...x,feld:f.id}));
+  if(b.auftrag)b.auftrag={...b.auftrag,feld:f.id};
+  const zustand=welt.load(welt.canonical(neu));
+  const geld=x=>Object.values(x.owners).reduce((n,o)=>n+o.cash,0);
+  if(geld(zustand)!==geld(alt)||zustand.minted!==alt.minted
+    ||zustand.burned!==alt.burned||zustand.tick!==alt.tick
+    ||welt.canonical(zustand)===altCanonical
+    ||JSON.stringify(zustand.ledger)!==JSON.stringify(alt.ledger)
+    ||JSON.stringify(zustand.ships)!==JSON.stringify(alt.ships)
+    ||JSON.stringify(zustand.stations)!==JSON.stringify(alt.stations)
+    ||JSON.stringify(zustand.owners)!==JSON.stringify(alt.owners)
+    ||quelle.hash(alt)!==quellHash)
+    throw Error('P8b: unzulaessiger Geld-/Waren-/Eigentumstransfer bei Geologiewechsel');
+  return {welt,zustand,quellHash,quellCanonical:altCanonical,
+    zielHash:welt.hash(zustand),neueBodenreserve:z.vorrat};
+}
+
 // J4c: Kein neuer Wirtschaftswert außer der ausdrücklichen Regelversion.
  // Nur ein vollständig geprüftes Original-203-JSON kann zum bezahlten Flugbetrieb.
 function ausRegel203J4c(json){
@@ -2136,7 +2180,7 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   // Nur experimenteller Rule205-Bergbau in zwei getrennten Nadir-Feldern.
   // Kein Produkt-/Save-Autoupgrade, keine Dravos-Miner und keine Zusatz-ISK.
   erstellenP8b:(kapital={})=>erstellen(kapital,true,true,true,true,true,true),
-  ausRegel195, ausRegel199K7, ausRegel200J2b, ausRegel201J3, ausRegel202J4b, ausRegel203J4c,
+  ausRegel195, ausRegel199K7, ausRegel200J2b, ausRegel201J3, ausRegel202J4b, ausRegel203J4c, ausRegel204P8b,
   DATEN: m_data_kanon.KANON, REGEL: m_data_kanon.KANON.regel, SCHRITTE: FLUG.DATEN.schritteJeMinute });
 if (NODE) module.exports = api; else scope.AphrosWelt = api;
 })(globalThis);

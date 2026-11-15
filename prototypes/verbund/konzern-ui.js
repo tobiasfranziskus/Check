@@ -149,6 +149,28 @@ function darstellen(a=session.ansicht()){
  })()]));
 
  tabelle('stationen',a.stationen,s=>[s.id,s.system,s.lager]);
+ // Reine J10-Vorschau: J6 erzeugt Angebote auf geprüften Kopien.
+ // Keine UI-Aktion kann sich als fremder Nadir-/Werft-/Transportakteur ausgeben.
+ const j10=scope.J10WerftLage.erstellen(session.weltReferenz(),session.zustandReferenz());
+ $('j10-fertige').textContent=j10.lager.jaeger;
+ $('j10-bauteile').textContent=j10.lager.bauteil+' / '+j10.j4.bauteile;
+ $('j10-material').textContent=j10.lager.material+' / '+j10.j4.material;
+ $('j10-silizium').textContent=j10.lager.silizium+' / '+j10.fehlbedarf.silizium+' noch rechnerisch benötigt';
+ $('j10-nadir').textContent=j10.kassen.st_nadir+' ISK';
+ $('j10-werft-cash').textContent=j10.k7.werftBarmittel+' / '+j10.k7.werftReserve+' ISK';
+ $('j10-hinweis').textContent='J4: '+j10.j4.bauteile+' Bauteile + '+j10.j4.material
+    +' Material + '+j10.j4.dauer+' min bezahlte Nadir-Arbeit ('+j10.j4.lohn
+    +' ISK), danach '+j10.j4.kaufpreis+' ISK echter Spielerkauf. '
+    +'Fehlbedarf für aktuelle vollständige Kette: '+j10.fehlbedarf.material
+    +' Material und '+j10.fehlbedarf.silizium+' Silizium (ohne noch laufende Aufträge). '
+    +'Kein Eigentumsrecht an anderen Firmen.';
+ tabelle('j10-vertraege',j10.vorgaenge,v=>[
+   v.label,
+   v.eigentuemer+(v.nurAnzeige?' · nur Anzeige':' · Spieler'),
+   v.ok?'Jetzt vom Eigentümer finanzierbar':v.grund||'Original-Core sperrt'
+ ]);
+ $('j10-jaeger-kaufen').disabled=!j10.vorgaenge.find(v=>v.id==='house-buy')?.ok;
+
  const buttons=session.angebote().map(x=>{
   const box=d.createElement('div');box.className='aktion';
   const button=d.createElement('button');button.textContent=x.label;button.disabled=!x.ok;
@@ -170,6 +192,14 @@ function darstellen(a=session.ansicht()){
   ?'Eigener bezahlter Jäger verfügbar. Der direkte J9-Schiffwechsel benutzt dieselbe Regel204-Welt; regelmäßiges JSON-Backup empfohlen.'
   :'Kein eigener Jäger erforderlich: Ein legal gekaufter Miner kann direkt aus der Konzernansicht persönlich geflogen werden. Jägerproduktion und Kauf bleiben separat finanziert.';
 }
+$('j10-jaeger-kaufen').addEventListener('click',()=>{
+ try{
+  const r=session.ausfuehren('buy-st_nadir-jaeger');
+  status(r.ok?'900-ISK-Kauf eines physisch vorhandenen Nadir-Jägers erfolgreich gebucht.'
+    :'Jägerkauf vom Original-Core gesperrt: '+r.reason,!r.ok);
+  darstellen();
+ }catch(e){status('Jägerkauf ohne Buchung abgebrochen: '+e.message,true);}
+});
 for(const el of d.querySelectorAll('[data-minute]')){
  el.addEventListener('click',()=>{
   try{const n=Number(el.dataset.minute);const a=session.weiterspielen(n);

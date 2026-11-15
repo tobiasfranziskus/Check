@@ -216,8 +216,11 @@ function bewegen(flug, s) {
 }
 // Ein Flugschritt fuer alle Schiffe in stabiler ID-Reihenfolge. Rueckgabe true = Core-Minute voll;
 // der Aufrufer fuehrt dann genau einmal den bestehenden Minuten-Tick aus.
-function schritt(state, flug = FLUG) {
-  for (const id of ids(state.ships)) {
+// Der dritte Parameter ist ausschliesslich fuer den privaten K1-Minuten-Batch:
+// dort bleibt die Flottenmenge zwischen den 60 Flugschritten unveraendert.
+// Direkte/isolierte Flugschritte behalten den bisherigen eigenen ID-Sortierpfad.
+function schritt(state, flug = FLUG, sortierteSchiffIds = null) {
+  for (const id of (sortierteSchiffIds || ids(state.ships))) {
     const s = state.ships[id], b = s.flug;
     if (!b) continue;
     if (b.lage === 'frei' || (steuerbarerTransit(state,s) && b.modus==='hand'))

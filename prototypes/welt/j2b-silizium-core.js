@@ -5,16 +5,33 @@
 (function(scope){
 'use strict';
 const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
-  if(![201,202,203,204].includes(rules.rulesVersion)||!rules.j2b)throw Error('J2b: nur Regel201/202-Forschungsprofil');
+  if(![201,202,203,204,205].includes(rules.rulesVersion)||!rules.j2b)
+    throw Error('J2b: ungueltige Regel201-205');
   const C=rules.j2b,W=C.charge*C.minutenJeEinheit*C.lohnJeMinute,
     P=C.charge*C.preis;
-  const leer=()=>({vorrat:C.feld.vorrat,auftraege:0,gefoerdert:0,
-    verkauft:0,arbeitsMinuten:0,belege:[],auftrag:null});
-  const feld=sh=>{
-    if(!sh||sh.klasse!=='miner'||sh.system!==C.feld.system
+  // W6/P8b NUR RULE205: endliche Felder, ein physischer Miner und EIN
+  // Original-Minuten-/Kassen-/Warenbuch. Rule204 hat weiterhin genau
+  // seine urspruengliche 16er-Lagerstaette und die unveraenderte Befehlsform.
+  const zweifeld=rules.rulesVersion===205;
+  if(zweifeld&&(!C.nebenfeld||C.nebenfeld.system!=='nadir'
+      ||C.feld.id!=='nadir-primaer'||C.nebenfeld.id!=='nadir-sekundaer'
+      ||!Number.isSafeInteger(C.nebenfeld.vorrat)||C.nebenfeld.vorrat<=0
+      ||C.nebenfeld.vorrat%C.charge!==0))
+    throw Error('P8b: ungueltige endliche Zweitgeologie');
+  const quellen=zweifeld?[C.feld,C.nebenfeld]:[C.feld];
+  const stand=()=>Object.fromEntries(quellen.map(f=>[f.id,{
+    vorrat:f.vorrat,gefoerdert:0,verkauft:0
+  }]));
+  const leer=()=>({vorrat:quellen.reduce((n,f)=>n+f.vorrat,0),
+    auftraege:0,gefoerdert:0,verkauft:0,arbeitsMinuten:0,belege:[],auftrag:null,
+    ...(zweifeld?{felder:stand()}:{})});
+  const quelle=id=>zweifeld?quellen.find(f=>f.id===id):C.feld;
+  const feld=(sh,id)=>{
+    const f=quelle(id);
+    if(!f||!sh||sh.klasse!=='miner'||sh.system!==f.system
       ||sh.flug?.lage!=='frei')return false;
-    const b=sh.flug,dx=b.x-C.feld.x,dy=b.y-C.feld.y;
-    return dx*dx+dy*dy<=C.feld.radius*C.feld.radius
+    const b=sh.flug,dx=b.x-f.x,dy=b.y-f.y;
+    return dx*dx+dy*dy<=f.radius*f.radius
       &&b.vx*b.vx+b.vy*b.vy<=FLUG.DATEN.abbau.tempo**2;
   };
   const konto=(s,id)=>{
@@ -24,7 +41,8 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
   function pruefen(s,cmd){
     if(!cmd||typeof cmd!=='object'||Array.isArray(cmd)
       ||!['siliconMineStart','siliconSell'].includes(cmd.type)
-      ||Object.keys(cmd).sort().join()!=='owner,schiff,type')
+      ||Object.keys(cmd).sort().join()!==
+        (zweifeld&&cmd.type==='siliconMineStart'?'feld,owner,schiff,type':'owner,schiff,type'))
       return 'J2b: strenge Befehlsform';
     const b=s.kanon.silizium,sh=s.ships[cmd.schiff];
     if(!b||!sh||sh.owner!==cmd.owner||sh.klasse!=='miner'
@@ -37,7 +55,9 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
       return 'J2b: Miner muss am Nadir-Dock stehen';
     if(cmd.type==='siliconMineStart'){
       if(b.auftrag||b.vorrat<C.charge||ladungSumme(sh)>0
-        ||stillgelegt(s,sh))return 'J2b: Feld, Frachtraum oder Auftrag blockiert';
+        ||stillgelegt(s,sh)
+        ||(zweifeld && (!quelle(cmd.feld)||b.felder?.[cmd.feld]?.vorrat<C.charge)))
+        return 'J2b: Feld, Frachtraum oder Auftrag blockiert';
       if(s.owners[cmd.owner].cash<W)return 'J2b: Foerderarbeit nicht vorfinanziert';
       if(s.owners[C.station].cash<P)return 'J2b: Siliziumankauf nicht vorfinanziert';
       if((s.stations[C.station].lager.silizium||0)+C.charge>rules.world.obergrenze)
@@ -61,7 +81,8 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
         throw Error('J2b: Treuhand nicht frei');
       transfer(s,cmd.owner,'k1_silizium_arbeit',W,'silizium-arbeitsreserve');
       transfer(s,C.station,'k1_silizium_kauf',P,'silizium-kaufreserve');
-      b.auftrag={schiff:sh.id,owner:cmd.owner,menge:C.charge,gearbeitet:0,gefoerdert:0};
+      b.auftrag={schiff:sh.id,owner:cmd.owner,menge:C.charge,gearbeitet:0,gefoerdert:0,
+        ...(zweifeld?{feld:cmd.feld}:{})};
       b.auftraege++;
     }else{
       const a=b.auftrag;
@@ -70,8 +91,10 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
       s.stations[C.station].lager.silizium+=a.menge;
       transfer(s,'k1_silizium_kauf',cmd.owner,a.menge*C.preis,'silizium-ankauf');
       b.verkauft+=a.menge;
+      if(zweifeld)b.felder[a.feld].verkauft+=a.menge;
       b.belege.push({schiff:sh.id,owner:cmd.owner,tick:s.tick,
-        menge:a.menge,preis:a.menge*C.preis,arbeit:a.gearbeitet*C.lohnJeMinute});
+        menge:a.menge,preis:a.menge*C.preis,arbeit:a.gearbeitet*C.lohnJeMinute,
+        ...(zweifeld?{feld:a.feld}:{})});
       b.auftrag=null;
     }
     return {ok:true,type:cmd.type};
@@ -80,24 +103,27 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
     const b=s.kanon.silizium,a=b.auftrag;
     if(!a||a.gefoerdert===a.menge)return;
     const sh=s.ships[a.schiff];
-    if(!feld(sh)||s.kanon.flugdienst[sh.id]?.gestrandet)return;
+    if(!feld(sh,a.feld)||s.kanon.flugdienst[sh.id]?.gestrandet)return;
     if(s.owners.k1_silizium_arbeit.cash<C.lohnJeMinute)
       throw Error('J2b: unbezahlte Siliziumarbeit');
     transfer(s,'k1_silizium_arbeit',pilot[a.owner],
       C.lohnJeMinute,'silizium-arbeitslohn');
     a.gearbeitet++;b.arbeitsMinuten++;
     if(a.gearbeitet%C.minutenJeEinheit===0){
-      if(b.vorrat===0||ladungSumme(sh)>=rules.economy.cargo)
+      if(b.vorrat===0||ladungSumme(sh)>=rules.economy.cargo
+        ||(zweifeld&&b.felder[a.feld].vorrat===0))
         throw Error('J2b: Feld oder Frachtraum erschoepft');
       sh.ladung.silizium=(sh.ladung.silizium||0)+1;
       s.ledger.silizium.mined++;
       b.gefoerdert++;a.gefoerdert++;b.vorrat--;
+      if(zweifeld){b.felder[a.feld].gefoerdert++;b.felder[a.feld].vorrat--;}
     }
   }
   function audit(s){
     const b=s.kanon.silizium,a=b?.auftrag,l=s.ledger.silizium;
     if(!b||!['vorrat','auftraege','gefoerdert','verkauft','arbeitsMinuten'].every(k=>ganz(b[k]))
-      ||b.vorrat!==C.feld.vorrat-b.gefoerdert||b.gefoerdert>C.feld.vorrat
+      ||b.vorrat!==quellen.reduce((n,f)=>n+f.vorrat,0)-b.gefoerdert
+      ||b.gefoerdert>quellen.reduce((n,f)=>n+f.vorrat,0)
       ||b.gefoerdert<b.verkauft||b.verkauft%C.charge!==0
       ||b.auftraege!==b.verkauft/C.charge+(a?1:0)
       ||!Array.isArray(b.belege)||b.belege.length!==b.verkauft/C.charge
@@ -117,7 +143,9 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
     const keys=new Set();
     if(b.belege.some(e=>{
       const sh=s.ships[e?.schiff],key=e?.tick+'|'+e?.schiff;
-      if(!e||Object.keys(e).sort().join()!=='arbeit,menge,owner,preis,schiff,tick'
+      if(!e||Object.keys(e).sort().join()!==
+          (zweifeld?'arbeit,feld,menge,owner,preis,schiff,tick':'arbeit,menge,owner,preis,schiff,tick')
+        ||(zweifeld&&!quelle(e.feld))
         ||keys.has(key)||!ganz(e.tick)||e.tick>s.tick||e.menge!==C.charge
         ||e.preis!==P||e.arbeit!==W||!sh||sh.klasse!=='miner'
         ||sh.owner!==e.owner||sh.heimat!=='nadir'
@@ -127,11 +155,32 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
     const onBoard=Object.values(s.ships).reduce((n,sh)=>n+(sh.ladung.silizium||0),0);
     if(onBoard!==b.gefoerdert-b.verkauft)return false;
     if(a&&(!ganz(a.gearbeitet)||a.gearbeitet>C.charge*C.minutenJeEinheit
+      ||(zweifeld&&(Object.keys(a).sort().join()!=='feld,gearbeitet,gefoerdert,menge,owner,schiff'
+        ||!quelle(a.feld)))
       ||a.gefoerdert!==Math.floor(a.gearbeitet/C.minutenJeEinheit)
       ||a.menge!==C.charge||!['house','npc3'].includes(a.owner)
       ||s.ships[a.schiff]?.owner!==a.owner
       ||(s.ships[a.schiff]?.ladung.silizium||0)!==a.gefoerdert
       ||!s.kanon.minerWerft?.lokaleKaeufe?.some(k=>k.id===a.schiff)))return false;
+    if(zweifeld){
+      if(!b.felder||typeof b.felder!=='object'||Array.isArray(b.felder)
+        ||Object.keys(b.felder).sort().join()!==quellen.map(f=>f.id).sort().join()
+        ||quellen.some(f=>{
+          const fstate=b.felder[f.id],belege=b.belege.filter(e=>e.feld===f.id);
+          return !fstate||typeof fstate!=='object'||Array.isArray(fstate)
+            ||Object.keys(fstate).sort().join()!=='gefoerdert,verkauft,vorrat'
+            ||!['gefoerdert','verkauft','vorrat'].every(k=>ganz(fstate[k]))
+            ||fstate.vorrat!==f.vorrat-fstate.gefoerdert
+            ||fstate.gefoerdert>f.vorrat
+            ||fstate.verkauft!==belege.length*C.charge
+            ||fstate.gefoerdert!==fstate.verkauft
+              +(a?.feld===f.id?a.gefoerdert:0);
+        })
+        ||quellen.reduce((n,f)=>n+b.felder[f.id].gefoerdert,0)!==b.gefoerdert
+        ||quellen.reduce((n,f)=>n+b.felder[f.id].verkauft,0)!==b.verkauft
+        ||quellen.reduce((n,f)=>n+b.felder[f.id].vorrat,0)!==b.vorrat)
+        return false;
+    }else if(b.felder!==undefined)return false;
     return true;
   }
   return Object.freeze({C,leer,feld,pruefen,ausfuehren,minute,audit});

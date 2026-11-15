@@ -111,6 +111,7 @@ function auftrag(id){
 const namen=[
  ['buy-st_aldera-miner','Deinen ersten Miner kaufen','Aus einem wirklich vorhandenen Aldera-Werftlager, für 600 ISK.'],
  ['buy-st_aldera-frachter','Frachter erwerben','Ein eigener Frachter wird nur aus wirklichem Lagerbestand und deinem Kapital gekauft.'],
+ ['buy-st_nadir-frachter','Nadir-Frachter erwerben','Nur eine wirklich vorhandene Hülle aus dem Nadir-Lager kaufen.'],
  ['buy-st_nadir-miner','Nadir-Miner übernehmen','Nur falls die Werft einen fertigen Miner mit Vormerkung für dich produziert hat.'],
  ['buy-st_nadir-jaeger','Jäger kaufen','Erst wenn Nadir eine echte, vollständig bezahlte Jägerhülle besitzt.']
 ];
@@ -206,6 +207,35 @@ function wirtschaftsbericht(a,s,angebote){
 }
 // J13 – alle Voraussetzungen werden nur gelesen; ein Kauf folgt ausschliesslich
 // dem bereits vorhandenen, unmittelbar erneut geprueften house-Originalauftrag.
+function jaegerBeitraege(){
+ const projekt=scope.J13Spielerprojekt.erstellen(session);
+ $('jaeger-beitrag-hinweis').textContent=projekt.hinweis;
+ const host=$('jaeger-beitrag-aktionen'),blocks=[];
+ for(const gruppe of projekt.gruppen){
+  const section=d.createElement('section'),h=d.createElement('h5');
+  h.textContent=gruppe.titel;section.append(h);
+  for(const a of gruppe.angebote){
+   const box=d.createElement('div'),b=d.createElement('button'),p=d.createElement('small');
+   box.className='order';b.type='button';b.dataset.j13Action=a.id;
+   b.textContent=titel(a);b.disabled=!a.ok;
+   p.textContent=a.label+' · '+(a.ok?'Original-Core: ausführbar':'Gesperrt: '+a.reason);
+   b.addEventListener('click',()=>auftrag(a.id));box.append(b,p);section.append(box);
+  }
+  blocks.push(section);
+ }
+ host.replaceChildren(...blocks);
+ $('jaeger-rohstoffe').textContent='Eigene belegte Siliziumverkäufe: '+projekt.silizium.eigeneVerkaeufe+
+   ' · Alle Siliziumverkäufe an Nadir: '+projekt.silizium.verkauft+'.';
+ $('jaeger-sperren').replaceChildren(...projekt.sperren.map(s=>{
+  const p=d.createElement('p');p.textContent=s.titel+' · Eigentümer: '+s.eigentuemer+
+   ' · house: '+(s.ok?'Core erlaubt den Auftrag':s.grund);return p;
+ }));
+ const a=projekt.aldera;
+ $('jaeger-finanzierung').textContent='Neuer K7-Erzankauf: Aldera besitzt '+fmt(a.kasse)+
+  ' von '+fmt(a.erzkauf)+' ISK; aktuell fehlen '+fmt(a.fehlend)+
+  ' ISK. Diese Liquiditätsprüfung ersetzt keine Firmenzustimmung. '+
+  'Die bekannte 500-ISK-Lücke im zweiten Forschungsvertrag ist dadurch nicht gelöst.';
+}
 function jaegerBericht(zustand,angebote){
  if(!scope.J13Werftakte)throw Error('J13: die originale Produktionsakte fehlt');
  const kauf=angebote.find(a=>a.id==='buy-st_nadir-jaeger');
@@ -267,6 +297,7 @@ function anzeigen(){
  }));
  wirtschaftsbericht(a,s,alleAngebote);
  jaegerBericht(s,alleAngebote);
+ jaegerBeitraege();
  const pilots=session.piloten();
  const own=a.schiffe;
  $('spielerschiffe').replaceChildren(...(own.length?own.map(sh=>{

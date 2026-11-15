@@ -8,6 +8,9 @@ on:
       - 'prototypes/j4c/**'
       - 'prototypes/raum/**'
       - 'prototypes/verbund/**'
+      - 'prototypes/legacy-hub/**'
+      - 'tests/p0-legacy-hub-*'
+      - 'scripts/p0-prototype-deps.mjs'
       - 'tests/j7-*'
       - 'tests/j8-*'
       - 'tests/j9-*'
@@ -103,6 +106,11 @@ jobs:
           WELT_BROWSER: ${{ matrix.browser }}
       - name: "J11: Frachterkauf, Flugreserve, echte F4-Fracht und vier Touchgrößen"
         run: node tests/j11-frachter-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "P0: historische Legacy-Hub-Einstiege inkl. Core-Vorschau in vier Touchgrößen"
+        run: node tests/p0-legacy-hub-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}

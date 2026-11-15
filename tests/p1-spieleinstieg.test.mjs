@@ -74,7 +74,7 @@ test('P1: standalone player entry only adds a separate shell, no core or old sav
  assert.match(html,/id="neues-spiel"/);
  assert.match(js,/W5acSession\.create\(42,'private195'\)\.export\(\)/);
  assert.match(js,/session\.exportieren\(\)/);
- assert.match(js,/session\.oeffnen204/);
+ assert.match(js,/\.oeffnen204\(/);
  assert.match(js,/localStorage\.setItem\(SLOT,json\)/);
  assert.doesNotMatch(js,/indexedDB\.deleteDatabase|localStorage\.clear\(|\.removeItem\(/);
  assert.doesNotMatch(html,/<script[^>]*src="https?:/i);

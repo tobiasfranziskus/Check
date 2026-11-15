@@ -70,11 +70,11 @@ Alle 13: Audit ok, Weltgeld 33.000, Mint/Burn 0, Save/Load hashgleich, Spielerka
 | S01 · 365 Tage | trägt; 218.001 Eis, Wassererlös 3.354.668 | `f3a679417bba5194` |
 | S01 · 730 Tage | trägt; 437.013 Eis, Wassererlös 6.727.284 | `85dd1f6779ca09fb` |
 | S02 · 365 Tage | trägt; 200 Frachter, 178 Miner, 379 Ersatzkäufe, 76 Erzverträge, Löhne 1.492.920, Dividenden 1.641.777, Wassererlös 3.145.760 | `29933833f78d8676` |
-| S02 · 730 Tage | S02_730_PLATZHALTER | – |
+| S02 · 730 Tage | trägt; 401 Frachter, 356 Miner, 757 Ersatzkäufe, 152 Erzverträge, Löhne 2.984.391, Dividenden 3.279.005, Wassererlös 6.305.588; Zwischenhash Tag 365 identisch zum getrennten 365-Tage-Lauf | `3a189d3d049500e3` |
 | S04 · 365 Tage | läuft gleichmäßig schwach; Erlös 78.608, 12 Ersatzkäufe | `52c4ebbef00c51ea` |
 | S13 · 365 Tage | läuft gleichmäßig schwach; Erlös 89.816, 12 Ersatzkäufe | `ff888fa7ab5da839` |
 
-Langläufe sind einmalig ausgeführte Werkzeugläufe (`node tools/w6-szenarien.cjs S02 365`), nicht Teil der Testsuite. S02 benötigt wegen der wachsenden Zahl verbrauchter Hüllen etwa 6,5 Minuten für 365 Tage.
+Langläufe sind einmalig ausgeführte Werkzeugläufe (`node tools/w6-szenarien.cjs S02 365`), nicht Teil der Testsuite. S02 benötigt wegen der wachsenden Zahl verbrauchter Hüllen etwa 6,5 Minuten für 365 und 27,5 Minuten für 730 Tage.
 
 ## 8. Offene Produktentscheidungen [OPTION]
 

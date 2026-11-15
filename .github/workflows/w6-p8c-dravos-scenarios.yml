@@ -1,0 +1,51 @@
+name: "W6/P8c – genuine Dravos 13×90 and S02 365 economic audit"
+on:
+  pull_request:
+    paths:
+      - 'prototypes/welt/welt-kern.js'
+      - 'prototypes/welt/rule200-k7-industry-core.js'
+      - 'prototypes/welt/j2b-silizium-core.js'
+      - 'prototypes/flug2d/flug-kern.js'
+      - 'tools/w6-p8c-dravos-szenarien.cjs'
+      - '.github/workflows/w6-p8c-dravos-scenarios.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-real-supply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scenario: alle
+            days: 90
+            label: alle-13-regime-90
+          - scenario: S02
+            days: 365
+            label: s02-365
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: "Real Dravos and original Rule204/205 targeted prerequisites"
+        run: |
+          node --check tools/w6-p8c-dravos-szenarien.cjs
+          node --test tests/w6-p8c-dravos-expedition.test.mjs
+      - name: "Prepaid Dravos/Orion/Nadir transit, 0 minted ISK, original cargo audits"
+        run: node tools/w6-p8c-dravos-szenarien.cjs "${{ matrix.scenario }}" "${{ matrix.days }}"
+        env:
+          P8C_OUTPUT_JSON: ${{ runner.temp }}/p8c-${{ matrix.label }}.json
+          P8C_STORE_SAVE: '1'
+          P8C_OUTPUT_SAVE: ${{ runner.temp }}/p8c-${{ matrix.label }}-canonical-save.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p8c-${{ matrix.label }}-raw-audits
+          path: |
+            ${{ runner.temp }}/p8c-${{ matrix.label }}.json
+            ${{ runner.temp }}/p8c-${{ matrix.label }}-canonical-save.json
+          retention-days: 7
+          if-no-files-found: ignore

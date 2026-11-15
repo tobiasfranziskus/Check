@@ -116,7 +116,7 @@ function erstellen(){
    return Object.freeze({
      herkunft,quelleHash,regel:204,tick:s.tick,hash:welt.hash(s),
      weltgeld:gleichesGeld(s),hausgeld:s.owners.house.cash,schiffe,stationen,
-     eigenerJaeger:jaeger.length, pilotierbar:jaeger.length>0,
+     eigenerJaeger:jaeger.length, pilotierbar:schiffe.some(sh=>['jaeger','miner'].includes(sh.klasse)),
      ausgabe:'Regel204 – manuelle JSON-Sicherung, kein automatischer Rückweg nach Regel195'
    });
  }
@@ -163,14 +163,21 @@ function erstellen(){
  function piloten(){
    requireState();
    const copy=pruefen(welt,zustand);
-   return Object.freeze(Object.values(copy.ships)
-     .filter(sh=>sh.owner==='house'&&['miner','jaeger'].includes(sh.klasse)&&sh.flug)
-     .sort((a,b)=>a.id.localeCompare(b.id)).map(sh=>Object.freeze({
+   const own=Object.values(copy.ships).filter(sh=>
+     sh.owner==='house'&&['miner','jaeger'].includes(sh.klasse)&&sh.flug);
+   return Object.freeze(own.sort((a,b)=>a.id.localeCompare(b.id)).map(sh=>{
+     // Nach Import einer Welt mit nur einem eigenen Schiff darf dieser eine
+     // vorhandene Pilot sein laufendes Schiff wieder übernehmen. Kein Ortswechsel.
+     const einzelnWiederAnmelden=!pilot&&own.length===1;
+     const erlaubt=!copy.kanon.pendel?.[sh.id]&&
+       (sh.flug.lage==='angedockt'||einzelnWiederAnmelden);
+     return Object.freeze({
        id:sh.id,klasse:sh.klasse,system:sh.system,lage:sh.flug.lage,
-       erlaubt:!copy.kanon.pendel?.[sh.id]&&sh.flug.lage==='angedockt',
+       erlaubt,
        grund:copy.kanon.pendel?.[sh.id]?'Autonomer Pendelauftrag zunächst beenden'
-         :sh.flug.lage!=='angedockt'?'Vor Übernahme vollständig andocken':null
-     })));
+         :!erlaubt?'Vor einem Wechsel vollständig andocken':null
+     });
+   }));
  }
  function uebernehmen(id,spielt=false){
    requireState();

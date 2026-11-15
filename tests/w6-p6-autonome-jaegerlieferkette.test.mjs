@@ -89,3 +89,56 @@ test('W6/P6: ohne das neue Silizium-Opt-in bleibt der S02-Originalpfad unangetas
  assert.equal(s.owners.house.cash,3000);
  audit(w,s);
 });
+
+test('W6/P6+S02: 90 Tage mit echter J4-Spielerabnahme erhalten bezahlte Eis-/Wasser-/Ersatzkreise',()=>{
+ const {welt:w,s}=W6.start(P);
+ w.npcSiliziumSetzen(s,true);
+ let gekauft=false,mitte=null,wertTag60=null,wertTag90=null;
+ const TAGESMINUTEN=1440,ende=90*TAGESMINUTEN,raster=120;
+ for(let t=raster;t<=ende;t+=raster){
+  w.advance(s,raster);
+  if(!gekauft && (s.stations.st_nadir.lager.jaeger||0)>0){
+   const kasse=s.owners.house.cash;
+   const r=w.execute(s,{type:'shipBuy',owner:'house',klasse:'jaeger',station:'st_nadir'});
+   assert.equal(r.ok,true,JSON.stringify(r));
+   assert.equal(kasse-s.owners.house.cash,900);
+   gekauft=true;
+  }
+  if(s.tick%(15*TAGESMINUTEN)===0){
+   audit(w,s);
+   if(s.tick===45*TAGESMINUTEN)mitte=w.save(s);
+   if(s.tick===60*TAGESMINUTEN)wertTag60=W6.kennzahlen(w,s);
+   if(s.tick===90*TAGESMINUTEN)wertTag90=W6.kennzahlen(w,s);
+  }
+ }
+ assert.equal(s.tick,ende);
+ assert.equal(gekauft,true,'ohne J4-Huelle kein nachweisbarer originaler 900-ISK-Spielerkauf');
+ assert.equal(s.owners.house.cash,2100,'Spieler spart den restlichen Betrag frei');
+ assert.equal(Object.values(s.ships).filter(x=>x.owner==='house'&&x.klasse==='jaeger').length,1);
+ assert.ok(s.kanon.silizium.gefoerdert<=w.rules.j2b.feld.vorrat,
+   'Endlicher physischer Siliziumvorrat darf nie ueberzogen werden');
+ assert.ok(s.kanon.jaeger.fertig>=1);
+ assert.ok(s.kanon.ersatzkaeufe>20,'echte Ersatzwirtschaft auch nach Spieler-Jaegerkauf');
+ assert.ok(wertTag60&&wertTag90&&mitte,'vollstaendige 45/60/90-Tage-Checkpointfolge');
+ for(const feld of ['eis','wasserErloes','loehne','ersatz']){
+  assert.ok(wertTag90[feld]>wertTag60[feld],
+    'kein fortgesetzter, finanzierter '+feld+'-Kreislauf Tag 60-90: '+JSON.stringify({tag60:wertTag60,tag90:wertTag90}));
+ }
+ assert.deepEqual(s.kanon.npc.abgelehnt,{});
+ const endHash=w.hash(s);
+ const fortsetzung=w.load(mitte);
+ w.advance(fortsetzung,45*TAGESMINUTEN);
+ audit(w,fortsetzung);
+ assert.equal(w.canonical(fortsetzung),w.canonical(s),'45→90 Save/Load gegen direkten 90-Tage-Pfad');
+ assert.equal(w.hash(fortsetzung),endHash);
+ console.log('W6_P6_S02_90_TAGE',JSON.stringify({
+  tag:90,hash:endHash,autonomJ4:s.kanon.jaeger.fertig,
+  originaleSpielerkaeufe:s.kanon.jaeger.kaeufe.length,
+  siliziumGefoerdert:s.kanon.silizium.gefoerdert,
+  siliziumVorrat:s.kanon.silizium.vorrat,ersatz:s.kanon.ersatzkaeufe,
+  tag60:{eis:wertTag60.eis,wasserErloes:wertTag60.wasserErloes,
+   loehne:wertTag60.loehne,ersatz:wertTag60.ersatz},
+  tag90:{eis:wertTag90.eis,wasserErloes:wertTag90.wasserErloes,
+   loehne:wertTag90.loehne,ersatz:wertTag90.ersatz},
+  weltgeld:33000,mint:0,burn:0,spieler:s.owners.house.cash}));
+});

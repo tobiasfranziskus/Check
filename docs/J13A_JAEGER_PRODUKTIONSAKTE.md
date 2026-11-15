@@ -1,6 +1,6 @@
 # J13a – Jäger-Produktionsakte in der echten Karriere
 
-**15.11.2026 · [DRAFT / nicht integriert]**
+**15.11.2026 · [J13a / Integrations-PR #391]**
 
 Ausgangsbasis: `main 22146ac4c6a1d166677655f32e8bc19c892d97bc` (J12). Diese Stufe ist **kein vollständig produzierter Spielerjäger**. Sie macht erstmals die bestehende, aber noch nicht durchgängig finanzierte Produktionskette als spielbezogenes Ziel nachvollziehbar.
 

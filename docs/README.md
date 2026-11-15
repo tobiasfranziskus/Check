@@ -20,7 +20,7 @@
 
 **[MAIN] Spielcode `ff828da9`** für P1, [vorheriger main `17090ec6` als Backup](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-p1-game-onboarding-20261115), vollständig grüne [P1-Node22/Chromium/WebKit-Abnahme](https://github.com/tobiasfranziskus/Check/actions/runs/43712294281), [296/296 Node22 und NAS-Erhalt](https://github.com/tobiasfranziskus/Check/actions/runs/43712294283), [Jäger-/Miner-Sicherheit](https://github.com/tobiasfranziskus/Check/actions/runs/43712294304), [Pages erfolgreich](https://github.com/tobiasfranziskus/Check/actions/runs/43712668896). Echte iPad-/NAS-Geräteabnahme weiterhin offen.
 
-**[DRAFT / unabhängig]** [J11-Codex-Frachter #378](https://github.com/tobiasfranziskus/Check/pull/378) bleibt getrennt von P1 und ist noch **nicht in main**. **[ANALYSE]** [J10d-Al­dera-Finanzierungsblocker #376](https://github.com/tobiasfranziskus/Check/pull/376): 0 von 500 ISK für zweite Erzlieferung; kein Rettungsmodell freigegeben.
+**[DRAFT / unabhängig]** [J11-Codex-Frachter #378](https://github.com/tobiasfranziskus/Check/pull/378) bleibt getrennt von P1 und ist noch **nicht in main**. **[ANALYSE]** [J10d-Aldera-Finanzierungsblocker #376](https://github.com/tobiasfranziskus/Check/pull/376): 0 von 500 ISK für zweite Erzlieferung; kein Rettungsmodell freigegeben.
 
 ## Aufbewahrung und offene Forschungs-PRs
 

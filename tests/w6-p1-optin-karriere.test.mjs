@@ -70,3 +70,13 @@ test('W6/X1: Manipulierte Opt-in-Flags werden von der Core-Ladevalidierung abgew
  json.kanon.npcSilizium.aktiv='gratis';
  assert.throws(()=>J8.erstellen().oeffnen204(JSON.stringify(json),true));
 });
+
+// P5-Felder dürfen keinem alten No-NPC-Originalsave hinzugedichtet werden.
+test('W6/X1: ohne NPC-Entscheidungsbuch ist ein eingeschleustes P5-Flag ungueltig',()=>{
+ const {neu,welt,s}=start(false);
+ assert.throws(()=>welt.npcSiliziumSetzen(s,true),/Original-NPC-Firmenpolitik/);
+ const forged=JSON.parse(neu.exportieren());
+ forged.kanon.npcSilizium={aktiv:true,werftauftrag:false};
+ assert.equal(welt.audit(forged).ok,false);
+ assert.throws(()=>J8.erstellen().oeffnen204(JSON.stringify(forged),true));
+});

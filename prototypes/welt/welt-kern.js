@@ -701,6 +701,126 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   const m_core_jaeger = jaeger ? J4.create({rules,
     transfer:m_core_buch.transfer,summe:m_core_buch.summe,ganz}) : null;
 
+  // -------------------------------------------------------------- m_core_p8c_reise
+  // NUR Regel206: EIN legal gekaufter K2-Miner benutzt die bereits vorhandene
+  // W3-Route (Dravos-Orion-Nadir 22+18), transit mit Original-kern.execute.
+  // Jede echte Transitminute wird aus der eigenen, im Voraus gebundenen
+  // NPC3-Kasse an den bereits existierenden Privatpiloten gezahlt.
+  // Die Regel ist Forschung: keine Gratis-Miner, kein Frachterersatz,
+  // keine andere Ware und kein Dravos-Verkauf oder unsichtbarer Teleport.
+  const m_core_p8c_reise = (() => {
+    const konto='k1_p8c_reise',owner='npc3',minutenpreis=rules.w3.arbeitJeMinute;
+    const leer=()=>({reisen:[],auftrag:null,gebunden:0,bezahlt:0,minuten:0});
+    const ziel=(station)=> station==='st_dravos'?'dravos':station==='st_nadir'?'nadir':null;
+    const route=(von,nach)=>kern.route(rules.world,von,nach);
+    const berechtigt=(s,sh)=>sh&&sh.owner===owner&&sh.klasse==='miner'
+      &&sh.heimat==='nadir'&&s.kanon.minerWerft?.lokaleKaeufe
+        ?.some(x=>x.id===sh.id&&x.owner===owner&&x.preis===kaufpreis('miner'));
+    function pruefen(s,cmd){
+      if(!p8cDravos)return 'P8c: diese Welt kennt kein Dravos';
+      if(!cmd||typeof cmd!=='object'||Array.isArray(cmd)
+        ||Object.keys(cmd).sort().join()!=='owner,schiff,type,ziel'
+        ||cmd.type!=='shipTravelDravos'||cmd.owner!==owner
+        ||!ziel(cmd.ziel))return 'P8c: Eigentümer und Befehlsform';
+      const sh=s.ships[cmd.schiff],to=ziel(cmd.ziel),p=s.kanon.p8c;
+      if(!berechtigt(s,sh)||!p||p.auftrag||sh.phase!=='dock'
+        ||sh.auftrag!=='halten'||sh.flug?.lage!=='angedockt'
+        ||sh.flug.anker!=='st_'+sh.system||sh.system===to
+        ||!['nadir','dravos'].includes(sh.system))
+        return 'P8c: nur freier eigener K2-Miner im wirklichen Dock';
+      const a=s.kanon.silizium.auftrag,b=s.kanon.silizium.felder;
+      if(to==='dravos'){
+        if(sh.system!=='nadir'||a||ladungSumme(sh)!==0
+          ||b['dravos-silizium'].vorrat<rules.j2b.charge)
+          return 'P8c: keine unerschlossene endliche Dravos-Fördercharge';
+      }else if(sh.system!=='dravos'||!a||a.owner!==owner
+          ||a.schiff!==sh.id||a.feld!=='dravos-silizium'
+          ||a.gefoerdert!==a.menge||sh.ladung.silizium!==a.menge)
+        return 'P8c: nur echte volle Siliziumladung zum Nadir-Verkäufer';
+      const r=route(sh.system,to),pfad=sh.system==='nadir'
+        ?'nadir,orion,dravos':'dravos,orion,nadir';
+      if(!r||r.zeit!==40||r.weg.join(',')!==pfad)
+        return 'P8c: historische physische Dravos-Orion-Nadir-Route fehlt';
+      const kosten=r.zeit*minutenpreis;
+      if(s.owners[owner].cash<kosten)return 'P8c: 40 Minuten Original-Pilotlohn nicht vorfinanziert';
+      if((s.owners[konto]?.cash||0)!==0)return 'P8c: Fracht-Arbeitstreuhand belegt';
+      return null;
+    }
+    function starten(s,cmd){
+      const grund=pruefen(s,cmd);if(grund)return {ok:false,type:cmd?.type,reason:grund};
+      const sh=s.ships[cmd.schiff],von=sh.system,nach=ziel(cmd.ziel);
+      const r=route(von,nach),kosten=r.zeit*minutenpreis;
+      // Der ORIGINAL-Kern erstellt die echte W3-Route und Ankunft.
+      const start=kern.execute(s,{type:'shipMove',owner,schiff:sh.id,ziel:cmd.ziel},rules);
+      if(!start.ok)return {ok:false,type:cmd.type,reason:'P8c Original-W3: '+start.reason};
+      if(!s.owners[konto])s.owners[konto]={id:konto,kind:'k1-reserve',cash:0};
+      m_core_buch.transfer(s,owner,konto,kosten,'p8c-reisereserve');
+      const p=s.kanon.p8c;
+      p.gebunden+=kosten;
+      p.auftrag={schiff:sh.id,owner,von,nach,start:s.tick,
+        ende:s.tick+r.zeit,dauer:r.zeit,bezahlt:0};
+      m_core_flugplan.koerperSync(s);
+      return {ok:true,type:cmd.type,schiff:sh.id,von,nach,dauer:r.zeit,reserviert:kosten};
+    }
+    function minute(s){
+      if(!p8cDravos)return;
+      const p=s.kanon.p8c,a=p.auftrag;if(!a)return;
+      const sh=s.ships[a.schiff];
+      if(!berechtigt(s,sh)||s.owners[konto]?.cash<minutenpreis)
+        throw Error('P8c: Transit ohne Eigentum oder bezahlten Privatpiloten');
+      if(s.tick<=a.start||s.tick>a.ende)
+        throw Error('P8c: Zeitreise oder versaeumte bezahlte Minute');
+      m_core_buch.transfer(s,konto,KANON.piloten[owner],minutenpreis,'p8c-reisepilot');
+      a.bezahlt++;p.minuten++;p.bezahlt+=minutenpreis;
+      s.kanon.verschleiss[sh.id]=(s.kanon.verschleiss[sh.id]||0)+1;
+      if(s.tick===a.ende){
+        if(sh.phase!=='dock'||sh.system!==a.nach
+          ||sh.ankunft!==s.tick||a.bezahlt!==a.dauer)
+          throw Error('P8c: Pilot bezahlt ohne W3-Ankunft am echten Ziel');
+        p.reisen.push({...a});p.auftrag=null;
+      }else if(sh.phase!=='reise'||sh.ziel!=='st_'+a.nach
+          ||sh.ankunft!==a.ende)
+        throw Error('P8c: fehlendes originales W3-Transitschiff');
+    }
+    function audit(s){
+      if(!p8cDravos)return s.kanon.p8c===undefined;
+      const p=s.kanon.p8c;
+      if(!p||typeof p!=='object'||Array.isArray(p)
+        ||Object.keys(p).sort().join()!=='auftrag,bezahlt,gebunden,minuten,reisen'
+        ||!Array.isArray(p.reisen)||!['gebunden','bezahlt','minuten'].every(k=>ganz(p[k]))
+        ||p.bezahlt!==p.minuten*minutenpreis)return false;
+      let geb=0,bez=0,letzte=0,ort='nadir',schiff=null;
+      const valid=(a,offen)=>{
+        if(!a||typeof a!=='object'||Array.isArray(a)
+          ||Object.keys(a).sort().join()!=='bezahlt,dauer,ende,nach,owner,schiff,start,von'
+          ||!ganz(a.start)||!ganz(a.ende)||!ganz(a.dauer)||!ganz(a.bezahlt)
+          ||a.owner!==owner||!berechtigt(s,s.ships[a.schiff])
+          ||a.von!==ort||a.start<letzte
+          ||a.nach!==(a.von==='nadir'?'dravos':'nadir')
+          ||a.dauer!==40||a.ende!==a.start+a.dauer
+          ||a.bezahlt>(offen?s.tick-a.start:a.dauer)
+          ||a.bezahlt!==(offen?s.tick-a.start:a.dauer)
+          ||(offen?a.ende<=s.tick:a.ende>s.tick)
+          ||(schiff!==null&&schiff!==a.schiff))return false;
+        schiff=a.schiff;ort=a.nach;letzte=a.ende;
+        geb+=a.dauer*minutenpreis;bez+=a.bezahlt*minutenpreis;
+        return true;
+      };
+      for(const r of p.reisen)if(!valid(r,false))return false;
+      if(p.auftrag&&!valid(p.auftrag,true))return false;
+      const sh=schiff?s.ships[schiff]:null;
+      if(sh&&((p.auftrag&&
+         (sh.phase!=='reise'||sh.ziel!=='st_'+p.auftrag.nach
+          ||sh.ankunft!==p.auftrag.ende||sh.system!==p.auftrag.von))
+         ||(!p.auftrag&&sh.system!==ort)))return false;
+      return geb===p.gebunden&&bez===p.bezahlt
+        &&m_core_buch.summe(s,'p8c-reisereserve')===geb
+        &&m_core_buch.summe(s,'p8c-reisepilot')===bez
+        &&(s.owners[konto]?.cash||0)===geb-bez;
+    }
+    return {leer,pruefen,starten,minute,audit};
+  })();
+
   // -------------------------------------------------------------- m_core_disponent
   // ---------------------------------------------------------------- m_core_spielerfracht
   // Der Original-W5n-Kern bleibt einziger Transportintegrator. K1 dokumentiert

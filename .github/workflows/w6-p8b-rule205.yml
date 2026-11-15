@@ -1,0 +1,29 @@
+name: "W6/P8b – endliche Zweifeld-Forschung Regel205 (kein Deployment)"
+on:
+  pull_request:
+    paths:
+      - "prototypes/welt/j2b-silizium-core.js"
+      - "prototypes/welt/rule200-k7-industry-core.js"
+      - "prototypes/welt/welt-kern.js"
+      - "tests/w6-p8b-two-fields-rule205.test.mjs"
+      - ".github/workflows/w6-p8b-rule205.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  two-physical-fields:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: "Echte Rule205-Lagerstaetten: Abbau, Belege, dritte J4-Huelle, Geld, Replay, Alt-204"
+        run: node --test tests/w6-p8b-two-fields-rule205.test.mjs
+      - name: "Syntax und Original-P6-90-Tage-Regression"
+        run: |
+          node --check prototypes/welt/welt-kern.js
+          node --check prototypes/welt/j2b-silizium-core.js
+          node --check prototypes/welt/rule200-k7-industry-core.js
+          node --test tests/w6-p5-autonome-siliziumkette.test.mjs tests/w6-p6-autonome-jaegerlieferkette.test.mjs

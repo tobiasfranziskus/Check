@@ -9,6 +9,7 @@ on:
       - 'prototypes/raum/**'
       - 'prototypes/verbund/**'
       - 'tests/j7-*'
+      - 'tests/j8-*'
       - 'prototypes/flug2d/flug-kern.js'
       - 'prototypes/f8-jaeger/**'
       - 'prototypes/welt/**'
@@ -68,6 +69,11 @@ jobs:
           WELT_BROWSER: ${{ matrix.browser }}
       - name: "J7: Regel195-Original im Browser nur prüfen, Manipulation zurückweisen"
         run: node tests/j7-uebernahme-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "J8: bezahlter Miner, echte Weltzeit, freiwillige Save-Kopie und Wiederaufnahme"
+        run: node tests/j8-konzern-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}

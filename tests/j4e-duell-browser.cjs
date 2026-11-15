@@ -47,9 +47,9 @@ const Welt=require('../prototypes/welt/welt-kern.js');
    try{
     await page.goto('http://127.0.0.1:'+server.address().port+'/');
     assert.match(await page.locator('h1').first().textContent(),/W0–W5/);
-    const href=await page.locator('nav[aria-label="Spielmodi"] a').getAttribute('href');
+    const href=await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/j4c/index.html"]').getAttribute('href');
     assert.equal(href,'prototypes/j4c/index.html','öffentliches Hauptspiel verlinkt den Jäger');
-    await page.locator('nav[aria-label="Spielmodi"] a').tap();
+    await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/j4c/index.html"]').tap();
     await page.waitForURL('**/prototypes/j4c/index.html');
     assert.equal(await page.locator('#duell-start').isDisabled(),true);
     assert.equal(await page.locator('#duell-feuer').isDisabled(),true);

@@ -1,3 +1,17 @@
+# J7: Original-Regel195→204-Prüfung integriert, Saves unangetastet – 15.11.2026
+
+**[MAIN]** Die vollständig prüfende, **nicht migrierende** J7-Kompatibilitätsschicht aus [#361](https://github.com/tobiasfranziskus/Check/pull/361) ist auf **`main 630905e850ec95101a1dab99f75ceb720d6996cf`** integriert. Vorheriger main `2556e727ceb748c4c5699be9bb5aa1928674593f` wurde auf [backup/main-before-j7-uebernahmepruefung-20261115](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-j7-uebernahmepruefung-20261115) gesichert. Kein Core-, Regel-, Konten-, Speicherhüllen- oder Root-/NAS-Spielcode geändert.
+
+**[SPIELBARER EINSTIEG / VERANTWORTUNG]** Der vorhandene Root→Jägerweg enthält einen Link zu [`prototypes/verbund/index.html`](../prototypes/verbund/index.html). Dort kann eine exportierte Regel195-/Schema8-Datei im **eigenen Browser**, ohne Upload, Download, Autoimport oder Überschreiben, durch die sechs bestehenden Original-Konverter geprüft werden. Pro Stufe erscheinen Resultat, Hash, Weltgeld; Manipulation oder nicht erfüllte Verträge erzeugen einen klaren Blocker. Die Jäger-Anmeldung akzeptiert weiterhin nur wirklich gekaufte Schiffe; ein alter Regel195-Save enthält keinen Jägerkauf und wird deshalb nicht kostenlos flugfähig gemacht.
+
+**[CI / FINALER J7-HEAD `dc5ea22d`]** [W5-RC1 / Node22 #43692307407](https://github.com/tobiasfranziskus/Check/actions/runs/43692307407): **275/275 Einzeltests, 0 Fehler/Skips**, originaler W5-Hauptstand, Touch-Preflight und NAS-Einzeldatei-Lieferprüfung. [J4e-/RAUM-/J7-Browser #43692307427](https://github.com/tobiasfranziskus/Check/actions/runs/43692307427): Chromium und WebKit Jäger-/Miner-Weltraumcockpit je vier Touchgrößen; zusätzlich lokale J7-Dateiprüfung je drei Größen und zurückgewiesener gefälschter Kontostand. [JavaScript-/Wirtschaftsregression #43692307439](https://github.com/tobiasfranziskus/Check/actions/runs/43692307439): erfolgreich, bedingt nicht gelaufener Sicherheitsgeografie-Job `skipped`, nicht als bestanden gewertet.
+
+**[PAGES]** [Deploy #43692631466](https://github.com/tobiasfranziskus/Check/actions/runs/43692631466) ist **completed/success für `630905e8`**. Eine unabhängig gerenderte externe Live-Webseite sowie echte iPad-Safari-/NAS-Geräteabnahme sind noch nicht erfolgt. NAS wurde nicht aktualisiert.
+
+**[OFFEN / NÄCHSTE STUFE]** Der technische Übernahmetest begründet noch keine übertragene spielbare Einheit. Als nächstes benötigt Regel204 eine Konzern-/Flottensitzung ohne gekauften Anfangsjäger, die echte vorhandene Miner-/Frachter-/Wirtschaftsaktionen weiterfinanziert, anschließend legitime Jägerproduktion beauftragen und den eigenen Jäger nach Kauf fliegen kann. Volle Erhaltung von aktiven Verträgen und begrenzter Industrie ist erst an mehreren realen alten 195-Saves zu prüfen; keine automatische Konvertierung und keine parallele autoritative Welt. Kein W6-Nachhaltigkeitsnachweis.
+
+---
+
 # J6-I + RAUM-1 in main und über Pages veröffentlicht – 15.11.2026
 
 **[MAIN]** [PR #359](https://github.com/tobiasfranziskus/Check/pull/359) aus den geprüften Drafts #356 (Flottenwechsel), #357 (reale Jägerwirtschaft) und #358 (grafisches Raumcockpit) wurde per Squash als `main ffd0654e60323742de306eb324b206e6f4287b91` integriert. Alter main `399a36ab38c1f6bf4b1b0d40f6a1254d4a52d434` liegt unverändert unter [backup/main-before-j6i-raum1-20261115](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-j6i-raum1-20261115). Die alten individuellen Drafts werden als superseded behandelt, nicht zusätzlich gemergt.

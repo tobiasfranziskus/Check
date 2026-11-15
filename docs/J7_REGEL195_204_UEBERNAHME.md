@@ -1,3 +1,5 @@
+> **[MAIN / J7 Stand 15.11.2026]** Die nachfolgend entwickelte, rein prüfende Übernahmekette wurde mit [#361](https://github.com/tobiasfranziskus/Check/pull/361) in `main 630905e8` integriert und auf [GitHub Pages](https://github.com/tobiasfranziskus/Check/actions/runs/43692631466) erfolgreich deployed. Vollständige Node22-Abnahme: **275/275**, Browser: Chromium/WebKit je drei J7-Touchgrößen mit gültiger und manipulierter Quelle; Root-/W5-/NAS-Schutz unverändert. Die historische DRAFT-Dokumentation folgt darunter. **Keine** produktive Save-Migration, kein 204-Spielstart ohne eigenen gekauften Jäger, keine W6-Nachhaltigkeit.
+
 # J7 – Original-Regel195 → Regel204: streng geprüfte Übergabekette
 
 **[DRAFT / 15.11.2026]** Ausgangspunkt: **main `2556e727ceb748c4c5699be9bb5aa1928674593f`**. Keine Änderung an bestehender Regel195- oder Regel204-Implementierung. Keine Save-/HTML-/Root- oder NAS-Änderungen.

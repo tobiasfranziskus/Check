@@ -104,7 +104,7 @@ const SLOT='aphros-void:spielerkarriere:regel204:v1';
        name:'untrusted.json',mimeType:'application/json',
        buffer:Buffer.from(JSON.stringify({rulesVersion:204,schema:8,owners:{house:{cash:999999}}}))
     });
-    assert.match(await page.locator('#menumeldung').textContent(),/nicht geladen|verweigert|laufende Karriere/i);
+    await page.waitForFunction(()=>/nicht geladen|verweigert|laufende Karriere/i.test(document.querySelector('#menumeldung').textContent),null,{timeout:10000});
     assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),resumed);
     assert.deepEqual(errors,[],'console/page errors are not allowed');
     console.log('P1_GAME_BROWSER_OK',JSON.stringify({

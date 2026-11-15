@@ -64,7 +64,44 @@ function liste(w,s,aktiv,sitzung){
       });
     }));
 }
-const API=Object.freeze({pruefen,liste});
+
+// RAUM-1-Rollenwechsel: auch ein tatsächlich vorhandener, eigener F6-Miner
+// darf am selben Dock übernommen werden. Frachter bleiben bewusst gesperrt:
+// der vorhandene Nadir-Frachter ist im freien F6 nicht steuerbar.
+function pruefenRolle(w,s,aktiv,ziel,sitzung){
+  if(w?.regel!==204||s?.rulesVersion!==204||!s?.ships)
+    return ablehnung('Nur die originale Regel204-Welt ist zulässig');
+  if(!sitzung||typeof sitzung.spielt!=='boolean'
+     ||!Object.hasOwn(sitzung,'patrouille')||!Object.hasOwn(sitzung,'duell'))
+    return ablehnung('Vollständiger Sitzungsstatus fehlt');
+  if(typeof aktiv!=='string'||typeof ziel!=='string'||aktiv===ziel)
+    return ablehnung('Ein anderes eigenes Schiff wählen');
+  const a=s.ships[aktiv],b=s.ships[ziel];
+  if(!a||!b||a.owner!=='house'||b.owner!=='house')
+    return ablehnung('Nur eigenes, physisch vorhandenes Schiff');
+  if(!['jaeger','miner'].includes(a.klasse)||!['jaeger','miner'].includes(b.klasse))
+    return ablehnung('Dieses Cockpit unterstützt noch keinen freien Frachterflug');
+  if((a.klasse==='jaeger'&&!gekauft(s,aktiv))
+     ||(b.klasse==='jaeger'&&!gekauft(s,ziel)))
+    return ablehnung('Jäger ohne tatsächlich nachgewiesenen Kaufbeleg');
+  if(sitzung.spielt)return ablehnung('Weltzeit vor dem Schiffwechsel anhalten');
+  if(sitzung.patrouille&&['bereit','flug'].includes(sitzung.patrouille.status))
+    return ablehnung('Laufende Patrouille zuerst beenden');
+  if(sitzung.duell&&sitzung.duell.status==='aktiv')
+    return ablehnung('Trainingsduell zuerst beenden');
+  const station=dock(s,a);
+  if(!station||dock(s,b)!==station)
+    return ablehnung('Beide Schiffe müssen vollständig am selben Dock liegen');
+  if(s.kanon?.flugdienst?.[aktiv]||s.kanon?.flugdienst?.[ziel])
+    return ablehnung('Fluglohnreserve erst am Dock abrechnen');
+  let audit;
+  try{audit=w.audit(s);}catch{return ablehnung('Weltaudit fehlgeschlagen');}
+  if(!audit?.ok)return ablehnung('Weltaudit fehlgeschlagen');
+  return Object.freeze({ok:true,pilot:ziel,vorher:aktiv,station,
+    trainingsanzeigenZuruecksetzen:!!(sitzung.patrouille||sitzung.duell)});
+}
+
+const API=Object.freeze({pruefen,liste,pruefenRolle});
 if(typeof module==='object'&&module.exports)module.exports=API;
 else scope.J6FlottenWechsel=API;
 })(typeof globalThis==='object'?globalThis:this);

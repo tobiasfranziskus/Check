@@ -101,3 +101,20 @@ test('J6 gemeinsamer Auftrags-/Flottenadapter verleiht house keine fremden Werft
  assert.equal(w.hash(s),hash);
  check(s);
 });
+
+test('RAUM-1 und J6: bezahlten Miner ohne Teleport übernehmen, Frachter und offene Mission blockieren',()=>{
+ const s=w.load(json),vor=w.save(s),hash=w.hash(s),p=sitzung();
+ const mine=Flotte.pruefenRolle(w,s,'sh023','sh022',p);
+ assert.equal(mine.ok,true,JSON.stringify(mine));
+ assert.equal(mine.pilot,'sh022');
+ assert.equal(mine.station,'st_nadir');
+ assert.equal(Flotte.pruefenRolle(w,s,'sh022','sh023',p).ok,true);
+ assert.equal(Flotte.pruefenRolle(w,s,'sh023','sh021',p).ok,false);
+ assert.equal(Flotte.pruefenRolle(w,s,'sh023','sh020',p).ok,false);
+ assert.equal(Flotte.pruefenRolle(w,s,'sh023','sh022',{spielt:true,patrouille:null,duell:null}).ok,false);
+ assert.equal(Flotte.pruefenRolle(w,s,'sh023','sh022',{spielt:false,patrouille:{status:'bereit'},duell:null}).ok,false);
+ assert.equal(Flotte.pruefenRolle(w,s,'sh023','sh022',{spielt:false,patrouille:null,duell:{status:'aktiv'}}).ok,false);
+ assert.equal(w.hash(s),hash);
+ assert.equal(w.save(s),vor);
+ check(s);
+});

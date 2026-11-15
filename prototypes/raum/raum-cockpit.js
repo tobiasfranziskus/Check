@@ -9,7 +9,7 @@
 (function (scope) {
 'use strict';
 function verbinden(B) {
-  const S = scope.RaumSzene, G = scope.RaumGrafik, doc = scope.document;
+  const S = scope.RaumSzene, G = scope.RaumGrafik, J6 = scope.J6FlottenWechsel, doc = scope.document;
   if (!S || !G || !doc || !B) throw Error('RAUM: Szene, Grafik oder Sitzungsbrücke fehlen');
   const $ = (id) => doc.getElementById(id);
   const canvas = $('raum-leinwand'), buehne = $('raum-buehne');
@@ -73,11 +73,25 @@ function verbinden(B) {
   function schiffWechseln(id) {
     const s = B.zustand();
     if (!s) return;
-    const grund = S.wechselGrund(s, Z.aktiv, id);
-    if (grund) { meldung('Schiffwechsel nicht möglich: ' + grund, true); return; }
+    const sitzung = {spielt:Z.laeuft,patrouille:B.patrouille(),duell:B.duellStand()};
+    const ergebnis = J6 && J6.pruefenRolle
+      ? J6.pruefenRolle(B.welt(),s,Z.aktiv,id,sitzung)
+      : {ok:!S.wechselGrund(s,Z.aktiv,id),reason:S.wechselGrund(s,Z.aktiv,id)};
+    if (!ergebnis.ok) { meldung('Schiffwechsel nicht möglich: ' + ergebnis.reason, true); return; }
     Z.aktiv = id; Z.auswahl = null; Z.vorher = null;
     meldung('Steuerung übernommen: ' + (S.KLASSENNAME[s.ships[id].klasse] || s.ships[id].klasse) + ' ' + id + ' · gleicher Weltstand, gleiche Kasse');
     hud(true);
+  }
+
+  function flotteGeprueft(sz) {
+    const s=B.zustand(), auswahl=S.flotte(s,sz.aktiv.id);
+    if(!J6 || !J6.pruefenRolle || sz.aktiv.lage!=='angedockt')return auswahl;
+    const status={spielt:Z.laeuft,patrouille:B.patrouille(),duell:B.duellStand()};
+    return auswahl.map(f=>{
+      if(f.aktiv||f.system!==sz.system)return f;
+      const ergebnis=J6.pruefenRolle(B.welt(),s,sz.aktiv.id,f.id,status);
+      return {...f,grund:ergebnis.ok?null:ergebnis.reason};
+    });
   }
 
   // ---- Zeitschritt und Bild --------------------------------------------------------------------
@@ -291,7 +305,7 @@ function verbinden(B) {
     // Dockkarte (Stationsansicht)
     if (a.lage === 'angedockt') {
       $('raum-dock').hidden = false;
-      const st = S.objekt(sz, sz.station), bb = sz.bergbau, fl = S.flotte(B.zustand(), a.id), F = B.welt().daten.flug;
+      const st = S.objekt(sz, sz.station), bb = sz.bergbau, fl = flotteGeprueft(sz), F = B.welt().daten.flug;
       const sig = JSON.stringify([a.id, st.lager, bb, fl, p.status, sz.kasse]);
       neuBauen('dock', sig, $('raum-dockinhalt'), () => {
         const teile = [absatz('Lager der Station (nicht Spielereigentum): ' + st.lager, 'note')];
@@ -323,7 +337,7 @@ function verbinden(B) {
       const t = x.name + ' · ' + fmt(x.distanz) + ' P'; if (b.textContent !== t) b.textContent = t;
       b.setAttribute('aria-pressed', String(Z.auswahl === x.id));
     });
-    const fl = S.flotte(B.zustand(), a.id);
+    const fl = flotteGeprueft(sz);
     neuBauen('flotte', JSON.stringify(fl), $('raum-flotte'), () => fl.map((f) => absatz(f.name + ' · ' + f.system + ' · ' + f.lage + ' · Fracht ' + f.ladung + (f.aktiv ? ' · WIRD GESTEUERT' : f.grund ? ' · ' + f.grund : ' · Wechsel im Dock möglich'), f.aktiv ? 'raum-aktivzeile' : '')));
     for (const f of S.FAKTOREN) $('raum-tempo-' + f).setAttribute('aria-pressed', String(Z.faktor === f));
   }

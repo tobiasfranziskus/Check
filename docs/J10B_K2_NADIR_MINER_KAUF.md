@@ -27,6 +27,12 @@ Das ursprüngliche `shipBuy` bleibt für den tatsächlichen Aldera-Miner, sowie 
 
 Dies ist ein **begrenzt ausgeführter Eingangsbeleg**, keine Behauptung autonomer NPC-Verträge im normalen Browser. Die Original-NPC-Erzpendelautomatik verhindert weiterhin ohne rechtmäßige Vertragspriorität die frühe K7-Verwendung; diese separate Produktentscheidung bleibt offen.
 
+## Öffentlicher Root-Einstieg
+
+Die bisherige `index.html`-Navigation enthielt nur den Jäger-Link, nicht den schon integrierten Konzern-/Minerflug. Dieser PR ergänzt **ausschließlich** einen zweiten regulären, 50 CSS-Pixel hohen Link zu `prototypes/verbund/konzern.html` und erklärt den **freiwilligen, getrennten** Regel195→204-Exportpfad. Das vorhandene Root195-Spiel, JavaScript, IndexedDB, alle bestehenden Bedienelemente und die NAS-Einzeldatei bleiben unangetastet.
+
+Der neue J10b-Browser-Test startet bewusst **unter der echten Root-URL `/index.html`**, klickt den neuen Navigationslink und führt anschließend den echten K2-Kauf-/Piloten-/Save-Pfad aus. Dadurch ist die Änderung nicht nur über eine versteckte Prototypenadresse spielbar.
+
 ## Prüfpfade
 
 - `tests/j10b-k2-nadir-kauf.test.mjs`: echter Bau-/Kaufpfad, ursprünglich gesperrtes Angebot, fremde `npc3`-Vormerkung verweigert, manipulierte Werft-/Kassen-/Schiffbestände im Import abgelehnt, deterministischer Load/Replay, echter J9-Pilot und unveränderte Original-195-Datei.

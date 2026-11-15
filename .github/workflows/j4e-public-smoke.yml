@@ -6,11 +6,14 @@ on:
       - 'aphros-void.html'
       - 'scripts/build-w5-singlefile.mjs'
       - 'prototypes/j4c/**'
+      - 'prototypes/raum/**'
       - 'prototypes/flug2d/flug-kern.js'
       - 'prototypes/f8-jaeger/**'
       - 'prototypes/welt/**'
       - 'tests/j4e-*'
       - 'tests/j5-*'
+      - 'tests/raum-*'
+      - 'tests/j6i-*'
       - 'tests/w5singlefile.test.mjs'
       - 'tests/w5rc1-preservation.test.mjs'
       - '.github/workflows/j4e-public-smoke.yml'
@@ -29,7 +32,7 @@ jobs:
       - name: "Pages-Navigation reproduzierbar, NAS-W0–W5 unverändert"
         run: node scripts/build-w5-singlefile.mjs --check
       - name: "J4e öffentlicher Einstieg: kaufbelegtes Seed42 JSON, W0–W5-Erhalt"
-        run: node --test tests/j4e-oeffentlicher-spieltest.test.mjs tests/j4e-release-abnahme.test.mjs tests/j5-konzernansicht.test.mjs tests/w5singlefile.test.mjs tests/w5rc1-preservation.test.mjs
+        run: node --test tests/j4e-oeffentlicher-spieltest.test.mjs tests/j4e-release-abnahme.test.mjs tests/j5-konzernansicht.test.mjs tests/raum-szene.test.mjs tests/w5singlefile.test.mjs tests/w5rc1-preservation.test.mjs
   genuine-fighter-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -48,6 +51,16 @@ jobs:
           node "$RUNNER_TEMP/j4e-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
       - name: "Vier Touchgrößen: Root → Jäger → J5-Konzern/Flugpause → F8-Training → Save"
         run: node tests/j4e-duell-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "RAUM-1 Raumcockpit: vier Touchgrößen, Leinwand-Tipp, Knüppel, Konzernwechsel, Bergbau, Replay, ohne Canvas"
+        run: node tests/raum-cockpit-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "J6-I Konzernwirtschaft: echter Spielerauftrag und JSON-Audit"
+        run: node tests/j6i-wirtschaft-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}

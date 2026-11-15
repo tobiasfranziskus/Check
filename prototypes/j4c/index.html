@@ -47,6 +47,7 @@ footer{max-width:1240px;margin:0 auto 22px;font-size:.86rem;color:#a5b9cd}
 @media(max-width:580px){.status{grid-template-columns:repeat(2,minmax(0,1fr))}.controls{grid-template-columns:1fr 1fr}section,aside,.panel{padding:11px}section>canvas{height:42vh}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 </style>
+<link rel="stylesheet" href="../raum/raum.css">
 </head>
 <body>
 <header>
@@ -56,6 +57,7 @@ footer{max-width:1240px;margin:0 auto 22px;font-size:.86rem;color:#a5b9cd}
 <nav class="ansichten" aria-label="Ansichten derselben Jägerwelt">
 <button id="ansicht-cockpit" aria-controls="spielbereich" aria-pressed="true">Jägercockpit</button>
 <button id="ansicht-konzern" aria-controls="konzernbereich" aria-pressed="false">Konzern &amp; Flotte</button>
+<button id="ansicht-raum" class="primary" aria-controls="raumbereich" aria-pressed="false" hidden>Raumcockpit · Grafik</button>
 </nav>
 <main id="spielbereich">
 <div class="left">
@@ -154,6 +156,59 @@ footer{max-width:1240px;margin:0 auto 22px;font-size:.86rem;color:#a5b9cd}
 <p class="note">Kein Autosave. Vor Schließen oder Verlassen des Browserfensters immer exportieren. Bestehende Hauptspiel- und Testversionen werden nicht überschrieben.</p>
 </aside>
 </main>
+<section id="raumbereich" aria-label="Grafisches Raumcockpit derselben Regel204-Welt" hidden>
+<h2 class="raum-titel">RAUM-1 · Grafisches Raumcockpit <span class="sub">– dieselbe Welt, dieselbe Kasse, derselbe Flugkern</span></h2>
+<div id="raum-buehne">
+<canvas id="raum-leinwand" role="img" aria-label="Weltraumansicht: eigenes Schiff, Station, Felder, Bojen und weitere Schiffe des Systems. Alle Ziele sind auch über die Objektliste unter der Ansicht wählbar."></canvas>
+<p id="raum-ersatz" class="note" hidden>Dieser Browser stellt keine Canvas-2D-Grafik bereit. Die Objektliste, alle Tasten unter dieser Fläche und das Steuerpult steuern dasselbe Schiff ohne Grafik.</p>
+<div class="raum-feld raum-ol" aria-label="Schiffsstatus">
+<strong id="raum-schiff">–</strong><span id="raum-lage">–</span><span id="raum-fahrt"></span><span id="raum-ladung"></span>
+</div>
+<div class="raum-feld raum-or" aria-label="Kasse und Weltzeit">
+<span>Kasse <strong id="raum-kasse">–</strong></span><span>Flugreserve <strong id="raum-reserve">–</strong></span><span id="raum-zeit">–</span><span id="raum-audit">–</span>
+</div>
+<div id="raum-zielkarte" class="raum-feld" aria-label="Gewähltes Ziel" hidden>
+<button id="raum-ziel-zu" type="button" aria-label="Auswahl aufheben">×</button>
+<strong id="raum-zielname"></strong><span id="raum-zielinfo"></span>
+<div id="raum-zielaktionen" class="raum-reihe"></div>
+</div>
+<div id="raum-dock" class="raum-feld" aria-label="Stationsansicht im Dock" hidden>
+<strong>Angedockt · Stationsdienste</strong>
+<div id="raum-dockinhalt"></div>
+</div>
+<div id="raum-knueppel" role="application" aria-label="Steuerknüppel: Richtung ziehen, Auslenkung bestimmt den Schub. Nur im freien Flug."><i id="raum-knauf"></i></div>
+<div class="raum-tasten">
+<button id="raum-feuer" type="button" class="alert" hidden>Feuer (Training)</button>
+<button id="raum-duell" type="button" hidden>Duelltraining</button>
+<button id="raum-stopp" type="button" hidden>Stopp</button>
+<button id="raum-andocken" type="button" class="primary" hidden>Andocken</button>
+<button id="raum-abdocken" type="button" class="primary" hidden>Abdocken</button>
+</div>
+</div>
+<div class="raum-zeitleiste" role="group" aria-label="Weltzeit und Zoom">
+<button id="raum-start" type="button" class="primary" aria-pressed="false">Zeit starten</button>
+<button id="raum-tempo-1" type="button" aria-pressed="false">1×</button>
+<button id="raum-tempo-10" type="button" aria-pressed="true">10×</button>
+<button id="raum-tempo-60" type="button" aria-pressed="false">60×</button>
+<button id="raum-tempo-300" type="button" aria-pressed="false">300×</button>
+<button id="raum-zoom-minus" type="button" aria-label="Herauszoomen">−</button>
+<button id="raum-zoom-plus" type="button" aria-label="Hineinzoomen">+</button>
+</div>
+<p id="raum-meldung" role="status" aria-live="polite">Tippe ein Objekt an oder wähle es in der Liste. Leerer Raum setzt einen Flugpunkt; geflogen wird erst nach Bestätigung.</p>
+<div class="raum-unten">
+<details open><summary>Übersicht · Objekte im System</summary><div id="raum-ziele" class="raum-liste"></div></details>
+<details><summary>Eigene Flotte · Schiffwechsel</summary><div id="raum-flotte"></div>
+<p class="note">Der Kern kennt noch keinen eigenen Spielerstandort. Deshalb wechselst du die Steuerung nur im Dock zwischen eigenen Schiffen derselben Station (Dockkarte). Der Wechsel ändert weder Geld noch Eigentum.</p></details>
+<details open><summary>Sitzung · Sichern und Ansichten</summary>
+<div class="raum-reihe">
+<button id="raum-export" type="button">Geprüften JSON-Spielstand exportieren</button>
+<button id="raum-schreiber" type="button">Flugschreiber exportieren</button>
+<button id="raum-konzern" type="button">Konzern &amp; Flotte</button>
+<button id="raum-pult" type="button">Steuerpult (klassisch)</button>
+</div>
+<p class="note">Kein Autosave: vor dem Verlassen exportieren. Laden und Import bleiben im Steuerpult. Bedienung: Knüppel = Handflug, Tippen = Ziel wählen, zwei Finger = Zoom; Tastatur: Pfeile/WASD, Leertaste Stopp, P Zeit, +/− Zoom.</p></details>
+</div>
+</section>
 <section id="konzernbereich" aria-label="Konzernübersicht derselben Welt" hidden>
 <h2>J5 · Konzern &amp; Flotte – ein Regel204-Spielstand</h2>
 <p class="note">Lesende Originaldaten der gerade geladenen Jägerwelt. Kein zweiter Wirtschaftskern, keine heimlichen Käufe oder Transfers. Beim Öffnen wird der laufende Flug angehalten; dieselbe Patrouille und dasselbe Training bleiben bis zur Rückkehr ins Cockpit erhalten.</p>
@@ -191,6 +246,9 @@ footer{max-width:1240px;margin:0 auto 22px;font-size:.86rem;color:#a5b9cd}
 <script src="../f8-jaeger/f8-duell.js"></script>
 <script src="duell.js"></script>
 <script src="konzern-lage.js"></script>
+<script src="../raum/raum-szene.js"></script>
+<script src="../raum/raum-grafik.js"></script>
+<script src="../raum/raum-cockpit.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

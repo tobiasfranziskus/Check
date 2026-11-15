@@ -1,0 +1,50 @@
+/* Aphros Void · RAUM-1 [DRAFT] – Raumcockpit. Touchflächen mindestens 48 CSS-Pixel, Safe Areas, Hoch-/Querformat. */
+#raumbereich[hidden]{display:none}
+#raumbereich{max-width:1240px;margin:8px auto 14px;padding:10px}
+body.raum-aktiv>header,body.raum-aktiv>footer{display:none}
+body.raum-aktiv .ansichten{margin:max(6px,env(safe-area-inset-top)) auto 6px}
+.raum-titel{font-size:.95rem;margin:0 0 8px}
+#raum-buehne{position:relative;height:min(74vh,760px);min-height:440px;border-radius:10px;border:1px solid #253e58;background:#040915;overflow:hidden;
+ -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#raum-leinwand{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;border:0;border-radius:0;min-height:0}
+#raum-leinwand[hidden]{display:none}
+#raum-ersatz{position:absolute;left:12px;right:12px;top:40%;margin:0;padding:12px;border:1px dashed #58728b;border-radius:8px;background:#0e1d32}
+.raum-feld{position:absolute;display:flex;flex-direction:column;gap:2px;padding:8px 10px;border:1px solid #33485f;border-radius:9px;
+ background:rgba(9,20,38,.86);font-size:.84rem;line-height:1.3;font-variant-numeric:tabular-nums;max-width:46%;overflow-wrap:anywhere}
+.raum-feld[hidden]{display:none}
+.raum-feld strong{font-size:.95rem}
+.raum-ol{left:8px;top:8px}.raum-or{right:8px;top:8px;text-align:right}
+#raum-zielkarte{left:50%;transform:translateX(-50%);top:104px;min-width:min(300px,92%);max-width:min(440px,94%);padding-right:54px}
+#raum-ziel-zu{position:absolute;right:4px;top:4px;min-width:48px;min-height:48px;padding:0;font-size:1.3rem;background:transparent;border-color:transparent}
+#raum-dock{left:8px;top:104px;bottom:150px;width:min(390px,calc(100% - 16px));max-width:none;overflow-y:auto;-webkit-overflow-scrolling:touch;gap:8px}
+#raum-dockinhalt{display:grid;gap:8px}
+#raum-dockinhalt p{margin:0}
+#raum-dockinhalt button,#raum-zielaktionen button{min-height:50px;text-align:left}
+.raum-reihe{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.raum-reihe button{flex:1 1 140px}
+#raum-knueppel{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:12px;width:132px;height:132px;border-radius:50%;
+ border:2px solid #58728b;background:radial-gradient(circle,rgba(27,52,79,.75),rgba(9,20,38,.8));touch-action:none;display:flex;align-items:center;justify-content:center}
+#raum-knueppel.aus{opacity:.35}
+#raum-knauf{display:block;width:52px;height:52px;border-radius:50%;background:#176d77;border:2px solid #7bdee0;pointer-events:none}
+.raum-tasten{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:12px;display:flex;flex-direction:column;gap:8px;width:min(170px,40%)}
+.raum-tasten button{min-height:52px}
+.raum-tasten button[hidden]{display:none}
+.raum-zeitleiste{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
+.raum-zeitleiste button{flex:1 1 64px;min-height:50px}
+.raum-zeitleiste #raum-start{flex:2 1 150px}
+.raum-zeitleiste button[aria-pressed="true"],.raum-liste button[aria-pressed="true"]{background:#176d77;border-color:#7bdee0}
+#raum-meldung{margin:10px 0;padding:10px 12px;background:#12384a;border-radius:8px;border-left:4px solid #44c0bf;min-height:48px;overflow-wrap:anywhere}
+.raum-unten{display:grid;gap:10px}
+.raum-unten details{border:1px solid #33485f;border-radius:10px;background:#0e1d32;padding:0 12px 10px}
+.raum-unten summary{min-height:48px;display:flex;align-items:center;font-weight:650;cursor:pointer}
+.raum-liste{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.raum-liste button{text-align:left;min-height:50px}
+#raum-flotte p{margin:.3em 0;font-size:.9rem;border-bottom:1px solid #273a50;padding:6px 0}
+.raum-aktivzeile{color:#ffe39d}
+@media(max-width:700px){
+ #raum-buehne{height:68vh;min-height:430px}
+ .raum-feld{font-size:.78rem;padding:6px 8px}
+ #raum-knueppel{width:112px;height:112px}
+ #raum-zielkarte,#raum-dock{top:112px}
+}
+@media(max-height:560px){#raum-buehne{height:86vh;min-height:320px}#raum-dock{bottom:8px;left:156px;width:min(360px,calc(100% - 340px))}}

@@ -6,6 +6,9 @@ const W=globalThis.AphrosWelt, Kurs=globalThis.J4dPatrouille, Kampf=globalThis.J
 if(!W||!Kurs||!Kampf||!Lage)throw Error('J5: Original-Welt, F6, F8 oder reine Konzernprojektion fehlen');
 const $=id=>document.getElementById(id),canvas=$('raum'),ctx=canvas.getContext('2d');
 let welt=null,weltzustand=null,pilot=null,aktion=null,ursprung='',spielt=false,geschw=45,patrouille=null,duell=null,ansicht='cockpit';
+// RAUM-1: optionale dritte Ansicht derselben Sitzung. Fehlt das Modul oder Canvas, bleibt das Steuerpult vollständig nutzbar.
+let raum=null,vorherige='cockpit',schrittzaehler=0,journal=[],journalVoll=true;
+const JOURNAL_MAX=50000;
 const meldung=(text,fehler=false)=>{$('meldung').textContent=text;$('meldung').className=fehler?'fehler':'';};
 const geld=()=>Object.values(weltzustand.owners).reduce((n,o)=>n+o.cash,0);
 function passendenJaeger(s){
@@ -51,17 +54,42 @@ function anzeigeKonzern(){
   b=>[b.id,format(b.cash)+' ISK']);
 }
 function wechseln(ziel){
- if(!['cockpit','konzern'].includes(ziel)||ziel===ansicht)return;
+ if(!['cockpit','konzern','raum'].includes(ziel)||ziel===ansicht)return;
+ if(ziel==='raum'&&!raum)return;
  // Niemals unbemerkt hinter einer verdeckten Flugansicht simulieren.
- if(ziel==='konzern'&&spielt){
+ if(spielt){
   spielt=false;$('play').textContent='Flugzeit starten';
  }
+ if(ansicht==='raum')raum.deaktivieren();
+ if(ansicht!=='konzern')vorherige=ansicht;
  ansicht=ziel;
  $('spielbereich').hidden=ziel!=='cockpit';
  $('konzernbereich').hidden=ziel!=='konzern';
+ $('raumbereich').hidden=ziel!=='raum';
  $('ansicht-cockpit').setAttribute('aria-pressed',String(ziel==='cockpit'));
  $('ansicht-konzern').setAttribute('aria-pressed',String(ziel==='konzern'));
+ $('ansicht-raum').setAttribute('aria-pressed',String(ziel==='raum'));
+ $('konzern-zurueck').textContent=vorherige==='raum'?'Zum gleichen Raumcockpit zurück':'Zum gleichen Jägercockpit zurück';
+ if(ziel==='raum')raum.aktivieren();
  anzeigen();
+}
+// Einziger Weg, auf dem Ansichten Weltzeit vergehen lassen: ganze Original-Teilschritte samt Beobachtern.
+function weltSchritte(n){
+ let minuten=0;
+ for(let i=0;i<n;i++){
+  if(welt.teilschritt(weltzustand)!==null)minuten++;
+  schrittzaehler++;
+  if(patrouille)Kurs.beobachten(patrouille,weltzustand);
+  if(duell)Kampf.beobachten(welt,weltzustand,duell);
+ }
+ return minuten;
+}
+// Einziger Weg für Kernbefehle aller Ansichten; der Flugschreiber hält die Folge für ein Replay fest.
+function weltBefehl(cmd){
+ const r=welt.execute(weltzustand,cmd);
+ if(journal.length<JOURNAL_MAX)journal.push({schritt:schrittzaehler,cmd:{...cmd},ok:r.ok});
+ else journalVoll=false;
+ return r;
 }
 function laden(json,freigabe){
  try{
@@ -90,9 +118,11 @@ function laden(json,freigabe){
    anzeigen();return false;
   }
   welt=neu.welt;weltzustand=neu.zustand;pilot=sh.id;ursprung=neu.quellHash;
+  schrittzaehler=0;journal=[];journalVoll=true;
   spielt=false;$('play').textContent='Flugzeit starten';aktion=null;patrouille=null;duell=null;
   $('datei').value='';$('unterschrift').hidden=true;
   meldung('Geprüfter, real bezahlter Jäger '+pilot+' geladen · Quellhash '+ursprung);
+  if(raum)raum.sitzungGewechselt();
   anzeigen();return true;
  }catch(e){
   // Nie den vorherigen validen Weltstand oder seine Spielzeit/Flugmission
@@ -104,7 +134,7 @@ function laden(json,freigabe){
 }
 function befehl(typ,extra={}){
  if(!welt||!pilot){meldung('Zuerst einen echten J4b-/J4c-Spielstand laden',true);return;}
- const r=welt.execute(weltzustand,{type:typ,owner:'house',schiff:pilot,...extra});
+ const r=weltBefehl({type:typ,owner:'house',schiff:pilot,...extra});
  if(!r.ok){meldung('Befehl abgelehnt: '+r.reason,true);return;}
  meldung(typ+' bestätigt · Eigentümer house · '+pilot);
  anzeigen();
@@ -213,10 +243,11 @@ function zeichnen(){
  }
  ctx.font=(11*dpr)+'px system-ui';ctx.fillStyle='#c1d6e9';ctx.fillText('EIN ZUSTAND · ECHTE F6-KINEMATIK · KEIN TREIBSTOFF',12*dpr,18*dpr);
 }
-function anzeigen(){anzeigeFlug();if(ansicht==='konzern')anzeigeKonzern();else zeichnen();}
+function anzeigen(){anzeigeFlug();if(ansicht==='konzern')anzeigeKonzern();else if(ansicht==='raum')raum.anzeigen();else zeichnen();}
 $('ansicht-cockpit').addEventListener('click',()=>wechseln('cockpit'));
 $('ansicht-konzern').addEventListener('click',()=>wechseln('konzern'));
-$('konzern-zurueck').addEventListener('click',()=>wechseln('cockpit'));
+$('ansicht-raum').addEventListener('click',()=>wechseln('raum'));
+$('konzern-zurueck').addEventListener('click',()=>wechseln(vorherige));
 $('beispiel').addEventListener('click',async()=>{
  const knopf=$('beispiel');
  knopf.disabled=true;meldung('Echten finanzierten Jägerstand laden und unabhängig prüfen …');
@@ -243,14 +274,20 @@ $('datei').addEventListener('change',async e=>{
  }
 });
 $('uebernahme').addEventListener('click',()=>{if(aktion)laden(aktion,true);});
-$('patrouille-start').addEventListener('click',()=>{
+function patrouilleStarten(){
  try {
   if(duell?.status==='aktiv')throw Error('Zuerst Trainingsduell beenden');
   if(!welt||!pilot)throw Error('Zuerst echten finanzierten Jäger laden');
   patrouille=Kurs.beginnen(weltzustand,pilot);
+  return {ok:true};
+ }catch(e){return {ok:false,reason:e.message};}
+}
+$('patrouille-start').addEventListener('click',()=>{
+ const r=patrouilleStarten();
+ if(r.ok){
   meldung('Patrouille vorbereitet. Echt abdocken und dann die drei Kontrollbojen bei maximal 300 P/s erreichen.');
   anzeigen();
- }catch(e){meldung('Patrouille abgelehnt: '+e.message,true);}
+ }else meldung('Patrouille abgelehnt: '+r.reason,true);
 });
 $('patrouille-ziel').addEventListener('click',()=>{
  if(!patrouille||!['bereit','flug'].includes(patrouille.status))return;
@@ -258,14 +295,20 @@ $('patrouille-ziel').addEventListener('click',()=>{
  if(patrouille.stufe===Kurs.TORE.length)befehl('shipDock',{station:'st_nadir'});
  else befehl('shipFlyTo',{x:z.x,y:z.y});
 });
-$('duell-start').addEventListener('click',()=>{
+function duellStarten(){
  try{
   if(patrouille&&['bereit','flug'].includes(patrouille.status))
    throw Error('Laufende Patrouille muss zuerst beendet werden');
   duell=Kampf.beginnen(welt,weltzustand,pilot);
+  return {ok:true};
+ }catch(e){return {ok:false,reason:e.message};}
+}
+$('duell-start').addEventListener('click',()=>{
+ const r=duellStarten();
+ if(r.ok){
   meldung('Original-F8-E-Duell auf dem bezahlten Jäger gestartet. Zuerst zur virtuellen Drohne fliegen, physisch ausrichten und selbst feuern.');
   anzeigen();
- }catch(e){meldung('Duellstart verweigert: '+e.message,true);}
+ }else meldung('Duellstart verweigert: '+r.reason,true);
 });
 $('duell-anflug').addEventListener('click',()=>{
  if(!duell||duell.status!=='aktiv')return;
@@ -293,7 +336,7 @@ $('play').addEventListener('click',()=>{
  if(!welt)return meldung('Zuerst original bezahlten Jäger laden',true);
  spielt=!spielt;$('play').textContent=spielt?'Flugzeit pausieren':'Flugzeit starten';
 });
-$('export').addEventListener('click',()=>{
+function exportieren(){
  if(!welt)return meldung('Kein geprüfter Weltstand geladen',true);
  try{
   const data=welt.save(weltzustand),url=URL.createObjectURL(new Blob([data],{type:'application/json'}));
@@ -301,14 +344,33 @@ $('export').addEventListener('click',()=>{
   document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
   meldung('Original-geprüfter Weltstand exportiert. Produktive Saves unberührt.');
  }catch(e){meldung('Sicherung abgelehnt: '+e.message,true);}
-});
+}
+$('export').addEventListener('click',exportieren);
 setInterval(()=>{
- if(!spielt||!welt)return;
+ if(!spielt||!welt||ansicht!=='cockpit')return;
  try{
-  for(let i=0;i<geschw;i++){welt.teilschritt(weltzustand);if(patrouille)Kurs.beobachten(patrouille,weltzustand);if(duell)Kampf.beobachten(welt,weltzustand,duell);}
+  weltSchritte(geschw);
   anzeigen();
  }catch(e){spielt=false;$('play').textContent='Flugzeit starten';meldung('Welt angehalten: '+e.message,true);}
 },700);
+// RAUM-1: Brücke zur grafischen Ansicht. Sie erhält keinen eigenen Zustand, nur Zugriff auf diese eine Sitzung.
+if(globalThis.RaumCockpit&&globalThis.RaumSzene&&globalThis.RaumGrafik&&$('raumbereich')){
+ try{
+  raum=globalThis.RaumCockpit.verbinden({
+   welt:()=>welt,zustand:()=>weltzustand,jaeger:()=>pilot,bojen:Kurs.TORE,
+   patrouille:()=>patrouille,patrouilleStand:()=>Kurs.stand(patrouille),
+   duellStand:()=>duell?Kampf.stand(duell):null,
+   schritte:weltSchritte,ausfuehren:weltBefehl,audit:()=>welt.audit(weltzustand),
+   patrouilleStarten,duellStarten,
+   feuern:()=>Kampf.feuern(welt,weltzustand,duell),
+   exportieren,ansicht:wechseln,meldung,
+   flugschreiber:()=>({format:'aphros-raum-flugschreiber-1',regel:204,quellHash:ursprung,
+    schritte:schrittzaehler,vollstaendig:journalVoll,eintraege:journal.map(e=>({...e,cmd:{...e.cmd}}))})
+  });
+  globalThis.RaumCockpit.sitzung=raum;
+  $('ansicht-raum').hidden=false;
+ }catch(e){raum=null;meldung('Grafisches Raumcockpit nicht verfügbar ('+e.message+'). Das Steuerpult bleibt nutzbar.',true);}
+}
 window.addEventListener('resize',()=>{if(ansicht==='cockpit')zeichnen();});
 anzeigen();
 })();

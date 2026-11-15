@@ -65,10 +65,17 @@ function erstellen(welt,zustand){
  const frachter=Object.values(s.ships).filter(sh=>sh.klasse==='frachter'&&sh.owner==='transport')
    .sort((a,b)=>a.id.localeCompare(b.id));
  if(miner.length&&frachter.length){
-   // Dies ist nur der tatsächliche Vorschlag für den fremden Auftraggeber;
-   // kein Klick, kein automatisches Setzen einer Unterschrift.
+   // Nur mit real existierenden, passenden Originalhüllen ist die Core-Probe
+   // möglich: keine Dummy-IDs und keine als "ausgeführt" getarnte Firmenentscheidung.
    vorgaenge.push(aktion('k7-offer','Erz-Frachtvertrag anbieten','st_nadir',
      {type:'industrialOreOffer',miner:miner[0].id,frachter:frachter[0].id}));
+ }else{
+   // Strukturelle Vorprüfung (aus realen Eigentums-/Flottenbeständen), bewusst
+   // NICHT als Original-Core-Ablehnungsgrund ausgegeben.
+   vorgaenge.push(Object.freeze({id:'k7-offer',label:'Erz-Frachtvertrag anbieten',
+     eigentuemer:'st_nadir',nurAnzeige:true,ok:false,
+     grund:'Vorprüfung: '+(!miner.length?'kein NPC3-Erzminer':'kein Frachter der Spedition transport')
+       +' als physisch vorhandener Auftragspartner',zahlungen:[]}));
  }
  for(const [id,label,owner] of [
   ['k7-mine','Bergbaubetrieb unterschreibt','npc3'],

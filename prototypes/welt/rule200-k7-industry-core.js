@@ -1224,6 +1224,10 @@ const { handel, aufnehmbar, stationIn } = m_core_handel;
 function entladen(state, rules, s) {
   const station = stationIn(rules, s.system);
   for (const ware of ids(s.ladung)) {
+    // Rule207: leere 0er-Bestandsfelder sind keine Ware. Beim neuen
+    // externen Dock-Transit duerfen sie keinen automatischen Ankaufsversuch
+    // ausloesen (kein Preis/Teiler fuer Nullmengen). Alte Regeln bitgleich.
+    if(rules.rulesVersion===207 && anzahl(s.ladung,ware)===0)continue;
     const m = Math.min(anzahl(s.ladung, ware), aufnehmbar(state, rules, station, ware));
     if (m > 0 && handel(state, rules, s, station, ware, m, false)) {
       state.stats.handel += 1; state.stats.verkaeufe[s.id] += 1;

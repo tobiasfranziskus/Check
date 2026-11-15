@@ -14,7 +14,7 @@
 
 ## S02-Langzeitfolgeprüfung · nicht integriert
 
-**[ANALYSE / NICHT MAIN]** Die [Folgeprüfung zu #385](W6_S02_LANGZEIT.md) schließt die damalige S02-Lücke: Tag 180/365/730 vollständig ausgeführt, 33.000 ISK, Mint/Burn 0; Tag-365-Replay und Dateifortsetzung kanonisch exakt. Endhash `3a189d3d049500e3`, 757 Ersatzkäufe, 760 historische Hüllen. CPU-Kosten steigen mit historischen Hüllen deutlich; kein dauerhafter Stillstand bis 730 beobachtet. 61/61 Node22-Testdateien einschließlich unveränderter 13×90-Regime; 3/3 direkte Werkzeugtests. [Daten und Logs](qa/w6-s02/results.json). Nur Forschung/Testwerkzeug geändert; keine Produktaktivierung, Integration oder Veröffentlichung. Der folgende #385-Abschluss beschreibt den damaligen Stand vor dieser Folgeprüfung.
+**[ANALYSE / NICHT MAIN]** [Draft #389](https://github.com/tobiasfranziskus/Check/pull/389), die [Folgeprüfung zu #385](W6_S02_LANGZEIT.md), schließt die damalige S02-Lücke: Tag 180/365/730 vollständig ausgeführt, 33.000 ISK, Mint/Burn 0; Tag-365-Replay und Dateifortsetzung kanonisch exakt. Endhash `3a189d3d049500e3`, 757 Ersatzkäufe, 760 historische Hüllen. CPU-Kosten steigen mit historischen Hüllen deutlich; kein dauerhafter Stillstand bis 730 beobachtet. 61/61 Node22-Testdateien einschließlich unveränderter 13×90-Regime; 3/3 direkte Werkzeugtests. [Daten und Logs](qa/w6-s02/results.json). Nur Forschung/Testwerkzeug geändert; keine Produktaktivierung, Integration oder Veröffentlichung. Der folgende #385-Abschluss beschreibt den damaligen Stand vor dieser Folgeprüfung.
 
 ## Unabhängiger W6-QA-Abschluss · nicht integriert
 

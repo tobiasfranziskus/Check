@@ -12,8 +12,12 @@
 | [MAIN] J8 Konzernkopie | Spieler kann ohne Startjäger vorhandenen Miner legal kaufen und Eis fördern; manuelle Save-Kopie | [#363](https://github.com/tobiasfranziskus/Check/pull/363) |
 | [MAIN] J9 | Rechtmäßig gekauften Miner ohne JSON-Zwischenexport im selben Regel204-Zustand fliegen, mit Originalflugreserve und Dock-/Eigentumsgates | [#366](https://github.com/tobiasfranziskus/Check/pull/366) |
 | [MAIN] J10a | Original-Werftkassen, Lager, NPC- und Stationsrechte sowie Kaufblockaden im Konzernspiel sichtbar, ohne Eingriff in Firmenrechte | [#368](https://github.com/tobiasfranziskus/Check/pull/368) |
-| [BESCHLOSSEN / nächster Schritt] J10b | NPC-Pendel gegenüber legitimen Industrie-Vertragsrollen auflösen und ersten finanzierten Jäger ermöglichen | [Roadmap](ROADMAP.md) |
+| [MAIN] J10b | 600-ISK-Eigentümerkauf einer echt gebauten Nadir-K2-Minerhülle; öffentlicher Root-Link zu Konzern/Miner; Jäger/RAUM-Touchtests und NAS-Datei erhalten | [Integration #373](https://github.com/tobiasfranziskus/Check/pull/373) · [Pages-Deploy](https://github.com/tobiasfranziskus/Check/actions/runs/43705980924) |
+| [ANALYSE / DRAFT] J10b-K7 | Vier getrennt legitimierte Firmenentscheide vor NPC-Pendel, echte Erz-/Fracht-/W5-Industriekette; noch keine normale autonome Koordination | [#370](https://github.com/tobiasfranziskus/Check/pull/370) |
+| [ANALYSE / DRAFT] J10c | 7 bezahlte J3-Bauteile aus echten W4- und J2b-Waren; Materiallücke 5 (= 10 Erz) vor J4 | [#374](https://github.com/tobiasfranziskus/Check/pull/374) |
 | [ANALYSE / Forschung] Krisen-Wirtschaft | Langzeit- und Käufergeldblockaden; Nachhaltigkeit nicht bewiesen | [Historischer Status](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261115.md) |
+
+**[MAIN] Spielcode `31665404`**, [vorheriger main als Backup](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-j10b-nadir-k2-20261115), vollständig grüne [Node22-](https://github.com/tobiasfranziskus/Check/actions/runs/43705579641) und [Chromium-/WebKit-Abnahme](https://github.com/tobiasfranziskus/Check/actions/runs/43705579645), [Pages erfolgreich](https://github.com/tobiasfranziskus/Check/actions/runs/43705980924). Echte iPad-/NAS-Geräteabnahme weiterhin offen.
 
 ## Aufbewahrung und offene Forschungs-PRs
 

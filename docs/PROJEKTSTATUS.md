@@ -12,6 +12,10 @@
 
 ---
 
+## S02-Langzeitfolgeprüfung · nicht integriert
+
+**[ANALYSE / NICHT MAIN]** Die [Folgeprüfung zu #385](W6_S02_LANGZEIT.md) schließt die damalige S02-Lücke: Tag 180/365/730 vollständig ausgeführt, 33.000 ISK, Mint/Burn 0; Tag-365-Replay und Dateifortsetzung kanonisch exakt. Endhash `3a189d3d049500e3`, 757 Ersatzkäufe, 760 historische Hüllen. CPU-Kosten steigen mit historischen Hüllen deutlich; kein dauerhafter Stillstand bis 730 beobachtet. 61/61 Node22-Testdateien einschließlich unveränderter 13×90-Regime; 3/3 direkte Werkzeugtests. [Daten und Logs](qa/w6-s02/results.json). Nur Forschung/Testwerkzeug geändert; keine Produktaktivierung, Integration oder Veröffentlichung. Der folgende #385-Abschluss beschreibt den damaligen Stand vor dieser Folgeprüfung.
+
 ## Unabhängiger W6-QA-Abschluss · nicht integriert
 
 **[ANALYSE / NICHT MAIN]** [#385](https://github.com/tobiasfranziskus/Check/pull/385) ergänzt die NPC-Forschung aus #382 um unabhängige Eigentums-/Opt-in-/Rücklagen- und Dauerprüfungen auf der oben genannten J11+P1-Basis. [Abnahmebericht mit CI-Nachweisen und Grenzen](W6_UNABHAENGIGE_ABNAHME_385.md), [S01-Langzeitdaten](W6_QA_385_LANGZEIT.json). S01 Tag 365: `f3a679417bba5194`; Tag 730 und Fortsetzung des Tag-365-Exports: `85dd1f6779ca09fb`, 33.000 ISK, Mint/Burn 0. S01 hat keine Stilllegung; der S02-Langzeitversuch wurde nach Tag 146 beendet und ist kein bestandener 365-/730-Tage-Ersatznachweis. Ein Berichtsfehler bei nicht durch das Prüfraster teilbaren Laufzeiten wurde ausschließlich im Forschungswerkzeug korrigiert. NPC-Politik, neue Rücklage und 1.060-ISK-Werftreserve bleiben [OPTION]. Kein Merge oder Deploy; die öffentliche Karriere und ihre Spielstände werden durch diesen Abschluss nicht verändert.

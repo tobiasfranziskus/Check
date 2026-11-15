@@ -1,0 +1,28 @@
+TAP version 13
+# Subtest: QA W6: short and partial reporting intervals reach the advertised final day
+ok 1 - QA W6: short and partial reporting intervals reach the advertised final day
+  ---
+  duration_ms: 7965.315387
+  type: 'test'
+  ...
+# Subtest: QA W6: reverse replacement matching and both policy switches preserve correct reserves
+ok 2 - QA W6: reverse replacement matching and both policy switches preserve correct reserves
+  ---
+  duration_ms: 4818.692185
+  type: 'test'
+  ...
+# Subtest: QA W6: long-run observer preserves state and detects falsified net bookings
+ok 3 - QA W6: long-run observer preserves state and detects falsified net bookings
+  ---
+  duration_ms: 1569.430488
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14477.034521

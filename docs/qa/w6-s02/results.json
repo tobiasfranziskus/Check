@@ -1,0 +1,4683 @@
+{
+  "status": "ANALYSE / NICHT MAIN",
+  "complete": true,
+  "scenario": "S02",
+  "node": "v22.23.4",
+  "provenance": {
+    "researchHead": "a95d0df70ff02aad1be4cdd1dab637c3228f22ab",
+    "code": "d5c570f98cdee28ec36044176cfa12c946fab3bf",
+    "main": "4d36a37d7c23b11151a4514df7841eef5eef9d01",
+    "coreAndReferenceFixturesUnchanged": true
+  },
+  "resources": {
+    "cpuQuota": 2,
+    "memoryLimitBytes": 8589934592,
+    "parallelRuns": true,
+    "wallTimesAreNotIsolatedBenchmarks": true
+  },
+  "primary": {
+    "fromDay": 0,
+    "toDay": 730,
+    "complete": true,
+    "elapsedSeconds": 2544.8685853800002,
+    "checkpoints": [
+      {
+        "day": 30,
+        "tick": 43200,
+        "hash": "6c5e49f3996e28f7",
+        "eis": 16356,
+        "erz": 2328,
+        "wasser": 16090,
+        "material": 150,
+        "frachter": 16,
+        "miner": 14,
+        "ersatz": 31,
+        "erzvertraege": 6,
+        "eisfrachten": 322,
+        "wasserErloes": 244642,
+        "dividenden": 138310,
+        "loehne": 122860,
+        "haushalte": 18928,
+        "firmen": 8694,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            9496
+          ],
+          [
+            "eigner_transport",
+            6797
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 34,
+          "consumed": 31,
+          "retired": 31
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 6.1052105270000006,
+        "secondsPerDay": 0.2035070175666667,
+        "auditSeconds": 0.02770491200000015,
+        "elapsedSeconds": 6.250599458,
+        "memory": {
+          "rss": 63426560,
+          "heapTotal": 23719936,
+          "heapUsed": 17819400,
+          "external": 1648123,
+          "arrayBuffers": 10511
+        },
+        "peakRssKiB": 69548,
+        "saveBytes": 41379,
+        "delta": {
+          "ice": 16356,
+          "waterRevenue": 244642,
+          "wages": 122860,
+          "replacements": 31
+        }
+      },
+      {
+        "day": 60,
+        "tick": 86400,
+        "hash": "0c5c93c27b2ba0d4",
+        "eis": 33468,
+        "erz": 2650,
+        "wasser": 33080,
+        "material": 310,
+        "frachter": 33,
+        "miner": 29,
+        "ersatz": 62,
+        "erzvertraege": 13,
+        "eisfrachten": 662,
+        "wasserErloes": 503938,
+        "dividenden": 272735,
+        "loehne": 245937,
+        "haushalte": 19754,
+        "firmen": 9206,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "eigner_transport",
+            13344
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            2506
+          ]
+        ],
+        "hulls": {
+          "total": 65,
+          "consumed": 62,
+          "retired": 62
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 14.091892295999997,
+        "secondsPerDay": 0.46972974319999994,
+        "auditSeconds": 0.06295882599999822,
+        "elapsedSeconds": 20.407117893,
+        "memory": {
+          "rss": 72167424,
+          "heapTotal": 33157120,
+          "heapUsed": 18374944,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 78692,
+        "saveBytes": 61366,
+        "delta": {
+          "ice": 17112,
+          "waterRevenue": 259296,
+          "wages": 123077,
+          "replacements": 31
+        }
+      },
+      {
+        "day": 90,
+        "tick": 129600,
+        "hash": "5582aecc49d4de89",
+        "eis": 50768,
+        "erz": 2950,
+        "wasser": 50140,
+        "material": 465,
+        "frachter": 49,
+        "miner": 44,
+        "ersatz": 93,
+        "erzvertraege": 19,
+        "eisfrachten": 1003,
+        "wasserErloes": 764776,
+        "dividenden": 408017,
+        "loehne": 368752,
+        "haushalte": 19523,
+        "firmen": 9461,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            7116
+          ],
+          [
+            "eigner_transport",
+            7023
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 96,
+          "consumed": 93,
+          "retired": 93
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 20.634087899,
+        "secondsPerDay": 0.6878029299666667,
+        "auditSeconds": 0.0514910069999969,
+        "elapsedSeconds": 41.093432348,
+        "memory": {
+          "rss": 73039872,
+          "heapTotal": 34594816,
+          "heapUsed": 20894800,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 81076,
+        "saveBytes": 81475,
+        "delta": {
+          "ice": 17300,
+          "waterRevenue": 260838,
+          "wages": 122815,
+          "replacements": 31
+        }
+      },
+      {
+        "day": 120,
+        "tick": 172800,
+        "hash": "0f5fd8467429bb16",
+        "eis": 68101,
+        "erz": 3250,
+        "wasser": 67150,
+        "material": 615,
+        "frachter": 65,
+        "miner": 58,
+        "ersatz": 125,
+        "erzvertraege": 25,
+        "eisfrachten": 1343,
+        "wasserErloes": 1024148,
+        "dividenden": 542465,
+        "loehne": 491060,
+        "haushalte": 19427,
+        "firmen": 9541,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            13694
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            1991
+          ]
+        ],
+        "hulls": {
+          "total": 128,
+          "consumed": 125,
+          "retired": 125
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 23.964227440999995,
+        "secondsPerDay": 0.7988075813666665,
+        "auditSeconds": 0.05750497899999755,
+        "elapsedSeconds": 65.11580185,
+        "memory": {
+          "rss": 96559104,
+          "heapTotal": 52830208,
+          "heapUsed": 32570976,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 94296,
+        "saveBytes": 102118,
+        "delta": {
+          "ice": 17333,
+          "waterRevenue": 259372,
+          "wages": 122308,
+          "replacements": 32
+        }
+      },
+      {
+        "day": 150,
+        "tick": 216000,
+        "hash": "1613632ddd0d5601",
+        "eis": 85317,
+        "erz": 3550,
+        "wasser": 84220,
+        "material": 775,
+        "frachter": 82,
+        "miner": 73,
+        "ersatz": 155,
+        "erzvertraege": 31,
+        "eisfrachten": 1684,
+        "wasserErloes": 1284428,
+        "dividenden": 678095,
+        "loehne": 613712,
+        "haushalte": 19989,
+        "firmen": 9237,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            14934
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            2333
+          ]
+        ],
+        "hulls": {
+          "total": 158,
+          "consumed": 155,
+          "retired": 155
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 38.130513387,
+        "secondsPerDay": 1.2710171129,
+        "auditSeconds": 0.1430946469999908,
+        "elapsedSeconds": 103.390035495,
+        "memory": {
+          "rss": 96477184,
+          "heapTotal": 52973568,
+          "heapUsed": 22957032,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 95652,
+        "saveBytes": 121506,
+        "delta": {
+          "ice": 17216,
+          "waterRevenue": 260280,
+          "wages": 122652,
+          "replacements": 30
+        }
+      },
+      {
+        "day": 180,
+        "tick": 259200,
+        "hash": "3f403fb44c57bcd9",
+        "eis": 102557,
+        "erz": 3900,
+        "wasser": 101150,
+        "material": 930,
+        "frachter": 99,
+        "miner": 87,
+        "ersatz": 187,
+        "erzvertraege": 38,
+        "eisfrachten": 2023,
+        "wasserErloes": 1542926,
+        "dividenden": 811457,
+        "loehne": 735876,
+        "haushalte": 19587,
+        "firmen": 9381,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            12034
+          ],
+          [
+            "pilot_eis",
+            4328
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 190,
+          "consumed": 187,
+          "retired": 187
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 63.144325476,
+        "secondsPerDay": 2.1048108492,
+        "auditSeconds": 0.1901105380000081,
+        "elapsedSeconds": 166.727075176,
+        "memory": {
+          "rss": 98488320,
+          "heapTotal": 54505472,
+          "heapUsed": 26069776,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 96528,
+        "saveBytes": 142348,
+        "delta": {
+          "ice": 17240,
+          "waterRevenue": 258498,
+          "wages": 122164,
+          "replacements": 32
+        }
+      },
+      {
+        "day": 210,
+        "tick": 302400,
+        "hash": "3632cf485e602e13",
+        "eis": 119833,
+        "erz": 4200,
+        "wasser": 118220,
+        "material": 1085,
+        "frachter": 115,
+        "miner": 102,
+        "ersatz": 217,
+        "erzvertraege": 44,
+        "eisfrachten": 2364,
+        "wasserErloes": 1803372,
+        "dividenden": 946799,
+        "loehne": 858563,
+        "haushalte": 19680,
+        "firmen": 9603,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "eigner_transport",
+            9917
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            2409
+          ]
+        ],
+        "hulls": {
+          "total": 220,
+          "consumed": 217,
+          "retired": 217
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 70.716809755,
+        "secondsPerDay": 2.3572269918333335,
+        "auditSeconds": 0.27337991199997486,
+        "elapsedSeconds": 237.718285586,
+        "memory": {
+          "rss": 101122048,
+          "heapTotal": 55664640,
+          "heapUsed": 32738488,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 99536,
+        "saveBytes": 161698,
+        "delta": {
+          "ice": 17276,
+          "waterRevenue": 260446,
+          "wages": 122687,
+          "replacements": 30
+        }
+      },
+      {
+        "day": 240,
+        "tick": 345600,
+        "hash": "5c6400e57b4c669b",
+        "eis": 137238,
+        "erz": 4500,
+        "wasser": 135260,
+        "material": 1235,
+        "frachter": 131,
+        "miner": 116,
+        "ersatz": 249,
+        "erzvertraege": 50,
+        "eisfrachten": 2705,
+        "wasserErloes": 2063626,
+        "dividenden": 1081698,
+        "loehne": 981242,
+        "haushalte": 19524,
+        "firmen": 9727,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            9972
+          ],
+          [
+            "eigner_transport",
+            4039
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 252,
+          "consumed": 249,
+          "retired": 249
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 93.18475444799999,
+        "secondsPerDay": 3.1061584815999996,
+        "auditSeconds": 0.1998409100000281,
+        "elapsedSeconds": 331.109150785,
+        "memory": {
+          "rss": 102797312,
+          "heapTotal": 57139200,
+          "heapUsed": 34602016,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 100388,
+        "saveBytes": 182293,
+        "delta": {
+          "ice": 17405,
+          "waterRevenue": 260254,
+          "wages": 122679,
+          "replacements": 32
+        }
+      },
+      {
+        "day": 270,
+        "tick": 388800,
+        "hash": "62b4ee0a3a628fe8",
+        "eis": 154517,
+        "erz": 4800,
+        "wasser": 152310,
+        "material": 1395,
+        "frachter": 148,
+        "miner": 131,
+        "ersatz": 280,
+        "erzvertraege": 56,
+        "eisfrachten": 3046,
+        "wasserErloes": 2323720,
+        "dividenden": 1215805,
+        "loehne": 1104326,
+        "haushalte": 19181,
+        "firmen": 10048,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "eigner_transport",
+            11956
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "fonds_aldera",
+            2490
+          ]
+        ],
+        "hulls": {
+          "total": 283,
+          "consumed": 280,
+          "retired": 280
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 99.39676200499997,
+        "secondsPerDay": 3.3132254001666657,
+        "auditSeconds": 0.20006801799999085,
+        "elapsedSeconds": 430.707822498,
+        "memory": {
+          "rss": 104042496,
+          "heapTotal": 58781696,
+          "heapUsed": 28272960,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 101956,
+        "saveBytes": 202322,
+        "delta": {
+          "ice": 17279,
+          "waterRevenue": 260094,
+          "wages": 123084,
+          "replacements": 31
+        }
+      },
+      {
+        "day": 300,
+        "tick": 432000,
+        "hash": "945d4e8d33a03898",
+        "eis": 171699,
+        "erz": 5150,
+        "wasser": 169250,
+        "material": 1555,
+        "frachter": 165,
+        "miner": 146,
+        "ersatz": 311,
+        "erzvertraege": 63,
+        "eisfrachten": 3385,
+        "wasserErloes": 2582486,
+        "dividenden": 1349668,
+        "loehne": 1226866,
+        "haushalte": 19438,
+        "firmen": 9549,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "pilot_eis",
+            6765
+          ],
+          [
+            "fonds_aldera",
+            5794
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "eigner_npc3",
+            3710
+          ]
+        ],
+        "hulls": {
+          "total": 314,
+          "consumed": 311,
+          "retired": 311
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 111.53412830699997,
+        "secondsPerDay": 3.717804276899999,
+        "auditSeconds": 0.363977956000017,
+        "elapsedSeconds": 542.6082975070001,
+        "memory": {
+          "rss": 105897984,
+          "heapTotal": 60108800,
+          "heapUsed": 34028528,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 103416,
+        "saveBytes": 222443,
+        "delta": {
+          "ice": 17182,
+          "waterRevenue": 258766,
+          "wages": 122540,
+          "replacements": 31
+        }
+      },
+      {
+        "day": 330,
+        "tick": 475200,
+        "hash": "67dcfa4ef286c0d9",
+        "eis": 189075,
+        "erz": 5450,
+        "wasser": 186340,
+        "material": 1710,
+        "frachter": 181,
+        "miner": 161,
+        "ersatz": 342,
+        "erzvertraege": 69,
+        "eisfrachten": 3727,
+        "wasserErloes": 2842828,
+        "dividenden": 1483801,
+        "loehne": 1350396,
+        "haushalte": 19269,
+        "firmen": 9693,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "eigner_transport",
+            9352
+          ],
+          [
+            "fonds_aldera",
+            6378
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 345,
+          "consumed": 342,
+          "retired": 342
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 121.50231657500007,
+        "secondsPerDay": 4.050077219166669,
+        "auditSeconds": 0.29106182100006844,
+        "elapsedSeconds": 664.404138334,
+        "memory": {
+          "rss": 108040192,
+          "heapTotal": 62328832,
+          "heapUsed": 33156144,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 105508,
+        "saveBytes": 242504,
+        "delta": {
+          "ice": 17376,
+          "waterRevenue": 260342,
+          "wages": 123530,
+          "replacements": 31
+        }
+      },
+      {
+        "day": 360,
+        "tick": 518400,
+        "hash": "f38382ed3e3f36b8",
+        "eis": 206362,
+        "erz": 5750,
+        "wasser": 203340,
+        "material": 1860,
+        "frachter": 197,
+        "miner": 175,
+        "ersatz": 373,
+        "erzvertraege": 75,
+        "eisfrachten": 4067,
+        "wasserErloes": 3102824,
+        "dividenden": 1618894,
+        "loehne": 1472483,
+        "haushalte": 18973,
+        "firmen": 10011,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            12624
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "eigner_transport",
+            2734
+          ]
+        ],
+        "hulls": {
+          "total": 376,
+          "consumed": 373,
+          "retired": 373
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 79.83130307300004,
+        "secondsPerDay": 2.661043435766668,
+        "auditSeconds": 0.22282649100001437,
+        "elapsedSeconds": 744.4604563759999,
+        "memory": {
+          "rss": 110325760,
+          "heapTotal": 64249856,
+          "heapUsed": 45363448,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 113028,
+        "saveBytes": 262528,
+        "delta": {
+          "ice": 17287,
+          "waterRevenue": 259996,
+          "wages": 122087,
+          "replacements": 31
+        }
+      },
+      {
+        "day": 365,
+        "tick": 525600,
+        "hash": "29933833f78d8676",
+        "eis": 209270,
+        "erz": 5800,
+        "wasser": 206190,
+        "material": 1890,
+        "frachter": 200,
+        "miner": 178,
+        "ersatz": 379,
+        "erzvertraege": 76,
+        "eisfrachten": 4124,
+        "wasserErloes": 3145760,
+        "dividenden": 1641777,
+        "loehne": 1492920,
+        "haushalte": 19814,
+        "firmen": 9750,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            11612
+          ],
+          [
+            "eigner_transport",
+            4231
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 382,
+          "consumed": 379,
+          "retired": 379
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 14.184354972000001,
+        "secondsPerDay": 2.8368709944000003,
+        "auditSeconds": 0.26723638000001665,
+        "elapsedSeconds": 758.91415232,
+        "memory": {
+          "rss": 119336960,
+          "heapTotal": 65601536,
+          "heapUsed": 38504688,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 116540,
+        "saveBytes": 266023,
+        "delta": {
+          "ice": 2908,
+          "waterRevenue": 42936,
+          "wages": 20437,
+          "replacements": 6
+        }
+      },
+      {
+        "day": 390,
+        "tick": 561600,
+        "hash": "16c7e656ea7be5cf",
+        "eis": 223725,
+        "erz": 6050,
+        "wasser": 220360,
+        "material": 2020,
+        "frachter": 214,
+        "miner": 190,
+        "ersatz": 404,
+        "erzvertraege": 81,
+        "eisfrachten": 4407,
+        "wasserErloes": 3362306,
+        "dividenden": 1754657,
+        "loehne": 1594436,
+        "haushalte": 19767,
+        "firmen": 9485,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            11886
+          ],
+          [
+            "eigner_transport",
+            4039
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 407,
+          "consumed": 404,
+          "retired": 404
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 84.182919703,
+        "secondsPerDay": 3.3673167881199997,
+        "auditSeconds": 0.24643101699999534,
+        "elapsedSeconds": 843.346335024,
+        "memory": {
+          "rss": 113573888,
+          "heapTotal": 67444736,
+          "heapUsed": 45298944,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 117404,
+        "saveBytes": 282580,
+        "delta": {
+          "ice": 14455,
+          "waterRevenue": 216546,
+          "wages": 101516,
+          "replacements": 25
+        }
+      },
+      {
+        "day": 420,
+        "tick": 604800,
+        "hash": "4f9de63e207ad9a3",
+        "eis": 241039,
+        "erz": 6350,
+        "wasser": 237370,
+        "material": 2170,
+        "frachter": 230,
+        "miner": 204,
+        "ersatz": 435,
+        "erzvertraege": 87,
+        "eisfrachten": 4747,
+        "wasserErloes": 3621734,
+        "dividenden": 1889110,
+        "loehne": 1716567,
+        "haushalte": 19443,
+        "firmen": 9811,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            14234
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            2517
+          ]
+        ],
+        "hulls": {
+          "total": 438,
+          "consumed": 435,
+          "retired": 435
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 97.86241434799996,
+        "secondsPerDay": 3.2620804782666655,
+        "auditSeconds": 0.23706267200002912,
+        "elapsedSeconds": 941.447803283,
+        "memory": {
+          "rss": 116736000,
+          "heapTotal": 69705728,
+          "heapUsed": 39366800,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 117404,
+        "saveBytes": 302549,
+        "delta": {
+          "ice": 17314,
+          "waterRevenue": 259428,
+          "wages": 122131,
+          "replacements": 31
+        }
+      },
+      {
+        "day": 450,
+        "tick": 648000,
+        "hash": "3d2e4490c50b922d",
+        "eis": 258214,
+        "erz": 6700,
+        "wasser": 254310,
+        "material": 2330,
+        "frachter": 247,
+        "miner": 219,
+        "ersatz": 466,
+        "erzvertraege": 94,
+        "eisfrachten": 5086,
+        "wasserErloes": 3880324,
+        "dividenden": 2023237,
+        "loehne": 1839199,
+        "haushalte": 20172,
+        "firmen": 9109,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "eigner_transport",
+            11204
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "pilot_eis",
+            2593
+          ]
+        ],
+        "hulls": {
+          "total": 469,
+          "consumed": 466,
+          "retired": 466
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 127.82853846800002,
+        "secondsPerDay": 4.260951282266667,
+        "auditSeconds": 0.30480782700004055,
+        "elapsedSeconds": 1069.5840237730001,
+        "memory": {
+          "rss": 119816192,
+          "heapTotal": 72511488,
+          "heapUsed": 44584784,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 117404,
+        "saveBytes": 322742,
+        "delta": {
+          "ice": 17175,
+          "waterRevenue": 258590,
+          "wages": 122632,
+          "replacements": 31
+        }
+      },
+      {
+        "day": 480,
+        "tick": 691200,
+        "hash": "1d21dc3abe4c1be5",
+        "eis": 275620,
+        "erz": 7000,
+        "wasser": 271300,
+        "material": 2480,
+        "frachter": 263,
+        "miner": 233,
+        "ersatz": 498,
+        "erzvertraege": 100,
+        "eisfrachten": 5426,
+        "wasserErloes": 4139328,
+        "dividenden": 2157196,
+        "loehne": 1961192,
+        "haushalte": 19640,
+        "firmen": 9388,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            15608
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            2001
+          ]
+        ],
+        "hulls": {
+          "total": 501,
+          "consumed": 498,
+          "retired": 498
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 122.0242629470001,
+        "secondsPerDay": 4.0674754315666695,
+        "auditSeconds": 0.31807950100000015,
+        "elapsedSeconds": 1191.934868866,
+        "memory": {
+          "rss": 123629568,
+          "heapTotal": 75849728,
+          "heapUsed": 43001928,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 120732,
+        "saveBytes": 343209,
+        "delta": {
+          "ice": 17406,
+          "waterRevenue": 259004,
+          "wages": 121993,
+          "replacements": 32
+        }
+      },
+      {
+        "day": 510,
+        "tick": 734400,
+        "hash": "bc5fc65268b11a61",
+        "eis": 292875,
+        "erz": 7300,
+        "wasser": 288340,
+        "material": 2640,
+        "frachter": 280,
+        "miner": 248,
+        "ersatz": 528,
+        "erzvertraege": 106,
+        "eisfrachten": 5767,
+        "wasserErloes": 4400044,
+        "dividenden": 2292998,
+        "loehne": 2083685,
+        "haushalte": 19779,
+        "firmen": 9205,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            8766
+          ],
+          [
+            "eigner_transport",
+            4107
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "pilot_eis",
+            3037
+          ]
+        ],
+        "hulls": {
+          "total": 531,
+          "consumed": 528,
+          "retired": 528
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 137.97544583999994,
+        "secondsPerDay": 4.599181527999998,
+        "auditSeconds": 0.36477192299999295,
+        "elapsedSeconds": 1330.287544771,
+        "memory": {
+          "rss": 128229376,
+          "heapTotal": 80236544,
+          "heapUsed": 51164528,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 125224,
+        "saveBytes": 362718,
+        "delta": {
+          "ice": 17255,
+          "waterRevenue": 260716,
+          "wages": 122493,
+          "replacements": 30
+        }
+      },
+      {
+        "day": 540,
+        "tick": 777600,
+        "hash": "1c3a58afbfd9c274",
+        "eis": 310045,
+        "erz": 7600,
+        "wasser": 305410,
+        "material": 2790,
+        "frachter": 296,
+        "miner": 262,
+        "ersatz": 560,
+        "erzvertraege": 112,
+        "eisfrachten": 6108,
+        "wasserErloes": 4660222,
+        "dividenden": 2427274,
+        "loehne": 2206716,
+        "haushalte": 19428,
+        "firmen": 9801,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "eigner_transport",
+            11913
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "fonds_aldera",
+            3306
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 563,
+          "consumed": 560,
+          "retired": 560
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 132.7385430340001,
+        "secondsPerDay": 4.424618101133336,
+        "auditSeconds": 0.2503482210000511,
+        "elapsedSeconds": 1463.2816078619999,
+        "memory": {
+          "rss": 132239360,
+          "heapTotal": 83972096,
+          "heapUsed": 61522616,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 129140,
+        "saveBytes": 383345,
+        "delta": {
+          "ice": 17170,
+          "waterRevenue": 260178,
+          "wages": 123031,
+          "replacements": 32
+        }
+      },
+      {
+        "day": 570,
+        "tick": 820800,
+        "hash": "4991c053b9d2c88d",
+        "eis": 327272,
+        "erz": 7900,
+        "wasser": 322470,
+        "material": 2950,
+        "frachter": 313,
+        "miner": 277,
+        "ersatz": 591,
+        "erzvertraege": 118,
+        "eisfrachten": 6449,
+        "wasserErloes": 4920398,
+        "dividenden": 2561779,
+        "loehne": 2329633,
+        "haushalte": 19234,
+        "firmen": 10049,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            8680
+          ],
+          [
+            "pilot_eis",
+            5764
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 594,
+          "consumed": 591,
+          "retired": 591
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 137.1921915249999,
+        "secondsPerDay": 4.57307305083333,
+        "auditSeconds": 0.4044993300000206,
+        "elapsedSeconds": 1600.880886313,
+        "memory": {
+          "rss": 136376320,
+          "heapTotal": 88064000,
+          "heapUsed": 64303736,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 133180,
+        "saveBytes": 403279,
+        "delta": {
+          "ice": 17227,
+          "waterRevenue": 260176,
+          "wages": 122917,
+          "replacements": 31
+        }
+      },
+      {
+        "day": 600,
+        "tick": 864000,
+        "hash": "a502eeb07b5a71f1",
+        "eis": 344502,
+        "erz": 8250,
+        "wasser": 339440,
+        "material": 3110,
+        "frachter": 330,
+        "miner": 292,
+        "ersatz": 623,
+        "erzvertraege": 125,
+        "eisfrachten": 6789,
+        "wasserErloes": 5179296,
+        "dividenden": 2696164,
+        "loehne": 2452303,
+        "haushalte": 20011,
+        "firmen": 9505,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "eigner_transport",
+            9108
+          ],
+          [
+            "fonds_aldera",
+            7248
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 626,
+          "consumed": 623,
+          "retired": 623
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 149.53428031399986,
+        "secondsPerDay": 4.984476010466662,
+        "auditSeconds": 0.40179209400014954,
+        "elapsedSeconds": 1750.8261429010001,
+        "memory": {
+          "rss": 121167872,
+          "heapTotal": 70557696,
+          "heapUsed": 22839008,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 134296,
+        "saveBytes": 423903,
+        "delta": {
+          "ice": 17230,
+          "waterRevenue": 258898,
+          "wages": 122670,
+          "replacements": 32
+        }
+      },
+      {
+        "day": 630,
+        "tick": 907200,
+        "hash": "0043f6b199b4ce05",
+        "eis": 361792,
+        "erz": 8550,
+        "wasser": 356490,
+        "material": 3265,
+        "frachter": 346,
+        "miner": 307,
+        "ersatz": 653,
+        "erzvertraege": 131,
+        "eisfrachten": 7130,
+        "wasserErloes": 5439576,
+        "dividenden": 2830902,
+        "loehne": 2574846,
+        "haushalte": 19522,
+        "firmen": 9462,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            12412
+          ],
+          [
+            "eigner_transport",
+            4078
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 656,
+          "consumed": 653,
+          "retired": 653
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 164.48456706200005,
+        "secondsPerDay": 5.482818902066668,
+        "auditSeconds": 0.385701714000199,
+        "elapsedSeconds": 1915.7043371910001,
+        "memory": {
+          "rss": 125063168,
+          "heapTotal": 73879552,
+          "heapUsed": 30862672,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 134296,
+        "saveBytes": 443485,
+        "delta": {
+          "ice": 17290,
+          "waterRevenue": 260280,
+          "wages": 122543,
+          "replacements": 30
+        }
+      },
+      {
+        "day": 660,
+        "tick": 950400,
+        "hash": "2396ef0e9fb1d9fd",
+        "eis": 379026,
+        "erz": 8850,
+        "wasser": 373540,
+        "material": 3415,
+        "frachter": 362,
+        "miner": 321,
+        "ersatz": 685,
+        "erzvertraege": 137,
+        "eisfrachten": 7471,
+        "wasserErloes": 5700134,
+        "dividenden": 2965809,
+        "loehne": 2697731,
+        "haushalte": 19276,
+        "firmen": 9708,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            9784
+          ],
+          [
+            "eigner_transport",
+            5390
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 688,
+          "consumed": 685,
+          "retired": 685
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 183.9001834900002,
+        "secondsPerDay": 6.130006116333339,
+        "auditSeconds": 0.4563086899998598,
+        "elapsedSeconds": 2100.065392809,
+        "memory": {
+          "rss": 128724992,
+          "heapTotal": 77094912,
+          "heapUsed": 35814416,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 134296,
+        "saveBytes": 464075,
+        "delta": {
+          "ice": 17234,
+          "waterRevenue": 260558,
+          "wages": 122885,
+          "replacements": 32
+        }
+      },
+      {
+        "day": 690,
+        "tick": 993600,
+        "hash": "d65fe1a9a1f14540",
+        "eis": 396346,
+        "erz": 9150,
+        "wasser": 390620,
+        "material": 3575,
+        "frachter": 379,
+        "miner": 336,
+        "ersatz": 715,
+        "erzvertraege": 143,
+        "eisfrachten": 7812,
+        "wasserErloes": 5960418,
+        "dividenden": 3100845,
+        "loehne": 2820871,
+        "haushalte": 19728,
+        "firmen": 9525,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            14576
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            2513
+          ]
+        ],
+        "hulls": {
+          "total": 718,
+          "consumed": 715,
+          "retired": 715
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 209.84461479400005,
+        "secondsPerDay": 6.994820493133335,
+        "auditSeconds": 0.4285477340002544,
+        "elapsedSeconds": 2310.3484103660003,
+        "memory": {
+          "rss": 132771840,
+          "heapTotal": 81510400,
+          "heapUsed": 54076976,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 134296,
+        "saveBytes": 483531,
+        "delta": {
+          "ice": 17320,
+          "waterRevenue": 260284,
+          "wages": 123140,
+          "replacements": 30
+        }
+      },
+      {
+        "day": 720,
+        "tick": 1036800,
+        "hash": "5d914109d3ff61eb",
+        "eis": 413673,
+        "erz": 9450,
+        "wasser": 407620,
+        "material": 3725,
+        "frachter": 395,
+        "miner": 350,
+        "ersatz": 747,
+        "erzvertraege": 149,
+        "eisfrachten": 8152,
+        "wasserErloes": 6219928,
+        "dividenden": 3234612,
+        "loehne": 2943853,
+        "haushalte": 19487,
+        "firmen": 9796,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "pilot_eis",
+            7228
+          ],
+          [
+            "fonds_aldera",
+            7142
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 750,
+          "consumed": 747,
+          "retired": 747
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 178.85545862800024,
+        "secondsPerDay": 5.961848620933341,
+        "auditSeconds": 0.35904598399996757,
+        "elapsedSeconds": 2489.567204014,
+        "memory": {
+          "rss": 136167424,
+          "heapTotal": 84738048,
+          "heapUsed": 47193152,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 134296,
+        "saveBytes": 504170,
+        "delta": {
+          "ice": 17327,
+          "waterRevenue": 259510,
+          "wages": 122982,
+          "replacements": 32
+        }
+      },
+      {
+        "day": 730,
+        "tick": 1051200,
+        "hash": "3a189d3d049500e3",
+        "eis": 419336,
+        "erz": 9600,
+        "wasser": 413240,
+        "material": 3785,
+        "frachter": 401,
+        "miner": 356,
+        "ersatz": 757,
+        "erzvertraege": 152,
+        "eisfrachten": 8265,
+        "wasserErloes": 6305588,
+        "dividenden": 3279005,
+        "loehne": 2984391,
+        "haushalte": 19658,
+        "firmen": 9326,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            13984
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "eigner_transport",
+            2661
+          ]
+        ],
+        "hulls": {
+          "total": 760,
+          "consumed": 757,
+          "retired": 757
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 54.883724971000106,
+        "secondsPerDay": 5.488372497100011,
+        "auditSeconds": 0.4138369909999892,
+        "elapsedSeconds": 2544.8685853800002,
+        "memory": {
+          "rss": 143196160,
+          "heapTotal": 89001984,
+          "heapUsed": 65405096,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 139840,
+        "saveBytes": 510965,
+        "delta": {
+          "ice": 5663,
+          "waterRevenue": 85660,
+          "wages": 40538,
+          "replacements": 10
+        }
+      }
+    ]
+  },
+  "replay365": {
+    "day": 365,
+    "hash": "29933833f78d8676",
+    "canonicalEqual": true,
+    "independentReplayFromStart": true,
+    "elapsedSeconds": 772.831476563
+  },
+  "savedContinuation": {
+    "fromDay": 365,
+    "toDay": 730,
+    "complete": true,
+    "canonicalEqual": true,
+    "hash": "3a189d3d049500e3",
+    "matchedCheckpoints": [
+      390,
+      420,
+      450,
+      480,
+      510,
+      540,
+      570,
+      600,
+      630,
+      660,
+      690,
+      720,
+      730
+    ],
+    "elapsedSeconds": 1558.4411861720002,
+    "checkpoints": [
+      {
+        "day": 390,
+        "tick": 561600,
+        "hash": "16c7e656ea7be5cf",
+        "eis": 223725,
+        "erz": 6050,
+        "wasser": 220360,
+        "material": 2020,
+        "frachter": 214,
+        "miner": 190,
+        "ersatz": 404,
+        "erzvertraege": 81,
+        "eisfrachten": 4407,
+        "wasserErloes": 3362306,
+        "dividenden": 1754657,
+        "loehne": 1594436,
+        "haushalte": 19767,
+        "firmen": 9485,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            11886
+          ],
+          [
+            "eigner_transport",
+            4039
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 407,
+          "consumed": 404,
+          "retired": 404
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 71.445303558,
+        "secondsPerDay": 2.8578121423200002,
+        "auditSeconds": 0.23886043000000062,
+        "elapsedSeconds": 72.068831464,
+        "memory": {
+          "rss": 104206336,
+          "heapTotal": 53186560,
+          "heapUsed": 27119432,
+          "external": 1648087,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 105428,
+        "saveBytes": 282580,
+        "delta": {
+          "ice": 14455,
+          "waterRevenue": 216546,
+          "wages": 101516,
+          "replacements": 25
+        }
+      },
+      {
+        "day": 420,
+        "tick": 604800,
+        "hash": "4f9de63e207ad9a3",
+        "eis": 241039,
+        "erz": 6350,
+        "wasser": 237370,
+        "material": 2170,
+        "frachter": 230,
+        "miner": 204,
+        "ersatz": 435,
+        "erzvertraege": 87,
+        "eisfrachten": 4747,
+        "wasserErloes": 3621734,
+        "dividenden": 1889110,
+        "loehne": 1716567,
+        "haushalte": 19443,
+        "firmen": 9811,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            14234
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            2517
+          ]
+        ],
+        "hulls": {
+          "total": 438,
+          "consumed": 435,
+          "retired": 435
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 78.02574953099999,
+        "secondsPerDay": 2.6008583176999998,
+        "auditSeconds": 0.1541764030000195,
+        "elapsedSeconds": 150.251811289,
+        "memory": {
+          "rss": 107278336,
+          "heapTotal": 54579200,
+          "heapUsed": 30171000,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 106272,
+        "saveBytes": 302549,
+        "delta": {
+          "ice": 17314,
+          "waterRevenue": 259428,
+          "wages": 122131,
+          "replacements": 31
+        }
+      },
+      {
+        "day": 450,
+        "tick": 648000,
+        "hash": "3d2e4490c50b922d",
+        "eis": 258214,
+        "erz": 6700,
+        "wasser": 254310,
+        "material": 2330,
+        "frachter": 247,
+        "miner": 219,
+        "ersatz": 466,
+        "erzvertraege": 94,
+        "eisfrachten": 5086,
+        "wasserErloes": 3880324,
+        "dividenden": 2023237,
+        "loehne": 1839199,
+        "haushalte": 20172,
+        "firmen": 9109,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "eigner_transport",
+            11204
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "pilot_eis",
+            2593
+          ]
+        ],
+        "hulls": {
+          "total": 469,
+          "consumed": 466,
+          "retired": 466
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 111.234145369,
+        "secondsPerDay": 3.7078048456333335,
+        "auditSeconds": 0.2720826850000012,
+        "elapsedSeconds": 261.773338099,
+        "memory": {
+          "rss": 108949504,
+          "heapTotal": 56856576,
+          "heapUsed": 29694800,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 106396,
+        "saveBytes": 322742,
+        "delta": {
+          "ice": 17175,
+          "waterRevenue": 258590,
+          "wages": 122632,
+          "replacements": 31
+        }
+      },
+      {
+        "day": 480,
+        "tick": 691200,
+        "hash": "1d21dc3abe4c1be5",
+        "eis": 275620,
+        "erz": 7000,
+        "wasser": 271300,
+        "material": 2480,
+        "frachter": 263,
+        "miner": 233,
+        "ersatz": 498,
+        "erzvertraege": 100,
+        "eisfrachten": 5426,
+        "wasserErloes": 4139328,
+        "dividenden": 2157196,
+        "loehne": 1961192,
+        "haushalte": 19640,
+        "firmen": 9388,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            15608
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            2001
+          ]
+        ],
+        "hulls": {
+          "total": 501,
+          "consumed": 498,
+          "retired": 498
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 105.455358516,
+        "secondsPerDay": 3.5151786172,
+        "auditSeconds": 0.30829206399997927,
+        "elapsedSeconds": 367.539051123,
+        "memory": {
+          "rss": 112762880,
+          "heapTotal": 60252160,
+          "heapUsed": 26148336,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 110120,
+        "saveBytes": 343209,
+        "delta": {
+          "ice": 17406,
+          "waterRevenue": 259004,
+          "wages": 121993,
+          "replacements": 32
+        }
+      },
+      {
+        "day": 510,
+        "tick": 734400,
+        "hash": "bc5fc65268b11a61",
+        "eis": 292875,
+        "erz": 7300,
+        "wasser": 288340,
+        "material": 2640,
+        "frachter": 280,
+        "miner": 248,
+        "ersatz": 528,
+        "erzvertraege": 106,
+        "eisfrachten": 5767,
+        "wasserErloes": 4400044,
+        "dividenden": 2292998,
+        "loehne": 2083685,
+        "haushalte": 19779,
+        "firmen": 9205,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            8766
+          ],
+          [
+            "eigner_transport",
+            4107
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "pilot_eis",
+            3037
+          ]
+        ],
+        "hulls": {
+          "total": 531,
+          "consumed": 528,
+          "retired": 528
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 113.839935719,
+        "secondsPerDay": 3.7946645239666665,
+        "auditSeconds": 0.3468648340000072,
+        "elapsedSeconds": 481.728402884,
+        "memory": {
+          "rss": 116817920,
+          "heapTotal": 63967232,
+          "heapUsed": 39441192,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 114080,
+        "saveBytes": 362718,
+        "delta": {
+          "ice": 17255,
+          "waterRevenue": 260716,
+          "wages": 122493,
+          "replacements": 30
+        }
+      },
+      {
+        "day": 540,
+        "tick": 777600,
+        "hash": "1c3a58afbfd9c274",
+        "eis": 310045,
+        "erz": 7600,
+        "wasser": 305410,
+        "material": 2790,
+        "frachter": 296,
+        "miner": 262,
+        "ersatz": 560,
+        "erzvertraege": 112,
+        "eisfrachten": 6108,
+        "wasserErloes": 4660222,
+        "dividenden": 2427274,
+        "loehne": 2206716,
+        "haushalte": 19428,
+        "firmen": 9801,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "eigner_transport",
+            11913
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "fonds_aldera",
+            3306
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 563,
+          "consumed": 560,
+          "retired": 560
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 118.13836960900005,
+        "secondsPerDay": 3.937945653633335,
+        "auditSeconds": 0.33771990799997004,
+        "elapsedSeconds": 600.207257369,
+        "memory": {
+          "rss": 120705024,
+          "heapTotal": 67014656,
+          "heapUsed": 43995144,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 117876,
+        "saveBytes": 383345,
+        "delta": {
+          "ice": 17170,
+          "waterRevenue": 260178,
+          "wages": 123031,
+          "replacements": 32
+        }
+      },
+      {
+        "day": 570,
+        "tick": 820800,
+        "hash": "4991c053b9d2c88d",
+        "eis": 327272,
+        "erz": 7900,
+        "wasser": 322470,
+        "material": 2950,
+        "frachter": 313,
+        "miner": 277,
+        "ersatz": 591,
+        "erzvertraege": 118,
+        "eisfrachten": 6449,
+        "wasserErloes": 4920398,
+        "dividenden": 2561779,
+        "loehne": 2329633,
+        "haushalte": 19234,
+        "firmen": 10049,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            8680
+          ],
+          [
+            "pilot_eis",
+            5764
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 594,
+          "consumed": 591,
+          "retired": 591
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 114.98890052599995,
+        "secondsPerDay": 3.832963350866665,
+        "auditSeconds": 0.22979928799998015,
+        "elapsedSeconds": 715.430006917,
+        "memory": {
+          "rss": 122867712,
+          "heapTotal": 70381568,
+          "heapUsed": 49806656,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 123776,
+        "saveBytes": 403279,
+        "delta": {
+          "ice": 17227,
+          "waterRevenue": 260176,
+          "wages": 122917,
+          "replacements": 31
+        }
+      },
+      {
+        "day": 600,
+        "tick": 864000,
+        "hash": "a502eeb07b5a71f1",
+        "eis": 344502,
+        "erz": 8250,
+        "wasser": 339440,
+        "material": 3110,
+        "frachter": 330,
+        "miner": 292,
+        "ersatz": 623,
+        "erzvertraege": 125,
+        "eisfrachten": 6789,
+        "wasserErloes": 5179296,
+        "dividenden": 2696164,
+        "loehne": 2452303,
+        "haushalte": 20011,
+        "firmen": 9505,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "eigner_transport",
+            9108
+          ],
+          [
+            "fonds_aldera",
+            7248
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 626,
+          "consumed": 623,
+          "retired": 623
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 128.753559811,
+        "secondsPerDay": 4.291785327033334,
+        "auditSeconds": 0.27431871599995067,
+        "elapsedSeconds": 844.4599336900001,
+        "memory": {
+          "rss": 127184896,
+          "heapTotal": 73617408,
+          "heapUsed": 46448584,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 124204,
+        "saveBytes": 423903,
+        "delta": {
+          "ice": 17230,
+          "waterRevenue": 258898,
+          "wages": 122670,
+          "replacements": 32
+        }
+      },
+      {
+        "day": 630,
+        "tick": 907200,
+        "hash": "0043f6b199b4ce05",
+        "eis": 361792,
+        "erz": 8550,
+        "wasser": 356490,
+        "material": 3265,
+        "frachter": 346,
+        "miner": 307,
+        "ersatz": 653,
+        "erzvertraege": 131,
+        "eisfrachten": 7130,
+        "wasserErloes": 5439576,
+        "dividenden": 2830902,
+        "loehne": 2574846,
+        "haushalte": 19522,
+        "firmen": 9462,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            12412
+          ],
+          [
+            "eigner_transport",
+            4078
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 656,
+          "consumed": 653,
+          "retired": 653
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 147.92852607999998,
+        "secondsPerDay": 4.930950869333333,
+        "auditSeconds": 0.3151833570000017,
+        "elapsedSeconds": 992.70694981,
+        "memory": {
+          "rss": 133214208,
+          "heapTotal": 78782464,
+          "heapUsed": 51340608,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 130092,
+        "saveBytes": 443485,
+        "delta": {
+          "ice": 17290,
+          "waterRevenue": 260280,
+          "wages": 122543,
+          "replacements": 30
+        }
+      },
+      {
+        "day": 660,
+        "tick": 950400,
+        "hash": "2396ef0e9fb1d9fd",
+        "eis": 379026,
+        "erz": 8850,
+        "wasser": 373540,
+        "material": 3415,
+        "frachter": 362,
+        "miner": 321,
+        "ersatz": 685,
+        "erzvertraege": 137,
+        "eisfrachten": 7471,
+        "wasserErloes": 5700134,
+        "dividenden": 2965809,
+        "loehne": 2697731,
+        "haushalte": 19276,
+        "firmen": 9708,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            9784
+          ],
+          [
+            "eigner_transport",
+            5390
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 688,
+          "consumed": 685,
+          "retired": 685
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 142.73493235599994,
+        "secondsPerDay": 4.757831078533331,
+        "auditSeconds": 0.568423674999969,
+        "elapsedSeconds": 1136.017480527,
+        "memory": {
+          "rss": 138551296,
+          "heapTotal": 83324928,
+          "heapUsed": 62238720,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 138592,
+        "saveBytes": 464075,
+        "delta": {
+          "ice": 17234,
+          "waterRevenue": 260558,
+          "wages": 122885,
+          "replacements": 32
+        }
+      },
+      {
+        "day": 690,
+        "tick": 993600,
+        "hash": "d65fe1a9a1f14540",
+        "eis": 396346,
+        "erz": 9150,
+        "wasser": 390620,
+        "material": 3575,
+        "frachter": 379,
+        "miner": 336,
+        "ersatz": 715,
+        "erzvertraege": 143,
+        "eisfrachten": 7812,
+        "wasserErloes": 5960418,
+        "dividenden": 3100845,
+        "loehne": 2820871,
+        "haushalte": 19728,
+        "firmen": 9525,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            14576
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            2513
+          ]
+        ],
+        "hulls": {
+          "total": 718,
+          "consumed": 715,
+          "retired": 715
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 179.7239094469999,
+        "secondsPerDay": 5.990796981566663,
+        "auditSeconds": 0.48961645300011153,
+        "elapsedSeconds": 1316.2345624900001,
+        "memory": {
+          "rss": 147369984,
+          "heapTotal": 88375296,
+          "heapUsed": 67036208,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 143916,
+        "saveBytes": 483531,
+        "delta": {
+          "ice": 17320,
+          "waterRevenue": 260284,
+          "wages": 123140,
+          "replacements": 30
+        }
+      },
+      {
+        "day": 720,
+        "tick": 1036800,
+        "hash": "5d914109d3ff61eb",
+        "eis": 413673,
+        "erz": 9450,
+        "wasser": 407620,
+        "material": 3725,
+        "frachter": 395,
+        "miner": 350,
+        "ersatz": 747,
+        "erzvertraege": 149,
+        "eisfrachten": 8152,
+        "wasserErloes": 6219928,
+        "dividenden": 3234612,
+        "loehne": 2943853,
+        "haushalte": 19487,
+        "firmen": 9796,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "pilot_eis",
+            7228
+          ],
+          [
+            "fonds_aldera",
+            7142
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ]
+        ],
+        "hulls": {
+          "total": 750,
+          "consumed": 747,
+          "retired": 747
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 187.50680815500021,
+        "secondsPerDay": 6.250226938500007,
+        "auditSeconds": 0.32729140600003304,
+        "elapsedSeconds": 1504.072531765,
+        "memory": {
+          "rss": 152510464,
+          "heapTotal": 92954624,
+          "heapUsed": 57907712,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 148936,
+        "saveBytes": 504170,
+        "delta": {
+          "ice": 17327,
+          "waterRevenue": 259510,
+          "wages": 122982,
+          "replacements": 32
+        }
+      },
+      {
+        "day": 730,
+        "tick": 1051200,
+        "hash": "3a189d3d049500e3",
+        "eis": 419336,
+        "erz": 9600,
+        "wasser": 413240,
+        "material": 3785,
+        "frachter": 401,
+        "miner": 356,
+        "ersatz": 757,
+        "erzvertraege": 152,
+        "eisfrachten": 8265,
+        "wasserErloes": 6305588,
+        "dividenden": 3279005,
+        "loehne": 2984391,
+        "haushalte": 19658,
+        "firmen": 9326,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            13984
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "eigner_transport",
+            2661
+          ]
+        ],
+        "hulls": {
+          "total": 760,
+          "consumed": 757,
+          "retired": 757
+        },
+        "worldMoney": 33000,
+        "minted": 0,
+        "burned": 0,
+        "advanceSeconds": 54.04291210199985,
+        "secondsPerDay": 5.404291210199985,
+        "auditSeconds": 0.31884954500012097,
+        "elapsedSeconds": 1558.438364237,
+        "memory": {
+          "rss": 131723264,
+          "heapTotal": 71155712,
+          "heapUsed": 31584952,
+          "external": 1649212,
+          "arrayBuffers": 10475
+        },
+        "peakRssKiB": 152784,
+        "saveBytes": 510965,
+        "delta": {
+          "ice": 5663,
+          "waterRevenue": 85660,
+          "wages": 40538,
+          "replacements": 10
+        }
+      }
+    ]
+  },
+  "independentMilestoneAudits": [
+    {
+      "day": 180,
+      "ok": true,
+      "canonicalRoundtrip": true,
+      "tick": 259200,
+      "hash": "3f403fb44c57bcd9",
+      "eis": 102557,
+      "erz": 3900,
+      "wasser": 101150,
+      "material": 930,
+      "frachter": 99,
+      "miner": 87,
+      "ersatz": 187,
+      "erzvertraege": 38,
+      "eisfrachten": 2023,
+      "wasserErloes": 1542926,
+      "dividenden": 811457,
+      "loehne": 735876,
+      "haushalte": 19587,
+      "firmen": 9381,
+      "spieler": 3000,
+      "groessteKonten": [
+        [
+          "fonds_aldera",
+          12034
+        ],
+        [
+          "pilot_eis",
+          4328
+        ],
+        [
+          "st_nadir",
+          4000
+        ],
+        [
+          "house",
+          3000
+        ]
+      ],
+      "additionalWages": {
+        "refinery": 3720,
+        "freighterYard": 2970,
+        "minerYard": 2610
+      },
+      "totalPaidWages": 745176,
+      "hulls": {
+        "total": 190,
+        "consumed": 187,
+        "retired": 187
+      },
+      "stocks": {
+        "bauteil": 0,
+        "eis": 1407,
+        "erz": 81,
+        "frachter": 1,
+        "jaeger": 0,
+        "material": 0,
+        "miner": 0,
+        "silizium": 0,
+        "wasser": 45
+      },
+      "cash": {
+        "arbeiter_werft_nadir": 8,
+        "arbeitskraefte_nadir": 10,
+        "eigner_house": 0,
+        "eigner_npc3": 835,
+        "eigner_st_aldera": 870,
+        "eigner_st_nadir": 274,
+        "eigner_transport": 1156,
+        "eigner_werft": 8,
+        "erz_arbeit_sh001": 0,
+        "erz_arbeit_sh003": 0,
+        "erz_arbeit_sh004": 0,
+        "erz_arbeit_sh005": 0,
+        "erz_arbeit_sh009": 0,
+        "erz_arbeit_sh013": 0,
+        "erz_arbeit_sh019": 0,
+        "erz_arbeit_sh023": 0,
+        "erz_arbeit_sh028": 0,
+        "erz_arbeit_sh034": 0,
+        "erz_arbeit_sh038": 0,
+        "erz_arbeit_sh042": 0,
+        "erz_arbeit_sh049": 0,
+        "erz_arbeit_sh053": 0,
+        "erz_arbeit_sh059": 0,
+        "erz_arbeit_sh063": 0,
+        "erz_arbeit_sh068": 0,
+        "erz_arbeit_sh072": 0,
+        "erz_arbeit_sh078": 0,
+        "erz_arbeit_sh083": 0,
+        "erz_arbeit_sh089": 0,
+        "erz_arbeit_sh093": 0,
+        "erz_arbeit_sh097": 0,
+        "erz_arbeit_sh104": 0,
+        "erz_arbeit_sh108": 0,
+        "erz_arbeit_sh112": 0,
+        "erz_arbeit_sh119": 0,
+        "erz_arbeit_sh123": 0,
+        "erz_arbeit_sh128": 0,
+        "erz_arbeit_sh134": 0,
+        "erz_arbeit_sh138": 0,
+        "erz_arbeit_sh142": 0,
+        "erz_arbeit_sh149": 0,
+        "erz_arbeit_sh153": 0,
+        "erz_arbeit_sh158": 0,
+        "erz_arbeit_sh164": 0,
+        "erz_arbeit_sh168": 0,
+        "erz_arbeit_sh172": 0,
+        "erz_arbeit_sh179": 0,
+        "erz_arbeit_sh183": 0,
+        "erz_arbeit_sh187": 0,
+        "erz_treuhand_sh001": 0,
+        "erz_treuhand_sh003": 0,
+        "erz_treuhand_sh004": 0,
+        "erz_treuhand_sh005": 0,
+        "erz_treuhand_sh009": 0,
+        "erz_treuhand_sh013": 0,
+        "erz_treuhand_sh019": 0,
+        "erz_treuhand_sh023": 0,
+        "erz_treuhand_sh028": 0,
+        "erz_treuhand_sh034": 0,
+        "erz_treuhand_sh038": 0,
+        "erz_treuhand_sh042": 0,
+        "erz_treuhand_sh049": 0,
+        "erz_treuhand_sh053": 0,
+        "erz_treuhand_sh059": 0,
+        "erz_treuhand_sh063": 0,
+        "erz_treuhand_sh068": 0,
+        "erz_treuhand_sh072": 0,
+        "erz_treuhand_sh078": 0,
+        "erz_treuhand_sh083": 0,
+        "erz_treuhand_sh089": 0,
+        "erz_treuhand_sh093": 0,
+        "erz_treuhand_sh097": 0,
+        "erz_treuhand_sh104": 0,
+        "erz_treuhand_sh108": 0,
+        "erz_treuhand_sh112": 0,
+        "erz_treuhand_sh119": 0,
+        "erz_treuhand_sh123": 0,
+        "erz_treuhand_sh128": 0,
+        "erz_treuhand_sh134": 0,
+        "erz_treuhand_sh138": 0,
+        "erz_treuhand_sh142": 0,
+        "erz_treuhand_sh149": 0,
+        "erz_treuhand_sh153": 0,
+        "erz_treuhand_sh158": 0,
+        "erz_treuhand_sh164": 0,
+        "erz_treuhand_sh168": 0,
+        "erz_treuhand_sh172": 0,
+        "erz_treuhand_sh179": 0,
+        "erz_treuhand_sh183": 0,
+        "erz_treuhand_sh187": 0,
+        "export": 410,
+        "fonds_aldera": 12034,
+        "fonds_transport": 0,
+        "house": 3000,
+        "j3_bauteil_arbeiter": 0,
+        "j4_jaeger_arbeiter": 0,
+        "k1_flug_sh001": 0,
+        "k1_flug_sh003": 0,
+        "k1_flug_sh004": 0,
+        "k1_flug_sh005": 0,
+        "k1_flug_sh006": 0,
+        "k1_flug_sh009": 0,
+        "k1_flug_sh011": 0,
+        "k1_flug_sh013": 0,
+        "k1_flug_sh015": 0,
+        "k1_flug_sh017": 0,
+        "k1_flug_sh019": 0,
+        "k1_flug_sh021": 0,
+        "k1_flug_sh023": 0,
+        "k1_flug_sh026": 0,
+        "k1_flug_sh028": 0,
+        "k1_flug_sh030": 0,
+        "k1_flug_sh032": 0,
+        "k1_flug_sh034": 0,
+        "k1_flug_sh036": 0,
+        "k1_flug_sh038": 0,
+        "k1_flug_sh040": 0,
+        "k1_flug_sh042": 0,
+        "k1_flug_sh045": 0,
+        "k1_flug_sh047": 0,
+        "k1_flug_sh049": 0,
+        "k1_flug_sh051": 0,
+        "k1_flug_sh053": 0,
+        "k1_flug_sh055": 0,
+        "k1_flug_sh057": 0,
+        "k1_flug_sh059": 0,
+        "k1_flug_sh062": 0,
+        "k1_flug_sh063": 0,
+        "k1_flug_sh066": 0,
+        "k1_flug_sh068": 0,
+        "k1_flug_sh070": 0,
+        "k1_flug_sh072": 0,
+        "k1_flug_sh075": 0,
+        "k1_flug_sh077": 0,
+        "k1_flug_sh078": 0,
+        "k1_flug_sh081": 0,
+        "k1_flug_sh083": 0,
+        "k1_flug_sh085": 0,
+        "k1_flug_sh087": 0,
+        "k1_flug_sh089": 0,
+        "k1_flug_sh091": 0,
+        "k1_flug_sh093": 0,
+        "k1_flug_sh096": 0,
+        "k1_flug_sh097": 0,
+        "k1_flug_sh100": 0,
+        "k1_flug_sh102": 0,
+        "k1_flug_sh104": 0,
+        "k1_flug_sh106": 0,
+        "k1_flug_sh108": 0,
+        "k1_flug_sh111": 0,
+        "k1_flug_sh112": 0,
+        "k1_flug_sh115": 0,
+        "k1_flug_sh117": 0,
+        "k1_flug_sh119": 0,
+        "k1_flug_sh122": 0,
+        "k1_flug_sh123": 0,
+        "k1_flug_sh125": 0,
+        "k1_flug_sh128": 0,
+        "k1_flug_sh130": 0,
+        "k1_flug_sh132": 0,
+        "k1_flug_sh134": 0,
+        "k1_flug_sh136": 0,
+        "k1_flug_sh138": 0,
+        "k1_flug_sh140": 0,
+        "k1_flug_sh142": 0,
+        "k1_flug_sh144": 0,
+        "k1_flug_sh147": 0,
+        "k1_flug_sh149": 0,
+        "k1_flug_sh151": 0,
+        "k1_flug_sh153": 0,
+        "k1_flug_sh155": 0,
+        "k1_flug_sh158": 0,
+        "k1_flug_sh160": 0,
+        "k1_flug_sh162": 0,
+        "k1_flug_sh164": 0,
+        "k1_flug_sh166": 0,
+        "k1_flug_sh168": 0,
+        "k1_flug_sh170": 0,
+        "k1_flug_sh172": 0,
+        "k1_flug_sh174": 0,
+        "k1_flug_sh176": 0,
+        "k1_flug_sh179": 0,
+        "k1_flug_sh181": 0,
+        "k1_flug_sh183": 0,
+        "k1_flug_sh185": 0,
+        "k1_flug_sh187": 30,
+        "k1_flug_sh190": 30,
+        "k1_miner_arbeit": 0,
+        "k1_miner_fracht": 0,
+        "k1_rueckfracht": 0,
+        "k7_werft_treuhand": 0,
+        "npc3": 2071,
+        "pilot_eis": 4328,
+        "pilot_erz": 0,
+        "pilot_house": 0,
+        "pilot_npc3": 14,
+        "st_aldera": 1100,
+        "st_nadir": 4000,
+        "transport": 1390,
+        "w3_arbeit_treuhand": 0,
+        "w3_kauf_treuhand": 0,
+        "w4_arbeit_treuhand": 0,
+        "w5_arbeit_treuhand": 0,
+        "w5ac_transfer_pilot": 8,
+        "w5ac_transfer_reserved": 0,
+        "w5n_arbeit": 42,
+        "w5n_fabrik_arbeit": 0,
+        "w5n_fracht_arbeit": 72,
+        "w5n_fracht_kauf": 490,
+        "werft_extern": 820
+      },
+      "worldMoney": 33000,
+      "minted": 0,
+      "burned": 0,
+      "production": {
+        "eisGefoerdert": 102557,
+        "erzGefoerdert": 3900,
+        "wasserProduziert": 101150,
+        "materialErzeugt": 930,
+        "frachterGebaut": 99,
+        "minerGebaut": 87,
+        "minerGeliefert": 87,
+        "jaegerGebaut": 0,
+        "jaegerVerkauft": 0
+      },
+      "wages": {
+        "bergbau": 212914,
+        "frachtpiloten": 247368,
+        "wasserwerk": 202300,
+        "minerflug": 73294,
+        "jaegerWerft": 0
+      },
+      "ledger": {
+        "bauteil": {
+          "consumed": 0,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 0
+        },
+        "eis": {
+          "consumed": 101150,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 102557,
+          "produced": 0
+        },
+        "erz": {
+          "consumed": 1860,
+          "exported": 1959,
+          "imported": 0,
+          "initial": 0,
+          "mined": 3900,
+          "produced": 0
+        },
+        "frachter": {
+          "consumed": 99,
+          "exported": 0,
+          "imported": 0,
+          "initial": 1,
+          "mined": 0,
+          "produced": 99
+        },
+        "jaeger": {
+          "consumed": 0,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 0
+        },
+        "material": {
+          "consumed": 930,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 930
+        },
+        "miner": {
+          "consumed": 91,
+          "exported": 0,
+          "imported": 0,
+          "initial": 4,
+          "mined": 0,
+          "produced": 87
+        },
+        "silizium": {
+          "consumed": 0,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 0
+        },
+        "wasser": {
+          "consumed": 101105,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 101150
+        }
+      },
+      "commands": {
+        "npc3:shipShuttle": 125,
+        "npc3:shipShuttleStop": 162
+      },
+      "rejected": {},
+      "bottleneck": {
+        "erster": {
+          "grund": "Kein Wasser am Wohnort st_aldera",
+          "tick": 64
+        },
+        "zaehler": {
+          "Aldera kann nächste Eischarge nicht bezahlen": 147,
+          "Kein Wasser am Wohnort st_aldera": 19009,
+          "Kein Wasser am Wohnort st_nadir": 1720,
+          "Kein einsatzfähiger Frachter der Spedition in Aldera": 5853,
+          "Miner-Erzfracht: Noch keine echte Erzcharge im Quelllager": 7,
+          "Minerwerft: K2: Material und Arbeitsminuten nicht vorfinanziert": 4281
+        }
+      }
+    },
+    {
+      "day": 365,
+      "ok": true,
+      "canonicalRoundtrip": true,
+      "tick": 525600,
+      "hash": "29933833f78d8676",
+      "eis": 209270,
+      "erz": 5800,
+      "wasser": 206190,
+      "material": 1890,
+      "frachter": 200,
+      "miner": 178,
+      "ersatz": 379,
+      "erzvertraege": 76,
+      "eisfrachten": 4124,
+      "wasserErloes": 3145760,
+      "dividenden": 1641777,
+      "loehne": 1492920,
+      "haushalte": 19814,
+      "firmen": 9750,
+      "spieler": 3000,
+      "groessteKonten": [
+        [
+          "fonds_aldera",
+          11612
+        ],
+        [
+          "eigner_transport",
+          4231
+        ],
+        [
+          "st_nadir",
+          4000
+        ],
+        [
+          "house",
+          3000
+        ]
+      ],
+      "additionalWages": {
+        "refinery": 7560,
+        "freighterYard": 6000,
+        "minerYard": 5340
+      },
+      "totalPaidWages": 1511820,
+      "hulls": {
+        "total": 382,
+        "consumed": 379,
+        "retired": 379
+      },
+      "stocks": {
+        "bauteil": 0,
+        "eis": 3080,
+        "erz": 61,
+        "frachter": 0,
+        "jaeger": 0,
+        "material": 0,
+        "miner": 1,
+        "silizium": 0,
+        "wasser": 70
+      },
+      "cash": {
+        "arbeiter_werft_nadir": 0,
+        "arbeitskraefte_nadir": 0,
+        "eigner_house": 0,
+        "eigner_npc3": 1145,
+        "eigner_st_aldera": 427,
+        "eigner_st_nadir": 2292,
+        "eigner_transport": 4231,
+        "eigner_werft": 10,
+        "erz_arbeit_sh001": 0,
+        "erz_arbeit_sh003": 0,
+        "erz_arbeit_sh004": 0,
+        "erz_arbeit_sh005": 0,
+        "erz_arbeit_sh009": 0,
+        "erz_arbeit_sh013": 0,
+        "erz_arbeit_sh019": 0,
+        "erz_arbeit_sh023": 0,
+        "erz_arbeit_sh028": 0,
+        "erz_arbeit_sh034": 0,
+        "erz_arbeit_sh038": 0,
+        "erz_arbeit_sh042": 0,
+        "erz_arbeit_sh049": 0,
+        "erz_arbeit_sh053": 0,
+        "erz_arbeit_sh059": 0,
+        "erz_arbeit_sh063": 0,
+        "erz_arbeit_sh068": 0,
+        "erz_arbeit_sh072": 0,
+        "erz_arbeit_sh078": 0,
+        "erz_arbeit_sh083": 0,
+        "erz_arbeit_sh089": 0,
+        "erz_arbeit_sh093": 0,
+        "erz_arbeit_sh097": 0,
+        "erz_arbeit_sh104": 0,
+        "erz_arbeit_sh108": 0,
+        "erz_arbeit_sh112": 0,
+        "erz_arbeit_sh119": 0,
+        "erz_arbeit_sh123": 0,
+        "erz_arbeit_sh128": 0,
+        "erz_arbeit_sh134": 0,
+        "erz_arbeit_sh138": 0,
+        "erz_arbeit_sh142": 0,
+        "erz_arbeit_sh149": 0,
+        "erz_arbeit_sh153": 0,
+        "erz_arbeit_sh158": 0,
+        "erz_arbeit_sh164": 0,
+        "erz_arbeit_sh168": 0,
+        "erz_arbeit_sh172": 0,
+        "erz_arbeit_sh179": 0,
+        "erz_arbeit_sh183": 0,
+        "erz_arbeit_sh187": 0,
+        "erz_arbeit_sh194": 0,
+        "erz_arbeit_sh198": 0,
+        "erz_arbeit_sh204": 0,
+        "erz_arbeit_sh209": 0,
+        "erz_arbeit_sh213": 0,
+        "erz_arbeit_sh219": 0,
+        "erz_arbeit_sh223": 0,
+        "erz_arbeit_sh228": 0,
+        "erz_arbeit_sh234": 0,
+        "erz_arbeit_sh239": 0,
+        "erz_arbeit_sh243": 0,
+        "erz_arbeit_sh249": 0,
+        "erz_arbeit_sh253": 0,
+        "erz_arbeit_sh257": 0,
+        "erz_arbeit_sh264": 0,
+        "erz_arbeit_sh268": 0,
+        "erz_arbeit_sh272": 0,
+        "erz_arbeit_sh279": 0,
+        "erz_arbeit_sh283": 0,
+        "erz_arbeit_sh287": 0,
+        "erz_arbeit_sh294": 0,
+        "erz_arbeit_sh298": 0,
+        "erz_arbeit_sh304": 0,
+        "erz_arbeit_sh308": 0,
+        "erz_arbeit_sh313": 0,
+        "erz_arbeit_sh319": 0,
+        "erz_arbeit_sh323": 0,
+        "erz_arbeit_sh329": 0,
+        "erz_arbeit_sh334": 0,
+        "erz_arbeit_sh338": 0,
+        "erz_arbeit_sh344": 0,
+        "erz_arbeit_sh349": 0,
+        "erz_arbeit_sh353": 0,
+        "erz_arbeit_sh357": 0,
+        "erz_arbeit_sh364": 0,
+        "erz_arbeit_sh368": 0,
+        "erz_arbeit_sh374": 0,
+        "erz_arbeit_sh379": 0,
+        "erz_treuhand_sh001": 0,
+        "erz_treuhand_sh003": 0,
+        "erz_treuhand_sh004": 0,
+        "erz_treuhand_sh005": 0,
+        "erz_treuhand_sh009": 0,
+        "erz_treuhand_sh013": 0,
+        "erz_treuhand_sh019": 0,
+        "erz_treuhand_sh023": 0,
+        "erz_treuhand_sh028": 0,
+        "erz_treuhand_sh034": 0,
+        "erz_treuhand_sh038": 0,
+        "erz_treuhand_sh042": 0,
+        "erz_treuhand_sh049": 0,
+        "erz_treuhand_sh053": 0,
+        "erz_treuhand_sh059": 0,
+        "erz_treuhand_sh063": 0,
+        "erz_treuhand_sh068": 0,
+        "erz_treuhand_sh072": 0,
+        "erz_treuhand_sh078": 0,
+        "erz_treuhand_sh083": 0,
+        "erz_treuhand_sh089": 0,
+        "erz_treuhand_sh093": 0,
+        "erz_treuhand_sh097": 0,
+        "erz_treuhand_sh104": 0,
+        "erz_treuhand_sh108": 0,
+        "erz_treuhand_sh112": 0,
+        "erz_treuhand_sh119": 0,
+        "erz_treuhand_sh123": 0,
+        "erz_treuhand_sh128": 0,
+        "erz_treuhand_sh134": 0,
+        "erz_treuhand_sh138": 0,
+        "erz_treuhand_sh142": 0,
+        "erz_treuhand_sh149": 0,
+        "erz_treuhand_sh153": 0,
+        "erz_treuhand_sh158": 0,
+        "erz_treuhand_sh164": 0,
+        "erz_treuhand_sh168": 0,
+        "erz_treuhand_sh172": 0,
+        "erz_treuhand_sh179": 0,
+        "erz_treuhand_sh183": 0,
+        "erz_treuhand_sh187": 0,
+        "erz_treuhand_sh194": 0,
+        "erz_treuhand_sh198": 0,
+        "erz_treuhand_sh204": 0,
+        "erz_treuhand_sh209": 0,
+        "erz_treuhand_sh213": 0,
+        "erz_treuhand_sh219": 0,
+        "erz_treuhand_sh223": 0,
+        "erz_treuhand_sh228": 0,
+        "erz_treuhand_sh234": 0,
+        "erz_treuhand_sh239": 0,
+        "erz_treuhand_sh243": 0,
+        "erz_treuhand_sh249": 0,
+        "erz_treuhand_sh253": 0,
+        "erz_treuhand_sh257": 0,
+        "erz_treuhand_sh264": 0,
+        "erz_treuhand_sh268": 0,
+        "erz_treuhand_sh272": 0,
+        "erz_treuhand_sh279": 0,
+        "erz_treuhand_sh283": 0,
+        "erz_treuhand_sh287": 0,
+        "erz_treuhand_sh294": 0,
+        "erz_treuhand_sh298": 0,
+        "erz_treuhand_sh304": 0,
+        "erz_treuhand_sh308": 0,
+        "erz_treuhand_sh313": 0,
+        "erz_treuhand_sh319": 0,
+        "erz_treuhand_sh323": 0,
+        "erz_treuhand_sh329": 0,
+        "erz_treuhand_sh334": 0,
+        "erz_treuhand_sh338": 0,
+        "erz_treuhand_sh344": 0,
+        "erz_treuhand_sh349": 0,
+        "erz_treuhand_sh353": 0,
+        "erz_treuhand_sh357": 0,
+        "erz_treuhand_sh364": 0,
+        "erz_treuhand_sh368": 0,
+        "erz_treuhand_sh374": 0,
+        "erz_treuhand_sh379": 0,
+        "export": 410,
+        "fonds_aldera": 11612,
+        "fonds_transport": 0,
+        "house": 3000,
+        "j3_bauteil_arbeiter": 0,
+        "j4_jaeger_arbeiter": 0,
+        "k1_flug_sh001": 0,
+        "k1_flug_sh003": 0,
+        "k1_flug_sh004": 0,
+        "k1_flug_sh005": 0,
+        "k1_flug_sh006": 0,
+        "k1_flug_sh009": 0,
+        "k1_flug_sh011": 0,
+        "k1_flug_sh013": 0,
+        "k1_flug_sh015": 0,
+        "k1_flug_sh017": 0,
+        "k1_flug_sh019": 0,
+        "k1_flug_sh021": 0,
+        "k1_flug_sh023": 0,
+        "k1_flug_sh026": 0,
+        "k1_flug_sh028": 0,
+        "k1_flug_sh030": 0,
+        "k1_flug_sh032": 0,
+        "k1_flug_sh034": 0,
+        "k1_flug_sh036": 0,
+        "k1_flug_sh038": 0,
+        "k1_flug_sh040": 0,
+        "k1_flug_sh042": 0,
+        "k1_flug_sh045": 0,
+        "k1_flug_sh047": 0,
+        "k1_flug_sh049": 0,
+        "k1_flug_sh051": 0,
+        "k1_flug_sh053": 0,
+        "k1_flug_sh055": 0,
+        "k1_flug_sh057": 0,
+        "k1_flug_sh059": 0,
+        "k1_flug_sh062": 0,
+        "k1_flug_sh063": 0,
+        "k1_flug_sh066": 0,
+        "k1_flug_sh068": 0,
+        "k1_flug_sh070": 0,
+        "k1_flug_sh072": 0,
+        "k1_flug_sh075": 0,
+        "k1_flug_sh077": 0,
+        "k1_flug_sh078": 0,
+        "k1_flug_sh081": 0,
+        "k1_flug_sh083": 0,
+        "k1_flug_sh085": 0,
+        "k1_flug_sh087": 0,
+        "k1_flug_sh089": 0,
+        "k1_flug_sh091": 0,
+        "k1_flug_sh093": 0,
+        "k1_flug_sh096": 0,
+        "k1_flug_sh097": 0,
+        "k1_flug_sh100": 0,
+        "k1_flug_sh102": 0,
+        "k1_flug_sh104": 0,
+        "k1_flug_sh106": 0,
+        "k1_flug_sh108": 0,
+        "k1_flug_sh111": 0,
+        "k1_flug_sh112": 0,
+        "k1_flug_sh115": 0,
+        "k1_flug_sh117": 0,
+        "k1_flug_sh119": 0,
+        "k1_flug_sh122": 0,
+        "k1_flug_sh123": 0,
+        "k1_flug_sh125": 0,
+        "k1_flug_sh128": 0,
+        "k1_flug_sh130": 0,
+        "k1_flug_sh132": 0,
+        "k1_flug_sh134": 0,
+        "k1_flug_sh136": 0,
+        "k1_flug_sh138": 0,
+        "k1_flug_sh140": 0,
+        "k1_flug_sh142": 0,
+        "k1_flug_sh144": 0,
+        "k1_flug_sh147": 0,
+        "k1_flug_sh149": 0,
+        "k1_flug_sh151": 0,
+        "k1_flug_sh153": 0,
+        "k1_flug_sh155": 0,
+        "k1_flug_sh158": 0,
+        "k1_flug_sh160": 0,
+        "k1_flug_sh162": 0,
+        "k1_flug_sh164": 0,
+        "k1_flug_sh166": 0,
+        "k1_flug_sh168": 0,
+        "k1_flug_sh170": 0,
+        "k1_flug_sh172": 0,
+        "k1_flug_sh174": 0,
+        "k1_flug_sh176": 0,
+        "k1_flug_sh179": 0,
+        "k1_flug_sh181": 0,
+        "k1_flug_sh183": 0,
+        "k1_flug_sh185": 0,
+        "k1_flug_sh187": 0,
+        "k1_flug_sh190": 0,
+        "k1_flug_sh192": 0,
+        "k1_flug_sh194": 0,
+        "k1_flug_sh196": 0,
+        "k1_flug_sh198": 0,
+        "k1_flug_sh200": 0,
+        "k1_flug_sh203": 0,
+        "k1_flug_sh204": 0,
+        "k1_flug_sh207": 0,
+        "k1_flug_sh209": 0,
+        "k1_flug_sh211": 0,
+        "k1_flug_sh213": 0,
+        "k1_flug_sh215": 0,
+        "k1_flug_sh217": 0,
+        "k1_flug_sh219": 0,
+        "k1_flug_sh221": 0,
+        "k1_flug_sh223": 0,
+        "k1_flug_sh226": 0,
+        "k1_flug_sh228": 0,
+        "k1_flug_sh230": 0,
+        "k1_flug_sh232": 0,
+        "k1_flug_sh234": 0,
+        "k1_flug_sh237": 0,
+        "k1_flug_sh239": 0,
+        "k1_flug_sh241": 0,
+        "k1_flug_sh243": 0,
+        "k1_flug_sh245": 0,
+        "k1_flug_sh247": 0,
+        "k1_flug_sh249": 0,
+        "k1_flug_sh251": 0,
+        "k1_flug_sh253": 0,
+        "k1_flug_sh255": 0,
+        "k1_flug_sh257": 0,
+        "k1_flug_sh260": 0,
+        "k1_flug_sh262": 0,
+        "k1_flug_sh264": 0,
+        "k1_flug_sh266": 0,
+        "k1_flug_sh268": 0,
+        "k1_flug_sh270": 0,
+        "k1_flug_sh272": 0,
+        "k1_flug_sh275": 0,
+        "k1_flug_sh277": 0,
+        "k1_flug_sh279": 0,
+        "k1_flug_sh281": 0,
+        "k1_flug_sh283": 0,
+        "k1_flug_sh285": 0,
+        "k1_flug_sh287": 0,
+        "k1_flug_sh289": 0,
+        "k1_flug_sh292": 0,
+        "k1_flug_sh294": 0,
+        "k1_flug_sh296": 0,
+        "k1_flug_sh298": 0,
+        "k1_flug_sh300": 0,
+        "k1_flug_sh302": 0,
+        "k1_flug_sh304": 0,
+        "k1_flug_sh306": 0,
+        "k1_flug_sh308": 0,
+        "k1_flug_sh310": 0,
+        "k1_flug_sh313": 0,
+        "k1_flug_sh315": 0,
+        "k1_flug_sh317": 0,
+        "k1_flug_sh319": 0,
+        "k1_flug_sh321": 0,
+        "k1_flug_sh323": 0,
+        "k1_flug_sh326": 0,
+        "k1_flug_sh327": 0,
+        "k1_flug_sh329": 0,
+        "k1_flug_sh332": 0,
+        "k1_flug_sh334": 0,
+        "k1_flug_sh336": 0,
+        "k1_flug_sh338": 0,
+        "k1_flug_sh340": 0,
+        "k1_flug_sh342": 0,
+        "k1_flug_sh344": 0,
+        "k1_flug_sh346": 0,
+        "k1_flug_sh349": 0,
+        "k1_flug_sh351": 0,
+        "k1_flug_sh353": 0,
+        "k1_flug_sh355": 0,
+        "k1_flug_sh357": 0,
+        "k1_flug_sh359": 0,
+        "k1_flug_sh361": 0,
+        "k1_flug_sh364": 0,
+        "k1_flug_sh366": 0,
+        "k1_flug_sh368": 0,
+        "k1_flug_sh370": 0,
+        "k1_flug_sh372": 0,
+        "k1_flug_sh374": 0,
+        "k1_flug_sh377": 0,
+        "k1_flug_sh379": 0,
+        "k1_flug_sh381": 0,
+        "k1_miner_arbeit": 0,
+        "k1_miner_fracht": 0,
+        "k1_rueckfracht": 0,
+        "k7_werft_treuhand": 0,
+        "npc3": 2349,
+        "pilot_eis": 0,
+        "pilot_erz": 0,
+        "pilot_house": 0,
+        "pilot_npc3": 15,
+        "st_aldera": 1100,
+        "st_nadir": 4000,
+        "transport": 1261,
+        "w3_arbeit_treuhand": 0,
+        "w3_kauf_treuhand": 0,
+        "w4_arbeit_treuhand": 0,
+        "w5_arbeit_treuhand": 0,
+        "w5ac_transfer_pilot": 41,
+        "w5ac_transfer_reserved": 23,
+        "w5n_arbeit": 41,
+        "w5n_fabrik_arbeit": 3,
+        "w5n_fracht_arbeit": 0,
+        "w5n_fracht_kauf": 0,
+        "werft_extern": 1040
+      },
+      "worldMoney": 33000,
+      "minted": 0,
+      "burned": 0,
+      "production": {
+        "eisGefoerdert": 209270,
+        "erzGefoerdert": 5800,
+        "wasserProduziert": 206190,
+        "materialErzeugt": 1890,
+        "frachterGebaut": 200,
+        "minerGebaut": 178,
+        "minerGeliefert": 178,
+        "jaegerGebaut": 0,
+        "jaegerVerkauft": 0
+      },
+      "wages": {
+        "bergbau": 430140,
+        "frachtpiloten": 504000,
+        "wasserwerk": 412397,
+        "minerflug": 146383,
+        "jaegerWerft": 0
+      },
+      "ledger": {
+        "bauteil": {
+          "consumed": 0,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 0
+        },
+        "eis": {
+          "consumed": 206190,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 209270,
+          "produced": 0
+        },
+        "erz": {
+          "consumed": 3780,
+          "exported": 1959,
+          "imported": 0,
+          "initial": 0,
+          "mined": 5800,
+          "produced": 0
+        },
+        "frachter": {
+          "consumed": 201,
+          "exported": 0,
+          "imported": 0,
+          "initial": 1,
+          "mined": 0,
+          "produced": 200
+        },
+        "jaeger": {
+          "consumed": 0,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 0
+        },
+        "material": {
+          "consumed": 1890,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 1890
+        },
+        "miner": {
+          "consumed": 181,
+          "exported": 0,
+          "imported": 0,
+          "initial": 4,
+          "mined": 0,
+          "produced": 178
+        },
+        "silizium": {
+          "consumed": 0,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 0
+        },
+        "wasser": {
+          "consumed": 206120,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 206190
+        }
+      },
+      "commands": {
+        "npc3:shipShuttle": 253,
+        "npc3:shipShuttleStop": 329
+      },
+      "rejected": {},
+      "bottleneck": {
+        "erster": {
+          "grund": "Kein Wasser am Wohnort st_aldera",
+          "tick": 64
+        },
+        "zaehler": {
+          "Aldera kann nächste Eischarge nicht bezahlen": 147,
+          "Erzfracht für Ersatzbau: Noch keine echte Erzcharge im Quelllager": 3,
+          "Kein Wasser am Wohnort st_aldera": 38727,
+          "Kein Wasser am Wohnort st_nadir": 3298,
+          "Kein einsatzfähiger Frachter der Spedition in Aldera": 11826,
+          "Miner-Erzfracht: Noch keine echte Erzcharge im Quelllager": 9,
+          "Minerwerft: K2: Material und Arbeitsminuten nicht vorfinanziert": 8754
+        }
+      }
+    },
+    {
+      "day": 730,
+      "ok": true,
+      "canonicalRoundtrip": true,
+      "tick": 1051200,
+      "hash": "3a189d3d049500e3",
+      "eis": 419336,
+      "erz": 9600,
+      "wasser": 413240,
+      "material": 3785,
+      "frachter": 401,
+      "miner": 356,
+      "ersatz": 757,
+      "erzvertraege": 152,
+      "eisfrachten": 8265,
+      "wasserErloes": 6305588,
+      "dividenden": 3279005,
+      "loehne": 2984391,
+      "haushalte": 19658,
+      "firmen": 9326,
+      "spieler": 3000,
+      "groessteKonten": [
+        [
+          "fonds_aldera",
+          13984
+        ],
+        [
+          "st_nadir",
+          4000
+        ],
+        [
+          "house",
+          3000
+        ],
+        [
+          "eigner_transport",
+          2661
+        ]
+      ],
+      "additionalWages": {
+        "refinery": 15140,
+        "freighterYard": 12030,
+        "minerYard": 10680
+      },
+      "totalPaidWages": 3022241,
+      "hulls": {
+        "total": 760,
+        "consumed": 757,
+        "retired": 757
+      },
+      "stocks": {
+        "bauteil": 0,
+        "eis": 6096,
+        "erz": 71,
+        "frachter": 1,
+        "jaeger": 0,
+        "material": 0,
+        "miner": 1,
+        "silizium": 0,
+        "wasser": 69
+      },
+      "cash": {
+        "arbeiter_werft_nadir": 2,
+        "arbeitskraefte_nadir": 6,
+        "eigner_house": 0,
+        "eigner_npc3": 1125,
+        "eigner_st_aldera": 9,
+        "eigner_st_nadir": 1796,
+        "eigner_transport": 2661,
+        "eigner_werft": 4,
+        "erz_arbeit_sh001": 0,
+        "erz_arbeit_sh003": 0,
+        "erz_arbeit_sh004": 0,
+        "erz_arbeit_sh005": 0,
+        "erz_arbeit_sh009": 0,
+        "erz_arbeit_sh013": 0,
+        "erz_arbeit_sh019": 0,
+        "erz_arbeit_sh023": 0,
+        "erz_arbeit_sh028": 0,
+        "erz_arbeit_sh034": 0,
+        "erz_arbeit_sh038": 0,
+        "erz_arbeit_sh042": 0,
+        "erz_arbeit_sh049": 0,
+        "erz_arbeit_sh053": 0,
+        "erz_arbeit_sh059": 0,
+        "erz_arbeit_sh063": 0,
+        "erz_arbeit_sh068": 0,
+        "erz_arbeit_sh072": 0,
+        "erz_arbeit_sh078": 0,
+        "erz_arbeit_sh083": 0,
+        "erz_arbeit_sh089": 0,
+        "erz_arbeit_sh093": 0,
+        "erz_arbeit_sh097": 0,
+        "erz_arbeit_sh104": 0,
+        "erz_arbeit_sh108": 0,
+        "erz_arbeit_sh112": 0,
+        "erz_arbeit_sh119": 0,
+        "erz_arbeit_sh123": 0,
+        "erz_arbeit_sh128": 0,
+        "erz_arbeit_sh134": 0,
+        "erz_arbeit_sh138": 0,
+        "erz_arbeit_sh142": 0,
+        "erz_arbeit_sh149": 0,
+        "erz_arbeit_sh153": 0,
+        "erz_arbeit_sh158": 0,
+        "erz_arbeit_sh164": 0,
+        "erz_arbeit_sh168": 0,
+        "erz_arbeit_sh172": 0,
+        "erz_arbeit_sh179": 0,
+        "erz_arbeit_sh183": 0,
+        "erz_arbeit_sh187": 0,
+        "erz_arbeit_sh194": 0,
+        "erz_arbeit_sh198": 0,
+        "erz_arbeit_sh204": 0,
+        "erz_arbeit_sh209": 0,
+        "erz_arbeit_sh213": 0,
+        "erz_arbeit_sh219": 0,
+        "erz_arbeit_sh223": 0,
+        "erz_arbeit_sh228": 0,
+        "erz_arbeit_sh234": 0,
+        "erz_arbeit_sh239": 0,
+        "erz_arbeit_sh243": 0,
+        "erz_arbeit_sh249": 0,
+        "erz_arbeit_sh253": 0,
+        "erz_arbeit_sh257": 0,
+        "erz_arbeit_sh264": 0,
+        "erz_arbeit_sh268": 0,
+        "erz_arbeit_sh272": 0,
+        "erz_arbeit_sh279": 0,
+        "erz_arbeit_sh283": 0,
+        "erz_arbeit_sh287": 0,
+        "erz_arbeit_sh294": 0,
+        "erz_arbeit_sh298": 0,
+        "erz_arbeit_sh304": 0,
+        "erz_arbeit_sh308": 0,
+        "erz_arbeit_sh313": 0,
+        "erz_arbeit_sh319": 0,
+        "erz_arbeit_sh323": 0,
+        "erz_arbeit_sh329": 0,
+        "erz_arbeit_sh334": 0,
+        "erz_arbeit_sh338": 0,
+        "erz_arbeit_sh344": 0,
+        "erz_arbeit_sh349": 0,
+        "erz_arbeit_sh353": 0,
+        "erz_arbeit_sh357": 0,
+        "erz_arbeit_sh364": 0,
+        "erz_arbeit_sh368": 0,
+        "erz_arbeit_sh374": 0,
+        "erz_arbeit_sh379": 0,
+        "erz_arbeit_sh383": 0,
+        "erz_arbeit_sh387": 0,
+        "erz_arbeit_sh394": 0,
+        "erz_arbeit_sh398": 0,
+        "erz_arbeit_sh405": 0,
+        "erz_arbeit_sh409": 0,
+        "erz_arbeit_sh413": 0,
+        "erz_arbeit_sh417": 0,
+        "erz_arbeit_sh423": 0,
+        "erz_arbeit_sh428": 0,
+        "erz_arbeit_sh432": 0,
+        "erz_arbeit_sh439": 0,
+        "erz_arbeit_sh443": 0,
+        "erz_arbeit_sh449": 0,
+        "erz_arbeit_sh453": 0,
+        "erz_arbeit_sh458": 0,
+        "erz_arbeit_sh464": 0,
+        "erz_arbeit_sh468": 0,
+        "erz_arbeit_sh473": 0,
+        "erz_arbeit_sh479": 0,
+        "erz_arbeit_sh483": 0,
+        "erz_arbeit_sh487": 0,
+        "erz_arbeit_sh494": 0,
+        "erz_arbeit_sh498": 0,
+        "erz_arbeit_sh503": 0,
+        "erz_arbeit_sh509": 0,
+        "erz_arbeit_sh513": 0,
+        "erz_arbeit_sh518": 0,
+        "erz_arbeit_sh524": 0,
+        "erz_arbeit_sh528": 0,
+        "erz_arbeit_sh532": 0,
+        "erz_arbeit_sh539": 0,
+        "erz_arbeit_sh543": 0,
+        "erz_arbeit_sh549": 0,
+        "erz_arbeit_sh554": 0,
+        "erz_arbeit_sh558": 0,
+        "erz_arbeit_sh564": 0,
+        "erz_arbeit_sh568": 0,
+        "erz_arbeit_sh573": 0,
+        "erz_arbeit_sh579": 0,
+        "erz_arbeit_sh583": 0,
+        "erz_arbeit_sh589": 0,
+        "erz_arbeit_sh594": 0,
+        "erz_arbeit_sh598": 0,
+        "erz_arbeit_sh604": 0,
+        "erz_arbeit_sh609": 0,
+        "erz_arbeit_sh613": 0,
+        "erz_arbeit_sh619": 0,
+        "erz_arbeit_sh624": 0,
+        "erz_arbeit_sh628": 0,
+        "erz_arbeit_sh634": 0,
+        "erz_arbeit_sh638": 0,
+        "erz_arbeit_sh643": 0,
+        "erz_arbeit_sh650": 0,
+        "erz_arbeit_sh653": 0,
+        "erz_arbeit_sh658": 0,
+        "erz_arbeit_sh664": 0,
+        "erz_arbeit_sh669": 0,
+        "erz_arbeit_sh673": 0,
+        "erz_arbeit_sh679": 0,
+        "erz_arbeit_sh683": 0,
+        "erz_arbeit_sh687": 0,
+        "erz_arbeit_sh694": 0,
+        "erz_arbeit_sh698": 0,
+        "erz_arbeit_sh704": 0,
+        "erz_arbeit_sh708": 0,
+        "erz_arbeit_sh713": 0,
+        "erz_arbeit_sh719": 0,
+        "erz_arbeit_sh724": 0,
+        "erz_arbeit_sh728": 0,
+        "erz_arbeit_sh734": 0,
+        "erz_arbeit_sh738": 0,
+        "erz_arbeit_sh744": 0,
+        "erz_arbeit_sh749": 0,
+        "erz_arbeit_sh754": 0,
+        "erz_arbeit_sh757": 0,
+        "erz_treuhand_sh001": 0,
+        "erz_treuhand_sh003": 0,
+        "erz_treuhand_sh004": 0,
+        "erz_treuhand_sh005": 0,
+        "erz_treuhand_sh009": 0,
+        "erz_treuhand_sh013": 0,
+        "erz_treuhand_sh019": 0,
+        "erz_treuhand_sh023": 0,
+        "erz_treuhand_sh028": 0,
+        "erz_treuhand_sh034": 0,
+        "erz_treuhand_sh038": 0,
+        "erz_treuhand_sh042": 0,
+        "erz_treuhand_sh049": 0,
+        "erz_treuhand_sh053": 0,
+        "erz_treuhand_sh059": 0,
+        "erz_treuhand_sh063": 0,
+        "erz_treuhand_sh068": 0,
+        "erz_treuhand_sh072": 0,
+        "erz_treuhand_sh078": 0,
+        "erz_treuhand_sh083": 0,
+        "erz_treuhand_sh089": 0,
+        "erz_treuhand_sh093": 0,
+        "erz_treuhand_sh097": 0,
+        "erz_treuhand_sh104": 0,
+        "erz_treuhand_sh108": 0,
+        "erz_treuhand_sh112": 0,
+        "erz_treuhand_sh119": 0,
+        "erz_treuhand_sh123": 0,
+        "erz_treuhand_sh128": 0,
+        "erz_treuhand_sh134": 0,
+        "erz_treuhand_sh138": 0,
+        "erz_treuhand_sh142": 0,
+        "erz_treuhand_sh149": 0,
+        "erz_treuhand_sh153": 0,
+        "erz_treuhand_sh158": 0,
+        "erz_treuhand_sh164": 0,
+        "erz_treuhand_sh168": 0,
+        "erz_treuhand_sh172": 0,
+        "erz_treuhand_sh179": 0,
+        "erz_treuhand_sh183": 0,
+        "erz_treuhand_sh187": 0,
+        "erz_treuhand_sh194": 0,
+        "erz_treuhand_sh198": 0,
+        "erz_treuhand_sh204": 0,
+        "erz_treuhand_sh209": 0,
+        "erz_treuhand_sh213": 0,
+        "erz_treuhand_sh219": 0,
+        "erz_treuhand_sh223": 0,
+        "erz_treuhand_sh228": 0,
+        "erz_treuhand_sh234": 0,
+        "erz_treuhand_sh239": 0,
+        "erz_treuhand_sh243": 0,
+        "erz_treuhand_sh249": 0,
+        "erz_treuhand_sh253": 0,
+        "erz_treuhand_sh257": 0,
+        "erz_treuhand_sh264": 0,
+        "erz_treuhand_sh268": 0,
+        "erz_treuhand_sh272": 0,
+        "erz_treuhand_sh279": 0,
+        "erz_treuhand_sh283": 0,
+        "erz_treuhand_sh287": 0,
+        "erz_treuhand_sh294": 0,
+        "erz_treuhand_sh298": 0,
+        "erz_treuhand_sh304": 0,
+        "erz_treuhand_sh308": 0,
+        "erz_treuhand_sh313": 0,
+        "erz_treuhand_sh319": 0,
+        "erz_treuhand_sh323": 0,
+        "erz_treuhand_sh329": 0,
+        "erz_treuhand_sh334": 0,
+        "erz_treuhand_sh338": 0,
+        "erz_treuhand_sh344": 0,
+        "erz_treuhand_sh349": 0,
+        "erz_treuhand_sh353": 0,
+        "erz_treuhand_sh357": 0,
+        "erz_treuhand_sh364": 0,
+        "erz_treuhand_sh368": 0,
+        "erz_treuhand_sh374": 0,
+        "erz_treuhand_sh379": 0,
+        "erz_treuhand_sh383": 0,
+        "erz_treuhand_sh387": 0,
+        "erz_treuhand_sh394": 0,
+        "erz_treuhand_sh398": 0,
+        "erz_treuhand_sh405": 0,
+        "erz_treuhand_sh409": 0,
+        "erz_treuhand_sh413": 0,
+        "erz_treuhand_sh417": 0,
+        "erz_treuhand_sh423": 0,
+        "erz_treuhand_sh428": 0,
+        "erz_treuhand_sh432": 0,
+        "erz_treuhand_sh439": 0,
+        "erz_treuhand_sh443": 0,
+        "erz_treuhand_sh449": 0,
+        "erz_treuhand_sh453": 0,
+        "erz_treuhand_sh458": 0,
+        "erz_treuhand_sh464": 0,
+        "erz_treuhand_sh468": 0,
+        "erz_treuhand_sh473": 0,
+        "erz_treuhand_sh479": 0,
+        "erz_treuhand_sh483": 0,
+        "erz_treuhand_sh487": 0,
+        "erz_treuhand_sh494": 0,
+        "erz_treuhand_sh498": 0,
+        "erz_treuhand_sh503": 0,
+        "erz_treuhand_sh509": 0,
+        "erz_treuhand_sh513": 0,
+        "erz_treuhand_sh518": 0,
+        "erz_treuhand_sh524": 0,
+        "erz_treuhand_sh528": 0,
+        "erz_treuhand_sh532": 0,
+        "erz_treuhand_sh539": 0,
+        "erz_treuhand_sh543": 0,
+        "erz_treuhand_sh549": 0,
+        "erz_treuhand_sh554": 0,
+        "erz_treuhand_sh558": 0,
+        "erz_treuhand_sh564": 0,
+        "erz_treuhand_sh568": 0,
+        "erz_treuhand_sh573": 0,
+        "erz_treuhand_sh579": 0,
+        "erz_treuhand_sh583": 0,
+        "erz_treuhand_sh589": 0,
+        "erz_treuhand_sh594": 0,
+        "erz_treuhand_sh598": 0,
+        "erz_treuhand_sh604": 0,
+        "erz_treuhand_sh609": 0,
+        "erz_treuhand_sh613": 0,
+        "erz_treuhand_sh619": 0,
+        "erz_treuhand_sh624": 0,
+        "erz_treuhand_sh628": 0,
+        "erz_treuhand_sh634": 0,
+        "erz_treuhand_sh638": 0,
+        "erz_treuhand_sh643": 0,
+        "erz_treuhand_sh650": 0,
+        "erz_treuhand_sh653": 0,
+        "erz_treuhand_sh658": 0,
+        "erz_treuhand_sh664": 0,
+        "erz_treuhand_sh669": 0,
+        "erz_treuhand_sh673": 0,
+        "erz_treuhand_sh679": 0,
+        "erz_treuhand_sh683": 0,
+        "erz_treuhand_sh687": 0,
+        "erz_treuhand_sh694": 0,
+        "erz_treuhand_sh698": 0,
+        "erz_treuhand_sh704": 0,
+        "erz_treuhand_sh708": 0,
+        "erz_treuhand_sh713": 0,
+        "erz_treuhand_sh719": 0,
+        "erz_treuhand_sh724": 0,
+        "erz_treuhand_sh728": 0,
+        "erz_treuhand_sh734": 0,
+        "erz_treuhand_sh738": 0,
+        "erz_treuhand_sh744": 0,
+        "erz_treuhand_sh749": 0,
+        "erz_treuhand_sh754": 0,
+        "erz_treuhand_sh757": 0,
+        "export": 410,
+        "fonds_aldera": 13984,
+        "fonds_transport": 0,
+        "house": 3000,
+        "j3_bauteil_arbeiter": 0,
+        "j4_jaeger_arbeiter": 0,
+        "k1_flug_sh001": 0,
+        "k1_flug_sh003": 0,
+        "k1_flug_sh004": 0,
+        "k1_flug_sh005": 0,
+        "k1_flug_sh006": 0,
+        "k1_flug_sh009": 0,
+        "k1_flug_sh011": 0,
+        "k1_flug_sh013": 0,
+        "k1_flug_sh015": 0,
+        "k1_flug_sh017": 0,
+        "k1_flug_sh019": 0,
+        "k1_flug_sh021": 0,
+        "k1_flug_sh023": 0,
+        "k1_flug_sh026": 0,
+        "k1_flug_sh028": 0,
+        "k1_flug_sh030": 0,
+        "k1_flug_sh032": 0,
+        "k1_flug_sh034": 0,
+        "k1_flug_sh036": 0,
+        "k1_flug_sh038": 0,
+        "k1_flug_sh040": 0,
+        "k1_flug_sh042": 0,
+        "k1_flug_sh045": 0,
+        "k1_flug_sh047": 0,
+        "k1_flug_sh049": 0,
+        "k1_flug_sh051": 0,
+        "k1_flug_sh053": 0,
+        "k1_flug_sh055": 0,
+        "k1_flug_sh057": 0,
+        "k1_flug_sh059": 0,
+        "k1_flug_sh062": 0,
+        "k1_flug_sh063": 0,
+        "k1_flug_sh066": 0,
+        "k1_flug_sh068": 0,
+        "k1_flug_sh070": 0,
+        "k1_flug_sh072": 0,
+        "k1_flug_sh075": 0,
+        "k1_flug_sh077": 0,
+        "k1_flug_sh078": 0,
+        "k1_flug_sh081": 0,
+        "k1_flug_sh083": 0,
+        "k1_flug_sh085": 0,
+        "k1_flug_sh087": 0,
+        "k1_flug_sh089": 0,
+        "k1_flug_sh091": 0,
+        "k1_flug_sh093": 0,
+        "k1_flug_sh096": 0,
+        "k1_flug_sh097": 0,
+        "k1_flug_sh100": 0,
+        "k1_flug_sh102": 0,
+        "k1_flug_sh104": 0,
+        "k1_flug_sh106": 0,
+        "k1_flug_sh108": 0,
+        "k1_flug_sh111": 0,
+        "k1_flug_sh112": 0,
+        "k1_flug_sh115": 0,
+        "k1_flug_sh117": 0,
+        "k1_flug_sh119": 0,
+        "k1_flug_sh122": 0,
+        "k1_flug_sh123": 0,
+        "k1_flug_sh125": 0,
+        "k1_flug_sh128": 0,
+        "k1_flug_sh130": 0,
+        "k1_flug_sh132": 0,
+        "k1_flug_sh134": 0,
+        "k1_flug_sh136": 0,
+        "k1_flug_sh138": 0,
+        "k1_flug_sh140": 0,
+        "k1_flug_sh142": 0,
+        "k1_flug_sh144": 0,
+        "k1_flug_sh147": 0,
+        "k1_flug_sh149": 0,
+        "k1_flug_sh151": 0,
+        "k1_flug_sh153": 0,
+        "k1_flug_sh155": 0,
+        "k1_flug_sh158": 0,
+        "k1_flug_sh160": 0,
+        "k1_flug_sh162": 0,
+        "k1_flug_sh164": 0,
+        "k1_flug_sh166": 0,
+        "k1_flug_sh168": 0,
+        "k1_flug_sh170": 0,
+        "k1_flug_sh172": 0,
+        "k1_flug_sh174": 0,
+        "k1_flug_sh176": 0,
+        "k1_flug_sh179": 0,
+        "k1_flug_sh181": 0,
+        "k1_flug_sh183": 0,
+        "k1_flug_sh185": 0,
+        "k1_flug_sh187": 0,
+        "k1_flug_sh190": 0,
+        "k1_flug_sh192": 0,
+        "k1_flug_sh194": 0,
+        "k1_flug_sh196": 0,
+        "k1_flug_sh198": 0,
+        "k1_flug_sh200": 0,
+        "k1_flug_sh203": 0,
+        "k1_flug_sh204": 0,
+        "k1_flug_sh207": 0,
+        "k1_flug_sh209": 0,
+        "k1_flug_sh211": 0,
+        "k1_flug_sh213": 0,
+        "k1_flug_sh215": 0,
+        "k1_flug_sh217": 0,
+        "k1_flug_sh219": 0,
+        "k1_flug_sh221": 0,
+        "k1_flug_sh223": 0,
+        "k1_flug_sh226": 0,
+        "k1_flug_sh228": 0,
+        "k1_flug_sh230": 0,
+        "k1_flug_sh232": 0,
+        "k1_flug_sh234": 0,
+        "k1_flug_sh237": 0,
+        "k1_flug_sh239": 0,
+        "k1_flug_sh241": 0,
+        "k1_flug_sh243": 0,
+        "k1_flug_sh245": 0,
+        "k1_flug_sh247": 0,
+        "k1_flug_sh249": 0,
+        "k1_flug_sh251": 0,
+        "k1_flug_sh253": 0,
+        "k1_flug_sh255": 0,
+        "k1_flug_sh257": 0,
+        "k1_flug_sh260": 0,
+        "k1_flug_sh262": 0,
+        "k1_flug_sh264": 0,
+        "k1_flug_sh266": 0,
+        "k1_flug_sh268": 0,
+        "k1_flug_sh270": 0,
+        "k1_flug_sh272": 0,
+        "k1_flug_sh275": 0,
+        "k1_flug_sh277": 0,
+        "k1_flug_sh279": 0,
+        "k1_flug_sh281": 0,
+        "k1_flug_sh283": 0,
+        "k1_flug_sh285": 0,
+        "k1_flug_sh287": 0,
+        "k1_flug_sh289": 0,
+        "k1_flug_sh292": 0,
+        "k1_flug_sh294": 0,
+        "k1_flug_sh296": 0,
+        "k1_flug_sh298": 0,
+        "k1_flug_sh300": 0,
+        "k1_flug_sh302": 0,
+        "k1_flug_sh304": 0,
+        "k1_flug_sh306": 0,
+        "k1_flug_sh308": 0,
+        "k1_flug_sh310": 0,
+        "k1_flug_sh313": 0,
+        "k1_flug_sh315": 0,
+        "k1_flug_sh317": 0,
+        "k1_flug_sh319": 0,
+        "k1_flug_sh321": 0,
+        "k1_flug_sh323": 0,
+        "k1_flug_sh326": 0,
+        "k1_flug_sh327": 0,
+        "k1_flug_sh329": 0,
+        "k1_flug_sh332": 0,
+        "k1_flug_sh334": 0,
+        "k1_flug_sh336": 0,
+        "k1_flug_sh338": 0,
+        "k1_flug_sh340": 0,
+        "k1_flug_sh342": 0,
+        "k1_flug_sh344": 0,
+        "k1_flug_sh346": 0,
+        "k1_flug_sh349": 0,
+        "k1_flug_sh351": 0,
+        "k1_flug_sh353": 0,
+        "k1_flug_sh355": 0,
+        "k1_flug_sh357": 0,
+        "k1_flug_sh359": 0,
+        "k1_flug_sh361": 0,
+        "k1_flug_sh364": 0,
+        "k1_flug_sh366": 0,
+        "k1_flug_sh368": 0,
+        "k1_flug_sh370": 0,
+        "k1_flug_sh372": 0,
+        "k1_flug_sh374": 0,
+        "k1_flug_sh377": 0,
+        "k1_flug_sh379": 0,
+        "k1_flug_sh381": 0,
+        "k1_flug_sh383": 0,
+        "k1_flug_sh385": 0,
+        "k1_flug_sh387": 0,
+        "k1_flug_sh390": 0,
+        "k1_flug_sh391": 0,
+        "k1_flug_sh394": 0,
+        "k1_flug_sh396": 0,
+        "k1_flug_sh398": 0,
+        "k1_flug_sh400": 0,
+        "k1_flug_sh402": 0,
+        "k1_flug_sh405": 0,
+        "k1_flug_sh407": 0,
+        "k1_flug_sh409": 0,
+        "k1_flug_sh411": 0,
+        "k1_flug_sh413": 0,
+        "k1_flug_sh415": 0,
+        "k1_flug_sh417": 0,
+        "k1_flug_sh419": 0,
+        "k1_flug_sh421": 0,
+        "k1_flug_sh423": 0,
+        "k1_flug_sh426": 0,
+        "k1_flug_sh428": 0,
+        "k1_flug_sh430": 0,
+        "k1_flug_sh432": 0,
+        "k1_flug_sh434": 0,
+        "k1_flug_sh437": 0,
+        "k1_flug_sh439": 0,
+        "k1_flug_sh441": 0,
+        "k1_flug_sh443": 0,
+        "k1_flug_sh445": 0,
+        "k1_flug_sh447": 0,
+        "k1_flug_sh449": 0,
+        "k1_flug_sh451": 0,
+        "k1_flug_sh453": 0,
+        "k1_flug_sh456": 0,
+        "k1_flug_sh458": 0,
+        "k1_flug_sh460": 0,
+        "k1_flug_sh462": 0,
+        "k1_flug_sh464": 0,
+        "k1_flug_sh466": 0,
+        "k1_flug_sh468": 0,
+        "k1_flug_sh470": 0,
+        "k1_flug_sh473": 0,
+        "k1_flug_sh475": 0,
+        "k1_flug_sh477": 0,
+        "k1_flug_sh479": 0,
+        "k1_flug_sh481": 0,
+        "k1_flug_sh483": 0,
+        "k1_flug_sh485": 0,
+        "k1_flug_sh487": 0,
+        "k1_flug_sh490": 0,
+        "k1_flug_sh492": 0,
+        "k1_flug_sh494": 0,
+        "k1_flug_sh496": 0,
+        "k1_flug_sh498": 0,
+        "k1_flug_sh500": 0,
+        "k1_flug_sh503": 0,
+        "k1_flug_sh505": 0,
+        "k1_flug_sh507": 0,
+        "k1_flug_sh509": 0,
+        "k1_flug_sh511": 0,
+        "k1_flug_sh513": 0,
+        "k1_flug_sh516": 0,
+        "k1_flug_sh518": 0,
+        "k1_flug_sh520": 0,
+        "k1_flug_sh522": 0,
+        "k1_flug_sh524": 0,
+        "k1_flug_sh526": 0,
+        "k1_flug_sh528": 0,
+        "k1_flug_sh530": 0,
+        "k1_flug_sh532": 0,
+        "k1_flug_sh535": 0,
+        "k1_flug_sh537": 0,
+        "k1_flug_sh539": 0,
+        "k1_flug_sh541": 0,
+        "k1_flug_sh543": 0,
+        "k1_flug_sh545": 0,
+        "k1_flug_sh547": 0,
+        "k1_flug_sh549": 0,
+        "k1_flug_sh552": 0,
+        "k1_flug_sh554": 0,
+        "k1_flug_sh556": 0,
+        "k1_flug_sh558": 0,
+        "k1_flug_sh560": 0,
+        "k1_flug_sh562": 0,
+        "k1_flug_sh564": 0,
+        "k1_flug_sh566": 0,
+        "k1_flug_sh568": 0,
+        "k1_flug_sh571": 0,
+        "k1_flug_sh573": 0,
+        "k1_flug_sh575": 0,
+        "k1_flug_sh577": 0,
+        "k1_flug_sh579": 0,
+        "k1_flug_sh582": 0,
+        "k1_flug_sh583": 0,
+        "k1_flug_sh586": 0,
+        "k1_flug_sh587": 0,
+        "k1_flug_sh589": 0,
+        "k1_flug_sh592": 0,
+        "k1_flug_sh594": 0,
+        "k1_flug_sh596": 0,
+        "k1_flug_sh598": 0,
+        "k1_flug_sh600": 0,
+        "k1_flug_sh602": 0,
+        "k1_flug_sh604": 0,
+        "k1_flug_sh606": 0,
+        "k1_flug_sh609": 0,
+        "k1_flug_sh611": 0,
+        "k1_flug_sh613": 0,
+        "k1_flug_sh615": 0,
+        "k1_flug_sh617": 0,
+        "k1_flug_sh619": 0,
+        "k1_flug_sh622": 0,
+        "k1_flug_sh624": 0,
+        "k1_flug_sh626": 0,
+        "k1_flug_sh628": 0,
+        "k1_flug_sh630": 0,
+        "k1_flug_sh632": 0,
+        "k1_flug_sh634": 0,
+        "k1_flug_sh636": 0,
+        "k1_flug_sh638": 0,
+        "k1_flug_sh641": 0,
+        "k1_flug_sh643": 0,
+        "k1_flug_sh645": 0,
+        "k1_flug_sh647": 0,
+        "k1_flug_sh650": 0,
+        "k1_flug_sh651": 0,
+        "k1_flug_sh653": 0,
+        "k1_flug_sh656": 0,
+        "k1_flug_sh658": 0,
+        "k1_flug_sh660": 0,
+        "k1_flug_sh662": 0,
+        "k1_flug_sh664": 0,
+        "k1_flug_sh666": 0,
+        "k1_flug_sh669": 0,
+        "k1_flug_sh671": 0,
+        "k1_flug_sh673": 0,
+        "k1_flug_sh675": 0,
+        "k1_flug_sh677": 0,
+        "k1_flug_sh679": 0,
+        "k1_flug_sh681": 0,
+        "k1_flug_sh683": 0,
+        "k1_flug_sh685": 0,
+        "k1_flug_sh687": 0,
+        "k1_flug_sh690": 0,
+        "k1_flug_sh692": 0,
+        "k1_flug_sh694": 0,
+        "k1_flug_sh696": 0,
+        "k1_flug_sh698": 0,
+        "k1_flug_sh700": 0,
+        "k1_flug_sh702": 0,
+        "k1_flug_sh704": 0,
+        "k1_flug_sh706": 0,
+        "k1_flug_sh708": 0,
+        "k1_flug_sh711": 0,
+        "k1_flug_sh713": 0,
+        "k1_flug_sh715": 0,
+        "k1_flug_sh717": 0,
+        "k1_flug_sh719": 0,
+        "k1_flug_sh722": 0,
+        "k1_flug_sh724": 0,
+        "k1_flug_sh726": 0,
+        "k1_flug_sh728": 0,
+        "k1_flug_sh730": 0,
+        "k1_flug_sh732": 0,
+        "k1_flug_sh734": 0,
+        "k1_flug_sh736": 0,
+        "k1_flug_sh738": 0,
+        "k1_flug_sh740": 0,
+        "k1_flug_sh742": 0,
+        "k1_flug_sh744": 0,
+        "k1_flug_sh747": 0,
+        "k1_flug_sh749": 0,
+        "k1_flug_sh751": 0,
+        "k1_flug_sh754": 0,
+        "k1_flug_sh755": 0,
+        "k1_flug_sh757": 30,
+        "k1_flug_sh760": 0,
+        "k1_miner_arbeit": 0,
+        "k1_miner_fracht": 0,
+        "k1_rueckfracht": 0,
+        "k7_werft_treuhand": 0,
+        "npc3": 2300,
+        "pilot_eis": 13,
+        "pilot_erz": 0,
+        "pilot_house": 0,
+        "pilot_npc3": 9,
+        "st_aldera": 845,
+        "st_nadir": 4000,
+        "transport": 1891,
+        "w3_arbeit_treuhand": 0,
+        "w3_kauf_treuhand": 0,
+        "w4_arbeit_treuhand": 0,
+        "w5_arbeit_treuhand": 0,
+        "w5ac_transfer_pilot": 0,
+        "w5ac_transfer_reserved": 0,
+        "w5n_arbeit": 49,
+        "w5n_fabrik_arbeit": 3,
+        "w5n_fracht_arbeit": 83,
+        "w5n_fracht_kauf": 490,
+        "werft_extern": 290
+      },
+      "worldMoney": 33000,
+      "minted": 0,
+      "burned": 0,
+      "production": {
+        "eisGefoerdert": 419336,
+        "erzGefoerdert": 9600,
+        "wasserProduziert": 413240,
+        "materialErzeugt": 3785,
+        "frachterGebaut": 401,
+        "minerGebaut": 356,
+        "minerGeliefert": 356,
+        "jaegerGebaut": 0,
+        "jaegerVerkauft": 0
+      },
+      "wages": {
+        "bergbau": 857872,
+        "frachtpiloten": 1010077,
+        "wasserwerk": 826497,
+        "minerflug": 289945,
+        "jaegerWerft": 0
+      },
+      "ledger": {
+        "bauteil": {
+          "consumed": 0,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 0
+        },
+        "eis": {
+          "consumed": 413240,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 419336,
+          "produced": 0
+        },
+        "erz": {
+          "consumed": 7570,
+          "exported": 1959,
+          "imported": 0,
+          "initial": 0,
+          "mined": 9600,
+          "produced": 0
+        },
+        "frachter": {
+          "consumed": 401,
+          "exported": 0,
+          "imported": 0,
+          "initial": 1,
+          "mined": 0,
+          "produced": 401
+        },
+        "jaeger": {
+          "consumed": 0,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 0
+        },
+        "material": {
+          "consumed": 3785,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 3785
+        },
+        "miner": {
+          "consumed": 359,
+          "exported": 0,
+          "imported": 0,
+          "initial": 4,
+          "mined": 0,
+          "produced": 356
+        },
+        "silizium": {
+          "consumed": 0,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 0
+        },
+        "wasser": {
+          "consumed": 413171,
+          "exported": 0,
+          "imported": 0,
+          "initial": 0,
+          "mined": 0,
+          "produced": 413240
+        }
+      },
+      "commands": {
+        "npc3:shipShuttle": 507,
+        "npc3:shipShuttleStop": 659
+      },
+      "rejected": {},
+      "bottleneck": {
+        "erster": {
+          "grund": "Kein Wasser am Wohnort st_aldera",
+          "tick": 64
+        },
+        "zaehler": {
+          "Aldera kann nächste Eischarge nicht bezahlen": 147,
+          "Ersatzminer npc3: kein Komplettschiff auf Lager": 22,
+          "Erzfracht für Ersatzbau: Noch keine echte Erzcharge im Quelllager": 3,
+          "Kein Wasser am Wohnort st_aldera": 77322,
+          "Kein Wasser am Wohnort st_nadir": 6668,
+          "Kein einsatzfähiger Frachter der Spedition in Aldera": 23848,
+          "Miner-Erzfracht: Noch keine echte Erzcharge im Quelllager": 45,
+          "Minerwerft: K2: Material und Arbeitsminuten nicht vorfinanziert": 12612,
+          "Minerwerft: K2: Werft/Lieferung belegt": 4
+        }
+      }
+    }
+  ],
+  "cpuBenchmark": [
+    {
+      "day": 180,
+      "hulls": 190,
+      "warmups": 1,
+      "repeats": 3,
+      "minutesPerSample": 1440,
+      "loadAndAuditExcluded": true,
+      "samples": [
+        {
+          "wallSeconds": 1.644119711,
+          "cpuSeconds": 1.104597
+        },
+        {
+          "wallSeconds": 1.951521886,
+          "cpuSeconds": 1.151261
+        },
+        {
+          "wallSeconds": 1.5198541269999997,
+          "cpuSeconds": 1.010548
+        }
+      ],
+      "endHash": "fb3621b99fc48efd"
+    },
+    {
+      "day": 365,
+      "hulls": 382,
+      "warmups": 1,
+      "repeats": 3,
+      "minutesPerSample": 1440,
+      "loadAndAuditExcluded": true,
+      "samples": [
+        {
+          "wallSeconds": 3.6591971569999986,
+          "cpuSeconds": 2.466016
+        },
+        {
+          "wallSeconds": 2.5575736119999983,
+          "cpuSeconds": 2.089619
+        },
+        {
+          "wallSeconds": 2.1226468800000005,
+          "cpuSeconds": 2.076199
+        }
+      ],
+      "endHash": "979e195ae256c6ed"
+    },
+    {
+      "day": 730,
+      "hulls": 760,
+      "warmups": 1,
+      "repeats": 3,
+      "minutesPerSample": 1440,
+      "loadAndAuditExcluded": true,
+      "samples": [
+        {
+          "wallSeconds": 4.083848221,
+          "cpuSeconds": 4.077339
+        },
+        {
+          "wallSeconds": 4.088676600000002,
+          "cpuSeconds": 4.109449
+        },
+        {
+          "wallSeconds": 3.8590017080000036,
+          "cpuSeconds": 3.85495
+        }
+      ],
+      "endHash": "b42ff9b3f6ee9a40"
+    }
+  ],
+  "cpuProfile180": {
+    "day": 180,
+    "simulationDays": 3,
+    "sampleCount": 4338,
+    "selfSamples": [
+      {
+        "function": "ids",
+        "file": "flug-kern.js",
+        "line": 105,
+        "samples": 667,
+        "percent": 15.37574919317658
+      },
+      {
+        "function": "schritt",
+        "file": "flug-kern.js",
+        "line": 219,
+        "samples": 578,
+        "percent": 13.324112494236976
+      },
+      {
+        "function": "ids",
+        "file": "welt-kern.js",
+        "line": 117,
+        "samples": 536,
+        "percent": 12.35592438911941
+      },
+      {
+        "function": "teilschritt",
+        "file": "welt-kern.js",
+        "line": 1649,
+        "samples": 258,
+        "percent": 5.94744121715076
+      },
+      {
+        "function": "wirtschaftsMinute",
+        "file": "welt-kern.js",
+        "line": 1614,
+        "samples": 253,
+        "percent": 5.832180728446288
+      },
+      {
+        "function": "(garbage collector)",
+        "file": "",
+        "line": 0,
+        "samples": 244,
+        "percent": 5.624711848778239
+      },
+      {
+        "function": "ids",
+        "file": "rule200-k7-industry-core.js",
+        "line": 520,
+        "samples": 123,
+        "percent": 2.835408022130014
+      },
+      {
+        "function": "ladungSumme",
+        "file": "welt-kern.js",
+        "line": 123,
+        "samples": 108,
+        "percent": 2.4896265560165975
+      },
+      {
+        "function": "schritt",
+        "file": "welt-kern.js",
+        "line": 898,
+        "samples": 87,
+        "percent": 2.0055325034578146
+      },
+      {
+        "function": "bergbau",
+        "file": "welt-kern.js",
+        "line": 1070,
+        "samples": 77,
+        "percent": 1.7750115260488704
+      },
+      {
+        "function": "koerperSync",
+        "file": "welt-kern.js",
+        "line": 212,
+        "samples": 76,
+        "percent": 1.751959428307976
+      },
+      {
+        "function": "minute",
+        "file": "welt-kern.js",
+        "line": 1655,
+        "samples": 51,
+        "percent": 1.1756569847856155
+      },
+      {
+        "function": "flotte",
+        "file": "welt-kern.js",
+        "line": 904,
+        "samples": 49,
+        "percent": 1.1295527893038266
+      },
+      {
+        "function": "audit",
+        "file": "rule200-k7-industry-core.js",
+        "line": 2770,
+        "samples": 48,
+        "percent": 1.1065006915629323
+      },
+      {
+        "function": "plan",
+        "file": "welt-kern.js",
+        "line": 353,
+        "samples": 46,
+        "percent": 1.0603964960811434
+      },
+      {
+        "function": "steuerbarerTransit",
+        "file": "flug-kern.js",
+        "line": 111,
+        "samples": 44,
+        "percent": 1.0142923005993545
+      },
+      {
+        "function": "audit",
+        "file": "rule200-k7-industry-core.js",
+        "line": 3679,
+        "samples": 41,
+        "percent": 0.9451360073766712
+      },
+      {
+        "function": "canonical",
+        "file": "rule200-k7-industry-core.js",
+        "line": 3461,
+        "samples": 40,
+        "percent": 0.9220839096357769
+      },
+      {
+        "function": "tauglich",
+        "file": "welt-kern.js",
+        "line": 906,
+        "samples": 38,
+        "percent": 0.875979714153988
+      },
+      {
+        "function": "foerderung",
+        "file": "rule200-k7-industry-core.js",
+        "line": 1199,
+        "samples": 37,
+        "percent": 0.8529276164130936
+      }
+    ]
+  },
+  "tests": {
+    "node22": {
+      "command": "node --test tests/*.test.mjs",
+      "passedFiles": 61,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "durationMs": 656982.664026
+    },
+    "affectedObserver": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0
+    },
+    "scenario13x90": {
+      "passed": true,
+      "referenceHashesUnchanged": true,
+      "testFile": "tests/w6-13x90-szenarien.test.mjs"
+    },
+    "singleFile": "W5_SINGLEFILE_OK"
+  },
+  "economy": {
+    "stalled": false,
+    "basis": "All observed intervals have positive ice production, water sales, wages and replacement purchases; not a proof of indefinite sustainability",
+    "firstRecordedPause": {
+      "grund": "Kein Wasser am Wohnort st_aldera",
+      "tick": 64
+    }
+  },
+  "redundantWorker": {
+    "primaryReachedDay": 730,
+    "automaticDuplicateContinuationCancelled": true,
+    "notCountedAsPassed": true,
+    "reason": "Separate file continuation already completed 365→730"
+  },
+  "limits": [
+    "No product approval or integration",
+    "No browser/device/NAS/deployment tests performed in this task",
+    "Observations at checkpoints, no claim of invariant proof for all possible states"
+  ]
+}

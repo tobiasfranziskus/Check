@@ -46,3 +46,16 @@ test('QA W6: reverse replacement matching and both policy switches preserve corr
     assert.equal(w.hash(w.load(w.save(copy))), w.hash(copy));
   }
 });
+
+// The expanded observer must be read-only and independently reject broken accounting.
+test('QA W6: long-run observer preserves state and detects falsified net bookings', () => {
+  const {welt:w,s}=W6.start(W6.SZENARIEN[1].politik);
+  w.advance(s,1440);
+  const before=w.canonical(s), observed=QA.snapshot(w,s);
+  assert.equal(w.canonical(s),before);
+  assert.equal(observed.worldMoney,33000);
+  assert.equal(observed.hulls.total,s.ledger.miner.consumed+s.ledger.frachter.consumed);
+  const copy=w.load(w.save(s));
+  copy.kanon.netto.npc3=(copy.kanon.netto.npc3||0)+1;
+  assert.throws(()=>QA.snapshot(w,copy),/independent double-entry/);
+});

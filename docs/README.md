@@ -1,39 +1,32 @@
-# Aphros Void – Repository-, Forschungs- und Archivindex
+# Aphros Void – schneller Projekt- und Quellenindex
 
-**Stand: 15.11.2026. Nur Navigation, nicht zweite Roadmap.** [Verbindliche Roadmap](ROADMAP.md) · [Tägliche Projektleitung & Putzplan](PROJEKTLEITUNG_SUPERVISION.md) · [Technischer Status](PROJEKTSTATUS.md) · [AGENTS.md](../AGENTS.md) · [Root-README](../README.md).
+**Nur Navigation, keine zweite Roadmap und kein eigenständiger Projektstatus.** Stand der Indexstruktur: 15.11.2026. **Für aktuelle Fakten stets `main`, CI und die kanonischen Dateien prüfen.** Frühere vollständige Fassung als [Git-Snapshot vor P0](https://github.com/tobiasfranziskus/Check/blob/31d0197dc0c2d6d9a3ea1af06440426065a4a0dd/docs/README.md) erhalten.
 
-## Aktueller Produktstand
+## Einstieg für ChatGPT, Codex und Projektleitung
 
-| Bereich | Einordnung | Referenz |
-| --- | --- | --- |
-| **[MAIN/W6-S02 OPT-IN] Autonome NPC-Wirtschaft im regulären P1-Spiel** | Auf ausdrückliche Auswahl beim Karrierestart: finanzierter Eis-/Erz-/Silizium-, Wasser-, Transport-, Ersatz- und J4-Jägerpfad; +1 Spieltag = 24 originale 60-Minuten-Ticks. Keine Änderung alter Saves. Nach 90 Tagen zwei Jäger, 93 Ersatzkäufe; endliches Siliziumvorkommen (16), keine allgemeine Nachhaltigkeit aller Krisenprofile | [Integration #400](https://github.com/tobiasfranziskus/Check/pull/400) · [Spielanleitung](W6_KARRIERE_OPTIN.md) · [Pages b637](https://github.com/tobiasfranziskus/Check/actions/runs/43741818820) |
-| **[MAIN/J13b] Jägerprojekt mit echten Spielerbeiträgen** | Originalvalidierte eigene Miner-/Frachterkäufe, Eis-/Fracht- und bedingte Silizium-Aufträge im echten Karriere-Tab; fremde Werft-/K7-/J3-/J4-Firmenrechte werden nicht erteilt | [Integration #399](https://github.com/tobiasfranziskus/Check/pull/399) · [J13b-Bericht](J13B_SPIELBARE_JAEGERPRODUKTION.md) |
-| **[MAIN/J13a] Originale Jäger-Produktionsakte** | Reale K7/W4/J2b/J3/J4-Rohstoffe, Buchungen und gesperrte Käufe im eigenen Jägerprojekt sichtbar | [Integration #391](https://github.com/tobiasfranziskus/Check/pull/391) · [Bericht](J13A_JAEGER_PRODUKTIONSAKTE.md) |
-| **[MAIN/J12] Lebendige Sektorwirtschaft** | Originale Lager, Unternehmen, Kassen und erlaubte Schiffskäufe in der bestehenden Karrieresitzung | [Integration #387](https://github.com/tobiasfranziskus/Check/pull/387) |
-| [MAIN/J11+P1] Bezahlter persönlicher Frachter | Original-Aldera-Frachter für 750 ISK, eigener Miner für 600 ISK, echte F4-Eisrundfracht 50 Eis mit 120 ISK Pilotenlohn und 240 ISK Frachtzahlung direkt im neuen Karrierestart | [Integration #383](https://github.com/tobiasfranziskus/Check/pull/383) · [E2E-Browser](https://github.com/tobiasfranziskus/Check/actions/runs/43715693985) · [Pages](https://github.com/tobiasfranziskus/Check/actions/runs/43716078089) |
-| [MAIN/P1] Spielerlebnis-Karriere | Titelbildschirm, Firmenprolog, echte neue Seed42-Regel195→204-Karriere ohne Datei, legaler Miner für 600 ISK, echtes RAUM-1, eigene lokale Saves | [Neue Karriere](https://tobiasfranziskus.github.io/Check/prototypes/spiel/index.html) · [Integration #380](https://github.com/tobiasfranziskus/Check/pull/380) · [Pages](https://github.com/tobiasfranziskus/Check/actions/runs/43712668896) |
-| [MAIN] Root W0–W5 Regel195 | Geschütztes Original-Hauptspiel hinter dem öffentlichen Karrierelink; NAS-Einzeldatei bytegleich, keine stille Save-Migration | [GitHub Pages](https://tobiasfranziskus.github.io/Check/) |
-| [MAIN] J6/RAUM-1 Regel204 | Grafisch fliegbarer eigener Miner/Jäger, finanzierte Aufträge, gleicher Worldhash | [Integration #359](https://github.com/tobiasfranziskus/Check/pull/359) |
-| [MAIN] J7 Regel195→204-Prüfung | Lesend, sechs Original-Konverter, keine automatische Migration | [#361](https://github.com/tobiasfranziskus/Check/pull/361) |
-| [MAIN] J8 Konzernkopie | Spieler kann ohne Startjäger vorhandenen Miner legal kaufen und Eis fördern; manuelle Save-Kopie | [#363](https://github.com/tobiasfranziskus/Check/pull/363) |
-| [MAIN] J9 | Rechtmäßig gekauften Miner ohne JSON-Zwischenexport im selben Regel204-Zustand fliegen, mit Originalflugreserve und Dock-/Eigentumsgates | [#366](https://github.com/tobiasfranziskus/Check/pull/366) |
-| [MAIN] J10a | Original-Werftkassen, Lager, NPC- und Stationsrechte sowie Kaufblockaden im Konzernspiel sichtbar, ohne Eingriff in Firmenrechte | [#368](https://github.com/tobiasfranziskus/Check/pull/368) |
-| [MAIN] J10b | 600-ISK-Eigentümerkauf einer echt gebauten Nadir-K2-Minerhülle; öffentlicher Root-Link zu Konzern/Miner; Jäger/RAUM-Touchtests und NAS-Datei erhalten | [Integration #373](https://github.com/tobiasfranziskus/Check/pull/373) · [Pages-Deploy](https://github.com/tobiasfranziskus/Check/actions/runs/43705980924) |
-| [ANALYSE / DRAFT] J10b-K7 | Vier getrennt legitimierte Firmenentscheide vor NPC-Pendel, echte Erz-/Fracht-/W5-Industriekette; noch keine normale autonome Koordination | [#370](https://github.com/tobiasfranziskus/Check/pull/370) |
-| [ANALYSE / DRAFT] J10c | 7 bezahlte J3-Bauteile aus echten W4- und J2b-Waren; Materiallücke 5 (= 10 Erz) vor J4 | [#374](https://github.com/tobiasfranziskus/Check/pull/374) |
-| [ANALYSE / Forschung] Krisen-Wirtschaft | Langzeit- und Käufergeldblockaden; Nachhaltigkeit nicht bewiesen | [Historischer Status](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261115.md) |
+1. **Zuerst** aktuellen [main-Commit](https://github.com/tobiasfranziskus/Check/commits/main), [Pages-Deploy](https://github.com/tobiasfranziskus/Check/actions) und relevante Diff-/PR-Metadaten ermitteln; nichts aus Datum/Chat-Erinnerungen als aktuellen Stand ableiten.
+2. **Planung:** [ROADMAP.md](ROADMAP.md), nur die Abschnitte zu betroffenen **W0–W6**-/ **P0–P6**-Schritten; vollständige historische Liste nicht routinemäßig lesen.
+3. **Technische Wahrheit:** [PROJEKTSTATUS.md](PROJEKTSTATUS.md), nur jüngste und sachlich betroffene Berichte mit Commit/CI/Save-Belegen; [AGENTS.md](../AGENTS.md) für verpflichtende Entwicklungs-/Release-Gates.
+4. **Gewählten Codebereich gezielt öffnen** und seine echten Tests/Abhängigkeiten prüfen. **Nicht** auf Verdacht `docs/archiv/`, alle Prototypen oder sämtliche alten PRs einlesen.
+5. **[P0-Aufräumprozess](PROJEKTLEITUNG_SUPERVISION.md)**, [P0-Inventur und PR-Triage](P0_GROSSPUTZ_PR_TRIAGE.md) und [Wiederverwendungskatalog Void Echoes](VOID_ECHOES_CODEKATALOG.md) nur bei entsprechendem Bedarf.
 
-**[MAIN / PAGES, Stand 15.11.2026]** Spielcode `b63701a9d953b2692ae3266b6816ae4e571ec6ca`, [J13b #399](https://github.com/tobiasfranziskus/Check/pull/399) und [W6-S02 #400](https://github.com/tobiasfranziskus/Check/pull/400) integriert; [GitHub-Pages-Deploy #43741818820](https://github.com/tobiasfranziskus/Check/actions/runs/43741818820) für exakt diesen Commit erfolgreich. **345/345 Node22**, Chromium/WebKit je vier Touchgrößen, unveränderte F4-Referenz und neue W6-Save-/Wirtschaftsaudits. Vorherige Versionen: [vor W6](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-w6-autonomous-career-20261115) · [vor J13b](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-j13b-and-w6-20261115). W6 ist **als S02-Auswahl spielbar**, aber **nicht als universell nachhaltige Gesamtwirtschaft abgeschlossen**; echtes iPad/NAS nicht am Gerät abgenommen.
+## Produktcode und passende Einstiege
 
-**[HISTORISCHE BELEGE]** Die ursprüngliche J11-/P1-Integration [#383](https://github.com/tobiasfranziskus/Check/pull/383) (früher `main b47a8303`, [Pages-Deploy](https://github.com/tobiasfranziskus/Check/actions/runs/43716078089)) und der Codex-Quell-Draft [#378](https://github.com/tobiasfranziskus/Check/pull/378) sind durch spätere Integrationen erweitert, ihre Tests/Backups bleiben als historische Belege erhalten. Der damalige J10d-Aldera-Blocker [#376](https://github.com/tobiasfranziskus/Check/pull/376) war ein konkreter Zustand ohne heutige optionale W6-Firmenpolitik und ist **kein heutiger W6-S02-Blocker**. Der getrennte S02-730-Tage-Forschungsnachweis [#389](https://github.com/tobiasfranziskus/Check/pull/389) belegt die Ersatz-/Wasserwirtschaft ohne den neuen P5-Silizium-Opt-in. W6-Research-Branches bleiben für Vergleich und unabhängige QA erhalten.
+| Aufgabe | Erst hier nachsehen |
+| --- | --- |
+| Öffentlicher Spielstart, Eigentum, Karriere, Bedienung | [`prototypes/spiel/index.html`](../prototypes/spiel/index.html), [`spiel.js`](../prototypes/spiel/spiel.js), `jaeger-projekt.js`, `jaeger-akte.js` |
+| Flug, Touch, Trägheit, Navigation, Zielauswahl | [`prototypes/raum/raum-cockpit.js`](../prototypes/raum/raum-cockpit.js), `raum-szene.js`, `raum-grafik.js`; [Void-Echoes-Katalog](VOID_ECHOES_CODEKATALOG.md) |
+| Deterministischer Weltkern, Industrie, Geld, Waren, Eigentum | [`prototypes/welt/welt-kern.js`](../prototypes/welt/welt-kern.js) und relevante `prototypes/welt/`-Module |
+| Jäger, Training, Treffer und Kampf | [`prototypes/j4c/`](../prototypes/j4c/) und [`prototypes/f8-jaeger/`](../prototypes/f8-jaeger/); F8-Drafts und Produktfähigkeit getrennt prüfen |
+| Bestehende Tests und Simulationen | [`tests/`](../tests/), [`tools/`](../tools/), [GitHub Actions](../.github/workflows/) |
+| Historische Module und Übernahmeversuche | [Legacy-Prototypen](../prototypes/legacy-pilot/), `docs/LEGACY_*_UEBERNAHME.md`, [Forschungsarchiv](archiv/) |
 
-## Aufbewahrung und offene Forschungs-PRs
+## Laufender Stand und historische Nachweise
 
-**Keine Branch-/Save-/Beleg-Löschung.** Bei einer historischen Inventur am 15.11. waren **166 offene Forschungs-/Draft-PRs** vorhanden; anschließend wurden neun belegbar abgelöste ältere PRs #338–#346 begründet geschlossen. **Diese Zahlen sind ein historischer Zwischenstand, keine aktuelle offene PR-Zahl.** Viele sind gegen ihren direkten Vorgänger gestapelt, nicht gegen den aktuellen `main`. Ein grün getesteter alter PR ist deshalb **nicht automatisch integrierbar**. Schließungen erfolgen nur mit konkretem Superseded-/Nachfolgebeleg und eindeutigem Kommentar; relevante noch nicht integrierte Versuche bleiben als Forschungs-PRs bestehen.
+- **Spiel starten:** [Neue Karriere](https://tobiasfranziskus.github.io/Check/prototypes/spiel/index.html); [öffentliche Root-Seite](https://tobiasfranziskus.github.io/Check/). Welche SHA wirklich veröffentlicht ist, über Pages prüfen.
+- **Wirtschaft:** W0–W5 besitzen einen integrierten Kern; W6-S02 hat einen geprüften endlichen Teilkreislauf, **keinen universellen Nachhaltigkeitsbeweis**. Für Details nur [Projektstatus](PROJEKTSTATUS.md) und [W6-Langzeitprüfung](W6_P7_SILIZIUM_LANGZEIT.md) gezielt öffnen.
+- **Aktive Forschung:** [P8b #408](https://github.com/tobiasfranziskus/Check/pull/408), [P8c #412](https://github.com/tobiasfranziskus/Check/pull/412) und F8-Jäger-Drafts dürfen nicht als produktiv bezeichnet werden. PR-Zustände vor Verwendung erneut prüfen.
+- **Historische Quellen:** [frühere Roadmap](archiv/ROADMAP_HISTORIE_BIS_20261115.md), [früherer Status](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261115.md), [früherer Repo-Index](archiv/REPO_INDEX_BIS_20261115.md), [PR-Bereinigungsbericht](PR_BEREINIGUNG_20261115.md).
+- **Grundschutz:** Kein neues Wirtschaftsgeld/Balancing oder stille Migration, keine historische PR-Integration ohne Gate. Echte iPad-/NAS-Gerätetests bleiben bis zu ihrer wirklichen Durchführung offen.
 
-- [Pull Requests](https://github.com/tobiasfranziskus/Check/pulls) – offene Arbeit; historische Branches nicht pauschal rebasen/mergen.
-- [J8-Backup vor Integration](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-j8-fighterless-corp-20261115) und [ältere Backup-/Versionszweige](https://github.com/tobiasfranziskus/Check/branches) – unverändert.
-- [Historische ROADMAP (vollständig)](archiv/ROADMAP_HISTORIE_BIS_20261115.md) und [historischer Projektstatus (vollständig)](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261115.md) – originale vollständige Dateiinhalte von `main 3f0840e3`.
-- [Voriger Repo-/Forschungsindex](archiv/REPO_INDEX_BIS_20261115.md) und [alte Root-README](archiv/ROOT_README_BIS_20261115.md) – originale Git-Blobs unverändert.
-
-**Nicht freigegeben:** Neue ISK-Emission, W6-Krisenrettung, destruktive Save-Migration, NAS-Produktionsaktualisierung oder unfinanzierte NPC-Entscheidungen. Echte iPad-Safari-/NAS-Geräteabnahme offen.
+**Kontextbudget:** Einstieg idealerweise **unter 2.000 Token**, danach ausschließlich die für die konkrete Aufgabe relevanten Abschnitte, Codepfade und Tests. Die Fundstellen sind **Pointer, kein Ersatz für eine aktuelle Git-/CI-Abnahme**.

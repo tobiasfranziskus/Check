@@ -8,6 +8,7 @@ ChatGPT koordiniert priorisierte, spielbare Entwicklung und die technische Wahrh
 
 ## Verbindlicher morgendlicher Ablauf
 
+0. **Tokenarme Orientierung:** [docs/README.md](README.md) zuerst als kurzen Quellenindex lesen, dann Git-Metadaten; große Roadmap-/Status-Dateien nur abschnittsweise. [P0-Triage](P0_GROSSPUTZ_PR_TRIAGE.md) und [Void-Echoes-Katalog](VOID_ECHOES_CODEKATALOG.md) bei passender Aufgabe gezielt nutzen. Alte PR-Bodies, Archive und das Legacy-Repository nicht routinemäßig vollständig lesen.
 1. **Frische Wahrheit:** `main`-SHA und Datum, letzter erfolgreicher Pages-Deploy und dazugehöriger SHA, `AGENTS.md`, `docs/ROADMAP.md`, `docs/PROJEKTSTATUS.md`, offene/gestapelte PRs, neue Commits, wichtige CI-Läufe und aktuelle Spielpfade nachprüfen. Nie alte Projektberichte als heutigen main-Stand verwenden.
 2. **Einordnung:** Jede relevante Entwicklung als **[MAIN]**, **[PAGES]**, **[DRAFT]**, **[ANALYSE]**, **[BESCHLOSSEN]** oder **[OPTION]** kennzeichnen. Test-Erfolg, Merge und Deployment sind getrennte Belege. Forschungs-Regeln 205/206 sind nicht allein wegen grüner CI produktiv.
 3. **Putzplan:** PR-Liste gegen aktuelle Hauptversion und Nachfolger abgleichen. Für jedes potenziell überholte PR die ursprüngliche Basis, noch einzigartige Erkenntnisse/Dateien, CI und Nachfolge-/Mainbelege notieren. Kandidaten für Schließung markieren, **nicht allein wegen Alters schließen**. Geschützte Branches, Backups, Tests, Rohberichte und Spielerstände erhalten. Keine doppelten docs-only-PRs.

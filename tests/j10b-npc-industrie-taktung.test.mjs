@@ -326,4 +326,69 @@ test('J10b/K2: paid original Nadir miner built from delivered ore and purchased 
    noMoneyMint:s.minted===0&&s.burned===0
  }));
 
+ // J10d experimental continuation: the actual npc3 OWNER voluntarily ends
+ // the existing ore shuttle. The original F6 controller must physically
+ // bring the miner home while paying every minute; never teleport or seize.
+ const stop=w.execute(s,{type:'shipShuttleStop',owner:'npc3',schiff:'sh001'});
+ assert.equal(stop.ok,true,JSON.stringify(stop));
+ audits(w,s);
+ const pending=s.kanon.pendel.sh001;
+ assert.ok(pending && pending.beenden===true,'NPC owner-requested stop waits for a real dock');
+ const stopStart=s.tick;
+ wait(w,s,()=>s.ships.sh001.flug.lage==='angedockt'
+   && !s.kanon.pendel.sh001,1200);
+ assert.equal(s.ships.sh001.system,'aldera');
+ assert.equal(Object.values(s.ships.sh001.ladung).reduce((a,x)=>a+x,0),0);
+ assert.equal(s.ships.sh001.owner,'npc3');
+ assert.equal(s.ships.sh002.owner,'transport');
+ assert.equal(s.ships.sh002.phase,'dock');
+ const dockHash=w.hash(s);
+ // Clearing the first W5 warehouse hull by its legal sale is required for
+ // a new signed K7 order (which contractually builds another W5 freighter).
+ const stockBefore=nadir.frachter;
+ assert.equal(stockBefore,1);
+ ownerCommand(w,s,'transport',{type:'shipBuy',station:'st_nadir',klasse:'frachter'});
+ assert.equal(nadir.frachter,stockBefore-1);
+ assert.ok(s.owners.transport.cash>=0);
+ const beforeSecond=w.hash(s);
+ const q=J6.erstellen(w,'st_nadir').angebot(s,{type:'industrialOreOffer',miner:'sh001',frachter:'sh002'});
+ assert.equal(w.hash(s),beforeSecond,'second K7 quote remains read-only');
+ assert.equal(q.ok,true,JSON.stringify(q));
+ ownerCommand(w,s,'st_nadir',{type:'industrialOreOffer',miner:'sh001',frachter:'sh002'});
+ for(const [owner,type] of [
+   ['npc3','industrialOreAcceptMine'],
+   ['transport','industrialOreAcceptFreight'],
+   ['werft_extern','industrialOreAcceptYard']
+ ]) ownerCommand(w,s,owner,{type});
+ const beforeCommit=w.hash(s);
+ const commitQuote=J6.erstellen(w,'st_nadir').angebot(s,{type:'industrialOreCommit'});
+ // An offer and valid separate signatures do NOT prove sufficient final money.
+ // The original Core rechecks *all five* businesses at commitment time.
+ assert.equal(commitQuote.ok,false,'insufficient capital must prevent contract');
+ assert.match(commitQuote.reason,/unvollständig vorfinanzierte Firmenkette/);
+ assert.equal(w.hash(s),beforeCommit,'read-only K7 funding check');
+ const expected=w.industriePreise;
+ const required={npc3:expected.bergbau,st_aldera:expected.alderakauf,
+   st_nadir:expected.nadiraufwand,transport:expected.frachtlohn,
+   werft_extern:expected.werft};
+ const wallets=Object.fromEntries(Object.keys(required).map(id=>[id,s.owners[id].cash]));
+ const deficits=Object.fromEntries(Object.keys(required).map(id=>[id,Math.max(0,required[id]-wallets[id])]));
+ const denied=J6.erstellen(w,'st_nadir').ausfuehren(s,{type:'industrialOreCommit'});
+ assert.equal(denied.ok,false);
+ assert.equal(w.hash(s),beforeCommit,'rejected contract cannot consume any funds');
+ assert.ok(Object.values(deficits).some(x=>x>0),'real undercapitalization measured');
+ const cancel=J6.erstellen(w,'st_nadir').ausfuehren(s,{type:'industrialOreCancel'});
+ assert.equal(cancel.ok,true,'only proper buyer may withdraw unsigned contract');
+ audits(w,s);
+ const secondSign=w.hash(s);
+ assert.equal(w.hash(w.load(w.save(s))),secondSign);
+ console.log('J10D_SECOND_K7_FINANCING_BLOCKER',JSON.stringify({
+   tick:s.tick,naturalDockMinutes:s.tick-stopStart,originalDockHash:dockHash,
+   newWarehouseHullBought:true,miner:'sh001',frachter:'sh002',
+   buyerCash:s.owners.st_nadir.cash,carrierCash:s.owners.transport.cash,
+   yardCash:s.owners.werft_extern.cash,money:33000,hash:secondSign,
+   signedButNotFunded:true,required,available:wallets,shortfall: deficits,
+   commitRejection:commitQuote.reason,orderCancelledByBuyer:true
+ }));
+
 });

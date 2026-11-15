@@ -110,5 +110,5 @@ jobs:
         if: always()
         with:
           name: j11-screenshots-${{ matrix.browser }}
-          path: docs/j11-screenshots/*.png
+          path: docs/j11-screenshots/${{ matrix.browser }}-*.png
           if-no-files-found: warn

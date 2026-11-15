@@ -112,7 +112,7 @@ const create=({rules,transfer,summe,ganz})=>{
     for(let i=0;i<b.belege.length;i++){
       const e=b.belege[i];
       if(!e||Object.keys(e).sort().join()!=='bauteile,ende,lohn,material,start,station'
-        ||!ganz(e.start)||!ganz(e.ende)||e.start>e.ende||e.ende>s.tick
+        ||!ganz(e.start)||!ganz(e.ende)||e.ende-e.start!==C.dauer||e.ende>s.tick
         ||e.station!==C.station||e.bauteile!==C.bauteile
         ||e.material!==C.material||e.lohn!==L
         ||(i>0&&e.start<b.belege[i-1].ende))return false;

@@ -80,7 +80,7 @@ function run(scenario){
       check(w,s,scenario.id,t/1440);
       lastReceipt=p.belege.length;
     }
-    peakFracht=Math.max(peakFracht,p.belege.length+(p.auftrag?1:0));
+    peakFracht=Math.max(peakFracht,p.auftrag?1:0);
     if(t===60*1440)early=W6.kennzahlen(w,s);
     if(t===90*1440)late=W6.kennzahlen(w,s);
     if(t%(15*1440)===0 || t===days*1440)check(w,s,scenario.id,t/1440);

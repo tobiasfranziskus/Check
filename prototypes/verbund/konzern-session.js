@@ -75,7 +75,7 @@ function erstellen(){
    let lauf=text,letzter=null,quellHash=null;
    for(let i=0;i<KETTE.length;i++){
      letzter=KETTE[i](lauf);
-     if(i===0)quellHash=letzter.quellHash; // Original-195-Hash, nicht 199-Zielhash
+     if(i===0)quellHash=letzter.nachweis?.quellHash; // Verifizierter Original-195-Hash aus dem Kernnachweis
      if(letzter.welt.hash(letzter.zustand)!==report.schritte[i].hash)
        throw Error('J8: der Original-Referenzhash weicht in Stufe '+i+' ab');
      lauf=letzter.welt.save(letzter.zustand);

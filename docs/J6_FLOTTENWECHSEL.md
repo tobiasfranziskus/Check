@@ -42,3 +42,12 @@ Minimaler Integrationsvertrag:
 Node22-Tests, GitHub-CI und echte Browserprüfungen erst nach tatsächlicher Ausführung dokumentieren. Die neuen Tests prüfen Originalflotte/Negativfälle, echte vollständig bezahlte zweite Jägerhülle, beide Richtungen am Dock, Welt- und Save-Hashneutralität und Manipulationsabwehr.
 
 Keine neuen Wirtschaftsgesetze, keine Emission, keine Spielstandänderung, kein Root-Pages-Release. Echte iPad-/NAS-Geräteabnahme offen. Die spätere Übernahme in main darf nur nach Gesamtregression, relevanten Chromium-/WebKit-Gates und Backup erfolgen.
+
+
+## CI-Nachweis auf finalem Head 54538e4e · 15.11.2026
+
+- [W5-RC1 #43686057839](https://github.com/tobiasfranziskus/Check/actions/runs/43686057839): completed/success. Vollständige Node22-Suite **250/250 Einzeltests**, Fehler 0, Skips 0, Abbrüche 0. Die vier neuen J6-Tests wurden im Joblog ausdrücklich als Tests 72–75 ausgeführt und bestanden. iPad-Touch-Preflight und NAS-Einzeldatei-Lieferprüfung ebenfalls completed/success. Der Touch-Preflight ist **kein echter iPad-Safari-Gerätetest**.
+- [J4e-Browser #43686058466](https://github.com/tobiasfranziskus/Check/actions/runs/43686058466): completed/success; Root- und Beispieljäger-Nachweis sowie Chromium-/WebKit-Browserjobs abgeschlossen.
+- [JavaScript-Regression #43686057849](https://github.com/tobiasfranziskus/Check/actions/runs/43686057849): completed/success; ein bedingt nicht durchgeführter Sicherheitsgeografie-Job zählt als `skipped`, nicht als bestandener Test.
+
+**Geltungsbereich:** Die unveränderte alte J5-Cockpitoberfläche wurde im Browser regressionsgeprüft. Die J6-Flottenauswahl ist nur als reines API-Modul implementiert; ein Browser-Test ihrer noch nicht existierenden Schaltfläche ist ausdrücklich **nicht** behauptet.

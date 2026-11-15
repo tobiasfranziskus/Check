@@ -138,8 +138,8 @@ function missions(){
 // J12: read-only station and company report from the SAME validated Rule204 session.
 // No separate economy, NPC signatures, speculative prices, or unvalidated purchase paths.
 function tabZeigen(name){
- if(!['auftraege','flotte','universum'].includes(name))return;
- for(const p of ['auftraege','flotte','universum']){
+ if(!['auftraege','flotte','universum','jaeger'].includes(name))return;
+ for(const p of ['auftraege','flotte','universum','jaeger']){
   $('panel-'+p).hidden=p!==name;
   $('tab-'+p).setAttribute('aria-pressed',String(p===name));
  }
@@ -204,6 +204,38 @@ function wirtschaftsbericht(a,s,angebote){
   ' ISK. Angezeigte Kaufangebote sind Momentaufnahmen; erst der Original-Core bucht einen Auftrag.';
  host.replaceChildren(lager,firmen,werft,footer);
 }
+// J13 – alle Voraussetzungen werden nur gelesen; ein Kauf folgt ausschliesslich
+// dem bereits vorhandenen, unmittelbar erneut geprueften house-Originalauftrag.
+function jaegerBericht(zustand,angebote){
+ if(!scope.J13Werftakte)throw Error('J13: die originale Produktionsakte fehlt');
+ const kauf=angebote.find(a=>a.id==='buy-st_nadir-jaeger');
+ const akte=scope.J13Werftakte.erstellen(session.weltReferenz(),zustand,kauf);
+ const host=$('jaeger-akte'),stufen=d.createElement('ol');
+ stufen.className='jaeger-schritte';
+ for(const step of akte.schritte){
+  const li=d.createElement('li'),h=d.createElement('strong'),p=d.createElement('p'),tag=d.createElement('span');
+  li.className='jaeger-schritt';li.dataset.stand=step.stand;
+  h.textContent=step.titel;p.textContent=step.hinweis;
+  tag.className='jaeger-stand';tag.textContent=step.stand==='erfuellt'?'Vorhanden':
+    step.stand==='laeuft'?'In Arbeit':step.stand==='bereit'?'Kaufbereit':'Noch offen';
+  li.append(h,tag,p);stufen.append(li);
+ }
+ const k=d.createElement('p');
+ k.className='economy-foot';
+ k.textContent='K7-Erzvertrag: '+akte.k7.phase+
+   (akte.k7.erzkauf!==null&&akte.k7.alderaKasse!==null
+     ?' · Aldera '+fmt(akte.k7.alderaKasse)+' / '+fmt(akte.k7.erzkauf)+' ISK fuer einen neuen Erzankauf'
+     :'')+'. Das ist eine Statusauskunft, keine Unterschrift.';
+ host.replaceChildren(stufen,k);
+ const button=$('jaeger-kaufweg');
+ button.disabled=!akte.kauf.ok;
+ $('jaeger-autoritaet').textContent=akte.eigeneJaeger>0
+  ?'Bereits gekaufter Jäger: '+akte.eigeneJaeger+' · Eigentum und Cockpit über „Meine Flotte“.'
+  :akte.kauf.ok
+    ?'Original-Core-Kauf für '+fmt(akte.kauf.preis)+' ISK möglich. Der Button öffnet nur die bestehende Kaufansicht.'
+    :'Kein Kauf: '+(akte.kauf.grund||'keine vollständige finanzierte Hülle')+
+     '. Nur Nadir darf J3/J4-Arbeit beauftragen; keine fremden Aufträge werden hier signiert.';
+}
 function anzeigen(){
  if(!session)return;
  const a=session.ansicht(),s=session.zustandReferenz();
@@ -234,6 +266,7 @@ function anzeigen(){
   box.append(button,small);return box;
  }));
  wirtschaftsbericht(a,s,alleAngebote);
+ jaegerBericht(s,alleAngebote);
  const pilots=session.piloten();
  const own=a.schiffe;
  $('spielerschiffe').replaceChildren(...(own.length?own.map(sh=>{
@@ -311,6 +344,15 @@ function cockpitBinden(){
   });
  }catch(e){raum=null;console.error('P1 cockpit bridge:',e);}
 }
+$('jaeger-kaufweg').addEventListener('click',()=>{
+ if(!session)return;
+ const quote=session.angebote().find(a=>a.id==='buy-st_nadir-jaeger');
+ if(!quote?.ok){hinweis('Jägerkauf weiterhin gesperrt: '+(quote?.reason||'Kein Originalangebot'),true);anzeigen();return;}
+ tabZeigen('auftraege');
+ const target=[...$('spieleraktionen').querySelectorAll('[data-action]')]
+   .find(el=>el.dataset.action==='buy-st_nadir-jaeger');
+ target?.focus(); // Navigiert nur; niemals automatisch kaufen.
+});
 $('neues-spiel').addEventListener('click',()=>screen('briefing'));
 $('karriere-starten').addEventListener('click',startNeu);
 $('fortsetzen').addEventListener('click',()=>{try{

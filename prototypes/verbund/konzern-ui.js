@@ -36,6 +36,8 @@ if(scope.RaumCockpit&&scope.RaumSzene&&scope.RaumGrafik&&$('raumbereich')){
    jaeger:()=>session.pilotStatus(),bojen:[],
    patrouille:()=>null,patrouilleStand:()=>({status:'nicht gestartet',erreicht:0}),
    duellStand:()=>null,
+   uebernehmen:(id,spielt)=>session.uebernehmen(id,spielt),
+   angebot:cmd=>session.flugAngebot(cmd),
    schritte:flugSchritte,ausfuehren:flugBefehl,audit:()=>session.flugAudit(),
    patrouilleStarten:()=>nichtMoeglich('Kein Jäger und keine freigegebene Patrouille in J9'),
    duellStarten:()=>nichtMoeglich('Nur die bestehende Jägersitzung besitzt ein Trainingsduell'),
@@ -127,11 +129,11 @@ function darstellen(a=session.ansicht()){
   const box=d.createElement('div');box.className='aktion';
   const taste=d.createElement('button');taste.type='button';
   taste.dataset.j9Pilot=p.id;
-  taste.textContent=(p.klasse==='miner'?'Miner ':'Jäger ')+p.id+' · '+p.system+' · '+p.lage+' persönlich fliegen';
+  taste.textContent=({miner:'Miner ',jaeger:'Jäger ',frachter:'Frachter '}[p.klasse])+p.id+' · '+p.system+' · '+p.lage+' persönlich fliegen';
   taste.disabled=!raum||!p.erlaubt;
   const info=d.createElement('small');
   info.textContent=p.erlaubt
-   ?'Eigene auditierte Hülle · Kopie derselben Welt, Lohnreserve beim Abdocken'
+   ?'Eigene auditierte Hülle · dieselbe Welt, Lohnreserve beim Abdocken'
    :'Gesperrt: '+p.grund;
   taste.addEventListener('click',()=>{
    if(!raum){status('Grafisches Cockpit nicht verfügbar',true);return;}
@@ -144,7 +146,7 @@ function darstellen(a=session.ansicht()){
  });
  $('j9-piloten').replaceChildren(...(nodes.length?nodes:[(()=>{
    const p=d.createElement('p');p.className='note';
-   p.textContent='Noch kein eigenes Schiff. Erst einen tatsächlich vorhandenen Miner bezahlen und kaufen.';
+   p.textContent='Noch kein eigenes Schiff. Erst einen vorhandenen Miner oder Aldera-Frachter bezahlen und kaufen.';
    return p;
  })()]));
 

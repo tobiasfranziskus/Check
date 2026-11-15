@@ -17,9 +17,10 @@ Keine neuen Wirtschaftsregeln, Preise, Erzquellen, NPC-Rechte, Warenvorräte, Pr
 
 ## Prüfungen / Merge-Gates
 
-- Die lokale isolierte V8-JavaScript-Syntaxprüfung für die beiden geänderten JS-Dateien war erfolgreich. Das ist **kein** Node22-Core-/Browser-Regressionsnachweis.
-- `tests/j12-wirtschaftsterminal.test.mjs`: Authentischer P1-Seed42-Start, reale Originalangebote und ein 600-ISK-Minerkauf, unabhängige Weltgeld-/Core-/Save-Prüfung und statische Ausführungsschranken der lesenden Darstellung.
-- `tests/p1-spielstart-browser.cjs`: zusätzliche Probe für alle vier vorhandenen Touchgrößen in Chromium und WebKit, Live-Stationen, NPC-Kassen, gültiges Kaufangebot, reiner Tabwechsel ohne Buchung; anschließend bisherige echte Kauf-/Flug-/Save-Kette.
-- CI-Gates erst nach tatsächlichen GitHub-Actions-Ergebnissen als bestanden markieren. Echte iPad Safari-/NAS-Geräteabnahme bleibt offen.
+- **Node22/W5-RC1:** [#43724534987](https://github.com/tobiasfranziskus/Check/actions/runs/43724534987) **301/301 Tests, 0 Fehler, 0 Skips**, inklusive beider neuen J12-Gegenproben, Save/Load und Original-Core-Audit. Root-/NAS-Check `W5_SINGLEFILE_OK`, iPad-Touch-Preflight und NAS-Lieferformat-Job ebenfalls tatsächlich erfolgreich.
+- **Browser/P1/J11:** [#43724534999](https://github.com/tobiasfranziskus/Check/actions/runs/43724534999) Chromium und WebKit mit je vier Touchgrößen, neuem Live-Terminal und reinem Angebotswechsel ohne Buchung erfolgreich; danach echte Miner-/Frachter-Käufe, F4-Fracht, 120 ISK Vertragslohn, 240 ISK Frachtentgelt, JSON-Sicherung und unveränderter F4-Endhash `e4514490aedc13bd`.
+- **Wirtschaftsregression:** [#43724534998](https://github.com/tobiasfranziskus/Check/actions/runs/43724534998) ausgeführte Jobs erfolgreich; der bedingt ausgelassene `sicherheitsgeografie-vergleich` gilt ausdrücklich **nicht** als getestet.
+- **Syntaktische Zusatzprüfung:** J12-JS und Browserprüfskript isoliert mit V8 fehlerfrei kompiliert. Der neue Code stammt weiterhin nur aus P1-Oberfläche und Tests, ohne produktive Kern- oder Speicheränderung.
+- **Offen:** echte iPad-Safari-/private NAS-Geräteprüfung; CI-WebKit ersetzt dies nicht.
 
-**Nicht zusammenführen**, solange Node22-Gesamtsuite, Root-/NAS-Einzeldatei-Check, Chromium/WebKit und Save/Load nicht erfolgreich nachgewiesen sind. Vor Integration gesichertes main-Backup und eigener Integrations-PR; stehende Freigabe nur bei vollständigem Gate. W6 #382/#385 bleibt unabhängig und gesperrt.
+**Integrationsstatus:** Dies ist noch ein [DRAFT]-PR. Die GitHub-Gates sind erfüllt; vor tatsächlichem Merge muss der aktuelle main-SHA erneut geprüft, die Vorversion gesichert und danach der reale Pages-Deploy nachgewiesen werden. W6 #382/#385 bleibt unabhängig und gesperrt.

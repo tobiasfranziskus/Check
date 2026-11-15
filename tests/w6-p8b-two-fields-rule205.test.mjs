@@ -75,20 +75,27 @@ test('P8b: alle Lagerstaetten sind getrennt erschöpfbar, Manipulation faellt be
 test('P8b: ausdruecklicher Import einer bereits bezahlten, laufenden Original204-Charge bewahrt Waren und Eigentum',()=>{
  const {welt:old,s}=W6.start(S02);
  old.npcSiliziumSetzen(s,true);
- // Erst echte Original-K2-Abnahme, volle 8er-Silizium-Verkaufscharge.
- for(let i=0;i<15000&&s.kanon.silizium.verkauft<8;i+=60)old.advance(s,60);
- assert.equal(s.kanon.silizium.verkauft,8,'Quelljob real abgeschlossen');
- const oldFirst=old.hash(s);
- // Der zweite Originalauftrag ist nur dann interessant, wenn physische
- // Foerderarbeit wirklich laeuft (kein synthetischer Auftrag im Test).
- for(let i=0;i<10000;i++){
-  if(s.kanon.silizium.auftrag?.gefoerdert>0
-    &&s.kanon.silizium.auftrag.gefoerdert<8)break;
+ // Die erste Originalcharge wird wirklich verkauft. Der zweite NPC-Auftrag
+ // darf nur laufen, wenn die erste J4-Huelle einen echten Käufer gefunden hat;
+ // ohne 900-ISK-Kauf bleibt die Lagerziel-Sperre wirksam. Keine Testspende.
+ let originalSaleHash=null,gekauft=false;
+ for(let i=0;i<30*1440;i++){
   old.minute(s);
+  if(!originalSaleHash && s.kanon.silizium.verkauft>=8)
+   originalSaleHash=old.hash(s);
+  if(!gekauft && s.stations.st_nadir.lager.jaeger>0){
+   assert.equal(old.execute(s,{type:'shipBuy',owner:'house',
+     klasse:'jaeger',station:'st_nadir'}).ok,true);
+   gekauft=true;
+  }
+  if(originalSaleHash && gekauft && s.kanon.silizium.auftrag?.gefoerdert>0
+    &&s.kanon.silizium.auftrag.gefoerdert<8)break;
  }
+ assert.ok(originalSaleHash && gekauft && s.kanon.silizium.verkauft>=8);
  assert.ok(s.kanon.silizium.auftrag?.gefoerdert>0 &&
   s.kanon.silizium.auftrag.gefoerdert<8,
-  'Originaljob muss gleichzeitig echten Erzfrachterlohn, Ladung und 204-Eigentum haben');
+  'Originaljob mit verkauftem Erstfeld, finanzierter Haus-Abnahme und physischer zweiter Teilladung fehlt');
+ const oldFirst=originalSaleHash;
  const canon=old.canonical(s),oldHash=old.hash(s),cash=Object.values(s.owners).map(o=>o.cash);
  const m=K.ausRegel204P8b(old.save(s)),w=m.welt,z=m.zustand,feld=z.kanon.silizium.felder;
  assert.equal(m.quellHash,oldHash);

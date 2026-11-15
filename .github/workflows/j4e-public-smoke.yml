@@ -12,6 +12,7 @@ on:
       - 'tests/j8-*'
       - 'tests/j9-*'
       - 'tests/j10a-*'
+      - 'tests/j10b-*'
       - 'prototypes/flug2d/flug-kern.js'
       - 'prototypes/f8-jaeger/**'
       - 'prototypes/welt/**'
@@ -86,6 +87,11 @@ jobs:
           WELT_BROWSER: ${{ matrix.browser }}
       - name: "J10a: Nadir-Werftgeld, Fremdrechte und echte Sperren in Chromium/WebKit"
         run: node tests/j10a-werft-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "J10b: originalfinanzierten K2-Nadir-Miner nur für seinen Käufer abholen und fliegen"
+        run: node tests/j10b-k2-kauf-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}

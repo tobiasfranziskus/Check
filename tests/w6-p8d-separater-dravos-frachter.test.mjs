@@ -103,6 +103,17 @@ test('P8d S02: getrennte Schiffe, reale Ladequittung, 0 Mint, voller Frachterloh
    const hash=w.hash(wieder);assert.equal(w.hash(w.load(w.save(wieder))),hash);
    w.advance(wieder,20);unabhaengig(w,wieder);
  }
+ // Transit-Zeit ist Teil des Eigentumsnachweises: ein geänderter
+ // Zeitpunkt ohne zusätzliche bezahlte Originalminute darf nie ladbar sein.
+ for(const [txt,mut] of [
+  [hinSave,x=>{x.kanon.p8d.auftrag.hinStart--; }],
+  [hinSave,x=>{x.kanon.p8d.auftrag.phase='rueck';}],
+  [geladenSave,x=>{x.kanon.p8d.auftrag.ladenTick=x.kanon.p8d.auftrag.hinStart;}]
+ ]){
+   const forged=JSON.parse(txt);mut(forged);
+   assert.equal(w.audit(forged).ok,false,'erfundene Frachterchronologie erkannt');
+   assert.throws(()=>w.load(JSON.stringify(forged)));
+ }
  for(const mut of [
    x=>{x.kanon.p8d.belege[0].lohnBezahlt--;},
    x=>{x.kanon.p8d.belege[0].gebuehr++;},

@@ -17,7 +17,7 @@ test('J8 – explizite, nicht zerstörende Kopie: echte Rule195-Welt wird Rule20
  const a=s.starten195(json,true);
  assert.equal(a.regel,204);
  assert.equal(a.weltgeld,33000);assert.equal(a.eigenerJaeger,0);
- assert.equal(a.pilotierbar,false);assert.ok(a.schiffe.some(sh=>sh.klasse==='miner'&&sh.system==='aldera'));
+ assert.equal(a.pilotierbar,false);assert.equal(a.schiffe.length,0,'frische Rule195-Welt hat keine kostenlosen Spielerhüllen');
  assert.equal(a.quelleHash,hash);
  assert.equal(alt.export(),json,'Originalsave nicht überschrieben');
  assert.equal(alt.snapshot().hash,hash);
@@ -33,12 +33,18 @@ test('J8 – explizite, nicht zerstörende Kopie: echte Rule195-Welt wird Rule20
 
 test('J8 – echte, vorfinanzierte Eisförderung mit eigenem Miner und Original-RNG',()=>{
  const before=original(),source=before.export(),s=newSession();
- const initial=s.starten195(source,true),moeglich=s.angebote();
- const ice=moeglich.find(a=>a.id.startsWith('ice-')&&a.ok);
- assert.ok(ice,'Regel195-Startwelt besitzt spielbaren eigenen Eisminer');
+ const initial=s.starten195(source,true);
+ assert.equal(initial.schiffe.length,0,'keinen kostenlosen Startminer erfinden');
+ const kauf=s.angebote().find(a=>a.id==='buy-st_aldera-miner');
+ assert.equal(kauf?.ok,true,'Original-Regel195 bietet vorhandenen und aus Hausgeld zahlbaren Aldera-Miner');
  const illegal=s.ausfuehren('industrialOreAcceptYard');
  assert.equal(illegal.ok,false,'fremde Firmenentscheidungen nicht als Spielerknopf');
  assert.equal(s.ansicht().hash,initial.hash,'Sperre ist zustandsneutral');
+ const bezahlt=s.ausfuehren(kauf.id);
+ assert.equal(bezahlt.ok,true,JSON.stringify(bezahlt));
+ assert.ok(s.ansicht().hausgeld<initial.hausgeld,'Kauf wurde wirklich bezahlt');
+ const ice=s.angebote().find(a=>a.id.startsWith('ice-')&&a.ok);
+ assert.ok(ice,'Erst nach bezahltem Miner-Kauf ist eigene Eisförderung zulässig');
  const result=s.ausfuehren(ice.id);
  assert.equal(result.ok,true,JSON.stringify(result));
  const active=s.angebote().find(a=>a.id===ice.id.replace('ice-','stop-'));
@@ -54,6 +60,7 @@ test('J8 – echte, vorfinanzierte Eisförderung mit eigenem Miner und Original-
  assert.equal(second.exportieren(),json,'Validiertes JSON roundtrip bitgleich');
  assert.equal(before.export(),source,'Altspielstand niemals verändert');
  const doppel=newSession();doppel.starten195(source,true);
+ assert.equal(doppel.ausfuehren(kauf.id).ok,true);
  const before2=doppel.ausfuehren(ice.id);assert.equal(before2.ok,true);
  doppel.weiterspielen(10);
  assert.equal(doppel.exportieren(),json,'gleicher Export + gleiche Commands = gleicher Seed-/Zeit-/Worldhash');

@@ -1574,7 +1574,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   }
 
   return Object.freeze({
-    ...(k7 ? {f7Werftfrachter:true} : {}),
+    ...(k7 ? {f7Werftfrachter:true, industriePreise:K7_PREIS} : {}),
     ...(silizium ? {j2bSilizium:true,siliziumFeld:rules.j2b.feld} : {}),
     ...(bauteile ? {j3Bauteile:true} : {}),
     ...(jaeger ? {j4bFinanzierterJaeger:true} : {}),

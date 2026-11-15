@@ -11,7 +11,8 @@
 | [MAIN] J7 Regel195→204-Prüfung | Lesend, sechs Original-Konverter, keine automatische Migration | [#361](https://github.com/tobiasfranziskus/Check/pull/361) |
 | [MAIN] J8 Konzernkopie | Spieler kann ohne Startjäger vorhandenen Miner legal kaufen und Eis fördern; manuelle Save-Kopie | [#363](https://github.com/tobiasfranziskus/Check/pull/363) |
 | [MAIN] J9 | Rechtmäßig gekauften Miner ohne JSON-Zwischenexport im selben Regel204-Zustand fliegen, mit Originalflugreserve und Dock-/Eigentumsgates | [#366](https://github.com/tobiasfranziskus/Check/pull/366) |
-| [BESCHLOSSEN / nächster Schritt] J10 | Eigentümerrechtlich und finanziell gedeckter erster Jäger aus dem J8/J9-Konzernspiel | [Roadmap](ROADMAP.md) |
+| [MAIN] J10a | Original-Werftkassen, Lager, NPC- und Stationsrechte sowie Kaufblockaden im Konzernspiel sichtbar, ohne Eingriff in Firmenrechte | [#368](https://github.com/tobiasfranziskus/Check/pull/368) |
+| [BESCHLOSSEN / nächster Schritt] J10b | NPC-Pendel gegenüber legitimen Industrie-Vertragsrollen auflösen und ersten finanzierten Jäger ermöglichen | [Roadmap](ROADMAP.md) |
 | [ANALYSE / Forschung] Krisen-Wirtschaft | Langzeit- und Käufergeldblockaden; Nachhaltigkeit nicht bewiesen | [Historischer Status](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261115.md) |
 
 ## Aufbewahrung und offene Forschungs-PRs

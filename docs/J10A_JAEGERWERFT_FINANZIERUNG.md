@@ -26,3 +26,9 @@ Die bereits integrierte J6-W-Folgeproduktion ([Bericht](J6W_SPIELBARE_JAEGERWIRT
 - Original-W0–W5-Root-/NAS-Preflight, Node22-Gesamtsuite, alte J7/J8/J9-/Jäger-/Miner-Browserregression unverändert prüfen. Neue Wirtschafts- oder Geldemissionsregeln sind **nicht** Bestandteil dieses Arbeitsschritts, deshalb sind historische 13×90-Prüfungen keine neue J10-Nachhaltigkeitsabnahme.
 
 **[STATUS BIS ZUM CI-ENDE]** Kein Test wird vor dem vollständigen tatsächlichen PR-Workflow als bestanden bezeichnet. Draft-PR bleibt bis zu grünem Gate und gesichertem vorherigem main unveröffentlicht. Echte iPad-Safari und private NAS-Geräteprüfung offen.
+
+## Tatsächlicher Schlussstand nach unabhängiger CI
+
+**[MAIN]** [PR #368](https://github.com/tobiasfranziskus/Check/pull/368) wurde als `main 1a8d9cdc` integriert und [Pages #43699888790](https://github.com/tobiasfranziskus/Check/actions/runs/43699888790) hat erfolgreich deployed. Vollständiger Node22-Lauf **289/289**, Chromium/WebKit jeweils 3/3 J10-Touchgrößen und bestehende Jäger-/Miner-Welt geprüft. Keine Runtime-Regeländerung, kein Save-Eingriff. Der ursprüngliche DRAFT-Vermerk oben beschreibt den Stand **vor dem Merge**.
+
+**Reproduzierter Negativbeleg im frischen Seed42-Regel195→204:** Tick0 keine Speditionshülle und 0 Nadir-Erz; Tick1: echter selbstfinanzierter 750-ISK-NPC-Frachterkauf (2.000→1.250 ISK Transportkasse, 600→1.350 ISK Werftkasse). NPC3-Miner `sh001` dockt gleichzeitig mit eigenem Erzpendel ab. Tick131: `sh001` hat 50 Erz **im Freiflug**, `transport/sh002` liegt leer im Aldera-Dock, K7-Industrieangebot deshalb „Schiffe nicht frei im Dock“. Es fehlen nicht freie Waren oder Geldrettung, sondern eine rechtmäßig vereinbarte Umwidmung/Vertragspriorität. Weltgeld 33.000 ISK, Mint/Burn 0. Volle erste Jägerproduktion bleibt **offen**. Rohdaten: [Node22-Run #43699452973](https://github.com/tobiasfranziskus/Check/actions/runs/43699452973).

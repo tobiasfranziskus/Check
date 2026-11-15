@@ -76,14 +76,14 @@ test('J14: einmalige Wiederanmeldung ist kein uneingeschraenkter Wechsel zwische
  assert.equal(session.flugAudit().ok,true);
 });
 
-test('J14: ohne gebundenen J2b-Hausauftrag gelten unveraendert die urspruenglichen Dock-/Rollenregeln',()=>{
+test('J14: der ursprüngliche Import bleibt streng und ein weiterer Import verändert keine bestehende Sitzung',()=>{
  const {save,nadir}=echteMehrschiffkarriere();
  const session=J8.erstellen();session.oeffnen204(save,true);
  const allowed=session.piloten().find(x=>x.id===nadir);
  assert.equal(allowed.erlaubt,true);
  const original=session.exportieren();
  // Ein zweiter Ladevorgang darf die alte Welt nicht anruehren.
- assert.throws(()=>session.oeffnen204(original,true),/nicht ueberschreiben/);
+ assert.throws(()=>session.oeffnen204(original,true),/nicht überschreiben/);
  assert.equal(session.exportieren(),original);
  assert.equal(session.ansicht().weltgeld,33000);
 });

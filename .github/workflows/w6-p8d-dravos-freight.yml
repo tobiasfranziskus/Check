@@ -1,0 +1,32 @@
+name: "W6/P8d – independent Dravos cargo contract (Rule207 research)"
+on:
+  pull_request:
+    paths:
+      - 'prototypes/welt/p8d-dravos-fracht-core.js'
+      - 'prototypes/welt/welt-kern.js'
+      - 'prototypes/welt/j2b-silizium-core.js'
+      - 'prototypes/welt/rule200-k7-industry-core.js'
+      - 'tests/w6-p8d-separater-dravos-frachter.test.mjs'
+      - '.github/workflows/w6-p8d-dravos-freight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dravos-freight-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: "Syntax of shared Rule207 economic modules"
+        run: |
+          node --check prototypes/welt/welt-kern.js
+          node --check prototypes/welt/p8d-dravos-fracht-core.js
+          node --check prototypes/welt/j2b-silizium-core.js
+          node --check prototypes/welt/rule200-k7-industry-core.js
+      - name: "Paid two-owner Dravos and original Rule204/205/206 regressions"
+        run: |
+          node --test tests/w6-p8d-separater-dravos-frachter.test.mjs
+          node --test tests/w6-p8c-dravos-expedition.test.mjs tests/w6-p8b-two-fields-rule205.test.mjs tests/w6-p5-autonome-siliziumkette.test.mjs tests/w6-p6-autonome-jaegerlieferkette.test.mjs

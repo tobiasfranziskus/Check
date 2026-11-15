@@ -1,3 +1,5 @@
+> **[MAIN / J8 veröffentlicht 15.11.2026]** Der nachfolgend beschriebene DRAFT wurde mit [PR #363](https://github.com/tobiasfranziskus/Check/pull/363) nach vollständigem Gate als `main a1388681` integriert und per [Pages #43694629127](https://github.com/tobiasfranziskus/Check/actions/runs/43694629127) veröffentlicht. Node22 **280/280**, Chromium/WebKit je 3 J8- und 4 Raumcockpit-Touchgrößen, reale Kauf-/Eis-/Save-Folge und wirtschaftliche Gesamtregression erfolgreich. Historische DRAFT-Beschreibung folgt unverändert. Echte iPad-/NAS-Geräteabnahme offen; kein automatischer Spielstandumzug.
+
 # J8 – Eine spielbare Regel204-Konzernwelt ohne Anfangsjäger
 
 **[DRAFT · 15. November 2026]** Ausgangs-main: baa1d4773c06658392a54838dbb60e12ea711a1f. Vor der Entwicklung wurden AGENTS.md, ROADMAP.md, PROJEKTSTATUS.md, Core und offene PRs geprüft. Der originale W0–W5-Root-/NAS-Code und sämtliche gespeicherten 195-/204-Spielstände bleiben unverändert.

@@ -1120,6 +1120,11 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       if(!b || !s)return;
       const C=rules.j2b, C3=rules.j3, C4=rules.j4,
         lager=state.stations[C.station].lager;
+      // Rule205 waehlt zuerst eine physisch vorhandene 8er-Charge aus EINEM
+      // konkreten Feld. Anfahrt und Belege koennen nicht die Quellen mischen.
+      // Rule204 geht weiterhin exakt ueber die bisherige Einzelquelle.
+      const feldWahl=C.nebenfeld?[C.feld,C.nebenfeld].find(f=>
+        s.felder?.[f.id]?.vorrat>=C.charge):C.feld;
       const lokal=ids(state.ships).map(id=>state.ships[id]).find(sh=>
         sh.owner==='npc3' && sh.klasse==='miner' && sh.heimat==='nadir'
         && sh.system==='nadir' && !m_core_anlage.stillgelegt(state,sh));
@@ -1147,6 +1152,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       if(lokal){
         const flug=lokal.flug, id=lokal.id;
         if(eigener){
+          const aktivFeld=C.nebenfeld?[C.feld,C.nebenfeld].find(f=>f.id===auftrag.feld):C.feld;
+          if(!aktivFeld)throw Error('P8b: fremde Quelle im gebuchten Minerauftrag');
           if(auftrag.gefoerdert>=auftrag.menge){
             if(flug.lage==='frei' && !(flug.andocken && flug.ziel?.art==='station'))
               befehl(state,'npc3',{type:'shipDock',schiff:id,station:C.station});
@@ -1154,10 +1161,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
               befehl(state,'npc3',{type:'siliconSell',schiff:id});
           }else if(flug.lage==='angedockt'){
             befehl(state,'npc3',{type:'shipUndock',schiff:id});
-          }else if(flug.lage==='frei' && !m_core_silizium.feld(lokal)
+          }else if(flug.lage==='frei' && !m_core_silizium.feld(lokal,auftrag.feld)
             && !(flug.modus==='anflug' && flug.ziel?.art==='punkt'
-              && flug.ziel.x===C.feld.x && flug.ziel.y===C.feld.y)){
-            befehl(state,'npc3',{type:'shipFlyTo',schiff:id,x:C.feld.x,y:C.feld.y});
+              && flug.ziel.x===aktivFeld.x && flug.ziel.y===aktivFeld.y)){
+            befehl(state,'npc3',{type:'shipFlyTo',schiff:id,x:aktivFeld.x,y:aktivFeld.y});
           }
           return;
         }
@@ -1166,10 +1173,12 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         if((lager.jaeger||0)>=1 || k.jaeger?.auftrag
           || vorhanden>=C4.bauteile || s.vorrat<C.charge)return;
         if(flug.lage!=='angedockt')return;
-        const cmd={type:'siliconMineStart',schiff:id,owner:'npc3'};
+        const cmd={type:'siliconMineStart',schiff:id,owner:'npc3',
+          ...(C.nebenfeld?{feld:feldWahl?.id}:{})};
         const grund=m_core_silizium.pruefen(state,cmd);
         if(grund){pause(state,'npc3','Silizium nicht finanziert: '+grund);return;}
-        if(befehl(state,'npc3',{type:'siliconMineStart',schiff:id}).ok)
+        if(befehl(state,'npc3',{type:'siliconMineStart',schiff:id,
+          ...(C.nebenfeld?{feld:feldWahl?.id}:{})}).ok)
           befehl(state,'npc3',{type:'shipUndock',schiff:id});
         return;
       }

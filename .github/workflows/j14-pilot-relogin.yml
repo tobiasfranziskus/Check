@@ -1,0 +1,45 @@
+name: "J14 – Pilot nach echtem Mehrschiff-Silizium-Reload"
+on:
+  pull_request:
+    paths:
+      - 'prototypes/verbund/konzern-session.js'
+      - 'tests/j14-pilot-relogin-multiship.test.mjs'
+      - 'tests/j14-pilot-relogin-browser.cjs'
+      - '.github/workflows/j14-pilot-relogin.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-j2b-controller:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Original finanzierte 600-ISK-K2-Huelle, J2b-Arbeit, JSON-Reload und Rollen-Sperren"
+        run: node --test tests/j14-pilot-relogin-multiship.test.mjs tests/j10b-k2-nadir-kauf.test.mjs tests/j9-verbund-raummine.test.mjs
+      - name: "NAS-/Root-Einzeldatei bleibt generierbar"
+        run: node scripts/build-w5-singlefile.mjs --check
+  public-root-j14-touch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Playwright nur im temporären CI installieren"
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/j14-playwright" playwright@1.62.0
+          node "$RUNNER_TEMP/j14-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
+      - name: "Vier Touchgroessen: öffentlicher Root, realer Mehrschiff-Import, J2b-Reattach, Cockpit, Flug, Save/Load"
+        run: node tests/j14-pilot-relogin-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/j14-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}

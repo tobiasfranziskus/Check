@@ -175,13 +175,22 @@ function erstellen(){
    const own=Object.values(copy.ships).filter(sh=>
      sh.owner==='house'&&['miner','jaeger','frachter'].includes(sh.klasse)&&sh.flug);
    return Object.freeze(own.sort((a,b)=>a.id.localeCompare(b.id)).map(sh=>{
-     // Nach Import einer Welt mit nur einem eigenen Schiff darf dieser eine
-     // vorhandene Pilot sein laufendes Schiff wieder übernehmen. Kein Ortswechsel.
+     // J14: Pilotwahl ist bewusst kein persistiertes Eigentums- oder Schiffsattribut.
+     // Ein beim Import bereits laufender, vom Original-Core auditierter J2b-Hausauftrag
+     // darf genau seinen real vorhandenen, rechtmaessig lokal gekauften Nadir-Miner
+     // wieder anbinden – auch wenn house weitere Schiffe besitzt. Weder Wechsel
+     // zu anderen Orten noch das Starten fremder/ungepruefter Auftraege folgt daraus.
      const einzelnWiederAnmelden=!pilot&&own.length===1;
+     const gebunden=copy.kanon.silizium?.auftrag;
+     const j2bWiederAnmelden=!pilot&&sh.klasse==='miner'&&sh.heimat==='nadir'
+       &&sh.system==='nadir'&&gebunden?.schiff===sh.id
+       &&gebunden.owner==='house'
+       &&copy.kanon.minerWerft?.lokaleKaeufe?.some(k=>k.id===sh.id&&k.owner==='house');
      const grund=J6.rollenGrund(copy,sh);
      const transitResume=einzelnWiederAnmelden&&sh.klasse==='frachter'&&sh.flug.lage==='transit';
      const erlaubt=(!grund&&sh.flug.lage==='angedockt')||
-       (einzelnWiederAnmelden&&!copy.kanon.pendel?.[sh.id]&&(sh.klasse!=='frachter'||transitResume||!grund));
+       (einzelnWiederAnmelden&&!copy.kanon.pendel?.[sh.id]&&(sh.klasse!=='frachter'||transitResume||!grund))||
+       (j2bWiederAnmelden&&!copy.kanon.pendel?.[sh.id]);
      return Object.freeze({
        id:sh.id,klasse:sh.klasse,system:sh.system,lage:sh.flug.lage,
        erlaubt,

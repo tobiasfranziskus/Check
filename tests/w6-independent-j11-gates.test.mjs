@@ -51,9 +51,15 @@ test('QA W6/J11: invalid activation input and forged policy logs cannot bypass a
  assert.throws(()=>w.npcAutoSetzen(s,'ja'),/Boolean/);
  assert.equal(w.hash(s),prior);
  w.npcAutoSetzen(s,true);
- let serialized=JSON.parse(w.save(s));
+ const serialized=JSON.parse(w.save(s));
  serialized.kanon.npc.befehle['house:shipBuy']=1;
- assert.throws(()=>w.load(JSON.stringify(serialized)));
+ assert.throws(()=>w.load(JSON.stringify(serialized)),'foreign owner event must not be accepted');
+ const forgedClass=JSON.parse(w.save(s));
+ forgedClass.kanon.npc.befehle['npc3:stationBuildFighter']=1;
+ assert.throws(()=>w.load(JSON.stringify(forgedClass)),'wrong legal owner / command pairing');
+ const forgedAtTickZero=JSON.parse(w.save(s));
+ forgedAtTickZero.kanon.npc.befehle['npc3:shipShuttle']=1;
+ assert.throws(()=>w.load(JSON.stringify(forgedAtTickZero)),'no automatic command before first world minute');
  const other=JSON.parse(w.save(s));other.kanon.npcAuto='true';
  assert.throws(()=>w.load(JSON.stringify(other)));
  audit(w,s);

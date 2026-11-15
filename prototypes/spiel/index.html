@@ -27,7 +27,7 @@
    <button class="primary" id="neues-spiel" type="button">Neue Karriere <span aria-hidden="true">→</span></button>
    <button id="fortsetzen" type="button" disabled>Karriere fortsetzen</button>
    <button id="vorige-karriere" type="button" hidden>Vorherige Karriere wiederherstellen</button>
-   <label class="import-button" for="import-datei">Gesicherte Karriere laden</label>
+   <button id="import-aktion" type="button">Gesicherte Karriere laden</button>
    <input id="import-datei" type="file" accept=".json,application/json" hidden>
   </div>
   <p id="menumeldung" class="statusline" role="status" aria-live="polite">Dein Spielstand wird nur für diese Karriere separat gespeichert.</p>
@@ -140,15 +140,15 @@
 <div class="raum-unten">
 <details open><summary>Übersicht · Objekte im System</summary><div id="raum-ziele" class="raum-liste"></div></details>
 <details><summary>Eigene Flotte · Schiffwechsel</summary><div id="raum-flotte"></div>
-<p class="note">Der Kern kennt noch keinen eigenen Spielerstandort. Deshalb wechselst du die Steuerung nur im Dock zwischen eigenen Schiffen derselben Station (Dockkarte). Der Wechsel ändert weder Geld noch Eigentum.</p></details>
-<details open><summary>Sitzung · Sichern und Ansichten</summary>
+<p class="note">Wechsle zwischen eigenen Schiffen nur am selben Dock und bei angehaltener Zeit. Ein Wechsel ändert weder Geld noch Eigentum.</p></details>
+<details open><summary>Spielmenü · Sichern &amp; Navigation</summary>
 <div class="raum-reihe">
 <button id="raum-export" type="button">Geprüften JSON-Spielstand exportieren</button>
-<button id="raum-schreiber" type="button">Flugschreiber exportieren</button>
+<button id="raum-schreiber" type="button" hidden>Flugschreiber exportieren</button>
 <button id="raum-konzern" type="button">Konzern &amp; Flotte</button>
-<button id="raum-pult" type="button">Zurück zum Konzern</button>
+<button id="raum-pult" type="button" hidden>Zurück zum Konzern</button>
 </div>
-<p class="note">Kein Autosave: vor dem Verlassen exportieren. Laden und Import bleiben im Steuerpult. Bedienung: Knüppel = Handflug, Tippen = Ziel wählen, zwei Finger = Zoom; Tastatur: Pfeile/WASD, Leertaste Stopp, P Zeit, +/− Zoom.</p></details>
+<p class="note">Diese Karriere wird in einem eigenen Browser-Slot gesichert. Für zusätzliche Sicherheit kannst du jederzeit JSON exportieren. Bedienung: Knüppel = Handflug, Tippen = Ziel wählen, zwei Finger = Zoom; Tastatur: Pfeile/WASD, Leertaste Stopp, P Zeit, +/− Zoom.</p></details>
 </div>
 </section>
 </main>

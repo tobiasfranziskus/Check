@@ -1,6 +1,6 @@
 # J12 – lebendes Wirtschafts- und Stationsterminal
 
-**[DRAFT / NICHT MAIN] · 15.11.2026**
+**[J12 / INTEGRATION ÜBER PR #387] · 15.11.2026**
 
 Basis: [MAIN] `4d36a37d7c23b11151a4514df7841eef5eef9d01` (J11+P1, unveränderte öffentliche Karriere). Dieser Schritt ergänzt die bereits vorhandene Tab-Ansicht „Das Universum“ um eine tatsächliche Wirtschaftsauskunft derselben Regel204-Sitzung.
 
@@ -23,4 +23,4 @@ Keine neuen Wirtschaftsregeln, Preise, Erzquellen, NPC-Rechte, Warenvorräte, Pr
 - **Syntaktische Zusatzprüfung:** J12-JS und Browserprüfskript isoliert mit V8 fehlerfrei kompiliert. Der neue Code stammt weiterhin nur aus P1-Oberfläche und Tests, ohne produktive Kern- oder Speicheränderung.
 - **Offen:** echte iPad-Safari-/private NAS-Geräteprüfung; CI-WebKit ersetzt dies nicht.
 
-**Integrationsstatus:** Dies ist noch ein [DRAFT]-PR. Die GitHub-Gates sind erfüllt; vor tatsächlichem Merge muss der aktuelle main-SHA erneut geprüft, die Vorversion gesichert und danach der reale Pages-Deploy nachgewiesen werden. W6 #382/#385 bleibt unabhängig und gesperrt.
+**Integrationsstatus:** Der separat geprüfte [Feature-Draft #386](https://github.com/tobiasfranziskus/Check/pull/386) wird durch [Integrations-PR #387](https://github.com/tobiasfranziskus/Check/pull/387) kontrolliert nach main übertragen. Die dokumentierten Code-Gates sind grün; die Vorversion muss vor Merge gesichert sein und Pages erst nach Erfolg als veröffentlicht gelten. Der konkrete integrierte Commit und Pages-Deploy werden im Projektstatus geführt. W6 #382/#385 bleibt unabhängig und gesperrt.

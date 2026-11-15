@@ -5,15 +5,16 @@
 (function(scope){
 'use strict';
 const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
-  if(![201,202,203,204,205,206].includes(rules.rulesVersion)||!rules.j2b)
+  if(![201,202,203,204,205,206,207].includes(rules.rulesVersion)||!rules.j2b)
     throw Error('J2b: ungueltige Regel201-205');
   const C=rules.j2b,W=C.charge*C.minutenJeEinheit*C.lohnJeMinute,
     P=C.charge*C.preis;
   // W6/P8b NUR RULE205: endliche Felder, ein physischer Miner und EIN
   // Original-Minuten-/Kassen-/Warenbuch. Rule204 hat weiterhin genau
   // seine urspruengliche 16er-Lagerstaette und die unveraenderte Befehlsform.
-  const zweifeld=[205,206].includes(rules.rulesVersion);
-  const dravos=rules.rulesVersion===206;
+  const zweifeld=[205,206,207].includes(rules.rulesVersion);
+  const dravos=[206,207].includes(rules.rulesVersion);
+  const fremdFracht=rules.rulesVersion===207;
   if(zweifeld&&(!C.nebenfeld||C.nebenfeld.system!==(dravos?'dravos':'nadir')
       ||C.feld.id!=='nadir-primaer'||C.nebenfeld.id!==(dravos?'dravos-silizium':'nadir-sekundaer')
       ||!Number.isSafeInteger(C.nebenfeld.vorrat)||C.nebenfeld.vorrat<=0
@@ -45,12 +46,21 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
       ||Object.keys(cmd).sort().join()!==
         (zweifeld&&cmd.type==='siliconMineStart'?'feld,owner,schiff,type':'owner,schiff,type'))
       return 'J2b: strenge Befehlsform';
-    const b=s.kanon.silizium,sh=s.ships[cmd.schiff];
-    if(!b||!sh||sh.owner!==cmd.owner||sh.klasse!=='miner'
+    const b=s.kanon.silizium,sh=s.ships[cmd.schiff],a=b?.auftrag;
+    // Rule207: die Ware ist im fremden TRANSPORT-Frachter nur in Obhut.
+    // Eigentum und die bereits gebundene Nadir-Kaufreserve bleiben bei NPC3.
+    const fracht=fremdFracht&&cmd.type==='siliconSell'
+      &&cmd.owner==='transport'&&sh?.owner==='transport'
+      &&sh?.klasse==='frachter'&&a?.owner==='npc3'
+      &&a?.feld==='dravos-silizium'
+      &&s.kanon.p8d?.auftrag?.frachter===sh.id
+      &&s.kanon.p8d?.auftrag?.miner===a.schiff
+      &&s.kanon.p8d?.auftrag?.phase==='ankunft';
+    if(!b||!sh||(!fracht&&(sh.owner!==cmd.owner||sh.klasse!=='miner'
       ||(!dravos&&sh.system!=='nadir')||sh.heimat!=='nadir'
       ||(dravos&&!['nadir','dravos'].includes(sh.system))
       ||!['house','npc3'].includes(cmd.owner)
-      ||!s.kanon.minerWerft?.lokaleKaeufe?.some(k=>k.id===sh.id&&k.owner===cmd.owner))
+      ||!s.kanon.minerWerft?.lokaleKaeufe?.some(k=>k.id===sh.id&&k.owner===cmd.owner))))
       return 'J2b: nur rechtmaessig in Nadir gekaufte K2-Miner';
     const zielFeld=cmd.type==='siliconMineStart'?quelle(cmd.feld):null;
     const zielDock=dravos&&zielFeld?.system==='dravos'?'st_dravos':C.station;
@@ -76,7 +86,8 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
         return 'J2b: kein Lagerplatz';
     }else{
       const a=b.auftrag;
-      if(!a||a.schiff!==sh.id||a.owner!==cmd.owner
+      if(!a||(fracht ? (a.owner!=='npc3'||a.schiff===sh.id) :
+          (a.schiff!==sh.id||a.owner!==cmd.owner))
         ||a.gefoerdert!==C.charge||a.gearbeitet!==C.charge*C.minutenJeEinheit
         ||sh.ladung.silizium!==C.charge)
         return 'J2b: nur vollstaendig gefoerderte echte Ware verkaufen';
@@ -101,10 +112,11 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
       sh.ladung.silizium-=a.menge;
       if(sh.ladung.silizium===0)delete sh.ladung.silizium;
       s.stations[C.station].lager.silizium+=a.menge;
-      transfer(s,'k1_silizium_kauf',cmd.owner,a.menge*C.preis,'silizium-ankauf');
+      // Verkaufserloes an EIGENTUEMER, nicht an den bloßen Spediteur.
+      transfer(s,'k1_silizium_kauf',a.owner,a.menge*C.preis,'silizium-ankauf');
       b.verkauft+=a.menge;
       if(zweifeld)b.felder[a.feld].verkauft+=a.menge;
-      b.belege.push({schiff:sh.id,owner:cmd.owner,tick:s.tick,
+      b.belege.push({schiff:a.schiff,owner:a.owner,tick:s.tick,
         menge:a.menge,preis:a.menge*C.preis,arbeit:a.gearbeitet*C.lohnJeMinute,
         ...(zweifeld?{feld:a.feld}:{})});
       b.auftrag=null;
@@ -172,7 +184,10 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
       ||a.gefoerdert!==Math.floor(a.gearbeitet/C.minutenJeEinheit)
       ||a.menge!==C.charge||!['house','npc3'].includes(a.owner)
       ||s.ships[a.schiff]?.owner!==a.owner
-      ||(s.ships[a.schiff]?.ladung.silizium||0)!==a.gefoerdert
+      ||(s.ships[a.schiff]?.ladung.silizium||0)!==
+         (fremdFracht&&s.kanon.p8d?.auftrag?.miner===a.schiff
+          &&['rueckBereit','rueck','ankunft'].includes(s.kanon.p8d.auftrag.phase)
+          ?0:a.gefoerdert)
       ||!s.kanon.minerWerft?.lokaleKaeufe?.some(k=>k.id===a.schiff)))return false;
     if(zweifeld){
       if(!b.felder||typeof b.felder!=='object'||Array.isArray(b.felder)

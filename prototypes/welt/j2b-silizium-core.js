@@ -5,16 +5,17 @@
 (function(scope){
 'use strict';
 const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
-  if(![201,202,203,204,205].includes(rules.rulesVersion)||!rules.j2b)
+  if(![201,202,203,204,205,206].includes(rules.rulesVersion)||!rules.j2b)
     throw Error('J2b: ungueltige Regel201-205');
   const C=rules.j2b,W=C.charge*C.minutenJeEinheit*C.lohnJeMinute,
     P=C.charge*C.preis;
   // W6/P8b NUR RULE205: endliche Felder, ein physischer Miner und EIN
   // Original-Minuten-/Kassen-/Warenbuch. Rule204 hat weiterhin genau
   // seine urspruengliche 16er-Lagerstaette und die unveraenderte Befehlsform.
-  const zweifeld=rules.rulesVersion===205;
-  if(zweifeld&&(!C.nebenfeld||C.nebenfeld.system!=='nadir'
-      ||C.feld.id!=='nadir-primaer'||C.nebenfeld.id!=='nadir-sekundaer'
+  const zweifeld=[205,206].includes(rules.rulesVersion);
+  const dravos=rules.rulesVersion===206;
+  if(zweifeld&&(!C.nebenfeld||C.nebenfeld.system!==(dravos?'dravos':'nadir')
+      ||C.feld.id!=='nadir-primaer'||C.nebenfeld.id!==(dravos?'dravos-silizium':'nadir-sekundaer')
       ||!Number.isSafeInteger(C.nebenfeld.vorrat)||C.nebenfeld.vorrat<=0
       ||C.nebenfeld.vorrat%C.charge!==0))
     throw Error('P8b: ungueltige endliche Zweitgeologie');
@@ -46,13 +47,24 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
       return 'J2b: strenge Befehlsform';
     const b=s.kanon.silizium,sh=s.ships[cmd.schiff];
     if(!b||!sh||sh.owner!==cmd.owner||sh.klasse!=='miner'
-      ||sh.system!=='nadir'||sh.heimat!=='nadir'
+      ||(!dravos&&sh.system!=='nadir')||sh.heimat!=='nadir'
+      ||(dravos&&!['nadir','dravos'].includes(sh.system))
       ||!['house','npc3'].includes(cmd.owner)
       ||!s.kanon.minerWerft?.lokaleKaeufe?.some(k=>k.id===sh.id&&k.owner===cmd.owner))
       return 'J2b: nur rechtmaessig in Nadir gekaufte K2-Miner';
-    if(sh.flug?.lage!=='angedockt'||sh.flug.anker!==C.station
-      ||sh.phase!=='dock'||sh.auftrag!=='halten')
-      return 'J2b: Miner muss am Nadir-Dock stehen';
+    const zielFeld=cmd.type==='siliconMineStart'?quelle(cmd.feld):null;
+    const zielDock=dravos&&zielFeld?.system==='dravos'?'st_dravos':C.station;
+    if(sh.flug?.lage!=='angedockt'||sh.flug.anker!==zielDock
+      ||sh.phase!=='dock'||sh.auftrag!=='halten'
+      ||(cmd.type==='siliconMineStart'&&sh.system!==zielFeld?.system)
+      ||(cmd.type==='siliconSell'&&sh.system!=='nadir'))
+      return 'J2b: nur am wirklichen Förder-/Nadir-Käufer-Dock';
+    // Für Dravos genügt die Ortsangabe nicht: keine durch manipulierte Saves
+    // vorgetäuschte kostenlose Fernstationierung.
+    if(dravos&&sh.system==='dravos'&&
+      !s.kanon.p8c?.reisen?.some(x=>x.schiff===sh.id
+        &&x.nach==='dravos'&&x.ende!==null&&x.ende<=s.tick))
+      return 'P8c: keine originale bezahlte Einreise nach Dravos';
     if(cmd.type==='siliconMineStart'){
       if(b.auftrag||b.vorrat<C.charge||ladungSumme(sh)>0
         ||stillgelegt(s,sh)

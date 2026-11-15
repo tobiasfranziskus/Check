@@ -1,0 +1,97 @@
+/* Aphros Void P1: independent cinematic player entry. No simulation rules or assets. */
+:root{color-scheme:dark;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--ink:#edf5ff;--muted:#acc1d5;--bg:#070e1c;--panel:#101e31;--line:#2b455d;--gold:#f1c787;--cyan:#79dfd8}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{background:var(--bg);scroll-behavior:smooth}
+body{min-height:100vh;margin:0;color:var(--ink);background:radial-gradient(ellipse at 83% 17%,#152b42 0%,transparent 55%),linear-gradient(125deg,#060c18,#0a1c2b 60%,#060c17);font-size:16px;line-height:1.52}
+.nebula{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;background-image:radial-gradient(1px 1px at 9% 18%,#ceeaff 92%,transparent),radial-gradient(1px 1px at 20% 63%,#fff 92%,transparent),radial-gradient(1px 1px at 37% 21%,#86a9b8 92%,transparent),radial-gradient(2px 2px at 57% 70%,#dceaf5 90%,transparent),radial-gradient(1px 1px at 74% 9%,#cbe5f0 92%,transparent),radial-gradient(1px 1px at 91% 61%,#fff 92%,transparent),radial-gradient(1px 1px at 84% 38%,#8cbddd 92%,transparent),radial-gradient(1px 1px at 13% 82%,#d8ddf3 92%,transparent),radial-gradient(1px 1px at 47% 91%,#f8ead3 92%,transparent);background-size:320px 300px,280px 310px,380px 330px,440px 370px,340px 290px,460px 390px,520px 470px,260px 310px,620px 480px;opacity:.62}
+.planet{position:absolute;width:min(45vw,680px);aspect-ratio:1;border-radius:50%;right:-9vw;top:16vh;background:radial-gradient(circle at 28% 22%,#376783 3%,#153a60 27%,#0a2944 48%,#050e23 69%,#030a14 76%);box-shadow:-60px -24px 170px #2b768149,0 0 14px #8fcbd15e,inset 26px 13px 60px #83e3e43b;transform:rotate(-25deg);filter:saturate(.85)}
+.orbital{position:absolute;border:1px solid #a2d5df3c;width:52vw;height:33vw;min-width:600px;min-height:360px;border-radius:50%;right:-8vw;top:25vh;transform:rotate(-30deg)}
+.orbit-b{width:58vw;height:39vw;right:-11vw;top:21vh;border-color:#c99e8030;transform:rotate(-17deg)}
+main,.topline,.page-footer{position:relative;z-index:1}
+a{color:#9de7eb}
+button,.import-button{font:inherit;display:inline-flex;justify-content:space-between;align-items:center;gap:12px;min-height:50px;padding:12px 18px;border:1px solid #59788c;background:#162b41;color:var(--ink);border-radius:8px;cursor:pointer;text-decoration:none;touch-action:manipulation}
+button:disabled,.import-button[aria-disabled=true]{opacity:.48;cursor:not-allowed}
+button:hover:not(:disabled),.import-button:hover{border-color:#88dfe2;background:#20445a}
+button:focus-visible,a:focus-visible,input:focus-visible,.import-button:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
+.primary{background:linear-gradient(135deg,#3a918b,#1e637f);border-color:#71e3cd;color:#fff;font-weight:750;box-shadow:0 12px 34px #1d828633}
+.primary:hover:not(:disabled){background:linear-gradient(135deg,#43a9a2,#267e9a)}
+.ghost{background:#0b1a2bbb;border-color:#476378;color:#e7f2fc}
+.topline{min-height:76px;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px clamp(20px,4vw,70px);border-bottom:1px solid #ffffff18}
+.brand{display:inline-flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink);font-size:.95rem;letter-spacing:.16em;font-weight:700}
+.brand b{color:var(--gold)}
+.brand-mark{display:grid;place-items:center;width:40px;height:40px;border:1px solid #a8b7b6;transform:rotate(-10deg);letter-spacing:0;font-weight:900;color:var(--cyan)}
+.topline-status{font-size:.75rem;letter-spacing:.12em;color:#a8c6d9}
+.eyebrow{margin:0;color:var(--gold);font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+.signal{display:inline-block;width:7px;height:7px;margin-right:7px;border-radius:50%;background:#9effd3;box-shadow:0 0 12px #6ef3d1}
+.splash{min-height:calc(100svh - 150px);display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,310px);align-items:end;gap:32px;padding:clamp(30px,6vw,100px) clamp(22px,7vw,120px) 76px}
+.hero-content{max-width:780px}
+.splash h1{margin:18px 0 0;line-height:.95;letter-spacing:-.075em;font-weight:900;font-size:clamp(4.5rem,13vw,11.5rem);text-shadow:0 12px 60px #040b16}
+.splash h1 em{font-style:normal;color:var(--gold)}
+.lead{max-width:640px;margin:32px 0 0;font-size:clamp(1.2rem,2vw,1.65rem);line-height:1.44;color:#f3f6ff;font-weight:520}
+.hero-caption{max-width:600px;color:var(--muted);font-size:1rem}
+.menu-actions{display:flex;flex-wrap:wrap;gap:12px;max-width:730px;margin:38px 0 16px}
+.menu-actions>*{min-width:190px}
+.menu-actions .primary{min-width:244px}
+.statusline{min-height:36px;color:#b8d3e2;font-size:.88rem}
+.statusline.error,.game-message.error{color:#ffbda8}
+.hero-side{align-self:end;display:grid;gap:10px;padding:22px 24px;border-top:1px solid #b7a27873;background:linear-gradient(160deg,#071525b3,#0a2437cc);box-shadow:0 30px 80px #06101ccf;color:#b9d1e3;font-size:.9rem}
+.hero-side-kicker{font-size:.67rem;letter-spacing:.15em;color:var(--gold)}
+.hero-side strong{font-size:2.5rem;color:#fff;letter-spacing:.08em;font-weight:850}
+.hero-side b{color:var(--gold)}
+.separator{height:1px;background:#52728488;margin:6px 0}
+.chapter{padding:clamp(22px,4vw,70px) clamp(20px,5vw,90px) 90px;min-height:calc(100svh - 140px)}
+.chapter-heading{max-width:930px}.chapter h2{font-size:clamp(2rem,4.8vw,4.5rem);line-height:1.1;margin:15px 0}.chapter-heading>p:last-child{max-width:710px;color:#d0deee;font-size:1.12rem}
+.factions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:30px 0}
+.faction{padding:24px;background:linear-gradient(160deg,#122b40da,#081525dd);border:1px solid #3d5f70;border-radius:12px;min-height:285px;display:flex;flex-direction:column;box-shadow:0 12px 35px #06112070}
+.faction-icon{font-size:2.25rem;color:var(--cyan);line-height:1}
+.faction-type{margin-top:20px;font-size:.68rem;font-weight:800;letter-spacing:.13em;color:var(--gold)}
+.faction h3{font-size:1.38rem;margin:6px 0}.faction p{font-size:.95rem;color:#ccdce9;margin:4px 0 16px}
+.faction-foot{border-top:1px solid #456579;padding-top:12px;margin-top:auto;font-size:.76rem;color:#a4c0cd}
+.briefing-bottom{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:24px 0;border-top:1px solid #66829b8c}
+.briefing-bottom>div{max-width:760px}.briefing-bottom strong{font-size:1.18rem}.briefing-bottom p{color:var(--muted);margin:6px 0}
+.world{padding:clamp(16px,3vw,40px) clamp(12px,4vw,65px) 60px}
+.worldbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:22px;margin:0 0 22px}
+.worldbar h2{margin:3px 0;font-size:clamp(2rem,3.8vw,3.5rem);line-height:1.1}
+.worldbar-right{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.world-balance{display:grid;gap:2px;padding:5px 16px;border-left:1px solid #496779}
+.world-balance small{font-size:.66rem;letter-spacing:.12em;color:var(--muted);font-weight:650}.world-balance strong{font-variant-numeric:tabular-nums;font-size:1.2rem}
+.game-grid{display:grid;grid-template-columns:minmax(210px,270px) minmax(300px,1fr) minmax(210px,260px);align-items:start;gap:16px}
+.game-grid>section,.game-grid>aside{background:#0c1b2edb;border:1px solid #355366;border-radius:13px;min-width:0}
+.task-panel,.world-right{padding:21px}
+.task-panel h3,.world-right h3{font-size:1.28rem;line-height:1.25;margin:9px 0}
+.task-panel>p:not(.eyebrow),.world-right .note{font-size:.91rem;color:#b9cadb}
+.missions{list-style:none;margin:22px 0;padding:0;counter-reset:mission}
+.missions li{padding:11px 0;border-top:1px solid #34485a;display:flex;gap:11px;align-items:flex-start;font-size:.94rem}
+.missions li::before{content:"○";color:var(--muted);font-size:1.1rem}.missions li.done::before{content:"✓";color:#86efc4}
+.missions li.done{color:#9adacb}.task-panel .ghost{width:100%;font-size:.9rem}
+.footnote{font-size:.79rem!important;color:#8fa8b9!important}
+.world-center{padding:0 18px 20px}
+.tabs{display:flex;flex-wrap:wrap;gap:7px;padding:14px 0;border-bottom:1px solid #34556a}
+.tabs button{font-size:.91rem;min-height:44px;padding:8px 12px;background:transparent;border-color:transparent}
+.tabs button[aria-pressed=true]{color:var(--gold);border-color:#536d7f;background:#25394c}
+.panel-head{padding:20px 0 14px}.panel-head h3{margin:4px 0 0;font-size:1.35rem}
+.orders,.ships{display:grid;gap:10px}
+.order{padding:15px;background:#15293e;border:1px solid #35576c;border-radius:10px}
+.order button{width:100%;min-height:48px;font-weight:720}.order small{display:block;margin:10px 2px 0;color:#aac2d6;line-height:1.4;overflow-wrap:anywhere}
+.order .available{color:#a1e7c8}
+.ships .ship{padding:16px;border:1px solid #3a5a70;background:#10283c;border-radius:10px}
+.ships .ship strong{display:block;color:#ecf6ff;font-size:1.1rem}.ship p{margin:7px 0 12px;color:#bdd1df}.ship button{width:100%}
+.sectors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.sectors article{min-height:115px;display:flex;flex-direction:column;padding:17px;background:#122639;border:1px solid #35586b;border-radius:9px}.sectors article strong{font-size:1.18rem}.sectors article span{color:var(--muted);font-size:.84rem}
+.world-stat{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:11px 0;border-top:1px solid #31485c;font-size:.9rem}.world-stat span{color:var(--muted)}.world-stat strong{font-variant-numeric:tabular-nums}
+.time-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:18px}.time-buttons button{padding:8px;font-size:.85rem;min-height:46px}
+.game-message{margin-top:17px;border:1px solid #3e6674;background:#102c40d9;border-radius:10px;padding:14px 16px;color:#bfebeb;min-height:50px}
+.page-footer{padding:18px clamp(18px,4vw,70px);border-top:1px solid #304453;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:.78rem;color:#92aabb}
+.page-footer>span:first-child{letter-spacing:.14em;font-weight:800;color:var(--gold)}
+body.raum-aktiv .topline,body.raum-aktiv .page-footer{display:none}
+body.raum-aktiv .world{display:none}
+#raumbereich{padding:14px clamp(8px,2vw,30px);max-width:1600px;margin:0 auto}
+#raumbereich .raum-titel{margin:0 0 12px}
+#raumbereich .note{color:#b3cddd}
+#raumbereich .raum-unten details{background:#112236;border:1px solid #39566b;border-radius:9px}
+#raumbereich .raum-unten summary{min-height:48px;padding:12px}
+#raumbereich .raum-unten button{min-height:48px}
+@media(max-width:1160px){.game-grid{grid-template-columns:minmax(200px,250px) minmax(300px,1fr)}.world-right{grid-column:1/-1}.world-right .time-buttons{max-width:500px}}
+@media(max-width:900px){.factions{grid-template-columns:repeat(2,minmax(0,1fr))}.splash{grid-template-columns:1fr;min-height:calc(100svh - 110px)}.hero-side{max-width:530px}.planet{width:70vw;right:-20vw}.game-grid{grid-template-columns:1fr}.world-right{grid-column:auto}.briefing-bottom{align-items:stretch;flex-direction:column}}
+@media(max-width:600px){.topline{padding:12px 17px;min-height:67px}.topline-status{display:none}.splash{padding:37px 20px 50px;gap:16px}.splash h1{font-size:clamp(4rem,20vw,6rem)}.lead{margin-top:22px}.menu-actions{flex-direction:column;gap:10px}.menu-actions>*{width:100%}.hero-side{margin-top:15px}.chapter{padding:22px 16px 55px}.factions{grid-template-columns:1fr}.faction{min-height:210px}.world{padding:20px 10px}.worldbar-right{gap:8px}.world-balance{padding:3px 9px}.world-center{padding:0 12px 16px}.sectors{grid-template-columns:1fr}.page-footer{font-size:.74rem}.worldbar h2{font-size:2rem}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}

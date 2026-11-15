@@ -387,7 +387,7 @@ const m_data_erzpilot = (() => {
         ...W5_RULES.economy.waren,silizium:{stufe:'rohstoff',basis:24}
       }};
     }
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug','siliziumZweitesFeld'].includes(k))
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug','siliziumZweitesFeld','siliziumDravos'].includes(k))
       || (Object.hasOwn(research,'kanon')&&(research.kanon!==true||research.personalWages!==true))
       || (Object.hasOwn(research,'ort')!==(research.kanon===true))
       || (research.kanon===true&&(typeof research.ort?.imFeld!=='function'
@@ -403,7 +403,9 @@ const m_data_erzpilot = (() => {
       || (Object.hasOwn(research,'jaeger')&&(research.jaeger!==true||research.bauteile!==true))
       || (Object.hasOwn(research,'jaegerFlug')&&(research.jaegerFlug!==true||research.jaeger!==true))
       || (Object.hasOwn(research,'siliziumZweitesFeld')&&
-        (research.siliziumZweitesFeld!==true||research.jaegerFlug!==true)))
+        (research.siliziumZweitesFeld!==true||research.jaegerFlug!==true))
+      || (Object.hasOwn(research,'siliziumDravos')&&
+        (research.siliziumDravos!==true||research.siliziumZweitesFeld!==true)))
       throw TypeError('Unbekannter W5ad-Startparameter');
     const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
     if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
@@ -494,6 +496,34 @@ const m_data_erzpilot = (() => {
         feld:Object.freeze({...W5_RULES.j2b.feld,id:'nadir-primaer'}),
         nebenfeld:Object.freeze({id:'nadir-sekundaer',system:'nadir',
           x:-720000,y:-480000,radius:144000,vorrat:16})});
+    }
+    // P8c/Regel206: echtes Dravos-System mit EMPTY Dock, NO CASH, NO STOCK.
+    // Die 16 Silizium sind NUR begrenzter Forschungs-Boden, keine Ware.
+    // Ein 40-minuetiger Dravos→Nadir-Pfad folgt den historischen Gatekanten
+    // Dravos→Orion (22) und Orion→Nadir (18). Kein direkter Fantasy-Gate.
+    if(research.siliziumDravos===true){
+      W5_RULES.rulesVersion=206;
+      W5_RULES.j2b=Object.freeze({...W5_RULES.j2b,
+        nebenfeld:Object.freeze({
+          id:'dravos-silizium',system:'dravos',x:720000,y:-480000,
+          radius:144000,vorrat:16})});
+      W5_RULES.p8c=Object.freeze({
+        transportOwner:'npc3',route:['dravos','orion','nadir'],
+        frachtLohnJeMinute:W5_RULES.w3.arbeitJeMinute
+      });
+      W5_RULES.world={...W5_RULES.world,
+        systems:{...W5_RULES.world.systems,
+          dravos:{station:'st_dravos',fonds:'fonds_dravos',sicherheit:'gesetzlos'}},
+        stations:{...W5_RULES.world.stations,
+          st_dravos:{system:'dravos',linien:[],verbrauch:{},ziel:{},gebuehr:0}},
+        fields:[...W5_RULES.world.fields,{system:'dravos',ware:'silizium',miner:0}],
+        gates:[...W5_RULES.world.gates,['aldera','dravos',20],
+          ['dravos','orion',22],['orion','nadir',18]]};
+      W5_RULES.owners=[...W5_RULES.owners,
+        {id:'st_dravos',kind:'station',cash:0},
+        {id:'fonds_dravos',kind:'fund',cash:0}];
+      W5_RULES.economy={...W5_RULES.economy,
+        region:{...W5_RULES.economy.region,dravos:900}};
     }
     if(research.kanon===true)W5_RULES.kanon={profil:'K1'};
     if(research.wageTrade===true){
@@ -4030,6 +4060,16 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
       personalWages:true,kanon:true,ort});
   },
   // K7: getrennte Forschungsregel200, keine Rule199-Migration/Produktänderung.
+  createP8cWelt:(options,ort)=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('P8c: nur originale Kassen, keine Gratis-Initialisierung');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,
+      personalWages:true,kanon:true,industryOre:true,
+      silizium:true,bauteile:true,jaeger:true,jaegerFlug:true,
+      siliziumZweitesFeld:true,siliziumDravos:true,ort});
+  },
   createP8bWelt:(options,ort)=>{
     if(options==null)options={};
     if(typeof options!=='object'||Array.isArray(options)

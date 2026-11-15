@@ -1,6 +1,6 @@
 # W6/P8a – echte Siliziumversorgung sichtbar, Dravos-Kette nicht fingieren
 
-**Stand: 15.11.2026 · [DRAFT / kein neues Wirtschaftsrecht]**
+**Stand: 15.11.2026 · [MAIN / GEPRÜFT / PAGES] – Nur neue Anzeige, kein neues Wirtschaftsrecht.** [Integrations-PR #406](https://github.com/tobiasfranziskus/Check/pull/406) ist als **`main 733f53fb075cc4903ab031c072a7157c403100e7`** integriert. [GitHub-Pages-Deploy #43750823580](https://github.com/tobiasfranziskus/Check/actions/runs/43750823580) ist `completed/success` für exakt diesen Commit. Vorversion: [`backup/main-before-p8a-supply-status-20261115`](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-p8a-supply-status-20261115).
 
 ## Ausgangslage und Quellprüfung
 
@@ -26,6 +26,14 @@ Der Bericht erscheint im **bestehenden Jägerprojekt** der regulären, von Root 
 - `tests/w6-p8a-silicon-real-supply.test.mjs`: realer P5-Opt-in, aktuelles Nadir-Feld 16, Kosten 128/192/40, nicht existenter Dravos-Kauf abgelehnt und bitgleicher Originalsave, manipulierte physische Siliziumzahl abgewiesen; anschließend **ausschließlich originalfinanzierter NPC3-Abbau**, ein echter 900-ISK-Spieler-Jägerkauf, vollständige Felderschöpfung, Weltgeld 33.000 ISK, Mint/Burn 0, Geld-/Waren-/Schiffs-/Eigentums- und Save-/Load-Audits.
 - `tests/w6-p8a-supply-browser.cjs`: tatsächlicher öffentlicher Root-Weg, ausdrücklich eingeschaltetes S02, Jägerprojekt-Diagnose, echte Finanzierungskennzahlen, keinerlei zusätzliche Waren/Geld durch Rendering, ein echter Original-Spieltag, Save/Load und unveränderte Daten; Chromium und WebKit mit vier Touchgrößen (`1180×820`, `1024×768`, `820×1180`, `390×844`).
 - `node --test tests/*.test.mjs`, Original-K7/J3/J4-/S02-Regressionshashes, bestehende Root-/NAS-Buildprüfung. **Nur tatsächlich erfolgreich abgeschlossene CI-Schritte dürfen später als bestanden bezeichnet werden.**
+
+## Tatsächlich ausgeführte Abnahme
+
+- Ziel-Head der unabhängigen [P8a-CI #43750361708](https://github.com/tobiasfranziskus/Check/actions/runs/43750361708): `c7a2be7d93b024f2f2d988c9b7ea3140d2c91f2e`. **7/7 gezielte Node22-Tests, 0 Fehler/Skips**, inklusive unabhängig geprüfter physischer 16/16-Siliziumförderung, echtem `house`-900-ISK-Jägerkauf, abgelehnter Dravos-Fremdstation und gefälschtem Siliziumvorrat sowie bitgleichem Original-Save.
+- Reale Produktionsprobe: Feldrest null am **Spieltag 8,5833**, originaler Zwischenhash `54f745e15ac41c83`, ein bereits fertiggestellter und real verkaufter Jäger; der zweite wird aus zuvor gefördertem Material erst später gebaut. **33.000 ISK, Mint/Burn 0**. Das ist keine künstliche Beweisführung mit eingespeister Ware.
+- [Vollständiges Node22-Gate #43750361617](https://github.com/tobiasfranziskus/Check/actions/runs/43750361617): **352/352 Tests, 0 Fehler/Skips**; sämtliche bestehenden 13×90-, Jäger-/Wirtschafts-, Save-/Eigentums-/Manipulations- und originalen K7-/F4-Referenzprüfungen einschließlich `W5_SINGLEFILE_OK`.
+- Chromium **4/4** und WebKit **4/4** Touchgrößen: echter Root-Einstieg, S02 bewusst aktiviert, sichtbarer P8a-Jägerstatus, unverändertes Original-Geld und Felder nach Tagesfortschritt und JSON-Reload; überall identischer 1-Tages-Hash **`b4debc4a0422b66f`**. Zusätzliche bestehende Browser-/Touch-/Wirtschafts-/NAS-Build-Gates grün. Der bedingte `sicherheitsgeografie-vergleich` war **skipped**, nicht als bestanden gezählt.
+- Kein neues Original-Regel204-Feld, keine Nebenbuchung oder Datenmigration. **Echte iPad-Safari-/NAS-Geräteabnahme offen.** Live-Pages HTTP wurde nicht zusätzlich von einem realen Endgerät aus abgerufen; der erfolgreiche GitHub-Pages-Deploy und die Root-Browsertests sind getrennte Belege.
 
 ## Wirtschaftlich noch nicht freigegeben / nächster P8b-Schritt
 

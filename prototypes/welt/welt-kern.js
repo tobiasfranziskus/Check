@@ -188,7 +188,13 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       const offen = {};
       let summe = 0;
       for (const sh of huellen(state, owner)) {
-        if (state.kanon.politik.stilllegung !== true) { summe += abschreibung(state, sh); continue; }
+        // Bestehende Regel204-Stilllegung ohne W6-Firmenopt-in benutzt unverändert
+        // die alte, volle Abschreibungsrücklage. W6 darf nicht allein durch
+        // eine historisch vorhandene Policy-Option Dividenden freigeben.
+        if (state.kanon.npcAuto !== true || state.kanon.politik.automatik !== true
+          || state.kanon.politik.stilllegung !== true) {
+          summe += abschreibung(state, sh); continue;
+        }
         if (offen[sh.klasse] > 0) { offen[sh.klasse]--; summe -= kaufpreis(sh.klasse); }
         summe += abschreibung(state, sh);
         if (verbraucht(state, sh)) offen[sh.klasse] = (offen[sh.klasse] || 0) + 1;

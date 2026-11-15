@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aphros Void · J8 – Konzernwirtschaft ohne Anfangsjäger</title>
+<style>
+:root{color-scheme:dark;font:16px/1.5 system-ui,sans-serif;background:#091525;color:#e1eaf5}
+*{box-sizing:border-box}body{max-width:1050px;margin:auto;padding:15px;padding-bottom:max(22px,env(safe-area-inset-bottom))}
+header,section{padding:15px;background:#102337;border:1px solid #365468;border-radius:12px;margin-bottom:14px}
+h1{font-size:1.6rem;margin:0 0 8px}h2{font-size:1.15rem;margin:3px 0 12px}
+h3{font-size:1rem}p{margin:8px 0 12px}a{color:#9de5ff}
+label{display:block;font-weight:650;margin-top:8px}
+button,input[type=file]{font:inherit;min-height:50px;border:1px solid #5e89a2;background:#183b54;color:inherit;border-radius:8px;padding:9px 12px;width:100%}
+button{cursor:pointer;touch-action:manipulation;text-align:left}button:disabled{opacity:.53;cursor:not-allowed}
+button.primary{background:#176d77;border-color:#5dd0d6;font-weight:700}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #8cdbef;outline-offset:3px}
+input[type=checkbox]{width:23px;height:23px;vertical-align:middle;accent-color:#54cad2}
+label.checkbox{display:flex;align-items:flex-start;gap:11px;font-weight:500}
+.note{color:#c4d6e3;font-size:.91rem}.warning{padding:12px;border-left:4px solid #ffc37b;background:#362c2a}
+.message{min-height:48px;padding:12px;background:#173a4f;border-radius:8px;overflow-wrap:anywhere}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.stats>div{padding:10px;background:#1a3348;border-radius:8px}
+.stats strong{display:block;font-size:1.2rem;overflow-wrap:anywhere}
+.block{border-top:1px solid #39566b;padding-top:14px;margin-top:16px}
+.aktion{display:grid;grid-template-columns:minmax(200px,1fr);gap:3px}
+.aktion small{color:#bcd0dc;overflow-wrap:anywhere}
+.scroll{overflow:auto}table{border-collapse:collapse;width:100%}
+th,td{border-bottom:1px solid #345166;text-align:left;padding:9px;overflow-wrap:anywhere}
+li{padding:4px}.success{color:#9ee5b5}.fail{color:#ffc3a0}
+[hidden]{display:none!important}
+@media(min-width:750px){.aktion{grid-template-columns:minmax(210px,2fr) minmax(190px,1fr);align-items:center}}
+</style></head><body>
+<header>
+<h1>J8 · Konzern und Flotte</h1>
+<p class="note">Regel204 · eine autoritative Wirtschaft · echte Eigentümer und Zahlungen · <strong>kein Anfangsjäger erforderlich</strong>.</p>
+<p><a href="../j4c/index.html">Grafisches Raumcockpit</a> · <a href="index.html">Nur Kompatibilität prüfen (J7)</a> · <a href="../../index.html">W0–W5-Hauptspiel</a></p>
+</header>
+<section id="quelle-bereich">
+<h2>1. Eigene Welt ausdrücklich öffnen</h2>
+<p class="warning">Ein Regel195-Spielstand wird nur nach deiner Bestätigung in eine <strong>separate Regel204-Kopie im Arbeitsspeicher</strong> überführt. Originaldatei, altes Browser-Speicherfach und alle ursprünglichen Schiffe, Konten und Waren bleiben unangetastet. Es gibt keine Rückmigration. Sichere die neue Welt regelmäßig als eigenes JSON.</p>
+<div class="block">
+<label for="quelle195">Regel195-JSON aus dem bestehenden Hauptspiel</label>
+<input id="quelle195" type="file" accept=".json,application/json">
+<p id="preview195" class="message" role="status" aria-live="polite">Bitte zuerst einen exportierten Regel195-Spielstand auswählen.</p>
+<ol id="stufen" aria-label="Prüfungen der sechs Original-Konvertierungen"></ol>
+<label class="checkbox"><input id="zustimmung195" type="checkbox"> Ich möchte ausdrücklich eine separate Regel204-Kopie starten und die ursprüngliche JSON-Datei selbst aufbewahren.</label>
+<button id="start195" class="primary" disabled>Prüfung bestätigen und neue Regel204-Konzernwelt starten</button>
+</div>
+<div class="block">
+<h3>Bereits separat gesicherte Regel204-Konzernwelt fortsetzen</h3>
+<label for="quelle204">J8-/Regel204-JSON wählen</label>
+<input id="quelle204" type="file" accept=".json,application/json">
+<label class="checkbox"><input id="zustimmung204" type="checkbox"> Ich möchte diesen geprüften Regel204-Stand in einer neuen, separaten Sitzung öffnen.</label>
+<button id="start204" disabled>Gesicherten Regel204-Stand laden</button>
+</div>
+</section>
+<section id="konzernwelt" hidden aria-label="Die eine laufende Regel204-Konzernwelt">
+<h2>2. Wirtschaft in derselben Welt führen</h2>
+<p id="weltmeldung" class="message" role="status" aria-live="polite">–</p>
+<div class="grid stats">
+<div><span>Weltzeit</span><strong id="tick">–</strong></div>
+<div><span>Spielerkonto house</span><strong id="cash">–</strong></div>
+<div><span>Weltgeld (unverändert)</span><strong id="weltgeld">–</strong></div>
+<div><span>Gekaufte eigene Jäger</span><strong id="jaeger">–</strong></div>
+</div>
+<p id="hash" class="note">–</p>
+<div class="block">
+<h3>Weltzeit und echte bezahlte Arbeitsvorgänge</h3>
+<div class="grid">
+<button data-minute="1">1 Wirtschaftsminute ausführen</button>
+<button data-minute="10">10 Wirtschaftsminuten ausführen</button>
+<button data-minute="60">60 Wirtschaftsminuten ausführen</button>
+</div>
+<p class="note">Es wird nur der bestehende Regel204-Core fortgeschrieben. Bezahlte Verträge, Gehälter, Waren und Schiffe bleiben echte Simulationsvorgänge. Bei Unterfinanzierung gibt es keine automatische Rettung.</p>
+</div>
+<div class="block">
+<h3>Eigene Finanz- und Förderaufträge</h3>
+<div id="angebote" class="grid" aria-label="Echte geprüfte Spieleraufträge"></div>
+<p class="note">Nur Befehle des Kontos <strong>house</strong>. Stationen, Werften und NPC-Konzerne entscheiden unabhängig; ihre Gelder dürfen nicht vom Spieler ausgegeben werden. Gesperrte Angebote zeigen den Core-Grund an.</p>
+</div>
+<div class="block">
+<h3>Vorhandene eigene Flotte</h3>
+<div class="scroll"><table><thead><tr><th>Schiff</th><th>Klasse</th><th>System</th><th>Status</th><th>Ladung</th></tr></thead><tbody id="schiffe"></tbody></table></div>
+</div>
+<div class="block">
+<h3>Stationslager (nicht automatisch Spielereigentum)</h3>
+<div class="scroll"><table><thead><tr><th>Station</th><th>System</th><th>Reale Bestände</th></tr></thead><tbody id="stationen"></tbody></table></div>
+</div>
+<div class="block">
+<h3>Eigenen Stand separat sichern</h3>
+<button id="export204" class="primary">Geprüften Regel204-Stand als JSON exportieren</button>
+<p id="pilotstatus" class="note">Ein Jäger muss zuerst tatsächlich finanziert, gebaut und gekauft werden. Ohne Kaufbeleg gibt es keinen Cockpitzugang. Nach dem Kauf kannst du das exportierte Regel204-JSON im vorhandenen Raumcockpit laden.</p>
+</div>
+</section>
+<footer><p class="note">Forschungs-/Spieltestversion J8. Kein automatischer Import in bestehende Speicherplätze, keine versteckten Geldtransfers, keine Produktionsfreigabe fremder Firmen. Echte iPad-Safari-/NAS-Geräteabnahme separat.</p></footer>
+<script src="../flug2d/flug-kern.js"></script>
+<script src="../welt/rule200-k7-industry-core.js"></script>
+<script src="../welt/j2b-silizium-core.js"></script>
+<script src="../welt/j3-bauteil-core.js"></script>
+<script src="../welt/j4b-jaeger-werft-core.js"></script>
+<script src="../welt/welt-kern.js"></script>
+<script src="kompatibilitaet.js"></script>
+<script src="konzern-session.js"></script>
+<script src="konzern-ui.js"></script>
+</body></html>

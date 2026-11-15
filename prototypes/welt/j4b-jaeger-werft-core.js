@@ -7,7 +7,7 @@
 (function(scope){
 'use strict';
 const create=({rules,transfer,summe,ganz})=>{
-  if(![203,204].includes(rules.rulesVersion)||!rules.j4)
+  if(![203,204,205].includes(rules.rulesVersion)||!rules.j4)
     throw Error('J4b: nur explizites Regel203-Profil');
   const C=rules.j4,L=C.dauer*C.lohnJeMinute;
   const leer=()=>({begonnen:0,fertig:0,verkauft:0,materialVerbraucht:0,

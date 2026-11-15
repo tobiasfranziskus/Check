@@ -1,0 +1,85 @@
+// J13: purely informational production record, no new legal authority.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {readFileSync} from 'node:fs';
+const require=createRequire(import.meta.url);
+const W5=require('../prototypes/w5ac/session.js');
+const J8=require('../prototypes/verbund/konzern-session.js');
+const J13=require('../prototypes/spiel/jaeger-akte.js');
+const start=()=>{
+ const source=W5.create(42,'private195').export(),ses=J8.erstellen();
+ ses.starten195(source,true);
+ return {source,ses};
+};
+test('J13: genuine starting fighter chain is physically and financially blocked, without a phantom ship',()=>{
+ const {source,ses}=start(),original=ses.exportieren();
+ const welt=ses.weltReferenz(),s=ses.zustandReferenz();
+ const offer=ses.angebote().find(o=>o.id==='buy-st_nadir-jaeger');
+ assert.ok(offer&&!offer.ok,'no originally financed fighter hull at day 0');
+ const report=J13.erstellen(welt,s,offer);
+ assert.equal(report.regel,204);
+ assert.equal(report.tick,0);
+ assert.equal(report.eigeneJaeger,0);
+ assert.equal(report.kauf.ok,false);
+ assert.equal(report.kauf.preis,welt.rules.j4.verkaufspreis);
+ assert.equal(report.kauf.preis,900);
+ assert.equal(report.lager.jaeger,0);
+ assert.equal(report.lager.bauteil,0);
+ assert.equal(report.fehlbedarf.bauteile,welt.rules.j4.bauteile);
+ assert.equal(report.fehlbedarf.material,welt.rules.j4.material+welt.rules.j4.bauteile*welt.rules.j3.material);
+ assert.equal(report.fehlbedarf.silizium,welt.rules.j4.bauteile*welt.rules.j3.silizium);
+ assert.equal(report.naechsterArbeitslohn,welt.rules.j4.dauer*welt.rules.j4.lohnJeMinute);
+ assert.equal(report.eigentuemerWerft,'st_nadir');
+ assert.equal(report.schritte.length,5);
+ assert.equal(report.schritte.at(-1).stand,'offen');
+ assert.equal(report.k7.erzkauf,welt.industriePreise.alderakauf);
+ assert.ok(Object.isFrozen(report)&&Object.isFrozen(report.schritte)&&Object.isFrozen(report.lager));
+ assert.equal(ses.exportieren(),original,'quotes and production record must be fully read-only');
+ assert.equal(ses.weltReferenz().audit(s).ok,true);
+ assert.equal(ses.ansicht().weltgeld,33000);
+ assert.equal(s.minted,0);assert.equal(s.burned,0);
+ assert.equal(W5.create(42,'private195').export(),source);
+});
+
+test('J13: lawful player miner purchase changes ownership but cannot authorize Nadir parts or fighter production',()=>{
+ const {ses}=start(),w=ses.weltReferenz();
+ assert.equal(ses.ausfuehren('buy-st_aldera-miner').ok,true);
+ const before=ses.exportieren(),s=ses.zustandReferenz();
+ const offer=ses.angebote().find(o=>o.id==='buy-st_nadir-jaeger');
+ const report=J13.erstellen(w,s,offer);
+ assert.equal(report.eigeneJaeger,0);
+ assert.equal(report.kauf.ok,false);
+ assert.equal(ses.ansicht().hausgeld,2400);
+ assert.equal(report.fehlbedarf.bauteile,8);
+ assert.equal(ses.exportieren(),before);
+ const owned=Object.values(s.ships).filter(x=>x.owner==='house');
+ assert.equal(owned.length,1);assert.equal(owned[0].klasse,'miner');
+ const wrong=w.load(before),denied=w.execute(wrong,{type:'stationBuildFighter',owner:'house',station:'st_nadir'});
+ assert.equal(denied.ok,false);
+ assert.match(denied.reason,/Nadir|Materialeigentümer/);
+ assert.equal(w.hash(wrong),w.hash(w.load(before)),'denied unauthorized command must not alter the core');
+ assert.equal(w.audit(wrong).ok,true);
+ const after=J8.erstellen();after.oeffnen204(before,true);
+ assert.equal(after.ansicht().hash,ses.ansicht().hash);
+ assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),33000);
+ assert.equal(s.minted,0);assert.equal(s.burned,0);
+});
+
+test('J13: standalone browser tab contains only a guarded purchase link, never NPC sign-off',()=>{
+ const html=readFileSync(new URL('../prototypes/spiel/index.html',import.meta.url),'utf8');
+ const js=readFileSync(new URL('../prototypes/spiel/spiel.js',import.meta.url),'utf8');
+ const j13=readFileSync(new URL('../prototypes/spiel/jaeger-akte.js',import.meta.url),'utf8');
+ assert.match(html,/id="tab-jaeger" data-tab="jaeger"/);
+ assert.match(html,/id="panel-jaeger"/);
+ assert.match(html,/id="jaeger-kaufweg"/);
+ assert.match(html,/src="jaeger-akte\.js"/);
+ assert.match(js,/jaegerBericht\(s,alleAngebote\)/);
+ assert.match(js,/scope\.J13Werftakte\.erstellen\(session\.weltReferenz\(\),zustand,kauf\)/);
+ assert.match(js,/tabZeigen\('auftraege'\)/);
+ assert.match(js,/button\.disabled=!akte\.kauf\.ok/);
+ assert.match(js,/\.textContent=step\.hinweis/);
+ assert.doesNotMatch(j13,/\.execute\(|\.submit\(|\.advance\(|\.localStorage|\.innerHTML/);
+ assert.doesNotMatch(html,/<script[^>]+src="https?:/);
+ assert.throws(()=>J13.erstellen({},{}),/Regel204/);
+});

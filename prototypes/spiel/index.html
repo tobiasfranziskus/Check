@@ -77,6 +77,7 @@
     <button id="tab-auftraege" data-tab="auftraege" aria-pressed="true">Aufträge</button>
     <button id="tab-flotte" data-tab="flotte" aria-pressed="false">Meine Flotte</button>
     <button id="tab-universum" data-tab="universum" aria-pressed="false">Das Universum</button>
+    <button id="tab-jaeger" data-tab="jaeger" aria-pressed="false">Jägerprojekt</button>
    </div>
    <div id="panel-auftraege" class="tab-panel">
     <div class="panel-head"><div><p class="eyebrow">EIGENTUM / BEZAHLTE ENTSCHEIDUNGEN</p><h3>Deine nächsten Schritte</h3></div></div>
@@ -85,6 +86,13 @@
    <div id="panel-flotte" class="tab-panel" hidden><div class="panel-head"><p class="eyebrow">EIGENE SCHIFFE</p><h3>Deine Flotte</h3></div><div id="spielerschiffe" class="ships"></div></div>
    <div id="panel-universum" class="tab-panel" hidden><div class="panel-head"><p class="eyebrow">SEKTORLAGE</p><h3>Eine Welt voller Unternehmen</h3></div><p class="economy-intro">Live aus deinem überprüften Karriere-Spielstand: Lager, Firmenkonten und Original-Core-Angebote. Die unabhängigen Unternehmen bleiben eigenständig.</p>
     <div id="sektorwirtschaft" class="economy-terminal" aria-label="Aktueller Wirtschaftsbericht">Der Wirtschaftsbericht erscheint nach dem Start einer Karriere.</div></div>
+   <div id="panel-jaeger" class="tab-panel" hidden>
+    <div class="panel-head"><p class="eyebrow">INDUSTRIE / J13</p><h3>Dein erster Jäger</h3></div>
+    <p class="economy-intro">Verfolge die echte Lieferkette bis zur fertigen Nadir-Hülle. Material, Firmenkassen, bezahlte Werftarbeit und Eigentum stammen aus derselben Karriere. Andere Firmen entscheiden weiterhin selbst.</p>
+    <div id="jaeger-akte" class="jaeger-akte" aria-label="Aktuelle Jäger-Produktionsakte">Die Produktionsakte erscheint nach dem Karrierestart.</div>
+    <div class="jaeger-aktion"><button id="jaeger-kaufweg" type="button" disabled>Zum originalen Jäger-Kaufangebot</button>
+    <p id="jaeger-autoritaet" class="economy-foot">Kein Auftrag an fremde Unternehmen ohne deren eigene Freigabe.</p></div>
+   </div>
   </section>
   <aside class="world-right" aria-label="Wirtschaftsnachrichten">
    <p class="eyebrow">NACHRICHTEN AUS DEM SEKTOR</p>
@@ -169,5 +177,6 @@
 <script src="../raum/raum-grafik.js"></script>
 <script src="../raum/raum-cockpit.js"></script>
 <script src="../verbund/konzern-session.js"></script>
+<script src="jaeger-akte.js"></script>
 <script src="spiel.js"></script>
 </body></html>

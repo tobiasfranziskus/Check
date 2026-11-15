@@ -76,6 +76,20 @@ const SLOT='aphros-void:spielerkarriere:regel204:v1';
     assert.equal(await page.locator('[data-action="buy-st_aldera-miner"]').isEnabled(),true);
     assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),rawStart,
       'the economy terminal cannot silently buy ships or change money');
+    // J13: no artificially unlocked fighter – only audited production prerequisites.
+    await page.locator('#tab-jaeger').tap();
+    assert.equal(await page.locator('#panel-jaeger').isVisible(),true);
+    const fighterRecord=page.locator('#jaeger-akte');
+    assert.equal(await fighterRecord.locator('.jaeger-schritt').count(),5);
+    assert.match(await fighterRecord.textContent(),/8 Bauteilen/);
+    assert.match(await fighterRecord.textContent(),/32 ISK Nadir-Arbeitslohn/);
+    assert.match(await fighterRecord.textContent(),/900 ISK/);
+    assert.equal(await page.locator('#jaeger-kaufweg').isDisabled(),true,
+      'not even an enabled purchase navigation without the real yard hull');
+    assert.match(await page.locator('#jaeger-autoritaet').textContent(),/Nur Nadir darf J3\/J4/);
+    assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),rawStart,
+      'reading a fighter project must not execute any company contract');
+    await page.locator('#tab-auftraege').tap();
     const buy=page.locator('[data-action="buy-st_aldera-miner"]');
     assert.equal(await buy.isEnabled(),true,'first genuine miner must be available');
     await buy.tap();

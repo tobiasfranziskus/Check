@@ -177,6 +177,38 @@ function create({rules,kern,transfer,summe,ladungSumme,stillgelegt,flugSync,sili
     else if(a.phase==='rueckBereit')ausfuehren(s,{type:'siliconFreightReturn',owner:SPED});
     else if(a.phase==='ankunft')ausfuehren(s,{type:'siliconFreightDeliver',owner:SPED});
   }
+  // Belegt auch die exakte Reihenfolge der physischen Fahrt. Ohne diese
+  // Chronologie könnte ein manipuliertes Save einen schon bezahlten Flug
+  // früher/später behaupten, obwohl Gesamt-ISK und Waren noch stimmen.
+  function zeiten(s,a){
+    const ph=a.phase,h=rules.w3.arbeitJeMinute;
+    const hin=['hin','laden','rueckBereit','rueck','ankunft','fertig'].includes(ph);
+    const geladen=['rueckBereit','rueck','ankunft','fertig'].includes(ph);
+    const heim=['rueck','ankunft','fertig'].includes(ph);
+    const fertig=ph==='fertig';
+    if(!ganz(a.angebotTick)||a.angebotTick>s.tick
+      ||(hin?(!ganz(a.hinStart)||a.hinStart<a.angebotTick||a.hinStart>s.tick):
+        a.hinStart!==null)
+      ||(geladen?(!ganz(a.ladenTick)||a.ladenTick<a.hinStart+a.hin
+        ||a.ladenTick>s.tick):a.ladenTick!==null)
+      ||(heim?(!ganz(a.rueckStart)||a.rueckStart<a.ladenTick
+        ||a.rueckStart>s.tick):a.rueckStart!==null)
+      ||(fertig?(!ganz(a.ankunftTick)||a.ankunftTick<a.rueckStart+a.zurueck
+        ||a.ankunftTick>s.tick):a.ankunftTick!==null))
+      return false;
+    const erstes=hin?a.hin*h:0,zweites=heim?a.zurueck*h:0;
+    if(ph==='hin')return s.tick<a.hinStart+a.hin
+      &&a.lohnBezahlt===(s.tick-a.hinStart)*h;
+    if(ph==='laden')return s.tick>=a.hinStart+a.hin
+      &&a.lohnBezahlt===erstes;
+    if(ph==='rueckBereit')return a.lohnBezahlt===erstes;
+    if(ph==='rueck')return s.tick<a.rueckStart+a.zurueck
+      &&a.lohnBezahlt===erstes+(s.tick-a.rueckStart)*h;
+    if(ph==='ankunft')return s.tick>=a.rueckStart+a.zurueck
+      &&a.lohnBezahlt===erstes+zweites;
+    if(fertig)return a.lohnBezahlt===erstes+zweites;
+    return ['angebot','bereit'].includes(ph)&&a.lohnBezahlt===0;
+  }
   function audit(s){
     const p=s.kanon.p8d;
     if(!p||typeof p!=='object'||Array.isArray(p)
@@ -202,6 +234,7 @@ function create({rules,kern,transfer,summe,ladungSumme,stillgelegt,flugSync,sili
         ||a.gebuehr!==(a.hin+a.zurueck)*rules.w3.frachtgebuehrJeMinute
         ||a.lohn!==(a.hin+a.zurueck)*rules.w3.arbeitJeMinute
         ||!ganz(a.lohnBezahlt)||a.lohnBezahlt>a.lohn
+        ||!zeiten(s,a)
         ||(done ? a.phase!=='fertig'||!ganz(a.ankunftTick)
           ||a.ankunftTick>s.tick||a.lohnBezahlt!==a.lohn
           : !['angebot','bereit','hin','laden','rueckBereit','rueck','ankunft'].includes(a.phase))
@@ -221,8 +254,10 @@ function create({rules,kern,transfer,summe,ladungSumme,stillgelegt,flugSync,sili
         if((m.ladung.silizium||0)!==(loaded?0:M)
           ||(f.ladung.silizium||0)!==(loaded?M:0)
           ||m.system!=='dravos'||m.flug?.lage!=='angedockt')return false;
-        if(a.phase==='hin'&&(f.phase!=='reise'||f.ziel!=='st_dravos'))return false;
-        if(a.phase==='rueck'&&(f.phase!=='reise'||f.ziel!=='st_nadir'))return false;
+        if(a.phase==='hin'&&(f.phase!=='reise'||f.ziel!=='st_dravos'
+          ||f.ankunft!==a.hinStart+a.hin||f.system!==a.abfahrt))return false;
+        if(a.phase==='rueck'&&(f.phase!=='reise'||f.ziel!=='st_nadir'
+          ||f.ankunft!==a.rueckStart+a.zurueck||f.system!=='dravos'))return false;
         if(a.phase==='laden'&&f.system!=='dravos')return false;
         if(a.phase==='ankunft'&&f.system!=='nadir')return false;
       }

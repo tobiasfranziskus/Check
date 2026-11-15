@@ -6,7 +6,8 @@
 
 | Bereich | Einordnung | Referenz |
 | --- | --- | --- |
-| [MAIN] Root W0–W5 Regel195 | Weiterhin geschütztes Original-Hauptspiel, keine stille Save-Migration | [GitHub Pages](https://tobiasfranziskus.github.io/Check/) |
+| [MAIN/P1] Spielerlebnis-Karriere | Titelbildschirm, Firmenprolog, echte neue Seed42-Regel195→204-Karriere ohne Datei, legaler Miner für 600 ISK, echtes RAUM-1, eigene lokale Saves | [Neue Karriere](https://tobiasfranziskus.github.io/Check/prototypes/spiel/index.html) · [Integration #380](https://github.com/tobiasfranziskus/Check/pull/380) · [Pages](https://github.com/tobiasfranziskus/Check/actions/runs/43712668896) |
+| [MAIN] Root W0–W5 Regel195 | Geschütztes Original-Hauptspiel hinter dem öffentlichen Karrierelink; NAS-Einzeldatei bytegleich, keine stille Save-Migration | [GitHub Pages](https://tobiasfranziskus.github.io/Check/) |
 | [MAIN] J6/RAUM-1 Regel204 | Grafisch fliegbarer eigener Miner/Jäger, finanzierte Aufträge, gleicher Worldhash | [Integration #359](https://github.com/tobiasfranziskus/Check/pull/359) |
 | [MAIN] J7 Regel195→204-Prüfung | Lesend, sechs Original-Konverter, keine automatische Migration | [#361](https://github.com/tobiasfranziskus/Check/pull/361) |
 | [MAIN] J8 Konzernkopie | Spieler kann ohne Startjäger vorhandenen Miner legal kaufen und Eis fördern; manuelle Save-Kopie | [#363](https://github.com/tobiasfranziskus/Check/pull/363) |
@@ -17,7 +18,9 @@
 | [ANALYSE / DRAFT] J10c | 7 bezahlte J3-Bauteile aus echten W4- und J2b-Waren; Materiallücke 5 (= 10 Erz) vor J4 | [#374](https://github.com/tobiasfranziskus/Check/pull/374) |
 | [ANALYSE / Forschung] Krisen-Wirtschaft | Langzeit- und Käufergeldblockaden; Nachhaltigkeit nicht bewiesen | [Historischer Status](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261115.md) |
 
-**[MAIN] Spielcode `31665404`**, [vorheriger main als Backup](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-j10b-nadir-k2-20261115), vollständig grüne [Node22-](https://github.com/tobiasfranziskus/Check/actions/runs/43705579641) und [Chromium-/WebKit-Abnahme](https://github.com/tobiasfranziskus/Check/actions/runs/43705579645), [Pages erfolgreich](https://github.com/tobiasfranziskus/Check/actions/runs/43705980924). Echte iPad-/NAS-Geräteabnahme weiterhin offen.
+**[MAIN] Spielcode `ff828da9`** für P1, [vorheriger main `17090ec6` als Backup](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-p1-game-onboarding-20261115), vollständig grüne [P1-Node22/Chromium/WebKit-Abnahme](https://github.com/tobiasfranziskus/Check/actions/runs/43712294281), [296/296 Node22 und NAS-Erhalt](https://github.com/tobiasfranziskus/Check/actions/runs/43712294283), [Jäger-/Miner-Sicherheit](https://github.com/tobiasfranziskus/Check/actions/runs/43712294304), [Pages erfolgreich](https://github.com/tobiasfranziskus/Check/actions/runs/43712668896). Echte iPad-/NAS-Geräteabnahme weiterhin offen.
+
+**[DRAFT / unabhängig]** [J11-Codex-Frachter #378](https://github.com/tobiasfranziskus/Check/pull/378) bleibt getrennt von P1 und ist noch **nicht in main**. **[ANALYSE]** [J10d-Aldera-Finanzierungsblocker #376](https://github.com/tobiasfranziskus/Check/pull/376): 0 von 500 ISK für zweite Erzlieferung; kein Rettungsmodell freigegeben.
 
 ## Aufbewahrung und offene Forschungs-PRs
 

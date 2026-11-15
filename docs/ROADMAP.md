@@ -44,15 +44,15 @@
 
 ## 5. Aktuelle Prioritäten, Stand 15.11.2026
 
-1. **[BESCHLOSSEN / J9 NÄCHSTER SCHRITT]** J8-Konzernwelt und vorhandenes grafisches RAUM-1-Cockpit **ohne zweiten Save, Weltzustand oder Anfangsjäger** verbinden. Eigener, tatsächlich gekaufter Miner muss steuerbar sein; kein Fremdschiff, kein Teleport. Root-Einstieg behalten.
-2. **[BESCHLOSSEN / NACHFOLGER]** Originalwirtschaft und im Spiel finanzierten Werftauftrag so verbinden, dass auch nach einer freiwilligen Regel195→204-Kopie ein Jäger tatsächlich erworben werden kann; fremde Nadir-/Werftrechte und Käuferkapital dürfen nicht still übertragen werden.
+1. **[MAIN / J9 ERREICHT]** J8-Konzernwelt und grafisches RAUM-1-Cockpit ohne zweiten Weltzustand/JSON-Zwischenschritt verbunden. Ein eigener, im Core für 600 ISK gekaufter Miner fliegt mit 40 ISK vorfinanzierter Flugreserve; fremde Schiffe, Doppelsteuerung und Jäger ohne Kaufbeleg bleiben gesperrt. [PR #366](https://github.com/tobiasfranziskus/Check/pull/366).
+2. **[BESCHLOSSEN / J10 NÄCHSTER SCHRITT]** In der jetzt gemeinsamen Konzern-/Flugwelt die vollständig rechtmäßig finanzierte Werft-/Bauteil-/Transportkette aus einer frischen 195→204-Welt weiterentwickeln und einen ersten eigenen Jäger tatsächlich erspielen. Vorher echten Nadir-Käuferetat, Materialien, Arbeitslohn und Eigentümer-/Vertragszustimmungen untersuchen; keine fremden NPC-Werftrechte als Spielerknopf simulieren.
 3. **[BESCHLOSSEN / NACHFOLGER]** Persönlichen Frachterflug mit Original-F6-Transportwirtschaft und echten Löhnen/Kapazitäten verbinden, nicht freischalten, solange der Core die Freifahrt sperrt.
 4. **[ANALYSE / OFFEN]** Endnachfrage und Ersatzkreisläufe mit getrennten Firmen/Haushalten, 13 **wirtschaftlich unterschiedlichen** 90-Tage-Szenarien, 365/730-Tage-Krisen; echte Unterfinanzierung nicht wegoptimieren.
 5. **[QUALITÄT]** Regel195/204/Schema8 und JSON/IndexedDB schützen; Node22, Seed-Hashes, Geld-/Waren-/Eigentums-/Schiffsaudits, Chromium/WebKit je vier Touchgrößen bei größerer Integration; echtes iPad Safari und NAS weiterhin gesondert abnehmen.
 
 ## 6. Integrations- und Veröffentlichungsregeln
 
-Der aktuelle integrierte Spielstand ist **[MAIN] `3f0840e3`** nach J8; [GitHub Pages](https://tobiasfranziskus.github.io/Check/) mit erfolgreichem [Deploy #43694798622](https://github.com/tobiasfranziskus/Check/actions/runs/43694798622). Regel195-Root-Save und freiwillige Regel204-Kopie bleiben bewusst getrennt, bis eine ausdrücklich sichere, rückverfolgbare Produktintegration vorliegt. W6 ist **nicht** als dauerhaft tragfähig nachgewiesen.
+Der aktuelle integrierte Spielstand ist **[MAIN] `8d3e1eeb`** nach J9; [GitHub Pages](https://tobiasfranziskus.github.io/Check/) mit erfolgreichem [Deploy #43696879026](https://github.com/tobiasfranziskus/Check/actions/runs/43696879026). Regel195-Root-Save und freiwillige Regel204-Kopie bleiben bewusst getrennt, bis eine ausdrücklich sichere, rückverfolgbare Produktintegration vorliegt. W6 ist **nicht** als dauerhaft tragfähig nachgewiesen.
 
 **[GOVERNANCE]** Gemäß [AGENTS.md](../AGENTS.md) gilt die ausdrücklich vom Nutzer erteilte stehende Merge-/Pages-Freigabe vom 14.11.2026 **nur für ausreichend geprüfte, spielbare Schritte** mit eigenem Integrations-PR, gesicherter Vorversion, tatsächlichen CI-/Browser-/Speichertests und nachgewiesenem Pages-Deploy. Keine NAS-Veröffentlichung, neue Emissionsmechanik oder destruktive Migration ohne gesonderte Entscheidung. CI/WebKit ersetzt keinen echten iPad-/NAS-Gerätetest.
 

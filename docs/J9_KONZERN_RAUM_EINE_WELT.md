@@ -1,3 +1,5 @@
+> **[MAIN / J9 · 15.11.2026]** Dieser ursprüngliche Draft wurde nach unabhängiger Abnahme als [PR #366](https://github.com/tobiasfranziskus/Check/pull/366) in `main 8d3e1eeb` integriert und via [GitHub Pages #43696879026](https://github.com/tobiasfranziskus/Check/actions/runs/43696879026) erfolgreich veröffentlicht. Node22 **284/284**, Chromium/WebKit J9 je drei Touchgrößen, ursprünglicher Raumcockpitstand je vier Größen sowie Geld-/Eigentums-/Save-/Replay-Gates vollständig bestanden. Darunter folgt die historische DRAFT-Beschreibung, die nicht als neuer ungemergter Stand zu lesen ist. Echte iPad-/NAS-Gerätetests offen.
+
 # J9 – Persönlicher Miner direkt aus derselben Konzernwelt
 
 **[DRAFT / 15.11.2026]** Ausgangsbasis: dokumentationsbereinigtes `main 1ff291f53bdd80eb0394176ab0628ca0890d353d`. **Nicht** in der Hauptversion und **nicht** auf Pages veröffentlicht, solange keine vollständige Abnahme auf dem aktuellen PR-Head vorliegt.

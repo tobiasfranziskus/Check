@@ -1,3 +1,19 @@
+# J9 – Konzern und persönlicher Miner im selben Regel204-Spiel · 15.11.2026
+
+**[MAIN]** [PR #366](https://github.com/tobiasfranziskus/Check/pull/366) ist nach vollständig bestandenem Integrations-Gate auf **`main 8d3e1eebd1bcc28f8a68a3689a8957ee837203ef`** gemergt. Vorheriger `main 1ff291f5` mit bereinigter Doku ist unter [backup/main-before-j9-konzern-raum-20261115](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-j9-konzern-raum-20261115) gesichert.
+
+**[SPIELBAR]** [J8-/J9-Konzernsitzung](../prototypes/verbund/konzern.html): Eine exportierte Regel195-Welt wird nur ausdrücklich als separate Regel204-Kopie geöffnet. Der Spieler bezahlt einen real vorhandenen Aldera-Miner für **600 ISK** und kann anschließend **ohne JSON-Zwischenschritt oder zweite Welt** unmittelbar in das bereits vorhandene RAUM-1-Canvas-Cockpit wechseln. Original-F6-`shipUndock` bindet **40 ISK** Fluglohnreserve; Steuerbefehle und Zeitläufe bleiben Teil desselben gespeicherten Wirtschaftszustands. Ein Klick auf „Konzern & Flotte“ kehrt zur selben Welt zurück. Keine freien NPC-Schiffe, keine fremden Produktionsrechte, keine doppelte Pendel-/Handsteuerung, kein geschenkter Jäger. Für einen Jäger sind weiterhin echter Bau/Kauf und originaler Kaufbeleg nötig. Save/Load bleibt manuell und non-destruktiv.
+
+**[CI / FINALER J9-HEAD `7961cd51`]** [W5-RC1 #43696540464](https://github.com/tobiasfranziskus/Check/actions/runs/43696540464): **284/284 Node22**, 0 Fehler, 0 Skips, W5-Root-/Touch-/NAS-Lieferchecks erfolgreich. [Browser #43696540454](https://github.com/tobiasfranziskus/Check/actions/runs/43696540454): Chromium und WebKit J9 mit je **drei** Touchgrößen, echte 600-ISK-Kauf-/40-ISK-Flug-/JSON-/Eigentumsaudits; vorhandenes Jäger-/Miner-Cockpit mit je vier Größen. [JavaScript/Wirtschaft #43696540577](https://github.com/tobiasfranziskus/Check/actions/runs/43696540577) completed/success; bedingt nicht ausgeführte Checks sind nicht als bestanden gewertet.
+
+**[PAGES]** [Build/Deploy #43696879026](https://github.com/tobiasfranziskus/Check/actions/runs/43696879026) **completed/success für `8d3e1eeb`**. Root https://tobiasfranziskus.github.io/Check/ und direkter J9-Einstieg https://tobiasfranziskus.github.io/Check/prototypes/verbund/konzern.html . Echte iPad-Safari-/private NAS-Geräteabnahme weiterhin offen; kein NAS-Push.
+
+**[REPO-/DOKUMENTATIONSPFLEGE]** [PR #365](https://github.com/tobiasfranziskus/Check/pull/365) hat Roadmap, Projektstatus und README verkleinert; vier vorherige Dokumente bytegleich mit originalem Git-Blob-SHA unter `docs/archiv/` bewahrt. Neun nachweislich ersetzte historische PRs #338–#346 mit Begründung geschlossen; ihre Branches/Commits/Saves nicht gelöscht. **157 historische PRs** bleiben als unabhängige, teilweise gestapelte Forschung offen. Kein Massenmerge.
+
+**[NÄCHSTER SCHRITT / J10]** Wirtschaftlich legitim finanzierte, spielbare Industrie-/Werftkette für einen ersten Jäger in der Regel204-Konzernwelt; Eigentümer-/Bieter-/Firmenrechte und echte Ressourcen-/Transportkassen zuerst beweisen. Nachrangig freier Spielerfrachterflug, MK1-Ausrüstung und Langzeit-W6-Krisenwirtschaft. Eine nachhaltige 13×90-/365-/730-Tage-Industrie ist **nicht** nachgewiesen.
+
+---
+
 # Aphros Void – aktueller belegter Projektstatus
 
 **Aktualisiert: 15.11.2026.** Die historische vollständige Statuschronik wurde **ohne Datenverlust** nach [archiv/PROJEKTSTATUS_HISTORIE_BIS_20261115.md](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261115.md) übernommen. Historische DRAFT-Aussagen sind keine aktuelle Releasebeschreibung.

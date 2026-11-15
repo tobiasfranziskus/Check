@@ -53,7 +53,7 @@ test('P8a: fremde Dravos-Transportbestellung ist KEIN vorhandenes Rule204-Angebo
  assert.equal(P8.erstellen(w,s).rohstoff.rest,16);
  const forged=JSON.parse(before);
  forged.kanon.silizium.vorrat+=8;
- assert.throws(()=>P8.erstellen(w,forged),/Audit verweigert Status/);
+ assert.throws(()=>P8.erstellen(w,forged),/Original-Waren-\/Geld-\/Eigentumsaudit verweigert Status/);
  assert.equal(w.save(s),before,'Manipulationsprobe niemals Originalstand importieren');
 });
 

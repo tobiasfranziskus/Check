@@ -1,0 +1,46 @@
+name: "W6/P8a – echte Silizium-Ressourcen und Finanzierung sichtbar"
+on:
+  pull_request:
+    paths:
+      - 'prototypes/spiel/silizium-versorgung.js'
+      - 'prototypes/spiel/spiel.js'
+      - 'prototypes/spiel/index.html'
+      - 'tests/w6-p8a-*'
+      - '.github/workflows/w6-p8a-silicon-status.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-supply-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Echter 16er-Siliziumvorrat bis zur Erschoepfung und fehlende Dravos-Route"
+        run: node --test tests/w6-p8a-silicon-real-supply.test.mjs tests/j13-jaeger-akte.test.mjs
+      - name: "Originalspiel und NAS-Einzeldatei bleiben baubar"
+        run: node scripts/build-w5-singlefile.mjs --check
+  public-root-p8-touch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Nur temporaere Playwright-CI-Binaerdateien"
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/p8-playwright" playwright@1.62.0
+          node "$RUNNER_TEMP/p8-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
+      - name: "4 Touchgroessen: Root, S02-Opt-in, echtes Feldkapital, Tick, Save/Load"
+        run: node tests/w6-p8a-supply-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/p8-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}

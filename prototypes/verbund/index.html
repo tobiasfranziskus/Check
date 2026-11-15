@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aphros Void · J7 – Regel195-Spielstand sicher prüfen</title>
+<style>
+:root{color-scheme:dark;font:16px/1.55 system-ui,sans-serif;background:#091525;color:#e1eaf5}
+*{box-sizing:border-box}body{max-width:920px;margin:auto;padding:18px}
+header,section{padding:16px;border:1px solid #35566a;border-radius:12px;background:#102337;margin:0 0 16px}
+h1{font-size:1.5rem;margin:0 0 12px}h2{font-size:1.2rem}
+a{color:#9be6ff}label{display:block;font-weight:700;margin-bottom:10px}
+input{display:block;font:inherit;width:100%;min-height:54px;padding:12px;background:#1a344b;color:inherit;border:2px dashed #6a98a8;border-radius:8px}
+.note{color:#bdd4e4}.warning{border-left:4px solid #f7b474;padding:12px;background:#3a302a}
+#ergebnis{white-space:pre-wrap;overflow-wrap:anywhere}
+ol{padding-left:24px}li{padding:9px 4px;border-bottom:1px solid #385366}
+.success{color:#9ce4b9}.fail{color:#ffd0a6}
+</style></head><body>
+<header>
+<h1>J7 · Spielstandprüfung Regel195 → 204</h1>
+<p class="note">Ein gemeinsamer Weltkern wird vorbereitet. Dieses Werkzeug prüft einen bestehenden Regel195-/Schema8-Export **nur im Browser**. Es übernimmt, speichert oder veröffentlicht keine Daten.</p>
+<a href="../j4c/index.html">Zurück zum grafischen Raumcockpit</a>
+</header>
+<section aria-label="Vorhandenen Spielstand prüfen">
+<h2>1. Originaldatei auswählen</h2>
+<label for="quelle">Regel195-JSON aus Aphros Void (max. 5 MB)</label>
+<input id="quelle" type="file" accept=".json,application/json">
+<p class="note">Die Datei wird lokal ausgelesen. Keine Uploads, keine automatische Spielstandüberschreibung, keine Geld- oder Warenänderung.</p>
+<p id="ergebnis" role="status" aria-live="polite">Noch kein Spielstand geprüft.</p>
+<ol id="stufen" aria-label="Auditergebnis jeder Regelstufe"></ol>
+</section>
+<section class="warning">
+<h2>2. Grenzen dieser Prüfung</h2>
+<p>Auch ein vollständig prüfbarer Regel195-Spielstand besitzt noch keinen für 900 ISK gekauften Jäger. Deshalb ist der bisherige Jäger-Spielmodus damit **nicht unmittelbar** spielbar. Ein eigener finanzieller Produktionsauftrag und eine echte Konzern-Startsitzung ohne Jäger sind separate nächste Schritte.</p>
+<p>Dies ist <strong>kein Konvertierungs- oder Importknopf</strong>. Die bisherige Regel195-Welt und alle Spielstände bleiben unangetastet. Prüfergebnis unbedingt vor einem späteren Wechsel sichern – eine Rückmigration ist nicht freigegeben.</p>
+</section>
+<script src="../flug2d/flug-kern.js"></script>
+<script src="../welt/rule200-k7-industry-core.js"></script>
+<script src="../welt/j2b-silizium-core.js"></script>
+<script src="../welt/j3-bauteil-core.js"></script>
+<script src="../welt/j4b-jaeger-werft-core.js"></script>
+<script src="../welt/welt-kern.js"></script>
+<script src="kompatibilitaet.js"></script>
+<script src="pruefung-ui.js"></script>
+</body></html>

@@ -49,7 +49,7 @@ const server=http.createServer((req,res)=>{
    await page.waitForURL('**/prototypes/legacy-hub/archiv/core-preview.html');
    await page.locator('#core-file').setInputFiles(path.join(root,'tests/fixtures/w5t/r32-seed42.json'));
    await page.locator('#core-input button').tap();
-   await page.locator('#core-status').getByText(/Core-Snapshot/).waitFor();
+   await page.waitForFunction(() => document.getElementById('core-status').textContent.includes('Core-Snapshot'));
    assert.equal(await page.locator('.legacy-corporation h1').count()>0,true);
    assert.equal(await page.evaluate('document.documentElement.scrollWidth<=innerWidth'),true);
    assert.deepEqual(missing,[]);

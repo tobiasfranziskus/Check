@@ -96,7 +96,7 @@ test('P8b: ausdruecklicher Import einer bereits bezahlten, laufenden Original204
   s.kanon.silizium.auftrag.gefoerdert<8,
   'Originaljob mit verkauftem Erstfeld, finanzierter Haus-Abnahme und physischer zweiter Teilladung fehlt');
  const oldFirst=originalSaleHash;
- const canon=old.canonical(s),oldHash=old.hash(s),cash=Object.values(s.owners).map(o=>o.cash);
+ const canon=old.canonical(s),oldHash=old.hash(s),cash=Object.fromEntries(Object.entries(s.owners).map(([id,o])=>[id,o.cash]));
  const m=K.ausRegel204P8b(old.save(s)),w=m.welt,z=m.zustand,feld=z.kanon.silizium.felder;
  assert.equal(m.quellHash,oldHash);
  assert.equal(old.canonical(s),canon,'alter Quellstand unveraendert');
@@ -105,7 +105,7 @@ test('P8b: ausdruecklicher Import einer bereits bezahlten, laufenden Original204
  assert.equal(feld['nadir-sekundaer'].gefoerdert,0);
  assert.equal(z.kanon.silizium.auftrag.feld,'nadir-primaer');
  assert.equal(z.kanon.silizium.belege[0].feld,'nadir-primaer');
- assert.deepEqual(Object.values(z.owners).map(o=>o.cash),cash);
+ assert.deepEqual(Object.fromEntries(Object.entries(z.owners).map(([id,o])=>[id,o.cash])),cash);
  assert.deepEqual(z.ledger,s.ledger);
  assert.deepEqual(z.ships,s.ships);
  assert.deepEqual(z.stations,s.stations);

@@ -39,7 +39,7 @@ const w=W.erstellenJ4c(JSON.parse(sample).w5ad.profile);
     // Eigener, leerer Browserkontext; kein Zugriff auf Nutzer-Spielstände.
     await page.evaluate(async()=>{const db=await new Promise(ok=>{const r=indexedDB.open('audit-legacy-sentinel',1);r.onupgradeneeded=()=>r.result.createObjectStore('saves');r.onsuccess=()=>ok(r.result);});await new Promise(ok=>{const t=db.transaction('saves','readwrite');t.objectStore('saves').put({original:'erhalten'},'sentinel');t.oncomplete=ok;});db.close();});
     const before=await snapshot();
-    await page.locator('nav[aria-label="Spielmodi"] a').tap();await page.waitForURL('**/prototypes/j4c/index.html');
+    await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/j4c/index.html"]').tap();await page.waitForURL('**/prototypes/j4c/index.html');
     await tap('beispiel');await page.waitForFunction(()=>document.querySelector('#schiff').textContent.includes('sh023'));
     assert.equal(w.hash(w.load(await download())),'daec00c7618a6cd7');
     await tap('patrouille-start');await tap('abdocken');await tap('play');

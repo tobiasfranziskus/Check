@@ -92,3 +92,29 @@ test('J10a: manipuliertes Geld, unzulässige Welt und Anzeige ohne Autorität ab
  assert.throws(()=>J10.erstellen({...w,regel:195},s.zustandReferenz()),/Regel204/);
  assert.equal(s.exportieren(),original);
 });
+
+
+test('J10a: bestehende NPC-Gründungs- und Lieferautomatik über echte Zeit prüfen, ohne neue Regeln',()=>{
+ const session=fresh(),start=session.exportieren();
+ const erkunden=(label)=>{
+   const t=J10.erstellen(session.weltReferenz(),session.zustandReferenz());
+   const s=session.zustandReferenz();
+   const transport=Object.values(s.ships).filter(sh=>sh.owner==='transport').map(sh=>({
+     id:sh.id,klasse:sh.klasse,system:sh.system,lage:sh.flug?.lage||sh.phase
+   }));
+   console.log('J10A_AUTOMATIK',JSON.stringify({
+     label,tick:t.tick,house:t.kassen.house,nadir:t.kassen.st_nadir,
+     transportKasse:t.kassen.transport,werft:t.kassen.werft_extern,
+     transport,erzNadir:t.lager.erz,jaeger:t.lager.jaeger,
+     angebotFrachter:t.k7.angebotFrachter,
+     blockaden:t.vorgaenge.filter(x=>!x.ok).slice(0,5).map(x=>[x.id,x.grund])
+   }));
+   assert.equal(t.weltgeld,33000);
+   assert.equal(s.minted,0);assert.equal(s.burned,0);
+   assert.equal(session.flugAudit().ok,true);
+   assert.equal(session.exportieren(),session.weltReferenz().save(session.zustandReferenz()));
+ };
+ erkunden('vorher');
+ for(const minutes of [1,10,60,60]){session.weiterspielen(minutes);erkunden('+'+minutes);}
+ assert.notEqual(session.exportieren(),start,'echte Wirtschaftsuhr erzeugt einen anderen Originalstand');
+});

@@ -42,9 +42,11 @@ test('W6/P4: NPC3 kauft, foerdert und verkauft Silizium mit ausschliesslich eige
    signiere(w,s,'st_nadir',{type:'stationRefine',station:'st_nadir'});
    bis(w,s,()=>!s.w4.auftrag,90,'Original-Raffineriecharge');
  }
- const kasseVor=s.owners.npc3.cash;
  signiere(w,s,'werft_extern',{type:'stationBuildMiner',station:'st_nadir',besteller:'npc3'});
  bis(w,s,()=>(nadir.miner||0)===1&&b().wartetAuf==='npc3',120,'K2-Miner fertig');
+ // NPC3 kann waehrend der echten Werftminuten legitime Eis-Erloese erhalten.
+ // Daher unmittelbar den Kauf kontieren, nicht zwei unterschiedliche Ticks.
+ const kasseVor=s.owners.npc3.cash;
  const vorher=new Set(Object.keys(s.ships));
  signiere(w,s,'npc3',{type:'stationClaimMinerLocal',station:'st_nadir'});
  const id=Object.keys(s.ships).find(x=>!vorher.has(x));

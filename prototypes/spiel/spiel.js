@@ -9,8 +9,7 @@ const SLOT='aphros-void:spielerkarriere:regel204:v1';
 const BACKUP=SLOT+':vorherige';
 const MAX=5*1024*1024;
 const fmt=n=>Number(n).toLocaleString('de-DE');
-const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
-let session=null,raum=null,ansicht='startseite',pilotenSitzung=false,flugSchritte=0,flugSeitSicherung=0;
+let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung=0;
 let cockpitGenutzt=false,flugerfahrung=false;
 const safeText=(s)=>String(s==null?'':s);
 const error=(e)=>safeText(e&&e.message?e.message:e);
@@ -43,7 +42,7 @@ function screen(id){
  if(id!=='raumbereich'&&raum)raum.deaktivieren();
  $('open-menu').hidden=id==='startseite';
  $('mode-indicator').textContent=id==='startseite'?'OFFLINE · ALDERA-SEKTOR':
-   id==='briefing'?'PROLOG · ALDERA-SEKTOR':'ONLINE · REGEL204';
+   id==='briefing'?'PROLOG · ALDERA-SEKTOR':'ONLINE · ALDERA-SEKTOR';
  if(id==='spielwelt'&&session)anzeigen();
  scope.scrollTo?.(0,0);
 }
@@ -126,11 +125,12 @@ function datum(ms){return Math.floor(ms/1440)+' Tage · '+(ms%1440)+' Minuten';}
 function missions(){
  const state=session.zustandReferenz(),mine=Object.values(state.ships).some(s=>s.owner==='house'&&s.klasse==='miner');
  const pilot=!!session.pilotStatus();
+ const eigenesFrachtgut=Object.values(state.ships).some(sh=>sh.owner==='house'&&Object.values(sh.ladung||{}).some(n=>n>0));
  return [
   {done:mine,text:'Einen eigenen Miner aus echten Beständen kaufen'},
   {done:pilot||cockpitGenutzt,text:'Ins Cockpit steigen – ein Schiff, eine Welt'},
   {done:(state.kanon.fluglohnMinuten||0)>0||flugerfahrung,text:'Abdocken und den ersten bezahlten Flug beginnen'},
-  {done:!!state.kanon.silizium?.belege?.length||!!state.ledger?.eis?.mined,text:'Erstes Eis oder Silizium wirklich fördern'}
+  {done:eigenesFrachtgut||!!state.kanon.silizium?.belege?.length,text:'Eigenes Eis oder Silizium wirklich gewinnen'}
  ];
 }
 function anzeigen(){
@@ -246,6 +246,7 @@ $('vorige-karriere')?.addEventListener('click',()=>{try{
    const json=gespeicherte(BACKUP);if(!json)throw Error('Keine vorherige Sicherung vorhanden');
    ladeSitzung(json,'backup',true);
  }catch(e){hinweis('Vorherige Karriere nicht geöffnet: '+error(e),true);}});
+$('import-aktion').addEventListener('click',()=>$('import-datei').click());
 $('import-datei').addEventListener('change',async e=>{
  const input=e.currentTarget; // Safari clears event.currentTarget after await.
  const f=input?.files?.[0];if(!f)return;

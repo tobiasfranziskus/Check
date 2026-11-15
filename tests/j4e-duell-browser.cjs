@@ -112,6 +112,14 @@ const Welt=require('../prototypes/welt/welt-kern.js');
     await tap('duell-feuer');
     assert.match(await page.locator('#meldung').textContent(),/F8-E-Trainingsprojektil gestartet/);
     assert.match(await page.locator('#duell-status').textContent(),/aktiv/);
+    // Ein Cockpit-/Konzernwechsel darf das laufende virtuelle Training nicht zurücksetzen.
+    const duellVorher=await page.locator('#duell-sekunden').textContent();
+    const trefferVorher=await page.locator('#duell-treffer').textContent();
+    await tap('ansicht-konzern');
+    await tap('konzern-zurueck');
+    assert.match(await page.locator('#duell-status').textContent(),/aktiv/);
+    assert.equal(await page.locator('#duell-sekunden').textContent(),duellVorher);
+    assert.equal(await page.locator('#duell-treffer').textContent(),trefferVorher);
     assert.match(await page.locator('#audit').textContent(),/OK/);
     const [download]=await Promise.all([
       page.waitForEvent('download'),

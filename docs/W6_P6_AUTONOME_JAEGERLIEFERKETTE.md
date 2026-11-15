@@ -14,6 +14,19 @@
 
 **Begrenzung:** Das endliche Siliziumfeld reicht mit dem Originalrezept theoretisch für höchstens **zwei** solche Jäger; die Nachfolgefrage einer längerfristigen Siliziumversorgung oder industriellen Expansion bleibt **[OPTION]**. Acht weitere schwach/ausfallend modellierte Szenarien sind dadurch nicht geheilt. Die W6-Policy, ihre Startreserve, Stilllegungsregel und produktive Aktivierung bleiben unfreigegeben. Diese QA war kein echter iPad-Safari- oder NAS-Gerätetest.
 
+## Gemeinsame Schlussabnahme nach P5-Härtung (Forschungs-Head `a44d2a8b`)
+
+**[ANALYSE / POSITIV – NICHT MAIN]** Nach Synchronisierung mit der vollständigen P5-Kauf-/Belegmanipulationsprüfung ist der gesamte W6/P6-Stack erneut ausgeführt worden: **341/341 Node22-Einzeltests, 0 Fehler, 0 Skips**, einschließlich aller unveränderten 13×90-Szenarien, der zusätzlichen P5-Positiv- und Negativprüfungen und des neuen 90-Tage-Einzelfalls. [Vollständiger Node22-Lauf](https://github.com/tobiasfranziskus/Check/actions/runs/43739119740/job/132887900856) (Job-ID im verlinkten Workflow gegebenenfalls direkt über den Run aufrufen). Single-File-Check `W5_SINGLEFILE_OK`; Chromium/WebKit und die ausgeführten Wirtschafts-/Touch-Checks `success`; der bedingte Sicherheitsgeografie-Vergleich war `skipped`, **nicht** bestanden. Keine echte iPad-Safari-/NAS-Geräteabnahme.
+
+**Im zusätzlichen S02/P5-Opt-in-Szenario bis Tag 90**:
+- **2 vollständig finanziert gebaute J4-Jäger**, davon **1 real für 900 ISK** von `house` gekauft; weiteres Exemplar als echte Lagerware.
+- **16/16 Siliziumeinheiten** aus dem originalen begrenzten Feld gefördert, **0 verbleibend**; ohne neue Felder kann diese Industriekette **keinen dritten Jäger** herstellen.
+- **93 finanzierte Ersatzkäufe** und weiterhin reale Eis-, Wasser- und Lohnflüsse im letzten Drittel: Eis 33.376→50.734, Wassererlöse 501.582→760.900 ISK, gezahlte Löhne 244.779→367.802 ISK, Ersatzkäufe 62→93 (jeweils Tag 60→90).
+- Weltgeld **33.000 ISK**, Mint/Burn 0, Spieler hält **2.100 ISK** und den bezahlten Jäger; unabhängige Geld-, Waren-, Eigentums- und Kern-Audits grün.
+- **Tag45-JSON-Fortsetzung → Tag90 exakt gleich** zum durchgehenden Simulationsergebnis; Endhash `686355895f27fbb8`. Die Referenzhashes der bisherigen 13×90-Szenarien sind nicht verändert.
+
+Dieser Nachweis **bewahrt eine funktionierende Eis-/Wasser-/Ersatzwirtschaft über 90 Tage unter endlicher zusätzlicher Jägernachfrage**, beweist aber weder ein unendliches Siliziumangebot noch allgemeine W6-Nachhaltigkeit aller Firmen/Szenarien. Die neuen NPC-Regeln bleiben **[OPTION]** und sind nicht in `main`.
+
 ## Forschungsfrage
 
 Kann die bestehende, nur nach bewusstem `npcSiliziumSetzen(true)` aktivierte Forschung allein mit rechtmäßig finanzierten Eigenbefehlen den Weg **Werft/Material → bezahlter NPC3-K2-Miner → physisches Silizium → J3-Bauteile → J4-Jäger → 900-ISK-Spielerkauf** ohne manuell signierende Fremdfirmen abschließen?
@@ -36,7 +49,7 @@ node --test tests/*.test.mjs
 node scripts/build-w5-singlefile.mjs --check
 ```
 
-**P6 wurde auf dem vorgenannten Test-/Code-Head tatsächlich ausgeführt und bestanden.** Dieser spätere reine Dokumentationsnachtrag ändert keine Wirtschaftsregeln, Tests oder Referenzhashes. Die tatsächlichen CI-Ergebnisse sind oben mit Prüf-Head und Link ausgewiesen. Öffentliche Spielversion, `main`, JS-Module der P1-Spieloberfläche und gespeicherte Original-Spielstände bleiben bytegleich. Keine iPad-Safari- oder NAS-Geräteabnahme.
+**P6 wurde auf dem gemeinsamen P5+P6-Forschungs-Head `a44d2a8b` nochmals vollständig ausgeführt und bestanden.** Der nachfolgende reine Dokumentationsnachtrag ändert weder Wirtschaftsregeln noch Tests oder Referenzhashes. Siehe gemeinsames Schluss-Gate oben. Öffentliche Spielversion, `main`, JS-Module der P1-Spieloberfläche und gespeicherte Original-Spielstände bleiben bytegleich. Keine iPad-Safari- oder NAS-Geräteabnahme.
 
 ## Geltungsgrenzen
 

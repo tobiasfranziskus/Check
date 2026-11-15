@@ -54,6 +54,8 @@ function create({rules,kern,transfer,summe,ladungSumme,stillgelegt,flugSync,sili
         return 'P8d: Original-W3-Route fehlt';
       const preisFracht=(hin.zeit+zurueck.zeit)*rules.w3.frachtgebuehrJeMinute;
       if(s.owners[MINER].cash<preisFracht)return 'P8d: Frachtgebuehr nicht vorfinanziert';
+      if(s.owners[SPED].cash<(hin.zeit+zurueck.zeit)*rules.w3.arbeitJeMinute)
+        return 'P8d: Spediteur kann Pilotlohn nicht vorfinanzieren';
       if((s.owners[FEE]?.cash||0)!==0||(s.owners[LOHN]?.cash||0)!==0)
         return 'P8d: Treuhand bereits belegt';
       return null;
@@ -156,7 +158,16 @@ function create({rules,kern,transfer,summe,ladungSumme,stillgelegt,flugSync,sili
     if(!a){
       const m=Object.values(s.ships).find(sh=>minerBereit(s,sh));
       const f=Object.values(s.ships).find(sh=>frei(s,sh));
-      if(m&&f)ausfuehren(s,{type:'siliconFreightOffer',owner:MINER,miner:m.id,frachter:f.id});
+      if(m&&f){
+        // Beide Firmenkassen VOR Unterschrift geprueft. Sofortige
+        // Gegenzeichnung durch die autorisierte NPC-Spedition in demselben
+        // Entscheidungsschritt; keine Zwischenverwendung von gebundenem ISK.
+        const r=ausfuehren(s,{type:'siliconFreightOffer',owner:MINER,miner:m.id,frachter:f.id});
+        if(r.ok){
+          const sign=ausfuehren(s,{type:'siliconFreightAccept',owner:SPED});
+          if(!sign.ok)throw Error('P8d: vorgepruefte Firmenfinanzierung ohne Gegenzeichnung');
+        }
+      }
       return;
     }
     const f=s.ships[a.frachter];

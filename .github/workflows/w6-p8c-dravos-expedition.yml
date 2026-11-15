@@ -1,0 +1,33 @@
+name: "W6/P8c – echte bezahlte Dravos-Miner-Expedition (isolierte Regel206)"
+on:
+  pull_request:
+    paths:
+      - 'prototypes/flug2d/flug-kern.js'
+      - 'prototypes/welt/welt-kern.js'
+      - 'prototypes/welt/rule200-k7-industry-core.js'
+      - 'prototypes/welt/j2b-silizium-core.js'
+      - 'prototypes/welt/j3-bauteil-core.js'
+      - 'prototypes/welt/j4b-jaeger-werft-core.js'
+      - 'tests/w6-p8c-dravos-expedition.test.mjs'
+      - '.github/workflows/w6-p8c-dravos-expedition.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paid-real-dravos-expedition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: "Regel206 Syntax und Dravos→Orion→Nadir: Vorfinanzierung, 2 echte Rohstoffchargen, Kassen, illegale Befehle"
+        run: |
+          node --check prototypes/welt/welt-kern.js
+          node --check prototypes/welt/rule200-k7-industry-core.js
+          node --check prototypes/welt/j2b-silizium-core.js
+          node --check prototypes/flug2d/flug-kern.js
+          node --test tests/w6-p8c-dravos-expedition.test.mjs
+      - name: "Original204/205-Referenz und F6-Browser-/Save-Grenzen"
+        run: node --test tests/w6-p5-autonome-siliziumkette.test.mjs tests/w6-p6-autonome-jaegerlieferkette.test.mjs tests/w6-p8b-two-fields-rule205.test.mjs

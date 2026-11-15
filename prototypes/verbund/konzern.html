@@ -77,6 +77,24 @@ li{padding:4px}.success{color:#9ee5b5}.fail{color:#ffc3a0}
 <div id="angebote" class="grid" aria-label="Echte geprüfte Spieleraufträge"></div>
 <p class="note">Nur Befehle des Kontos <strong>house</strong>. Stationen, Werften und NPC-Konzerne entscheiden unabhängig; ihre Gelder dürfen nicht vom Spieler ausgegeben werden. Gesperrte Angebote zeigen den Core-Grund an.</p>
 </div>
+<div class="block" id="j10-werft" aria-label="Geprüfte Jägerproduktion in Nadir">
+<h3>J10 · Industrie und Jägerwerft Nadir</h3>
+<p class="note">Reale Originalbestände, Kassen und Kern-Auftragssperren. Produktionsrechte gehören weiterhin den eingetragenen Firmen – hier kannst du keine fremden Werft- oder Transportaufträge auslösen.</p>
+<div class="grid stats">
+<div><span>Fertige Jäger im Lager</span><strong id="j10-fertige">–</strong></div>
+<div><span>Bauteile / Bedarf</span><strong id="j10-bauteile">–</strong></div>
+<div><span>Material / Bedarf</span><strong id="j10-material">–</strong></div>
+<div><span>Silizium / Bedarf</span><strong id="j10-silizium">–</strong></div>
+<div><span>Nadir-Kasse</span><strong id="j10-nadir">–</strong></div>
+<div><span>Werftbetrieb / K7-Reserve</span><strong id="j10-werft-cash">–</strong></div>
+</div>
+<p id="j10-hinweis" class="note" role="status" aria-live="polite">Nach Öffnen einer validierten Regel204-Welt werden die tatsächlichen Blocker ermittelt.</p>
+<div class="scroll"><table><thead><tr><th>Originalauftrag</th><th>Entscheidet</th><th>Stand</th></tr></thead><tbody id="j10-vertraege"></tbody></table></div>
+<div class="block">
+<button id="j10-jaeger-kaufen" type="button" class="primary" disabled>Fertigen Jäger für 900 ISK rechtmäßig kaufen</button>
+<p class="note">Dieser Knopf führt ausschließlich den schon vorhandenen validierten <code>house/shipBuy</code>-Befehl aus. Sobald Werftbestand oder eigene 900 ISK fehlen, verweigert der Original-Core den Kauf. Keine Jägerhülle wird hier produziert oder verschenkt.</p>
+</div>
+</div>
 <div class="block" id="j9-steuerplatz">
 <h3>Persönlich fliegen · ohne zweite Welt</h3>
 <p class="note">Einen eigenen, tatsächlich gekauften und am Dock erreichbaren Miner oder Jäger übernehmen. Ein bestehender autonomer Pendelauftrag muss zuvor beendet sein. Jägerkampf benötigt einen rechtmäßig erworbenen Jäger.</p>
@@ -162,6 +180,8 @@ li{padding:4px}.success{color:#9ee5b5}.fail{color:#ffc3a0}
 <script src="../raum/raum-szene.js"></script>
 <script src="../raum/raum-grafik.js"></script>
 <script src="../raum/raum-cockpit.js"></script>
+<script src="../j6w/wirtschaft.js"></script>
+<script src="jaeger-werft-lage.js"></script>
 <script src="konzern-session.js"></script>
 <script src="konzern-ui.js"></script>
 </body></html>

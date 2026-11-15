@@ -25,7 +25,9 @@ function pruefen(w,s,aktiv,ziel,sitzung){
     return ablehnung('Sitzungsstatus einschließlich Flug und Training fehlt');
   if(typeof aktiv!=='string'||typeof ziel!=='string'||aktiv===ziel)
     return ablehnung('Bitte ein anderes, tatsächlich vorhandenes Schiff wählen');
-  const audit=w.audit(s);
+  let audit;
+  try { audit=w.audit(s); }
+  catch { return ablehnung('Wirtschafts- und Eigentumsaudit fehlgeschlagen'); }
   if(!audit?.ok) return ablehnung('Wirtschafts- und Eigentumsaudit fehlgeschlagen');
   const bisher=s.ships?.[aktiv],neu=s.ships?.[ziel];
   if(!bisher||bisher.owner!=='house'||bisher.klasse!=='jaeger'||!gekauft(s,aktiv))

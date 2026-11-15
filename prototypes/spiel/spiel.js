@@ -292,6 +292,9 @@ function jaegerBericht(zustand,angebote){
 function anzeigen(){
  if(!session)return;
  const a=session.ansicht(),s=session.zustandReferenz();
+ // Status stammt ausschließlich aus dem gespeicherten Core, nicht aus einem UI-Schalter.
+ const w6Status=$('w6-status');
+ if(w6Status)w6Status.hidden=!(s.kanon.npcAuto===true&&s.kanon.npcSilizium?.aktiv===true);
  $('hausgeld').textContent=fmt(a.hausgeld)+' ISK';
  $('zeit').textContent=datum(a.tick);
  $('weltgeld').textContent=fmt(a.weltgeld)+' ISK';

@@ -360,15 +360,35 @@ test('J10b/K2: paid original Nadir miner built from delivered ore and purchased 
    ['transport','industrialOreAcceptFreight'],
    ['werft_extern','industrialOreAcceptYard']
  ]) ownerCommand(w,s,owner,{type});
- ownerCommand(w,s,'st_nadir',{type:'industrialOreCommit'});
- assert.equal(s.kanon.industrieErz.phase,'aktiv');
+ const beforeCommit=w.hash(s);
+ const commitQuote=J6.erstellen(w,'st_nadir').angebot(s,{type:'industrialOreCommit'});
+ // An offer and valid separate signatures do NOT prove sufficient final money.
+ // The original Core rechecks *all five* businesses at commitment time.
+ assert.equal(commitQuote.ok,false,'insufficient capital must prevent contract');
+ assert.match(commitQuote.reason,/unvollständig vorfinanzierte Firmenkette/);
+ assert.equal(w.hash(s),beforeCommit,'read-only K7 funding check');
+ const expected=w.industriePreise;
+ const required={npc3:expected.bergbau,st_aldera:expected.alderakauf,
+   st_nadir:expected.nadiraufwand,transport:expected.frachtlohn,
+   werft_extern:expected.werft};
+ const wallets=Object.fromEntries(Object.keys(required).map(id=>[id,s.owners[id].cash]));
+ const deficits=Object.fromEntries(Object.keys(required).map(id=>[id,Math.max(0,required[id]-wallets[id])]));
+ const denied=J6.erstellen(w,'st_nadir').ausfuehren(s,{type:'industrialOreCommit'});
+ assert.equal(denied.ok,false);
+ assert.equal(w.hash(s),beforeCommit,'rejected contract cannot consume any funds');
+ assert.ok(Object.values(deficits).some(x=>x>0),'real undercapitalization measured');
+ const cancel=J6.erstellen(w,'st_nadir').ausfuehren(s,{type:'industrialOreCancel'});
+ assert.equal(cancel.ok,true,'only proper buyer may withdraw unsigned contract');
+ audits(w,s);
  const secondSign=w.hash(s);
  assert.equal(w.hash(w.load(w.save(s))),secondSign);
- console.log('J10D_SECOND_K7_SIGNED',JSON.stringify({
+ console.log('J10D_SECOND_K7_FINANCING_BLOCKER',JSON.stringify({
    tick:s.tick,naturalDockMinutes:s.tick-stopStart,originalDockHash:dockHash,
    newWarehouseHullBought:true,miner:'sh001',frachter:'sh002',
    buyerCash:s.owners.st_nadir.cash,carrierCash:s.owners.transport.cash,
-   yardCash:s.owners.werft_extern.cash,money:33000,hash:secondSign
+   yardCash:s.owners.werft_extern.cash,money:33000,hash:secondSign,
+   signedButNotFunded:true,required,available:wallets,shortfall: deficits,
+   commitRejection:commitQuote.reason,orderCancelledByBuyer:true
  }));
 
 });

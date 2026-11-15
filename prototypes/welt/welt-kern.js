@@ -17,6 +17,7 @@ const FLUG = NODE ? require('../flug2d/flug-kern.js') : scope.FlugKern;
 const J2B = NODE ? require('./j2b-silizium-core.js') : scope.J2bSilizium;
 const J3 = NODE ? require('./j3-bauteil-core.js') : scope.J3Bauteile;
 const J4 = NODE ? require('./j4b-jaeger-werft-core.js') : scope.J4bJaegerWerft;
+const P8D = NODE ? require('./p8d-dravos-fracht-core.js') : scope.P8dFracht;
 if (!FACTORY || typeof FACTORY.createKanonWelt !== 'function' || !FLUG || typeof FLUG.schritt !== 'function')
   throw Error('K1 benötigt den gemeinsamen Wirtschaftskern (Profil 199) und den Flugkern');
 
@@ -84,7 +85,7 @@ const m_data_kanon = (() => {
   return { KANON, tiefFrieren };
 })();
 
-function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false) {
+function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false) {
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
@@ -92,7 +93,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   });
   // Ein Forschungsquellstand für K1 (Regel199) oder explizit K7 (Regel200).
   // Niemals die produktive Regel195-Einzeldatei überschreiben.
-  const engine = k7 ? (p8cDravos ? FACTORY.createP8cWelt(startkapital,ort) :
+  const engine = k7 ? (p8dFracht ? FACTORY.createP8dWelt(startkapital,ort) :
+    p8cDravos ? FACTORY.createP8cWelt(startkapital,ort) :
     p8bZweiFelder ? FACTORY.createP8bWelt(startkapital,ort) :
     jaegerFlug ? FACTORY.createJ4cWelt(startkapital,ort) :
     jaeger ? FACTORY.createJ4bWelt(startkapital,ort) :
@@ -100,7 +102,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     silizium ? FACTORY.createJ2bWelt(startkapital, ort)
     : FACTORY.createK7Welt(startkapital, ort)) : FACTORY.createKanonWelt(startkapital, ort);
   const kern = engine.core, rules = engine.rules;
-  if (rules.rulesVersion !== (p8cDravos ? 206 : p8bZweiFelder ? 205 : jaegerFlug ? 204 : jaeger ? 203 : bauteile ? 202 : silizium ? 201 : k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
+  if (rules.rulesVersion !== (p8dFracht ? 207 : p8cDravos ? 206 : p8bZweiFelder ? 205 : jaegerFlug ? 204 : jaeger ? 203 : bauteile ? 202 : silizium ? 201 : k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
     throw Error('K1: unerwartetes Kernprofil');
   const N = FLUG.DATEN.schritteJeMinute;
   const W = rules.w5n;
@@ -729,6 +731,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         ||!['nadir','dravos'].includes(sh.system))
         return 'P8c: nur freier eigener K2-Miner im wirklichen Dock';
       const a=s.kanon.silizium.auftrag,b=s.kanon.silizium.felder;
+      if(p8dFracht&&to==='nadir')
+        return 'P8d: Miner-Ladung muss mit fremdem Originalfrachter verkehren';
       if(to==='dravos'){
         if(sh.system!=='nadir'||a||ladungSumme(sh)!==0
           ||b['dravos-silizium'].vorrat<rules.j2b.charge)
@@ -820,6 +824,15 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     }
     return {leer,pruefen,starten,minute,audit};
   })();
+
+  // -------------------------------------------------------------- m_core_p8d_fracht
+  // Rule207: eigenstaendige, unterschriebene npc3 -> transport Spedition.
+  // Einziges Ladungs-/Kassenbuch, keine Eigentumsveraenderung des Schiffs.
+  const m_core_p8d = p8dFracht ? P8D.create({rules,kern,
+    transfer:m_core_buch.transfer,summe:m_core_buch.summe,ladungSumme,
+    stillgelegt:m_core_anlage.stillgelegt,
+    flugSync:s=>m_core_flugplan.koerperSync(s),
+    siliziumVerkaufen:(s,cmd)=>m_core_silizium.ausfuehren(s,cmd)}) : null;
 
   // -------------------------------------------------------------- m_core_disponent
   // ---------------------------------------------------------------- m_core_spielerfracht
@@ -1287,7 +1300,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
             if(flug.lage==='frei' && !(flug.andocken && flug.ziel?.art==='station'))
               befehl(state,'npc3',{type:'shipDock',schiff:id,station:dock});
             else if(flug.lage==='angedockt'){
-              if(p8cDravos&&lokal.system==='dravos')
+              if(p8dFracht&&lokal.system==='dravos'){
+                // Warte auf einen rechtmaessigen separaten Speditionsvertrag.
+                // Das Silizium bleibt im echten Miner, bis es quittiert geladen wird.
+              }else if(p8cDravos&&lokal.system==='dravos')
                 befehl(state,'npc3',{type:'shipTravelDravos',schiff:id,ziel:'st_nadir'});
               else befehl(state,'npc3',{type:'siliconSell',schiff:id});
             }
@@ -1386,6 +1402,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       if (k.npcAuto !== true || k.politik.automatik !== true) return;
       bergbau(state);
       siliziumKette(state);
+      if(p8dFracht)m_core_p8d.automatisch(state);
       industrie(state);
     }
     function audit(state, fehler) {
@@ -1503,6 +1520,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       if (!m_core_minerwerft.audit(state)) fehler.push('K2-Minerwerft/Transport');
       if (silizium && !m_core_silizium.audit(state)) fehler.push('J2b-Silizium-/Geld-/Feldbuch');
       if (!m_core_p8c_reise.audit(state)) fehler.push('P8c: authentische Dravos-Fracht-/Piloten-Kassenbelege');
+      if(p8dFracht&&!m_core_p8d.audit(state))fehler.push('P8d: doppelte oder ungedeckte Fremdfracht');
       if (bauteile && !m_core_bauteile.audit(state)) fehler.push('J3-Bauteil-/Material-/Lohnbuch');
       if (jaeger && !m_core_jaeger.audit(state)) fehler.push('J4b-Jägerherstellung-/Eigentums-/Lohnbuch');
       if (!m_core_spielerfracht.audit(state)) fehler.push('K1-Spielerfracht/Vertragslohn');
@@ -1614,7 +1632,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (silizium) state.kanon.silizium = m_core_silizium.leer();
     if (bauteile) state.kanon.bauteile = m_core_bauteile.leer();
     if (jaeger) state.kanon.jaeger = m_core_jaeger.leer();
-    if (p8cDravos) state.kanon.p8c = m_core_p8c_reise.leer();
+    if (p8cDravos||p8dFracht) state.kanon.p8c = m_core_p8c_reise.leer();
+    if (p8dFracht) state.kanon.p8d = m_core_p8d.leer();
     const a = audit(state);
     if (!a.ok) throw Error('K1: Anfangszustand nicht konsistent: ' + a.fehler.join('; '));
     return state;
@@ -1886,9 +1905,15 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     }
     if(bauteile&&type==='stationBuildParts')
       return m_core_bauteile.ausfuehren(state,cmd);
-    if(p8cDravos&&type==='shipTravelDravos')
+    if((p8cDravos||p8dFracht)&&type==='shipTravelDravos')
       return m_core_p8c_reise.starten(state,cmd);
-    if(p8cDravos&&type==='shipMove'&&state.ships[cmd?.schiff]?.heimat==='nadir')
+    if(p8dFracht&&type?.startsWith('siliconFreight'))
+      return m_core_p8d.ausfuehren(state,cmd);
+    if(p8dFracht&&type==='shipMove')
+      return {ok:false,type,reason:'P8d: nur signierter vorfinanzierter W3-Frachtertransfer'};
+    if(p8dFracht&&type==='siliconSell'&&cmd?.owner==='transport')
+      return {ok:false,type,reason:'P8d: kein Verkauf ohne Frachtquittung'};
+    if((p8cDravos||p8dFracht)&&type==='shipMove'&&state.ships[cmd?.schiff]?.heimat==='nadir')
       return {ok:false,type,reason:'P8c: fernreisende K2-Huellen brauchen bezahlte Dravos-Reise'};
     if(silizium&&['siliconMineStart','siliconSell'].includes(type))
       return m_core_silizium.ausfuehren(state,cmd);
@@ -1946,7 +1971,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       &&state.kanon.industrieErz.erzAngenommen)state.kanon.industrieErz.phase='geliefert';
     m_core_minerwerft.tick(state);
     if(silizium)m_core_silizium.minute(state);
-    if(p8cDravos)m_core_p8c_reise.minute(state);
+    if(p8cDravos||p8dFracht)m_core_p8c_reise.minute(state);
+    if(p8dFracht)m_core_p8d.minute(state);
     if(bauteile)m_core_bauteile.minute(state);
     if(jaeger)m_core_jaeger.minute(state);
     m_core_flugplan.koerperSync(state);
@@ -2076,7 +2102,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(jaeger ? {j4bFinanzierterJaeger:true} : {}),
     ...(jaegerFlug ? {j4cBezahlterJaegerflug:true} : {}),
     ...(p8bZweiFelder ? {p8bZweiEndlicheFelder:true} : {}),
-    ...(p8cDravos ? {p8cEchteDravosExpedition:true} : {}),
+    ...(p8cDravos||p8dFracht ? {p8cEchteDravosExpedition:true} : {}),
+    ...(p8dFracht ? {p8dGetrennteSpedition:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
     createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
@@ -2343,6 +2370,7 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   erstellenP8b:(kapital={})=>erstellen(kapital,true,true,true,true,true,true),
   // Ausschliesslich isolierte, nicht produktiv freigegebene Rule206-Expedition.
   erstellenP8c:(kapital={})=>erstellen(kapital,true,true,true,true,true,false,true),
+  erstellenP8d:(kapital={})=>erstellen(kapital,true,true,true,true,true,false,false,true),
   ausRegel195, ausRegel199K7, ausRegel200J2b, ausRegel201J3, ausRegel202J4b, ausRegel203J4c, ausRegel204P8b,
   DATEN: m_data_kanon.KANON, REGEL: m_data_kanon.KANON.regel, SCHRITTE: FLUG.DATEN.schritteJeMinute });
 if (NODE) module.exports = api; else scope.AphrosWelt = api;

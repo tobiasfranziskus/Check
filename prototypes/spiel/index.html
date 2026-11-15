@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#080f1c">
+<meta name="description" content="Aphros Void: Weltraumunternehmen führen und das eigene Raumschiff fliegen.">
+<title>Aphros Void · Deine Geschichte beginnt</title>
+<link rel="stylesheet" href="../raum/raum.css">
+<link rel="stylesheet" href="spiel.css">
+</head>
+<body>
+<div class="nebula" aria-hidden="true"><div class="orbital orbit-a"></div><div class="orbital orbit-b"></div><div class="planet"></div></div>
+<header class="topline">
+ <a class="brand" href="../../index.html" aria-label="Aphros Void – klassische Wirtschaft"><span class="brand-mark">AV</span><span>APHROS <b>VOID</b></span></a>
+ <span class="topline-status" id="mode-indicator">OFFLINE · ALDERA-SEKTOR</span>
+ <button id="open-menu" class="ghost" type="button" hidden>Menü</button>
+</header>
+<main>
+<section id="startseite" class="splash">
+ <div class="hero-content">
+  <p class="eyebrow"><span class="signal"></span> EINE WELT. DEINE ENTSCHEIDUNGEN.</p>
+  <h1>APHROS <em>VOID</em></h1>
+  <p class="lead">Ein Konzern am Rand des bekannten Raums. Eine Wirtschaft, in der jede Entscheidung zählt. Und irgendwann dein eigenes Schiff zwischen den Sternen.</p>
+  <p class="hero-caption">Werde Unternehmer, Pilot und Entdecker. Dein Abenteuer beginnt in Aldera.</p>
+  <div class="menu-actions">
+   <button class="primary" id="neues-spiel" type="button">Neue Karriere <span aria-hidden="true">→</span></button>
+   <button id="fortsetzen" type="button" disabled>Karriere fortsetzen</button>
+   <label class="import-button" for="import-datei">Gesicherte Karriere laden</label>
+   <input id="import-datei" type="file" accept=".json,application/json" hidden>
+  </div>
+  <p id="menumeldung" class="statusline" role="status" aria-live="polite">Dein Spielstand wird nur für diese Karriere separat gespeichert.</p>
+ </div>
+ <div class="hero-side" aria-label="Spielwelt">
+  <span class="hero-side-kicker">SEKTORBERICHT / 01</span>
+  <strong>ALDERA</strong>
+  <span>Ein sicherer Ausgangspunkt. Doch das Universum wartet nicht auf dich.</span>
+  <div class="separator"></div>
+  <span><b>1</b> gemeinsame Wirtschaft</span>
+  <span><b>3</b> Schiffsklassen im Ausbau</span>
+  <span><b>0</b> geschenkte Schiffe</span>
+ </div>
+</section>
+
+<section id="briefing" class="chapter" hidden>
+ <div class="chapter-heading"><p class="eyebrow">PROLOG / DER ERSTE AUFTRAG</p><h2>Niemand wartet auf einen neuen Konzern.</h2>
+ <p>Die Handelswege sind vergeben, die Werften ausgelastet, die besten Schiffe gehören anderen. Du hast Kapital, aber noch keine eigene Flotte. Was daraus wird, entscheidest du.</p></div>
+ <div class="factions" aria-label="Unternehmen und Orte der Spielwelt">
+  <article class="faction"><span class="faction-icon">◈</span><span class="faction-type">DEIN UNTERNEHMEN</span><h3>Dein Konzern</h3><p>Du verwaltest dein eigenes Konto. Jeder Miner und Frachter muss tatsächlich gekauft werden.</p><span class="faction-foot">Eigentümer: house</span></article>
+  <article class="faction"><span class="faction-icon">◇</span><span class="faction-type">BERGBAU / NPC</span><h3>Freie Erzförderer</h3><p>Eigenständige Bergbaubetriebe. Ihre Schiffe, Löhne und Aufträge gehören nicht dir.</p><span class="faction-foot">Unternehmen: npc3</span></article>
+  <article class="faction"><span class="faction-icon">▣</span><span class="faction-type">HANDEL / INDUSTRIE</span><h3>Aldera & Nadir</h3><p>Aldera handelt mit Rohstoffen. In Nadir warten Raffinerien und Werften – wenn sie finanziert werden.</p><span class="faction-foot">Stationen: st_aldera · st_nadir</span></article>
+  <article class="faction"><span class="faction-icon">⇢</span><span class="faction-type">LOGISTIK / SCHIFFBAU</span><h3>Spedition & Werft</h3><p>Ohne bezahlten Transport bleibt Erz liegen. Ohne Material und Arbeiter baut die Werft kein Schiff.</p><span class="faction-foot">Firmen: transport · werft_extern</span></article>
+ </div>
+ <div class="briefing-bottom">
+  <div><strong>Dein erstes Ziel: einen Miner erwerben und selbst fliegen.</strong><p>Keine Datei hochladen, keine Testdaten auswählen. Du startest mit dem unveränderten wirtschaftlichen Anfangszustand und triffst deine eigenen Entscheidungen.</p></div>
+  <button id="karriere-starten" class="primary" type="button">Karriere in Aldera beginnen <span aria-hidden="true">→</span></button>
+ </div>
+ <p id="briefing-meldung" class="statusline" role="status" aria-live="polite"></p>
+</section>
+
+<section id="spielwelt" class="world" hidden>
+ <div class="worldbar">
+  <div><span class="eyebrow">DEIN KONZERN / ALDERA-SEKTOR</span><h2>Kommandobrücke</h2></div>
+  <div class="worldbar-right"><span class="world-balance"><small>DEIN KAPITAL</small><strong id="hausgeld">–</strong></span><span class="world-balance"><small>WELTZEIT</small><strong id="zeit">–</strong></span><button id="welt-sichern" type="button" class="ghost">Sichern</button></div>
+ </div>
+ <div class="game-grid">
+  <section class="task-panel" aria-label="Missionsjournal">
+   <p class="eyebrow">KAPITEL 01 / DEIN ERSTER FLUG</p><h3>Ein Schiff. Ein Anfang.</h3>
+   <p id="missions-text">Dein Konto ist bereit. Suche ein wirklich vorhandenes Schiff.</p>
+   <ol class="missions" id="missions" aria-label="Erste Aufgaben"></ol>
+   <button id="welt-export" type="button" class="ghost">Spielstand als JSON sichern</button>
+   <p class="footnote">Autosave nur im eigenen Karriere-Slot dieser Seite. Der alte Wirtschaftsspielstand bleibt unberührt.</p>
+  </section>
+  <section class="world-center" aria-label="Spielaktionen und Flotte">
+   <div class="tabs" role="group" aria-label="Konzerntabs">
+    <button id="tab-auftraege" data-tab="auftraege" aria-pressed="true">Aufträge</button>
+    <button id="tab-flotte" data-tab="flotte" aria-pressed="false">Meine Flotte</button>
+    <button id="tab-universum" data-tab="universum" aria-pressed="false">Das Universum</button>
+   </div>
+   <div id="panel-auftraege" class="tab-panel">
+    <div class="panel-head"><div><p class="eyebrow">EIGENTUM / BEZAHLTE ENTSCHEIDUNGEN</p><h3>Deine nächsten Schritte</h3></div></div>
+    <div id="spieleraktionen" class="orders"></div>
+   </div>
+   <div id="panel-flotte" class="tab-panel" hidden><div class="panel-head"><p class="eyebrow">EIGENE SCHIFFE</p><h3>Deine Flotte</h3></div><div id="spielerschiffe" class="ships"></div></div>
+   <div id="panel-universum" class="tab-panel" hidden><div class="panel-head"><p class="eyebrow">SEKTORLAGE</p><h3>Eine Welt voller Unternehmen</h3></div><div class="sectors"><article><strong>Aldera</strong><span>Sicher · Rohstoffe und Handel</span></article><article><strong>Nadir</strong><span>Umkämpft · Raffinerie und Werft</span></article><article><strong>Transport</strong><span>Eigenständige Spedition · bezahlte Fracht</span></article><article><strong>Außenwerft</strong><span>Eigenständiger Schiffbau · reale Löhne</span></article></div></div>
+  </section>
+  <aside class="world-right" aria-label="Wirtschaftsnachrichten">
+   <p class="eyebrow">NACHRICHTEN AUS DEM SEKTOR</p>
+   <h3>Die Wirtschaft läuft weiter.</h3>
+   <div class="world-stat"><span>Weltgeld</span><strong id="weltgeld">–</strong></div>
+   <div class="world-stat"><span>Aldera · Kasse</span><strong id="aldera-kasse">–</strong></div>
+   <div class="world-stat"><span>Nadir · Kasse</span><strong id="nadir-kasse">–</strong></div>
+   <div class="world-stat"><span>Meine Schiffe</span><strong id="schiff-anzahl">–</strong></div>
+   <p class="note">Kein kostenloser Gewinn: Produktion, Flug und Transport kosten echtes Geld. Andere Firmen entscheiden selbst.</p>
+   <div class="time-buttons"><button data-advance="1">+1 Minute</button><button data-advance="10">+10 Minuten</button><button data-advance="60">+60 Minuten</button></div>
+  </aside>
+ </div>
+ <div id="welt-meldung" role="status" aria-live="polite" class="game-message">Wähle einen Auftrag oder dein Schiff.</div>
+</section>
+<section id="raumbereich" aria-label="Grafisches Raumcockpit derselben Regel204-Welt" hidden>
+<h2 class="raum-titel">Dein Schiff <span class="sub">– freie Steuerung, echte Flugkosten, eine Welt</span></h2>
+<div id="raum-buehne">
+<canvas id="raum-leinwand" role="img" aria-label="Weltraumansicht: eigenes Schiff, Station, Felder, Bojen und weitere Schiffe des Systems. Alle Ziele sind auch über die Objektliste unter der Ansicht wählbar."></canvas>
+<p id="raum-ersatz" class="note" hidden>Dieser Browser stellt keine Canvas-2D-Grafik bereit. Die Objektliste, alle Tasten unter dieser Fläche und das Steuerpult steuern dasselbe Schiff ohne Grafik.</p>
+<div class="raum-feld raum-ol" aria-label="Schiffsstatus">
+<strong id="raum-schiff">–</strong><span id="raum-lage">–</span><span id="raum-fahrt"></span><span id="raum-ladung"></span>
+</div>
+<div class="raum-feld raum-or" aria-label="Kasse und Weltzeit">
+<span>Kasse <strong id="raum-kasse">–</strong></span><span>Flugreserve <strong id="raum-reserve">–</strong></span><span id="raum-zeit">–</span><span id="raum-audit">–</span>
+</div>
+<div id="raum-zielkarte" class="raum-feld" aria-label="Gewähltes Ziel" hidden>
+<button id="raum-ziel-zu" type="button" aria-label="Auswahl aufheben">×</button>
+<strong id="raum-zielname"></strong><span id="raum-zielinfo"></span>
+<div id="raum-zielaktionen" class="raum-reihe"></div>
+</div>
+<div id="raum-dock" class="raum-feld" aria-label="Stationsansicht im Dock" hidden>
+<strong>Angedockt · Stationsdienste</strong>
+<div id="raum-dockinhalt"></div>
+</div>
+<div id="raum-knueppel" role="application" aria-label="Steuerknüppel: Richtung ziehen, Auslenkung bestimmt den Schub. Nur im freien Flug."><i id="raum-knauf"></i></div>
+<div class="raum-tasten">
+<button id="raum-feuer" type="button" class="alert" hidden>Feuer (Training)</button>
+<button id="raum-duell" type="button" hidden>Duelltraining</button>
+<button id="raum-stopp" type="button" hidden>Stopp</button>
+<button id="raum-andocken" type="button" class="primary" hidden>Andocken</button>
+<button id="raum-abdocken" type="button" class="primary" hidden>Abdocken</button>
+</div>
+</div>
+<div class="raum-zeitleiste" role="group" aria-label="Weltzeit und Zoom">
+<button id="raum-start" type="button" class="primary" aria-pressed="false">Zeit starten</button>
+<button id="raum-tempo-1" type="button" aria-pressed="false">1×</button>
+<button id="raum-tempo-10" type="button" aria-pressed="true">10×</button>
+<button id="raum-tempo-60" type="button" aria-pressed="false">60×</button>
+<button id="raum-tempo-300" type="button" aria-pressed="false">300×</button>
+<button id="raum-zoom-minus" type="button" aria-label="Herauszoomen">−</button>
+<button id="raum-zoom-plus" type="button" aria-label="Hineinzoomen">+</button>
+</div>
+<p id="raum-meldung" role="status" aria-live="polite">Tippe ein Objekt an oder wähle es in der Liste. Leerer Raum setzt einen Flugpunkt; geflogen wird erst nach Bestätigung.</p>
+<div class="raum-unten">
+<details open><summary>Übersicht · Objekte im System</summary><div id="raum-ziele" class="raum-liste"></div></details>
+<details><summary>Eigene Flotte · Schiffwechsel</summary><div id="raum-flotte"></div>
+<p class="note">Der Kern kennt noch keinen eigenen Spielerstandort. Deshalb wechselst du die Steuerung nur im Dock zwischen eigenen Schiffen derselben Station (Dockkarte). Der Wechsel ändert weder Geld noch Eigentum.</p></details>
+<details open><summary>Sitzung · Sichern und Ansichten</summary>
+<div class="raum-reihe">
+<button id="raum-export" type="button">Geprüften JSON-Spielstand exportieren</button>
+<button id="raum-schreiber" type="button">Flugschreiber exportieren</button>
+<button id="raum-konzern" type="button">Konzern &amp; Flotte</button>
+<button id="raum-pult" type="button">Zurück zum Konzern</button>
+</div>
+<p class="note">Kein Autosave: vor dem Verlassen exportieren. Laden und Import bleiben im Steuerpult. Bedienung: Knüppel = Handflug, Tippen = Ziel wählen, zwei Finger = Zoom; Tastatur: Pfeile/WASD, Leertaste Stopp, P Zeit, +/− Zoom.</p></details>
+</div>
+</section>
+</main>
+<footer class="page-footer"><span>APHROS VOID</span><span>Eine gemeinsame Simulation · Geld, Waren und Eigentum bleiben prüfbar.</span><a href="../../index.html">Klassische Wirtschaft öffnen</a></footer>
+<script src="../w5ac/rule191-w5-ferry-core.js"></script>
+<script src="../legacy-hub/core-adapter.js"></script>
+<script src="../w5ac/session.js"></script>
+<script src="../flug2d/flug-kern.js"></script>
+<script src="../welt/rule200-k7-industry-core.js"></script>
+<script src="../welt/j2b-silizium-core.js"></script>
+<script src="../welt/j3-bauteil-core.js"></script>
+<script src="../welt/j4b-jaeger-werft-core.js"></script>
+<script src="../welt/welt-kern.js"></script>
+<script src="../verbund/kompatibilitaet.js"></script>
+<script src="../j4c/flotten-wechsel.js"></script>
+<script src="../raum/raum-szene.js"></script>
+<script src="../raum/raum-grafik.js"></script>
+<script src="../raum/raum-cockpit.js"></script>
+<script src="../verbund/konzern-session.js"></script>
+<script src="spiel.js"></script>
+</body></html>

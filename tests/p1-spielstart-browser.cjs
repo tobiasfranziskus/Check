@@ -100,7 +100,11 @@ const SLOT='aphros-void:spielerkarriere:regel204:v1';
     // Bad imports cannot replace the valid career.
     await page.locator('#open-menu').tap();
     assert.equal(await page.locator('#startseite').isVisible(),true);
-    await page.locator('#import-datei').setInputFiles({
+    const [chooser]=await Promise.all([
+      page.waitForEvent('filechooser'),
+      page.locator('#import-aktion').tap()
+    ]);
+    await chooser.setFiles({
        name:'untrusted.json',mimeType:'application/json',
        buffer:Buffer.from(JSON.stringify({rulesVersion:204,schema:8,owners:{house:{cash:999999}}}))
     });

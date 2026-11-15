@@ -1,0 +1,398 @@
+{
+  "status": "ANALYSE, NICHT MAIN",
+  "node": "v22.23.4",
+  "codeCommit": "d5c570f98cdee28ec36044176cfa12c946fab3bf",
+  "result": {
+    "scenario": "S01",
+    "days": 730,
+    "checkpoints": [
+      {
+        "day": 73,
+        "tick": 105120,
+        "hash": "bc9a8665941f07a3",
+        "eis": 42807,
+        "erz": 2050,
+        "wasser": 42700,
+        "material": 5,
+        "frachter": 1,
+        "miner": 0,
+        "ersatz": 0,
+        "erzvertraege": 1,
+        "eisfrachten": 854,
+        "wasserErloes": 656604,
+        "dividenden": 371266,
+        "loehne": 304066,
+        "haushalte": 18778,
+        "firmen": 10630,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            13650
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            3000
+          ]
+        ]
+      },
+      {
+        "day": 146,
+        "tick": 210240,
+        "hash": "7c1b5664e0e282a1",
+        "eis": 86625,
+        "erz": 2050,
+        "wasser": 86500,
+        "material": 5,
+        "frachter": 1,
+        "miner": 0,
+        "ersatz": 0,
+        "erzvertraege": 1,
+        "eisfrachten": 1730,
+        "wasserErloes": 1331154,
+        "dividenden": 741394,
+        "loehne": 608488,
+        "haushalte": 18778,
+        "firmen": 10630,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            13606
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            3000
+          ]
+        ]
+      },
+      {
+        "day": 219,
+        "tick": 315360,
+        "hash": "254b498bcbbb3eb4",
+        "eis": 130404,
+        "erz": 2050,
+        "wasser": 130300,
+        "material": 5,
+        "frachter": 1,
+        "miner": 0,
+        "ersatz": 0,
+        "erzvertraege": 1,
+        "eisfrachten": 2606,
+        "wasserErloes": 2005644,
+        "dividenden": 1111561,
+        "loehne": 912811,
+        "haushalte": 18778,
+        "firmen": 10630,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            13596
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            3000
+          ]
+        ]
+      },
+      {
+        "day": 292,
+        "tick": 420480,
+        "hash": "ff23de8f53b1cbba",
+        "eis": 174222,
+        "erz": 2050,
+        "wasser": 174100,
+        "material": 5,
+        "frachter": 1,
+        "miner": 0,
+        "ersatz": 0,
+        "erzvertraege": 1,
+        "eisfrachten": 3482,
+        "wasserErloes": 2680180,
+        "dividenden": 1481675,
+        "loehne": 1217233,
+        "haushalte": 18778,
+        "firmen": 10630,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            13632
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            3000
+          ]
+        ]
+      },
+      {
+        "day": 365,
+        "tick": 525600,
+        "hash": "f3a679417bba5194",
+        "eis": 218001,
+        "erz": 2050,
+        "wasser": 217900,
+        "material": 5,
+        "frachter": 1,
+        "miner": 0,
+        "ersatz": 0,
+        "erzvertraege": 1,
+        "eisfrachten": 4358,
+        "wasserErloes": 3354668,
+        "dividenden": 1851840,
+        "loehne": 1521556,
+        "haushalte": 18778,
+        "firmen": 10630,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            13606
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            3000
+          ]
+        ]
+      },
+      {
+        "day": 438,
+        "tick": 630720,
+        "hash": "38e9af78559d0c67",
+        "eis": 261819,
+        "erz": 2050,
+        "wasser": 261700,
+        "material": 5,
+        "frachter": 1,
+        "miner": 0,
+        "ersatz": 0,
+        "erzvertraege": 1,
+        "eisfrachten": 5234,
+        "wasserErloes": 4029220,
+        "dividenden": 2221970,
+        "loehne": 1825978,
+        "haushalte": 18778,
+        "firmen": 10630,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            13610
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            3000
+          ]
+        ]
+      },
+      {
+        "day": 511,
+        "tick": 735840,
+        "hash": "96b9e3d6a2b9e79f",
+        "eis": 305598,
+        "erz": 2050,
+        "wasser": 305500,
+        "material": 5,
+        "frachter": 1,
+        "miner": 0,
+        "ersatz": 0,
+        "erzvertraege": 1,
+        "eisfrachten": 6110,
+        "wasserErloes": 4703706,
+        "dividenden": 2592133,
+        "loehne": 2130301,
+        "haushalte": 18778,
+        "firmen": 10630,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            13568
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            3000
+          ]
+        ]
+      },
+      {
+        "day": 584,
+        "tick": 840960,
+        "hash": "ce5a3d28a0ca668b",
+        "eis": 349416,
+        "erz": 2050,
+        "wasser": 349300,
+        "material": 5,
+        "frachter": 1,
+        "miner": 0,
+        "ersatz": 0,
+        "erzvertraege": 1,
+        "eisfrachten": 6986,
+        "wasserErloes": 5378244,
+        "dividenden": 2962249,
+        "loehne": 2434723,
+        "haushalte": 18778,
+        "firmen": 10630,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            13636
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            3000
+          ]
+        ]
+      },
+      {
+        "day": 657,
+        "tick": 946080,
+        "hash": "09cd81ffbfca57df",
+        "eis": 393195,
+        "erz": 2050,
+        "wasser": 393100,
+        "material": 5,
+        "frachter": 1,
+        "miner": 0,
+        "ersatz": 0,
+        "erzvertraege": 1,
+        "eisfrachten": 7862,
+        "wasserErloes": 6052762,
+        "dividenden": 3332444,
+        "loehne": 2739046,
+        "haushalte": 18778,
+        "firmen": 10630,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            13546
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            3000
+          ]
+        ]
+      },
+      {
+        "day": 730,
+        "tick": 1051200,
+        "hash": "85dd1f6779ca09fb",
+        "eis": 437013,
+        "erz": 2050,
+        "wasser": 436900,
+        "material": 5,
+        "frachter": 1,
+        "miner": 0,
+        "ersatz": 0,
+        "erzvertraege": 1,
+        "eisfrachten": 8738,
+        "wasserErloes": 6727284,
+        "dividenden": 3702544,
+        "loehne": 3043468,
+        "haushalte": 18778,
+        "firmen": 10630,
+        "spieler": 3000,
+        "groessteKonten": [
+          [
+            "fonds_aldera",
+            13598
+          ],
+          [
+            "st_nadir",
+            4000
+          ],
+          [
+            "house",
+            3000
+          ],
+          [
+            "npc3",
+            3000
+          ]
+        ]
+      }
+    ],
+    "replayHash": "85dd1f6779ca09fb",
+    "elapsedSeconds": 96.920482866,
+    "ok": true
+  },
+  "limitations": [
+    "S01 ohne Stilllegung und Ersatzwirtschaft; kein allgemeiner W6-Nachweis",
+    "S02-Langlauf nach Tag 146 beendet; kein unabhängiger 365-/730-Tage-S02-Nachweis"
+  ]
+}

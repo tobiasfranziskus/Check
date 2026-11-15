@@ -34,6 +34,20 @@ Dieser Gegenpfad ist **keine** neue autonome NPC-Entscheidungsregel und darf nic
 
 ---
 
+## Erweiterter, tatsächlich geprüfter K2-/Silizium-Gegenpfad
+
+**[ANALYSE / DRAFT]** [Node22-Run #43702620012](https://github.com/tobiasfranziskus/Check/actions/runs/43702620012), **293/293 Tests, keine Fehler oder Skips**; [JS-Wirtschaft #43702620020](https://github.com/tobiasfranziskus/Check/actions/runs/43702620020) erfolgreich. Ausgangspunkt ist **derselbe** nach 50 Erz/finanziertem K7-W5-Frachter gültige Core-Worldhash; keine künstliche Eingangsware.
+
+1. **Tick211:** Nadir hat nach einer weiteren echten Raffineriecharge 5 Material, Aldera noch **zwei vorhandene Miner im Verkaufslager**. Ein K2-Werftauftrag scheitert korrekt mit `K2: Miner liegen schon in Aldera`. Diese vorhandenen Hüllen werden anschließend **rechtmäßig und jeweils aus vorhandener Kasse** an `house` und `npc3` verkauft – kein Löschen des Bestands.
+2. Die externe Werft `werft_extern` baut anschließend mit **5 echten Material und 30 wirklich vorfinanzierten Arbeitsminuten** einen Nadir-Miner, ausdrücklich für `house` vorgemerkt. Mit dem Original-`stationClaimMinerLocal` wird die fertige Hülle für **600 house-ISK** erworben.
+3. **Tick241:** Original-K2-Miner **`sh006`**, mit echtem `minerWerft.lokaleKaeufe`-Buch, Hauskasse **1.800 ISK**, NPC3-Kasse **2.058 ISK**, externe Werft **2.690 ISK**, Ledger `miner.produced=1`, Weltgeld **33.000**, Mint/Burn **0**, Hash **`29a875cdd31ab589`**.
+4. Derselbe Hausminer reserviert echte J2b-Förderarbeit, bezahlt den F6-Flugdienst, fliegt physisch zum Nadir-Siliziumfeld `(720000,-480000)`, fördert 8 Silizium in **64 bezahlten Arbeitsminuten**, dockt wieder an und verkauft 8 echte Ware für **192 ISK** an Nadir. Die bezahlte Förderarbeit kostet **128 ISK**.
+5. **Tick324:** Siliziumlager Nadir **8**, das Hauskonto nach allen echten Förder-/Flug-/Verkaufskosten **1.789 ISK**, Weltgeld unverändert **33.000**, Mint/Burn **0**, Hash **`1f460e8d5f533b76`**. Original-195-Quelle bytegleich, vollständiger Core-Audit pro Minute und Save/Load-Endhash bestanden. **0 Jäger**, denn bislang bleiben 30 Erz/0 Material/0 Bauteile nach echter K2-Werftfertigung. Für J4 werden weiter **20 Material, 8 J3-Bauteile und 32 Werftlohnminuten** nötig, einschließlich mindestens einer zusätzlichen echten Erzlieferung für 5 Material.
+
+**Zusätzlich im spielbaren Code gesondert behoben:** Bisher bot J8 für den fertigen Nadir-Miner nur den generischen, dort unzulässigen `shipBuy`. Der sachgerechte K2-Eigentümerkauf wird im unabhängigen [Draft-PR #371](https://github.com/tobiasfranziskus/Check/pull/371) zur separat geprüften Integration vorgeschlagen. **Nicht** gleichbedeutend mit Freigabe der NPC-Industriepriorität.
+
+---
+
 ## Für die spätere Entscheidung
 
 Die optionale bestehende `welt.industrieAutoSetzen(...)`-Forschung bleibt ohne Produktfreigabe **deaktiviert**. Eine neue Prioritätsregel "Bergbau-/Industrievertragsanfrage vor autonomem Erzpendel" ist eine wirtschaftliche NPC-Produktentscheidung und wird hier weder still implementiert noch aktiviert. Erst nach positivem Vorversuch/Unterfinanzierungs- und Krisentest eine konkrete, vom Nutzer getrennt freizugebende Designoption vorstellen.

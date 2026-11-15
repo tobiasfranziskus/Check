@@ -727,6 +727,12 @@ function checkShape(state, cmd, rules) {
       if (rules.economy.waren[cmd.klasse].stufe !== 'schiff') return 'Ware ist kein aktivierbares Schiff';
       if (!Object.hasOwn(s.ladung, cmd.klasse) || s.ladung[cmd.klasse] < 1) return 'Schiff nicht im Frachtraum';
     }
+    // P8d: bereits unterzeichneter Fremdfrachtvertrag reserviert diese
+    // EIGENE Transporthuelle; keine automatische Eis-/Erz-/Werft-Doppelbindung.
+    // Nur der Vertrag darf den echten W3-Schiffstransit ausloesen.
+    if(rules.rulesVersion===207&&state.kanon?.p8d?.auftrag?.frachter===s.id
+      &&!['shipMove','shipRename'].includes(cmd.type))
+      return 'P8d: Frachter ist bereits rechtswirksam vertraglich gebunden';
     if (rules.w3 && s.klasse === 'frachter' && cmd.type !== 'shipFreight' && cmd.type !== 'shipRename'
       && !(rules.w5Transfer && cmd.type === 'shipReposition')
       && !(rules.w5Replacement && cmd.type === 'researchShipLoss')

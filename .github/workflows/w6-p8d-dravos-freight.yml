@@ -7,6 +7,7 @@ on:
       - 'prototypes/welt/j2b-silizium-core.js'
       - 'prototypes/welt/rule200-k7-industry-core.js'
       - 'tests/w6-p8d-separater-dravos-frachter.test.mjs'
+      - 'tests/w6-p8d-zwei-firmen-finanzierung.test.mjs'
       - '.github/workflows/w6-p8d-dravos-freight.yml'
   workflow_dispatch:
 permissions:
@@ -28,5 +29,5 @@ jobs:
           node --check prototypes/welt/rule200-k7-industry-core.js
       - name: "Paid two-owner Dravos and original Rule204/205/206 regressions"
         run: |
-          node --test tests/w6-p8d-separater-dravos-frachter.test.mjs
+          node --test tests/w6-p8d-separater-dravos-frachter.test.mjs tests/w6-p8d-zwei-firmen-finanzierung.test.mjs
           node --test tests/w6-p8c-dravos-expedition.test.mjs tests/w6-p8b-two-fields-rule205.test.mjs tests/w6-p5-autonome-siliziumkette.test.mjs tests/w6-p6-autonome-jaegerlieferkette.test.mjs

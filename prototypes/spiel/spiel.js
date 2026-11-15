@@ -68,13 +68,27 @@ function startNeu(){
  try{
   if(!scope.W5acSession||!scope.J8KonzernSitzung)throw Error('Original-Wirtschaftskern wurde nicht geladen');
   // A genuine Rule195 starting world, not a prefilled 204 test fixture.
+  const w6Aktiv=$('w6-npc-start')?.checked===true;
   const original195=scope.W5acSession.create(42,'private195').export();
   const neu=neueSitzung();
   const a=neu.starten195(original195,true);
   if(a.regel!==204||a.weltgeld!==33000)throw Error('Ausgangswelt nicht autoritativ validiert');
+  if(w6Aktiv){
+   const welt=neu.weltReferenz(),zustand=neu.zustandReferenz();
+   if(typeof welt.politikSetzen!=='function'||typeof welt.npcAutoSetzen!=='function'
+     ||typeof welt.npcSiliziumSetzen!=='function')throw Error('W6-Firmenpolitik nicht vollständig installiert');
+   // Freigegebenes S02-Forschungsprofil. Eine Politik ist Verhalten, weder Geldquelle noch Ware.
+   welt.politikSetzen(zustand,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
+   welt.npcAutoSetzen(zustand,true);
+   welt.npcSiliziumSetzen(zustand,true);
+   const audit=welt.audit(zustand);
+   if(!audit.ok)throw Error('W6: Wirtschaftsprüfung verweigert Start: '+audit.fehler.join('; '));
+  }
   session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;
   const ok=speichern(!!vorher);
-  aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK in der gesamten Wirtschaft. Kein kostenloses Schiff.');
+  aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(w6Aktiv
+   ?'W6-NPC-Konzerne arbeiten auf eigene Rechnung; jeder Auftrag bleibt finanziert.'
+   :'Unveränderte Karriere ohne NPC-W6-Automatik.')+' Kein kostenloses Schiff.');
   if(!ok)hinweis('Karriere gestartet. Lokales Speichern nicht verfügbar; bitte sofort JSON exportieren.',true);
  }catch(e){hinweis('Start verweigert: '+error(e),true);}
 }

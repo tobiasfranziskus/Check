@@ -1,3 +1,4 @@
+> **[MAIN / nachträglich integriert, 15.11.2026]** Die ursprüngliche RAUM-1-Forschung [#358](https://github.com/tobiasfranziskus/Check/pull/358) wurde nach unabhängiger Anpassung durch [Integrations-PR #359](https://github.com/tobiasfranziskus/Check/pull/359) übernommen und als `main ffd0654e` auf GitHub Pages veröffentlicht. Die nachfolgenden `[DRAFT]`-Angaben dokumentieren ausschließlich den historischen Ausgangszustand. Finale Abnahme: 272/272 Node22, Chromium/WebKit je vier Touchgrößen, finanzierte Spieleraufträge und reale Flotten-/Eigentumsgates; echte iPad-/NAS-Gerätetests weiterhin offen.
 # RAUM-1 · Grafisches Raumcockpit in der Regel204-Sitzung – Bestandsaufnahme und Übergabe
 
 **Status: [DRAFT] · 15.11.2026.** Einmaliger, abgegrenzter Sonderauftrag (grafische Gameplay-Integration aus Void Echoes). Kein Merge, kein Pages-Deploy, keine neue Wirtschaftsregel. Prüfung, Integration und Veröffentlichung liegen bei ChatGPT als Hauptentwickler.

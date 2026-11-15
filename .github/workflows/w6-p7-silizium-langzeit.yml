@@ -1,0 +1,37 @@
+name: "W6 P7 – echte NPC-Jaegerwirtschaft 180/365/730 Tage"
+on:
+  pull_request:
+    paths:
+      - 'tools/w6-p7-silizium-langzeit.cjs'
+      - 'tests/w6-p7-*.test.mjs'
+      - 'docs/W6_P7_SILIZIUM_LANGZEIT.md'
+      - '.github/workflows/w6-p7-silizium-langzeit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  silicon-fighter-longrun:
+    name: "S02+P5: Tag 90/180/365/730, bezahlt und physisch auditiert"
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Syntax und Wirtschaftsreferenz ohne neue Optionen"
+        run: |
+          node --check tools/w6-p7-silizium-langzeit.cjs
+          node --test tests/w6-p7-langzeit-contract.test.mjs
+      - name: "S02+P5: bis 730 Tage, echte Finanzierung, Save-/Waren-/Eigentumsaudits"
+        run: |
+          mkdir -p "$RUNNER_TEMP/w6-p7"
+          node tools/w6-p7-silizium-langzeit.cjs 730 "$RUNNER_TEMP/w6-p7"
+      - name: "Tatsaechliche 180-/365-/730-Saves, nicht ins Produktrepository"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w6-p7-730-days-replay-and-audit
+          path: ${{ runner.temp }}/w6-p7/
+          if-no-files-found: warn
+          retention-days: 7

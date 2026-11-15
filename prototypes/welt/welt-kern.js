@@ -1142,10 +1142,25 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       const k = state.kanon, n = k.npc;
       if (k.npcAuto !== undefined && typeof k.npcAuto !== 'boolean') fehler.push('W6-Firmenpolitik: ungültige Einstellung');
       if (n === undefined) { if (k.npcAuto !== undefined) fehler.push('W6-Firmenpolitik: Entscheidungsbuch fehlt'); return; }
+      // QA-Härtung zu #382: auch positive, aber unmögliche Eigenbefehls-Zähler
+      // dürfen nicht als angeblich authentische NPC-Entscheidungen geladen werden.
+      // Ein neuer Regel204-Stand ohne npc-Felder bleibt unverändert.
+      const erlaubt = new Set([
+        'npc3:shipShuttle', 'npc3:shipShuttleStop', 'npc3:shipBuy',
+        'st_nadir:stationRefine', 'st_nadir:stationBuildParts', 'st_nadir:stationBuildFighter',
+      ]);
+      const gueltigerZaehler = (key, value, bereich) => {
+        if (!ganz(value) || value === 0 || value > state.tick) return false;
+        if (bereich !== 'pausen') return erlaubt.has(key);
+        return (key.startsWith('npc3: ') || key.startsWith('st_nadir: ')) && key.length > 8;
+      };
       if (k.npcAuto === undefined || n === null || typeof n !== 'object' || Array.isArray(n)
         || Object.keys(n).sort().join() !== 'abgelehnt,befehle,pausen'
-        || [n.befehle, n.abgelehnt, n.pausen].some((z) => z === null || typeof z !== 'object' || Array.isArray(z)
-          || Object.values(z).some((x) => !ganz(x) || x === 0)))
+        || ['befehle', 'abgelehnt', 'pausen'].some((bereich) => {
+          const z = n[bereich];
+          return z === null || typeof z !== 'object' || Array.isArray(z)
+            || Object.entries(z).some(([key, value]) => !gueltigerZaehler(key, value, bereich));
+        }))
         fehler.push('W6-Firmenpolitik: Entscheidungsbuch ungültig');
     }
     return { leer, schritt, audit };

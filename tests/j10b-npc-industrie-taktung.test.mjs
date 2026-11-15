@@ -154,3 +154,76 @@ test('J10b: default policy is independently proven to miss signed industry while
  }));
  assert.notEqual(w.save(s),save);
 });
+
+
+test('J10b/K2: paid original Nadir miner built from delivered ore and purchased locally; no free silicon',()=>{
+ const {w,s}=earlyContract();
+ wait(w,s,()=>s.w3.auftrag?.phase==='rueck');
+ ownerCommand(w,s,'st_nadir',{type:'stationRefine',station:'st_nadir'});
+ wait(w,s,()=>!s.w4.auftrag,100);
+ ownerCommand(w,s,'werft_extern',{type:'industrialOreBuildShip'});
+ wait(w,s,()=>!s.w5.auftrag&&!s.w3.auftrag,240);
+ // The signed K7 order has consumed 10 of its 50 really delivered ore.
+ // Only existing stock can be refined: no invented silicon/miner inventory.
+ assert.equal(s.stations.st_nadir.lager.erz,40);
+ ownerCommand(w,s,'st_nadir',{type:'stationRefine',station:'st_nadir'});
+ wait(w,s,()=>!s.w4.auftrag,100);
+ const oldMineStock=s.stations.st_aldera.lager.miner||0;
+ const k2={type:'stationBuildMiner',owner:'werft_extern',station:'st_nadir',besteller:'house'};
+ const pre=w.hash(s);
+ const firstAttempt=w.execute(w.load(w.save(s)),k2);
+ console.log('J10B_K2_BEFORE',JSON.stringify({
+  tick:s.tick,alderaMinerStock:oldMineStock,nadirMinerStock:s.stations.st_nadir.lager.miner||0,
+  house:s.owners.house.cash,npc3:s.owners.npc3.cash,werft:s.owners.werft_extern.cash,
+  material:s.stations.st_nadir.lager.material,ore:s.stations.st_nadir.lager.erz,
+  k2Attempt:firstAttempt,foundryRules:{
+   material:w.rules.w5.material,price:w.rules.w5.materialPreis,
+   workMinutes:w.rules.w5.dauer,workPrice:w.rules.w5.lohnJeMinute
+  }
+ }));
+ assert.equal(w.hash(s),pre,'copy-based K2 precheck does not mutate world');
+ // Existing original K2 prevents manufacturing while cheaper Aldera starter
+ // miners remain physically in stock. Purchases, not stock deletion, are required.
+ if(oldMineStock>0){
+  assert.equal(firstAttempt.ok,false);
+  assert.match(firstAttempt.reason,/Aldera/);
+  for(let k=0;k<oldMineStock;k++){
+   const owner=k===0?'house':'npc3';
+   ownerCommand(w,s,owner,{type:'shipBuy',station:'st_aldera',klasse:'miner'});
+  }
+ }
+ assert.equal(s.stations.st_aldera.lager.miner||0,0);
+ const start=w.hash(s);
+ const real=w.execute(s,k2);
+ assert.equal(real.ok,true,JSON.stringify(real));
+ audits(w,s);
+ assert.notEqual(w.hash(s),start);
+ assert.equal(s.kanon.minerWerft.begonnen,1);
+ wait(w,s,()=>!s.kanon.minerWerft.auftrag,100);
+ assert.equal(s.stations.st_nadir.lager.miner,1);
+ const cash=s.owners.house.cash,oldShips=Object.keys(s.ships);
+ const claim={type:'stationClaimMinerLocal',owner:'house',station:'st_nadir'};
+ const receipt=w.execute(s,claim);
+ assert.equal(receipt.ok,true,JSON.stringify(receipt));
+ audits(w,s);
+ assert.equal(cash-s.owners.house.cash,600,'genuine house purchase of Nadir K2 miner');
+ assert.equal(s.stations.st_nadir.lager.miner,0);
+ const created=Object.values(s.ships).filter(sh=>!oldShips.includes(sh.id));
+ assert.equal(created.length,1);
+ assert.equal(created[0].owner,'house');
+ assert.equal(created[0].klasse,'miner');
+ assert.equal(created[0].heimat,'nadir');
+ assert.equal(created[0].flug.lage,'angedockt');
+ assert.ok(s.kanon.minerWerft.lokaleKaeufe.some(x=>x.id===created[0].id&&x.preis===600));
+ assert.equal(s.stations.st_nadir.lager.silizium,0,'no silicon until real field mining and sale');
+ assert.equal(s.kanon.jaeger.fertig,0);
+ const loaded=w.load(w.save(s));
+ assert.equal(w.hash(loaded),w.hash(s));
+ console.log('J10B_K2_LOCAL_MINER',JSON.stringify({
+  tick:s.tick,ship:created[0].id,houseCash:s.owners.house.cash,
+  npc3Cash:s.owners.npc3.cash,externalYardCash:s.owners.werft_extern.cash,
+  material:s.stations.st_nadir.lager.material,ore:s.stations.st_nadir.lager.erz,
+  producedMiners:s.ledger.miner.produced,initialMinerPurchases:oldMineStock,
+  worldMoney:33000,minted:s.minted,burned:s.burned,hash:w.hash(s)
+ }));
+});

@@ -72,6 +72,57 @@ test('P8b: alle Lagerstaetten sind getrennt erschöpfbar, Manipulation faellt be
  }
  assert.equal(old.load(save).rulesVersion,204);
 });
+test('P8b: ausdruecklicher Import einer bereits bezahlten, laufenden Original204-Charge bewahrt Waren und Eigentum',()=>{
+ const {welt:old,s}=W6.start(S02);
+ old.npcSiliziumSetzen(s,true);
+ // Erst echte Original-K2-Abnahme, volle 8er-Silizium-Verkaufscharge.
+ for(let i=0;i<15000&&s.kanon.silizium.verkauft<8;i+=60)old.advance(s,60);
+ assert.equal(s.kanon.silizium.verkauft,8,'Quelljob real abgeschlossen');
+ const oldFirst=old.hash(s);
+ // Der zweite Originalauftrag ist nur dann interessant, wenn physische
+ // Foerderarbeit wirklich laeuft (kein synthetischer Auftrag im Test).
+ for(let i=0;i<10000;i++){
+  if(s.kanon.silizium.auftrag?.gefoerdert>0
+    &&s.kanon.silizium.auftrag.gefoerdert<8)break;
+  old.minute(s);
+ }
+ assert.ok(s.kanon.silizium.auftrag?.gefoerdert>0 &&
+  s.kanon.silizium.auftrag.gefoerdert<8,
+  'Originaljob muss gleichzeitig echten Erzfrachterlohn, Ladung und 204-Eigentum haben');
+ const canon=old.canonical(s),oldHash=old.hash(s),cash=Object.values(s.owners).map(o=>o.cash);
+ const m=K.ausRegel204P8b(old.save(s)),w=m.welt,z=m.zustand,feld=z.kanon.silizium.felder;
+ assert.equal(m.quellHash,oldHash);
+ assert.equal(old.canonical(s),canon,'alter Quellstand unveraendert');
+ assert.equal(feld['nadir-primaer'].gefoerdert,s.kanon.silizium.gefoerdert);
+ assert.equal(feld['nadir-primaer'].verkauft,8);
+ assert.equal(feld['nadir-sekundaer'].gefoerdert,0);
+ assert.equal(z.kanon.silizium.auftrag.feld,'nadir-primaer');
+ assert.equal(z.kanon.silizium.belege[0].feld,'nadir-primaer');
+ assert.deepEqual(Object.values(z.owners).map(o=>o.cash),cash);
+ assert.deepEqual(z.ledger,s.ledger);
+ assert.deepEqual(z.ships,s.ships);
+ assert.deepEqual(z.stations,s.stations);
+ assert.equal(z.kanon.silizium.vorrat,s.kanon.silizium.vorrat+16);
+ audit(w,z);
+ // Original-204 und Forsch-205 muessen eine laufende K1/F6/
+ // J2b-Arbeitsminute im urspruenglichen Feld identisch bezahlen.
+ old.minute(s);w.minute(z);
+ assert.equal(z.kanon.silizium.gefoerdert,s.kanon.silizium.gefoerdert);
+ assert.equal(z.kanon.silizium.arbeitsMinuten,s.kanon.silizium.arbeitsMinuten);
+ assert.deepEqual(z.owners,s.owners);
+ assert.deepEqual(z.ledger,s.ledger);
+ assert.deepEqual(z.ships,s.ships);
+ assert.equal(z.tick,s.tick);
+ assert.equal(w.hash(w.load(w.save(z))),w.hash(z));
+ audit(w,z);audit(old,s);
+ assert.notEqual(oldFirst,oldHash,'Originalwelt bewegte sich nach erstem Verkauf weiter');
+ console.log('P8B_AKTIVE_204_205_FORTSETZUNG',JSON.stringify({
+  tick:z.tick,sourceHash:old.hash(s),targetHash:w.hash(z),
+  alteFoerderung:s.kanon.silizium.gefoerdert,
+  zweitesFeldNochUnberuehrt:feld['nadir-sekundaer'].vorrat,
+  weltgeld:33000,mint:0,burn:0}));
+});
+
 test('P8b: Original-NPC3 foerdert legal aus zwei real getrennten Feldern; dritter bezahlter J4 wird nicht durch Gratiswaren erzeugt',()=>{
  const {welt:w,zustand:s}=K.ausRegel204P8b(quelle().save);
  assert.deepEqual(w.npcSiliziumSetzen(s,true),{ok:true,aktiviert:true});

@@ -38,7 +38,9 @@ function eigenesSchiff(s, id) {
   if (!sh || sh.id !== id || sh.owner !== OWNER || !sh.flug) throw Error('RAUM: kein eigenes Schiff mit Flugkörper');
   return sh;
 }
-// Der Einstieg bleibt streng: nur eine auditierte Regel204-Welt mit wirklich gekauftem Spielerjäger.
+// Original-Jägerbelege bleiben zwingend. J9 erlaubt zusätzlich eine vollständig
+// auditierte, nur mit echtem Hausgeld gekaufte Minerhülle ohne Anfangsjäger.
+// Der Core hat beim Kauf das Eigentum gebucht, die Szene selbst erzeugt keine Hülle.
 function sitzungPruefen(welt, s) {
   if (!welt || welt.regel !== 204 || !s || s.rulesVersion !== 204 || !ganz(s.tick) || !ganz(s.flug && s.flug.schritt))
     throw Error('RAUM: nur auditierte Regel204-Welt');
@@ -46,8 +48,14 @@ function sitzungPruefen(welt, s) {
   const kauf = s.kanon && s.kanon.jaeger && Array.isArray(s.kanon.jaeger.kaeufe)
     ? s.kanon.jaeger.kaeufe.find((k) => k.owner === OWNER && k.preis === preis
       && s.ships[k.id] && s.ships[k.id].owner === OWNER && s.ships[k.id].klasse === 'jaeger') : null;
-  if (!kauf) throw Error('RAUM: kein tatsächlich gekaufter Spielerjäger im Weltstand');
-  return kauf.id;
+  const eigeneJäger = Object.values(s.ships || {}).filter(sh => sh.owner === OWNER && sh.klasse === 'jaeger');
+  if (eigeneJäger.length && !kauf)
+    throw Error('RAUM: kein tatsächlich gekaufter Spielerjäger im Weltstand');
+  if (kauf) return kauf.id;
+  if (!Object.values(s.ships || {}).some(sh => sh.owner === OWNER && sh.klasse === 'miner' && sh.flug))
+    throw Error('RAUM: noch kein rechtmäßig erworbener eigener Miner oder Jäger');
+  if (!welt.audit(s).ok) throw Error('RAUM: Minerübernahme verlangt vollständiges Original-Core-Audit');
+  return null; // Kein künstlicher Jäger – Jägertraining bleibt gesperrt.
 }
 function ladungText(ladung) {
   const teile = Object.keys(ladung || {}).sort().filter((k) => ladung[k] > 0).map((k) => k + ': ' + ladung[k]);

@@ -10,6 +10,7 @@ on:
       - 'prototypes/verbund/**'
       - 'tests/j7-*'
       - 'tests/j8-*'
+      - 'tests/j9-*'
       - 'prototypes/flug2d/flug-kern.js'
       - 'prototypes/f8-jaeger/**'
       - 'prototypes/welt/**'
@@ -74,6 +75,11 @@ jobs:
           WELT_BROWSER: ${{ matrix.browser }}
       - name: "J8: bezahlter Miner, echte Weltzeit, freiwillige Save-Kopie und Wiederaufnahme"
         run: node tests/j8-konzern-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "J9: dieselbe Konzernwelt persönlich als Miner fliegen und originalfinanziert abdocken"
+        run: node tests/j9-verbund-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}

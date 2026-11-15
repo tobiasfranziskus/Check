@@ -6,6 +6,51 @@
 'use strict';
 const d=scope.document,$=id=>d.getElementById(id);
 const session=scope.J8KonzernSitzung.erstellen();
+let raum=null,schrittzaehler=0,flugJournal=[],journalVoll=true;
+const JOURNAL_MAX=50000;
+const nichtMoeglich=grund=>({ok:false,reason:grund});
+function sichtWechsel(ziel){
+ if(!aktiv)return;
+ if(ziel==='raum'){
+   $('konzernwelt').hidden=true;$('raumbereich').hidden=false;
+   if(raum)raum.aktivieren();
+ }else{
+   if(raum)raum.deaktivieren();
+   $('raumbereich').hidden=true;$('konzernwelt').hidden=false;
+   darstellen(session.ansicht());
+ }
+}
+function flugBefehl(cmd){
+ const r=session.flugBefehl(cmd);
+ if(flugJournal.length<JOURNAL_MAX)flugJournal.push({schritt:schrittzaehler,cmd:{...cmd},ok:r.ok});
+ else journalVoll=false;
+ return r;
+}
+function flugSchritte(n){
+ const m=session.flugSchritte(n);schrittzaehler+=n;return m;
+}
+if(scope.RaumCockpit&&scope.RaumSzene&&scope.RaumGrafik&&$('raumbereich')){
+ try{
+  raum=scope.RaumCockpit.verbinden({
+   welt:()=>session.weltReferenz(),zustand:()=>session.zustandReferenz(),
+   jaeger:()=>session.pilotStatus(),bojen:[],
+   patrouille:()=>null,patrouilleStand:()=>({status:'nicht gestartet',erreicht:0}),
+   duellStand:()=>null,
+   schritte:flugSchritte,ausfuehren:flugBefehl,audit:()=>session.flugAudit(),
+   patrouilleStarten:()=>nichtMoeglich('Kein Jäger und keine freigegebene Patrouille in J9'),
+   duellStarten:()=>nichtMoeglich('Nur die bestehende Jägersitzung besitzt ein Trainingsduell'),
+   feuern:()=>nichtMoeglich('Keine unfinanzierte Kampfmunition im Konzerncockpit'),
+   exportieren:()=>$('export204').click(),
+   ansicht:sichtWechsel,
+   meldung:(s,fail)=>status(s,fail),
+   flugschreiber:()=>({format:'aphros-raum-flugschreiber-1',regel:204,
+     quellHash:session.ansicht().quelleHash,
+     schritte:schrittzaehler,vollstaendig:journalVoll,
+     eintraege:flugJournal.map(e=>({...e,cmd:{...e.cmd}}))})
+  });
+ }catch(e){raum=null;console.error('J9 Cockpit-Fallback: ',e.message);}
+}
+
 let text195=null,text204=null,pruefungOK=false,aktiv=false;
 const status=(s,fehler=false)=>{const x=aktiv?$('weltmeldung'):$('preview195');
  x.textContent=s;x.className='message'+(fehler?' fail':'');};
@@ -75,6 +120,34 @@ function darstellen(a=session.ansicht()){
  $('jaeger').textContent=a.eigenerJaeger;
  $('hash').textContent='Original-Core-Hash '+a.hash+' · '+a.herkunft+' · Quelle '+a.quelleHash;
  tabelle('schiffe',a.schiffe,s=>[s.id,s.klasse,s.system,s.flug||s.phase,s.ladung]);
+
+ // Der Pilotwechsel verändert weder den Core-Worldhash noch eigene Waren/Gelder.
+ const piloten=session.piloten();
+ const nodes=piloten.map(p=>{
+  const box=d.createElement('div');box.className='aktion';
+  const taste=d.createElement('button');taste.type='button';
+  taste.dataset.j9Pilot=p.id;
+  taste.textContent=(p.klasse==='miner'?'Miner ':'Jäger ')+p.id+' · '+p.system+' · '+p.lage+' persönlich fliegen';
+  taste.disabled=!raum||!p.erlaubt;
+  const info=d.createElement('small');
+  info.textContent=p.erlaubt
+   ?'Eigene auditierte Hülle · Kopie derselben Welt, Lohnreserve beim Abdocken'
+   :'Gesperrt: '+p.grund;
+  taste.addEventListener('click',()=>{
+   if(!raum){status('Grafisches Cockpit nicht verfügbar',true);return;}
+   const r=session.uebernehmen(p.id,raum.laeuft());
+   if(!r.ok){status('Schiffwechsel verweigert: '+r.reason,true);darstellen();return;}
+   raum.sitzungGewechselt();
+   sichtWechsel('raum');
+  });
+  box.append(taste,info);return box;
+ });
+ $('j9-piloten').replaceChildren(...(nodes.length?nodes:[(()=>{
+   const p=d.createElement('p');p.className='note';
+   p.textContent='Noch kein eigenes Schiff. Erst einen tatsächlich vorhandenen Miner bezahlen und kaufen.';
+   return p;
+ })()]));
+
  tabelle('stationen',a.stationen,s=>[s.id,s.system,s.lager]);
  const buttons=session.angebote().map(x=>{
   const box=d.createElement('div');box.className='aktion';
@@ -94,8 +167,8 @@ function darstellen(a=session.ansicht()){
  });
  $('angebote').replaceChildren(...buttons);
  $('pilotstatus').textContent=a.eigenerJaeger>0
-  ?'Eigener bezahlter Jäger vorhanden. Exportiere die Regel204-Welt und lade sie über den normalen JSON-Import im grafischen Raumcockpit – die beiden Seiten schreiben keine gemeinsamen Autosaves.'
-  :'Noch kein gekaufter Jäger: Erst legitime Werftproduktion und Kauf finanzieren. Eigene Miner und Konzerntätigkeiten bleiben trotzdem spielbar.';
+  ?'Eigener bezahlter Jäger verfügbar. Der direkte J9-Schiffwechsel benutzt dieselbe Regel204-Welt; regelmäßiges JSON-Backup empfohlen.'
+  :'Kein eigener Jäger erforderlich: Ein legal gekaufter Miner kann direkt aus der Konzernansicht persönlich geflogen werden. Jägerproduktion und Kauf bleiben separat finanziert.';
 }
 for(const el of d.querySelectorAll('[data-minute]')){
  el.addEventListener('click',()=>{

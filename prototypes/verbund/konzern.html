@@ -28,7 +28,7 @@ th,td{border-bottom:1px solid #345166;text-align:left;padding:9px;overflow-wrap:
 li{padding:4px}.success{color:#9ee5b5}.fail{color:#ffc3a0}
 [hidden]{display:none!important}
 @media(min-width:750px){.aktion{grid-template-columns:minmax(210px,2fr) minmax(190px,1fr);align-items:center}}
-</style></head><body>
+</style><link rel="stylesheet" href="../raum/raum.css"></head><body>
 <header>
 <h1>J8 · Konzern und Flotte</h1>
 <p class="note">Regel204 · eine autoritative Wirtschaft · echte Eigentümer und Zahlungen · <strong>kein Anfangsjäger erforderlich</strong>.</p>
@@ -77,6 +77,11 @@ li{padding:4px}.success{color:#9ee5b5}.fail{color:#ffc3a0}
 <div id="angebote" class="grid" aria-label="Echte geprüfte Spieleraufträge"></div>
 <p class="note">Nur Befehle des Kontos <strong>house</strong>. Stationen, Werften und NPC-Konzerne entscheiden unabhängig; ihre Gelder dürfen nicht vom Spieler ausgegeben werden. Gesperrte Angebote zeigen den Core-Grund an.</p>
 </div>
+<div class="block" id="j9-steuerplatz">
+<h3>Persönlich fliegen · ohne zweite Welt</h3>
+<p class="note">Einen eigenen, tatsächlich gekauften und am Dock erreichbaren Miner oder Jäger übernehmen. Ein bestehender autonomer Pendelauftrag muss zuvor beendet sein. Jägerkampf benötigt einen rechtmäßig erworbenen Jäger.</p>
+<div id="j9-piloten" class="grid" aria-label="Geprüfte persönliche Schiffe"></div>
+</div>
 <div class="block">
 <h3>Vorhandene eigene Flotte</h3>
 <div class="scroll"><table><thead><tr><th>Schiff</th><th>Klasse</th><th>System</th><th>Status</th><th>Ladung</th></tr></thead><tbody id="schiffe"></tbody></table></div>
@@ -91,6 +96,60 @@ li{padding:4px}.success{color:#9ee5b5}.fail{color:#ffc3a0}
 <p id="pilotstatus" class="note">Ein Jäger muss zuerst tatsächlich finanziert, gebaut und gekauft werden. Ohne Kaufbeleg gibt es keinen Cockpitzugang. Nach dem Kauf kannst du das exportierte Regel204-JSON im vorhandenen Raumcockpit laden.</p>
 </div>
 </section>
+<section id="raumbereich" aria-label="Grafisches Raumcockpit derselben Regel204-Welt" hidden>
+<h2 class="raum-titel">J9 · Persönliches 2D-Schiff <span class="sub">– direkt aus der J8-Konzernwelt, ohne JSON-Wechsel</span></h2>
+<div id="raum-buehne">
+<canvas id="raum-leinwand" role="img" aria-label="Weltraumansicht: eigenes Schiff, Station, Felder, Bojen und weitere Schiffe des Systems. Alle Ziele sind auch über die Objektliste unter der Ansicht wählbar."></canvas>
+<p id="raum-ersatz" class="note" hidden>Dieser Browser stellt keine Canvas-2D-Grafik bereit. Die Objektliste, alle Tasten unter dieser Fläche und das Steuerpult steuern dasselbe Schiff ohne Grafik.</p>
+<div class="raum-feld raum-ol" aria-label="Schiffsstatus">
+<strong id="raum-schiff">–</strong><span id="raum-lage">–</span><span id="raum-fahrt"></span><span id="raum-ladung"></span>
+</div>
+<div class="raum-feld raum-or" aria-label="Kasse und Weltzeit">
+<span>Kasse <strong id="raum-kasse">–</strong></span><span>Flugreserve <strong id="raum-reserve">–</strong></span><span id="raum-zeit">–</span><span id="raum-audit">–</span>
+</div>
+<div id="raum-zielkarte" class="raum-feld" aria-label="Gewähltes Ziel" hidden>
+<button id="raum-ziel-zu" type="button" aria-label="Auswahl aufheben">×</button>
+<strong id="raum-zielname"></strong><span id="raum-zielinfo"></span>
+<div id="raum-zielaktionen" class="raum-reihe"></div>
+</div>
+<div id="raum-dock" class="raum-feld" aria-label="Stationsansicht im Dock" hidden>
+<strong>Angedockt · Stationsdienste</strong>
+<div id="raum-dockinhalt"></div>
+</div>
+<div id="raum-knueppel" role="application" aria-label="Steuerknüppel: Richtung ziehen, Auslenkung bestimmt den Schub. Nur im freien Flug."><i id="raum-knauf"></i></div>
+<div class="raum-tasten">
+<button id="raum-feuer" type="button" class="alert" hidden>Feuer (Training)</button>
+<button id="raum-duell" type="button" hidden>Duelltraining</button>
+<button id="raum-stopp" type="button" hidden>Stopp</button>
+<button id="raum-andocken" type="button" class="primary" hidden>Andocken</button>
+<button id="raum-abdocken" type="button" class="primary" hidden>Abdocken</button>
+</div>
+</div>
+<div class="raum-zeitleiste" role="group" aria-label="Weltzeit und Zoom">
+<button id="raum-start" type="button" class="primary" aria-pressed="false">Zeit starten</button>
+<button id="raum-tempo-1" type="button" aria-pressed="false">1×</button>
+<button id="raum-tempo-10" type="button" aria-pressed="true">10×</button>
+<button id="raum-tempo-60" type="button" aria-pressed="false">60×</button>
+<button id="raum-tempo-300" type="button" aria-pressed="false">300×</button>
+<button id="raum-zoom-minus" type="button" aria-label="Herauszoomen">−</button>
+<button id="raum-zoom-plus" type="button" aria-label="Hineinzoomen">+</button>
+</div>
+<p id="raum-meldung" role="status" aria-live="polite">Tippe ein Objekt an oder wähle es in der Liste. Leerer Raum setzt einen Flugpunkt; geflogen wird erst nach Bestätigung.</p>
+<div class="raum-unten">
+<details open><summary>Übersicht · Objekte im System</summary><div id="raum-ziele" class="raum-liste"></div></details>
+<details><summary>Eigene Flotte · Schiffwechsel</summary><div id="raum-flotte"></div>
+<p class="note">Der Kern kennt noch keinen eigenen Spielerstandort. Deshalb wechselst du die Steuerung nur im Dock zwischen eigenen Schiffen derselben Station (Dockkarte). Der Wechsel ändert weder Geld noch Eigentum.</p></details>
+<details open><summary>Sitzung · Sichern und Ansichten</summary>
+<div class="raum-reihe">
+<button id="raum-export" type="button">Geprüften JSON-Spielstand exportieren</button>
+<button id="raum-schreiber" type="button">Flugschreiber exportieren</button>
+<button id="raum-konzern" type="button">Konzern &amp; Flotte</button>
+<button id="raum-pult" type="button">Zurück zur Konzernzentrale</button>
+</div>
+<p class="note">Kein Autosave: vor dem Verlassen exportieren. Laden und Import bleiben im Steuerpult. Bedienung: Knüppel = Handflug, Tippen = Ziel wählen, zwei Finger = Zoom; Tastatur: Pfeile/WASD, Leertaste Stopp, P Zeit, +/− Zoom.</p></details>
+</div>
+</section>
+
 <footer><p class="note">Forschungs-/Spieltestversion J8. Kein automatischer Import in bestehende Speicherplätze, keine versteckten Geldtransfers, keine Produktionsfreigabe fremder Firmen. Echte iPad-Safari-/NAS-Geräteabnahme separat.</p></footer>
 <script src="../flug2d/flug-kern.js"></script>
 <script src="../welt/rule200-k7-industry-core.js"></script>
@@ -99,6 +158,10 @@ li{padding:4px}.success{color:#9ee5b5}.fail{color:#ffc3a0}
 <script src="../welt/j4b-jaeger-werft-core.js"></script>
 <script src="../welt/welt-kern.js"></script>
 <script src="kompatibilitaet.js"></script>
+<script src="../j4c/flotten-wechsel.js"></script>
+<script src="../raum/raum-szene.js"></script>
+<script src="../raum/raum-grafik.js"></script>
+<script src="../raum/raum-cockpit.js"></script>
 <script src="konzern-session.js"></script>
 <script src="konzern-ui.js"></script>
 </body></html>

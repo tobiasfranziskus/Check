@@ -8,6 +8,7 @@
 const NODE=typeof module==='object'&&module.exports;
 const W=NODE?require('../welt/welt-kern.js'):scope.AphrosWelt;
 const J7=NODE?require('./kompatibilitaet.js'):scope.J7UebernahmeCheck;
+const J6=NODE?require('../j4c/flotten-wechsel.js'):scope.J6FlottenWechsel;
 if(!W||!J7)throw Error('J8 benötigt die vorhandenen Core- und J7-Prüfer');
 const MAX=5*1024*1024;
 const KETTE=Object.freeze([
@@ -46,6 +47,7 @@ function haushaltPlan(s){
 }
 function erstellen(){
  let welt=null,zustand=null,herkunft=null,quelleHash=null;
+ let pilot=null;
  function requireState(){if(!welt||!zustand)throw Error('J8: erst eine geprüfte Welt ausdrücklich starten');}
  function gleichesGeld(s){
    const summe=Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
@@ -114,7 +116,7 @@ function erstellen(){
    return Object.freeze({
      herkunft,quelleHash,regel:204,tick:s.tick,hash:welt.hash(s),
      weltgeld:gleichesGeld(s),hausgeld:s.owners.house.cash,schiffe,stationen,
-     eigenerJaeger:jaeger.length, pilotierbar:jaeger.length>0,
+     eigenerJaeger:jaeger.length, pilotierbar:schiffe.some(sh=>['jaeger','miner'].includes(sh.klasse)),
      ausgabe:'Regel204 – manuelle JSON-Sicherung, kein automatischer Rückweg nach Regel195'
    });
  }
@@ -156,8 +158,84 @@ function erstellen(){
    zustand=final;
    return ansicht();
  }
+ // J9: Auswahl des einen persönlich gesteuerten, erworbenen Schiffs.
+ // Das ist ein Controllerzustand derselben Spielwelt, kein Saveformat und kein Orts-Teleport.
+ function piloten(){
+   requireState();
+   const copy=pruefen(welt,zustand);
+   const own=Object.values(copy.ships).filter(sh=>
+     sh.owner==='house'&&['miner','jaeger'].includes(sh.klasse)&&sh.flug);
+   return Object.freeze(own.sort((a,b)=>a.id.localeCompare(b.id)).map(sh=>{
+     // Nach Import einer Welt mit nur einem eigenen Schiff darf dieser eine
+     // vorhandene Pilot sein laufendes Schiff wieder übernehmen. Kein Ortswechsel.
+     const einzelnWiederAnmelden=!pilot&&own.length===1;
+     const erlaubt=!copy.kanon.pendel?.[sh.id]&&
+       (sh.flug.lage==='angedockt'||einzelnWiederAnmelden);
+     return Object.freeze({
+       id:sh.id,klasse:sh.klasse,system:sh.system,lage:sh.flug.lage,
+       erlaubt,
+       grund:copy.kanon.pendel?.[sh.id]?'Autonomer Pendelauftrag zunächst beenden'
+         :!erlaubt?'Vor einem Wechsel vollständig andocken':null
+     });
+   }));
+ }
+ function uebernehmen(id,spielt=false){
+   requireState();
+   if(typeof id!=='string'||spielt||!J6||typeof J6.pruefenRolle!=='function')
+     return {ok:false,reason:'Flugzeit anhalten und gültigen Piloten wählen'};
+   const eigener=piloten().find(x=>x.id===id);
+   if(!eigener)return {ok:false,reason:'Nur wirklich gekaufte eigene Miner/Jäger'};
+   if(pilot===id)return {ok:true,pilot:id};
+   if(!eigener.erlaubt)return {ok:false,reason:eigener.grund};
+   if(pilot){
+     const gate=J6.pruefenRolle(welt,zustand,pilot,id,
+       {spielt:false,patrouille:null,duell:null});
+     if(!gate.ok)return gate;
+   }else if(!welt.audit(zustand).ok)
+     return {ok:false,reason:'Ungültiger ursprünglicher Weltstand'};
+   pilot=id;
+   return {ok:true,pilot:id};
+ }
+ const flugBefehle=new Set([
+   'shipUndock','shipDock','shipApproach','shipFlyTo','shipSteer',
+   'siliconMineStart','siliconSell'
+ ]);
+ function flugBefehl(cmd){
+   requireState();
+   if(!cmd||typeof cmd!=='object'||Array.isArray(cmd)||
+      cmd.owner!=='house'||cmd.schiff!==pilot||!flugBefehle.has(cmd.type)||
+      !zustand.ships[pilot]||zustand.ships[pilot].owner!=='house'||
+      !['jaeger','miner'].includes(zustand.ships[pilot].klasse))
+     return {ok:false,reason:'Nur gültige eigene Pilotenkernbefehle'};
+   if(zustand.kanon.pendel?.[pilot])
+     return {ok:false,reason:'Autonomer Pendelauftrag vor persönlicher Steuerung beenden'};
+   try{
+     const n=pruefen(welt,zustand),r=welt.execute(n,cmd);
+     if(!r.ok)return {ok:false,reason:r.reason};
+     zustand=pruefen(welt,n);
+     return {ok:true,type:cmd.type};
+   }catch(e){return {ok:false,reason:String(e.message||e)};}
+ }
+ function flugSchritte(zahl){
+   requireState();
+   if(!Number.isSafeInteger(zahl)||zahl<0||zahl>900)
+     throw RangeError('J9: maximal 900 Original-Flugschritte pro Frame');
+   if(!pilot||!zustand.ships[pilot]||zustand.ships[pilot].owner!=='house')
+     throw Error('J9: kein eigener Pilot ausgewählt');
+   if(zahl===0)return 0;
+   const neu=pruefen(welt,zustand),vor=neu.tick;
+   for(let i=0;i<zahl;i++)welt.teilschritt(neu);
+   zustand=pruefen(welt,neu);
+   return zustand.tick-vor;
+ }
+ function pilotStatus(){return pilot;}
+ function weltReferenz(){return welt;}
+ function zustandReferenz(){return zustand;}
+ function flugAudit(){requireState();return welt.audit(zustand);}
+
  function exportieren(){requireState();return welt.save(zustand);}
- return Object.freeze({starten195,oeffnen204,ansicht,angebote,ausfuehren,weiterspielen,exportieren});
+ return Object.freeze({starten195,oeffnen204,ansicht,angebote,ausfuehren,weiterspielen,exportieren,
+  piloten,uebernehmen,pilotStatus,flugBefehl,flugSchritte,weltReferenz,zustandReferenz,flugAudit});
 }
 const API=Object.freeze({erstellen});
 if(NODE)module.exports=API;else scope.J8KonzernSitzung=API;

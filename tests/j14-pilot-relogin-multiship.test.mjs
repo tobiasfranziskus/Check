@@ -49,7 +49,8 @@ test('J14: nach Reload einer bezahlten Mehrschiffkarriere ist nur der original g
  assert.equal(session.exportieren(),save,'kein Nebenwirkung auf Sperre');
  const undock=session.flugBefehl({type:'shipUndock',schiff:nadir,owner:'house'});
  assert.equal(undock.ok,true,JSON.stringify(undock));
- assert.equal(session.zustandReferenz().ships[nadir].flug.lage,'frei');
+ assert.equal(session.zustandReferenz().ships[nadir].flug.lage,'abdocken',
+  'Original-F6-Abdocken ist ein realer, noch nicht abgeschlossener Flugzustand');
  assert.equal(session.flugAudit().ok,true);
  assert.equal(session.ansicht().weltgeld,33000);
  assert.equal(session.zustandReferenz().minted,0);

@@ -1,0 +1,53 @@
+name: "W6/P8b Rule205 – 13 Szenarien und S02-Langlauf"
+on:
+  pull_request:
+    paths:
+      - 'prototypes/welt/j2b-silizium-core.js'
+      - 'prototypes/welt/j3-bauteil-core.js'
+      - 'prototypes/welt/j4b-jaeger-werft-core.js'
+      - 'prototypes/welt/rule200-k7-industry-core.js'
+      - 'prototypes/welt/welt-kern.js'
+      - 'tests/w6-p8b-two-fields-rule205.test.mjs'
+      - 'tools/w6-p8b-zweifeld-szenarien.cjs'
+      - '.github/workflows/w6-p8b-scenarios.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  finite-fields:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scope: alle
+            tage: 90
+            label: dreizehn-krisenregime-90tage
+          - scope: S02
+            tage: 365
+            label: s02-zweifeld-365tage
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Syntax und unveraenderter Rule204-Referenzvertrag"
+        run: |
+          node --check tools/w6-p8b-zweifeld-szenarien.cjs
+          node --test tests/w6-p8b-two-fields-rule205.test.mjs
+      - name: "Tatsaechliche bezahlte endliche Zwei-Feld-Welt mit Originalaudi­t und Spielerkaeufen"
+        run: node tools/w6-p8b-zweifeld-szenarien.cjs "${{ matrix.scope }}" "${{ matrix.tage }}"
+        env:
+          P8B_OUTPUT_JSON: ${{ runner.temp }}/p8b-${{ matrix.label }}.json
+          P8B_STORE_SAVES: '1'
+      - name: "Nur echte Rule205-Forschungsbelege archivieren"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p8b-${{ matrix.label }}-rohbericht
+          path: |
+            ${{ runner.temp }}/p8b-${{ matrix.label }}.json
+            ${{ runner.temp }}/w6-p8b-S02-*d.json
+          if-no-files-found: ignore
+          retention-days: 7

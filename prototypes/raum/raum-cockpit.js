@@ -107,13 +107,23 @@ function verbinden(B) {
       if (sz.bergbau && sz.bergbau.auftrag && sz.bergbau.auftrag.fertig && !v.fertig) meldung('Charge vollständig gefördert – zurück zum Dock und verkaufen');
       if (a.gestrandet && !v.gestrandet) meldung('Flugarbeit nicht mehr finanziert – Antrieb aus, Schiff wartet auf Kapital', true);
     }
+    // Virtuelle Duell-HP sind keine wirtschaftlichen Schäden. Trotzdem endet
+    // die Trainingszeit sichtbar, statt unbemerkt weitere Fluglöhne zu verbrauchen.
+    const duellStatus = B.duellStand()?.status || null;
+    if (v && v.id === a.id && v.duellStatus === 'aktiv'
+        && duellStatus && duellStatus !== 'aktiv') {
+      laufSetzen(false);
+      meldung(duellStatus === 'sieg' ? 'Training gewonnen – Übungsdrohne ausgeschaltet. Keine Beute oder Schäden.'
+        : duellStatus === 'niederlage' ? 'Training verloren – nur virtuelle Trefferpunkte. Schiff bleibt im Originalzustand.'
+        : 'Training beendet: ' + duellStatus);
+    }
     // Im Dock und vollständig abgerechnet: Weltzeit nicht unbemerkt weiterlaufen lassen.
     if (Z.laeuft && a.lage === 'angedockt' && a.reserve === 0 && !B.zustand().kanon.flugdienst[a.id] && v && v.id === a.id && v.dienst) {
       laufSetzen(false); meldung('Im Dock abgerechnet – Zeit angehalten');
     }
     Z.vorher = { id: a.id, lage: a.lage, anBord: sz.bergbau ? sz.bergbau.anBord : undefined,
       fertig: !!(sz.bergbau && sz.bergbau.auftrag && sz.bergbau.auftrag.fertig), gestrandet: a.gestrandet,
-      dienst: !!B.zustand().kanon.flugdienst[a.id] };
+      dienst: !!B.zustand().kanon.flugdienst[a.id], duellStatus };
     const o = typeof Z.auswahl === 'string' ? S.objekt(sz, Z.auswahl) : null;
     if (typeof Z.auswahl === 'string' && !o) Z.auswahl = null;
     // Patrouille: nach erreichter Boje die nächste offene Marke vorschlagen.

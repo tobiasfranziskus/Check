@@ -69,6 +69,18 @@ function followupGate(w,s){
     &&['nadir','dravos'].includes(sh.system)&&!s.kanon.stillgelegt?.[sh.id]);
   const frachter=Object.values(s.ships).filter(sh=>
     sh.owner==='transport'&&sh.klasse==='frachter'&&sh.phase==='dock');
+  const reserve=w.rules.w5.material+C4.material;
+  const k7Preis={
+    npc3:w.rules.w3.fracht*w.rules.erzpilot.minerJeMinute,
+    st_aldera:w.rules.w3.fracht*w.rules.erzpilot.preis,
+    st_nadir:w.rules.w3.fracht*w.rules.erzpilot.preis
+      +2*w.rules.w5n.flugMinuten*w.rules.w3.frachtgebuehrJeMinute,
+    transport:2*w.rules.w5n.flugMinuten*w.rules.w3.arbeitJeMinute,
+    werft_extern:w.rules.w5.material*w.rules.w5.materialPreis
+      +w.rules.w5.dauer*w.rules.w5.lohnJeMinute
+  };
+  const k7Budgets=Object.fromEntries(Object.entries(k7Preis).map(([id,required])=>
+    [id,{available:s.owners[id].cash,required,shortfall:Math.max(0,required-s.owners[id].cash)}]));
   const status={
     tick:s.tick,fieldChoice:feld?.id||null,fieldRemaining:feld?b.felder[feld.id].vorrat:0,
     fieldTotal:b.vorrat,activeSiliconOrder:b.auftrag?{
@@ -84,6 +96,23 @@ function followupGate(w,s){
       materials:lager.material||0,ore:lager.erz||0,fighter:lager.jaeger||0},
     fighterOrder:!!k.jaeger?.auftrag,partsOrder:!!k.bauteile?.auftrag,
     existingSupply:vorhanden,fighterPartsDemand:C4.bauteile,
+    partsMaterialRequired:C3.material+reserve,
+    partsMaterialMissing:Math.max(0,C3.material+reserve-(lager.material||0)),
+    oreRefiningBatch:w.rules.w4.erzJeCharge,
+    k7DemandGate:{
+      finishedFreighterStock:lager.frachter||0,
+      freighterStockTarget:w.rules.world.stations[C.station].ziel.frachter,
+      storedOre:lager.erz||0,storedMaterial:lager.material||0,
+      thresholdBeforeK7Stops:w.rules.w5.material,
+      k7StoppedByMaterial:(lager.material||0)>=w.rules.w5.material,
+      phase:k.industrieErz?.phase??null,
+      runningOtherContract:!!(s.w3?.auftrag||s.w5n?.frachtauftrag
+        ||s.w4?.auftrag||s.w5?.auftrag||k.minerWerft?.auftrag),
+      funds:k7Budgets,
+      alderaEmptyMinerCandidates:Object.values(s.ships).filter(sh=>
+        sh.owner==='npc3'&&sh.klasse==='miner'&&sh.system==='aldera'
+        &&sh.flug?.lage==='angedockt'&&Object.values(sh.ladung).every(x=>x===0)).length
+    },
     minerCash:s.owners.npc3.cash,buyerCash:s.owners[C.station].cash,
     carrierCash:s.owners.transport.cash,
     miningLaborNeeded:C.charge*C.minutenJeEinheit*C.lohnJeMinute,

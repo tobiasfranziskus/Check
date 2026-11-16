@@ -207,7 +207,39 @@ function run(scenario){
       oreAtNadir:s.stations.st_nadir.lager.erz||0,
       partsProduced:s.kanon.bauteile?.bauteile||0,
       hullsBuilt:s.w5.fertig,
-      totalOwnedFreighters:Object.values(s.ships).filter(x=>x.owner==='transport'&&x.klasse==='frachter').length}: {})
+      totalOwnedFreighters:Object.values(s.ships).filter(x=>x.owner==='transport'&&x.klasse==='frachter').length,
+      w6SupplyAudit:{
+        siliziumLager:s.stations.st_nadir.lager.silizium||0,
+        bauteilLager:s.stations.st_nadir.lager.bauteil||0,
+        minerYard:{built:s.kanon.minerWerft?.fertig||0,
+          materialSpent:s.kanon.minerWerft?.materialVerbraucht||0,
+          active:!!s.kanon.minerWerft?.auftrag,
+          pending:s.kanon.minerWerft?.wartetAuf??null},
+        partFactory:{done:s.kanon.bauteile.abgeschlossen,
+          materialSpent:s.kanon.bauteile.materialVerbraucht,
+          siliconSpent:s.kanon.bauteile.siliziumVerbraucht,
+          active:!!s.kanon.bauteile.auftrag},
+        fighterYard:{built:s.kanon.jaeger.fertig,
+          materialSpent:s.kanon.jaeger.materialVerbraucht,
+          partsSpent:s.kanon.jaeger.bauteileVerbraucht,
+          active:!!s.kanon.jaeger.auftrag},
+        capitalFreighters:s.w5.fertig,
+        materialForFreighters:s.w5.materialVerbraucht,
+        oreRefined:s.w4.verbraucht??null,
+        viableMiners:Object.values(s.ships).filter(sh=>sh.owner==='npc3'
+          &&sh.klasse==='miner'&&sh.system==='aldera'
+          &&sh.flug?.lage==='angedockt'&&sh.phase==='dock'
+          &&Object.values(sh.ladung).every(x=>x===0)
+          &&w.buchwert(s,sh.id)>0).map(sh=>({
+            id:sh.id,remainingValue:w.buchwert(s,sh.id),
+            pendel:s.kanon.pendel[sh.id]?.ware||null,order:sh.auftrag})),
+        viableCarriers:Object.values(s.ships).filter(sh=>sh.owner==='transport'
+          &&sh.klasse==='frachter'&&sh.system==='aldera'
+          &&sh.phase==='dock'&&sh.auftrag==='halten'
+          &&Object.values(sh.ladung).every(x=>x===0)
+          &&w.buchwert(s,sh.id)>0).map(sh=>({id:sh.id,
+            remainingValue:w.buchwert(s,sh.id)}))
+      }}: {})
   };
   assert.ok(peakFracht<=1,'bestehende Forschungsregel207 kann nur eine gebundene Charge haben');
   console.log('W6_P8D_DRAVOS_REGIME',JSON.stringify(result));

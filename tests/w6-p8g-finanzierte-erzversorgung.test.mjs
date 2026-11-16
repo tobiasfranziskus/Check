@@ -112,6 +112,33 @@ test('P8g – echte Nadir-Materialnachfrage beauftragt 50 Erz mit W3-Vorfinanzie
   assert.equal(s.w3.auftrag.phase,'vorbestellt');
   assert.equal(s.owners.k7_werft_treuhand?.cash||0,0);
   check(w,s);
+  // Negativ-/Manipulationsabwehr: kein signierter Werftauftrag, keine
+  // umetikettierte Materialbestellung und keine gefälschte Erst-Freigabe.
+  const unversehrt=w.save(s);
+  for(const cmd of [
+    {type:'industrialOreOfferMaterial',owner:'st_nadir',miner:miner.id,frachter:newId},
+    {type:'industrialOreAcceptYard',owner:'werft_extern'},
+    {type:'industrialOreBuildShip',owner:'werft_extern'},
+    {type:'industrialOreCommitMaterial',owner:'st_nadir'},
+  ]){
+    const rejected=w.execute(s,cmd);
+    assert.equal(rejected.ok,false,'bereits gebundene Ware/unerlaubte Werft: '+JSON.stringify(cmd));
+    assert.equal(w.save(s),unversehrt,'kein mutierter Zustand bei abgewiesenem Auftrag');
+  }
+  for(const change of [
+    raw=>{raw.kanon.industrieErz.signWerft=true;},
+    raw=>{raw.kanon.industrieErz.materialOnly=false;},
+    raw=>{raw.kanon.materialSupplyEnabled=false;},
+    raw=>{raw.w3.auftrag.menge=51;},
+  ]){
+    const raw=JSON.parse(unversehrt);change(raw);
+    assert.equal(w.audit(raw).ok,false,'manipulierter Materialvertrag erkannt');
+    assert.throws(()=>w.load(JSON.stringify(raw)),'gefälschten Vertrag nicht ladbar machen');
+    assert.equal(w.save(s),unversehrt,'Originalsave wurde nicht überschrieben');
+  }
+  assert.throws(()=>w.materialSupplySetzen(s,false),
+    'keine nachträgliche Freigaberücknahme eines finanziert laufenden Vertrags');
+  assert.equal(w.save(s),unversehrt);
   let days=0;
   while(s.kanon.industrieErz.phase!=='geliefert'&&days<25*1440){
     w.advance(s,120);days+=120;

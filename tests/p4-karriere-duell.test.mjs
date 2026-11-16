@@ -91,7 +91,8 @@ test('P4: immutable J8 snapshots drive opponent simulation without authority or 
  assert.equal(ses.zustandReferenz().burned,0);
  assert.equal(Object.values(ses.zustandReferenz().owners).reduce((n,o)=>n+o.cash,0),33000);
  assert.equal(J4e.audit(duel).ok,true);
- assert.equal(J4e.stand(duel).sekunden,steps);
+ assert.ok(J4e.stand(duel).sekunden>0&&J4e.stand(duel).sekunden<=steps,
+   'virtual training may end on a real F8 outcome while F6 flight continues');
  assert.equal(seen,true,'real moving drone must fire only after entering its physical range');
  const loaded=J8.erstellen();loaded.oeffnen204(ses.exportieren(),true);
  assert.equal(loaded.exportieren(),ses.exportieren());

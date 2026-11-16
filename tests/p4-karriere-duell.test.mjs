@@ -100,10 +100,10 @@ test('P4: immutable J8 snapshots drive opponent simulation without authority or 
 
 test('P4: forged fighter entitlement or non-fighter ownership cannot start training',()=>{
  const a=session(),{w,ses,id}=a;
- const original=ses.exportieren(),s=ses.zustandReferenz();
- s.kanon.jaeger.kaeufe=[];
- assert.throws(()=>J4e.beginnen(w,s,id),/auditiert|Originaler Eigentums/i);
- assert.equal(ses.exportieren()===original,false,'tampered untrusted state differs');
+ const original=ses.exportieren(),forged=w.load(original);
+ forged.kanon.jaeger.kaeufe=[];
+ assert.throws(()=>J4e.beginnen(w,forged,id),/auditiert|Originaler Eigentums/i);
+ assert.equal(ses.exportieren(),original,'rejected forged record cannot replace the valid career');
  const ok=session();
  const miner=Object.values(ok.ses.zustandReferenz().ships)
    .find(sh=>sh.owner==='house'&&sh.klasse==='miner');

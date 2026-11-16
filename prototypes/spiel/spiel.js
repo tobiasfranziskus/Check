@@ -117,7 +117,7 @@ function ladeSitzung(json,auswahl,backup=false){
  if(regel!==204&&regel!==207)throw Error('Nur bestätigte Original-Regel204- oder Forschungsregel207-Saves');
  if(regel===207&&!['forschung','forschung-backup','datei'].includes(auswahl))
    throw Error('Forschungsstand nur über getrennten Forschungszugang laden');
- if(regel===204&&auswahl==='forschung')
+ if(regel===204&&['forschung','forschung-backup'].includes(auswahl))
    throw Error('Forschungszugang darf nicht den Regel204-Spielstand ersetzen');
  // The authorization is a real user action OUTSIDE the untrusted JSON:
  // named research-resume click or separate explicit file-import confirmation.

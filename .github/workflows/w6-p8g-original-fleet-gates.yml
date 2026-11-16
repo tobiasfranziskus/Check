@@ -1,0 +1,23 @@
+name: W6/P8g original NPC replacement policy diagnostics
+on:
+  pull_request:
+    paths:
+      - 'tests/w6-p8g-originale-frachterdisposition-diagnose.test.mjs'
+      - '.github/workflows/w6-p8g-original-fleet-gates.yml'
+  push:
+    branches:
+      - 'research/w6-p8g-financed-material-supply-20261116'
+    paths:
+      - 'tests/w6-p8g-originale-frachterdisposition-diagnose.test.mjs'
+      - '.github/workflows/w6-p8g-original-fleet-gates.yml'
+jobs:
+  original-dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read-only original 90-day carrier and existing-policy gates
+        run: node --test tests/w6-p8g-originale-frachterdisposition-diagnose.test.mjs

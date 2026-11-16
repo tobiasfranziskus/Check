@@ -2106,15 +2106,41 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (!ganz(minuten) || minuten > 1440 * 3650) throw RangeError('K1: ungültige Zahl an Wirtschaftsminuten');
     for (let i = 0; i < minuten; i++) minute(state);
   }
+  // P8g: Freigabe darf niemals aus einem importierten, beliebig editierbaren
+  // JSON-Flag folgen. Fuer *lokale, unmittelbar ausgegebene* Save/Load-Runden
+  // merken wir deshalb nur den exakten, von dieser laufenden Welt ausgegebenen
+  // Text ausserhalb der Datei. Der Speicher ist bewusst klein und fluechtig:
+  // Nach Neustart oder bei externem Import muss der Aufrufer die ausdrueckliche
+  // Einwilligung als SEPARATES API-Argument uebergeben. Dies ist ein Import-
+  // Freigabegate, KEINE kryptographische Signatur oder Anti-Cheat-Technik.
+  const lokalVertrauenswuerdigeP8gSaves=new Set();
   function save(state) {
     const a = audit(state);
     if (!a.ok) throw Error('K1: ungültigen Zustand nicht speichern: ' + a.fehler.join('; '));
-    return kern.save(state);
+    const json=kern.save(state);
+    if(p8dFracht&&state.kanon.materialSupplyEnabled===true){
+      if(lokalVertrauenswuerdigeP8gSaves.size>=64)
+        lokalVertrauenswuerdigeP8gSaves.delete(lokalVertrauenswuerdigeP8gSaves.values().next().value);
+      lokalVertrauenswuerdigeP8gSaves.add(json);
+    }
+    return json;
   }
-  function load(json) {
+  function load(json,optionen) {
+    // Das normale Dateiladegate akzeptiert KEIN eigenmaechtig gesetztes P8g-
+    // Flag. Nur die exakt ausgegebene Same-Session-Runde oder eine explizite
+    // Einwilligung des aufrufenden UI/Import-Controllers ist legitim.
+    if(optionen!==undefined && (optionen===null||typeof optionen!=='object'
+      ||Array.isArray(optionen)||Object.keys(optionen).some(k=>k!=='p8gImportFreigegeben')
+      ||(optionen.p8gImportFreigegeben!==undefined
+        &&typeof optionen.p8gImportFreigegeben!=='boolean')))
+      throw TypeError('P8g: ungueltige externe Importfreigabe');
     let roh;
     try { roh = JSON.parse(json); } catch (_) { throw Error('K1: JSON nicht lesbar'); }
     pruefeForm(roh);
+    if(roh.kanon.materialSupplyEnabled===true
+      &&!lokalVertrauenswuerdigeP8gSaves.has(json)
+      &&optionen?.p8gImportFreigegeben!==true)
+      throw Error('P8g: externer Import nur nach ausdruecklicher Freigabe ausserhalb des JSON');
     const state = kern.loadW5(json); // prüft Kernbilanzen einschließlich Netto-Korrektur
     const a = audit(state);
     if (!a.ok) throw Error('K1: Welt ungültig: ' + a.fehler.join('; '));

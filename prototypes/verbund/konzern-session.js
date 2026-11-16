@@ -242,15 +242,34 @@ function erstellen(){
      return {ok:true,type:cmd.type};
    }catch(e){return {ok:false,reason:String(e.message||e)};}
  }
- function flugSchritte(zahl){
+ function flugSchritte(zahl, beiSchritt){
    requireState();
    if(!Number.isSafeInteger(zahl)||zahl<0||zahl>900)
      throw RangeError('J9: maximal 900 Original-Flugschritte pro Frame');
    if(!pilot||!zustand.ships[pilot]||zustand.ships[pilot].owner!=='house')
      throw Error('J9: kein eigener Pilot ausgewählt');
+   if(beiSchritt!==undefined&&typeof beiSchritt!=='function')throw TypeError('J9: ungültiger Flugbeobachter');
    if(zahl===0)return 0;
    const neu=pruefen(welt,zustand),vor=neu.tick;
-   for(let i=0;i<zahl;i++)welt.teilschritt(neu);
+   for(let i=0;i<zahl;i++){
+     welt.teilschritt(neu);
+     if(beiSchritt){
+       // Read-only, immutable flight sample. Never give a UI observer the mutable world.
+       const sh=neu.ships[pilot],b=sh.flug;
+       const probe=Object.freeze({
+         rulesVersion:neu.rulesVersion,tick:neu.tick,
+         flug:Object.freeze({schritt:neu.flug.schritt}),
+         ships:Object.freeze({[pilot]:Object.freeze({
+           id:sh.id,owner:sh.owner,klasse:sh.klasse,system:sh.system,
+           flug:Object.freeze({lage:b.lage,anker:b.anker,x:b.x,y:b.y,vx:b.vx,vy:b.vy})
+         })}),
+         kanon:Object.freeze({jaeger:Object.freeze({kaeufe:Object.freeze(
+           (neu.kanon.jaeger.kaeufe||[]).map(k=>Object.freeze({id:k.id,owner:k.owner,station:k.station}))
+         )})})
+       });
+       beiSchritt(probe);
+     }
+   }
    zustand=pruefen(welt,neu);
    return zustand.tick-vor;
  }

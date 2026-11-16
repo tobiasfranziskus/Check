@@ -1,5 +1,8 @@
 # W6/P8g – Spielbare, isolierte Forschungskarriere in P1/P2
 
+**[MAIN / RELEASE VERIFIZIERT 16.11.2026]** Der hier ursprünglich noch als Draft beschriebene neue P1-/P2-Forschungsmodus ist mit [Release-PR #430](https://github.com/tobiasfranziskus/Check/pull/430) in `main bf1d33536895d5c4904594fadb5fff9d5443ba88` integriert. **Eigene Regel207-Karriere** ausdrücklich wählen, normales Regel204-Spiel samt Save/Backup bleibt erhalten. Der folgende Original-Bericht dokumentiert als historische Zwischenstufe die seinerzeit noch offenen CI-/Freigabegates; vor dem Merge waren acht frische PR-CI-Workflows einschließlich Chromium/WebKit je vier Touchgrößen **erfolgreich**. Pages-Veröffentlichung separat über [Deploy #43884696901](https://github.com/tobiasfranziskus/Check/actions/runs/43884696901) bestätigen; echte iPad-/NAS-Geräteabnahme weiter offen. **Kein kontinuierlich nachhaltiger NPC-Kreislauf behauptet.**
+
+
 **[DRAFT / NO RELEASE · 16.11.2026]** [Draft-PR #429](https://github.com/tobiasfranziskus/Check/pull/429), gestapelt auf dem gegen aktuellen P2-`main feda85dc` erstellten [W6-Integrations-Draft #428](https://github.com/tobiasfranziskus/Check/pull/428).
 
 Die bis dahin **nur im Node22-Kern** ausführbare, vom Nutzer genehmigte vollständig finanzierte 50-Erz-Materialversorgung ist nun in einer **separaten, ausdrücklich gewählten Regel207-Forschungskarriere** durch die *vorhandene* P1-/Jäger-/RAUM-Oberfläche bedienbar. **Keine Regel-/Balanceänderung, kein Main-Merge und kein Pages-Deploy** durch diese Arbeit.

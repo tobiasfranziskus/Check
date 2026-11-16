@@ -73,7 +73,21 @@ test('Managerakademie: paid miner, paid freighter, original ice order and actual
  assert.equal(state.minted,0);assert.equal(state.burned,0);
  assert.equal(Object.values(state.owners).reduce((n,o)=>n+o.cash,0),33000);
  assert.equal(s.weltReferenz().audit(state).ok,true);
- assert.equal(s.ansicht().hash,'e4514490aedc13bd','original career reference hash must remain');
+ // The academy uses a miner-first purchase order. The historical
+ // e4514490... reference uses a *different* order: freighter before miner.
+ // Prove that observing the lessons changes nothing: run a fresh original
+ // session through exactly the same commands *without* the tutorial layer.
+ const noTutor=neu();
+ assert.equal(noTutor.ausfuehren('buy-st_aldera-miner').ok,true);
+ assert.equal(noTutor.ausfuehren('buy-st_aldera-frachter').ok,true);
+ assert.equal(noTutor.ausfuehren('ice-'+miner.id).ok,true);
+ noTutor.weiterspielen(60);noTutor.weiterspielen(60);
+ assert.equal(noTutor.ausfuehren('freight-'+freighter.id).ok,true);
+ noTutor.weiterspielen(60);noTutor.weiterspielen(60);
+ assert.equal(s.ansicht().hash,noTutor.ansicht().hash,
+   'tutorial observation must preserve original seed and economic hash');
+ assert.equal(s.exportieren(),noTutor.exportieren(),
+   'same commands with and without lessons must produce byte-identical save');
  const saved=s.exportieren(),round=J.erstellen();round.oeffnen204(saved,true);
  assert.equal(round.exportieren(),saved);
  assert.equal(lesson(T.daten(round),'abrechnung').erfuellt,true,'economic receipts survive legitimate save/load');

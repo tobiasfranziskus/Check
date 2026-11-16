@@ -1487,7 +1487,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       pruefeForm(state);
       const k = state.kanon, fehler = [];
       m_core_firmenpolitik.audit(state, fehler);
-      if (k7) {
+      if(k.materialSupplyEnabled!==undefined
+        &&(!p8dFracht||typeof k.materialSupplyEnabled!=='boolean'))
+        fehler.push('P8g: nicht authorisierte oder ungueltige Aktivierung');
+      if(k7) {
         if (k.industrieAuto !== undefined && typeof k.industrieAuto !== 'boolean')
           fehler.push('K7-Industrieautomatik: ungültige Einstellung');
         const i=k.industrieErz, a=state.w3?.auftrag;
@@ -1667,6 +1670,19 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (ziel.einkaufMinuten === 0 || ziel.dividendeMinuten === 0) throw TypeError('K1: Intervall muss positiv sein');
   }
 
+  // P8g ausschliesslich bewusst aktiver Forschungsweltzustand.
+  // Bisherige Rule207-Seed/-Save/-Hash-Referenzen bleiben unangetastet.
+  function materialSupplySetzen(s,aktiviert) {
+    pruefeForm(s);
+    if(!p8dFracht||typeof aktiviert!=='boolean')
+      throw TypeError('P8g: nur explizite Rule207-Bool-Aktivierung');
+    if(!aktiviert&&s.kanon.industrieErz?.materialOnly
+      &&['angebot','aktiv'].includes(s.kanon.industrieErz.phase))
+      throw Error('P8g: laufenden real finanzierten Materialauftrag zuerst abschliessen');
+    s.kanon.materialSupplyEnabled=aktiviert;
+    return {ok:true,aktiviert};
+  }
+
   // K7: drei getrennt durch Original-Firmenrechte signierte Vertragsparteien.
   // Ein Angebot und die Signaturen erzeugen keine Ware, Geld oder Schiff.
   function k7Befehl(s, cmd) {
@@ -1689,7 +1705,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     const verwerfen=reason=>({ok:false,type,reason:'K7: '+reason});
     if(type==='industrialOreOffer'||type==='industrialOreOfferMaterial'){
       const onlyMaterial=type==='industrialOreOfferMaterial';
-      if(onlyMaterial&&!p8dFracht)return verwerfen('P8g: nur isolierte Dravos-Regel207-Forschung');
+      if(onlyMaterial&&(!p8dFracht||s.kanon.materialSupplyEnabled!==true))
+        return verwerfen('P8g: Materialversorgung nicht ausdrücklich aktiviert');
       const lage=s.stations[rules.w5.station].lager;
       const materialBedarf=rules.j3?.material+rules.w5.material+
         ((jaeger&&(lage.jaeger||0)<1)?rules.j4.material:0);
@@ -1852,7 +1869,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     // P8g: reale J3-Materialnachfrage ist unabhaengig von der W5-Frachterquote.
     const materialBedarf=rules.j3?.material+rules.w5.material+
       (jaeger&&(nadir.jaeger||0)<1?rules.j4.material:0);
-    const materialOnly=p8dFracht&&s.kanon.npcAuto===true
+    const materialOnly=p8dFracht&&s.kanon.materialSupplyEnabled===true
+      &&s.kanon.npcAuto===true
       &&(nadir.silizium||0)>=(rules.j3?.silizium||Infinity)
       &&(nadir.material||0)+Math.floor((nadir.erz||0)/rules.w4.erzJeCharge)
         *rules.w4.materialJeCharge<materialBedarf;
@@ -2140,7 +2158,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(p8cDravos||p8dFracht ? {p8cEchteDravosExpedition:true} : {}),
     ...(p8dFracht ? {p8dGetrennteSpedition:true,p8gMaterialOnlyW3:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
-    createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
+    createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, materialSupplySetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
     torPruefen: m_core_torfreigabe.pruefen, torFrachtPruefen: m_core_torfreigabe.darfFracht,
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,

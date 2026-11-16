@@ -374,6 +374,27 @@ function siliziumBericht(zustand){
    ' · '+beschaffung),
   zeile('Lieferstatus',lage.stand)
  );
+ if(zustand.rulesVersion===207){
+   const w=session.weltReferenz(),k=zustand.kanon,warehouse=zustand.stations.st_nadir.lager;
+   const dravos=Object.entries(k.silizium?.felder||{}).filter(([id])=>id.startsWith('dravos:'));
+   const rest=dravos.reduce((n,[,f])=>n+(Number.isSafeInteger(f.vorrat)?f.vorrat:0),0);
+   const transport=Object.values(zustand.ships).filter(sh=>sh.owner==='transport'&&sh.klasse==='frachter');
+   const alderadock=transport.filter(sh=>sh.system==='aldera'
+     &&sh.phase==='dock'&&sh.flug?.lage==='angedockt'
+     &&Object.values(sh.ladung||{}).every(n=>n===0)&&w.buchwert(zustand,sh.id)>0);
+   const phase=k.industrieErz?.phase||'frei',fr=k.p8d;
+   host.append(
+     zeile('Endliche Dravos-Bodenreserve',fmt(rest)+' echte Siliziumeinheiten, kein automatisches Auffüllen'),
+     zeile('Bezahlte Dravos-Fracht',fmt(fr?.geliefert||0)+' abgeschlossene Lieferungen · '
+       +fmt(fr?.angebote||0)+' ursprüngliche Angebote; neue Frachten nur gegen reale Kasse und Ware'),
+     zeile('P8g-Materialauftrag',phase+(k.industrieErz?.materialOnly?' · ohne verpflichtenden Frachterneubau':'')
+       +' · '+fmt(zustand.w3.abgeschlossen)+' W3-Lieferungen insgesamt'),
+     zeile('Nadir-Industrie',fmt(warehouse.erz||0)+' Erz · '+fmt(warehouse.material||0)
+       +' Material · '+fmt(warehouse.silizium||0)+' Silizium · '
+       +fmt(k.bauteile.abgeschlossen)+' hergestellte Bauteile · '+fmt(k.jaeger.fertig)+' gebaute Jäger'),
+     zeile('Frachtkapazität in Aldera',fmt(alderadock.length)+' leere, angedockte Speditionsfrachter mit Restbuchwert; dies allein ist noch keine finanzierte Vertragszusage')
+   );
+ }
 }
 function anzeigen(){
  if(!session)return;

@@ -120,3 +120,52 @@ test('P8f: Original-NPC3-Mining in separater Kopie ist keine Liefer- oder Käufe
     world:money(s),mint:s.minted,burn:s.burned,
     noAutomaticBuyingGuarantee:true}));
 });
+
+test('P8f: echter 750-ISK-W5-Frachterkauf und 60-Minuten-Originalüberführung ersetzen eine verschlissene Aldera-Hülle',()=>{
+  const {w,save,originalHash,firstDay}=snapshotAfterFirstFreight();
+  const s=w.load(save),oldIds=new Set(Object.keys(s.ships));
+  const station=s.stations.st_nadir,stockBefore=station.lager.frachter;
+  const transportBefore=s.owners.transport.cash,werftBefore=s.owners.werft_extern.cash;
+  const paidBefore=s.w5ac.paid;
+  assert.ok(stockBefore>0,'nur real gebaute Nadir-W5-Hüllen kaufen');
+  assert.ok(transportBefore>=810,'eigenes Kapital muss Kauf und bezahlte Überführung decken');
+  const buy=w.execute(s,{type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_nadir'});
+  assert.equal(buy.ok,true,'Original-W5-Kauf: '+buy.reason);
+  const id=Object.keys(s.ships).find(x=>!oldIds.has(x));
+  assert.ok(id,'Kauf muss eine echte neue Schiff-ID und nicht nur eine Inventarbuchung auslösen');
+  assert.equal(s.ships[id].owner,'transport');
+  assert.equal(s.ships[id].system,'nadir');
+  assert.equal(s.stations.st_nadir.lager.frachter,stockBefore-1);
+  assert.equal(transportBefore-s.owners.transport.cash,750);
+  assert.equal(s.owners.werft_extern.cash-werftBefore,750);
+  valid(w,s);
+  const reposition=w.execute(s,{type:'shipReposition',owner:'transport',schiff:id});
+  assert.equal(reposition.ok,true,'Original-W5ac-Frachtüberführung: '+reposition.reason);
+  assert.equal(transportBefore-s.owners.transport.cash,810);
+  valid(w,s);
+  assert.equal(s.ships[id].phase,'reise','keine kostenlose Sofortverlagerung');
+  assert.equal(s.w5ac.active?.id,id,'Original-W5ac-Transit muss korrekt gebucht sein');
+  w.advance(s,30);
+  valid(w,s);
+  const middle=w.save(s);
+  assert.equal(w.hash(w.load(middle)),w.hash(s),'Echtzeit-Transit ist nach JSON-Reload identisch');
+  assert.equal(s.ships[id].phase,'reise','ein echter 60-Minuten-Flug darf nicht halbzeitig fertig sein');
+  w.advance(s,30);
+  valid(w,s);
+  assert.equal(s.ships[id].phase,'dock');
+  assert.equal(s.ships[id].system,'aldera');
+  assert.equal(s.ships[id].flug?.lage,'angedockt');
+  assert.ok(s.w5ac.completed.some(x=>x.id===id&&x.kosten===60),'Originalquittung für 60 bezahlte Minuten');
+  assert.equal(s.w5ac.paid-paidBefore,60);
+  const unchanged=w.save(s);
+  const freight=w.execute(s,{type:'shipFreight',owner:'transport',schiff:id});
+  assert.equal(freight.ok,false,'ohne echte 50 Erz darf auch ein neuer Frachter nichts liefern');
+  assert.match(freight.reason,/Erzcharge/,'nach behobenem Hüllenblocker muss reale Warenlücke sichtbar werden');
+  assert.equal(w.save(s),unchanged,'kein Phantom-Erz und keine Buchung bei Ablehnung');
+  assert.equal(w.hash(w.load(save)),originalHash,'der Original-S02-Ausgangsstand bleibt erhalten');
+  console.log('P8F_REPLACEMENT_FREIGHT',JSON.stringify({firstDay,id,initialStock:stockBefore,
+    remainingStock:s.stations.st_nadir.lager.frachter,owner:'transport',price:750,
+    ferryLabor:60,newLocation:s.ships[id].system,originalW5acReceipt:true,
+    nextBlocker:freight.reason,worldISK:money(s),mint:s.minted,burn:s.burned,
+    hash:w.hash(s)}));
+});

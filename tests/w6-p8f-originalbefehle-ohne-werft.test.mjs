@@ -75,23 +75,23 @@ test('P8f: Original-J3 kann Lagerware gegen echten Nadir-Lohn verarbeiten; die J
       hash:w.hash(s)},blockedNext:refused.reason}));
 });
 
-test('P8f: Original-W3 und W4 lehnen nicht vorhandenes 50er Erz ab; Abbruch verändert keine Kassen oder Bestände',()=>{
+test('P8f: Original-W3 und W4 lehnen ohne Erz/benutzbaren Frachter ab; jede Ablehnung ist unveränderlich',()=>{
   const {w,save,originalHash,firstDay}=snapshotAfterFirstFreight();
   const s=w.load(save),hash=w.hash(s);
-  const sh=Object.values(s.ships).find(x=>x.owner==='transport'&&x.klasse==='frachter'
+  const carriers=Object.values(s.ships).filter(x=>x.owner==='transport'&&x.klasse==='frachter'
     &&x.system==='aldera'&&x.phase==='dock'&&x.auftrag==='halten'
     &&Object.values(x.ladung).every(n=>n===0));
-  assert.ok(sh,'realer leerer Speditionsfrachter fehlt');
+  assert.ok(carriers.length,'reale Aldera-Spedition fehlt');
   const attempts=[
-    {type:'shipFreight',owner:'transport',schiff:sh.id},
+    ...carriers.map(sh=>({type:'shipFreight',owner:'transport',schiff:sh.id})),
     {type:'stationRefine',owner:'st_nadir',station:'st_nadir'},
   ];
   const denied=[];
   for(const cmd of attempts){
     const unchanged=w.save(s),r=w.execute(s,cmd);
-    assert.equal(r.ok,false,'kein unfinanzierter Originalauftrag: '+JSON.stringify(cmd));
+    assert.equal(r.ok,false,'keine Ware oder freie Originalkapazitaet: '+JSON.stringify(cmd));
     assert.equal(w.save(s),unchanged);
-    denied.push({type:cmd.type,reason:r.reason});
+    denied.push({type:cmd.type,ship:cmd.schiff??null,reason:r.reason});
   }
   valid(w,s);
   assert.equal(w.hash(s),hash);

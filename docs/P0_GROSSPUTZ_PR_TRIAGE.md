@@ -39,6 +39,10 @@ Für die C1b-/C1c-/C1d-Industriekette wurden **#249–#251 und #253–#264** (15
 
 **[GEPRÜFT / P0]** 13 PRs (#294, #296, #297, #310–#312, #316, #318–#320, #332, #333, #336) wurden nach **einzeln bestätigter direkter Git-Abstammung** und PR-Kommentar **ohne Merge** geschlossen. Die offenen Nachfolger #298, #317, #321 und #337 samt allen Originalcommits und Forschungsbefunden bleiben erhalten. Die divergierenden Forschungslinien #305 und #317/#318 wurden **nicht** zusammengeführt; W6-PRs wurden nicht verändert. GitHub-Livezahl unmittelbar danach: **102 offene PRs** (vorher 115; exklusive neuem Dokumentations-PR). [Vollständige Tabelle, Head-SHAs, Vergleichsergebnisse und Grenzen](archiv/P0_PR_KETTEN_F2_K1_F8_20261116.md).
 
+## K2–K13-Forschungs-PR-Kette: 14 weitere Vorgänger geschlossen · 16.11.2026
+
+**[GEPRÜFT / P0]** Nach eigenständiger Head-Abstammungsprüfung wurden #301, #304, #308, #309, #313–#315 und #322–#328 mit GitHub-Kommentaren **ohne Merge** geschlossen. Alle 14 Heads sind echte Vorfahren des weiterhin offenen K13/F6-Forschungs-Leaf [#329](https://github.com/tobiasfranziskus/Check/pull/329) (`behind_by=0`); [#306](https://github.com/tobiasfranziskus/Check/pull/306) ist dagegen `diverged` und bleibt wegen eigener Commits geschützt. **103 → 89 offene PRs** unmittelbar vor/nach dieser zweiten Runde (einschließlich Docs-Draft #448). Weder Forschung noch Geld-/Warenregeln dadurch nach main integriert. [Original-Head-SHAs, individuelle Vergleichszahlen, Erhaltungsgrenzen](archiv/P0_PR_KETTE_K2_K13_20261116.md).
+
 ## Nächste P0-Pakete
 
 1. **PR-Triage in Gruppen von 10–20** auf Basis PR-Metadaten und Code-Nachfolger. Nur bei belegtem Ersatz und ohne einzigartige Funktion schließen, immer mit Verweis; Git-Branches/CI/Spielstände niemals löschen.

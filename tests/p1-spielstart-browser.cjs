@@ -138,6 +138,25 @@ async function w6Optin(browser,base,width,height,kind){
    const page=await ctx.newPage(),errors=[];
    page.on('pageerror',e=>errors.push(String(e)));
    page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+   // P2 cockpit inspection hook: expose the existing read-only browser QA API,
+   // without introducing a second world, command path, or product-code global.
+   await page.addInitScript(()=>{
+     let component;
+     Object.defineProperty(window,'RaumCockpit',{
+       configurable:true,
+       get(){return component;},
+       set(api){
+         component=api;
+         const original=api.verbinden;
+         api.verbinden=function(...args){
+           const cockpit=original.apply(this,args);
+           api.sitzung=cockpit;
+           return cockpit;
+         };
+       }
+     });
+   });
+
    try{
     await page.goto(base+'/');
     const entry=page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/spiel/index.html"]');

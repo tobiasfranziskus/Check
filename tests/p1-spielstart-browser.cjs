@@ -420,6 +420,7 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
 
    try{
     await page.goto(base+'/');
+    assert.equal(await page.title(),'Aphros Void · Dein Weltraumkonzern');
     const gateway=page.locator('#root-portal');
     assert.equal(await gateway.isVisible(),true,'public root must offer the premium game entry');
     assert.match(await page.locator('#root-game-title').textContent(),/APHROS\s+VOID/);

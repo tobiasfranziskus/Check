@@ -85,4 +85,19 @@ Die Frage einer **automatischen unabhängigen W5-Ersatzbestellung** mit Kunden-,
 
 **Keine Freigabe für diese Zusatzregel erteilt.** P8g-Originalmaterialvertrag ist freigegeben und nachgewiesen; ein automatischer Wiederholungs-Überführungsdienst ist eine **eigene Wirtschaftsentscheidung**, nicht stillschweigend Bestandteil des ursprünglichen Freigabeumfangs.
 
+## Unabhängige Codex-Sicherheitsabnahme und gezielte Korrektur
+
+**[DRAFT / ROTE ABNAHME]** [Codex-QA #426](https://github.com/tobiasfranziskus/Check/pull/426) liefert eine vollständig unabhängig konstruierte Node22-Suite mit ursprünglich **68 Prüfungen: 62 bestanden, 6 fehlgeschlagen**. Die Fehlergruppen waren: (F1) aus JSON selbst behauptetes P8g-Opt-in, (F2) während einer laufenden W3-Fahrt löschbarer K7-Unterschriftsnachweis (2 Tests), (F3) terminaler Materialvertrag ohne irgendeine tatsächliche W3-Lieferung, (F4) nach Signatur verschlissene Miner-/Frachterhüllen vor Commit (2 Tests).
+
+**[DRAFT / GEPRÜFTE HÄRTUNG]** [Codefix `75347b9`](https://github.com/tobiasfranziskus/Check/commit/75347b9c9429f2fe92a346f6666a217fd0f33551) nur im P8g-Forschungskern:
+- W3-`industrieMiner` bleibt für **alle aktiven Frachtphasen** an K7-Vertragsphase, Miner-ID, Frachter-ID und beide Eigentümerunterschriften gebunden; der Loader verweigert das Löschen während des Transits.
+- Die Fälschung eines terminalen Materialvertrags **ohne abgeschlossene W3-Fracht und gelieferte Rohstoffmenge** wird abgewiesen. **Grenze:** Die bisherigen W3-Zähler sind nur aggregierte Summen und kein eindeutiger historischer Vertragseinzelbeleg; eine stärkere Herkunftsbindung würde eine neue versionierte Belegstruktur und Save-Vertragsentscheidung erfordern.
+- `industrialOreCommitMaterial` und der originale K7-Commit validieren Eigentum, Schiffstyp, Aldera-Standort, Dockstatus, Ladung, Fremdauftrag und **aktuellen Verschleiß** unmittelbar vor Reservierung erneut. Ablehnungen bleiben atomar.
+
+[Integrations-QA #427](https://github.com/tobiasfranziskus/Check/pull/427) führt exakt **Codex' unveränderte Original-Testdatei** gegen diese Korrektur aus. [CI #43863245279](https://github.com/tobiasfranziskus/Check/actions/runs/43863245279): **67/68 bestanden, 1 fehlgeschlagen**, statt 62/68; **keine** Tests übersprungen oder als erwarteten Fehler behandelt. F1 bleibt bewusst rot.
+
+**[OFFEN / KOMPATIBILITÄTSENTSCHEIDUNG] F1:** Eine pure `load(json)`-Funktion kann ein rechtmäßig intern gespeichertes `materialSupplyEnabled:true` nicht vom **gleichlautenden, manipulierten extern importierten JSON** unterscheiden. Das Kernformat alleine kann diese Autorität nicht gewährleisten. Verlässliche Freigabe braucht einen **nicht aus dem JSON ableitbaren externen Importkontext**, z. B. Importdialog mit ausdrücklicher Bestätigung, während der interne Save/Load-Weg in derselben Session freigegebene P8g-Zustände erhält. Das Einführen eines weiteren JSON-Flags oder ein pauschales Verwerfen aller P8g-Saves wäre keine tragfähige Lösung. Import-/Save-Vertragsänderungen bedürfen eigener Freigabe und vollständiger Browser-/Altformatabnahme.
+
+**Keine Produktfreigabe für neuen repetitiven W5ac-Frachtdienst, keine W6-Main-/Pages-Integration.** Die unabhängige QA bleibt ein bewusst blockierendes Gate, bis F1 und die tatsächlichen Herkunftsnachweise verbindlich geklärt sind.
+
 **Nächster Release-Gate:** P8g mit seinen notwendigen P8b–P8f-Abhängigkeiten gezielt auf den jeweils aktuellen Hauptzweig integrieren (keine ganzen historischen Stacks blind zusammenführen), echte Bedienung aus dem öffentlichen Spielstart, unabhängige Node22/Browser-Wirtschaft, historischer Hash und aktualisierte Save-/Regelversionsfrage klären. Erst nach erfolgreicher Integration und eigenem Pages-Nachweis `[MAIN]/[PAGES]` setzen.

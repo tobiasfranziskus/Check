@@ -450,10 +450,12 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
     const terminal=page.locator('#sektorwirtschaft');
     assert.equal(await terminal.locator('.economy-card').count()>=6,true);
     const report=await terminal.textContent();
-    assert.match(report,/st_aldera/);
-    assert.match(report,/st_nadir/);
-    assert.match(report,/Bergbau.*npc3/);
-    assert.match(report,/Außenwerft.*werft_extern/);
+    assert.match(report,/Aldera/);
+    assert.match(report,/Nadir/);
+    assert.match(report,/Freie Erzförderer/);
+    assert.match(report,/Unabhängige Werft/);
+    assert.doesNotMatch(report,/\b(?:st_aldera|st_nadir|npc3|werft_extern)\b/,
+      'the player-visible report should never expose internal owner IDs');
     assert.match(report,/33[.,]000 ISK/);
     assert.match(report,/Mint\/Burn:\s*0 \/ 0 ISK/);
     const link=terminal.locator('[data-j12-offer="buy-st_aldera-miner"]');

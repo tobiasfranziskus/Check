@@ -137,6 +137,18 @@ test('P4: real purchased 900-ISK fighter from original Regel204 save can begin a
  assert.equal(flight.ok,true,JSON.stringify(flight));
  for(let i=0;i<5&&patrol.stufe===0;i++)s.flugSchritte(900,beobachten);
  assert.equal(patrol.stufe,1,'first patrol checkpoint requires actual financed physical arrival at safe speed');
+ for(let index=1;index<Kurs.TORE.length;index++){
+   const next=Kurs.TORE[index];
+   const course=s.flugBefehl({type:'shipFlyTo',owner:'house',schiff:id,x:next.x,y:next.y});
+   assert.equal(course.ok,true,JSON.stringify(course));
+   for(let step=0;step<6&&patrol.stufe<=index;step++)s.flugSchritte(900,beobachten);
+   assert.equal(patrol.stufe,index+1,'next checkpoint requires financed physical flight, not instant progress');
+ }
+ const toDock=s.flugBefehl({type:'shipDock',owner:'house',schiff:id,station:'st_nadir'});
+ assert.equal(toDock.ok,true,JSON.stringify(toDock));
+ for(let i=0;i<8&&patrol.status!=='erfolgreich';i++)s.flugSchritte(900,beobachten);
+ assert.equal(patrol.status,'erfolgreich','all three real checkpoints require actual Nadir docking');
+ assert.equal(s.zustandReferenz().ships[id].flug.lage,'angedockt');
  assert.equal(s.zustandReferenz().minted,0);
  assert.equal(s.zustandReferenz().burned,0);
  assert.equal(s.weltReferenz().audit(s.zustandReferenz()).ok,true);

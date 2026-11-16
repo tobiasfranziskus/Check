@@ -233,6 +233,28 @@ async function w6Optin(browser,base,width,height,kind){
     // P2: the real public career uses the new commands through the pilot session.
     const tap=async sel=>{await page.locator(sel).tap();};
     await tap('#raum-tempo-300');
+    // P2_PINCH_POINTERS_CHECK: Browser-Emulation zweier gleichzeitiger Touch-Pointer.
+    // Kein physisches iPad: prüft Pointer-Zoom und Cancel ohne unbeabsichtigte Auswahl.
+    const pinch=await page.evaluate(()=>{
+      const canvas=document.querySelector('#raum-leinwand');
+      const r=canvas.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+      const before=RaumCockpit.sitzung.zustand();
+      const send=(type,id,x)=>canvas.dispatchEvent(new PointerEvent(type,{
+        bubbles:true,pointerId:id,pointerType:'touch',isPrimary:id===91,
+        clientX:x,clientY:cy
+      }));
+      send('pointerdown',91,cx-30);send('pointerdown',92,cx+30);
+      send('pointermove',91,cx-50);send('pointermove',92,cx+50);
+      const during=RaumCockpit.sitzung.zustand();
+      send('pointercancel',91,cx-50);send('pointercancel',92,cx+50);
+      const after=RaumCockpit.sitzung.zustand();
+      return {start:before.massstab,zoom:during.massstab,end:after.massstab,
+        beforeSelection:JSON.stringify(before.auswahl),afterSelection:JSON.stringify(after.auswahl)};
+    });
+    assert.ok(pinch.zoom<pinch.start,'Pinch-out must zoom into the canvas in both engines');
+    assert.equal(pinch.end,pinch.zoom,'Cancelling fingers must keep the current zoom');
+    assert.equal(pinch.afterSelection,pinch.beforeSelection,'Pinch must not select a target');
+
     await page.waitForFunction(()=>/Freier Flug|Handflug/.test(document.querySelector('#raum-lage').textContent));
     await tap('[data-raum="objekt-st_aldera"]');
     await page.locator('#ziel-orbit-abstand').fill('120000');

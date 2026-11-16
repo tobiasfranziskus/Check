@@ -1,4 +1,10 @@
-# Pilotenakademie · Auftrag #437
+# Pilotenakademie · zwölf Übungen [MAIN / PAGES]
+
+**[MAIN / PAGES · 16.11.2026]** Codex-Draft [#440](https://github.com/tobiasfranziskus/Check/pull/440) wurde gegen den aktuellen Spielstand unabhängig geprüft, um die direkte Karrieresteuerung ergänzt und über [Integrations-PR #441](https://github.com/tobiasfranziskus/Check/pull/441) als `main 47d59f407c6042c80aebff62e497c33cbcc9bffd` veröffentlicht. [Pages #43924629083](https://github.com/tobiasfranziskus/Check/actions/runs/43924629083) ist `completed/success` für **genau diesen Codecommit**. **7/7** Integrations-CI-Workflows erfolgreich. Chromium **4/4** und WebKit **4/4** sowohl für die zwölf eigenständigen Fluglektionen als auch für die Einbindung in die reguläre Karriere neben acht Managerlektionen, jeweils mit Original-Eigentum/Flugreserve und Save-Audit. Kein Import erforderlich, wenn die bereits gespeicherte Karriere auf der Kommandobrücke läuft. Kein neues Wirtschaftsgeld, keine Gratis-Schiffe/Waren, keine Änderungen am Schema; echte iPad-/NAS-Gerätetests weiterhin offen. Der ursprüngliche Codex-Draft wurde **ohne eigenen Merge** als ersetzt geschlossen; alle Originalcommits und Browserbilder bleiben erhalten. [Integrationsbericht](P1_AKADEMIEN_INTEGRATION.md).
+
+## Historischer Codex-Draft und dessen eigenständige Testumgebung
+Die folgenden Draft-/WebKit-Aussagen sind **historisch** und beschreiben den damaligen Codex-Isolationslauf vor der erfolgreichen Integrationsprüfung, nicht den veröffentlichten Stand.
+
 
 **[DRAFT / NICHT MAIN]** Ausgangsbasis `main b3c3fe8e6d00994758ebd42023a84201cb3919a0`, am 16.11.2026 über GitHub und `git ls-remote` geprüft. Nach der separat integrierten Managerakademie [#438](https://github.com/tobiasfranziskus/Check/pull/438) konfliktfrei auf aktuellen `main 544961eb3f254d4198cdd07f60a4185c8c7b6df8` rebasiert. Anschließend auf den ausschließlich dokumentarisch ergänzten `main ecd855507b2da4a165e64197ba32e4c7d8a4a87d` (#439) rebasiert; Produkt- und Testdateien sind gegenüber der geprüften Managerbasis bitgleich. Piloten-Codecommit nach Rebase: `278ab94`. Keine Integration, kein Merge und kein Pages-Deployment. Dateigrenzen von [#437](https://github.com/tobiasfranziskus/Check/issues/437) eingehalten; Manager-Akademie, Hauptstartseite, Raum- und Wirtschaftskern bleiben unverändert.
 

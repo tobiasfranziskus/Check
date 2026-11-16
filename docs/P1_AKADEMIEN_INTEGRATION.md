@@ -1,4 +1,16 @@
-# P1 – Integration zweier Akademien in eine Karriere [DRAFT]
+# P1 – Integration zweier Akademien in eine Karriere [MAIN / PAGES]
+
+**[GEPRÜFT am 16.11.2026]** [PR #441](https://github.com/tobiasfranziskus/Check/pull/441) mit `main 47d59f407c6042c80aebff62e497c33cbcc9bffd` integriert; [Pages-Deploy #43924629083](https://github.com/tobiasfranziskus/Check/actions/runs/43924629083) abgeschlossen und erfolgreich für **denselben Commit**. Sieben der sieben Workflow-Gates grün (bedingte Test-Skips nicht als bestanden gezählt):
+
+- [P1-Akademien, Node22, Chromium/WebKit und je vier Touchgrößen](https://github.com/tobiasfranziskus/Check/actions/runs/43923609070): vorhandenes Karrierespiel + Manager- und Pilotenkurse sowie separater Codex-Importpfad
+- [Vollständige JavaScript-/Wirtschaftsregression](https://github.com/tobiasfranziskus/Check/actions/runs/43923609077) und [W5-Altversion/NAS-Build](https://github.com/tobiasfranziskus/Check/actions/runs/43923609086)
+- [J4e-Jäger-Sicherheitsbrowser](https://github.com/tobiasfranziskus/Check/actions/runs/43923609036), [J14](https://github.com/tobiasfranziskus/Check/actions/runs/43923609044), [W6/P8a](https://github.com/tobiasfranziskus/Check/actions/runs/43923609033), [W6/P8g](https://github.com/tobiasfranziskus/Check/actions/runs/43923609035)
+
+Alle Testläufe gehören zum Integrations-Head `2b1eba8292fb536fd0ddf088b7745beaf211faa4`; danach keine Produktcodeänderung vor dem Merge. **Wirtschaftssicherung:** Originalweltgeld 33.000 ISK, Mint/Burn 0, autorisierte Käufe/Bergbau/Frachten und getrennte Regel204-/207-Speicher bleiben erhalten. Full-Snapshots sind abgetrennt und ausschließlich bei aktiver Übung angefordert. Ausgangs-main ist [hier gesichert](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-p1-pilotakademie-20261116).
+
+**Die reale iPad-Safari-/NAS-Geräteabnahme wurde nicht durchgeführt.** Chromium/WebKit-Simulationen sind keine Gerätetests. Der ursprüngliche Codex-Draft [#440](https://github.com/tobiasfranziskus/Check/pull/440) wurde ohne Merge als durch #441 ersetzt geschlossen.
+
+
 
 ## Ziel und technische Grenze
 - Originale zwölf Pilotenlektionen aus Codex-Draft [#440](https://github.com/tobiasfranziskus/Check/pull/440) übernehmen und als ausklappbare **Pilotenakademie** direkt in `prototypes/spiel/index.html` in derselben regulären Karriere sichtbar machen. Die acht bereits veröffentlichten [Managerlektionen #438](https://github.com/tobiasfranziskus/Check/pull/438) bleiben vorhanden; gleichzeitige CSS-Nutzung isoliert.

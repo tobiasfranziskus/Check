@@ -58,6 +58,10 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
     assert.ok(dialogs.some(x=>/Regel207-Forschungswelt/.test(x)),'Research opt-in outside JSON confirmed');
     // Legitimate player-originated original miner purchase is still a real game action.
     await page.locator('#tab-jaeger').tap();
+    const status=await page.locator('#p8-silizium-lage').textContent();
+    for(const label of ['Endliche Dravos-Bodenreserve','Bezahlte Dravos-Fracht',
+      'P8g-Materialauftrag','Nadir-Industrie','Frachtkapazität in Aldera'])
+      assert.ok(status.includes(label),'visible research status: '+label);
     const buy=page.locator('[data-j13-action="buy-st_aldera-miner"]');
     assert.equal(await buy.isEnabled(),true);
     await buy.tap();

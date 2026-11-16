@@ -4,6 +4,7 @@ on:
     paths:
       - 'prototypes/welt/welt-kern.js'
       - 'tests/w6-p8g-finanzierte-erzversorgung.test.mjs'
+      - 'tools/w6-p8d-dravos-szenarien.cjs'
       - '.github/workflows/w6-p8g-material-supply.yml'
   push:
     branches:
@@ -11,6 +12,7 @@ on:
     paths:
       - 'prototypes/welt/welt-kern.js'
       - 'tests/w6-p8g-finanzierte-erzversorgung.test.mjs'
+      - 'tools/w6-p8d-dravos-szenarien.cjs'
       - '.github/workflows/w6-p8g-material-supply.yml'
 jobs:
   original-funded-contract:

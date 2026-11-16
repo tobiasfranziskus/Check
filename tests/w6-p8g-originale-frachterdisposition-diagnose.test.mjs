@@ -114,3 +114,31 @@ test('S02×90: original S11-style werftVorrat+earlyReplacement policy experiment
     fighterDelta:after.industry.builtFighters-before.industry.builtFighters}));
   assert.equal(w.hash(w.load(save)),reference);
 });
+
+test('S02×90: bereits bezahlte W5ac-Huelle darf nicht unbemerkt erneut fliegen (getrenntes Vertragsgate)',()=>{
+  const {w,s,save,reference}=original90();
+  const sh=Object.values(s.ships).find(x=>x.owner==='transport'&&x.klasse==='frachter'
+    &&x.system==='nadir'&&x.phase==='dock'&&w.buchwert(s,x.id)>0);
+  assert.ok(sh,'reale einsatzfaehige Huelle in Nadir erwartet');
+  assert.ok(s.w5ac.completed.some(e=>e.id===sh.id),'bereits bezahlte Original-W5ac-Fahrt nachgewiesen');
+  assert.equal(s.w3.auftrag,null);
+  assert.equal(s.w5n.frachtauftrag,null);
+  assert.equal(s.w5ac.active,null);
+  assert.ok(s.owners.transport.cash>=w.rules.w5Transfer.lohnJeMinute*60,
+    'Spedition koennte die gleichen echten 60 Pilotenminuten erneut bezahlen');
+  const offer=w.kern.pilotW5TransferKalkulation(s,sh.id);
+  assert.equal(offer.ok,false,'Einmaligkeitsgate ist Absicht des noch unveraenderten Kerns');
+  const before=w.save(s);
+  const attempted=w.execute(s,{type:'shipReposition',owner:'transport',schiff:sh.id});
+  assert.equal(attempted.ok,false,'keinen Wiederholungsauftrag an Originalkern vorbei buchen');
+  assert.equal(w.save(s),before,'Originalbefehl lehnt ohne Geld/Waren/Eigentumswechsel ab');
+  verify(w,s);
+  assert.equal(w.hash(s),reference);
+  assert.equal(w.hash(w.load(save)),reference);
+  console.log('P8G_W5AC_ONE_TIME_GATE',JSON.stringify({ship:sh.id,
+    system:sh.system,previouslyCompleted:s.w5ac.completed.filter(e=>e.id===sh.id),
+    originalQuote:offer,originalCommand:attempted,
+    w3Active:false,iceFreightActive:false,w5acActive:false,
+    carrierCash:s.owners.transport.cash,remainingBookValue:w.buchwert(s,sh.id),
+    worldISK:33000,sourceHash:reference}));
+});

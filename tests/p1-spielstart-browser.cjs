@@ -231,7 +231,7 @@ async function w6Optin(browser,base,width,height,kind){
     assert.equal(flying.minted,0);assert.equal(flying.burned,0);
     assert.equal(w.audit(w.load(JSON.stringify(flying))).ok,true);
     // P2: the real public career uses the new commands through the pilot session.
-    const tap=async sel=>{const l=page.locator(sel);await l.scrollIntoViewIfNeeded();await l.tap();};
+    const tap=async sel=>{await page.locator(sel).tap();};
     await tap('#raum-tempo-300');
     await page.waitForFunction(()=>/Freier Flug|Handflug/.test(document.querySelector('#raum-lage').textContent));
     await tap('[data-raum="objekt-st_aldera"]');

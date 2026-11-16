@@ -108,6 +108,37 @@ function erstellen(){
    const w=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
    return aktivieren(w,w.load(text),'Fortgesetzter Regel204-Export',w.hash(w.load(text)));
  }
+ // W6/P8g DRAFT: eine echte NEUE Regel207-Forschungswelt aus dem
+ // originalfinanzierten Seed; niemals eine bestehende Regel204-Karriere umwandeln.
+ // Das ist kein Importpfad, keine Gratisreserve und keine neue Simulationsuhr.
+ function startenP8g(bestaetigt){
+   if(bestaetigt!==true)throw Error('W6/P8g: eigenen Forschungsstart ausdrücklich bestätigen');
+   if(welt)throw Error('J8: laufende Sitzung nicht überschreiben');
+   const w=W.erstellenP8d({carrierCash:2000,buyerCash:4000});
+   const s=w.createState(42);
+   if(s.rulesVersion!==207||w.regel!==207||s.owners.house.cash!==3000)
+     throw Error('W6/P8g: Originalstartwelt oder Eigentum nicht verifiziert');
+   w.politikSetzen(s,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
+   w.npcAutoSetzen(s,true);
+   w.npcSiliziumSetzen(s,true);
+   w.materialSupplySetzen(s,true);
+   const audit=w.audit(s);
+   if(!audit.ok)throw Error('W6/P8g: nicht finanzierte Forschungswelt: '+audit.fehler.join('; '));
+   return aktivieren(w,s,'Explizite neue Regel207-Forschung (keine Regel204-Migration)',w.hash(s));
+ }
+ function oeffnenP8g(text,bestaetigt){
+   if(bestaetigt!==true)throw Error('W6/P8g: externe JSON-Einwilligung ausdrücklich erforderlich');
+   if(welt)throw Error('J8: laufende Sitzung nicht überschreiben');
+   const raw=paket(text),p=raw.w5ad?.profile;
+   if(raw.rulesVersion!==207||raw.schema!==8
+      ||!safe(p?.carrierCash)||!safe(p?.buyerCash)
+      ||raw.kanon?.materialSupplyEnabled!==true)
+     throw Error('W6/P8g: ausschließlich separat aktivierte originale Regel207-Saves');
+   const w=W.erstellenP8d({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+   const state=w.load(text,{p8gImportFreigegeben:true});
+   if(!w.audit(state).ok)throw Error('W6/P8g: Wirtschafts-/Eigentumsaudit fehlgeschlagen');
+   return aktivieren(w,state,'Ausdrücklich bestätigter Regel207-Forschungssave',w.hash(state));
+ }
  function ansicht(){
    requireState();
    const s=pruefen(welt,zustand);
@@ -123,10 +154,12 @@ function erstellen(){
    }));
    const jaeger=schiffe.filter(sh=>sh.klasse==='jaeger');
    return Object.freeze({
-     herkunft,quelleHash,regel:204,tick:s.tick,hash:welt.hash(s),
+     herkunft,quelleHash,regel:welt.regel,tick:s.tick,hash:welt.hash(s),
      weltgeld:gleichesGeld(s),hausgeld:s.owners.house.cash,schiffe,stationen,
      eigenerJaeger:jaeger.length, pilotierbar:schiffe.some(sh=>['jaeger','miner','frachter'].includes(sh.klasse)),
-     ausgabe:'Regel204 – manuelle JSON-Sicherung, kein automatischer Rückweg nach Regel195'
+     ausgabe:welt.regel===207
+       ?'Regel207 – isolierte Forschungskopie, kein automatisches Upgrade oder Import in 204'
+       :'Regel204 – manuelle JSON-Sicherung, kein automatischer Rückweg nach Regel195'
    });
  }
  function angebot(cmd){
@@ -260,7 +293,7 @@ function erstellen(){
  function flugAudit(){requireState();return welt.audit(zustand);}
 
  function exportieren(){requireState();return welt.save(zustand);}
- return Object.freeze({starten195,oeffnen204,ansicht,angebote,ausfuehren,weiterspielen,exportieren,
+ return Object.freeze({starten195,oeffnen204,startenP8g,oeffnenP8g,ansicht,angebote,ausfuehren,weiterspielen,exportieren,
   piloten,uebernehmen,pilotStatus,flugBefehl,flugAngebot,flugSchritte,weltReferenz,zustandReferenz,flugAudit});
 }
 const API=Object.freeze({erstellen});

@@ -6,7 +6,7 @@
 'use strict';
 function erstellen(welt,zustand,kaufangebot){
  const r=welt?.rules,s=zustand;
- if(r?.rulesVersion!==204||s?.rulesVersion!==204||!r?.j3||!r?.j4||
+ if(![204,207].includes(r?.rulesVersion)||s?.rulesVersion!==r.rulesVersion||!r?.j3||!r?.j4||
     !s?.stations?.st_nadir||!s?.owners?.st_nadir||!s?.owners?.house||
     !s?.kanon?.bauteile||!s?.kanon?.jaeger)
    throw Error('J13: nur originale, vollstaendige Regel204-Jaegerwirtschaft');
@@ -51,7 +51,7 @@ function erstellen(welt,zustand,kaufangebot){
      'Original-Core sperrt: '+(angebot?.reason||'kein Kaufangebot'))),
  ];
  return Object.freeze({
-  regel:204,tick:s.tick,schritte:Object.freeze(schritte),
+  regel:r.rulesVersion,tick:s.tick,schritte:Object.freeze(schritte),
   eigentuemerWerft:r.j4.owner,naechsterArbeitslohn:arbeitJ4,
   k7:Object.freeze({phase:k7?.phase||'unbekannt',alderaKasse:alderakasse,erzkauf:ankauf}),
   lager:Object.freeze({material,silizium,bauteil:gebauteTeile,jaeger:lagerJaeger}),

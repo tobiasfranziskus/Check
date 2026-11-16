@@ -387,7 +387,7 @@ const m_data_erzpilot = (() => {
         ...W5_RULES.economy.waren,silizium:{stufe:'rohstoff',basis:24}
       }};
     }
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug'].includes(k))
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug','siliziumZweitesFeld','siliziumDravos','siliziumFracht'].includes(k))
       || (Object.hasOwn(research,'kanon')&&(research.kanon!==true||research.personalWages!==true))
       || (Object.hasOwn(research,'ort')!==(research.kanon===true))
       || (research.kanon===true&&(typeof research.ort?.imFeld!=='function'
@@ -401,7 +401,13 @@ const m_data_erzpilot = (() => {
       || (Object.hasOwn(research,'silizium')&&(research.silizium!==true||research.industryOre!==true))
       || (Object.hasOwn(research,'bauteile')&&(research.bauteile!==true||research.silizium!==true))
       || (Object.hasOwn(research,'jaeger')&&(research.jaeger!==true||research.bauteile!==true))
-      || (Object.hasOwn(research,'jaegerFlug')&&(research.jaegerFlug!==true||research.jaeger!==true)))
+      || (Object.hasOwn(research,'jaegerFlug')&&(research.jaegerFlug!==true||research.jaeger!==true))
+      || (Object.hasOwn(research,'siliziumZweitesFeld')&&
+        (research.siliziumZweitesFeld!==true||research.jaegerFlug!==true))
+      || (Object.hasOwn(research,'siliziumDravos')&&
+        (research.siliziumDravos!==true||research.siliziumZweitesFeld!==true))
+      || (Object.hasOwn(research,'siliziumFracht')&&
+        (research.siliziumFracht!==true||research.siliziumDravos!==true)))
       throw TypeError('Unbekannter W5ad-Startparameter');
     const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
     if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
@@ -481,6 +487,55 @@ const m_data_erzpilot = (() => {
       W5_RULES.rulesVersion=204;
       W5_RULES.j4c=Object.freeze({owner:'house',station:'st_nadir',
         verschleissMilliJeMinute:300});
+    }
+    // W6/P8b [DRAFT / RESEARCH RULE205]: eine ZWEITE, raeumlich getrennte,
+    // ENDLICHE Nadir-Geologie. Explizite Versuchsauswahl, niemals in Rule204.
+    // Keine Schiffe, Kassen, Siliziumware oder Rettung bei der Initialisierung.
+    // Dravos wird dadurch NICHT erschlossen oder als Lieferweg simuliert.
+    if(research.siliziumZweitesFeld===true){
+      W5_RULES.rulesVersion=205;
+      W5_RULES.j2b=Object.freeze({...W5_RULES.j2b,
+        feld:Object.freeze({...W5_RULES.j2b.feld,id:'nadir-primaer'}),
+        nebenfeld:Object.freeze({id:'nadir-sekundaer',system:'nadir',
+          x:-720000,y:-480000,radius:144000,vorrat:16})});
+    }
+    // P8c/Regel206: echtes Dravos-System mit EMPTY Dock, NO CASH, NO STOCK.
+    // Die 16 Silizium sind NUR begrenzter Forschungs-Boden, keine Ware.
+    // Ein 40-minuetiger Dravos→Nadir-Pfad folgt den historischen Gatekanten
+    // Dravos→Orion (22) und Orion→Nadir (18). Kein direkter Fantasy-Gate.
+    if(research.siliziumDravos===true){
+      W5_RULES.rulesVersion=206;
+      W5_RULES.j2b=Object.freeze({...W5_RULES.j2b,
+        nebenfeld:Object.freeze({
+          id:'dravos-silizium',system:'dravos',x:720000,y:-480000,
+          radius:144000,vorrat:16})});
+      W5_RULES.p8c=Object.freeze({
+        transportOwner:'npc3',route:['dravos','orion','nadir'],
+        frachtLohnJeMinute:W5_RULES.w3.arbeitJeMinute
+      });
+      W5_RULES.world={...W5_RULES.world,
+        systems:{...W5_RULES.world.systems,
+          dravos:{station:'st_dravos',fonds:'fonds_dravos',sicherheit:'gesetzlos'}},
+        stations:{...W5_RULES.world.stations,
+          st_dravos:{system:'dravos',linien:[],verbrauch:{},ziel:{},gebuehr:0}},
+        fields:[...W5_RULES.world.fields,{system:'dravos',ware:'silizium',miner:0}],
+        gates:[...W5_RULES.world.gates,['aldera','dravos',20],
+          ['dravos','orion',22],['orion','nadir',18]]};
+      W5_RULES.owners=[...W5_RULES.owners,
+        {id:'st_dravos',kind:'station',cash:0},
+        {id:'fonds_dravos',kind:'fund',cash:0}];
+      W5_RULES.economy={...W5_RULES.economy,
+        region:{...W5_RULES.economy.region,dravos:900}};
+    }
+    // P8d/Rule207: kein neues Geld und keine Schiffsschenkung.
+    // Entkoppelte Fracht mit vorhandener npc3- und transport-Kasse.
+    if(research.siliziumFracht===true){
+      W5_RULES.rulesVersion=207;
+      W5_RULES.p8d=Object.freeze({minerOwner:'npc3',frachterOwner:'transport',
+        ware:'silizium',quelle:'dravos',ziel:'nadir'});
+      W5_RULES.owners=[...W5_RULES.owners,
+        {id:'k1_p8d_fracht',kind:'k1-reserve',cash:0},
+        {id:'k1_p8d_pilot',kind:'k1-reserve',cash:0}];
     }
     if(research.kanon===true)W5_RULES.kanon={profil:'K1'};
     if(research.wageTrade===true){
@@ -672,10 +727,18 @@ function checkShape(state, cmd, rules) {
       if (rules.economy.waren[cmd.klasse].stufe !== 'schiff') return 'Ware ist kein aktivierbares Schiff';
       if (!Object.hasOwn(s.ladung, cmd.klasse) || s.ladung[cmd.klasse] < 1) return 'Schiff nicht im Frachtraum';
     }
+    // P8d: bereits unterzeichneter Fremdfrachtvertrag reserviert diese
+    // EIGENE Transporthuelle; keine automatische Eis-/Erz-/Werft-Doppelbindung.
+    // Nur der Vertrag darf den echten W3-Schiffstransit ausloesen.
+    if(rules.rulesVersion===207&&state.kanon?.p8d?.auftrag?.frachter===s.id
+      &&!['shipMove','shipRename'].includes(cmd.type))
+      return 'P8d: Frachter ist bereits rechtswirksam vertraglich gebunden';
     if (rules.w3 && s.klasse === 'frachter' && cmd.type !== 'shipFreight' && cmd.type !== 'shipRename'
       && !(rules.w5Transfer && cmd.type === 'shipReposition')
       && !(rules.w5Replacement && cmd.type === 'researchShipLoss')
-      && !(rules.w5n && cmd.type === 'shipFreightIce'))
+      && !(rules.w5n && cmd.type === 'shipFreightIce')
+      && !(rules.rulesVersion===207 && cmd.type==='shipMove'
+        && state.kanon?.p8d?.auftrag?.frachter===s.id))
       return 'W3-Frachter ausschließlich per finanziertem Transportauftrag steuern';
     if(cmd.type==='shipFreightIce'){
       const q=m_core_w5n.pruefenFracht(state,rules,s);
@@ -791,7 +854,8 @@ function checkShape(state, cmd, rules) {
     ...(rules.w5WageTrade ? ['workerMaterialBuy'] : []),
     ...(rules.w5n?['shipSellIce','shipFreightIce','stationWater','workerWaterBuy']:[]),
     ...(rules.w5ag?['pilotWaterBuy']:[]),
-    ...(rules.k7?['stationClaimMinerLocal']:[])].includes(cmd.type))
+    ...(rules.k7?['stationClaimMinerLocal']:[]),
+    ...([206,207].includes(rules.rulesVersion)?['shipMove']:[])].includes(cmd.type))
     return 'Im Erzpilot derzeit nicht freigeschaltet';
   if (cmd.type === 'stationClaimMinerLocal') {
     // Keine Änderung des bestehenden shipBuy: die alten K2-Rückfracht-/J2-
@@ -1160,6 +1224,10 @@ const { handel, aufnehmbar, stationIn } = m_core_handel;
 function entladen(state, rules, s) {
   const station = stationIn(rules, s.system);
   for (const ware of ids(s.ladung)) {
+    // Rule207: leere 0er-Bestandsfelder sind keine Ware. Beim neuen
+    // externen Dock-Transit duerfen sie keinen automatischen Ankaufsversuch
+    // ausloesen (kein Preis/Teiler fuer Nullmengen). Alte Regeln bitgleich.
+    if(rules.rulesVersion===207 && anzahl(s.ladung,ware)===0)continue;
     const m = Math.min(anzahl(s.ladung, ware), aufnehmbar(state, rules, station, ware));
     if (m > 0 && handel(state, rules, s, station, ware, m, false)) {
       state.stats.handel += 1; state.stats.verkaeufe[s.id] += 1;
@@ -2698,6 +2766,25 @@ const m_core_w5_transfer=(()=>{
         &&((lost(x.id)?.tick>=x.ankunft&&lost(x.id)?.system===c.ziel)
           ||s.w3.auftrag?.schiff===x.id
           ||(!!r.kanon&&s.w5n?.frachtauftrag?.schiff===x.id)
+          // Rule207: legitime Anschlussverwendung einer bereits mit W5ac
+          // bezahlten Werft-Huelle. W5ac-Kauf-/Flugjournal bleibt unveraendert;
+          // der NEUE Fremdfrachtbeleg wird separat vom P8d-K1-Audit geprueft.
+          ||(r.rulesVersion===207&&s.ships[x.id]?.owner==='transport'
+            &&((s.kanon?.p8d?.auftrag?.frachter===x.id&&(()=>{
+              const a=s.kanon.p8d.auftrag,sh=s.ships[x.id];
+              return (a.phase==='hin'&&sh.phase==='reise'
+                  &&sh.ziel==='st_dravos')
+                ||(a.phase==='rueck'&&sh.phase==='reise'
+                  &&sh.ziel==='st_nadir')
+                ||(['laden','rueckBereit'].includes(a.phase)
+                  &&sh.system==='dravos'&&sh.phase==='dock'
+                  &&sh.auftrag==='halten')
+                ||(a.phase==='ankunft'&&sh.system==='nadir'
+                  &&sh.phase==='dock'&&sh.auftrag==='halten');
+            })())||(s.kanon?.p8d?.belege?.some(b=>b.frachter===x.id
+                &&b.phase==='fertig')&&s.ships[x.id].system==='nadir'
+                &&s.ships[x.id].phase==='dock'
+                &&s.ships[x.id].auftrag==='halten')))
           ||(s.ships[x.id].system===c.ziel&&s.ships[x.id].phase==='dock'
             &&s.ships[x.id].auftrag==='halten')))
       &&activeOk&&(!a||!ids.includes(a.id))
@@ -4017,6 +4104,36 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
       personalWages:true,kanon:true,ort});
   },
   // K7: getrennte Forschungsregel200, keine Rule199-Migration/Produktänderung.
+  createP8dWelt:(options,ort)=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('P8d: nur originale Kassen, keine Gratis-Huellen');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,
+      personalWages:true,kanon:true,industryOre:true,
+      silizium:true,bauteile:true,jaeger:true,jaegerFlug:true,
+      siliziumZweitesFeld:true,siliziumDravos:true,siliziumFracht:true,ort});
+  },
+  createP8cWelt:(options,ort)=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('P8c: nur originale Kassen, keine Gratis-Initialisierung');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,
+      personalWages:true,kanon:true,industryOre:true,
+      silizium:true,bauteile:true,jaeger:true,jaegerFlug:true,
+      siliziumZweitesFeld:true,siliziumDravos:true,ort});
+  },
+  createP8bWelt:(options,ort)=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('P8b: nur nachweisbare Anfangskassen');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,
+      personalWages:true,kanon:true,industryOre:true,
+      silizium:true,bauteile:true,jaeger:true,jaegerFlug:true,
+      siliziumZweitesFeld:true,ort});
+  },
   createJ4cWelt:(options,ort)=>{
     if(options==null)options={};
     if(typeof options!=='object'||Array.isArray(options)

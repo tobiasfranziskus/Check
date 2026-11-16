@@ -8,7 +8,7 @@ const ganz=n=>Number.isSafeInteger(n)&&n>=0;
 const summe=(list,feld)=>list.reduce((n,v)=>n+(v[feld]||0),0);
 function erstellen(welt,zustand){
  const r=welt?.rules,s=zustand,k=s?.kanon,b=k?.silizium;
- if(r?.rulesVersion!==204||s?.rulesVersion!==204||!r.j2b||!r.j3||!r.j4||
+ if(![204,207].includes(r?.rulesVersion)||s?.rulesVersion!==r.rulesVersion||!r.j2b||!r.j3||!r.j4||
     !r.world?.systems||!Array.isArray(r.world?.fields)||
     !s?.stations?.st_nadir?.lager||!s?.owners?.npc3||!s?.owners?.st_nadir||
     !b||!s?.ledger?.silizium||typeof welt.audit!=='function')
@@ -40,10 +40,13 @@ function erstellen(welt,zustand){
  const eigeneMiner=schiffe.filter(sh=>sh.owner==='npc3'&&sh.klasse==='miner'
   &&sh.system===depot.system&&sh.heimat===depot.system
   &&k?.minerWerft?.lokaleKaeufe?.some(x=>x.id===sh.id&&x.owner==='npc3'));
+ // Rule207 has distinct physically finite Nadir and Dravos deposits; never
+ // misleadingly sum Dravos stock into the local Nadir-Feld remainder.
+ const lokal=r.rulesVersion===207&&b.felder?.[depot.id]?b.felder[depot.id]:b;
  const rohstoff=Object.freeze({
-  system:depot.system,gesamt:depot.vorrat,rest:b.vorrat,
-  gefoerdert:b.gefoerdert,verkauft:b.verkauft,charge,
-  moeglicheNeueChargen:Math.floor(b.vorrat/charge),
+  system:depot.system,gesamt:depot.vorrat,rest:lokal.vorrat,
+  gefoerdert:lokal.gefoerdert,verkauft:lokal.verkauft,charge,
+  moeglicheNeueChargen:Math.floor(lokal.vorrat/charge),
   auftrag:gebunden
  });
  const lager=Object.freeze({siliziumNadir:freiImDepot,siliziumSchiffe:anBord,
@@ -74,7 +77,7 @@ function erstellen(welt,zustand){
     ?'Keine neue 8er-Foerdercharge im Nadir-Feld; vorhandene Ware/Teile separat nachweisbar'
     :'Nadir-Siliziumfeld erschoepft; ohne neue endliche, finanzierte Quelle kein weiterer J3-Rohstoffnachschub')
   :'Nadir-Feld hat noch endlichen Rohstoff; naechste Charge nur mit Original-Miner, Geld, Dock und Kaufvertrag';
- const probe=Object.freeze({regel:204,tick:s.tick,
+ const probe=Object.freeze({regel:r.rulesVersion,tick:s.tick,
   rohstoff,lager,finanzierung,weg,stand});
  return probe;
 }

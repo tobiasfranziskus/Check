@@ -42,8 +42,9 @@ function eigenesSchiff(s, id) {
 // auditierte, nur mit echtem Hausgeld gekaufte Minerhülle ohne Anfangsjäger.
 // Der Core hat beim Kauf das Eigentum gebucht, die Szene selbst erzeugt keine Hülle.
 function sitzungPruefen(welt, s) {
-  if (!welt || welt.regel !== 204 || !s || s.rulesVersion !== 204 || !ganz(s.tick) || !ganz(s.flug && s.flug.schritt))
-    throw Error('RAUM: nur auditierte Regel204-Welt');
+  if (!welt || ![204,207].includes(welt.regel) || !s || s.rulesVersion !== welt.regel
+      || !ganz(s.tick) || !ganz(s.flug && s.flug.schritt))
+    throw Error('RAUM: nur auditierte Original-Regel204/207-Welt');
   const preis = welt.rules && welt.rules.j4 && welt.rules.j4.verkaufspreis;
   const kauf = s.kanon && s.kanon.jaeger && Array.isArray(s.kanon.jaeger.kaeufe)
     ? s.kanon.jaeger.kaeufe.find((k) => k.owner === OWNER && k.preis === preis

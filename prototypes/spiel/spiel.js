@@ -6,6 +6,7 @@
 'use strict';
 const d=scope.document,$=id=>d.getElementById(id);
 const SLOT='aphros-void:spielerkarriere:regel204:v1';
+const SLOT_W6='aphros-void:spielerkarriere:regel207-forschung:v1';
 const BACKUP=SLOT+':vorherige';
 const MAX=5*1024*1024;
 const fmt=n=>Number(n).toLocaleString('de-DE');
@@ -18,10 +19,19 @@ function speichern(copyOld=false){
  if(!session)return false;
  const json=session.exportieren();
  if(json.length>MAX)throw Error('Karrierestand übersteigt 5 MB. Bitte als JSON exportieren.');
- // Get, set and backup are deliberately isolated from every existing Rule195 slot.
+ // Preserve the original Rule204 write *literally*; the research slot
+ // is a separate explicit branch, not a generic alias that could silently
+ // redirect any existing Rule204/195 career storage.
  try {
-   if(copyOld){const old=scope.localStorage.getItem(SLOT);if(old)scope.localStorage.setItem(BACKUP,old);}
-   scope.localStorage.setItem(SLOT,json);
+   if(session.ansicht().regel===207){
+     if(copyOld){const old=scope.localStorage.getItem(SLOT_W6);
+       if(old)scope.localStorage.setItem(SLOT_W6+':vorherige',old);}
+     scope.localStorage.setItem(SLOT_W6,json);
+   }else{
+     if(copyOld){const old=scope.localStorage.getItem(SLOT);
+       if(old)scope.localStorage.setItem(BACKUP,old);}
+     scope.localStorage.setItem(SLOT,json);
+   }
    return true;
  }catch(e){
    hinweis('Lokales Sichern nicht möglich. Bitte den JSON-Export verwenden: '+error(e),true);
@@ -33,8 +43,11 @@ function gespeicherte(key=SLOT){
 }
 function menustand(){
  $('fortsetzen').disabled=!gespeicherte();
+ $('fortsetzen-w6').disabled=!gespeicherte(SLOT_W6);
  const old=$('vorige-karriere');
  if(old)old.hidden=!gespeicherte(BACKUP);
+ const w6Backup=$('vorige-forschung');
+ if(w6Backup)w6Backup.hidden=!gespeicherte(SLOT_W6+':vorherige');
 }
 function screen(id){
  ansicht=id;
@@ -63,16 +76,19 @@ function aktiveSitzung(nachricht){
  menustand();
 }
 function startNeu(){
- const vorher=gespeicherte();
- if(vorher&&!scope.confirm('Hier besteht schon eine Karriere. Die bisherige Version bleibt als „Vorherige Karriere“ gesichert. Trotzdem eine neue Karriere beginnen?'))return;
  try{
   if(!scope.W5acSession||!scope.J8KonzernSitzung)throw Error('Original-Wirtschaftskern wurde nicht geladen');
-  // A genuine Rule195 starting world, not a prefilled 204 test fixture.
+  // Explicitly selected NEW research world. Not a Rule204-to-207 save migration.
   const w6Aktiv=$('w6-npc-start')?.checked===true;
-  const original195=scope.W5acSession.create(42,'private195').export();
+  const p8gAktiv=$('w6-p8g-start')?.checked===true;
+  if(w6Aktiv&&p8gAktiv)throw Error('Bitte nur ein Forschungsprofil wählen');
+  const slot=p8gAktiv?SLOT_W6:SLOT,vorher=gespeicherte(slot);
+  if(p8gAktiv&&!scope.confirm('W6/P8g ist eine getrennte Regel207-Forschungswelt mit neuen endlichen Rohstofffeldern. Deine Regel204-Karriere bleibt unverändert. Eigenen Forschungsstart beginnen?'))return;
+  if(vorher&&!scope.confirm('Für dieses Profil besteht schon ein Spielstand. Die bisherige Version bleibt als „Vorherige Karriere“ gesichert. Trotzdem neu beginnen?'))return;
   const neu=neueSitzung();
-  const a=neu.starten195(original195,true);
-  if(a.regel!==204||a.weltgeld!==33000)throw Error('Ausgangswelt nicht autoritativ validiert');
+  const a=p8gAktiv?neu.startenP8g(true):neu.starten195(scope.W5acSession.create(42,'private195').export(),true);
+  if(a.regel!==(p8gAktiv?207:204)||a.weltgeld!==33000)
+    throw Error('Ausgangswelt nicht autoritativ validiert');
   if(w6Aktiv){
    const welt=neu.weltReferenz(),zustand=neu.zustandReferenz();
    if(typeof welt.politikSetzen!=='function'||typeof welt.npcAutoSetzen!=='function'
@@ -86,8 +102,9 @@ function startNeu(){
   }
   session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;
   const ok=speichern(!!vorher);
-  aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(w6Aktiv
-   ?'W6-NPC-Konzerne arbeiten auf eigene Rechnung; jeder Auftrag bleibt finanziert.'
+  aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(p8gAktiv
+   ?'Isolierte Regel207-Dravosforschung: echter Bergbau, Fremdfracht und Materialverträge; Regel204-Slot unangetastet.'
+   :w6Aktiv?'W6-NPC-Konzerne arbeiten auf eigene Rechnung; jeder Auftrag bleibt finanziert.'
    :'Unveränderte Karriere ohne NPC-W6-Automatik.')+' Kein kostenloses Schiff.');
   if(!ok)hinweis('Karriere gestartet. Lokales Speichern nicht verfügbar; bitte sofort JSON exportieren.',true);
  }catch(e){hinweis('Start verweigert: '+error(e),true);}
@@ -96,14 +113,25 @@ function ladeSitzung(json,auswahl,backup=false){
  if(typeof json!=='string'||json.length<1||json.length>MAX)
    throw Error('Ungültige Größe des Karriere-Spielstands.');
  if(session)throw Error('Laufende Karriere zuerst als JSON exportieren und die Seite neu öffnen.');
+ const raw=JSON.parse(json),regel=raw?.rulesVersion;
+ if(regel!==204&&regel!==207)throw Error('Nur bestätigte Original-Regel204- oder Forschungsregel207-Saves');
+ if(regel===207&&!['forschung','forschung-backup','datei'].includes(auswahl))
+   throw Error('Forschungsstand nur über getrennten Forschungszugang laden');
+ if(regel===204&&['forschung','forschung-backup'].includes(auswahl))
+   throw Error('Forschungszugang darf nicht den Regel204-Spielstand ersetzen');
+ // The authorization is a real user action OUTSIDE the untrusted JSON:
+ // named research-resume click or separate explicit file-import confirmation.
+ if(regel===207&&auswahl==='datei'&&!scope.confirm(
+   'Diese Datei enthält Regel207-W6-Forschung. Externen P8g-Import ausdrücklich erlauben? Die normale Regel204-Karriere bleibt separat erhalten.'))return;
+ const slot=regel===207?SLOT_W6:SLOT;
+ if(auswahl==='datei'&&gespeicherte(slot)&&!scope.confirm(
+   'Dieser Datei-Spielstand ersetzt NUR die gleichnamige Karriere-Speicherstelle. Die bisherige wird zuvor gesichert. Fortfahren?'))return;
  const neu=neueSitzung();
- const a=neu.oeffnen204(json,true); // Strict Core validation; no auto migration.
- if(a.regel!==204||a.weltgeld!==33000)throw Error('Weltgeld- und Regel-Audit verweigert den Stand');
- if(auswahl==='datei'){
-   if(gespeicherte()&&!scope.confirm('Der neue Datei-Spielstand ersetzt die aktive Karriere-Speicherstelle. Die bisherige Karriere wird zusätzlich gesichert. Fortfahren?'))return;
- }
+ const a=regel===207?neu.oeffnenP8g(json,true):neu.oeffnen204(json,true);
+ if(a.regel!==regel||a.weltgeld!==33000)
+   throw Error('Weltgeld- und Regel-Audit verweigert den Stand');
  session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;
- if(auswahl==='datei'||backup)speichern(!!gespeicherte());
+ if(auswahl==='datei'||backup)speichern(!!gespeicherte(slot));
  aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Der Original-Core hat deinen Spielstand geprüft.');
 }
 function weiter(n){
@@ -120,7 +148,9 @@ function weiter(n){
  }catch(e){
   if(vorher!==null){
    try{
-    const restore=neueSitzung();restore.oeffnen204(vorher,true);
+    const restore=neueSitzung();
+    if(session?.ansicht().regel===207)restore.oeffnenP8g(vorher,true);
+    else restore.oeffnen204(vorher,true);
     session=restore;anzeigen();
    }catch(restoreError){
     hinweis('Tagesfortschritt fehlgeschlagen; bitte letzte JSON-Sicherung verwenden: '+error(restoreError),true);
@@ -318,9 +348,11 @@ function siliziumBericht(zustand){
   b.textContent=titel+': ';p.append(b,d.createTextNode(info));return p;
  };
  const f=lage.rohstoff,l=lage.lager,g=lage.finanzierung,w=lage.weg;
- const beschaffung=w.dravosAktiv
-  ?'Ein weiteres System ist im Regel204-Profil vorhanden, aber kein bezahlter Silizium-Frachtvertrag ist eingerichtet.'
-  :'Dravos ist in der allgemeinen Karte verzeichnet, aber kein aktives Regel204-Foerder-/Frachtziel. Neue endliche Quellen sind noch nicht erschlossen.';
+ const beschaffung=zustand.rulesVersion===207
+  ?'Regel207-Forschung: endliche Dravos-Minerfelder, eigene bezahlte Fracht und Eigentümerverträge. Lieferungen nur bei wirklicher Ware, Kapazität und zahlungsfähigem Käufer.'
+  :w.dravosAktiv
+   ?'Ein weiteres System ist in Regel204 bekannt, aber kein bezahlter Silizium-Frachtvertrag ist eingerichtet.'
+   :'Dravos ist auf der Karte, aber kein aktives Regel204-Foerder-/Frachtziel. Neue endliche Quellen sind noch nicht erschlossen.';
  host.replaceChildren(
   zeile('Endliches Nadir-Feld',fmt(f.rest)+' / '+fmt(f.gesamt)+' Silizium verbleiben · '+fmt(f.gefoerdert)+
    ' physisch gefoerdert · '+fmt(f.verkauft)+' bezahlt an Nadir verkauft · '+fmt(f.moeglicheNeueChargen)+
@@ -342,13 +374,35 @@ function siliziumBericht(zustand){
    ' · '+beschaffung),
   zeile('Lieferstatus',lage.stand)
  );
+ if(zustand.rulesVersion===207){
+   const w=session.weltReferenz(),k=zustand.kanon,warehouse=zustand.stations.st_nadir.lager;
+   const dravos=Object.entries(k.silizium?.felder||{}).filter(([id])=>id.startsWith('dravos:'));
+   const rest=dravos.reduce((n,[,f])=>n+(Number.isSafeInteger(f.vorrat)?f.vorrat:0),0);
+   const transport=Object.values(zustand.ships).filter(sh=>sh.owner==='transport'&&sh.klasse==='frachter');
+   const alderadock=transport.filter(sh=>sh.system==='aldera'
+     &&sh.phase==='dock'&&sh.flug?.lage==='angedockt'
+     &&Object.values(sh.ladung||{}).every(n=>n===0)&&w.buchwert(zustand,sh.id)>0);
+   const phase=k.industrieErz?.phase||'frei',fr=k.p8d;
+   host.append(
+     zeile('Endliche Dravos-Bodenreserve',fmt(rest)+' echte Siliziumeinheiten, kein automatisches Auffüllen'),
+     zeile('Bezahlte Dravos-Fracht',fmt(fr?.geliefert||0)+' abgeschlossene Lieferungen · '
+       +fmt(fr?.angebote||0)+' ursprüngliche Angebote; neue Frachten nur gegen reale Kasse und Ware'),
+     zeile('P8g-Materialauftrag',phase+(k.industrieErz?.materialOnly?' · ohne verpflichtenden Frachterneubau':'')
+       +' · '+fmt(zustand.w3.abgeschlossen)+' W3-Lieferungen insgesamt'),
+     zeile('Nadir-Industrie',fmt(warehouse.erz||0)+' Erz · '+fmt(warehouse.material||0)
+       +' Material · '+fmt(warehouse.silizium||0)+' Silizium · '
+       +fmt(k.bauteile.abgeschlossen)+' hergestellte Bauteile · '+fmt(k.jaeger.fertig)+' gebaute Jäger'),
+     zeile('Frachtkapazität in Aldera',fmt(alderadock.length)+' leere, angedockte Speditionsfrachter mit Restbuchwert; dies allein ist noch keine finanzierte Vertragszusage')
+   );
+ }
 }
 function anzeigen(){
  if(!session)return;
  const a=session.ansicht(),s=session.zustandReferenz();
  // Status stammt ausschließlich aus dem gespeicherten Core, nicht aus einem UI-Schalter.
  const w6Status=$('w6-status');
- if(w6Status)w6Status.hidden=!(s.kanon.npcAuto===true&&s.kanon.npcSilizium?.aktiv===true);
+ if(w6Status){w6Status.hidden=!(s.kanon.npcAuto===true&&s.kanon.npcSilizium?.aktiv===true);
+   w6Status.textContent=s.rulesVersion===207?'W6 · Dravos-Forschung aktiv':'W6 · NPC-Wirtschaft aktiv';}
  $('hausgeld').textContent=fmt(a.hausgeld)+' ISK';
  $('zeit').textContent=datum(a.tick);
  $('weltgeld').textContent=fmt(a.weltgeld)+' ISK';
@@ -450,7 +504,7 @@ function cockpitBinden(){
    exportieren:saveDownload,
    ansicht:retour,
    meldung:(m,fail)=>hinweis(m,fail),
-   flugschreiber:()=>({format:'aphros-raum-flugschreiber-1',regel:204,
+   flugschreiber:()=>({format:'aphros-raum-flugschreiber-1',regel:session?.ansicht().regel||204,
        schritte:flugSchritte,vollstaendig:false,
        hinweis:'Diese Spielerlebnishülle speichert keinen vollständigen Replay-Befehlsstrom.',
        eintraege:[]})
@@ -473,11 +527,28 @@ $('fortsetzen').addEventListener('click',()=>{try{
    const json=gespeicherte();if(!json)throw Error('Keine Karriere gespeichert');
    ladeSitzung(json,'lokal');
  }catch(e){hinweis('Karriere nicht geöffnet: '+error(e),true);}});
+$('fortsetzen-w6').addEventListener('click',()=>{try{
+   if(session){aktiveSitzung('Deine laufende Karriere ist geöffnet.');return;}
+   const json=gespeicherte(SLOT_W6);if(!json)throw Error('Kein separater Forschungsstand gespeichert');
+   ladeSitzung(json,'forschung');
+ }catch(e){hinweis('W6-Forschung nicht geöffnet: '+error(e),true);}});
+$('w6-npc-start').addEventListener('change',()=>{
+ if($('w6-npc-start').checked)$('w6-p8g-start').checked=false;
+});
+$('w6-p8g-start').addEventListener('change',()=>{
+ if($('w6-p8g-start').checked)$('w6-npc-start').checked=false;
+});
 $('vorige-karriere')?.addEventListener('click',()=>{try{
    if(session)throw Error('Erst die aktuelle Karriere als JSON sichern und neu laden');
    const json=gespeicherte(BACKUP);if(!json)throw Error('Keine vorherige Sicherung vorhanden');
    ladeSitzung(json,'backup',true);
  }catch(e){hinweis('Vorherige Karriere nicht geöffnet: '+error(e),true);}});
+$('vorige-forschung').addEventListener('click',()=>{try{
+ if(session)throw Error('Erst die aktuelle Karriere als JSON sichern und die Seite neu öffnen');
+ const json=gespeicherte(SLOT_W6+':vorherige');
+ if(!json)throw Error('Keine gesonderte W6-Forschungssicherung vorhanden');
+ ladeSitzung(json,'forschung-backup',true);
+ }catch(e){hinweis('W6-Forschungssicherung nicht geladen: '+error(e),true);}});
 $('import-aktion').addEventListener('click',()=>$('import-datei').click());
 $('import-datei').addEventListener('change',async e=>{
  const input=e.currentTarget; // Safari clears event.currentTarget after await.

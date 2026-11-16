@@ -1,0 +1,30 @@
+# W6/P8g – Spielbare, isolierte Forschungskarriere in P1/P2
+
+**[DRAFT / NO RELEASE · 16.11.2026]** [Draft-PR #429](https://github.com/tobiasfranziskus/Check/pull/429), gestapelt auf dem gegen aktuellen P2-`main feda85dc` erstellten [W6-Integrations-Draft #428](https://github.com/tobiasfranziskus/Check/pull/428).
+
+Die bis dahin **nur im Node22-Kern** ausführbare, vom Nutzer genehmigte vollständig finanzierte 50-Erz-Materialversorgung ist nun in einer **separaten, ausdrücklich gewählten Regel207-Forschungskarriere** durch die *vorhandene* P1-/Jäger-/RAUM-Oberfläche bedienbar. **Keine Regel-/Balanceänderung, kein Main-Merge und kein Pages-Deploy** durch diese Arbeit.
+
+## Reale Spielerhandlungen und Autorität
+
+- Der Spieler wählt im vorhandenen Prolog bewusst `W6/P8g: Neue Dravos-Forschungskarriere` und bestätigt gesondert. Er erhält keinen gratis gestarteten Jäger, Miner oder Frachter. Eine **neue, initial vollständig finanzierte Original-Rule207-Welt mit Seed42 und 33.000 ISK Gesamtgeld** wird aufgebaut, ohne einen vorhandenen 204-Save zu überschreiben oder zu migrieren.
+- Die bereits bestehende `J8KonzernSitzung` autorisiert originale `house`-Kauf- und Flugbefehle; z.B. 600 ISK für einen aus echtem Aldera-Lager gekauften Miner. Die persönlich gesteuerte Schiffskörper-/Orbit-/Folgen-/Handflugberechnung ist **derselbe autoritative P2-Kern**. Szenen- und Rollenprüfungen akzeptieren nur gültige Original-Regel204- oder -207-Welten mit wörtlich übereinstimmender Regelversion und realem `welt.audit`.
+- Die bestehenden Jäger-/Siliziumakten zeigen physische Regel207-Bestände, und die **sichtbare W6-Beschaffungsakte** zeigt Dravos-Bodenreserve, gezahlte Dravos-Frachten, echte W3-Materialaufträge, Nadir-Erz/Material/Silizium/J3/J4 sowie wirklich leere, angedockte `transport`-Frachter mit positivem Buchwert. Diese Informationen sind **nur lesend**; ein fremder NPC-Auftrag lässt sich vom eigenen Spieler nicht legitim unterschreiben.
+- Die Original-204-Oberfläche, ihr originaler 195→204-Startpfad und ihr bestehendes `localStorage.setItem(SLOT,json)` bleiben **wörtlich und funktional unverändert**; ebenso ihr alter Backup-Slot. Das Forschungsprofil nutzt ausschließlich `aphros-void:spielerkarriere:regel207-forschung:v1` samt eigener `:vorherige`-Sicherung und eigenen Start-/Fortsetzen-/Zurück-Schaltflächen.
+- Ein importiertes `rulesVersion=207`-JSON kann **keine Freigabe aus seinem eigenen Inhalt erhalten**: Das P1-UI fragt beim Dateieinlesen ausdrücklich die Einwilligung ab und ruft nur dann `J8.oeffnenP8g(text,true)` auf, das wiederum `Welt.load(json,{p8gImportFreigegeben:true})` nach dem ursprünglichen Wirtschafts-/Manipulationsaudit ausführt. Ohne Einwilligung bleibt das ursprüngliche Save-Slot bitgleich erhalten.
+- Die separate Regel207-Initialwelt ist **Forschung**, nicht die stille Erweiterung der laufenden Rule204-Karriere. Auch ein eigener Rule207-Spielstand darf im UI nicht als regulärer 204-Save missverstanden oder im falschen Slot restauriert werden.
+
+## Tatsächlich ausgeführte Tests (unterschiedliche Commits)
+
+**[GEPRÜFT / früherer UI-Code]** [CI #43870443365](https://github.com/tobiasfranziskus/Check/actions/runs/43870443365): neuer Rule207-Forschungsstart, finanziertes Spieler-Eigentum, vollständige Original-204-P1/P2- und Save-Audits **Node22 erfolgreich**, jeweils Chromium/WebKit vier Touchgrößen **erfolgreich**. Dieser Lauf wurde nach einer P1-Quellpfadkorrektur gestartet und liegt **vor** den nachfolgenden strengeren Import-/Cockpittests.
+
+**[GEPRÜFT / frühere Integrationsbasis]** [CI #43867323121](https://github.com/tobiasfranziskus/Check/actions/runs/43867323121): 457/457 Node22, 8/8 gezielte P2-Integrationschecks, 13×90 plus S02×365 und ×730; originaler Main-basierter W6-Kern. [CI #43868065022](https://github.com/tobiasfranziskus/Check/actions/runs/43868065022) 458/458 Tests mit **S02×730-Wiederanlauf aus echter, nicht zurückgesetzter Wirtschaft**: neuer finanzierter W5-Frachter, 50 Erz, J3/J4 bis zum dritten für 900 ISK gekauften Jäger. Ein manueller Gegenpfad ist **kein automatischer NPC-Nachfrage- oder Ersatznachweis**.
+
+**[NEUE ABNAHME NOCH AUSSTEHEND]** Erweiterte UI-Tests verlangen jetzt den **tatsächlichen P2-Cockpit-Einstieg mit selbst gekauftem Rule207-Miner**, Browser-Import zuerst **abgelehnt**, danach **ausdrücklich erlaubt**, zweimalige getrennte Rule207- und Rule204-Saves, Forschungs-Backup, 4×Touch in Chromium und WebKit sowie Node22-Regression/68 unveränderte Codex-Sicherheitstests. Nur der **letzte Code-Head** darf als endgültig grün bezeichnet werden.
+
+## Weiterhin offene Freigaben und Gameplay-Gates
+
+1. **[BESCHLUSSBEDARF]** Öffentliche Aktivierung von **Rule205–207** einschließlich der endlichen zusätzlichen Siliziumfelder/Dravos-Reise, ihrer voll finanzierten Fracht-/Arbeitstarife und endgültiger Regel-/Save-Versionierung ist vom bisher isoliert freigegebenen P8g-**50-Erz-Auftrag** getrennt. Bei ausdrücklicher Produktfreigabe erst eigene durchgeprüfte Integration auf dann aktuellem `main`; niemals bestehende Regel204-Saves löschen oder automatisch umstellen.
+2. **[WIRTSCHAFTSENGPASS]** Original-W5ac lässt pro Frachter nur einen 60-ISK-Nadir→Aldera-Transport zu. Automatische Wiederholung/Trägerservice und echte NPC-Ersatzbestellpolitik sind **nicht** freigegeben. S02 kann weiterhin nach 90/730 Tagen stehen bleiben, auch wenn es durch Originalbefehle mit eigenem Restkapital manuell wieder auf drei Jäger gebracht werden kann.
+3. **[QUALITÄT]** Kein echter iPad-Safari- oder privater NAS-Test, keine öffentliche Pages-Version. Chromium/WebKit-Emulation ist keine Gerätabnahme. Der opt-in-Forschungspfad muss nach der letzten Änderung mit Node22, den Originalregressionen und allen vier Touchgrößen unabhängig bestehen, bevor überhaupt eine Produktabnahme in Frage kommt.
+
+**Produktziel:** Eine einzige, glaubwürdige Raumschiff- und Firmenwelt, nicht weitere für immer getrennte Forschungsdemonstratoren. Der W6-Forschungsstart ist ein kontrollierter Zwischenschritt; die endgültige Integration muss die reale Spielerkarriere mit ihrer ursprünglichen Eigentums-/Save-Kette erhalten.

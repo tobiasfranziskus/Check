@@ -1,0 +1,46 @@
+name: W6/P8g – playable isolated Rule207 research career
+on:
+  push:
+    branches:
+      - 'feat/w6-p8g-career-optin-20261116'
+  pull_request:
+    paths:
+      - 'prototypes/spiel/**'
+      - 'prototypes/verbund/konzern-session.js'
+      - 'prototypes/j4c/flotten-wechsel.js'
+      - 'tests/w6-p8g-research-career*.?s'
+      - '.github/workflows/w6-p8g-playable-research.yml'
+jobs:
+  node22-career:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Genuine paid Rule207 research career, import and legacy 204/P2 regressions"
+        run: node --test tests/w6-p8g-research-career.test.mjs tests/p1-spieleinstieg.test.mjs tests/p2-zielsteuerung.test.mjs tests/w6-p8g-p2-main-integration.test.mjs
+      - name: "Independent adversarial 68 tests unchanged"
+        run: node --test tests/w6-p8g-unabhaengige-sicherheitsabnahme.test.mjs
+  playable-4-touch-sizes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Playwright only within CI"
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/w6-playwright" playwright@1.62.0
+          node "$RUNNER_TEMP/w6-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
+      - name: "Original public P1 career + new Rule207 touch opt-in with separate saves"
+        run: node tests/w6-p8g-research-career-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/w6-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}

@@ -1,0 +1,37 @@
+name: W6 P8g independent adversarial acceptance
+on:
+  pull_request:
+    paths:
+      - 'prototypes/welt/**'
+      - 'tests/w6-p8g-unabhaengige-sicherheitsabnahme.test.mjs'
+      - '.github/workflows/w6-p8g-independent-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Independent acceptance (known defects remain failing)
+        run: node --test tests/w6-p8g-unabhaengige-sicherheitsabnahme.test.mjs
+  original-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Existing P8d P8f P8g checks
+        run: >-
+          node --test
+          tests/w6-p8d-separater-dravos-frachter.test.mjs
+          tests/w6-p8d-zwei-firmen-finanzierung.test.mjs
+          tests/w6-p8f-originalbefehle-ohne-werft.test.mjs
+          tests/w6-p8g-finanzierte-erzversorgung.test.mjs
+          tests/w6-p8g-original-w5-ersatz-nach-90-tagen.test.mjs

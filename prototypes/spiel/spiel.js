@@ -143,6 +143,8 @@ function weiter(n){
    vorher=session.exportieren();
    for(let i=0;i<24;i++)session.weiterspielen(60);
   }else session.weiterspielen(n);
+  if(duell?.status==='aktiv')duell.status='unterbrochen';
+  if(patrouille&&['bereit','flug'].includes(patrouille.status))patrouille.status='unterbrochen';
   speichern();anzeigen();
   hinweis(n+' bezahlte Weltminuten vergangen. Alle Waren und Konten stammen aus dem Original-Core.');
  }catch(e){

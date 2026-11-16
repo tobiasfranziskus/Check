@@ -4,6 +4,7 @@ on:
     paths:
       - 'prototypes/welt/welt-kern.js'
       - 'tests/w6-p8g-finanzierte-erzversorgung.test.mjs'
+      - 'tests/w6-p8g-original-w5-ersatz-nach-90-tagen.test.mjs'
       - 'tools/w6-p8d-dravos-szenarien.cjs'
       - '.github/workflows/w6-p8g-material-supply.yml'
   push:
@@ -12,6 +13,7 @@ on:
     paths:
       - 'prototypes/welt/welt-kern.js'
       - 'tests/w6-p8g-finanzierte-erzversorgung.test.mjs'
+      - 'tests/w6-p8g-original-w5-ersatz-nach-90-tagen.test.mjs'
       - 'tools/w6-p8d-dravos-szenarien.cjs'
       - '.github/workflows/w6-p8g-material-supply.yml'
 jobs:
@@ -24,7 +26,7 @@ jobs:
         with:
           node-version: '22'
       - name: P8g source and independent paid W3/W4 original-contract checks
-        run: node --test tests/w6-p8g-finanzierte-erzversorgung.test.mjs
+        run: node --test tests/w6-p8g-finanzierte-erzversorgung.test.mjs tests/w6-p8g-original-w5-ersatz-nach-90-tagen.test.mjs
       - name: P8d and P8f independent regressions
         run: node --test tests/w6-p8d-separater-dravos-frachter.test.mjs tests/w6-p8f-originalbefehle-ohne-werft.test.mjs
 

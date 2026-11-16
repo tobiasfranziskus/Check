@@ -11,7 +11,7 @@ const BACKUP=SLOT+':vorherige';
 const MAX=5*1024*1024;
 const fmt=n=>Number(n).toLocaleString('de-DE');
 let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung=0,patrouille=null,duell=null;
-let cockpitGenutzt=false,flugerfahrung=false;
+let cockpitGenutzt=false,flugerfahrung=false,managerTutor=null;
 const safeText=(s)=>String(s==null?'':s);
 const error=(e)=>safeText(e&&e.message?e.message:e);
 
@@ -177,6 +177,7 @@ function auftrag(id){
   const result=session.ausfuehren(id);
   if(!result.ok)throw Error(result.reason);
   speichern();anzeigen();
+  managerTutor?.gebucht(id);
   hinweis('Auftrag gebucht: '+a.label+'. Konten und Eigentümer sind neu geprüft.');
   if(siliziumSchiff)pilotieren(siliziumSchiff);
  }catch(e){hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
@@ -450,6 +451,7 @@ function anzeigen(){
    else box.append(h,p,b);
    return box;
  }):[(()=>{const p=d.createElement('p');p.textContent='Noch kein Schiff. Beginne mit dem Kauf eines wirklich vorhandenen Aldera-Miners.';return p;})()]));
+ managerTutor?.auffrischen();
 }
 function pilotieren(id){
  try{
@@ -621,5 +623,19 @@ $('welt-export').addEventListener('click',saveDownload);
 for(const b of d.querySelectorAll('[data-advance]'))b.addEventListener('click',()=>weiter(Number(b.dataset.advance)));
 for(const b of d.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>tabZeigen(b.dataset.tab));
 scope.addEventListener('pagehide',()=>{if(session){try{speichern();}catch(_){/* local export stays available */}}});
+// Ausbildungs-UI navigiert nur; alle Wirtschaftsaktionen bleiben im Original-Core.
+if(scope.ManagerAkademie){
+ managerTutor=scope.ManagerAkademie.verbinden({
+   wurzel:$('spielwelt'),sitzung:()=>session,
+   navigieren:(panel,id)=>{
+     tabZeigen(panel);
+     if(id){
+       const target=[...d.querySelectorAll('[data-action], [data-j13-action]')]
+         .find(b=>b.dataset.action===id||b.dataset.j13Action===id);
+       if(target){target.scrollIntoView?.({block:'nearest'});target.focus();}
+     }
+   }
+ });
+}
 cockpitBinden();menustand();screen('startseite');
 })(globalThis);

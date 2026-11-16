@@ -15,6 +15,7 @@ try:
    ctx=browser.new_context(viewport={'width':w,'height':h},is_mobile=True,has_touch=True,accept_downloads=True)
    page=ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
    page.goto(f'http://127.0.0.1:{server.server_port}/prototypes/w5x/')
+   page.wait_for_url('**/prototypes/w5x/archiv/index.html')
    page.wait_for_function("document.querySelector('#identity').textContent.includes('Original-Audit OK')")
    identity=page.locator('#identity').inner_text()
    assert 'Regel 16' in identity and 'Tick 0' in identity

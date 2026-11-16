@@ -218,7 +218,12 @@ test('W5x: 13 deterministic Rule16 seeds ×90 simulated days, daily independent 
 });
 
 test('W5x: static single-Core W2 browser contract and protected W1 UI persist unchanged',()=>{
- const html=readFileSync(new URL('../prototypes/w5x/index.html',import.meta.url),'utf8');
+ // Die alte URL ist als statische, rückwärtskompatible Weiterleitung erhalten.
+ const oldHtml=readFileSync(new URL('../prototypes/w5x/index.html',import.meta.url),'utf8');
+ const html=readFileSync(new URL('../prototypes/w5x/archiv/index.html',import.meta.url),'utf8');
+ assert.match(oldHtml,/url=archiv\/index\.html/);
+ assert.match(oldHtml,/href="archiv\/index\.html"/);
+ assert.match(html,/<base href="\.\.\/">/);
  const app=readFileSync(new URL('../prototypes/w5w/app.js',import.meta.url),'utf8');
  const bridge=readFileSync(new URL('../prototypes/w5x/bootstrap.js',import.meta.url),'utf8');
  const extension=readFileSync(new URL('../prototypes/w5x/extension.js',import.meta.url),'utf8');

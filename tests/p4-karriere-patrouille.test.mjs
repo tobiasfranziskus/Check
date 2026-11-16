@@ -71,22 +71,18 @@ test('P4: patrol only accepts the checked Nadir-owner record, 3 real positions a
  assert.throws(()=>Kurs.beginnen(s,id),/gekauften Spielerjäger/);
  s.kanon.jaeger.kaeufe=[{id,owner:'house',station:'st_nadir'}];
  const p=Kurs.beginnen(s,id);
+ let zeit=0;
  for(let i=0;i<3;i++){
    const marke=Kurs.TORE[i];
-   sekunde(s,i+1,marke.x,marke.y,350,0);
+   sekunde(s,++zeit,marke.x,marke.y,350,0);
    Kurs.beobachten(p,s);
    assert.equal(p.stufe,i,'over-speed flight must not count');
-   sekunde(s,i+2,marke.x,marke.y,120,0);
+   sekunde(s,++zeit,marke.x,marke.y,120,0);
    Kurs.beobachten(p,s);
    assert.equal(p.stufe,i+1);
-   // Next iteration must start after the last observed second.
-   if(i<2){
-     const t=i+3;sekunde(s,t,marke.x,marke.y,120,0);
-     Kurs.beobachten(p,s);
-   }
  }
  assert.equal(p.stufe,3);
- sekunde(s,6,0,0,0,0,'angedockt'); // wrong timestamp is rejected, no free finish
+ sekunde(s,zeit+2,0,0,0,0,'angedockt'); // skipped second is rejected, no free finish
  Kurs.beobachten(p,s);
  assert.equal(p.status,'unterbrochen');
  const x=regel204Jaeger(),q=Kurs.beginnen(x.s,x.id);

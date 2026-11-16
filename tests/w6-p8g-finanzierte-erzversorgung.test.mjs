@@ -131,6 +131,48 @@ test('P8g – echte Nadir-Materialnachfrage beauftragt 50 Erz mit W3-Vorfinanzie
   w.advance(s,w.rules.w4.dauer);
   check(w,s);
   assert.ok(s.stations.st_nadir.lager.material>=11);
+  // Reale W4-Kette mit 50 angeliefertem Erz: vorhandenes Forschungsrezept
+  // ist 10 Erz -> 5 Material je Charge (keine neue Balanceänderung).
+  for(let i=1;i<5;i++){
+    const r=w.execute(s,{type:'stationRefine',owner:'st_nadir',station:'st_nadir'});
+    assert.equal(r.ok,true,'W4-Charge '+i+': '+r.reason);
+    w.advance(s,w.rules.w4.dauer);
+    check(w,s);
+  }
+  assert.equal(s.stations.st_nadir.lager.erz,0);
+  assert.equal(s.stations.st_nadir.lager.material,35,
+    '10 altes Material + 5×5 neues W4-Material ohne Gratisware');
+  // Bereits 8 bezahlte Dravos-Siliziumeinheiten liegen rechtmäßig in Nadir.
+  // Mit der realen Erz-Nachlieferung werden aus ihnen acht J3-Bauteile.
+  const bauteileVor=s.kanon.bauteile.abgeschlossen,jaegerVor=s.kanon.jaeger.fertig;
+  for(let i=0;i<8;i++){
+    const r=w.execute(s,{type:'stationBuildParts',owner:'st_nadir',station:'st_nadir'});
+    assert.equal(r.ok,true,'J3-Bauteile aus realem Nachschub '+i+': '+r.reason);
+    w.advance(s,w.rules.j3.dauer);
+    check(w,s);
+  }
+  assert.equal(s.kanon.bauteile.abgeschlossen,bauteileVor+8);
+  assert.equal(s.stations.st_nadir.lager.bauteil,8);
+  assert.equal(s.stations.st_nadir.lager.silizium,0);
+  const bauen=w.execute(s,{type:'stationBuildFighter',owner:'st_nadir',station:'st_nadir'});
+  assert.equal(bauen.ok,true,'originalfinanzierter J4-Jäger: '+bauen.reason);
+  w.advance(s,w.rules.j4.dauer);check(w,s);
+  assert.equal(s.kanon.jaeger.fertig,jaegerVor+1);
+  assert.equal(s.stations.st_nadir.lager.jaeger,1);
+  const cashVor=s.owners.house.cash,werftCashVor=s.owners.st_nadir.cash;
+  assert.ok(cashVor>=900,'Spieler kann eigenen Original-Jäger aus vorhandenem Konto zahlen');
+  const purchase=w.execute(s,{type:'shipBuy',owner:'house',klasse:'jaeger',station:'st_nadir'});
+  assert.equal(purchase.ok,true,'Original-900-ISK-Jägerkauf: '+purchase.reason);
+  assert.equal(cashVor-s.owners.house.cash,900);
+  assert.equal(s.owners.st_nadir.cash-werftCashVor,900);
+  check(w,s);
+  console.log('P8G_W6_THIRD_FIGHTER',JSON.stringify({newOre:50,materialsFromOre:25,
+    newParts:8,newFighter:1,realHousePurchase:900,
+    totalFighters:s.kanon.jaeger.fertig,oreRemaining:s.stations.st_nadir.lager.erz,
+    materialRemaining:s.stations.st_nadir.lager.material,
+    siliconRemaining:s.stations.st_nadir.lager.silizium,
+    freightersBuilt:0,worldISK:total(s),mint:s.minted,burn:s.burned,
+    finalHash:w.hash(s)}));
   console.log('P8G_FINANCED_DELIVERY',JSON.stringify({originalHash,startDay,day:s.tick/1440,
     oreAtNadir:s.stations.st_nadir.lager.erz,material:s.stations.st_nadir.lager.material,
     parts:s.stations.st_nadir.lager.bauteil,freighter:newId,miner:miner.id,

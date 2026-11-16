@@ -11,7 +11,7 @@ const BACKUP=SLOT+':vorherige';
 const MAX=5*1024*1024;
 const fmt=n=>Number(n).toLocaleString('de-DE');
 let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung=0,patrouille=null,duell=null;
-let cockpitGenutzt=false,flugerfahrung=false,managerTutor=null;
+let cockpitGenutzt=false,flugerfahrung=false,managerTutor=null,pilotTutor=null,pilotMenu=null;
 const safeText=(s)=>String(s==null?'':s);
 const error=(e)=>safeText(e&&e.message?e.message:e);
 
@@ -101,6 +101,7 @@ function startNeu(){
    if(!audit.ok)throw Error('W6: Wirtschaftsprüfung verweigert Start: '+audit.fehler.join('; '));
   }
   session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
+  pilotTutor?.zuruecksetzen();pilotMenu?.zeichnen();
   const ok=speichern(!!vorher);
   aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(p8gAktiv
    ?'Isolierte Regel207-Dravosforschung: echter Bergbau, Fremdfracht und Materialverträge; Regel204-Slot unangetastet.'
@@ -131,6 +132,7 @@ function ladeSitzung(json,auswahl,backup=false){
  if(a.regel!==regel||a.weltgeld!==33000)
    throw Error('Weltgeld- und Regel-Audit verweigert den Stand');
  session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
+  pilotTutor?.zuruecksetzen();pilotMenu?.zeichnen();
  if(auswahl==='datei'||backup)speichern(!!gespeicherte(slot));
  aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Der Original-Core hat deinen Spielstand geprüft.');
 }
@@ -145,6 +147,7 @@ function weiter(n){
   }else session.weiterspielen(n);
   if(duell?.status==='aktiv')duell.status='unterbrochen';
   if(patrouille&&['bereit','flug'].includes(patrouille.status))patrouille.status='unterbrochen';
+  pilotTutor?.beobachten(session.zustandReferenz());pilotStatusAktualisieren();
   speichern();anzeigen();
   hinweis(n+' bezahlte Weltminuten vergangen. Alle Waren und Konten stammen aus dem Original-Core.');
  }catch(e){
@@ -452,6 +455,7 @@ function anzeigen(){
    return box;
  }):[(()=>{const p=d.createElement('p');p.textContent='Noch kein Schiff. Beginne mit dem Kauf eines wirklich vorhandenen Aldera-Miners.';return p;})()]));
  managerTutor?.auffrischen();
+ pilotMenu?.zeichnen();
 }
 function pilotieren(id){
  try{
@@ -461,6 +465,7 @@ function pilotieren(id){
   if(!r.ok)throw Error(r.reason);
   if(vorher!==id&&duell?.status==='aktiv')duell.status='abgebrochen';
   cockpitGenutzt=true;speichern();raum.sitzungGewechselt();
+  pilotTutor?.beobachten(session.zustandReferenz());pilotMenu?.zeichnen();pilotStatusAktualisieren();
   screen('raumbereich');raum.aktivieren();
   hinweis('Du steuerst jetzt '+id+'. Das Schiff bleibt in der ursprünglichen Welt.');
  }catch(e){hinweis('Cockpit gesperrt: '+error(e),true);}
@@ -508,7 +513,12 @@ function cockpitBinden(){
           catch(_){duell.status='unterbrochen';}
         }
       }:undefined;
-      const minutes=session.flugSchritte(n,beobachten);
+      const beobachtet=pilotTutor?.stand().status==='aktiv';
+      const minutes=session.flugSchritte(n,beobachten,beobachtet?original=>{
+        pilotTutor.beobachten(original);
+        pilotStatusAktualisieren();
+      }:undefined);
+      if(beobachtet)pilotMenu?.aktualisieren();
       flugSchritte+=n;flugSeitSicherung+=minutes;
       if(minutes>0)flugerfahrung=true;
       if(flugSeitSicherung>=5){flugSeitSicherung=0;speichern();}
@@ -516,7 +526,11 @@ function cockpitBinden(){
    },
    ausfuehren:cmd=>{
      const r=session.flugBefehl(cmd);
-     if(r.ok){flugerfahrung=true;speichern();}
+     if(r.ok){
+       flugerfahrung=true;
+       pilotTutor?.beobachten(session.zustandReferenz());
+       pilotMenu?.aktualisieren();pilotStatusAktualisieren();speichern();
+     }
      return r;
    },
    audit:()=>session.flugAudit(),
@@ -529,6 +543,7 @@ function cockpitBinden(){
        if(duell?.status==='aktiv')throw Error('Zuerst das laufende Duelltraining beenden');
        const neu=scope.J4dPatrouille.beginnen(session.zustandReferenz(),session.pilotStatus());
        patrouille=neu; // Nur Sitzungsübung, nicht Teil des wirtschaftlichen Spielstands.
+       pilotTutor?.beobachten(session.zustandReferenz());pilotStatusAktualisieren();
        return {ok:true};
      }catch(e){return {ok:false,reason:error(e)};}
    },
@@ -541,6 +556,7 @@ function cockpitBinden(){
        if(duell?.status==='aktiv')throw Error('Ein Duelltraining läuft bereits');
        duell=scope.J4eDuell.beginnen(
          session.weltReferenz(),session.zustandReferenz(),session.pilotStatus());
+       pilotTutor?.beobachten(session.zustandReferenz());pilotStatusAktualisieren();
        return {ok:true};
      }catch(e){return {ok:false,reason:error(e)};}
    },
@@ -560,6 +576,34 @@ function cockpitBinden(){
        eintraege:[]})
   });
  }catch(e){raum=null;console.error('P1 cockpit bridge:',e);}
+}
+// P1/P2: lessons observe the currently loaded original career; no second world.
+function pilotStatusAktualisieren(){
+ const el=$('pilotenausbildung-live');if(!el)return;
+ const t=pilotTutor?.stand();
+ el.hidden=!t||t.status==='bereit';
+ if(el.hidden)return;
+ const v=(t.status==='erfolgreich'?'Geschafft · ':t.status==='unterbrochen'?'Übung unterbrochen · ':'Flugübung · ')+t.meldung;
+ if(el.textContent!==v)el.textContent=v;
+}
+function pilotBinden(){
+ if(!scope.PilotenAkademie||!scope.PilotenMenue)return;
+ pilotTutor=scope.PilotenAkademie.erstellen({
+   welt:()=>session?.weltReferenz(),zustand:()=>session?.zustandReferenz(),
+   aktiv:()=>session?.pilotStatus(),szene:scope.RaumSzene,
+   angebot:cmd=>session?.flugAngebot(cmd),
+   patrouilleStand:()=>scope.J4dPatrouille.stand(patrouille),
+   duellStand:()=>duell&&scope.J4eDuell.stand(duell)
+ });
+ pilotMenu=scope.PilotenMenue.verbinden($('pilotenausbildung-karten'),pilotTutor,()=>{
+   pilotStatusAktualisieren();
+   if(!session||!raum||!session.pilotStatus())return;
+   screen('raumbereich');
+   raum.aktivieren();
+ });
+ const manager=$('manager-akademie'),pilot=$('pilotenausbildung');
+ if(manager&&pilot)manager.after(pilot);
+ pilotMenu.zeichnen();
 }
 $('jaeger-kaufweg').addEventListener('click',()=>{
  if(!session)return;
@@ -637,5 +681,5 @@ if(scope.ManagerAkademie){
    }
  });
 }
-cockpitBinden();menustand();screen('startseite');
+cockpitBinden();pilotBinden();menustand();screen('startseite');
 })(globalThis);

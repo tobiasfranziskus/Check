@@ -20,7 +20,8 @@ function normalizedPages(pages=read('index.html')){
  assert.equal(match.length,1,'one public Spielmodi navigation');
  assert.match(portal,/href="prototypes\/spiel\/index\.html"/);
  assert.match(portal,/href="prototypes\/j4c\/index\.html"/);
- let without=once(pages,style,'','Pages-only embedded CSS');
+ let without=once(pages,"<title>Aphros Void · Dein Weltraumkonzern</title>","<title>Aphros Void – W0–W5 · Spielbare Entwicklungsversion</title>",'Pages-only document title');
+ without=once(without,style,'','Pages-only embedded CSS');
  without=once(without,portal+'\n'+disclosure+'\n'+heading,heading,'Pages-only hero and disclosure opening');
  without=once(without,'</details>\n</header>\n'+divider+'\n<section class="controls"',
    '</header>\n<section class="controls"','Pages-only disclosure and legacy heading');

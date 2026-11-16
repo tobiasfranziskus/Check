@@ -9,6 +9,7 @@ on:
       - 'prototypes/welt/j3-bauteil-core.js'
       - 'prototypes/welt/j4b-jaeger-werft-core.js'
       - 'tools/w6-p8d-dravos-szenarien.cjs'
+      - 'tests/w6-p8f-originalbefehle-ohne-werft.test.mjs'
       - '.github/workflows/w6-p8d-dravos-economy.yml'
   workflow_dispatch:
 permissions:
@@ -59,11 +60,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: actions/download-artifact@v4
         if: needs.regime.result == 'success'
         with:
           pattern: p8d-*
           merge-multiple: true
+      - name: "P8f isolated original-command counterfactuals (no rule change)"
+        run: node --test tests/w6-p8f-originalbefehle-ohne-werft.test.mjs
       - name: "Independent 13x90 + S02x365 summary; failures not passed"
         env:
           REGIME_STATUS: "${{ needs.regime.result }}"

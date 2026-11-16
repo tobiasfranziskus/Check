@@ -15,6 +15,8 @@ test('P1 Root: byte-identical deterministic Pages build and unchanged standalone
  const pages=read('index.html'),nas=read('aphros-void.html');
  assert.ok(pages.length>nas.length);
  assert.match(pages,/<section id="root-portal"/);
+ assert.match(pages,/<title>Aphros Void · Dein Weltraumkonzern<\/title>/);
+ assert.match(nas,/<title>Aphros Void – W0–W5 · Spielbare Entwicklungsversion<\/title>/);
  assert.doesNotMatch(nas,/id="root-portal"|id="pages-premium-entry"/);
  assert.match(nas,/W5agStorage/);
  assert.match(pages,/W5agStorage/);

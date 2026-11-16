@@ -110,3 +110,37 @@ test('P4: regular public career loads the existing patrol, no unsafe save migrat
  assert.match(session,/Object\.freeze\(\{schritt:neu\.flug\.schritt\}\)/);
  assert.doesNotMatch(js,/localStorage\.setItem\([^,]+,\s*patrouille/);
 });
+
+test('P4: real purchased 900-ISK fighter from original Regel204 save can begin a paid patrol',()=>{
+ const original=fs.readFileSync(new URL('../prototypes/j4c/beispiel-jaeger-seed42.json',import.meta.url),'utf8');
+ const s=J8.erstellen();s.oeffnen204(original,true);
+ const id='sh023',state=s.zustandReferenz();
+ assert.equal(state.ships[id].owner,'house');
+ assert.equal(state.ships[id].klasse,'jaeger');
+ assert.equal(state.ships[id].flug.anker,'st_nadir');
+ assert.ok(state.kanon.jaeger.kaeufe.some(k=>k.id===id&&k.owner==='house'&&k.preis===900));
+ assert.equal(s.uebernehmen(id,false).ok,true);
+ const patrol=Kurs.beginnen(state,id);
+ assert.equal(patrol.status,'bereit');
+ const startCash=state.owners.house.cash;
+ const undock=s.flugBefehl({type:'shipUndock',owner:'house',schiff:id});
+ assert.equal(undock.ok,true,JSON.stringify(undock));
+ assert.ok(s.zustandReferenz().owners.house.cash<startCash,'real flight salary reserve must be paid');
+ let samples=0;
+ const beobachten=p=>{samples++;Kurs.beobachten(patrol,p);};
+ s.flugSchritte(40,beobachten);
+ assert.equal(samples,40);
+ assert.equal(patrol.status,'flug');
+ assert.equal(s.zustandReferenz().ships[id].flug.lage,'frei');
+ const target=Kurs.TORE[0];
+ const flight=s.flugBefehl({type:'shipFlyTo',owner:'house',schiff:id,x:target.x,y:target.y});
+ assert.equal(flight.ok,true,JSON.stringify(flight));
+ for(let i=0;i<5&&patrol.stufe===0;i++)s.flugSchritte(900,beobachten);
+ assert.equal(patrol.stufe,1,'first patrol checkpoint requires actual financed physical arrival at safe speed');
+ assert.equal(s.zustandReferenz().minted,0);
+ assert.equal(s.zustandReferenz().burned,0);
+ assert.equal(s.weltReferenz().audit(s.zustandReferenz()).ok,true);
+ const exported=s.exportieren(),copy=J8.erstellen();copy.oeffnen204(exported,true);
+ assert.equal(copy.exportieren(),exported,'patrol status must never modify core save');
+ assert.equal(Kurs.stand(null).status,'nicht gestartet','patrol is intentionally not imported as a game state');
+});

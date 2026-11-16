@@ -68,8 +68,21 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
     const paid=await page.evaluate(k=>localStorage.getItem(k),researchSlot),p=JSON.parse(paid);
     assert.equal(p.owners.house.cash,2400);
     assert.equal(total(p),33000);
-    assert.ok(Object.values(p.ships).some(sh=>sh.owner==='house'&&sh.klasse==='miner'));
+    const ownMiner=Object.values(p.ships).find(sh=>sh.owner==='house'&&sh.klasse==='miner');
+    assert.ok(ownMiner);
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),oldSlot),null);
+    // The SAME authoritative Rule207 world must be personally flyable
+    // through the already integrated P2 cockpit, not a separate 2D demo.
+    await page.locator('#tab-flotte').tap();
+    const enter=page.locator('[data-pilot="'+ownMiner.id+'"]');
+    assert.equal(await enter.isEnabled(),true,'only really paid house miner is pilotable');
+    await enter.tap();
+    assert.equal(await page.locator('#raumbereich').isVisible(),true);
+    assert.match(await page.locator('#raum-schiff').textContent(),new RegExp(ownMiner.id));
+    await page.locator('#raum-konzern').tap();
+    assert.equal(await page.locator('#spielwelt').isVisible(),true);
+    assert.equal(await page.evaluate(k=>localStorage.getItem(k),researchSlot),paid,
+      'enter/exit cockpit changes only pilot selection, not Rule207 economy');
     await page.reload();
     assert.equal(await page.locator('#fortsetzen-w6').isDisabled(),false);
     await page.locator('#fortsetzen-w6').tap();

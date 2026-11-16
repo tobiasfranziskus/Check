@@ -46,7 +46,9 @@ const Welt=require('../prototypes/welt/welt-kern.js');
    };
    try{
     await page.goto('http://127.0.0.1:'+server.address().port+'/');
-    assert.match(await page.locator('h1').first().textContent(),/W0–W5/);
+    assert.match(await page.locator('#root-game-title').textContent(),/APHROS\s+VOID/);
+    assert.match(await page.locator('#root-legacy-info h1').textContent(),/W0–W5/,
+      'older W0–W5 mode and its technical identity remain available');
     const href=await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/j4c/index.html"]').getAttribute('href');
     assert.equal(href,'prototypes/j4c/index.html','öffentliches Hauptspiel verlinkt den Jäger');
     await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/j4c/index.html"]').tap();

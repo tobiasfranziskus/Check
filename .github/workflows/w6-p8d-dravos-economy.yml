@@ -79,6 +79,23 @@ jobs:
           assert.equal(new Set(short.map(x=>x.id)).size,13);
           assert.equal(rows.filter(x=>x.days===365&&x.id==='S02').length,1);
           assert.ok(rows.every(x=>x.worldISK===33000&&x.mint===0&&x.burn===0));
+          // A green financial audit does not mean a working 365-day economy.
+          // Check activity against the ACTUAL last 30 days of every run.
+          for(const x of rows){
+            assert.equal(x.last30Window?.startDay,x.days-30);
+            assert.equal(x.last30Window?.endDay,x.days);
+            const w=x.last30Window;
+            assert.deepEqual(x.last30Active,{
+              ice:w.end.ice>w.start.ice,
+              water:w.end.waterISK>w.start.waterISK,
+              replacement:w.end.replacements>w.start.replacements
+            });
+          }
+          console.log('P8D_FINAL_30_DAY_ACTIVITY',JSON.stringify(rows.map(x=>({
+            id:x.id,days:x.days,fromDay:x.last30Window.startDay,
+            toDay:x.last30Window.endDay,active:x.last30Active,
+            contracts:x.contracts
+          }))));
           console.log('P8D_ALL_ECONOMY_REGIMES',JSON.stringify(rows.map(x=>({
             id:x.id,days:x.days,contracts:x.contracts,dravo:x.siliconDravosSold,
             fee:x.feeISK,pilot:x.pilotISK,carrier:x.carrierCash,npc3:x.npc3Cash,

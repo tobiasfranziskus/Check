@@ -8,6 +8,7 @@ const W=require('../prototypes/welt/welt-kern.js');
 const J13=require('../prototypes/spiel/jaeger-akte.js');
 const J13b=require('../prototypes/spiel/jaeger-projekt.js');
 const P8a=require('../prototypes/spiel/silizium-versorgung.js');
+const Szene=require('../prototypes/raum/raum-szene.js');
 const sum=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
 function verify(j){
   const w=j.weltReferenz(),s=j.zustandReferenz(),json=j.exportieren();
@@ -65,6 +66,12 @@ test('W6/P8g: real player buys own original miner; cockpit rights and save/load 
   assert.ok(miner);assert.equal(miner.system,'aldera');
   const pilot=session.uebernehmen(miner.id,false);
   assert.equal(pilot.ok,true,pilot.reason);
+  const bild=Szene.erzeugen(w,s,miner.id,{bojen:[],patrouille:null,duell:null});
+  assert.equal(bild.regel,207);
+  assert.equal(bild.aktiv.id,miner.id);
+  assert.equal(bild.system,'aldera');
+  assert.equal(bild.weltgeld,33000);
+  assert.equal(bild.jaeger,null,'kein kostenloser Jäger im Cockpit');
   assert.equal(session.pilotStatus(),miner.id);
   const fly=session.flugBefehl({type:'shipUndock',owner:'house',schiff:miner.id});
   assert.equal(fly.ok,true,fly.reason);

@@ -8,6 +8,8 @@ const K=require('../prototypes/welt/welt-kern.js');
 const W6=require('./w6-szenarien.cjs');
 const capital=Object.freeze({carrierCash:2000,buyerCash:4000});
 const name=process.argv[2]||'alle',days=Number(process.argv[3]||90);
+// Neu nur auf ausdruecklichem Prozess-Opt-in; P8d-Standard bleibt bitgleich.
+const p8gOptIn=process.env.W6_P8G_MATERIAL==='1';
 if((name!=='alle'&&!W6.SZENARIEN.some(x=>x.id===name))
   ||!Number.isSafeInteger(days)||days<1||days>730)
   throw Error('P8d: erwartet [S01..S13|alle] [1..730] Tage');
@@ -130,6 +132,7 @@ function run(scenario){
   const s=w.createState(42,{politik:scenario.politik});
   assert.deepEqual(w.npcAutoSetzen(s,true),{ok:true,aktiviert:true});
   assert.deepEqual(w.npcSiliziumSetzen(s,true),{ok:true,aktiviert:true});
+  if(p8gOptIn)assert.deepEqual(w.materialSupplySetzen(s,true),{ok:true,aktiviert:true});
   let buys=0,early=days===30?W6.kennzahlen(w,s):null,late=null,peakFracht=0,lastReceipt=0,firstFreight=null;
   check(w,s,scenario.id,0);
   // 120-Minuten-Blöcke benutzen denselben 60-Teilschritt-Kern; dazwischen
@@ -196,7 +199,15 @@ function run(scenario){
     worldISK:cash(s),mint:s.minted,burn:s.burned,
     peakParallelFreights:peakFracht,
     firstFreight,
-    followupAtEnd:followupGate(w,s)
+    followupAtEnd:followupGate(w,s),
+    ...(p8gOptIn?{p8gOptIn:true,originalW3Complete:s.w3.abgeschlossen,
+      lastIndustrialContract:s.kanon.industrieErz?.phase??null,
+      materialOnlyLastContract:s.kanon.industrieErz?.materialOnly===true,
+      materialAtNadir:s.stations.st_nadir.lager.material||0,
+      oreAtNadir:s.stations.st_nadir.lager.erz||0,
+      partsProduced:s.kanon.bauteile?.bauteile||0,
+      hullsBuilt:s.w5.fertig,
+      totalOwnedFreighters:Object.values(s.ships).filter(x=>x.owner==='transport'&&x.klasse==='frachter').length}: {})
   };
   assert.ok(peakFracht<=1,'bestehende Forschungsregel207 kann nur eine gebundene Charge haben');
   console.log('W6_P8D_DRAVOS_REGIME',JSON.stringify(result));

@@ -43,6 +43,10 @@ const m_data_flug = (() => {
         ],
       },
       nadir: { station: { id: 'st_nadir', x: 0, y: 0 }, felder: [] },
+      // W6/Rule206+: Research-only Dravos field, not active in 204.
+      dravos: {station:{id:'st_dravos',x:0,y:0},felder:[
+        {id:'dravos:silizium',ware:'silizium',x:720000,y:-480000,radius:144000}
+      ]},
     },
   });
   return { VIERTEL, FLUG };

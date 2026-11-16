@@ -114,6 +114,51 @@ async function w6Optin(browser,base,width,height,kind){
     tick:s2.tick,hash:w.hash(w.load(after)),weltgeld:33000,originalHaus:3000}));
  }finally{await context.close();}
 }
+// P4: a *previously legally purchased* original Rule204 fighter (900 ISK)
+// enters the very same public P1 career through the protected local save slot.
+// No toy purchase, fake ships, virtual currency, or second simulation.
+async function karrierePatrouille(browser,base,width,height,kind){
+ const save=fs.readFileSync(path.join(__dirname,'../prototypes/j4c/beispiel-jaeger-seed42.json'),'utf8');
+ const original=JSON.parse(save);
+ assert.ok(original.kanon.jaeger.kaeufe.some(k=>k.id==='sh023'&&k.owner==='house'&&k.preis===900));
+ const ctx=await browser.newContext({viewport:{width,height},hasTouch:true});
+ await ctx.addInitScript(({key,json})=>localStorage.setItem(key,json),{key:SLOT,json:save});
+ const page=await ctx.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(String(e)));
+ try{
+  await page.goto(base+'/prototypes/spiel/index.html');
+  await page.locator('#fortsetzen').tap();
+  await page.locator('#tab-flotte').tap();
+  await page.locator('[data-pilot="sh023"]').tap();
+  assert.equal(await page.locator('#raumbereich').isVisible(),true);
+  assert.match(await page.locator('#raum-schiff').textContent(),/Jäger/);
+  const before=await page.evaluate(key=>localStorage.getItem(key),SLOT);
+  assert.equal(before,save,'opening paid fighter must not change world');
+  await page.locator('[data-raum="dock-patrouille"]').tap();
+  assert.match(await page.locator('#raum-ladung').textContent(),/Patrouille bereit · 0\/3/);
+  assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),before,
+    'starting observer mission must not generate money, goods, or a new save');
+  assert.equal(await page.locator('[data-raum="objekt-boje:0"]').count(),1,
+    'first geometric checkpoint is visible in the existing cockpit');
+  await page.locator('#raum-tempo-300').tap();
+  await page.locator('#raum-abdocken').tap();
+  await page.waitForFunction(()=>/Patrouille flug/.test(document.querySelector('#raum-ladung').textContent),null,{timeout:15000});
+  await page.locator('[data-raum="objekt-boje:0"]').tap();
+  await page.locator('[data-raum="ziel-anfliegen"]').tap();
+  await page.waitForFunction(()=>/Patrouille flug · 1\/3/.test(document.querySelector('#raum-ladung').textContent),null,{timeout:30000});
+  await page.locator('#raum-start').tap();
+  const data=await page.evaluate(key=>localStorage.getItem(key),SLOT),s=JSON.parse(data),p=s.w5ad.profile;
+  const w=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+  assert.equal(w.audit(w.load(data)).ok,true);
+  assert.equal(s.minted,0);assert.equal(s.burned,0);
+  assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),33000);
+  assert.equal(s.ships.sh023.owner,'house');
+  assert.deepEqual(errors,[]);
+  console.log('P4_PAID_FIGHTER_PATROL_BROWSER_OK',JSON.stringify({kind,width,height,ship:'sh023',
+    checkpoints:1,total:3,money:33000,hash:w.hash(w.load(data))}));
+ }finally{await ctx.close();}
+}
+
 (async()=>{
  const root=path.resolve(__dirname,'..');
  const server=http.createServer((req,res)=>{
@@ -337,6 +382,7 @@ async function w6Optin(browser,base,width,height,kind){
    await projektPfad(browser,base,width,height,kind);
    await siliziumPilot(browser,base,width,height,kind);
    await w6Optin(browser,base,width,height,kind);
+   await karrierePatrouille(browser,base,width,height,kind);
   }
  }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

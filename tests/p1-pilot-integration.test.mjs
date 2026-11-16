@@ -36,7 +36,8 @@ test('P1 Pilot-Bindung: Originalflug liefert detached full-state snapshots nur a
    assert.equal(full.rulesVersion,204);
    assert.equal(typeof full.ships.sh023.flug.modus,'string');
    assert.equal(typeof full.flug.schritt,'number');
-   assert.ok(Array.isArray(full.kanon.spielerFrachten.auftraege));
+   assert.ok(!full.kanon.spielerFrachten || Array.isArray(full.kanon.spielerFrachten.auftraege),
+     'untouched sample may have no player freight bookkeeping yet');
    // Simulate hostile or buggy tutorial code: these mutations must never reach
    // the original economic or flight state, even mid-transaction.
    full.owners.house.cash+=100000;

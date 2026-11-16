@@ -1,6 +1,6 @@
 # Aphros Void – verbindliche Produkt-Roadmap
 
-**[DRAFT / P2]** Neue autoritative Orbit-/Folgen-/Aufschaltbefehle und gemeinsames Touch-Zielmenü auf separatem Branch; noch nicht MAIN. Kompatibilität, Prüfungen und Grenzen: [P2-Zielsteuerung](P2_ZIELSTEUERUNG.md). Keine Wirtschafts-, Kampf- oder Forschungsregeländerung.
+**[MAIN / PAGES / P2 · 16.11.2026]** Orbit, Folgen, Aufschalten/Lösen und Handübernahme sind im gemeinsamen Regel204-Cockpit spielbar und mit [PR #421](https://github.com/tobiasfranziskus/Check/pull/421) (`main d86efe41`) integriert. [Pages-Deploy #43814267718](https://github.com/tobiasfranziskus/Check/actions/runs/43814267718) für exakt diesen Commit erfolgreich. [Tests, Kompatibilität und Grenzen](P2_ZIELSTEUERUNG.md); kein neuer Wirtschafts-, Kampf- oder Forschungsregelwechsel. Weiteres P2/P4: tatsächliche iPad-Safari-Abnahme und spätere Kampf-/Eskortintegration getrennt behandeln.
 
 **Stand 15.11.2026 · [BESCHLOSSEN] Produktziele und Entwicklungsreihenfolge.** Dies ist die **einzige** verbindliche Roadmap. Technische Nachweise stehen in [PROJEKTSTATUS.md](PROJEKTSTATUS.md); Entwicklungs- und Release-Gates in [AGENTS.md](../AGENTS.md). Historische Einträge sind vollständig und unverändert in [ROADMAP_HISTORIE_BIS_20261115.md](archiv/ROADMAP_HISTORIE_BIS_20261115.md) archiviert. Alte Commit-/PR-Labels gelten ausschließlich für ihren ursprünglichen Zeitpunkt.
 

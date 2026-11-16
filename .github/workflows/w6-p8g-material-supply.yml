@@ -1,0 +1,27 @@
+name: W6/P8g – independently paid material-only ore delivery
+on:
+  pull_request:
+    paths:
+      - 'prototypes/welt/welt-kern.js'
+      - 'tests/w6-p8g-finanzierte-erzversorgung.test.mjs'
+      - '.github/workflows/w6-p8g-material-supply.yml'
+  push:
+    branches:
+      - 'research/w6-p8g-financed-material-supply-20261116'
+    paths:
+      - 'prototypes/welt/welt-kern.js'
+      - 'tests/w6-p8g-finanzierte-erzversorgung.test.mjs'
+      - '.github/workflows/w6-p8g-material-supply.yml'
+jobs:
+  original-funded-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: P8g source and independent paid W3/W4 original-contract checks
+        run: node --test tests/w6-p8g-finanzierte-erzversorgung.test.mjs
+      - name: P8d and P8f independent regressions
+        run: node --test tests/w6-p8d-separater-dravos-frachter.test.mjs tests/w6-p8f-originalbefehle-ohne-werft.test.mjs

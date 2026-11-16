@@ -10,7 +10,7 @@ const SLOT_W6='aphros-void:spielerkarriere:regel207-forschung:v1';
 const BACKUP=SLOT+':vorherige';
 const MAX=5*1024*1024;
 const fmt=n=>Number(n).toLocaleString('de-DE');
-let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung=0;
+let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung=0,patrouille=null;
 let cockpitGenutzt=false,flugerfahrung=false;
 const safeText=(s)=>String(s==null?'':s);
 const error=(e)=>safeText(e&&e.message?e.message:e);
@@ -100,7 +100,7 @@ function startNeu(){
    const audit=welt.audit(zustand);
    if(!audit.ok)throw Error('W6: Wirtschaftsprüfung verweigert Start: '+audit.fehler.join('; '));
   }
-  session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;
+  session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;
   const ok=speichern(!!vorher);
   aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(p8gAktiv
    ?'Isolierte Regel207-Dravosforschung: echter Bergbau, Fremdfracht und Materialverträge; Regel204-Slot unangetastet.'
@@ -130,7 +130,7 @@ function ladeSitzung(json,auswahl,backup=false){
  const a=regel===207?neu.oeffnenP8g(json,true):neu.oeffnen204(json,true);
  if(a.regel!==regel||a.weltgeld!==33000)
    throw Error('Weltgeld- und Regel-Audit verweigert den Stand');
- session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;
+ session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;
  if(auswahl==='datei'||backup)speichern(!!gespeicherte(slot));
  aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Der Original-Core hat deinen Spielstand geprüft.');
 }
@@ -480,14 +480,24 @@ function cockpitBinden(){
   raum=scope.RaumCockpit.verbinden({
    welt:()=>session?session.weltReferenz():null,
    zustand:()=>session?session.zustandReferenz():null,
-   jaeger:()=>session?session.pilotStatus():null,bojen:[],
-   patrouille:()=>null,patrouilleStand:()=>({status:'nicht gestartet',erreicht:0}),duellStand:()=>null,
+   jaeger:()=>session?session.pilotStatus():null,
+   bojen:scope.J4dPatrouille?scope.J4dPatrouille.TORE:[],
+   patrouille:()=>patrouille,
+   patrouilleStand:()=>scope.J4dPatrouille
+     ?scope.J4dPatrouille.stand(patrouille):{status:'nicht gestartet',erreicht:0},
+   duellStand:()=>null,
    // J11: transfer control through the same session, never by a second player world.
    uebernehmen:(id,spielt)=>session.uebernehmen(id,spielt),
    // Authoritative funding quotes on temporary audited clones; no NPC impersonation.
    angebot:cmd=>session.flugAngebot(cmd),
    schritte:n=>{
-      const minutes=session.flugSchritte(n);flugSchritte+=n;flugSeitSicherung+=minutes;
+      const beobachten=patrouille&&['bereit','flug'].includes(patrouille.status)
+        ?probe=>{
+          try{scope.J4dPatrouille.beobachten(patrouille,probe);}
+          catch(_){patrouille.status='unterbrochen';}
+        }:undefined;
+      const minutes=session.flugSchritte(n,beobachten);
+      flugSchritte+=n;flugSeitSicherung+=minutes;
       if(minutes>0)flugerfahrung=true;
       if(flugSeitSicherung>=5){flugSeitSicherung=0;speichern();}
       return minutes;
@@ -498,7 +508,17 @@ function cockpitBinden(){
      return r;
    },
    audit:()=>session.flugAudit(),
-   patrouilleStarten:()=>({ok:false,reason:'Keine freigegebene Patrouille in dieser Karriere'}),
+   patrouilleStarten:()=>{
+     try{
+       if(!session||!scope.J4dPatrouille)throw Error('Patrouillenkern nicht geladen');
+       if(raum?.laeuft())throw Error('Vor dem Start die Weltzeit anhalten');
+       if(patrouille&&['bereit','flug'].includes(patrouille.status))
+         throw Error('Die laufende Patrouille zuerst abschließen');
+       const neu=scope.J4dPatrouille.beginnen(session.zustandReferenz(),session.pilotStatus());
+       patrouille=neu; // Nur Sitzungsübung, nicht Teil des wirtschaftlichen Spielstands.
+       return {ok:true};
+     }catch(e){return {ok:false,reason:error(e)};}
+   },
    duellStarten:()=>({ok:false,reason:'Kein Trainingsduell ohne echte Jägerfreigabe'}),
    feuern:()=>({ok:false,reason:'Kein kostenloses Kampfmaterial'}),
    exportieren:saveDownload,

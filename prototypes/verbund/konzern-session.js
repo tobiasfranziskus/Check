@@ -275,13 +275,14 @@ function erstellen(){
      return {ok:true,type:cmd.type};
    }catch(e){return {ok:false,reason:String(e.message||e)};}
  }
- function flugSchritte(zahl, beiSchritt){
+ function flugSchritte(zahl, beiSchritt, beiVollschritt){
    requireState();
    if(!Number.isSafeInteger(zahl)||zahl<0||zahl>900)
      throw RangeError('J9: maximal 900 Original-Flugschritte pro Frame');
    if(!pilot||!zustand.ships[pilot]||zustand.ships[pilot].owner!=='house')
      throw Error('J9: kein eigener Pilot ausgewählt');
    if(beiSchritt!==undefined&&typeof beiSchritt!=='function')throw TypeError('J9: ungültiger Flugbeobachter');
+   if(beiVollschritt!==undefined&&typeof beiVollschritt!=='function')throw TypeError('J9: ungültiger Vollzustand-Beobachter');
    if(zahl===0)return 0;
    const neu=pruefen(welt,zustand),vor=neu.tick;
    for(let i=0;i<zahl;i++){
@@ -306,6 +307,11 @@ function erstellen(){
        });
        beiSchritt(probe);
      }
+     // P1-Pilotentutorial: ausdrücklich angeforderter, vollständig vom Core
+     // abgetrennter Lesesnapshot für Modi/Ziel/Transport/Ladung. Kein Zugriff
+     // auf die mutable Transaktion, kein zweiter Tick und keine Save-Änderung.
+     // Kopie nur während laufender Lektion, nicht bei normalem Gameplay.
+     if(beiVollschritt)beiVollschritt(structuredClone(neu));
    }
    zustand=pruefen(welt,neu);
    return zustand.tick-vor;

@@ -58,3 +58,19 @@ Unveränderte Originalreferenzen aus vollständiger CI: J11 Seed42 `ece830a2e4a0
 Browsergrößen jeweils 1180×820, 1024×768, 820×1180 und 390×844. Statische HTTP-/Einzeldatei-Prüfung ist kein Deploy und kein Zugriff auf das private NAS. Zweifinger-Pinch, echte virtuelle iPad-Tastatur, Hintergrund/Resume auf physischem Safari und echter NAS-Server bleiben **offen**; eine frühere Fortschrittsmeldung fasste den belegten Zoomtastentest zu weit als Pinch zusammen. Keine Geräteabnahme aus Browseremulation ableiten.
 
 Übergabe: Draft #421 gegen unveränderten main, kein Merge/Pages-/NAS-Deploy. Dieser Bericht wird in einem reinen Dokumentationscommit nach dem geprüften Abnahme-Head ergänzt; Produkt- und Testdateien bleiben dabei identisch. ChatGPT soll die Integration unabhängig abnehmen, insbesondere enge Orbits, Systemgrenzen, die scrollbare Zielkarte und reale iPad-Bedienung.
+
+## Unabhängige ChatGPT-Integrationsabnahme · 16.11.2026
+
+**Prüfumfang:** tatsächlich aktueller `main 6530dae867b56a98c8157ba5738f2817c1ca87e3`, Regel- und Roadmap-Vorgaben, gesamter P2-Code-Diff, unveränderte Finanzierungs-/Eigentumsbrücke, P2-Save-/Zielvalidierung, Touch-Zielkarte sowie die GitHub-Actions-Jobresultate. Lokale unabhängige Node-/Browserausführung in der ChatGPT-Umgebung war wegen fehlendem GitHub-DNS-Zugriff auf den Quellcheckout nicht möglich; die GitHub Actions sind reale externe Ausführungen, keine von ChatGPT lokal durchgeführten Tests.
+
+**Unabhängig ergänzte QA:** `d861fab` ergänzt einen browserbasierten Test zweier gleichzeitiger Touch-Pointer, Pinch-out, Pointer-Cancel und ausbleibender irrtümlicher Zielauswahl auf allen vier Touchgrößen. Sein erster P1-Lauf [#43813366963](https://github.com/tobiasfranziskus/Check/actions/runs/43813366963) scheiterte in beiden Engines an der Testinstrumentierung (die öffentliche P1-Karriere hält die Cockpit-Instanz lokal statt unter `RaumCockpit.sitzung`). Dies war **kein bestandener Lauf**. Der reine Testkorrekturcommit `5b5d6b3d33e7ecc2280c3f3b4f7c6189a5acb873` bindet die vorhandene lesende Cockpit-Prüf-API nur innerhalb des Browser-Tests; kein Produktcode wurde dabei geändert.
+
+**Alle fünf Workflows am vollständig geprüften Testcode `5b5d6b3` erfolgreich:**
+
+- [Node22 / JS-Regressionssuite #43813671495](https://github.com/tobiasfranziskus/Check/actions/runs/43813671495) – `completed/success`, 361/361.
+- [P1 / neue P2-Pinch-Prüfung #43813671348](https://github.com/tobiasfranziskus/Check/actions/runs/43813671348) – `completed/success`, Chromium/WebKit je vier Touchgrößen, inklusive regulärer Karriere und Altpfade.
+- [J4e / Root, Jäger, Touch, Save #43813671321](https://github.com/tobiasfranziskus/Check/actions/runs/43813671321) – `completed/success`, beide Engines.
+- [J14 / Mehrschiff-Reload #43813671442](https://github.com/tobiasfranziskus/Check/actions/runs/43813671442) – `completed/success`, beide Engines.
+- [W5-RC1 / Save, NAS-Einzeldatei, Touch #43813671488](https://github.com/tobiasfranziskus/Check/actions/runs/43813671488) – `completed/success`.
+
+Backup vor einer Integration: [`backup/main-before-p2-zielsteuerung-20261116`](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-p2-zielsteuerung-20261116) auf exakt `6530dae`. Nur die Browser-Pointeremulation ist neu nachgewiesen; **physisches iPad Safari (inkl. tatsächlichem Multi-Touch, Tastatur/Hintergrundzustand) und privater NAS-Server bleiben offen**. Ein bedingt übersprungenes Geografie-Gate wird weiterhin nicht als bestanden gewertet. Dieses Dokument ist der Vor-Merge-Abnahmebericht; tatsächlicher Merge und Pages-Ergebnis sind getrennt im Projektstatus zu belegen.

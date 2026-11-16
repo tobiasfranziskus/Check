@@ -1494,6 +1494,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         if (k.industrieAuto !== undefined && typeof k.industrieAuto !== 'boolean')
           fehler.push('K7-Industrieautomatik: ungültige Einstellung');
         const i=k.industrieErz, a=state.w3?.auftrag;
+        // P8g-Security: Auch unterwegs bleibt der unterschriebene K7-
+        // Ursprungsnachweis an die REAL vorfinanzierte Original-W3-Fracht
+        // gebunden. Die alte Vorbestellungsphase allein genuegt nicht.
+        const laufendeIndustrieFracht=a&&a.industrieMiner!==undefined;
         const beteiligte=i && ['angebot','aktiv','geliefert'].includes(i.phase);
         // Vertrags-IDs sind reale Eigentumsrechte, nicht vom JSON-Importer
         // beliebig neu verteilbare Namen. Auch nach der Lieferung prüfen.
@@ -1509,6 +1513,19 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         if(i && ['aktiv','geliefert'].includes(i.phase)
           &&sicherK7Reserve(state,i)!==(i.materialOnly||i.werftVerwendet?0:K7_PREIS.werft))
           fehler.push('K7-Werftreserve nicht einmalig aus eigenem Vermögen gebunden');
+        if(laufendeIndustrieFracht&&(!i||i.phase!=='aktiv'
+          ||i.miner!==a.industrieMiner||i.frachter!==a.schiff
+          ||i.signMiner!==true||i.signFracht!==true
+          ||(i.materialOnly?i.signWerft!==false||k.materialSupplyEnabled!==true:i.signWerft!==true)
+          ||(a.phase!=='vorbestellt'&&i.erzAngenommen!==true)))
+          fehler.push('K7: aktive W3-Fracht ohne unloeschbaren Original-Vertragsnachweis');
+        // Terminaler Materialvertrag ohne EINE einzige real gebuchte W3-Charge
+        // ist ein gefaelschter Leistungsnachweis, auch bei plausiblen Schiff-IDs.
+        // Historische P8g-Saves behalten dieselbe JSON-Form, kein stiller Umbau.
+        if(i?.materialOnly&&i.phase==='geliefert'
+          &&(i.signMiner!==true||i.signFracht!==true||i.erzAngenommen!==true
+            ||state.w3.abgeschlossen<1||state.w3.geliefert<rules.w3.fracht))
+          fehler.push('P8g: behauptete Materiallieferung ohne realen W3-Liefernachweis');
         if(!i||!['frei','angebot','aktiv','geliefert','storniert'].includes(i.phase)
           ||(i.materialOnly!==undefined&&i.materialOnly!==true)
           ||(i.materialOnly&&(i.signWerft||i.werftVerwendet
@@ -1787,10 +1804,17 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         return verwerfen('nur der Käufer bestätigt nach beiden Eigentümerzustimmungen');
       const mi=s.ships[i.miner],fr=s.ships[i.frachter];
       if(!mi||!fr||mi.owner!=='npc3'||fr.owner!=='transport'
-        ||mi.flug?.lage!=='angedockt'||fr.phase!=='dock'
-        ||Object.values(mi.ladung).some(x=>x!==0)||s.erzpilotVertraege?.[mi.id]
+        ||mi.klasse!=='miner'||fr.klasse!=='frachter'
+        ||mi.system!=='aldera'||fr.system!=='aldera'
+        ||mi.phase!=='dock'||mi.flug?.lage!=='angedockt'
+        ||fr.phase!=='dock'||fr.flug?.lage!=='angedockt'
+        ||fr.auftrag!=='halten'
+        ||m_core_anlage.stillgelegt(s,mi)||m_core_anlage.stillgelegt(s,fr)
+        ||Object.values(mi.ladung).some(x=>x!==0)
+        ||Object.values(fr.ladung).some(x=>x!==0)
+        ||s.erzpilotVertraege?.[mi.id]
         ||(s.kanon.pendel[i.miner]&&s.kanon.pendel[i.miner].ware!=='erz'))
-        return verwerfen('Einsatzschiffe/Erzauftrag nicht mehr verfügbar');
+        return verwerfen('Einsatzschiffe/Erzauftrag seit Signatur nicht mehr verfügbar');
       if(s.owners.npc3.cash<K7_PREIS.bergbau||s.owners.st_aldera.cash<K7_PREIS.alderakauf
         ||s.owners.st_nadir.cash<K7_PREIS.nadiraufwand||s.owners.transport.cash<K7_PREIS.frachtlohn
         ||(!onlyMaterial&&s.owners.werft_extern.cash<K7_PREIS.werft))

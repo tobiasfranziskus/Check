@@ -9,6 +9,9 @@ on:
       - 'prototypes/raum/**'
       - 'prototypes/verbund/**'
       - 'prototypes/legacy-hub/**'
+      - 'prototypes/w5x/**'
+      - 'tests/p0-w5x-*'
+      - 'tests/w5x-*'
       - 'tests/p0-legacy-hub-*'
       - 'scripts/p0-prototype-deps.mjs'
       - 'tests/j7-*'
@@ -106,6 +109,11 @@ jobs:
           WELT_BROWSER: ${{ matrix.browser }}
       - name: "J11: Frachterkauf, Flugreserve, echte F4-Fracht und vier Touchgrößen"
         run: node tests/j11-frachter-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "P0 W5x: alte Regel16-URL, Original-Audit und zwei finanzierte Miner in Chromium/WebKit"
+        run: node tests/p0-w5x-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/j4e-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}

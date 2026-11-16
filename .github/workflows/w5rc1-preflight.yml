@@ -41,6 +41,10 @@ jobs:
         run: python tests/w5ag-touch.py
         env:
           CHROMIUM_PATH: playwright-managed
+      - name: "P0 W5x: historischer Regel16-Kern und alte Deep-Link-URL auf vier Touchgrößen"
+        run: python tests/w5x-touch.py
+        env:
+          CHROMIUM_PATH: playwright-managed
       - name: "Four touch sizes: original core bound 2D miner"
         run: python tests/ui-miner2d-touch.py
         env:

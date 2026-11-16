@@ -54,7 +54,8 @@ const pagesLegacyDivider="<section id=\"klassische-wirtschaft\" aria-label=\"Kla
 const pagesDetailsStart="<details id=\"root-legacy-info\"><summary>Hintergrund zum klassischen Wirtschaftsmodus</summary>";
 const heading='<h1>Aphros Void – W0–W5</h1>';
 assert.ok(out.includes(heading),'W0–W5 Spieltitel fehlt');
-const pages=out.replace('</head>',pagesStyle+'</head>')
+const pages=out.replace("<title>Aphros Void – W0–W5 · Spielbare Entwicklungsversion</title>","<title>Aphros Void · Dein Weltraumkonzern</title>")
+ .replace('</head>',pagesStyle+'</head>')
  .replace(heading,pagesNavigation+nl+pagesDetailsStart+nl+heading)
  .replace('</header>'+nl+'<section class="controls"',
    '</details>'+nl+'</header>'+nl+pagesLegacyDivider+nl+'<section class="controls"');

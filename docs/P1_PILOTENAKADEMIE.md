@@ -1,6 +1,6 @@
 # Pilotenakademie · Auftrag #437
 
-**[DRAFT / NICHT MAIN]** Ausgangsbasis `main b3c3fe8e6d00994758ebd42023a84201cb3919a0`, am 16.11.2026 über GitHub und `git ls-remote` geprüft. Nach der separat integrierten Managerakademie [#438](https://github.com/tobiasfranziskus/Check/pull/438) konfliktfrei auf aktuellen `main 544961eb3f254d4198cdd07f60a4185c8c7b6df8` rebasiert. Geprüfter Piloten-Codecommit: `6ec0143`. Keine Integration, kein Merge und kein Pages-Deployment. Dateigrenzen von [#437](https://github.com/tobiasfranziskus/Check/issues/437) eingehalten; Manager-Akademie, Hauptstartseite, Raum- und Wirtschaftskern bleiben unverändert.
+**[DRAFT / NICHT MAIN]** Ausgangsbasis `main b3c3fe8e6d00994758ebd42023a84201cb3919a0`, am 16.11.2026 über GitHub und `git ls-remote` geprüft. Nach der separat integrierten Managerakademie [#438](https://github.com/tobiasfranziskus/Check/pull/438) konfliktfrei auf aktuellen `main 544961eb3f254d4198cdd07f60a4185c8c7b6df8` rebasiert. Anschließend auf den ausschließlich dokumentarisch ergänzten `main ecd855507b2da4a165e64197ba32e4c7d8a4a87d` (#439) rebasiert; Produkt- und Testdateien sind gegenüber der geprüften Managerbasis bitgleich. Piloten-Codecommit nach Rebase: `278ab94`. Keine Integration, kein Merge und kein Pages-Deployment. Dateigrenzen von [#437](https://github.com/tobiasfranziskus/Check/issues/437) eingehalten; Manager-Akademie, Hauptstartseite, Raum- und Wirtschaftskern bleiben unverändert.
 
 ## Aufrufen und lernen
 

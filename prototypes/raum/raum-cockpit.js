@@ -275,7 +275,7 @@ function verbinden(B) {
       neuBauen('flotte', 'leer', $('raum-flotte'), () => [absatz('Kein Weltstand geladen.', 'note')]);
       return;
     }
-    const a = sz.aktiv, frei = a.lage === 'frei', jaeger = a.id === sz.jaeger, d = B.duellStand(), p = B.patrouilleStand();
+    const a = sz.aktiv, frei = a.lage === 'frei', jaeger = a.id === sz.jaeger && a.klasse === 'jaeger' && sz.regel === 204, d = B.duellStand(), p = B.patrouilleStand();
     const LAGE = { angedockt: 'Im Dock', frei: ['orbit','folgen'].includes(a.modus) ? 'Autopilot: ' + a.modus + ' · ' + fmt(a.ziel?.radius || a.ziel?.abstand) + ' P · Handflug/Stopp übernimmt' : a.modus === 'anflug' ? 'Autopilot' : a.modus === 'hand' ? 'Handflug' : 'Freier Flug – Halt',
       andocken: 'Dockt an …', abdocken: 'Legt ab …', transit: 'Transit' };
     setzen('raum-schiff', a.name);

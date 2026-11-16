@@ -56,8 +56,16 @@ function diagnosis(w,s){
     fleet:frachter.map(sh=>({
       id:sh.id,system:sh.system,phase:sh.phase,docked:sh.flug?.lage==='angedockt',
       remainingValue:w.buchwert(s,sh.id),workOrder:sh.auftrag,
+      previouslyPaidFerry:s.w5ac.completed.some(x=>x.id===sh.id),
+      ferryCompletedRecords:s.w5ac.completed.filter(x=>x.id===sh.id),
       ferryQuote:sh.system==='nadir'&&sh.phase==='dock'&&!stillgelegt(sh)
         ?w.kern.pilotW5TransferKalkulation(s,sh.id):null})),
+    otherFerryBlockingSources:{
+      w3Active:s.w3.auftrag?.phase??null,
+      iceFreightActive:s.w5n?.frachtauftrag?.phase??null,
+      ferryActive:s.w5ac.active?.id??null,
+      completedFerries:s.w5ac.completed.length,
+    },
     viableTotal:viable.length,viableAtAldera:viable.filter(sh=>
       sh.system==='aldera'&&sh.phase==='dock'&&sh.auftrag==='halten').length,
     minerYard:{built:k.minerWerft?.fertig||0,pending:k.minerWerft?.wartetAuf||null,

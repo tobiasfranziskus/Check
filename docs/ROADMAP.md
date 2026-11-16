@@ -53,7 +53,6 @@
 
 **[BESCHLOSSEN / NUTZERKLARSTELLUNG 15.11.2026]** Im früheren Void Echoes **existierte keine Folgen-Einstellung mit Abstandseingabe**. Diese P2-Funktion ist als **neue** Mechanik im autoritativen Aphros-Void-Flugkern zu entwickeln, sofern sie nicht bereits dort existiert; nicht als Legacy-Wiederverwendung einplanen. Der [Quellkatalog](VOID_ECHOES_CODEKATALOG.md) unterscheidet gesicherte Alt-Funktionen von neuen Spielzielen.
 
-**[ANALYSE / NOCH NICHT IN MAIN]** Der aktuelle Regel204-RAUM-1-Kern ermöglicht bereits Zielanflug via `shipApproach`/`shipFlyTo`, Andocken und manuelles `shipSteer`. Gleichwertige **Orbit-/Folgen-/Aufschaltbefehle** für die öffentliche P1-Karriere sind noch nicht belegt. Die neue Zielbedienung ist erst nach separat geprüfter Umsetzung **[MAIN]**; bis dahin fehlende Funktionen als nicht verfügbar kennzeichnen, nicht scheinbar anbieten. Für neue Core-Befehle sind Seed-Replay, Referenzhash, Spielstands-/Eigentums-/Geldschutz, Touch/WebKit und Abbruchfälle Pflicht. Die UI-Ergänzung gehört mit dem vereinbarten **einfacheren Spieleinstieg und geführtem Konzern-Tutorial** in [UX-Aufgabe #410](https://github.com/tobiasfranziskus/Check/issues/410).
 
 - **I Erweiterungen:** weitere Schiffe/Fraktionen/Systeme; Multiplayer optional und erst nach stabilem Einzelspiel, kein Backend-Zwang.
 

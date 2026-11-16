@@ -288,17 +288,21 @@ function erstellen(){
      welt.teilschritt(neu);
      if(beiSchritt){
        // Read-only, immutable flight sample. Never give a UI observer the mutable world.
-       const sh=neu.ships[pilot],b=sh.flug;
+       const sh=neu.ships[pilot],b=sh.flug,flugdienst=neu.kanon.flugdienst?.[pilot];
        const probe=Object.freeze({
          rulesVersion:neu.rulesVersion,tick:neu.tick,
          flug:Object.freeze({schritt:neu.flug.schritt}),
          ships:Object.freeze({[pilot]:Object.freeze({
            id:sh.id,owner:sh.owner,klasse:sh.klasse,system:sh.system,
-           flug:Object.freeze({lage:b.lage,anker:b.anker,x:b.x,y:b.y,vx:b.vx,vy:b.vy})
+           flug:Object.freeze({lage:b.lage,anker:b.anker,x:b.x,y:b.y,vx:b.vx,vy:b.vy,kurs:b.kurs})
          })}),
-         kanon:Object.freeze({jaeger:Object.freeze({kaeufe:Object.freeze(
-           (neu.kanon.jaeger.kaeufe||[]).map(k=>Object.freeze({id:k.id,owner:k.owner,station:k.station}))
-         )})})
+         kanon:Object.freeze({
+           jaeger:Object.freeze({kaeufe:Object.freeze(
+             (neu.kanon.jaeger.kaeufe||[]).map(k=>Object.freeze({id:k.id,owner:k.owner,station:k.station,preis:k.preis}))
+           )}),
+           flugdienst:Object.freeze(flugdienst
+             ? {[pilot]:Object.freeze({konto:flugdienst.konto})} : {})
+         })
        });
        beiSchritt(probe);
      }

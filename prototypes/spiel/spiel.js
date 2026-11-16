@@ -10,7 +10,7 @@ const SLOT_W6='aphros-void:spielerkarriere:regel207-forschung:v1';
 const BACKUP=SLOT+':vorherige';
 const MAX=5*1024*1024;
 const fmt=n=>Number(n).toLocaleString('de-DE');
-let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung=0,patrouille=null;
+let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung=0,patrouille=null,duell=null;
 let cockpitGenutzt=false,flugerfahrung=false;
 const safeText=(s)=>String(s==null?'':s);
 const error=(e)=>safeText(e&&e.message?e.message:e);
@@ -100,7 +100,7 @@ function startNeu(){
    const audit=welt.audit(zustand);
    if(!audit.ok)throw Error('W6: Wirtschaftsprüfung verweigert Start: '+audit.fehler.join('; '));
   }
-  session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;
+  session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
   const ok=speichern(!!vorher);
   aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(p8gAktiv
    ?'Isolierte Regel207-Dravosforschung: echter Bergbau, Fremdfracht und Materialverträge; Regel204-Slot unangetastet.'
@@ -130,7 +130,7 @@ function ladeSitzung(json,auswahl,backup=false){
  const a=regel===207?neu.oeffnenP8g(json,true):neu.oeffnen204(json,true);
  if(a.regel!==regel||a.weltgeld!==33000)
    throw Error('Weltgeld- und Regel-Audit verweigert den Stand');
- session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;
+ session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
  if(auswahl==='datei'||backup)speichern(!!gespeicherte(slot));
  aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Der Original-Core hat deinen Spielstand geprüft.');
 }
@@ -143,6 +143,8 @@ function weiter(n){
    vorher=session.exportieren();
    for(let i=0;i<24;i++)session.weiterspielen(60);
   }else session.weiterspielen(n);
+  if(duell?.status==='aktiv')duell.status='unterbrochen';
+  if(patrouille&&['bereit','flug'].includes(patrouille.status))patrouille.status='unterbrochen';
   speichern();anzeigen();
   hinweis(n+' bezahlte Weltminuten vergangen. Alle Waren und Konten stammen aus dem Original-Core.');
  }catch(e){
@@ -452,8 +454,10 @@ function anzeigen(){
 function pilotieren(id){
  try{
   if(!raum)throw Error('2D-Cockpit steht nicht zur Verfügung');
+  const vorher=session.pilotStatus();
   const r=session.uebernehmen(id,raum.laeuft());
   if(!r.ok)throw Error(r.reason);
+  if(vorher!==id&&duell?.status==='aktiv')duell.status='abgebrochen';
   cockpitGenutzt=true;speichern();raum.sitzungGewechselt();
   screen('raumbereich');raum.aktivieren();
   hinweis('Du steuerst jetzt '+id+'. Das Schiff bleibt in der ursprünglichen Welt.');
@@ -485,17 +489,23 @@ function cockpitBinden(){
    patrouille:()=>patrouille,
    patrouilleStand:()=>scope.J4dPatrouille
      ?scope.J4dPatrouille.stand(patrouille):{status:'nicht gestartet',erreicht:0},
-   duellStand:()=>null,
+   duellStand:()=>duell&&scope.J4eDuell?scope.J4eDuell.stand(duell):null,
    // J11: transfer control through the same session, never by a second player world.
    uebernehmen:(id,spielt)=>session.uebernehmen(id,spielt),
    // Authoritative funding quotes on temporary audited clones; no NPC impersonation.
    angebot:cmd=>session.flugAngebot(cmd),
    schritte:n=>{
-      const beobachten=patrouille&&['bereit','flug'].includes(patrouille.status)
-        ?probe=>{
+      const beobachtbar=(patrouille&&['bereit','flug'].includes(patrouille.status))||duell?.status==='aktiv';
+      const beobachten=beobachtbar?probe=>{
+        if(patrouille&&['bereit','flug'].includes(patrouille.status)){
           try{scope.J4dPatrouille.beobachten(patrouille,probe);}
           catch(_){patrouille.status='unterbrochen';}
-        }:undefined;
+        }
+        if(duell?.status==='aktiv'){
+          try{scope.J4eDuell.beobachten(session.weltReferenz(),probe,duell);}
+          catch(_){duell.status='unterbrochen';}
+        }
+      }:undefined;
       const minutes=session.flugSchritte(n,beobachten);
       flugSchritte+=n;flugSeitSicherung+=minutes;
       if(minutes>0)flugerfahrung=true;
@@ -514,13 +524,31 @@ function cockpitBinden(){
        if(raum?.laeuft())throw Error('Vor dem Start die Weltzeit anhalten');
        if(patrouille&&['bereit','flug'].includes(patrouille.status))
          throw Error('Die laufende Patrouille zuerst abschließen');
+       if(duell?.status==='aktiv')throw Error('Zuerst das laufende Duelltraining beenden');
        const neu=scope.J4dPatrouille.beginnen(session.zustandReferenz(),session.pilotStatus());
        patrouille=neu; // Nur Sitzungsübung, nicht Teil des wirtschaftlichen Spielstands.
        return {ok:true};
      }catch(e){return {ok:false,reason:error(e)};}
    },
-   duellStarten:()=>({ok:false,reason:'Kein Trainingsduell ohne echte Jägerfreigabe'}),
-   feuern:()=>({ok:false,reason:'Kein kostenloses Kampfmaterial'}),
+   duellStarten:()=>{
+     try{
+       if(!session||!scope.J4eDuell)throw Error('F8-E-Trainingskern nicht geladen');
+       if(session.ansicht().regel!==204)throw Error('F8-E nur für die Original-Regel204-Karriere');
+       if(patrouille&&['bereit','flug'].includes(patrouille.status))
+         throw Error('Eine laufende Patrouille muss zuerst abgeschlossen werden');
+       if(duell?.status==='aktiv')throw Error('Ein Duelltraining läuft bereits');
+       duell=scope.J4eDuell.beginnen(
+         session.weltReferenz(),session.zustandReferenz(),session.pilotStatus());
+       return {ok:true};
+     }catch(e){return {ok:false,reason:error(e)};}
+   },
+   feuern:()=>{
+     if(!session||!scope.J4eDuell||!duell||duell.schiff!==session.pilotStatus())
+       return {ok:false,reason:'Kein gültiges eigenes laufendes Trainingsduell'};
+     // Ausschließlich das flüchtige F8-Trainingsbuch wird verändert.
+     // Der Welt-Core erhält niemals einen kostenlosen Waffen- oder Schadenbefehl.
+     return scope.J4eDuell.feuern(session.weltReferenz(),session.zustandReferenz(),duell);
+   },
    exportieren:saveDownload,
    ansicht:retour,
    meldung:(m,fail)=>hinweis(m,fail),

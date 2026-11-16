@@ -159,6 +159,66 @@ async function karrierePatrouille(browser,base,width,height,kind){
  }finally{await ctx.close();}
 }
 
+
+// P4/F8-E: legally produced and bought original fighter in the public career.
+// The target, projectiles and adversary are only temporary training overlays.
+async function karriereDuell(browser,base,width,height,kind){
+ const saved=fs.readFileSync(path.join(__dirname,'../prototypes/j4c/beispiel-jaeger-seed42.json'),'utf8');
+ const record=JSON.parse(saved);
+ assert.ok(record.kanon.jaeger.kaeufe.some(k=>k.id==='sh023'&&k.owner==='house'&&k.preis===900));
+ const ctx=await browser.newContext({viewport:{width,height},hasTouch:true,acceptDownloads:true});
+ await ctx.addInitScript(({key,json})=>localStorage.setItem(key,json),{key:SLOT,json:saved});
+ const page=await ctx.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(String(e)));
+ try{
+  await page.goto(base+'/');
+  await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/spiel/index.html"]').tap();
+  await page.locator('#fortsetzen').tap();
+  await page.locator('#tab-flotte').tap();
+  await page.locator('[data-pilot="sh023"]').tap();
+  assert.equal(await page.locator('#raumbereich').isVisible(),true);
+  assert.match(await page.locator('#raum-schiff').textContent(),/Jäger/);
+  assert.equal(await page.locator('#raum-duell').isHidden(),true,'dock must not enable training fire');
+  assert.equal(await page.locator('#raum-feuer').isHidden(),true);
+  await page.locator('#raum-tempo-300').tap();
+  await page.locator('#raum-abdocken').tap();
+  await page.waitForFunction(()=>/Freier Flug|Handflug/.test(
+    document.querySelector('#raum-lage').textContent),null,{timeout:18000});
+  await page.locator('#raum-start').tap(); // halt original F6 clock for an atomic duel start
+  assert.equal(await page.locator('#raum-duell').isVisible(),true);
+  const before=await page.evaluate(key=>localStorage.getItem(key),SLOT);
+  await page.locator('#raum-duell').tap();
+  assert.match(await page.locator('#raum-ladung').textContent(),/Training aktiv/);
+  assert.equal(await page.locator('[data-raum="objekt-drohne"]').count(),1);
+  assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),before,
+    'virtual encounter cannot mint a world entity or modify world JSON');
+  assert.equal(await page.locator('#raum-feuer').isVisible(),true);
+  await page.locator('#raum-feuer').tap();
+  assert.match(await page.locator('#raum-meldung').textContent(),/Trainingsprojektil gestartet/);
+  assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),before,
+    'virtual shooting cannot mint ammunition or write damages');
+  await page.locator('[data-raum="objekt-drohne"]').tap();
+  await page.locator('[data-raum="ziel-anfliegen"]').tap();
+  await page.waitForFunction(previous=>document.querySelector('#raum-zeit').textContent!==previous,
+    await page.locator('#raum-zeit').textContent(),{timeout:18000});
+  if(await page.locator('#raum-start').getAttribute('aria-pressed')==='true')
+    await page.locator('#raum-start').tap();
+  const auditText=await page.evaluate(key=>localStorage.getItem(key),SLOT);
+  const current=JSON.parse(auditText);
+  const profile=current.w5ad.profile;
+  const w=W.erstellenJ4c({carrierCash:profile.carrierCash,buyerCash:profile.buyerCash});
+  assert.equal(w.audit(w.load(auditText)).ok,true);
+  assert.equal(Object.values(current.owners).reduce((sum,o)=>sum+o.cash,0),33000);
+  assert.equal(current.minted,0);assert.equal(current.burned,0);
+  assert.equal(current.ships.sh023.owner,'house');
+  assert.equal(auditText.includes('zielprobe'),false);
+  assert.equal(auditText.includes('gegnerGeschosse'),false);
+  assert.deepEqual(errors,[]);
+  console.log('P4_PUBLIC_CAREER_PAID_F8_DUEL_OK',JSON.stringify({kind,width,height,ship:'sh023',
+    worldMoney:33000,hash:w.hash(w.load(auditText))}));
+ }finally{await ctx.close();}
+}
+
 (async()=>{
  const root=path.resolve(__dirname,'..');
  const server=http.createServer((req,res)=>{
@@ -383,6 +443,7 @@ async function karrierePatrouille(browser,base,width,height,kind){
    await siliziumPilot(browser,base,width,height,kind);
    await w6Optin(browser,base,width,height,kind);
    await karrierePatrouille(browser,base,width,height,kind);
+   await karriereDuell(browser,base,width,height,kind);
   }
  }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

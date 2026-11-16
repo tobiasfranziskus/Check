@@ -54,6 +54,23 @@ const server=http.createServer((req,res)=>{
    await page.waitForFunction(() => document.getElementById('core-status').textContent.startsWith('Core-Snapshot · Tick '));
    assert.equal(await page.locator('.legacy-corporation h1').count()>0,true);
    assert.equal(await page.evaluate('document.documentElement.scrollWidth<=innerWidth'),true);
+   // Auch zwei weitere historische Deep Links muessen nach P0-Archivierung
+   // mit denselben JS-/CSS-Dateien weiterhin bedienbar bleiben.
+   await page.goto(origin+'/prototypes/legacy-fitting/');
+   await page.waitForURL('**/prototypes/legacy-fitting/archiv/index.html');
+   await page.locator('#fitting .layout').waitFor();
+   await page.locator('[data-platz="platz-laser"]').tap();
+   await page.locator('[data-modul="laser-S-MK2"]').tap();
+   assert.match(await page.locator('#vergleich').innerText(),/Hypothetischer Vergleich/);
+   assert.equal(await page.evaluate('document.documentElement.scrollWidth<=innerWidth'),true);
+   await page.goto(origin+'/prototypes/legacy-pilot/');
+   await page.waitForURL('**/prototypes/legacy-pilot/archiv/index.html');
+   await page.locator('.lp h1').waitFor();
+   await page.locator('#pilot-choice').selectOption('3');
+   assert.match(await page.locator('.lp h1').innerText(),/Tarek Holm/);
+   await page.locator('[data-skill="combat"]').tap();
+   assert.equal(await page.locator('[data-skill="combat"]').getAttribute('aria-pressed'),'true');
+   assert.equal(await page.evaluate('document.documentElement.scrollWidth<=innerWidth'),true);
    assert.deepEqual(missing,[]);
    assert.deepEqual(errors,[]);
    console.log('PASS P0 legacy-hub old URLs -> archived demo '+browserKind+' '+width+'x'+height);

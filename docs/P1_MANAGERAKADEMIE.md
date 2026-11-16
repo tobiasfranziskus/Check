@@ -1,4 +1,7 @@
-# Managerakademie · Acht Wirtschaftslektionen [DRAFT / P1]
+# Managerakademie · Acht Wirtschaftslektionen [MAIN / PAGES / P1]
+
+**Geprüfte Integration:** [#438](https://github.com/tobiasfranziskus/Check/pull/438), Codecommit `544961eb3f254d4198cdd07f60a4185c8c7b6df8`; [Pages #43920173034](https://github.com/tobiasfranziskus/Check/actions/runs/43920173034) `completed/success` für diesen Commit. Fünf vollständig erfolgreiche PR-Workflows: [P1 Node22 + Chromium/WebKit (4/4)](https://github.com/tobiasfranziskus/Check/actions/runs/43919080954), [volle JS-/Wirtschaftsregression](https://github.com/tobiasfranziskus/Check/actions/runs/43919080907), [W5/NAS-Build](https://github.com/tobiasfranziskus/Check/actions/runs/43919080859), W6/P8a und W6/P8g. Erhaltener ursprünglicher `main`: [Backup](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-p1-managerakademie-20261116). Keine echte iPad-/NAS-Geräteabnahme und kein direkter HTTP-Smoke aus der eingeschränkten Prüfungsumgebung.
+
 
 **Quelle:** öffentlicher Original-Karrierestart `prototypes/spiel/index.html` mit unverändertem J8/Weltkern. Zusätzlicher ausklappbarer Kurs **Managerakademie** oberhalb der Konzern-Karten. Keine zweite Simulation, keine neuen wirtschaftlichen Angebote, kein Buildsystem.
 

@@ -15,9 +15,14 @@ let cockpitGenutzt=false,flugerfahrung=false,managerTutor=null,pilotTutor=null,p
 const safeText=(s)=>String(s==null?'':s);
 const error=(e)=>safeText(e&&e.message?e.message:e);
 // Zentrale Anzeigenamen: nur für die Oberfläche, nie als ID in Befehlen oder Spielständen.
-const KONZERN_ANZEIGENAMEN=Object.freeze({house:'Dein Konzern',npc3:'Freie Erzförderer',
- transport:'Freie Spedition',werft_extern:'Unabhängige Werft',
- st_aldera:'Aldera',st_nadir:'Nadir'});
+const KONZERN_ANZEIGENAMEN=Object.freeze({
+ house:'Dein Konzern',
+ npc3:'Meridian Rohstoffwerke',
+ transport:'Asterion Logistik',
+ werft_extern:'Nadir Schiffswerke',
+ st_aldera:'Aldera Handelsstation',
+ st_nadir:'Nadir Industriestation'
+});
 function konzernname(id){return Object.prototype.hasOwnProperty.call(KONZERN_ANZEIGENAMEN,id)
  ?KONZERN_ANZEIGENAMEN[id]:safeText(id);}
 function firmennamenAnzeigen(){
@@ -125,22 +130,22 @@ function ladeSitzung(json,auswahl,backup=false){
    throw Error('Ungültige Größe des Karriere-Spielstands.');
  if(session)throw Error('Laufende Karriere zuerst als JSON exportieren und die Seite neu öffnen.');
  const raw=JSON.parse(json),regel=raw?.rulesVersion;
- if(regel!==204&&regel!==207)throw Error('Nur bestätigte Original-Regel204- oder Forschungsregel207-Saves');
+ if(regel!==204&&regel!==207)throw Error('Dieser Spielstand gehört nicht zu einer unterstützten Karriere.');
  if(regel===207&&!['forschung','forschung-backup','datei'].includes(auswahl))
-   throw Error('Forschungsstand nur über getrennten Forschungszugang laden');
+   throw Error('Bitte die experimentelle Karriere über ihren eigenen Zugang öffnen.');
  if(regel===204&&['forschung','forschung-backup'].includes(auswahl))
-   throw Error('Forschungszugang darf nicht den Regel204-Spielstand ersetzen');
+   throw Error('Der experimentelle Spielzugang kann keine normale Karriere überschreiben.');
  // The authorization is a real user action OUTSIDE the untrusted JSON:
  // named research-resume click or separate explicit file-import confirmation.
  if(regel===207&&auswahl==='datei'&&!scope.confirm(
-   'Diese Datei enthält Regel207-W6-Forschung. Externen P8g-Import ausdrücklich erlauben? Die normale Regel204-Karriere bleibt separat erhalten.'))return;
+   'Diese Datei enthält eine experimentelle Dravos-Karriere. Möchtest du diesen externen Spielstand ausdrücklich importieren? Deine normale Karriere bleibt separat erhalten.'))return;
  const slot=regel===207?SLOT_W6:SLOT;
  if(auswahl==='datei'&&gespeicherte(slot)&&!scope.confirm(
    'Dieser Datei-Spielstand ersetzt NUR die gleichnamige Karriere-Speicherstelle. Die bisherige wird zuvor gesichert. Fortfahren?'))return;
  const neu=neueSitzung();
  const a=regel===207?neu.oeffnenP8g(json,true):neu.oeffnen204(json,true);
  if(a.regel!==regel||a.weltgeld!==33000)
-   throw Error('Weltgeld- und Regel-Audit verweigert den Stand');
+   throw Error('Die Prüfung der Wirtschaft und des Spielstands ist fehlgeschlagen.');
  session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
   pilotTutor?.zuruecksetzen();pilotMenu?.zeichnen();
  if(auswahl==='datei'||backup)speichern(!!gespeicherte(slot));
@@ -217,10 +222,10 @@ function missions(){
  const pilot=!!session.pilotStatus();
  const eigenesFrachtgut=Object.values(state.ships).some(sh=>sh.owner==='house'&&Object.values(sh.ladung||{}).some(n=>n>0));
  return [
-  {done:mine,text:'Einen eigenen Miner aus echten Beständen kaufen'},
+  {done:mine,text:'Dein erstes Bergbauschiff kaufen'},
   {done:pilot||cockpitGenutzt,text:'Ins Cockpit steigen – ein Schiff, eine Welt'},
   {done:(state.kanon.fluglohnMinuten||0)>0||flugerfahrung,text:'Abdocken und den ersten bezahlten Flug beginnen'},
-  {done:eigenesFrachtgut||!!state.kanon.silizium?.belege?.length,text:'Eigenes Eis oder Silizium wirklich gewinnen'}
+  {done:eigenesFrachtgut||!!state.kanon.silizium?.belege?.length,text:'Eis oder Silizium fördern und transportieren'}
  ];
 }
 // J12: read-only station and company report from the SAME validated Rule204 session.
@@ -276,7 +281,7 @@ function wirtschaftsbericht(a,s,angebote){
   if(angebot.ok){
    const link=d.createElement('button');
    link.type='button';link.className='economy-go';link.dataset.j12Offer=angebot.id;
-   link.textContent='Zum geprüften Kaufangebot';
+   link.textContent='Kaufangebot öffnen';
    link.addEventListener('click',()=>{
     tabZeigen('auftraege');
     const target=[...$('spieleraktionen').querySelectorAll('[data-action]')]
@@ -288,8 +293,9 @@ function wirtschaftsbericht(a,s,angebote){
  }
  const footer=d.createElement('p');
  footer.className='economy-foot';
- footer.textContent='Weltgeld: '+fmt(a.weltgeld)+' ISK · Mint/Burn: '+fmt(s.minted)+' / '+fmt(s.burned)+
-  ' ISK. Kaufangebote sind Momentaufnahmen; vor jeder Buchung wird der Auftrag erneut geprüft.';
+ footer.textContent='Geld im Universum: '+fmt(a.weltgeld)+' ISK · Neu ausgegebene ISK: '+fmt(s.minted)+
+  ' · Eingezogene ISK: '+fmt(s.burned)+
+  '. Kaufangebote können sich ändern und werden beim Kauf erneut geprüft.';
  host.replaceChildren(lager,firmen,werft,footer);
 }
 // J13 – alle Voraussetzungen werden nur gelesen; ein Kauf folgt ausschliesslich
@@ -380,7 +386,7 @@ function siliziumBericht(zustand){
    'Eigentümer '+konzernname(f.auftrag.owner)+' · Bergbauschiff '+f.auftrag.schiff+' · '+
    fmt(f.auftrag.gefoerdert)+' / '+fmt(f.auftrag.menge)+' Einheiten wirklich gefoerdert'
    :'Kein laufender Förderauftrag'),
-  zeile('Vorfinanzierung je weiterer Originalcharge',
+  zeile('Kosten einer weiteren Fördercharge',
    fmt(g.arbeitJeCharge)+' ISK Bergbaulohn · '+fmt(g.ankaufJeCharge)+
    ' ISK Nadir-Ankauf · mindestens '+fmt(g.flugreserve)+
    ' ISK Flugreserve bei neuer Ausfahrt. Kassen: '+konzernname('npc3')+' '+fmt(g.npc3Kasse)+
@@ -402,7 +408,7 @@ function siliziumBericht(zustand){
    host.append(
      zeile('Endliche Dravos-Bodenreserve',fmt(rest)+' echte Siliziumeinheiten, kein automatisches Auffüllen'),
      zeile('Bezahlte Dravos-Fracht',fmt(fr?.geliefert||0)+' abgeschlossene Lieferungen · '
-       +fmt(fr?.angebote||0)+' ursprüngliche Angebote; neue Frachten nur gegen reale Kasse und Ware'),
+       +fmt(fr?.angebote||0)+' veröffentlichte Angebote; neue Frachten nur gegen reale Kasse und Ware'),
      zeile('Materialauftrag',phase+(k.industrieErz?.materialOnly?' · ohne verpflichtenden Frachterneubau':'')
        +' · '+fmt(zustand.w3.abgeschlossen)+' W3-Lieferungen insgesamt'),
      zeile('Nadir-Industrie',fmt(warehouse.erz||0)+' Erz · '+fmt(warehouse.material||0)
@@ -618,7 +624,7 @@ function pilotBinden(){
 $('jaeger-kaufweg').addEventListener('click',()=>{
  if(!session)return;
  const quote=session.angebote().find(a=>a.id==='buy-st_nadir-jaeger');
- if(!quote?.ok){hinweis('Jägerkauf weiterhin gesperrt: '+(quote?.reason||'Kein Originalangebot'),true);anzeigen();return;}
+ if(!quote?.ok){hinweis('Jägerkauf derzeit nicht möglich: '+(quote?.reason||'Kein Kaufangebot'),true);anzeigen();return;}
  tabZeigen('auftraege');
  const target=[...$('spieleraktionen').querySelectorAll('[data-action]')]
    .find(el=>el.dataset.action==='buy-st_nadir-jaeger');

@@ -50,20 +50,20 @@ function verbinden(B) {
 
   // ---- Befehle ---------------------------------------------------------------------------------
   const TEXT = { shipUndock: 'Abdocken eingeleitet – Flugreserve gebunden', shipDock: 'Andockanflug läuft',
-    shipApproach: 'Autopilot: Anflug', shipFlyTo: 'Autopilot: Kurs gesetzt', shipSteer: 'Handsteuerung',
+    shipOrbit:'Autopilot: Orbit', shipFollow:'Autopilot: Folgen', shipLock:'Ziel erfasst – keine Waffen aktiviert', shipUnlock:'Zielerfassung gelöst', shipApproach: 'Autopilot: Anflug', shipFlyTo: 'Autopilot: Kurs gesetzt', shipSteer: 'Handsteuerung',
     siliconMineStart: 'Siliziumauftrag angenommen – Lohn und Ankauf sind vorfinanziert',
     siliconSell: 'Silizium an Station Nadir verkauft',
     shipFreightIce: 'Bezahlte Eis-Rundfracht angenommen – Zeit starten für Vertragsfahrt',
     shipGateCheck: 'Bezahlter Toranflug vom Original-Core bestätigt',
     shipFreightGateIce: 'Torfracht angenommen – Zeit starten für Vertragsfahrt' };
-  function tun(aktion, ziel, leise) {
+  function tun(aktion, ziel, leise, abstand) {
     const sz = szene();
     if (!sz) { meldung('Zuerst einen finanzierten Jägerstand laden', true); return null; }
-    const cmd = S.befehl(B.welt(), sz, aktion, ziel);
+    const cmd = S.befehl(B.welt(), sz, aktion, ziel, abstand);
     if (!cmd) { meldung('Für dieses Ziel gibt es keinen Kernbefehl', true); return null; }
     const r = B.ausfuehren(cmd);
     if (!r.ok) { meldung('Kern lehnt ab: ' + r.reason, true); hud(true); return r; }
-    if (['shipUndock', 'shipDock', 'shipApproach', 'shipFlyTo', 'shipSteer'].includes(cmd.type) && !Z.laeuft) laufSetzen(true);
+    if (['shipOrbit', 'shipFollow', 'shipUndock', 'shipDock', 'shipApproach', 'shipFlyTo', 'shipSteer'].includes(cmd.type) && !Z.laeuft) laufSetzen(true);
     if (!leise) meldung((TEXT[cmd.type] || cmd.type) + ' · ' + sz.aktiv.name + (Z.laeuft ? ' · Zeit läuft ' + Z.faktor + '×' : ''));
     if (cmd.type === 'shipUndock' || cmd.type === 'siliconSell' || cmd.type === 'siliconMineStart') ring(sz.aktiv.x, sz.aktiv.y, '#6cf', 1100);
     pruefen(); hud(true);
@@ -276,10 +276,10 @@ function verbinden(B) {
       return;
     }
     const a = sz.aktiv, frei = a.lage === 'frei', jaeger = a.id === sz.jaeger, d = B.duellStand(), p = B.patrouilleStand();
-    const LAGE = { angedockt: 'Im Dock', frei: a.modus === 'anflug' ? 'Autopilot' : a.modus === 'hand' ? 'Handflug' : 'Freier Flug – Halt',
+    const LAGE = { angedockt: 'Im Dock', frei: ['orbit','folgen'].includes(a.modus) ? 'Autopilot: ' + a.modus + ' · ' + fmt(a.ziel?.radius || a.ziel?.abstand) + ' P · Handflug/Stopp übernimmt' : a.modus === 'anflug' ? 'Autopilot' : a.modus === 'hand' ? 'Handflug' : 'Freier Flug – Halt',
       andocken: 'Dockt an …', abdocken: 'Legt ab …', transit: 'Transit' };
     setzen('raum-schiff', a.name);
-    setzen('raum-lage', (LAGE[a.lage] || a.lage) + (a.gestrandet ? ' · NICHT FINANZIERT' : ''));
+    setzen('raum-lage', (LAGE[a.lage] || a.lage) + (a.gestrandet ? ' · NICHT FINANZIERT' : '') + (a.erfassung ? ' · Aufgeschaltet: ' + a.erfassung.id : ''));
     setzen('raum-fahrt', fmt(a.fahrt) + ' P/s · Kurs ' + a.kurs + '/256');
     let zusatz = 'Fracht: ' + a.ladung;
     if(a.klasse==='frachter'&&a.lage==='transit')zusatz+=' · Vertragsfahrt: Regel204 sperrt freie Steuerung; Lieferung und Rückkehr im Original-Core';
@@ -306,7 +306,28 @@ function verbinden(B) {
       setzen('raum-zielinfo', fmt(dist) + ' P' + (o && o.art === 'station' ? ' · Lager (nicht Spielereigentum): ' + o.lager : o && o.art === 'boje' ? ' · höchstens ' + o.maxTempo + ' P/s' : o && o.vorrat !== undefined ? ' · Vorrat ' + o.vorrat : o && o.art === 'schiff' ? ' · ' + o.owner + ' · ' + o.ladung : ''));
       const akt = S.aktionen(sz, Z.auswahl);
       if(a.klasse==='frachter'&&o?.art==='tor'&&B.angebot){const q=B.angebot(S.befehl(B.welt(),sz,'torpruefen'));akt.push({id:'torpruefen',text:'Bezahlten Toranflug bestätigen'+(q.ok?'':' · '+q.reason),aktiv:q.ok});}
-      neuBauen('ziel', JSON.stringify([Z.auswahl, akt]), $('raum-zielaktionen'), () => akt.map((x) => knopf(x.text, x.id === 'anfliegen' ? 'primary' : '', () => tun(x.id, Z.auswahl), !x.aktiv, 'ziel-' + x.id)));
+      neuBauen('ziel', JSON.stringify([Z.auswahl, akt]), $('raum-zielaktionen'), () => {
+        const teile = [];
+        for (const x of akt) {
+          let eingabe = null;
+          if (x.id === 'orbit' || x.id === 'folgen') {
+            const label = doc.createElement('label');
+            label.textContent = x.id === 'orbit' ? 'Orbitradius (P) ' : 'Folgeabstand (P) ';
+            eingabe = doc.createElement('input'); eingabe.type = 'number'; eingabe.inputMode = 'numeric';
+            eingabe.min = String(B.welt().flugKern.DATEN.punktHalt); eingabe.max = String(sz.raumRadius); eingabe.step = '1';
+            eingabe.value = String(Math.max(Number(eingabe.min), Math.min(sz.raumRadius, Math.round(dist))));
+            eingabe.id = 'ziel-' + x.id + '-abstand'; label.htmlFor = eingabe.id;
+            eingabe.style.minHeight = '48px'; eingabe.style.width = '100%';
+            label.append(eingabe); teile.push(label);
+          }
+          teile.push(knopf(x.text, x.id === 'anfliegen' ? 'primary' : '', () => {
+            if (eingabe && !eingabe.reportValidity()) return;
+            tun(x.id, Z.auswahl, false, eingabe ? Number(eingabe.value) : undefined);
+          }, !x.aktiv, 'ziel-' + x.id));
+          if (!x.aktiv && x.grund) teile.push(absatz(x.grund, 'note'));
+        }
+        return teile;
+      });
     }
     // Dockkarte (Stationsansicht)
     if (a.lage === 'angedockt') {

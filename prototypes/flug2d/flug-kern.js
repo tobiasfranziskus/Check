@@ -53,6 +53,9 @@ const { VIERTEL, FLUG } = m_data_flug;
 const KOERPER = ['andocken', 'anker', 'kurs', 'lage', 'modus', 'rest', 'sollFahrt', 'sollKurs', 'vx', 'vy', 'x', 'y', 'ziel'];
 const LAGEN = ['angedockt', 'frei', 'andocken', 'abdocken', 'transit'];
 const BEFEHLE = Object.freeze({
+  shipOrbit: ['schiff', 'zielArt', 'ziel', 'radius', 'x', 'y'],
+  shipFollow: ['schiff', 'ziel', 'abstand'], shipLock: ['schiff', 'zielArt', 'ziel'],
+  shipUnlock: ['schiff'],
   shipSteer: ['schiff', 'kurs', 'fahrt'], shipApproach: ['schiff', 'zielArt', 'ziel'],
   shipFlyTo: ['schiff', 'x', 'y'], shipDock: ['schiff', 'station'], shipUndock: ['schiff'],
 });
@@ -127,6 +130,24 @@ function koerperAngedockt(system, flug = FLUG) {
     modus: 'halt', sollKurs: 0, sollFahrt: 0, ziel: null, andocken: false };
 }
 
+// Zielidentität wird vor jedem Schritt erneut im autoritativen Zustand geprüft.
+function zielObjekt(state, s, z, flug) {
+  if (!z) return null;
+  const sys = flug.systeme[s.system];
+  if (z.art === 'station') return z.id === sys?.station.id ? sys.station : null;
+  if (z.art === 'feld') return feld(flug, s.system, z.id);
+  if (z.art === 'punkt') return ganz(z.x, -flug.raumRadius, flug.raumRadius) && ganz(z.y, -flug.raumRadius, flug.raumRadius) ? z : null;
+  const t = z.art === 'schiff' && typeof z.id === 'string' && Object.hasOwn(state.ships, z.id) ? state.ships[z.id] : null;
+  return t && t.id !== s.id && t.system === s.system && t.flug?.lage === 'frei' ? t.flug : null;
+}
+
+// Save-Validierung erlaubt einen inzwischen abgedockten/verlorenen Kontakt bis zum
+// nächsten Flugschritt, aber keine erfundenen Identitäten oder zusätzlichen Felder.
+function zielForm(state, s, z, flug) {
+  if (!z || typeof z !== 'object' || Array.isArray(z)) return false;
+  if (z.art === 'schiff') return typeof z.id === 'string' && z.id !== s.id && Object.hasOwn(state.ships,z.id);
+  return !!zielObjekt(state,s,z,flug);
+}
 function pruefen(state, cmd, flug = FLUG) {
   if (cmd === null || typeof cmd !== 'object' || Array.isArray(cmd)) return 'Befehl ist kein Objekt';
   if (!Object.hasOwn(BEFEHLE, cmd.type)) return 'unbekannter Flugbefehl';
@@ -140,6 +161,16 @@ function pruefen(state, cmd, flug = FLUG) {
   if (b.lage !== 'frei' && !(cmd.type==='shipSteer' && steuerbarerTransit(state,s)))
     return 'Schiff ist nicht im freien Flug';
   const sys = flug.systeme[s.system];
+  if (['shipOrbit','shipFollow','shipLock','shipUnlock'].includes(cmd.type)) {
+    if (state.rulesVersion !== 204) return 'P2 verlangt Regel204';
+    if (cmd.type !== 'shipUnlock') {
+      const z = {art: cmd.type === 'shipFollow' ? 'schiff' : cmd.zielArt, id: cmd.ziel, x: cmd.x, y: cmd.y};
+      if (!zielObjekt(state, s, z, flug) || (cmd.type === 'shipLock' && z.art === 'punkt')) return 'Ziel nicht verfügbar';
+      if (z.art === 'punkt' ? cmd.ziel !== undefined : cmd.x !== undefined || cmd.y !== undefined) return 'Widersprüchliches Ziel';
+    }
+    if (cmd.type === 'shipOrbit' && !ganz(cmd.radius, flug.punktHalt, flug.raumRadius)) return 'Orbitradius außerhalb des Systemraums';
+    if (cmd.type === 'shipFollow' && !ganz(cmd.abstand, flug.punktHalt, flug.raumRadius)) return 'Folgeabstand außerhalb des Systemraums';
+  }
   if (cmd.type === 'shipSteer') {
     if (!ganz(cmd.kurs, 0, 255)) return 'Kurs muss ganze Zahl 0..255 sein';
     if (!ganz(cmd.fahrt, 0, 100)) return 'Fahrt muss ganze Zahl 0..100 sein';
@@ -160,10 +191,14 @@ function ausfuehren(state, cmd, flug = FLUG) {
   if (fehler) return { ok: false, type: cmd && cmd.type, reason: fehler };
   const b = state.ships[cmd.schiff].flug;
   switch (cmd.type) {
+    case 'shipOrbit': b.modus = 'orbit'; b.ziel = cmd.zielArt === 'punkt' ? {art:'punkt', x:cmd.x, y:cmd.y, radius:cmd.radius} : {art:cmd.zielArt, id:cmd.ziel, radius:cmd.radius}; b.andocken = false; break;
+    case 'shipFollow': b.modus = 'folgen'; b.ziel = {art:'schiff', id:cmd.ziel, abstand:cmd.abstand}; b.andocken = false; break;
+    case 'shipLock': b.erfassung = {art:cmd.zielArt, id:cmd.ziel}; break;
+    case 'shipUnlock': delete b.erfassung; break;
     case 'shipSteer': b.modus = 'hand'; b.sollKurs = cmd.kurs; b.sollFahrt = cmd.fahrt; b.ziel = null; b.andocken = false; break;
     case 'shipApproach': b.modus = 'anflug'; b.ziel = { art: cmd.zielArt, id: cmd.ziel }; b.andocken = false; break;
     case 'shipFlyTo': b.modus = 'anflug'; b.ziel = { art: 'punkt', x: cmd.x, y: cmd.y }; b.andocken = false; break;
-    case 'shipDock': b.modus = 'anflug'; b.ziel = { art: 'station', id: cmd.station }; b.andocken = true; break;
+    case 'shipDock': delete b.erfassung; b.modus = 'anflug'; b.ziel = { art: 'station', id: cmd.station }; b.andocken = true; break;
     case 'shipUndock': b.lage = 'abdocken'; b.rest = flug.andocken.schritte; break;
   }
   return { ok: true, type: cmd.type };
@@ -186,8 +221,29 @@ function anflug(flug, s, k) {
   const erlaubt = isqrt(k.bremse * (dist - z.halt));
   b.sollFahrt = Math.max(flug.kriechfahrt, Math.min(100, kuerzen(erlaubt * 100 / k.vmax)));
 }
-function bewegen(flug, s) {
+// Radiale Distanzregelung plus tangentiale Orbitfahrt. Nur Sollwerte: Beschleunigung,
+// Bremsen, Drehrate und Integration bleiben ausschließlich im Original-bewegen().
+function zielFlug(state, flug, s, k) {
+  const b = s.flug, z = zielObjekt(state, s, b.ziel, flug);
+  if (!z) { b.modus = 'halt'; b.ziel = null; b.sollFahrt = 0; b.andocken = false; return; }
+  const dx = b.x - z.x, dy = b.y - z.y, d = Math.max(1, isqrt(dx*dx + dy*dy));
+  const radius = b.modus === 'orbit' ? b.ziel.radius : b.ziel.abstand;
+  const fehler = d - radius;
+  // Bremsweg begrenzt den Anflug; die lineare Nahregelung vermeidet Pendeln.
+  const radial = Math.sign(fehler) * Math.min(kuerzen(Math.abs(fehler)/16), isqrt(k.bremse*Math.abs(fehler)), k.vmax);
+  // Konservative Kurvenfahrt aus Original-Beschleunigung und -Wendigkeit abgeleitet.
+  const tangential = b.modus === 'orbit' ? Math.min(kuerzen(k.vmax/2), isqrt(k.schub*radius/4), kuerzen(radius*k.drehrate/128)) : 0;
+  const ux = dx === 0 && dy === 0 ? flug.einheit : kuerzen(dx*flug.einheit/d);
+  const uy = kuerzen(dy*flug.einheit/d);
+  const vx = (z.vx || 0) - kuerzen((ux*radial + uy*tangential)/flug.einheit);
+  const vy = (z.vy || 0) + kuerzen((ux*tangential - uy*radial)/flug.einheit);
+  const tempo = isqrt(vx*vx + vy*vy);
+  if (tempo) b.sollKurs = richtungZu(vx,vy);
+  b.sollFahrt = Math.min(100, Math.round(tempo*100/k.vmax));
+}
+function bewegen(flug, s, state) {
   const b = s.flug, k = flug.klassen[s.klasse], E = flug.einheit;
+  if (b.modus === 'orbit' || b.modus === 'folgen') zielFlug(state, flug, s, k);
   if (b.modus === 'anflug' && b.ziel) anflug(flug, s, k);
   b.kurs = drehen(b.kurs, b.sollKurs, k.drehrate);
   const zx = kuerzen(cos(b.kurs) * k.vmax * b.sollFahrt / (E * 100));
@@ -223,8 +279,9 @@ function schritt(state, flug = FLUG, sortierteSchiffIds = null) {
   for (const id of (sortierteSchiffIds || ids(state.ships))) {
     const s = state.ships[id], b = s.flug;
     if (!b) continue;
+    if (b.erfassung && (b.lage !== 'frei' || !zielObjekt(state,s,b.erfassung,flug))) delete b.erfassung;
     if (b.lage === 'frei' || (steuerbarerTransit(state,s) && b.modus==='hand'))
-      bewegen(flug, s);
+      bewegen(flug, s, state);
     else if (b.lage === 'andocken') {
       const st = flug.systeme[s.system].station;
       b.rest -= 1;
@@ -278,11 +335,11 @@ function audit(state, flug = FLUG) {
     if (b === undefined) continue;
     const k = flug.klassen[s.klasse], sys = flug.systeme[s.system];
     if (!b || typeof b !== 'object' || !k || !sys) return fehler(id + ': Flugkörper ohne Klasse/System');
-    if (Object.keys(b).sort().join() !== KOERPER.join()) return fehler(id + ': unbekannte oder fehlende Flugfelder');
+    if (Object.keys(b).filter(k=>k!=='erfassung').sort().join() !== KOERPER.join()) return fehler(id + ': unbekannte oder fehlende Flugfelder');
     if (!ganz(b.x, -R, R) || !ganz(b.y, -R, R) || !ganz(b.vx, -k.vmax, k.vmax) || !ganz(b.vy, -k.vmax, k.vmax)
       || !ganz(b.kurs, 0, 255) || !ganz(b.sollKurs, 0, 255) || !ganz(b.sollFahrt, 0, 100))
       return fehler(id + ': Flugzahl außerhalb des Wertebereichs');
-    if (!LAGEN.includes(b.lage) || !['hand', 'anflug', 'halt'].includes(b.modus) || typeof b.andocken !== 'boolean')
+    if (!LAGEN.includes(b.lage) || !['hand', 'anflug', 'halt', ...(state.rulesVersion === 204 ? ['orbit','folgen'] : [])].includes(b.modus) || typeof b.andocken !== 'boolean')
       return fehler(id + ': unbekannte Lage oder Steuerart');
     if ((b.lage === 'transit') !== (s.phase === 'reise')) return fehler(id + ': Transit passt nicht zur Core-Phase');
     const fest = b.lage === 'angedockt' || b.lage === 'andocken' || b.lage === 'abdocken';
@@ -298,7 +355,14 @@ function audit(state, flug = FLUG) {
     if (b.lage === 'angedockt' && (b.x !== sys.station.x || b.y !== sys.station.y)) return fehler(id + ': angedockt, aber nicht am Dock');
     const sequenz = b.lage === 'andocken' || b.lage === 'abdocken';
     if (!ganz(b.rest, sequenz ? 1 : 0, sequenz ? flug.andocken.schritte : 0)) return fehler(id + ': Sequenzzähler ungültig');
+    if (Object.hasOwn(b,'erfassung') && !(state.rulesVersion === 204 && b.erfassung && Object.keys(b.erfassung).sort().join() === 'art,id' && ['station','feld','schiff'].includes(b.erfassung.art) && zielForm(state,s,b.erfassung,flug))) return fehler(id + ': Zielerfassung ungültig');
     const z = b.ziel;
+    if (b.modus === 'orbit' || b.modus === 'folgen') {
+      const distanz = b.modus === 'orbit' ? 'radius' : 'abstand';
+      const keys = z?.art === 'punkt' ? ['art','x','y',distanz] : ['art','id',distanz];
+      if (b.lage !== 'frei' || !z || Object.keys(z).sort().join() !== keys.sort().join() || !ganz(z[distanz],flug.punktHalt,R) || !['station','feld','punkt','schiff'].includes(z.art) || (b.modus === 'folgen' && z.art !== 'schiff') || !zielForm(state,s,z,flug) || b.andocken) return fehler(id + ': P2-Ziel ungültig');
+      continue;
+    }
     if (z !== null) {
       const ok = z && typeof z === 'object' && b.lage === 'frei' && b.modus === 'anflug'
         && (z.art === 'station' ? Object.keys(z).length === 2 && z.id === sys.station.id

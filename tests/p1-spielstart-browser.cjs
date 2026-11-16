@@ -230,6 +230,35 @@ async function w6Optin(browser,base,width,height,kind){
     assert.equal(flying.owners.house.cash,2360);
     assert.equal(flying.minted,0);assert.equal(flying.burned,0);
     assert.equal(w.audit(w.load(JSON.stringify(flying))).ok,true);
+    // P2: the real public career uses the new commands through the pilot session.
+    const tap=async sel=>{const l=page.locator(sel);await l.scrollIntoViewIfNeeded();await l.tap();};
+    await tap('#raum-tempo-300');
+    await page.waitForFunction(()=>/Freier Flug|Handflug/.test(document.querySelector('#raum-lage').textContent));
+    await tap('[data-raum="objekt-st_aldera"]');
+    await page.locator('#ziel-orbit-abstand').fill('120000');
+    await tap('[data-raum="ziel-orbit"]');
+    await page.waitForFunction(()=>/Autopilot: orbit/.test(document.querySelector('#raum-lage').textContent));
+    const orbitSave=await page.evaluate(key=>localStorage.getItem(key),SLOT);
+    assert.equal(w.load(orbitSave).ships[ship.id].flug.modus,'orbit');
+    // Input stays intact across HUD ticks, also on touch keyboards.
+    await page.locator('#ziel-orbit-abstand').fill('150000');
+    await page.waitForTimeout(350);
+    assert.equal(await page.locator('#ziel-orbit-abstand').inputValue(),'150000');
+    await tap('#raum-stopp');
+    assert.match(await page.locator('#raum-lage').textContent(),/Handflug/);
+    // NPC3's original financed mining shuttle is now moving in this same world.
+    await page.waitForSelector('[data-raum="objekt-sh001"]');
+    await tap('[data-raum="objekt-sh001"]');
+    await page.locator('#ziel-folgen-abstand').fill('90000');
+    await tap('[data-raum="ziel-folgen"]');
+    await page.waitForFunction(()=>/Autopilot: folgen/.test(document.querySelector('#raum-lage').textContent));
+    const followed=w.load(await page.evaluate(key=>localStorage.getItem(key),SLOT));
+    assert.equal(followed.ships[ship.id].flug.ziel.id,'sh001');
+    await tap('[data-raum="ziel-aufschalten"]');
+    assert.match(await page.locator('#raum-lage').textContent(),/Aufgeschaltet: sh001/);
+    await tap('#raum-stopp');
+    await tap('#raum-start'); // pause after manual takeover
+    assert.match(await page.locator('#raum-lage').textContent(),/Handflug/);
     await page.locator('#raum-konzern').tap();
     assert.equal(await page.locator('#spielwelt').isVisible(),true);
     const [download]=await Promise.all([

@@ -146,7 +146,7 @@ function erzeugen(welt, s, aktivId, extra) {
       lage: b.lage, modus: b.modus, x: b.x, y: b.y, vx: b.vx, vy: b.vy, kurs: b.kurs, sollKurs: b.sollKurs,
       sollFahrt: b.sollFahrt, andocken: b.andocken, anker: b.anker, vmax: k ? k.vmax : 0,
       fahrt: Math.round(Math.sqrt(b.vx * b.vx + b.vy * b.vy)),
-      ziel: b.ziel ? { ...b.ziel } : null, ladung: ladungText(sh.ladung),
+      erfassung: b.erfassung ? {...b.erfassung} : null, ziel: b.ziel ? { ...b.ziel } : null, ladung: ladungText(sh.ladung),
       gestrandet: !!(dienst && dienst.gestrandet),
       reserve: dienst && s.owners[dienst.konto] ? s.owners[dienst.konto].cash : 0,
       verschleiss: s.kanon.verschleiss[aktivId] || 0 },
@@ -204,11 +204,17 @@ function knueppel(welt, dx, dy, radiusPx) {
   const anteil = klemmen((len - tot) / (radiusPx - tot), 0, 1);
   return { kurs: F.richtungZu(Math.round(dx * 64), Math.round(dy * 64)), fahrt: Math.max(5, Math.round(anteil * 20) * 5) };
 }
-function befehl(welt, szene, aktion, ziel) {
+function befehl(welt, szene, aktion, ziel, abstand) {
   const F = flugDaten(welt), a = szene.aktiv, basis = { owner: OWNER, schiff: a.id };
   const o = typeof ziel === 'string' ? objekt(szene, ziel) : null;
   const punkt = o ? { x: o.x, y: o.y } : ziel && ganz(ziel.x) && ganz(ziel.y) ? { x: ziel.x, y: ziel.y } : null;
   switch (aktion) {
+    case 'orbit':
+      if (!o || !ganz(abstand)) return null;
+      return {type:'shipOrbit', ...basis, radius:abstand, ...(o.art === 'station' || o.art === 'schiff' || o.kern ? {zielArt:o.art, ziel:o.id} : {zielArt:'punkt', x:o.x, y:o.y})};
+    case 'folgen': return o?.art === 'schiff' && ganz(abstand) ? {type:'shipFollow', ...basis, ziel:o.id, abstand} : null;
+    case 'aufschalten': return o && ['station','schiff'].includes(o.art) || o?.kern ? {type:'shipLock', ...basis, zielArt:o.art, ziel:o.id} : null;
+    case 'loesen': return {type:'shipUnlock', ...basis};
     case 'abdocken': return { type: 'shipUndock', ...basis };
     case 'andocken': return { type: 'shipDock', ...basis, station: szene.station };
     case 'stopp': return { type: 'shipSteer', ...basis, kurs: a.kurs, fahrt: 0 };
@@ -235,9 +241,16 @@ function aktionen(szene, ziel) {
   const a = szene.aktiv, o = typeof ziel === 'string' ? objekt(szene, ziel) : null, frei = a.lage === 'frei';
   const liste = [];
   if (!o && !(ziel && ganz(ziel.x))) return liste;
-  liste.push({ id: 'anfliegen', text: o ? 'Anfliegen' : 'Hierhin fliegen', aktiv: frei });
+  liste.push({ id: 'anfliegen', text: o ? 'Autopilot: Annähern' : 'Hierhin fliegen', aktiv: frei });
   if (o && o.art === 'station') liste.push({ id: 'andocken', text: 'Andocken', aktiv: frei });
   if (o && (o.art === 'drohne' || o.art === 'schiff')) liste.push({ id: 'ausrichten', text: 'Ausrichten', aktiv: frei });
+  if (o) {
+    const echt = ['station','schiff'].includes(o.art) || o.kern;
+    liste.push({id:'orbit', text:'Orbit', aktiv:frei && o.art !== 'drohne', grund:!frei ? 'Erst frei fliegen' : o.art === 'drohne' ? 'Virtuelles Trainingsziel' : ''});
+    liste.push({id:'folgen', text:'Folgen', aktiv:frei && o.art === 'schiff' && o.lage === 'frei', grund:!frei ? 'Erst frei fliegen' : o.art !== 'schiff' ? 'Nur beweglichen Schiffen folgen' : o.lage !== 'frei' ? 'Ziel ist nicht frei im Flug' : ''});
+    liste.push({id:'aufschalten', text:'Aufschalten', aktiv:frei && !!echt, grund:!frei ? 'Erst frei fliegen' : !echt ? 'Keine erfassbare Kernidentität' : ''});
+    liste.push({id:'loesen', text:'Aufschaltung lösen', aktiv:frei && !!a.erfassung});
+  }
   return liste;
 }
 

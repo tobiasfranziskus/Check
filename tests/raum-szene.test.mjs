@@ -215,8 +215,8 @@ test('Befehlsabbildung erzeugt nur vorhandene, dem Spieler gehörende Kernbefehl
  assert.equal(S.befehl(w,sz,'anfliegen',{x:1.5,y:2}),null);
  assert.equal(S.befehl(w,sz,'steuern',{kurs:'1',fahrt:5}),null);
  assert.equal(S.befehl(w,sz,'geldSchenken'),null);
- assert.deepEqual(S.aktionen(sz,'st_nadir').map(a=>a.id),['anfliegen','andocken']);
- assert.deepEqual(S.aktionen(sz,'drohne').map(a=>a.id),['anfliegen','ausrichten']);
+ assert.deepEqual(S.aktionen(sz,'st_nadir').map(a=>a.id),['anfliegen','andocken','orbit','folgen','aufschalten','loesen']);
+ assert.deepEqual(S.aktionen(sz,'drohne').map(a=>a.id),['anfliegen','ausrichten','orbit','folgen','aufschalten','loesen']);
  assert.deepEqual(S.aktionen(sz,null),[]);
 });
 

@@ -217,6 +217,7 @@ function erstellen(){
    return {ok:true,pilot:id};
  }
  const flugBefehle=new Set([
+   'shipOrbit','shipFollow','shipLock','shipUnlock',
    'shipUndock','shipDock','shipApproach','shipFlyTo','shipSteer',
    'siliconMineStart','siliconSell','shipFreightIce','shipGateCheck','shipFreightGateIce'
  ]);

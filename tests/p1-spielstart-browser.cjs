@@ -298,6 +298,83 @@ async function managerAkademiePfad(browser,base,width,height,kind){
  }finally{await ctx.close();}
 }
 
+
+// Integrated career, not the standalone import host: two academies, one paid world.
+async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
+ const ctx=await browser.newContext({viewport:{width,height},hasTouch:true,acceptDownloads:true});
+ const page=await ctx.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(String(e)));
+ const state=async()=>{
+  const saved=await page.evaluate(key=>localStorage.getItem(key),SLOT);
+  const raw=JSON.parse(saved),p=raw.w5ad.profile;
+  const world=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+  const val=world.load(saved);assert.equal(world.audit(val).ok,true);
+  assert.equal(Object.values(raw.owners).reduce((n,o)=>n+o.cash,0),33000);
+  assert.equal(raw.minted,0);assert.equal(raw.burned,0);
+  assert.equal(saved.includes('trainingAlt'),false);
+  return {saved,raw,hash:world.hash(val)};
+ };
+ try{
+  await page.goto(base+'/prototypes/spiel/index.html');
+  await page.locator('#neues-spiel').tap();await page.locator('#karriere-starten').tap();
+  const pilot=page.locator('#pilotenausbildung');
+  assert.equal(await pilot.isVisible(),true);
+  assert.equal(await page.locator('#manager-akademie').count(),1,'manager stays integrated');
+  await pilot.locator('summary').tap();
+  assert.equal(await pilot.locator('[data-lektion]').count(),12);
+  assert.equal(await pilot.locator('[data-lektion]:enabled').count(),0,'no free starting ship');
+  const before=await state();
+  await page.locator('[data-action="buy-st_aldera-miner"]').tap();
+  const bought=await state();
+  assert.equal(bought.raw.owners.house.cash,2400,'real 600 ISK miner payment');
+  assert.equal(await pilot.locator('[data-lektion="auswahl"]').isDisabled(),true,'select the legal pilot first');
+  await page.locator('#tab-flotte').tap();
+  const miner=Object.values(bought.raw.ships).find(x=>x.owner==='house'&&x.klasse==='miner');
+  assert.ok(miner);
+  await page.locator('[data-pilot="'+miner.id+'"]').tap();
+  assert.equal(await page.locator('#raumbereich').isVisible(),true);
+  await page.locator('#raum-konzern').tap();
+  assert.equal(await page.locator('#spielwelt').isVisible(),true);
+  await pilot.locator('[data-lektion="auswahl"]').tap();
+  assert.equal(await page.locator('#raumbereich').isVisible(),true);
+  assert.match(await page.locator('#pilotenausbildung-live').textContent(),/Geschafft/);
+  assert.equal((await state()).saved,bought.saved,'select mission cannot change save');
+  await page.locator('#raum-konzern').tap();
+  await pilot.locator('[data-lektion="abdocken"]').tap();
+  assert.equal(await page.locator('#raumbereich').isVisible(),true);
+  await page.locator('#raum-abdocken').tap();
+  await page.locator('#raum-tempo-60').tap();
+  await page.waitForFunction(()=>document.querySelector('#raum-lage').textContent.includes('Freier Flug'),null,{timeout:18000});
+  const stick=page.locator('#raum-knueppel');await stick.scrollIntoViewIfNeeded();const b=await stick.boundingBox();
+  assert.ok(b?.width>40);
+  await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();
+  await page.mouse.move(b.x+b.width-9,b.y+b.height/2,{steps:5});await page.mouse.up();
+  await page.waitForFunction(()=>/Geschafft/.test(document.querySelector('#pilotenausbildung-live').textContent),null,{timeout:18000});
+  const flight=await state();
+  assert.equal(flight.raw.ships[miner.id].owner,'house');
+  assert.equal(flight.raw.ships[miner.id].flug.lage,'frei');
+  assert.notEqual(flight.hash,before.hash,'real paid flight must update economic world');
+  await page.locator('#raum-start').tap();
+  await page.locator('#raum-konzern').tap();
+  await pilot.locator('[data-lektion="aufschalten"]').tap();
+  await page.locator('#raum-ziele').getByRole('button',{name:/Station Aldera/}).tap();
+  await page.locator('#raum-zielaktionen').getByRole('button',{name:'Aufschalten',exact:true}).tap();
+  await page.locator('#raum-zielaktionen').getByRole('button',{name:'Aufschaltung lösen',exact:true}).tap();
+  assert.match(await page.locator('#pilotenausbildung-live').textContent(),/Geschafft/);
+  const final=await state();
+  await page.locator('#raum-konzern').tap();
+  await page.locator('#welt-sichern').tap();
+  await page.reload();await page.locator('#fortsetzen').tap();
+  assert.equal((await state()).saved,final.saved);
+  assert.equal(await page.locator('#pilotenausbildung').count(),1);
+  assert.equal(await page.locator('#manager-akademie').count(),1);
+  assert.equal(await page.locator('#pilotenausbildung-live').isHidden(),true,
+    'training progress intentionally not added to economic save');
+  assert.deepEqual(errors,[]);
+  console.log('P1_PILOT_IN_CAREER_OK',JSON.stringify({kind,width,height,chapters:12,worldMoney:33000,hash:final.hash}));
+ }finally{await ctx.close();}
+}
+
 (async()=>{
  const root=path.resolve(__dirname,'..');
  const server=http.createServer((req,res)=>{
@@ -524,6 +601,7 @@ async function managerAkademiePfad(browser,base,width,height,kind){
    await karrierePatrouille(browser,base,width,height,kind);
    await karriereDuell(browser,base,width,height,kind);
    await managerAkademiePfad(browser,base,width,height,kind);
+   await pilotAkademieKarrierePfad(browser,base,width,height,kind);
   }
  }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

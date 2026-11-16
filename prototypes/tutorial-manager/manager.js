@@ -17,7 +17,7 @@ const FAECHER=Object.freeze([
 ]);
 const eigener=(s,klasse)=>Object.values(s.ships||{}).filter(x=>x.owner==='house'&&x.klasse===klasse).sort((a,b)=>a.id.localeCompare(b.id));
 const daten=(session,gesehen={})=>{
- if(!session||!['function'].every(()=>true)||typeof session.ansicht!=='function'
+ if(!session||typeof session.ansicht!=='function'
    ||typeof session.weltReferenz!=='function'||typeof session.zustandReferenz!=='function'
    ||typeof session.angebote!=='function')throw Error('Managerakademie: keine gültige Karrieresitzung');
  const s=session.zustandReferenz(),w=session.weltReferenz();
@@ -36,7 +36,8 @@ const daten=(session,gesehen={})=>{
    markt:!!gesehen.markt,
    miner:gekaufterMiner.length>0,
    frachter:gekaufterFrachter.length>0,
-   foerderung:gekaufterMiner.some(sh=>!!s.kanon?.pendel?.[sh.id])||!!gesehen.foerderung,
+   foerderung:gekaufterMiner.some(sh=>s.kanon?.pendel?.[sh.id]?.ware==='eis')||
+     !!(s.kanon?.silizium?.auftrag?.owner==='house'&&hausMiner.has(s.kanon.silizium.auftrag.schiff)),
    bestand:!!gesehen.bestand,
    transport:lieferungen.length>0,
    abrechnung:lieferungen.some(x=>Number.isSafeInteger(x.end)&&x.end>=x.start
@@ -113,8 +114,8 @@ function verbinden({wurzel,sitzung,navigieren}){
    return m;
  }
  function gebucht(id){
-   if(typeof id==='string'&&id.startsWith('ice-'))gesehen.foerderung=true;
-   auffrischen();
+   // No achievement is credited from a UI callback; the actual world proves it.
+   if(typeof id==='string')auffrischen();
  }
  return Object.freeze({auffrischen,gebucht,element:container,stand:()=>aktiveSitzung?daten(aktiveSitzung,gesehen):null});
 }

@@ -8,7 +8,6 @@ const d=scope.document,$=id=>d.getElementById(id);
 const SLOT='aphros-void:spielerkarriere:regel204:v1';
 const SLOT_W6='aphros-void:spielerkarriere:regel207-forschung:v1';
 const BACKUP=SLOT+':vorherige';
-const aktivSlot=()=>session?.ansicht().regel===207?SLOT_W6:SLOT;
 const MAX=5*1024*1024;
 const fmt=n=>Number(n).toLocaleString('de-DE');
 let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung=0;
@@ -20,13 +19,19 @@ function speichern(copyOld=false){
  if(!session)return false;
  const json=session.exportieren();
  if(json.length>MAX)throw Error('Karrierestand übersteigt 5 MB. Bitte als JSON exportieren.');
- // Rule207 research saves have their OWN slot and backup; neither one touches
- // the normal Rule204 career or historical Rule195/IndexedDB.
- const slot=aktivSlot();
+ // Preserve the original Rule204 write *literally*; the research slot
+ // is a separate explicit branch, not a generic alias that could silently
+ // redirect any existing Rule204/195 career storage.
  try {
-   if(copyOld){const old=scope.localStorage.getItem(slot);
-     if(old)scope.localStorage.setItem(slot+':vorherige',old);}
-   scope.localStorage.setItem(slot,json);
+   if(session.ansicht().regel===207){
+     if(copyOld){const old=scope.localStorage.getItem(SLOT_W6);
+       if(old)scope.localStorage.setItem(SLOT_W6+':vorherige',old);}
+     scope.localStorage.setItem(SLOT_W6,json);
+   }else{
+     if(copyOld){const old=scope.localStorage.getItem(SLOT);
+       if(old)scope.localStorage.setItem(BACKUP,old);}
+     scope.localStorage.setItem(SLOT,json);
+   }
    return true;
  }catch(e){
    hinweis('Lokales Sichern nicht möglich. Bitte den JSON-Export verwenden: '+error(e),true);

@@ -1,0 +1,23 @@
+name: W6/P8g independent QA integration gate
+on:
+  push:
+    branches:
+      - 'qa/w6-p8g-security-integration-20261116'
+  pull_request:
+    paths:
+      - 'tests/w6-p8g-unabhaengige-sicherheitsabnahme.test.mjs'
+      - 'prototypes/welt/welt-kern.js'
+      - '.github/workflows/w6-p8g-qa-integration.yml'
+jobs:
+  independent-adversarial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Unchanged 68 independent Codex tests, failures must fail the gate"
+        run: node --test tests/w6-p8g-unabhaengige-sicherheitsabnahme.test.mjs
+      - name: "Original P8g/P8d/P8f tests"
+        run: node --test tests/w6-p8g-finanzierte-erzversorgung.test.mjs tests/w6-p8g-original-w5-ersatz-nach-90-tagen.test.mjs tests/w6-p8d-separater-dravos-frachter.test.mjs tests/w6-p8f-originalbefehle-ohne-werft.test.mjs

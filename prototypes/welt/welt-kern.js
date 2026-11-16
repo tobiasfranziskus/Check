@@ -1511,7 +1511,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           fehler.push('K7-Werftreserve nicht einmalig aus eigenem Vermögen gebunden');
         if(!i||!['frei','angebot','aktiv','geliefert','storniert'].includes(i.phase)
           ||(i.materialOnly!==undefined&&i.materialOnly!==true)
-          ||(i.materialOnly&&(i.signWerft||i.werftVerwendet))
+          ||(i.materialOnly&&(i.signWerft||i.werftVerwendet
+            ||(['angebot','aktiv'].includes(i.phase)&&k.materialSupplyEnabled!==true)))
           ||(i.phase==='aktiv'&&(!a||a.industrieMiner!==i.miner||!i.signMiner||!i.signFracht||(!i.materialOnly&&!i.signWerft)))
           ||(a?.phase==='vorbestellt'&&(i.phase!=='aktiv'||!i.signMiner||!i.signFracht||(!i.materialOnly&&!i.signWerft)||i.miner!==a.industrieMiner))
           ||(i.phase==='geliefert'&&a?.industrieMiner===i.miner)

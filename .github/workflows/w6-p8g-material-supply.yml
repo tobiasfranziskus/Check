@@ -25,3 +25,33 @@ jobs:
         run: node --test tests/w6-p8g-finanzierte-erzversorgung.test.mjs
       - name: P8d and P8f independent regressions
         run: node --test tests/w6-p8d-separater-dravos-frachter.test.mjs tests/w6-p8f-originalbefehle-ohne-werft.test.mjs
+
+  opted-in-13-regimes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [S01, S02, S03, S04, S05, S06, S07, S08, S09, S10, S11, S12, S13]
+    env:
+      W6_P8G_MATERIAL: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Real paid W6/P8g economy with S01-S13 crisis seed, 90 days"
+        run: node tools/w6-p8d-dravos-szenarien.cjs ${{ matrix.scenario }} 90
+
+  opted-in-s02-365:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      W6_P8G_MATERIAL: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Real paid W6/P8g economy with S02 seed, 365 days"
+        run: node tools/w6-p8d-dravos-szenarien.cjs S02 365

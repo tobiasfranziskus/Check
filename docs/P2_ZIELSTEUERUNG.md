@@ -1,6 +1,6 @@
-# P2 Zielsteuerung [DRAFT]
+# P2 Zielsteuerung [MAIN / PAGES]
 
-Basis: main `6530dae867b56a98c8157ba5738f2817c1ca87e3`, Issue #410. Kein Merge/Deploy. P8b/c/d und Wirtschaftsregeln bleiben unverändert.
+Entwicklungsbasis: main `6530dae867b56a98c8157ba5738f2817c1ca87e3`, Issue #410. [PR #421](https://github.com/tobiasfranziskus/Check/pull/421) am 16.11.2026 integriert: [MAIN `d86efe41`](https://github.com/tobiasfranziskus/Check/commit/d86efe41d06d287804b8407d740313c18107fca3). [PAGES #43814267718](https://github.com/tobiasfranziskus/Check/actions/runs/43814267718) `completed/success` für genau diesen Merge-Commit. Die frühere Draft-Übergabechronik bleibt als historischer Testnachweis erhalten. P8b/c/d und Wirtschaftsregeln bleiben unverändert.
 
 Gemeinsames Zielmenü für persönlich übernommene Miner/Frachter/Jäger: Annähern mit Originalbefehl, Orbit mit editierbarem Radius, Folgen mit editierbarem Abstand, Aufschalten/Lösen ohne Waffen und originales Andocken. Eingaben bleiben über HUD-Ticks erhalten. Handflug/Stopp ersetzt Orbit/Folgen unmittelbar; Geschwindigkeit baut der vorhandene Integrator kontinuierlich ab. Fremde Schiffe bleiben ausschließlich Ziele, keine Steuerungsübernahme.
 

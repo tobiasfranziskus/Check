@@ -48,7 +48,10 @@ const server=http.createServer((req,res)=>{
    await page.waitForFunction(()=>document.querySelector('#identity')?.textContent.includes('Tick 120'));
    assert.match(await page.locator('#identity').innerText(),/Original-Audit OK/);
    assert.match(await page.locator('#w2-company-stats').innerText(),/19\.000 ISK/);
-   assert.ok((await page.locator('#w2-fleet tbody tr').count())>=2);
+   // W5x kann sein originalgetreues Tabellen-Markup mit oder ohne explizites tbody darstellen.
+   const rowsInBody=await page.locator('#w2-fleet tbody tr').count();
+   const rowsTotal=await page.locator('#w2-fleet tr').count();
+   assert.ok(rowsInBody===2 || rowsTotal===3,'zwei bezahlte NPC-Miner in Originaltabelle');
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
    assert.deepEqual(missing,[]);
    assert.deepEqual(errors,[]);

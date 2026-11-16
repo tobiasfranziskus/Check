@@ -25,6 +25,11 @@ const KONZERN_ANZEIGENAMEN=Object.freeze({
 });
 function konzernname(id){return Object.prototype.hasOwnProperty.call(KONZERN_ANZEIGENAMEN,id)
  ?KONZERN_ANZEIGENAMEN[id]:safeText(id);}
+// Anzeigeebene für ältere Auftragsmeldungen: technische IDs sind niemals Spielernamen.
+function anzeigetext(value){
+ return safeText(value).replace(/(^|[^A-Za-z0-9_])(house|npc3|transport|werft_extern|st_aldera|st_nadir)(?=$|[^A-Za-z0-9_])/g,
+  (_match,prefix,id)=>prefix+konzernname(id));
+}
 function firmennamenAnzeigen(){
  for(const el of d.querySelectorAll('[data-company-display]'))
   el.textContent=konzernname(el.dataset.companyDisplay);
@@ -75,7 +80,7 @@ function screen(id){
  scope.scrollTo?.(0,0);
 }
 function hinweis(message,fail=false){
- const text=safeText(message);
+ const text=anzeigetext(message);
  const id=ansicht==='spielwelt'||ansicht==='raumbereich'?'welt-meldung':
    ansicht==='briefing'?'briefing-meldung':'menumeldung';
  $(id).textContent=text;
@@ -201,21 +206,21 @@ function auftrag(id){
  }catch(e){hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
 }
 const namen=[
- ['buy-st_aldera-miner','Deinen ersten Miner kaufen','Aus einem wirklich vorhandenen Aldera-Werftlager, für 600 ISK.'],
- ['buy-st_aldera-frachter','Frachter erwerben','Ein eigener Frachter wird nur aus wirklichem Lagerbestand und deinem Kapital gekauft.'],
- ['buy-st_nadir-frachter','Nadir-Frachter erwerben','Nur eine wirklich vorhandene Hülle aus dem Nadir-Lager kaufen.'],
- ['buy-st_nadir-miner','Nadir-Miner übernehmen','Nur falls die Werft einen fertigen Miner mit Vormerkung für dich produziert hat.'],
- ['buy-st_nadir-jaeger','Jäger kaufen','Erst wenn Nadir eine echte, vollständig bezahlte Jägerhülle besitzt.']
+ ['buy-st_aldera-miner','Dein erstes Bergbauschiff kaufen','Aus dem Aldera-Werftbestand für 600 ISK.'],
+ ['buy-st_aldera-frachter','Frachter erwerben','Ein Transporter aus dem Aldera-Werftbestand, bezahlt aus deinem Kapital.'],
+ ['buy-st_nadir-frachter','Frachter in Nadir erwerben','Nur lieferbare Schiffe aus dem Nadir-Werftbestand.'],
+ ['buy-st_nadir-miner','Bergbauschiff in Nadir kaufen','Für dich vormerkbar, sobald eine fertige Schiffshülle bereitsteht.'],
+ ['buy-st_nadir-jaeger','Jäger kaufen','Sobald die Nadir Schiffswerke einen vollständig finanzierten Jäger anbieten.']
 ];
 function titel(a){return namen.find(x=>x[0]===a.id)?.[1]||(
  a.id.startsWith('ice-')?'Eisförderung beginnen':
  a.id.startsWith('stop-')?'Automatischen Pendelauftrag beenden':
  a.id.startsWith('sil-start-')?'Silizium fördern':
  a.id.startsWith('sil-sell-')?'Silizium verkaufen':
- a.id.startsWith('freight-')?'F4 · Bezahlte Eisfracht ausführen':
- a.id.startsWith('gate-freight-')?'F6 · Eisfracht mit Torbeleg':a.label);
+ a.id.startsWith('freight-')?'Eisfracht transportieren':
+ a.id.startsWith('gate-freight-')?'Eisfracht über das Sprungtor':anzeigetext(a.label));
 }
-function info(a){return namen.find(x=>x[0]===a.id)?.[2]||a.label;}
+function info(a){return namen.find(x=>x[0]===a.id)?.[2]||anzeigetext(a.label);}
 function datum(ms){return Math.floor(ms/1440)+' Tage · '+(ms%1440)+' Minuten';}
 function missions(){
  const state=session.zustandReferenz(),mine=Object.values(state.ships).some(s=>s.owner==='house'&&s.klasse==='miner');
@@ -276,7 +281,7 @@ function wirtschaftsbericht(a,s,angebote){
  for(const angebot of kauf){
   const card=karte(werft,titel(angebot),[
    ['Verfügbarkeit',angebot.ok?'Kauf derzeit möglich':'Gesperrt'],
-   ['Begründung',angebot.ok?info(angebot):angebot.reason||'Kauf derzeit nicht möglich']
+   ['Begründung',angebot.ok?info(angebot):anzeigetext(angebot.reason||'Kauf derzeit nicht möglich')]
   ]);
   if(angebot.ok){
    const link=d.createElement('button');
@@ -302,16 +307,16 @@ function wirtschaftsbericht(a,s,angebote){
 // dem bereits vorhandenen, unmittelbar erneut geprueften house-Originalauftrag.
 function jaegerBeitraege(){
  const projekt=scope.J13Spielerprojekt.erstellen(session);
- $('jaeger-beitrag-hinweis').textContent=projekt.hinweis;
+ $('jaeger-beitrag-hinweis').textContent=anzeigetext(projekt.hinweis);
  const host=$('jaeger-beitrag-aktionen'),blocks=[];
  for(const gruppe of projekt.gruppen){
   const section=d.createElement('section'),h=d.createElement('h5');
-  h.textContent=gruppe.titel;section.append(h);
+  h.textContent=anzeigetext(gruppe.titel);section.append(h);
   for(const a of gruppe.angebote){
    const box=d.createElement('div'),b=d.createElement('button'),p=d.createElement('small');
    box.className='order';b.type='button';b.dataset.j13Action=a.id;
    b.textContent=titel(a);b.disabled=!a.ok;
-   p.textContent=a.label+' · '+(a.ok?'Auftrag verfügbar':'Gesperrt: '+a.reason);
+   p.textContent=anzeigetext(a.label+' · '+(a.ok?'Auftrag verfügbar':'Gesperrt: '+a.reason));
    b.addEventListener('click',()=>auftrag(a.id));box.append(b,p);section.append(box);
   }
   blocks.push(section);
@@ -321,7 +326,7 @@ function jaegerBeitraege(){
    ' · Alle Siliziumverkäufe an Nadir: '+projekt.silizium.verkauft+'.';
  $('jaeger-sperren').replaceChildren(...projekt.sperren.map(s=>{
   const p=d.createElement('p');p.textContent=s.titel+' · Eigentümer: '+konzernname(s.eigentuemer)+
-   ' · Dein Konzern: '+(s.ok?'Auftrag verfügbar':s.grund);return p;
+   ' · Dein Konzern: '+anzeigetext(s.ok?'Auftrag verfügbar':s.grund);return p;
  }));
  const a=projekt.aldera;
  $('jaeger-finanzierung').textContent='Neuer Erzankauf: Aldera besitzt '+fmt(a.kasse)+
@@ -338,7 +343,7 @@ function jaegerBericht(zustand,angebote){
  for(const step of akte.schritte){
   const li=d.createElement('li'),h=d.createElement('strong'),p=d.createElement('p'),tag=d.createElement('span');
   li.className='jaeger-schritt';li.dataset.stand=step.stand;
-  h.textContent=step.titel;p.textContent=step.hinweis;
+  h.textContent=anzeigetext(step.titel);p.textContent=anzeigetext(step.hinweis);
   tag.className='jaeger-stand';tag.textContent=step.stand==='erfuellt'?'Vorhanden':
     step.stand==='laeuft'?'In Arbeit':step.stand==='bereit'?'Kaufbereit':'Noch offen';
   li.append(h,tag,p);stufen.append(li);
@@ -446,7 +451,7 @@ function anzeigen(){
   const box=d.createElement('div'),button=d.createElement('button'),small=d.createElement('small');
   box.className='order';
   button.type='button';button.dataset.action=o.id;button.textContent=titel(o);button.disabled=!o.ok;
-  small.textContent=o.ok?info(o):'Zurzeit gesperrt: '+o.reason;
+  small.textContent=o.ok?info(o):'Zurzeit gesperrt: '+anzeigetext(o.reason);
   if(o.ok)small.className='available';
   button.addEventListener('click',()=>auftrag(o.id));
   box.append(button,small);return box;
@@ -466,10 +471,10 @@ function anzeigen(){
    const bereitsPilot=session.pilotStatus()===sh.id;
    b.disabled=(!pilot?.erlaubt&&!bereitsPilot)||!raum;
    b.addEventListener('click',()=>pilotieren(sh.id));
-   if(!pilot?.erlaubt&&!bereitsPilot){const m=d.createElement('small');m.textContent=pilot?.grund||'Cockpit für diese Schiffsklasse noch nicht verfügbar';box.append(h,p,b,m);}
+   if(!pilot?.erlaubt&&!bereitsPilot){const m=d.createElement('small');m.textContent=anzeigetext(pilot?.grund||'Cockpit für diese Schiffsklasse noch nicht verfügbar');box.append(h,p,b,m);}
    else box.append(h,p,b);
    return box;
- }):[(()=>{const p=d.createElement('p');p.textContent='Noch kein Schiff. Beginne mit dem Kauf eines wirklich vorhandenen Aldera-Miners.';return p;})()]));
+ }):[(()=>{const p=d.createElement('p');p.textContent='Deine Flotte ist noch leer. Kaufe dein erstes Bergbauschiff in Aldera.';return p;})()]));
  managerTutor?.auffrischen();
  pilotMenu?.zeichnen();
 }

@@ -351,7 +351,7 @@ function jaegerBericht(zustand,angebote){
   :akte.kauf.ok
     ?'Original-Core-Kauf für '+fmt(akte.kauf.preis)+' ISK möglich. Der Button öffnet nur die bestehende Kaufansicht.'
     :'Kein Kauf: '+(akte.kauf.grund||'keine vollständige finanzierte Hülle')+
-     '. Nur Nadir darf J3/J4-Arbeit beauftragen; keine fremden Aufträge werden hier signiert.';
+     '. Nur Nadir darf die Werftarbeit beauftragen. Aufträge fremder Unternehmen bleiben gesperrt.';
 }
 // P8a: Transparenz der TATSAECHLICHEN Quelle statt erfundener Nachschuborder.
 function siliziumBericht(zustand){

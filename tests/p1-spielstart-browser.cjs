@@ -219,6 +219,85 @@ async function karriereDuell(browser,base,width,height,kind){
  }finally{await ctx.close();}
 }
 
+
+async function managerAkademiePfad(browser,base,width,height,kind){
+ const ctx=await browser.newContext({viewport:{width,height},hasTouch:true});
+ const page=await ctx.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(String(e)));
+ const key=SLOT;
+ const proof=async()=>{
+   const saved=await page.evaluate(k=>localStorage.getItem(k),key);
+   const loaded=JSON.parse(saved),p=loaded.w5ad.profile;
+   const world=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+   assert.equal(world.audit(world.load(saved)).ok,true);
+   assert.equal(loaded.minted,0);assert.equal(loaded.burned,0);
+   assert.equal(Object.values(loaded.owners).reduce((n,o)=>n+o.cash,0),33000);
+   return {saved,loaded,hash:world.hash(world.load(saved))};
+ };
+ try{
+  await page.goto(base+'/prototypes/spiel/index.html');
+  await page.locator('#neues-spiel').tap();
+  await page.locator('#karriere-starten').tap();
+  const card=page.locator('#manager-akademie');
+  assert.equal(await card.count(),1);
+  await card.locator('summary').tap();
+  assert.equal(await card.locator('nav [data-manager-mission]').count(),8);
+  const before=await proof();
+  await card.locator('[data-manager-mission="markt"]').tap();
+  await card.locator('.manager-akademie-goto').tap();
+  assert.equal(await page.locator('#panel-auftraege').isVisible(),true);
+  assert.equal((await proof()).saved,before.saved,'opening quote menu must not buy anything');
+  await card.locator('[data-manager-mission="miner"]').tap();
+  await card.locator('.manager-akademie-goto').tap();
+  assert.equal((await proof()).saved,before.saved,'tutorial CTA never executes a purchase');
+  await page.locator('[data-action="buy-st_aldera-miner"]').tap();
+  assert.match(await card.locator('[data-manager-mission="miner"]').textContent(),/✓/);
+  await card.locator('[data-manager-mission="frachter"]').tap();
+  await card.locator('.manager-akademie-goto').tap();
+  await page.locator('[data-action="buy-st_aldera-frachter"]').tap();
+  assert.match(await card.locator('[data-manager-mission="frachter"]').textContent(),/✓/);
+  assert.equal((await proof()).loaded.owners.house.cash,1650);
+  await card.locator('[data-manager-mission="foerderung"]').tap();
+  await card.locator('.manager-akademie-goto').tap();
+  const miner=Object.values((await proof()).loaded.ships).find(x=>x.owner==='house'&&x.klasse==='miner');
+  const frachter=Object.values((await proof()).loaded.ships).find(x=>x.owner==='house'&&x.klasse==='frachter');
+  assert.ok(miner&&frachter);
+  await page.locator('[data-action="ice-'+miner.id+'"]').tap();
+  assert.match(await card.locator('[data-manager-mission="foerderung"]').textContent(),/✓/);
+  await card.locator('[data-manager-mission="bestand"]').tap();
+  await card.locator('.manager-akademie-goto').tap();
+  assert.equal(await page.locator('#panel-universum').isVisible(),true);
+  assert.match(await card.locator('[data-manager-mission="bestand"]').textContent(),/✓/);
+  await card.locator('[data-manager-mission="transport"]').tap();
+  assert.equal(await card.locator('.manager-akademie-goto').isDisabled(),true,'no prepaid cargo before real mining');
+  for(let i=0;i<2;i++)await page.locator('[data-advance="60"]').tap();
+  await card.locator('.manager-akademie-goto').tap();
+  assert.equal(await page.locator('#panel-auftraege').isVisible(),true);
+  await page.locator('[data-action="freight-'+frachter.id+'"]').tap();
+  assert.match(await card.locator('[data-manager-mission="transport"]').textContent(),/✓/);
+  await card.locator('[data-manager-mission="abrechnung"]').tap();
+  assert.doesNotMatch(await card.locator('[data-manager-mission="abrechnung"]').textContent(),/✓/,
+    'real delivery is not paid on departure');
+  for(let i=0;i<2;i++)await page.locator('[data-advance="60"]').tap();
+  assert.match(await card.locator('[data-manager-mission="abrechnung"]').textContent(),/✓/);
+  const result=await proof();
+  assert.match(result.hash,/^[0-9a-f]{16}$/,'audited original world hash');
+  assert.equal(result.loaded.kanon.spielerFrachten.lohn,120);
+  assert.equal(result.loaded.kanon.spielerFrachten.gebuehr,240);
+  assert.doesNotMatch(await card.locator('[data-manager-mission="verkauf"]').textContent(),/✓/,
+    'freight fees are not a silicon sale');
+  await page.reload();
+  await page.locator('#fortsetzen').tap();
+  const reopened=page.locator('#manager-akademie');
+  await reopened.locator('summary').tap();
+  assert.match(await reopened.locator('[data-manager-mission="abrechnung"]').textContent(),/✓/,
+    'completed original-core delivery stays complete on reload');
+  assert.equal((await proof()).hash,result.hash);
+  assert.deepEqual(errors,[]);
+  console.log('P1_MANAGER_ACADEMY_BROWSER_OK',JSON.stringify({kind,width,height,money:33000,hash:result.hash,chapters:8}));
+ }finally{await ctx.close();}
+}
+
 (async()=>{
  const root=path.resolve(__dirname,'..');
  const server=http.createServer((req,res)=>{
@@ -444,6 +523,7 @@ async function karriereDuell(browser,base,width,height,kind){
    await w6Optin(browser,base,width,height,kind);
    await karrierePatrouille(browser,base,width,height,kind);
    await karriereDuell(browser,base,width,height,kind);
+   await managerAkademiePfad(browser,base,width,height,kind);
   }
  }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

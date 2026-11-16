@@ -1504,11 +1504,13 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           ||typeof i.erzAngenommen!=='boolean'))
           fehler.push('K7-Vertrag: unwirksame Eigentümer-/Unterschriftsbelege');
         if(i && ['aktiv','geliefert'].includes(i.phase)
-          &&sicherK7Reserve(state,i)!==(i.werftVerwendet?0:K7_PREIS.werft))
+          &&sicherK7Reserve(state,i)!==(i.materialOnly||i.werftVerwendet?0:K7_PREIS.werft))
           fehler.push('K7-Werftreserve nicht einmalig aus eigenem Vermögen gebunden');
         if(!i||!['frei','angebot','aktiv','geliefert','storniert'].includes(i.phase)
-          ||(i.phase==='aktiv'&&(!a||a.industrieMiner!==i.miner||!i.signMiner||!i.signFracht||!i.signWerft))
-          ||(a?.phase==='vorbestellt'&&(i.phase!=='aktiv'||!i.signMiner||!i.signFracht||!i.signWerft||i.miner!==a.industrieMiner))
+          ||(i.materialOnly!==undefined&&i.materialOnly!==true)
+          ||(i.materialOnly&&(i.signWerft||i.werftVerwendet))
+          ||(i.phase==='aktiv'&&(!a||a.industrieMiner!==i.miner||!i.signMiner||!i.signFracht||(!i.materialOnly&&!i.signWerft)))
+          ||(a?.phase==='vorbestellt'&&(i.phase!=='aktiv'||!i.signMiner||!i.signFracht||(!i.materialOnly&&!i.signWerft)||i.miner!==a.industrieMiner))
           ||(i.phase==='geliefert'&&a?.industrieMiner===i.miner)
           ||(i.phase==='angebot'&&a?.industrieMiner)) fehler.push('K7-Industrieerzkette/Signaturen');
       }
@@ -1671,11 +1673,13 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     const type=cmd?.type, i=s.kanon.industrieErz, angebot=i?.phase==='angebot';
     const erlaubte={
       industrialOreOffer:['type','owner','miner','frachter'],
+      industrialOreOfferMaterial:['type','owner','miner','frachter'],
       industrialOreAcceptMine:['type','owner'],
       industrialOreAcceptFreight:['type','owner'],
       industrialOreAcceptYard:['type','owner'],
       industrialOreBuildShip:['type','owner'],
       industrialOreCommit:['type','owner'],
+      industrialOreCommitMaterial:['type','owner'],
       industrialOreCancel:['type','owner'],
     };
     if(!hat(erlaubte,type)||!cmd||typeof cmd!=='object'||Array.isArray(cmd)
@@ -1683,7 +1687,19 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       ||Object.keys(cmd).length!==erlaubte[type].length)
       return {ok:false,type,reason:'K7: unerlaubte Vertragsform'};
     const verwerfen=reason=>({ok:false,type,reason:'K7: '+reason});
-    if(type==='industrialOreOffer'){
+    if(type==='industrialOreOffer'||type==='industrialOreOfferMaterial'){
+      const onlyMaterial=type==='industrialOreOfferMaterial';
+      if(onlyMaterial&&!p8dFracht)return verwerfen('P8g: nur isolierte Dravos-Regel207-Forschung');
+      const lage=s.stations[rules.w5.station].lager;
+      const materialBedarf=rules.j3?.material+rules.w5.material+
+        ((jaeger&&(lage.jaeger||0)<1)?rules.j4.material:0);
+      // Keine erfundene Abnahme: nur bezahltes Silizium, unzureichendes Material,
+      // noch nicht vorhandenes Erz und bestehende originale 50er-Bedarfsmenge.
+      if(onlyMaterial&&((lage.silizium||0)<rules.j3.silizium
+        ||(lage.material||0)+(Math.floor((lage.erz||0)/rules.w4.erzJeCharge)
+          *rules.w4.materialJeCharge)>=materialBedarf
+        ||s.kanon.bauteile.auftrag))
+        return verwerfen('P8g: kein echter ungedeckter J3-Materialbedarf');
       if(cmd.owner!=='st_nadir')return verwerfen('nur realer Industriekäufer darf bestellen');
       if(!['frei','geliefert','storniert'].includes(i.phase))return verwerfen('Vertrag bereits vorhanden');
       if(s.w3.auftrag||s.w5n.frachtauftrag)return verwerfen('bereits laufende Fracht');
@@ -1700,7 +1716,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       if(s.owners.st_nadir.cash<K7_PREIS.nadiraufwand)return verwerfen('Nadir kann Kauf und Rundfracht nicht vorfinanzieren');
       s.kanon.industrieErz={phase:'angebot',miner:mi.id,frachter:fr.id,
         signMiner:false,signFracht:false,signWerft:false,
-        werftVerwendet:false,erzAngenommen:false,erstellt:s.tick};
+        werftVerwendet:false,erzAngenommen:false,erstellt:s.tick,
+        ...(onlyMaterial?{materialOnly:true}:{})};
       return {ok:true,type};
     }
     if(type==='industrialOreAcceptMine'){
@@ -1718,12 +1735,14 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       i.signFracht=true;return {ok:true,type};
     }
     if(type==='industrialOreAcceptYard'){
+      if(i.materialOnly)return verwerfen('P8g: Materialvertrag darf keine Werft unterschreiben');
       if(cmd.owner!=='werft_extern'||!angebot)return verwerfen('nur Werfteigentümer darf unterschreiben');
       if(i.signWerft)return verwerfen('Werft bereits unterschrieben');
       if(s.owners.werft_extern.cash<K7_PREIS.werft)return verwerfen('reales Werftmaterial und bezahlte Arbeitsminuten nicht gedeckt');
       i.signWerft=true;return {ok:true,type};
     }
     if(type==='industrialOreBuildShip'){
+      if(i.materialOnly)return verwerfen('P8g: keine verpflichtende neue Frachterhülle');
       // W4-Material entsteht schon bei der echten Hinlieferung. Der bezahlte
       // Rückflug dauert weiter; seine 240 ISK bleiben bis zur Rückkehr gesperrt.
       const echtGeliefert=i.phase==='geliefert'
@@ -1743,8 +1762,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       i.werftVerwendet=true;
       return {ok:true,type};
     }
-    if(type==='industrialOreCommit'){
-      if(cmd.owner!=='st_nadir'||!angebot||!i.signMiner||!i.signFracht||!i.signWerft)
+    if(type==='industrialOreCommit'||type==='industrialOreCommitMaterial'){
+      const onlyMaterial=type==='industrialOreCommitMaterial';
+      if(onlyMaterial!==!!i.materialOnly)return verwerfen('P8g: Auftragsart entspricht nicht dem Angebot');
+      if(cmd.owner!=='st_nadir'||!angebot||!i.signMiner||!i.signFracht||(!onlyMaterial&&!i.signWerft))
         return verwerfen('nur der Käufer bestätigt nach beiden Eigentümerzustimmungen');
       const mi=s.ships[i.miner],fr=s.ships[i.frachter];
       if(!mi||!fr||mi.owner!=='npc3'||fr.owner!=='transport'
@@ -1754,14 +1775,16 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         return verwerfen('Einsatzschiffe/Erzauftrag nicht mehr verfügbar');
       if(s.owners.npc3.cash<K7_PREIS.bergbau||s.owners.st_aldera.cash<K7_PREIS.alderakauf
         ||s.owners.st_nadir.cash<K7_PREIS.nadiraufwand||s.owners.transport.cash<K7_PREIS.frachtlohn
-        ||s.owners.werft_extern.cash<K7_PREIS.werft)
+        ||(!onlyMaterial&&s.owners.werft_extern.cash<K7_PREIS.werft))
         return verwerfen('unvollständig vorfinanzierte Firmenkette');
       try { kern.industryOrePrebook(s,i.frachter,i.miner); }
       catch(e){return verwerfen(e.message);}
-      if(!s.owners.k7_werft_treuhand)
-        s.owners.k7_werft_treuhand={id:'k7_werft_treuhand',kind:'k7-reserve',cash:0};
-      if(s.owners.k7_werft_treuhand.cash!==0)throw Error('K7: bereits gebundene Werfttreuhand');
-      m_core_buch.transfer(s,'werft_extern','k7_werft_treuhand',K7_PREIS.werft,'k7-werftreserve');
+      if(!onlyMaterial){
+        if(!s.owners.k7_werft_treuhand)
+          s.owners.k7_werft_treuhand={id:'k7_werft_treuhand',kind:'k7-reserve',cash:0};
+        if(s.owners.k7_werft_treuhand.cash!==0)throw Error('K7: bereits gebundene Werfttreuhand');
+        m_core_buch.transfer(s,'werft_extern','k7_werft_treuhand',K7_PREIS.werft,'k7-werftreserve');
+      }
       i.phase='aktiv';
       const m=kern.execute(s,{type:'shipMine',owner:'npc3',schiff:i.miner,ware:'erz'},rules);
       if(!m.ok)throw Error('K7: nach Vorfinanzierung abgelehnter Eigentümerauftrag: '+m.reason);
@@ -1776,11 +1799,12 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       const mi=s.ships[i.miner];
       if(mi?.flug?.lage!=='angedockt'||Object.values(mi.ladung).some(x=>x!==0)
         ||s.erzpilotVertraege?.[mi.id])return verwerfen('bezahlte Arbeit oder Waren vorhanden');
-      if(i.werftVerwendet||s.owners.k7_werft_treuhand?.cash!==K7_PREIS.werft)
+      if(i.werftVerwendet||(s.owners.k7_werft_treuhand?.cash||0)!==(i.materialOnly?0:K7_PREIS.werft))
         return verwerfen('bezahlte Werftleistung bereits begonnen');
       try{kern.industryOreCancel(s);}
       catch(e){return verwerfen(e.message);}
-      m_core_buch.transfer(s,'k7_werft_treuhand','werft_extern',K7_PREIS.werft,'k7-werftreserve-rueck');
+      if(!i.materialOnly)
+        m_core_buch.transfer(s,'k7_werft_treuhand','werft_extern',K7_PREIS.werft,'k7-werftreserve-rueck');
       const stop=kern.execute(s,{type:'shipWait',owner:'npc3',schiff:i.miner},rules);
       if(!stop.ok)throw Error('K7: gebuchtes Storno ohne Miner-Stopp: '+stop.reason);
       delete s.kanon.pendel[i.miner];
@@ -1803,35 +1827,46 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         || (s.w3.auftrag?.phase === 'rueck'
           && s.w3.auftrag?.industrieMiner === i.miner);
       if (i.erzAngenommen && amNadirGeliefert && !i.werftVerwendet) {
+        const materialGrenze=i.materialOnly
+          ?rules.j3.material+rules.w5.material+
+            (((nadir.jaeger||0)<1)?rules.j4.material:0)
+          :rules.w5.material;
         if (!s.w4.auftrag && !s.w5.auftrag && !s.kanon.minerWerft?.auftrag
-          && (nadir.material || 0) < rules.w5.material
+          && (nadir.material || 0) < materialGrenze
           && (nadir.erz || 0) >= rules.w4.erzJeCharge) {
           const q = kern.pilotW4Kalkulation(s);
           if (q.ok) kern.execute(s, { type:'stationRefine', owner:rules.w4.station,
             station:rules.w4.station }, rules);
         }
-        if (!s.w4.auftrag && !s.w5.auftrag && !s.kanon.minerWerft?.auftrag
+        if (!i.materialOnly && !s.w4.auftrag && !s.w5.auftrag && !s.kanon.minerWerft?.auftrag
           && (nadir.material || 0) >= rules.w5.material)
           k7Befehl(s, { type:'industrialOreBuildShip', owner:rules.w5.werft });
       }
       // The active contract must finish; the NPCs cannot replace its
       // signatures or issue a second W3 escrow in parallel.
-      if (i.phase !== 'geliefert' || !i.werftVerwendet) return;
+      if (i.phase !== 'geliefert' || (!i.werftVerwendet&&!i.materialOnly)) return;
     }
     if (!['frei','storniert','geliefert'].includes(i.phase)
       || s.w3.auftrag || s.w5n.frachtauftrag || s.w4.auftrag || s.w5.auftrag
       || s.kanon.minerWerft?.auftrag) return;
+    // P8g: reale J3-Materialnachfrage ist unabhaengig von der W5-Frachterquote.
+    const materialBedarf=rules.j3?.material+rules.w5.material+
+      (jaeger&&(nadir.jaeger||0)<1?rules.j4.material:0);
+    const materialOnly=p8dFracht&&s.kanon.npcAuto===true
+      &&(nadir.silizium||0)>=(rules.j3?.silizium||Infinity)
+      &&(nadir.material||0)+Math.floor((nadir.erz||0)/rules.w4.erzJeCharge)
+        *rules.w4.materialJeCharge<materialBedarf;
     // A limited warehouse target is physical demand, not invented ISK.
-    if ((nadir.frachter || 0) >= rules.world.stations[rules.w5.station].ziel.frachter)
+    if(!materialOnly&&(nadir.frachter||0)>=rules.world.stations[rules.w5.station].ziel.frachter)
       return;
     // W6: Nadir bestellt kein weiteres Erz, solange eigener Bestand die nächste Hülle deckt.
-    if (s.kanon.npcAuto === true && ((nadir.erz || 0) >= rules.w4.erzJeCharge
+    if (!materialOnly&&s.kanon.npcAuto === true && ((nadir.erz || 0) >= rules.w4.erzJeCharge
       || (nadir.material || 0) >= rules.w5.material)) return;
     if (s.owners.npc3.cash < K7_PREIS.bergbau
       || s.owners.st_aldera.cash < K7_PREIS.alderakauf
       || s.owners.st_nadir.cash < K7_PREIS.nadiraufwand
       || s.owners.transport.cash < K7_PREIS.frachtlohn
-      || s.owners.werft_extern.cash < K7_PREIS.werft) return;
+      || (!materialOnly&&s.owners.werft_extern.cash < K7_PREIS.werft)) return;
     const miner = ids(s.ships).map(id=>s.ships[id]).find(sh =>
       sh.owner === 'npc3' && sh.klasse === 'miner' && sh.system === 'aldera'
       && sh.flug?.lage === 'angedockt' && !m_core_anlage.stillgelegt(s, sh)
@@ -1844,11 +1879,11 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       && ladungSumme(sh) === 0);
     if (!miner || !frachter) return;
     const befehle = [
-      {type:'industrialOreOffer',owner:'st_nadir',miner:miner.id,frachter:frachter.id},
+      {type:materialOnly?'industrialOreOfferMaterial':'industrialOreOffer',owner:'st_nadir',miner:miner.id,frachter:frachter.id},
       {type:'industrialOreAcceptMine',owner:'npc3'},
       {type:'industrialOreAcceptFreight',owner:'transport'},
-      {type:'industrialOreAcceptYard',owner:'werft_extern'},
-      {type:'industrialOreCommit',owner:'st_nadir'},
+      ...(!materialOnly?[{type:'industrialOreAcceptYard',owner:'werft_extern'}]:[]),
+      {type:materialOnly?'industrialOreCommitMaterial':'industrialOreCommit',owner:'st_nadir'},
     ];
     for (const cmd of befehle) {
       const r = k7Befehl(s, cmd);
@@ -2103,7 +2138,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(jaegerFlug ? {j4cBezahlterJaegerflug:true} : {}),
     ...(p8bZweiFelder ? {p8bZweiEndlicheFelder:true} : {}),
     ...(p8cDravos||p8dFracht ? {p8cEchteDravosExpedition:true} : {}),
-    ...(p8dFracht ? {p8dGetrennteSpedition:true} : {}),
+    ...(p8dFracht ? {p8dGetrennteSpedition:true,p8gMaterialOnlyW3:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
     createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,

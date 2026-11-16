@@ -1,5 +1,8 @@
 # W6/P8g – selektiver Integrationskandidat auf aktuellem P2-main
 
+**[MAIN / RELEASE VERIFIZIERT 16.11.2026]** Dieser frühere Draft-Integrationsbericht dokumentiert die vor dem Merge geprüften Forschungs- und Integrations-Commits. Sein Produktcode wurde **anschließend vollständig und selektiv** mit [Release-PR #430](https://github.com/tobiasfranziskus/Check/pull/430) auf `main bf1d33536895d5c4904594fadb5fff9d5443ba88` übernommen. Die frühere Kennzeichnung „DRAFT / NO RELEASE“ in den folgenden chronologischen Originalabschnitten beschreibt **nur den damaligen Prüfstand**. Neue Regel207-Karriere ist freiwillig/gesondert gespeichert; die unbegrenzte NPC-Nachhaltigkeit ist weiterhin **nicht** belegt. [PAGES / GEPRÜFT] [Build und Deploy #43884696901](https://github.com/tobiasfranziskus/Check/actions/runs/43884696901) `completed/success` für exakt `main bf1d3353`; Root-Spielzugang verlinkt das W6-fähige P1-Spiel.
+
+
 **[DRAFT / NO RELEASE · 16.11.2026]** [PR #428](https://github.com/tobiasfranziskus/Check/pull/428), separater Branch `integrate/w6-p8g-rule207-p2-main-20261116`, direkt auf **[MAIN] `feda85dc4a7ccb3544756c63b5dfc3235cf6df0f`** aufgebaut. Ziel: genehmigter originalfinanzierter **50-Erz-Materialvertrag ohne Pflicht-Frachterneubau** aus [Forschung #425](https://github.com/tobiasfranziskus/Check/pull/425) und [unabhängiger QA #426](https://github.com/tobiasfranziskus/Check/pull/426) **ohne blindes Zusammenführen von 106 divergierenden Forschungscommits** auf den aktuellen Hauptstand vorbereiten. **Kein Merge, keine Pages- oder NAS-Veröffentlichung.**
 
 ## Auswahl der Änderungen und technische Regelgrenze

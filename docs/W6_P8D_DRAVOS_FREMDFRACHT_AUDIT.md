@@ -21,6 +21,23 @@
 
 **NEGATIV zur Rentabilität:** NPC3 trägt 128 ISK Förderlohn + 40 ISK Miner-Hinreise + 120 ISK Frachtentgelt = **288 ISK Kosten** für 192 ISK Verkauf: **−96 ISK vor Verschleiß und Ersatz**. Die Spedition erhält 120 ISK und zahlt 60 ISK Pilot: **+60 ISK vor Abschreibung**. Vollständig finanziert ist nicht dasselbe wie dauerhaft profitabel.
 
+## Nachprüfung 16.11.2026 – 13×90 und S02×365 [ANALYSE / QA]
+
+[CI-Matrix #43768148138](https://github.com/tobiasfranziskus/Check/actions/runs/43768148138) am P8d-Head `3f771856`: **14/14 Szenariojobs und Aggregat erfolgreich**. Damit bestehen die geprüften Geld-/Waren-/Eigentums-/Frachtbeleg- und Save/Load-Invarianten; das ist **keine** Erfolgsaussage zur wirtschaftlichen Tragfähigkeit.
+
+| Profil | Echte bezahlte Dravos-Fracht | Dravos-Silizium verkauft | Jäger gebaut | Ergebnis |
+| --- | ---: | ---: | ---: | --- |
+| S02, 90 Tage | 1 | 8 | 2 | Restfeld 8, NPC3 −96 ISK/Dravos-Vertrag vor Verschleiß |
+| S11, 90 Tage | 1 | 8 | 2 | Restfeld 8, kein Folgeauftrag |
+| S01, S03–S10, S12–S13, je 90 Tage | 0 | 0 | je nach Welt 0–1 | Kein Nachweis einer Dravos-Handelskette |
+| S02, 365 Tage | 1 | 8 | 2 | Zwischen Tag 90 und 365 keine zusätzliche Förderung, Wassererlöse, Ersatzkäufe oder Frachtauslieferung |
+
+S02: Tag 90 und Tag 365 jeweils Eis **7.038**, Wassererlöse **105.336 ISK**, Ersatzkäufe **14**, NPC3 **1.554 ISK**, Spedition **1.898 ISK**, Nadir **4.000 ISK**. Die Restmenge **8 Dravos-Silizium** ist physisch vorhanden, die letzte Minerposition liegt in Dravos, ein neuer Vertrag wurde nicht nachgewiesen. Wiederholt meldet der NPC-`K2`-Pfad fehlendes reales W4-Material. Diese Werte erlauben **noch keine eindeutige Ursachenzuweisung** zwischen Nachfragelücke, Automatik, Produktions-/Kapazitätsblockade oder fehlendem Folgeauftrag.
+
+**Wichtige Korrektur am ursprünglichen Matrix-Runner:** Die bis dahin `last30Active` genannte Kennzahl verglich für **jeden** Lauf Tag **60 mit 90**; im 365-Tage-Lauf waren das nicht die letzten 30 Tage. Der hier zusätzlich gestapelte QA-Branch stellt das Fenster auf `days−30 … days` um und gibt Start-/Endmengen explizit aus. Die geänderte CI muss vor einer Bestanden-Aussage **neu laufen**. `peakParallelFreights` wird bisher nur alle 120 Simulationsminuten abgefragt und ist deshalb kein lückenloser Beweis für die maximale Zahl gleichzeitig laufender Kurzaufträge.
+
+**Nächster wirtschaftlicher Entwicklungsschritt:** Vor Preiserhöhung, frischem Kapital oder neuen Ressourcen erst die zweite echte 8er-Dravos-Charge als wiederholbaren NPC3-Miner-/Frachtprozess unter bestehenden Firmensignaturen, Käufer- und Materialgrenzen prüfen. Sollte ein zweiter Auftrag trotz vorhandener 8 Einheiten und Mittel nicht zustande kommen, den ersten rechts- und finanzierungsbelegten Blocker exakt ausweisen. Eine neue Regel-/Balancefreigabe wird erst bei belegtem Bedarf eingeholt. Keine stille Migration, kein Merge der Forschungsregel207.
+
 ## Bis zur Integration offen
 
 - Regel207 in 13×90- und langen 365-/730-Tage-Krisenwelten samt Frachtkapazität, Ersatz und Insolvenz-/Abbruchregeln unabhängig prüfen.

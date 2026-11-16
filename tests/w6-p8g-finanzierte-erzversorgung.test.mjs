@@ -34,6 +34,8 @@ function afterFreight(){
   assert.equal(s.stations.st_nadir.lager.erz,0);
   check(w,s);
   w.politikSetzen(s,{automatik:false});
+  assert.deepEqual(w.materialSupplySetzen(s,true),{ok:true,aktiviert:true});
+  check(w,s);
   return {w,s};
 }
 

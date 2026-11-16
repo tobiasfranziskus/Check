@@ -41,6 +41,8 @@ function menustand(){
  $('fortsetzen-w6').disabled=!gespeicherte(SLOT_W6);
  const old=$('vorige-karriere');
  if(old)old.hidden=!gespeicherte(BACKUP);
+ const w6Backup=$('vorige-forschung');
+ if(w6Backup)w6Backup.hidden=!gespeicherte(SLOT_W6+':vorherige');
 }
 function screen(id){
  ansicht=id;
@@ -108,7 +110,7 @@ function ladeSitzung(json,auswahl,backup=false){
  if(session)throw Error('Laufende Karriere zuerst als JSON exportieren und die Seite neu öffnen.');
  const raw=JSON.parse(json),regel=raw?.rulesVersion;
  if(regel!==204&&regel!==207)throw Error('Nur bestätigte Original-Regel204- oder Forschungsregel207-Saves');
- if(regel===207&&auswahl!=='forschung'&&auswahl!=='datei')
+ if(regel===207&&!['forschung','forschung-backup','datei'].includes(auswahl))
    throw Error('Forschungsstand nur über getrennten Forschungszugang laden');
  if(regel===204&&auswahl==='forschung')
    throw Error('Forschungszugang darf nicht den Regel204-Spielstand ersetzen');
@@ -515,6 +517,12 @@ $('vorige-karriere')?.addEventListener('click',()=>{try{
    const json=gespeicherte(BACKUP);if(!json)throw Error('Keine vorherige Sicherung vorhanden');
    ladeSitzung(json,'backup',true);
  }catch(e){hinweis('Vorherige Karriere nicht geöffnet: '+error(e),true);}});
+$('vorige-forschung').addEventListener('click',()=>{try{
+ if(session)throw Error('Erst die aktuelle Karriere als JSON sichern und die Seite neu öffnen');
+ const json=gespeicherte(SLOT_W6+':vorherige');
+ if(!json)throw Error('Keine gesonderte W6-Forschungssicherung vorhanden');
+ ladeSitzung(json,'forschung-backup',true);
+ }catch(e){hinweis('W6-Forschungssicherung nicht geladen: '+error(e),true);}});
 $('import-aktion').addEventListener('click',()=>$('import-datei').click());
 $('import-datei').addEventListener('change',async e=>{
  const input=e.currentTarget; // Safari clears event.currentTarget after await.

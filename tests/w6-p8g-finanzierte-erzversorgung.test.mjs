@@ -206,3 +206,35 @@ test('P8g – echte Nadir-Materialnachfrage beauftragt 50 Erz mit W3-Vorfinanzie
     cargoDelivered:50,freightersBuiltSinceContract:0,worldISK:total(s),
     mint:s.minted,burn:s.burned,hash:w.hash(s)}));
 });
+
+test('P8g – externes JSON kann sein Opt-in nicht selbst autorisieren, nur separate Importfreigabe',()=>{
+  const options={carrierCash:2000,buyerCash:4000};
+  const w1=K.erstellenP8d(options);
+  const s=w1.createState(42,{politik:policy});
+  const old=w1.save(s),raw=JSON.parse(old);
+  assert.equal(raw.kanon.materialSupplyEnabled,undefined);
+  raw.kanon.materialSupplyEnabled=true;
+  assert.throws(()=>w1.load(JSON.stringify(raw)),/P8g: externer Import/);
+  assert.equal(w1.hash(w1.load(old)),w1.hash(s),'alte unveraenderte Save-Runde ohne P8g weiterhin gültig');
+
+  assert.deepEqual(w1.materialSupplySetzen(s,true),{ok:true,aktiviert:true});
+  const authorized=w1.save(s);
+  assert.equal(w1.hash(w1.load(authorized)),w1.hash(s),
+    'selbe Welt darf selbst erzeugten Original-Save weiterhin laden');
+  const w2=K.erstellenP8d(options);
+  assert.throws(()=>w2.load(authorized),/P8g: externer Import/,
+    'P8g-Datei aus anderer Sitzung verlangt echte Nutzerentscheidung');
+  assert.throws(()=>w2.load(authorized,{p8gImportFreigegeben:false}),/P8g: externer Import/);
+  assert.throws(()=>w2.load(authorized,{p8gImportFreigegeben:'true'}),TypeError);
+  assert.throws(()=>w2.load(authorized,{p8gImportFreigegeben:true,anderes:'yes'}),TypeError);
+  const imported=w2.load(authorized,{p8gImportFreigegeben:true});
+  assert.equal(w2.hash(imported),w1.hash(s),
+    'ausdrücklich genehmigter externer P8g-Import bleibt vollständig original');
+  assert.equal(imported.kanon.materialSupplyEnabled,true);
+  assert.equal(w2.hash(w2.load(w2.save(imported))),w2.hash(imported),
+    'nach expliziter Importfreigabe bleibt lokales Save/Load möglich');
+  check(w2,imported);
+  console.log('P8G_EXTERNAL_IMPORT_GATE',JSON.stringify({legacyUnchanged:true,
+    foreignWithoutConsentRejected:true,explicitConsentRestores:true,
+    formatChanged:false,crossSessionHash:w2.hash(imported)}));
+});

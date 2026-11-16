@@ -24,6 +24,8 @@
 
 ## Laufender Stand und historische Nachweise
 
+- **[MAIN / PAGES / W6 P8g · 16.11.2026]** [Freigegebener W6-Release-PR #430](https://github.com/tobiasfranziskus/Check/pull/430) ist unter `main bf1d33536895d5c4904594fadb5fff9d5443ba88` integriert; [Pages-Deploy #43884696901](https://github.com/tobiasfranziskus/Check/actions/runs/43884696901) erfolgreich. [Spielbare neue Regel207-Dravos-Karriere](https://tobiasfranziskus.github.io/Check/prototypes/spiel/index.html) ausdrücklich im Prolog wählen; Regel204 bleibt die normale, **vollständig getrennt gespeicherte** Karriere. Wirtschafts-/Sicherheitsnachweise: [selektive Integration](W6_P8G_INTEGRATION_P2.md) · [P1/P2-Forschungsstart](W6_P8G_FORSCHUNGSKARRIERE.md). **13×90 und S02×365/730 buchungsstabil, aber nicht wirtschaftlich dauerhaft tragfähig**; 0 Mint/Burn. Echte iPad-/NAS-Abnahme offen.
+
 - **Spiel starten:** [Neue Karriere](https://tobiasfranziskus.github.io/Check/prototypes/spiel/index.html); [öffentliche Root-Seite](https://tobiasfranziskus.github.io/Check/). Welche SHA wirklich veröffentlicht ist, über Pages prüfen.
 - **Wirtschaft:** W0–W5 besitzen einen integrierten Kern; W6-S02 hat einen geprüften endlichen Teilkreislauf, **keinen universellen Nachhaltigkeitsbeweis**. Für Details nur [Projektstatus](PROJEKTSTATUS.md) und [W6-Langzeitprüfung](W6_P7_SILIZIUM_LANGZEIT.md) gezielt öffnen.
 - **Aktive Forschung:** [P8b #408](https://github.com/tobiasfranziskus/Check/pull/408), [P8c #412](https://github.com/tobiasfranziskus/Check/pull/412) und F8-Jäger-Drafts dürfen nicht als produktiv bezeichnet werden. PR-Zustände vor Verwendung erneut prüfen.

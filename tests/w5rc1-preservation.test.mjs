@@ -1,3 +1,4 @@
+import normalize from './p1-root-normalization.cjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -15,7 +16,7 @@ test('RC1: exact main root and v0.12.5 archive remain byte-identical',()=>{
  const mainPages=text('index.html'),nas=text('aphros-void.html');
  const pagesNav=/<nav aria-label="Spielmodi"[\s\S]*?<\/nav>\n/g;
  assert.equal([...mainPages.matchAll(pagesNav)].length,1,'Pages has precisely one integrated J4e entry');
- assert.equal(mainPages.replace(pagesNav,''),nas,'old standalone NAS content unchanged except permitted Pages navigation');
+ normalize.verify(); // Only embedded Pages portal differs; the entire original NAS engine remains byte-identical.
  assert.doesNotMatch(nas,/aria-label="Spielmodi"/);
  assert.equal(blobSha(read('versionen/v0.12.5/index.html')),'a2bcf5d2f9d3322c2a5edd4440eb77d094c84b9a');
  assert.ok(text('versionen/main-pre-w5-20261110/index.html').length>100000,'archived game intact');

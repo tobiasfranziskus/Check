@@ -420,6 +420,16 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
 
    try{
     await page.goto(base+'/');
+    assert.equal(await page.title(),'Aphros Void · Dein Weltraumkonzern');
+    const gateway=page.locator('#root-portal');
+    assert.equal(await gateway.isVisible(),true,'public root must offer the premium game entry');
+    assert.match(await page.locator('#root-game-title').textContent(),/APHROS\s+VOID/);
+    assert.equal(await page.locator('#root-legacy-info').count(),1);
+    assert.equal(await page.locator('#root-legacy-info').evaluate(el=>el.open),false);
+    assert.equal(await page.locator('#klassische-wirtschaft').count(),1);
+    assert.equal(await page.locator('#save').count(),1,'original W0-W5 save button kept');
+    assert.equal(await page.locator('#import').count(),1,'original W0-W5 import kept');
+    assert.doesNotMatch(await gateway.textContent(),/Regel\s*20[47]|Prototyp|richtiger Miner/i);
     const entry=page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/spiel/index.html"]');
     assert.equal(await entry.count(),1,'visible first-class game entry from public root');
     await entry.tap();

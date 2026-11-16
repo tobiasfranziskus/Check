@@ -35,7 +35,9 @@ const w=W.erstellenJ4c(JSON.parse(sample).w5ad.profile);
    });
    try{
     await page.goto(base+'/');await page.waitForFunction(()=>document.querySelector('#storage-status').textContent!=='Speicher wird geprüft …');
-    assert.match(await page.locator('h1').first().textContent(),/W0–W5/);
+    assert.match(await page.locator('#root-game-title').textContent(),/APHROS\s+VOID/);
+    assert.match(await page.locator('#root-legacy-info h1').textContent(),/W0–W5/,
+      'classic economic world remains present even behind its secondary disclosure');
     // Eigener, leerer Browserkontext; kein Zugriff auf Nutzer-Spielstände.
     await page.evaluate(async()=>{const db=await new Promise(ok=>{const r=indexedDB.open('audit-legacy-sentinel',1);r.onupgradeneeded=()=>r.result.createObjectStore('saves');r.onsuccess=()=>ok(r.result);});await new Promise(ok=>{const t=db.transaction('saves','readwrite');t.objectStore('saves').put({original:'erhalten'},'sentinel');t.oncomplete=ok;});db.close();});
     const before=await snapshot();

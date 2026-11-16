@@ -45,10 +45,21 @@ assert.doesNotMatch(out,/document\.createElement\('link'\);link\.rel='stylesheet
 out='<!-- Aphros Void / single-file Rule195 W0-W5: Generated from same original core, no asset URLs. -->\n'+out;
 // GitHub Pages erhält nur die statische Spielmodus-Navigation; NAS bleibt eine
 // eigenständige W0–W5-Datei ohne nicht mitgelieferte J4e-Dateipfade.
-const pagesNavigation="<nav aria-label=\"Spielmodi\" style=\"padding:12px;border:2px solid #65d7ec;border-radius:9px;margin:12px 0;background:#102332\">\n <a href=\"prototypes/spiel/index.html\" style=\"display:inline-block;min-height:50px;padding:12px 20px;border-radius:8px;background:linear-gradient(125deg,#a36536,#257b82);border:1px solid #d8ad7d;color:#fff;font-weight:850;text-decoration:none\">APHROS VOID SPIELEN · Neue Karriere starten</a>\n <a href=\"prototypes/j4c/index.html\" style=\"display:inline-block;min-height:50px;padding:12px 18px;border-radius:8px;background:#176d77;color:#fff;font-weight:700;text-decoration:none\">Jäger selbst fliegen · Patrouille &amp; Duell</a>\n <a href=\"prototypes/verbund/konzern.html\" style=\"display:inline-block;min-height:50px;padding:12px 18px;margin:4px 0 0 8px;border-radius:8px;background:#176d77;color:#fff;font-weight:700;text-decoration:none\">Konzern führen · eigenen Miner kaufen &amp; fliegen</a>\n <span style=\"display:block;margin-top:8px\">Neue Karriere: Titelbildschirm, Firmenprolog und echtes, aus der ursprünglichen Regel195-Welt gestartetes Regel204-Konzernspiel mit eigenem 2D-Cockpit – ohne Testdatei oder Import. Eigener separater Karrierespeicher, zusätzlich JSON-Export. Die bisherigen Jäger- und Konzernzugänge und der alte W0–W5-Spielstand bleiben erhalten.</span>\n</nav>";
-const heading="<h1>Aphros Void – W0–W5</h1>";
+
+const nl=String.fromCharCode(10);
+const pagesStyle='<style id="pages-premium-entry">'+nl+
+  fs.readFileSync(path.join(root,'scripts/pages-entry.css'),'utf8')+nl+'</style>'+nl;
+const pagesNavigation=fs.readFileSync(path.join(root,'scripts/pages-entry.html'),'utf8');
+const pagesLegacyDivider="<section id=\"klassische-wirtschaft\" aria-label=\"Klassischer Wirtschaftsmodus\"><h2>Klassische Wirtschaft · W0–W5</h2><p>Der bisherige Wirtschaftseinstieg bleibt mit seinen bisherigen Spielständen, Funktionen und JSON-Importen erhalten. Das neue Spiel erreichst du über „Karriere öffnen“.</p></section>";
+const pagesDetailsStart="<details id=\"root-legacy-info\"><summary>Hintergrund zum klassischen Wirtschaftsmodus</summary>";
+const heading='<h1>Aphros Void – W0–W5</h1>';
 assert.ok(out.includes(heading),'W0–W5 Spieltitel fehlt');
-const pages=out.replace(heading,heading+String.fromCharCode(10)+pagesNavigation);
+const pages=out.replace("<title>Aphros Void – W0–W5 · Spielbare Entwicklungsversion</title>","<title>Aphros Void · Dein Weltraumkonzern</title>")
+ .replace('</head>',pagesStyle+'</head>')
+ .replace(heading,pagesNavigation+nl+pagesDetailsStart+nl+heading)
+ .replace('</header>'+nl+'<section class="controls"',
+   '</details>'+nl+'</header>'+nl+pagesLegacyDivider+nl+'<section class="controls"');
+assert.equal((pages.match(/<nav aria-label="Spielmodi"/g)||[]).length,1,'Exactly one game entry navigation');
 assert.doesNotMatch(out,/<script[^>]*\bsrc\s*=|<link[^>]*\brel="stylesheet"[^>]*\bhref\s*=/);
 for(const [name,expected] of [['index.html',pages],['aphros-void.html',out]]){
  const dest=path.join(root,name);

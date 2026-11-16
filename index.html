@@ -2,7 +2,7 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Aphros Void – W0–W5 · Spielbare Entwicklungsversion</title>
+<title>Aphros Void · Dein Weltraumkonzern</title>
 <style data-inlined-from="../w5u/style.css">
 :root{color-scheme:dark;font:16px/1.5 system-ui,sans-serif;background:#09121c;color:#e1eaf2}*{box-sizing:border-box}body{margin:0 auto;max-width:1450px;padding:16px;padding-bottom:max(20px,env(safe-area-inset-bottom))}section,header{margin-bottom:16px}button,input,select{font:inherit;min-height:48px;max-width:100%;padding:8px;border:1px solid #657a8c;border-radius:6px;background:#152737;color:inherit}button{cursor:pointer}button:disabled{opacity:.55;cursor:default}button[aria-current]{outline:2px solid #65d7ec}label{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px}nav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}form{padding:8px 0;border-bottom:1px solid #354353}table{width:100%;border-collapse:collapse}td,th{text-align:left;border-bottom:1px solid #354353;padding:8px;overflow-wrap:anywhere}h1{font-size:1.6rem}canvas{width:100%;height:400px;background:#02040a;display:block}pre{white-space:pre-wrap;overflow-wrap:anywhere}p{overflow-wrap:anywhere}.scroll{overflow:auto}#hq{height:700px}#station{min-height:600px}#actions{border-top:1px solid #657a8c;padding-top:16px}[hidden]{display:none!important}@media(max-width:600px){body{padding:8px}label{display:flex}input[type=file]{width:100%}canvas{height:320px}#hq{height:760px}}
 
@@ -97,20 +97,94 @@
 
 
 
+<style id="pages-premium-entry">
+/* Pages-only premium portal – embedded by build-w5-singlefile.mjs, never loaded at runtime. */
+#root-portal{position:relative;isolation:isolate;overflow:hidden;min-height:calc(100svh - 40px);padding:clamp(24px,3vw,45px) clamp(20px,5vw,72px) clamp(26px,3vw,45px);border:1px solid #9ebcc944;border-radius:24px;background:linear-gradient(125deg,#07121f,#0c2033 50%,#071321);color:#eff5fc;box-shadow:0 20px 75px #0006;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;line-height:1.48}
+#root-portal *{box-sizing:border-box}
+#root-portal::before{content:"";position:absolute;z-index:-1;pointer-events:none;width:min(62vw,680px);aspect-ratio:1;right:-9%;top:8%;border-radius:50%;background:radial-gradient(circle at 23% 25%,#53859c 0%,#284966 24%,#15314e 50%,#061729 70%,#030916 78%);box-shadow:-35px -18px 110px #4587a43b,inset 28px 12px 65px #b3dfe026}
+#root-portal::after{content:"";position:absolute;z-index:-2;inset:0;pointer-events:none;opacity:.75;background-image:radial-gradient(1px 1px at 11% 15%,#e5f2ff 93%,transparent),radial-gradient(1px 1px at 37% 49%,#eafaff 90%,transparent),radial-gradient(2px 2px at 68% 13%,#e7edff 92%,transparent),radial-gradient(1px 1px at 91% 83%,#f4f8ff 92%,transparent);background-size:310px 270px,370px 310px,460px 340px,420px 400px}
+#root-portal .root-brandline{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#dbe8f2;font-size:.72rem;letter-spacing:.15em;font-weight:800}
+#root-portal .root-mark{display:inline-grid;place-items:center;width:36px;height:36px;margin-right:9px;border:1px solid #92bcc1;border-radius:10px;color:#93e0dc;letter-spacing:0}
+#root-portal .root-region{font-size:.66rem;color:#b8cedb;letter-spacing:.13em}
+#root-portal .root-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,285px);gap:clamp(22px,5vw,65px);align-items:center;margin:clamp(38px,7vh,85px) 0 24px}
+#root-portal .root-eyebrow{margin:0;color:#f0d09d;font-size:.69rem;font-weight:800;letter-spacing:.17em}
+#root-portal h1{margin:16px 0 23px;font-size:clamp(3.5rem,9.5vw,8.7rem);line-height:.96;letter-spacing:-.075em;color:#fff;font-weight:850;text-shadow:0 14px 52px #0005}
+#root-portal h1 em{font-style:normal;color:#ebc48d}
+#root-portal .root-lead{max-width:690px;margin:0 0 10px;font-size:clamp(1.13rem,2.1vw,1.6rem);line-height:1.42;font-weight:550;color:#f4f7ff}
+#root-portal .root-sub{max-width:575px;margin:0;color:#b9ccda;font-size:.95rem}
+#root-portal nav[aria-label="Spielmodi"]{display:flex;flex-wrap:wrap;align-items:center;gap:11px;margin:27px 0 13px;padding:0;border:0;background:none}
+#root-portal nav[aria-label="Spielmodi"] a{min-height:52px;padding:13px 19px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;gap:13px;font-size:.92rem;font-weight:730;text-decoration:none;transition:background .18s ease}
+#root-portal .root-primary{border:1px solid #8cdbd4;background:linear-gradient(115deg,#377f85,#226479);color:#fff;box-shadow:0 12px 33px #05152288}
+#root-portal .root-primary:hover{background:#458e94}
+#root-portal .root-secondary{border:1px solid #729aa7aa;background:#102d42dd;color:#e0edf6}
+#root-portal .root-secondary:hover{background:#22465b}
+#root-portal .root-alt{display:flex;flex:1 0 100%;align-items:center;flex-wrap:wrap;gap:9px 16px;font-size:.82rem;color:#b8cfdb}
+#root-portal nav[aria-label="Spielmodi"] .root-alt a{min-height:44px;padding:6px 2px;border:0;background:none;color:#d5ecef;font-weight:550;box-shadow:none}
+#root-portal .root-alt a{color:#d5ecef;text-decoration:underline;text-underline-offset:4px}
+#root-portal .root-info{position:relative;align-self:end;display:grid;gap:12px;padding:22px;border:1px solid #aac5ca57;border-radius:18px;background:#071b2dbd;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 22px 50px #0004}
+#root-portal .root-info small{font-size:.66rem;letter-spacing:.14em;color:#e6c495;font-weight:800}
+#root-portal .root-info strong{font-size:2.2rem;line-height:1.08;letter-spacing:.05em;color:#fff}
+#root-portal .root-info p{color:#c6d7e4;margin:0;font-size:.87rem}
+#root-portal .root-info div{border-top:1px solid #c1d6d64a;padding-top:12px;color:#b7cbd8;font-size:.8rem}
+#root-portal .root-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin-top:30px}
+#root-portal .root-cards article{min-width:0;min-height:117px;padding:16px 19px;border:1px solid #9cb7c047;border-radius:15px;background:#0b2234cf;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+#root-portal .root-cards small{color:#b0cfdd;font-size:.65rem;font-weight:800;letter-spacing:.13em}
+#root-portal .root-cards h2{margin:8px 0 4px;color:#fff;font-size:1.09rem;letter-spacing:-.02em}
+#root-portal .root-cards p{margin:0;color:#c1d2df;font-size:.84rem}
+#root-portal a:focus-visible{outline:3px solid #adeee6;outline-offset:3px}
+#root-legacy-info{margin:24px 0 12px;padding:12px 16px;border:1px solid #416277;border-radius:12px;background:#0d2437;color:#c5d5e0}
+#root-legacy-info summary{min-height:48px;cursor:pointer;display:flex;align-items:center;font-weight:680}
+#root-legacy-info h1{font-size:1.35rem;color:#edf6ff}
+#root-legacy-info p{color:#b3ccd9;font-size:.86rem}
+#klassische-wirtschaft{padding:17px 20px;margin:30px 0 15px;background:linear-gradient(130deg,#122e41,#0a2133);border:1px solid #42677e;border-radius:13px}
+#klassische-wirtschaft h2{font-size:1.28rem;color:#fff;margin:0 0 5px}
+#klassische-wirtschaft p{font-size:.89rem;color:#bfcfdf;margin:0}
+@media(max-width:1020px){#root-portal .root-grid{grid-template-columns:1fr}#root-portal .root-info{max-width:650px}}
+@media(max-width:680px){#root-portal{min-height:calc(100svh - 24px);border-radius:16px;padding:20px 16px 24px}#root-portal .root-grid{margin:42px 0 18px}#root-portal h1{font-size:clamp(3.2rem,13.4vw,5.7rem)}#root-portal nav[aria-label="Spielmodi"]{flex-direction:column;align-items:stretch}#root-portal .root-cards{grid-template-columns:1fr}#root-portal .root-cards article{min-height:0}#root-portal::before{width:95vw;right:-38vw;opacity:.54}#root-portal .root-region{display:none}}
+@media(prefers-reduced-motion:reduce){#root-portal nav a{transition:none!important}}
+
+</style>
 </head>
 <body>
 <header>
+<section id="root-portal" aria-label="Aphros Void – Spieleinstieg">
+ <div class="root-brandline"><span><span class="root-mark">AV</span> APHROS VOID</span><span class="root-region">ALDERA-SEKTOR · DEIN AUFBRUCH</span></div>
+ <div class="root-grid">
+  <div>
+   <p class="root-eyebrow">EINE WELT. DEINE ENTSCHEIDUNGEN.</p>
+   <h1 id="root-game-title">APHROS <em>VOID</em></h1>
+   <p class="root-lead">Führe deinen Konzern. Steuere Miner, Frachter und Jäger persönlich. Schreibe deine Geschichte zwischen den Sternen.</p>
+   <p class="root-sub">Eine lebendige Weltraumwirtschaft: Jedes Schiff wird gekauft, jeder Transport finanziert und jeder Auftrag wirklich ausgeführt.</p>
+   <nav aria-label="Spielmodi">
+    <a class="root-primary" href="prototypes/spiel/index.html">Karriere öffnen <span aria-hidden="true">→</span></a>
+    <a class="root-secondary" href="#klassische-wirtschaft">Klassische Wirtschaft</a>
+    <a class="root-secondary" href="prototypes/j4c/index.html">Jägertraining</a>
+    <div class="root-alt"><span>Weiterer Zugang:</span>
+     <a href="prototypes/verbund/konzern.html">Frühere Konzernansicht</a>
+    </div>
+   </nav>
+  </div>
+  <aside class="root-info" aria-label="Dein Ausgangspunkt">
+   <small>SEKTORPROFIL / 01</small>
+   <strong>ALDERA</strong>
+   <p>Hier beginnt deine Karriere. Andere Konzerne handeln weiter – auch wenn du einen anderen Kurs einschlägst.</p>
+   <div>Karriere und klassische Wirtschaft besitzen getrennte Spielstände.</div>
+  </aside>
+ </div>
+ <div class="root-cards" aria-label="Spielmöglichkeiten">
+  <article><small>KONZERN</small><h2>Wirtschaft gestalten</h2><p>Handeln, finanzieren und eigene Produktionsketten aufbauen.</p></article>
+  <article><small>PILOT</small><h2>Selbst ans Steuer</h2><p>Mit Trägheit fliegen, andocken, Ziele ansteuern und Rohstoffe fördern.</p></article>
+  <article><small>AKADEMIE</small><h2>Deinen Weg finden</h2><p>Zwölf Flugübungen und acht Managerlektionen begleiten dich.</p></article>
+ </div>
+</section>
+<details id="root-legacy-info"><summary>Hintergrund zum klassischen Wirtschaftsmodus</summary>
 <h1>Aphros Void – W0–W5</h1>
-<nav aria-label="Spielmodi" style="padding:12px;border:2px solid #65d7ec;border-radius:9px;margin:12px 0;background:#102332">
- <a href="prototypes/spiel/index.html" style="display:inline-block;min-height:50px;padding:12px 20px;border-radius:8px;background:linear-gradient(125deg,#a36536,#257b82);border:1px solid #d8ad7d;color:#fff;font-weight:850;text-decoration:none">APHROS VOID SPIELEN · Neue Karriere starten</a>
- <a href="prototypes/j4c/index.html" style="display:inline-block;min-height:50px;padding:12px 18px;border-radius:8px;background:#176d77;color:#fff;font-weight:700;text-decoration:none">Jäger selbst fliegen · Patrouille &amp; Duell</a>
- <a href="prototypes/verbund/konzern.html" style="display:inline-block;min-height:50px;padding:12px 18px;margin:4px 0 0 8px;border-radius:8px;background:#176d77;color:#fff;font-weight:700;text-decoration:none">Konzern führen · eigenen Miner kaufen &amp; fliegen</a>
- <span style="display:block;margin-top:8px">Neue Karriere: Titelbildschirm, Firmenprolog und echtes, aus der ursprünglichen Regel195-Welt gestartetes Regel204-Konzernspiel mit eigenem 2D-Cockpit – ohne Testdatei oder Import. Eigener separater Karrierespeicher, zusätzlich JSON-Export. Die bisherigen Jäger- und Konzernzugänge und der alte W0–W5-Spielstand bleiben erhalten.</span>
-</nav>
 <p><strong>Spielbare Forschungswelt · W0–W5 mit Eis, Wasser und persönlichen Pilotenkonten / Forschungsregel 195 / Schema 8.</strong>
 Ein gemeinsamer Original-Core für Spieler und NPC. Getrennt von W5ab (Regel 19), W5aa (Regel 18), W5z/W5y (Regel 17), W5x (Regel 16), W5w (Regel 15), W5u (Regel 14), C1d (Regel 3314)
 und öffentlichem Hauptspiel. Automatisches Speichern nach jeder Aktion in einer eigenen Regel195-Datenbank. Wiederherstellung bleibt pausiert, ohne Offline-Fortschritt. Browserdaten sind keine NAS-Sicherung; JSON regelmäßig extern sichern. Regel14-Speicher bleiben unberührt. Die Bedienfolge steht unter „Eis, Wasser &amp; Privatkonten“.</p>
+</details>
 </header>
+<section id="klassische-wirtschaft" aria-label="Klassischer Wirtschaftsmodus"><h2>Klassische Wirtschaft · W0–W5</h2><p>Der bisherige Wirtschaftseinstieg bleibt mit seinen bisherigen Spielständen, Funktionen und JSON-Importen erhalten. Das neue Spiel erreichst du über „Karriere öffnen“.</p></section>
 <section class="controls" aria-label="Sitzung und Schutz">
 <button id="save">Spielstand speichern</button><button id="load">Manuellen Spielstand laden</button><button id="load-previous">Vorherigen Autosave laden</button>
 <p id="storage-status" role="status" aria-live="polite">Speicher wird geprüft …</p>

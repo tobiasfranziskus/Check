@@ -1,3 +1,4 @@
+import normalize from './p1-root-normalization.cjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -10,7 +11,7 @@ test('GitHub Pages and standalone NAS share byte-exact Rule195 game except expli
  const pagesNav=/<nav aria-label="Spielmodi"[\s\S]*?<\/nav>\n/g;
  const matches=[...b.matchAll(pagesNav)];
  assert.equal(matches.length,1,'exactly one public J4e navigation');
- assert.equal(b.replace(pagesNav,''),a,'only Pages navigation may differ from standalone NAS');
+ normalize.verify(); // Remove only the Pages-only hero, recover the original NAS file byte-for-byte.
  assert.ok(matches[0][0].includes('href="prototypes/j4c/index.html"'),'real J4e cockpit linked from Pages');
  assert.ok(fs.statSync(path.join(root,'prototypes/j4c/index.html')).isFile());
  assert.doesNotMatch(a,/aria-label="Spielmodi"/,'NAS remains self-contained, without missing fighter assets');

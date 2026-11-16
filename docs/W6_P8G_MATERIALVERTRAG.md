@@ -73,11 +73,11 @@ Die Frage einer **automatischen unabhängigen W5-Ersatzbestellung** mit Kunden-,
 
 ## P8g-Flottendiagnose: Der aktive Nadir-Frachter ist im Original-W5ac gesperrt
 
-**[GEPRÜFT / KEIN PRODUKTCODEWECHSEL]** [CI #43861124895](https://github.com/tobiasfranziskus/Check/actions/runs/43861124895), **3/3 Node22-Tests**, analysiert originalen S02-Tag90-Hash `ad0f037be40c32fd` und ausschließlich bereits existierende Politikvarianten. Schiffe und ursprüngliche Eigentumsrechte:
+**[GEPRÜFT / KEIN PRODUKTCODEWECHSEL]** [CI #43861497630](https://github.com/tobiasfranziskus/Check/actions/runs/43861497630), **4/4 Node22-Tests**, analysiert originalen S02-Tag90-Hash `ad0f037be40c32fd` und ausschließlich bereits existierende Politikvarianten. Schiffe und ursprüngliche Eigentumsrechte:
 
 - **`sh002`** in Aldera und **`sh007`** in Aldera: beide vollständig verschlissen (Restbuchwert **0**), nicht nutzbar.
 - **`sh010`**: `transport`-Eigentum, leer und angedockt in **Nadir**, Restbuchwert **678 ISK**. Ein ursprünglicher, **vollständig bezahlter** W5ac-Nadir→Aldera-Flug von Minute 7.715 bis 7.775 ist im `w5ac.completed`-Journal hinterlegt.
-- `pilotW5TransferKalkulation` lehnt einen erneuten Flug von `sh010` mit „Noch aktive W3-Fracht oder Ueberfuehrung“ ab, obwohl `w3.auftrag`, `w5n.frachtauftrag` und `w5ac.active` **alle null** sind. Die tatsächliche Sperre ist **`w5ac.completed.some(x=>x.id===sh.id)`** im Original-W5ac. Das W5ac-Audit fordert ebenfalls eine **einzigartige Schiffs-ID** in allen abgeschlossenen Überführungsbelegen.
+- `pilotW5TransferKalkulation` lehnt einen erneuten Flug von `sh010` mit „Noch aktive W3-Fracht oder Ueberfuehrung“ ab, obwohl `w3.auftrag`, `w5n.frachtauftrag` und `w5ac.active` **alle null** sind. Die tatsächliche Sperre ist **`w5ac.completed.some(x=>x.id===sh.id)`** im Original-W5ac. Ein zusätzlicher direkt signierter `shipReposition`-Gegenversuch scheitert mit genau demselben Grund **ohne jede Save-, Kassen- oder Eigentumsmutation**. Das W5ac-Audit fordert ebenfalls eine **einzigartige Schiffs-ID** in allen abgeschlossenen Überführungsbelegen.
 - Die NPC-Ersatzlogik prüft `frachter.some(tauglich)` **systemweit**. Das einsatzfähige, aber in Nadir gestrandetene `sh010` verhindert so einen automatischen Neukauf. Ohne Aldera-Frachter wird aber kein neuer echter W3/P8g-Vertrag möglich.
 - Das vorhandene Politikszenario `werftVorrat=1` (auch kombiniert mit `ersatzVorlaufProzent=80`) aktiviert in der Testkopie **eine finanzierte W5-Frachterfertigung** (10→5 Material, Nadir-Frachterlager 0→1), aber der Ersatz wird **nicht** automatisch gekauft. Innerhalb von fünf Tagen: **0 weitere W3-Frachten und 0 neue Jäger**. Keine geschenkten Ressourcen, volle Audits.
 

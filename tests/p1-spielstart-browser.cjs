@@ -475,7 +475,7 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
     assert.match(await fighterRecord.textContent(),/900 ISK/);
     assert.equal(await page.locator('#jaeger-kaufweg').isDisabled(),true,
       'not even an enabled purchase navigation without the real yard hull');
-    assert.match(await page.locator('#jaeger-autoritaet').textContent(),/Nur Nadir darf J3\/J4/);
+    assert.match(await page.locator('#jaeger-autoritaet').textContent(),/Nur Nadir darf die Werftarbeit beauftragen/);
     assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),rawStart,
       'reading a fighter project must not execute any company contract');
     // J13b: project actions are original player orders, revalidated on click.

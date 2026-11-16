@@ -53,6 +53,8 @@ const initial=()=>{
      name:'j14-real-registered-multi-ship-silicon.json',
      mimeType:'application/json',buffer:Buffer.from(source.json)
     });
+    // FileReader/import completes asynchronously, particularly in WebKit.
+    await page.locator('#spielwelt').waitFor({state:'visible'});
     assert.equal(await page.locator('#spielwelt').isVisible(),true);
     await page.locator('#tab-flotte').tap();
     const pilot=page.locator('[data-pilot="'+source.minerId+'"]');

@@ -56,12 +56,52 @@ function check(w,s,id,tag){
   const save=w.save(s),rehydrated=w.load(save);
   assert.equal(w.hash(rehydrated),w.hash(s),id+' deterministischer JSON-Reload');
 }
+// P8e: NUR LESENDER Snapshot der Nachfragelocks aus dem originalen W6 NPC-Pfad.
+function followupGate(w,s){
+  const C=w.rules.j2b,C3=w.rules.j3,C4=w.rules.j4,k=s.kanon,
+    lager=s.stations[C.station].lager,b=k.silizium;
+  const felder=[C.feld,C.nebenfeld].filter(Boolean);
+  const feld=felder.find(f=>b.felder?.[f.id]?.vorrat>=C.charge);
+  const vorhanden=(lager.silizium||0)+(lager.bauteil||0)
+    +(k.bauteile?.auftrag?C3.proCharge:0);
+  const miner=Object.values(s.ships).find(sh=>
+    sh.owner==='npc3'&&sh.klasse==='miner'&&sh.heimat==='nadir'
+    &&['nadir','dravos'].includes(sh.system)&&!s.kanon.stillgelegt?.[sh.id]);
+  const frachter=Object.values(s.ships).filter(sh=>
+    sh.owner==='transport'&&sh.klasse==='frachter'&&sh.phase==='dock');
+  const status={
+    tick:s.tick,fieldChoice:feld?.id||null,fieldRemaining:feld?b.felder[feld.id].vorrat:0,
+    fieldTotal:b.vorrat,activeSiliconOrder:b.auftrag?{
+      owner:b.auftrag.owner,ship:b.auftrag.schiff,field:b.auftrag.feld,
+      mined:b.auftrag.gefoerdert,requested:b.auftrag.menge
+    }:null,
+    miner:miner?{id:miner.id,system:miner.system,phase:miner.phase,
+      flug:miner.flug?.lage,anker:miner.flug?.anker,
+      cargo:miner.ladung.silizium||0}:null,
+    carrierDocked:frachter.map(sh=>({id:sh.id,system:sh.system,
+      cargo:sh.ladung.silizium||0})),
+    warehouse:{silicon:lager.silizium||0,parts:lager.bauteil||0,
+      materials:lager.material||0,ore:lager.erz||0,fighter:lager.jaeger||0},
+    fighterOrder:!!k.jaeger?.auftrag,partsOrder:!!k.bauteile?.auftrag,
+    existingSupply:vorhanden,fighterPartsDemand:C4.bauteile,
+    minerCash:s.owners.npc3.cash,buyerCash:s.owners[C.station].cash,
+    carrierCash:s.owners.transport.cash,
+    miningLaborNeeded:C.charge*C.minutenJeEinheit*C.lohnJeMinute,
+    buyingCashNeeded:C.charge*C.preis,
+    noFighterInStock:!(lager.jaeger>0),noFighterOrder:!k.jaeger?.auftrag,
+    needsAdditionalSupply:vorhanden<C4.bauteile,
+    sourceAvailable:b.vorrat>=C.charge,
+    minerHasFunding:s.owners.npc3.cash>=C.charge*C.minutenJeEinheit*C.lohnJeMinute,
+    buyerHasFunding:s.owners[C.station].cash>=C.charge*C.preis
+  };
+  return status;
+}
 function run(scenario){
   const w=K.erstellenP8d(capital);
   const s=w.createState(42,{politik:scenario.politik});
   assert.deepEqual(w.npcAutoSetzen(s,true),{ok:true,aktiviert:true});
   assert.deepEqual(w.npcSiliziumSetzen(s,true),{ok:true,aktiviert:true});
-  let buys=0,early=days===30?W6.kennzahlen(w,s):null,late=null,peakFracht=0,lastReceipt=0;
+  let buys=0,early=days===30?W6.kennzahlen(w,s):null,late=null,peakFracht=0,lastReceipt=0,firstFreight=null;
   check(w,s,scenario.id,0);
   // 120-Minuten-Blöcke benutzen denselben 60-Teilschritt-Kern; dazwischen
   // laufen ALLE 20-/40-Minuten-Original-Reisen mit minutengenauer Entlohnung.
@@ -78,6 +118,7 @@ function run(scenario){
     const p=s.kanon.p8d;
     if(p.belege.length!==lastReceipt){
       check(w,s,scenario.id,t/1440);
+      if(!firstFreight)firstFreight={day:t/1440,gate:followupGate(w,s)};
       lastReceipt=p.belege.length;
     }
     peakFracht=Math.max(peakFracht,p.auftrag?1:0);
@@ -124,7 +165,9 @@ function run(scenario){
     }:null,
     topPauses:Object.entries(s.kanon.npc?.pausen||{}).sort((a,b)=>b[1]-a[1]).slice(0,4),
     worldISK:cash(s),mint:s.minted,burn:s.burned,
-    peakParallelFreights:peakFracht
+    peakParallelFreights:peakFracht,
+    firstFreight,
+    followupAtEnd:followupGate(w,s)
   };
   assert.ok(peakFracht<=1,'bestehende Forschungsregel207 kann nur eine gebundene Charge haben');
   console.log('W6_P8D_DRAVOS_REGIME',JSON.stringify(result));

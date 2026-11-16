@@ -77,6 +77,7 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
     await page.goto(url);
     const package207={name:'w6-research.json',mimeType:'application/json',buffer:Buffer.from(paid)};
     await page.locator('#import-datei').setInputFiles(package207);
+    await page.waitForFunction(()=>document.getElementById('import-datei').value==='');
     assert.equal(await page.locator('#startseite').isVisible(),true,
       'dismissed external import must stay on original starting screen');
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),researchSlot),paid);
@@ -85,6 +86,7 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
       'file content alone cannot activate an unapproved Rule207 import');
     erlaubteFremdimporte=true;
     await page.locator('#import-datei').setInputFiles(package207);
+    await page.waitForFunction(()=>document.getElementById('import-datei').value==='');
     assert.equal(await page.locator('#spielwelt').isVisible(),true);
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),researchSlot),paid);
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),researchSlot+':vorherige'),paid);

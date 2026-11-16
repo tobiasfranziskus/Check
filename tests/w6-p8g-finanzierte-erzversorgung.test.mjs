@@ -80,7 +80,16 @@ test('P8g – echte Nadir-Materialnachfrage beauftragt 50 Erz mit W3-Vorfinanzie
         task:x.auftrag,system:x.system,phase:x.phase,flug:x.flug?.lage})),
     localMinerStock:s.stations.st_aldera.lager.miner,npc3Cash:s.owners.npc3.cash}));
   assert.ok(miners.length>0,'für realen P8g-Vertrag fehlt ein einsatzfähiger eigener NPC3-Miner');
-  const miner=miners[0],belegeVor=s.w3.abgeschlossen,werftVor=s.w5.fertig;
+  const miner=miners.find(x=>!s.erzpilotVertraege?.[x.id])||miners[0];
+  if(s.kanon.pendel[miner.id]?.ware==='eis'){
+    // Unterschrift und Disposition liegen beim tatsächlichen Eigentümer;
+    // bestehender pendelnder Eisauftrag darf nicht still übernommen werden.
+    const stop=w.execute(s,{type:'shipShuttleStop',owner:'npc3',schiff:miner.id});
+    assert.equal(stop.ok,true,'Original-Eisauftrag ordentlich abbrechen: '+stop.reason);
+    assert.equal(s.kanon.pendel[miner.id],undefined);
+    check(w,s);
+  }
+  const belegeVor=s.w3.abgeschlossen,werftVor=s.w5.fertig;
   const offer={type:'industrialOreOfferMaterial',owner:'st_nadir',miner:miner.id,frachter:newId};
   for(const cmd of [
     offer,{type:'industrialOreAcceptMine',owner:'npc3'},

@@ -35,6 +35,7 @@ function ready90(){
 }
 test('P8g-S02×90: Original-W5-Werft kann echtes Ersatzschiff aus eigenem Kapital und Material nachproduzieren',()=>{
   const {w,s,originalHash}=ready90();
+  const originalSave=w.save(s);
   w.politikSetzen(s,{automatik:false});
   const before={material:s.stations.st_nadir.lager.material,stock:s.stations.st_nadir.lager.frachter,
     werft:s.owners.werft_extern.cash,carrier:s.owners.transport.cash,created:s.w5.fertig};
@@ -58,7 +59,7 @@ test('P8g-S02×90: Original-W5-Werft kann echtes Ersatzschiff aus eigenem Kapita
   const ferry=w.execute(s,{type:'shipReposition',owner:'transport',schiff:ship.id});
   assert.equal(ferry.ok,true,'bezahlte W5ac Überführung: '+ferry.reason);
   verify(w,s);
-  const mid=w.save(s);
+  const mid=w.save(s),midHash=w.hash(s);
   w.advance(s,30);
   assert.equal(s.ships[ship.id].phase,'reise');
   verify(w,s);
@@ -69,8 +70,8 @@ test('P8g-S02×90: Original-W5-Werft kann echtes Ersatzschiff aus eigenem Kapita
   assert.equal(w.buchwert(s,ship.id)>0,true);
   assert.equal(before.carrier-s.owners.transport.cash,810);
   assert.ok(s.w5ac.completed.some(x=>x.id===ship.id&&x.kosten===60));
-  assert.equal(w.hash(w.load(mid)),w.hash(w.load(mid)));
-  assert.equal(w.hash(w.load(w.save(ready90().s))),originalHash,'Quellwelt unberührt');
+  assert.equal(w.hash(w.load(mid)),midHash,'originaler halber Transit bleibt wiederladbar');
+  assert.equal(w.hash(w.load(originalSave)),originalHash,'Quellwelt unberührt');
   console.log('P8G_REAL_REPLACEMENT_W5',JSON.stringify({originalHash,source:'S02×90',
     ship:ship.id,productionMaterials:w.rules.w5.material,
     purchaseISK:750,ferryISK:60,freighterValue:w.buchwert(s,ship.id),

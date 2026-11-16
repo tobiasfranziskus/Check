@@ -26,6 +26,7 @@
   <div class="menu-actions">
    <button class="primary" id="neues-spiel" type="button">Neue Karriere <span aria-hidden="true">→</span></button>
    <button id="fortsetzen" type="button" disabled>Karriere fortsetzen</button>
+   <button id="fortsetzen-w6" type="button" disabled>W6-Forschung fortsetzen</button>
    <button id="vorige-karriere" type="button" hidden>Vorherige Karriere wiederherstellen</button>
    <button id="import-aktion" type="button">Gesicherte Karriere laden</button>
    <input id="import-datei" type="file" accept=".json,application/json" hidden>
@@ -56,6 +57,11 @@
   <input id="w6-npc-start" type="checkbox">
   <span><strong>W6: Autonome NPC-Wirtschaft im Testprofil S02 starten</strong>
    <small>Nur für diese neue Karriere. NPC-Konzerne bezahlen Bergbau, Transporte, Ersatzschiffe, Bauteile und bis zu zwei Jäger selbst. Keine Gratiswaren oder neuen ISK; reale Krisen bleiben möglich. Bestehende Spielstände werden nicht umgestellt.</small></span>
+ </label>
+ <label class="w6-start-option" for="w6-p8g-start">
+  <input id="w6-p8g-start" type="checkbox">
+  <span><strong>W6/P8g: Neue Dravos-Forschungskarriere (Regel207)</strong>
+   <small>Eigenständige, ausdrücklich gewählte Forschungswelt mit echten endlichen Siliziumfeldern, Eigentumsrechten, bezahlter Dravos-Fracht und finanzierter Erzversorgung. Separater Save-Slot: Deine Regel204-Karriere bleibt erhalten. Kein Import oder automatische Umstellung.</small></span>
  </label>
  <div class="briefing-bottom">
   <div><strong>Dein erstes Ziel: einen Miner erwerben und selbst fliegen.</strong><p>Wähle oben, ob NPC-Firmen ihre Industrie eigenständig betreiben sollen. Ohne Auswahl bleibt der bisherige unveränderte Karriere-Start erhalten.</p></div>

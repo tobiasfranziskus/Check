@@ -28,3 +28,5 @@
 2. Mit der gegenwärtigen `main`-Funktion vergleichen: **bereits in main / übernehmbarer UI-Ansatz / nur Forschung / fehlt wirklich**. Danach die minimale Dateigrenze festlegen.
 3. In originalem Aphros-Void-Core implementieren, bestehende Trägheit/Handübernahme erhalten; Rechte, Finanzen, alte Saves, Seed/Hashes, Handsteuerung und Touch/WebKit prüfen.
 4. Bei einer echten Übernahme diesen Katalog mit Zielpfad, PR, Testnachweis und verbleibender Lücke ergänzen. Keine Doppelimplementierung und keine Behauptung, die alte Engine sei bereits integriert.
+
+**[DRAFT / P2 #421](https://github.com/tobiasfranziskus/Check/pull/421):** Die vier oben genannten Orbit-/Autopilot-/Touchquellen am Original-SHA erneut gezielt gelesen. Radiale/tangentiale Richtungsbildung, ausdrückliche Zielbefehle und Abbruchmuster im bestehenden `prototypes/flug2d/flug-kern.js`/RAUM-Cockpit verwendet; Folgen neu, keine Alt-Simulation kopiert. [Implementierung, Quellenvergleich, tatsächliche Tests und Grenzen](P2_ZIELSTEUERUNG.md). Noch kein MAIN-/Pages-Nachweis.

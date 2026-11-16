@@ -61,7 +61,7 @@ function run(scenario){
   const s=w.createState(42,{politik:scenario.politik});
   assert.deepEqual(w.npcAutoSetzen(s,true),{ok:true,aktiviert:true});
   assert.deepEqual(w.npcSiliziumSetzen(s,true),{ok:true,aktiviert:true});
-  let buys=0,early=null,late=null,peakFracht=0,lastReceipt=0;
+  let buys=0,early=days===30?W6.kennzahlen(w,s):null,late=null,peakFracht=0,lastReceipt=0;
   check(w,s,scenario.id,0);
   // 120-Minuten-Blöcke benutzen denselben 60-Teilschritt-Kern; dazwischen
   // laufen ALLE 20-/40-Minuten-Original-Reisen mit minutengenauer Entlohnung.
@@ -81,13 +81,20 @@ function run(scenario){
       lastReceipt=p.belege.length;
     }
     peakFracht=Math.max(peakFracht,p.auftrag?1:0);
-    if(t===60*1440)early=W6.kennzahlen(w,s);
-    if(t===90*1440)late=W6.kennzahlen(w,s);
+    if(days>=30&&t===(days-30)*1440)early=W6.kennzahlen(w,s);
+    if(t===days*1440)late=W6.kennzahlen(w,s);
     if(t%(15*1440)===0 || t===days*1440)check(w,s,scenario.id,t/1440);
   }
   const p=s.kanon.p8d,field=s.kanon.silizium.felder,k=W6.kennzahlen(w,s);
   const carriers=Object.values(s.ships).filter(x=>x.owner==='transport'&&x.klasse==='frachter');
   const miners=Object.values(s.ships).filter(x=>x.owner==='npc3'&&x.heimat==='nadir');
+  // Das 30-Tage-Fenster bezieht sich auf das tatsächliche Laufende:
+  // 90 Tage => 60–90, 365 Tage => 335–365 (nicht immer 60–90).
+  const last30Window=early&&late?{
+    startDay:days-30,endDay:days,
+    start:{ice:early.eis,waterISK:early.wasserErloes,replacements:early.ersatz},
+    end:{ice:late.eis,waterISK:late.wasserErloes,replacements:late.ersatz}
+  }:null;
   const result={
     id:scenario.id,days,hash:w.hash(s),contracts:p.belege.length,
     offers:p.angebote,active:p.auftrag?.phase||null,
@@ -109,10 +116,11 @@ function run(scenario){
     minerPositions:miners.map(x=>({id:x.id,system:x.system,
       silicon:x.ladung.silizium||0})),
     ice:k.eis,waterISK:k.wasserErloes,replacements:k.ersatz,
-    last30Active:early&&late?{
-      ice:late.eis>early.eis,
-      water:late.wasserErloes>early.wasserErloes,
-      replacement:late.ersatz>early.ersatz
+    last30Window,
+    last30Active:last30Window?{
+      ice:last30Window.end.ice>last30Window.start.ice,
+      water:last30Window.end.waterISK>last30Window.start.waterISK,
+      replacement:last30Window.end.replacements>last30Window.start.replacements
     }:null,
     topPauses:Object.entries(s.kanon.npc?.pausen||{}).sort((a,b)=>b[1]-a[1]).slice(0,4),
     worldISK:cash(s),mint:s.minted,burn:s.burned,

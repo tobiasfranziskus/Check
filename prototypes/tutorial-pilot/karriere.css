@@ -1,0 +1,35 @@
+/* Shared P1 career academy styles. Scoped: never import standalone akademie.css. */
+.piloten-akademie{margin:0 clamp(16px,4vw,64px) 22px;background:linear-gradient(132deg,rgba(31,55,74,.86),rgba(8,22,38,.95));
+ border:1px solid rgba(165,213,231,.24);border-radius:20px;overflow:hidden;color:#f2f7ff;
+ box-shadow:0 20px 55px #0003;}
+.piloten-akademie details{margin:0;}
+.piloten-akademie summary{list-style:none;display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;padding:19px 23px;
+ min-height:68px;cursor:pointer;touch-action:manipulation;}
+.piloten-akademie summary::-webkit-details-marker{display:none}
+.piloten-akademie summary::after{content:'⌄';font-size:1.25rem;color:#a8cbd9;margin-left:auto}
+.piloten-akademie details[open] summary::after{content:'⌃'}
+.piloten-akademie-tag{font-size:.66rem;color:#b9d8e4;font-weight:750;letter-spacing:.13em}
+.piloten-akademie summary strong{font-weight:750;letter-spacing:-.025em;font-size:1.3rem}
+.piloten-akademie-count{font-size:.78rem;border:1px solid #8eb6bf66;border-radius:99px;color:#d9e9f4;padding:5px 10px}
+.piloten-akademie-hint{padding:0 23px;margin:0 0 12px;color:#bdd1e3;line-height:1.5;font-size:.89rem}
+.piloten-akademie #pilotenausbildung-karten{padding:0 22px 22px}
+.piloten-akademie .lektionen{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:13px}
+.piloten-akademie .lektionen article{min-width:0;display:flex;flex-direction:column;gap:10px;
+ padding:18px;border-radius:15px;border:1px solid #88c2c52e;background:rgba(6,17,29,.46)}
+.piloten-akademie .lektionen h3{font-size:1.03rem;line-height:1.23;letter-spacing:-.01em;margin:0}
+.piloten-akademie .lektionen p{margin:0;font-size:.85rem;line-height:1.45;color:#bed0e0;overflow-wrap:anywhere}
+.piloten-akademie .lektionen article p:nth-of-type(2){margin-top:auto;font-size:.8rem;color:#dfc58b}
+.piloten-akademie .lektionen button{min-height:48px;border-radius:10px;justify-content:center;font-weight:720;
+ background:linear-gradient(115deg,#286b70,#205b74);border:1px solid #8bd4d19c;color:#faffff}
+.piloten-akademie .lektionen button:disabled{opacity:.48}
+.piloten-akademie [role=status]{margin:14px 0 2px;padding:12px 14px;border-radius:10px;
+ border:1px solid #accbcb40;background:#101d2cdd;color:#e7f4ff;overflow-wrap:anywhere}
+.piloten-akademie button:focus-visible,.piloten-akademie summary:focus-visible{outline:3px solid #a4eee3;outline-offset:3px}
+.piloten-akademie-live{margin:0 16px 12px;padding:11px 15px;border-radius:12px;border:1px solid #7bc2c56c;
+ background:rgba(9,38,53,.94);color:#e7f9f7;font-weight:600}
+@media(max-width:720px){.piloten-akademie{margin:0 15px 18px;border-radius:16px}
+ .piloten-akademie summary{padding:15px 17px}.piloten-akademie-hint{padding:0 17px}
+ .piloten-akademie #pilotenausbildung-karten{padding:0 14px 16px}
+ .piloten-akademie .lektionen{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){.piloten-akademie *{scroll-behavior:auto}}

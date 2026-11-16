@@ -95,6 +95,8 @@ const Welt=require('../prototypes/welt/welt-kern.js');
     await lage('Freier Flug|Autopilot|Handflug');
     assert.equal(await page.locator('#raum-dock').isVisible(),false);
     // Ziel direkt auf der Leinwand antippen (herausgezoomt, damit die Boje im Bild liegt).
+    // Die bewusst geöffnete Zielkarte zuerst schließen; verdeckte Ziele werden nicht durchgeklickt.
+    await tap('#raum-ziel-zu');
     await tap('#raum-zoom-minus');await tap('#raum-zoom-minus');
     await page.locator('#raum-buehne').scrollIntoViewIfNeeded();
     const boje=await page.evaluate(()=>RaumCockpit.sitzung.bildpunkt('boje:0'));
@@ -106,6 +108,7 @@ const Welt=require('../prototypes/welt/welt-kern.js');
     assert.match(await text('#raum-meldung'),/Autopilot: Kurs gesetzt/);
     await page.waitForFunction(()=>/Patrouille flug · 1\/3/.test(document.querySelector('#raum-ladung').textContent),null,{timeout:40000});
     // Leerer Raum: Punkt markieren, Flug erst nach Bestätigung.
+    await tap('#raum-ziel-zu');
     const frei=await page.evaluate(()=>{const r=document.querySelector('#raum-leinwand').getBoundingClientRect();return {x:r.left+r.width/2-70,y:r.top+r.height/2+105};});
     await page.touchscreen.tap(frei.x,frei.y);
     await page.waitForFunction(()=>{const a=RaumCockpit.sitzung.zustand().auswahl;return !!a&&typeof a==='object';});

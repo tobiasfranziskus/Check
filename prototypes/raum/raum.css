@@ -14,7 +14,7 @@ body.raum-aktiv .ansichten{margin:max(6px,env(safe-area-inset-top)) auto 6px}
 .raum-feld[hidden]{display:none}
 .raum-feld strong{font-size:.95rem}
 .raum-ol{left:8px;top:8px}.raum-or{right:8px;top:8px;text-align:right}
-#raum-zielkarte{left:50%;transform:translateX(-50%);top:104px;min-width:min(300px,92%);max-width:min(440px,94%);padding-right:54px}
+#raum-zielkarte{left:50%;transform:translateX(-50%);top:104px;min-width:min(300px,92%);max-width:min(440px,94%);padding-right:54px;max-height:calc(100% - 270px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 #raum-ziel-zu{position:absolute;right:4px;top:4px;min-width:48px;min-height:48px;padding:0;font-size:1.3rem;background:transparent;border-color:transparent}
 #raum-dock{left:8px;top:104px;bottom:150px;width:min(390px,calc(100% - 16px));max-width:none;overflow-y:auto;-webkit-overflow-scrolling:touch;gap:8px}
 #raum-dockinhalt{display:grid;gap:8px}
@@ -48,3 +48,6 @@ body.raum-aktiv .ansichten{margin:max(6px,env(safe-area-inset-top)) auto 6px}
  #raum-zielkarte,#raum-dock{top:112px}
 }
 @media(max-height:560px){#raum-buehne{height:86vh;min-height:320px}#raum-dock{bottom:8px;left:156px;width:min(360px,calc(100% - 340px))}}
+
+#raum-zielaktionen label{flex:1 1 100%;min-width:0}
+#raum-zielaktionen input{box-sizing:border-box;max-width:100%}

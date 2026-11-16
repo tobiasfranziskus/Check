@@ -1,5 +1,7 @@
 # Aphros Void – verbindliche Produkt-Roadmap
 
+**[DRAFT / P2]** Neue autoritative Orbit-/Folgen-/Aufschaltbefehle und gemeinsames Touch-Zielmenü auf separatem Branch; noch nicht MAIN. Kompatibilität, Prüfungen und Grenzen: [P2-Zielsteuerung](P2_ZIELSTEUERUNG.md). Keine Wirtschafts-, Kampf- oder Forschungsregeländerung.
+
 **Stand 15.11.2026 · [BESCHLOSSEN] Produktziele und Entwicklungsreihenfolge.** Dies ist die **einzige** verbindliche Roadmap. Technische Nachweise stehen in [PROJEKTSTATUS.md](PROJEKTSTATUS.md); Entwicklungs- und Release-Gates in [AGENTS.md](../AGENTS.md). Historische Einträge sind vollständig und unverändert in [ROADMAP_HISTORIE_BIS_20261115.md](archiv/ROADMAP_HISTORIE_BIS_20261115.md) archiviert. Alte Commit-/PR-Labels gelten ausschließlich für ihren ursprünglichen Zeitpunkt.
 
 ## 1. Produktvision und Architektur

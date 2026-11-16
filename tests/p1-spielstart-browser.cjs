@@ -138,6 +138,25 @@ async function w6Optin(browser,base,width,height,kind){
    const page=await ctx.newPage(),errors=[];
    page.on('pageerror',e=>errors.push(String(e)));
    page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+   // P2 cockpit inspection hook: expose the existing read-only browser QA API,
+   // without introducing a second world, command path, or product-code global.
+   await page.addInitScript(()=>{
+     let component;
+     Object.defineProperty(window,'RaumCockpit',{
+       configurable:true,
+       get(){return component;},
+       set(api){
+         component=api;
+         const original=api.verbinden;
+         api.verbinden=function(...args){
+           const cockpit=original.apply(this,args);
+           api.sitzung=cockpit;
+           return cockpit;
+         };
+       }
+     });
+   });
+
    try{
     await page.goto(base+'/');
     const entry=page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/spiel/index.html"]');
@@ -230,6 +249,57 @@ async function w6Optin(browser,base,width,height,kind){
     assert.equal(flying.owners.house.cash,2360);
     assert.equal(flying.minted,0);assert.equal(flying.burned,0);
     assert.equal(w.audit(w.load(JSON.stringify(flying))).ok,true);
+    // P2: the real public career uses the new commands through the pilot session.
+    const tap=async sel=>{await page.locator(sel).tap();};
+    await tap('#raum-tempo-300');
+    // P2_PINCH_POINTERS_CHECK: Browser-Emulation zweier gleichzeitiger Touch-Pointer.
+    // Kein physisches iPad: prüft Pointer-Zoom und Cancel ohne unbeabsichtigte Auswahl.
+    const pinch=await page.evaluate(()=>{
+      const canvas=document.querySelector('#raum-leinwand');
+      const r=canvas.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+      const before=RaumCockpit.sitzung.zustand();
+      const send=(type,id,x)=>canvas.dispatchEvent(new PointerEvent(type,{
+        bubbles:true,pointerId:id,pointerType:'touch',isPrimary:id===91,
+        clientX:x,clientY:cy
+      }));
+      send('pointerdown',91,cx-30);send('pointerdown',92,cx+30);
+      send('pointermove',91,cx-50);send('pointermove',92,cx+50);
+      const during=RaumCockpit.sitzung.zustand();
+      send('pointercancel',91,cx-50);send('pointercancel',92,cx+50);
+      const after=RaumCockpit.sitzung.zustand();
+      return {start:before.massstab,zoom:during.massstab,end:after.massstab,
+        beforeSelection:JSON.stringify(before.auswahl),afterSelection:JSON.stringify(after.auswahl)};
+    });
+    assert.ok(pinch.zoom<pinch.start,'Pinch-out must zoom into the canvas in both engines');
+    assert.equal(pinch.end,pinch.zoom,'Cancelling fingers must keep the current zoom');
+    assert.equal(pinch.afterSelection,pinch.beforeSelection,'Pinch must not select a target');
+
+    await page.waitForFunction(()=>/Freier Flug|Handflug/.test(document.querySelector('#raum-lage').textContent));
+    await tap('[data-raum="objekt-st_aldera"]');
+    await page.locator('#ziel-orbit-abstand').fill('120000');
+    await tap('[data-raum="ziel-orbit"]');
+    await page.waitForFunction(()=>/Autopilot: orbit/.test(document.querySelector('#raum-lage').textContent));
+    const orbitSave=await page.evaluate(key=>localStorage.getItem(key),SLOT);
+    assert.equal(w.load(orbitSave).ships[ship.id].flug.modus,'orbit');
+    // Input stays intact across HUD ticks, also on touch keyboards.
+    await page.locator('#ziel-orbit-abstand').fill('150000');
+    await page.waitForTimeout(350);
+    assert.equal(await page.locator('#ziel-orbit-abstand').inputValue(),'150000');
+    await tap('#raum-stopp');
+    assert.match(await page.locator('#raum-lage').textContent(),/Handflug/);
+    // NPC3's original financed mining shuttle is now moving in this same world.
+    await page.waitForSelector('[data-raum="objekt-sh001"]');
+    await tap('[data-raum="objekt-sh001"]');
+    await page.locator('#ziel-folgen-abstand').fill('90000');
+    await tap('[data-raum="ziel-folgen"]');
+    await page.waitForFunction(()=>/Autopilot: folgen/.test(document.querySelector('#raum-lage').textContent));
+    const followed=w.load(await page.evaluate(key=>localStorage.getItem(key),SLOT));
+    assert.equal(followed.ships[ship.id].flug.ziel.id,'sh001');
+    await tap('[data-raum="ziel-aufschalten"]');
+    assert.match(await page.locator('#raum-lage').textContent(),/Aufgeschaltet: sh001/);
+    await tap('#raum-stopp');
+    await tap('#raum-start'); // pause after manual takeover
+    assert.match(await page.locator('#raum-lage').textContent(),/Handflug/);
     await page.locator('#raum-konzern').tap();
     assert.equal(await page.locator('#spielwelt').isVisible(),true);
     const [download]=await Promise.all([

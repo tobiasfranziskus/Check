@@ -28,6 +28,20 @@
 
 Der neue Vertrag macht den tatsächlichen Rohstoffkäufer nicht künstlich zahlungsfähig. Ohne eigenen Etat, echte ungenutzte Schiffskapazität oder reale Materiallücke gibt es **keinen** Auftrag. NPC-Unternehmen dürfen auch mit diesem Mechanismus ausfallen.
 
+## Unabhängige P8g-Sicherheitsabnahme und Importvertrag
+
+**[DRAFT / ABNAHMESPERRRE]** Codex [QA-PR #426](https://github.com/tobiasfranziskus/Check/pull/426) hat die frühere Selbstabnahme widerlegt: **68 unabhängige Tests, 62 grün, 6 rot in vier Gruppen** (selbst gesetztes Import-Opt-in, entfernbarer K7-Ursprungsbeleg während W3-Hinreise, gefälschte Fertigmeldung ohne Lieferung, Verschleiß nach Signatur). Die ursprünglichen Finanzierungs-/Save-/Replay-Nachweise gelten nur für ihre ausgeführten positiven Pfade; P8g ist dadurch **nicht releasefähig**.
+
+**[DRAFT / KERNKORREKTUREN]** In diesem Forschungsbranch wurden für den neu freigegebenen Materialvertrag ergänzt:
+
+- W3-Auftrag `industrieMiner` bindet K7-Ursprungsbelege während Vorbestellung, Hin- und Rückflug; zugehörige Schiff-IDs und beide Eigentümersignaturen werden im Audit verbunden.
+- Ein terminaler `materialOnly`-Vertrag darf nicht ohne reale W3-Abschluss- und Warenbuchung als Lieferung gelten; die Ledger-Audits bleiben zusätzlich verbindlich.
+- Beim `industrialOreCommitMaterial` und ursprünglichen K7-Commit werden **beide** eigenen Schiffe, Typ, Standort, Anker, Auftrag, Ladung und realer Restbuchwert erneut kontrolliert, bevor irgendeine W3-Treuhand entsteht.
+- **P8g-Importfreigabe stammt niemals allein aus dem JSON-Flag.** `welt.load(json)` lässt ein P8g-aktiviertes fremdes JSON grundsätzlich nicht automatisch zu. Lokal **von derselben Weltinstanz selbst erzeugte exakt gleiche** `welt.save(state)`-Texte dürfen für sofortigen Save/Load-Replay weiter geladen werden. Ein externer/importierter P8g-Spielstand verlangt *separat* `welt.load(json,{p8gImportFreigegeben:true})`, **erst nach ausdrücklicher Zustimmung im aufrufenden Import-Dialog**. Weder das Flag noch ein gespeicherter Beleg können dieses API-Argument selbst setzen.
+- Der Save-Text und sein kanonischer Zustand bleiben unverändert, keine stille Regel- oder Schema-Migration. Die lokale Textvertrauensliste ist bewusst flüchtig (kein Dateisignaturschlüssel). **Keine kryptografische Authentifizierung, kein fälschungssicherer Anti-Cheat und kein Ersatz für die externe ausdrückliche Zustimmung.** Nach App-Neustart zählt auch die eigene exportierte P8g-Datei als externer Import. Für den bisherigen produktiven Regel204-Bestand ändert sich nichts.
+
+**[ABNAHME-LAUFEND]** Die **unveränderte** Codex-Datei ist auf der separaten <https://github.com/tobiasfranziskus/Check/pull/427> als QA-Bridge gegen die Kernkorrektur eingespielt. Erst nach erfolgreichem **68/68**, unveränderten 13×90/S02×365, vollständiger Node22-Regression und einer realen UI-Freigabe darf eine zukünftige Produktintegration erwogen werden. Bis dahin **kein Merge/Pages/NAS**, keine iPad-Abnahme behaupten.
+
 ## Nachweise und noch ausstehende Integration
 
 **[GEPRÜFT]** Beim gezielten Original-Node22-Lauf [#43850009699](https://github.com/tobiasfranziskus/Check/actions/runs/43850009699) wurden **2/2 P8g-Spezialtests + 7/7 P8d/P8f-Regressionen** bestanden: S02 ab erster echter Dravos-Lieferung Tag14,25; zulässiger NPC3-Miner `sh017` mit Original-Auftragsfreigabe, neuer real gekaufter/überführter Speditionsfrachter `sh021`, 50 finanzierte Erz geliefert, 40 physisch gelagert nach erster W4-Charge, 15 Material, **keine weitere W5-Hülle**, Geldmenge 33.000 ISK, Mint/Burn 0. Endhash nach erster W4-Charge `eb8df591590bfe47`.

@@ -1,0 +1,44 @@
+/* Aphros Void · manager course. Intentionally scoped; main start-screen redesign stays independent. */
+.manager-akademie{margin:0 clamp(16px,4vw,64px) 22px;border:1px solid rgba(180,209,234,.22);
+ border-radius:20px;background:linear-gradient(125deg,rgba(31,57,76,.86),rgba(11,23,37,.93));
+ box-shadow:0 22px 65px rgba(0,0,0,.20);overflow:hidden;color:#f2f7ff}
+.manager-akademie>summary{list-style:none;cursor:pointer;display:flex;align-items:center;flex-wrap:wrap;
+ gap:12px 22px;padding:19px 23px;min-height:68px;touch-action:manipulation}
+.manager-akademie>summary::-webkit-details-marker{display:none}
+.manager-akademie>summary:after{content:'⌄';margin-left:auto;color:#9dc3d1;font-size:1.25rem}
+.manager-akademie[open]>summary:after{content:'⌃'}
+.manager-akademie-kicker{font-size:.66rem;letter-spacing:.13em;color:#bad6de;font-weight:750}
+.manager-akademie>summary strong{font-size:1.3rem;letter-spacing:-.025em;font-weight:700}
+.manager-akademie-progress{font-size:.78rem;color:#d7e8f2;border:1px solid #7ea7ad60;
+ padding:5px 10px;border-radius:999px}
+.manager-akademie-body{display:grid;grid-template-columns:minmax(175px,250px) minmax(0,1fr);
+ gap:18px 24px;padding:0 22px 22px}
+.manager-akademie-hint{grid-column:1/-1;margin:0;color:#bcd0df;font-size:.9rem}
+.manager-akademie-nav{display:flex;flex-direction:column;gap:7px;max-height:340px;overflow:auto}
+.manager-akademie-nav button{width:100%;text-align:left;min-height:48px;justify-content:flex-start;
+ border:1px solid #7694aa32;background:rgba(255,255,255,.04);padding:9px 12px;
+ border-radius:12px;font-size:.89rem;font-weight:560}
+.manager-akademie-nav button.manager-akademie-selected{background:rgba(108,193,192,.17);
+ border-color:#82d9d0a0;color:#e8fffa}
+.manager-akademie-detail{padding:20px 22px;border:1px solid rgba(191,220,235,.12);
+ border-radius:16px;background:rgba(6,17,29,.42);min-height:240px;display:flex;
+ flex-direction:column;align-items:flex-start;gap:11px}
+.manager-akademie-detail>*{margin:0}
+.manager-akademie-label{font-size:.69rem;font-weight:800;letter-spacing:.16em;color:#e8c891}
+.manager-akademie-detail h4{font-size:1.4rem;line-height:1.2;letter-spacing:-.03em}
+.manager-akademie-detail>p{color:#e0eaf5}
+.manager-akademie-detail .manager-akademie-explain{font-size:.88rem;color:#b6c9db}
+.manager-akademie-detail .manager-akademie-goto{margin-top:auto;min-height:48px;
+ border-radius:12px;border:1px solid rgba(117,219,209,.60);
+ background:linear-gradient(110deg,#2b686e,#255b72);color:#f8ffff;font-weight:720}
+.manager-akademie button:focus-visible,.manager-akademie>summary:focus-visible{outline:3px solid #94eee3;outline-offset:2px}
+@media(max-width:720px){
+ .manager-akademie{margin:0 15px 18px;border-radius:16px}
+ .manager-akademie>summary{padding:15px 17px}
+ .manager-akademie-body{display:flex;flex-direction:column;padding:0 15px 17px;gap:13px}
+ .manager-akademie-nav{flex-direction:row;overflow:auto;max-height:none;padding-bottom:6px;
+ scroll-snap-type:x mandatory}
+ .manager-akademie-nav button{min-width:164px;max-width:205px;flex-shrink:0;scroll-snap-align:start}
+ .manager-akademie-detail{padding:17px;min-height:230px}
+}
+@media(prefers-reduced-motion:reduce){.manager-akademie *{scroll-behavior:auto}}

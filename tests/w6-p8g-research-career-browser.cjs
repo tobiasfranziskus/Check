@@ -25,8 +25,14 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
   for(const [width,height] of sizes){
    const ctx=await browser.newContext({viewport:{width,height},hasTouch:true,acceptDownloads:true});
    const page=await ctx.newPage(),errors=[],dialogs=[];
+   let erlaubteFremdimporte=false;
    page.on('pageerror',e=>errors.push(String(e)));
-   page.on('dialog',async dialog=>{dialogs.push(dialog.message());await dialog.accept();});
+   page.on('dialog',async dialog=>{
+     dialogs.push(dialog.message());
+     if(/Externen P8g-Import ausdrücklich erlauben/.test(dialog.message())&&!erlaubteFremdimporte)
+       await dialog.dismiss();
+     else await dialog.accept();
+   });
    const url='http://127.0.0.1:'+server.address().port+'/prototypes/spiel/index.html';
    try{
     await page.goto(url);
@@ -66,6 +72,23 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
     assert.equal(await page.locator('#spielwelt').isVisible(),true);
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),researchSlot),paid,
       'Rule207 research resume cannot migrate or mutate old authored save');
+    // An IMPORTED Rule207 JSON cannot authorize itself: first reject
+    // the actual browser-confirm dialog, then explicitly authorize it.
+    await page.goto(url);
+    const package207={name:'w6-research.json',mimeType:'application/json',buffer:Buffer.from(paid)};
+    await page.locator('#import-datei').setInputFiles(package207);
+    assert.equal(await page.locator('#startseite').isVisible(),true,
+      'dismissed external import must stay on original starting screen');
+    assert.equal(await page.evaluate(k=>localStorage.getItem(k),researchSlot),paid);
+    assert.equal(await page.evaluate(k=>localStorage.getItem(k),oldSlot),null);
+    assert.ok(dialogs.some(x=>/Externen P8g-Import ausdrücklich erlauben/.test(x)),
+      'file content alone cannot activate an unapproved Rule207 import');
+    erlaubteFremdimporte=true;
+    await page.locator('#import-datei').setInputFiles(package207);
+    assert.equal(await page.locator('#spielwelt').isVisible(),true);
+    assert.equal(await page.evaluate(k=>localStorage.getItem(k),researchSlot),paid);
+    assert.equal(await page.evaluate(k=>localStorage.getItem(k),researchSlot+':vorherige'),paid);
+    assert.equal(await page.evaluate(k=>localStorage.getItem(k),oldSlot),null);
     // Original 204 starts in its OWN slot even when 207 research exists.
     await page.goto(url);
     await page.locator('#neues-spiel').tap();

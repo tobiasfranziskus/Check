@@ -1,5 +1,6 @@
 // Öffentlicher Einstieg J4e: vollständig finanzierter, statischer Original-Regel204-Stand.
 // Kein synthetischer Spieler-Jäger und kein stiller Save-Import der älteren Rule195-Welt.
+import normalize from './p1-root-normalization.cjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -15,7 +16,7 @@ test('öffentliche Root-W0–W5 verlinkt J4e, ohne das NAS-Spiel oder die Speich
  const pages=read('index.html'),nas=read('aphros-void.html');
  const nav=/<nav aria-label="Spielmodi"[\s\S]*?<\/nav>\n/g;
  assert.equal([...pages.matchAll(nav)].length,1,'genau ein öffentlicher Jäger-Einstieg');
- assert.equal(pages.replace(nav,''),nas,'nur Pages-only-Navigation, NAS-Core bitgenau');
+ normalize.verify(); // Inverse Pages-only portal proves the complete NAS game is byte-identical.
  assert.ok(pages.includes('href="prototypes/j4c/index.html"'),'Root verlinkt Jägercockpit');
  assert.match(pages,/id="storage-status"/,'alte W0–W5-Speicherhülle bleibt erhalten');
  assert.ok(fs.existsSync(path.join(root,'prototypes/j4c/index.html')));

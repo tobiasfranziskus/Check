@@ -38,4 +38,22 @@ Der neue Vertrag macht den tatsächlichen Rohstoffkäufer nicht künstlich zahlu
 
 Aktuelle Forschung setzt `materialSupplySetzen` ausdrücklich; nicht `main`, kein UI-/Pages-Deploy, keine Produkt-Save-Migration und keine echte iPad-/NAS-Abnahme.
 
+## Automatische NPC-Wirtschaft: 13×90 und S02×365 (nicht mit Einzelauftrag verwechseln)
+
+**[GEPRÜFT / NEGATIVER NACHHALTIGKEITSBEFUND]** [GitHub Actions #43851323192](https://github.com/tobiasfranziskus/Check/actions/runs/43851323192) bestätigt **13/13 Szenarien à 90 Tage, S02 über 365 Tage und die separaten Vertrags-/Legacy-Regressionen vollständig erfolgreich**. Alle Ergebnisse gehören zur ausdrücklich aktivierten `W6_P8G_MATERIAL=1`-Variante, **nicht** `main`. Die ursprüngliche P8d-Version ohne Opt-in bleibt daneben testbar.
+
+| Welt | Erfolgreiche Dravos-Fremdfrachten bis 90 Tage | Material-only-Vertrag als letzter K7-Vertrag | Original-W3-Frachten insgesamt | Fertige Jäger |
+| --- | ---: | --- | ---: | ---: |
+| S01 | 0 | nein | 1 | 0 |
+| S02 | 1 | ja | 3 | 2 |
+| S03 | 1 | ja | 3 | 2 |
+| S04 | 1 | ja | 3 | 2 |
+| S05–S10 | jeweils 0 | nein | je 1 | 0 |
+| S11 | 2 | ja | 4 | **3** |
+| S12–S13 | jeweils 0 | nein | je 1 | 0 |
+
+Bei S02 sind 90-Tage- und 365-Tage-Endstände **wirtschaftlich identisch** (je 2 gebaute/gekaufte Jäger, 3 abgeschlossene W3-Frachten, 10 Material in Nadir, kein Erz; echte Materialbestellung abgeschlossen). Der 365-Tage-Endhash lautet `abf227020abc7c00`, der 90-Tage-Hash `ad0f037be40c32fd` (Hashes unterscheiden sich trotz identischer Mengen wegen späterem Tick). Im tatsächlichen Fenster Tag **335–365** keine Eisproduktion, kein Wasserumsatz, kein Ersatzkauf. **Keine fortlaufend tragfähige Gesamtwirtschaft nachgewiesen.**
+
+S11 gelingt ein dritter Jäger vollständig autonom; S02/S03/S04 hingegen nicht. Die beobachtete Materialnachfrage funktioniert also grundsätzlich, ihre Wirkung hängt von weiteren **physischen Schiffskapazitäten und konkurrierendem Materialverbrauch** ab. Die konkrete Ursachenaufteilung ist Gegenstand einer nachfolgenden **rein lesenden Diagnoserunde**, keine beschlossene Balanceänderung. In den übrigen neun Szenarien entstand mangels tatsächlich ausgelöster Silizium-/Industrienachfrage kein Material-only-Auftrag; Insolvenz oder alternative Einzelfehler daraus nicht behaupten.
+
 **Nächster Release-Gate:** P8g mit seinen notwendigen P8b–P8f-Abhängigkeiten gezielt auf den jeweils aktuellen Hauptzweig integrieren (keine ganzen historischen Stacks blind zusammenführen), echte Bedienung aus dem öffentlichen Spielstart, unabhängige Node22/Browser-Wirtschaft, historischer Hash und aktualisierte Save-/Regelversionsfrage klären. Erst nach erfolgreicher Integration und eigenem Pages-Nachweis `[MAIN]/[PAGES]` setzen.

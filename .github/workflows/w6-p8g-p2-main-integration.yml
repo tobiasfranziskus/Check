@@ -1,0 +1,55 @@
+name: W6/P8g integrated on current P2 main – economy and compatibility
+on:
+  push:
+    branches:
+      - 'integrate/w6-p8g-rule207-p2-main-20261116'
+  pull_request:
+    paths:
+      - 'prototypes/welt/**'
+      - 'prototypes/flug2d/flug-kern.js'
+      - 'tests/w6-p8g-*.test.mjs'
+      - '.github/workflows/w6-p8g-p2-main-integration.yml'
+jobs:
+  all-node22:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Full genuine Node22 tests/*.test.mjs incl P2 and 68 independent Codex checks"
+        run: node --test tests/*.test.mjs
+      - name: "Public P2 target-control explicit compatibility test"
+        run: node --test tests/p2-zielsteuerung.test.mjs tests/w6-p8g-p2-main-integration.test.mjs
+  authentic-crisis-worlds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { scenario: S01, days: 90 }
+          - { scenario: S02, days: 90 }
+          - { scenario: S03, days: 90 }
+          - { scenario: S04, days: 90 }
+          - { scenario: S05, days: 90 }
+          - { scenario: S06, days: 90 }
+          - { scenario: S07, days: 90 }
+          - { scenario: S08, days: 90 }
+          - { scenario: S09, days: 90 }
+          - { scenario: S10, days: 90 }
+          - { scenario: S11, days: 90 }
+          - { scenario: S12, days: 90 }
+          - { scenario: S13, days: 90 }
+          - { scenario: S02, days: 365 }
+          - { scenario: S02, days: 730 }
+    env:
+      W6_P8G_MATERIAL: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Real paid W6 Rule207 supply – no mint, funded work and 90/365/730 days"
+        run: node tools/w6-p8d-dravos-szenarien.cjs ${{ matrix.scenario }} ${{ matrix.days }}

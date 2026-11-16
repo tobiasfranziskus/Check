@@ -8,6 +8,8 @@ on:
       - 'prototypes/verbund/**'
       - 'tests/p2-*'
       - 'tests/p1-*'
+      - 'tests/p4-karriere-patrouille.test.mjs'
+      - 'prototypes/j4c/patrouille.js'
       - 'scripts/build-w5-singlefile.mjs'
       - 'index.html'
       - '.github/workflows/p1-spielstart.yml'
@@ -24,7 +26,7 @@ jobs:
         with:
           node-version: '22'
       - name: "P1 realer Regel195-Spielstart und bezahlter F6-Minerflug"
-        run: node --test tests/p1-spieleinstieg.test.mjs tests/p2-zielsteuerung.test.mjs
+        run: node --test tests/p1-spieleinstieg.test.mjs tests/p2-zielsteuerung.test.mjs tests/p4-karriere-patrouille.test.mjs
       - name: "Öffentliche Root-Navigation reproduzierbar; NAS-W0–W5 unverändert"
         run: node scripts/build-w5-singlefile.mjs --check
   real-game-browser:

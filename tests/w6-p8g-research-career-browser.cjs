@@ -29,7 +29,7 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
    page.on('pageerror',e=>errors.push(String(e)));
    page.on('dialog',async dialog=>{
      dialogs.push(dialog.message());
-     if(/Externen P8g-Import ausdrücklich erlauben/.test(dialog.message())&&!erlaubteFremdimporte)
+     if(/externen Spielstand ausdrücklich importieren/.test(dialog.message())&&!erlaubteFremdimporte)
        await dialog.dismiss();
      else await dialog.accept();
    });
@@ -46,7 +46,7 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
     await page.locator('#karriere-starten').tap();
     assert.equal(await page.locator('#spielwelt').isVisible(),true);
     assert.equal(await page.locator('#w6-status').isVisible(),true);
-    assert.match(await page.locator('#w6-status').textContent(),/Dravos-Forschung/);
+    assert.match(await page.locator('#w6-status').textContent(),/Experimentelle Dravos-Karriere aktiv/);
     const raw=await page.evaluate(k=>localStorage.getItem(k),researchSlot),s=JSON.parse(raw);
     assert.equal(s.rulesVersion,207);
     assert.equal(s.kanon.materialSupplyEnabled,true);
@@ -55,12 +55,12 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
     assert.equal(s.owners.house.cash,3000);
     assert.equal(s.minted,0);assert.equal(s.burned,0);
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),oldSlot),null);
-    assert.ok(dialogs.some(x=>/Regel207-Forschungswelt/.test(x)),'Research opt-in outside JSON confirmed');
+    assert.ok(dialogs.some(x=>/experimentelle Dravos-Karriere/.test(x)),'Research opt-in outside JSON confirmed');
     // Legitimate player-originated original miner purchase is still a real game action.
     await page.locator('#tab-jaeger').tap();
     const status=await page.locator('#p8-silizium-lage').textContent();
     for(const label of ['Endliche Dravos-Bodenreserve','Bezahlte Dravos-Fracht',
-      'P8g-Materialauftrag','Nadir-Industrie','Frachtkapazität in Aldera'])
+      'Materialauftrag','Nadir-Industrie','Frachtkapazität in Aldera'])
       assert.ok(status.includes(label),'visible research status: '+label);
     const buy=page.locator('[data-j13-action="buy-st_aldera-miner"]');
     assert.equal(await buy.isEnabled(),true);
@@ -99,7 +99,7 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
       'dismissed external import must stay on original starting screen');
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),researchSlot),paid);
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),oldSlot),null);
-    assert.ok(dialogs.some(x=>/Externen P8g-Import ausdrücklich erlauben/.test(x)),
+    assert.ok(dialogs.some(x=>/externen Spielstand ausdrücklich importieren/.test(x)),
       'file content alone cannot activate an unapproved Rule207 import');
     erlaubteFremdimporte=true;
     await page.locator('#import-datei').setInputFiles(package207);

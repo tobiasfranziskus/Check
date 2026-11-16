@@ -137,3 +137,29 @@ body.raum-aktiv .world{display:none}
 #jaeger-beitrag-aktionen section{min-width:0}
 #jaeger-beitrag-aktionen button{min-height:48px;width:100%;overflow-wrap:anywhere}
 #jaeger-sperren p{font-size:.88rem;overflow-wrap:anywhere;color:var(--muted)}
+
+
+/* P1 Produktreife: additive Startseiten-Gestaltung, ohne Wirtschafts-/Cockpitänderung. */
+#startseite.splash{align-items:center;gap:clamp(24px,4vw,58px);padding-top:clamp(40px,7vw,100px);padding-bottom:clamp(36px,5vw,88px)}
+#startseite .hero-content{max-width:820px}
+#startseite h1{font-size:clamp(3.75rem,9vw,8.8rem);letter-spacing:-.068em}
+#startseite .lead{margin-top:25px;max-width:660px;font-weight:510;line-height:1.4}
+#startseite .hero-caption{color:#b7c9d7}
+#startseite .menu-actions{margin-top:30px;gap:10px}
+#startseite .menu-actions button{border-radius:12px;border-color:#ffffff31;transition:background-color .18s ease,border-color .18s ease,transform .18s ease}
+#startseite .menu-actions button.primary{border-color:#8cdfd4}
+#startseite .menu-actions button:not(:disabled):active{transform:translateY(1px)}
+#startseite .hero-side{align-self:center;border:1px solid #ffffff26;border-radius:20px;background:rgba(11,30,45,.78);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 22px 70px #0208138a}
+#startseite .entry-features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:clamp(28px,4vw,54px)}
+#startseite .entry-features article{min-width:0;padding:17px;border:1px solid #ffffff24;border-radius:16px;background:rgba(11,29,45,.74);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+#startseite .entry-features article span{display:block;color:#a6c7d5;font-size:.66rem;letter-spacing:.12em;font-weight:750}
+#startseite .entry-features h2{margin:11px 0 6px;font-size:1.1rem;font-weight:720;letter-spacing:-.02em}
+#startseite .entry-features p{margin:0;color:#c1d2dc;font-size:.88rem;line-height:1.48}
+.advanced-start{margin:30px 0 20px;padding:20px;border:1px solid #ffffff21;border-radius:18px;background:rgba(13,31,45,.55)}
+.advanced-heading{display:flex;gap:12px;align-items:center;margin:0;color:#e7eaf1;font-size:.86rem;letter-spacing:.12em;font-weight:750}
+.advanced-heading span{color:#aabfca;font-size:.72rem;font-weight:500;letter-spacing:0}
+.advanced-note{margin:10px 0 18px;color:#b9cfda;font-size:.92rem}
+.advanced-start .w6-start-option{border-color:#ffffff29;border-radius:12px;background:rgba(17,40,58,.64)}
+@media(max-width:1050px){#startseite.splash{grid-template-columns:minmax(0,1fr)}#startseite .hero-side{max-width:720px;width:100%;justify-self:start}}
+@media(max-width:700px){#startseite .entry-features{grid-template-columns:1fr}#startseite .entry-features article{padding:14px 16px}#startseite .menu-actions>*{min-width:0;width:100%}#startseite .menu-actions button{justify-content:center}#startseite h1{font-size:clamp(3.5rem,13.6vw,6rem)}.advanced-start{padding:15px}}
+@media(prefers-reduced-motion:reduce){#startseite .menu-actions button{transition:none}}

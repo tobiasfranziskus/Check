@@ -426,11 +426,19 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
     await page.waitForURL('**/prototypes/spiel/index.html');
     assert.equal(await page.locator('#startseite').isVisible(),true);
     assert.equal(await page.locator('#fortsetzen').isDisabled(),true);
+    assert.equal(await page.locator('.entry-features article').count(),3);
+    assert.doesNotMatch(await page.locator('#startseite').textContent(),/Regel\s*20[47]|Prototyp|richtiger Miner/i);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,
+      'premium career start must not have horizontal overflow');
     assert.equal(await page.locator('#vorige-karriere').isHidden(),true);
     assert.match(await page.locator('h1').textContent(),/APHROS\s+VOID/);
     await page.locator('#neues-spiel').tap();
     assert.equal(await page.locator('#briefing').isVisible(),true);
     assert.equal(await page.locator('.faction').count(),4);
+    assert.match(await page.locator('#briefing').textContent(),/Meridian Rohstoffwerke/);
+    assert.match(await page.locator('#briefing').textContent(),/Asterion Logistik/);
+    assert.match(await page.locator('#briefing').textContent(),/Nadir Schiffswerke/);
+    assert.doesNotMatch(await page.locator('#briefing').textContent(),/Regel\s*20[47]|P8g|Prototyp|richtiger Miner/i);
     assert.match(await page.locator('#briefing').textContent(),/Aldera.*Nadir/s);
     await page.locator('#karriere-starten').tap();
     assert.equal(await page.locator('#spielwelt').isVisible(),true);
@@ -450,12 +458,14 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
     const terminal=page.locator('#sektorwirtschaft');
     assert.equal(await terminal.locator('.economy-card').count()>=6,true);
     const report=await terminal.textContent();
-    assert.match(report,/st_aldera/);
-    assert.match(report,/st_nadir/);
-    assert.match(report,/Bergbau.*npc3/);
-    assert.match(report,/Außenwerft.*werft_extern/);
+    assert.match(report,/Aldera/);
+    assert.match(report,/Nadir/);
+    assert.match(report,/Meridian Rohstoffwerke/);
+    assert.match(report,/Nadir Schiffswerke/);
+    assert.doesNotMatch(report,/\b(?:st_aldera|st_nadir|npc3|werft_extern)\b/,
+      'the player-visible report should never expose internal owner IDs');
     assert.match(report,/33[.,]000 ISK/);
-    assert.match(report,/Mint\/Burn:\s*0 \/ 0 ISK/);
+    assert.match(report,/Neu ausgegebene ISK:\s*0 · Eingezogene ISK:\s*0/);
     const link=terminal.locator('[data-j12-offer="buy-st_aldera-miner"]');
     assert.equal(await link.count(),1);
     await link.tap();
@@ -473,7 +483,7 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
     assert.match(await fighterRecord.textContent(),/900 ISK/);
     assert.equal(await page.locator('#jaeger-kaufweg').isDisabled(),true,
       'not even an enabled purchase navigation without the real yard hull');
-    assert.match(await page.locator('#jaeger-autoritaet').textContent(),/Nur Nadir darf J3\/J4/);
+    assert.match(await page.locator('#jaeger-autoritaet').textContent(),/Nur Nadir darf die Werftarbeit beauftragen/);
     assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),rawStart,
       'reading a fighter project must not execute any company contract');
     // J13b: project actions are original player orders, revalidated on click.

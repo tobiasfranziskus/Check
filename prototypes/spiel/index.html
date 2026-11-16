@@ -14,7 +14,7 @@
 <body>
 <div class="nebula" aria-hidden="true"><div class="orbital orbit-a"></div><div class="orbital orbit-b"></div><div class="planet"></div></div>
 <header class="topline">
- <a class="brand" href="../../index.html" aria-label="Aphros Void – klassische Wirtschaft"><span class="brand-mark">AV</span><span>APHROS <b>VOID</b></span></a>
+ <a class="brand" href="../../index.html" aria-label="Aphros Void – Hauptseite"><span class="brand-mark">AV</span><span>APHROS <b>VOID</b></span></a>
  <span class="topline-status" id="mode-indicator">OFFLINE · ALDERA-SEKTOR</span>
  <button id="open-menu" class="ghost" type="button" hidden>Menü</button>
 </header>
@@ -23,18 +23,23 @@
  <div class="hero-content">
   <p class="eyebrow"><span class="signal"></span> EINE WELT. DEINE ENTSCHEIDUNGEN.</p>
   <h1>APHROS <em>VOID</em></h1>
-  <p class="lead">Ein Konzern am Rand des bekannten Raums. Eine Wirtschaft, in der jede Entscheidung zählt. Und irgendwann dein eigenes Schiff zwischen den Sternen.</p>
+  <p class="lead">Führe einen Konzern. Steuere deine Schiffe. Baue dein Unternehmen zwischen den Sternen auf.</p>
   <p class="hero-caption">Werde Unternehmer, Pilot und Entdecker. Dein Abenteuer beginnt in Aldera.</p>
   <div class="menu-actions">
    <button class="primary" id="neues-spiel" type="button">Neue Karriere <span aria-hidden="true">→</span></button>
    <button id="fortsetzen" type="button" disabled>Karriere fortsetzen</button>
-   <button id="fortsetzen-w6" type="button" disabled>W6-Forschung fortsetzen</button>
+   <button id="fortsetzen-w6" type="button" disabled>Experimentelle Karriere fortsetzen</button>
    <button id="vorige-karriere" type="button" hidden>Vorherige Karriere wiederherstellen</button>
-   <button id="vorige-forschung" type="button" hidden>Vorherige W6-Forschung wiederherstellen</button>
-   <button id="import-aktion" type="button">Gesicherte Karriere laden</button>
+   <button id="vorige-forschung" type="button" hidden>Vorherige experimentelle Karriere wiederherstellen</button>
+   <button id="import-aktion" type="button">Spielstand importieren</button>
    <input id="import-datei" type="file" accept=".json,application/json" hidden>
   </div>
-  <p id="menumeldung" class="statusline" role="status" aria-live="polite">Dein Spielstand wird nur für diese Karriere separat gespeichert.</p>
+  <p id="menumeldung" class="statusline" role="status" aria-live="polite">Deine Karriere wird getrennt von anderen Spielständen gespeichert.</p>
+  <div class="entry-features" aria-label="Entdecke Aphros Void">
+   <article><span>WIRTSCHAFT</span><h2>Wirtschaft</h2><p>Rohstoffe fördern, Transporte finanzieren und Produktionsketten aufbauen.</p></article>
+   <article><span>FLOTTE</span><h2>Flotte</h2><p>Bergbauschiffe, Frachter und Jäger kaufen und selbst übernehmen.</p></article>
+   <article><span>UNIVERSUM</span><h2>Universum</h2><p>Handel und Flugrouten zwischen Aldera, Nadir und weiteren Sektoren erkunden.</p></article>
+  </div>
  </div>
  <div class="hero-side" aria-label="Spielwelt">
   <span class="hero-side-kicker">SEKTORBERICHT / 01</span>
@@ -42,8 +47,8 @@
   <span>Ein sicherer Ausgangspunkt. Doch das Universum wartet nicht auf dich.</span>
   <div class="separator"></div>
   <span><b>1</b> gemeinsame Wirtschaft</span>
-  <span><b>3</b> Schiffsklassen im Ausbau</span>
-  <span><b>0</b> geschenkte Schiffe</span>
+  <span><b>3</b> persönlich steuerbare Schiffsklassen</span>
+  <span>Deine Entscheidungen gestalten das Universum.</span>
  </div>
 </section>
 
@@ -51,23 +56,27 @@
  <div class="chapter-heading"><p class="eyebrow">PROLOG / DER ERSTE AUFTRAG</p><h2>Niemand wartet auf einen neuen Konzern.</h2>
  <p>Die Handelswege sind vergeben, die Werften ausgelastet, die besten Schiffe gehören anderen. Du hast Kapital, aber noch keine eigene Flotte. Was daraus wird, entscheidest du.</p></div>
  <div class="factions" aria-label="Unternehmen und Orte der Spielwelt">
-  <article class="faction"><span class="faction-icon">◈</span><span class="faction-type">DEIN UNTERNEHMEN</span><h3>Dein Konzern</h3><p>Du verwaltest dein eigenes Konto. Jeder Miner und Frachter muss tatsächlich gekauft werden.</p><span class="faction-foot">Eigentümer: house</span></article>
-  <article class="faction"><span class="faction-icon">◇</span><span class="faction-type">BERGBAU / NPC</span><h3>Freie Erzförderer</h3><p>Eigenständige Bergbaubetriebe. Ihre Schiffe, Löhne und Aufträge gehören nicht dir.</p><span class="faction-foot">Unternehmen: npc3</span></article>
-  <article class="faction"><span class="faction-icon">▣</span><span class="faction-type">HANDEL / INDUSTRIE</span><h3>Aldera & Nadir</h3><p>Aldera handelt mit Rohstoffen. In Nadir warten Raffinerien und Werften – wenn sie finanziert werden.</p><span class="faction-foot">Stationen: st_aldera · st_nadir</span></article>
-  <article class="faction"><span class="faction-icon">⇢</span><span class="faction-type">LOGISTIK / SCHIFFBAU</span><h3>Spedition & Werft</h3><p>Ohne bezahlten Transport bleibt Erz liegen. Ohne Material und Arbeiter baut die Werft kein Schiff.</p><span class="faction-foot">Firmen: transport · werft_extern</span></article>
+  <article class="faction"><span class="faction-icon">◈</span><span class="faction-type">DEIN UNTERNEHMEN</span><h3>Dein Konzern</h3><p>Du verwaltest dein eigenes Konto. Jeder Miner und Frachter muss tatsächlich gekauft werden.</p><span class="faction-foot">Eigentümer: <span data-company-display="house">Dein Konzern</span></span></article>
+  <article class="faction"><span class="faction-icon">◇</span><span class="faction-type">ROHSTOFFE / MERIDIAN</span><h3>Meridian Rohstoffwerke</h3><p>Eigenständiger Bergbaukonzern. Seine Schiffe, Löhne und Aufträge gehören nicht dir.</p><span class="faction-foot">Unternehmen: <span data-company-display="npc3">Meridian Rohstoffwerke</span></span></article>
+  <article class="faction"><span class="faction-icon">▣</span><span class="faction-type">HANDEL / INDUSTRIE</span><h3>Aldera & Nadir</h3><p>Aldera handelt mit Rohstoffen. In Nadir warten Raffinerien und Werften – wenn sie finanziert werden.</p><span class="faction-foot">Stationen: <span data-company-display="st_aldera">Aldera</span> · <span data-company-display="st_nadir">Nadir</span></span></article>
+  <article class="faction"><span class="faction-icon">⇢</span><span class="faction-type">LOGISTIK / SCHIFFBAU</span><h3>Asterion & Nadir Schiffswerke</h3><p>Asterion verbindet die Handelsstationen. Die Nadir Schiffswerke produzieren nur mit Material, Personal und Finanzierung.</p><span class="faction-foot">Firmen: <span data-company-display="transport">Asterion Logistik</span> · <span data-company-display="werft_extern">Nadir Schiffswerke</span></span></article>
  </div>
+ <section class="advanced-start" aria-label="Weitere Karrieremodi">
+  <p class="advanced-heading">WEITERE SPIELMODI <span>Freiwillig</span></p>
+  <p class="advanced-note">Du kannst mit der klassischen Karriere beginnen oder eine erweiterte Simulation wählen. Bestehende Spielstände bleiben getrennt.</p>
  <label class="w6-start-option" for="w6-npc-start">
   <input id="w6-npc-start" type="checkbox">
-  <span><strong>W6: Autonome NPC-Wirtschaft im Testprofil S02 starten</strong>
-   <small>Nur für diese neue Karriere. NPC-Konzerne bezahlen Bergbau, Transporte, Ersatzschiffe, Bauteile und bis zu zwei Jäger selbst. Keine Gratiswaren oder neuen ISK; reale Krisen bleiben möglich. Bestehende Spielstände werden nicht umgestellt.</small></span>
+  <span><strong>Erweiterte Wirtschaftssimulation</strong>
+   <small>Nur für diese neue Karriere. Unabhängige Konzerne finanzieren Bergbau, Transporte, Ersatzschiffe, Bauteile und bis zu zwei Jäger selbst. Keine Gratiswaren oder neuen ISK; reale Krisen bleiben möglich. Bestehende Spielstände werden nicht umgestellt.</small></span>
  </label>
  <label class="w6-start-option" for="w6-p8g-start">
   <input id="w6-p8g-start" type="checkbox">
-  <span><strong>W6/P8g: Neue Dravos-Forschungskarriere (Regel207)</strong>
-   <small>Eigenständige, ausdrücklich gewählte Forschungswelt mit echten endlichen Siliziumfeldern, Eigentumsrechten, bezahlter Dravos-Fracht und finanzierter Erzversorgung. Separater Save-Slot: Deine Regel204-Karriere bleibt erhalten. Kein Import oder automatische Umstellung.</small></span>
+  <span><strong>Experimentelle Dravos-Karriere</strong>
+   <small>Eigenständige Spielwelt mit begrenzten Siliziumfeldern, Eigentumsrechten, bezahlter Dravos-Fracht und finanzierter Erzversorgung. Dein normaler Karrierespielstand bleibt erhalten. Keine automatische Übernahme bestehender Spielstände.</small></span>
  </label>
+ </section>
  <div class="briefing-bottom">
-  <div><strong>Dein erstes Ziel: einen Miner erwerben und selbst fliegen.</strong><p>Wähle oben, ob NPC-Firmen ihre Industrie eigenständig betreiben sollen. Ohne Auswahl bleibt der bisherige unveränderte Karriere-Start erhalten.</p></div>
+  <div><strong>Dein erstes Ziel: einen Miner erwerben und selbst fliegen.</strong><p>Wähle oben, ob andere Konzerne ihre Industrie eigenständig betreiben sollen. Ohne Auswahl bleibt der bisherige unveränderte Karriere-Start erhalten.</p></div>
   <button id="karriere-starten" class="primary" type="button">Karriere in Aldera beginnen <span aria-hidden="true">→</span></button>
  </div>
  <p id="briefing-meldung" class="statusline" role="status" aria-live="polite"></p>
@@ -76,7 +85,7 @@
 <section id="spielwelt" class="world" hidden>
  <div class="worldbar">
   <div><span class="eyebrow">DEIN KONZERN / ALDERA-SEKTOR</span><h2>Kommandobrücke</h2></div>
-  <div class="worldbar-right"><span id="w6-status" class="w6-world-indicator" hidden>W6 · NPC-Wirtschaft aktiv</span><span class="world-balance"><small>DEIN KAPITAL</small><strong id="hausgeld">–</strong></span><span class="world-balance"><small>WELTZEIT</small><strong id="zeit">–</strong></span><button id="welt-sichern" type="button" class="ghost">Sichern</button></div>
+  <div class="worldbar-right"><span id="w6-status" class="w6-world-indicator" hidden>Erweiterte Wirtschaft aktiv</span><span class="world-balance"><small>DEIN KAPITAL</small><strong id="hausgeld">–</strong></span><span class="world-balance"><small>WELTZEIT</small><strong id="zeit">–</strong></span><button id="welt-sichern" type="button" class="ghost">Sichern</button></div>
  </div>
  <section id="pilotenausbildung" class="piloten-akademie" aria-label="Pilotenakademie">
   <details id="pilotenausbildung-details">
@@ -89,7 +98,7 @@
  <div class="game-grid">
   <section class="task-panel" aria-label="Missionsjournal">
    <p class="eyebrow">KAPITEL 01 / DEIN ERSTER FLUG</p><h3>Ein Schiff. Ein Anfang.</h3>
-   <p id="missions-text">Dein Konto ist bereit. Suche ein wirklich vorhandenes Schiff.</p>
+   <p id="missions-text">Dein Unternehmen ist bereit. Entdecke die Kaufangebote der Werften.</p>
    <ol class="missions" id="missions" aria-label="Erste Aufgaben"></ol>
    <button id="welt-export" type="button" class="ghost">Spielstand als JSON sichern</button>
    <p class="footnote">Autosave nur im eigenen Karriere-Slot dieser Seite. Der alte Wirtschaftsspielstand bleibt unberührt.</p>
@@ -99,28 +108,28 @@
     <button id="tab-auftraege" data-tab="auftraege" aria-pressed="true">Aufträge</button>
     <button id="tab-flotte" data-tab="flotte" aria-pressed="false">Meine Flotte</button>
     <button id="tab-universum" data-tab="universum" aria-pressed="false">Das Universum</button>
-    <button id="tab-jaeger" data-tab="jaeger" aria-pressed="false">Jägerprojekt</button>
+    <button id="tab-jaeger" data-tab="jaeger" aria-pressed="false">Jägerproduktion</button>
    </div>
    <div id="panel-auftraege" class="tab-panel">
     <div class="panel-head"><div><p class="eyebrow">EIGENTUM / BEZAHLTE ENTSCHEIDUNGEN</p><h3>Deine nächsten Schritte</h3></div></div>
     <div id="spieleraktionen" class="orders"></div>
    </div>
    <div id="panel-flotte" class="tab-panel" hidden><div class="panel-head"><p class="eyebrow">EIGENE SCHIFFE</p><h3>Deine Flotte</h3></div><div id="spielerschiffe" class="ships"></div></div>
-   <div id="panel-universum" class="tab-panel" hidden><div class="panel-head"><p class="eyebrow">SEKTORLAGE</p><h3>Eine Welt voller Unternehmen</h3></div><p class="economy-intro">Live aus deinem überprüften Karriere-Spielstand: Lager, Firmenkonten und Original-Core-Angebote. Die unabhängigen Unternehmen bleiben eigenständig.</p>
+   <div id="panel-universum" class="tab-panel" hidden><div class="panel-head"><p class="eyebrow">SEKTORLAGE</p><h3>Eine Welt voller Unternehmen</h3></div><p class="economy-intro">Aktuelle Lager, Firmenkonten und geprüfte Kaufangebote aus deiner Karriere. Die unabhängigen Unternehmen bleiben eigenständig.</p>
     <div id="sektorwirtschaft" class="economy-terminal" aria-label="Aktueller Wirtschaftsbericht">Der Wirtschaftsbericht erscheint nach dem Start einer Karriere.</div></div>
    <div id="panel-jaeger" class="tab-panel" hidden>
-    <div class="panel-head"><p class="eyebrow">INDUSTRIE / J13</p><h3>Dein erster Jäger</h3></div>
-    <p class="economy-intro">Verfolge die echte Lieferkette bis zur fertigen Nadir-Hülle. Material, Firmenkassen, bezahlte Werftarbeit und Eigentum stammen aus derselben Karriere. Andere Firmen entscheiden weiterhin selbst.</p>
-    <p class="note">Nach einem rechtmäßig finanzierten Jägerkauf: unter „Meine Flotte“ den Jäger in Nadir selbst fliegen, am Dock die <strong>Patrouille (3 Bojen)</strong> starten, kontrolliert fliegen und zurückkehren. Die Übung benötigt echten bezahlten Flug, erzeugt aber weder Gratis-ISK noch Beute. Nach einem Reload startet sie neu.</p>
-    <p class="note">P4 · <strong>Virtuelles Jägerduell:</strong> erst nach einem wirklich bezahlten Abdockflug in Nadir auf „Duelltraining“ tippen. Drohne anfliegen, Ziel ausrichten, Übungsprojektile abfeuern und gegnerischem Übungsfeuer ausweichen. Trefferpunkte sind reine Trainingswerte – keine Munition, Hüllenschäden, Beute oder ISK-Belohnungen. Die Übung ist nicht Teil deines JSON-Weltspielstands.</p>
+    <div class="panel-head"><p class="eyebrow">INDUSTRIE / SCHIFFBAU</p><h3>Dein erster Jäger</h3></div>
+    <p class="economy-intro">Verfolge die Lieferkette bis zur fertigen Nadir-Hülle. Material, Firmenkassen, bezahlte Werftarbeit und Eigentum stammen aus derselben Karriere. Andere Firmen entscheiden weiterhin selbst.</p>
+    <p class="note">Nach dem Kauf deines Jägers: unter „Meine Flotte“ das Schiff in Nadir selbst fliegen, am Dock die <strong>Patrouille (3 Bojen)</strong> starten, kontrolliert fliegen und zurückkehren. Die Übung benötigt echten bezahlten Flug, erzeugt aber weder Gratis-ISK noch Beute. Nach einem Reload startet sie neu.</p>
+    <p class="note"><strong>Virtuelles Jägerduell:</strong> nach einem finanzierten Abdockflug in Nadir auf „Duelltraining“ tippen. Drohne anfliegen, Ziel ausrichten, Übungsprojektile abfeuern und gegnerischem Übungsfeuer ausweichen. Trefferpunkte sind reine Trainingswerte – keine Munition, Hüllenschäden, Beute oder ISK-Belohnungen. Die Übung ist nicht Teil deines JSON-Weltspielstands.</p>
     <div id="jaeger-akte" class="jaeger-akte" aria-label="Aktuelle Jäger-Produktionsakte">Die Produktionsakte erscheint nach dem Karrierestart.</div>
     <section aria-label="Deine spielbaren Beiträge"><h4>Deine spielbaren Beiträge</h4><p id="jaeger-beitrag-hinweis" class="note"></p><div id="jaeger-beitrag-aktionen" class="orders"></div><p id="jaeger-rohstoffe" class="note"></p></section>
-    <section aria-label="P8 · Siliziumversorgung und echte Engpässe"><h4>Siliziumversorgung · Förder- und Finanzierungsstand</h4>
+    <section aria-label="Siliziumversorgung und finanzielle Engpässe"><h4>Siliziumversorgung · Förder- und Finanzierungsstand</h4>
      <div id="p8-silizium-lage" class="economy-terminal" aria-live="off">Die geprüfte Versorgungsdiagnose erscheint nach dem Karrierestart.</div>
-     <p class="note">Auskunft aus dem unveränderten Wirtschaftskern. Weitere Systeme und Lagerstätten sind keine kostenlosen Waren oder freigegebenen Förderaufträge.</p>
+     <p class="note">Weitere Systeme und Lagerstätten erschließen sich durch finanzierte Aufträge. Neue Waren entstehen nur durch tatsächlichen Bergbau und Produktion.</p>
     </section>
     <section aria-label="Produktionsrechte und Finanzierung"><h4>Was die Unternehmen beitragen müssen</h4><div id="jaeger-sperren"></div><p id="jaeger-finanzierung" class="note"></p></section>
-    <div class="jaeger-aktion"><button id="jaeger-kaufweg" type="button" disabled>Zum originalen Jäger-Kaufangebot</button>
+    <div class="jaeger-aktion"><button id="jaeger-kaufweg" type="button" disabled>Zum Jäger-Kaufangebot</button>
     <p id="jaeger-autoritaet" class="economy-foot">Kein Auftrag an fremde Unternehmen ohne deren eigene Freigabe.</p></div>
    </div>
   </section>
@@ -131,14 +140,14 @@
    <div class="world-stat"><span>Aldera · Kasse</span><strong id="aldera-kasse">–</strong></div>
    <div class="world-stat"><span>Nadir · Kasse</span><strong id="nadir-kasse">–</strong></div>
    <div class="world-stat"><span>Meine Schiffe</span><strong id="schiff-anzahl">–</strong></div>
-   <p class="note">Kein kostenloser Gewinn: Produktion, Flug und Transport kosten echtes Geld. Andere Firmen entscheiden selbst.</p>
+   <p class="note">Jede Investition zählt. Produktion, Flug und Transport belasten reale Firmenkassen. Andere Konzerne verfolgen ihre eigenen Ziele.</p>
    <div class="time-buttons"><button data-advance="1">+1 Minute</button><button data-advance="10">+10 Minuten</button><button data-advance="60">+60 Minuten</button><button data-advance="1440">+1 Spieltag</button></div>
   </aside>
  </div>
  <div id="welt-meldung" role="status" aria-live="polite" class="game-message">Wähle einen Auftrag oder dein Schiff.</div>
 </section>
-<section id="raumbereich" aria-label="Grafisches Raumcockpit derselben Regel204-Welt" hidden>
-<h2 class="raum-titel">Dein Schiff <span class="sub">– freie Steuerung, echte Flugkosten, eine Welt</span></h2>
+<section id="raumbereich" aria-label="Grafisches Raumcockpit deiner Karriere" hidden>
+<h2 class="raum-titel">Dein Schiff <span class="sub">– Trägheit spüren. Ziele erreichen. Kurs halten.</span></h2>
 <p id="pilotenausbildung-live" class="piloten-akademie-live" role="status" aria-live="polite" hidden></p>
 <div id="raum-buehne">
 <canvas id="raum-leinwand" role="img" aria-label="Weltraumansicht: eigenes Schiff, Station, Felder, Bojen und weitere Schiffe des Systems. Alle Ziele sind auch über die Objektliste unter der Ansicht wählbar."></canvas>

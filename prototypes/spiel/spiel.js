@@ -14,6 +14,26 @@ let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung
 let cockpitGenutzt=false,flugerfahrung=false,managerTutor=null,pilotTutor=null,pilotMenu=null;
 const safeText=(s)=>String(s==null?'':s);
 const error=(e)=>safeText(e&&e.message?e.message:e);
+// Zentrale Anzeigenamen: nur für die Oberfläche, nie als ID in Befehlen oder Spielständen.
+const KONZERN_ANZEIGENAMEN=Object.freeze({
+ house:'Dein Konzern',
+ npc3:'Meridian Rohstoffwerke',
+ transport:'Asterion Logistik',
+ werft_extern:'Nadir Schiffswerke',
+ st_aldera:'Aldera Handelsstation',
+ st_nadir:'Nadir Industriestation'
+});
+function konzernname(id){return Object.prototype.hasOwnProperty.call(KONZERN_ANZEIGENAMEN,id)
+ ?KONZERN_ANZEIGENAMEN[id]:safeText(id);}
+// Anzeigeebene für ältere Auftragsmeldungen: technische IDs sind niemals Spielernamen.
+function anzeigetext(value){
+ return safeText(value).replace(/(^|[^A-Za-z0-9_])(house|npc3|transport|werft_extern|st_aldera|st_nadir)(?=$|[^A-Za-z0-9_])/g,
+  (_match,prefix,id)=>prefix+konzernname(id));
+}
+function firmennamenAnzeigen(){
+ for(const el of d.querySelectorAll('[data-company-display]'))
+  el.textContent=konzernname(el.dataset.companyDisplay);
+}
 
 function speichern(copyOld=false){
  if(!session)return false;
@@ -60,7 +80,7 @@ function screen(id){
  scope.scrollTo?.(0,0);
 }
 function hinweis(message,fail=false){
- const text=safeText(message);
+ const text=anzeigetext(message);
  const id=ansicht==='spielwelt'||ansicht==='raumbereich'?'welt-meldung':
    ansicht==='briefing'?'briefing-meldung':'menumeldung';
  $(id).textContent=text;
@@ -81,9 +101,9 @@ function startNeu(){
   // Explicitly selected NEW research world. Not a Rule204-to-207 save migration.
   const w6Aktiv=$('w6-npc-start')?.checked===true;
   const p8gAktiv=$('w6-p8g-start')?.checked===true;
-  if(w6Aktiv&&p8gAktiv)throw Error('Bitte nur ein Forschungsprofil wählen');
+  if(w6Aktiv&&p8gAktiv)throw Error('Bitte nur einen erweiterten Karrieremodus wählen');
   const slot=p8gAktiv?SLOT_W6:SLOT,vorher=gespeicherte(slot);
-  if(p8gAktiv&&!scope.confirm('W6/P8g ist eine getrennte Regel207-Forschungswelt mit neuen endlichen Rohstofffeldern. Deine Regel204-Karriere bleibt unverändert. Eigenen Forschungsstart beginnen?'))return;
+  if(p8gAktiv&&!scope.confirm('Die experimentelle Dravos-Karriere besitzt eine eigene Spielwelt mit begrenzten Rohstofffeldern. Deine normale Karriere bleibt unverändert. Experimentelle Karriere beginnen?'))return;
   if(vorher&&!scope.confirm('Für dieses Profil besteht schon ein Spielstand. Die bisherige Version bleibt als „Vorherige Karriere“ gesichert. Trotzdem neu beginnen?'))return;
   const neu=neueSitzung();
   const a=p8gAktiv?neu.startenP8g(true):neu.starten195(scope.W5acSession.create(42,'private195').export(),true);
@@ -104,9 +124,9 @@ function startNeu(){
   pilotTutor?.zuruecksetzen();pilotMenu?.zeichnen();
   const ok=speichern(!!vorher);
   aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(p8gAktiv
-   ?'Isolierte Regel207-Dravosforschung: echter Bergbau, Fremdfracht und Materialverträge; Regel204-Slot unangetastet.'
-   :w6Aktiv?'W6-NPC-Konzerne arbeiten auf eigene Rechnung; jeder Auftrag bleibt finanziert.'
-   :'Unveränderte Karriere ohne NPC-W6-Automatik.')+' Kein kostenloses Schiff.');
+   ?'Experimentelle Dravos-Karriere mit bezahltem Bergbau, Transport und Materialverträgen; deine normale Karriere bleibt unverändert.'
+   :w6Aktiv?'Unabhängige Konzerne arbeiten auf eigene Rechnung; jeder Auftrag bleibt finanziert.'
+   :'Klassische Karriere ohne autonome Industrieaufträge.')+' Kein kostenloses Schiff.');
   if(!ok)hinweis('Karriere gestartet. Lokales Speichern nicht verfügbar; bitte sofort JSON exportieren.',true);
  }catch(e){hinweis('Start verweigert: '+error(e),true);}
 }
@@ -115,26 +135,26 @@ function ladeSitzung(json,auswahl,backup=false){
    throw Error('Ungültige Größe des Karriere-Spielstands.');
  if(session)throw Error('Laufende Karriere zuerst als JSON exportieren und die Seite neu öffnen.');
  const raw=JSON.parse(json),regel=raw?.rulesVersion;
- if(regel!==204&&regel!==207)throw Error('Nur bestätigte Original-Regel204- oder Forschungsregel207-Saves');
+ if(regel!==204&&regel!==207)throw Error('Dieser Spielstand gehört nicht zu einer unterstützten Karriere.');
  if(regel===207&&!['forschung','forschung-backup','datei'].includes(auswahl))
-   throw Error('Forschungsstand nur über getrennten Forschungszugang laden');
+   throw Error('Bitte die experimentelle Karriere über ihren eigenen Zugang öffnen.');
  if(regel===204&&['forschung','forschung-backup'].includes(auswahl))
-   throw Error('Forschungszugang darf nicht den Regel204-Spielstand ersetzen');
+   throw Error('Der experimentelle Spielzugang kann keine normale Karriere überschreiben.');
  // The authorization is a real user action OUTSIDE the untrusted JSON:
  // named research-resume click or separate explicit file-import confirmation.
  if(regel===207&&auswahl==='datei'&&!scope.confirm(
-   'Diese Datei enthält Regel207-W6-Forschung. Externen P8g-Import ausdrücklich erlauben? Die normale Regel204-Karriere bleibt separat erhalten.'))return;
+   'Diese Datei enthält eine experimentelle Dravos-Karriere. Möchtest du diesen externen Spielstand ausdrücklich importieren? Deine normale Karriere bleibt separat erhalten.'))return;
  const slot=regel===207?SLOT_W6:SLOT;
  if(auswahl==='datei'&&gespeicherte(slot)&&!scope.confirm(
    'Dieser Datei-Spielstand ersetzt NUR die gleichnamige Karriere-Speicherstelle. Die bisherige wird zuvor gesichert. Fortfahren?'))return;
  const neu=neueSitzung();
  const a=regel===207?neu.oeffnenP8g(json,true):neu.oeffnen204(json,true);
  if(a.regel!==regel||a.weltgeld!==33000)
-   throw Error('Weltgeld- und Regel-Audit verweigert den Stand');
+   throw Error('Die Prüfung der Wirtschaft und des Spielstands ist fehlgeschlagen.');
  session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
   pilotTutor?.zuruecksetzen();pilotMenu?.zeichnen();
  if(auswahl==='datei'||backup)speichern(!!gespeicherte(slot));
- aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Der Original-Core hat deinen Spielstand geprüft.');
+ aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Dein Spielstand wurde geprüft.');
 }
 function weiter(n){
  let vorher=null;
@@ -149,7 +169,7 @@ function weiter(n){
   if(patrouille&&['bereit','flug'].includes(patrouille.status))patrouille.status='unterbrochen';
   pilotTutor?.beobachten(session.zustandReferenz());pilotStatusAktualisieren();
   speichern();anzeigen();
-  hinweis(n+' bezahlte Weltminuten vergangen. Alle Waren und Konten stammen aus dem Original-Core.');
+  hinweis(n+' bezahlte Weltminuten vergangen. Alle Waren und Konten wurden regulär verbucht.');
  }catch(e){
   if(vorher!==null){
    try{
@@ -168,7 +188,7 @@ function weiter(n){
 function auftrag(id){
  try{
   const a=session.angebote().find(x=>x.id===id);
-  if(!a||!a.ok)throw Error(a?.reason||'Der Original-Core erlaubt diesen Auftrag nicht');
+  if(!a||!a.ok)throw Error(a?.reason||'Dieser Auftrag ist derzeit nicht verfügbar');
   // J2b binds the miner to a job. Select its lawful pilot BEFORE binding;
   // afterwards the existing fleet gate rejects a new cockpit selection.
   const siliziumSchiff=id.startsWith('sil-start-')?id.slice('sil-start-'.length):null;
@@ -186,31 +206,31 @@ function auftrag(id){
  }catch(e){hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
 }
 const namen=[
- ['buy-st_aldera-miner','Deinen ersten Miner kaufen','Aus einem wirklich vorhandenen Aldera-Werftlager, für 600 ISK.'],
- ['buy-st_aldera-frachter','Frachter erwerben','Ein eigener Frachter wird nur aus wirklichem Lagerbestand und deinem Kapital gekauft.'],
- ['buy-st_nadir-frachter','Nadir-Frachter erwerben','Nur eine wirklich vorhandene Hülle aus dem Nadir-Lager kaufen.'],
- ['buy-st_nadir-miner','Nadir-Miner übernehmen','Nur falls die Werft einen fertigen Miner mit Vormerkung für dich produziert hat.'],
- ['buy-st_nadir-jaeger','Jäger kaufen','Erst wenn Nadir eine echte, vollständig bezahlte Jägerhülle besitzt.']
+ ['buy-st_aldera-miner','Dein erstes Bergbauschiff kaufen','Aus dem Aldera-Werftbestand für 600 ISK.'],
+ ['buy-st_aldera-frachter','Frachter erwerben','Ein Transporter aus dem Aldera-Werftbestand, bezahlt aus deinem Kapital.'],
+ ['buy-st_nadir-frachter','Frachter in Nadir erwerben','Nur lieferbare Schiffe aus dem Nadir-Werftbestand.'],
+ ['buy-st_nadir-miner','Bergbauschiff in Nadir kaufen','Für dich vormerkbar, sobald eine fertige Schiffshülle bereitsteht.'],
+ ['buy-st_nadir-jaeger','Jäger kaufen','Sobald die Nadir Schiffswerke einen vollständig finanzierten Jäger anbieten.']
 ];
 function titel(a){return namen.find(x=>x[0]===a.id)?.[1]||(
  a.id.startsWith('ice-')?'Eisförderung beginnen':
  a.id.startsWith('stop-')?'Automatischen Pendelauftrag beenden':
  a.id.startsWith('sil-start-')?'Silizium fördern':
  a.id.startsWith('sil-sell-')?'Silizium verkaufen':
- a.id.startsWith('freight-')?'F4 · Bezahlte Eisfracht ausführen':
- a.id.startsWith('gate-freight-')?'F6 · Eisfracht mit Torbeleg':a.label);
+ a.id.startsWith('freight-')?'Eisfracht transportieren':
+ a.id.startsWith('gate-freight-')?'Eisfracht über das Sprungtor':anzeigetext(a.label));
 }
-function info(a){return namen.find(x=>x[0]===a.id)?.[2]||a.label;}
+function info(a){return namen.find(x=>x[0]===a.id)?.[2]||anzeigetext(a.label);}
 function datum(ms){return Math.floor(ms/1440)+' Tage · '+(ms%1440)+' Minuten';}
 function missions(){
  const state=session.zustandReferenz(),mine=Object.values(state.ships).some(s=>s.owner==='house'&&s.klasse==='miner');
  const pilot=!!session.pilotStatus();
  const eigenesFrachtgut=Object.values(state.ships).some(sh=>sh.owner==='house'&&Object.values(sh.ladung||{}).some(n=>n>0));
  return [
-  {done:mine,text:'Einen eigenen Miner aus echten Beständen kaufen'},
+  {done:mine,text:'Dein erstes Bergbauschiff kaufen'},
   {done:pilot||cockpitGenutzt,text:'Ins Cockpit steigen – ein Schiff, eine Welt'},
   {done:(state.kanon.fluglohnMinuten||0)>0||flugerfahrung,text:'Abdocken und den ersten bezahlten Flug beginnen'},
-  {done:eigenesFrachtgut||!!state.kanon.silizium?.belege?.length,text:'Eigenes Eis oder Silizium wirklich gewinnen'}
+  {done:eigenesFrachtgut||!!state.kanon.silizium?.belege?.length,text:'Eis oder Silizium fördern und transportieren'}
  ];
 }
 // J12: read-only station and company report from the SAME validated Rule204 session.
@@ -242,31 +262,31 @@ function wirtschaftsbericht(a,s,angebote){
  const lager=section('Stationen · physische Bestände');
  for(const st of a.stationen){
   const cash=s.owners[st.id]?.cash;
-  karte(lager,st.id+' · '+st.system,[
+  karte(lager,konzernname(st.id)+' · '+st.system,[
    ['Lager',st.lager],
    ['Eigene Stationskasse',Number.isSafeInteger(cash)?fmt(cash)+' ISK':'Kein eigenes Konto']
   ]);
  }
  const firmen=section('Unabhängige Unternehmen');
- for(const [id,name] of [['npc3','Bergbau · npc3'],['transport','Spedition · transport'],['werft_extern','Außenwerft · werft_extern']]){
+ for(const id of ['npc3','transport','werft_extern']){
   const owner=s.owners[id];if(!owner)continue;
   const schiffe=Object.values(s.ships).filter(x=>x.owner===id);
   const klassen=[...new Set(schiffe.map(x=>x.klasse))].sort()
     .map(klasse=>klasse+': '+schiffe.filter(x=>x.klasse===klasse).length).join(' · ')||'Keine eigenen Schiffe';
-  karte(firmen,name,[['Firmenkasse',fmt(owner.cash)+' ISK'],
+  karte(firmen,konzernname(id),[['Firmenkasse',fmt(owner.cash)+' ISK'],
    ['Eigene Flotte',klassen]]);
  }
  const werft=section('Werft · tatsächlich geprüfte Kaufangebote');
  const kauf=angebote.filter(o=>namen.some(n=>n[0]===o.id));
  for(const angebot of kauf){
   const card=karte(werft,titel(angebot),[
-   ['Core-Status',angebot.ok?'Kauf derzeit möglich':'Gesperrt'],
-   ['Begründung',angebot.ok?info(angebot):angebot.reason||'Original-Core verweigert den Kauf']
+   ['Verfügbarkeit',angebot.ok?'Kauf derzeit möglich':'Gesperrt'],
+   ['Begründung',angebot.ok?info(angebot):anzeigetext(angebot.reason||'Kauf derzeit nicht möglich')]
   ]);
   if(angebot.ok){
    const link=d.createElement('button');
    link.type='button';link.className='economy-go';link.dataset.j12Offer=angebot.id;
-   link.textContent='Zum geprüften Kaufangebot';
+   link.textContent='Kaufangebot öffnen';
    link.addEventListener('click',()=>{
     tabZeigen('auftraege');
     const target=[...$('spieleraktionen').querySelectorAll('[data-action]')]
@@ -278,24 +298,25 @@ function wirtschaftsbericht(a,s,angebote){
  }
  const footer=d.createElement('p');
  footer.className='economy-foot';
- footer.textContent='Weltgeld: '+fmt(a.weltgeld)+' ISK · Mint/Burn: '+fmt(s.minted)+' / '+fmt(s.burned)+
-  ' ISK. Angezeigte Kaufangebote sind Momentaufnahmen; erst der Original-Core bucht einen Auftrag.';
+ footer.textContent='Geld im Universum: '+fmt(a.weltgeld)+' ISK · Neu ausgegebene ISK: '+fmt(s.minted)+
+  ' · Eingezogene ISK: '+fmt(s.burned)+
+  '. Kaufangebote können sich ändern und werden beim Kauf erneut geprüft.';
  host.replaceChildren(lager,firmen,werft,footer);
 }
 // J13 – alle Voraussetzungen werden nur gelesen; ein Kauf folgt ausschliesslich
 // dem bereits vorhandenen, unmittelbar erneut geprueften house-Originalauftrag.
 function jaegerBeitraege(){
  const projekt=scope.J13Spielerprojekt.erstellen(session);
- $('jaeger-beitrag-hinweis').textContent=projekt.hinweis;
+ $('jaeger-beitrag-hinweis').textContent=anzeigetext(projekt.hinweis);
  const host=$('jaeger-beitrag-aktionen'),blocks=[];
  for(const gruppe of projekt.gruppen){
   const section=d.createElement('section'),h=d.createElement('h5');
-  h.textContent=gruppe.titel;section.append(h);
+  h.textContent=anzeigetext(gruppe.titel);section.append(h);
   for(const a of gruppe.angebote){
    const box=d.createElement('div'),b=d.createElement('button'),p=d.createElement('small');
    box.className='order';b.type='button';b.dataset.j13Action=a.id;
    b.textContent=titel(a);b.disabled=!a.ok;
-   p.textContent=a.label+' · '+(a.ok?'Original-Core: ausführbar':'Gesperrt: '+a.reason);
+   p.textContent=anzeigetext(a.label+' · '+(a.ok?'Auftrag verfügbar':'Gesperrt: '+a.reason));
    b.addEventListener('click',()=>auftrag(a.id));box.append(b,p);section.append(box);
   }
   blocks.push(section);
@@ -304,14 +325,14 @@ function jaegerBeitraege(){
  $('jaeger-rohstoffe').textContent='Eigene belegte Siliziumverkäufe: '+projekt.silizium.eigeneVerkaeufe+
    ' · Alle Siliziumverkäufe an Nadir: '+projekt.silizium.verkauft+'.';
  $('jaeger-sperren').replaceChildren(...projekt.sperren.map(s=>{
-  const p=d.createElement('p');p.textContent=s.titel+' · Eigentümer: '+s.eigentuemer+
-   ' · house: '+(s.ok?'Core erlaubt den Auftrag':s.grund);return p;
+  const p=d.createElement('p');p.textContent=s.titel+' · Eigentümer: '+konzernname(s.eigentuemer)+
+   ' · Dein Konzern: '+anzeigetext(s.ok?'Auftrag verfügbar':s.grund);return p;
  }));
  const a=projekt.aldera;
- $('jaeger-finanzierung').textContent='Neuer K7-Erzankauf: Aldera besitzt '+fmt(a.kasse)+
+ $('jaeger-finanzierung').textContent='Neuer Erzankauf: Aldera besitzt '+fmt(a.kasse)+
   ' von '+fmt(a.erzkauf)+' ISK; aktuell fehlen '+fmt(a.fehlend)+
   ' ISK. Diese Liquiditätsprüfung ersetzt keine Firmenzustimmung. '+
-  'Die bekannte 500-ISK-Lücke im zweiten Forschungsvertrag ist dadurch nicht gelöst.';
+  'Die bekannte Finanzierungslücke von 500 ISK bleibt weiterhin bestehen.';
 }
 function jaegerBericht(zustand,angebote){
  if(!scope.J13Werftakte)throw Error('J13: die originale Produktionsakte fehlt');
@@ -322,14 +343,14 @@ function jaegerBericht(zustand,angebote){
  for(const step of akte.schritte){
   const li=d.createElement('li'),h=d.createElement('strong'),p=d.createElement('p'),tag=d.createElement('span');
   li.className='jaeger-schritt';li.dataset.stand=step.stand;
-  h.textContent=step.titel;p.textContent=step.hinweis;
+  h.textContent=anzeigetext(step.titel);p.textContent=anzeigetext(step.hinweis);
   tag.className='jaeger-stand';tag.textContent=step.stand==='erfuellt'?'Vorhanden':
     step.stand==='laeuft'?'In Arbeit':step.stand==='bereit'?'Kaufbereit':'Noch offen';
   li.append(h,tag,p);stufen.append(li);
  }
  const k=d.createElement('p');
  k.className='economy-foot';
- k.textContent='K7-Erzvertrag: '+akte.k7.phase+
+ k.textContent='Erzliefervertrag: '+akte.k7.phase+
    (akte.k7.erzkauf!==null&&akte.k7.alderaKasse!==null
      ?' · Aldera '+fmt(akte.k7.alderaKasse)+' / '+fmt(akte.k7.erzkauf)+' ISK fuer einen neuen Erzankauf'
      :'')+'. Das ist eine Statusauskunft, keine Unterschrift.';
@@ -339,9 +360,9 @@ function jaegerBericht(zustand,angebote){
  $('jaeger-autoritaet').textContent=akte.eigeneJaeger>0
   ?'Bereits gekaufter Jäger: '+akte.eigeneJaeger+' · Eigentum und Cockpit über „Meine Flotte“.'
   :akte.kauf.ok
-    ?'Original-Core-Kauf für '+fmt(akte.kauf.preis)+' ISK möglich. Der Button öffnet nur die bestehende Kaufansicht.'
+    ?'Jägerkauf für '+fmt(akte.kauf.preis)+' ISK möglich. Der Button öffnet nur die bestehende Kaufansicht.'
     :'Kein Kauf: '+(akte.kauf.grund||'keine vollständige finanzierte Hülle')+
-     '. Nur Nadir darf J3/J4-Arbeit beauftragen; keine fremden Aufträge werden hier signiert.';
+     '. Nur Nadir darf die Werftarbeit beauftragen. Aufträge fremder Unternehmen bleiben gesperrt.';
 }
 // P8a: Transparenz der TATSAECHLICHEN Quelle statt erfundener Nachschuborder.
 function siliziumBericht(zustand){
@@ -355,25 +376,25 @@ function siliziumBericht(zustand){
  };
  const f=lage.rohstoff,l=lage.lager,g=lage.finanzierung,w=lage.weg;
  const beschaffung=zustand.rulesVersion===207
-  ?'Regel207-Forschung: endliche Dravos-Minerfelder, eigene bezahlte Fracht und Eigentümerverträge. Lieferungen nur bei wirklicher Ware, Kapazität und zahlungsfähigem Käufer.'
+  ?'Experimentelle Dravos-Karriere: begrenzte Rohstofffelder, bezahlte Fracht und Eigentümerverträge. Lieferungen nur bei vorhandener Ware, Kapazität und zahlungsfähigem Käufer.'
   :w.dravosAktiv
-   ?'Ein weiteres System ist in Regel204 bekannt, aber kein bezahlter Silizium-Frachtvertrag ist eingerichtet.'
-   :'Dravos ist auf der Karte, aber kein aktives Regel204-Foerder-/Frachtziel. Neue endliche Quellen sind noch nicht erschlossen.';
+   ?'Ein weiteres System ist bekannt, aber dort ist noch kein bezahlter Silizium-Frachtvertrag eingerichtet.'
+   :'Dravos ist auf der Karte, aber noch kein aktives Förder- oder Frachtziel. Neue begrenzte Rohstoffquellen sind noch nicht erschlossen.';
  host.replaceChildren(
   zeile('Endliches Nadir-Feld',fmt(f.rest)+' / '+fmt(f.gesamt)+' Silizium verbleiben · '+fmt(f.gefoerdert)+
    ' physisch gefoerdert · '+fmt(f.verkauft)+' bezahlt an Nadir verkauft · '+fmt(f.moeglicheNeueChargen)+
    ' volle '+fmt(f.charge)+'er-Chargen im Boden'),
   zeile('Vorhandene Ware',fmt(l.siliziumNadir)+' Silizium im Nadir-Lager · '+
-   fmt(l.siliziumSchiffe)+' in echten Schiffsraeumen · '+fmt(l.bauteileNadir)+' fertige J3-Teile · '+
+   fmt(l.siliziumSchiffe)+' in echten Schiffsraeumen · '+fmt(l.bauteileNadir)+' fertige Bauteile · '+
    fmt(l.jaegerNadir)+' verkaufsfaehige Jaeger · '+fmt(l.fertigeJaeger)+' Jaeger gesamt gebaut'),
   zeile('Laufender Abbau',f.auftrag?
-   'Eigentuemer '+f.auftrag.owner+' · Miner '+f.auftrag.schiff+' · '+
+   'Eigentümer '+konzernname(f.auftrag.owner)+' · Bergbauschiff '+f.auftrag.schiff+' · '+
    fmt(f.auftrag.gefoerdert)+' / '+fmt(f.auftrag.menge)+' Einheiten wirklich gefoerdert'
-   :'Kein laufender J2b-Foerderauftrag'),
-  zeile('Vorfinanzierung je weiterer Originalcharge',
+   :'Kein laufender Förderauftrag'),
+  zeile('Kosten einer weiteren Fördercharge',
    fmt(g.arbeitJeCharge)+' ISK Bergbaulohn · '+fmt(g.ankaufJeCharge)+
    ' ISK Nadir-Ankauf · mindestens '+fmt(g.flugreserve)+
-   ' ISK Flugreserve bei neuer Ausfahrt. Kassen: npc3 '+fmt(g.npc3Kasse)+
+   ' ISK Flugreserve bei neuer Ausfahrt. Kassen: '+konzernname('npc3')+' '+fmt(g.npc3Kasse)+
    ' ISK, Nadir '+fmt(g.nadirKasse)+' ISK; eigene bezahlte Nadir-Miner: '+
    fmt(g.anzahlRechtmaessigerNpcNadirMiner)+'. Das ist keine bindende Kaufzusage.'),
   zeile('Weitere Siliziumfelder im aktiven Kern',fmt(w.fremdeAktiveSiliziumFelder)+
@@ -392,8 +413,8 @@ function siliziumBericht(zustand){
    host.append(
      zeile('Endliche Dravos-Bodenreserve',fmt(rest)+' echte Siliziumeinheiten, kein automatisches Auffüllen'),
      zeile('Bezahlte Dravos-Fracht',fmt(fr?.geliefert||0)+' abgeschlossene Lieferungen · '
-       +fmt(fr?.angebote||0)+' ursprüngliche Angebote; neue Frachten nur gegen reale Kasse und Ware'),
-     zeile('P8g-Materialauftrag',phase+(k.industrieErz?.materialOnly?' · ohne verpflichtenden Frachterneubau':'')
+       +fmt(fr?.angebote||0)+' veröffentlichte Angebote; neue Frachten nur gegen reale Kasse und Ware'),
+     zeile('Materialauftrag',phase+(k.industrieErz?.materialOnly?' · ohne verpflichtenden Frachterneubau':'')
        +' · '+fmt(zustand.w3.abgeschlossen)+' W3-Lieferungen insgesamt'),
      zeile('Nadir-Industrie',fmt(warehouse.erz||0)+' Erz · '+fmt(warehouse.material||0)
        +' Material · '+fmt(warehouse.silizium||0)+' Silizium · '
@@ -408,7 +429,7 @@ function anzeigen(){
  // Status stammt ausschließlich aus dem gespeicherten Core, nicht aus einem UI-Schalter.
  const w6Status=$('w6-status');
  if(w6Status){w6Status.hidden=!(s.kanon.npcAuto===true&&s.kanon.npcSilizium?.aktiv===true);
-   w6Status.textContent=s.rulesVersion===207?'W6 · Dravos-Forschung aktiv':'W6 · NPC-Wirtschaft aktiv';}
+   w6Status.textContent=s.rulesVersion===207?'Experimentelle Dravos-Karriere aktiv':'Erweiterte Wirtschaft aktiv';}
  $('hausgeld').textContent=fmt(a.hausgeld)+' ISK';
  $('zeit').textContent=datum(a.tick);
  $('weltgeld').textContent=fmt(a.weltgeld)+' ISK';
@@ -430,7 +451,7 @@ function anzeigen(){
   const box=d.createElement('div'),button=d.createElement('button'),small=d.createElement('small');
   box.className='order';
   button.type='button';button.dataset.action=o.id;button.textContent=titel(o);button.disabled=!o.ok;
-  small.textContent=o.ok?info(o):'Zurzeit gesperrt: '+o.reason;
+  small.textContent=o.ok?info(o):'Zurzeit gesperrt: '+anzeigetext(o.reason);
   if(o.ok)small.className='available';
   button.addEventListener('click',()=>auftrag(o.id));
   box.append(button,small);return box;
@@ -450,10 +471,10 @@ function anzeigen(){
    const bereitsPilot=session.pilotStatus()===sh.id;
    b.disabled=(!pilot?.erlaubt&&!bereitsPilot)||!raum;
    b.addEventListener('click',()=>pilotieren(sh.id));
-   if(!pilot?.erlaubt&&!bereitsPilot){const m=d.createElement('small');m.textContent=pilot?.grund||'Cockpit für diese Schiffsklasse noch nicht verfügbar';box.append(h,p,b,m);}
+   if(!pilot?.erlaubt&&!bereitsPilot){const m=d.createElement('small');m.textContent=anzeigetext(pilot?.grund||'Cockpit für diese Schiffsklasse noch nicht verfügbar');box.append(h,p,b,m);}
    else box.append(h,p,b);
    return box;
- }):[(()=>{const p=d.createElement('p');p.textContent='Noch kein Schiff. Beginne mit dem Kauf eines wirklich vorhandenen Aldera-Miners.';return p;})()]));
+ }):[(()=>{const p=d.createElement('p');p.textContent='Deine Flotte ist noch leer. Kaufe dein erstes Bergbauschiff in Aldera.';return p;})()]));
  managerTutor?.auffrischen();
  pilotMenu?.zeichnen();
 }
@@ -608,7 +629,7 @@ function pilotBinden(){
 $('jaeger-kaufweg').addEventListener('click',()=>{
  if(!session)return;
  const quote=session.angebote().find(a=>a.id==='buy-st_nadir-jaeger');
- if(!quote?.ok){hinweis('Jägerkauf weiterhin gesperrt: '+(quote?.reason||'Kein Originalangebot'),true);anzeigen();return;}
+ if(!quote?.ok){hinweis('Jägerkauf derzeit nicht möglich: '+(quote?.reason||'Kein Kaufangebot'),true);anzeigen();return;}
  tabZeigen('auftraege');
  const target=[...$('spieleraktionen').querySelectorAll('[data-action]')]
    .find(el=>el.dataset.action==='buy-st_nadir-jaeger');
@@ -625,7 +646,7 @@ $('fortsetzen-w6').addEventListener('click',()=>{try{
    if(session){aktiveSitzung('Deine laufende Karriere ist geöffnet.');return;}
    const json=gespeicherte(SLOT_W6);if(!json)throw Error('Kein separater Forschungsstand gespeichert');
    ladeSitzung(json,'forschung');
- }catch(e){hinweis('W6-Forschung nicht geöffnet: '+error(e),true);}});
+ }catch(e){hinweis('Experimentelle Karriere nicht geöffnet: '+error(e),true);}});
 $('w6-npc-start').addEventListener('change',()=>{
  if($('w6-npc-start').checked)$('w6-p8g-start').checked=false;
 });
@@ -642,7 +663,7 @@ $('vorige-forschung').addEventListener('click',()=>{try{
  const json=gespeicherte(SLOT_W6+':vorherige');
  if(!json)throw Error('Keine gesonderte W6-Forschungssicherung vorhanden');
  ladeSitzung(json,'forschung-backup',true);
- }catch(e){hinweis('W6-Forschungssicherung nicht geladen: '+error(e),true);}});
+ }catch(e){hinweis('Experimentelle Karrieresicherung nicht geladen: '+error(e),true);}});
 $('import-aktion').addEventListener('click',()=>$('import-datei').click());
 $('import-datei').addEventListener('change',async e=>{
  const input=e.currentTarget; // Safari clears event.currentTarget after await.
@@ -681,5 +702,5 @@ if(scope.ManagerAkademie){
    }
  });
 }
-cockpitBinden();pilotBinden();menustand();screen('startseite');
+firmennamenAnzeigen();cockpitBinden();pilotBinden();menustand();screen('startseite');
 })(globalThis);

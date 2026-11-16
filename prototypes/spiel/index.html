@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="../raum/raum.css">
 <link rel="stylesheet" href="spiel.css">
 <link rel="stylesheet" href="../tutorial-manager/manager.css">
+<link rel="stylesheet" href="../tutorial-pilot/karriere.css">
 </head>
 <body>
 <div class="nebula" aria-hidden="true"><div class="orbital orbit-a"></div><div class="orbital orbit-b"></div><div class="planet"></div></div>
@@ -77,6 +78,14 @@
   <div><span class="eyebrow">DEIN KONZERN / ALDERA-SEKTOR</span><h2>Kommandobrücke</h2></div>
   <div class="worldbar-right"><span id="w6-status" class="w6-world-indicator" hidden>W6 · NPC-Wirtschaft aktiv</span><span class="world-balance"><small>DEIN KAPITAL</small><strong id="hausgeld">–</strong></span><span class="world-balance"><small>WELTZEIT</small><strong id="zeit">–</strong></span><button id="welt-sichern" type="button" class="ghost">Sichern</button></div>
  </div>
+ <section id="pilotenausbildung" class="piloten-akademie" aria-label="Pilotenakademie">
+  <details id="pilotenausbildung-details">
+   <summary><span class="piloten-akademie-tag">APHROS ACADEMY · FLUGAUSBILDUNG</span>
+    <strong>Pilotenakademie</strong><span class="piloten-akademie-count">12 Flugübungen</span></summary>
+   <p class="piloten-akademie-hint">Lerne mit deinem eigenen Schiff. Wähle es unter „Meine Flotte“ aus, kehre zur Kommandobrücke zurück und starte eine Mission. Alle Flugkosten und Warenbewegungen bleiben Teil deiner Karriere.</p>
+   <div id="pilotenausbildung-karten"></div>
+  </details>
+ </section>
  <div class="game-grid">
   <section class="task-panel" aria-label="Missionsjournal">
    <p class="eyebrow">KAPITEL 01 / DEIN ERSTER FLUG</p><h3>Ein Schiff. Ein Anfang.</h3>
@@ -130,6 +139,7 @@
 </section>
 <section id="raumbereich" aria-label="Grafisches Raumcockpit derselben Regel204-Welt" hidden>
 <h2 class="raum-titel">Dein Schiff <span class="sub">– freie Steuerung, echte Flugkosten, eine Welt</span></h2>
+<p id="pilotenausbildung-live" class="piloten-akademie-live" role="status" aria-live="polite" hidden></p>
 <div id="raum-buehne">
 <canvas id="raum-leinwand" role="img" aria-label="Weltraumansicht: eigenes Schiff, Station, Felder, Bojen und weitere Schiffe des Systems. Alle Ziele sind auch über die Objektliste unter der Ansicht wählbar."></canvas>
 <p id="raum-ersatz" class="note" hidden>Dieser Browser stellt keine Canvas-2D-Grafik bereit. Die Objektliste, alle Tasten unter dieser Fläche und das Steuerpult steuern dasselbe Schiff ohne Grafik.</p>
@@ -207,5 +217,7 @@
 <script src="jaeger-projekt.js"></script>
 <script src="silizium-versorgung.js"></script>
 <script src="../tutorial-manager/manager.js"></script>
+<script src="../tutorial-pilot/akademie.js"></script>
+<script src="../tutorial-pilot/menue.js"></script>
 <script src="spiel.js"></script>
 </body></html>

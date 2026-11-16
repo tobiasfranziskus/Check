@@ -56,4 +56,19 @@ Bei S02 sind 90-Tage- und 365-Tage-Endstände **wirtschaftlich identisch** (je 2
 
 S11 gelingt ein dritter Jäger vollständig autonom; S02/S03/S04 hingegen nicht. Die beobachtete Materialnachfrage funktioniert also grundsätzlich, ihre Wirkung hängt von weiteren **physischen Schiffskapazitäten und konkurrierendem Materialverbrauch** ab. Die konkrete Ursachenaufteilung ist Gegenstand einer nachfolgenden **rein lesenden Diagnoserunde**, keine beschlossene Balanceänderung. In den übrigen neun Szenarien entstand mangels tatsächlich ausgelöster Silizium-/Industrienachfrage kein Material-only-Auftrag; Insolvenz oder alternative Einzelfehler daraus nicht behaupten.
 
+## S02-Flottenblocker – unabhängige Quellengate-Diagnose
+
+**[GEPRÜFT]** [CI #43854549811](https://github.com/tobiasfranziskus/Check/actions/runs/43854549811): 13×90 + S02×365 und gezielte Vertragsprüfungen **vollständig grün**. Die ausschließlich lesenden Endstände bestätigen für S02-Tag90:
+
+- **2 Original-NPC3-Miner** in Aldera noch physisch einsetzbar: `sh005` Restbuchwert 75 ISK (Eis-Pendel) und `sh006` Restbuchwert 436 ISK (Erz-Pendel).
+- **0** einsatzfähige, leere `transport`-Frachter im Aldera-Dock. Alle verfügbaren alten Hüllen sind abgeschrieben oder an anderer Stelle.
+- Insgesamt **16 echte J3-Bauteile** (16 Silizium, 32 Material verarbeitet) und **2 J4-Jäger** (weitere 8 Material) produziert. Drei K2-Minerbauten haben **15 Material** benötigt; zusätzlich zwei W5-Hüllen mit **10 Material** im ursprünglichen Forschungslauf.
+- Am Ende liegen **8 Silizium, 10 Material und 0 Erz** in Nadir. Es besteht also wieder eine echte Materiallücke, aber ohne verwendbaren Aldera-Frachter kann die vorhandene P8g-Nachfrage nicht bedient werden.
+
+**Wirtschaftliche Ersatzfähigkeit in S02 rechnerisch vorhanden, tatsächliche Umsetzung noch separat zu prüfen:** Nadir hält **10 Material**, `werft_extern` nach den S02-Quittungen **820 ISK** (Original-W5-Baukosten 530 ISK) und die Spedition **1.322 ISK** (Original-Kauf 750 + W5ac-Überführung 60 + eine W3-Arbeitsvorfinanzierung 120 ISK). Die alte K7-Automatik baut eine neue W5-Hülle allerdings nur innerhalb eines Frachterbedarfsvertrags; die zuletzt genehmigte P8g-Materiallieferung darf kein *obligatorisches* neues W5-Schiff erzeugen.
+
+**[DRAFT / NEUER ORIGINALBEFEHLS-GEGENVERSUCH]** `tests/w6-p8g-original-w5-ersatz-nach-90-tagen.test.mjs` nimmt einen unveränderten S02×90-Save, pausiert die NPC-Automatik **nur in einer isolierten Kopie**, prüft die echte W5-Fertigung durch `werft_extern`, den realen 750-ISK-Kauf durch `transport`, 60 bezahlte W5ac-Flugminuten nach Aldera und eine weitere rechtmäßig unterschriebene 50-Erz-Lieferung bis zum dritten Jäger. **Bis zur tatsächlichen Node22-CI keinen Erfolg behaupten.** Der Test verändert keine Wirtschafts- oder Nachfrageentscheidung des Regel207-Cores.
+
+Die Frage einer **automatischen unabhängigen W5-Ersatzbestellung** mit Kunden-, Werft-, Speditions- und Materialbudget wäre eine separate NPC-Dispositions-/Balanceentscheidung und wird nicht still mit dem nun genehmigten *Erzliefervertrag ohne Pflicht-Frachterbau* gleichgesetzt.
+
 **Nächster Release-Gate:** P8g mit seinen notwendigen P8b–P8f-Abhängigkeiten gezielt auf den jeweils aktuellen Hauptzweig integrieren (keine ganzen historischen Stacks blind zusammenführen), echte Bedienung aus dem öffentlichen Spielstart, unabhängige Node22/Browser-Wirtschaft, historischer Hash und aktualisierte Save-/Regelversionsfrage klären. Erst nach erfolgreicher Integration und eigenem Pages-Nachweis `[MAIN]/[PAGES]` setzen.

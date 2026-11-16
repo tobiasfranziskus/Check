@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pilotenakademie · Aphros Void</title><link rel="stylesheet" href="../raum/raum.css"><link rel="stylesheet" href="akademie.css"></head>
+<body><main><header><p>APHROS VOID / FLUGSCHULE</p><h1>Pilotenakademie</h1><p>Eine Übung. Dein Schiff. Echte Flugbewegungen.</p>
+<a href="../spiel/index.html">Zur Karriere</a></header>
+<section aria-label="Karriere laden"><h2>Mit deinem Schiff lernen</h2><p>Lade einen JSON-Export deiner Karriere. Du fliegst hier in dieser geladenen Karriere weiter. Sichere Änderungen über „JSON exportieren“. Dein gespeicherter Karrierestand bleibt erhalten.</p>
+<label>Gesicherte Karriere laden <input id="karriere" type="file" accept=".json,application/json"></label>
+<p id="meldung" role="status"></p><label>Pilotenschiff <select id="pilot"><option>Karriere laden</option></select></label>
+<div id="auftraege"></div><button id="neu" type="button">Übung zurücksetzen</button></section>
+<section aria-label="Einzelne Flugübungen" id="akademie"></section>
+<section id="raumbereich" aria-label="Raumcockpit deiner Karriere" hidden>
+<h2 class="raum-titel">Dein Schiff <span class="sub">– freie Steuerung, echte Flugkosten, eine Welt</span></h2>
+<p id="unterricht-status" role="status"></p>
+<div id="raum-buehne">
+<canvas id="raum-leinwand" role="img" aria-label="Weltraumansicht: eigenes Schiff, Station, Felder, Bojen und weitere Schiffe des Systems. Alle Ziele sind auch über die Objektliste unter der Ansicht wählbar."></canvas>
+<p id="raum-ersatz" class="note" hidden>Dieser Browser stellt keine Canvas-2D-Grafik bereit. Die Objektliste, alle Tasten unter dieser Fläche und das Steuerpult steuern dasselbe Schiff ohne Grafik.</p>
+<div class="raum-feld raum-ol" aria-label="Schiffsstatus">
+<strong id="raum-schiff">–</strong><span id="raum-lage">–</span><span id="raum-fahrt"></span><span id="raum-ladung"></span>
+</div>
+<div class="raum-feld raum-or" aria-label="Kasse und Weltzeit">
+<span>Kasse <strong id="raum-kasse">–</strong></span><span>Lohnreserve <strong id="raum-reserve">–</strong></span><span id="raum-zeit">–</span><span id="raum-audit">–</span>
+</div>
+<div id="raum-zielkarte" class="raum-feld" aria-label="Gewähltes Ziel" hidden>
+<button id="raum-ziel-zu" type="button" aria-label="Auswahl aufheben">×</button>
+<strong id="raum-zielname"></strong><span id="raum-zielinfo"></span>
+<div id="raum-zielaktionen" class="raum-reihe"></div>
+</div>
+<div id="raum-dock" class="raum-feld" aria-label="Stationsansicht im Dock" hidden>
+<strong>Angedockt · Stationsdienste</strong>
+<div id="raum-dockinhalt"></div>
+</div>
+<div id="raum-knueppel" role="application" aria-label="Steuerknüppel: Richtung ziehen, Auslenkung bestimmt den Schub. Nur im freien Flug."><i id="raum-knauf"></i></div>
+<div class="raum-tasten">
+<button id="raum-feuer" type="button" class="alert" hidden>Feuer (Training)</button>
+<button id="raum-duell" type="button" hidden>Duelltraining</button>
+<button id="raum-stopp" type="button" hidden>Stopp</button>
+<button id="raum-andocken" type="button" class="primary" hidden>Andocken</button>
+<button id="raum-abdocken" type="button" class="primary" hidden>Abdocken</button>
+</div>
+</div>
+<div class="raum-zeitleiste" role="group" aria-label="Weltzeit und Zoom">
+<button id="raum-start" type="button" class="primary" aria-pressed="false">Zeit starten</button>
+<button id="raum-tempo-1" type="button" aria-pressed="false">1×</button>
+<button id="raum-tempo-10" type="button" aria-pressed="true">10×</button>
+<button id="raum-tempo-60" type="button" aria-pressed="false">60×</button>
+<button id="raum-tempo-300" type="button" aria-pressed="false">300×</button>
+<button id="raum-zoom-minus" type="button" aria-label="Herauszoomen">−</button>
+<button id="raum-zoom-plus" type="button" aria-label="Hineinzoomen">+</button>
+</div>
+<p id="raum-meldung" role="status" aria-live="polite">Tippe ein Objekt an oder wähle es in der Liste. Leerer Raum setzt einen Flugpunkt; geflogen wird erst nach Bestätigung.</p>
+<div class="raum-unten">
+<details open><summary>Übersicht · Objekte im System</summary><div id="raum-ziele" class="raum-liste"></div></details>
+<details><summary>Eigene Flotte · Schiffwechsel</summary><div id="raum-flotte"></div>
+<p class="note">Wechsle zwischen eigenen Schiffen nur am selben Dock und bei angehaltener Zeit. Ein Wechsel ändert weder Geld noch Eigentum.</p></details>
+<details open><summary>Spielmenü · Sichern &amp; Navigation</summary>
+<div class="raum-reihe">
+<button id="raum-export" type="button">Geprüften JSON-Spielstand exportieren</button>
+<button id="raum-schreiber" type="button" hidden>Flugschreiber exportieren</button>
+<button id="raum-konzern" type="button">Zu den Flugübungen</button>
+<button id="raum-pult" type="button" hidden>Zurück zum Konzern</button>
+</div>
+<p class="note">Diese geladene Karriere bleibt bis zum Schließen im Arbeitsspeicher. Sichere sie über JSON exportieren. Bedienung: Knüppel = Handflug, Tippen = Ziel wählen, zwei Finger = Zoom; Tastatur: Pfeile/WASD, Leertaste Stopp, P Zeit, +/− Zoom.</p></details>
+</div>
+</section>
+</main><script src="../w5ac/rule191-w5-ferry-core.js"></script>
+<script src="../legacy-hub/core-adapter.js"></script>
+<script src="../w5ac/session.js"></script>
+<script src="../flug2d/flug-kern.js"></script>
+<script src="../welt/rule200-k7-industry-core.js"></script>
+<script src="../welt/j2b-silizium-core.js"></script>
+<script src="../welt/j3-bauteil-core.js"></script>
+<script src="../welt/j4b-jaeger-werft-core.js"></script>
+<script src="../welt/p8d-dravos-fracht-core.js"></script>
+<script src="../welt/welt-kern.js"></script>
+<script src="../verbund/kompatibilitaet.js"></script>
+<script src="../j4c/flotten-wechsel.js"></script>
+<script src="../j4c/patrouille.js"></script>
+<script src="../f8-jaeger/f8-treffer.js"></script>
+<script src="../f8-jaeger/f8-duell.js"></script>
+<script src="../j4c/duell.js"></script>
+<script src="../raum/raum-szene.js"></script>
+<script src="../raum/raum-grafik.js"></script>
+<script src="../raum/raum-cockpit.js"></script>
+<script src="../verbund/konzern-session.js"></script>
+
+<script src="akademie.js"></script><script src="menue.js"></script><script src="seite.js"></script></body></html>

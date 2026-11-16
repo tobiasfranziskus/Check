@@ -4,6 +4,7 @@ on:
     paths:
       - 'prototypes/spiel/**'
       - 'prototypes/tutorial-manager/**'
+      - 'prototypes/tutorial-pilot/**'
       - 'prototypes/raum/**'
       - 'prototypes/flug2d/**'
       - 'prototypes/verbund/**'
@@ -11,6 +12,7 @@ on:
       - 'tests/p1-*'
       - 'tests/p4-karriere-patrouille.test.mjs'
       - 'tests/p4-karriere-duell.test.mjs'
+      - 'tests/tutorial-pilot-*'
       - 'prototypes/f8-jaeger/**'
       - 'prototypes/j4c/duell.js'
       - 'prototypes/j4c/patrouille.js'
@@ -30,7 +32,7 @@ jobs:
         with:
           node-version: '22'
       - name: "P1 realer Regel195-Spielstart und bezahlter F6-Minerflug"
-        run: node --test tests/p1-spieleinstieg.test.mjs tests/p2-zielsteuerung.test.mjs tests/p4-karriere-patrouille.test.mjs tests/p4-karriere-duell.test.mjs tests/p1-managerakademie.test.mjs
+        run: node --test tests/p1-spieleinstieg.test.mjs tests/p2-zielsteuerung.test.mjs tests/p4-karriere-patrouille.test.mjs tests/p4-karriere-duell.test.mjs tests/p1-managerakademie.test.mjs tests/tutorial-pilot-core.test.mjs tests/p1-pilot-integration.test.mjs
       - name: "Öffentliche Root-Navigation reproduzierbar; NAS-W0–W5 unverändert"
         run: node scripts/build-w5-singlefile.mjs --check
   real-game-browser:
@@ -54,6 +56,11 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/p1-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}
+      - name: "P1 Pilotenakademie: zwölf Originalflugübungen in vier Touchgrößen"
+        run: node tests/tutorial-pilot-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/p1-playwright/node_modules/playwright
+          TUTORIAL_BROWSERS: ${{ matrix.browser }}
       - name: "J11+P1: echter Spielstart, bezahlter Frachter und Miner, Eisauftrag, F4-Rundfracht und Save"
         run: node tests/p1-j11-career-browser.cjs
         env:

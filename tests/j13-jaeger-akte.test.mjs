@@ -78,7 +78,7 @@ test('J13: standalone browser tab contains only a guarded purchase link, never N
  assert.match(js,/scope\.J13Werftakte\.erstellen\(session\.weltReferenz\(\),zustand,kauf\)/);
  assert.match(js,/tabZeigen\('auftraege'\)/);
  assert.match(js,/button\.disabled=!akte\.kauf\.ok/);
- assert.match(js,/\.textContent=step\.hinweis/);
+ assert.match(js,/\.textContent=anzeigetext\(step\.hinweis\)/);
  assert.doesNotMatch(j13,/\.execute\(|\.submit\(|\.advance\(|\.localStorage|\.innerHTML/);
  assert.doesNotMatch(html,/<script[^>]+src="https?:/);
  assert.throws(()=>J13.erstellen({},{}),/Regel204/);

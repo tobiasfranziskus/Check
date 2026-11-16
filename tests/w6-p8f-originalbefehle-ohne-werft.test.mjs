@@ -124,6 +124,12 @@ test('P8f: Original-NPC3-Mining in separater Kopie ist keine Liefer- oder Käufe
 test('P8f: echter 750-ISK-W5-Frachterkauf und 60-Minuten-Originalüberführung ersetzen eine verschlissene Aldera-Hülle',()=>{
   const {w,save,originalHash,firstDay}=snapshotAfterFirstFreight();
   const s=w.load(save),oldIds=new Set(Object.keys(s.ships));
+  // Isolierte Testkopie: das bestehende S02-Autodispatch darf die gerade
+  // gekaufte Hülle nicht vor der eigentlichen W3-Nachprobe neu vergeben.
+  // Dies ist ein vorhandener, erlaubter Politikschalter; der Original-Save
+  // und alle Weltregeln bleiben unangetastet.
+  w.politikSetzen(s,{automatik:false});
+  valid(w,s);
   const station=s.stations.st_nadir,stockBefore=station.lager.frachter;
   const transportBefore=s.owners.transport.cash,werftBefore=s.owners.werft_extern.cash;
   const paidBefore=s.w5ac.paid;
@@ -163,7 +169,7 @@ test('P8f: echter 750-ISK-W5-Frachterkauf und 60-Minuten-Originalüberführung e
   assert.match(freight.reason,/Erzcharge/,'nach behobenem Hüllenblocker muss reale Warenlücke sichtbar werden');
   assert.equal(w.save(s),unchanged,'kein Phantom-Erz und keine Buchung bei Ablehnung');
   assert.equal(w.hash(w.load(save)),originalHash,'der Original-S02-Ausgangsstand bleibt erhalten');
-  console.log('P8F_REPLACEMENT_FREIGHT',JSON.stringify({firstDay,id,initialStock:stockBefore,
+  console.log('P8F_REPLACEMENT_FREIGHT',JSON.stringify({firstDay,id,isolatedAutoDispatchDisabled:true,initialStock:stockBefore,
     remainingStock:s.stations.st_nadir.lager.frachter,owner:'transport',price:750,
     ferryLabor:60,newLocation:s.ships[id].system,originalW5acReceipt:true,
     nextBlocker:freight.reason,worldISK:money(s),mint:s.minted,burn:s.burned,

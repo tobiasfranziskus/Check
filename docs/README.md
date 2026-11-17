@@ -15,7 +15,7 @@
 
 | Aufgabe | Erst hier nachsehen |
 | --- | --- |
-| **Manager- und Pilotenakademie (P1)** | [`prototypes/tutorial-manager/`](../prototypes/tutorial-manager/) mit [Manager-Prüfbericht](P1_MANAGERAKADEMIE.md); [`prototypes/tutorial-pilot/`](../prototypes/tutorial-pilot/) mit 12 Fluglektionen, [Integrationsnachweis](P1_AKADEMIEN_INTEGRATION.md) und [Original-Codex-Katalog](P1_PILOTENAKADEMIE.md); gemeinsam aus [`prototypes/spiel/index.html`](../prototypes/spiel/index.html) erreichbar |
+| **Manager- und Pilotenakademie (P1)** | [`prototypes/tutorial-manager/`](../prototypes/tutorial-manager/) mit [Manager-Prüfbericht](P1_MANAGERAKADEMIE.md); [`prototypes/tutorial-pilot/`](../prototypes/tutorial-pilot/) mit 13 Fluglektionen (12 ursprüngliche + integrierte P2-Flugprüfung), [Integrationsnachweis](P1_AKADEMIEN_INTEGRATION.md) und [Original-Codex-Katalog](P1_PILOTENAKADEMIE.md); gemeinsam aus [`prototypes/spiel/index.html`](../prototypes/spiel/index.html) erreichbar |
 | Flug, Touch, Trägheit, Navigation, Zielauswahl | [`prototypes/raum/raum-cockpit.js`](../prototypes/raum/raum-cockpit.js), `raum-szene.js`, `raum-grafik.js`; [Void-Echoes-Katalog](VOID_ECHOES_CODEKATALOG.md) |
 | Deterministischer Weltkern, Industrie, Geld, Waren, Eigentum | [`prototypes/welt/welt-kern.js`](../prototypes/welt/welt-kern.js) und relevante `prototypes/welt/`-Module |
 | Jäger, Training, Treffer und Kampf | [`prototypes/j4c/`](../prototypes/j4c/) und [`prototypes/f8-jaeger/`](../prototypes/f8-jaeger/); F8-Drafts und Produktfähigkeit getrennt prüfen |

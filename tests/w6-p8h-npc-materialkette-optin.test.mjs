@@ -64,12 +64,18 @@ test('P8h: S02x90 aktiviert rechtmaessige automatische Ersatzkette – nur eine 
  assert.equal(a.w3Neu,1,'neue reale finanzierte W3-Materialfracht');
  assert.equal(a.werftNeu,1,'keine unnoetige zweite W5-Huelle');
  for(const cmd of ['werft_extern:stationBuildShip','transport:shipBuy',
-   'transport:shipReposition','st_nadir:industrialOreOfferMaterial',
-   'npc3:industrialOreAcceptMine','transport:industrialOreAcceptFreight',
-   'st_nadir:industrialOreCommitMaterial'])
+   'st_nadir:industrialOreOfferMaterial','npc3:industrialOreAcceptMine',
+   'transport:industrialOreAcceptFreight','st_nadir:industrialOreCommitMaterial'])
    assert.equal(a.belege[cmd],1,cmd+' genau einmal mit Originaleigentum');
- assert.ok(Object.values(a.s.ships).some(sh=>sh.owner==='transport'&&sh.klasse==='frachter'
-   &&sh.system==='aldera'&&w.buchwert(a.s,sh.id)>0));
+ // Die bereits vorhandene W5-Industrie kann die Ueberfuehrung rechtmaessig
+ // selbst ausloesen. Nicht den Quellenpfad vorschreiben, sondern 60 echte
+ // bezahlte Original-Pilotenminuten fuer die NEUE Huelle nachweisen.
+ assert.ok((a.belege['transport:shipReposition']||0)<=1,
+   'kein zweiter NPC-P8h-Ueberfuehrungsauftrag');
+ const neuerFrachter=Object.values(a.s.ships).find(sh=>sh.owner==='transport'
+   &&sh.klasse==='frachter'&&sh.system==='aldera'&&w.buchwert(a.s,sh.id)>0
+   &&a.s.w5ac.completed.some(x=>x.id===sh.id&&x.kosten===60));
+ assert.ok(neuerFrachter,'Original-W5ac-Nachweis der bezahlten neuen Frachterueberfuehrung');
  assert.equal(w.hash(s),h,'urspruengliche Krise unveraendert');
  assert.equal(w.save(s),quelle);
  console.log('P8H_PRODUCT_OPTIN_RECOVERY',JSON.stringify({sourceHash:h,finalHash:a.hash,

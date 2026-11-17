@@ -107,6 +107,8 @@ test('P8h: Boolean-Aus und Save/Load ohne automatische Migration',()=>{
  w.npcAutoSetzen(s,true);w.materialSupplySetzen(s,true);
  const v=w.hash(s);
  w.npcMaterialKetteSetzen(s,true);
+ assert.throws(()=>w.materialSupplySetzen(s,false),/P8h/,
+   'NPC-Opt-in darf nicht durch Abschalten des erforderlichen W3-Originalkerns korrupt werden');
  pruefen(w,s);
  const loaded=w.load(w.save(s));
  assert.equal(loaded.kanon.npcMaterialKette,true);

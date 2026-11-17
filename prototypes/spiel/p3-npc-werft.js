@@ -12,7 +12,7 @@ function auswerten(w,s){
  const carrier=s.owners.transport,shipyard=s.owners.werft_extern;
  if(!carrier||!shipyard)throw Error('W6-Frachterakte: Firmenkonten fehlen');
  const r=w.rules,price=r.economy.waren.frachter.basis;
- const ferryCost=r.w5Transfer.dauer*r.w5Transfer.lohnJeMinute;
+ const ferryCost=r.w5n.flugMinuten*r.w5Transfer.lohnJeMinute;
  if(!integer(price)||!integer(ferryCost)||price<=0)throw Error('W6-Frachterakte: Originaltarife fehlen');
  const ships=Object.values(s.ships).filter(sh=>sh.owner==='transport'&&sh.klasse==='frachter');
  const active=ships.filter(sh=>w.buchwert(s,sh.id)>0);

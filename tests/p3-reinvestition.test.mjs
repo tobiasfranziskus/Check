@@ -101,6 +101,27 @@ test('P3: audit real two-round earnings, asset depreciation and reinvestment quo
     'newly owned miner waits when station stock/buyer budget prevents new mining');
 
  }
+ // Continue through original market exhaustion. Do not assume infinite demand:
+ // the UI must stop at a genuine refused buyer or mining-funding quote.
+ let blocked=null,attempts=0;
+ for(let i=0;i<30;i++){
+  const before=j.exportieren(),p=P3.auswerten(j.zustandReferenz(),j.angebote(),j.weltReferenz());
+  assert.equal(j.exportieren(),before,'read-only finance view must not change world');
+  if(!p.bereit){blocked=p;break;}
+  if(p.art==='zeit')j.weiterspielen(60);
+  else assert.equal(j.ausfuehren(p.aktion).ok,true);
+  attempts++;
+  assert.equal(j.weltReferenz().audit(j.zustandReferenz()).ok,true);
+ }
+ assert.ok(blocked,'a financed market cannot run forever on the limited original buyer money');
+ assert.ok(blocked.grund,'core-backed financing or availability reason must be visible');
+ assert.equal(blocked.bereit,false);
+ const reached=snapshot(j,'post-market-block');
+ console.log('P3_FINANCE_BLOCKED '+JSON.stringify({
+   attempts,rounds:blocked.abgeschlossen,phase:blocked.art,reason:blocked.grund,
+   buyerAl:reached.stock.aldera.eis,alderaCash:j.zustandReferenz().owners.st_aldera.cash,
+   nadirCash:j.zustandReferenz().owners.st_nadir.cash,house:reached.house,equity:reached.equity
+ }));
  const good=j.exportieren(),fake=JSON.parse(good);
  fake.owners.house.cash+=100;fake.owners.st_aldera.cash-=100;
  assert.equal(Object.values(fake.owners).reduce((n,o)=>n+o.cash,0),33000);

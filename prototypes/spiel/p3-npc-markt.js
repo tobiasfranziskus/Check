@@ -50,7 +50,7 @@ function auswerten(w,s,angebote,daten){
   npcFrachter:npcFrachter.length,freiNpcFrachter:freiNpcFrachter.length,
   eigeneFrachter:eigeneFrachter.length,naechsteAbrechnung:bisAbrechnung,
   art:kannFracht?'fracht':'zeit',aktion:kannFracht?fracht.id:null,
-  bereit:kannFracht||true,grund,
+  bereit:true,grund,
   mangel:kannFracht?null:(angebote.find(a=>/^freight-/.test(a.id)&&eigeneFrachter.some(sh=>a.id==='freight-'+sh.id))?.reason||null)
  });
 }

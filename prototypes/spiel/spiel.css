@@ -186,3 +186,8 @@ body.raum-aktiv .world{display:none}
 .p3-wasser .p3-zahlen{color:#a5e8d2}
 .p3-wasser .p3-einschraenkung{font-size:.74rem;color:#aabfcd;line-height:1.45}
 .p3-wasser #p3-wasser-klein{margin-top:7px;background:transparent;border:1px solid #69958d}
+
+/* P3: financial NPC consumer demand and existing player freight decision. */
+.p3-npc-markt{border-color:#637e90;background:#112a38e8}
+.p3-npc-markt .p3-zahlen{color:#9ad7e7}
+.p3-npc-markt .p3-einschraenkung{font-size:.74rem;color:#acbfc9;line-height:1.48}

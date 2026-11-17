@@ -31,6 +31,9 @@ function haushaltPlan(s,welt){
  const w5n=welt?.rules?.w5n,preis=W.DATEN.wasser.preisAldera;
  if(s.rulesVersion===204 && w5n && Number.isSafeInteger(preis) && preis>0
     && s.owners.pilot_house && s.owners.st_aldera){
+   plan.push(Object.freeze({id:'water-pilot-house-1',
+     label:'Eine Einheit Aldera-Wasser aus persönlichem Pilotenlohn kaufen',
+     befehl:Object.freeze({type:'householdBuy',owner:'pilot_house',menge:1})}));
    const ankauf=w5n.charge*w5n.eisPreis;
    const fehl=Math.max(0,ankauf-s.owners.st_aldera.cash);
    const menge=Math.ceil(fehl/preis);

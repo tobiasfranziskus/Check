@@ -276,6 +276,31 @@ function investitionAnzeigen(s,angebote){
  $('p3-invest-sperre').textContent=p.grund?'Gesperrt: '+anzeigetext(p.grund):
    'Kaufen und Sparen sind deine Entscheidung. Kein kostenloses Schiff und kein garantierter Abnehmer.';
 }
+// P3: existing local water demand, paid ONLY from the player's personal pilot wage account.
+function wasserLohnAnzeigen(s,angebote){
+ const host=$('p3-wasser-kreislauf');
+ if(!host||!scope.P3WasserLohn)return;
+ const p=scope.P3WasserLohn.auswerten(session.weltReferenz(),s,angebote,scope.AphrosWelt.DATEN);
+ host.hidden=!p.sichtbar;
+ if(!p.sichtbar)return;
+ $('p3-wasser-zahlen').textContent='Privater Pilotenlohn: '+fmt(p.lohn)+
+   ' ISK · Aldera-Wasserlager: '+fmt(p.wasser)+' Einheiten · Wasserpreis: '+
+   fmt(p.preis)+' ISK · Aldera-Käuferkasse: '+fmt(p.kaeuferKasse)+' ISK.';
+ $('p3-wasser-bedarf').textContent=p.fehlbetrag>0
+  ?'Nächste Eischarge: '+fmt(p.eisKosten)+' ISK erforderlich. Aktuell fehlen '+
+    fmt(p.fehlbetrag)+' ISK. '+fmt(p.zielMenge)+' wirklich vorhandene Einheiten Wasser kosten '+
+    fmt(p.zielKosten)+' ISK aus deinem PRIVATEN Pilotenlohn.'
+  :'Die nächste Original-Eischarge ist derzeit bereits finanzierbar. Du darfst deinen Lohn behalten.';
+ const b=$('p3-wasser-aktion');b.disabled=!p.zielBereit;
+ b.textContent=p.fehlbetrag>0
+  ?fmt(p.zielMenge)+' Wasser für '+fmt(p.zielKosten)+' ISK privat kaufen'
+  :'Kein Käuferengpass – Lohn sparen';
+ const klein=$('p3-wasser-klein');klein.disabled=!p.kleinBereit;
+ klein.textContent='Freiwillig 1 Wasser für '+fmt(p.preis)+' ISK kaufen';
+ $('p3-wasser-grund').textContent=(p.fehlbetrag>0&&!p.zielBereit?'Gesperrt: ':'')+
+  anzeigetext(p.grund)+(p.fehlbetrag>0&&!p.zielBereit&&p.kleinBereit
+    ?' Eine einzelne Einheit kannst du weiterhin legal kaufen.':'');
+}
 // J12: read-only station and company report from the SAME validated Rule204 session.
 // No separate economy, NPC signatures, speculative prices, or unvalidated purchase paths.
 function tabZeigen(name){
@@ -528,6 +553,7 @@ function anzeigen(){
  }));
  handelswegAnzeigen(s,alleAngebote);
  investitionAnzeigen(s,alleAngebote);
+ wasserLohnAnzeigen(s,alleAngebote);
  wirtschaftsbericht(a,s,alleAngebote);
  jaegerBericht(s,alleAngebote);
  jaegerBeitraege();
@@ -744,6 +770,21 @@ $('p3-invest-aktion')?.addEventListener('click',()=>{
   auftrag(p.aktion); // The established J8 owner/stock/budget validation and autosave.
  }catch(e){hinweis('Investition gesperrt: '+error(e),true);anzeigen();}
 });
+// No direct mutations or foreign money controls: all choices go through the
+// strict J8 plan and original householdBuy validation, then the normal autosave.
+function wasserLohnAusgeben(id){
+ if(!session||!scope.P3WasserLohn)return;
+ try{
+  const p=scope.P3WasserLohn.auswerten(session.weltReferenz(),
+    session.zustandReferenz(),session.angebote(),scope.AphrosWelt.DATEN);
+  const berechtigt=p.sichtbar&&(id===p.zielAktion?p.zielBereit:
+    id===p.kleinAktion&&p.kleinBereit);
+  if(!berechtigt)throw Error(p.grund||'Privater Wasserkauf nicht finanzierbar');
+  auftrag(id);
+ }catch(e){hinweis('Wasserkauf gesperrt: '+error(e),true);anzeigen();}
+}
+$('p3-wasser-aktion')?.addEventListener('click',()=>wasserLohnAusgeben('water-pilot-house-bedarf'));
+$('p3-wasser-klein')?.addEventListener('click',()=>wasserLohnAusgeben('water-pilot-house-1'));
 $('jaeger-kaufweg').addEventListener('click',()=>{
  if(!session)return;
  const quote=session.angebote().find(a=>a.id==='buy-st_nadir-jaeger');

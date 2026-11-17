@@ -1,0 +1,481 @@
+TAP version 13
+# Subtest: tests/b5a-halten-kosten.test.mjs
+ok 1 - tests/b5a-halten-kosten.test.mjs
+  ---
+  duration_ms: 125.299892
+  type: 'test'
+  ...
+# Subtest: tests/b5b-sollrolle.test.mjs
+ok 2 - tests/b5b-sollrolle.test.mjs
+  ---
+  duration_ms: 102.636203
+  type: 'test'
+  ...
+# Subtest: tests/handel-ui.test.mjs
+ok 3 - tests/handel-ui.test.mjs
+  ---
+  duration_ms: 2825.481222
+  type: 'test'
+  ...
+# Subtest: tests/j10a-werft-finanzierung.test.mjs
+ok 4 - tests/j10a-werft-finanzierung.test.mjs
+  ---
+  duration_ms: 423.609882
+  type: 'test'
+  ...
+# Subtest: tests/j10b-k2-nadir-kauf.test.mjs
+ok 5 - tests/j10b-k2-nadir-kauf.test.mjs
+  ---
+  duration_ms: 603.155114
+  type: 'test'
+  ...
+# Subtest: tests/j11-frachter.test.mjs
+ok 6 - tests/j11-frachter.test.mjs
+  ---
+  duration_ms: 655.686736
+  type: 'test'
+  ...
+# Subtest: tests/j12-wirtschaftsterminal.test.mjs
+ok 7 - tests/j12-wirtschaftsterminal.test.mjs
+  ---
+  duration_ms: 185.447942
+  type: 'test'
+  ...
+# Subtest: tests/j13-jaeger-akte.test.mjs
+ok 8 - tests/j13-jaeger-akte.test.mjs
+  ---
+  duration_ms: 236.068489
+  type: 'test'
+  ...
+# Subtest: tests/j13b-spielbare-produktion.test.mjs
+ok 9 - tests/j13b-spielbare-produktion.test.mjs
+  ---
+  duration_ms: 1175.562743
+  type: 'test'
+  ...
+# Subtest: tests/j14-pilot-relogin-multiship.test.mjs
+ok 10 - tests/j14-pilot-relogin-multiship.test.mjs
+  ---
+  duration_ms: 520.399121
+  type: 'test'
+  ...
+# Subtest: tests/j4e-oeffentlicher-spieltest.test.mjs
+ok 11 - tests/j4e-oeffentlicher-spieltest.test.mjs
+  ---
+  duration_ms: 75.499305
+  type: 'test'
+  ...
+# Subtest: tests/j4e-release-abnahme.test.mjs
+ok 12 - tests/j4e-release-abnahme.test.mjs
+  ---
+  duration_ms: 172.292072
+  type: 'test'
+  ...
+# Subtest: tests/j5-konzernansicht.test.mjs
+ok 13 - tests/j5-konzernansicht.test.mjs
+  ---
+  duration_ms: 120.953621
+  type: 'test'
+  ...
+# Subtest: tests/j5w-finanzierte-folgeproduktion.test.mjs
+ok 14 - tests/j5w-finanzierte-folgeproduktion.test.mjs
+  ---
+  duration_ms: 3981.180863
+  type: 'test'
+  ...
+# Subtest: tests/j5w-unabhaengige-auditpruefung.test.mjs
+ok 15 - tests/j5w-unabhaengige-auditpruefung.test.mjs
+  ---
+  duration_ms: 91.379549
+  type: 'test'
+  ...
+# Subtest: tests/j6-f6-flottenrollen.test.mjs
+ok 16 - tests/j6-f6-flottenrollen.test.mjs
+  ---
+  duration_ms: 124.957768
+  type: 'test'
+  ...
+# Subtest: tests/j6-flottenwechsel.test.mjs
+ok 17 - tests/j6-flottenwechsel.test.mjs
+  ---
+  duration_ms: 316.743606
+  type: 'test'
+  ...
+# Subtest: tests/j6i-gemeinsame-welt.test.mjs
+ok 18 - tests/j6i-gemeinsame-welt.test.mjs
+  ---
+  duration_ms: 327.01627
+  type: 'test'
+  ...
+# Subtest: tests/j6w-spielbare-jaegerwirtschaft.test.mjs
+ok 19 - tests/j6w-spielbare-jaegerwirtschaft.test.mjs
+  ---
+  duration_ms: 7172.376421
+  type: 'test'
+  ...
+# Subtest: tests/j7-regel195-uebernahme.test.mjs
+ok 20 - tests/j7-regel195-uebernahme.test.mjs
+  ---
+  duration_ms: 214.252814
+  type: 'test'
+  ...
+# Subtest: tests/j8-konzern-ohne-jaeger.test.mjs
+ok 21 - tests/j8-konzern-ohne-jaeger.test.mjs
+  ---
+  duration_ms: 390.146755
+  type: 'test'
+  ...
+# Subtest: tests/j9-verbund-raummine.test.mjs
+ok 22 - tests/j9-verbund-raummine.test.mjs
+  ---
+  duration_ms: 315.899532
+  type: 'test'
+  ...
+# Subtest: tests/konzerne.test.mjs
+ok 23 - tests/konzerne.test.mjs
+  ---
+  duration_ms: 73.989302
+  type: 'test'
+  ...
+# Subtest: tests/legacy-corporation.test.mjs
+ok 24 - tests/legacy-corporation.test.mjs
+  ---
+  duration_ms: 64.890045
+  type: 'test'
+  ...
+# Subtest: tests/legacy-fitting-preview.test.mjs
+ok 25 - tests/legacy-fitting-preview.test.mjs
+  ---
+  duration_ms: 164.290531
+  type: 'test'
+  ...
+# Subtest: tests/legacy-mining-scanner.test.mjs
+ok 26 - tests/legacy-mining-scanner.test.mjs
+  ---
+  duration_ms: 51.89067
+  type: 'test'
+  ...
+# Subtest: tests/legacy-pilot.test.mjs
+ok 27 - tests/legacy-pilot.test.mjs
+  ---
+  duration_ms: 50.655987
+  type: 'test'
+  ...
+# Subtest: tests/legacy-station-preview.test.mjs
+ok 28 - tests/legacy-station-preview.test.mjs
+  ---
+  duration_ms: 58.51916
+  type: 'test'
+  ...
+# Subtest: tests/p0-legacy-hub-archive.test.mjs
+not ok 29 - tests/p0-legacy-hub-archive.test.mjs
+  ---
+  duration_ms: 111.930407
+  type: 'test'
+  location: '/workspace/Check/tests/p0-legacy-hub-archive.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: tests/p0-legacy-pages-archive.test.mjs
+not ok 30 - tests/p0-legacy-pages-archive.test.mjs
+  ---
+  duration_ms: 89.76938
+  type: 'test'
+  location: '/workspace/Check/tests/p0-legacy-pages-archive.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: tests/p0-prototype-deps.test.mjs
+not ok 31 - tests/p0-prototype-deps.test.mjs
+  ---
+  duration_ms: 120.910438
+  type: 'test'
+  location: '/workspace/Check/tests/p0-prototype-deps.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: tests/p0-w5x-archive.test.mjs
+not ok 32 - tests/p0-w5x-archive.test.mjs
+  ---
+  duration_ms: 86.079332
+  type: 'test'
+  location: '/workspace/Check/tests/p0-w5x-archive.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: tests/p1-managerakademie.test.mjs
+ok 33 - tests/p1-managerakademie.test.mjs
+  ---
+  duration_ms: 518.226523
+  type: 'test'
+  ...
+# Subtest: tests/p1-pilot-integration.test.mjs
+ok 34 - tests/p1-pilot-integration.test.mjs
+  ---
+  duration_ms: 321.347941
+  type: 'test'
+  ...
+# Subtest: tests/p1-root-premium.test.mjs
+not ok 35 - tests/p1-root-premium.test.mjs
+  ---
+  duration_ms: 89.504837
+  type: 'test'
+  location: '/workspace/Check/tests/p1-root-premium.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: tests/p1-spieleinstieg.test.mjs
+ok 36 - tests/p1-spieleinstieg.test.mjs
+  ---
+  duration_ms: 195.407657
+  type: 'test'
+  ...
+# Subtest: tests/p2-autopilot-sichtbarkeit.test.mjs
+ok 37 - tests/p2-autopilot-sichtbarkeit.test.mjs
+  ---
+  duration_ms: 567.043524
+  type: 'test'
+  ...
+# Subtest: tests/p2-flugpruefung.test.mjs
+ok 38 - tests/p2-flugpruefung.test.mjs
+  ---
+  duration_ms: 3245.208747
+  type: 'test'
+  ...
+# Subtest: tests/p2-zielsteuerung.test.mjs
+ok 39 - tests/p2-zielsteuerung.test.mjs
+  ---
+  duration_ms: 359.985462
+  type: 'test'
+  ...
+# Subtest: tests/p3-handelsweg.test.mjs
+ok 40 - tests/p3-handelsweg.test.mjs
+  ---
+  duration_ms: 1198.55448
+  type: 'test'
+  ...
+# Subtest: tests/p4-karriere-duell.test.mjs
+ok 41 - tests/p4-karriere-duell.test.mjs
+  ---
+  duration_ms: 537.001082
+  type: 'test'
+  ...
+# Subtest: tests/p4-karriere-patrouille.test.mjs
+ok 42 - tests/p4-karriere-patrouille.test.mjs
+  ---
+  duration_ms: 506.367664
+  type: 'test'
+  ...
+# Subtest: tests/raum-szene.test.mjs
+ok 43 - tests/raum-szene.test.mjs
+  ---
+  duration_ms: 452.501615
+  type: 'test'
+  ...
+# Subtest: tests/regel195-storage.test.mjs
+ok 44 - tests/regel195-storage.test.mjs
+  ---
+  duration_ms: 202.559279
+  type: 'test'
+  ...
+# Subtest: tests/reisen-silizium.test.mjs
+ok 45 - tests/reisen-silizium.test.mjs
+  ---
+  duration_ms: 1089.997645
+  type: 'test'
+  ...
+# Subtest: tests/sicherheitszonen.test.mjs
+ok 46 - tests/sicherheitszonen.test.mjs
+  ---
+  duration_ms: 252.767425
+  type: 'test'
+  ...
+# Subtest: tests/spielstand.test.mjs
+ok 47 - tests/spielstand.test.mjs
+  ---
+  duration_ms: 760.475226
+  type: 'test'
+  ...
+# Subtest: tests/start-smoke.test.mjs
+ok 48 - tests/start-smoke.test.mjs
+  ---
+  duration_ms: 137.109292
+  type: 'test'
+  ...
+# Subtest: tests/tutorial-pilot-core.test.mjs
+ok 49 - tests/tutorial-pilot-core.test.mjs
+  ---
+  duration_ms: 1606.196794
+  type: 'test'
+  ...
+# Subtest: tests/ui-miner2d-rule195.test.mjs
+ok 50 - tests/ui-miner2d-rule195.test.mjs
+  ---
+  duration_ms: 398.631252
+  type: 'test'
+  ...
+# Subtest: tests/w5aa-original-w4-refinery.test.mjs
+ok 51 - tests/w5aa-original-w4-refinery.test.mjs
+  ---
+  duration_ms: 1838.68727
+  type: 'test'
+  ...
+# Subtest: tests/w5aa-w4-90d-matrix.test.mjs
+ok 52 - tests/w5aa-w4-90d-matrix.test.mjs
+  ---
+  duration_ms: 4608.185417
+  type: 'test'
+  ...
+# Subtest: tests/w5ab-finanzierter-schiffbau.test.mjs
+ok 53 - tests/w5ab-finanzierter-schiffbau.test.mjs
+  ---
+  duration_ms: 443.80302
+  type: 'test'
+  ...
+# Subtest: tests/w5ab-rule19-90d.test.mjs
+ok 54 - tests/w5ab-rule19-90d.test.mjs
+  ---
+  duration_ms: 4762.970352
+  type: 'test'
+  ...
+# Subtest: tests/w5ac-frachterueberfuehrung.test.mjs
+ok 55 - tests/w5ac-frachterueberfuehrung.test.mjs
+  ---
+  duration_ms: 588.773786
+  type: 'test'
+  ...
+# Subtest: tests/w5ac-regel191-90d.test.mjs
+ok 56 - tests/w5ac-regel191-90d.test.mjs
+  ---
+  duration_ms: 5406.128295
+  type: 'test'
+  ...
+# Subtest: tests/w5ad-ersatzwirtschaft.test.mjs
+ok 57 - tests/w5ad-ersatzwirtschaft.test.mjs
+  ---
+  duration_ms: 24729.024951
+  type: 'test'
+  ...
+# Subtest: tests/w5ae-lohnmaterialkauf.test.mjs
+ok 58 - tests/w5ae-lohnmaterialkauf.test.mjs
+  ---
+  duration_ms: 522.285237
+  type: 'test'
+  ...
+# Subtest: tests/w5ae-wage-90d-matrix.test.mjs
+ok 59 - tests/w5ae-wage-90d-matrix.test.mjs
+  ---
+  duration_ms: 28265.56238
+  type: 'test'
+  ...
+# Subtest: tests/w5af-13x90-finanziertes-wasser.test.mjs
+ok 60 - tests/w5af-13x90-finanziertes-wasser.test.mjs
+  ---
+  duration_ms: 55120.045621
+  type: 'test'
+  ...
+# Subtest: tests/w5af-eis-wasser-lohnkauf.test.mjs
+ok 61 - tests/w5af-eis-wasser-lohnkauf.test.mjs
+  ---
+  duration_ms: 505.840472
+  type: 'test'
+  ...
+# Subtest: tests/w5ag-individuelle-pilotenloehne.test.mjs
+ok 62 - tests/w5ag-individuelle-pilotenloehne.test.mjs
+  ---
+  duration_ms: 767.865989
+  type: 'test'
+  ...
+# Subtest: tests/w5ag-private-wage-13x90.test.mjs
+ok 63 - tests/w5ag-private-wage-13x90.test.mjs
+  ---
+  duration_ms: 86527.30445
+  type: 'test'
+  ...
+# Subtest: tests/w5ag-spielintegration.test.mjs
+ok 64 - tests/w5ag-spielintegration.test.mjs
+  ---
+  duration_ms: 2366.938084
+  type: 'test'
+  ...
+# Subtest: tests/w5ak-folgezyklen.test.mjs
+ok 65 - tests/w5ak-folgezyklen.test.mjs
+  ---
+  duration_ms: 6317.540211
+  type: 'test'
+  ...
+# Subtest: tests/w5al-liquiditaetsbruecke.test.mjs
+ok 66 - tests/w5al-liquiditaetsbruecke.test.mjs
+  ---
+  duration_ms: 5291.305883
+  type: 'test'
+  ...
+# Subtest: tests/w5rc1-preservation.test.mjs
+ok 67 - tests/w5rc1-preservation.test.mjs
+  ---
+  duration_ms: 194.540665
+  type: 'test'
+  ...
+# Subtest: tests/w5singlefile.test.mjs
+ok 68 - tests/w5singlefile.test.mjs
+  ---
+  duration_ms: 223.426088
+  type: 'test'
+  ...
+# Subtest: tests/w5t-core-adapter.test.mjs
+ok 69 - tests/w5t-core-adapter.test.mjs
+  ---
+  duration_ms: 198.111111
+  type: 'test'
+  ...
+# Subtest: tests/w5u-session.test.mjs
+ok 70 - tests/w5u-session.test.mjs
+  ---
+  duration_ms: 1167.88196
+  type: 'test'
+  ...
+# Subtest: tests/w5v-finance-preview.test.mjs
+ok 71 - tests/w5v-finance-preview.test.mjs
+  ---
+  duration_ms: 840.252624
+  type: 'test'
+  ...
+# Subtest: tests/w5w-funded-w1-hub.test.mjs
+ok 72 - tests/w5w-funded-w1-hub.test.mjs
+  ---
+  duration_ms: 312.235944
+  type: 'test'
+  ...
+# Subtest: tests/w5x-finanzierte-w2-konzerne.test.mjs
+ok 73 - tests/w5x-finanzierte-w2-konzerne.test.mjs
+  ---
+  duration_ms: 2865.770967
+  type: 'test'
+  ...
+# Subtest: tests/w5y-original-w3-freight.test.mjs
+ok 74 - tests/w5y-original-w3-freight.test.mjs
+  ---
+  duration_ms: 1173.316246
+  type: 'test'
+  ...
+# Subtest: tests/w5z-finanzierte-folgefrachten.test.mjs
+ok 75 - tests/w5z-finanzierte-folgefrachten.test.mjs
+  ---
+  duration_ms: 2901.60356
+  type: 'test'
+  ...

@@ -1,0 +1,60 @@
+Zwischenlauf vor Profil-/Eigentumskorrektur, abgebrochen zugunsten Endlauf.
+Nicht als bestandene Gesamtregression gewertet. Voller Zwischenlog lokal /tmp/issue469-node22-voll.log.
+# Subtest: R1: alte 204/207 Zustände und RNG bitgleich gegen main-Quellen, JSON keine Migration
+not ok 244 - R1: alte 204/207 Zustände und RNG bitgleich gegen main-Quellen, JSON keine Migration
+  ---
+  duration_ms: 4796.674502
+  type: 'test'
+  location: '/workspace/Check/tests/rohstoff-forschung.test.mjs:12:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected exception.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  operator: 'throws'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/Check/tests/rohstoff-forschung.test.mjs:30:9)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: R1: Modellvertrag volle/leere Felder, genau ein Abbau pro Miner/Tick, neues Vorkommen ohne Ware
+ok 245 - R1: Modellvertrag volle/leere Felder, genau ein Abbau pro Miner/Tick, neues Vorkommen ohne Ware
+  ---
+  duration_ms: 5.213467
+  type: 'test'
+  ...
+# Subtest: R1: reale bezahlte Kette, Wiederentdeckung, kalter JSON-Import und zwei identische Replays
+ok 246 - R1: reale bezahlte Kette, Wiederentdeckung, kalter JSON-Import und zwei identische Replays
+  ---
+  duration_ms: 25415.102479
+# Subtest: R1: abgeschnittene Lohn-/Kaufbelege und Gratisware werden abgelehnt
+not ok 247 - R1: abgeschnittene Lohn-/Kaufbelege und Gratisware werden abgelehnt
+  ---
+  duration_ms: 1824.740564
+  type: 'test'
+  location: '/workspace/Check/tests/rohstoff-forschung.test.mjs:63:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+
+    true !== false
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/Check/tests/rohstoff-forschung.test.mjs:66:37)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Sieben Sicherheitseinstufungen steuern Piratenvorkommen und Sicherheitsjäger
+ok 248 - Sieben Sicherheitseinstufungen steuern Piratenvorkommen und Sicherheitsjäger
+  ---

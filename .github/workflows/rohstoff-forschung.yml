@@ -1,0 +1,41 @@
+name: R1 endliche Rohstofffelder (nur Forschung)
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'prototypes/welt/**'
+      - 'tools/rohstoff-forschung.cjs'
+      - 'tests/rohstoff-forschung.test.mjs'
+      - '.github/workflows/rohstoff-forschung.yml'
+permissions:
+  contents: read
+jobs:
+  node22:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/*.test.mjs
+  matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        profil: [A, B, C, alt]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/rohstoff-forschung.cjs '${{ matrix.profil }}' > result.jsonl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r1-${{ matrix.profil }}
+          path: result.jsonl

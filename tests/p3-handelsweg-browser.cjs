@@ -55,7 +55,55 @@ const server=http.createServer((req,res)=>{
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
     await page.reload();await page.locator('#fortsetzen').tap();
     assert.match(await page.locator('#p3-handelsstand').textContent(),/2 abgeschlossene Eis-Rundfahrten/);
+    // P3 chapter 03: continue the same career until earned asset-adjusted surplus
+    // exceeds the exact original 600-ISK hull price. No additional profile or world.
+    assert.equal(await page.locator('#p3-investition').isVisible(),true);
+    assert.match(await page.locator('#p3-invest-bilanz').textContent(),/\+525 ISK/);
+    for(let i=0;i<10;i++){
+     const json=await page.evaluate(k=>localStorage.getItem(k),SLOT),raw=JSON.parse(json);
+     if((raw.kanon.spielerFrachten?.auftraege||[]).filter(a=>a.end!==null).length>=3)break;
+     assert.equal(await page.locator('#p3-handelsaktion').isEnabled(),true);
+     await page.locator('#p3-handelsaktion').tap();
+    }
+    const preText=await page.evaluate(k=>localStorage.getItem(k),SLOT),pre=JSON.parse(preText);
+    assert.equal(pre.kanon.spielerFrachten.auftraege.filter(a=>a.end!==null).length,3);
+    assert.equal(pre.owners.house.cash,2594);
+    assert.match(await page.locator('#p3-invest-bilanz').textContent(),/\+751 ISK/);
+    assert.match(await page.locator('#p3-invest-markt').textContent(),/258 ISK Käuferkasse/);
+    assert.equal(await page.locator('#p3-invest-aktion').isEnabled(),true);
+    const preShips=new Set(Object.keys(pre.ships));
+    await page.locator('#p3-invest-aktion').tap();
+    const investedText=await page.evaluate(k=>localStorage.getItem(k),SLOT),invested=JSON.parse(investedText);
+    const newMiner=Object.values(invested.ships).find(sh=>sh.owner==='house'&&sh.klasse==='miner'&&!preShips.has(sh.id));
+    assert.ok(newMiner,'a second actual owned miner, never gifted');
+    assert.equal(invested.owners.house.cash,1994,'exact original 600 ISK purchase');
+    assert.equal(invested.stations.st_aldera.lager.miner,1,'original stock consumed once');
+    const wInvest=W.erstellenJ4c({carrierCash:invested.w5ad.profile.carrierCash,buyerCash:invested.w5ad.profile.buyerCash});
+    const loaded=wInvest.load(investedText);
+    assert.equal(wInvest.audit(loaded).ok,true);
+    assert.equal(wInvest.buchwert(loaded,newMiner.id),600);
+    assert.equal(Object.values(invested.owners).reduce((n,o)=>n+o.cash,0),33000);
+    assert.equal(invested.minted,0);assert.equal(invested.burned,0);
+    assert.equal(await page.locator('#p3-invest-aktion').isEnabled(),true);
+    await page.locator('#p3-invest-aktion').tap();
+    let workingText=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+    assert.equal(JSON.parse(workingText).kanon.pendel[newMiner.id].ware,'eis','new miner got own real core job');
+    await page.locator('[data-advance="60"]').tap();
+    workingText=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+    const working=JSON.parse(workingText),workingHash=wInvest.hash(wInvest.load(workingText));
+    assert.equal(wInvest.audit(wInvest.load(workingText)).ok,true);
+    assert.equal(wInvest.buchwert(wInvest.load(workingText),newMiner.id),600,
+      'the real new miner is idle under existing inventory/financing restrictions');
+    await page.reload();await page.locator('#fortsetzen').tap();
+    const resume=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+    assert.equal(wInvest.hash(wInvest.load(resume)),workingHash);
+    assert.equal(await page.locator('#p3-investition').isVisible(),true);
     assert.deepEqual(errors,[]);
+    console.log('P3_REINVEST_BROWSER_OK',JSON.stringify({
+     kind,width,height,rounds:3,cash:working.owners.house.cash,
+     newMiner:newMiner.id,alderaBudget:working.owners.st_aldera.cash,
+     world:33000,mint:0,burn:0,hash:workingHash}));
+
     console.log('P3_TRADE_BROWSER_OK',JSON.stringify({kind,width,height,freight:s.kanon.spielerFrachten.auftraege.length,
       fees:s.kanon.spielerFrachten.gebuehr,house:s.owners.house.cash,world:33000}));
    }finally{await ctx.close();}

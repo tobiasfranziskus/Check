@@ -19,3 +19,5 @@ Node v22.23.4, 17.11.2026. Alle Endläufe stammen vom Forschungsstand mit streng
 Browser-, Touch-, echtes iPad-, NAS- und Deploy-Gates wurden für R1 nicht ausgeführt; keine Browser-Spieloberfläche geändert oder hinzugefügt. GitHub-CI wird separat durch den Draft-PR angestoßen; lokale Logs sind kein CI-Erfolgsnachweis.
 
 Endlauf: tests 519, pass 519, fail 0, cancelled 0, skipped 0, duration_ms 602722.062159; Prozess-Exit 0. Alle 52 CLI-Szenarioläufe sowie der unabhängige A-S02-Replay ebenfalls Exit 0.
+
+CI-Portabilitätskorrektur nach dem 519/519-Lauf: Die vier gezielten Tests wurden nach Ersatz der Git-Historienabhängigkeit durch unabhängig erzeugte SHA256-Referenzen erneut bestanden. Core/CLI und ihre Simulationshashes unverändert; `gezielt-final.log` und abschließende Quellhashes beziehen sich auf diese portable Testfassung. Referenzerzeugung: `node tools/rohstoff-referenz.cjs` benötigt Historie und gibt nur JSON aus.

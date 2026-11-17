@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRequire,Module} from 'node:module';
-import {execFileSync} from 'node:child_process';
+import {createRequire} from 'node:module';
+import {createHash} from 'node:crypto';
 const require=createRequire(import.meta.url);
 const K=require('../prototypes/welt/welt-kern.js');
 const G=require('../prototypes/welt/rohstoff-forschung-core.cjs');
@@ -10,22 +10,17 @@ const W6=require('../tools/w6-szenarien.cjs');
 const policy=W6.SZENARIEN[1].politik;
 const copy=x=>JSON.parse(JSON.stringify(x));
 test('R1: alte 204/207 Zustände und RNG bitgleich gegen main-Quellen, JSON keine Migration',()=>{
- const cache={};
- function alt(path){
-   if(cache[path])return cache[path].exports;
-   const filename=require.resolve('../prototypes/welt/'+path),m=new Module(filename);cache[path]=m;
-   m.filename=filename;m.paths=Module._nodeModulePaths(filename.slice(0,filename.lastIndexOf('/')));
-   const native=createRequire(filename);
-   m.require=id=>['./j2b-silizium-core.js','./rule200-k7-industry-core.js'].includes(id)?alt(id.slice(2)):native(id);
-   m._compile(execFileSync('git',['show','bf8d4d27:'+ 'prototypes/welt/'+path],{encoding:'utf8'}),filename);return m.exports;
- }
- const original=alt('welt-kern.js');
+ // Unabhaengig aus den drei ORIGINALQUELLEN von main bf8d4d27 erzeugt,
+ // nicht aus der Forschungsimplementierung. SHA256 bindet alle Save-Bytes.
+ const refs=require('./fixtures/rohstoff-main-bf8d4d27.json');
+ const sha=json=>createHash('sha256').update(json).digest('hex');
  for(const factory of ['erstellenJ4c','erstellenP8d']){
-   const a=K[factory](),b=original[factory](),s=a.createState(),t=b.createState();
-   assert.equal(a.save(s),b.save(t));a.advance(s,3000);b.advance(t,3000);
-   assert.equal(a.save(s),b.save(t));assert.equal(a.hash(s),b.hash(t));
-   assert.equal(a.save(a.load(b.save(t))),b.save(t));
-   assert.throws(()=>K.erstellenRohstoffForschung('A').load(b.save(t)),/Forschungswelt|fremde Regelversion/);
+   const a=K[factory](),s=a.createState(),r=refs.regeln[factory];
+   assert.equal(sha(a.save(s)),r.start.sha256);assert.equal(a.hash(s),r.start.hash);
+   a.advance(s,refs.minuten);
+   assert.equal(sha(a.save(s)),r.fortsetzung.sha256);assert.equal(a.hash(s),r.fortsetzung.hash);
+   assert.equal(a.save(a.load(a.save(s))),a.save(s));
+   assert.throws(()=>K.erstellenRohstoffForschung('A').load(a.save(s)),/Forschungswelt|fremde Regelversion/);
  }
  assert.throws(()=>K.erstellenRohstoffForschung(),/Profil/);
 });

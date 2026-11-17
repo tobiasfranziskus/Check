@@ -2,25 +2,25 @@ TAP version 13
 # Subtest: R1: alte 204/207 Zustände und RNG bitgleich gegen main-Quellen, JSON keine Migration
 ok 1 - R1: alte 204/207 Zustände und RNG bitgleich gegen main-Quellen, JSON keine Migration
   ---
-  duration_ms: 5960.501279
+  duration_ms: 917.963776
   type: 'test'
   ...
 # Subtest: R1: Modellvertrag volle/leere Felder, genau ein Abbau pro Miner/Tick, neues Vorkommen ohne Ware
 ok 2 - R1: Modellvertrag volle/leere Felder, genau ein Abbau pro Miner/Tick, neues Vorkommen ohne Ware
   ---
-  duration_ms: 6.79711
+  duration_ms: 4.833796
   type: 'test'
   ...
 # Subtest: R1: reale bezahlte Kette, Wiederentdeckung, kalter JSON-Import und zwei identische Replays
 ok 3 - R1: reale bezahlte Kette, Wiederentdeckung, kalter JSON-Import und zwei identische Replays
   ---
-  duration_ms: 25039.66546
+  duration_ms: 7892.572787
   type: 'test'
   ...
 # Subtest: R1: abgeschnittene Lohn-/Kaufbelege und Gratisware werden abgelehnt
 ok 4 - R1: abgeschnittene Lohn-/Kaufbelege und Gratisware werden abgelehnt
   ---
-  duration_ms: 3294.364335
+  duration_ms: 959.234949
   type: 'test'
   ...
 1..4
@@ -31,4 +31,4 @@ ok 4 - R1: abgeschnittene Lohn-/Kaufbelege und Gratisware werden abgelehnt
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 34597.000564
+# duration_ms 9889.929859

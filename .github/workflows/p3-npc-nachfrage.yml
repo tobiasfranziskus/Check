@@ -1,0 +1,19 @@
+name: "P3 NPC-Nachfrage – vorhandene Geldströme"
+on:
+  pull_request:
+    paths:
+      - 'tests/p3-npc-nachfrage-research.test.mjs'
+      - '.github/workflows/p3-npc-nachfrage.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  trace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/p3-npc-nachfrage-research.test.mjs

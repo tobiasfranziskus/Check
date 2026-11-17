@@ -68,6 +68,11 @@ function plan(w,s){
  return {art:'bauen',befehle:[{type:'stationBuildShip',owner:'werft_extern',station:'st_nadir'}]};
 }
 function ausfuehren(w,s,p){
+ // Keine von aussen erfundenen NPC-Eigentuemerbefehle akzeptieren:
+ // Nur der fuer DEN aktuellen, auditierten Zustand frisch berechnete Plan gilt.
+ const aktuell=plan(w,s);
+ if(JSON.stringify(aktuell)!==JSON.stringify(p))
+   return {ok:false,grund:'Plan nicht aus dem aktuellen Originalzustand autorisiert',zustand:s};
  if(!p||!Array.isArray(p.befehle)||!p.befehle.length)
    return {ok:false,grund:p?.grund||'Kein aktueller, finanzierter Auftrag',zustand:s};
  // Jede Entscheidung prueft ihre vier getrennten Original-Firmenrechte,

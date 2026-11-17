@@ -92,4 +92,7 @@ test('P8h: S02×90 original – finanzierte Folge-Disposition mit deterministisc
  }));
  assert.ok(a.belege.some(x=>x.art==='bauen'||x.art==='kaufen'||x.art==='ueberfuehren'||x.art==='vertrag'),
    'Mindestens ein rechtswirksamer, bezahlter Originalentscheid wird erwartet');
+ assert.equal(a.belege.filter(x=>x.art==='bauen').length,1,
+   'Keine zweite Frachterhuelle herstellen, waehrend der bezahlte Ersatz unterwegs ist');
+ assert.ok(a.neueW3>=1,'Tatsaechlicher weiterer 50-Erz-W3-Vertrag muss abgeschlossen sein');
 });

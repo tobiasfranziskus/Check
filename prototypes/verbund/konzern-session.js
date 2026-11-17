@@ -190,14 +190,21 @@ function erstellen(){
    const clone=pruefen(welt,zustand),hash=welt.hash(clone);
    try{
      const result=welt.execute(clone,cmd);
-     return {ok:result.ok,reason:result.reason||null,hash};
+     // Cost is read exclusively from the ORIGINAL core's simulated escrow,
+     // never recalculated using a second UI pricing formula.
+     const actualFerry=result.ok&&cmd.type==='shipReposition'
+       &&clone.w5ac?.active?.id===cmd.schiff ?clone.w5ac.active:null;
+     return {ok:result.ok,reason:result.reason||null,hash,
+       ...(actualFerry?{kosten:actualFerry.kosten,minuten:actualFerry.minuten}: {})};
    }catch(e){return {ok:false,reason:String(e.message||e),hash};}
  }
  function angebote(){
    requireState();
    return haushaltPlan(zustand,welt).map(x=>{
      const a=angebot(x.befehl);
-     return Object.freeze({id:x.id,label:x.label,ok:a.ok,reason:a.reason});
+     return Object.freeze({id:x.id,label:x.label,ok:a.ok,reason:a.reason,
+       ...(x.befehl.type==='shipReposition'&&a.ok
+          ?{kosten:a.kosten,minuten:a.minuten}: {})});
    });
  }
  function ausfuehren(id){

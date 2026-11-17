@@ -385,6 +385,16 @@ function industrieAnzeigen(s,angebote){
   ?'Eine real gefertigte und noch nicht verkaufte Hülle gehört nach dem Kauf deinem Konzern. Nadir und Asterion können sie dann nicht mehr kaufen.'
   :'Privater Original-Kauf aktuell gesperrt: '+anzeigetext(p.hausKaufgrund||
     'Keine bezahlbare frei verfügbare Werfthülle; Lager und Finanzierung bleiben endlich.');
+ const cockpit=$('p3-industrie-cockpit'),note=$('p3-industrie-cockpit-hinweis');
+ const eigeneId=p.werftSpielerSchiffId;
+ const frei=eigeneId?session.piloten().find(x=>x.id===eigeneId):null;
+ const steuerbar=!!eigeneId&&!!raum&&(frei?.erlaubt===true||session.pilotStatus()===eigeneId);
+ cockpit.hidden=!eigeneId;cockpit.disabled=!steuerbar;
+ cockpit.textContent=eigeneId?'Werftfrachter '+eigeneId+' selbst fliegen':'Eigenen Werftfrachter selbst fliegen';
+ note.hidden=!eigeneId;
+ note.textContent=steuerbar
+  ?'Diese echte bezahlte Werfthülle gehört dir. Cockpit und Weltwirtschaft bleiben in derselben Sitzung.'
+  :'Cockpit derzeit gesperrt: '+anzeigetext(frei?.grund||'Schiff oder Pilotenwechsel nicht freigegeben');
 }
 // J12: read-only station and company report from the SAME validated Rule204 session.
 // No separate economy, NPC signatures, speculative prices, or unvalidated purchase paths.
@@ -902,6 +912,20 @@ $('p3-industrie-kauf')?.addEventListener('click',()=>{
   if(!p.sichtbar||!p.kaufberechtigt)throw Error(p.hausKaufgrund||'Werfthülle nicht verfügbar');
   auftrag(p.hausKaufId); // J8 original house:shipBuy; atomic audit and save.
  }catch(e){hinweis('Werftkauf gesperrt: '+error(e),true);anzeigen();}
+});
+$('p3-industrie-cockpit')?.addEventListener('click',()=>{
+ if(!session||!scope.P3Industrie)return;
+ try{
+  const s=session.zustandReferenz(),p=scope.P3Industrie.auswerten(
+   session.weltReferenz(),s,session.angebote());
+  const id=p.werftSpielerSchiffId;
+  if(!p.sichtbar||!id||s.ships[id]?.owner!=='house'||!s.w5.schiffIds.includes(id))
+   throw Error('Kein eigenes, original gefertigtes Werftschiff vorhanden');
+  const pruefung=session.piloten().find(x=>x.id===id);
+  if(!pruefung?.erlaubt&&session.pilotStatus()!==id)
+   throw Error(pruefung?.grund||'Persönliche Steuerung nicht freigegeben');
+  pilotieren(id); // Existing validated transfer and original 2D cockpit; no new world.
+ }catch(e){hinweis('Werftcockpit gesperrt: '+error(e),true);anzeigen();}
 });
 $('p3-industrie-zeit')?.addEventListener('click',()=>{
  if(!session||!scope.P3Industrie)return;

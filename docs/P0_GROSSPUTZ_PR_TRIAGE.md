@@ -47,6 +47,10 @@ Für die C1b-/C1c-/C1d-Industriekette wurden **#249–#251 und #253–#264** (15
 
 **[GEPRÜFT / P0]** Die 15 PRs **#266–#271, #273–#278, #280, #282, #285** sind nach **individuellem GitHub-Compare** (`status=ahead`, `behind_by=0`) vollständig als direkte Commit-Vorfahren des weiterhin offenen Forschungs-Leaf **[#286](https://github.com/tobiasfranziskus/Check/pull/286)** bestätigt. Jeder PR erhielt einen Nachfolger-/Erhaltungskommentar und wurde **ohne Merge geschlossen**; Branches, Commits, negative Befunde und Tests bleiben erhalten. Die separat geprüften Abzweige **#279, #281, #283, #284** sind `diverged` und deshalb ausdrücklich **offen geblieben**. **92 → 77 offene PRs**, live geprüft nach der Bereinigung. Die aktive W4/W5-Integrationsarbeit #484–#486 blieb unverändert. [Vollständiger SHA-/Compare-/Wiederherstellungsnachweis](archiv/P0_PR_KETTE_W5V_W5AL_20261117.md). Kein Code-Merge, keine neue Wirtschaftsregel und kein durch diese P0-Arbeit ausgelöster Pages-Deploy.
 
+## Fortsetzung am 17.11.2026 – acht historische K1/F7/J10/Legacy-Forschungs-Vorfahren
+
+**[GEPRÜFT / P0]** Die PRs **#203, #207, #234, #306, #329, #331, #370, #374** wurden einzeln per GitHub-Compare als Vorfahren der jeweils weiterhin offenen Forschungs-Leaves **#286, #321, #335, #376** nachgewiesen (`status=ahead`, `behind_by=0`), mit individuellen Nachfolgerkommentaren **ohne Merge geschlossen**. Unabhängige K1-/F8-Forschung **#305/#317/#321/#337** bleibt erhalten, insbesondere #305 `diverged` gegenüber #317/#321. Dazu W6/P3-Forschung, alle ursprünglichen Branches, Tests, Saves und Commits unangetastet. **78 → 70 offene PRs** (inklusive bestehendem Docs-Draft #487), nach Schließung live geprüft. [SHA-/Compare-/Schutzindex](archiv/P0_PR_KETTEN_K1_F7_J10_LEGACY_20261117.md). Nur PR-Triage und Dokumentation, keine Spiel-/Wirtschafts-/Save-Änderung, kein durch diesen Batch ausgelöster Pages-Deploy.
+
 ## Nächste P0-Pakete
 
 1. **PR-Triage in Gruppen von 10–20** auf Basis PR-Metadaten und Code-Nachfolger. Nur bei belegtem Ersatz und ohne einzigartige Funktion schließen, immer mit Verweis; Git-Branches/CI/Spielstände niemals löschen.

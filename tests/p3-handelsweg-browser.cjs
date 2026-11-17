@@ -29,7 +29,13 @@ const server=http.createServer((req,res)=>{
    try{
     await page.goto('http://127.0.0.1:'+server.address().port+'/');
     await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/spiel/index.html"]').tap();
-    await page.locator('#neues-spiel').tap();await page.locator('#karriere-starten').tap();
+    // The navigation may complete before all bottom-of-body JavaScript listeners
+    // have been installed. Wait for actual document load BEFORE the mobile tap.
+    await page.waitForURL('**/prototypes/spiel/index.html');
+    await page.waitForLoadState('load');
+    await page.locator('#neues-spiel').tap();
+    await page.locator('#briefing').waitFor({state:'visible'});
+    await page.locator('#karriere-starten').tap();
     assert.equal(await page.locator('#p3-handelsauftrag').isVisible(),true);
     assert.match(await page.locator('#p3-handelsziel').textContent(),/Miner erwerben/);
     assert.equal(await page.locator('#p3-handelsaktion').isEnabled(),true);

@@ -196,3 +196,9 @@ body.raum-aktiv .world{display:none}
 .p3-npc-werft{border-color:#7f7398;background:#1b253bdc}
 .p3-npc-werft .p3-zahlen{color:#c7d8fa}
 .p3-npc-werft .p3-einschraenkung{font-size:.74rem;color:#acbfc9;line-height:1.45}
+
+/* P3/W4-W5: industrial purchase with original owner/funds checks. */
+.p3-industrie{border-color:#a38254;background:#30281ce8}
+.p3-industrie .p3-zahlen{color:#e9d2a5}
+.p3-industrie .p3-einschraenkung{font-size:.74rem;color:#c5bfad;line-height:1.45}
+.p3-industrie #p3-industrie-zeit{margin-top:8px;background:transparent;border:1px solid #a08f75}

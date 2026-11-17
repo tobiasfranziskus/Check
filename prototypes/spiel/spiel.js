@@ -330,6 +330,34 @@ function npcMarktAnzeigen(s,angebote){
   (p.naechsteAbrechnung!==null?' · Nächste planmäßige Dividendenprüfung in '+
    fmt(p.naechsteAbrechnung)+' Minuten (keine Zahlungsgarantie).':'');
 }
+// W6/P3: read-only signed NPC hull/shipyard receipts. Never controls foreign wallets.
+function npcWerftAnzeigen(s){
+ const host=$('p3-npc-werft');
+ if(!host||!scope.P3NPCWerft)return;
+ const p=scope.P3NPCWerft.auswerten(session.weltReferenz(),s);
+ host.hidden=!p.sichtbar;
+ if(!p.sichtbar)return;
+ $('p3-npc-werft-kassen').textContent='Asterion: '+fmt(p.transportGeld)+' ISK eigenes Firmenkapital · Nadir-Werft: '+
+   fmt(p.werftGeld)+' ISK. Original-Frachterpreis '+fmt(p.preis)+
+   ' ISK, eigenfinanzierte Überführung '+fmt(p.ferryCost)+' ISK.';
+ $('p3-npc-werft-flotte').textContent='Asterion besitzt '+fmt(p.gesamtFlotte)+
+   ' Frachter, davon '+fmt(p.fahrbereit)+' nicht vollständig verschlissen und '+
+   fmt(p.freiAldera)+' frei am Aldera-Dock. '+fmt(p.werftherkunft)+
+   ' dieser Frachter stammen aus nachweislich gebauten W5-Hüllen; '+fmt(p.ueberfuehrt)+
+   ' abgeschlossene Originalüberführungen.';
+ $('p3-npc-werft-auftrag').textContent='Nadir-Werft: '+fmt(p.werftGebaut)+
+   ' produzierte Hüllen, '+fmt(p.nadirStock)+' Frachter im Verkaufs-Lager, '+
+   fmt(p.nadirMaterial)+' Material, '+fmt(p.nadirErz)+' Erz. Gründungslager Aldera: '+
+   fmt(p.alderaStock)+' Frachter. Tatsächlich gebuchte Ersatzkäufe aller Schiffsklassen: '+
+   fmt(p.ersatzInsgesamt)+'.';
+ const location=p.angebot.station==='st_nadir'?'Nadir':'Aldera';
+ $('p3-npc-werft-grund').textContent=p.angebot.ok?
+   'Ein Original-Frachterkauf durch Asterion wäre derzeit am '+location+
+   '-Dock grundsätzlich gedeckt. Die Entscheidung trifft ausschließlich die NPC-Politik.':
+   'Original-Frachterkauf '+location+' derzeit nicht möglich: '+
+   anzeigetext(p.angebot.grund||'Werftbestand oder eigenes Firmenkapital unzureichend')+
+   (p.engpass?' · Bereits dokumentierter Engpass: '+anzeigetext(p.engpass):'');
+}
 // J12: read-only station and company report from the SAME validated Rule204 session.
 // No separate economy, NPC signatures, speculative prices, or unvalidated purchase paths.
 function tabZeigen(name){
@@ -584,6 +612,7 @@ function anzeigen(){
  investitionAnzeigen(s,alleAngebote);
  wasserLohnAnzeigen(s,alleAngebote);
  npcMarktAnzeigen(s,alleAngebote);
+ npcWerftAnzeigen(s);
  wirtschaftsbericht(a,s,alleAngebote);
  jaegerBericht(s,alleAngebote);
  jaegerBeitraege();
@@ -826,6 +855,14 @@ $('p3-npc-aktion')?.addEventListener('click',()=>{
   else if(p.art==='zeit')weiter(60);
   else throw Error('Keine zulässige Originalaktion');
  }catch(e){hinweis('NPC-Markt gesperrt: '+error(e),true);anzeigen();}
+});
+$('p3-npc-werft-aktion')?.addEventListener('click',()=>{
+ if(!session||!scope.P3NPCWerft)return;
+ try{
+  const p=scope.P3NPCWerft.auswerten(session.weltReferenz(),session.zustandReferenz());
+  if(!p.sichtbar)throw Error('Nur im ausdrücklich gewählten Regel204-S02-Modus');
+  weiter(60); // Originalwelt, Eigentum, Firmenpolitik, Save und 60 bezahlte Minuten.
+ }catch(e){hinweis('NPC-Flottenbericht gesperrt: '+error(e),true);anzeigen();}
 });
 $('jaeger-kaufweg').addEventListener('click',()=>{
  if(!session)return;

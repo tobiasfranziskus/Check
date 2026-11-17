@@ -142,6 +142,8 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
    'chapter appears only after choosing original S02 NPC career');
   assert.equal(await page.locator('#p3-industrie-kauf').isDisabled(),true,
    'no phantom hull at world start');
+  assert.equal(await page.locator('#p3-industrie-cockpit').isHidden(),true,
+   'no free or preowned W5 cockpit at start');
   for(let i=0;i<5;i++)await page.locator('#p3-industrie-zeit').tap();
   const raw=await page.evaluate(k=>localStorage.getItem(k),SLOT),s=JSON.parse(raw);
   assert.equal(s.tick,300,'five original 60-minute economic steps');
@@ -175,6 +177,16 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
   await page.reload();await page.locator('#fortsetzen').tap();
   assert.equal(await page.locator('#p3-industrie').isVisible(),true);
   assert.equal(w.hash(w.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),hash);
+  assert.equal(await page.locator('#p3-industrie-cockpit').isVisible(),true,
+   'only physically built and bought W5 ship gets a cockpit shortcut');
+  assert.equal(await page.locator('#p3-industrie-cockpit').isEnabled(),true,
+   'original pilot/fleet gate must allow the newly bought Nadir freighter');
+  await page.locator('#p3-industrie-cockpit').tap();
+  assert.equal(await page.locator('#raumbereich').isVisible(),true,
+   'a real W5 purchase leads directly to the same 2D cockpit');
+  assert.match(await page.locator('#raum-schiff').textContent(),/Frachter/i);
+  assert.equal(w.hash(w.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),hash,
+   'cockpit selection alone cannot mint cash, hulls or materials');
   assert.deepEqual(errors,[]);
   console.log('P3_W4_W5_INDUSTRY_BROWSER_OK',JSON.stringify({
    kind,width,height,tick:after.tick,ship:newShips[0].id,

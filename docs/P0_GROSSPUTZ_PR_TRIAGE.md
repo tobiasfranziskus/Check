@@ -43,6 +43,10 @@ Für die C1b-/C1c-/C1d-Industriekette wurden **#249–#251 und #253–#264** (15
 
 **[GEPRÜFT / P0]** Nach eigenständiger Head-Abstammungsprüfung wurden #301, #304, #308, #309, #313–#315 und #322–#328 mit GitHub-Kommentaren **ohne Merge** geschlossen. Alle 14 Heads sind echte Vorfahren des weiterhin offenen K13/F6-Forschungs-Leaf [#329](https://github.com/tobiasfranziskus/Check/pull/329) (`behind_by=0`); [#306](https://github.com/tobiasfranziskus/Check/pull/306) ist dagegen `diverged` und bleibt wegen eigener Commits geschützt. **103 → 89 offene PRs** unmittelbar vor/nach dieser zweiten Runde (einschließlich Docs-Draft #448). Weder Forschung noch Geld-/Warenregeln dadurch nach main integriert. [Original-Head-SHAs, individuelle Vergleichszahlen, Erhaltungsgrenzen](archiv/P0_PR_KETTE_K2_K13_20261116.md).
 
+## Fortsetzung am 17.11.2026 – 15 historische W5v–W5al-Forschungs-PRs geschlossen
+
+**[GEPRÜFT / P0]** Die 15 PRs **#266–#271, #273–#278, #280, #282, #285** sind nach **individuellem GitHub-Compare** (`status=ahead`, `behind_by=0`) vollständig als direkte Commit-Vorfahren des weiterhin offenen Forschungs-Leaf **[#286](https://github.com/tobiasfranziskus/Check/pull/286)** bestätigt. Jeder PR erhielt einen Nachfolger-/Erhaltungskommentar und wurde **ohne Merge geschlossen**; Branches, Commits, negative Befunde und Tests bleiben erhalten. Die separat geprüften Abzweige **#279, #281, #283, #284** sind `diverged` und deshalb ausdrücklich **offen geblieben**. **92 → 77 offene PRs**, live geprüft nach der Bereinigung. Die aktive W4/W5-Integrationsarbeit #484–#486 blieb unverändert. [Vollständiger SHA-/Compare-/Wiederherstellungsnachweis](archiv/P0_PR_KETTE_W5V_W5AL_20261117.md). Kein Code-Merge, keine neue Wirtschaftsregel und kein durch diese P0-Arbeit ausgelöster Pages-Deploy.
+
 ## Nächste P0-Pakete
 
 1. **PR-Triage in Gruppen von 10–20** auf Basis PR-Metadaten und Code-Nachfolger. Nur bei belegtem Ersatz und ohne einzigartige Funktion schließen, immer mit Verweis; Git-Branches/CI/Spielstände niemals löschen.

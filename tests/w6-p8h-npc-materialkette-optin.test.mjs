@@ -98,7 +98,9 @@ test('P8h: gefaelschte NPC-Entscheidungsbelege duerfen keine W5-/W3-Leistung vor
    const a=w.audit(copy);
    assert.equal(a.ok,false,'Gefaelschter '+notice+'-Beleg nicht akzeptiert');
    assert.ok(a.fehler.some(e=>/P8h/.test(e)),a.fehler.join('; '));
-   assert.throws(()=>w.load(JSON.stringify(copy)),/P8h|Audit|audit|verweigert/);
+   assert.throws(()=>w.load(JSON.stringify(copy),{p8gImportFreigegeben:true}),
+     /P8h|Audit|audit|verweigert/,
+     'Auch nach ausdruecklich freigegebenem Regel207-Import bleibt der geaenderte Wirtschaftsbeleg verboten');
  }
 });
 test('P8h: Boolean-Aus und Save/Load ohne automatische Migration',()=>{

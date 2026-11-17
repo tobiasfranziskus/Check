@@ -56,6 +56,12 @@ function haushaltPlan(s,welt){
  for(const sh of Object.values(s.ships).filter(x=>x.owner==='house'&&x.klasse==='frachter')){
    hinzu('freight-'+sh.id,'F4 · bezahlte Eis-Rundfracht mit '+sh.id,{type:'shipFreightIce',schiff:sh.id});
    hinzu('gate-freight-'+sh.id,'F6 · Eis-Rundfracht mit Torbeleg '+sh.id,{type:'shipFreightGateIce',schiff:sh.id});
+   // Rule204 already accepts the house as original W5ac owner: this only exposes
+   // the fully wage-funded Nadir -> Aldera ferry, never a free cockpit teleport.
+   if(s.rulesVersion===204&&sh.system==='nadir'&&sh.heimat==='nadir'
+     &&s.w5?.schiffIds?.includes(sh.id))
+     hinzu('reposition-'+sh.id,'W5ac · eigene Werfthuelle bezahlt nach Aldera ueberfuehren',
+       {type:'shipReposition',schiff:sh.id});
  }
  for(const [station,klasse] of [
    ['st_aldera','miner'],

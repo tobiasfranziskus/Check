@@ -203,3 +203,4 @@ body.raum-aktiv .world{display:none}
 .p3-industrie .p3-einschraenkung{font-size:.74rem;color:#c5bfad;line-height:1.45}
 .p3-industrie #p3-industrie-zeit{margin-top:8px;background:transparent;border:1px solid #a08f75}
 .p3-industrie #p3-industrie-cockpit{margin-top:8px;min-height:48px}
+.p3-industrie #p3-industrie-transfer{margin-top:8px;min-height:48px;background:transparent;border:1px solid #a08f75}

@@ -358,6 +358,34 @@ function npcWerftAnzeigen(s){
    anzeigetext(p.angebot.grund||'Werftbestand oder eigenes Firmenkapital unzureichend')+
    (p.engpass?' · Bereits dokumentierter Engpass: '+anzeigetext(p.engpass):'');
 }
+// P3 Kapitel 06: original financed W3-W4-W5 production and only a legal house purchase.
+function industrieAnzeigen(s,angebote){
+ const host=$('p3-industrie');if(!host||!scope.P3Industrie)return;
+ const p=scope.P3Industrie.auswerten(session.weltReferenz(),s,angebote);
+ host.hidden=!p.sichtbar;if(!p.sichtbar)return;
+ $('p3-industrie-phase').textContent=p.stage+' · '+p.produktionslage;
+ $('p3-industrie-w3').textContent='W3 Transport: '+fmt(p.w3Vertraege)+
+  ' vollständig bezahlte Erzfrachten mit '+fmt(p.w3Geliefert)+' geliefertem Erz ('+
+  fmt(p.w3ProCharge)+' je Vertrag). Nadir lagert '+fmt(p.erzNadir)+
+  ' Erz, Aldera '+fmt(p.erzAldera)+'.';
+ $('p3-industrie-w4').textContent='W4 Raffinerie: '+fmt(p.w4Chargen)+
+  ' fertige bezahlte Chargen, '+fmt(p.w4ErzVerbraucht)+' Erz verbraucht und '+
+  fmt(p.w4Material)+' Material erzeugt. Originalrezept: '+fmt(p.w4RezeptErz)+
+  ' Erz → '+fmt(p.w4RezeptMaterial)+' Material.';
+ $('p3-industrie-w5').textContent='W5 Schiffbau: '+fmt(p.w5Gebaut)+
+  ' fertige Frachter aus '+fmt(p.w5MaterialVerbraucht)+' verarbeitetem Material ('+
+  fmt(p.w5MaterialJeSchiff)+' Material je Hülle). Im Nadir-Lager: '+
+  fmt(p.materialNadir)+' Material, '+fmt(p.hullenNadir)+' verkäufliche Hüllen.';
+ $('p3-industrie-kassen').textContent='Kassen: Nadir '+fmt(p.nadirKasse)+
+  ' ISK · Werft '+fmt(p.werftKasse)+' ISK · Asterion '+fmt(p.frachtKasse)+
+  ' ISK · Dein Konzern '+fmt(p.hausKasse)+' ISK.';
+ const b=$('p3-industrie-kauf');b.disabled=!p.kaufberechtigt;
+ b.textContent='Vorhandene Nadir-Hülle für '+fmt(p.hausKaufpreis)+' ISK kaufen';
+ $('p3-industrie-hinweis').textContent=p.kaufberechtigt
+  ?'Eine real gefertigte und noch nicht verkaufte Hülle gehört nach dem Kauf deinem Konzern. Nadir und Asterion können sie dann nicht mehr kaufen.'
+  :'Privater Original-Kauf aktuell gesperrt: '+anzeigetext(p.hausKaufgrund||
+    'Keine bezahlbare frei verfügbare Werfthülle; Lager und Finanzierung bleiben endlich.');
+}
 // J12: read-only station and company report from the SAME validated Rule204 session.
 // No separate economy, NPC signatures, speculative prices, or unvalidated purchase paths.
 function tabZeigen(name){
@@ -613,6 +641,7 @@ function anzeigen(){
  wasserLohnAnzeigen(s,alleAngebote);
  npcMarktAnzeigen(s,alleAngebote);
  npcWerftAnzeigen(s);
+ industrieAnzeigen(s,alleAngebote);
  wirtschaftsbericht(a,s,alleAngebote);
  jaegerBericht(s,alleAngebote);
  jaegerBeitraege();
@@ -863,6 +892,25 @@ $('p3-npc-werft-aktion')?.addEventListener('click',()=>{
   if(!p.sichtbar)throw Error('Nur im ausdrücklich gewählten Regel204-S02-Modus');
   weiter(60); // Originalwelt, Eigentum, Firmenpolitik, Save und 60 bezahlte Minuten.
  }catch(e){hinweis('NPC-Flottenbericht gesperrt: '+error(e),true);anzeigen();}
+});
+$('p3-industrie-kauf')?.addEventListener('click',()=>{
+ if(!session||!scope.P3Industrie)return;
+ try{
+  // Revalidate original station stock, buyer's own cash and owner permissions.
+  const p=scope.P3Industrie.auswerten(session.weltReferenz(),
+   session.zustandReferenz(),session.angebote());
+  if(!p.sichtbar||!p.kaufberechtigt)throw Error(p.hausKaufgrund||'Werfthülle nicht verfügbar');
+  auftrag(p.hausKaufId); // J8 original house:shipBuy; atomic audit and save.
+ }catch(e){hinweis('Werftkauf gesperrt: '+error(e),true);anzeigen();}
+});
+$('p3-industrie-zeit')?.addEventListener('click',()=>{
+ if(!session||!scope.P3Industrie)return;
+ try{
+  const p=scope.P3Industrie.auswerten(session.weltReferenz(),
+   session.zustandReferenz(),session.angebote());
+  if(!p.sichtbar)throw Error('Nur für ausdrücklich gewählte Regel204-S02-Wirtschaft');
+  weiter(60); // Same original scheduled, fully audited economic step.
+ }catch(e){hinweis('Industrieschicht gesperrt: '+error(e),true);anzeigen();}
 });
 $('jaeger-kaufweg').addEventListener('click',()=>{
  if(!session)return;

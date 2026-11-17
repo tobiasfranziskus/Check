@@ -94,6 +94,10 @@ function verbinden(B) {
     if (!leise) meldung((TEXT[cmd.type] || cmd.type) + ' · ' + sz.aktiv.name + (Z.laeuft ? ' · Zeit läuft ' + Z.faktor + '×' : ''));
     if (cmd.type === 'shipUndock' || cmd.type === 'siliconSell' || cmd.type === 'siliconMineStart') ring(sz.aktiv.x, sz.aktiv.y, '#6cf', 1100);
     pruefen(); hud(true);
+    // Nach einer Zielaktion die Flugflächen wieder sichtbar machen, auch wenn die
+    // Zielkarte zuvor außerhalb des Bildschirms liegende Handsteuerung verdrängt hat.
+    if (Z.sichtbar && ['anfliegen','orbit','folgen','ausrichten','andocken'].includes(aktion))
+      buehne.scrollIntoView?.({block:'nearest', behavior:'instant'});
     return r;
   }
   function waehlen(ziel) {

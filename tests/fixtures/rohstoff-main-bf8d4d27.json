@@ -1,0 +1,26 @@
+{
+  "quelle": "bf8d4d27e87914abf725992e41752577dc7106cc",
+  "minuten": 3000,
+  "regeln": {
+    "erstellenJ4c": {
+      "start": {
+        "sha256": "cd30c65482dca48bda8dcd025424a4be63698d08f1378b6099d08b28b20d3c55",
+        "hash": "be34e5f3dc6e6d1c"
+      },
+      "fortsetzung": {
+        "sha256": "fad61878c2cab12a35f59e309d8e1cef74b234c6fee7482c435c04e49b355653",
+        "hash": "89ace1268d0b57d8"
+      }
+    },
+    "erstellenP8d": {
+      "start": {
+        "sha256": "9a7822dc1bee40f17376093eb895f10cbf8cba102a0cc6e24924b87f01e8bb54",
+        "hash": "26431ca85a4696e6"
+      },
+      "fortsetzung": {
+        "sha256": "b0c3063da9a80d304e98a13170163eb5b289e0201f6d46086817c6bbcc04a0f1",
+        "hash": "2a3dd53ca03e3ab6"
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+100644 blob e8fc98255ae36bdabea8f6459a1f5a27c49af053	prototypes/welt/j2b-silizium-core.js
+100644 blob d2c7b042d36ea265b26b45a710db1a3879cd107b	prototypes/welt/rule200-k7-industry-core.js
+100644 blob 48327ecac6710935b62110b734a92741df8e1b49	prototypes/welt/welt-kern.js
+6e4e5a9d73a33128e63db85f7c4fb14dcf1b87a6579f8d6770012b3b16453885  prototypes/welt/welt-kern.js
+d0622fdd99993f1dc232660ee7d244c2e620b37022fc2ca57fe1d9c2d3a09850  prototypes/welt/rule200-k7-industry-core.js
+4cc3f9a77710f118a5c8ffe9fb2ae1bab3b4c19e45f11abfbf1ae8d92811c30c  prototypes/welt/j2b-silizium-core.js
+67870825965f5f031caea07c5a319a99e8cc682646a8dfbbdab3c1f0cbe3fced  prototypes/welt/rohstoff-forschung-core.cjs
+ce1257a58bc6e34763e5505eab6788981b9071840ab588102f84d5d82b7251e7  tools/rohstoff-forschung.cjs
+43a7122b057bf50937aca55850904fa511459c6ce988850470271b22f63cb10f  tests/rohstoff-forschung.test.mjs
+a1791b440eacf8949ed1d26225a7d2b7b43a383ccd92891c32fe98028b5e5c02  tools/rohstoff-referenz.cjs
+44d71df2643187dd21736f9b5b96574a82b633a20a9702b51eeb358fdc2d8b18  tests/fixtures/rohstoff-main-bf8d4d27.json
+v22.23.4

@@ -1641,6 +1641,9 @@ function entfernen(state, rules, s) {
     state.stats.vernichtet += n;
     delete s.ladung[ware];
   }
+  // R1-Forschung: nur den tagesaktuellen Geologie-Doppelfoerderungsmarker
+  // fuer ein rechtmaessig verlorenes Schiff entfernen; Bilanz bleibt original.
+  research?.ort?.geologie?.schiffsverlust(state,s);
   delete state.ships[s.id];
   delete state.stats.verkaeufe[s.id];
   zaehle(state.stats.verluste, s.owner, s.klasse);
@@ -1961,7 +1964,11 @@ const m_core_erzpilot = (() => {
     if (!v) return 0; // kein Auftrag: keine unbezahlte oder spekulative Produktion.
     const vorher = anzahl(schiff.ladung, 'erz');
     if (vorher >= v.menge) return abschliessen(state, rules, schiff);
-    const n = Math.min(rules.economy.miningRate, v.menge - vorher, rules.economy.cargo - vorher);
+    let n = Math.min(rules.economy.miningRate, v.menge - vorher, rules.economy.cargo - vorher);
+    if (research?.ort?.geologie) {
+      n = research.ort.geologie.menge(state, schiff, 'erz', n);
+      if (!n) return 0;
+    }
     const kosten = n * cfg.minerJeMinute;
     // Alte Regel-15-Draft-Saves ohne Arbeits-Treuhand weiter abwickeln,
     // neue Auftraege sind dagegen beidseitig voll vorfinanziert.
@@ -1978,6 +1985,7 @@ const m_core_erzpilot = (() => {
     buche(state, schiff.owner, 'kosten', kosten);
     schiff.ladung.erz = vorher + n;
     state.ledger.erz.mined += n;
+    research?.ort?.geologie?.abbauen(state, schiff, 'erz', n);
     if (schiff.ladung.erz >= v.menge) abschliessen(state, rules, schiff);
     return n;
   }
@@ -3024,7 +3032,11 @@ const m_core_w5n=(()=>{
  function foerdern(s,r,sh){
    const w=beitrag(s),c=r.w5n;
    const belegt=Object.values(sh.ladung).reduce((n,x)=>n+x,0);
-   const n=Math.min(r.economy.miningRate,r.economy.cargo-belegt);
+   let n=Math.min(r.economy.miningRate,r.economy.cargo-belegt);
+   if (research?.ort?.geologie && n>0) {
+     n=research.ort.geologie.menge(s,sh,'eis',n);
+     if(!n)return 0;
+   }
    if(n<=0||s.owners[sh.owner].cash<c.mineLohn){
      sh.auftrag='halten';
      protokolliere(s,'auftrag',sh.id+': Eisabbau pausiert (Fracht/Arbeitsgeld)',sh.owner);
@@ -3035,6 +3047,7 @@ const m_core_w5n=(()=>{
    buche(s,sh.owner,'kosten',c.mineLohn);
    sh.ladung.eis=(sh.ladung.eis||0)+n;
    s.ledger.eis.mined+=n;
+   research?.ort?.geologie?.abbauen(s,sh,'eis',n);
    w.eisAbgebaut+=n;w.mineMinuten++;w.mineLohn+=c.mineLohn;
    // Research-only: dockgebundene F2b-Eisabnahme. Regel195 bleibt unverändert,
    // weil ausschließlich die Forschungskonfiguration dieses Flag aktivieren darf.

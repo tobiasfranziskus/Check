@@ -4,7 +4,7 @@
  */
 (function(scope){
 'use strict';
-const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
+const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot,geologie=null})=>{
   if(![201,202,203,204,205,206,207].includes(rules.rulesVersion)||!rules.j2b)
     throw Error('J2b: ungueltige Regel201-205');
   const C=rules.j2b,W=C.charge*C.minutenJeEinheit*C.lohnJeMinute,
@@ -128,6 +128,7 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
     if(!a||a.gefoerdert===a.menge)return;
     const sh=s.ships[a.schiff];
     if(!feld(sh,a.feld)||s.kanon.flugdienst[sh.id]?.gestrandet)return;
+    if(geologie&&!geologie.menge(s,sh,'silizium',1,a.feld))return;
     if(s.owners.k1_silizium_arbeit.cash<C.lohnJeMinute)
       throw Error('J2b: unbezahlte Siliziumarbeit');
     transfer(s,'k1_silizium_arbeit',pilot[a.owner],
@@ -139,6 +140,7 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
         throw Error('J2b: Feld oder Frachtraum erschoepft');
       sh.ladung.silizium=(sh.ladung.silizium||0)+1;
       s.ledger.silizium.mined++;
+      geologie?.abbauen(s,sh,'silizium',1,a.feld);
       b.gefoerdert++;a.gefoerdert++;b.vorrat--;
       if(zweifeld){b.felder[a.feld].gefoerdert++;b.felder[a.feld].vorrat--;}
     }
@@ -146,8 +148,8 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
   function audit(s){
     const b=s.kanon.silizium,a=b?.auftrag,l=s.ledger.silizium;
     if(!b||!['vorrat','auftraege','gefoerdert','verkauft','arbeitsMinuten'].every(k=>ganz(b[k]))
-      ||b.vorrat!==quellen.reduce((n,f)=>n+f.vorrat,0)-b.gefoerdert
-      ||b.gefoerdert>quellen.reduce((n,f)=>n+f.vorrat,0)
+      ||b.vorrat!==quellen.reduce((n,f)=>n+(geologie?geologie.kapazitaet(s,f.id):f.vorrat),0)-b.gefoerdert
+      ||b.gefoerdert>quellen.reduce((n,f)=>n+(geologie?geologie.kapazitaet(s,f.id):f.vorrat),0)
       ||b.gefoerdert<b.verkauft||b.verkauft%C.charge!==0
       ||b.auftraege!==b.verkauft/C.charge+(a?1:0)
       ||!Array.isArray(b.belege)||b.belege.length!==b.verkauft/C.charge
@@ -197,8 +199,8 @@ const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
           return !fstate||typeof fstate!=='object'||Array.isArray(fstate)
             ||Object.keys(fstate).sort().join()!=='gefoerdert,verkauft,vorrat'
             ||!['gefoerdert','verkauft','vorrat'].every(k=>ganz(fstate[k]))
-            ||fstate.vorrat!==f.vorrat-fstate.gefoerdert
-            ||fstate.gefoerdert>f.vorrat
+            ||fstate.vorrat!==(geologie?geologie.kapazitaet(s,f.id):f.vorrat)-fstate.gefoerdert
+            ||fstate.gefoerdert>(geologie?geologie.kapazitaet(s,f.id):f.vorrat)
             ||fstate.verkauft!==belege.length*C.charge
             ||fstate.gefoerdert!==fstate.verkauft
               +(a?.feld===f.id?a.gefoerdert:0);

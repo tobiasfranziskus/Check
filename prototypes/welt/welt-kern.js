@@ -85,9 +85,11 @@ const m_data_kanon = (() => {
   return { KANON, tiefFrieren };
 })();
 
-function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false) {
+function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false, rohstoffProfil = null) {
   const { KANON } = m_data_kanon;
+  const geologie = rohstoffProfil === null ? null : require('./rohstoff-forschung-core.cjs').create(rohstoffProfil);
   const ort = Object.freeze({
+    ...(geologie ? {geologie} : {}),
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
     angedocktAn: (sh, station) => FLUG.angedocktAn(sh, station),
   });
@@ -102,6 +104,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     silizium ? FACTORY.createJ2bWelt(startkapital, ort)
     : FACTORY.createK7Welt(startkapital, ort)) : FACTORY.createKanonWelt(startkapital, ort);
   const kern = engine.core, rules = engine.rules;
+  geologie?.konfigurieren(rules);
   if (rules.rulesVersion !== (p8dFracht ? 207 : p8cDravos ? 206 : p8bZweiFelder ? 205 : jaegerFlug ? 204 : jaeger ? 203 : bauteile ? 202 : silizium ? 201 : k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
     throw Error('K1: unerwartetes Kernprofil');
   const N = FLUG.DATEN.schritteJeMinute;
@@ -697,7 +700,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   // die vorhandene Doppelkassenbuchung und den bestehenden F6-Schiffskörper.
   const m_core_silizium = silizium ? J2B.create({rules,FLUG,
     transfer:m_core_buch.transfer,summe:m_core_buch.summe,ganz,ladungSumme,
-    stillgelegt:m_core_anlage.stillgelegt,pilot:KANON.piloten}) : null;
+    stillgelegt:m_core_anlage.stillgelegt,pilot:KANON.piloten,geologie}) : null;
   const m_core_bauteile = bauteile ? J3.create({rules,
     transfer:m_core_buch.transfer,summe:m_core_buch.summe,ganz}) : null;
   const m_core_jaeger = jaeger ? J4.create({rules,
@@ -1580,6 +1583,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (state === null || typeof state !== 'object' || state.rulesVersion !== rules.rulesVersion || state.schema !== KANON.schema)
       throw Error('K1: fremde Regelversion oder Schema; keine automatische Migration');
     const k = state.kanon;
+    if (!!k?.rohstoffe !== !!geologie) throw Error('R1: explizite Forschungswelt erforderlich');
     if (!k || k.modell !== KANON.modell || !k.netto || !k.buch || !k.wasser || !k.pendel || !k.flugdienst
       || !k.verschleiss || !k.haushalte || !k.politik || !state.flug)
       throw Error('K1: Weltbuch unvollständig');
@@ -1589,6 +1593,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     try {
       pruefeForm(state);
       const k = state.kanon, fehler = [];
+      if (geologie && !geologie.audit(state)) fehler.push('R1: Geologiebuch ungueltig');
       m_core_firmenpolitik.audit(state, fehler);
       if(k.materialSupplyEnabled!==undefined
         &&(!p8dFracht||typeof k.materialSupplyEnabled!=='boolean'))
@@ -1760,6 +1765,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (jaeger) state.kanon.jaeger = m_core_jaeger.leer();
     if (p8cDravos||p8dFracht) state.kanon.p8c = m_core_p8c_reise.leer();
     if (p8dFracht) state.kanon.p8d = m_core_p8d.leer();
+    if (geologie) geologie.init(state, rules);
     const a = audit(state);
     if (!a.ok) throw Error('K1: Anfangszustand nicht konsistent: ' + a.fehler.join('; '));
     return state;
@@ -2158,6 +2164,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     const vorherEislohn = state.w5n.frachtLohn;
     const vorherEisgeliefert = state.w5n.eisGeliefert;
     const vorherEisgebuehr = state.w5n.frachtUmsatz;
+    if (geologie) geologie.minute(state, state.tick + 1);
     const ergebnis = kern.step(state, rules);
     m_core_spielerfracht.minute(state, vorherEisauftrag, vorherEislohn,
       vorherEisgeliefert, vorherEisgebuehr);
@@ -2591,6 +2598,10 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   erstellenP8b:(kapital={})=>erstellen(kapital,true,true,true,true,true,true),
   // Ausschliesslich isolierte, nicht produktiv freigegebene Rule206-Expedition.
   erstellenP8c:(kapital={})=>erstellen(kapital,true,true,true,true,true,false,true),
+  erstellenRohstoffForschung:(profil)=>{
+    if(!['A','B','C'].includes(profil))throw Error('R1: explizites Profil erforderlich');
+    return erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,true,profil);
+  },
   erstellenP8d:(kapital={})=>erstellen(kapital,true,true,true,true,true,false,false,true),
   ausRegel195, ausRegel199K7, ausRegel200J2b, ausRegel201J3, ausRegel202J4b, ausRegel203J4c, ausRegel204P8b,
   DATEN: m_data_kanon.KANON, REGEL: m_data_kanon.KANON.regel, SCHRITTE: FLUG.DATEN.schritteJeMinute });

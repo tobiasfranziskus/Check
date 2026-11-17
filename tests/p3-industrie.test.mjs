@@ -26,6 +26,8 @@ test('P3: first complete original W3→W4→W5 production ends in legal player-o
  const {j,w}=begin(),read=()=>Industry.auswerten(w,clean(w,j.zustandReferenz()),j.angebote());
  const start=read();assert.equal(start.sichtbar,true);
  assert.equal(start.hausKaufbereit,false);assert.equal(start.w5Gebaut,0);
+ assert.equal(start.werftSpielerSchiffId,null,'no cockpit before physical purchase');
+ assert.equal(start.werftSpielerAnzahl,0);
  assert.equal(j.ausfuehren('stationBuildShip-for-house').ok,false,'player cannot sign foreign W5 manufacturing');
  assert.equal(j.ausfuehren('transport:shipBuy').ok,false,'player cannot use NPC company money');
  for(let i=0;i<5;i++)j.weiterspielen(60);
@@ -51,12 +53,17 @@ test('P3: first complete original W3→W4→W5 production ends in legal player-o
  assert.equal(after.owners.house.cash,customer-750);
  assert.equal(after.stations.st_nadir.lager.frachter,stock-1);
  assert.equal(p2.kaufberechtigt,false,'sold-out hull cannot be purchased twice');
+ assert.equal(p2.werftSpielerSchiffId,bought[0].id,'only original W5-origin house hull is eligible');
+ assert.equal(p2.werftSpielerAnzahl,1);
+ assert.ok(j.piloten().some(x=>x.id===bought[0].id),'existing flight gate sees purchased hull');
  assert.equal(after.w5.fertig,before.w5.fertig,'ship transfer is not a free additional build');
  assert.equal(after.ledger.frachter.produced,before.ledger.frachter.produced);
  assert.equal(after.ledger.frachter.consumed,before.ledger.frachter.consumed+1);
  assert.equal(j.ausfuehren(p.hausKaufId).ok,false,'same hull cannot be bought a second time');
  const json=j.exportieren(),resumed=J8.erstellen();resumed.oeffnen204(json,true);
  assert.equal(resumed.exportieren(),json);assert.equal(w.hash(resumed.zustandReferenz()),w.hash(after));
+ assert.equal(Industry.auswerten(w,resumed.zustandReferenz(),resumed.angebote()).werftSpielerSchiffId,bought[0].id,
+  'industry cockpit shortcut survives original Save/Load');
  const forged=JSON.parse(json);forged.owners.house.cash+=750;forged.owners.werft_extern.cash-=750;
  assert.throws(()=>J8.erstellen().oeffnen204(JSON.stringify(forged),true),'cash laundering must be rejected');
  console.log('P3_W4_W5_HOUSE_HULL_OK '+JSON.stringify({tick:after.tick,

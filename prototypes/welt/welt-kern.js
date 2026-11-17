@@ -1539,6 +1539,28 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           || (ziel?.werftauftrag && anzahl('werft_extern:stationBuildMiner')===0))
           fehler.push('W6/P5: NPC-Entscheidungen ohne Original-Kauf-/Warenbelege');
       }
+      // P8h: manipulierte JSON-Zaehler koennen NIE bezahlte Frachter,
+      // Ueberfuehrungen oder vier Firmenunterschriften erfinden.
+      if(p8dFracht&&n?.befehle&&typeof n.befehle==='object'){
+        const cnt=key=>n.befehle[key]||0;
+        const werft=cnt('werft_extern:stationBuildShip'),
+          gekauft=cnt('transport:shipBuy'),
+          ferry=cnt('transport:shipReposition'),
+          angebot=cnt('st_nadir:industrialOreOfferMaterial'),
+          mine=cnt('npc3:industrialOreAcceptMine'),
+          fracht=cnt('transport:industrialOreAcceptFreight'),
+          commit=cnt('st_nadir:industrialOreCommitMaterial');
+        const kette=werft+gekauft+ferry+angebot+mine+fracht+commit;
+        const w3Offen=['angebot','aktiv'].includes(k.industrieErz?.phase)?1:0;
+        const darf=k.npcMaterialKette!==undefined
+          &&werft<=(state.w5.fertig+(state.w5.auftrag?1:0))
+          &&gekauft<=state.w5.verkauft
+          &&ferry<=state.w5ac.completed.length+(state.w5ac.active?1:0)
+          &&angebot<=state.w3.abgeschlossen+w3Offen
+          &&mine<=angebot&&fracht<=angebot&&commit<=angebot;
+        if(kette>0&&!darf)
+          fehler.push('P8h: NPC-Entscheidungszaehler ohne echte W5-/W3-/Eigentumsbelege');
+      }
       if (k.npcAuto === undefined || n === null || typeof n !== 'object' || Array.isArray(n)
         || Object.keys(n).sort().join() !== 'abgelehnt,befehle,pausen'
         || ['befehle', 'abgelehnt', 'pausen'].some((bereich) => {

@@ -42,11 +42,9 @@ function create(profil){
  }
  function minute(s,tick){
    for(const f of Object.values(buch(s).felder)){
-     // 'letzte' ist nur die Sperre gegen doppelten Abbau IM SELBEN Tick.
-     // Vergangene Schiffseigner sind keine Live-Referenzen: Schiffe duerfen
-     // spaeter rechtmaessig zerstoert oder umgeschrieben werden.
-     for(const id of Object.keys(f.letzte))
-       if(f.letzte[id].tick<tick)delete f.letzte[id];
+     // Historische letzte Foerder-Eigner bleiben zur Manipulationspruefung
+     // erhalten. Nur der autoritative Original-Verlustpfad darf den Eintrag
+     // beim tatsaechlichen Entfernen des Schiffs loeschen.
      if(f.respawn!==tick)continue;
      f.restmenge=f.maxkapazitaet;f.generation++;f.respawn=null;
      if(f.ware==='silizium'){
@@ -83,7 +81,7 @@ function create(profil){
          ||e.neu!==e.leer+f.wartezeit||(i<f.generation?e.neu>s.tick:e.neu!==f.respawn))return false;
        vorher=e.neu;
      }
-     if(!f.letzte||Array.isArray(f.letzte)||Object.entries(f.letzte).some(([id,e])=>!keys(e,'tick,owner')||!s.ships[id]||s.ships[id].owner!==e.owner||!nat(e.tick)||e.tick!==s.tick||e.tick%f.minuten))return false;
+     if(!f.letzte||Array.isArray(f.letzte)||Object.entries(f.letzte).some(([id,e])=>!keys(e,'tick,owner')||!s.ships[id]||s.ships[id].owner!==e.owner||!nat(e.tick)||e.tick>s.tick||e.tick%f.minuten))return false;
      if(f.ware==='silizium'&&s.kanon.silizium.felder[f.feldId].vorrat!==f.restmenge)return false;
      totals[f.ware]+=f.gefoerdert;
    }

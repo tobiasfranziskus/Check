@@ -85,23 +85,24 @@ test('R1: Miner-Verlust entfernt nur den aktuellen Foerdermarker, nicht die bere
  assert.deepEqual({ledger:s.ledger,owners:s.owners,rohstoffe:s.kanon.rohstoffe.felder['aldera-erz'].gefoerdert},vor);
  assert.deepEqual(s.kanon.rohstoffe.felder['aldera-erz'].letzte,{});
 });
-test('R1: Eigentums-Historie veraltet nach dem Tick ohne falsche Live-Sperre',()=>{
+test('R1: historische Minereigentuemer bleiben pruefbar bis zum legalen Verlust',()=>{
  const w=K.erstellenRohstoffForschung('A'),s=w.createState(),g=G.create('A');
  g.konfigurieren(w.rules);
  const sh=Object.values(s.ships).find(x=>x.klasse==='miner'&&x.system==='aldera');
  s.tick=1;g.abbauen(s,sh,'erz',1);s.ledger.erz.mined++;
  assert.equal(g.audit(s),true);
- const gehackt=copy(s);
- gehackt.kanon.rohstoffe.felder['aldera-erz'].letzte[sh.id].owner='house';
- assert.equal(g.audit(gehackt),false,'aktueller falscher Eigentumsbeleg bleibt gesperrt');
+ const gefaelscht=copy(s);
+ gefaelscht.kanon.rohstoffe.felder['aldera-erz'].letzte[sh.id].owner='house';
+ assert.equal(g.audit(gefaelscht),false,'historisch falscher Mine-Eigentuemer bleibt gesperrt');
  s.tick=2;g.minute(s,2);
- assert.deepEqual(s.kanon.rohstoffe.felder['aldera-erz'].letzte,{});
- assert.equal(g.audit(s),true);
- // Die nun vergangene Bergbaugenehmigung darf nicht von spaeteren
- // legitimen Schiffsverlusten oder Eigentumswechseln abhaengen.
- delete s.ships[sh.id];
- assert.equal(g.audit(s),true);
- const rueckdatiert=copy(s);
- rueckdatiert.kanon.rohstoffe.felder['aldera-erz'].letzte[sh.id]={tick:1,owner:sh.owner};
- assert.equal(g.audit(rueckdatiert),false,'abgelaufene Doppelentnahmesperre im Save wird erkannt');
+ assert.deepEqual(s.kanon.rohstoffe.felder['aldera-erz'].letzte[sh.id],
+   {tick:1,owner:sh.owner},'Beleg bleibt auch nach dem naechsten Tick erhalten');
+ const geaendert=copy(s);
+ geaendert.ships[sh.id].owner='house';
+ assert.equal(g.audit(geaendert),false,'manipulierter Live-Schiffseigentuemer wird erkannt');
+ g.schiffsverlust(s,sh);delete s.ships[sh.id];
+ assert.equal(g.audit(s),true,'originaer gemeldeter Verlust wird nicht falsch blockiert');
+ const wiedereingeschmuggelt=copy(s);
+ wiedereingeschmuggelt.kanon.rohstoffe.felder['aldera-erz'].letzte[sh.id]={tick:1,owner:sh.owner};
+ assert.equal(g.audit(wiedereingeschmuggelt),false,'Geloeschtes Schiff darf nicht als Live-Foerderbeleg auftauchen');
 });

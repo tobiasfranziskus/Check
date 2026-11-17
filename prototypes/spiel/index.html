@@ -90,7 +90,7 @@
  <section id="pilotenausbildung" class="piloten-akademie" aria-label="Pilotenakademie">
   <details id="pilotenausbildung-details">
    <summary><span class="piloten-akademie-tag">APHROS ACADEMY · FLUGAUSBILDUNG</span>
-    <strong>Pilotenakademie</strong><span class="piloten-akademie-count">12 Flugübungen</span></summary>
+    <strong>Pilotenakademie</strong><span class="piloten-akademie-count">13 Flugübungen</span></summary>
    <p class="piloten-akademie-hint">Lerne mit deinem eigenen Schiff. Wähle es unter „Meine Flotte“ aus, kehre zur Kommandobrücke zurück und starte eine Mission. Alle Flugkosten und Warenbewegungen bleiben Teil deiner Karriere.</p>
    <div id="pilotenausbildung-karten"></div>
   </details>
@@ -100,6 +100,16 @@
    <p class="eyebrow">KAPITEL 01 / DEIN ERSTER FLUG</p><h3>Ein Schiff. Ein Anfang.</h3>
    <p id="missions-text">Dein Unternehmen ist bereit. Entdecke die Kaufangebote der Werften.</p>
    <ol class="missions" id="missions" aria-label="Erste Aufgaben"></ol>
+   <section id="p3-handelsauftrag" class="p3-handelsauftrag" aria-label="Wiederholbarer Eis-Handelsauftrag">
+    <p class="eyebrow">KAPITEL 02 / HANDELSROUTE</p>
+    <h3>Eis. Fracht. Erlös.</h3>
+    <p id="p3-handelsstand" role="status" aria-live="polite">Der Handelsweg erscheint nach dem Karrierestart.</p>
+    <p id="p3-handelszahlen" class="p3-zahlen"></p>
+    <strong id="p3-handelsziel"></strong>
+    <p id="p3-handelsanleitung"></p>
+    <button id="p3-handelsaktion" type="button" disabled>Wirtschaftsauftrag öffnen</button>
+    <p id="p3-handelssperre" class="p3-sperre"></p>
+   </section>
    <button id="welt-export" type="button" class="ghost">Spielstand als JSON sichern</button>
    <p class="footnote">Autosave nur im eigenen Karriere-Slot dieser Seite. Der alte Wirtschaftsspielstand bleibt unberührt.</p>
   </section>
@@ -232,5 +242,5 @@
 <script src="../tutorial-manager/manager.js"></script>
 <script src="../tutorial-pilot/akademie.js"></script>
 <script src="../tutorial-pilot/menue.js"></script>
-<script src="spiel.js"></script>
+<script src="p3-handelsweg.js"></script>\n<script src="spiel.js"></script>
 </body></html>

@@ -174,3 +174,9 @@ body.raum-aktiv .world{display:none}
 .p3-handelsauftrag .p3-sperre{color:#ffbca8;font-size:.8rem}
 .p3-handelsauftrag button{width:100%;font-size:.86rem;justify-content:center;padding:10px;min-height:48px}
 @media(max-width:900px){.p3-handelsauftrag{padding:17px}}
+
+/* P3: optional investment after completed original freight; no financial CSS logic. */
+.p3-investition{border-color:#8f7450;background:#182638de}
+.p3-investition .p3-zahlen{color:#e7d9ac}
+.p3-investition .p3-einschraenkung{font-size:.74rem;color:#aabfcd;line-height:1.45}
+.p3-investition .p3-sperre{min-height:1em}

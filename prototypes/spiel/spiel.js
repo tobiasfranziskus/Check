@@ -144,6 +144,8 @@ function ladeSitzung(json,auswahl,backup=false){
  // named research-resume click or separate explicit file-import confirmation.
  if(regel===207&&auswahl==='datei'&&!scope.confirm(
    'Diese Datei enthält eine experimentelle Dravos-Karriere. Möchtest du diesen externen Spielstand ausdrücklich importieren? Deine normale Karriere bleibt separat erhalten.'))return;
+ if(regel===207&&auswahl==='datei'&&raw.kanon?.npcMaterialKette===true
+   &&!scope.confirm('Dieser importierte Spielstand aktiviert zusätzlich die eigenfinanzierte NPC-Folgeversorgung mit selbstständigen Werft-/Fracht-/Erzentscheidungen. Auch diese Automatik ausdrücklich übernehmen?'))return;
  const slot=regel===207?SLOT_W6:SLOT;
  if(auswahl==='datei'&&gespeicherte(slot)&&!scope.confirm(
    'Dieser Datei-Spielstand ersetzt NUR die gleichnamige Karriere-Speicherstelle. Die bisherige wird zuvor gesichert. Fortfahren?'))return;
@@ -662,7 +664,6 @@ $('w6-p8h-toggle')?.addEventListener('click',()=>{
      throw Error('W6/P8h-Originaldispatcher ist nicht geladen');
    const alt=s.kanon.npcMaterialKette===true,neu=!alt;
    if(neu&&!scope.confirm('Die eigenständigen NPC-Unternehmen dürfen künftig neue Frachter bauen, kaufen und real finanzierte Erztransporte abschließen. Es gibt keine Preisgarantien, Kredite oder geschenkten Waren. Deinen bestehenden W6-Forschungsstand vorher sichern und die Folgekette aktivieren?'))return;
-   const alteJson=session.exportieren();
    welt.npcMaterialKetteSetzen(s,neu);
    const audit=welt.audit(s);
    if(!audit.ok){

@@ -18,7 +18,7 @@ const server=http.createServer((req,res)=>{
    const context=await browser.newContext({viewport:{width,height},hasTouch:true,acceptDownloads:true});
    const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
    await page.goto(base+'/prototypes/tutorial-pilot/index.html');
-   assert.equal(await page.locator('[data-lektion]').count(),12);
+   assert.equal(await page.locator('[data-lektion]').count(),13);
    assert.equal(await page.locator('[data-lektion]:enabled').count(),0);
    await page.locator('#karriere').setInputFiles({name:'karriere.json',mimeType:'application/json',buffer:Buffer.from(save)});
    await page.waitForFunction(()=>document.getElementById('meldung').textContent.startsWith('Karriere geladen'));

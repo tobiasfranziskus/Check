@@ -44,3 +44,8 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/w6-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}
+      - name: "W6/P8h: genuine paid Rule207 NPC follow-up toggle, backup, double import consent and protected Rule204"
+        run: node tests/w6-p8h-toggle-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/w6-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}

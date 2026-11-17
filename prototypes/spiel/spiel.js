@@ -301,6 +301,35 @@ function wasserLohnAnzeigen(s,angebote){
   anzeigetext(p.grund)+(p.fehlbetrag>0&&!p.zielBereit&&p.kleinBereit
     ?' Eine einzelne Einheit kannst du weiterhin legal kaufen.':'');
 }
+// P3 chapter 05: NPC household demand is already core-financed. Real choices
+// are the normal financed F4 contract and the existing paid 60-minute clock.
+function npcMarktAnzeigen(s,angebote){
+ const host=$('p3-npc-markt');
+ if(!host||!scope.P3NPCMarkt)return;
+ const p=scope.P3NPCMarkt.auswerten(session.weltReferenz(),s,angebote,scope.AphrosWelt.DATEN);
+ host.hidden=!p.sichtbar;
+ if(!p.sichtbar)return;
+ $('p3-npc-geld').textContent='Bisherige NPC-Wasserkäufe: Aldera '+fmt(p.npcWasserAl)+
+  ' ISK · Nadir '+fmt(p.npcWasserNadir)+' ISK · reale Dividenden an NPC-Haushalte: '+
+  fmt(p.npcDividenden)+' ISK.';
+ $('p3-npc-ware').textContent='Aldera: '+fmt(p.alderakasse)+' ISK Käuferkasse · '+
+  fmt(p.eis)+' Eis · '+fmt(p.wasser)+' Wasser. Nadir: '+fmt(p.nadirkasse)+
+  ' ISK · '+fmt(p.wasserNadir)+' Wasser.';
+ $('p3-npc-frachter').textContent='Asterion-Frachter: '+fmt(p.npcFrachter)+
+  ' insgesamt, '+fmt(p.freiNpcFrachter)+' derzeit frei in Aldera. Deine bezahlten Frachter: '+
+  fmt(p.eigeneFrachter)+'.';
+ $('p3-npc-ziel').textContent=p.art==='fracht'?
+  'Übernimm die tatsächlich angebotene Eisfracht mit deinem eigenen Schiff':
+  'NPC-Markt beobachten: Einnahmen, Waren und echte Transportangebote';
+ const button=$('p3-npc-aktion');
+ button.disabled=!p.bereit;
+ button.textContent=p.art==='fracht'?'Vorfinanzierte Original-Fracht annehmen':
+  '60 reguläre Wirtschaftsminuten fortsetzen';
+ $('p3-npc-grund').textContent=p.grund+
+  (p.mangel?' Spielerangebot: '+anzeigetext(p.mangel):'')+
+  (p.naechsteAbrechnung!==null?' · Nächste planmäßige Dividendenprüfung in '+
+   fmt(p.naechsteAbrechnung)+' Minuten (keine Zahlungsgarantie).':'');
+}
 // J12: read-only station and company report from the SAME validated Rule204 session.
 // No separate economy, NPC signatures, speculative prices, or unvalidated purchase paths.
 function tabZeigen(name){
@@ -554,6 +583,7 @@ function anzeigen(){
  handelswegAnzeigen(s,alleAngebote);
  investitionAnzeigen(s,alleAngebote);
  wasserLohnAnzeigen(s,alleAngebote);
+ npcMarktAnzeigen(s,alleAngebote);
  wirtschaftsbericht(a,s,alleAngebote);
  jaegerBericht(s,alleAngebote);
  jaegerBeitraege();
@@ -785,6 +815,18 @@ function wasserLohnAusgeben(id){
 }
 $('p3-wasser-aktion')?.addEventListener('click',()=>wasserLohnAusgeben('water-pilot-house-bedarf'));
 $('p3-wasser-klein')?.addEventListener('click',()=>wasserLohnAusgeben('water-pilot-house-1'));
+$('p3-npc-aktion')?.addEventListener('click',()=>{
+ if(!session||!scope.P3NPCMarkt)return;
+ try{
+  // Always re-evaluate original validated core and offers, never a stale DOM quote.
+  const p=scope.P3NPCMarkt.auswerten(session.weltReferenz(),
+   session.zustandReferenz(),session.angebote(),scope.AphrosWelt.DATEN);
+  if(!p.sichtbar||!p.bereit)throw Error('NPC-Markt ist für diese Karriere nicht verfügbar');
+  if(p.art==='fracht'&&p.aktion)auftrag(p.aktion);
+  else if(p.art==='zeit')weiter(60);
+  else throw Error('Keine zulässige Originalaktion');
+ }catch(e){hinweis('NPC-Markt gesperrt: '+error(e),true);anzeigen();}
+});
 $('jaeger-kaufweg').addEventListener('click',()=>{
  if(!session)return;
  const quote=session.angebote().find(a=>a.id==='buy-st_nadir-jaeger');

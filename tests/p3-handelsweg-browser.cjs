@@ -149,6 +149,33 @@ const server=http.createServer((req,res)=>{
      water:qty,wageDebit:sum,buyerBefore:block.owners.st_aldera.cash,buyerAfter:paid.owners.st_aldera.cash,hash:waterHash
     }));
 
+    // Chapter 05: real NPC earnings and independent freight market.
+    assert.equal(await page.locator('#p3-npc-markt').isVisible(),true);
+    assert.match(await page.locator('#p3-npc-geld').textContent(),/NPC-Wasserkäufe: Aldera/);
+    assert.match(await page.locator('#p3-npc-frachter').textContent(),/Asterion-Frachter:/);
+    assert.equal(await page.locator('#p3-npc-aktion').isEnabled(),true);
+    const beforeNpc=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+    const button=await page.locator('#p3-npc-aktion').textContent();
+    await page.locator('#p3-npc-aktion').tap();
+    const npcJson=await page.evaluate(k=>localStorage.getItem(k),SLOT),afterNpc=JSON.parse(npcJson);
+    assert.equal(wInvest.audit(wInvest.load(npcJson)).ok,true);
+    assert.equal(Object.values(afterNpc.owners).reduce((n,o)=>n+o.cash,0),33000);
+    assert.equal(afterNpc.minted,0);assert.equal(afterNpc.burned,0);
+    if(/60 reguläre/.test(button))assert.equal(afterNpc.tick,beforeNpc.tick+60);
+    else {
+     assert.match(button,/Original-Fracht/);
+     assert.equal(afterNpc.tick,beforeNpc.tick);
+     assert.ok(afterNpc.w5n.frachtauftrag,'original contract started rather than fabricated time');
+    }
+    const npcHash=wInvest.hash(wInvest.load(npcJson));
+    await page.reload();await page.locator('#fortsetzen').tap();
+    assert.equal(wInvest.hash(wInvest.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),npcHash);
+    assert.equal(await page.locator('#p3-npc-markt').isVisible(),true);
+    assert.deepEqual(errors,[]);
+    console.log('P3_NPC_MARKT_BROWSER_OK',JSON.stringify({
+      kind,width,height,aktion:button,tick:afterNpc.tick,hash:npcHash
+    }));
+
     console.log('P3_REINVEST_BROWSER_OK',JSON.stringify({
      kind,width,height,rounds:3,cash:working.owners.house.cash,
      newMiner:newMiner.id,alderaBudget:working.owners.st_aldera.cash,

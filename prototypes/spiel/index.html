@@ -110,6 +110,17 @@
     <button id="p3-handelsaktion" type="button" disabled>Wirtschaftsauftrag öffnen</button>
     <p id="p3-handelssperre" class="p3-sperre"></p>
    </section>
+   <section id="p3-investition" class="p3-handelsauftrag p3-investition" aria-label="Kapital und Reinvestition" hidden>
+    <p class="eyebrow">KAPITEL 03 / ENTSCHEIDEN &amp; INVESTIEREN</p>
+    <h3>Ertrag oder Rücklage?</h3>
+    <p id="p3-invest-bilanz" class="p3-zahlen">Prüfe Kasse und den Restbuchwert deiner Schiffe.</p>
+    <p id="p3-invest-markt">Weitere Miner gibt es nur gegen einen echten Werftkauf.</p>
+    <strong id="p3-invest-ziel"></strong>
+    <p id="p3-invest-hinweis"></p>
+    <button id="p3-invest-aktion" type="button" disabled>Originalangebot prüfen</button>
+    <p id="p3-invest-sperre" class="p3-sperre" role="status" aria-live="polite"></p>
+    <p class="p3-einschraenkung">Vergleich der Spielerkasse und Original-Schiffsrestbuchwerte mit 3.000 ISK Startkapital – keine vollständige GuV. Waren, offene Treuhandansprüche und künftige Reparaturen sind darin nicht bewertet. Käufer und Erlöse bleiben endlich.</p>
+   </section>
    <button id="welt-export" type="button" class="ghost">Spielstand als JSON sichern</button>
    <p class="footnote">Autosave nur im eigenen Karriere-Slot dieser Seite. Der alte Wirtschaftsspielstand bleibt unberührt.</p>
   </section>
@@ -243,5 +254,6 @@
 <script src="../tutorial-pilot/akademie.js"></script>
 <script src="../tutorial-pilot/menue.js"></script>
 <script src="p3-handelsweg.js"></script>
+<script src="p3-investition.js"></script>
 <script src="spiel.js"></script>
 </body></html>

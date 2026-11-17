@@ -1397,6 +1397,73 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       if (fehler) pause(state, C3.owner, fehler);
       else befehl(state, C3.owner, { type: 'stationBuildParts', station: C3.station });
     }
+        // W6/P8h: NUR ausdruecklich aktivierte Regel207-Folgeversorgung.
+    // Alle vier Unternehmen handeln durch originale, validierte Eigenbefehle;
+    // es gibt keine eigenen Buchungen, Waren, Preise oder Ersatz-Hilfen.
+    // Eine Werft ist kein garantierter Lieferant: fehlende Mittel blockieren.
+    function materialfolge(state) {
+      const k=state.kanon;
+      if(!p8dFracht||k.npcMaterialKette!==true||k.materialSupplyEnabled!==true
+        ||state.tick%30!==0)return;
+      const lager=state.stations.st_nadir.lager,regel=rules;
+      if(k.jaeger?.auftrag||k.bauteile?.auftrag||(lager.jaeger||0)>=1
+        ||(lager.bauteil||0)>=regel.j4.bauteile
+        ||(lager.silizium||0)<regel.j3.silizium
+        ||(lager.material||0)>=regel.j3.material+regel.j4.material+regel.w5.material)return;
+      if(['angebot','aktiv'].includes(k.industrieErz?.phase))return;
+      const frachter=ids(state.ships).map(id=>state.ships[id])
+        .filter(sh=>sh.owner==='transport'&&sh.klasse==='frachter');
+      const geeignet=(sh,system)=>sh.system===system&&sh.phase==='dock'
+        &&sh.flug?.lage==='angedockt'&&sh.auftrag==='halten'
+        &&ladungSumme(sh)===0&&!m_core_anlage.stillgelegt(state,sh);
+      const frei=frachter.find(sh=>geeignet(sh,'aldera'));
+      let befehle;
+      if(frei){
+        const miner=ids(state.ships).map(id=>state.ships[id]).find(sh=>
+          sh.owner==='npc3'&&sh.klasse==='miner'&&sh.system==='aldera'
+          &&sh.phase==='dock'&&sh.flug?.lage==='angedockt'
+          &&ladungSumme(sh)===0&&!m_core_anlage.stillgelegt(state,sh)
+          &&(!k.pendel[sh.id]||k.pendel[sh.id].ware==='erz')
+          &&!state.erzpilotVertraege?.[sh.id]);
+        if(!miner){pause(state,'npc3','P8h: kein freier Erzminer');return;}
+        befehle=[
+          {type:'industrialOreOfferMaterial',owner:'st_nadir',miner:miner.id,frachter:frei.id},
+          {type:'industrialOreAcceptMine',owner:'npc3'},
+          {type:'industrialOreAcceptFreight',owner:'transport'},
+          {type:'industrialOreCommitMaterial',owner:'st_nadir'}
+        ];
+      }else{
+        const nadir=frachter.find(sh=>geeignet(sh,'nadir')
+          &&!state.w5ac.completed.some(x=>x.id===sh.id));
+        if(nadir)befehle=[{type:'shipReposition',owner:'transport',schiff:nadir.id}];
+        else if(frachter.some(sh=>!m_core_anlage.stillgelegt(state,sh)
+          &&(state.w5ac?.active?.id===sh.id||sh.phase==='reise')))return;
+        else if((lager.frachter||0)>0){
+          const kauf=regel.w5.verkaufsPreis+60*regel.w5Transfer.lohnJeMinute;
+          if(state.owners.transport.cash<kauf){
+            pause(state,'transport','P8h: Frachterkauf plus Rueckflug unfinanziert');return;
+          }
+          befehle=[{type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_nadir'}];
+        }else{
+          if(state.w5.auftrag||k.minerWerft?.auftrag)return;
+          const quote=kern.pilotW5Kalkulation(state);
+          if(!quote.ok){pause(state,'werft_extern','P8h: Original-W5 '+quote.grund);return;}
+          befehle=[{type:'stationBuildShip',owner:'werft_extern',station:'st_nadir'}];
+        }
+      }
+      // Eine K7-Unterschrift wird nur angeboten, wenn alle vier ORIGINAL-
+      // Berechtigungs- und Finanzierungspruefungen auf einer Kopie bestehen.
+      // Ein abgelehnter Vertrag darf keine fremden Teilzusagen festhalten.
+      const probe=load(save(state));
+      for(const cmd of befehle){
+        const antwort=execute(probe,cmd);
+        if(!antwort.ok){pause(state,cmd.owner,'P8h: '+cmd.type+' '+antwort.reason);return;}
+      }
+      for(const cmd of befehle){
+        const antwort=befehl(state,cmd.owner,Object.fromEntries(Object.entries(cmd).filter(([key])=>key!=='owner')));
+        if(!antwort.ok)throw Error('P8h: vorgepruefter Originalbefehl fehlgeschlagen: '+antwort.reason);
+      }
+    }
     function schritt(state) {
       const k = state.kanon;
       if (k.npcAuto !== true || k.politik.automatik !== true) return;
@@ -1404,10 +1471,17 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       siliziumKette(state);
       if(p8dFracht)m_core_p8d.automatisch(state);
       industrie(state);
+      materialfolge(state);
     }
     function audit(state, fehler) {
       const k = state.kanon, n = k.npc;
       if (k.npcAuto !== undefined && typeof k.npcAuto !== 'boolean') fehler.push('W6-Firmenpolitik: ungültige Einstellung');
+      // Auch ALT-Saves ohne NPC-Buch muessen fremde P8h-Felder verweigern:
+      // dieser Check steht deshalb VOR dem historischen Early-Return.
+      if(k.npcMaterialKette!==undefined
+        &&(!p8dFracht||typeof k.npcMaterialKette!=='boolean'||!n
+          ||k.npcAuto===undefined||k.materialSupplyEnabled!==true))
+        fehler.push('P8h: NPC-Folgeversorgung ungueltig oder ohne Originalfreigabe');
       // Save-Manipulationsschutz: Ein neues P5-Feld ohne das autonome
       // Original-Entscheidungsbuch ist kein gueltiger optionaler Altstand.
       if (n === undefined) {
@@ -1426,10 +1500,17 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         'npc3:shipDock', 'npc3:siliconSell',
       ]);
       if(p8cDravos||p8dFracht)erlaubt.add('npc3:shipTravelDravos');
+      if(p8dFracht)for(const key of [
+        'werft_extern:stationBuildShip','transport:shipBuy','transport:shipReposition',
+        'st_nadir:industrialOreOfferMaterial','npc3:industrialOreAcceptMine',
+        'transport:industrialOreAcceptFreight','st_nadir:industrialOreCommitMaterial'
+      ])erlaubt.add(key);
       const gueltigerZaehler = (key, value, bereich) => {
         if (!ganz(value) || value === 0 || value > state.tick) return false;
         if (bereich !== 'pausen') return erlaubt.has(key);
-        return (key.startsWith('npc3: ') || key.startsWith('st_nadir: ')) && key.length > 8;
+        return (key.startsWith('npc3: ') || key.startsWith('st_nadir: ')
+          || (p8dFracht&&(key.startsWith('transport: ')||key.startsWith('werft_extern: '))))
+          && key.length > 8;
       };
       const ziel=k.npcSilizium, wm=k.minerWerft;
       if(ziel!==undefined && (!ziel || typeof ziel!=='object' || Array.isArray(ziel)
@@ -1459,6 +1540,28 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           || anzahl('npc3:siliconSell')>verkauftNpc3
           || (ziel?.werftauftrag && anzahl('werft_extern:stationBuildMiner')===0))
           fehler.push('W6/P5: NPC-Entscheidungen ohne Original-Kauf-/Warenbelege');
+      }
+      // P8h: manipulierte JSON-Zaehler koennen NIE bezahlte Frachter,
+      // Ueberfuehrungen oder vier Firmenunterschriften erfinden.
+      if(p8dFracht&&n?.befehle&&typeof n.befehle==='object'){
+        const cnt=key=>n.befehle[key]||0;
+        const werft=cnt('werft_extern:stationBuildShip'),
+          gekauft=cnt('transport:shipBuy'),
+          ferry=cnt('transport:shipReposition'),
+          angebot=cnt('st_nadir:industrialOreOfferMaterial'),
+          mine=cnt('npc3:industrialOreAcceptMine'),
+          fracht=cnt('transport:industrialOreAcceptFreight'),
+          commit=cnt('st_nadir:industrialOreCommitMaterial');
+        const kette=werft+gekauft+ferry+angebot+mine+fracht+commit;
+        const w3Offen=['angebot','aktiv'].includes(k.industrieErz?.phase)?1:0;
+        const darf=k.npcMaterialKette!==undefined
+          &&werft<=(state.w5.fertig+(state.w5.auftrag?1:0))
+          &&gekauft<=state.w5.verkauft
+          &&ferry<=state.w5ac.completed.length+(state.w5ac.active?1:0)
+          &&angebot<=state.w3.abgeschlossen+w3Offen
+          &&mine<=angebot&&fracht<=angebot&&commit<=angebot;
+        if(kette>0&&!darf)
+          fehler.push('P8h: NPC-Entscheidungszaehler ohne echte W5-/W3-/Eigentumsbelege');
       }
       if (k.npcAuto === undefined || n === null || typeof n !== 'object' || Array.isArray(n)
         || Object.keys(n).sort().join() !== 'abgelehnt,befehle,pausen'
@@ -1697,6 +1800,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if(!aktiviert&&s.kanon.industrieErz?.materialOnly
       &&['angebot','aktiv'].includes(s.kanon.industrieErz.phase))
       throw Error('P8g: laufenden real finanzierten Materialauftrag zuerst abschliessen');
+    if(!aktiviert&&s.kanon.npcMaterialKette===true)
+      throw Error('P8h: eigenfinanzierte NPC-Folgeversorgung zuvor abschalten');
     s.kanon.materialSupplyEnabled=aktiviert;
     return {ok:true,aktiviert};
   }
@@ -1962,6 +2067,18 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     return {ok:true,aktiviert};
   }
 
+  // W6/P8h: additiver Opt-in auf bestehender Regel207-Welt.
+  // Alt-Spielstaende ohne dieses Feld behalten alte Simulation und Originalhash.
+  function npcMaterialKetteSetzen(s,aktiviert) {
+    pruefeForm(s);
+    if(!p8dFracht||s.rulesVersion!==207||typeof aktiviert!=='boolean')
+      throw TypeError('P8h: nur ausdrueckliche Regel207-Bool-Aktivierung');
+    if(s.kanon.materialSupplyEnabled!==true||s.kanon.npcAuto!==true||!s.kanon.npc)
+      throw Error('P8h: Original-NPC- und Materialversorgung erforderlich');
+    s.kanon.npcMaterialKette=aktiviert;
+    return {ok:true,aktiviert};
+  }
+
   // W6 [DRAFT/OPTION]: schaltet nur die gespeicherte Firmenpolitik; bucht selbst nichts.
   function npcAutoSetzen(s, aktiviert) {
     pruefeForm(s);
@@ -2209,7 +2326,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(p8cDravos||p8dFracht ? {p8cEchteDravosExpedition:true} : {}),
     ...(p8dFracht ? {p8dGetrennteSpedition:true,p8gMaterialOnlyW3:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
-    createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, materialSupplySetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
+    createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, npcMaterialKetteSetzen, materialSupplySetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
     torPruefen: m_core_torfreigabe.pruefen, torFrachtPruefen: m_core_torfreigabe.darfFracht,
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,

@@ -179,14 +179,12 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
   assert.equal(w.hash(w.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),hash);
   assert.equal(await page.locator('#p3-industrie-cockpit').isVisible(),true,
    'only physically built and bought W5 ship gets a cockpit shortcut');
-  assert.equal(await page.locator('#p3-industrie-cockpit').isEnabled(),true,
-   'original pilot/fleet gate must allow the newly bought Nadir freighter');
-  await page.locator('#p3-industrie-cockpit').tap();
-  assert.equal(await page.locator('#raumbereich').isVisible(),true,
-   'a real W5 purchase leads directly to the same 2D cockpit');
-  assert.match(await page.locator('#raum-schiff').textContent(),/Frachter/i);
+  assert.equal(await page.locator('#p3-industrie-cockpit').isDisabled(),true,
+   'Nadir warehouse purchase may not bypass original Aldera-only free-flight gate');
+  assert.match(await page.locator('#p3-industrie-cockpit-hinweis').textContent(),
+   /nur in Aldera/,'the real legal flight blocker must be visible');
   assert.equal(w.hash(w.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),hash,
-   'cockpit selection alone cannot mint cash, hulls or materials');
+   'read-only ownership and pilot-permission labels must preserve the world hash');
   assert.deepEqual(errors,[]);
   console.log('P3_W4_W5_INDUSTRY_BROWSER_OK',JSON.stringify({
    kind,width,height,tick:after.tick,ship:newShips[0].id,

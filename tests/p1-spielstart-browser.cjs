@@ -99,7 +99,7 @@ async function w6Optin(browser,base,width,height,kind){
   assert.equal(Object.values(s.owners).reduce((a,o)=>a+o.cash,0),33000);
   assert.equal(await page.locator('#p3-npc-werft').isVisible(),true,
     'S02 player sees independently financed NPC freight company');
-  assert.match(await page.locator('#p3-npc-werft-kassen').textContent(),/Asterion: 2\\.000 ISK/);
+  assert.match(await page.locator('#p3-npc-werft-kassen').textContent(),/Asterion: 2[.]000 ISK/);
   assert.match(await page.locator('#p3-npc-werft-flotte').textContent(),/0 Frachter/);
   assert.equal(await page.locator('#p3-npc-werft-aktion').isEnabled(),true);
   await page.locator('#p3-npc-werft-aktion').tap();

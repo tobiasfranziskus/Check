@@ -12,7 +12,7 @@ const server=http.createServer((req,res)=>{
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
  try{
- const kind=process.env.WELT_BROWSER||'chromium';browser=await ({chromium,webkit})[kind].launch(kind==='chromium'?{executablePath:process.env.CHROMIUM_EXECUTABLE||'/usr/lib/chromium/chromium',args:['--no-sandbox']}:{});
+ const kind=process.env.WELT_BROWSER||'chromium';browser=await ({chromium,webkit})[kind].launch(kind==='chromium'?{...(process.env.CHROMIUM_EXECUTABLE?{executablePath:process.env.CHROMIUM_EXECUTABLE}:{}),args:['--no-sandbox']}:{});
  for(const [width,height] of [[1180,820],[1024,768],[820,1180],[390,844]]){
   const ctx=await browser.newContext({viewport:{width,height},hasTouch:true,acceptDownloads:true});const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(String(e)));
   const tap=async selector=>{await page.locator(selector).scrollIntoViewIfNeeded();await page.locator(selector).tap();};

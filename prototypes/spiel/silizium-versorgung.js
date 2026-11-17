@@ -77,8 +77,44 @@ function erstellen(welt,zustand){
     ?'Keine neue 8er-Foerdercharge im Nadir-Feld; vorhandene Ware/Teile separat nachweisbar'
     :'Nadir-Siliziumfeld erschoepft; ohne neue endliche, finanzierte Quelle kein weiterer J3-Rohstoffnachschub')
   :'Nadir-Feld hat noch endlichen Rohstoff; naechste Charge nur mit Original-Miner, Geld, Dock und Kaufvertrag';
+ // W6/P8g: reiner Bestands- und Finanzierungshinweis zum bekannten Frachter-Engpass.
+ // Keine NPC-Signatur, kein Kaufversprechen und kein wirtschaftlicher Seitenbefehl.
+ let frachtErsatz=null;
+ if(r.rulesVersion===207){
+   const frachter=schiffe.filter(sh=>sh.owner==='transport'&&sh.klasse==='frachter');
+   const tauglich=sh=>welt.buchwert(s,sh.id)>0&&sh.phase==='dock'
+     &&sh.flug?.lage==='angedockt'&&sh.auftrag==='halten'
+     &&Object.values(sh.ladung||{}).every(n=>n===0);
+   const alderaBereit=frachter.filter(sh=>sh.system==='aldera'&&tauglich(sh));
+   const nadirBereit=frachter.filter(sh=>sh.system==='nadir'&&tauglich(sh)
+     &&!s.w5ac?.completed?.some(x=>x.id===sh.id));
+   const lagerNadir=s.stations.st_nadir.lager;
+   // Die Originalkalkulation bleibt die einzige Autoritaet fuer W5-Kosten.
+   const angebot=welt.kern?.pilotW5Kalkulation?.(s);
+   const grund=angebot?.grund||'kein finanzierter Werftauftrag bestaetigt';
+   const bedarf=r.j3.material+r.j4.material+r.w5.material;
+   const hinweis=alderaBereit.length>0
+     ?'Physischer Frachter in Aldera vorhanden; ein Erzvertrag braucht weiterhin Ware, Firmenkassen und rechtmaessige Zusagen.'
+     :nadirBereit.length>0
+       ?'Eigene Frachterhuelle in Nadir vorhanden; eine bezahlte Original-W5ac-Ueberfuehrung ist gesondert zu pruefen.'
+       :(lagerNadir.frachter||0)>0
+         ?'Fertige Nadir-Frachterware vorhanden; Kauf und Ueberfuehrung muessen die Spedition selbst finanzieren.'
+         :angebot?.ok
+           ?'W5-Originalkalkulation ermoeglicht einen Werftauftrag; eine neue Huelle und der Transport entstehen erst durch echte Firmenbefehle.'
+           :'Kein geeigneter Frachter in Aldera; Original-W5-Werftpruefung: '+grund;
+   frachtErsatz=Object.freeze({
+     alderaBereit:alderaBereit.length,nadirBereit:nadirBereit.length,
+     fertigeHuellenNadir:lagerNadir.frachter||0,
+     speditionKasse:s.owners.transport.cash,werftKasse:s.owners.werft_extern.cash,
+     materialNadir:lagerNadir.material||0,
+     materialFuerJ3J4UndW5:bedarf,
+     materialLuecke:Math.max(0,bedarf-(lagerNadir.material||0)),
+     werftKalkulation:Object.freeze({ok:angebot?.ok===true,grund:angebot?.grund||null}),
+     hinweis
+   });
+ }
  const probe=Object.freeze({regel:r.rulesVersion,tick:s.tick,
-  rohstoff,lager,finanzierung,weg,stand});
+  rohstoff,lager,finanzierung,weg,stand,frachtErsatz});
  return probe;
 }
 const API=Object.freeze({erstellen});

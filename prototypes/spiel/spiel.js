@@ -332,7 +332,8 @@ function jaegerBeitraege(){
  $('jaeger-finanzierung').textContent='Neuer Erzankauf: Aldera besitzt '+fmt(a.kasse)+
   ' von '+fmt(a.erzkauf)+' ISK; aktuell fehlen '+fmt(a.fehlend)+
   ' ISK. Diese Liquiditätsprüfung ersetzt keine Firmenzustimmung. '+
-  'Die bekannte Finanzierungslücke von 500 ISK bleibt weiterhin bestehen.';
+  (a.fehlend>0?'Für diesen Erzankauf fehlt aktuell echte Kaufkraft.':
+   'Die Kasse deckt den reinen Erzankauf; Vertrag, Lager und Firmenrechte bleiben gesondert zu prüfen.');
 }
 function jaegerBericht(zustand,angebote){
  if(!scope.J13Werftakte)throw Error('J13: die originale Produktionsakte fehlt');
@@ -420,6 +421,21 @@ function siliziumBericht(zustand){
        +' Material · '+fmt(warehouse.silizium||0)+' Silizium · '
        +fmt(k.bauteile.abgeschlossen)+' hergestellte Bauteile · '+fmt(k.jaeger.fertig)+' gebaute Jäger'),
      zeile('Frachtkapazität in Aldera',fmt(alderadock.length)+' leere, angedockte Speditionsfrachter mit Restbuchwert; dies allein ist noch keine finanzierte Vertragszusage')
+   );
+   const ersatz=lage.frachtErsatz;
+   if(ersatz)host.append(
+     zeile('W6 · Ersatz- und Transportlage',
+       fmt(ersatz.alderaBereit)+' freie Original-Frachter in Aldera · '+
+       fmt(ersatz.nadirBereit)+' unüberführte Hüllen bei der Spedition in Nadir · '+
+       fmt(ersatz.fertigeHuellenNadir)+' fertige Frachter im Nadir-Lager'),
+     zeile('Industrielle Materialreserve',
+       fmt(ersatz.materialNadir)+' Material vorhanden · '+fmt(ersatz.materialFuerJ3J4UndW5)+
+       ' Material als kombinierter Rechenbedarf für J3, J4 und W5 · '+
+       fmt(ersatz.materialLuecke)+' Differenz. Dies ist eine Planungshilfe, kein neuer Auftragszwang.'),
+     zeile('Eigenständige Firmenkassen',
+       'Spedition '+fmt(ersatz.speditionKasse)+' ISK · Werft '+fmt(ersatz.werftKasse)+
+       ' ISK. Keine dieser Kassen gehört deinem Konzern.'),
+     zeile('Nächster wirtschaftlicher Engpass',ersatz.hinweis)
    );
  }
 }

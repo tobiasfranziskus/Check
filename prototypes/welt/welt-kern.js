@@ -1800,6 +1800,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if(!aktiviert&&s.kanon.industrieErz?.materialOnly
       &&['angebot','aktiv'].includes(s.kanon.industrieErz.phase))
       throw Error('P8g: laufenden real finanzierten Materialauftrag zuerst abschliessen');
+    if(!aktiviert&&s.kanon.npcMaterialKette===true)
+      throw Error('P8h: eigenfinanzierte NPC-Folgeversorgung zuvor abschalten');
     s.kanon.materialSupplyEnabled=aktiviert;
     return {ok:true,aktiviert};
   }

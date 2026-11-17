@@ -393,8 +393,7 @@ function industrieAnzeigen(s,angebote){
  const transferSichtbar=!!eigeneId&&p.werftSpielerOrt==='nadir';
  transfer.hidden=!transferSichtbar;
  transfer.disabled=!p.werftTransferBereit;
- transfer.textContent='Eigene Werfthülle '+(eigeneId||'')+' bezahlt nach Aldera überführen'+
-  (p.werftTransferKosten!==null?' · '+fmt(p.werftTransferKosten)+' ISK / '+fmt(p.werftTransferMinuten)+' Min.':'');
+ transfer.textContent='Eigene Werfthülle '+(eigeneId||'')+' bezahlt nach Aldera überführen';
  cockpit.hidden=!eigeneId;cockpit.disabled=!steuerbar;
  cockpit.textContent=eigeneId?'Werftfrachter '+eigeneId+' selbst fliegen':'Eigenen Werftfrachter selbst fliegen';
  note.hidden=!eigeneId;

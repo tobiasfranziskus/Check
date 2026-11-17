@@ -442,6 +442,17 @@ function siliziumBericht(zustand){
 function anzeigen(){
  if(!session)return;
  const a=session.ansicht(),s=session.zustandReferenz();
+ const p8hControls=$('w6-p8h-controls'),p8hTaste=$('w6-p8h-toggle'),p8hStatus=$('w6-p8h-status');
+ if(p8hControls&&p8hTaste&&p8hStatus){
+   p8hControls.hidden=s.rulesVersion!==207;
+   if(s.rulesVersion===207){
+     const aktiv=s.kanon.npcMaterialKette===true;
+     p8hTaste.textContent=aktiv?'NPC-Folgeversorgung pausieren':'Eigenfinanzierte NPC-Folgeversorgung aktivieren';
+     p8hStatus.textContent=aktiv
+       ?'Aktiv: Nadir, Spedition und Bergbau entscheiden mit eigenem Kapital und echten Originalaufträgen. Kein garantierter Verkauf, keine Gratisressourcen.'
+       :'Aus: Bisherige Regel207-Wirtschaft ohne zusätzliche Frachter- und Erz-Disposition. Aktivierung speichert eine eigene W6-Forschungsentscheidung.';
+   }
+ }
  // Status stammt ausschließlich aus dem gespeicherten Core, nicht aus einem UI-Schalter.
  const w6Status=$('w6-status');
  if(w6Status){w6Status.hidden=!(s.kanon.npcAuto===true&&s.kanon.npcSilizium?.aktiv===true);
@@ -642,6 +653,32 @@ function pilotBinden(){
  if(manager&&pilot)manager.after(pilot);
  pilotMenu.zeichnen();
 }
+$('w6-p8h-toggle')?.addEventListener('click',()=>{
+ try{
+   if(!session||session.ansicht().regel!==207)
+     throw Error('Folgeversorgung nur in der ausdrücklich gewählten Regel207-Forschung');
+   const welt=session.weltReferenz(),s=session.zustandReferenz();
+   if(typeof welt.npcMaterialKetteSetzen!=='function')
+     throw Error('W6/P8h-Originaldispatcher ist nicht geladen');
+   const alt=s.kanon.npcMaterialKette===true,neu=!alt;
+   if(neu&&!scope.confirm('Die eigenständigen NPC-Unternehmen dürfen künftig neue Frachter bauen, kaufen und real finanzierte Erztransporte abschließen. Es gibt keine Preisgarantien, Kredite oder geschenkten Waren. Deinen bestehenden W6-Forschungsstand vorher sichern und die Folgekette aktivieren?'))return;
+   const alteJson=session.exportieren();
+   welt.npcMaterialKetteSetzen(s,neu);
+   const audit=welt.audit(s);
+   if(!audit.ok){
+     welt.npcMaterialKetteSetzen(s,alt);
+     throw Error('Original-Wirtschaftsaudit: '+audit.fehler.join('; '));
+   }
+   if(!speichern(true)){
+     // Bei verweigerter Speicherberechtigung kein ungesichertes Opt-in behaupten.
+     welt.npcMaterialKetteSetzen(s,alt);
+     throw Error('Aktivierung ohne geschützte lokale Sicherung verweigert; bitte JSON exportieren');
+   }
+   anzeigen();
+   hinweis(neu?'W6-P8h-Folgeversorgung aktiviert. Jeder NPC-Auftrag benötigt Originalware und echtes Firmenkapital.':
+     'W6-P8h-Folgeversorgung pausiert. Laufende bereits bezahlte Originalaufträge bleiben gültig.');
+ }catch(e){hinweis('W6-Folgeversorgung nicht geändert: '+error(e),true);}
+});
 $('jaeger-kaufweg').addEventListener('click',()=>{
  if(!session)return;
  const quote=session.angebote().find(a=>a.id==='buy-st_nadir-jaeger');

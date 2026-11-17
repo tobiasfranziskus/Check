@@ -21,8 +21,6 @@ function auswerten(w,s,angebote){
  if(numbers.some(x=>!natural(x))||!natural(r.w3.fracht)||!natural(r.w4.erzJeCharge)
    ||!natural(r.w4.materialJeCharge)||!natural(r.w5.material))
    throw Error('W4/W5: Originalbestand oder Fertigungsrezept ist ungültig');
- const w3Paid=Object.entries(s.kanon.buch?.summen||{})
-   .filter(([key])=>/^(erz|w3-|industrie|k7-)/.test(key)).map(([key,amount])=>({key,amount}));
  const signierteErzVertraege=ore.abgeschlossen;
  const auftrag=ore.auftrag?'Erzfracht wird wirklich transportiert':
    refinery.auftrag?'Nadir-Raffinerie arbeitet an einer finanzierten Charge':
@@ -47,7 +45,6 @@ function auswerten(w,s,angebote){
   hausKaufpreis:r.economy.waren.frachter.basis,
   hausKaufbereit:buyer.ok===true,hausKaufgrund:buyer.reason||null,
   hausKaufId:'buy-st_nadir-frachter',produktionslage:auftrag,
-  transportLohnGedeckt:s.owners.transport.cash>=0,
   ledger:Object.freeze({erzMined:s.ledger.erz.mined,materialProduced:s.ledger.material.produced,
     materialConsumed:s.ledger.material.consumed,freighterProduced:s.ledger.frachter.produced}),
   kaufberechtigt:stock>0&&house>=r.economy.waren.frachter.basis&&buyer.ok===true});

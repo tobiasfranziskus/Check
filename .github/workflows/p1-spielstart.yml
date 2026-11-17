@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: '22'
       - name: "P1 realer Regel195-Spielstart und bezahlter F6-Minerflug"
-        run: node --test tests/p1-spieleinstieg.test.mjs tests/p2-zielsteuerung.test.mjs tests/p4-karriere-patrouille.test.mjs tests/p4-karriere-duell.test.mjs tests/p1-managerakademie.test.mjs tests/tutorial-pilot-core.test.mjs tests/p1-pilot-integration.test.mjs tests/p2-flugpruefung.test.mjs tests/p3-handelsweg.test.mjs tests/p3-reinvestition.test.mjs
+        run: node --test tests/p1-spieleinstieg.test.mjs tests/p2-zielsteuerung.test.mjs tests/p4-karriere-patrouille.test.mjs tests/p4-karriere-duell.test.mjs tests/p1-managerakademie.test.mjs tests/tutorial-pilot-core.test.mjs tests/p1-pilot-integration.test.mjs tests/p2-flugpruefung.test.mjs tests/p3-handelsweg.test.mjs tests/p3-reinvestition.test.mjs tests/p3-wasserlohn.test.mjs
       - name: "Öffentliche Root-Navigation reproduzierbar; NAS-W0–W5 unverändert"
         run: node scripts/build-w5-singlefile.mjs --check
   real-game-browser:

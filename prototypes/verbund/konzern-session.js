@@ -23,8 +23,25 @@ function paket(text){
  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Ungültiges Zustandsobjekt');
  return raw;
 }
-function haushaltPlan(s){
+function haushaltPlan(s,welt){
  const plan=[],hinzu=(id,label,cmd)=>plan.push(Object.freeze({id,label,befehl:Object.freeze({...cmd,owner:'house'})}));
+ // Only the player's actually earned PRIVATE pilot wages can fund personal water use.
+ // The 204 world already implements householdBuy, local water stock and exact ledger
+ // transfers; no new buyer budget, revenue, economic rule or household authority.
+ const w5n=welt?.rules?.w5n,preis=W.DATEN.wasser.preisAldera;
+ if(s.rulesVersion===204 && w5n && Number.isSafeInteger(preis) && preis>0
+    && s.owners.pilot_house && s.owners.st_aldera){
+   plan.push(Object.freeze({id:'water-pilot-house-1',
+     label:'Eine Einheit Aldera-Wasser aus persönlichem Pilotenlohn kaufen',
+     befehl:Object.freeze({type:'householdBuy',owner:'pilot_house',menge:1})}));
+   const ankauf=w5n.charge*w5n.eisPreis;
+   const fehl=Math.max(0,ankauf-s.owners.st_aldera.cash);
+   const menge=Math.ceil(fehl/preis);
+   if(fehl>0 && Number.isSafeInteger(menge) && menge>0)
+     plan.push(Object.freeze({id:'water-pilot-house-bedarf',
+       label:'Privaten Pilotenlohn für '+menge+' Einheiten Aldera-Wasser ausgeben',
+       befehl:Object.freeze({type:'householdBuy',owner:'pilot_house',menge})}));
+ }
  for(const sh of Object.values(s.ships).filter(x=>x.owner==='house'&&x.klasse==='miner').sort((a,b)=>a.id.localeCompare(b.id))){
    if(s.kanon.pendel?.[sh.id]){
      hinzu('stop-'+sh.id,'Eis-Pendel von '+sh.id+' beenden',{type:'shipShuttleStop',schiff:sh.id});
@@ -172,7 +189,7 @@ function erstellen(){
  }
  function angebote(){
    requireState();
-   return haushaltPlan(zustand).map(x=>{
+   return haushaltPlan(zustand,welt).map(x=>{
      const a=angebot(x.befehl);
      return Object.freeze({id:x.id,label:x.label,ok:a.ok,reason:a.reason});
    });
@@ -180,7 +197,7 @@ function erstellen(){
  function ausfuehren(id){
    requireState();
    if(typeof id!=='string')return {ok:false,reason:'Unbekannter Auftragswunsch'};
-   const plan=haushaltPlan(zustand).find(x=>x.id===id);
+   const plan=haushaltPlan(zustand,welt).find(x=>x.id===id);
    if(!plan)return {ok:false,reason:'Kein legitim auswählbarer Spielerauftrag'};
    const q=angebot(plan.befehl);
    if(!q.ok)return {ok:false,reason:q.reason};

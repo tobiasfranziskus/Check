@@ -314,7 +314,7 @@ function verbinden(B) {
       return;
     }
     const a = sz.aktiv, frei = a.lage === 'frei', jaeger = a.id === sz.jaeger && a.klasse === 'jaeger' && sz.regel === 204, d = B.duellStand(), p = B.patrouilleStand();
-    const LAGE = { angedockt: 'Im Dock', frei: ['orbit','folgen'].includes(a.modus) ? 'Autopilot: ' + (a.modus === 'orbit' ? 'Orbit' : 'Folgen') : a.modus === 'anflug' ? 'Autopilot: Anfliegen' : a.modus === 'hand' ? 'Handflug' : 'Freier Flug – Halt',
+    const LAGE = { angedockt: 'Im Dock', frei: ['orbit','folgen'].includes(a.modus) ? 'Autopilot: ' + a.modus : a.modus === 'anflug' ? 'Autopilot: Anfliegen' : a.modus === 'hand' ? 'Handflug' : 'Freier Flug – Halt',
       andocken: 'Dockt an …', abdocken: 'Legt ab …', transit: 'Transit' };
     const zielName = (z) => z ? z.art === 'punkt' ? 'Raumpunkt (' + fmt(z.x) + ', ' + fmt(z.y) + ')' : S.objekt(sz, z.id)?.name || 'Ziel nicht mehr verfügbar' : 'Kein Flugziel';
     const modus = a.modus === 'anflug' ? 'Autopilot: Anfliegen' : a.modus === 'orbit' ? 'Autopilot: Orbit · Radius ' + fmt(a.ziel?.radius) + ' P' : a.modus === 'folgen' ? 'Autopilot: Folgen · Abstand ' + fmt(a.ziel?.abstand) + ' P' : LAGE[a.lage];

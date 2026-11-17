@@ -31,7 +31,7 @@ const server=http.createServer((req,res)=>{
     await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/spiel/index.html"]').tap();
     // The navigation may complete before all bottom-of-body JavaScript listeners
     // have been installed. Wait for actual document load BEFORE the mobile tap.
-    await page.waitForURL(/\\/prototypes\\/spiel\\/index[.]html/);
+    await page.waitForURL('**/prototypes/spiel/index.html');
     await page.waitForLoadState('load');
     await page.locator('#neues-spiel').tap();
     await page.locator('#briefing').waitFor({state:'visible'});

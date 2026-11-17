@@ -185,6 +185,44 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
    /nur in Aldera/,'the real legal flight blocker must be visible');
   assert.equal(w.hash(w.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),hash,
    'read-only ownership and pilot-permission labels must preserve the world hash');
+  let transferReady=await page.locator('#p3-industrie-transfer').isEnabled();
+  for(let i=0;i<24&&!transferReady;i++){
+   await page.locator('#p3-industrie-zeit').tap();
+   transferReady=await page.locator('#p3-industrie-transfer').isEnabled();
+  }
+  assert.equal(transferReady,true,'real owner-funded W5ac transfer quote available after finite original NPC contracts');
+  const preTransfer=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  await page.locator('#p3-industrie-transfer').tap();
+  const signedTransfer=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+  const inTransit=JSON.parse(signedTransfer);
+  const active=inTransit.w5ac.active;
+  assert.equal(active.id,newShips[0].id);
+  assert.equal(active.owner,'house');
+  assert.ok(active.kosten>0&&active.minuten>0,'flight wages cannot be free');
+  assert.equal(inTransit.owners.house.cash,preTransfer.owners.house.cash-active.kosten);
+  assert.equal(w.audit(w.load(signedTransfer)).ok,true);
+  assert.equal(await page.locator('#p3-industrie-cockpit').isDisabled(),true,
+   'in-transit freighter may not enter a free cockpit');
+  for(let i=0;i<Math.ceil(active.minuten/60)+1;i++){
+   const check=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+   if(check.w5ac.completed.some(x=>x.id===newShips[0].id))break;
+   await page.locator('#p3-industrie-zeit').tap();
+  }
+  const arrivedJSON=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+  const arrived=JSON.parse(arrivedJSON);
+  assert.ok(arrived.w5ac.completed.some(x=>x.id===newShips[0].id&&x.owner==='house'
+   &&x.kosten===active.kosten),'original paid W5ac arrival receipt');
+  assert.equal(arrived.ships[newShips[0].id].system,'aldera');
+  assert.equal(arrived.ships[newShips[0].id].owner,'house');
+  assert.equal(await page.locator('#p3-industrie-cockpit').isEnabled(),true,
+   'valid Aldera arrival unlocks unchanged original pilot gate');
+  assert.equal(w.audit(w.load(arrivedJSON)).ok,true);
+  const arrivalHash=w.hash(w.load(arrivedJSON));
+  await page.locator('#p3-industrie-cockpit').tap();
+  assert.equal(await page.locator('#raumbereich').isVisible(),true);
+  assert.match(await page.locator('#raum-schiff').textContent(),/Frachter/i);
+  assert.equal(w.hash(w.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),arrivalHash,
+   'same-world pilot selection alone must not change money or goods');
   assert.deepEqual(errors,[]);
   console.log('P3_W4_W5_INDUSTRY_BROWSER_OK',JSON.stringify({
    kind,width,height,tick:after.tick,ship:newShips[0].id,

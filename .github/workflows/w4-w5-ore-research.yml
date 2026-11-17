@@ -1,0 +1,20 @@
+name: "W4/W5 Original-Erz-/Werftkette – Diagnose"
+on:
+  pull_request:
+    paths:
+      - "tests/w4-w5-ore-research.test.mjs"
+      - ".github/workflows/w4-w5-ore-research.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  s02-trace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original-NPC-Erztransport, Raffinerie, Werft, Echtgeld-Kaufpruefung
+        run: node --test tests/w4-w5-ore-research.test.mjs

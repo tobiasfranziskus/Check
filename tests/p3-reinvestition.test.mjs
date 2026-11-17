@@ -102,7 +102,7 @@ test('P3: audit real two-round earnings, asset depreciation and reinvestment quo
 
  }
  const good=j.exportieren(),fake=JSON.parse(good);
- fake.owners.house.cash+=600;fake.owners.st_aldera.cash-=600;
+ fake.owners.house.cash+=100;fake.owners.st_aldera.cash-=100;
  assert.equal(Object.values(fake.owners).reduce((n,o)=>n+o.cash,0),33000);
  assert.throws(()=>J8.erstellen().oeffnen204(JSON.stringify(fake),true),
    'unbacked owner transfer is forbidden even with conserved world money');

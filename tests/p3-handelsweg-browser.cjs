@@ -40,7 +40,7 @@ const server=http.createServer((req,res)=>{
      assert.equal(w.audit(w.load(json)).ok,true);
      assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),33000);
      assert.equal(s.minted,0);assert.equal(s.burned,0);
-     const completed=s.kanon.spielerFrachten.auftraege.filter(a=>a.end!==null&&a.geliefert!==null).length;
+     const completed=(s.kanon.spielerFrachten?.auftraege||[]).filter(a=>a.end!==null&&a.geliefert!==null).length;
      if(completed>=2)break;
      assert.equal(await page.locator('#p3-handelsaktion').isEnabled(),true,
        'Original P3 offer blocked after '+completed+' deliveries: '+await page.locator('#p3-handelssperre').textContent());

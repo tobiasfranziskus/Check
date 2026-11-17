@@ -1476,6 +1476,12 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     function audit(state, fehler) {
       const k = state.kanon, n = k.npc;
       if (k.npcAuto !== undefined && typeof k.npcAuto !== 'boolean') fehler.push('W6-Firmenpolitik: ungültige Einstellung');
+      // Auch ALT-Saves ohne NPC-Buch muessen fremde P8h-Felder verweigern:
+      // dieser Check steht deshalb VOR dem historischen Early-Return.
+      if(k.npcMaterialKette!==undefined
+        &&(!p8dFracht||typeof k.npcMaterialKette!=='boolean'||!n
+          ||k.npcAuto===undefined||k.materialSupplyEnabled!==true))
+        fehler.push('P8h: NPC-Folgeversorgung ungueltig oder ohne Originalfreigabe');
       // Save-Manipulationsschutz: Ein neues P5-Feld ohne das autonome
       // Original-Entscheidungsbuch ist kein gueltiger optionaler Altstand.
       if (n === undefined) {
@@ -1506,10 +1512,6 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           || (p8dFracht&&(key.startsWith('transport: ')||key.startsWith('werft_extern: '))))
           && key.length > 8;
       };
-      if(k.npcMaterialKette!==undefined
-        &&(!p8dFracht||typeof k.npcMaterialKette!=='boolean'||!n
-          ||k.npcAuto===undefined||k.materialSupplyEnabled!==true))
-        fehler.push('P8h: NPC-Folgeversorgung ungueltig oder ohne Originalfreigabe');
       const ziel=k.npcSilizium, wm=k.minerWerft;
       if(ziel!==undefined && (!ziel || typeof ziel!=='object' || Array.isArray(ziel)
         || Object.keys(ziel).sort().join()!=='aktiv,werftauftrag'

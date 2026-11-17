@@ -135,11 +135,15 @@ test('P3: original prepaid owner W5ac ferry brings factory hull to Aldera, then 
    quote=j.angebote().find(x=>x.id===transfer);
  }
  assert.equal(quote?.ok,true,'original transfer must become legal: '+quote?.reason);
+ assert.ok(Number.isSafeInteger(quote.kosten)&&quote.kosten>0);
+ assert.ok(Number.isSafeInteger(quote.minuten)&&quote.minuten>0);
  const before=clean(w,j.zustandReferenz()),cash=before.owners.house.cash;
  const start=j.ausfuehren(transfer);
  assert.equal(start.ok,true,JSON.stringify(start));
  const active=j.zustandReferenz().w5ac.active;
  assert.equal(active.id,ship.id);assert.equal(active.owner,'house');
+ assert.equal(active.kosten,quote.kosten,'displayed price is the original escrow amount');
+ assert.equal(active.minuten,quote.minuten,'displayed duration comes from the original contract');
  assert.ok(active.kosten>0&&active.minuten>0);
  assert.equal(j.zustandReferenz().owners.house.cash,cash-active.kosten,
    'real pilot wages were reserved before travel');

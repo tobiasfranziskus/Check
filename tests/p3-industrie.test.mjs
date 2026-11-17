@@ -145,6 +145,10 @@ test('P3: original prepaid owner W5ac ferry brings factory hull to Aldera, then 
    'real pilot wages were reserved before travel');
  assert.equal(j.ausfuehren(transfer).ok,false,'active ferry cannot be sold a second time');
  clean(w,j.zustandReferenz());
+ const transitSave=j.exportieren(),transitCopy=J8.erstellen();
+ transitCopy.oeffnen204(transitSave,true);
+ assert.equal(transitCopy.exportieren(),transitSave,'prepaid voyage and escrow survive cold Save/Load');
+ assert.equal(w.hash(transitCopy.zustandReferenz()),w.hash(j.zustandReferenz()));
  let remaining=active.minuten;
  while(remaining>0){const step=remaining>=60?60:remaining>=10?10:1;
   j.weiterspielen(step);remaining-=step;}

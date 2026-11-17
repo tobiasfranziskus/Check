@@ -251,6 +251,31 @@ function handelswegAnzeigen(s,angebote){
  $('p3-handelssperre').textContent=p.grund?'Gesperrt: '+anzeigetext(p.grund):
   'Nur Originalangebote aus deinem Eigentum. Keine Abnahmegarantie und keine geschenkten Waren.';
 }
+// P3: exactly the Core's legal quote; asset view is read-only, not a second economy.
+function investitionAnzeigen(s,angebote){
+ const host=$('p3-investition');
+ if(!host||!scope.P3Investition)return;
+ const p=scope.P3Investition.auswerten(session.weltReferenz(),s,angebote);
+ host.hidden=!p.sichtbar;
+ if(!p.sichtbar)return;
+ const vorzeichen=p.veraenderung>=0?'+':'';
+ $('p3-invest-bilanz').textContent='Kasse '+fmt(p.kasse)+' ISK + Original-Schiffsbuchwerte '+
+   fmt(p.buchwert)+' ISK = '+fmt(p.vermoegen)+' ISK · gegenüber der Standardstartkasse '+
+   vorzeichen+fmt(p.veraenderung)+' ISK (Schiffsverschleiß berücksichtigt).';
+ $('p3-invest-markt').textContent='Aldera: '+fmt(p.lagerMiner)+' Miner im echten Werftlager · '+ 
+   fmt(p.alderakasse)+' ISK Käuferkasse · '+fmt(p.eis)+' Eis im Stationslager. '+
+   'Diese Käufermittel können aufgebraucht werden.';
+ $('p3-invest-ziel').textContent=p.art==='kaufen'?
+   'Zusätzlichen Miner für '+fmt(p.preis)+' ISK erwerben oder Kapital sparen':
+   p.art==='arbeiten'?'Deinen zusätzlich gekauften Miner in Arbeit schicken':
+   'Zusätzlicher Miner beauftragt – reale Abnahme abwarten';
+ $('p3-invest-hinweis').textContent=p.hinweis;
+ const b=$('p3-invest-aktion');b.disabled=!p.bereit;
+ b.textContent=p.art==='kaufen'?'Miner verbindlich kaufen ('+fmt(p.preis)+' ISK)':
+   p.art==='arbeiten'?'Original-Eisförderung beauftragen':'Auftrag bereits vorhanden';
+ $('p3-invest-sperre').textContent=p.grund?'Gesperrt: '+anzeigetext(p.grund):
+   'Kaufen und Sparen sind deine Entscheidung. Kein kostenloses Schiff und kein garantierter Abnehmer.';
+}
 // J12: read-only station and company report from the SAME validated Rule204 session.
 // No separate economy, NPC signatures, speculative prices, or unvalidated purchase paths.
 function tabZeigen(name){
@@ -502,6 +527,7 @@ function anzeigen(){
   box.append(button,small);return box;
  }));
  handelswegAnzeigen(s,alleAngebote);
+ investitionAnzeigen(s,alleAngebote);
  wirtschaftsbericht(a,s,alleAngebote);
  jaegerBericht(s,alleAngebote);
  jaegerBeitraege();
@@ -706,6 +732,17 @@ $('p3-handelsaktion')?.addEventListener('click',()=>{
   if(p.art==='zeit')weiter(60); // The same paid world-step as the existing clock button.
   else if(p.art==='auftrag'&&p.aktion)auftrag(p.aktion); // Original validated J8 command.
  }catch(e){hinweis('Handelsauftrag gesperrt: '+error(e),true);anzeigen();}
+});
+$('p3-invest-aktion')?.addEventListener('click',()=>{
+ if(!session||!scope.P3Investition)return;
+ try{
+  // Observe the current audited world and current quote again before every click.
+  const p=scope.P3Investition.auswerten(session.weltReferenz(),
+    session.zustandReferenz(),session.angebote());
+  if(!p.sichtbar||!p.bereit||!p.aktion)
+    throw Error(p.grund||'Kein rechtmäßig finanzierter Investitionsauftrag');
+  auftrag(p.aktion); // The established J8 owner/stock/budget validation and autosave.
+ }catch(e){hinweis('Investition gesperrt: '+error(e),true);anzeigen();}
 });
 $('jaeger-kaufweg').addEventListener('click',()=>{
  if(!session)return;

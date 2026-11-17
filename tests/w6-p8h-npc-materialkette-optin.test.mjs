@@ -63,10 +63,24 @@ test('P8h: S02x90 aktiviert rechtmaessige automatische Ersatzkette – nur eine 
  assert.deepEqual(a.belege,b.belege);
  assert.equal(a.w3Neu,1,'neue reale finanzierte W3-Materialfracht');
  assert.equal(a.werftNeu,1,'keine unnoetige zweite W5-Huelle');
- for(const cmd of ['werft_extern:stationBuildShip','transport:shipBuy',
-   'st_nadir:industrialOreOfferMaterial','npc3:industrialOreAcceptMine',
-   'transport:industrialOreAcceptFreight','st_nadir:industrialOreCommitMaterial'])
+ // Der bereits produktive K7-Disponent DARF seinen eigenen rechtsgueltigen
+ // Materialvertrag zuerst ausfuehren. P8h muss die fehlende W5-Huelle bezahlen,
+ // nicht denselben Vertrag ein zweites Mal signieren.
+ for(const cmd of ['werft_extern:stationBuildShip','transport:shipBuy'])
    assert.equal(a.belege[cmd],1,cmd+' genau einmal mit Originaleigentum');
+ assert.equal(a.s.kanon.industrieErz.phase,'geliefert',
+   'Original-K7-Vertrag muss eine echte Lieferung erhalten haben');
+ assert.equal(a.s.kanon.industrieErz.materialOnly,true);
+ assert.equal(a.s.kanon.industrieErz.signMiner,true,
+   'Bergbaufirma hat ihren Originalvertrag signiert');
+ assert.equal(a.s.kanon.industrieErz.signFracht,true,
+   'Spedition hat die Originalfracht eigenstaendig signiert');
+ assert.equal(a.s.kanon.industrieErz.erzAngenommen,true,
+   'Industriekaeufer hat die physische Ware abgenommen');
+ const p8hAngebote=a.belege['st_nadir:industrialOreOfferMaterial']||0;
+ assert.ok(p8hAngebote<=1,'Keine doppelte Materialbestellung durch P8h');
+ assert.equal(a.s.w3.abgeschlossen,a.basis.w3+1,
+   '50 Erz durch wirklichen autoritativen Original-W3-Vertrag geliefert');
  // Die bereits vorhandene W5-Industrie kann die Ueberfuehrung rechtmaessig
  // selbst ausloesen. Nicht den Quellenpfad vorschreiben, sondern 60 echte
  // bezahlte Original-Pilotenminuten fuer die NEUE Huelle nachweisen.

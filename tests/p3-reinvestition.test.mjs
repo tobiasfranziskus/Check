@@ -7,6 +7,7 @@ const require=createRequire(import.meta.url);
 const W5=require('../prototypes/w5ac/session.js');
 const J8=require('../prototypes/verbund/konzern-session.js');
 const P3=require('../prototypes/spiel/p3-handelsweg.js');
+const Invest=require('../prototypes/spiel/p3-investition.js');
 const start=()=>{const j=J8.erstellen();j.starten195(W5.create(42,'private195').export(),true);return j;};
 function snapshot(j,label){
  const s=j.zustandReferenz(),w=j.weltReferenz();
@@ -39,6 +40,12 @@ test('P3: audit real two-round earnings, asset depreciation and reinvestment quo
  }
  assert.equal(finished,2);
  const final=snapshot(j,'two-freights');
+ const investTwo=Invest.auswerten(j.weltReferenz(),j.zustandReferenz(),j.angebote());
+ assert.equal(investTwo.sichtbar,true);
+ assert.equal(investTwo.veraenderung,525);
+ assert.equal(investTwo.deckend,false);
+ assert.equal(investTwo.bereit,true,'real ship can be bought even if earned surplus is < 600');
+
  assert.equal(final.house,2310);
  assert.equal(final.equity>=0,true);
  const available=final.offers.filter(x=>x.id.startsWith('buy-')&&x.ok);
@@ -53,12 +60,25 @@ test('P3: audit real two-round earnings, asset depreciation and reinvestment quo
  }
  assert.equal(P3.auswerten(j.zustandReferenz(),j.angebote()).abgeschlossen,3);
  const third=snapshot(j,'three-freights');
+ const investThree=Invest.auswerten(j.weltReferenz(),j.zustandReferenz(),j.angebote());
+ assert.equal(investThree.deckend,true);
+ assert.equal(investThree.veraenderung,751);
+ assert.equal(investThree.preis,600);
+ assert.equal(investThree.bereit,true);
+ assert.equal(investThree.alderakasse,258);
+
  const originalShipIds=new Set(Object.keys(j.zustandReferenz().ships));
  const investment=j.angebote().find(a=>a.id==='buy-st_aldera-miner');
  assert.equal(investment?.ok,true,investment?.reason);
  const receipt=j.ausfuehren(investment.id);
  assert.equal(receipt.ok,true,JSON.stringify(receipt));
  const after=snapshot(j,'after-investment');
+ const invested=Invest.auswerten(j.weltReferenz(),j.zustandReferenz(),j.angebote());
+ assert.equal(invested.art,'arbeiten');
+ assert.equal(invested.bereit,true,'new miner genuinely admits a funded original pendulum job');
+ assert.equal(invested.miner,2);
+ assert.equal(invested.lagerMiner,1);
+
  const newMiner=Object.values(j.zustandReferenz().ships)
   .find(sh=>sh.owner==='house'&&sh.klasse==='miner'&&!originalShipIds.has(sh.id));
  assert.ok(newMiner,'real new ship owned by house');
@@ -74,6 +94,17 @@ test('P3: audit real two-round earnings, asset depreciation and reinvestment quo
   const begin=j.ausfuehren(newJob.id);assert.equal(begin.ok,true,JSON.stringify(begin));
   j.weiterspielen(60);
   snapshot(j,'second-miner-first-paid-work');
+  const waiting=Invest.auswerten(j.weltReferenz(),j.zustandReferenz(),j.angebote());
+  assert.equal(waiting.art,'wartet');
+  assert.equal(waiting.bereit,false);
+  assert.equal(j.weltReferenz().buchwert(j.zustandReferenz(),newMiner.id),600,
+    'newly owned miner waits when station stock/buyer budget prevents new mining');
+
  }
- const exported=j.exportieren(),again=J8.erstellen();again.oeffnen204(exported,true);assert.equal(again.exportieren(),exported);
+ const good=j.exportieren(),fake=JSON.parse(good);
+ fake.owners.house.cash+=600;fake.owners.st_aldera.cash-=600;
+ assert.equal(Object.values(fake.owners).reduce((n,o)=>n+o.cash,0),33000);
+ assert.throws(()=>J8.erstellen().oeffnen204(JSON.stringify(fake),true),
+   'unbacked owner transfer is forbidden even with conserved world money');
+ const exported=good,again=J8.erstellen();again.oeffnen204(exported,true);assert.equal(again.exportieren(),exported);
 });

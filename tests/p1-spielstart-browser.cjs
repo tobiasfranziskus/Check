@@ -97,7 +97,19 @@ async function w6Optin(browser,base,width,height,kind){
   assert.equal(s.tick,0);assert.equal(s.owners.house.cash,3000);
   assert.equal(w.audit(w.load(raw)).ok,true);
   assert.equal(Object.values(s.owners).reduce((a,o)=>a+o.cash,0),33000);
-  await page.locator('[data-advance="60"]').tap();
+  assert.equal(await page.locator('#p3-npc-werft').isVisible(),true,
+    'S02 player sees independently financed NPC freight company');
+  assert.match(await page.locator('#p3-npc-werft-kassen').textContent(),/Asterion: 2[.]000 ISK/);
+  assert.match(await page.locator('#p3-npc-werft-flotte').textContent(),/0 Frachter/);
+  assert.equal(await page.locator('#p3-npc-werft-aktion').isEnabled(),true);
+  await page.locator('#p3-npc-werft-aktion').tap();
+  const receipt=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  assert.equal(receipt.tick,60,'button uses precisely one original world advance');
+  assert.ok(Object.values(receipt.ships).some(sh=>sh.owner==='transport'&&sh.klasse==='frachter'),
+    'NPC spends real company cash to acquire its own first physical hull');
+  assert.equal(receipt.owners.house.cash,3000);
+  assert.equal(w.audit(w.load(JSON.stringify(receipt))).ok,true);
+  assert.match(await page.locator('#p3-npc-werft-flotte').textContent(),/Asterion besitzt [1-9]/);
   await page.locator('[data-advance="1440"]').tap();
   const after=await page.evaluate(k=>localStorage.getItem(k),SLOT),s2=JSON.parse(after);
   assert.equal(s2.tick,1500,'+1 Spieltag verwendet exakt 24 Original-60-Minuten-Schritte');
@@ -107,6 +119,7 @@ async function w6Optin(browser,base,width,height,kind){
   await page.reload();
   await page.locator('#fortsetzen').tap();
   assert.equal(await page.locator('#w6-status').isVisible(),true);
+  assert.equal(await page.locator('#p3-npc-werft').isVisible(),true);
   assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),after,
     'W6-Save wird bei Resume weder migriert noch still veraendert');
   assert.deepEqual(errors,[]);

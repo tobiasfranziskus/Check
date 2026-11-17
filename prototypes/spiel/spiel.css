@@ -191,3 +191,8 @@ body.raum-aktiv .world{display:none}
 .p3-npc-markt{border-color:#637e90;background:#112a38e8}
 .p3-npc-markt .p3-zahlen{color:#9ad7e7}
 .p3-npc-markt .p3-einschraenkung{font-size:.74rem;color:#acbfc9;line-height:1.48}
+
+/* W6 S02: owned NPC freight and shipyard receipts, same touch affordances. */
+.p3-npc-werft{border-color:#7f7398;background:#1b253bdc}
+.p3-npc-werft .p3-zahlen{color:#c7d8fa}
+.p3-npc-werft .p3-einschraenkung{font-size:.74rem;color:#acbfc9;line-height:1.45}

@@ -43,5 +43,37 @@ test('P3: audit real two-round earnings, asset depreciation and reinvestment quo
  assert.equal(final.equity>=0,true);
  const available=final.offers.filter(x=>x.id.startsWith('buy-')&&x.ok);
  console.log('P3_REINVEST_OPTIONS '+JSON.stringify({investments:available,houseCashGrowth:final.house-init.house,houseEquityGrowth:final.equity-init.equity,freightRounds:final.freight.auftraege.length,elapsed:final.tick,assets:final.assets,prior:history.map(h=>({tick:h.tick,equity:h.equity,house:h.house}))}));
+ // Three genuine rounds may finance an entire next miner from earned asset-adjusted surplus.
+ for(let i=0;i<10;i++){
+  const p=P3.auswerten(j.zustandReferenz(),j.angebote());
+  if(p.abgeschlossen>=3)break;
+  assert.equal(p.bereit,true,p.grund||p.titel);
+  if(p.art==='zeit')j.weiterspielen(60);
+  else assert.equal(j.ausfuehren(p.aktion).ok,true);
+ }
+ assert.equal(P3.auswerten(j.zustandReferenz(),j.angebote()).abgeschlossen,3);
+ const third=snapshot(j,'three-freights');
+ const originalShipIds=new Set(Object.keys(j.zustandReferenz().ships));
+ const investment=j.angebote().find(a=>a.id==='buy-st_aldera-miner');
+ assert.equal(investment?.ok,true,investment?.reason);
+ const receipt=j.ausfuehren(investment.id);
+ assert.equal(receipt.ok,true,JSON.stringify(receipt));
+ const after=snapshot(j,'after-investment');
+ const newMiner=Object.values(j.zustandReferenz().ships)
+  .find(sh=>sh.owner==='house'&&sh.klasse==='miner'&&!originalShipIds.has(sh.id));
+ assert.ok(newMiner,'real new ship owned by house');
+ assert.equal(after.house,third.house-600,'original 600 ISK transfer');
+ assert.equal(after.equity,third.equity,'fully paid new 600-ISK hull replaces 600-ISK cash at purchase');
+ const newJob=j.angebote().find(a=>a.id==='ice-'+newMiner.id);
+ console.log('P3_REINVEST_OUTCOME '+JSON.stringify({
+  beforeInvestment:third.equity,afterInvestment:after.equity,earnedSurplus:third.equity-init.equity,
+  newMiner:newMiner.id,remainingMinerStock:after.stock.aldera.miner,
+  originalMiningOffer:newJob||null,freeBuyerCash:j.zustandReferenz().owners.st_aldera.cash
+ }));
+ if(newJob?.ok){
+  const begin=j.ausfuehren(newJob.id);assert.equal(begin.ok,true,JSON.stringify(begin));
+  j.weiterspielen(60);
+  snapshot(j,'second-miner-first-paid-work');
+ }
  const exported=j.exportieren(),again=J8.erstellen();again.oeffnen204(exported,true);assert.equal(again.exportieren(),exported);
 });

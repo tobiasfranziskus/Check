@@ -52,3 +52,41 @@ test('trace real NPC water demand after Aldera buyer market freeze and first div
  assert.equal(j.weltReferenz().audit(j.zustandReferenz()).ok,true);
  // A negative result MUST NOT be disguised as a guaranteed market rescue.
 });
+
+test('NPC water income supports next original player-owned freight, without player purchasing water',()=>{
+ const j=J8.erstellen();j.starten195(W5.create(42,'private195').export(),true);
+ for(let i=0;i<95;i++){
+  const p=P3.auswerten(j.zustandReferenz(),j.angebote(),j.weltReferenz());
+  if(!p.bereit)break;
+  if(p.art==='zeit')j.weiterspielen(60);
+  else assert.equal(j.ausfuehren(p.aktion).ok,true,p.aktion);
+ }
+ const before=inspect(j,'player-freight-before-npc'),initialRounds=before.rounds,initialBuyer=before.aldera;
+ let contract=null;
+ for(let i=0;i<22;i++){
+  const p=P3.auswerten(j.zustandReferenz(),j.angebote(),j.weltReferenz());
+  if(p.art==='auftrag'&&p.aktion?.startsWith('freight-')&&p.bereit){
+   const tick=j.zustandReferenz().tick;
+   const result=j.ausfuehren(p.aktion);assert.equal(result.ok,true,JSON.stringify(result));
+   contract={tick,id:p.aktion,buyer:j.zustandReferenz().owners.st_aldera.cash};
+   j.weiterspielen(60);j.weiterspielen(60);break;
+  }
+  j.weiterspielen(60);
+ }
+ const after=inspect(j,'player-freight-after-npc'),s=j.zustandReferenz();
+ assert.ok(contract,'an ORIGINAL paid freight must be possible from a real batch');
+ assert.equal(after.rounds,initialRounds+1,'one more actual dock-returned original F4');
+ assert.equal(s.kanon.buch?.summen?.['wasser-einzelhandel|pilot_house|st_aldera']||0,0,
+  'no manual or hidden pilot_house consumer spending');
+ const grossNpcSales=(s.kanon.buch?.summen?.['wasser-einzelhandel|pilot_npc3|st_aldera']||0)
+  +(s.kanon.buch?.summen?.['wasser-einzelhandel|fonds_aldera|st_aldera']||0)
+  +(s.kanon.buch?.summen?.['wasser-einzelhandel|eigner_npc3|st_aldera']||0);
+ assert.ok(grossNpcSales>0,'real financed NPC households must buy actual local water');
+ assert.equal(money(s),33000);assert.equal(s.minted,0);assert.equal(s.burned,0);
+ const json=j.exportieren(),loaded=J8.erstellen();loaded.oeffnen204(json,true);
+ assert.equal(loaded.exportieren(),json);
+ console.log('P3_NPC_FREIGHT_OK '+JSON.stringify({beforeTick:before.tick,contract,
+  buyerBefore:initialBuyer,afterTick:after.tick,npcWaterCash:grossNpcSales,
+  afterRounds:after.rounds,privateConsumption:0,ledger:s.kanon.buch?.summen?.['dividende|npc3|eigner_npc3']||0,
+  world:money(s),hash:j.weltReferenz().hash(s)}));
+});

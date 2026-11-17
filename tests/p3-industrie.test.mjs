@@ -55,7 +55,12 @@ test('P3: first complete original W3→W4→W5 production ends in legal player-o
  assert.equal(p2.kaufberechtigt,false,'sold-out hull cannot be purchased twice');
  assert.equal(p2.werftSpielerSchiffId,bought[0].id,'only original W5-origin house hull is eligible');
  assert.equal(p2.werftSpielerAnzahl,1);
- assert.ok(j.piloten().some(x=>x.id===bought[0].id),'existing flight gate sees purchased hull');
+ const flug=j.piloten().find(x=>x.id===bought[0].id);
+ assert.ok(flug,'existing flight gate sees purchased hull');
+ assert.equal(flug.erlaubt,false,'do not circumvent the pre-existing Nadir free-flight lock');
+ assert.match(flug.grund,/nur in Aldera/);
+ const verkaufHash=w.hash(after);
+ assert.equal(w.hash(j.zustandReferenz()),verkaufHash,'read-only pilot gate must not mutate the original world');
  assert.equal(after.w5.fertig,before.w5.fertig,'ship transfer is not a free additional build');
  assert.equal(after.ledger.frachter.produced,before.ledger.frachter.produced);
  assert.equal(after.ledger.frachter.consumed,before.ledger.frachter.consumed+1);

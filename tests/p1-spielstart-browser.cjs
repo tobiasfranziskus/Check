@@ -127,6 +127,62 @@ async function w6Optin(browser,base,width,height,kind){
     tick:s2.tick,hash:w.hash(w.load(after)),weltgeld:33000,originalHaus:3000}));
  }finally{await context.close();}
 }
+// P3/W4/W5: authentic paid NPC industry supplies a ship the player may BUY.
+// No staged warehouse, no scripted NPC cash and no fake player production rights.
+async function w4w5IndustriePfad(browser,base,width,height,kind){
+ const context=await browser.newContext({viewport:{width,height},hasTouch:true});
+ const page=await context.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(String(e)));
+ try{
+  await page.goto(base+'/prototypes/spiel/index.html');
+  await page.locator('#neues-spiel').tap();
+  await page.locator('label[for="w6-npc-start"]').tap();
+  await page.locator('#karriere-starten').tap();
+  assert.equal(await page.locator('#p3-industrie').isVisible(),true,
+   'chapter appears only after choosing original S02 NPC career');
+  assert.equal(await page.locator('#p3-industrie-kauf').isDisabled(),true,
+   'no phantom hull at world start');
+  for(let i=0;i<5;i++)await page.locator('#p3-industrie-zeit').tap();
+  const raw=await page.evaluate(k=>localStorage.getItem(k),SLOT),s=JSON.parse(raw);
+  assert.equal(s.tick,300,'five original 60-minute economic steps');
+  assert.ok(s.w3.abgeschlossen>=1&&s.w4.abgeschlossen>=1&&s.w5.fertig>=1);
+  assert.match(await page.locator('#p3-industrie-w3').textContent(),/Erzfrachten/);
+  assert.match(await page.locator('#p3-industrie-w4').textContent(),/Raffinerie/);
+  assert.match(await page.locator('#p3-industrie-w5').textContent(),/Schiffbau/);
+  assert.equal(s.stations.st_nadir.lager.frachter,1);
+  assert.equal(await page.locator('#p3-industrie-kauf').isEnabled(),true);
+  const ids=new Set(Object.keys(s.ships)),house=s.owners.house.cash;
+  await page.locator('#p3-industrie-kauf').tap();
+  const signed=await page.evaluate(k=>localStorage.getItem(k),SLOT),after=JSON.parse(signed);
+  const newShips=Object.values(after.ships).filter(sh=>!ids.has(sh.id));
+  assert.equal(newShips.length,1);
+  assert.equal(newShips[0].owner,'house');
+  assert.equal(newShips[0].klasse,'frachter');
+  assert.equal(newShips[0].system,'nadir');
+  assert.ok(after.w5.schiffIds.includes(newShips[0].id));
+  assert.equal(after.owners.house.cash,house-750);
+  assert.equal(after.stations.st_nadir.lager.frachter,0);
+  assert.equal(after.w5.fertig,s.w5.fertig,'purchase cannot conjure an additional factory hull');
+  assert.equal(after.ledger.frachter.consumed,s.ledger.frachter.consumed+1);
+  assert.equal(after.minted,0);assert.equal(after.burned,0);
+  assert.equal(Object.values(after.owners).reduce((n,o)=>n+o.cash,0),33000);
+  const w=W.erstellenJ4c({carrierCash:after.w5ad.profile.carrierCash,
+   buyerCash:after.w5ad.profile.buyerCash});
+  assert.equal(w.audit(w.load(signed)).ok,true);
+  assert.equal(await page.locator('#p3-industrie-kauf').isDisabled(),true,
+   'no double-purchase of the one finished hull');
+  const hash=w.hash(w.load(signed));
+  await page.reload();await page.locator('#fortsetzen').tap();
+  assert.equal(await page.locator('#p3-industrie').isVisible(),true);
+  assert.equal(w.hash(w.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),hash);
+  assert.deepEqual(errors,[]);
+  console.log('P3_W4_W5_INDUSTRY_BROWSER_OK',JSON.stringify({
+   kind,width,height,tick:after.tick,ship:newShips[0].id,
+   oreJobs:after.w3.abgeschlossen,refined:after.w4.abgeschlossen,
+   built:after.w5.fertig,paid:750,house:after.owners.house.cash,hash
+  }));
+ }finally{await context.close();}
+}
 // P4: a *previously legally purchased* original Rule204 fighter (900 ISK)
 // enters the very same public P1 career through the protected local save slot.
 // No toy purchase, fake ships, virtual currency, or second simulation.
@@ -631,6 +687,7 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
    await projektPfad(browser,base,width,height,kind);
    await siliziumPilot(browser,base,width,height,kind);
    await w6Optin(browser,base,width,height,kind);
+   await w4w5IndustriePfad(browser,base,width,height,kind);
    await karrierePatrouille(browser,base,width,height,kind);
    await karriereDuell(browser,base,width,height,kind);
    await managerAkademiePfad(browser,base,width,height,kind);

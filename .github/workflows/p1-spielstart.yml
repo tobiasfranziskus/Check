@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: '22'
       - name: "P1 realer Regel195-Spielstart und bezahlter F6-Minerflug"
-        run: node --test tests/p1-spieleinstieg.test.mjs tests/p2-zielsteuerung.test.mjs tests/p4-karriere-patrouille.test.mjs tests/p4-karriere-duell.test.mjs tests/p1-managerakademie.test.mjs tests/tutorial-pilot-core.test.mjs tests/p1-pilot-integration.test.mjs
+        run: node --test tests/p1-spieleinstieg.test.mjs tests/p2-zielsteuerung.test.mjs tests/p4-karriere-patrouille.test.mjs tests/p4-karriere-duell.test.mjs tests/p1-managerakademie.test.mjs tests/tutorial-pilot-core.test.mjs tests/p1-pilot-integration.test.mjs tests/p2-flugpruefung.test.mjs
       - name: "Öffentliche Root-Navigation reproduzierbar; NAS-W0–W5 unverändert"
         run: node scripts/build-w5-singlefile.mjs --check
   real-game-browser:
@@ -51,12 +51,17 @@ jobs:
         run: |
           npm install --no-save --prefix "$RUNNER_TEMP/p1-playwright" playwright@1.62.0
           node "$RUNNER_TEMP/p1-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
+      - name: "P2 Flugprüfung: fünf echte Etappen und Welt-Audit in vier Touchgrößen"
+        run: node tests/p2-flugpruefung-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/p1-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
       - name: "4 Touchgrößen: Root → Prolog → neue echte Karriere → bezahlter Miner → Cockpit → Save/Load"
         run: node tests/p1-spielstart-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/p1-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}
-      - name: "P1 Pilotenakademie: zwölf Originalflugübungen in vier Touchgrößen"
+      - name: "P1 Pilotenakademie: 13 Lektionen, ursprüngliche Flugübungen erhalten"
         run: node tests/tutorial-pilot-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/p1-playwright/node_modules/playwright

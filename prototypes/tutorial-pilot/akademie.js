@@ -16,7 +16,8 @@ const LEKTIONEN=Object.freeze([
  ['bergbau','Miner: echte Förderung','Miner','Übernimm deinen Miner. Starte einen bezahlten Siliziumauftrag, fliege ins Feld und fördere mindestens eine Einheit.'],
  ['fracht','Frachter: bezahlte Rundfahrt','Frachter','Beobachte deinen bereits angenommenen Eisfrachtauftrag bis zur Lieferung und bezahlten Rückkehr.'],
  ['patrouille','Jäger: Bojenpatrouille','Jäger','Starte im Nadir-Dock die Patrouille. Passiere drei Bojen langsam und kehre zum Dock zurück.'],
- ['duell','Jäger: Duelltraining','Jäger','Fliege im bezahlten freien Flug zur Übungsdrohne, starte das Duelltraining und besiege sie. Trefferpunkte sind virtuell; es entstehen keine realen Schäden oder Beute.']
+ ['duell','Jäger: Duelltraining','Jäger','Fliege im bezahlten freien Flug zur Übungsdrohne, starte das Duelltraining und besiege sie. Trefferpunkte sind virtuell; es entstehen keine realen Schäden oder Beute.'],
+ ['flugpruefung','Flugprüfung – vom Dock zum sicheren Rückflug','Alle','Übernimm dein gekauftes Schiff im Dock. Docke bezahlt ab, fliege ein Ziel per Autopilot an, halte einen ausdrücklich gewählten Orbit, ändere den Kurs von Hand und kehre zum Ausgangsdock zurück.']
 ].map(([id,titel,klasse,anleitung])=>Object.freeze({id,titel,klasse,anleitung})));
 const zeit=s=>s.tick*60+s.flug.schritt;
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -38,7 +39,7 @@ function erstellen(B){
    const klasse=id==='bergbau'?'miner':id==='fracht'?'frachter':'jaeger';
    if(sh.klasse!==klasse)return 'Übernimm einen gekauften '+({miner:'Miner',frachter:'Frachter',jaeger:'Jäger'}[klasse])+'.';
   }
-  if(id==='abdocken'){
+  if(['abdocken','flugpruefung'].includes(id)){
    if(b.lage!=='angedockt')return 'Kehre zuerst ins Dock zurück.';
    const a=B.angebot?.({type:'shipUndock',owner:'house',schiff:sh.id});
    if(!a?.ok)return a?.reason?.replace(/^[A-Z]\d+(?:\/[A-Z]\d+)?:\s*/, '')||'Ein rechtmäßig finanzierter Abdockflug ist erforderlich.';
@@ -67,8 +68,68 @@ function erstellen(B){
    ladung:r.sh.ladung?.silizium||0,gefoerdert:r.s.kanon.silizium?.gefoerdert||0,
    fracht:r.s.kanon.spielerFrachten?.auftraege?.find(x=>x.schiff===r.id&&x.end===null)?.start,
    system:r.sh.system,systemWechsel:false,trainingAlt:B[id+'Stand']?.()?.status,belege:[]};
+  if(id==='flugpruefung'){lauf.etappe=0;lauf.dock=b.anker;lauf.abflug=false;missionsText();}
   if(id==='auswahl')fertig('Gekauftes eigenes Schiff ist als Pilotenschiff ausgewählt.');
   return {ok:true};
+ }
+ // Only core seconds count; command snapshots can arm a newly selected target.
+ const ETAPPEN=[
+  'Abdocken: Tippe auf Abdocken und warte auf freien, finanzierten Flug.',
+  'Zielanflug: Wähle Station oder Feld und Autopilot: Anfliegen. Erreiche den Zielbereich.',
+  'Orbit: Wähle ein Ziel und ausdrücklich einen Radius (z. B. 120000 P). Halte ihn 30 Flugsekunden bei mindestens 0,3 rad Umkreisung.',
+  'Handflug: Übernimm den Orbit mit dem Knüppel. Ändere die tatsächliche Bewegungsrichtung um mindestens 0,3 rad.',
+  'Rückflug: Wähle die Ausgangsstation und Andocken. Warte auf die bestätigte Dockankunft.'
+ ];
+ function missionsText(){
+  const p=lauf;
+  p.meldung=p.belege.length+'/5 Etappen bestätigt · Etappe '+(p.etappe+1)+'/5 · '+ETAPPEN[p.etappe]
+   +(p.etappe===2?' Fortschritt: '+p.stabil+'/30 Flugsekunden, '+p.winkel.toFixed(2)+'/0,30 rad.':'');
+ }
+ function missionsEtappe(text){
+  const p=lauf;p.belege.push(text);p.etappe++;p.ziel=null;p.stabil=0;p.winkel=0;p.polar=null;
+  if(p.etappe===5){p.status='erfolgreich';p.meldung='5/5 Etappen bestätigt. Flugprüfung bestanden: sicher am Ausgangsdock zurück.';}
+ }
+ function mission(s,sh,b,v,dt,bewegung,dienst){
+  const p=lauf,w=B.welt();
+  if(!w.audit(s).ok){fehler('Eigentums- und Kassenprüfung fehlgeschlagen.');return;}
+  if(sh.system!==p.system){fehler('Das Prüfungssystem wurde verlassen.');return;}
+  if(p.etappe>0&&b.lage==='angedockt'&&p.etappe<4){fehler('Vor Abschluss der Flugaufgaben angedockt.');return;}
+  if(b.lage!=='angedockt'&&!dienst){fehler('Der finanzierte Flugdienst fehlt.');return;}
+  const z=b.ziel,sys=w.flugKern.DATEN.systeme[sh.system];
+  const ziel=z?.art==='station'?sys.station:z?.art==='feld'?sys.felder.find(f=>f.id===z.id):null;
+  if(p.etappe===0){
+   if(b.lage==='abdocken')p.abflug=true;
+   if(dt===1&&p.abflug&&b.lage==='frei'&&dienst)missionsEtappe('Regulär und finanziert vom Ausgangsdock abgedockt.');
+  }else if(p.etappe===1){
+   if(dt===1&&b.lage==='frei'&&b.modus==='anflug'&&!b.andocken&&ziel&&bewegung>0
+     &&dist(b,ziel)<dist(v,ziel)&&dist(b,ziel)<=(ziel.radius||w.flugKern.DATEN.andocken.radius))
+    missionsEtappe('Gewähltes Ziel im Original-Autopiloten erreicht.');
+  }else if(p.etappe===2){
+   if(b.modus==='orbit'&&ziel&&Number.isInteger(z.radius)&&z.radius>0){
+    const sign=JSON.stringify(z);
+    if(p.ziel!==sign){p.ziel=sign;p.stabil=0;p.winkel=0;p.polar=null;}
+    if(dt===1){
+     const passt=Math.abs(dist(b,ziel)-z.radius)<=Math.max(1200,z.radius*0.04)&&bewegung>0;
+     const a=Math.atan2(b.y-ziel.y,b.x-ziel.x);
+     if(passt){p.stabil++;if(p.polar!==null)p.winkel+=Math.abs(Math.atan2(Math.sin(a-p.polar),Math.cos(a-p.polar)));}
+     else{p.stabil=0;p.winkel=0;}
+     p.polar=a;
+     if(p.stabil>=30&&p.winkel>=0.3){
+      p.handBasis={vx:b.vx,vy:b.vy};missionsEtappe('Gewählten Radius '+z.radius+' P stabil umkreist.');
+     }
+    }
+   }else{p.ziel=null;p.stabil=0;p.winkel=0;p.polar=null;}
+  }else if(p.etappe===3){
+   // Keep the last autopilot velocity; steering the hull alone is insufficient.
+   if(['orbit','anflug','folgen'].includes(b.modus)&&Math.hypot(b.vx,b.vy)>0)p.handBasis={vx:b.vx,vy:b.vy};
+   const a=p.handBasis;
+   if(dt===1&&b.modus==='hand'&&!b.ziel&&bewegung>0&&Math.hypot(b.vx,b.vy)>1&&a&&Math.hypot(a.vx,a.vy)>1){
+    const d=Math.abs(Math.atan2(a.vx*b.vy-a.vy*b.vx,a.vx*b.vx+a.vy*b.vy));
+    if(d>=0.3)missionsEtappe('Handübernahme und echte Richtungsänderung bestätigt.');
+   }
+  }else if(p.etappe===4&&dt===1&&b.lage==='angedockt'&&v.lage==='andocken'&&b.anker===p.dock&&Math.hypot(b.vx,b.vy)===0)
+   missionsEtappe('Sicher am Ausgangsdock angedockt.');
+  if(p.status==='aktiv')missionsText();
  }
  function fertig(text){lauf.status='erfolgreich';lauf.meldung=text;lauf.belege.push(text);}
  function fehler(text){lauf.status='unterbrochen';lauf.meldung=text+' Starte die Übung erneut.';}
@@ -80,6 +141,7 @@ function erstellen(B){
   const dt=t-p.letzter,v=p.vorher,bewegung=dist(b,v);p.weg+=bewegung;
   const dienst=s.kanon?.flugdienst?.[p.schiff];
   if(dienst?.gestrandet){fehler('Die Flugarbeit ist nicht mehr finanziert.');return stand();}
+  if(p.id==='flugpruefung'){mission(s,sh,b,v,dt,bewegung,dienst);p.vorher={...b};p.letzter=t;return stand();}
   if(p.id==='abdocken'&&b.lage==='frei'&&dienst&&p.weg>0)fertig('Freier Flug, finanzierte Flugreserve und echte Positionsänderung bestätigt.');
   if(p.id==='andocken'&&b.lage==='angedockt'&&v.lage!=='angedockt'&&b.anker&&Math.hypot(b.vx,b.vy)===0)fertig('Sichere Ankunft am Dock bestätigt.');
   if(p.id==='handflug'){

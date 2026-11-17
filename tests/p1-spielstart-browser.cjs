@@ -321,7 +321,7 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
   assert.equal(await pilot.isVisible(),true);
   assert.equal(await page.locator('#manager-akademie').count(),1,'manager stays integrated');
   await pilot.locator('summary').tap();
-  assert.equal(await pilot.locator('[data-lektion]').count(),12);
+  assert.equal(await pilot.locator('[data-lektion]').count(),13);
   assert.equal(await pilot.locator('[data-lektion]:enabled').count(),0,'no free starting ship');
   const before=await state();
   await page.locator('[data-action="buy-st_aldera-miner"]').tap();
@@ -371,7 +371,7 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
   assert.equal(await page.locator('#pilotenausbildung-live').isHidden(),true,
     'training progress intentionally not added to economic save');
   assert.deepEqual(errors,[]);
-  console.log('P1_PILOT_IN_CAREER_OK',JSON.stringify({kind,width,height,chapters:12,worldMoney:33000,hash:final.hash}));
+  console.log('P1_PILOT_IN_CAREER_OK',JSON.stringify({kind,width,height,chapters:13,worldMoney:33000,hash:final.hash}));
  }finally{await ctx.close();}
 }
 

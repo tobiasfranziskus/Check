@@ -1,4 +1,8 @@
-# P2 – zusammenhängende Flugprüfung [DRAFT]
+# P2 – zusammenhängende Flugprüfung [MAIN / PAGES]
+
+**Release-Abnahme 17.11.2026:** Integration über [PR #461](https://github.com/tobiasfranziskus/Check/pull/461) als `main 83768ea0c64af27cb3dd6f86d67203198a40ea9a`, [Pages #44042542600](https://github.com/tobiasfranziskus/Check/actions/runs/44042542600) erfolgreich auf exakt diesem Codecommit. Nach Korrektur der beiden auf zwölf festgelegten Browser-Katalogasserts und Einbindung der neuen Mission als reguläres CI-Gate bestanden **drei vollständige Integrations-Workflows**, inklusive 512/512 Node22 und Chromium **sowie WebKit** jeweils 4/4 Touchgrößen mit vollständiger Flugprüfung, unverändertem normalem Karrierefluss, Altlektionen, Wirtschafts-/Speicher-/NAS-Kompatibilität. Bedingter Sicherheitsgeografietest skipped. Die folgenden ursprünglichen Draft-Lokalbefunde (WebKit-Download HTTP403, Karriere-Timeouts) sind historische Prüfgrenzen **des Drafts** und ersetzen nicht die spätere grüne Integrations-CI. Echtes iPad/NAS weiterhin offen; Vorversion `backup/main-before-p2-flugpruefung-20261117` gesichert.
+
+## Historischer Draft-Nachweis
 
 Basis: tatsächlicher `main c24da3cc0e5ccedb9516e6a53c032105caa8978a`, anschließend auf den ausschließlich dokumentarischen `main 1dd645cfaaeba5eca3f84b449b27788965b2ca90` nachgeführt. W6/P8h war bereits integriert. Kein Merge oder Deployment durch diesen Auftrag.
 

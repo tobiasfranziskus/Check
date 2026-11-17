@@ -61,3 +61,47 @@ test('R1: abgeschnittene Lohn-/Kaufbelege und Gratisware werden abgelehnt',()=>{
    const q=copy(s);change(q);assert.equal(w.audit(q).ok,false,String(change));
  }
 });
+
+test('R1: Miner-Verlust entfernt nur den aktuellen Foerdermarker, nicht die bereits gebuchte Ware',()=>{
+ // Modell-Gegenprobe: der Original-Verlustpfad ruft geologie.schiffsverlust()
+ // direkt vor dem Entfernen aus state.ships auf. Keine fiktive Wirtschaftsminute.
+ const w=K.erstellenRohstoffForschung('A'),s=w.createState(),g=G.create('A');
+ g.konfigurieren(w.rules);
+ const sh=Object.values(s.ships).find(x=>x.klasse==='miner'&&x.system==='aldera');
+ assert.ok(sh,'Erzminer im Originalzustand');
+ s.tick=1;
+ assert.equal(g.menge(s,sh,'erz',1),1);
+ g.abbauen(s,sh,'erz',1);
+ s.ledger.erz.mined++; // nur Geologie-Modelltest; nicht als Original-Wirtschaftsbeleg
+ assert.equal(g.audit(s),true);
+ assert.equal(g.menge(s,sh,'erz',1),0,'keine doppelte Foerderung');
+ const ohneBeleg=copy(s);
+ delete ohneBeleg.ships[sh.id];
+ assert.equal(g.audit(ohneBeleg),false,'ungemeldete Schiffsloeschung faellt auf');
+ const vor=copy({ledger:s.ledger,owners:s.owners,rohstoffe:s.kanon.rohstoffe.felder['aldera-erz'].gefoerdert});
+ g.schiffsverlust(s,sh);
+ delete s.ships[sh.id]; // nachgebildeter, originaler Schritt in m_core_sicherheit.entfernen
+ assert.equal(g.audit(s),true,'legitimer Verlust laesst die geologische Gesamtbilanz intakt');
+ assert.deepEqual({ledger:s.ledger,owners:s.owners,rohstoffe:s.kanon.rohstoffe.felder['aldera-erz'].gefoerdert},vor);
+ assert.deepEqual(s.kanon.rohstoffe.felder['aldera-erz'].letzte,{});
+});
+test('R1: Eigentums-Historie veraltet nach dem Tick ohne falsche Live-Sperre',()=>{
+ const w=K.erstellenRohstoffForschung('A'),s=w.createState(),g=G.create('A');
+ g.konfigurieren(w.rules);
+ const sh=Object.values(s.ships).find(x=>x.klasse==='miner'&&x.system==='aldera');
+ s.tick=1;g.abbauen(s,sh,'erz',1);s.ledger.erz.mined++;
+ assert.equal(g.audit(s),true);
+ const gehackt=copy(s);
+ gehackt.kanon.rohstoffe.felder['aldera-erz'].letzte[sh.id].owner='house';
+ assert.equal(g.audit(gehackt),false,'aktueller falscher Eigentumsbeleg bleibt gesperrt');
+ s.tick=2;g.minute(s,2);
+ assert.deepEqual(s.kanon.rohstoffe.felder['aldera-erz'].letzte,{});
+ assert.equal(g.audit(s),true);
+ // Die nun vergangene Bergbaugenehmigung darf nicht von spaeteren
+ // legitimen Schiffsverlusten oder Eigentumswechseln abhaengen.
+ delete s.ships[sh.id];
+ assert.equal(g.audit(s),true);
+ const rueckdatiert=copy(s);
+ rueckdatiert.kanon.rohstoffe.felder['aldera-erz'].letzte[sh.id]={tick:1,owner:sh.owner};
+ assert.equal(g.audit(rueckdatiert),false,'abgelaufene Doppelentnahmesperre im Save wird erkannt');
+});

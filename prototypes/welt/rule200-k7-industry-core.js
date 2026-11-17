@@ -1641,6 +1641,9 @@ function entfernen(state, rules, s) {
     state.stats.vernichtet += n;
     delete s.ladung[ware];
   }
+  // R1-Forschung: nur den tagesaktuellen Geologie-Doppelfoerderungsmarker
+  // fuer ein rechtmaessig verlorenes Schiff entfernen; Bilanz bleibt original.
+  research?.ort?.geologie?.schiffsverlust(state,s);
   delete state.ships[s.id];
   delete state.stats.verkaeufe[s.id];
   zaehle(state.stats.verluste, s.owner, s.klasse);

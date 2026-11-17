@@ -41,12 +41,26 @@ function create(profil){
    if(!f.restmenge){f.respawn=s.tick+f.wartezeit;f.ereignisse.push({id:f.feldId+':'+f.generation,leer:s.tick,neu:f.respawn});}
  }
  function minute(s,tick){
-   for(const f of Object.values(buch(s).felder))if(f.respawn===tick){
+   for(const f of Object.values(buch(s).felder)){
+     // 'letzte' ist nur die Sperre gegen doppelten Abbau IM SELBEN Tick.
+     // Vergangene Schiffseigner sind keine Live-Referenzen: Schiffe duerfen
+     // spaeter rechtmaessig zerstoert oder umgeschrieben werden.
+     for(const id of Object.keys(f.letzte))
+       if(f.letzte[id].tick<tick)delete f.letzte[id];
+     if(f.respawn!==tick)continue;
      f.restmenge=f.maxkapazitaet;f.generation++;f.respawn=null;
      if(f.ware==='silizium'){
        s.kanon.silizium.vorrat+=f.maxkapazitaet;
        s.kanon.silizium.felder[f.feldId].vorrat+=f.maxkapazitaet;
      }
+   }
+ }
+ // Aufruf ausschliesslich vom Original-Verlustpfad: kein neues Geld,
+ // keine Warenbewegung und keine zweite Eigentums- oder Verlustbuchung.
+ function schiffsverlust(s,sh){
+   for(const f of Object.values(buch(s).felder)){
+     const e=f.letzte[sh.id];
+     if(e&&e.owner===sh.owner)delete f.letzte[sh.id];
    }
  }
  function kapazitaet(s,id){const f=buch(s).felder[id];return (f.generation+1)*f.maxkapazitaet;}
@@ -69,12 +83,12 @@ function create(profil){
          ||e.neu!==e.leer+f.wartezeit||(i<f.generation?e.neu>s.tick:e.neu!==f.respawn))return false;
        vorher=e.neu;
      }
-     if(!f.letzte||Array.isArray(f.letzte)||Object.entries(f.letzte).some(([id,e])=>!keys(e,'tick,owner')||!s.ships[id]||s.ships[id].owner!==e.owner||!nat(e.tick)||e.tick>s.tick||e.tick%f.minuten))return false;
+     if(!f.letzte||Array.isArray(f.letzte)||Object.entries(f.letzte).some(([id,e])=>!keys(e,'tick,owner')||!s.ships[id]||s.ships[id].owner!==e.owner||!nat(e.tick)||e.tick!==s.tick||e.tick%f.minuten))return false;
      if(f.ware==='silizium'&&s.kanon.silizium.felder[f.feldId].vorrat!==f.restmenge)return false;
      totals[f.ware]+=f.gefoerdert;
    }
    return Object.entries(totals).every(([w,n])=>n===(s.ledger[w]?.mined||0));
  }catch{return false;}}
- return Object.freeze({konfigurieren,init,menge,abbauen,minute,kapazitaet,audit});
+ return Object.freeze({konfigurieren,init,menge,abbauen,minute,schiffsverlust,kapazitaet,audit});
 }
 module.exports=Object.freeze({create,PROFILE});

@@ -123,7 +123,7 @@ test('P3: audit real two-round earnings, asset depreciation and reinvestment quo
    nadirCash:j.zustandReferenz().owners.st_nadir.cash,house:reached.house,equity:reached.equity
  }));
  const good=j.exportieren(),fake=JSON.parse(good);
- fake.owners.house.cash+=100;fake.owners.st_aldera.cash-=100;
+ fake.owners.house.cash+=100;fake.owners.st_nadir.cash-=100;
  assert.equal(Object.values(fake.owners).reduce((n,o)=>n+o.cash,0),33000);
  assert.throws(()=>J8.erstellen().oeffnen204(JSON.stringify(fake),true),
    'unbacked owner transfer is forbidden even with conserved world money');

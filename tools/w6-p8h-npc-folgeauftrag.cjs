@@ -53,6 +53,12 @@ function plan(w,s){
    !s.w5ac.completed.some(x=>x.id===sh.id));
  if(nadir)return {art:'ueberfuehren',schiff:nadir.id,befehle:[
    {type:'shipReposition',owner:'transport',schiff:nadir.id}]};
+ // Ein bereits rechtmaessig gekaufter und bezahlter Ersatzfrachter ist
+ // unterwegs: weder zweite Werftbestellung noch zweite Kaufbindung ausloesen.
+ const unterwegs=frachter.find(sh=>w.buchwert(s,sh.id)>0
+   &&(s.w5ac?.active?.id===sh.id||sh.phase==='reise'));
+ if(unterwegs)return {art:'warten',
+   grund:'Bezahlter Speditionsfrachter '+unterwegs.id+' ist bereits unterwegs'};
  if((lager.frachter||0)>0){
    // Original-W5-Verkaufspreis und 60 echte Pilotenminuten, keine Kreditfiktion.
    const preis=w.rules.w5.verkaufsPreis;

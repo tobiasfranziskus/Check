@@ -238,7 +238,7 @@ function missions(){
 // P3: guiding the next REAL paid order, not adding a mission economy or save state.
 function handelswegAnzeigen(s,angebote){
  const panel=$('p3-handelsauftrag');if(!panel||!scope.P3Handelsweg)return;
- const p=scope.P3Handelsweg.auswerten(s,angebote);
+ const p=scope.P3Handelsweg.auswerten(s,angebote,session.weltReferenz());
  $('p3-handelsstand').textContent=p.text;
  $('p3-handelszahlen').textContent='Aldera-Lager: '+fmt(p.eis)+' Eis · Eigene Kasse: '+
    fmt(p.hauskasse)+' ISK · Verbuchte F4-Frachtgebühren: '+fmt(p.gebuehr)+
@@ -727,7 +727,7 @@ $('p3-handelsaktion')?.addEventListener('click',()=>{
  if(!session||!scope.P3Handelsweg)return;
  try{
   // Re-evaluate each click on actual current Core state; never trust the earlier DOM label.
-  const p=scope.P3Handelsweg.auswerten(session.zustandReferenz(),session.angebote());
+  const p=scope.P3Handelsweg.auswerten(session.zustandReferenz(),session.angebote(),session.weltReferenz());
   if(!p.bereit)throw Error(p.grund||'Das Originalangebot ist derzeit nicht finanzierbar');
   if(p.art==='zeit')weiter(60); // The same paid world-step as the existing clock button.
   else if(p.art==='auftrag'&&p.aktion)auftrag(p.aktion); // Original validated J8 command.

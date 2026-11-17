@@ -76,6 +76,25 @@ test('P8h: S02x90 aktiviert rechtmaessige automatische Ersatzkette – nur eine 
    minuten:a.steps*30,extraW3:a.w3Neu,extraW5:a.werftNeu,commandProof:a.belege,
    fighters:a.s.kanon.jaeger.fertig,ISK:cash(a.s),mint:a.s.minted,burn:a.s.burned}));
 });
+test('P8h: gefaelschte NPC-Entscheidungsbelege duerfen keine W5-/W3-Leistung vortaeuschen',()=>{
+ const w=K.erstellenP8d({carrierCash:2000,buyerCash:4000});
+ const s=w.createState(42);w.npcAutoSetzen(s,true);w.materialSupplySetzen(s,true);
+ w.npcMaterialKetteSetzen(s,true);w.advance(s,1);
+ pruefen(w,s);
+ for(const [key,notice] of [
+   ['transport:shipReposition','Ueberfuehrung'],
+   ['transport:shipBuy','Kauf'],
+   ['werft_extern:stationBuildShip','Werft'],
+   ['st_nadir:industrialOreOfferMaterial','Materialvertrag']
+ ]){
+   const copy=w.load(w.save(s));
+   copy.kanon.npc.befehle[key]=1;
+   const a=w.audit(copy);
+   assert.equal(a.ok,false,'Gefaelschter '+notice+'-Beleg nicht akzeptiert');
+   assert.ok(a.fehler.some(e=>/P8h/.test(e)),a.fehler.join('; '));
+   assert.throws(()=>w.load(JSON.stringify(copy)),/P8h|Audit|audit|verweigert/);
+ }
+});
 test('P8h: Boolean-Aus und Save/Load ohne automatische Migration',()=>{
  const w=K.erstellenP8d({carrierCash:2000,buyerCash:4000});
  const s=w.createState(42);

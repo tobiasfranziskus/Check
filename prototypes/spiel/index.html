@@ -152,6 +152,19 @@
     <p id="p3-npc-werft-grund" class="p3-sperre" role="status" aria-live="polite"></p>
     <p class="p3-einschraenkung">Nur im ausdrücklich gewählten S02-NPC-Modus. Asterion und die Nadir-Werft handeln autonom aus eigenen Kassen und nur mit physisch vorhandenen Gütern. Diese Taste führt ausschließlich die reguläre Weltzeit fort, nicht einen fremden Firmenbefehl. Kein garantierter Frachter, kein kostenloser Ersatz.</p>
    </section>
+   <section id="p3-industrie" class="p3-handelsauftrag p3-industrie" aria-label="Echte Erz-Material-Werftkette" hidden>
+    <p class="eyebrow">KAPITEL 06 / INDUSTRIE · W3 → W4 → W5</p>
+    <h3>Aus Erz wird dein nächster Frachter.</h3>
+    <p id="p3-industrie-phase" class="p3-zahlen"></p>
+    <p id="p3-industrie-w3"></p>
+    <p id="p3-industrie-w4"></p>
+    <p id="p3-industrie-w5"></p>
+    <p id="p3-industrie-kassen"></p>
+    <button id="p3-industrie-kauf" type="button" disabled>Echten Werftfrachter kaufen</button>
+    <button id="p3-industrie-zeit" type="button">60 Wirtschaftsminuten fortsetzen</button>
+    <p id="p3-industrie-hinweis" class="p3-sperre" role="status" aria-live="polite"></p>
+    <p class="p3-einschraenkung">Die NPC-Konzerne bezahlen Erzfracht, Verarbeitung und Werftarbeit eigenständig. Du kaufst nur aus vorhandenen echten Nadir-Hüllen und allein mit deinem eigenen Kapital. Es gibt keine Produktionsgarantie, keine kostenlosen Schiffe und keine erzwungenen Käufe.</p>
+   </section>
    <button id="welt-export" type="button" class="ghost">Spielstand als JSON sichern</button>
    <p class="footnote">Autosave nur im eigenen Karriere-Slot dieser Seite. Der alte Wirtschaftsspielstand bleibt unberührt.</p>
   </section>
@@ -289,5 +302,6 @@
 <script src="p3-wasserlohn.js"></script>
 <script src="p3-npc-markt.js"></script>
 <script src="p3-npc-werft.js"></script>
+<script src="p3-industrie.js"></script>
 <script src="spiel.js"></script>
 </body></html>

@@ -1,0 +1,67 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import fs from 'node:fs';
+const require=createRequire(import.meta.url);
+const W5=require('../prototypes/w5ac/session.js');
+const J8=require('../prototypes/verbund/konzern-session.js');
+const P3=require('../prototypes/spiel/p3-handelsweg.js');
+const start=()=>{const s=J8.erstellen();s.starten195(W5.create(42,'private195').export(),true);return s;};
+const read=s=>P3.auswerten(s.zustandReferenz(),s.angebote());
+const audit=s=>{
+ const state=s.zustandReferenz(),w=s.weltReferenz();
+ assert.equal(w.audit(state).ok,true);
+ assert.equal(Object.values(state.owners).reduce((n,o)=>n+o.cash,0),33000);
+ assert.equal(state.minted,0);assert.equal(state.burned,0);
+ const json=s.exportieren(),reload=J8.erstellen();reload.oeffnen204(json,true);
+ assert.equal(reload.exportieren(),json);
+ assert.equal(reload.ansicht().hash,s.ansicht().hash);
+ assert.equal(json.includes('p3-handels'),false);
+};
+test('P3: repeat paid miner → ice → freight original decisions and completion evidence',()=>{
+ const run=()=>{
+  const s=start(),startSave=s.exportieren(),sequence=[];
+  const initial=read(s);assert.equal(initial.abgeschlossen,0);
+  assert.equal(initial.aktion,'buy-st_aldera-miner');
+  assert.equal(initial.bereit,true);
+  assert.equal(s.exportieren(),startSave,'status view cannot mutate world');
+  for(let i=0;i<45;i++){
+   const p=read(s);assert.equal(p.bereit,true,p.grund||p.titel);
+   if(p.abgeschlossen>=2)break;
+   sequence.push(p.art==='zeit'?'advance60':p.aktion);
+   if(p.art==='zeit')s.weiterspielen(60);
+   else {const r=s.ausfuehren(p.aktion);assert.equal(r.ok,true,JSON.stringify(r));}
+   audit(s);
+  }
+  const last=read(s);assert.ok(last.abgeschlossen>=2,'at least two ORIGINAL fully paid ice roundtrips');
+  assert.equal(last.gebuehr>=480,true,'two original fee bookings');
+  assert.equal(last.lohn>=240,true,'two original funded labor bookings');
+  assert.ok(sequence.includes('buy-st_aldera-miner'));
+  assert.ok(sequence.includes('buy-st_aldera-frachter'));
+  assert.ok(sequence.some(x=>x.startsWith('ice-')));
+  assert.ok(sequence.filter(x=>x.startsWith('freight-')).length>=2);
+  return {hash:s.ansicht().hash,sequence,rounds:last.abgeschlossen,save:s.exportieren()};
+ };
+ const one=run(),two=run();assert.equal(one.hash,two.hash);
+ assert.deepEqual(one.sequence,two.sequence);assert.equal(one.save,two.save);
+});
+test('P3: missing ship and buyer refusal remain original disabled choices, never invent purchase',()=>{
+ const s=start(),raw=s.zustandReferenz();
+ const initial=read(s);assert.equal(initial.abgeschlossen,0);
+ assert.equal(initial.bereit,true);assert.equal(initial.aktion,'buy-st_aldera-miner');
+ const bad=P3.auswerten({...raw,ships:{}},[]);
+ assert.equal(bad.bereit,false);assert.match(bad.grund,/Originalkern/);
+ assert.throws(()=>P3.auswerten({...raw,rulesVersion:999},[]));
+ audit(s);
+});
+test('P3: published career shell binds only original buy/shuttle/freight/advance commands',()=>{
+ const html=fs.readFileSync(new URL('../prototypes/spiel/index.html',import.meta.url),'utf8');
+ const js=fs.readFileSync(new URL('../prototypes/spiel/spiel.js',import.meta.url),'utf8');
+ const src=fs.readFileSync(new URL('../prototypes/spiel/p3-handelsweg.js',import.meta.url),'utf8');
+ assert.match(html,/id="p3-handelsaktion"/);assert.match(html,/src="p3-handelsweg.js"/);
+ assert.match(js,/P3Handelsweg\.auswerten/);
+ assert.match(js,/if\(p\.art==='zeit'\)weiter\(60\)/);
+ assert.match(js,/auftrag\(p\.aktion\)/);
+ assert.doesNotMatch(src,/\.execute\(|\.advance\(|\.save\(|\.load\(|\.setItem\(|localStorage/);
+ assert.doesNotMatch(js,/p3[^\n]*\b(?:minted|burned|\.cash\s*\+=)/);
+});

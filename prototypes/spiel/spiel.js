@@ -235,6 +235,22 @@ function missions(){
   {done:eigenesFrachtgut||!!state.kanon.silizium?.belege?.length,text:'Eis oder Silizium fördern und transportieren'}
  ];
 }
+// P3: guiding the next REAL paid order, not adding a mission economy or save state.
+function handelswegAnzeigen(s,angebote){
+ const panel=$('p3-handelsauftrag');if(!panel||!scope.P3Handelsweg)return;
+ const p=scope.P3Handelsweg.auswerten(s,angebote);
+ $('p3-handelsstand').textContent=p.text;
+ $('p3-handelszahlen').textContent='Aldera-Lager: '+fmt(p.eis)+' Eis · Eigene Kasse: '+
+   fmt(p.hauskasse)+' ISK · Verbuchte F4-Frachtgebühren: '+fmt(p.gebuehr)+
+   ' ISK · F4-Arbeitskosten: '+fmt(p.lohn)+' ISK (kein pauschaler Nettogewinn).';
+ $('p3-handelsziel').textContent=(p.abgeschlossen?'Runde '+(p.abgeschlossen+1)+': ':'Erster Handelsauftrag: ')+p.titel;
+ $('p3-handelsanleitung').textContent=p.anleitung;
+ const b=$('p3-handelsaktion');b.disabled=!p.bereit;
+ b.textContent=p.art==='zeit'?'60 Spielminuten regulär abrechnen':
+  p.art==='auftrag'?'Originalauftrag ausführen':'Kein Auftrag verfügbar';
+ $('p3-handelssperre').textContent=p.grund?'Gesperrt: '+anzeigetext(p.grund):
+  'Nur Originalangebote aus deinem Eigentum. Keine Abnahmegarantie und keine geschenkten Waren.';
+}
 // J12: read-only station and company report from the SAME validated Rule204 session.
 // No separate economy, NPC signatures, speculative prices, or unvalidated purchase paths.
 function tabZeigen(name){
@@ -485,6 +501,7 @@ function anzeigen(){
   button.addEventListener('click',()=>auftrag(o.id));
   box.append(button,small);return box;
  }));
+ handelswegAnzeigen(s,alleAngebote);
  wirtschaftsbericht(a,s,alleAngebote);
  jaegerBericht(s,alleAngebote);
  jaegerBeitraege();
@@ -679,6 +696,16 @@ $('w6-p8h-toggle')?.addEventListener('click',()=>{
    hinweis(neu?'W6-P8h-Folgeversorgung aktiviert. Jeder NPC-Auftrag benötigt Originalware und echtes Firmenkapital.':
      'W6-P8h-Folgeversorgung pausiert. Laufende bereits bezahlte Originalaufträge bleiben gültig.');
  }catch(e){hinweis('W6-Folgeversorgung nicht geändert: '+error(e),true);}
+});
+$('p3-handelsaktion')?.addEventListener('click',()=>{
+ if(!session||!scope.P3Handelsweg)return;
+ try{
+  // Re-evaluate each click on actual current Core state; never trust the earlier DOM label.
+  const p=scope.P3Handelsweg.auswerten(session.zustandReferenz(),session.angebote());
+  if(!p.bereit)throw Error(p.grund||'Das Originalangebot ist derzeit nicht finanzierbar');
+  if(p.art==='zeit')weiter(60); // The same paid world-step as the existing clock button.
+  else if(p.art==='auftrag'&&p.aktion)auftrag(p.aktion); // Original validated J8 command.
+ }catch(e){hinweis('Handelsauftrag gesperrt: '+error(e),true);anzeigen();}
 });
 $('jaeger-kaufweg').addEventListener('click',()=>{
  if(!session)return;

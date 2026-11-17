@@ -80,8 +80,11 @@ test('W4/W5 14-day repeated original ore contract and production full ledger/rep
  assert.equal(p.ledger.materialProduced,p.w4Material);
  assert.equal(p.ledger.freighterProduced,p.w5Gebaut);
  assert.equal(p.ledger.materialConsumed,
-  p.w5MaterialVerbraucht+(s.kanon.minerWerft?.materialVerbraucht||0),
-  'all material either in W5 freighters or legitimate miner construction');
+  p.w5MaterialVerbraucht
+   +(s.kanon.minerWerft?.materialVerbraucht||0)
+   +(s.kanon.bauteile?.materialVerbraucht||0)
+   +(s.kanon.jaeger?.materialVerbraucht||0),
+  'material consumed only by original W5, miner, J3 parts or J4 fighter production');
  assert.ok(p.w3Geliefert>=p.w4ErzVerbraucht,
   'not more ore refined than physically delivered');
  const endHash=w.hash(s),copy=w.load(first);w.advance(copy,14*1440);

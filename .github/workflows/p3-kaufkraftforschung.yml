@@ -1,0 +1,20 @@
+name: "P3 Kaufkraftkreislauf – isolierter Nachweis"
+on:
+  pull_request:
+    paths:
+      - 'tests/p3-kaufkraftpfad.test.mjs'
+      - '.github/workflows/p3-kaufkraftforschung.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-market:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Reale Käuferkonten, Wasserbestand und nachweisliche ISK-Buchungen"
+        run: node --test tests/p3-kaufkraftpfad.test.mjs

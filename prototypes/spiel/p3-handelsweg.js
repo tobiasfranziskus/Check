@@ -4,7 +4,7 @@
  */
 (function(scope){
 'use strict';
-function auswerten(s,angebote){
+function auswerten(s,angebote,welt=null){
  if(!s||![204,207].includes(s.rulesVersion)||!s.kanon||!Array.isArray(angebote))
    throw Error('P3 benötigt den geprüften Regel204/207-Karrierestand mit Core-Angeboten');
  const schiffe=Object.values(s.ships||{}).filter(sh=>sh.owner==='house');
@@ -21,7 +21,11 @@ function auswerten(s,angebote){
  const gebuehr=s.kanon.spielerFrachten?.gebuehr||0;
  const lohn=s.kanon.spielerFrachten?.lohn||0;
  const suchen=id=>angebote.find(a=>a.id===id);
- let aktion=null,art='auftrag',titel='',anleitung='',angebot=null;
+ // The original W5n rule defines the charge price, never the UI.
+ const w=welt?.rules?.w5n;
+ const eisAnkaufKosten=Number.isSafeInteger(w?.charge)&&Number.isSafeInteger(w?.eisPreis)
+   ?w.charge*w.eisPreis:null;
+ let aktion=null,art='auftrag',titel='',anleitung='',angebot=null,blockGrund=null;
  if(!miner.length){
   titel='Eigenen Miner erwerben';
   anleitung='Für den ersten Schritt wird ein tatsächlich käuflicher Aldera-Miner benötigt.';
@@ -39,19 +43,28 @@ function auswerten(s,angebote){
   anleitung='50 physische Einheiten Eis sind in Aldera verfügbar. Käuferbudget, Löhne und Frachter werden bei der Buchung erneut geprüft.';
   aktion='freight-'+frachter[0].id;
  }else if(miner.some(sh=>s.kanon.pendel?.[sh.id]?.ware==='eis')){
-  titel='Bezahlten Bergbau fortsetzen';
-  anleitung='Dein Miner fördert bereits. Bis zur nächsten 50er-Charge nur reguläre, finanzierte Spielzeit verwenden.';
-  art='zeit';
+  if(eisAnkaufKosten!==null&&s.owners.st_aldera.cash<eisAnkaufKosten){
+   titel='Eisabnahme in Aldera nicht finanziert';
+   blockGrund='Aldera besitzt '+s.owners.st_aldera.cash+' von '+eisAnkaufKosten+
+     ' ISK für die nächste Original-Eischarge. Es gibt keinen garantierten Käufer.';
+   anleitung='Reguläre Weltzeit kannst du weiterhin über die Kommandobrücke fortsetzen. '+
+     'Ein neuer Verkauf ist erst nach echter Käuferfinanzierung möglich.';
+   art='blockiert';
+  }else{
+   titel='Bezahlten Bergbau fortsetzen';
+   anleitung='Dein Miner fördert bereits. Bis zur nächsten 50er-Charge nur reguläre, finanzierte Spielzeit verwenden.';
+   art='zeit';
+  }
  }else{
   titel='Eisförderung finanzieren';
   anleitung=eis>=50?'Für eine Fracht wird ein freier, eigener Frachter in Aldera benötigt.':
    'Der vorhandene Miner kann nur auf einen vom Originalkern zugelassenen Eisauftrag gesetzt werden.';
-  if(eis>=50){art='blockiert';}
+  if(eis>=50){art='blockiert';blockGrund='Kein freier eigener Frachter in Aldera.';}
   else {aktion='ice-'+miner[0].id;}
  }
  if(aktion)angebot=suchen(aktion);
  const bereit=art==='zeit'||(art==='auftrag'&&!!angebot?.ok);
- const grund=art==='blockiert'?'Kein freier eigener Frachter in Aldera.'
+ const grund=art==='blockiert'?blockGrund
   :aktion&&!bereit?(angebot?.reason||'Der Originalkern bietet diesen Auftrag derzeit nicht an.'):null;
  const text=abgeschlossen
   ?'Originalbelege: '+abgeschlossen+' abgeschlossene Eis-Rundfahrt'+(abgeschlossen===1?'':'en')+

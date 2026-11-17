@@ -63,6 +63,8 @@ function auswerten(w,s,angebote){
   werftTransferAktiv:transferAktiv,
   werftTransferBereit:gekauft?.system==='nadir'&&transferAngebot?.ok===true,
   werftTransferGrund:transferAngebot?.reason||null,
+  werftTransferKosten:transferAngebot?.ok?transferAngebot.kosten:null,
+  werftTransferMinuten:transferAngebot?.ok?transferAngebot.minuten:null,
   ledger:Object.freeze({erzMined:s.ledger.erz.mined,materialProduced:s.ledger.material.produced,
     materialConsumed:s.ledger.material.consumed,freighterProduced:s.ledger.frachter.produced}),
   kaufberechtigt:stock>0&&house>=r.economy.waren.frachter.basis&&buyer.ok===true});

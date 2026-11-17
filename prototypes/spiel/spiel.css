@@ -180,3 +180,9 @@ body.raum-aktiv .world{display:none}
 .p3-investition .p3-zahlen{color:#e7d9ac}
 .p3-investition .p3-einschraenkung{font-size:.74rem;color:#aabfcd;line-height:1.45}
 .p3-investition .p3-sperre{min-height:1em}
+
+/* P3: voluntary paid water demand. Existing original trade buttons remain separate. */
+.p3-wasser{border-color:#39786c;background:#102d32d9}
+.p3-wasser .p3-zahlen{color:#a5e8d2}
+.p3-wasser .p3-einschraenkung{font-size:.74rem;color:#aabfcd;line-height:1.45}
+.p3-wasser #p3-wasser-klein{margin-top:7px;background:transparent;border:1px solid #69958d}

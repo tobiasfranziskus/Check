@@ -98,7 +98,57 @@ const server=http.createServer((req,res)=>{
     const resume=await page.evaluate(k=>localStorage.getItem(k),SLOT);
     assert.equal(wInvest.hash(wInvest.load(resume)),workingHash);
     assert.equal(await page.locator('#p3-investition').isVisible(),true);
+    // Chapter 04: no invented demand. Advance the real paid career until the
+    // finite buyer account blocks a new ice batch, then VOLUNTARILY consume
+    // physical Aldera water from the player's already earned pilot wages.
+    let blockText=null,block=null;
+    for(let i=0;i<85;i++){
+     const raw=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+     const now=JSON.parse(raw),cost=wInvest.rules.w5n.charge*wInvest.rules.w5n.eisPreis;
+     if(now.owners.st_aldera.cash<cost && await page.locator('#p3-wasser-aktion').isEnabled()){
+      blockText=raw;block=now;break;
+     }
+     assert.equal(await page.locator('#p3-handelsaktion').isEnabled(),true,
+       'No legal buyer repayment path after '+i+' more player decisions');
+     await page.locator('#p3-handelsaktion').tap();
+    }
+    assert.ok(block,'original buyer shortage with a real affordable private-water route');
+    const cost=wInvest.rules.w5n.charge*wInvest.rules.w5n.eisPreis;
+    const price=W.DATEN.wasser.preisAldera;
+    const qty=Math.ceil((cost-block.owners.st_aldera.cash)/price),sum=qty*price;
+    assert.ok(qty>0&&qty<=block.stations.st_aldera.lager.wasser);
+    assert.equal(await page.locator('#p3-wasser-kreislauf').isVisible(),true);
+    assert.match(await page.locator('#p3-wasser-aktion').textContent(),new RegExp(qty+' Wasser für '+sum+' ISK'));
+    const existingRounds=block.kanon.spielerFrachten.auftraege.filter(a=>a.end!==null).length;
+    await page.locator('#p3-wasser-aktion').tap();
+    const paid=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+    assert.equal(paid.owners.pilot_house.cash,block.owners.pilot_house.cash-sum);
+    assert.equal(paid.owners.st_aldera.cash,block.owners.st_aldera.cash+sum);
+    assert.equal(paid.stations.st_aldera.lager.wasser,block.stations.st_aldera.lager.wasser-qty);
+    assert.equal(paid.ledger.wasser.consumed,block.ledger.wasser.consumed+qty);
+    assert.equal(wInvest.audit(wInvest.load(JSON.stringify(paid))).ok,true);
+    for(let i=0;i<40;i++){
+     const latest=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+     if(latest.kanon.spielerFrachten.auftraege.filter(a=>a.end!==null).length>existingRounds)break;
+     assert.equal(await page.locator('#p3-handelsaktion').isEnabled(),true);
+     await page.locator('#p3-handelsaktion').tap();
+    }
+    const afterWaterText=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+    const afterWater=JSON.parse(afterWaterText);
+    assert.ok(afterWater.kanon.spielerFrachten.auftraege.filter(a=>a.end!==null).length>existingRounds,
+      'private consumption funded at least one further original F4 round');
+    assert.equal(wInvest.audit(wInvest.load(afterWaterText)).ok,true);
+    assert.equal(Object.values(afterWater.owners).reduce((n,o)=>n+o.cash,0),33000);
+    assert.equal(afterWater.minted,0);assert.equal(afterWater.burned,0);
+    const waterHash=wInvest.hash(wInvest.load(afterWaterText));
+    await page.reload();await page.locator('#fortsetzen').tap();
+    assert.equal(wInvest.hash(wInvest.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),waterHash);
     assert.deepEqual(errors,[]);
+    console.log('P3_WATER_BROWSER_OK',JSON.stringify({
+     kind,width,height,roundsBefore:existingRounds,roundsAfter:afterWater.kanon.spielerFrachten.auftraege.filter(a=>a.end!==null).length,
+     water:qty,wageDebit:sum,buyerBefore:block.owners.st_aldera.cash,buyerAfter:paid.owners.st_aldera.cash,hash:waterHash
+    }));
+
     console.log('P3_REINVEST_BROWSER_OK',JSON.stringify({
      kind,width,height,rounds:3,cash:working.owners.house.cash,
      newMiner:newMiner.id,alderaBudget:working.owners.st_aldera.cash,

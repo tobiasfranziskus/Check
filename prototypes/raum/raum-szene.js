@@ -237,6 +237,12 @@ function befehl(welt, szene, aktion, ziel, abstand) {
     default: return null;
   }
 }
+// Zustandsneutrale Core-Vorschau für historische Sitzungsbrücken ohne eigenes Angebot.
+// Nur die Kopie erreicht execute; keine zweite Befehls-/Flugimplementierung.
+function angebot(welt, zustand, cmd) {
+  try { return welt.execute(welt.load(welt.save(zustand)), cmd); }
+  catch (e) { return {ok:false, reason:e.message}; }
+}
 // Welche Aktionen bietet die Zielkarte an? Nur Anzeige; die Gültigkeit prüft der Kern beim Ausführen.
 function aktionen(szene, ziel) {
   const a = szene.aktiv, o = typeof ziel === 'string' ? objekt(szene, ziel) : null, frei = a.lage === 'frei';
@@ -288,7 +294,7 @@ function zeitgeber(rest, dtMs, faktor, maxSchritte) {
 }
 
 const API = Object.freeze({ OWNER, ZOOM, FAKTOREN, KLASSENNAME, sitzungPruefen, erzeugen, ziele, objekt, kamera, zuBild, zuWelt,
-  treffer, knueppel, befehl, aktionen, wechselGrund, flotte, zeitgeber, ladungText });
+  treffer, knueppel, befehl, angebot, aktionen, wechselGrund, flotte, zeitgeber, ladungText });
 if (typeof module === 'object' && module.exports) module.exports = API;
 else scope.RaumSzene = API;
 })(typeof globalThis === 'object' ? globalThis : this);

@@ -48,6 +48,33 @@ function verbinden(B) {
     return Z.auditOk;
   }
 
+  // Lesende Bedienhilfe außerhalb der Leinwand: verdeckt weder Ziele noch Handflugflächen.
+  const navigation = doc.createElement('section'); navigation.id = 'raum-navigation';
+  navigation.setAttribute('aria-label', 'Flugsteuerung');
+  const status = doc.createElement('p'); status.id = 'raum-flugstatus';
+  status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
+  const auswahl = doc.createElement('p'); auswahl.id = 'raum-auswahl';
+  const hilfe = doc.createElement('p'); hilfe.id = 'raum-flughilfe';
+  hilfe.textContent = 'Ziel antippen → Flugaktion wählen → Autopilot: Anfliegen → Manuell übernehmen oder Stoppen. Zeit anhalten pausiert die Welt; Stoppen bremst das Schiff.';
+  const hand = doc.createElement('button'); hand.type = 'button'; hand.id = 'raum-hand';
+  hand.textContent = 'Manuell übernehmen';
+  hand.setAttribute('aria-describedby', 'raum-flughilfe');
+  hand.addEventListener('click', () => {
+    const sz = szene(); if (sz) tun('steuern', {kurs:sz.aktiv.sollKurs, fahrt:sz.aktiv.sollFahrt});
+  });
+  navigation.append(status, auswahl, hilfe, hand); buehne.before(navigation, $('raum-zielkarte'));
+  $('raum-stopp').textContent = 'Stoppen';
+  $('raum-stopp').setAttribute('aria-label', 'Autopilot stoppen und Schiff abbremsen');
+  // Die Sitzungsbrücke prüft am Original-Core. Historische Brücken ohne Angebot
+  // verwenden denselben Core ausschließlich auf einer Save/Load-Kopie.
+  function angebot(aktion, ziel, abstand) {
+    const sz = szene(), w = B.welt();
+    const cmd = sz && S.befehl(w, sz, aktion, ziel, abstand);
+    if (!cmd) return {ok:false, reason:'Kein gültiges Flugziel'};
+    try { return B.angebot ? B.angebot(cmd) : S.angebot(w, B.zustand(), cmd); }
+    catch (e) { return {ok:false, reason:e.message}; }
+  }
+
   // ---- Befehle ---------------------------------------------------------------------------------
   const TEXT = { shipUndock: 'Abdocken eingeleitet – Flugreserve gebunden', shipDock: 'Andockanflug läuft',
     shipOrbit:'Autopilot: Orbit', shipFollow:'Autopilot: Folgen', shipLock:'Ziel erfasst – keine Waffen aktiviert', shipUnlock:'Zielerfassung gelöst', shipApproach: 'Autopilot: Anflug', shipFlyTo: 'Autopilot: Kurs gesetzt', shipSteer: 'Handsteuerung',
@@ -67,6 +94,10 @@ function verbinden(B) {
     if (!leise) meldung((TEXT[cmd.type] || cmd.type) + ' · ' + sz.aktiv.name + (Z.laeuft ? ' · Zeit läuft ' + Z.faktor + '×' : ''));
     if (cmd.type === 'shipUndock' || cmd.type === 'siliconSell' || cmd.type === 'siliconMineStart') ring(sz.aktiv.x, sz.aktiv.y, '#6cf', 1100);
     pruefen(); hud(true);
+    // Nach einer Zielaktion die Flugflächen wieder sichtbar machen, auch wenn die
+    // Zielkarte zuvor außerhalb des Bildschirms liegende Handsteuerung verdrängt hat.
+    if (Z.sichtbar && ['anfliegen','orbit','folgen','ausrichten','andocken'].includes(aktion))
+      buehne.scrollIntoView?.({block:'nearest', behavior:'instant'});
     return r;
   }
   function waehlen(ziel) {
@@ -279,6 +310,7 @@ function verbinden(B) {
     $('raum-zielkarte').hidden = true; $('raum-dock').hidden = true;
     for (const id of ['raum-abdocken', 'raum-andocken', 'raum-stopp', 'raum-duell', 'raum-feuer']) $(id).hidden = true;
     if (leer) {
+      status.textContent = 'Kein Flug aktiv'; auswahl.textContent = 'Kein Ziel gewählt'; hand.disabled = true;
       setzen('raum-schiff', 'Kein Weltstand'); setzen('raum-lage', 'Im Steuerpult einen finanzierten Jäger laden'); setzen('raum-fahrt', ''); setzen('raum-ladung', '');
       setzen('raum-kasse', '–'); setzen('raum-reserve', '–'); setzen('raum-zeit', '–'); setzen('raum-audit', '–');
       neuBauen('ziele', 'leer', $('raum-ziele'), () => [absatz('Kein Weltstand geladen.', 'note')]);
@@ -286,8 +318,20 @@ function verbinden(B) {
       return;
     }
     const a = sz.aktiv, frei = a.lage === 'frei', jaeger = a.id === sz.jaeger && a.klasse === 'jaeger' && sz.regel === 204, d = B.duellStand(), p = B.patrouilleStand();
-    const LAGE = { angedockt: 'Im Dock', frei: ['orbit','folgen'].includes(a.modus) ? 'Autopilot: ' + a.modus + ' · ' + fmt(a.ziel?.radius || a.ziel?.abstand) + ' P · Handflug/Stopp übernimmt' : a.modus === 'anflug' ? 'Autopilot' : a.modus === 'hand' ? 'Handflug' : 'Freier Flug – Halt',
+    const LAGE = { angedockt: 'Im Dock', frei: ['orbit','folgen'].includes(a.modus) ? 'Autopilot: ' + a.modus : a.modus === 'anflug' ? 'Autopilot: Anfliegen' : a.modus === 'hand' ? 'Handflug' : 'Freier Flug – Halt',
       andocken: 'Dockt an …', abdocken: 'Legt ab …', transit: 'Transit' };
+    const zielName = (z) => z ? z.art === 'punkt' ? 'Raumpunkt (' + fmt(z.x) + ', ' + fmt(z.y) + ')' : S.objekt(sz, z.id)?.name || 'Ziel nicht mehr verfügbar' : 'Kein Flugziel';
+    const modus = a.modus === 'anflug' ? 'Autopilot: Anfliegen' : a.modus === 'orbit' ? 'Autopilot: Orbit · Radius ' + fmt(a.ziel?.radius) + ' P' : a.modus === 'folgen' ? 'Autopilot: Folgen · Abstand ' + fmt(a.ziel?.abstand) + ' P' : LAGE[a.lage];
+    const flugtext = (frei ? modus : LAGE[a.lage] || a.lage) + (a.ziel ? ' · Flugziel: ' + zielName(a.ziel) : '') + (Z.laeuft ? ' · Zeit läuft' : ' · Zeit pausiert') + (a.gestrandet ? ' · Flug nicht finanziert' : '');
+    if (status.textContent !== flugtext) status.textContent = flugtext;
+    const gew = typeof Z.auswahl === 'string' ? S.objekt(sz, Z.auswahl)?.name || 'Ziel nicht mehr verfügbar' : Z.auswahl ? 'Freier Raumpunkt' : 'Keines';
+    auswahl.textContent = 'Gewähltes Ziel: ' + gew;
+    const h = angebot('steuern', {kurs:a.sollKurs, fahrt:a.sollFahrt});
+    hand.disabled = !frei || !h.ok; hand.title = h.ok ? 'Kurs und Schub beibehalten, Autopilot beenden' : h.reason;
+    hand.setAttribute('aria-label', 'Manuell übernehmen · ' + hand.title);
+    for (const [id, aktion] of [['raum-abdocken','abdocken'], ['raum-andocken','andocken'], ['raum-stopp','stopp']]) {
+      const q = angebot(aktion); $(id).disabled = !q.ok; $(id).title = q.ok ? '' : q.reason;
+    }
     setzen('raum-schiff', a.name);
     setzen('raum-lage', (LAGE[a.lage] || a.lage) + (a.gestrandet ? ' · NICHT FINANZIERT' : '') + (a.erfassung ? ' · Aufgeschaltet: ' + a.erfassung.id : ''));
     setzen('raum-fahrt', fmt(a.fahrt) + ' P/s · Kurs ' + a.kurs + '/256');
@@ -314,7 +358,12 @@ function verbinden(B) {
       setzen('raum-zielname', o ? o.name : 'Freier Raumpunkt');
       const dist = o ? o.distanz : Math.round(Math.hypot(punkt.x - a.x, punkt.y - a.y));
       setzen('raum-zielinfo', fmt(dist) + ' P' + (o && o.art === 'station' ? ' · Lager (nicht Spielereigentum): ' + o.lager : o && o.art === 'boje' ? ' · höchstens ' + o.maxTempo + ' P/s' : o && o.vorrat !== undefined ? ' · Vorrat ' + o.vorrat : o && o.art === 'schiff' ? ' · ' + o.owner + ' · ' + o.ladung : ''));
-      const akt = S.aktionen(sz, Z.auswahl);
+      const akt = S.aktionen(sz, Z.auswahl).map(x => {
+        const abstand = Math.max(B.welt().flugKern.DATEN.punktHalt, Math.min(sz.raumRadius, Math.round(dist)));
+        const q = x.aktiv ? angebot(x.id, Z.auswahl, abstand) : null;
+        return {...x, text:x.id === 'anfliegen' ? 'Autopilot: Anfliegen' : x.text,
+          aktiv:x.aktiv && !!q?.ok, grund:q && !q.ok ? q.reason : x.grund};
+      });
       if(a.klasse==='frachter'&&o?.art==='tor'&&B.angebot){const q=B.angebot(S.befehl(B.welt(),sz,'torpruefen'));akt.push({id:'torpruefen',text:'Bezahlten Toranflug bestätigen'+(q.ok?'':' · '+q.reason),aktiv:q.ok});}
       neuBauen('ziel', JSON.stringify([Z.auswahl, akt]), $('raum-zielaktionen'), () => {
         const teile = [];
@@ -330,11 +379,15 @@ function verbinden(B) {
             eingabe.style.minHeight = '48px'; eingabe.style.width = '100%';
             label.append(eingabe); teile.push(label);
           }
-          teile.push(knopf(x.text, x.id === 'anfliegen' ? 'primary' : '', () => {
+          const taste = knopf(x.text, x.id === 'anfliegen' ? 'primary' : '', () => {
             if (eingabe && !eingabe.reportValidity()) return;
             tun(x.id, Z.auswahl, false, eingabe ? Number(eingabe.value) : undefined);
-          }, !x.aktiv, 'ziel-' + x.id));
-          if (!x.aktiv && x.grund) teile.push(absatz(x.grund, 'note'));
+          }, !x.aktiv, 'ziel-' + x.id);
+          teile.push(taste);
+          if (!x.aktiv && x.grund) {
+            const grund = absatz(x.grund, 'note'); grund.id = 'raum-grund-' + x.id;
+            taste.setAttribute('aria-describedby', grund.id); taste.title = x.grund; teile.push(grund);
+          }
         }
         return teile;
       });
@@ -343,10 +396,12 @@ function verbinden(B) {
     if (a.lage === 'angedockt') {
       $('raum-dock').hidden = false;
       const st = S.objekt(sz, sz.station), bb = sz.bergbau, fl = flotteGeprueft(sz), F = B.welt().daten.flug;
-      const sig = JSON.stringify([a.id, st.lager, bb, fl, p.status, sz.kasse]);
+      const abflug = angebot('abdocken');
+      const sig = JSON.stringify([a.id, st.lager, bb, fl, p.status, sz.kasse, abflug.ok, abflug.reason]);
       neuBauen('dock', sig, $('raum-dockinhalt'), () => {
         const teile = [absatz('Lager der Station (nicht Spielereigentum): ' + st.lager, 'note')];
-        teile.push(knopf('Abdocken · bindet Flugreserve (' + F.reserveMinuten + ' min × ' + F.lohnJeMinute + ' ISK)', 'primary', () => tun('abdocken'), false, 'dock-abdocken'));
+        teile.push(knopf('Abdocken · bindet Flugreserve (' + F.reserveMinuten + ' min × ' + F.lohnJeMinute + ' ISK)', 'primary', () => tun('abdocken'), !abflug.ok, 'dock-abdocken'));
+        if (!abflug.ok) teile.push(absatz('Abflug gesperrt: ' + abflug.reason, 'note'));
         if (a.klasse==='frachter' && B.angebot) {
           for(const [id,text] of [['eisfracht','F4 · bezahlte Eis-Rundfracht'],['torfracht','F6 · Eis-Rundfracht mit Torbeleg']]) {
             const q=B.angebot(S.befehl(B.welt(),sz,id));

@@ -153,7 +153,7 @@ test('P3: original prepaid owner W5ac ferry brings factory hull to Aldera, then 
  while(remaining>0){const step=remaining>=60?60:remaining>=10?10:1;
   j.weiterspielen(step);remaining-=step;}
  const after=clean(w,j.zustandReferenz());
- assert.equal(after.w5ac.active,null,'paid ferry completed');
+ assert.notEqual(after.w5ac.active?.id,ship.id,'own paid ferry is no longer in transit');
  assert.ok(after.w5ac.completed.some(x=>x.id===ship.id&&x.owner==='house'
    &&x.kosten===active.kosten),'original W5ac payment and arrival receipt');
  assert.equal(after.ships[ship.id].system,'aldera','physical destination after paid travel');

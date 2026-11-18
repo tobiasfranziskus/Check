@@ -389,7 +389,8 @@ function industrieAnzeigen(s,angebote){
   transfer=$('p3-industrie-transfer');
  const eigeneId=p.werftSpielerSchiffId;
  const frei=eigeneId?session.piloten().find(x=>x.id===eigeneId):null;
- const steuerbar=!!eigeneId&&!!raum&&(frei?.erlaubt===true||session.pilotStatus()===eigeneId);
+ const steuerbar=!!eigeneId&&!!raum&&!p.werftTransferAktiv&&
+  (frei?.erlaubt===true||session.pilotStatus()===eigeneId);
  const transferSichtbar=!!eigeneId&&p.werftSpielerOrt==='nadir';
  transfer.hidden=!transferSichtbar;
  transfer.disabled=!p.werftTransferBereit;
@@ -943,7 +944,7 @@ $('p3-industrie-cockpit')?.addEventListener('click',()=>{
   const s=session.zustandReferenz(),p=scope.P3Industrie.auswerten(
    session.weltReferenz(),s,session.angebote());
   const id=p.werftSpielerSchiffId;
-  if(!p.sichtbar||!id||s.ships[id]?.owner!=='house'||!s.w5.schiffIds.includes(id))
+  if(!p.sichtbar||!id||p.werftTransferAktiv||s.ships[id]?.owner!=='house'||!s.w5.schiffIds.includes(id))
    throw Error('Kein eigenes, original gefertigtes Werftschiff vorhanden');
   const pruefung=session.piloten().find(x=>x.id===id);
   if(!pruefung?.erlaubt&&session.pilotStatus()!==id)

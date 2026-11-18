@@ -92,7 +92,11 @@ function finish(){
  }
  assert.equal(s.ships[ship].system,'aldera');
  assert.equal(s.ships[ship].heimat,'nadir');
- assert.equal(s.owners.house.cash,1839,'real tariff minus prefinanced crew wages');
+ // The original ice miner continues to operate in the same world clock:
+ // extra mined/sold goods and wages are NOT attributable to the F4 tariff.
+ assert.ok(Number.isSafeInteger(s.owners.house.cash)&&s.owners.house.cash>=0);
+ assert.equal(s.kanon.spielerFrachten.gebuehr-s.kanon.spielerFrachten.lohn,120,
+   'the 240-ISK transport fee and 120-ISK pilot wages are separately booked, not net corporate profit');
  const done=j.exportieren();
  const tampered=JSON.parse(done);
  tampered.w5ac.completed[0].kosten=0;

@@ -28,6 +28,17 @@ test('P3: original nine paid F4 and subsequent second bought W5 hull remain inde
  assert.equal(nadir.werftFrachtId,'freight-'+f.second);
  assert.equal(nadir.werftFrachtBereit,false,'Nadir ship cannot run Aldera F4 directly');
  assert.equal(nadir.werftTransferId,'reposition-'+f.second);
+ const strecke=[
+   ...(s.w3.auftrag?['W3-Erzfracht']:[]),
+   ...(s.w5n?.frachtauftrag?['W5n-Eisfracht']:[]),
+   ...(s.w5ac?.active?['W5ac-Überführung']:[])
+ ];
+ assert.deepEqual(nadir.werftStreckenAuftraege,strecke,
+  'show only actually active original transport contracts');
+ assert.equal(nadir.werftStreckeBelegt,strecke.length>0);
+ assert.deepEqual(def.werftStreckenAuftraege,strecke,
+  'ship selection must never change the global route occupancy');
+ assert.equal(Object.isFrozen(nadir.werftStreckenAuftraege),true);
  assert.equal(nadir.werftFrachter.find(sh=>sh.id===f.first).ort,'aldera');
  assert.equal(nadir.werftFrachter.find(sh=>sh.id===f.second).ort,'nadir');
  assert.equal(v(f.first).werftSpielerSchiffId,f.first);

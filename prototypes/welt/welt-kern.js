@@ -1097,7 +1097,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       p3Warteauftrag=null;
       p3NpcVorrang=false;
       p3NpcVorrangSeit=null;
-      p3GebundenerZustand=state;
+      // The replacement snapshot is not an authenticated continuation
+      // of a queue. Discard the pointer too; otherwise every future
+      // legitimate J8 clone is permanently rejected at admission.
+      p3GebundenerZustand=null;
       return;
     }
     if (p3NpcVorrang) {

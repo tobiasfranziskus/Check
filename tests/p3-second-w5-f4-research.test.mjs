@@ -6,6 +6,8 @@ const {run}=require('./p3-second-w5-f4-research.cjs');
 
 test('P3: second bought W5 hull completes a genuine paid, audited F4 round after funded ferry',()=>{
  const v=run();
+ const replay=run();
+ assert.deepEqual(replay,v,'same seed, funded commands and FIFO choice must replay identically');
  assert.equal(v.status,'paid-second-f4-completed');
  assert.equal(v.first,'sh004');
  assert.equal(v.second,'sh010');

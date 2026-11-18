@@ -19,21 +19,31 @@ function verify(j){
  return s;
 }
 function available(j,id,phase){
- const reasons=new Map();
+ const reasons=new Map(),busy={w3:0,eis:0,w5ac:0,frei:0},snapshots=[];
  for(let n=0;n<=MAX_WAIT;n++){
-  const q=j.angebote().find(a=>a.id===id);
-  if(q?.ok)return {quote:q,checks:n,at:j.zustandReferenz().tick,
-    blockers:[...reasons.entries()]};
+  const state=j.zustandReferenz(),q=j.angebote().find(a=>a.id===id);
+  if(q?.ok)return {ok:true,quote:q,checks:n,at:state.tick,
+    blockers:[...reasons.entries()],busy,snapshots};
   const reason=q?.reason||'kein Originalangebot';
   reasons.set(reason,(reasons.get(reason)||0)+1);
+  const w3=state.w3.auftrag,w5n=state.w5n.frachtauftrag,w5ac=state.w5ac.active;
+  if(w3)busy.w3++;
+  if(w5n)busy.eis++;
+  if(w5ac)busy.w5ac++;
+  if(!w3&&!w5n&&!w5ac)busy.frei++;
+  if(n%12===0||n===MAX_WAIT)snapshots.push({tick:state.tick,
+    w3:w3?{schiff:w3.schiff,phase:w3.phase,start:w3.start,gearbeitet:w3.gearbeitet}:null,
+    eis:w5n?{schiff:w5n.schiff,phase:w5n.phase,gearbeitet:w5n.gearbeitet}:null,
+    ueberfuehrung:w5ac?{schiff:w5ac.id,gearbeitet:w5ac.gearbeitet}:null,
+    company:state.owners.house.cash,ice:state.stations.st_aldera.lager.eis||0});
   if(n<MAX_WAIT)j.weiterspielen(10);
   if(n%24===0)verify(j);
  }
  const s=verify(j);
- console.log('P3_ZWEITFRACHT_BLOCKED '+JSON.stringify({phase,ship:id,tick:s.tick,
-  buyer:s.owners.st_nadir.cash,company:s.owners.house.cash,
-  ice:s.stations.st_aldera.lager.eis||0,blockers:[...reasons.entries()]}));
- assert.fail('Keine belegte bezahlbare '+phase+' in 24 Originalstunden: '+JSON.stringify([...reasons.entries()]));
+ return {ok:false,phase,ship:id,at:s.tick,checks:MAX_WAIT+1,
+  blockers:[...reasons.entries()],busy,snapshots,
+  company:s.owners.house.cash,buyer:s.owners.st_nadir.cash,
+  ice:s.stations.st_aldera.lager.eis||0};
 }
 function run(){
  const seed=erstellen(),j=J8.erstellen();
@@ -48,6 +58,23 @@ function run(){
  const oldCount=s0.kanon.spielerFrachten.auftraege.length;
  assert.equal(oldCount,9);
  const ferry=available(j,'reposition-'+seed.second,'W5ac-Überführung');
+ if(!ferry.ok){
+  const after=verify(j),save=j.exportieren(),cold=J8.erstellen();
+  cold.oeffnen204(save,true);
+  assert.equal(cold.exportieren(),save);
+  assert.equal(cold.weltReferenz().hash(cold.zustandReferenz()),w.hash(after));
+  assert.equal(after.ships[seed.first].owner,'house');
+  assert.equal(after.ships[seed.second].owner,'house');
+  assert.equal(after.ships[seed.second].system,'nadir');
+  assert.equal(after.kanon.spielerFrachten.auftraege.length,9);
+  assert.equal(v(seed.first).werftFrachtRunden,9);
+  assert.equal(v(seed.second).werftFrachtRunden,0);
+  assert.equal(v().werftSpielerSchiffId,seed.first);
+  return {status:'blocked',first:seed.first,second:seed.second,
+    phase:'original-paid-ferry',ferry,roundCount:9,tick:after.tick,
+    cash:after.owners.house.cash,worldMoney:33000,
+    hash:w.hash(after),reason:'W5ac original capacity or other signed quote denied'};
+ }
  assert.equal(ferry.quote.kosten,60);
  assert.equal(ferry.quote.minuten,60);
  const f0=verify(j),ownerCash=f0.owners.house.cash;
@@ -68,6 +95,22 @@ function run(){
  assert.equal(afterFerry.ships[seed.first].system,'aldera');
  assert.equal(w.buchwert(afterFerry,seed.second),732);
  const freight=available(j,'freight-'+seed.second,'F4-Original-Eisrundfracht');
+ if(!freight.ok){
+  const after=verify(j),save=j.exportieren(),cold=J8.erstellen();
+  cold.oeffnen204(save,true);
+  assert.equal(cold.exportieren(),save);
+  assert.equal(cold.weltReferenz().hash(cold.zustandReferenz()),w.hash(after));
+  assert.equal(after.ships[seed.first].owner,'house');
+  assert.equal(after.ships[seed.second].owner,'house');
+  assert.equal(after.ships[seed.second].system,'aldera');
+  assert.equal(after.kanon.spielerFrachten.auftraege.length,9);
+  assert.equal(v(seed.first).werftFrachtRunden,9);
+  assert.equal(v(seed.second).werftFrachtRunden,0);
+  return {status:'blocked',first:seed.first,second:seed.second,
+    phase:'original-paid-freight',ferry,freight,roundCount:9,
+    tick:after.tick,cash:after.owners.house.cash,worldMoney:33000,
+    hash:w.hash(after),reason:'No signed fully funded second-hull F4 quote within observation'};
+ }
  const secondBefore=v(seed.second),firstBefore=v(seed.first);
  assert.equal(secondBefore.werftFrachtRunden,0);
  assert.equal(firstBefore.werftFrachtRunden,9);
@@ -105,7 +148,7 @@ function run(){
  assert.equal(cold.exportieren(),save);
  assert.equal(cold.weltReferenz().hash(cold.zustandReferenz()),w.hash(completed));
  assert.equal(verify(cold).kanon.spielerFrachten.auftraege.length,10);
- return {seed:42,first:seed.first,second:seed.second,
+ return {status:'completed',seed:42,first:seed.first,second:seed.second,
   ferry:{start:ferry.at,arrival:receipt.ankunft,kosten:receipt.kosten,
     checks:ferry.checks,blockers:ferry.blockers,beforeCash:ownerCash},
   freight:{start:freight.at,delivered:contract.geliefert,end:contract.end,
@@ -119,4 +162,7 @@ function run(){
   worldMoney:33000,hash:w.hash(completed)};
 }
 module.exports={run};
-if(require.main===module)console.log('P3_ZWEITFRACHT_OK '+JSON.stringify(run()));
+if(require.main===module){
+ const result=run();
+ console.log(result.status==='completed'?'P3_ZWEITFRACHT_OK ':'P3_ZWEITFRACHT_BLOCKED ',JSON.stringify(result));
+}

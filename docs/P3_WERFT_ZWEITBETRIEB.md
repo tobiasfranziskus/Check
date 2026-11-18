@@ -10,3 +10,11 @@ Aus dem autoritativen S02/Seed42-Regel204-Zweitfrachter-Testfixture erzeugt der 
 4. **Negativbefund zulässig:** Hat der echte Markt innerhalb des begrenzten Beobachtungsfensters keinen solchen Originalvertrag, dokumentiert der Test die nachgewiesenen Sperrgründe; nichts wird erzwungen. Ohne das neue Gameplay nicht als „bestanden“ melden.
 
 **[QA ausstehend]** GitHub-Node22-/W5-Tests tatsächlich ausführen; reine Forschung, kein Merge und kein Pages-Deploy ohne separate Integrationsfreigabe. Echte iPad-/NAS-Abnahme offen. W6-Dauerstabilität damit nicht nachgewiesen.
+
+## Negativer Erstlauf / originärer Engpass
+
+**[ANALYSE, CI-Kommit `741bdb8`]** 532/533 Node22 bestanden, neuer Test zurecht fehlgeschlagen: Zwischen Weltminute **3160 und 4600** wurde `reposition-sh010` bei **145 von 145** legitimen Angeboten durch `Noch aktive W3-Fracht oder Ueberfuehrung` verweigert. Die Firmenkasse hatte am Ende 5.435 ISK, der Eisbestand in Aldera 92; fehlendes eigenes Geld oder Ware war nicht der Hauptblocker. Bestehende Test-/Wirtschaftssuiten blieben grün, aber **beide vollständigen Workflows endeten `failure`** und zählen nicht als bestanden. Der originale W5ac-Kern sperrt Überführungen bei jeder aktiven W3-Erz- bzw. W5n-Eisfracht sowie parallelen W5ac-Fahrten. Das ist ein gegenwärtiger Kapazitäts-/Belegungskonflikt, noch kein Beweis für einen fehlerhaften Geldkern.
+
+**Abgrenzung:** Der positive Titel „zweiter Frachter im Einsatz“ ist für dieses Szenario **nicht nachgewiesen**. Die neue Prüfversion schreibt beide zulässigen Ergebnisse explizit in das Forschungsprotokoll: `completed` nur mit originalsigniertem Transfer- und F4-Beleg, oder `blocked` mit Belegungshistogramm, tatsächlichen W3-/W5n-/W5ac-Aufträgen, original unveränderten neun Erstfrachten, beiden Schiffeigentümern, allen Core-Audits und kalt importierbarem Save. Ein grüner Test in der Variante `blocked` bedeutet **nur korrekte Negativprüfung**, nicht erfolgreiche Überführung. Kein produktiver Scheduling-/Wirtschaftseingriff ohne separate sachliche Freigabe.
+
+**[QA erneut ausstehend]** Neues Testwerkzeug und Report im folgenden Commit, keine Produktdateien verändert.

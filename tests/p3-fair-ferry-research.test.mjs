@@ -6,6 +6,8 @@ const {run,expire}=require('./p3-fair-ferry-research.cjs');
 
 test('P3 research: bounded queued player reaches original paid ferry then NPC route resumes, never deployed',()=>{
  const r=run();
+ const replay=run();
+ assert.deepEqual(replay,r,'repeat same financed world and exact queue must replay bit-identically');
  assert.equal(r.status,'completed-original-ferry-in-research-only-world');
  assert.equal(r.second,'sh010');
  assert.equal(r.grant.kosten,60);

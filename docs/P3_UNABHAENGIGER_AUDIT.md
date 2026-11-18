@@ -111,6 +111,15 @@ Der lokale Node22-Lauf `node tests/p3-independent-soak.cjs S04 730` beendete bei
 | 730 | aus | 218 | 6 | 22 | 169712 | `df77a89e8fd0cafe` |
 | 730 | an | 219 | 6 | 22 | 170304 | `4c753d2b941f41bc` |
 
-Im S04-Paar lief der NPC-Durchsatz zwischen Tag 365 und 730 in beiden Modi weiter. Die Forschung führte genau eine zusätzliche, bezahlte Hausüberführung aus. Der Zusatzlauf S02 bis Tag 730 war zum Abschluss dieses Berichts in Actions noch offen. [Zusatzlauf S02](https://github.com/tobiasfranziskus/Check/actions/runs/44386502218/job/135092400438)
+Im S04-Paar lief der NPC-Durchsatz zwischen Tag 365 und 730 in beiden Modi weiter. Die Forschung führte genau eine zusätzliche, bezahlte Hausüberführung aus. Der zusätzliche S02-Lauf in Actions bestand beide Modi mit zwölf Checkpoints. Ausgangshash `f9d24e437e6a211d` war in beiden Welten gleich.
 
-**Provenienz.** Die CI-Ergebnisse beziehen sich auf den Test- und Workflow-Commit `6721f95`. Der abschließende Commit ergänzt ausschließlich diesen Messbericht. Der erste lokale Gesamtlauf und die erste Szenariomatrix bleiben im Prüfprotokoll als Infrastrukturabbruch bzw. methodisch unvollständige Matrix sichtbar.
+| Tag | Forschung | NPC-Eis | W3 | Ersatzkäufe | Wassererlös (ISK) | Welt-Hash |
+| ---: | --- | ---: | ---: | ---: | ---: | --- |
+| 365 | aus | 1578 | 31 | 148 | 1210818 | `a875c215772524cd` |
+| 365 | an | 4163 | 80 | 392 | 3182608 | `cc709f5e14f6f26e` |
+| 730 | aus | 1578 | 31 | 148 | 1210818 | `79d0e5f754011635` |
+| 730 | an | 4659 | 89 | 438 | 3561234 | `3b25250e85360a6c` |
+
+Ohne Forschung stagnierten in S02 zwischen Tag 365 und 730 alle vier gemessenen Durchsatzgrößen. Die Forschungswelt verbuchte in diesem Intervall weitere 496 NPC-Eisabschlüsse und 46 Ersatzkäufe. Da beide Welten ab dem ersten Zuschlag unterschiedliche Wirtschaftszustände durchlaufen, ist dies eine gemessene Wirkung für das S02-Paar. Die Zahlen belegen weder die Ursache der späteren Stagnation im Originalzweig noch eine allgemeine Fairness- oder Nachhaltigkeitsgarantie. Mit der bereits bestätigten Regression und 13×90-Matrix war der unabhängige Audit-Workflow damit vollständig erfolgreich. [Audit-Workflow](https://github.com/tobiasfranziskus/Check/actions/runs/44386502218) · [S02-Langlauf](https://github.com/tobiasfranziskus/Check/actions/runs/44386502218/job/135092400438)
+
+**Provenienz.** Die CI-Ergebnisse beziehen sich auf den Test- und Workflow-Commit `6721f95`. Die nachfolgenden Commits ergänzen ausschließlich diesen Messbericht. Der erste lokale Gesamtlauf und die erste Szenariomatrix bleiben im Prüfprotokoll als Infrastrukturabbruch bzw. methodisch unvollständige Matrix sichtbar.

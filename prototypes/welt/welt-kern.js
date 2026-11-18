@@ -1229,7 +1229,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       }
       // 2. Eisfracht Aldera -> Nadir, sobald Charge, Käuferetat und Arbeitsreserve vorhanden sind.
       if (p.eisfracht && !state.w5n.frachtauftrag && !state.w3.auftrag
-        && !(p3Forschung && state.w5ac?.active)
+        && !(p3Forschung && p3GebundenerZustand === state && state.w5ac?.active?.owner === 'house')
         && (state.stations[W.quellStation].lager.eis || 0) >= W.charge) {
         const frei = ids(state.ships).map((id) => state.ships[id]).find((sh) => sh.owner === W.frachterOwner
           && sh.klasse === 'frachter' && sh.phase === 'dock' && sh.system === 'aldera' && sh.auftrag === 'halten'
@@ -1936,7 +1936,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         return verwerfen('P8g: kein echter ungedeckter J3-Materialbedarf');
       if(cmd.owner!=='st_nadir')return verwerfen('nur realer Industriekäufer darf bestellen');
       if(!['frei','geliefert','storniert'].includes(i.phase))return verwerfen('Vertrag bereits vorhanden');
-      if(s.w3.auftrag||s.w5n.frachtauftrag||(p3Forschung&&s.w5ac?.active))
+      if(s.w3.auftrag||s.w5n.frachtauftrag||(p3Forschung&&p3GebundenerZustand===s&&s.w5ac?.active?.owner==='house'))
         return verwerfen('bereits laufende Fracht');
       if((s.owners.k7_werft_treuhand?.cash||0)!==0)
         return verwerfen('vorheriger Vertrag hat noch gebundenes Werftkapital');

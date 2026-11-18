@@ -55,6 +55,8 @@ function run(){
  assert.equal(w.save(s),saved,'Unpersisted research queue must not self-activate on import');
  assert.equal(w.p3ForschungsFrachtAnmeldung(s,f.second,1440).ok,false);
  const beforePilot=s.owners.pilot_house.cash;
+ const beforePlayerWage=s.kanon.spielerFrachten.lohn;
+ const beforePlayerFreight=s.kanon.spielerFrachten.gebuehr;
  const beforeBuyer=s.owners.st_nadir.cash;
  const beforeMoney=Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
  const beforeIce=s.w5n.eisGeliefert;
@@ -99,6 +101,8 @@ function run(){
    last:end.letzterBeleg,at:s.tick,first:f.first,second:f.second,
    cash:s.owners.house.cash,buyer:s.owners.st_nadir.cash,
    pilotGain:s.owners.pilot_house.cash-beforePilot,
+   paidPlayerWage:s.kanon.spielerFrachten.lohn-beforePlayerWage,
+   paidPlayerFreight:s.kanon.spielerFrachten.gebuehr-beforePlayerFreight,
    buyerBefore:beforeBuyer,worldMoney:beforeMoney,oldRounds:oldCount,
    currentRounds:s.kanon.spielerFrachten.auftraege.length,
    extraIceDelivered:s.w5n.eisGeliefert-beforeIce,
@@ -112,8 +116,14 @@ function run(){
  assert.equal(closed.menge,50);
  assert.equal(closed.arbeit,120);
  assert.equal(closed.fracht,240);
- assert.equal(outcome.pilotGain,120);
- assert.equal(outcome.extraIceDelivered,50);
+ // Pilot household, NPC water purchases and NPC freights can also change
+ // independently while 120 real minutes pass. Match the SIGNED player-specific
+ // original freight book rather than mistakenly treating global deltas as solely
+ // this one player's F4 contract.
+ assert.equal(outcome.paidPlayerWage,120);
+ assert.equal(outcome.paidPlayerFreight,240);
+ assert.ok(outcome.pilotGain>=120);
+ assert.ok(outcome.extraIceDelivered>=50);
  assert.equal(outcome.currentRounds,10);
  assert.equal(s.ships[f.second].owner,'house');
  assert.equal(s.ships[f.second].system,'aldera');

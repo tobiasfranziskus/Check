@@ -46,8 +46,8 @@ function run(){
  const before=w.hash(s),cash=s.owners.house.cash;
  const oldCount=s.kanon.spielerFrachten.auftraege.length;
  assert.equal(w.p3ForschungsFrachtAnmeldung(s,'sh002').ok,false);
- assert.equal(w.p3ForschungsFrachtAnmeldung(s,f.first).ok,false,
-   'Only the exact newly ferried Nadir-built own W5 hull may enter this research trial');
+ // sh004 is ALSO an originally purchased and ferried Nadir-built owned hull.
+ // Never blacklist it merely because this test selects sh010 for the next job.
  const attempt=w.p3ForschungsFrachtAnmeldung(s,f.second,1440);
  assert.equal(attempt.ok,true,attempt.reason);
  assert.equal(w.hash(s),before,'Admission must not debit or alter signed world');

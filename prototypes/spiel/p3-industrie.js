@@ -27,6 +27,17 @@ function auswerten(w,s,angebote){
    yard.auftrag?'Werft baut mit bezahltem Material eine neue Hülle':
    'Neue Aufträge hängen von Originalware, Firmenkapital, Lager und Kapazität ab';
  const stock=nadir.frachter||0,house=s.owners.house.cash;
+ // Only *physically produced* W5 hulls lawfully owned by the player qualify.
+ const w5Ids=new Set(yard.schiffIds||[]);
+ const eigeneWerftFrachter=Object.values(s.ships).filter(sh=>
+   sh.owner==='house'&&sh.klasse==='frachter'&&w5Ids.has(sh.id))
+   .sort((a,b)=>a.id.localeCompare(b.id));
+ const eigenesWerftSchiff=eigeneWerftFrachter.length
+   ?eigeneWerftFrachter[eigeneWerftFrachter.length-1].id:null;
+ const gekauft=eigenesWerftSchiff?s.ships[eigenesWerftSchiff]:null;
+ const transferId=eigenesWerftSchiff?'reposition-'+eigenesWerftSchiff:null;
+ const transferAngebot=transferId?angebote.find(a=>a.id===transferId):null;
+ const transferAktiv=!!(eigenesWerftSchiff&&s.w5ac?.active?.id===eigenesWerftSchiff);
  const stage=signierteErzVertraege===0?'W3 – Erztransport':
    refinery.abgeschlossen===0?'W4 – bezahlte Verarbeitung':
    yard.fertig===0?'W5 – Material zur Werft':'W3 → W4 → W5 nachgewiesen';
@@ -45,6 +56,15 @@ function auswerten(w,s,angebote){
   hausKaufpreis:r.economy.waren.frachter.basis,
   hausKaufbereit:buyer.ok===true,hausKaufgrund:buyer.reason||null,
   hausKaufId:'buy-st_nadir-frachter',produktionslage:auftrag,
+  werftSpielerSchiffId:eigenesWerftSchiff,
+  werftSpielerAnzahl:eigeneWerftFrachter.length,
+  werftSpielerOrt:gekauft?.system||null,
+  werftTransferId:transferId,
+  werftTransferAktiv:transferAktiv,
+  werftTransferBereit:gekauft?.system==='nadir'&&transferAngebot?.ok===true,
+  werftTransferGrund:transferAngebot?.reason||null,
+  werftTransferKosten:transferAngebot?.ok?transferAngebot.kosten:null,
+  werftTransferMinuten:transferAngebot?.ok?transferAngebot.minuten:null,
   ledger:Object.freeze({erzMined:s.ledger.erz.mined,materialProduced:s.ledger.material.produced,
     materialConsumed:s.ledger.material.consumed,freighterProduced:s.ledger.frachter.produced}),
   kaufberechtigt:stock>0&&house>=r.economy.waren.frachter.basis&&buyer.ok===true});

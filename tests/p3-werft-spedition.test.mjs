@@ -51,3 +51,22 @@ test('P3 Kapitel06: authentic paid W5-F4 receipts and revalidated repeat-offer i
  assert.equal(j.zustandReferenz().minted,0);assert.equal(j.zustandReferenz().burned,0);
  assert.equal(Object.values(j.zustandReferenz().owners).reduce((n,o)=>n+o.cash,0),33000);
 });
+
+test('P3 Kapitel06: no selection or stale foreign ID can claim an unowned factory hull',()=>{
+ const j=J8.erstellen();j.starten195(OLD.create(42,'private195').export(),true);
+ const w=j.weltReferenz(),s=j.zustandReferenz();
+ w.politikSetzen(s,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
+ w.npcAutoSetzen(s,true);w.npcSiliziumSetzen(s,true);
+ for(let i=0;i<5;i++)j.weiterspielen(60);
+ assert.equal(j.ausfuehren('buy-st_nadir-frachter').ok,true);
+ const before=w.hash(j.zustandReferenz()),saved=j.exportieren();
+ const choose=(id)=>Industry.auswerten(w,j.zustandReferenz(),j.angebote(),id);
+ assert.equal(choose('sh004').werftSpielerSchiffId,'sh004');
+ assert.equal(choose('sh001').werftSpielerSchiffId,'sh004');
+ assert.equal(choose('sh999').werftSpielerSchiffId,'sh004');
+ assert.deepEqual(choose('sh004').werftFrachter.map(sh=>sh.id),['sh004']);
+ assert.equal(choose('sh004').werftFrachter[0].ort,'nadir');
+ assert.equal(choose('sh004').werftFrachter[0].buchwert,750);
+ assert.equal(w.hash(j.zustandReferenz()),before);
+ assert.equal(j.exportieren(),saved,'selection is not stored in Rule204 JSON');
+});

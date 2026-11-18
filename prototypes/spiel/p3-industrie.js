@@ -6,7 +6,7 @@
 (function(scope){
 'use strict';
 const natural=n=>Number.isSafeInteger(n)&&n>=0;
-function auswerten(w,s,angebote){
+function auswerten(w,s,angebote,auswahlId=null){
  if(s?.rulesVersion!==204||s?.kanon?.npcAuto!==true||
    s?.kanon?.npcSilizium?.aktiv!==true)return Object.freeze({sichtbar:false});
  if(!w||w.regel!==204||!w.audit(s).ok||!Array.isArray(angebote))
@@ -32,9 +32,17 @@ function auswerten(w,s,angebote){
  const eigeneWerftFrachter=Object.values(s.ships).filter(sh=>
    sh.owner==='house'&&sh.klasse==='frachter'&&w5Ids.has(sh.id))
    .sort((a,b)=>a.id.localeCompare(b.id));
- const eigenesWerftSchiff=eigeneWerftFrachter.length
-   ?eigeneWerftFrachter[eigeneWerftFrachter.length-1].id:null;
+ // User-only ephemeral UI selection. On old saves and missing choices prefer an
+ // already docked Aldera carrier, not the newest untransferred Nadir hull.
+ const auswahl=eigeneWerftFrachter.find(sh=>sh.id===auswahlId)
+   ||eigeneWerftFrachter.find(sh=>sh.system==='aldera'&&sh.phase==='dock')
+   ||eigeneWerftFrachter[0]||null;
+ const eigenesWerftSchiff=auswahl?.id||null;
  const gekauft=eigenesWerftSchiff?s.ships[eigenesWerftSchiff]:null;
+ const werftFrachter=Object.freeze(eigeneWerftFrachter.map(sh=>Object.freeze({
+   id:sh.id,ort:sh.system,phase:sh.phase,
+   buchwert:w.buchwert(s,sh.id)
+ })));
  const transferId=eigenesWerftSchiff?'reposition-'+eigenesWerftSchiff:null;
  const transferAngebot=transferId?angebote.find(a=>a.id===transferId):null;
  const transferAktiv=!!(eigenesWerftSchiff&&s.w5ac?.active?.id===eigenesWerftSchiff);
@@ -69,7 +77,7 @@ function auswerten(w,s,angebote){
   hausKaufbereit:buyer.ok===true,hausKaufgrund:buyer.reason||null,
   hausKaufId:'buy-st_nadir-frachter',produktionslage:auftrag,
   werftSpielerSchiffId:eigenesWerftSchiff,
-  werftSpielerAnzahl:eigeneWerftFrachter.length,
+  werftFrachter,werftSpielerAnzahl:eigeneWerftFrachter.length,
   werftSpielerOrt:gekauft?.system||null,
   werftTransferId:transferId,
   werftTransferAktiv:transferAktiv,

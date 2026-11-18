@@ -11,7 +11,9 @@ test('P3: second bought W5 hull completes a genuine paid, audited F4 round after
  assert.equal(v.second,'sh010');
  assert.equal(v.currentRounds,10);
  assert.equal(v.worldMoney,33000);
- assert.equal(v.extraIceDelivered,50);
+ assert.ok(v.extraIceDelivered>=50,'NPC cargo can also arrive during 120 original minutes');
+ assert.equal(v.paidPlayerWage,120,'exact player-specific original labor ledger');
+ assert.equal(v.paidPlayerFreight,240,'exact player-specific original freight ledger');
  assert.equal(v.closed.fracht,240);
  assert.equal(v.closed.arbeit,120);
 });

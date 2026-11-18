@@ -111,7 +111,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   const p3Forschung = NODE && process.env.APHROS_P3_FAIR_FERRY_RESEARCH === '1'
     && rules.rulesVersion === 204;
   let p3Warteauftrag = null, p3GebundenerZustand = null;
-  let p3NpcVorrang = false, p3LetzterBeleg = null, p3Erfolge = 0;
+  let p3NpcVorrang = false, p3NpcVorrangSeit = null, p3LetzterBeleg = null, p3Erfolge = 0;
   // K7-Preise ausschließlich aus den Original-W1/W3/W5-Regeln ableiten,
   // keine zweite Tarif-/Balancingtabelle für den Forschungsauftrag.
   const K7_PREIS = k7 ? Object.freeze({
@@ -1064,7 +1064,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       || sh.phase !== 'dock' || sh.auftrag !== 'halten' || sh.flug?.lage !== 'angedockt'
       || Object.values(sh.ladung).some(x => x !== 0)
       || !state.w5.schiffIds.includes(schiff)
-      || state.w5ac.completed.some(x => x.id === schiff))
+      || state.w5ac.completed.some(x => x.id === schiff)
+      || m_core_anlage.stillgelegt(state, sh))
       return Object.freeze({ok:false,reason:'Kein kaufbelegter freier eigener Nadir-Frachter'});
     // Admission is NON-reserving: no escrow is booked until the exact original
     // core quote is legally valid at dispatch. Recheck actual funds then.
@@ -1084,12 +1085,34 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       letzterBeleg:p3LetzterBeleg?Object.freeze({...p3LetzterBeleg}):null});
   }
   function p3VorNpcFenster(state) {
-    if (!p3Forschung || !p3GebundenerZustand || state !== p3GebundenerZustand)return;
+    if (!p3Forschung || !p3GebundenerZustand)return;
+    // J8 advances a VALIDATED CLONE, not the same object. A non-persisted
+    // research intent cannot authorize a different state or stick forever
+    // to its predecessor. Fail closed, give an explicit status and permit
+    // a new request for the now-current state. No money was escrowed yet.
+    if (state !== p3GebundenerZustand) {
+      if (p3Warteauftrag)
+        p3LetzterBeleg={status:'zustandswechsel-abgebrochen',
+          schiff:p3Warteauftrag.schiff,tick:state.tick};
+      p3Warteauftrag=null;
+      p3NpcVorrang=false;
+      p3NpcVorrangSeit=null;
+      p3GebundenerZustand=state;
+      return;
+    }
     if (p3NpcVorrang) {
-      // Alternation: after one player ferry, an observed real NPC route must
-      // start before a new player registration is admitted.
+      // Yield to any ACTUALLY started NPC transport, never an unfinanced
+      // or indefinitely absent demand. A bounded 120-minute research
+      // grace starts when the house ferry was really booked (60 minutes
+      // underway + 60 minutes idle), not at enrollment.
       if (state.w3.auftrag || state.w5n.frachtauftrag
-        || state.w5ac.active?.owner === 'transport')p3NpcVorrang = false;
+        || state.w5ac.active?.owner === 'transport'
+        || (p3NpcVorrangSeit !== null
+          && state.tick >= p3NpcVorrangSeit + 120
+          && !state.w5ac.active)) {
+        p3NpcVorrang=false;
+        p3NpcVorrangSeit=null;
+      }
       return;
     }
     const request = p3Warteauftrag;
@@ -1097,6 +1120,16 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (state.tick > request.frist) {
       p3LetzterBeleg = {status:'abgelaufen',schiff:request.schiff,tick:state.tick};
       p3Warteauftrag = null;
+      return;
+    }
+    // The lower-level Rule191 quote does not check wear. The research
+    // scheduler must fail closed both when enrolled and JUST BEFORE start,
+    // including a valid, audited zero-book-value boundary state.
+    const sh=state.ships[request.schiff];
+    if (!sh || m_core_anlage.stillgelegt(state, sh)) {
+      p3LetzterBeleg={status:'original-abgelehnt',
+        schiff:request.schiff,tick:state.tick,grund:'Huelle stillgelegt'};
+      p3Warteauftrag=null;
       return;
     }
     const quote = kern.pilotW5TransferKalkulation(state,request.schiff);
@@ -1120,12 +1153,17 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       tick:state.tick,kosten:quote.kosten,minuten:quote.minuten};
     p3Erfolge++;
     p3NpcVorrang=true;
+    p3NpcVorrangSeit=state.tick;
     p3Warteauftrag=null;
   }
 
   // NPC-Automatik: wählt nur finanzierte Aufträge und nutzt dieselben validierten Befehle.
   const m_core_disponent = (() => {
-    const versuch = (state, cmd, k1) => (k1 ? m_core_kreislauf.ausfuehren(state, cmd) : kern.execute(state, cmd, rules));
+    const versuch = (state, cmd, k1) =>
+      (p3Forschung && state.w5ac?.active
+        && ['shipFreight','shipFreightIce'].includes(cmd?.type))
+        ? {ok:false,reason:'P3: W5ac belegt den einzigen Transportkorridor'}
+        : (k1 ? m_core_kreislauf.ausfuehren(state, cmd) : kern.execute(state, cmd, rules));
     function schritt(state) {
       const k = state.kanon, p = k.politik;
       if (!p.automatik) return;
@@ -1229,7 +1267,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       }
       // 2. Eisfracht Aldera -> Nadir, sobald Charge, Käuferetat und Arbeitsreserve vorhanden sind.
       if (p.eisfracht && !state.w5n.frachtauftrag && !state.w3.auftrag
-        && !(p3Forschung && p3GebundenerZustand === state && state.w5ac?.active?.owner === 'house')
+        && !(p3Forschung && state.w5ac?.active)
         && (state.stations[W.quellStation].lager.eis || 0) >= W.charge) {
         const frei = ids(state.ships).map((id) => state.ships[id]).find((sh) => sh.owner === W.frachterOwner
           && sh.klasse === 'frachter' && sh.phase === 'dock' && sh.system === 'aldera' && sh.auftrag === 'halten'
@@ -1683,6 +1721,12 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     try {
       pruefeForm(state);
       const k = state.kanon, fehler = [];
+      // Independently of any external queue or Node object identity, an
+      // ACTIVE original W5ac is authoritative lane occupancy after import.
+      if (p3Forschung &&
+        Number(!!state.w3?.auftrag) + Number(!!state.w5n?.frachtauftrag)
+          + Number(!!state.w5ac?.active) > 1)
+        fehler.push('P3: unzulaessige Doppelbelegung W3/W5n/W5ac');
       m_core_firmenpolitik.audit(state, fehler);
       if(k.materialSupplyEnabled!==undefined
         &&(!p8dFracht||typeof k.materialSupplyEnabled!=='boolean'))
@@ -1936,7 +1980,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         return verwerfen('P8g: kein echter ungedeckter J3-Materialbedarf');
       if(cmd.owner!=='st_nadir')return verwerfen('nur realer Industriekäufer darf bestellen');
       if(!['frei','geliefert','storniert'].includes(i.phase))return verwerfen('Vertrag bereits vorhanden');
-      if(s.w3.auftrag||s.w5n.frachtauftrag||(p3Forschung&&p3GebundenerZustand===s&&s.w5ac?.active?.owner==='house'))
+      if(s.w3.auftrag||s.w5n.frachtauftrag||(p3Forschung&&s.w5ac?.active))
         return verwerfen('bereits laufende Fracht');
       if((s.owners.k7_werft_treuhand?.cash||0)!==0)
         return verwerfen('vorheriger Vertrag hat noch gebundenes Werftkapital');
@@ -2187,6 +2231,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   function execute(state, cmd) {
     pruefeForm(state);
     const type = cmd && cmd.type;
+    if (p3Forschung && state.w5ac?.active
+      && ['shipFreight','shipFreightIce','shipFreightGateIce'].includes(type))
+      return {ok:false,type,reason:'P3: W5ac belegt den einzigen Transportkorridor'};
     if(jaeger&&type==='stationBuildFighter')
       return m_core_jaeger.bauen(state,cmd);
     if(jaeger&&type==='shipBuy'&&cmd?.klasse==='jaeger'){

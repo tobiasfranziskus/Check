@@ -18,4 +18,20 @@ Nach Original-Kern-Tick, Produktion und regulärer Firmenpolitik, aber **vor** d
 ## Reproduzierbares Experiment
 `tests/p3-fair-ferry-research.test.mjs` / `tests/p3-fair-ferry-research.cjs`: Der vorhandene originalfinanzierte Seed42/S02-Wert bei Tick 3160 enthält die Hüllen `sh004` (Aldera) und `sh010` (Nadir), neun vollständig bezahlte Spieler-F4-Belege, 33.000 ISK Weltgeld. Negative Anmeldung für fremde/ungültige/bereits überführte Schiffe, Duplikatblockade, reiner Anmeldungshash, TTL-Ablauf ohne Abbuchung, vollständiger Original-W5ac-Start mit Eigentums-/Waren-/Kassen-/Treuhandnachweisen, fertige 60 Original-Minuten und nachfolgende echte NPC-Fracht. World-Audit und JSON-Roundtrip sollen weiter bestehen. **Nur tatsächlich grüne CI-Läufe zählen als erfolgreiche Durchführung.**
 
-**Status bei Anlage:** Implementierter isolierter Forschungsversuch; CI-Ergebnis zunächst offen. Kein Release, kein Merge, kein Save-Upgrade.
+## Beobachteter Ergebnisnachweis
+
+**[GEPRÜFTER FORSCHUNGSCODE `633aa419`, 18.11.2026]** Vier tatsächlich vollständig beendete CI-Workflows für exakt diesen Stand:
+
+- [W5-RC1 #44367147463](https://github.com/tobiasfranziskus/Check/actions/runs/44367147463): `completed/success`, **535/535 Node22**; Touch-Preflight und NAS-Singlefile-Build erfolgreich
+- [JavaScript-Regressionsprüfung #44367148839](https://github.com/tobiasfranziskus/Check/actions/runs/44367148839): `completed/success`
+- [J4e Root/Flug/Browser #44367147554](https://github.com/tobiasfranziskus/Check/actions/runs/44367147554): `completed/success`
+- [W6/P8g #44367147370](https://github.com/tobiasfranziskus/Check/actions/runs/44367147370): `completed/success` einschließlich unabhängig laufender Seed-/Krisenprüfungen und Browser (das Forschungs-Opt-in war dort **nicht aktiviert**)
+
+**Original-Sequenz:** In der unverändert finanzierten S02/Seed42-Originalwelt von Minute 3160 meldet `house` den für **750 ISK tatsächlich gekauften** W5-Frachter `sh010` an. Der experimentelle Slot startet bei **Minute 3377** ausschließlich über den voll validierten Original-Weltbefehl die **60 ISK** teure und für **60 Minuten** treuhänderisch gebuchte W5ac-Überführung. Die Hülle erreicht bei **Minute 3437** tatsächlich Aldera; sofort danach beginnt wieder eine eigenständige NPC-W5n-Fracht. `sh004` und `sh010` verbleiben bei `house`. Die neun schon zuvor bezahlten Spieler-F4-Runden bleiben neun: **kein gefälschter zehnter Vertrag**. Original-Audits für Geld, Güter, W3–W5, Eigentum, Laden und Wiederholen bestehen; Weltgeld **33.000 ISK**, Mint/Burn **0**. Der Testzustand am Ende besitzt Hash **`5c9cc9a67b29a72a`**, ausdrücklich **kein** Ersatz für die unveränderte Basis-Referenzwelt `2454761bd83b9c95`, denn hier wurde eine andere autorisierte Aktion ausgeführt.
+
+**Ablauf-Gegenprobe:** Anmeldung für ein 60-Minuten-Fenster ohne freien Korridor verfällt bei Minute 3222; die Besitzerkasse bleibt **4.790 ISK** und `sh010` bleibt in Nadir. Unbefugte Fremd-IDs und Doppelanmeldungen werden abgewiesen. Eine Forschungs-Warteposition wird niemals in JSON gespeichert und kann nach Import nicht wieder auftauchen.
+
+**[GEZIELTE TESTNACHSCHÄRFUNG `8fb12582`]** Zusätzlich wurde der echte Originaltreuhandkontostand **60 ISK** beim Start des Hausauftrags als explizites Assert aufgenommen und ein **zweiter vollständiger bit-identischer Replay** verlangt. Die bisherigen vier grünen Workflows gelten **nur** für `633aa419`; eine weitere CI-Ausführung für den neuen Head ist gesondert erforderlich.
+
+**Integrationsentscheidung:** Forschung belegt eine **technisch mögliche, wirtschaftlich originalbezahlte** Priorität für genau einen eigenen Werftfrachter im gegebenen Seed. Sie belegt ausdrücklich **keine** produktionsfähige, savegeschützte, durchgehend vorfinanzierte und für alle Eigentümer faire Warteliste, keine zweite F4 und keine W6-Dauerstabilität. Die Änderung an der NPC-Priorität ist weiterhin **nicht freigegeben**. **Kein Merge oder Deployment** dieser Forschung.
+

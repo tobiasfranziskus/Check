@@ -1,0 +1,21 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+const {run}=require('./p3-werft-zweitbetrieb.cjs');
+test('P3: legitimately bought second W5 freighter accepts paid ferry then its OWN first 50-ice F4, no double booking',()=>{
+ const r=run();
+ assert.equal(r.first,'sh004');
+ assert.equal(r.second,'sh010');
+ assert.equal(r.ferry.kosten,60);
+ assert.equal(r.freight.menge,50);
+ assert.equal(r.freight.tarif,240);
+ assert.equal(r.freight.lohn,120);
+ assert.equal(r.roundCount,10);
+ assert.equal(r.bookValueSecond,696);
+ assert.equal(r.homeSecond,'nadir');
+ assert.equal(r.worldMoney,33000);
+ assert.ok(r.shipsOwned.includes(r.first));
+ assert.ok(r.shipsOwned.includes(r.second));
+ console.log('P3_ZWEITFRACHT_OK '+JSON.stringify(r));
+});

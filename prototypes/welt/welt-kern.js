@@ -1061,7 +1061,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     const sh = state.ships[schiff];
     if (!sh || sh.owner !== 'house' || sh.klasse !== 'frachter'
       || sh.heimat !== 'nadir' || sh.system !== 'nadir'
-      || sh.phase !== 'dock' || sh.auftrag !== 'halten'
+      || sh.phase !== 'dock' || sh.auftrag !== 'halten' || sh.flug?.lage !== 'angedockt'
       || Object.values(sh.ladung).some(x => x !== 0)
       || !state.w5.schiffIds.includes(schiff)
       || state.w5ac.completed.some(x => x.id === schiff))
@@ -1111,8 +1111,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       }
       return;
     }
-    const result=kern.execute(state,{type:'shipReposition',owner:'house',
-      schiff:request.schiff},rules);
+    const result=execute(state,{type:'shipReposition',owner:'house',
+      schiff:request.schiff});
     if (!result.ok || state.w5ac.active?.id !== request.schiff)
       throw Error('P3 Forschungsfenster: Originalbefehl trotz grüner Quote gescheitert');
     m_core_flugplan.koerperSync(state);

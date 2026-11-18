@@ -886,7 +886,14 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         const x = f.auftraege[i], sh = s.ships[x?.schiff], offen = x?.end === null;
         const key = x?.schiff + '|' + x?.start;
         if (!sh || sh.owner !== owner || sh.klasse !== 'frachter'
-          || sh.heimat !== 'aldera' || !ganz(x.start) || x.start > s.tick
+          // A Nadir-built W5 hull keeps its immutable origin after the ORIGINAL
+          // fully paid W5ac ferry. Only its audited, completed, pre-contract
+          // ferry receipt makes it an Aldera freight carrier (Rule204 only).
+          || (sh.heimat !== 'aldera' && !(rules.rulesVersion === 204
+            && sh.heimat === 'nadir' && s.w5?.schiffIds?.includes(sh.id)
+            && s.w5ac?.completed?.some(t => t.id === sh.id
+              && t.owner === owner && t.ankunft <= x.start)))
+          || !ganz(x.start) || x.start > s.tick
           || x.menge !== W.charge || x.eis !== eis || x.arbeit !== arbeit
           || x.fracht !== fracht || x.zeit !== W.flugMinuten
           || gesehen.has(key) || (i && f.auftraege[i-1].start > x.start)) return false;

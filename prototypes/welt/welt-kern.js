@@ -2237,6 +2237,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (p3Forschung && state.w5ac?.active
       && ['shipFreight','shipFreightIce','shipFreightGateIce'].includes(type))
       return {ok:false,type,reason:'P3: W5ac belegt den einzigen Transportkorridor'};
+    if (p3Forschung && type==='shipReposition' && state.ships[cmd?.schiff]
+      && m_core_anlage.stillgelegt(state, state.ships[cmd.schiff]))
+      return {ok:false,type,reason:'P3: stillgelegte Huelle darf nicht ueberfuehrt werden'};
     if(jaeger&&type==='stationBuildFighter')
       return m_core_jaeger.bauen(state,cmd);
     if(jaeger&&type==='shipBuy'&&cmd?.klasse==='jaeger'){

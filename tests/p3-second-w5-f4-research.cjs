@@ -54,6 +54,7 @@ function run(){
  assert.equal(s.owners.house.cash,cash,'No early debit without audited escrow model');
  assert.equal(w.save(s),saved,'Unpersisted research queue must not self-activate on import');
  assert.equal(w.p3ForschungsFrachtAnmeldung(s,f.second,1440).ok,false);
+ const beforeBookValue=w.buchwert(s,f.second);
  const beforePilot=s.owners.pilot_house.cash;
  const beforePlayerWage=s.kanon.spielerFrachten.lohn;
  const beforePlayerFreight=s.kanon.spielerFrachten.gebuehr;
@@ -76,6 +77,7 @@ function run(){
    assert.equal(started.frachttarif,240);
    assert.equal(started.menge,50);
    assert.equal(started.workEscrow,120);
+   assert.equal(started.buyEscrow,490,'Original buyer paid real 50 ice + 240 tariff');
   }
   const contract=s.kanon.spielerFrachten.auftraege.at(-1);
   if(started&&contract?.schiff===f.second&&contract.end!==null){
@@ -104,6 +106,7 @@ function run(){
    paidPlayerWage:s.kanon.spielerFrachten.lohn-beforePlayerWage,
    paidPlayerFreight:s.kanon.spielerFrachten.gebuehr-beforePlayerFreight,
    buyerBefore:beforeBuyer,worldMoney:beforeMoney,oldRounds:oldCount,
+   bookBefore:beforeBookValue,bookAfter:w.buchwert(s,f.second),
    currentRounds:s.kanon.spielerFrachten.auftraege.length,
    extraIceDelivered:s.w5n.eisGeliefert-beforeIce,
    hash:w.hash(s),sample:samples};
@@ -122,6 +125,8 @@ function run(){
  // this one player's F4 contract.
  assert.equal(outcome.paidPlayerWage,120);
  assert.equal(outcome.paidPlayerFreight,240);
+ assert.equal(outcome.bookBefore-outcome.bookAfter,36,
+   'Only the original ship wear core may deduct the 120-minute ferry book value');
  assert.ok(outcome.pilotGain>=120);
  assert.ok(outcome.extraIceDelivered>=50);
  assert.equal(outcome.currentRounds,10);

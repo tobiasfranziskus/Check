@@ -12,6 +12,7 @@ const MAX=5*1024*1024;
 const fmt=n=>Number(n).toLocaleString('de-DE');
 let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung=0,patrouille=null,duell=null;
 let cockpitGenutzt=false,flugerfahrung=false,managerTutor=null,pilotTutor=null,pilotMenu=null;
+let werftAuswahlId=null; // Only UI memory, never exported into a Rule204/207 save.
 const safeText=(s)=>String(s==null?'':s);
 const error=(e)=>safeText(e&&e.message?e.message:e);
 // Zentrale Anzeigenamen: nur für die Oberfläche, nie als ID in Befehlen oder Spielständen.
@@ -120,7 +121,7 @@ function startNeu(){
    const audit=welt.audit(zustand);
    if(!audit.ok)throw Error('W6: Wirtschaftsprüfung verweigert Start: '+audit.fehler.join('; '));
   }
-  session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
+  session=neu;werftAuswahlId=null;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
   pilotTutor?.zuruecksetzen();pilotMenu?.zeichnen();
   const ok=speichern(!!vorher);
   aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(p8gAktiv
@@ -153,7 +154,7 @@ function ladeSitzung(json,auswahl,backup=false){
  const a=regel===207?neu.oeffnenP8g(json,true):neu.oeffnen204(json,true);
  if(a.regel!==regel||a.weltgeld!==33000)
    throw Error('Die Prüfung der Wirtschaft und des Spielstands ist fehlgeschlagen.');
- session=neu;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
+ session=neu;werftAuswahlId=null;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
   pilotTutor?.zuruecksetzen();pilotMenu?.zeichnen();
  if(auswahl==='datei'||backup)speichern(!!gespeicherte(slot));
  aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Dein Spielstand wurde geprüft.');
@@ -361,8 +362,23 @@ function npcWerftAnzeigen(s){
 // P3 Kapitel 06: original financed W3-W4-W5 production and only a legal house purchase.
 function industrieAnzeigen(s,angebote){
  const host=$('p3-industrie');if(!host||!scope.P3Industrie)return;
- const p=scope.P3Industrie.auswerten(session.weltReferenz(),s,angebote);
+ const p=scope.P3Industrie.auswerten(session.weltReferenz(),s,angebote,werftAuswahlId);
  host.hidden=!p.sichtbar;if(!p.sichtbar)return;
+ // Never turn a stale/foreign ID into an owner command after a career reload.
+ werftAuswahlId=p.werftSpielerSchiffId;
+ const select=$('p3-industrie-auswahl'),shipLabel=$('p3-industrie-auswahl-label');
+ const ships=p.werftFrachter;
+ select.hidden=shipLabel.hidden=ships.length===0;
+ select.disabled=ships.length<2;
+ select.replaceChildren(...ships.map(sh=>{
+  const option=d.createElement('option');
+  option.value=sh.id;
+  option.textContent=sh.id+' · '+(sh.ort==='aldera'?'Aldera':sh.ort==='nadir'?'Nadir':sh.ort)+
+   ' · '+(sh.phase==='dock'?'am Dock':sh.phase==='reise'?'unterwegs':sh.phase)+
+   ' · '+fmt(sh.buchwert)+' ISK Buchwert';
+  return option;
+ }));
+ if(p.werftSpielerSchiffId)select.value=p.werftSpielerSchiffId;
  $('p3-industrie-phase').textContent=p.stage+' · '+p.produktionslage;
  $('p3-industrie-w3').textContent='W3 Transport: '+fmt(p.w3Vertraege)+
   ' vollständig bezahlte Erzfrachten mit '+fmt(p.w3Geliefert)+' geliefertem Erz ('+
@@ -947,11 +963,23 @@ $('p3-industrie-kauf')?.addEventListener('click',()=>{
   auftrag(p.hausKaufId); // J8 original house:shipBuy; atomic audit and save.
  }catch(e){hinweis('Werftkauf gesperrt: '+error(e),true);anzeigen();}
 });
+$('p3-industrie-auswahl')?.addEventListener('change',()=>{
+ if(!session||!scope.P3Industrie)return;
+ try{
+  const next=$('p3-industrie-auswahl').value;
+  const p=scope.P3Industrie.auswerten(session.weltReferenz(),
+   session.zustandReferenz(),session.angebote(),next);
+  if(!p.sichtbar||!p.werftFrachter.some(sh=>sh.id===next)
+    ||p.werftSpielerSchiffId!==next)
+   throw Error('Die Hülle gehört nicht zum original gebauten eigenen Werftbestand');
+  werftAuswahlId=next;anzeigen(); // No save or economic command on selection.
+ }catch(e){hinweis('Werftauswahl gesperrt: '+error(e),true);anzeigen();}
+});
 $('p3-industrie-transfer')?.addEventListener('click',()=>{
  if(!session||!scope.P3Industrie)return;
  try{
   const p=scope.P3Industrie.auswerten(session.weltReferenz(),
-   session.zustandReferenz(),session.angebote());
+   session.zustandReferenz(),session.angebote(),werftAuswahlId);
   if(!p.sichtbar||!p.werftTransferBereit||!p.werftTransferId)
    throw Error(p.werftTransferGrund||'Kein vollständig finanzierter Original-Überführungsauftrag');
   auftrag(p.werftTransferId); // Existing W5ac owner-authorized wage escrow + real world minutes.
@@ -962,7 +990,7 @@ $('p3-industrie-fracht')?.addEventListener('click',()=>{
  try{
   // No UI-made buyer, price or wage: re-evaluate the signed original J8 quote.
   const s=session.zustandReferenz(),p=scope.P3Industrie.auswerten(
-   session.weltReferenz(),s,session.angebote());
+   session.weltReferenz(),s,session.angebote(),werftAuswahlId);
   if(!p.sichtbar||!p.werftFrachtBereit||!p.werftFrachtId
     ||s.ships[p.werftSpielerSchiffId]?.owner!=='house'
     ||!s.w5.schiffIds.includes(p.werftSpielerSchiffId))
@@ -974,7 +1002,7 @@ $('p3-industrie-cockpit')?.addEventListener('click',()=>{
  if(!session||!scope.P3Industrie)return;
  try{
   const s=session.zustandReferenz(),p=scope.P3Industrie.auswerten(
-   session.weltReferenz(),s,session.angebote());
+   session.weltReferenz(),s,session.angebote(),werftAuswahlId);
   const id=p.werftSpielerSchiffId;
   if(!p.sichtbar||!id||p.werftTransferAktiv||s.ships[id]?.owner!=='house'||!s.w5.schiffIds.includes(id))
    throw Error('Kein eigenes, original gefertigtes Werftschiff vorhanden');

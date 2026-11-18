@@ -146,6 +146,7 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
    'no free or preowned W5 cockpit at start');
   assert.equal(await page.locator('#p3-industrie-fracht').isHidden(),true,
    'no paid W5 freighter means no freight button');
+  assert.equal(await page.locator('#p3-industrie-auswahl').isHidden(),true);
   for(let i=0;i<5;i++)await page.locator('#p3-industrie-zeit').tap();
   const raw=await page.evaluate(k=>localStorage.getItem(k),SLOT),s=JSON.parse(raw);
   assert.equal(s.tick,300,'five original 60-minute economic steps');
@@ -182,6 +183,9 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
   assert.equal(await page.locator('#p3-industrie-cockpit').isVisible(),true,
    'only physically built and bought W5 ship gets a cockpit shortcut');
   assert.equal(await page.locator('#p3-industrie-fracht').isVisible(),true);
+  assert.equal(await page.locator('#p3-industrie-auswahl').isVisible(),true);
+  assert.equal(await page.locator('#p3-industrie-auswahl').isDisabled(),true,
+    'single owned W5 freighter is shown but cannot be switched');
   assert.equal(await page.locator('#p3-industrie-fracht').isDisabled(),true,
    'no free freight directly after Nadir warehouse purchase');
   assert.equal(await page.locator('#p3-industrie-cockpit').isDisabled(),true,

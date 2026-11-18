@@ -46,6 +46,12 @@ function auswerten(w,s,angebote,auswahlId=null){
  const transferId=eigenesWerftSchiff?'reposition-'+eigenesWerftSchiff:null;
  const transferAngebot=transferId?angebote.find(a=>a.id===transferId):null;
  const transferAktiv=!!(eigenesWerftSchiff&&s.w5ac?.active?.id===eigenesWerftSchiff);
+ // Only observed, current original orders: no artificial reservation or predicted slot.
+ const streckenAuftraege=Object.freeze([
+   ore.auftrag?'W3-Erzfracht':null,
+   s.w5n?.frachtauftrag?'W5n-Eisfracht':null,
+   s.w5ac?.active?'W5ac-Überführung':null
+ ].filter(Boolean));
  // Exactly the already-audited K1/F4 player contracts of THIS purchased W5 hull.
  // Company cash includes mining, purchases and NPC activity: never call it freight profit.
  const belege=(s.kanon.spielerFrachten?.auftraege||[]).filter(a=>
@@ -81,6 +87,8 @@ function auswerten(w,s,angebote,auswahlId=null){
   werftSpielerOrt:gekauft?.system||null,
   werftTransferId:transferId,
   werftTransferAktiv:transferAktiv,
+  werftStreckeBelegt:streckenAuftraege.length>0,
+  werftStreckenAuftraege:streckenAuftraege,
   werftTransferBereit:gekauft?.system==='nadir'&&transferAngebot?.ok===true,
   werftTransferGrund:transferAngebot?.reason||null,
   werftTransferKosten:transferAngebot?.ok?transferAngebot.kosten:null,

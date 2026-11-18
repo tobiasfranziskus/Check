@@ -35,6 +35,8 @@ function checkModes(scenario, save, ship, days, seed, cohort) {
     const world = session.weltReferenz(), state = session.zustandReferenz();
     assert.equal(world.regel, 204);
     assert.equal(typeof world.p3ForschungsAnmeldung, enabled ? 'function' : 'undefined');
+    // A patch alone would inherit S02's retirement and shipyard reserve in S01/S03.
+    world.politikSetzen(state, world.daten.politik);
     world.politikSetzen(state, scenario.politik);
     const startTick = state.tick;
     const initialHash = world.hash(state);
@@ -52,6 +54,7 @@ function checkModes(scenario, save, ship, days, seed, cohort) {
         enabled, request, queue: world.p3ForschungsStatus?.(), ...row}));
     }
   }
+  return disabled;
 }
 
 function seedFixture(seed, policy) {
@@ -93,7 +96,10 @@ if (selection === 'seeds') {
   const fixture = erstellen();
   const scenarios = SZENARIEN.filter(entry => selection === 'all' || entry.id === selection);
   assert.ok(scenarios.length, selection);
+  const initialHashes = new Set();
   for (const scenario of scenarios) {
-    checkModes(scenario, fixture.save, fixture.second, days, 42, 'paid-second-hull');
+    const initialHash = checkModes(scenario, fixture.save, fixture.second, days, 42, 'paid-second-hull');
+    assert.ok(!initialHashes.has(initialHash), 'scenario policies must differ: ' + scenario.id);
+    initialHashes.add(initialHash);
   }
 }

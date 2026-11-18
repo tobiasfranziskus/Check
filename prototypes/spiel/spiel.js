@@ -413,6 +413,16 @@ function industrieAnzeigen(s,angebote){
  transfer.textContent='Eigene Werfthülle '+(eigeneId||'')+' nach Aldera überführen'+
   (p.werftTransferBereit?' · '+fmt(p.werftTransferKosten)+' ISK für '+
     fmt(p.werftTransferMinuten)+' bezahlte Flugminuten':' · derzeit gesperrt');
+ const strecke=$('p3-industrie-strecke');
+ strecke.hidden=!transferSichtbar;
+ strecke.textContent=transferSichtbar
+  ?'Strecke Nadir–Aldera jetzt: '+(p.werftStreckeBelegt
+    ?p.werftStreckenAuftraege.join(' · '):'kein aktiver W3-/W5n-/W5ac-Auftrag')+
+   '. Original-Überführung für '+eigeneId+': '+
+   (p.werftTransferBereit?'freigegeben – wird beim Klick erneut geprüft.'
+    :'gesperrt – '+anzeigetext(p.werftTransferGrund||'kein freigegebenes Originalangebot')+
+     '. Weitere Weltzeit kann den Status ändern, garantiert aber kein freies Zeitfenster.')
+  :'';
  cockpit.hidden=!eigeneId;cockpit.disabled=!steuerbar;
  cockpit.textContent=eigeneId?'Werftfrachter '+eigeneId+' selbst fliegen':'Eigenen Werftfrachter selbst fliegen';
  const freight=$('p3-industrie-fracht');

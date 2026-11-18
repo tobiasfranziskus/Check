@@ -9,7 +9,7 @@ test('P3: after nine real W5 freight receipts, only a legally available future h
  assert.equal(result.window.start,2220);
  assert.equal(result.window.worldCash,33000);
  assert.equal(result.window.mint,0);assert.equal(result.window.burn,0);
- assert.ok(result.observedCount<=289);
+ assert.ok(result.observedCount<=145);
  assert.ok(result.window.end<=3660);
  if(result.firstPaid){
   assert.ok(['frachter','miner'].includes(result.firstPaid.type));
@@ -17,7 +17,7 @@ test('P3: after nine real W5 freight receipts, only a legally available future h
   assert.equal(result.firstPaid.value,result.firstPaid.price);
  }else{
   assert.equal(result.window.end,3660);
-  assert.equal(result.observedCount,289);
+  assert.equal(result.observedCount,145);
  }
  console.log('P3_WERFT_NEUKAUF_GRENZE '+JSON.stringify(result));
 });

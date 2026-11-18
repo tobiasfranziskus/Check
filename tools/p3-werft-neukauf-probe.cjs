@@ -1,12 +1,12 @@
 /* [ANALYSE] No new economic rules, stocks, consumers or reserved buyers.
  * Probe actual J8 ship purchase offers after nine fully financed W5 F4 rounds.
- * One original five-minute world step between checks, at most 24 h.
+ * One original ten-minute world step between checks, at most 24 h.
  */
 'use strict';
 const assert=require('node:assert/strict');
 const {run}=require('./p3-werftfrachter-zyklus.cjs');
 const J8=require('../prototypes/verbund/konzern-session.js');
-const MAX=288, STEP=5; // 1,440 real economic minutes
+const MAX=144, STEP=10; // J8 accepts only 1, 10 or 60; 1,440 real economic minutes
 function cashSum(s){return Object.values(s.owners).reduce((n,o)=>n+o.cash,0);}
 function audit(j){
  const w=j.weltReferenz(),s=j.zustandReferenz(),a=w.audit(s);
@@ -62,7 +62,7 @@ function pruefen(){
    const reason=q.reason||'kein Originalkaufangebot';
    const k=key+': '+reason;count[k]=(count[k]||0)+1;
   }
-  if(i%12===0||i===MAX)timeline.push({tick:t,
+  if(i%6===0||i===MAX)timeline.push({tick:t,
    cash:s.owners.house.cash,alderaMiner:s.stations.st_aldera.lager.miner||0,
    nadirFrachter:s.stations.st_nadir.lager.frachter||0,
    w5Gebaut:s.w5.fertig,w4Chargen:s.w4.abgeschlossen,

@@ -59,6 +59,27 @@ Für die C1b-/C1c-/C1d-Industriekette wurden **#249–#251 und #253–#264** (15
 
 **[GEPRÜFT / P0]** Nach individuellem GitHub-Compare gegen den weiterhin offenen Forschungsnachfolger [#243](https://github.com/tobiasfranziskus/Check/pull/243) (`behind_by=0`) wurden die alten PRs **#161, #164–#169, #171, #173, #175, #176, #178–#185** jeweils nach Begründungskommentar **ohne Merge geschlossen**. Im Nachfolger sind ihre vollständigen Head-Commits enthalten. **#170 bleibt ausdrücklich offen**: `status=diverged`, `behind_by=2` – eigene Commits nicht im Nachfolger. Zusammen mit 46 zuvor sicher geschlossenen W5s-Vorgängern ergibt das **65 bewahrte, einzeln belegte historische PR-Schließungen** dieser W5s-Forschungsfamilie. [Vollständige SHA-/Compare-Tabelle und Erhaltungsgrenzen](archiv/W5S_PR_KETTE_20261115.md). Die Live-PR-Zahl ging im abschließenden Batch **56 → 37** zurück (einschließlich offenem Dokumentations-PR #487). Weder #243 noch aktive Wirtschaft/Gameplay-PRs, Legacy-Prototypen, Tags, Branches, Spielstände oder Referenztests wurden gelöscht. Kein Code-Merge, keine Wirtschaftsregel- oder Save-Änderung, kein durch diese Triage ausgelöster Pages-Deploy.
 
+## P0-Nachtrag 18.11.2026 – acht weitere gesicherte Forschungsvorfahren
+
+**[MAIN/PAGES, nur Dokumentation]** [Integrations-PR #492](https://github.com/tobiasfranziskus/Check/pull/492) hat die vier vollständigen historischen Dokumentationsdateien des zuvor geschlossenen, nicht gemergten Original-Drafts [#487](https://github.com/tobiasfranziskus/Check/pull/487) mit identischen Git-Blob-SHAs plus einen korrigierten Quellenindex auf `main 6e4ae87f6c082d2f805dd6dbf9d2bd35e7e4075d` gebracht. [Pages-Deploy #44244728937](https://github.com/tobiasfranziskus/Check/actions/runs/44244728937) meldet genau diesen SHA `completed/success`. Für den docs-only-PR wurden keine CI-/Node22-/Browserchecks ausgeführt; 62 relative Verweise geprüft. Originalbranch #487 und die Vorversion `backup/main-before-p0-archiv-20261118` sind erhalten.
+
+**[GEPRÜFT / P0-PR-Triage]** Weitere **acht** offene PRs wurden nach direktem GitHub-Compare ihres unveränderten Head-SHAs mit einem noch offenen Forschungsnachfolger, `status=ahead` und **`behind_by=0`**, jeweils mit eigenem Nachfolgerkommentar **ohne Merge geschlossen**. Bezeichnete Werte sind die Anzahl der nach dem alten Head folgenden Commits im Forschungsnachfolger, **keine** Produktionsfreigabe:
+
+| Ohne Merge geschlossen | Original-Head | Offener, schützender Nachfolger-Head | Compare ahead/behind |
+| --- | --- | --- | --- |
+| [#408](https://github.com/tobiasfranziskus/Check/pull/408) | `eac8ae5ec4a25b5a06c265c1029e95b600f0181c` | [#423](https://github.com/tobiasfranziskus/Check/pull/423) `6835542c07260537e8c2a2f37e102c1ba575c612` | 56/0 |
+| [#412](https://github.com/tobiasfranziskus/Check/pull/412) | `c6c40cec68085f399b4baa833fc259abb5bc0626` | #423 (wie oben) | 39/0 |
+| [#415](https://github.com/tobiasfranziskus/Check/pull/415) | `3f771856ecc79c931e70e8238c3de2001cd408e6` | #423 | 14/0 |
+| [#420](https://github.com/tobiasfranziskus/Check/pull/420) | `a483d3274fb2a27ab3332526f07d0ce272888058` | #423 | 11/0 |
+| [#422](https://github.com/tobiasfranziskus/Check/pull/422) | `ccaff327cf73193deff13a6f475e0aa199d4d71d` | #423 | 8/0 |
+| [#246](https://github.com/tobiasfranziskus/Check/pull/246) | `76880387c4ebeec75461dd14bedafadc85726090` | [#265](https://github.com/tobiasfranziskus/Check/pull/265) `98fc29bd039bfbf907baefefe5a3b60bbee57b09` | 149/0 |
+| [#247](https://github.com/tobiasfranziskus/Check/pull/247) | `83538e9d1aab3d8d843e14158a17f79e02bc7aef` | #265 | 147/0 |
+| [#298](https://github.com/tobiasfranziskus/Check/pull/298) | `791392816ecd5959e67f8728ff25bd604567f7eb` | [#321](https://github.com/tobiasfranziskus/Check/pull/321) `a297e6f6e62402a9b7fe76285ed3c2aa3c287ce0` | 134/0 |
+
+**Bewusst erhalten:** [#252](https://github.com/tobiasfranziskus/Check/pull/252) `diverged` gegen #265 (136/7), [#317](https://github.com/tobiasfranziskus/Check/pull/317) `diverged` gegen #321 (67/13), [#335](https://github.com/tobiasfranziskus/Check/pull/335) `diverged` gegen #376 (30/284). Weitere abweichende #170, #279/#281/#283/#284 sowie K1-/Jäger-Leaves und unabhängige W6-Analysen bleiben unangetastet. Forschung ist **nicht [MAIN]**; kein neues Regel205/206-Opt-in, keine Geld-/Balancefreigabe.
+
+**GitHub-Livezählung unmittelbar nach diesen acht Schließungen:** 28 offene PRs (nach Merge #492: 36; danach 31; danach 28). Diese Zahl ist eine Momentaufnahme **vor einem neuen Nachtrags-PR**, keine dauerhafte Vorgabe. Keine Branches/Commits/Tests/Spielstände gelöscht, keine neuen Node22-/Wirtschafts-/Browserprüfungen für die Triage durchgeführt.
+
 ## Nächste P0-Pakete
 
 1. **PR-Triage in Gruppen von 10–20** auf Basis PR-Metadaten und Code-Nachfolger. Nur bei belegtem Ersatz und ohne einzigartige Funktion schließen, immer mit Verweis; Git-Branches/CI/Spielstände niemals löschen.

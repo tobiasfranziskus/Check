@@ -26,6 +26,8 @@ test('P3: first complete original W3→W4→W5 production ends in legal player-o
  const {j,w}=begin(),read=()=>Industry.auswerten(w,clean(w,j.zustandReferenz()),j.angebote());
  const start=read();assert.equal(start.sichtbar,true);
  assert.equal(start.hausKaufbereit,false);assert.equal(start.w5Gebaut,0);
+ assert.equal(start.werftSpielerSchiffId,null,'no cockpit before physical purchase');
+ assert.equal(start.werftSpielerAnzahl,0);
  assert.equal(j.ausfuehren('stationBuildShip-for-house').ok,false,'player cannot sign foreign W5 manufacturing');
  assert.equal(j.ausfuehren('transport:shipBuy').ok,false,'player cannot use NPC company money');
  for(let i=0;i<5;i++)j.weiterspielen(60);
@@ -51,12 +53,22 @@ test('P3: first complete original W3→W4→W5 production ends in legal player-o
  assert.equal(after.owners.house.cash,customer-750);
  assert.equal(after.stations.st_nadir.lager.frachter,stock-1);
  assert.equal(p2.kaufberechtigt,false,'sold-out hull cannot be purchased twice');
+ assert.equal(p2.werftSpielerSchiffId,bought[0].id,'only original W5-origin house hull is eligible');
+ assert.equal(p2.werftSpielerAnzahl,1);
+ const flug=j.piloten().find(x=>x.id===bought[0].id);
+ assert.ok(flug,'existing flight gate sees purchased hull');
+ assert.equal(flug.erlaubt,false,'do not circumvent the pre-existing Nadir free-flight lock');
+ assert.match(flug.grund,/nur in Aldera/);
+ const verkaufHash=w.hash(after);
+ assert.equal(w.hash(j.zustandReferenz()),verkaufHash,'read-only pilot gate must not mutate the original world');
  assert.equal(after.w5.fertig,before.w5.fertig,'ship transfer is not a free additional build');
  assert.equal(after.ledger.frachter.produced,before.ledger.frachter.produced);
  assert.equal(after.ledger.frachter.consumed,before.ledger.frachter.consumed+1);
  assert.equal(j.ausfuehren(p.hausKaufId).ok,false,'same hull cannot be bought a second time');
  const json=j.exportieren(),resumed=J8.erstellen();resumed.oeffnen204(json,true);
  assert.equal(resumed.exportieren(),json);assert.equal(w.hash(resumed.zustandReferenz()),w.hash(after));
+ assert.equal(Industry.auswerten(w,resumed.zustandReferenz(),resumed.angebote()).werftSpielerSchiffId,bought[0].id,
+  'industry cockpit shortcut survives original Save/Load');
  const forged=JSON.parse(json);forged.owners.house.cash+=750;forged.owners.werft_extern.cash-=750;
  assert.throws(()=>J8.erstellen().oeffnen204(JSON.stringify(forged),true),'cash laundering must be rejected');
  console.log('P3_W4_W5_HOUSE_HULL_OK '+JSON.stringify({tick:after.tick,
@@ -104,4 +116,64 @@ test('P3: no industrial purchase authority in classic career or separate Rule207
  assert.equal(w.hash(s),hash);
  const w6=J8.erstellen();w6.startenP8g(true);
  assert.equal(Industry.auswerten(w6.weltReferenz(),w6.zustandReferenz(),w6.angebote()).sichtbar,false);
+});
+
+
+test('P3: original prepaid owner W5ac ferry brings factory hull to Aldera, then permits real 2D pilot role',()=>{
+ const {j,w}=begin();
+ for(let i=0;i<5;i++)j.weiterspielen(60);
+ assert.equal(j.ausfuehren('buy-st_nadir-frachter').ok,true,'750-ISK original W5 buy');
+ const ship=Object.values(j.zustandReferenz().ships).find(sh=>
+   sh.owner==='house'&&sh.system==='nadir'&&j.zustandReferenz().w5.schiffIds.includes(sh.id));
+ assert.ok(ship,'actual house-owned original W5 hull');
+ const transfer='reposition-'+ship.id;
+ assert.equal(j.piloten().find(x=>x.id===ship.id)?.erlaubt,false,
+   'no unpaid Nadir cockpit teleport');
+ let quote=j.angebote().find(x=>x.id===transfer);
+ for(let i=0;i<24&&!quote?.ok;i++){
+   j.weiterspielen(60);
+   quote=j.angebote().find(x=>x.id===transfer);
+ }
+ assert.equal(quote?.ok,true,'original transfer must become legal: '+quote?.reason);
+ assert.ok(Number.isSafeInteger(quote.kosten)&&quote.kosten>0);
+ assert.ok(Number.isSafeInteger(quote.minuten)&&quote.minuten>0);
+ const before=clean(w,j.zustandReferenz()),cash=before.owners.house.cash;
+ const start=j.ausfuehren(transfer);
+ assert.equal(start.ok,true,JSON.stringify(start));
+ const active=j.zustandReferenz().w5ac.active;
+ assert.equal(active.id,ship.id);assert.equal(active.owner,'house');
+ assert.equal(active.kosten,quote.kosten,'displayed price is the original escrow amount');
+ assert.equal(active.minuten,quote.minuten,'displayed duration comes from the original contract');
+ assert.ok(active.kosten>0&&active.minuten>0);
+ assert.equal(j.zustandReferenz().owners.house.cash,cash-active.kosten,
+   'real pilot wages were reserved before travel');
+ assert.equal(j.ausfuehren(transfer).ok,false,'active ferry cannot be sold a second time');
+ clean(w,j.zustandReferenz());
+ const transitSave=j.exportieren(),transitCopy=J8.erstellen();
+ transitCopy.oeffnen204(transitSave,true);
+ assert.equal(transitCopy.exportieren(),transitSave,'prepaid voyage and escrow survive cold Save/Load');
+ assert.equal(w.hash(transitCopy.zustandReferenz()),w.hash(j.zustandReferenz()));
+ let remaining=active.minuten;
+ while(remaining>0){const step=remaining>=60?60:remaining>=10?10:1;
+  j.weiterspielen(step);remaining-=step;}
+ const after=clean(w,j.zustandReferenz());
+ assert.notEqual(after.w5ac.active?.id,ship.id,'own paid ferry is no longer in transit');
+ assert.ok(after.w5ac.completed.some(x=>x.id===ship.id&&x.owner==='house'
+   &&x.kosten===active.kosten),'original W5ac payment and arrival receipt');
+ assert.equal(after.ships[ship.id].system,'aldera','physical destination after paid travel');
+ assert.equal(after.ships[ship.id].owner,'house');
+ assert.equal(j.piloten().find(x=>x.id===ship.id)?.erlaubt,true,
+   'only now does original J6 Aldera flight permission become true');
+ const hash=w.hash(after);
+ const role=j.uebernehmen(ship.id,false);
+ assert.equal(role.ok,true,JSON.stringify(role));
+ assert.equal(w.hash(j.zustandReferenz()),hash,'pilot selection is not another economic action');
+ const exported=j.exportieren(),restored=J8.erstellen();
+ restored.oeffnen204(exported,true);
+ assert.equal(restored.exportieren(),exported);
+ assert.equal(w.hash(restored.zustandReferenz()),hash,'real ferry and ownership survive load');
+ assert.equal(Industry.auswerten(w,restored.zustandReferenz(),restored.angebote()).werftSpielerOrt,'aldera');
+ console.log('P3_W5AC_PLAYER_FERRY_OK '+JSON.stringify({ship:ship.id,
+  wages:active.kosten,minutes:active.minuten,house:after.owners.house.cash,
+  world:sum(after),mint:after.minted,burn:after.burned,hash}));
 });

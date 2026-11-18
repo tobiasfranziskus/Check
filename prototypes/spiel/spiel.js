@@ -385,6 +385,31 @@ function industrieAnzeigen(s,angebote){
   ?'Eine real gefertigte und noch nicht verkaufte Hülle gehört nach dem Kauf deinem Konzern. Nadir und Asterion können sie dann nicht mehr kaufen.'
   :'Privater Original-Kauf aktuell gesperrt: '+anzeigetext(p.hausKaufgrund||
     'Keine bezahlbare frei verfügbare Werfthülle; Lager und Finanzierung bleiben endlich.');
+ const cockpit=$('p3-industrie-cockpit'),note=$('p3-industrie-cockpit-hinweis'),
+  transfer=$('p3-industrie-transfer');
+ const eigeneId=p.werftSpielerSchiffId;
+ const frei=eigeneId?session.piloten().find(x=>x.id===eigeneId):null;
+ const steuerbar=!!eigeneId&&!!raum&&!p.werftTransferAktiv&&
+  (frei?.erlaubt===true||session.pilotStatus()===eigeneId);
+ const transferSichtbar=!!eigeneId&&p.werftSpielerOrt==='nadir';
+ transfer.hidden=!transferSichtbar;
+ transfer.disabled=!p.werftTransferBereit;
+ transfer.textContent='Eigene Werfthülle '+(eigeneId||'')+' nach Aldera überführen'+
+  (p.werftTransferBereit?' · '+fmt(p.werftTransferKosten)+' ISK für '+
+    fmt(p.werftTransferMinuten)+' bezahlte Flugminuten':' · derzeit gesperrt');
+ cockpit.hidden=!eigeneId;cockpit.disabled=!steuerbar;
+ cockpit.textContent=eigeneId?'Werftfrachter '+eigeneId+' selbst fliegen':'Eigenen Werftfrachter selbst fliegen';
+ note.hidden=!eigeneId;
+ note.textContent=steuerbar
+  ?'Echte bezahlte Werfthülle. Das bestehende 2D-Cockpit steuert sie in derselben Welt.'
+  :p.werftTransferAktiv
+   ?'Bezahlte Original-Überführung läuft. Bis zur echten Ankunft in Aldera keine freie Steuerung.'
+   :'Cockpit derzeit gesperrt: '+anzeigetext(frei?.grund||'Schiffwechsel nicht freigegeben')+
+    (transferSichtbar
+     ?'. Original-Überführung: '+(p.werftTransferBereit
+       ?'durch eigenen bezahlten Auftrag verfügbar'
+       :anzeigetext(p.werftTransferGrund||'Finanzierung, W3-Fracht oder Transportkapazität nicht frei'))
+     :'');
 }
 // J12: read-only station and company report from the SAME validated Rule204 session.
 // No separate economy, NPC signatures, speculative prices, or unvalidated purchase paths.
@@ -902,6 +927,30 @@ $('p3-industrie-kauf')?.addEventListener('click',()=>{
   if(!p.sichtbar||!p.kaufberechtigt)throw Error(p.hausKaufgrund||'Werfthülle nicht verfügbar');
   auftrag(p.hausKaufId); // J8 original house:shipBuy; atomic audit and save.
  }catch(e){hinweis('Werftkauf gesperrt: '+error(e),true);anzeigen();}
+});
+$('p3-industrie-transfer')?.addEventListener('click',()=>{
+ if(!session||!scope.P3Industrie)return;
+ try{
+  const p=scope.P3Industrie.auswerten(session.weltReferenz(),
+   session.zustandReferenz(),session.angebote());
+  if(!p.sichtbar||!p.werftTransferBereit||!p.werftTransferId)
+   throw Error(p.werftTransferGrund||'Kein vollständig finanzierter Original-Überführungsauftrag');
+  auftrag(p.werftTransferId); // Existing W5ac owner-authorized wage escrow + real world minutes.
+ }catch(e){hinweis('Werftüberführung gesperrt: '+error(e),true);anzeigen();}
+});
+$('p3-industrie-cockpit')?.addEventListener('click',()=>{
+ if(!session||!scope.P3Industrie)return;
+ try{
+  const s=session.zustandReferenz(),p=scope.P3Industrie.auswerten(
+   session.weltReferenz(),s,session.angebote());
+  const id=p.werftSpielerSchiffId;
+  if(!p.sichtbar||!id||p.werftTransferAktiv||s.ships[id]?.owner!=='house'||!s.w5.schiffIds.includes(id))
+   throw Error('Kein eigenes, original gefertigtes Werftschiff vorhanden');
+  const pruefung=session.piloten().find(x=>x.id===id);
+  if(!pruefung?.erlaubt&&session.pilotStatus()!==id)
+   throw Error(pruefung?.grund||'Persönliche Steuerung nicht freigegeben');
+  pilotieren(id); // Existing validated transfer and original 2D cockpit; no new world.
+ }catch(e){hinweis('Werftcockpit gesperrt: '+error(e),true);anzeigen();}
 });
 $('p3-industrie-zeit')?.addEventListener('click',()=>{
  if(!session||!scope.P3Industrie)return;

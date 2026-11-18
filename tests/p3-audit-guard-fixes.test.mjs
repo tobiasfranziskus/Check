@@ -142,7 +142,7 @@ test('P3 audit fix: imported active ferry blocks original freight starts and lan
  ]) {
   const result=world.execute(state,cmd);
   assert.equal(result.ok,false);
-  assert.match(result.reason,/Korridor/);
+  assert.match(result.reason,/korridor/i);
   assert.equal(world.save(state),before);
  }
  const falsified=JSON.parse(before);

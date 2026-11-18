@@ -9,8 +9,8 @@ test('P3: second original bought hull completes genuine W5ac and F4 or documents
  assert.equal(r.second,'sh010');
  assert.equal(r.worldMoney,33000);
  if(r.status==='completed'){
-  assert.equal(r.ferry.quote.kosten,60);
-  assert.equal(r.freight.quote.ok,true);
+  assert.equal(r.ferry.kosten,60);
+  assert.equal(r.freight.end-r.freight.start,120);
   assert.equal(r.freight.menge,50);
   assert.equal(r.freight.tarif,240);
   assert.equal(r.freight.lohn,120);

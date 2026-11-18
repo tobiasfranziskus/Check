@@ -73,8 +73,20 @@ function finish(){
  assert.equal(x.geliefert,540);assert.equal(x.end,600);
  assert.equal(s.kanon.spielerFrachten.lohn,120);
  assert.equal(s.kanon.spielerFrachten.gebuehr,240);
- assert.equal(s.owners.w5n_fracht_arbeit.cash,0);
- assert.equal(s.owners.w5n_fracht_kauf.cash,0);
+ // The NPC dispatcher may already start its *next* funded F4 contract in
+ // this same world minute. Shared escrow is not the player's own residual.
+ assert.equal(s.kanon.spielerFrachten.auftraege.filter(a=>a.end===null).length,0);
+ assert.equal(s.owners.pilot_house.cash,141,'21 ISK miner + 120 ISK genuine player F4 pilot wages');
+ const active=s.w5n.frachtauftrag;
+ if(active){
+   assert.notEqual(active.schiff,ship,'next contract belongs to a different freighter');
+   assert.notEqual(s.ships[active.schiff].owner,'house','no new player freight was ordered');
+   assert.equal(s.owners.w5n_fracht_arbeit.cash,120-active.gearbeitet,
+     'original 120-ISK wage escrow belongs to the new running NPC contract');
+ }else{
+   assert.equal(s.owners.w5n_fracht_arbeit.cash,0,'no unattached wage escrow');
+   assert.equal(s.owners.w5n_fracht_kauf.cash,0,'no unattached buyer escrow');
+ }
  assert.equal(s.ships[ship].system,'aldera');
  assert.equal(s.ships[ship].heimat,'nadir');
  assert.equal(s.owners.house.cash,1839,'real tariff minus prefinanced crew wages');

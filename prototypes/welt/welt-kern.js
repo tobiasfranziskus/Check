@@ -1077,6 +1077,38 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     return Object.freeze({ok:true,schiff,angemeldet:state.tick,frist:state.tick+laufzeit,
       modell:'unverbindliche Vormerkung, Original-Treuhand erst bei Zuschlag'});
   }
+  // Optional P3/F4 follow-up, still Node22-only: this grants NO freight by itself.
+  // The existing original F4 quote must later prove buyer, ship, ice and wages.
+  function p3FrachtAnmelden(state,schiff,laufzeit=720) {
+    if (!p3Forschung) throw Error('P3/F4: Forschungsdisponent nicht aktiv');
+    if (!Number.isSafeInteger(laufzeit) || laufzeit < 120 || laufzeit > 1440)
+      return Object.freeze({ok:false,reason:'Nur 120–1440 echte Warteminuten'});
+    if (typeof schiff !== 'string' || !/^sh[0-9]{3,}$/.test(schiff))
+      return Object.freeze({ok:false,reason:'Unbekannte Schiff-ID'});
+    if (!state || !audit(state).ok)
+      return Object.freeze({ok:false,reason:'Original-Wirtschaftsaudit ungueltig'});
+    if (p3GebundenerZustand && p3GebundenerZustand !== state)
+      return Object.freeze({ok:false,reason:'Forschungsqueue an andere Welt gebunden'});
+    if (p3Warteauftrag || p3NpcVorrang)
+      return Object.freeze({ok:false,reason:'Warteposition besetzt oder NPC-Vorrang aktiv'});
+    const sh=state.ships[schiff];
+    const ferry=state.w5ac.completed.find(x=>x.id===schiff && x.owner==='house');
+    if (!sh || sh.owner!=='house' || sh.klasse!=='frachter'
+      || sh.heimat!=='nadir' || sh.system!=='aldera'
+      || sh.phase!=='dock' || sh.auftrag!=='halten'
+      || sh.flug?.lage!=='angedockt'
+      || Object.values(sh.ladung).some(x=>x!==0)
+      || !ferry || !state.w5.schiffIds.includes(schiff))
+      return Object.freeze({ok:false,reason:'Nur bezahlte, wirklich ueberfuehrte eigene W5-Huelle in Aldera'});
+    const labor = 2*W.flugMinuten*W.fliegerLohn;
+    if (!Number.isSafeInteger(labor) || state.owners.house.cash<labor)
+      return Object.freeze({ok:false,reason:'Haus kann Original-F4-Arbeit nicht tragen'});
+    // Deliberately no sidecar escrow or fake signed freight contract on enrollment.
+    p3GebundenerZustand=state;
+    p3Warteauftrag={art:'f4',schiff,angemeldet:state.tick,frist:state.tick+laufzeit};
+    return Object.freeze({ok:true,art:'f4',schiff,angemeldet:state.tick,
+      frist:state.tick+laufzeit,modell:'nur Antrag; Original-F4-Pruefung und Treuhand bei Zuschlag'});
+  }
   function p3Status() {
     return Object.freeze({aktiv:p3Forschung,wartend:p3Warteauftrag
       ?Object.freeze({...p3Warteauftrag}):null,
@@ -1099,25 +1131,38 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       p3Warteauftrag = null;
       return;
     }
-    const quote = kern.pilotW5TransferKalkulation(state,request.schiff);
+    const freight=request.art==='f4';
+    // W5n's legacy quote does not exclude a simultaneous W5ac transfer.
+    // An original physical corridor must not be double allocated in research.
+    if (freight && state.w5ac.active)return;
+    const quote=freight
+      ?kern.pilotIceFreightQuote(state,request.schiff)
+      :kern.pilotW5TransferKalkulation(state,request.schiff);
     if (!quote.ok) {
       // Only a busy original corridor may keep the request in the queue.
       // Any other original gate (funds, ownership, damage, wrong dock, prior
       // flight) cancels automatically: no locked money and no phantom slot.
-      if (quote.grund !== 'Noch aktive W3-Fracht oder Ueberfuehrung') {
+      if (quote.grund !== (freight ? 'Frachter bereits gebunden' : 'Noch aktive W3-Fracht oder Ueberfuehrung')) {
         p3LetzterBeleg={status:'original-abgelehnt',schiff:request.schiff,
           tick:state.tick,grund:quote.grund};
         p3Warteauftrag = null;
       }
       return;
     }
-    const result=execute(state,{type:'shipReposition',owner:'house',
-      schiff:request.schiff});
-    if (!result.ok || state.w5ac.active?.id !== request.schiff)
+    const result=execute(state,{type:freight?'shipFreightIce':'shipReposition',
+      owner:'house',schiff:request.schiff});
+    if (!result.ok || (freight
+      ?state.w5n.frachtauftrag?.schiff!==request.schiff
+        || state.kanon.spielerFrachten?.auftraege.at(-1)?.schiff!==request.schiff
+        || state.kanon.spielerFrachten?.auftraege.at(-1)?.start!==state.tick
+      :state.w5ac.active?.id!==request.schiff))
       throw Error('P3 Forschungsfenster: Originalbefehl trotz grüner Quote gescheitert');
     m_core_flugplan.koerperSync(state);
-    p3LetzterBeleg={status:'original-gestartet',schiff:request.schiff,
-      tick:state.tick,kosten:quote.kosten,minuten:quote.minuten};
+    p3LetzterBeleg=freight
+      ?{status:'original-f4-gestartet',schiff:request.schiff,tick:state.tick,
+        menge:W.charge,lohn:quote.arbeit,frachttarif:quote.fracht}
+      :{status:'original-gestartet',schiff:request.schiff,
+        tick:state.tick,kosten:quote.kosten,minuten:quote.minuten};
     p3Erfolge++;
     p3NpcVorrang=true;
     p3Warteauftrag=null;
@@ -2423,7 +2468,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(p8dFracht ? {p8dGetrennteSpedition:true,p8gMaterialOnlyW3:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
     createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, npcMaterialKetteSetzen, materialSupplySetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
-    ...(p3Forschung ? {p3ForschungsAnmeldung:p3Anmelden,p3ForschungsStatus:p3Status} : {}),
+    ...(p3Forschung ? {p3ForschungsAnmeldung:p3Anmelden,
+      p3ForschungsFrachtAnmeldung:p3FrachtAnmelden,p3ForschungsStatus:p3Status} : {}),
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
     torPruefen: m_core_torfreigabe.pruefen, torFrachtPruefen: m_core_torfreigabe.darfFracht,
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,

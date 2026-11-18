@@ -58,10 +58,11 @@ function run(){
   const status=w.p3ForschungsStatus(),a=s.w5ac.active;
   if(!granted&&status.letzterBeleg?.status==='original-gestartet'){
    granted={...status.letzterBeleg,house:s.owners.house.cash,
-     escrow:s.owners.w5ac_transfer_reserve?.cash??null};
+     escrow:s.owners[w.rules.w5Transfer.reserved]?.cash??null};
    assert.equal(s.w5ac.active?.id,f.second);
    assert.equal(granted.kosten,60,'original funded W5ac salary, not an arbitrary quote');
    assert.equal(startCash-s.owners.house.cash,60);
+   assert.equal(granted.escrow,60,'Original-W5ac-Treuhand muss volle 60 ISK enthalten');
    assert.equal(s.w5ac.active.owner,'house');
    assert.equal(w.p3ForschungsStatus().npcVorrang,true);
   }

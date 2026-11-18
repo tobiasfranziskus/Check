@@ -127,6 +127,64 @@ async function w6Optin(browser,base,width,height,kind){
     tick:s2.tick,hash:w.hash(w.load(after)),weltgeld:33000,originalHaus:3000}));
  }finally{await context.close();}
 }
+// P3: genuine two-purchased-freighter original save from nine settled paid F4 rounds.
+async function w5MehrschiffPfad(browser,base,width,height,kind){
+ const fixture=require('./p3-werft-mehrschiff-fixture.cjs').erstellen();
+ const context=await browser.newContext({viewport:{width,height},hasTouch:true});
+ await context.addInitScript(({key,save})=>localStorage.setItem(key,save),
+  {key:SLOT,save:fixture.save});
+ const page=await context.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(String(e)));
+ try{
+  await page.goto(base+'/prototypes/spiel/index.html');
+  await page.locator('#fortsetzen').tap();
+  assert.equal(await page.locator('#p3-industrie').isVisible(),true);
+  const selector=page.locator('#p3-industrie-auswahl');
+  assert.equal(await selector.isVisible(),true);
+  assert.equal(await selector.isEnabled(),true);
+  assert.equal(await selector.inputValue(),fixture.first,
+   'default prefers existing Aldera working ship over new Nadir W5 hull');
+  assert.deepEqual(await selector.locator('option').evaluateAll(els=>els.map(e=>e.value)),
+   [fixture.first,fixture.second]);
+  assert.match(await page.locator('#p3-industrie-frachtzahlen').textContent(),
+   /9 abgeschlossene Runden/);
+  const persisted=await page.evaluate(key=>localStorage.getItem(key),SLOT);
+  assert.equal(persisted,fixture.save);
+  const beforeHash=W.erstellenJ4c({carrierCash:JSON.parse(persisted).w5ad.profile.carrierCash,
+   buyerCash:JSON.parse(persisted).w5ad.profile.buyerCash}).hash(
+    W.erstellenJ4c({carrierCash:JSON.parse(persisted).w5ad.profile.carrierCash,
+      buyerCash:JSON.parse(persisted).w5ad.profile.buyerCash}).load(persisted));
+  assert.equal(beforeHash,fixture.hash);
+  await selector.selectOption(fixture.second);
+  assert.equal(await selector.inputValue(),fixture.second);
+  assert.equal(await page.locator('#p3-industrie-transfer').isVisible(),true);
+  assert.match(await page.locator('#p3-industrie-transfer').textContent(),/sh010/);
+  assert.match(await page.locator('#p3-industrie-cockpit').textContent(),/sh010/);
+  assert.match(await page.locator('#p3-industrie-fracht').textContent(),/sh010/);
+  assert.match(await page.locator('#p3-industrie-frachtzahlen').textContent(),
+   /0 abgeschlossene Runden/);
+  assert.equal(await page.locator('#p3-industrie-fracht').isDisabled(),true,
+   'do not grant Nadir W5 hull phantom Aldera freight');
+  assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),persisted,
+   'selection must not touch autosave JSON');
+  await selector.selectOption(fixture.first);
+  assert.equal(await selector.inputValue(),fixture.first);
+  assert.equal(await page.locator('#p3-industrie-transfer').isHidden(),true);
+  assert.match(await page.locator('#p3-industrie-cockpit').textContent(),/sh004/);
+  assert.match(await page.locator('#p3-industrie-fracht').textContent(),/sh004/);
+  assert.match(await page.locator('#p3-industrie-frachtzahlen').textContent(),
+   /9 abgeschlossene Runden/);
+  assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),persisted);
+  await selector.selectOption(fixture.second);
+  await page.reload();await page.locator('#fortsetzen').tap();
+  assert.equal(await page.locator('#p3-industrie-auswahl').inputValue(),fixture.first,
+   'ephemeral UI-only selection must not migrate or persist');
+  assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),persisted);
+  assert.deepEqual(errors,[]);
+  console.log('P3_MULTI_W5_BROWSER_OK '+JSON.stringify({kind,width,height,
+    first:fixture.first,second:fixture.second,tick:fixture.tick,hash:fixture.hash}));
+ }finally{await context.close();}
+}
 // P3/W4/W5: authentic paid NPC industry supplies a ship the player may BUY.
 // No staged warehouse, no scripted NPC cash and no fake player production rights.
 async function w4w5IndustriePfad(browser,base,width,height,kind){
@@ -774,6 +832,7 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
    await siliziumPilot(browser,base,width,height,kind);
    await w6Optin(browser,base,width,height,kind);
    await w4w5IndustriePfad(browser,base,width,height,kind);
+   await w5MehrschiffPfad(browser,base,width,height,kind);
    await karrierePatrouille(browser,base,width,height,kind);
    await karriereDuell(browser,base,width,height,kind);
    await managerAkademiePfad(browser,base,width,height,kind);

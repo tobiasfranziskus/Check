@@ -15,3 +15,11 @@ Jeder Abschluss liefert die Originalbelege für 50 Eis, 240 ISK Frachttarif, 120
 ## Prüfungen / Grenzen
 
 `node --test tests/p3-werftfrachter-zyklus.test.mjs`, vollständige Node22-Suite und GitHub-CI sind erst nach tatsächlicher Ausführung als bestanden zu vermerken. Das Testwerkzeug protokolliert abgeschlossene Originalaufträge, konkurrierende NPC-Frachten, Ablehnungsgründe, Kassen, Lager, Schiffsbuchwert und identische kalte Saves/Hashes. Manipulierte Herkunft/Überführungsbelege werden bereits in #495 regressiert. **Kein Merge oder Deployment aus diesem Forschungs-PR.** Browser-/iPad-/NAS-Geräteprüfung nicht durch Node simuliert.
+
+## 18.11. – Verlängerter Originalmarkt- und Eigenkapitaltest [DRAFT / ANALYSE]
+
+Der zusätzliche, unabhängige 9-Runden-Zielversuch nutzt maximal 360 echte 10-Minuten-Angebotskontrollen ab der ersten bereits finanzierten Fracht. Ein neunter Auftrag ist **nicht garantiert**: Ziel ist ein ehrlicher Kapital-/Warengrenznachweis und der Vergleich mit dem 750-ISK-W5-Frachterersatz. Alle 60 Weltminuten werden vollständige Core- und Save-Audits ausgeführt, bei jedem angenommenen Originalvertrag einschließlich Abrechnung und Rückdock sofort. Keine neuen Käufer, Rohstoffe oder Kredite.
+
+Ergänzend wird der **Kasse-plus-eigene-Schiffsrestbuchwerte**-Stand vor der ersten Investition, vor der ersten F4-Fahrt und am Untersuchungsende erfasst. Dazu kommen tatsächlich gebuchte F4-Gebühren, private Pilotenlöhne, Einzel- und Gesamtabschreibungen, verfügbare Original-Miner-/Werftkauf- und Frachtofferten sowie echte Sperrgründe. **Dieser Buchwert-Schnappschuss ist keine vollständige GuV, kein Liquidationswert und kein Ersatznachweis**: Offene Forderungen, Lagerbewertung, übrige Mitarbeiter-/Produktionskosten und künftige Finanzierung bleiben gesondert. Der Transport-Deckungsbeitrag wird nie mit Unternehmens- oder Weltwirtschaftsgewinn gleichgesetzt.
+
+**[QA ausstehend]** Erst GitHub-Node22-Ergebnisse und deterministischen tatsächlichen Output prüfen; der Vier-Runden-Referenznachweis bleibt unverändert und muss erneut grün sein.

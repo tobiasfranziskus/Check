@@ -144,6 +144,8 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
    'no phantom hull at world start');
   assert.equal(await page.locator('#p3-industrie-cockpit').isHidden(),true,
    'no free or preowned W5 cockpit at start');
+  assert.equal(await page.locator('#p3-industrie-fracht').isHidden(),true,
+   'no paid W5 freighter means no freight button');
   for(let i=0;i<5;i++)await page.locator('#p3-industrie-zeit').tap();
   const raw=await page.evaluate(k=>localStorage.getItem(k),SLOT),s=JSON.parse(raw);
   assert.equal(s.tick,300,'five original 60-minute economic steps');
@@ -179,6 +181,9 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
   assert.equal(w.hash(w.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),hash);
   assert.equal(await page.locator('#p3-industrie-cockpit').isVisible(),true,
    'only physically built and bought W5 ship gets a cockpit shortcut');
+  assert.equal(await page.locator('#p3-industrie-fracht').isVisible(),true);
+  assert.equal(await page.locator('#p3-industrie-fracht').isDisabled(),true,
+   'no free freight directly after Nadir warehouse purchase');
   assert.equal(await page.locator('#p3-industrie-cockpit').isDisabled(),true,
    'Nadir warehouse purchase may not bypass original Aldera-only free-flight gate');
   assert.match(await page.locator('#p3-industrie-cockpit-hinweis').textContent(),
@@ -217,7 +222,36 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
   assert.equal(await page.locator('#p3-industrie-cockpit').isEnabled(),true,
    'valid Aldera arrival unlocks unchanged original pilot gate');
   assert.equal(w.audit(w.load(arrivedJSON)).ok,true);
-  const arrivalHash=w.hash(w.load(arrivedJSON));
+  assert.equal(await page.locator('#p3-industrie-fracht').isDisabled(),true,
+   'arrival alone may not conjure 50 ice');
+  assert.match(await page.locator('#p3-industrie-frachtzahlen').textContent(),/0 abgeschlossene Runden/);
+  // Existing player-purchased miner, original fully paid ice shuttle, then only
+  // the J8-audited genuine 50-ice F4 offer can enable the new touch button.
+  await page.locator('[data-action="buy-st_aldera-miner"]').tap();
+  const withMiner=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  const miner=Object.values(withMiner.ships).find(x=>x.owner==='house'&&x.klasse==='miner');
+  assert.ok(miner,'original Aldera stock supplied the paid miner');
+  await page.locator('[data-action="ice-'+miner.id+'"]').tap();
+  await page.locator('#p3-industrie-zeit').tap();
+  await page.locator('#p3-industrie-zeit').tap();
+  assert.equal(await page.locator('#p3-industrie-fracht').isEnabled(),true,
+   'real 50 ice, actual buyer cash and empty paid W5 hull produce a green quote');
+  await page.locator('#p3-industrie-fracht').tap();
+  const begun=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  assert.equal(begun.kanon.spielerFrachten.auftraege.at(-1).schiff,newShips[0].id);
+  assert.equal(begun.owners.w5n_fracht_arbeit.cash,120);
+  assert.equal(begun.owners.w5n_fracht_kauf.cash,490);
+  await page.locator('#p3-industrie-zeit').tap();
+  await page.locator('#p3-industrie-zeit').tap();
+  const freightDone=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  assert.equal(freightDone.kanon.spielerFrachten.auftraege.filter(x=>x.end!==null).length,1);
+  assert.equal(freightDone.kanon.spielerFrachten.gebuehr,240);
+  assert.equal(freightDone.kanon.spielerFrachten.lohn,120);
+  assert.equal(freightDone.ships[newShips[0].id].heimat,'nadir');
+  assert.equal(w.audit(w.load(JSON.stringify(freightDone))).ok,true);
+  assert.match(await page.locator('#p3-industrie-frachtzahlen').textContent(),/1 abgeschlossene Runden/);
+  assert.match(await page.locator('#p3-industrie-frachtzahlen').textContent(),/240 ISK gebuchte Frachttarife/);
+  const arrivalHash=w.hash(w.load(JSON.stringify(freightDone)));
   await page.locator('#p3-industrie-cockpit').tap();
   assert.equal(await page.locator('#raumbereich').isVisible(),true);
   assert.match(await page.locator('#raum-schiff').textContent(),/Frachter/i);

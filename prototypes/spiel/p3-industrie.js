@@ -38,6 +38,18 @@ function auswerten(w,s,angebote){
  const transferId=eigenesWerftSchiff?'reposition-'+eigenesWerftSchiff:null;
  const transferAngebot=transferId?angebote.find(a=>a.id===transferId):null;
  const transferAktiv=!!(eigenesWerftSchiff&&s.w5ac?.active?.id===eigenesWerftSchiff);
+ // Exactly the already-audited K1/F4 player contracts of THIS purchased W5 hull.
+ // Company cash includes mining, purchases and NPC activity: never call it freight profit.
+ const belege=(s.kanon.spielerFrachten?.auftraege||[]).filter(a=>
+   a.schiff===eigenesWerftSchiff&&a.end!==null&&a.geliefert!==null);
+ const frachtTarife=belege.reduce((n,a)=>n+a.fracht,0);
+ const frachtLoehne=belege.reduce((n,a)=>n+a.arbeit,0);
+ const frachtId=eigenesWerftSchiff?'freight-'+eigenesWerftSchiff:null;
+ const frachtAngebot=frachtId?angebote.find(a=>a.id===frachtId):null;
+ const frachtBuchwert=gekauft?w.buchwert(s,gekauft.id):null;
+ if(!natural(frachtTarife)||!natural(frachtLoehne)||!natural(frachtBuchwert??0)
+   ||frachtTarife<frachtLoehne)
+   throw Error('P3 Werftfrachter: Original-Frachtbuch oder Schiffsbuchwert ungueltig');
  const stage=signierteErzVertraege===0?'W3 – Erztransport':
    refinery.abgeschlossen===0?'W4 – bezahlte Verarbeitung':
    yard.fertig===0?'W5 – Material zur Werft':'W3 → W4 → W5 nachgewiesen';
@@ -65,6 +77,14 @@ function auswerten(w,s,angebote){
   werftTransferGrund:transferAngebot?.reason||null,
   werftTransferKosten:transferAngebot?.ok?transferAngebot.kosten:null,
   werftTransferMinuten:transferAngebot?.ok?transferAngebot.minuten:null,
+  werftFrachtId:frachtId,werftFrachtRunden:belege.length,
+  werftFrachtTarife:frachtTarife,werftFrachtLoehne:frachtLoehne,
+  werftFrachtBeitragVorWertverzehr:frachtTarife-frachtLoehne,
+  werftFrachtBuchwert:frachtBuchwert,
+  werftFrachtBereit:gekauft?.system==='aldera'&&frachtAngebot?.ok===true,
+  werftFrachtGrund:frachtAngebot?.reason||null,
+  werftFrachtAktiv:!!(eigenesWerftSchiff
+    &&s.kanon.spielerFrachten?.auftraege?.some(a=>a.schiff===eigenesWerftSchiff&&a.end===null)),
   ledger:Object.freeze({erzMined:s.ledger.erz.mined,materialProduced:s.ledger.material.produced,
     materialConsumed:s.ledger.material.consumed,freighterProduced:s.ledger.frachter.produced}),
   kaufberechtigt:stock>0&&house>=r.economy.waren.frachter.basis&&buyer.ok===true});

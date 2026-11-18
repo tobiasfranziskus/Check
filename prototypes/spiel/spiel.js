@@ -399,6 +399,25 @@ function industrieAnzeigen(s,angebote){
     fmt(p.werftTransferMinuten)+' bezahlte Flugminuten':' · derzeit gesperrt');
  cockpit.hidden=!eigeneId;cockpit.disabled=!steuerbar;
  cockpit.textContent=eigeneId?'Werftfrachter '+eigeneId+' selbst fliegen':'Eigenen Werftfrachter selbst fliegen';
+ const freight=$('p3-industrie-fracht');
+ const freightStand=$('p3-industrie-frachtzahlen'),freightGrund=$('p3-industrie-frachtgrund');
+ freight.hidden=!eigeneId;freight.disabled=!p.werftFrachtBereit;
+ freight.textContent='50 Eis mit Werftfrachter '+(eigeneId||'')+' transportieren (Original-F4)';
+ freightStand.hidden=!eigeneId;
+ freightStand.textContent=eigeneId
+  ?'Eigene Werftfracht: '+fmt(p.werftFrachtRunden)+' abgeschlossene Runden · '+
+   fmt(p.werftFrachtTarife)+' ISK gebuchte Frachttarife · '+
+   fmt(p.werftFrachtLoehne)+' ISK bezahlte Fracht-Pilotenlöhne · '+
+   fmt(p.werftFrachtBeitragVorWertverzehr)+' ISK vor Wertverzehr und sonstigen Kosten. '+
+   'Aktueller Original-Schiffsbuchwert '+fmt(p.werftFrachtBuchwert)+' ISK.'
+  :'';
+ freightGrund.hidden=!eigeneId;
+ freightGrund.textContent=eigeneId
+  ?p.werftFrachtBereit?'Echt vorfinanzierter Originalauftrag verfügbar. Käufer- und Pilotengeld werden beim Start gebunden.'
+   :'Neuer F4-Auftrag gesperrt: '+anzeigetext(p.werftFrachtGrund||
+    (p.werftTransferAktiv?'Die bezahlte Werftüberführung läuft noch.':
+      'Nur ein eigener, freier und wirklich angedockter Frachter in Aldera darf die Ladung übernehmen.'))
+  :'';
  note.hidden=!eigeneId;
  note.textContent=steuerbar
   ?'Echte bezahlte Werfthülle. Das bestehende 2D-Cockpit steuert sie in derselben Welt.'
@@ -937,6 +956,19 @@ $('p3-industrie-transfer')?.addEventListener('click',()=>{
    throw Error(p.werftTransferGrund||'Kein vollständig finanzierter Original-Überführungsauftrag');
   auftrag(p.werftTransferId); // Existing W5ac owner-authorized wage escrow + real world minutes.
  }catch(e){hinweis('Werftüberführung gesperrt: '+error(e),true);anzeigen();}
+});
+$('p3-industrie-fracht')?.addEventListener('click',()=>{
+ if(!session||!scope.P3Industrie)return;
+ try{
+  // No UI-made buyer, price or wage: re-evaluate the signed original J8 quote.
+  const s=session.zustandReferenz(),p=scope.P3Industrie.auswerten(
+   session.weltReferenz(),s,session.angebote());
+  if(!p.sichtbar||!p.werftFrachtBereit||!p.werftFrachtId
+    ||s.ships[p.werftSpielerSchiffId]?.owner!=='house'
+    ||!s.w5.schiffIds.includes(p.werftSpielerSchiffId))
+   throw Error(p.werftFrachtGrund||'Keine echte bezahlbare F4-Fracht fuer die Werfthuelle');
+  auftrag(p.werftFrachtId);
+ }catch(e){hinweis('Werftfracht gesperrt: '+error(e),true);anzeigen();}
 });
 $('p3-industrie-cockpit')?.addEventListener('click',()=>{
  if(!session||!scope.P3Industrie)return;

@@ -106,6 +106,12 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     throw Error('K1: unerwartetes Kernprofil');
   const N = FLUG.DATEN.schritteJeMinute;
   const W = rules.w5n;
+  // P3 RESEARCH ONLY: externally activated in an isolated Node22 process.
+  // There is NO browser flag, save-field, silent Rule204 migration or default scheduler change.
+  const p3Forschung = NODE && process.env.APHROS_P3_FAIR_FERRY_RESEARCH === '1'
+    && rules.rulesVersion === 204;
+  let p3Warteauftrag = null, p3GebundenerZustand = null;
+  let p3NpcVorrang = false, p3LetzterBeleg = null, p3Erfolge = 0;
   // K7-Preise ausschließlich aus den Original-W1/W3/W5-Regeln ableiten,
   // keine zweite Tarif-/Balancingtabelle für den Forschungsauftrag.
   const K7_PREIS = k7 ? Object.freeze({
@@ -1037,6 +1043,86 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     return { pruefen, check, darfFracht, starten, audit };
   })();
 
+  // Only on isolated Node22 research branch; state is NOT augmented and cannot
+  // be accepted as a self-authorizing JSON queue. Every actual debit is done
+  // exclusively by the unchanged, audited original shipReposition command.
+  function p3Anmelden(state, schiff, laufzeit = 360) {
+    if (!p3Forschung) throw Error('P3: Forschungsdisponent nicht aktiv');
+    if (!Number.isSafeInteger(laufzeit) || laufzeit < 60 || laufzeit > 720)
+      return Object.freeze({ok:false,reason:'Nur 60–720 echte Warteminuten'});
+    if (typeof schiff !== 'string' || !/^sh[0-9]{3,}$/.test(schiff))
+      return Object.freeze({ok:false,reason:'Ungültige Schiff-ID'});
+    if (!state || !audit(state).ok)
+      return Object.freeze({ok:false,reason:'Original-Audit ungueltig'});
+    if (p3GebundenerZustand && p3GebundenerZustand !== state)
+      return Object.freeze({ok:false,reason:'Forschungsqueue an andere Welt gebunden'});
+    if (p3Warteauftrag || p3NpcVorrang)
+      return Object.freeze({ok:false,reason:'Eine offene Warteposition oder NPC-Vorrang'});
+    const sh = state.ships[schiff];
+    if (!sh || sh.owner !== 'house' || sh.klasse !== 'frachter'
+      || sh.heimat !== 'nadir' || sh.system !== 'nadir'
+      || sh.phase !== 'dock' || sh.auftrag !== 'halten' || sh.flug?.lage !== 'angedockt'
+      || Object.values(sh.ladung).some(x => x !== 0)
+      || !state.w5.schiffIds.includes(schiff)
+      || state.w5ac.completed.some(x => x.id === schiff))
+      return Object.freeze({ok:false,reason:'Kein kaufbelegter freier eigener Nadir-Frachter'});
+    // Admission is NON-reserving: no escrow is booked until the exact original
+    // core quote is legally valid at dispatch. Recheck actual funds then.
+    const ungefaehrerLohn = W.flugMinuten * rules.w5Transfer.lohnJeMinute;
+    if (!Number.isSafeInteger(ungefaehrerLohn) || ungefaehrerLohn <= 0
+      || state.owners.house.cash < ungefaehrerLohn)
+      return Object.freeze({ok:false,reason:'Eigentümer kann Pilotenlohn nicht decken'});
+    p3GebundenerZustand = state;
+    p3Warteauftrag = {schiff,angemeldet:state.tick,frist:state.tick+laufzeit};
+    return Object.freeze({ok:true,schiff,angemeldet:state.tick,frist:state.tick+laufzeit,
+      modell:'unverbindliche Vormerkung, Original-Treuhand erst bei Zuschlag'});
+  }
+  function p3Status() {
+    return Object.freeze({aktiv:p3Forschung,wartend:p3Warteauftrag
+      ?Object.freeze({...p3Warteauftrag}):null,
+      npcVorrang:p3NpcVorrang,abgeschlossen:p3Erfolge,
+      letzterBeleg:p3LetzterBeleg?Object.freeze({...p3LetzterBeleg}):null});
+  }
+  function p3VorNpcFenster(state) {
+    if (!p3Forschung || !p3GebundenerZustand || state !== p3GebundenerZustand)return;
+    if (p3NpcVorrang) {
+      // Alternation: after one player ferry, an observed real NPC route must
+      // start before a new player registration is admitted.
+      if (state.w3.auftrag || state.w5n.frachtauftrag
+        || state.w5ac.active?.owner === 'transport')p3NpcVorrang = false;
+      return;
+    }
+    const request = p3Warteauftrag;
+    if (!request)return;
+    if (state.tick > request.frist) {
+      p3LetzterBeleg = {status:'abgelaufen',schiff:request.schiff,tick:state.tick};
+      p3Warteauftrag = null;
+      return;
+    }
+    const quote = kern.pilotW5TransferKalkulation(state,request.schiff);
+    if (!quote.ok) {
+      // Only a busy original corridor may keep the request in the queue.
+      // Any other original gate (funds, ownership, damage, wrong dock, prior
+      // flight) cancels automatically: no locked money and no phantom slot.
+      if (quote.grund !== 'Noch aktive W3-Fracht oder Ueberfuehrung') {
+        p3LetzterBeleg={status:'original-abgelehnt',schiff:request.schiff,
+          tick:state.tick,grund:quote.grund};
+        p3Warteauftrag = null;
+      }
+      return;
+    }
+    const result=execute(state,{type:'shipReposition',owner:'house',
+      schiff:request.schiff});
+    if (!result.ok || state.w5ac.active?.id !== request.schiff)
+      throw Error('P3 Forschungsfenster: Originalbefehl trotz grüner Quote gescheitert');
+    m_core_flugplan.koerperSync(state);
+    p3LetzterBeleg={status:'original-gestartet',schiff:request.schiff,
+      tick:state.tick,kosten:quote.kosten,minuten:quote.minuten};
+    p3Erfolge++;
+    p3NpcVorrang=true;
+    p3Warteauftrag=null;
+  }
+
   // NPC-Automatik: wählt nur finanzierte Aufträge und nutzt dieselben validierten Befehle.
   const m_core_disponent = (() => {
     const versuch = (state, cmd, k1) => (k1 ? m_core_kreislauf.ausfuehren(state, cmd) : kern.execute(state, cmd, rules));
@@ -1143,6 +1229,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       }
       // 2. Eisfracht Aldera -> Nadir, sobald Charge, Käuferetat und Arbeitsreserve vorhanden sind.
       if (p.eisfracht && !state.w5n.frachtauftrag && !state.w3.auftrag
+        && !(p3Forschung && p3GebundenerZustand === state && state.w5ac?.active?.owner === 'house')
         && (state.stations[W.quellStation].lager.eis || 0) >= W.charge) {
         const frei = ids(state.ships).map((id) => state.ships[id]).find((sh) => sh.owner === W.frachterOwner
           && sh.klasse === 'frachter' && sh.phase === 'dock' && sh.system === 'aldera' && sh.auftrag === 'halten'
@@ -1849,7 +1936,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         return verwerfen('P8g: kein echter ungedeckter J3-Materialbedarf');
       if(cmd.owner!=='st_nadir')return verwerfen('nur realer Industriekäufer darf bestellen');
       if(!['frei','geliefert','storniert'].includes(i.phase))return verwerfen('Vertrag bereits vorhanden');
-      if(s.w3.auftrag||s.w5n.frachtauftrag)return verwerfen('bereits laufende Fracht');
+      if(s.w3.auftrag||s.w5n.frachtauftrag||(p3Forschung&&p3GebundenerZustand===s&&s.w5ac?.active?.owner==='house'))
+        return verwerfen('bereits laufende Fracht');
       if((s.owners.k7_werft_treuhand?.cash||0)!==0)
         return verwerfen('vorheriger Vertrag hat noch gebundenes Werftkapital');
       const mi=s.ships[cmd.miner],fr=s.ships[cmd.frachter];
@@ -2188,6 +2276,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     // Signed K7-W5 reserve takes priority over discretionary NPC shipbuilding.
     industrieAutoSchritt(state);
     m_core_firmenpolitik.schritt(state);
+    if (p3Forschung) p3VorNpcFenster(state);
     m_core_disponent.schritt(state);
     m_core_flugplan.koerperSync(state);
     m_core_flugplan.plan(state, true, true);
@@ -2334,6 +2423,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(p8dFracht ? {p8dGetrennteSpedition:true,p8gMaterialOnlyW3:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
     createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, npcMaterialKetteSetzen, materialSupplySetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
+    ...(p3Forschung ? {p3ForschungsAnmeldung:p3Anmelden,p3ForschungsStatus:p3Status} : {}),
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
     torPruefen: m_core_torfreigabe.pruefen, torFrachtPruefen: m_core_torfreigabe.darfFracht,
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,

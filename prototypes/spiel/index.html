@@ -76,7 +76,7 @@
  </label>
  </section>
  <div class="briefing-bottom">
-  <div><strong>Dein erstes Ziel: einen Miner erwerben und selbst fliegen.</strong><p>Wähle oben, ob andere Konzerne ihre Industrie eigenständig betreiben sollen. Ohne Auswahl bleibt der bisherige unveränderte Karriere-Start erhalten.</p></div>
+  <div><strong>Dein erstes Ziel: ein Bergbauschiff kaufen.</strong><p>Auf der Kommandobrücke führt dich „Eishandel“ durch deine erste bezahlte Lieferung. Unter „Meine Flotte“ kannst du selbst ins Cockpit steigen.</p></div>
   <button id="karriere-starten" class="primary" type="button">Karriere in Aldera beginnen <span aria-hidden="true">→</span></button>
  </div>
  <p id="briefing-meldung" class="statusline" role="status" aria-live="polite"></p>
@@ -87,6 +87,19 @@
   <div><span class="eyebrow">DEIN KONZERN / ALDERA-SEKTOR</span><h2>Kommandobrücke</h2></div>
   <div class="worldbar-right"><span id="w6-status" class="w6-world-indicator" hidden>Erweiterte Wirtschaft aktiv</span><span class="world-balance"><small>DEIN KAPITAL</small><strong id="hausgeld">–</strong></span><span class="world-balance"><small>WELTZEIT</small><strong id="zeit">–</strong></span><button id="welt-sichern" type="button" class="ghost">Sichern</button></div>
  </div>
+ <section id="p3-handelsauftrag" class="p3-handelsauftrag karriere-handelsweg" aria-label="Wiederholbarer Eis-Handelsauftrag">
+  <h3>Eishandel</h3>
+  <p id="p3-handelsziel" class="karriere-handelsziel"></p>
+  <p id="p3-handelsanleitung"></p>
+  <button id="p3-handelsaktion" class="primary" type="button" disabled>Wirtschaftsauftrag öffnen</button>
+  <p id="p3-handelssperre" class="p3-sperre" role="status"></p>
+  <p id="p3-handelsstand" role="status"></p>
+  <details id="p3-handelsdetails">
+   <summary>Handelsbilanz und Vertragsdetails</summary>
+   <p id="p3-handelszahlen" class="p3-zahlen"></p>
+   <p id="p3-handelssperre-detail"></p>
+  </details>
+ </section>
  <section id="pilotenausbildung" class="piloten-akademie" aria-label="Pilotenakademie">
   <details id="pilotenausbildung-details">
    <summary><span class="piloten-akademie-tag">APHROS ACADEMY · FLUGAUSBILDUNG</span>
@@ -100,16 +113,6 @@
    <p class="eyebrow">KAPITEL 01 / DEIN ERSTER FLUG</p><h3>Ein Schiff. Ein Anfang.</h3>
    <p id="missions-text">Dein Unternehmen ist bereit. Entdecke die Kaufangebote der Werften.</p>
    <ol class="missions" id="missions" aria-label="Erste Aufgaben"></ol>
-   <section id="p3-handelsauftrag" class="p3-handelsauftrag" aria-label="Wiederholbarer Eis-Handelsauftrag">
-    <p class="eyebrow">KAPITEL 02 / HANDELSROUTE</p>
-    <h3>Eis. Fracht. Erlös.</h3>
-    <p id="p3-handelsstand" role="status" aria-live="polite">Der Handelsweg erscheint nach dem Karrierestart.</p>
-    <p id="p3-handelszahlen" class="p3-zahlen"></p>
-    <strong id="p3-handelsziel"></strong>
-    <p id="p3-handelsanleitung"></p>
-    <button id="p3-handelsaktion" type="button" disabled>Wirtschaftsauftrag öffnen</button>
-    <p id="p3-handelssperre" class="p3-sperre"></p>
-   </section>
    <section id="p3-investition" class="p3-handelsauftrag p3-investition" aria-label="Kapital und Reinvestition" hidden>
     <p class="eyebrow">KAPITEL 03 / ENTSCHEIDEN &amp; INVESTIEREN</p>
     <h3>Ertrag oder Rücklage?</h3>

@@ -39,7 +39,19 @@ const server=http.createServer((req,res)=>{
     assert.equal(await page.locator('#p3-handelsauftrag').isVisible(),true);
     assert.match(await page.locator('#p3-handelsziel').textContent(),/Miner erwerben/);
     assert.equal(await page.locator('#p3-handelsaktion').isEnabled(),true);
+    const handel=page.locator('#p3-handelsaktion');
+    assert.match(await handel.textContent(),/Bergbauschiff kaufen/);
+    assert.equal(await page.locator('#p3-handelsdetails').getAttribute('open'),null);
+    const knopf=await handel.boundingBox();
+    assert.ok(knopf && knopf.height>=48 && knopf.y>=0 && knopf.y+knopf.height<=height);
     const initial=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+    await handel.tap();
+    assert.match(await handel.textContent(),/Frachter erwerben/);
+    assert.match(await page.locator('#p3-handelsanleitung').textContent(),/vor dem ersten Flug/);
+    await handel.tap();
+    assert.match(await handel.textContent(),/Eisförderung beginnen/);
+    await handel.tap();
+    assert.equal(await handel.textContent(),'60 Spielminuten weiter');
     for(let i=0;i<45;i++){
      const json=await page.evaluate(k=>localStorage.getItem(k),SLOT);
      const s=JSON.parse(json),w=W.erstellenJ4c({carrierCash:s.w5ad.profile.carrierCash,buyerCash:s.w5ad.profile.buyerCash});
@@ -54,13 +66,15 @@ const server=http.createServer((req,res)=>{
     }
     const final=await page.evaluate(k=>localStorage.getItem(k),SLOT),s=JSON.parse(final);
     assert.ok(s.kanon.spielerFrachten.auftraege.filter(a=>a.end!==null).length>=2);
-    assert.match(await page.locator('#p3-handelsstand').textContent(),/2 abgeschlossene Eis-Rundfahrten/);
+    assert.match(await page.locator('#p3-handelsstand').textContent(),/2 bezahlte Rundfahrten/);
     assert.ok(s.kanon.spielerFrachten.gebuehr>=480);
+    await page.locator('#p3-handelsdetails summary').tap();
+    assert.match(await page.locator('#p3-handelszahlen').innerText(),/Verfügbare Kasse/);
     assert.equal(final.includes('p3-handels'),false);
     assert.notEqual(final,initial);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
     await page.reload();await page.locator('#fortsetzen').tap();
-    assert.match(await page.locator('#p3-handelsstand').textContent(),/2 abgeschlossene Eis-Rundfahrten/);
+    assert.match(await page.locator('#p3-handelsstand').textContent(),/2 bezahlte Rundfahrten/);
     // P3 chapter 03: continue the same career until earned asset-adjusted surplus
     // exceeds the exact original 600-ISK hull price. No additional profile or world.
     assert.equal(await page.locator('#p3-investition').isVisible(),true);

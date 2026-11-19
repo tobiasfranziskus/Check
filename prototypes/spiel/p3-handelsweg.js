@@ -73,7 +73,21 @@ function auswerten(s,angebote,welt=null){
  return Object.freeze({abgeschlossen,offen,eis,hauskasse,gebuehr,lohn,
   titel,anleitung,art,aktion,bereit,grund,text});
 }
-const api=Object.freeze({auswerten});
+// Nur autoritative, vollständig abgerechnete Eigenfrachten zählen als dauerhafter
+// Karriere-Meilenstein; sichtbare Schiffsladung und begonnene Verträge zählen nicht.
+function ersteBezahlteRundfahrt(s,welt){
+ if(!s||![204,207].includes(s.rulesVersion)||typeof welt?.audit!=='function')return false;
+ try{if(welt.audit(s).ok!==true)return false;}catch{return false;}
+ const belege=s.kanon?.spielerFrachten;
+ if(!belege||!Number.isSafeInteger(belege.gebuehr)||belege.gebuehr<=0||!Array.isArray(belege.auftraege))return false;
+ // Das autoritative Spielerfracht-Journal beweist die historische Eigenfracht.
+ // Ein späterer Schiffseigentümerwechsel darf den bereits verdienten Erfolg nicht löschen.
+ return belege.auftraege.some(a=>typeof a.schiff==='string'&&a.schiff.length>0
+   &&Number.isSafeInteger(a.start)&&a.start>=0
+   &&Number.isSafeInteger(a.geliefert)&&Number.isSafeInteger(a.end)
+   &&a.start<=a.geliefert&&a.geliefert<=a.end);
+}
+const api=Object.freeze({auswerten,ersteBezahlteRundfahrt});
 if(typeof module==='object'&&module.exports)module.exports=api;
 else scope.P3Handelsweg=api;
 })(globalThis);

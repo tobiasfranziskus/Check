@@ -60,7 +60,9 @@ test('P3 post-fix independent: retired second hull has no F4 admission or paymen
   const {fixture,world,state}=ready();
   const ship=fixture.second;
   world.politikSetzen(state,{stilllegung:true});
-  state.kanon.verschleiss[ship]=Math.ceil(
+  // The hull has already flown the real 60-minute W5ac transfer.
+  // Add remaining wear to existing wear; replacing the counter leaves 18 ISK.
+  state.kanon.verschleiss[ship]+=Math.ceil(
     world.buchwert(state,ship)*1000/world.daten.verschleiss.milliJeMinute.frachter);
   assert.equal(world.buchwert(state,ship),0);
   assert.equal(world.bericht(state).schiffe.find(x=>x.id===ship).stillgelegt,true);
@@ -79,7 +81,9 @@ test('P3 post-fix independent: admissible F4 wait revalidates retirement before 
   world.politikSetzen(state,{stilllegung:true});
   assert.equal(world.p3ForschungsFrachtAnmeldung(state,ship,1440).ok,true);
   assert.equal(world.p3ForschungsStatus().wartend.art,'f4');
-  state.kanon.verschleiss[ship]=Math.ceil(
+  // The hull has already flown the real 60-minute W5ac transfer.
+  // Add remaining wear to existing wear; replacing the counter leaves 18 ISK.
+  state.kanon.verschleiss[ship]+=Math.ceil(
     world.buchwert(state,ship)*1000/world.daten.verschleiss.milliJeMinute.frachter);
   const cash=state.owners.house.cash;
   world.minute(state);

@@ -76,7 +76,8 @@ function auswerten(s,angebote,welt=null){
 // Nur autoritative, vollständig abgerechnete Eigenfrachten zählen als dauerhafter
 // Karriere-Meilenstein; sichtbare Schiffsladung und begonnene Verträge zählen nicht.
 function ersteBezahlteRundfahrt(s,welt){
- if(!s||![204,207].includes(s.rulesVersion)||typeof welt?.audit!=='function'||!welt.audit(s).ok)return false;
+ if(!s||![204,207].includes(s.rulesVersion)||typeof welt?.audit!=='function')return false;
+ try{if(welt.audit(s).ok!==true)return false;}catch{return false;}
  const belege=s.kanon?.spielerFrachten;
  if(!belege||!Number.isSafeInteger(belege.gebuehr)||belege.gebuehr<=0||!Array.isArray(belege.auftraege))return false;
  // Das autoritative Spielerfracht-Journal beweist die historische Eigenfracht.

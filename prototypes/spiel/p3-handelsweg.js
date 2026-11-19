@@ -66,12 +66,27 @@ function auswerten(s,angebote,welt=null){
  const bereit=art==='zeit'||(art==='auftrag'&&!!angebot?.ok);
  const grund=art==='blockiert'?blockGrund
   :aktion&&!bereit?(angebot?.reason||'Der Originalkern bietet diesen Auftrag derzeit nicht an.'):null;
+ // Keine scheinbare Ersatzbeschaffung: nur die ORIGINAL-Quote des anderen Marktes
+ // lesen. Ein Nadir-Schiff steht nach dem Kauf nicht automatisch in Aldera.
+ let marktHinweis=null;
+ if(grund==='kein Komplettschiff auf Lager'
+   &&(aktion==='buy-st_aldera-frachter'||aktion==='buy-st_aldera-miner')){
+  const klasse=aktion.endsWith('frachter')?'frachter':'miner';
+  const bezeichnung=klasse==='frachter'?'Frachter':'Bergbauschiff';
+  const nadir=suchen('buy-st_nadir-'+klasse);
+  const start='Aldera: kein '+bezeichnung+' im aktuellen Werftbestand. ';
+  marktHinweis=nadir?.ok===true
+   ?start+'Nadir bietet aktuell einen echten Kauf an. Das Schiff befindet sich danach in Nadir und ist nicht sofort für Aldera-Aufträge verfügbar.'
+   :nadir
+    ?start+'Auch der Kauf in Nadir ist gesperrt: '+(nadir.reason||'Originalmarkt verweigert den Kauf')+'. Ein späteres Angebot ist nicht garantiert.'
+    :start+'Für Nadir liegt gerade kein entsprechendes Kaufangebot vor. Ein späteres Angebot ist nicht garantiert.';
+ }
  const text=abgeschlossen
   ?'Originalbelege: '+abgeschlossen+' abgeschlossene Eis-Rundfahrt'+(abgeschlossen===1?'':'en')+
     '. Jede weitere Fracht benötigt erneut Ware und zahlungsfähige Beteiligte.'
   :'Noch keine abgeschlossene Eis-Rundfahrt. Ein Auftrag ist erst nach Lieferung und Rückkehr abgeschlossen.';
  return Object.freeze({abgeschlossen,offen,eis,hauskasse,gebuehr,lohn,
-  titel,anleitung,art,aktion,bereit,grund,text});
+  titel,anleitung,art,aktion,bereit,grund,marktHinweis,text});
 }
 // Nur autoritative, vollständig abgerechnete Eigenfrachten zählen als dauerhafter
 // Karriere-Meilenstein; sichtbare Schiffsladung und begonnene Verträge zählen nicht.

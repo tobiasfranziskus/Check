@@ -28,15 +28,21 @@ const server=http.createServer((req,res)=>{
    const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(String(e)));
    try{
     await page.goto('http://127.0.0.1:'+server.address().port+'/');
-    await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/spiel/index.html"]').tap();
+    await page.getByRole('link',{name:/^Wirtschaftsmanager/}).tap();
     // The navigation may complete before all bottom-of-body JavaScript listeners
     // have been installed. Wait for actual document load BEFORE the mobile tap.
     await page.waitForURL('**/prototypes/spiel/index.html');
     await page.waitForLoadState('load');
+    if(kind==='chromium'&&width===1180&&process.env.M0_SCREENSHOT_DIR)
+     await page.screenshot({path:path.join(process.env.M0_SCREENSHOT_DIR,'m0-einstieg.jpg'),quality:82});
     await page.locator('#neues-spiel').tap();
     await page.locator('#briefing').waitFor({state:'visible'});
+    assert.match(await page.locator('.briefing-bottom').innerText(),/Kaufe beide Schiffe, bevor du Wirtschaftszeit/);
     await page.locator('#karriere-starten').tap();
     assert.equal(await page.locator('#p3-handelsauftrag').isVisible(),true);
+    assert.equal(await page.locator('#pilotenausbildung-details').getAttribute('open'),null);
+    assert.equal(await page.locator('#hausgeld').innerText(),'3.000 ISK');
+    assert.equal(await page.locator('#schiff-anzahl').innerText(),'0');
     assert.match(await page.locator('#p3-handelsziel').textContent(),/Miner erwerben/);
     assert.equal(await page.locator('#p3-handelsaktion').isEnabled(),true);
     const handel=page.locator('#p3-handelsaktion');
@@ -45,13 +51,50 @@ const server=http.createServer((req,res)=>{
     const knopf=await handel.boundingBox();
     assert.ok(knopf && knopf.height>=48 && knopf.y>=0 && knopf.y+knopf.height<=height);
     const initial=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+    const zeitVorKauf=await page.locator('#zeit').innerText();
+    const kaufhinweis=page.locator('#p3-kaufhinweis');
+    assert.match(await kaufhinweis.innerText(),/beide Schiffe, bevor du Wirtschaftszeit/);
+    assert.equal(await kaufhinweis.isVisible(),true);
     await handel.tap();
     assert.match(await handel.textContent(),/Frachter erwerben/);
-    assert.match(await page.locator('#p3-handelsanleitung').textContent(),/vor dem ersten Flug/);
+    assert.equal(await kaufhinweis.isVisible(),true);
     await handel.tap();
+    assert.equal(await page.locator('#hausgeld').innerText(),'1.650 ISK');
+    assert.equal(await page.locator('#schiff-anzahl').innerText(),'2');
+    assert.equal(await page.locator('#zeit').innerText(),zeitVorKauf,'purchases do not advance time');
+    assert.equal(await kaufhinweis.isVisible(),false);
     assert.match(await handel.textContent(),/Eisförderung beginnen/);
     await handel.tap();
-    assert.equal(await handel.textContent(),'60 Spielminuten weiter');
+    for(let i=0;i<2;i++){
+     assert.equal(await handel.textContent(),'60 Spielminuten weiter');
+     await handel.tap();
+    }
+    assert.equal(await handel.textContent(),'Eisfracht transportieren');
+    await handel.tap();
+    for(let i=0;i<2;i++){
+     assert.equal(await handel.textContent(),'60 Spielminuten weiter');
+     await handel.tap();
+    }
+    assert.equal(await page.locator('#raumbereich').isVisible(),false);
+    assert.match(await page.locator('#p3-handelsstand').innerText(),/1 bezahlte Rundfahrt · 240 ISK Frachtgebühren · 120 ISK Fluglöhne/);
+    const firstSave=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+    const first=JSON.parse(firstSave);
+    const world=W.erstellenJ4c({carrierCash:first.w5ad.profile.carrierCash,buyerCash:first.w5ad.profile.buyerCash});
+    assert.equal(first.rulesVersion,204);
+    assert.equal(first.kanon.spielerFrachten.gebuehr,240);
+    assert.equal(first.kanon.spielerFrachten.lohn,120);
+    assert.deepEqual(Object.values(first.ships).filter(sh=>sh.owner==='house').map(sh=>sh.klasse).sort(),['frachter','miner']);
+    const firstWorld=world.load(firstSave);
+    assert.equal(world.audit(firstWorld).ok,true);
+    const firstHash=world.hash(firstWorld);
+    if(kind==='chromium'&&width===1180&&process.env.M0_SCREENSHOT_DIR)
+     await page.screenshot({path:path.join(process.env.M0_SCREENSHOT_DIR,'m0-erste-eisfracht.jpg'),quality:82});
+    await page.reload();
+    await page.locator('#fortsetzen').tap();
+    const resumed=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+    assert.equal(world.hash(world.load(resumed)),firstHash);
+    assert.match(await page.locator('#p3-handelsstand').innerText(),/240 ISK Frachtgebühren · 120 ISK Fluglöhne/);
+    console.log('M0_MANAGER_BROWSER_OK',JSON.stringify({kind,width,height,firstHash}));
     for(let i=0;i<45;i++){
      const json=await page.evaluate(k=>localStorage.getItem(k),SLOT);
      const s=JSON.parse(json),w=W.erstellenJ4c({carrierCash:s.w5ad.profile.carrierCash,buyerCash:s.w5ad.profile.buyerCash});

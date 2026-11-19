@@ -249,9 +249,9 @@ function handelswegAnzeigen(s,angebote){
  $('p3-handelszahlen').textContent='Aldera-Lager: '+fmt(p.eis)+' Eis · Verfügbare Kasse: '+
    fmt(p.hauskasse)+' ISK. Frachtgebühren und Fluglöhne bilden nur einen Teil des Ergebnisses.';
  $('p3-handelsziel').textContent=(p.abgeschlossen?'Runde '+(p.abgeschlossen+1)+': ':'Nächstes Handelsziel: ')+p.titel;
- $('p3-handelsanleitung').textContent=ausverkauft?'':p.aktion==='buy-st_aldera-frachter'
-   ?'Kaufe den Frachter vor dem ersten Flug, wenn du mit Eis handeln willst. Andere Konzerne können das verfügbare Schiff kaufen, sobald Spielzeit vergeht.'
-   :p.offen?'Die Rundfahrt endet nach der Lieferung und der Rückkehr nach Aldera.'
+ const kaufhinweis=$('p3-kaufhinweis');
+ kaufhinweis.hidden=p.aktion!=='buy-st_aldera-miner'&&p.aktion!=='buy-st_aldera-frachter';
+ $('p3-handelsanleitung').textContent=ausverkauft?'':p.offen?'Die Rundfahrt endet nach der Lieferung und der Rückkehr nach Aldera.'
    :p.art==='zeit'?'Dein Miner arbeitet. Schau nach 60 Spielminuten wieder ins Lager.'
    :p.anleitung;
  const angebot=p.aktion?angebote.find(a=>a.id===p.aktion):null;
@@ -259,8 +259,8 @@ function handelswegAnzeigen(s,angebote){
  b.textContent=p.art==='zeit'?'60 Spielminuten weiter':
    angebot?titel(angebot):'Kein Auftrag verfügbar';
  $('p3-handelssperre').textContent=ausverkauft
-   ?(p.aktion==='buy-st_aldera-frachter'?'In Aldera ist gerade kein Frachter zu kaufen. Prüfe weitere Angebote unter „Das Universum“.':
-     'In Aldera ist gerade kein Bergbauschiff zu kaufen. Prüfe weitere Angebote unter „Das Universum“.')
+   ?(p.aktion==='buy-st_aldera-frachter'?'In Aldera ist gerade kein Frachter zu kaufen. Prüfe weitere Angebote unter „Das Universum“ oder in deinen Aufträgen.':
+     'In Aldera ist gerade kein Bergbauschiff zu kaufen. Prüfe weitere Angebote unter „Das Universum“ oder in deinen Aufträgen.')
    :grund?'Gesperrt: '+grund:'';
  $('p3-handelssperre-detail').textContent=grund;
 }

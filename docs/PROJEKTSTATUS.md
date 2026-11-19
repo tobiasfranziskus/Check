@@ -85,6 +85,10 @@
 
 ---
 
+## Wirtschaftsmanager-Einstieg [DRAFT / M0]
+
+[#517](https://github.com/tobiasfranziskus/Check/issues/517) baut auf [#513](https://github.com/tobiasfranziskus/Check/pull/513) auf. Der Root-Link „Wirtschaftsmanager“ nutzt die bestehende Karriere mit Fortsetzen und JSON-Import. Die Kommandobrücke zeigt den Eishandel, die Konzernkasse und die Zahl eigener Schiffe. Der Hinweis zum Frachter erscheint bereits vor dem ersten Kauf. Das Flugjournal ist über die optionale Pilotenakademie erreichbar. Der bestehende Regel204-Spielstand und die validierten J8-Angebote versorgen die gesamte Folge.
+
 ## Vorherige Integrations- und Prüfberichte (historische Zwischenstände)
 
 

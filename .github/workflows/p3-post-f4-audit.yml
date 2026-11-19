@@ -1,0 +1,47 @@
+name: P3 post-fix independent second-F4 audit
+on:
+  pull_request:
+    branches: ['research/p3-f4-post-audit-20261119']
+    paths:
+      - 'tests/p3-post-f4-*'
+      - '.github/workflows/p3-post-f4-audit.yml'
+      - 'docs/P3_POST_F4_UNABHAENGIGER_AUDIT.md'
+permissions:
+  contents: read
+jobs:
+  independent-negatives:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/p3-post-f4-independent.test.mjs tests/p3-audit-guard-fixes.test.mjs tests/p3-second-w5-f4-research.test.mjs
+  paired-soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include:
+          - { scenarios: 'S01 S02 S03 S04', days: 90 }
+          - { scenarios: 'S05 S06 S07 S08', days: 90 }
+          - { scenarios: 'S09 S10 S11 S12 S13', days: 90 }
+          - { scenarios: 'S02', days: 730 }
+          - { scenarios: 'S04', days: 730 }
+    name: "${{ matrix.days }} days / ${{ matrix.scenarios }}"
+    env:
+      SCENARIOS: ${{ matrix.scenarios }}
+      DAYS: ${{ matrix.days }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          read -r -a scenarios <<< "$SCENARIOS"
+          for scenario in "${scenarios[@]}"; do
+            node tests/p3-post-f4-soak.cjs "$scenario" "$DAYS" || exit "$?"
+          done

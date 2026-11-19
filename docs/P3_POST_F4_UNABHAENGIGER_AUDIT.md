@@ -22,3 +22,9 @@ Zum Zeitpunkt der ersten Erstellung: **Tests, Soak-Runs und dieses neue CI-Gate 
 ## Weiter bestehende Integrationssperre
 
 #510 verwendet eine **flüchtige, nicht signierte und nicht treuhänderisch vorfinanzierte** Forschungsqueue. Ihre Beendigung bei J8-Klon ist ein sicherer Abbruch, keine Vertragskontinuität. Der 120-Minuten-Vorrang ist eine vorläufige Forschungsheuristik. Mehr-Eigentümer-Fairness, Widerruf und Rückzahlung vorab gebundener Vertragstreuhand, Migration in eine neue Regel-/Save-Version, die Browser-Integration und die echte iPad-/NAS-Geräteprüfung fehlen weiterhin. **Kein Merge nach main, kein Pages-/NAS-Deployment, keine neue Balancing-/Wirtschaftsregel-Freigabe.**
+
+## Erster Negativlauf – nicht bestanden, reine Testvoraussetzung korrigiert
+
+Der erste unabhängige Job des Audit-Heads `65349065` ([CI #44454158963](https://github.com/tobiasfranziskus/Check/actions/runs/44454158963)) ergab **8/10 bestandene Tests, 2 fehlgeschlagen**. Die beiden fehlgeschlagenen Stilllegungstests berechneten den zum Nullbuchwert erforderlichen **zusätzlichen** Verschleiß nach dem echten 60-Minuten-W5ac-Flug, setzten den akkumulierten Verschleißzähler aber absolut auf diesen Zusatzwert zurück. Der Restbuchwert war dadurch **18 ISK statt 0 ISK**. Folgerichtig konnte der Test keine Stilllegung oder warteschlangenbedingte Ablehnung erwarten. Dies ist **kein belegter Produktfehler**: Der Test hatte seine eigene Vorbedingung nicht hergestellt.
+
+Im Folgecommit `540f4ebe` wurde **nur** in beiden Test-Fixtures die bereits gebuchte W5ac-Abnutzung erhalten und der restliche Abnutzungsbedarf hinzuaddiert. Der produktive Core, alle Wirtschaftstests und der Szenario-Runner sind bytegenau unverändert. **Der rote Erstlauf bleibt dokumentiert; neue Gates erst nach eigenständigem erfolgreichem CI-Lauf behaupten.**

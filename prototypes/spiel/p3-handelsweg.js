@@ -79,10 +79,11 @@ function ersteBezahlteRundfahrt(s,welt){
  if(!s||![204,207].includes(s.rulesVersion)||typeof welt?.audit!=='function'||!welt.audit(s).ok)return false;
  const belege=s.kanon?.spielerFrachten;
  if(!belege||!Number.isSafeInteger(belege.gebuehr)||belege.gebuehr<=0||!Array.isArray(belege.auftraege))return false;
- const eigene=new Set(Object.values(s.ships||{})
-   .filter(sh=>sh.owner==='house'&&sh.klasse==='frachter').map(sh=>sh.id));
- return belege.auftraege.some(a=>eigene.has(a.schiff)
-   &&Number.isSafeInteger(a.start)&&Number.isSafeInteger(a.geliefert)&&Number.isSafeInteger(a.end)
+ // Das autoritative Spielerfracht-Journal beweist die historische Eigenfracht.
+ // Ein späterer Schiffseigentümerwechsel darf den bereits verdienten Erfolg nicht löschen.
+ return belege.auftraege.some(a=>typeof a.schiff==='string'&&a.schiff.length>0
+   &&Number.isSafeInteger(a.start)&&a.start>=0
+   &&Number.isSafeInteger(a.geliefert)&&Number.isSafeInteger(a.end)
    &&a.start<=a.geliefert&&a.geliefert<=a.end);
 }
 const api=Object.freeze({auswerten,ersteBezahlteRundfahrt});

@@ -1,0 +1,31 @@
+name: "W6a – paid water demand unlocks prepaid freight"
+on:
+  pull_request:
+    paths:
+      - 'tests/w6a-*.test.mjs'
+      - 'docs/W6A_*'
+      - '.github/workflows/w6a-paid-demand.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-original-core-payments:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Actual Rule195 real cargo, paid wages, buyer cash, refusal, replay and Save/Load"
+        run: node --test tests/w6a-lohnnachfrage-reaktiviert-fracht.test.mjs
+  full-existing-node-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "All original core, current web singlefile, economy and historical save tests"
+        run: node --test tests/*.test.mjs

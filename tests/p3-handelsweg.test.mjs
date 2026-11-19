@@ -45,6 +45,37 @@ test('P3: repeat paid miner → ice → freight original decisions and completio
  const one=run(),two=run();assert.equal(one.hash,two.hash);
  assert.deepEqual(one.sequence,two.sequence);assert.equal(one.save,two.save);
 });
+test('P1 #515: first paid shipment milestone stays after delivery, ticks and Save/Load; no early or forged completion',()=>{
+ const s=start(),done=()=>P3.ersteBezahlteRundfahrt(s.zustandReferenz(),s.weltReferenz());
+ assert.equal(done(),false,'empty career has no freight receipt');
+ assert.equal(s.ausfuehren('buy-st_aldera-miner').ok,true);
+ assert.equal(s.ausfuehren('buy-st_aldera-frachter').ok,true);
+ const miner=s.ansicht().schiffe.find(sh=>sh.klasse==='miner');
+ const frachter=s.ansicht().schiffe.find(sh=>sh.klasse==='frachter');
+ assert.equal(s.ausfuehren('ice-'+miner.id).ok,true);
+ s.weiterspielen(60);s.weiterspielen(60);
+ assert.equal(done(),false,'ice stock is not proof of completed delivery');
+ assert.equal(s.ausfuehren('freight-'+frachter.id).ok,true);
+ assert.equal(done(),false,'an accepted contract has no completed payment yet');
+ const fake=structuredClone(s.zustandReferenz());
+ fake.kanon.spielerFrachten.gebuehr=240;
+ fake.kanon.spielerFrachten.auftraege[0].geliefert=180;
+ fake.kanon.spielerFrachten.auftraege[0].end=240;
+ assert.equal(P3.ersteBezahlteRundfahrt(fake,s.weltReferenz()),false,
+   'fabricated delivery/payment must fail the original economic audit');
+ s.weiterspielen(60);
+ assert.equal(done(),false,'delivery without return is not a completed roundtrip');
+ s.weiterspielen(60);
+ assert.equal(done(),true,'completed original F4 is a permanent receipt');
+ const original=s.exportieren(),r=J8.erstellen();r.oeffnen204(original,true);
+ assert.equal(r.exportieren(),original);
+ assert.equal(P3.ersteBezahlteRundfahrt(r.zustandReferenz(),r.weltReferenz()),true);
+ s.weiterspielen(60);
+ assert.equal(done(),true,'later world time must not clear completed milestone');
+ assert.equal(s.weltReferenz().audit(s.zustandReferenz()).ok,true);
+ assert.equal(s.zustandReferenz().minted,0);
+ assert.equal(s.zustandReferenz().burned,0);
+});
 test('P3: missing ship and buyer refusal remain original disabled choices, never invent purchase',()=>{
  const s=start(),raw=s.zustandReferenz();
  const initial=read(s);assert.equal(initial.abgeschlossen,0);

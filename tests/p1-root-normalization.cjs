@@ -8,7 +8,7 @@ const repo=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(repo,rel),'utf8');
 const heading='<h1>Aphros Void – W0–W5</h1>';
 const disclosure='<details id="root-legacy-info"><summary>Hintergrund zum klassischen Wirtschaftsmodus</summary>';
-const divider='<section id="klassische-wirtschaft" aria-label="Klassischer Wirtschaftsmodus"><h2>Klassische Wirtschaft · W0–W5</h2><p>Der bisherige Wirtschaftseinstieg bleibt mit seinen bisherigen Spielständen, Funktionen und JSON-Importen erhalten. Das neue Spiel erreichst du über „Karriere öffnen“.</p></section>';
+const divider='<section id="klassische-wirtschaft" aria-label="Klassischer Wirtschaftsmodus"><h2>Klassische Wirtschaft · W0–W5</h2><p>Der bisherige Wirtschaftseinstieg bleibt mit seinen bisherigen Spielständen, Funktionen und JSON-Importen erhalten. Das neue Spiel erreichst du über „Wirtschaftsmanager“.</p></section>';
 function once(text,from,to,what){
  assert.equal(text.split(from).length,2,'expected exactly one '+what);
  return text.replace(from,to);

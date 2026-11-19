@@ -6,6 +6,7 @@ const require=createRequire(import.meta.url);
 const T=require('../prototypes/tutorial-manager/manager.js');
 const J=require('../prototypes/verbund/konzern-session.js');
 const W5=require('../prototypes/w5ac/session.js');
+const Handel=require('../prototypes/spiel/p3-handelsweg.js');
 const lesson=(m,id)=>{const x=m.ziele.find(x=>x.id===id);assert.ok(x,'no lesson '+id);return x;};
 const neu=()=>{
  const s=J.erstellen();
@@ -126,4 +127,21 @@ test('Managerakademie: public HTML integrates only a read-only UI extension',()=
  assert.match(js,/managerTutor\?\.auffrischen\(\)/);
  assert.match(js,/managerTutor\?\.gebucht\(id\)/);
  assert.doesNotMatch(fs.readFileSync(new URL('../prototypes/tutorial-manager/manager.js',import.meta.url),'utf8'),/localStorage|session\.ausfuehren\(/);
+});
+
+
+test('Wirtschaftsmanager: ticks can exhaust the freighter offer and the original refusal leaves the save untouched',()=>{
+ const s=neu();
+ const handel=()=>Handel.auswerten(s.zustandReferenz(),s.angebote(),s.weltReferenz());
+ assert.equal(handel().aktion,'buy-st_aldera-miner');
+ assert.equal(s.ausfuehren(handel().aktion).ok,true);
+ assert.equal(handel().aktion,'buy-st_aldera-frachter');
+ assert.equal(handel().bereit,true);
+ assert.equal(s.ansicht().tick,0);
+ s.weiterspielen(60);
+ const vorher=s.exportieren(),blockiert=handel();
+ assert.equal(blockiert.bereit,false);
+ assert.equal(blockiert.grund,'kein Komplettschiff auf Lager');
+ assert.equal(s.ausfuehren(blockiert.aktion).ok,false);
+ assert.equal(s.exportieren(),vorher);
 });

@@ -78,7 +78,7 @@ function screen(id){
  $('mode-indicator').textContent=id==='startseite'?'OFFLINE · ALDERA-SEKTOR':
    id==='briefing'?'PROLOG · ALDERA-SEKTOR':'ONLINE · ALDERA-SEKTOR';
  if(id==='spielwelt'&&session)anzeigen();
- scope.scrollTo?.(0,0);
+ scope.scrollTo?.({top:0,left:0,behavior:'instant'});
 }
 function hinweis(message,fail=false){
  const text=anzeigetext(message);
@@ -240,17 +240,29 @@ function missions(){
 function handelswegAnzeigen(s,angebote){
  const panel=$('p3-handelsauftrag');if(!panel||!scope.P3Handelsweg)return;
  const p=scope.P3Handelsweg.auswerten(s,angebote,session.weltReferenz());
- $('p3-handelsstand').textContent=p.text;
- $('p3-handelszahlen').textContent='Aldera-Lager: '+fmt(p.eis)+' Eis · Eigene Kasse: '+
-   fmt(p.hauskasse)+' ISK · Verbuchte F4-Frachtgebühren: '+fmt(p.gebuehr)+
-   ' ISK · F4-Arbeitskosten: '+fmt(p.lohn)+' ISK (kein pauschaler Nettogewinn).';
- $('p3-handelsziel').textContent=(p.abgeschlossen?'Runde '+(p.abgeschlossen+1)+': ':'Erster Handelsauftrag: ')+p.titel;
- $('p3-handelsanleitung').textContent=p.anleitung;
+ const grund=p.grund?anzeigetext(p.grund):'';
+ const ausverkauft=grund==='kein Komplettschiff auf Lager';
+ $('p3-handelsstand').textContent=p.abgeschlossen
+   ?fmt(p.abgeschlossen)+(p.abgeschlossen===1?' bezahlte Rundfahrt':' bezahlte Rundfahrten')+
+    ' · '+fmt(p.gebuehr)+' ISK Frachtgebühren · '+fmt(p.lohn)+' ISK Fluglöhne'
+   :'';
+ $('p3-handelszahlen').textContent='Aldera-Lager: '+fmt(p.eis)+' Eis · Verfügbare Kasse: '+
+   fmt(p.hauskasse)+' ISK. Frachtgebühren und Fluglöhne bilden nur einen Teil des Ergebnisses.';
+ $('p3-handelsziel').textContent=(p.abgeschlossen?'Runde '+(p.abgeschlossen+1)+': ':'Nächstes Handelsziel: ')+p.titel;
+ $('p3-handelsanleitung').textContent=ausverkauft?'':p.aktion==='buy-st_aldera-frachter'
+   ?'Kaufe den Frachter vor dem ersten Flug, wenn du mit Eis handeln willst. Andere Konzerne können das verfügbare Schiff kaufen, sobald Spielzeit vergeht.'
+   :p.offen?'Die Rundfahrt endet nach der Lieferung und der Rückkehr nach Aldera.'
+   :p.art==='zeit'?'Dein Miner arbeitet. Schau nach 60 Spielminuten wieder ins Lager.'
+   :p.anleitung;
+ const angebot=p.aktion?angebote.find(a=>a.id===p.aktion):null;
  const b=$('p3-handelsaktion');b.disabled=!p.bereit;
- b.textContent=p.art==='zeit'?'60 Spielminuten regulär abrechnen':
-  p.art==='auftrag'?'Originalauftrag ausführen':'Kein Auftrag verfügbar';
- $('p3-handelssperre').textContent=p.grund?'Gesperrt: '+anzeigetext(p.grund):
-  'Nur Originalangebote aus deinem Eigentum. Keine Abnahmegarantie und keine geschenkten Waren.';
+ b.textContent=p.art==='zeit'?'60 Spielminuten weiter':
+   angebot?titel(angebot):'Kein Auftrag verfügbar';
+ $('p3-handelssperre').textContent=ausverkauft
+   ?(p.aktion==='buy-st_aldera-frachter'?'In Aldera ist gerade kein Frachter zu kaufen. Prüfe weitere Angebote unter „Das Universum“.':
+     'In Aldera ist gerade kein Bergbauschiff zu kaufen. Prüfe weitere Angebote unter „Das Universum“.')
+   :grund?'Gesperrt: '+grund:'';
+ $('p3-handelssperre-detail').textContent=grund;
 }
 // P3: exactly the Core's legal quote; asset view is read-only, not a second economy.
 function investitionAnzeigen(s,angebote){

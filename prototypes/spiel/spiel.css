@@ -166,6 +166,12 @@ body.raum-aktiv .world{display:none}
 
 /* P3: repeatable, core-funded trade decisions in the normal career journal. */
 .p3-handelsauftrag{margin:17px 0;padding:15px 13px;border:1px solid #477180;border-radius:10px;background:#11283bc9;min-width:0}
+.karriere-handelsweg{margin:0 0 16px}
+.karriere-handelsweg .karriere-handelsziel{font-weight:700;color:var(--ink);font-size:1rem}
+.karriere-handelsweg summary{display:flex;align-items:center;min-height:48px;cursor:pointer;color:#bfd4df;font-size:.85rem}
+.karriere-handelsweg summary::before{content:"▸";margin-right:.55em}
+.karriere-handelsweg details[open] summary::before{content:"▾"}
+.karriere-handelsweg p:empty{display:none}
 .p3-handelsauftrag .eyebrow{font-size:.65rem}
 .p3-handelsauftrag h3{margin:7px 0}
 .p3-handelsauftrag p{font-size:.83rem;line-height:1.45;color:#bfd4df;overflow-wrap:anywhere}
@@ -173,6 +179,7 @@ body.raum-aktiv .world{display:none}
 .p3-handelsauftrag .p3-zahlen{color:#9fe1c8;font-variant-numeric:tabular-nums}
 .p3-handelsauftrag .p3-sperre{color:#ffbca8;font-size:.8rem}
 .p3-handelsauftrag button{width:100%;font-size:.86rem;justify-content:center;padding:10px;min-height:48px}
+.karriere-handelsweg #p3-handelsaktion{width:auto}
 @media(max-width:900px){.p3-handelsauftrag{padding:17px}}
 
 /* P3: optional investment after completed original freight; no financial CSS logic. */

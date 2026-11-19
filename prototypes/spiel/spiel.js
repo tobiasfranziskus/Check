@@ -228,12 +228,16 @@ function datum(ms){return Math.floor(ms/1440)+' Tage · '+(ms%1440)+' Minuten';}
 function missions(){
  const state=session.zustandReferenz(),mine=Object.values(state.ships).some(s=>s.owner==='house'&&s.klasse==='miner');
  const pilot=!!session.pilotStatus();
- const eigenesFrachtgut=Object.values(state.ships).some(sh=>sh.owner==='house'&&Object.values(sh.ladung||{}).some(n=>n>0));
+ const eigenMiner=new Set(Object.values(state.ships)
+   .filter(sh=>sh.owner==='house'&&sh.klasse==='miner').map(sh=>sh.id));
+ const eisBezahlt=scope.P3Handelsweg?.ersteBezahlteRundfahrt(state,session.weltReferenz())===true;
+ const siliziumBezahlt=(state.kanon.silizium?.belege||[]).some(b=>b.owner==='house'
+   &&eigenMiner.has(b.schiff)&&Number.isSafeInteger(b.preis)&&b.preis>0);
  return [
   {done:mine,text:'Dein erstes Bergbauschiff kaufen'},
   {done:pilot||cockpitGenutzt,text:'Ins Cockpit steigen – ein Schiff, eine Welt'},
   {done:(state.kanon.fluglohnMinuten||0)>0||flugerfahrung,text:'Abdocken und den ersten bezahlten Flug beginnen'},
-  {done:eigenesFrachtgut||!!state.kanon.silizium?.belege?.length,text:'Eis oder Silizium fördern und transportieren'}
+  {done:eisBezahlt||siliziumBezahlt,text:'Eis oder Silizium fördern und transportieren'}
  ];
 }
 // P3: guiding the next REAL paid order, not adding a mission economy or save state.

@@ -71,10 +71,14 @@ const server=http.createServer((req,res)=>{
     }
     assert.equal(await handel.textContent(),'Eisfracht transportieren');
     await handel.tap();
+    assert.notEqual(await page.locator('#missions li:last-child').getAttribute('class'),'done',
+      'an open freight order is not a completed delivery');
     for(let i=0;i<2;i++){
      assert.equal(await handel.textContent(),'60 Spielminuten weiter');
      await handel.tap();
     }
+    assert.equal(await page.locator('#missions li:last-child').getAttribute('class'),'done',
+      'paid completed freight must permanently complete the career milestone');
     assert.equal(await page.locator('#raumbereich').isVisible(),false);
     assert.match(await page.locator('#p3-handelsstand').innerText(),/1 bezahlte Rundfahrt · 240 ISK Frachtgebühren · 120 ISK Fluglöhne/);
     const firstSave=await page.evaluate(k=>localStorage.getItem(k),SLOT);
@@ -94,6 +98,8 @@ const server=http.createServer((req,res)=>{
     const resumed=await page.evaluate(k=>localStorage.getItem(k),SLOT);
     assert.equal(world.hash(world.load(resumed)),firstHash);
     assert.match(await page.locator('#p3-handelsstand').innerText(),/240 ISK Frachtgebühren · 120 ISK Fluglöhne/);
+    assert.equal(await page.locator('#missions li:last-child').getAttribute('class'),'done',
+      'first paid freight remains a milestone after reload');
     console.log('M0_MANAGER_BROWSER_OK',JSON.stringify({kind,width,height,firstHash}));
     for(let i=0;i<45;i++){
      const json=await page.evaluate(k=>localStorage.getItem(k),SLOT);
@@ -118,6 +124,8 @@ const server=http.createServer((req,res)=>{
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
     await page.reload();await page.locator('#fortsetzen').tap();
     assert.match(await page.locator('#p3-handelsstand').textContent(),/2 bezahlte Rundfahrten/);
+    assert.equal(await page.locator('#missions li:last-child').getAttribute('class'),'done',
+      'a later business cycle must not erase the completed first shipment');
     // P3 chapter 03: continue the same career until earned asset-adjusted surplus
     // exceeds the exact original 600-ISK hull price. No additional profile or world.
     assert.equal(await page.locator('#p3-investition').isVisible(),true);

@@ -89,7 +89,7 @@ test('M3-P2: real built hull can be bought but original W3 route blocks prematur
   stock:sold,houseCash:paid.owners.house.cash,hash:j.ansicht().hash}));
 });
 
-test('M3-P2: organic purchases deplete player capital; genuine W5 stock is not free',()=>{
+test('M3-P2: genuine capital depletion does not conjure an unavailable W5 hull',()=>{
  const {j,w}=begin();
  // Legitimate starter purchases spend real house money and consume finite stock.
  const purchases=['buy-st_aldera-miner','buy-st_aldera-miner','buy-st_aldera-miner',
@@ -107,28 +107,39 @@ test('M3-P2: organic purchases deplete player capital; genuine W5 stock is not f
  check(w,afterPurchases);
  const snapshot=j.exportieren(),replay=J8.erstellen();replay.oeffnen204(snapshot,true);
  const s1=j.zustandReferenz(),s2=replay.zustandReferenz(),w2=replay.weltReferenz();
- let observed=null;
+ let firstAvailable=null;
  // Inspect every actual minute so an available hull is not mistaken for
  // perpetual availability after a competing, legitimate NPC purchase.
  for(let i=0;i<=1440;i++){
-  if(s1.stations.st_nadir.lager.frachter>0){observed=i;break;}
+  if(s1.stations.st_nadir.lager.frachter>0){firstAvailable=i;break;}
   if(i<1440){w.advance(s1,1);w2.advance(s2,1);}
  }
  assert.equal(w.hash(s1),w2.hash(s2),'same paid action history replays deterministically');
  assert.equal(w.save(s1),w2.save(s2),'exact original replay bytes');
  check(w,s1);
- assert.ok(observed!==null,'a physical W5 hull must first become available');
- assert.ok(s1.stations.st_nadir.lager.frachter>0);
- assert.ok(s1.owners.house.cash<750,'legal initial spend leaves insufficient house funds');
+ // CI first revealed the negative result: after these lawful purchases no
+ // unbought Nadir hull appears during the sampled 1,440 minutes. Never infer
+ // a finance-blocked W5 offer from an inventory-blocked market.
+ assert.equal(firstAvailable,null,
+  'this exact paid seed has no physical Nadir hull during the observed horizon');
+ assert.equal(s1.stations.st_nadir.lager.frachter,0);
+ assert.equal(s1.owners.house.cash,450,
+  'no synthetic company income or balance adjustment was used in the run');
  const reason=refuseJ8(j,'buy-st_nadir-frachter');
- assert.equal(reason,'W5-Schiffskauf nicht belegbar');
+ assert.equal(reason,'kein Komplettschiff auf Lager',
+  'stock absence, not insufficient cash, is the observed original first blocker');
+ assert.equal(j.zustandReferenz().w5.schiffIds.some(id=>
+   j.zustandReferenz().ships[id]?.owner==='house'),false,
+  'no fabricated player-owned Nadir freighter');
  const originalSave=w.save(s1);
  const original=w.execute(s1,{type:'shipBuy',owner:'house',station:'st_nadir',klasse:'frachter'});
  assert.equal(original.ok,false);
- assert.equal(original.reason,reason,'J8 displays the unmodified original core blocker');
+ assert.equal(original.reason,reason,'original core blocker exactly preserved');
  assert.equal(w.save(s1),originalSave,'failed direct core purchase stays byte-identical');
  check(w,s1);
- console.log('M3_P2_ORGANIC_FUNDS_BLOCK '+JSON.stringify({tick:s1.tick,
+ console.log('M3_P2_NATURAL_CAPITAL_AND_STOCK_LIMIT '+JSON.stringify({
+  tick:s1.tick,worldDays:Math.floor(s1.tick/1440),unboughtNadirHullEverSeen:firstAvailable!==null,
+  w3Completed:s1.w3.abgeschlossen,w4Completed:s1.w4.abgeschlossen,w5Completed:s1.w5.fertig,
   stock:s1.stations.st_nadir.lager.frachter,houseCash:s1.owners.house.cash,
   reason,hash:w.hash(s1)}));
 });

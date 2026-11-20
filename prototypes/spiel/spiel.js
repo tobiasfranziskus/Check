@@ -233,6 +233,26 @@ function managerDispositionAnzeigen(s,angebote){
  const host=$('manager-disposition');
  if(!host||!scope.P3ManagerDisposition)return;
  const p=scope.P3ManagerDisposition.auswerten(session.weltReferenz(),s,angebote);
+ const diff=p.inventarindikator===null?'nicht zuverlässig bezifferbar':
+  (p.inventarindikator>=0?'+':'')+fmt(p.inventarindikator)+' ISK';
+ $('manager-betrieb-geld').textContent='Eigene Firmenkasse '+fmt(p.hausKasse)+
+  ' ISK · Restbuchwert deiner Schiffe '+fmt(p.anlagewert)+
+  ' ISK · bisheriger Wertverzehr deiner aktuellen Schiffe '+fmt(p.verschleiss)+
+  ' ISK. Kasse + Schiffsbuchwerte gegenüber Originalstart: '+diff+'.';
+ $('manager-betrieb-frachten').textContent='Belegte eigene F4-Rundfahrten: '+
+  fmt(p.frachtAbgeschlossen)+' abgeschlossen, '+fmt(p.frachtOffen)+
+  ' unterwegs · tatsächliche Frachterlöse '+fmt(p.frachtGebuehrBisher)+
+  ' ISK · ausgezahlter F4-Pilotenlohn '+fmt(p.frachtLohnBisher)+
+  ' ISK (separates Pilotenlohnkonto).';
+ $('manager-betrieb-risiko').textContent='Keine vollständige Gewinnrechnung: Waren, Reserven, '+
+  'Verbindlichkeiten, Minerarbeit und weitere Kosten sind hier nicht saldiert. '+
+  'Weltzeit kann Käuferkapital, Lagerbestände und Auftragslage verändern; Erfolg ist nicht garantiert.';
+ const stop=$('manager-aussetzen-aktion');
+ stop.disabled=!p.aussetzen.bereit;
+ stop.textContent=p.aussetzen.titel;
+ $('manager-aussetzen-grund').textContent=p.aussetzen.bereit
+  ?'Nur dein eigenes laufendes Eis-Pendel: Originalauftrag wird bei Klick erneut geprüft.'
+  :'Gesperrt: '+anzeigetext(p.aussetzen.grund);
  $('manager-disposition-kassen').textContent='Deine Kasse '+fmt(p.hausKasse)+
   ' ISK · Aldera-Käuferkasse '+fmt(p.alderaKasse)+' ISK · Nadir-Kasse '+
   fmt(p.nadirKasse)+' ISK. Nur tatsächlich vorhandene Firmenmittel.';
@@ -1003,6 +1023,25 @@ function managerDispositionsAuftrag(art){
   auftrag(choice.aktion);
  }catch(e){hinweis('Managerauftrag gesperrt: '+error(e),true);anzeigen();}
 }
+$('manager-zeit-aktion')?.addEventListener('click',()=>{
+ if(!session||!scope.P3ManagerDisposition)return;
+ try{
+  // Same audited world clock + protected autosave as the global +60 button.
+  scope.P3ManagerDisposition.auswerten(session.weltReferenz(),
+    session.zustandReferenz(),session.angebote());
+  weiter(60);
+ }catch(e){hinweis('Weltzeit nicht fortgesetzt: '+error(e),true);anzeigen();}
+});
+$('manager-aussetzen-aktion')?.addEventListener('click',()=>{
+ if(!session||!scope.P3ManagerDisposition)return;
+ try{
+  const p=scope.P3ManagerDisposition.auswerten(session.weltReferenz(),
+    session.zustandReferenz(),session.angebote());
+  if(!p.aussetzen.bereit||!p.aussetzen.aktion)
+   throw Error(p.aussetzen.grund||'Kein eigener laufender Original-Förderauftrag');
+  auftrag(p.aussetzen.aktion); // Original-J8 shipShuttleStop, never direct mutation.
+ }catch(e){hinweis('Förderpause gesperrt: '+error(e),true);anzeigen();}
+});
 $('manager-abbau-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('abbau'));
 $('manager-transport-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('transport'));
 $('p3-handelsaktion')?.addEventListener('click',()=>{

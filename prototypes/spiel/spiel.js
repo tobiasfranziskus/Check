@@ -303,8 +303,9 @@ function wasserLohnAnzeigen(s,angebote){
    fmt(p.preis)+' ISK · Aldera-Käuferkasse: '+fmt(p.kaeuferKasse)+' ISK.';
  $('p3-wasser-bedarf').textContent=p.fehlbetrag>0
   ?'Nächste Eischarge: '+fmt(p.eisKosten)+' ISK erforderlich. Aktuell fehlen '+
-    fmt(p.fehlbetrag)+' ISK. '+fmt(p.zielMenge)+' wirklich vorhandene Einheiten Wasser kosten '+
-    fmt(p.zielKosten)+' ISK aus deinem PRIVATEN Pilotenlohn.'
+    fmt(p.fehlbetrag)+' ISK. Für den Ausgleich wären '+fmt(p.zielMenge)+' Einheiten Wasser nötig ('+
+    fmt(p.zielKosten)+' ISK aus deinem PRIVATEN Pilotenlohn). Tatsächlich im Aldera-Lager: '+
+    fmt(p.wasser)+' Einheiten. Ob der Kauf jetzt möglich ist, entscheidet das Originalangebot.'
   :'Die nächste Original-Eischarge ist derzeit bereits finanzierbar. Du darfst deinen Lohn behalten.';
  const b=$('p3-wasser-aktion');b.disabled=!p.zielBereit;
  b.textContent=p.fehlbetrag>0

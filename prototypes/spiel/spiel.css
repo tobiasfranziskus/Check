@@ -207,6 +207,11 @@ body.raum-aktiv .world{display:none}
 /* P3/W4-W5: industrial purchase with original owner/funds checks. */
 .p3-industrie{border-color:#a38254;background:#30281ce8}
 .p3-industrie .p3-zahlen{color:#e9d2a5}
+.p3-industrie #p3-industrie-buchungen{margin:12px 0;padding:8px 12px;border:1px solid #856f54;border-radius:9px;background:#201b19}
+.p3-industrie #p3-industrie-buchungen summary{display:flex;align-items:center;min-height:48px;cursor:pointer;touch-action:manipulation;color:#e9d2a5;font-size:.88rem;font-weight:700}
+.p3-industrie #p3-industrie-buchungen summary:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
+.p3-industrie #p3-industrie-buchungen p{margin:10px 0;line-height:1.5}
+
 .p3-industrie .p3-einschraenkung{font-size:.74rem;color:#c5bfad;line-height:1.45}
 .p3-industrie #p3-industrie-zeit{margin-top:8px;background:transparent;border:1px solid #a08f75}
 .p3-industrie #p3-industrie-cockpit{margin-top:8px;min-height:48px}

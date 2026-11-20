@@ -262,10 +262,8 @@ function handelswegAnzeigen(s,angebote){
  const b=$('p3-handelsaktion');b.disabled=!p.bereit;
  b.textContent=p.art==='zeit'?'60 Spielminuten weiter':
    angebot?titel(angebot):'Kein Auftrag verfügbar';
- $('p3-handelssperre').textContent=ausverkauft
-   ?(p.aktion==='buy-st_aldera-frachter'?'In Aldera ist gerade kein Frachter zu kaufen. Prüfe weitere Angebote unter „Das Universum“ oder in deinen Aufträgen.':
-     'In Aldera ist gerade kein Bergbauschiff zu kaufen. Prüfe weitere Angebote unter „Das Universum“ oder in deinen Aufträgen.')
-   :grund?'Gesperrt: '+grund:'';
+ $('p3-handelssperre').textContent=p.marktHinweis
+   ?anzeigetext(p.marktHinweis):grund?'Gesperrt: '+grund:'';
  $('p3-handelssperre-detail').textContent=grund;
 }
 // P3: exactly the Core's legal quote; asset view is read-only, not a second economy.

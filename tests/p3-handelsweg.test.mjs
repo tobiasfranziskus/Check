@@ -85,6 +85,33 @@ test('P3: missing ship and buyer refusal remain original disabled choices, never
  assert.throws(()=>P3.auswerten({...raw,rulesVersion:999},[]));
  audit(s);
 });
+test('M1 #522: no imaginary replacement ship after Aldera stock exhausts',()=>{
+ const s=start();
+ assert.equal(s.ausfuehren('buy-st_aldera-miner').ok,true);
+ s.weiterspielen(60);
+ const quotes=s.angebote(),state=s.zustandReferenz(),welt=s.weltReferenz();
+ const saved=s.exportieren(),p=P3.auswerten(state,quotes,welt);
+ assert.equal(p.aktion,'buy-st_aldera-frachter');
+ assert.equal(p.bereit,false);
+ assert.equal(p.grund,'kein Komplettschiff auf Lager');
+ assert.match(p.marktHinweis,/Aldera: kein Frachter/);
+ const id='buy-st_nadir-frachter',other=quotes.filter(a=>a.id!==id);
+ const available=P3.auswerten(state,[...other,{id,ok:true,label:'Original-Nadir-Kauf'}],welt);
+ assert.match(available.marktHinweis,/Nadir bietet aktuell einen echten Kauf an/);
+ assert.match(available.marktHinweis,/nicht sofort für Aldera-Aufträge verfügbar/);
+ const unavailable=P3.auswerten(state,[...other,{id,ok:false,reason:'kein Komplettschiff auf Lager'}],welt);
+ assert.match(unavailable.marktHinweis,/Auch der Kauf in Nadir ist gesperrt: kein Komplettschiff auf Lager/);
+ assert.doesNotMatch(unavailable.marktHinweis,/Nadir bietet aktuell einen echten Kauf an/);
+ const absent=P3.auswerten(state,other,welt);
+ assert.match(absent.marktHinweis,/kein entsprechendes Kaufangebot/);
+ assert.doesNotMatch(absent.marktHinweis,/Nadir bietet aktuell einen echten Kauf an/);
+ const original=quotes.find(a=>a.id===id);
+ if(original?.ok)assert.match(p.marktHinweis,/Nadir bietet aktuell einen echten Kauf an/);
+ else if(original)assert.match(p.marktHinweis,/Auch der Kauf in Nadir ist gesperrt/);
+ else assert.match(p.marktHinweis,/kein entsprechendes Kaufangebot/);
+ assert.equal(s.exportieren(),saved,'read-only market guidance must never change the save');
+ audit(s);
+});
 test('P3: published career shell binds only original buy/shuttle/freight/advance commands',()=>{
  const html=fs.readFileSync(new URL('../prototypes/spiel/index.html',import.meta.url),'utf8');
  const js=fs.readFileSync(new URL('../prototypes/spiel/spiel.js',import.meta.url),'utf8');

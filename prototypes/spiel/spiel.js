@@ -412,6 +412,11 @@ function industrieAnzeigen(s,angebote){
   ' ISK · Dein Konzern '+fmt(p.hausKasse)+' ISK.';
  // Bookkeeping is read-only: reserves are NOT profits, rights or completed payouts.
  const book=p.buchungen, owner=id=>id?konzernname(id):'noch kein Schiff zugeordnet';
+ const frachtphase=Object.freeze({
+  vorbestellt:'vorfinanziert, Erzförderung noch offen',
+  hin:'Erz unterwegs nach Nadir',
+  rueck:'Erz in Nadir angekommen, Frachter auf Rückweg'
+ })[book.w3.phase]||'unbekannter Originalstatus ('+anzeigetext(book.w3.phase)+')';
  $('p3-industrie-rechte').textContent='Auftraggeber: '+konzernname(book.auftraggeber)+
   ' · Bergbau: '+owner(book.minerEigentuemer)+
   ' · Transport: '+owner(book.frachterEigentuemer)+
@@ -429,12 +434,12 @@ function industrieAnzeigen(s,angebote){
   fmt(book.w3.erzKaufGebucht)+' ISK; Fluglöhne bereits gezahlt '+
   fmt(book.w3.fluglohnBezahlt)+' ISK; Speditionstarif bereits ausgezahlt '+
   fmt(book.w3.frachttarifAusgezahlt)+' ISK.'+
-  (book.w3.phase?' Aktueller Vertrag: '+book.w3.phase+'.':' Kein offener W3-Frachtvertrag.');
+  (book.w3.phase?' Aktueller Erztransport: '+frachtphase+'.':' Kein offener Erztransportvertrag.');
  $('p3-industrie-w4-geld').textContent='Raffinerie: Arbeitsreserve jetzt '+
   fmt(book.w4.arbeitsReserve)+' ISK · Arbeitsmittel kumulativ gebunden '+
   fmt(book.w4.arbeitsGebucht)+' ISK · bereits bezahlt '+
   fmt(book.w4.arbeitsBezahlt)+' ISK. Material erscheint erst nach Chargenabschluss.';
- $('p3-industrie-w5-geld').textContent='Werft: K7-Mittel aktuell reserviert '+
+ $('p3-industrie-w5-geld').textContent='Werft: zweckgebundene Vertragsmittel jetzt '+
   fmt(book.w5.k7WerftReserve)+' ISK · Material bisher an Nadir bezahlt '+
   fmt(book.w5.materialBezahlt)+' ISK · Werftlohnreserve jetzt '+
   fmt(book.w5.arbeitsReserve)+' ISK · Lohnmittel kumulativ gebunden '+

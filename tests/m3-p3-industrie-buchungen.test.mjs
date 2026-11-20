@@ -159,7 +159,12 @@ test('M3-P3: actual industry renderer presents reserves, owner boundaries and cu
  assert.match(nodes['p3-industrie-w5-geld'].textContent,/530 ISK/);
  assert.match(nodes['p3-industrie-eigentum'].textContent,/0 unverkaufte Nadir-Hüllen/);
  assert.equal(nodes['p3-industrie-kauf'].disabled,true);
- w.advance(s,253-71);
+ w.advance(s,203-71);
+ ({nodes,p}=render());
+ assert.match(nodes['p3-industrie-w3-geld'].textContent,/Frachter auf Rückweg/);
+ assert.doesNotMatch(nodes['p3-industrie-w3-geld'].textContent,/rueck/i,
+  'player-facing text must translate the original internal contract phase');
+ w.advance(s,253-203);
  ({nodes,p}=render());
  assert.match(nodes['p3-industrie-eigentum'].textContent,/1 unverkaufte Nadir-Hüllen/);
  assert.match(nodes['p3-industrie-eigentum'].textContent,/Du besitzt 0/);

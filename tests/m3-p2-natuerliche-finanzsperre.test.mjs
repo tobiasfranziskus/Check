@@ -136,3 +136,75 @@ test('M3-P2 timing survey: pay for genuine ships after K7 has begun, before W5 c
     purchaseAt:x.purchaseAt,house:x.house,nadirStock:x.nadirStock,w5:x.w5
    }))}));
 });
+
+test('M3-P2: a genuine first Nadir purchase leaves 450 ISK; inspect second organic W5 stock',()=>{
+ const {j,w}=start();
+ for(let t=0;t<71;t++)w.advance(j.zustandReferenz(),1);
+ assert.equal(j.zustandReferenz().w3.auftrag!==null,true,
+  'original W3 ore order must have started before house expenditure');
+ const bought=[];
+ for(let n=0;n<3;n++){
+   const q=j.angebote().find(x=>x.id==='buy-st_aldera-miner');
+   assert.equal(q?.ok,true,'the three existing Aldera miners must actually be sold');
+   const pre=j.zustandReferenz().owners.house.cash;
+   const out=j.ausfuehren(q.id);
+   assert.equal(out.ok,true,JSON.stringify(out));
+   assert.equal(j.zustandReferenz().owners.house.cash,pre-600);
+   bought.push(q.id);
+ }
+ assert.equal(j.zustandReferenz().owners.house.cash,1200);
+ for(let t=71;t<253;t++)w.advance(j.zustandReferenz(),1);
+ check(j);
+ const atFirst=j.zustandReferenz(),first=j.angebote().find(x=>x.id==='buy-st_nadir-frachter');
+ assert.equal(atFirst.stations.st_nadir.lager.frachter,1,'first real NPC-funded W5 hull must exist');
+ assert.equal(first?.ok,true,first?.reason);
+ assert.equal(j.ausfuehren(first.id).ok,true);
+ const after=j.zustandReferenz();
+ assert.equal(after.stations.st_nadir.lager.frachter,0);
+ assert.equal(after.owners.house.cash,450,'three paid 600-ISK miners and one 750-ISK Nadir hull');
+ assert.equal(Object.values(after.ships).filter(s=>s.owner==='house'&&
+  after.w5.schiffIds.includes(s.id)).length,1,'the house paid for precisely one W5 ship');
+ check(j);
+ const replay=J8.erstellen(),checkpoint=j.exportieren();
+ replay.oeffnen204(checkpoint,true);
+ assert.equal(replay.exportieren(),checkpoint,'cold J8 recovery after legitimate W5 purchase');
+ let witness=null;const end=253+3*1440;
+ for(let tick=254;tick<=end;tick++){
+   w.advance(j.zustandReferenz(),1);
+   replay.weltReferenz().advance(replay.zustandReferenz(),1);
+   const s=j.zustandReferenz();
+   if(s.stations.st_nadir.lager.frachter>0){
+     witness={tick,house:s.owners.house.cash,stock:s.stations.st_nadir.lager.frachter,
+       w3:s.w3.abgeschlossen,w4:s.w4.abgeschlossen,w5:s.w5.fertig,
+       sold:s.w5.verkauft,hash:w.hash(s)};
+     break;
+   }
+ }
+ const a=j.zustandReferenz(),b=replay.zustandReferenz();
+ assert.equal(w.save(a),replay.weltReferenz().save(b),'two genuine histories must replay identically');
+ check(j);check(replay);
+ const quote=j.angebote().find(x=>x.id==='buy-st_nadir-frachter');
+ const result={firstPurchaseTick:253,houseAfterFirst:450,
+   firstOwnedW5:1,secondStockSeen:witness!==null,witness,
+   lastTick:a.tick,latestHouse:a.owners.house.cash,latestStock:a.stations.st_nadir.lager.frachter,
+   built:a.w5.fertig,sold:a.w5.verkauft,quote:{ok:quote?.ok??null,reason:quote?.reason||null},
+   hash:w.hash(a)};
+ if(witness&&witness.house<750){
+   assert.equal(quote.ok,false,'second real physical W5 hull must be denied to underfunded house');
+   assert.ok(quote.reason);
+   const original=j.exportieren(),old=j.ansicht().hash,
+     out=j.ausfuehren('buy-st_nadir-frachter');
+   assert.equal(out.ok,false);
+   assert.equal(out.reason,quote.reason);
+   assert.equal(j.exportieren(),original);
+   assert.equal(j.ansicht().hash,old);
+   const direct=w.execute(a,{type:'shipBuy',owner:'house',station:'st_nadir',klasse:'frachter'});
+   assert.equal(direct.ok,false);
+   assert.equal(direct.reason,quote.reason);
+   assert.equal(j.exportieren(),original);
+   check(j);
+   console.log('M3_P2_ORGANIC_SECOND_HULL_FINANCE_BLOCK '+JSON.stringify(result));
+ }else{
+   console.log('M3_P2_SECOND_HULL_SEARCH_NEGATIVE '+JSON.stringify(result));
+ }
+});

@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: P0 legacy hub archived HTML redirects preserve both original URLs
+ok 1 - P0 legacy hub archived HTML redirects preserve both original URLs
+  ---
+  duration_ms: 1.370802
+  type: 'test'
+  ...
+# Subtest: P0 runtime/build and historical archived HTML are resolved by inventory
+ok 2 - P0 runtime/build and historical archived HTML are resolved by inventory
+  ---
+  duration_ms: 883.717338
+  type: 'test'
+  ...
+# Subtest: P0: fitting and pilot preserve old deep links, archived HTML and original resources
+ok 3 - P0: fitting and pilot preserve old deep links, archived HTML and original resources
+  ---
+  duration_ms: 1.780155
+  type: 'test'
+  ...
+# Subtest: P0: static graph resolves both archived demos with no dangling assets
+ok 4 - P0: static graph resolves both archived demos with no dangling assets
+  ---
+  duration_ms: 721.044865
+  type: 'test'
+  ...
+# Subtest: P0 public HTML assets and generated singlefile inputs remain present
+ok 5 - P0 public HTML assets and generated singlefile inputs remain present
+  ---
+  duration_ms: 532.879495
+  type: 'test'
+  ...
+# Subtest: P0 distinguishes runtime modules from unintegrated legacy demos
+ok 6 - P0 distinguishes runtime modules from unintegrated legacy demos
+  ---
+  duration_ms: 679.035185
+  type: 'test'
+  ...
+# Subtest: P0 W5x: old URL remains a static fallback redirect; original Rule16 scripts still load
+ok 7 - P0 W5x: old URL remains a static fallback redirect; original Rule16 scripts still load
+  ---
+  duration_ms: 2.85493
+  type: 'test'
+  ...
+# Subtest: P0 W5x: archived page is present in the static dependency inventory
+ok 8 - P0 W5x: archived page is present in the static dependency inventory
+  ---
+  duration_ms: 601.945083
+  type: 'test'
+  ...
+# Subtest: P1 Root: byte-identical deterministic Pages build and unchanged standalone NAS file
+ok 9 - P1 Root: byte-identical deterministic Pages build and unchanged standalone NAS file
+  ---
+  duration_ms: 250.495268
+  type: 'test'
+  ...
+# Subtest: P1 Root: one first-class career CTA, explicit and still navigable legacy W0–W5 and original access
+ok 10 - P1 Root: one first-class career CTA, explicit and still navigable legacy W0–W5 and original access
+  ---
+  duration_ms: 42.084896
+  type: 'test'
+  ...
+# Subtest: P1 Root: premium portal is static, original cockpit/save slots untouched
+ok 11 - P1 Root: premium portal is static, original cockpit/save slots untouched
+  ---
+  duration_ms: 6.657404
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4919.525684

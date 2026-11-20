@@ -132,7 +132,8 @@ test('M3-P3: actual industry renderer presents reserves, owner boundaries and cu
  const body=script.slice(begin,end+2);
  const {j,w,s}=start();
  function render(){
-  const before=w.save(s),p=Industry.auswerten(w,s,j.angebote()),nodes={};
+  const current=j.zustandReferenz();
+  const before=w.save(current),p=Industry.auswerten(w,current,j.angebote()),nodes={};
   const $=id=>(nodes[id]??=(Object.assign({hidden:false,disabled:false,textContent:'',
    replaceChildren(...children){this.children=children;}})));
   const names={house:'Dein Konzern',npc3:'Meridian Rohstoffwerke',
@@ -145,8 +146,8 @@ test('M3-P3: actual industry renderer presents reserves, owner boundaries and cu
    fmt:n=>Number(n).toLocaleString('de-DE'),
    konzernname:id=>names[id]||id,anzeigetext:x=>x};
   const fn=vm.runInNewContext('('+body+')',context);
-  fn(s,j.angebote());
-  assert.equal(w.save(s),before,'actual renderer must not book or advance the original world');
+  fn(current,j.angebote());
+  assert.equal(w.save(current),before,'actual renderer must not book or advance the original world');
   return {nodes,p};
  }
  w.advance(s,71);
@@ -174,5 +175,5 @@ test('M3-P3: actual industry renderer presents reserves, owner boundaries and cu
  assert.match(nodes['p3-industrie-eigentum'].textContent,/0 unverkaufte Nadir-Hüllen/);
  assert.match(nodes['p3-industrie-eigentum'].textContent,/Du besitzt 1/);
  assert.equal(nodes['p3-industrie-kauf'].disabled,true,'spent physical stock cannot be bought twice');
- assert.equal(w.audit(s).ok,true);
+ assert.equal(w.audit(j.zustandReferenz()).ok,true);
 });

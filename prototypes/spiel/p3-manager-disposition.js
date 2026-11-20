@@ -27,6 +27,13 @@ function auswerten(w,s,angebote){
  const waiting=miners.filter(sh=>!!s.kanon?.pendel?.[sh.id]&&
    s.kanon.pendel[sh.id].ware==='eis');
  const idleMiners=miners.filter(sh=>!s.kanon?.pendel?.[sh.id]);
+ // M2: only stop an already running OWN pendulum via the original quote.
+ const stopMine=choose(waiting,'stop-');
+ const aussetzen=stopMine
+   ?{aktion:stopMine.id,bereit:stopMine.quote.ok===true,
+      titel:'Eigene Eisförderung beenden',grund:stopMine.quote.reason||null}
+   :{aktion:null,bereit:false,titel:'Keine laufende Eigenförderung',
+      grund:'Nur ein rechtmäßig laufendes eigenes Eis-Pendel kann beendet werden.'};
  const nextMine=choose(idleMiners,'ice-');
  const mineBuy=quote('buy-st_aldera-miner');
  const mine=miners.length===0
@@ -54,13 +61,34 @@ function auswerten(w,s,angebote){
         titel:'50 Eis transportieren',grund:nextFreight.quote.reason||null}
      :{aktion:null,bereit:false,titel:'Eistransport nicht verfügbar',
        grund:'Kein originaler Frachtauftrag für einen eigenen Aldera-Frachter'};
+ // M2: original book values, receipts and paid wages; never infer a full profit.
+ // No book entry is created here. Freight pilot wages are paid to pilot_house,
+ // not quietly presented as the HOUSE company's own expenditure.
+ const assets=owned.map(sh=>{
+  const basis=w.rules?.economy?.waren?.[sh.klasse]?.basis;
+  const rest=w.buchwert(s,sh.id);
+  if(!natural(basis)||!natural(rest)||rest>basis)
+   throw Error('Manager-Betriebsbericht: ungültiger Original-Anlagewert');
+  return {id:sh.id,klasse:sh.klasse,basis,rest};
+ });
+ const anlagewert=assets.reduce((n,sh)=>n+sh.rest,0);
+ const verschleiss=assets.reduce((n,sh)=>n+sh.basis-sh.rest,0);
+ const startKasse=w.rules.owners?.find(o=>o.id==='house')?.cash;
+ const inventarindikator=natural(startKasse)?house+anlagewert-startKasse:null;
+ const f=s.kanon?.spielerFrachten;
+ const gebuehr=f?.gebuehr||0,lohn=f?.lohn||0;
+ if(!natural(gebuehr)||!natural(lohn))
+  throw Error('Manager-Betriebsbericht: ungültige Original-Frachtbelege');
  return Object.freeze({
   hausKasse:house,alderaKasse:aldera,nadirKasse:nadir,eisLager:ice,
   eisCharge:charge,ankaufKosten:charge*price,
   minerAnzahl:miners.length,minerAktiv:waiting.length,
   frachterAnzahl:carriers.length,frachtOffen:open,frachtAbgeschlossen:completed,
-  frachtGebuehrBisher:s.kanon?.spielerFrachten?.gebuehr||0,
-  frachtLohnBisher:s.kanon?.spielerFrachten?.lohn||0,
+  frachtGebuehrBisher:gebuehr,
+  frachtLohnBisher:lohn,
+  anlagewert,verschleiss,inventarindikator,
+  // Never label this cash/book-value indicator as a balance sheet or net profit.
+  aussetzen:Object.freeze(aussetzen),
   abbau:Object.freeze(mine),transport:Object.freeze(freight)
  });
 }

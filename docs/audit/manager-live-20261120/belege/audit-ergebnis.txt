@@ -1,0 +1,42 @@
+{
+  "node": "v22.23.5",
+  "replayByteIdentical": true,
+  "checkpoints": [
+    {
+      "name": "tick360.json",
+      "hash": "1df0f18ff779fd4c",
+      "tick": 360,
+      "sha256": "bff016bb816b6da41e5e9d7a277eb1f70532feb71b5b28df73395edc0b240b28",
+      "cash": 2310,
+      "pilotCash": 303,
+      "alderaCash": 255
+    },
+    {
+      "name": "tick600-vor-wasser.json",
+      "hash": "8bd33848deabf150",
+      "tick": 600,
+      "sha256": "023a36ffcca22c05df255aa729a88ba5b096bb0ac9bfaa45d3cb563438178672",
+      "cash": 2409,
+      "pilotCash": 606,
+      "alderaCash": 3
+    },
+    {
+      "name": "tick600-nach-wasser.json",
+      "hash": "b0ff084a87dbbf89",
+      "tick": 600,
+      "sha256": "db32264aed71ffe6060f4981c4b58e4007fd85704df71b03685012991267b4dd",
+      "cash": 2409,
+      "pilotCash": 350,
+      "alderaCash": 259
+    },
+    {
+      "name": "tick600-nach-import.json",
+      "hash": "b0ff084a87dbbf89",
+      "tick": 600,
+      "sha256": "db32264aed71ffe6060f4981c4b58e4007fd85704df71b03685012991267b4dd",
+      "cash": 2409,
+      "pilotCash": 350,
+      "alderaCash": 259
+    }
+  ]
+}

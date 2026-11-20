@@ -1,0 +1,6 @@
+Stand: 20.11.2026 – Analyse-Draft, kein Integrationsgate.
+
+Node22 v22.23.5: gezielter Originalexport-/Replay-Audit erfolgreich (audit-ergebnis.txt, unabhaengiger-audit.json).
+Node22 v22.23.5: vollständiger unveränderter Befehl node --test tests/*.test.mjs läuft noch. Noch kein Gesamt-Pass behauptet. Ergebnis und vollständiges Protokoll werden nach Abschluss ergänzt.
+Vorläufe: Node20-Gesamtlauf abgebrochen (Exit130), kein Gesamt-Pass. Eingeschränkter Node22-Gesamtlauf ebenfalls abgebrochen (Exit130); unter anderem Archiv-/Inventurfehler spawnSync git EPERM, siehe node22-eingeschraenkt-abgebrochen.log. Unveränderter Node22-Wiederholungslauf mit nötigen Prozessrechten; zuvor betroffene Archivtests dort bereits erfolgreich.
+Keine neue Chromium-/WebKit-Touchmatrix und kein echter Cloud-Chrome-, iPad-Safari- oder NAS-Test.

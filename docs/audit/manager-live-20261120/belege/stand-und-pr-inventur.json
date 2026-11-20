@@ -1,0 +1,347 @@
+{
+  "checkedAt": {
+    "current_time": "2026-11-20 06:30:44 UTC"
+  },
+  "main": {
+    "sha": "ca8a41960ca41033326d7b105c974d55b083fb79",
+    "tree": "f43f5e929bd7a3401ef03b75dd1309b2679fcaad"
+  },
+  "pages": [
+    {
+      "id": 44683590027,
+      "name": "pages build and deployment",
+      "head": "ca8a41960ca41033326d7b105c974d55b083fb79",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/tobiasfranziskus/Check/actions/runs/44683590027"
+    },
+    {
+      "id": 44683488561,
+      "name": "pages build and deployment",
+      "head": "7b6b381a4878d25d5e38bf04afc46a6344e9a7e0",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/tobiasfranziskus/Check/actions/runs/44683488561"
+    },
+    {
+      "id": 44683489071,
+      "name": "Aphros Void – JavaScript-Regressionsprüfung",
+      "head": "7b6b381a4878d25d5e38bf04afc46a6344e9a7e0",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/tobiasfranziskus/Check/actions/runs/44683489071"
+    },
+    {
+      "id": 44609789625,
+      "name": "Aphros Void – JavaScript-Regressionsprüfung",
+      "head": "ce950445ae8cc37e7d429ced81d22e5361e5f086",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/tobiasfranziskus/Check/actions/runs/44609789625"
+    },
+    {
+      "id": 44609786507,
+      "name": "pages build and deployment",
+      "head": "ce950445ae8cc37e7d429ced81d22e5361e5f086",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/tobiasfranziskus/Check/actions/runs/44609786507"
+    }
+  ],
+  "openPullRequests": [
+    {
+      "number": 511,
+      "title": "[P3 AUDIT] Zweiter bezahlter F4 nach #509: J8-Grenzen und 13×90/730-Paarläufe",
+      "head": "audit/p3-f4-post-fix-20261119",
+      "sha": "da686630d2cb12d1802aa9b8fc775665da17179f",
+      "base": "research/p3-f4-post-audit-20261119",
+      "draft": true
+    },
+    {
+      "number": 510,
+      "title": "[P3 FORSCHUNG] Zweiter F4-Frachter auf auditierten #509-Guards",
+      "head": "research/p3-f4-post-audit-20261119",
+      "sha": "52fddda1cd997c388ea15c80cc75bfe6beb334a2",
+      "base": "fix/p3-ferry-audit-guards-20261118",
+      "draft": true
+    },
+    {
+      "number": 509,
+      "title": "[P3 AUDIT-FIX FORSCHUNG] Save-Replay-Streckensperre, J8-Klon und endlicher NPC-Vorrang",
+      "head": "fix/p3-ferry-audit-guards-20261118",
+      "sha": "6316e5ab0a8ba02ddf8f452d1d18f0e09fcc66a3",
+      "base": "research/p3-fair-ferry-window-20261118",
+      "draft": true
+    },
+    {
+      "number": 508,
+      "title": "[P3 AUDIT] Unabhängige Prüfung von W5ac-Warteschlange, Replay und Fairness",
+      "head": "audit/p3-ferry-20261118",
+      "sha": "49f71e1dfa9c75b68017babcd70dc08156bc9003",
+      "base": "research/p3-fair-ferry-window-20261118",
+      "draft": true
+    },
+    {
+      "number": 507,
+      "title": "[P3 FORSCHUNG] Zweiter gekaufter W5-Frachter: erste echte Original-F4-Folge",
+      "head": "research/p3-second-f4-20261118",
+      "sha": "8b823d9bbe5d626d2d4a320e2089aaeea985e456",
+      "base": "research/p3-fair-ferry-window-20261118",
+      "draft": true
+    },
+    {
+      "number": 506,
+      "title": "[P3 FORSCHUNG] Endliches W5ac-Wartefenster, Originalzahlungen und NPC-Rückkehr",
+      "head": "research/p3-fair-ferry-window-20261118",
+      "sha": "2901a20454ba0c3a6a3b4feb89cbe8d3786c5f69",
+      "base": "test/p3-minute-capacity-20261118",
+      "draft": true
+    },
+    {
+      "number": 505,
+      "title": "[P3 ANALYSE] 1.441 Original-Minuten auf bezahlbare Zweitfrachter-Überführung prüfen",
+      "head": "test/p3-minute-capacity-20261118",
+      "sha": "0234bf4e3d977ece2114c46960d718166f287c3f",
+      "base": "main",
+      "draft": true
+    },
+    {
+      "number": 501,
+      "title": "[P3 ANALYSE] Zweiter echter W5-Frachter: bezahlte Überführung und eigene F4-Rundfahrt",
+      "head": "test/p3-zweitfrachter-echte-fahrt-20261118",
+      "sha": "eefdd0943b6e0a5447624a92ad2bee2e18a1c05b",
+      "base": "main",
+      "draft": true
+    },
+    {
+      "number": 496,
+      "title": "[P3 ANALYSE] W5-Spielerfrachter: wiederholte Original-F4 und reale Absatzgrenzen",
+      "head": "research/p3-werftfrachter-folgezyklen-20261118",
+      "sha": "2d0cfd2643317c047df0f9ca7be39a2053c5f8cf",
+      "base": "main",
+      "draft": true
+    },
+    {
+      "number": 490,
+      "title": "[DRAFT/ANALYSE] W6 Industrie: 13×90, S02×730 und finanzierbare Folgeentscheidungen",
+      "head": "research/w6-industrie-langzeit-20261117",
+      "sha": "4ecdb6bfdf5feb128212f8a2a66c07e04ae63740",
+      "base": "main",
+      "draft": true
+    },
+    {
+      "number": 470,
+      "title": "[Draft/W6-R1] Endliche Rohstofffelder und deterministischer Respawn – Forschung #469",
+      "head": "research/469-deterministische-rohstofffelder",
+      "sha": "d3104bf14b99ead0ee82c31839b2af26aa2a1d81",
+      "base": "main",
+      "draft": true
+    },
+    {
+      "number": 423,
+      "title": "[DRAFT/W6 P8f] 5 echte Bauteile + bezahlter 810-ISK-Ersatzfrachter, Erzengpass belegt",
+      "head": "research/w6-p8f-existing-commands-20261116",
+      "sha": "6835542c07260537e8c2a2f37e102c1ba575c612",
+      "base": "research/w6-p8e-dravos-followup-demand-gate-20261116",
+      "draft": true
+    },
+    {
+      "number": 376,
+      "title": "[DRAFT/J10d · ANALYSE] Eigentümerrückflug funktioniert – Aldera fehlen 500 ISK für zweiten K7-Vertrag",
+      "head": "research/j10d-zweiter-k7-vertrag-rechtmaessige-npc-rueckkehr-20261115",
+      "sha": "0330213df66e7b9d482fd8c627f0428ef72d4c4d",
+      "base": "research/j10c-echte-bauteile-materialgrenze-20261115",
+      "draft": true
+    },
+    {
+      "number": 337,
+      "title": "[DRAFT/F8-E] Jäger-Duell: echtes Gegenfeuer, Ausweichen, Pilotenschaden und Übungsniederlage",
+      "head": "research/f8e-jaeger-duelltraining-20261114",
+      "sha": "55bcf818c2f5b09a5b8a20c69f7ef8a36f5e2218",
+      "base": "research/f8d-bewegliche-trainingsdrohne-20261114",
+      "draft": true
+    },
+    {
+      "number": 335,
+      "title": "[DRAFT/J1] Regel200-Jägerwirtschaft: geprüfte Produktionsblocker und F8-Vertrag",
+      "head": "feature/j1-jaegerwirtschaft-regel200-20261114",
+      "sha": "afabb9facba2543a594ffdb5390559956bcd9bf9",
+      "base": "codex/k13-f7-werftfrachter-player",
+      "draft": true
+    },
+    {
+      "number": 321,
+      "title": "[DRAFT/K1-F6] Bezahlter 2D-Sprungtoranflug mit echter Core-Freigabe vor optionaler Eisfracht",
+      "head": "feature/k1-f6-bezahlte-torfreigabe-20261113",
+      "sha": "a297e6f6e62402a9b7fe76285ed3c2aa3c287ce0",
+      "base": "feature/k1-f5-transit-2d-steuerung-20261113",
+      "draft": true
+    },
+    {
+      "number": 317,
+      "title": "[DRAFT/K1-Spielbarkeit] Bezahlte Flug- und Förderabschnitte mit einem Tipp bis zum nächsten Entscheidungspunkt",
+      "head": "feature/k1-abschnittssteuerung-20261112",
+      "sha": "f5c8dac959964224deb082c75034c4dfcbb470a0",
+      "base": "feature/k1-bergbaurunde-gefuert-20261112",
+      "draft": true
+    },
+    {
+      "number": 305,
+      "title": "[DRAFT/K1-UX] Touch-Miner-Cockpit mit realem Kurs, Fahrt und bezahlter Flugreserve",
+      "head": "feature/k1-miner-cockpit-handflug-20261112",
+      "sha": "3a65d3a1a228deed1d6e42f3447a243206072212",
+      "base": "claude/aphros-void-integration-jt51hu",
+      "draft": true
+    },
+    {
+      "number": 291,
+      "title": "[DRAFT/ANALYSE] void-echoes GitHub-Quellcode vor F1 auswerten",
+      "head": "review/void-html-reuse-audit-20261110",
+      "sha": "3fca34e53a39ea8637cef698b1f6d00712e81cc8",
+      "base": "main",
+      "draft": true
+    },
+    {
+      "number": 288,
+      "title": "[DRAFT/W6a] Echte Piloten-Wasserkäufe finanzieren blockierte Folgefracht ohne Mint",
+      "head": "research/w6a-lohnnachfrage-finanziert-folgeeisfracht-20261110",
+      "sha": "def1f7cac2ffd6010ee40c03723f9cd2b75997d5",
+      "base": "main",
+      "draft": true
+    },
+    {
+      "number": 286,
+      "title": "[DRAFT/W5al] W1-Erztreuhand im 2D-Spielhub anzeigen und dritten realen Eisflug prüfen",
+      "head": "research/w5al-echte-erkauf-reserve-cockpit-20261110",
+      "sha": "f84fd79675e2dc31c1574463047e614c22556586",
+      "base": "feature/w5ak-wiederholbare-wirtschaft",
+      "draft": true
+    },
+    {
+      "number": 284,
+      "title": "[DRAFT/W5aj-b] Alderas Kassenabfluss bis zum dritten realen Eisankauf nachvollziehen",
+      "head": "research/w5ajb-aldera-kassenbruecke-20261109",
+      "sha": "ad8a22056f5786db9c755c523f1b3fea4b6109bc",
+      "base": "research/w5aj-kapitalreichweite-folgezyklen-20261109",
+      "draft": true
+    },
+    {
+      "number": 283,
+      "title": "[DRAFT/W5aj] Kapitalreichweite 13×90 Tage und 365-Tage-Unterdeckung mit echten Folgefrachten",
+      "head": "research/w5aj-kapitalreichweite-folgezyklen-20261109",
+      "sha": "0d3d098c37e40934bebd59da0f4e8bd2c5b281ee",
+      "base": "research/w5ai-zweiter-bezahlter-frachtlohnzyklus-20261109",
+      "draft": true
+    },
+    {
+      "number": 281,
+      "title": "[DRAFT/W5ai] Zweiter wirklich bezahlter Eis-Rundflug, neue private Pilotenlöhne und Folgekäufe",
+      "head": "research/w5ai-zweiter-bezahlter-frachtlohnzyklus-20261109",
+      "sha": "f0e7e8ea5d9923226996dcc5ce2b9a4ebc7dddff",
+      "base": "research/w5ah-private-wasser-zweitkauf-ui-20261109",
+      "draft": true
+    },
+    {
+      "number": 279,
+      "title": "[DRAFT/W5ah] Regel195 bedienbar: getrennte Privatpiloten und zweiter tatsächlich bezahlter Wasserkauf",
+      "head": "research/w5ah-private-wasser-zweitkauf-ui-20261109",
+      "sha": "4bc9e37603bd0ed9afc9eb91dd8050abdcb77f6e",
+      "base": "research/w5ag-individuelle-pilotenloehne-wasser-20261109",
+      "draft": true
+    },
+    {
+      "number": 265,
+      "title": "[DRAFT/FORSCHUNG] C1d-11: echte W3-Folgefracht, repariertes Fracht-Audit und Kapital-Nachfragegate",
+      "head": "research/c1d-11-stationsinvestitionsgate-20261109",
+      "sha": "98fc29bd039bfbf907baefefe5a3b60bbee57b09",
+      "base": "research/c1d-10-stationsmodulbedarf-20261108",
+      "draft": true
+    },
+    {
+      "number": 252,
+      "title": "[DRAFT/FORSCHUNG] C1c-3: zehn bezahlte Siliziumminuten und zwei echte Bauteile",
+      "head": "research/c1c-3-silizium-minuten-20261108",
+      "sha": "86ab91a16c860c5680de10e32175d766b82ced91",
+      "base": "research/c1c-2-paid-bauteil-20261108",
+      "draft": true
+    },
+    {
+      "number": 245,
+      "title": "[DRAFT/KONZEPT] Aphros Void: vollständiges Wirtschaftsreferenzmodell",
+      "head": "konzept/gesamtwirtschaft-referenzmodell-20261107",
+      "sha": "008728e1f011540842eb090144fa40b284833788",
+      "base": "main",
+      "draft": true
+    },
+    {
+      "number": 243,
+      "title": "[DRAFT/ANALYSE] W5s-ao: Gesamtwirtschaft, 13×90 und sechs Krisenläufe bis Tag 730",
+      "head": "feature/w5s-ao-gesamtwirtschaft-stresstest-20261107",
+      "sha": "e921fd29cf4af33b0b325b4d656183638d12abd4",
+      "base": "feature/w5s-an-exportmarge-eigentumsquote-20261107",
+      "draft": true
+    },
+    {
+      "number": 198,
+      "title": "Legacy-Konzernzentrale: isolierter, lesender Snapshot-Prototyp",
+      "head": "feat/legacy-corporation-preview",
+      "sha": "4396305c3812fefdc75fd9f1f9e9d0632cc5b4ed",
+      "base": "main",
+      "draft": true
+    },
+    {
+      "number": 195,
+      "title": "Legacy-Bergbauscanner: isolierter, lesender 2D-Snapshot-Prototyp",
+      "head": "feature/legacy-mining-scanner-20261105",
+      "sha": "059d284661802767c4f065b3b0881f70f49e2018",
+      "base": "main",
+      "draft": true
+    },
+    {
+      "number": 189,
+      "title": "Legacy-Pilotenakte: isolierte, lesende Skillbaum-Vorschau",
+      "head": "feat/legacy-pilotenakte",
+      "sha": "effb82b1e19738293359073b6eff391995ce3273",
+      "base": "main",
+      "draft": true
+    },
+    {
+      "number": 187,
+      "title": "Legacy-Station: isolierte, lesende Raumhafen-Vorschau",
+      "head": "feat/legacy-station-preview",
+      "sha": "63f39a3749a6a6346c1a40f5201230c316d5272e",
+      "base": "main",
+      "draft": true
+    },
+    {
+      "number": 186,
+      "title": "Legacy-Fitting: isolierter UI-Prototyp mit schreibgeschützter Vergleichsansicht",
+      "head": "codex/legacy-fitting-ui-extraktion",
+      "sha": "d744d3a4fe9ac15be9887b8eb831779cde3034e8",
+      "base": "main",
+      "draft": true
+    },
+    {
+      "number": 170,
+      "title": "[DRAFT] W5: Erstes real aus Material gebautes und bezahltes Frachtschiff",
+      "head": "feature/w5-finanzierter-schiffbau-20261104",
+      "sha": "c6dea414bd909dfd34c078f908da71a4d7978f4d",
+      "base": "feature/w4-raffinerie-echtes-erz-20261104",
+      "draft": true
+    }
+  ],
+  "browserInventory": {
+    "available": [
+      "ChatGPT in-app browser",
+      "Codex MCP Apps"
+    ],
+    "cloudChromeAvailable": false
+  },
+  "httpMatchedPaths": [
+    "index.html",
+    "prototypes/spiel/index.html",
+    "prototypes/spiel/spiel.js",
+    "prototypes/spiel/p3-handelsweg.js",
+    "prototypes/verbund/konzern-session.js"
+  ]
+}

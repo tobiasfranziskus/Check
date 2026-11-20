@@ -71,6 +71,17 @@ button:focus-visible,a:focus-visible,input:focus-visible,.import-button:focus-vi
 .tabs button{font-size:.91rem;min-height:44px;padding:8px 12px;background:transparent;border-color:transparent}
 .tabs button[aria-pressed=true]{color:var(--gold);border-color:#536d7f;background:#25394c}
 .panel-head{padding:20px 0 14px}.panel-head h3{margin:4px 0 0;font-size:1.35rem}
+/* M1/M2: zwei direkte, aber nur aus echten J8-Quotes abgeleitete Manageraufträge. */
+.manager-disposition{border:1px solid #426276;background:#0f2537;border-radius:12px;padding:15px;margin-bottom:19px;min-width:0}
+.manager-disposition h4{margin:0 0 7px;color:var(--gold);font-size:1.02rem}
+.manager-disposition>.economy-foot{margin:8px 0 13px}
+.manager-disposition-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.manager-disposition-card{padding:15px;border:1px solid #45677a;border-radius:10px;background:#173146;min-width:0}
+.manager-disposition-card strong{display:block;font-size:.94rem}
+.manager-disposition-card p{color:#bdd4e0;font-size:.86rem;line-height:1.45;overflow-wrap:anywhere}
+.manager-disposition-card button{width:100%;min-height:48px;margin-top:8px;font-weight:710}
+.manager-disposition-card .p3-sperre{min-height:1.4em;font-size:.82rem;color:#c6d4df}
+@media(max-width:720px){.manager-disposition-grid{grid-template-columns:1fr}}
 .orders,.ships{display:grid;gap:10px}
 .order{padding:15px;background:#15293e;border:1px solid #35576c;border-radius:10px}
 .order button{width:100%;min-height:48px;font-weight:720}.order small{display:block;margin:10px 2px 0;color:#aac2d6;line-height:1.4;overflow-wrap:anywhere}

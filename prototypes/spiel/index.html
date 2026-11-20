@@ -199,6 +199,25 @@
    </div>
    <div id="panel-auftraege" class="tab-panel">
     <div class="panel-head"><div><p class="eyebrow">EIGENTUM / BEZAHLTE ENTSCHEIDUNGEN</p><h3>Deine nächsten Schritte</h3></div></div>
+    <section id="manager-disposition" class="manager-disposition" aria-label="Eigene Förder- und Transportaufträge">
+     <h4>Deine Auftragszentrale</h4>
+     <p id="manager-disposition-kassen" class="economy-foot">Originale Lager und Firmenkassen erscheinen nach dem Start.</p>
+     <div class="manager-disposition-grid">
+      <article class="manager-disposition-card" aria-label="Eisförderung disponieren">
+       <strong>1. Bergbau · Aldera</strong>
+       <p id="manager-abbau-status"></p>
+       <button id="manager-abbau-aktion" type="button" disabled>Bergbauangebot prüfen</button>
+       <p id="manager-abbau-grund" class="p3-sperre" role="status" aria-live="polite"></p>
+      </article>
+      <article class="manager-disposition-card" aria-label="Eigenen Eisfrachter beauftragen">
+       <strong>2. Transport · Aldera</strong>
+       <p id="manager-transport-status"></p>
+       <button id="manager-transport-aktion" type="button" disabled>Frachtangebot prüfen</button>
+       <p id="manager-transport-grund" class="p3-sperre" role="status" aria-live="polite"></p>
+      </article>
+     </div>
+     <p class="economy-foot">Aufträge werden beim Antippen erneut vom Originalkern geprüft. Eine freie Hülle, zahlungsfähige Käufer und echte Ware sind nicht garantiert. Die Weltzeit läuft nur über die bestehenden Zeittasten.</p>
+    </section>
     <div id="spieleraktionen" class="orders"></div>
    </div>
    <div id="panel-flotte" class="tab-panel" hidden><div class="panel-head"><p class="eyebrow">EIGENE SCHIFFE</p><h3>Deine Flotte</h3></div><div id="spielerschiffe" class="ships"></div></div>
@@ -318,6 +337,7 @@
 <script src="../tutorial-manager/manager.js"></script>
 <script src="../tutorial-pilot/akademie.js"></script>
 <script src="../tutorial-pilot/menue.js"></script>
+<script src="p3-manager-disposition.js"></script>
 <script src="p3-handelsweg.js"></script>
 <script src="p3-investition.js"></script>
 <script src="p3-wasserlohn.js"></script>

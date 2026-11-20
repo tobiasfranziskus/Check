@@ -55,22 +55,34 @@ const server=http.createServer((req,res)=>{
     const kaufhinweis=page.locator('#p3-kaufhinweis');
     assert.match(await kaufhinweis.innerText(),/beide Schiffe, bevor du Wirtschaftszeit/);
     assert.equal(await kaufhinweis.isVisible(),true);
-    await handel.tap();
+    // The new manager task cards use exactly the same original buy/ice/F4 offers
+    // without opening the cockpit, across all Chromium/WebKit touch sizes.
+    const mining=page.locator('#manager-abbau-aktion');
+    const freight=page.locator('#manager-transport-aktion');
+    assert.equal(await mining.isEnabled(),true);
+    assert.equal(await freight.isEnabled(),true);
+    assert.match(await page.locator('#manager-disposition-kassen').innerText(),/3.000 ISK/);
+    await mining.tap();
     assert.match(await handel.textContent(),/Frachter erwerben/);
+    assert.match(await mining.textContent(),/Eisförderung beauftragen/);
     assert.equal(await kaufhinweis.isVisible(),true);
-    await handel.tap();
+    await freight.tap();
     assert.equal(await page.locator('#hausgeld').innerText(),'1.650 ISK');
     assert.equal(await page.locator('#schiff-anzahl').innerText(),'2');
     assert.equal(await page.locator('#zeit').innerText(),zeitVorKauf,'purchases do not advance time');
     assert.equal(await kaufhinweis.isVisible(),false);
     assert.match(await handel.textContent(),/Eisförderung beginnen/);
-    await handel.tap();
+    assert.equal(await mining.isEnabled(),true);
+    await mining.tap();
+    assert.equal(await mining.isEnabled(),false,'running miner cannot start a duplicate job');
     for(let i=0;i<2;i++){
      assert.equal(await handel.textContent(),'60 Spielminuten weiter');
      await handel.tap();
     }
     assert.equal(await handel.textContent(),'Eisfracht transportieren');
-    await handel.tap();
+    assert.equal(await freight.isEnabled(),true);
+    await freight.tap();
+    assert.equal(await freight.isEnabled(),false,'same cargo cannot be dispatched twice');
     assert.notEqual(await page.locator('#missions li:last-child').getAttribute('class'),'done',
       'an open freight order is not a completed delivery');
     for(let i=0;i<2;i++){

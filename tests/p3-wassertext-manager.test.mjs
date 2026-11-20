@@ -46,6 +46,12 @@ test('manager-water-text: partial inventory stays distinct from calculated need'
  assert.equal(d['p3-wasser-aktion'].disabled,true);
  assert.equal(d['p3-wasser-klein'].disabled,false,'1-unit original offer stays independent');
 });
+test('manager-water-text: exactly required water does not block a genuine quote',()=>{
+ const d=render(16,16,false,true);
+ assert.match(d['p3-wasser-bedarf'].textContent,/16 Einheiten Wasser nötig/);
+ assert.match(d['p3-wasser-bedarf'].textContent,/Aldera-Lager: 16 Einheiten/);
+ assert.equal(d['p3-wasser-aktion'].disabled,false);
+});
 test('manager-water-text: sufficient physical stock preserves original purchase gate',()=>{
  const d=render(37,16,false,true);
  assert.match(d['p3-wasser-bedarf'].textContent,/Aldera-Lager: 37 Einheiten/);

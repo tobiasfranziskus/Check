@@ -71,7 +71,10 @@ test('Manager: finance real miner, carrier, ice and roundtrip without a pilot',(
   p=show(j);
   assert.equal(p.frachtOffen,1);
   assert.equal(p.frachtAbgeschlossen,0,'accepting a contract is not completing delivery');
-  j.weiterspielen(60);j.weiterspielen(60);
+  j.weiterspielen(60);
+  p=show(j);
+  assert.equal(p.frachtOffen,1,'accepted house freight stays open while goods are en route');
+  j.weiterspielen(60);
   audit(j);
   p=show(j);
   assert.equal(p.frachtOffen,0);

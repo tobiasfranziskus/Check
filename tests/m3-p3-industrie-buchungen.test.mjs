@@ -3,6 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 const OLD=require('../prototypes/w5ac/session.js');
@@ -121,4 +122,52 @@ test('M3-P3: the visible manager section binds each read-only receipt and no new
  assert.match(js,/const book=p.buchungen/);
  assert.doesNotMatch(js.slice(js.indexOf('const book=p.buchungen'),
   js.indexOf("const b=$('p3-industrie-kauf')")),/\.ausfuehren\(|\.weiterspielen\(/);
+});
+
+test('M3-P3: actual industry renderer presents reserves, owner boundaries and current quote',()=>{
+ const script=readFileSync(new URL('../prototypes/spiel/spiel.js',import.meta.url),'utf8');
+ const begin=script.indexOf('function industrieAnzeigen(s,angebote){');
+ const end=script.indexOf('\n}\n// J12',begin);
+ assert.ok(begin>=0&&end>begin,'the actual manager-industry renderer must be available');
+ const body=script.slice(begin,end+2);
+ const {j,w,s}=start();
+ function render(){
+  const before=w.save(s),p=Industry.auswerten(w,s,j.angebote()),nodes={};
+  const $=id=>(nodes[id]??=(Object.assign({hidden:false,disabled:false,textContent:'',
+   replaceChildren(...children){this.children=children;}})));
+  const names={house:'Dein Konzern',npc3:'Meridian Rohstoffwerke',
+   transport:'Asterion Logistik',st_nadir:'Nadir Industriestation',
+   werft_extern:'Nadir Schiffswerke'};
+  const context={$,
+   scope:{P3Industrie:{auswerten:()=>p}},
+   session:{weltReferenz:()=>w,piloten:()=>j.piloten(),pilotStatus:()=>null},
+   d:{createElement:()=>({})},werftAuswahlId:null,raum:null,
+   fmt:n=>Number(n).toLocaleString('de-DE'),
+   konzernname:id=>names[id]||id,anzeigetext:x=>x};
+  const fn=vm.runInNewContext('('+body+')',context);
+  fn(s,j.angebote());
+  assert.equal(w.save(s),before,'actual renderer must not book or advance the original world');
+  return {nodes,p};
+ }
+ w.advance(s,71);
+ let {nodes,p}=render();
+ assert.match(nodes['p3-industrie-rechte'].textContent,/Meridian Rohstoffwerke/);
+ assert.match(nodes['p3-industrie-rechte'].textContent,/Asterion Logistik/);
+ assert.match(nodes['p3-industrie-k7'].textContent,/Zustimmung Bergbau erteilt/);
+ assert.match(nodes['p3-industrie-w3-geld'].textContent,/740 ISK/);
+ assert.match(nodes['p3-industrie-w3-geld'].textContent,/120 ISK/);
+ assert.match(nodes['p3-industrie-w5-geld'].textContent,/530 ISK/);
+ assert.match(nodes['p3-industrie-eigentum'].textContent,/0 unverkaufte Nadir-Hüllen/);
+ assert.equal(nodes['p3-industrie-kauf'].disabled,true);
+ w.advance(s,253-71);
+ ({nodes,p}=render());
+ assert.match(nodes['p3-industrie-eigentum'].textContent,/1 unverkaufte Nadir-Hüllen/);
+ assert.match(nodes['p3-industrie-eigentum'].textContent,/Du besitzt 0/);
+ assert.equal(nodes['p3-industrie-kauf'].disabled,false,'only original 750 ISK J8 quote unlocks purchase');
+ assert.equal(j.ausfuehren(p.hausKaufId).ok,true,'real original house-owned W5 hull purchase');
+ ({nodes}=render());
+ assert.match(nodes['p3-industrie-eigentum'].textContent,/0 unverkaufte Nadir-Hüllen/);
+ assert.match(nodes['p3-industrie-eigentum'].textContent,/Du besitzt 1/);
+ assert.equal(nodes['p3-industrie-kauf'].disabled,true,'spent physical stock cannot be bought twice');
+ assert.equal(w.audit(s).ok,true);
 });

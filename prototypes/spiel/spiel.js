@@ -416,16 +416,16 @@ function industrieAnzeigen(s,angebote){
   ' · Transport: '+owner(book.frachterEigentuemer)+
   ' · Raffinerie: '+konzernname(book.raffinerieEigentuemer)+
   ' · Werft: '+konzernname(book.werftEigentuemer)+
-  '. Diese fremden Auftraege gehoeren nicht deinem Konzern.';
+  '. Diese fremden Aufträge gehören nicht deinem Konzern.';
  $('p3-industrie-k7').textContent='Erzauftrag: '+book.k7Phase+
   ' · Zustimmung Bergbau '+(book.signaturen.bergbau?'erteilt':'offen')+
   ' · Spedition '+(book.signaturen.spediteur?'erteilt':'offen')+
   ' · Werft '+(book.signaturen.werft?'erteilt':'offen')+
   '. Eine Zustimmung ist noch keine Lieferung oder Auszahlung.';
- $('p3-industrie-w3-geld').textContent='Erztransport: Nadir-Kaeuferreserve jetzt '+
+ $('p3-industrie-w3-geld').textContent='Erztransport: Nadir-Käuferreserve jetzt '+
   fmt(book.w3.kaufReserve)+' ISK · Asterion-Fluglohnreserve jetzt '+
-  fmt(book.w3.arbeitsReserve)+' ISK. Erzankaeufe bisher gebucht '+
-  fmt(book.w3.erzKaufGebucht)+' ISK; Flugloehne bereits gezahlt '+
+  fmt(book.w3.arbeitsReserve)+' ISK. Auftragsmittel bislang gebucht (einschließlich Tarifreserve) '+
+  fmt(book.w3.erzKaufGebucht)+' ISK; Fluglöhne bereits gezahlt '+
   fmt(book.w3.fluglohnBezahlt)+' ISK; Speditionstarif bereits ausgezahlt '+
   fmt(book.w3.frachttarifAusgezahlt)+' ISK.'+
   (book.w3.phase?' Aktueller Vertrag: '+book.w3.phase+'.':' Kein offener W3-Frachtvertrag.');
@@ -440,9 +440,9 @@ function industrieAnzeigen(s,angebote){
   fmt(book.w5.arbeitsGebunden)+' ISK · bereits ausgezahlt '+
   fmt(book.w5.arbeitsBezahlt)+' ISK. Reserven nicht nochmals als Ausgaben addieren.';
  $('p3-industrie-eigentum').textContent=fmt(p.hullenNadir)+
-  ' unverkaufte Nadir-Huellen sind Stationslager, nicht dein Eigentum. Du besitzt '+
-  fmt(p.werftSpielerAnzahl)+' tatsaechlich gekaufte Werftfrachter. Nur originale '+
-  'Kauf- und Ueberfuehrungsangebote duerfen deinen Bestand aendern.';
+  ' unverkaufte Nadir-Hüllen sind Stationslager, nicht dein Eigentum. Du besitzt '+
+  fmt(p.werftSpielerAnzahl)+' tatsächlich gekaufte Werftfrachter. Nur originale '+
+  'Kauf- und Überführungsangebote dürfen deinen Bestand ändern.';
  const b=$('p3-industrie-kauf');b.disabled=!p.kaufberechtigt;
  b.textContent='Vorhandene Nadir-Hülle für '+fmt(p.hausKaufpreis)+' ISK kaufen';
  $('p3-industrie-hinweis').textContent=p.kaufberechtigt

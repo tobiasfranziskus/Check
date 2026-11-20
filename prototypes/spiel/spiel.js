@@ -410,6 +410,40 @@ function industrieAnzeigen(s,angebote){
  $('p3-industrie-kassen').textContent='Kassen: Nadir '+fmt(p.nadirKasse)+
   ' ISK · Werft '+fmt(p.werftKasse)+' ISK · Asterion '+fmt(p.frachtKasse)+
   ' ISK · Dein Konzern '+fmt(p.hausKasse)+' ISK.';
+ // Bookkeeping is read-only: reserves are NOT profits, rights or completed payouts.
+ const book=p.buchungen, owner=id=>id?konzernname(id):'noch kein Schiff zugeordnet';
+ $('p3-industrie-rechte').textContent='Auftraggeber: '+konzernname(book.auftraggeber)+
+  ' · Bergbau: '+owner(book.minerEigentuemer)+
+  ' · Transport: '+owner(book.frachterEigentuemer)+
+  ' · Raffinerie: '+konzernname(book.raffinerieEigentuemer)+
+  ' · Werft: '+konzernname(book.werftEigentuemer)+
+  '. Diese fremden Aufträge gehören nicht deinem Konzern.';
+ $('p3-industrie-k7').textContent='Erzauftrag: '+book.k7Phase+
+  ' · Zustimmung Bergbau '+(book.signaturen.bergbau?'erteilt':'offen')+
+  ' · Spedition '+(book.signaturen.spediteur?'erteilt':'offen')+
+  ' · Werft '+(book.signaturen.werft?'erteilt':'offen')+
+  '. Eine Zustimmung ist noch keine Lieferung oder Auszahlung.';
+ $('p3-industrie-w3-geld').textContent='Erztransport: Nadir-Käuferreserve jetzt '+
+  fmt(book.w3.kaufReserve)+' ISK · Asterion-Fluglohnreserve jetzt '+
+  fmt(book.w3.arbeitsReserve)+' ISK. Auftragsmittel bislang gebucht (einschließlich Tarifreserve) '+
+  fmt(book.w3.erzKaufGebucht)+' ISK; Fluglöhne bereits gezahlt '+
+  fmt(book.w3.fluglohnBezahlt)+' ISK; Speditionstarif bereits ausgezahlt '+
+  fmt(book.w3.frachttarifAusgezahlt)+' ISK.'+
+  (book.w3.phase?' Aktueller Vertrag: '+book.w3.phase+'.':' Kein offener W3-Frachtvertrag.');
+ $('p3-industrie-w4-geld').textContent='Raffinerie: Arbeitsreserve jetzt '+
+  fmt(book.w4.arbeitsReserve)+' ISK · Arbeitsmittel kumulativ gebunden '+
+  fmt(book.w4.arbeitsGebucht)+' ISK · bereits bezahlt '+
+  fmt(book.w4.arbeitsBezahlt)+' ISK. Material erscheint erst nach Chargenabschluss.';
+ $('p3-industrie-w5-geld').textContent='Werft: K7-Mittel aktuell reserviert '+
+  fmt(book.w5.k7WerftReserve)+' ISK · Material bisher an Nadir bezahlt '+
+  fmt(book.w5.materialBezahlt)+' ISK · Werftlohnreserve jetzt '+
+  fmt(book.w5.arbeitsReserve)+' ISK · Lohnmittel kumulativ gebunden '+
+  fmt(book.w5.arbeitsGebunden)+' ISK · bereits ausgezahlt '+
+  fmt(book.w5.arbeitsBezahlt)+' ISK. Reserven nicht nochmals als Ausgaben addieren.';
+ $('p3-industrie-eigentum').textContent=fmt(p.hullenNadir)+
+  ' unverkaufte Nadir-Hüllen sind Stationslager, nicht dein Eigentum. Du besitzt '+
+  fmt(p.werftSpielerAnzahl)+' tatsächlich gekaufte Werftfrachter. Nur originale '+
+  'Kauf- und Überführungsangebote dürfen deinen Bestand ändern.';
  const b=$('p3-industrie-kauf');b.disabled=!p.kaufberechtigt;
  b.textContent='Vorhandene Nadir-Hülle für '+fmt(p.hausKaufpreis)+' ISK kaufen';
  $('p3-industrie-hinweis').textContent=p.kaufberechtigt

@@ -1,0 +1,2290 @@
+{
+  "node": "v22.23.5",
+  "replayByteIdentical": true,
+  "checks": [
+    {
+      "name": "tick360.json",
+      "sha256": "bff016bb816b6da41e5e9d7a277eb1f70532feb71b5b28df73395edc0b240b28",
+      "tick": 360,
+      "hash": "1df0f18ff779fd4c",
+      "coreAudit": {
+        "ok": true,
+        "fehler": [],
+        "flug": {
+          "ok": true,
+          "grund": "Flugzustand konsistent"
+        },
+        "wirtschaft": {
+          "ok": true,
+          "total": 33000,
+          "expected": 33000,
+          "delta": 0,
+          "isk": {
+            "ok": true,
+            "total": 33000,
+            "expected": 33000,
+            "delta": 0
+          },
+          "goods": {
+            "ok": true,
+            "delta": {}
+          },
+          "finanzierung": {
+            "ok": true,
+            "start": 20000,
+            "ausgegeben": 2000,
+            "rest": 18000,
+            "differenz": 0,
+            "exportiert": 200
+          },
+          "vollkosten": {
+            "ok": true,
+            "ketteOk": true,
+            "house": true,
+            "npc3": true,
+            "station": true,
+            "werft": true,
+            "kaeufer": true
+          },
+          "contracts": {
+            "ok": true,
+            "errors": {},
+            "reserved": 0
+          },
+          "water": {
+            "ok": true,
+            "eisAbgebaut": 150,
+            "eisVerkauft": 150,
+            "eisGeliefert": 100,
+            "wasserProduziert": 80,
+            "wasserVerbraucht": 0,
+            "waterBuyerCash": 0,
+            "kundenZahlungen": 0,
+            "frachtAuftrag": "frei",
+            "fabrikAuftrag": "in_arbeit",
+            "knappheitsStunden": 0
+          },
+          "personal": {
+            "ok": true,
+            "contractOk": true,
+            "paymentsOk": true,
+            "wagesOk": true,
+            "ownerOk": true,
+            "earnedOre": 0,
+            "earnedIce": 240,
+            "spentOre": 0,
+            "spentIce": 0,
+            "cashOre": 0,
+            "cashIce": 0,
+            "pooledCash": 0,
+            "paidMinutes": 240,
+            "iceContracts": 2
+          },
+          "wageTrade": {
+            "ok": true,
+            "workerCash": 0,
+            "stationCash": 3414,
+            "materialOwned": 0,
+            "materialPurchased": 0,
+            "price": 100,
+            "spent": 0,
+            "purchases": 0,
+            "paidLabor": 0,
+            "cannotClaimConsumption": true
+          },
+          "replacement": {
+            "ok": true,
+            "profileOk": true,
+            "ownerOk": true,
+            "purchaseOk": true,
+            "lossOk": true,
+            "freightOk": true,
+            "assignmentOk": true,
+            "activeOk": true,
+            "lost": 0,
+            "replaced": 0,
+            "deployed": 0
+          },
+          "w5transfer": {
+            "ok": true,
+            "allocated": 0,
+            "paid": 0,
+            "reserved": 0,
+            "worker": 0,
+            "active": false,
+            "completed": 0,
+            "shipId": null,
+            "remaining": 0,
+            "routeMinutes": 60,
+            "perMinute": 1,
+            "ownerCash": 2000
+          },
+          "w3": {
+            "ok": true,
+            "buyer": 3414,
+            "carrier": 2000,
+            "kaufTreuhand": 0,
+            "arbeitTreuhand": 0,
+            "oreDelivered": 0,
+            "paidWork": 0,
+            "freightRevenue": 0,
+            "status": "frei"
+          },
+          "w4": {
+            "ok": true,
+            "arbeitsKasse": 0,
+            "arbeiter": 0,
+            "station": 3414,
+            "erz": 0,
+            "material": 0,
+            "verbraucht": 0,
+            "produziert": 0,
+            "begonnen": 0,
+            "abgeschlossen": 0,
+            "status": "bereit",
+            "restzeit": 0
+          },
+          "w5": {
+            "ok": true,
+            "werftCash": 1950,
+            "werftEscrow": 0,
+            "materialUmsatz": 0,
+            "materialVerbraucht": 0,
+            "lohnBezahlt": 0,
+            "arbeitCash": 0,
+            "produziert": 0,
+            "verkauft": 0,
+            "frachterLager": 0,
+            "materialLager": 0,
+            "buyerCash": 2000,
+            "stationCash": 3414,
+            "status": "bereit",
+            "restMinuten": 0
+          }
+        }
+      },
+      "independentGoods": {
+        "bauteil": {
+          "expected": 0,
+          "held": 0
+        },
+        "eis": {
+          "expected": 70,
+          "held": 70
+        },
+        "erz": {
+          "expected": 0,
+          "held": 0
+        },
+        "frachter": {
+          "expected": 0,
+          "held": 0
+        },
+        "jaeger": {
+          "expected": 0,
+          "held": 0
+        },
+        "material": {
+          "expected": 0,
+          "held": 0
+        },
+        "miner": {
+          "expected": 2,
+          "held": 2
+        },
+        "silizium": {
+          "expected": 0,
+          "held": 0
+        },
+        "wasser": {
+          "expected": 72,
+          "held": 72
+        }
+      },
+      "cash": 2310,
+      "pilotCash": 303,
+      "alderaCash": 255,
+      "freight": {
+        "auftraege": [
+          {
+            "arbeit": 120,
+            "eis": 250,
+            "end": 240,
+            "fracht": 240,
+            "geliefert": 180,
+            "menge": 50,
+            "schiff": "sh003",
+            "start": 120,
+            "zeit": 60
+          },
+          {
+            "arbeit": 120,
+            "eis": 250,
+            "end": 360,
+            "fracht": 240,
+            "geliefert": 300,
+            "menge": 50,
+            "schiff": "sh003",
+            "start": 240,
+            "zeit": 60
+          }
+        ],
+        "gebuehr": 480,
+        "lohn": 240
+      },
+      "book": {
+        "belege": 486,
+        "summen": {
+          "fluglohn|k1_flug_sh001|pilot_npc3": 159,
+          "fluglohn|k1_flug_sh002|pilot_house": 63,
+          "flugreserve-rueck|k1_flug_sh001|npc3": 96,
+          "flugreserve-rueck|k1_flug_sh002|house": 57,
+          "flugreserve|house|k1_flug_sh002": 120,
+          "flugreserve|npc3|k1_flug_sh001": 275,
+          "rueckfracht-reserve|st_aldera|k1_rueckfracht": 33,
+          "rueckfracht|k1_rueckfracht|house": 33,
+          "spielerfracht-pilot|pilot_eis|pilot_house": 240,
+          "wasser-einzelhandel|w5n_arbeit|st_nadir": 112,
+          "wasser-grosshandel|st_aldera|st_nadir": 462
+        }
+      },
+      "owners": {
+        "arbeiter_werft_nadir": {
+          "cash": 0,
+          "id": "arbeiter_werft_nadir",
+          "kind": "labor"
+        },
+        "arbeitskraefte_nadir": {
+          "cash": 0,
+          "id": "arbeitskraefte_nadir",
+          "kind": "labor"
+        },
+        "eigner_house": {
+          "cash": 0,
+          "id": "eigner_house",
+          "kind": "haushalt"
+        },
+        "eigner_npc3": {
+          "cash": 0,
+          "id": "eigner_npc3",
+          "kind": "haushalt"
+        },
+        "eigner_st_aldera": {
+          "cash": 0,
+          "id": "eigner_st_aldera",
+          "kind": "haushalt"
+        },
+        "eigner_st_nadir": {
+          "cash": 0,
+          "id": "eigner_st_nadir",
+          "kind": "haushalt"
+        },
+        "eigner_transport": {
+          "cash": 0,
+          "id": "eigner_transport",
+          "kind": "haushalt"
+        },
+        "eigner_werft": {
+          "cash": 0,
+          "id": "eigner_werft",
+          "kind": "haushalt"
+        },
+        "erz_arbeit_sh001": {
+          "cash": 0,
+          "id": "erz_arbeit_sh001",
+          "kind": "escrow"
+        },
+        "erz_treuhand_sh001": {
+          "cash": 0,
+          "id": "erz_treuhand_sh001",
+          "kind": "escrow"
+        },
+        "export": {
+          "cash": 18000,
+          "id": "export",
+          "kind": "buyer"
+        },
+        "fonds_aldera": {
+          "cash": 700,
+          "id": "fonds_aldera",
+          "kind": "fund"
+        },
+        "fonds_transport": {
+          "cash": 0,
+          "id": "fonds_transport",
+          "kind": "fund"
+        },
+        "house": {
+          "cash": 2310,
+          "id": "house",
+          "kind": "player"
+        },
+        "j3_bauteil_arbeiter": {
+          "cash": 0,
+          "id": "j3_bauteil_arbeiter",
+          "kind": "labor"
+        },
+        "j4_jaeger_arbeiter": {
+          "cash": 0,
+          "id": "j4_jaeger_arbeiter",
+          "kind": "labor"
+        },
+        "k1_flug_sh001": {
+          "cash": 20,
+          "id": "k1_flug_sh001",
+          "kind": "k1-reserve"
+        },
+        "k1_flug_sh002": {
+          "cash": 0,
+          "id": "k1_flug_sh002",
+          "kind": "k1-reserve"
+        },
+        "k1_rueckfracht": {
+          "cash": 0,
+          "id": "k1_rueckfracht",
+          "kind": "k1-reserve"
+        },
+        "npc3": {
+          "cash": 3821,
+          "id": "npc3",
+          "kind": "miner"
+        },
+        "pilot_eis": {
+          "cash": 0,
+          "id": "pilot_eis",
+          "kind": "private-pilot"
+        },
+        "pilot_erz": {
+          "cash": 0,
+          "id": "pilot_erz",
+          "kind": "private-pilot"
+        },
+        "pilot_house": {
+          "cash": 303,
+          "id": "pilot_house",
+          "kind": "haushalt"
+        },
+        "pilot_npc3": {
+          "cash": 159,
+          "id": "pilot_npc3",
+          "kind": "haushalt"
+        },
+        "st_aldera": {
+          "cash": 255,
+          "id": "st_aldera",
+          "kind": "station"
+        },
+        "st_nadir": {
+          "cash": 3414,
+          "id": "st_nadir",
+          "kind": "station"
+        },
+        "transport": {
+          "cash": 2000,
+          "id": "transport",
+          "kind": "carrier"
+        },
+        "w5ac_transfer_pilot": {
+          "cash": 0,
+          "id": "w5ac_transfer_pilot",
+          "kind": "w5ac-labor"
+        },
+        "w5ac_transfer_reserved": {
+          "cash": 0,
+          "id": "w5ac_transfer_reserved",
+          "kind": "w5ac-escrow"
+        },
+        "w5n_arbeit": {
+          "cash": 48,
+          "id": "w5n_arbeit",
+          "kind": "labor"
+        },
+        "w5n_fabrik_arbeit": {
+          "cash": 20,
+          "id": "w5n_fabrik_arbeit",
+          "kind": "w5n-reserve"
+        },
+        "w5n_fracht_arbeit": {
+          "cash": 0,
+          "id": "w5n_fracht_arbeit",
+          "kind": "w5n-reserve"
+        },
+        "w5n_fracht_kauf": {
+          "cash": 0,
+          "id": "w5n_fracht_kauf",
+          "kind": "w5n-reserve"
+        },
+        "werft_extern": {
+          "cash": 1950,
+          "id": "werft_extern",
+          "kind": "vendor"
+        }
+      },
+      "ships": {
+        "sh001": {
+          "ankunft": 0,
+          "arbeit": 0,
+          "auftrag": "foerdern",
+          "escorte": null,
+          "eskorte": null,
+          "flug": {
+            "andocken": false,
+            "anker": null,
+            "kurs": 241,
+            "lage": "frei",
+            "modus": "anflug",
+            "rest": 0,
+            "sollFahrt": 0,
+            "sollKurs": 241,
+            "vx": 0,
+            "vy": 0,
+            "x": 893184,
+            "y": -357308,
+            "ziel": {
+              "art": "feld",
+              "id": "aldera:erz"
+            }
+          },
+          "heimat": "aldera",
+          "id": "sh001",
+          "klasse": "miner",
+          "ladung": {},
+          "owner": "npc3",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": "erz",
+          "warten": 0,
+          "ziel": null
+        },
+        "sh002": {
+          "ankunft": 0,
+          "arbeit": 0,
+          "auftrag": "halten",
+          "escorte": null,
+          "eskorte": null,
+          "flug": {
+            "andocken": false,
+            "anker": "st_aldera",
+            "kurs": 219,
+            "lage": "angedockt",
+            "modus": "halt",
+            "rest": 0,
+            "sollFahrt": 0,
+            "sollKurs": 219,
+            "vx": 0,
+            "vy": 0,
+            "x": 0,
+            "y": 0,
+            "ziel": null
+          },
+          "heimat": "aldera",
+          "id": "sh002",
+          "klasse": "miner",
+          "ladung": {},
+          "owner": "house",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": "eis",
+          "warten": 0,
+          "ziel": null
+        },
+        "sh003": {
+          "ankunft": 360,
+          "arbeit": 0,
+          "auftrag": "halten",
+          "escorte": null,
+          "flug": {
+            "andocken": false,
+            "anker": "st_aldera",
+            "kurs": 0,
+            "lage": "angedockt",
+            "modus": "halt",
+            "rest": 0,
+            "sollFahrt": 0,
+            "sollKurs": 0,
+            "vx": 0,
+            "vy": 0,
+            "x": 0,
+            "y": 0,
+            "ziel": null
+          },
+          "heimat": "aldera",
+          "id": "sh003",
+          "klasse": "frachter",
+          "ladung": {
+            "eis": 0
+          },
+          "owner": "house",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": null,
+          "warten": 0,
+          "ziel": null
+        }
+      }
+    },
+    {
+      "name": "tick600-vor-wasser.json",
+      "sha256": "023a36ffcca22c05df255aa729a88ba5b096bb0ac9bfaa45d3cb563438178672",
+      "tick": 600,
+      "hash": "8bd33848deabf150",
+      "coreAudit": {
+        "ok": true,
+        "fehler": [],
+        "flug": {
+          "ok": true,
+          "grund": "Flugzustand konsistent"
+        },
+        "wirtschaft": {
+          "ok": true,
+          "total": 33000,
+          "expected": 33000,
+          "delta": 0,
+          "isk": {
+            "ok": true,
+            "total": 33000,
+            "expected": 33000,
+            "delta": 0
+          },
+          "goods": {
+            "ok": true,
+            "delta": {}
+          },
+          "finanzierung": {
+            "ok": true,
+            "start": 20000,
+            "ausgegeben": 3500,
+            "rest": 16500,
+            "differenz": 0,
+            "exportiert": 350
+          },
+          "vollkosten": {
+            "ok": true,
+            "ketteOk": true,
+            "house": true,
+            "npc3": true,
+            "station": true,
+            "werft": true,
+            "kaeufer": true
+          },
+          "contracts": {
+            "ok": true,
+            "errors": {},
+            "reserved": 1
+          },
+          "water": {
+            "ok": true,
+            "eisAbgebaut": 300,
+            "eisVerkauft": 300,
+            "eisGeliefert": 200,
+            "wasserProduziert": 180,
+            "wasserVerbraucht": 0,
+            "waterBuyerCash": 0,
+            "kundenZahlungen": 0,
+            "frachtAuftrag": "frei",
+            "fabrikAuftrag": "in_arbeit",
+            "knappheitsStunden": 0
+          },
+          "personal": {
+            "ok": true,
+            "contractOk": true,
+            "paymentsOk": true,
+            "wagesOk": true,
+            "ownerOk": true,
+            "earnedOre": 0,
+            "earnedIce": 480,
+            "spentOre": 0,
+            "spentIce": 0,
+            "cashOre": 0,
+            "cashIce": 0,
+            "pooledCash": 0,
+            "paidMinutes": 480,
+            "iceContracts": 4
+          },
+          "wageTrade": {
+            "ok": true,
+            "workerCash": 0,
+            "stationCash": 3452,
+            "materialOwned": 0,
+            "materialPurchased": 0,
+            "price": 100,
+            "spent": 0,
+            "purchases": 0,
+            "paidLabor": 0,
+            "cannotClaimConsumption": true
+          },
+          "replacement": {
+            "ok": true,
+            "profileOk": true,
+            "ownerOk": true,
+            "purchaseOk": true,
+            "lossOk": true,
+            "freightOk": true,
+            "assignmentOk": true,
+            "activeOk": true,
+            "lost": 0,
+            "replaced": 0,
+            "deployed": 0
+          },
+          "w5transfer": {
+            "ok": true,
+            "allocated": 0,
+            "paid": 0,
+            "reserved": 0,
+            "worker": 0,
+            "active": false,
+            "completed": 0,
+            "shipId": null,
+            "remaining": 0,
+            "routeMinutes": 60,
+            "perMinute": 1,
+            "ownerCash": 2000
+          },
+          "w3": {
+            "ok": true,
+            "buyer": 3452,
+            "carrier": 2000,
+            "kaufTreuhand": 0,
+            "arbeitTreuhand": 0,
+            "oreDelivered": 0,
+            "paidWork": 0,
+            "freightRevenue": 0,
+            "status": "frei"
+          },
+          "w4": {
+            "ok": true,
+            "arbeitsKasse": 0,
+            "arbeiter": 0,
+            "station": 3452,
+            "erz": 0,
+            "material": 0,
+            "verbraucht": 0,
+            "produziert": 0,
+            "begonnen": 0,
+            "abgeschlossen": 0,
+            "status": "bereit",
+            "restzeit": 0
+          },
+          "w5": {
+            "ok": true,
+            "werftCash": 2550,
+            "werftEscrow": 0,
+            "materialUmsatz": 0,
+            "materialVerbraucht": 0,
+            "lohnBezahlt": 0,
+            "arbeitCash": 0,
+            "produziert": 0,
+            "verkauft": 0,
+            "frachterLager": 0,
+            "materialLager": 0,
+            "buyerCash": 2000,
+            "stationCash": 3452,
+            "status": "bereit",
+            "restMinuten": 0
+          }
+        }
+      },
+      "independentGoods": {
+        "bauteil": {
+          "expected": 0,
+          "held": 0
+        },
+        "eis": {
+          "expected": 120,
+          "held": 120
+        },
+        "erz": {
+          "expected": 1,
+          "held": 1
+        },
+        "frachter": {
+          "expected": 0,
+          "held": 0
+        },
+        "jaeger": {
+          "expected": 0,
+          "held": 0
+        },
+        "material": {
+          "expected": 0,
+          "held": 0
+        },
+        "miner": {
+          "expected": 1,
+          "held": 1
+        },
+        "silizium": {
+          "expected": 0,
+          "held": 0
+        },
+        "wasser": {
+          "expected": 89,
+          "held": 89
+        }
+      },
+      "cash": 2409,
+      "pilotCash": 606,
+      "alderaCash": 3,
+      "freight": {
+        "auftraege": [
+          {
+            "arbeit": 120,
+            "eis": 250,
+            "end": 240,
+            "fracht": 240,
+            "geliefert": 180,
+            "menge": 50,
+            "schiff": "sh003",
+            "start": 120,
+            "zeit": 60
+          },
+          {
+            "arbeit": 120,
+            "eis": 250,
+            "end": 360,
+            "fracht": 240,
+            "geliefert": 300,
+            "menge": 50,
+            "schiff": "sh003",
+            "start": 240,
+            "zeit": 60
+          },
+          {
+            "arbeit": 120,
+            "eis": 250,
+            "end": 480,
+            "fracht": 240,
+            "geliefert": 420,
+            "menge": 50,
+            "schiff": "sh003",
+            "start": 360,
+            "zeit": 60
+          },
+          {
+            "arbeit": 120,
+            "eis": 250,
+            "end": 600,
+            "fracht": 240,
+            "geliefert": 540,
+            "menge": 50,
+            "schiff": "sh003",
+            "start": 480,
+            "zeit": 60
+          }
+        ],
+        "gebuehr": 960,
+        "lohn": 480
+      },
+      "book": {
+        "belege": 905,
+        "summen": {
+          "fluglohn|k1_flug_sh001|pilot_npc3": 248,
+          "fluglohn|k1_flug_sh002|pilot_house": 105,
+          "fluglohn|k1_flug_sh004|pilot_house": 21,
+          "flugreserve-rueck|k1_flug_sh001|npc3": 159,
+          "flugreserve-rueck|k1_flug_sh002|house": 95,
+          "flugreserve-rueck|k1_flug_sh004|house": 19,
+          "flugreserve|house|k1_flug_sh002": 200,
+          "flugreserve|house|k1_flug_sh004": 40,
+          "flugreserve|npc3|k1_flug_sh001": 435,
+          "rueckfracht-reserve|st_aldera|k1_rueckfracht": 105,
+          "rueckfracht|k1_rueckfracht|house": 105,
+          "spielerfracht-pilot|pilot_eis|pilot_house": 480,
+          "wasser-einzelhandel|fonds_aldera|st_aldera": 944,
+          "wasser-einzelhandel|pilot_npc3|st_aldera": 144,
+          "wasser-einzelhandel|w5n_arbeit|st_nadir": 322,
+          "wasser-grosshandel|st_aldera|st_nadir": 1470
+        }
+      },
+      "owners": {
+        "arbeiter_werft_nadir": {
+          "cash": 0,
+          "id": "arbeiter_werft_nadir",
+          "kind": "labor"
+        },
+        "arbeitskraefte_nadir": {
+          "cash": 0,
+          "id": "arbeitskraefte_nadir",
+          "kind": "labor"
+        },
+        "eigner_house": {
+          "cash": 0,
+          "id": "eigner_house",
+          "kind": "haushalt"
+        },
+        "eigner_npc3": {
+          "cash": 0,
+          "id": "eigner_npc3",
+          "kind": "haushalt"
+        },
+        "eigner_st_aldera": {
+          "cash": 0,
+          "id": "eigner_st_aldera",
+          "kind": "haushalt"
+        },
+        "eigner_st_nadir": {
+          "cash": 0,
+          "id": "eigner_st_nadir",
+          "kind": "haushalt"
+        },
+        "eigner_transport": {
+          "cash": 0,
+          "id": "eigner_transport",
+          "kind": "haushalt"
+        },
+        "eigner_werft": {
+          "cash": 0,
+          "id": "eigner_werft",
+          "kind": "haushalt"
+        },
+        "erz_arbeit_sh001": {
+          "cash": 0,
+          "id": "erz_arbeit_sh001",
+          "kind": "escrow"
+        },
+        "erz_treuhand_sh001": {
+          "cash": 10,
+          "id": "erz_treuhand_sh001",
+          "kind": "escrow"
+        },
+        "export": {
+          "cash": 16500,
+          "id": "export",
+          "kind": "buyer"
+        },
+        "fonds_aldera": {
+          "cash": 358,
+          "id": "fonds_aldera",
+          "kind": "fund"
+        },
+        "fonds_transport": {
+          "cash": 0,
+          "id": "fonds_transport",
+          "kind": "fund"
+        },
+        "house": {
+          "cash": 2409,
+          "id": "house",
+          "kind": "player"
+        },
+        "j3_bauteil_arbeiter": {
+          "cash": 0,
+          "id": "j3_bauteil_arbeiter",
+          "kind": "labor"
+        },
+        "j4_jaeger_arbeiter": {
+          "cash": 0,
+          "id": "j4_jaeger_arbeiter",
+          "kind": "labor"
+        },
+        "k1_flug_sh001": {
+          "cash": 28,
+          "id": "k1_flug_sh001",
+          "kind": "k1-reserve"
+        },
+        "k1_flug_sh002": {
+          "cash": 0,
+          "id": "k1_flug_sh002",
+          "kind": "k1-reserve"
+        },
+        "k1_flug_sh004": {
+          "cash": 0,
+          "id": "k1_flug_sh004",
+          "kind": "k1-reserve"
+        },
+        "k1_rueckfracht": {
+          "cash": 0,
+          "id": "k1_rueckfracht",
+          "kind": "k1-reserve"
+        },
+        "npc3": {
+          "cash": 4922,
+          "id": "npc3",
+          "kind": "miner"
+        },
+        "pilot_eis": {
+          "cash": 0,
+          "id": "pilot_eis",
+          "kind": "private-pilot"
+        },
+        "pilot_erz": {
+          "cash": 0,
+          "id": "pilot_erz",
+          "kind": "private-pilot"
+        },
+        "pilot_house": {
+          "cash": 606,
+          "id": "pilot_house",
+          "kind": "haushalt"
+        },
+        "pilot_npc3": {
+          "cash": 104,
+          "id": "pilot_npc3",
+          "kind": "haushalt"
+        },
+        "st_aldera": {
+          "cash": 3,
+          "id": "st_aldera",
+          "kind": "station"
+        },
+        "st_nadir": {
+          "cash": 3452,
+          "id": "st_nadir",
+          "kind": "station"
+        },
+        "transport": {
+          "cash": 2000,
+          "id": "transport",
+          "kind": "carrier"
+        },
+        "w5ac_transfer_pilot": {
+          "cash": 0,
+          "id": "w5ac_transfer_pilot",
+          "kind": "w5ac-labor"
+        },
+        "w5ac_transfer_reserved": {
+          "cash": 0,
+          "id": "w5ac_transfer_reserved",
+          "kind": "w5ac-escrow"
+        },
+        "w5n_arbeit": {
+          "cash": 38,
+          "id": "w5n_arbeit",
+          "kind": "labor"
+        },
+        "w5n_fabrik_arbeit": {
+          "cash": 20,
+          "id": "w5n_fabrik_arbeit",
+          "kind": "w5n-reserve"
+        },
+        "w5n_fracht_arbeit": {
+          "cash": 0,
+          "id": "w5n_fracht_arbeit",
+          "kind": "w5n-reserve"
+        },
+        "w5n_fracht_kauf": {
+          "cash": 0,
+          "id": "w5n_fracht_kauf",
+          "kind": "w5n-reserve"
+        },
+        "werft_extern": {
+          "cash": 2550,
+          "id": "werft_extern",
+          "kind": "vendor"
+        }
+      },
+      "ships": {
+        "sh001": {
+          "ankunft": 0,
+          "arbeit": 0,
+          "auftrag": "foerdern",
+          "escorte": null,
+          "eskorte": null,
+          "flug": {
+            "andocken": true,
+            "anker": null,
+            "kurs": 113,
+            "lage": "frei",
+            "modus": "anflug",
+            "rest": 0,
+            "sollFahrt": 100,
+            "sollKurs": 113,
+            "vx": -1791,
+            "vy": 691,
+            "x": 776849,
+            "y": -309738,
+            "ziel": {
+              "art": "station",
+              "id": "st_aldera"
+            }
+          },
+          "heimat": "aldera",
+          "id": "sh001",
+          "klasse": "miner",
+          "ladung": {
+            "erz": 1
+          },
+          "owner": "npc3",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": "erz",
+          "warten": 0,
+          "ziel": null
+        },
+        "sh002": {
+          "ankunft": 0,
+          "arbeit": 0,
+          "auftrag": "halten",
+          "escorte": null,
+          "eskorte": null,
+          "flug": {
+            "andocken": false,
+            "anker": "st_aldera",
+            "kurs": 219,
+            "lage": "angedockt",
+            "modus": "halt",
+            "rest": 0,
+            "sollFahrt": 0,
+            "sollKurs": 219,
+            "vx": 0,
+            "vy": 0,
+            "x": 0,
+            "y": 0,
+            "ziel": null
+          },
+          "heimat": "aldera",
+          "id": "sh002",
+          "klasse": "miner",
+          "ladung": {},
+          "owner": "house",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": "eis",
+          "warten": 0,
+          "ziel": null
+        },
+        "sh003": {
+          "ankunft": 600,
+          "arbeit": 0,
+          "auftrag": "halten",
+          "escorte": null,
+          "flug": {
+            "andocken": false,
+            "anker": "st_aldera",
+            "kurs": 0,
+            "lage": "angedockt",
+            "modus": "halt",
+            "rest": 0,
+            "sollFahrt": 0,
+            "sollKurs": 0,
+            "vx": 0,
+            "vy": 0,
+            "x": 0,
+            "y": 0,
+            "ziel": null
+          },
+          "heimat": "aldera",
+          "id": "sh003",
+          "klasse": "frachter",
+          "ladung": {
+            "eis": 0
+          },
+          "owner": "house",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": null,
+          "warten": 0,
+          "ziel": null
+        },
+        "sh004": {
+          "ankunft": 0,
+          "arbeit": 0,
+          "auftrag": "halten",
+          "escorte": null,
+          "eskorte": null,
+          "flug": {
+            "andocken": false,
+            "anker": "st_aldera",
+            "kurs": 219,
+            "lage": "angedockt",
+            "modus": "halt",
+            "rest": 0,
+            "sollFahrt": 0,
+            "sollKurs": 219,
+            "vx": 0,
+            "vy": 0,
+            "x": 0,
+            "y": 0,
+            "ziel": null
+          },
+          "heimat": "aldera",
+          "id": "sh004",
+          "klasse": "miner",
+          "ladung": {},
+          "owner": "house",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": "eis",
+          "warten": 0,
+          "ziel": null
+        }
+      }
+    },
+    {
+      "name": "tick600-nach-wasser.json",
+      "sha256": "db32264aed71ffe6060f4981c4b58e4007fd85704df71b03685012991267b4dd",
+      "tick": 600,
+      "hash": "b0ff084a87dbbf89",
+      "coreAudit": {
+        "ok": true,
+        "fehler": [],
+        "flug": {
+          "ok": true,
+          "grund": "Flugzustand konsistent"
+        },
+        "wirtschaft": {
+          "ok": true,
+          "total": 33000,
+          "expected": 33000,
+          "delta": 0,
+          "isk": {
+            "ok": true,
+            "total": 33000,
+            "expected": 33000,
+            "delta": 0
+          },
+          "goods": {
+            "ok": true,
+            "delta": {}
+          },
+          "finanzierung": {
+            "ok": true,
+            "start": 20000,
+            "ausgegeben": 3500,
+            "rest": 16500,
+            "differenz": 0,
+            "exportiert": 350
+          },
+          "vollkosten": {
+            "ok": true,
+            "ketteOk": true,
+            "house": true,
+            "npc3": true,
+            "station": true,
+            "werft": true,
+            "kaeufer": true
+          },
+          "contracts": {
+            "ok": true,
+            "errors": {},
+            "reserved": 1
+          },
+          "water": {
+            "ok": true,
+            "eisAbgebaut": 300,
+            "eisVerkauft": 300,
+            "eisGeliefert": 200,
+            "wasserProduziert": 180,
+            "wasserVerbraucht": 0,
+            "waterBuyerCash": 0,
+            "kundenZahlungen": 0,
+            "frachtAuftrag": "frei",
+            "fabrikAuftrag": "in_arbeit",
+            "knappheitsStunden": 0
+          },
+          "personal": {
+            "ok": true,
+            "contractOk": true,
+            "paymentsOk": true,
+            "wagesOk": true,
+            "ownerOk": true,
+            "earnedOre": 0,
+            "earnedIce": 480,
+            "spentOre": 0,
+            "spentIce": 0,
+            "cashOre": 0,
+            "cashIce": 0,
+            "pooledCash": 0,
+            "paidMinutes": 480,
+            "iceContracts": 4
+          },
+          "wageTrade": {
+            "ok": true,
+            "workerCash": 0,
+            "stationCash": 3452,
+            "materialOwned": 0,
+            "materialPurchased": 0,
+            "price": 100,
+            "spent": 0,
+            "purchases": 0,
+            "paidLabor": 0,
+            "cannotClaimConsumption": true
+          },
+          "replacement": {
+            "ok": true,
+            "profileOk": true,
+            "ownerOk": true,
+            "purchaseOk": true,
+            "lossOk": true,
+            "freightOk": true,
+            "assignmentOk": true,
+            "activeOk": true,
+            "lost": 0,
+            "replaced": 0,
+            "deployed": 0
+          },
+          "w5transfer": {
+            "ok": true,
+            "allocated": 0,
+            "paid": 0,
+            "reserved": 0,
+            "worker": 0,
+            "active": false,
+            "completed": 0,
+            "shipId": null,
+            "remaining": 0,
+            "routeMinutes": 60,
+            "perMinute": 1,
+            "ownerCash": 2000
+          },
+          "w3": {
+            "ok": true,
+            "buyer": 3452,
+            "carrier": 2000,
+            "kaufTreuhand": 0,
+            "arbeitTreuhand": 0,
+            "oreDelivered": 0,
+            "paidWork": 0,
+            "freightRevenue": 0,
+            "status": "frei"
+          },
+          "w4": {
+            "ok": true,
+            "arbeitsKasse": 0,
+            "arbeiter": 0,
+            "station": 3452,
+            "erz": 0,
+            "material": 0,
+            "verbraucht": 0,
+            "produziert": 0,
+            "begonnen": 0,
+            "abgeschlossen": 0,
+            "status": "bereit",
+            "restzeit": 0
+          },
+          "w5": {
+            "ok": true,
+            "werftCash": 2550,
+            "werftEscrow": 0,
+            "materialUmsatz": 0,
+            "materialVerbraucht": 0,
+            "lohnBezahlt": 0,
+            "arbeitCash": 0,
+            "produziert": 0,
+            "verkauft": 0,
+            "frachterLager": 0,
+            "materialLager": 0,
+            "buyerCash": 2000,
+            "stationCash": 3452,
+            "status": "bereit",
+            "restMinuten": 0
+          }
+        }
+      },
+      "independentGoods": {
+        "bauteil": {
+          "expected": 0,
+          "held": 0
+        },
+        "eis": {
+          "expected": 120,
+          "held": 120
+        },
+        "erz": {
+          "expected": 1,
+          "held": 1
+        },
+        "frachter": {
+          "expected": 0,
+          "held": 0
+        },
+        "jaeger": {
+          "expected": 0,
+          "held": 0
+        },
+        "material": {
+          "expected": 0,
+          "held": 0
+        },
+        "miner": {
+          "expected": 1,
+          "held": 1
+        },
+        "silizium": {
+          "expected": 0,
+          "held": 0
+        },
+        "wasser": {
+          "expected": 73,
+          "held": 73
+        }
+      },
+      "cash": 2409,
+      "pilotCash": 350,
+      "alderaCash": 259,
+      "freight": {
+        "auftraege": [
+          {
+            "arbeit": 120,
+            "eis": 250,
+            "end": 240,
+            "fracht": 240,
+            "geliefert": 180,
+            "menge": 50,
+            "schiff": "sh003",
+            "start": 120,
+            "zeit": 60
+          },
+          {
+            "arbeit": 120,
+            "eis": 250,
+            "end": 360,
+            "fracht": 240,
+            "geliefert": 300,
+            "menge": 50,
+            "schiff": "sh003",
+            "start": 240,
+            "zeit": 60
+          },
+          {
+            "arbeit": 120,
+            "eis": 250,
+            "end": 480,
+            "fracht": 240,
+            "geliefert": 420,
+            "menge": 50,
+            "schiff": "sh003",
+            "start": 360,
+            "zeit": 60
+          },
+          {
+            "arbeit": 120,
+            "eis": 250,
+            "end": 600,
+            "fracht": 240,
+            "geliefert": 540,
+            "menge": 50,
+            "schiff": "sh003",
+            "start": 480,
+            "zeit": 60
+          }
+        ],
+        "gebuehr": 960,
+        "lohn": 480
+      },
+      "book": {
+        "belege": 906,
+        "summen": {
+          "fluglohn|k1_flug_sh001|pilot_npc3": 248,
+          "fluglohn|k1_flug_sh002|pilot_house": 105,
+          "fluglohn|k1_flug_sh004|pilot_house": 21,
+          "flugreserve-rueck|k1_flug_sh001|npc3": 159,
+          "flugreserve-rueck|k1_flug_sh002|house": 95,
+          "flugreserve-rueck|k1_flug_sh004|house": 19,
+          "flugreserve|house|k1_flug_sh002": 200,
+          "flugreserve|house|k1_flug_sh004": 40,
+          "flugreserve|npc3|k1_flug_sh001": 435,
+          "rueckfracht-reserve|st_aldera|k1_rueckfracht": 105,
+          "rueckfracht|k1_rueckfracht|house": 105,
+          "spielerfracht-pilot|pilot_eis|pilot_house": 480,
+          "wasser-einzelhandel|fonds_aldera|st_aldera": 944,
+          "wasser-einzelhandel|pilot_house|st_aldera": 256,
+          "wasser-einzelhandel|pilot_npc3|st_aldera": 144,
+          "wasser-einzelhandel|w5n_arbeit|st_nadir": 322,
+          "wasser-grosshandel|st_aldera|st_nadir": 1470
+        }
+      },
+      "owners": {
+        "arbeiter_werft_nadir": {
+          "cash": 0,
+          "id": "arbeiter_werft_nadir",
+          "kind": "labor"
+        },
+        "arbeitskraefte_nadir": {
+          "cash": 0,
+          "id": "arbeitskraefte_nadir",
+          "kind": "labor"
+        },
+        "eigner_house": {
+          "cash": 0,
+          "id": "eigner_house",
+          "kind": "haushalt"
+        },
+        "eigner_npc3": {
+          "cash": 0,
+          "id": "eigner_npc3",
+          "kind": "haushalt"
+        },
+        "eigner_st_aldera": {
+          "cash": 0,
+          "id": "eigner_st_aldera",
+          "kind": "haushalt"
+        },
+        "eigner_st_nadir": {
+          "cash": 0,
+          "id": "eigner_st_nadir",
+          "kind": "haushalt"
+        },
+        "eigner_transport": {
+          "cash": 0,
+          "id": "eigner_transport",
+          "kind": "haushalt"
+        },
+        "eigner_werft": {
+          "cash": 0,
+          "id": "eigner_werft",
+          "kind": "haushalt"
+        },
+        "erz_arbeit_sh001": {
+          "cash": 0,
+          "id": "erz_arbeit_sh001",
+          "kind": "escrow"
+        },
+        "erz_treuhand_sh001": {
+          "cash": 10,
+          "id": "erz_treuhand_sh001",
+          "kind": "escrow"
+        },
+        "export": {
+          "cash": 16500,
+          "id": "export",
+          "kind": "buyer"
+        },
+        "fonds_aldera": {
+          "cash": 358,
+          "id": "fonds_aldera",
+          "kind": "fund"
+        },
+        "fonds_transport": {
+          "cash": 0,
+          "id": "fonds_transport",
+          "kind": "fund"
+        },
+        "house": {
+          "cash": 2409,
+          "id": "house",
+          "kind": "player"
+        },
+        "j3_bauteil_arbeiter": {
+          "cash": 0,
+          "id": "j3_bauteil_arbeiter",
+          "kind": "labor"
+        },
+        "j4_jaeger_arbeiter": {
+          "cash": 0,
+          "id": "j4_jaeger_arbeiter",
+          "kind": "labor"
+        },
+        "k1_flug_sh001": {
+          "cash": 28,
+          "id": "k1_flug_sh001",
+          "kind": "k1-reserve"
+        },
+        "k1_flug_sh002": {
+          "cash": 0,
+          "id": "k1_flug_sh002",
+          "kind": "k1-reserve"
+        },
+        "k1_flug_sh004": {
+          "cash": 0,
+          "id": "k1_flug_sh004",
+          "kind": "k1-reserve"
+        },
+        "k1_rueckfracht": {
+          "cash": 0,
+          "id": "k1_rueckfracht",
+          "kind": "k1-reserve"
+        },
+        "npc3": {
+          "cash": 4922,
+          "id": "npc3",
+          "kind": "miner"
+        },
+        "pilot_eis": {
+          "cash": 0,
+          "id": "pilot_eis",
+          "kind": "private-pilot"
+        },
+        "pilot_erz": {
+          "cash": 0,
+          "id": "pilot_erz",
+          "kind": "private-pilot"
+        },
+        "pilot_house": {
+          "cash": 350,
+          "id": "pilot_house",
+          "kind": "haushalt"
+        },
+        "pilot_npc3": {
+          "cash": 104,
+          "id": "pilot_npc3",
+          "kind": "haushalt"
+        },
+        "st_aldera": {
+          "cash": 259,
+          "id": "st_aldera",
+          "kind": "station"
+        },
+        "st_nadir": {
+          "cash": 3452,
+          "id": "st_nadir",
+          "kind": "station"
+        },
+        "transport": {
+          "cash": 2000,
+          "id": "transport",
+          "kind": "carrier"
+        },
+        "w5ac_transfer_pilot": {
+          "cash": 0,
+          "id": "w5ac_transfer_pilot",
+          "kind": "w5ac-labor"
+        },
+        "w5ac_transfer_reserved": {
+          "cash": 0,
+          "id": "w5ac_transfer_reserved",
+          "kind": "w5ac-escrow"
+        },
+        "w5n_arbeit": {
+          "cash": 38,
+          "id": "w5n_arbeit",
+          "kind": "labor"
+        },
+        "w5n_fabrik_arbeit": {
+          "cash": 20,
+          "id": "w5n_fabrik_arbeit",
+          "kind": "w5n-reserve"
+        },
+        "w5n_fracht_arbeit": {
+          "cash": 0,
+          "id": "w5n_fracht_arbeit",
+          "kind": "w5n-reserve"
+        },
+        "w5n_fracht_kauf": {
+          "cash": 0,
+          "id": "w5n_fracht_kauf",
+          "kind": "w5n-reserve"
+        },
+        "werft_extern": {
+          "cash": 2550,
+          "id": "werft_extern",
+          "kind": "vendor"
+        }
+      },
+      "ships": {
+        "sh001": {
+          "ankunft": 0,
+          "arbeit": 0,
+          "auftrag": "foerdern",
+          "escorte": null,
+          "eskorte": null,
+          "flug": {
+            "andocken": true,
+            "anker": null,
+            "kurs": 113,
+            "lage": "frei",
+            "modus": "anflug",
+            "rest": 0,
+            "sollFahrt": 100,
+            "sollKurs": 113,
+            "vx": -1791,
+            "vy": 691,
+            "x": 776849,
+            "y": -309738,
+            "ziel": {
+              "art": "station",
+              "id": "st_aldera"
+            }
+          },
+          "heimat": "aldera",
+          "id": "sh001",
+          "klasse": "miner",
+          "ladung": {
+            "erz": 1
+          },
+          "owner": "npc3",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": "erz",
+          "warten": 0,
+          "ziel": null
+        },
+        "sh002": {
+          "ankunft": 0,
+          "arbeit": 0,
+          "auftrag": "halten",
+          "escorte": null,
+          "eskorte": null,
+          "flug": {
+            "andocken": false,
+            "anker": "st_aldera",
+            "kurs": 219,
+            "lage": "angedockt",
+            "modus": "halt",
+            "rest": 0,
+            "sollFahrt": 0,
+            "sollKurs": 219,
+            "vx": 0,
+            "vy": 0,
+            "x": 0,
+            "y": 0,
+            "ziel": null
+          },
+          "heimat": "aldera",
+          "id": "sh002",
+          "klasse": "miner",
+          "ladung": {},
+          "owner": "house",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": "eis",
+          "warten": 0,
+          "ziel": null
+        },
+        "sh003": {
+          "ankunft": 600,
+          "arbeit": 0,
+          "auftrag": "halten",
+          "escorte": null,
+          "flug": {
+            "andocken": false,
+            "anker": "st_aldera",
+            "kurs": 0,
+            "lage": "angedockt",
+            "modus": "halt",
+            "rest": 0,
+            "sollFahrt": 0,
+            "sollKurs": 0,
+            "vx": 0,
+            "vy": 0,
+            "x": 0,
+            "y": 0,
+            "ziel": null
+          },
+          "heimat": "aldera",
+          "id": "sh003",
+          "klasse": "frachter",
+          "ladung": {
+            "eis": 0
+          },
+          "owner": "house",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": null,
+          "warten": 0,
+          "ziel": null
+        },
+        "sh004": {
+          "ankunft": 0,
+          "arbeit": 0,
+          "auftrag": "halten",
+          "escorte": null,
+          "eskorte": null,
+          "flug": {
+            "andocken": false,
+            "anker": "st_aldera",
+            "kurs": 219,
+            "lage": "angedockt",
+            "modus": "halt",
+            "rest": 0,
+            "sollFahrt": 0,
+            "sollKurs": 219,
+            "vx": 0,
+            "vy": 0,
+            "x": 0,
+            "y": 0,
+            "ziel": null
+          },
+          "heimat": "aldera",
+          "id": "sh004",
+          "klasse": "miner",
+          "ladung": {},
+          "owner": "house",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": "eis",
+          "warten": 0,
+          "ziel": null
+        }
+      }
+    },
+    {
+      "name": "tick600-nach-import.json",
+      "sha256": "db32264aed71ffe6060f4981c4b58e4007fd85704df71b03685012991267b4dd",
+      "tick": 600,
+      "hash": "b0ff084a87dbbf89",
+      "coreAudit": {
+        "ok": true,
+        "fehler": [],
+        "flug": {
+          "ok": true,
+          "grund": "Flugzustand konsistent"
+        },
+        "wirtschaft": {
+          "ok": true,
+          "total": 33000,
+          "expected": 33000,
+          "delta": 0,
+          "isk": {
+            "ok": true,
+            "total": 33000,
+            "expected": 33000,
+            "delta": 0
+          },
+          "goods": {
+            "ok": true,
+            "delta": {}
+          },
+          "finanzierung": {
+            "ok": true,
+            "start": 20000,
+            "ausgegeben": 3500,
+            "rest": 16500,
+            "differenz": 0,
+            "exportiert": 350
+          },
+          "vollkosten": {
+            "ok": true,
+            "ketteOk": true,
+            "house": true,
+            "npc3": true,
+            "station": true,
+            "werft": true,
+            "kaeufer": true
+          },
+          "contracts": {
+            "ok": true,
+            "errors": {},
+            "reserved": 1
+          },
+          "water": {
+            "ok": true,
+            "eisAbgebaut": 300,
+            "eisVerkauft": 300,
+            "eisGeliefert": 200,
+            "wasserProduziert": 180,
+            "wasserVerbraucht": 0,
+            "waterBuyerCash": 0,
+            "kundenZahlungen": 0,
+            "frachtAuftrag": "frei",
+            "fabrikAuftrag": "in_arbeit",
+            "knappheitsStunden": 0
+          },
+          "personal": {
+            "ok": true,
+            "contractOk": true,
+            "paymentsOk": true,
+            "wagesOk": true,
+            "ownerOk": true,
+            "earnedOre": 0,
+            "earnedIce": 480,
+            "spentOre": 0,
+            "spentIce": 0,
+            "cashOre": 0,
+            "cashIce": 0,
+            "pooledCash": 0,
+            "paidMinutes": 480,
+            "iceContracts": 4
+          },
+          "wageTrade": {
+            "ok": true,
+            "workerCash": 0,
+            "stationCash": 3452,
+            "materialOwned": 0,
+            "materialPurchased": 0,
+            "price": 100,
+            "spent": 0,
+            "purchases": 0,
+            "paidLabor": 0,
+            "cannotClaimConsumption": true
+          },
+          "replacement": {
+            "ok": true,
+            "profileOk": true,
+            "ownerOk": true,
+            "purchaseOk": true,
+            "lossOk": true,
+            "freightOk": true,
+            "assignmentOk": true,
+            "activeOk": true,
+            "lost": 0,
+            "replaced": 0,
+            "deployed": 0
+          },
+          "w5transfer": {
+            "ok": true,
+            "allocated": 0,
+            "paid": 0,
+            "reserved": 0,
+            "worker": 0,
+            "active": false,
+            "completed": 0,
+            "shipId": null,
+            "remaining": 0,
+            "routeMinutes": 60,
+            "perMinute": 1,
+            "ownerCash": 2000
+          },
+          "w3": {
+            "ok": true,
+            "buyer": 3452,
+            "carrier": 2000,
+            "kaufTreuhand": 0,
+            "arbeitTreuhand": 0,
+            "oreDelivered": 0,
+            "paidWork": 0,
+            "freightRevenue": 0,
+            "status": "frei"
+          },
+          "w4": {
+            "ok": true,
+            "arbeitsKasse": 0,
+            "arbeiter": 0,
+            "station": 3452,
+            "erz": 0,
+            "material": 0,
+            "verbraucht": 0,
+            "produziert": 0,
+            "begonnen": 0,
+            "abgeschlossen": 0,
+            "status": "bereit",
+            "restzeit": 0
+          },
+          "w5": {
+            "ok": true,
+            "werftCash": 2550,
+            "werftEscrow": 0,
+            "materialUmsatz": 0,
+            "materialVerbraucht": 0,
+            "lohnBezahlt": 0,
+            "arbeitCash": 0,
+            "produziert": 0,
+            "verkauft": 0,
+            "frachterLager": 0,
+            "materialLager": 0,
+            "buyerCash": 2000,
+            "stationCash": 3452,
+            "status": "bereit",
+            "restMinuten": 0
+          }
+        }
+      },
+      "independentGoods": {
+        "bauteil": {
+          "expected": 0,
+          "held": 0
+        },
+        "eis": {
+          "expected": 120,
+          "held": 120
+        },
+        "erz": {
+          "expected": 1,
+          "held": 1
+        },
+        "frachter": {
+          "expected": 0,
+          "held": 0
+        },
+        "jaeger": {
+          "expected": 0,
+          "held": 0
+        },
+        "material": {
+          "expected": 0,
+          "held": 0
+        },
+        "miner": {
+          "expected": 1,
+          "held": 1
+        },
+        "silizium": {
+          "expected": 0,
+          "held": 0
+        },
+        "wasser": {
+          "expected": 73,
+          "held": 73
+        }
+      },
+      "cash": 2409,
+      "pilotCash": 350,
+      "alderaCash": 259,
+      "freight": {
+        "auftraege": [
+          {
+            "arbeit": 120,
+            "eis": 250,
+            "end": 240,
+            "fracht": 240,
+            "geliefert": 180,
+            "menge": 50,
+            "schiff": "sh003",
+            "start": 120,
+            "zeit": 60
+          },
+          {
+            "arbeit": 120,
+            "eis": 250,
+            "end": 360,
+            "fracht": 240,
+            "geliefert": 300,
+            "menge": 50,
+            "schiff": "sh003",
+            "start": 240,
+            "zeit": 60
+          },
+          {
+            "arbeit": 120,
+            "eis": 250,
+            "end": 480,
+            "fracht": 240,
+            "geliefert": 420,
+            "menge": 50,
+            "schiff": "sh003",
+            "start": 360,
+            "zeit": 60
+          },
+          {
+            "arbeit": 120,
+            "eis": 250,
+            "end": 600,
+            "fracht": 240,
+            "geliefert": 540,
+            "menge": 50,
+            "schiff": "sh003",
+            "start": 480,
+            "zeit": 60
+          }
+        ],
+        "gebuehr": 960,
+        "lohn": 480
+      },
+      "book": {
+        "belege": 906,
+        "summen": {
+          "fluglohn|k1_flug_sh001|pilot_npc3": 248,
+          "fluglohn|k1_flug_sh002|pilot_house": 105,
+          "fluglohn|k1_flug_sh004|pilot_house": 21,
+          "flugreserve-rueck|k1_flug_sh001|npc3": 159,
+          "flugreserve-rueck|k1_flug_sh002|house": 95,
+          "flugreserve-rueck|k1_flug_sh004|house": 19,
+          "flugreserve|house|k1_flug_sh002": 200,
+          "flugreserve|house|k1_flug_sh004": 40,
+          "flugreserve|npc3|k1_flug_sh001": 435,
+          "rueckfracht-reserve|st_aldera|k1_rueckfracht": 105,
+          "rueckfracht|k1_rueckfracht|house": 105,
+          "spielerfracht-pilot|pilot_eis|pilot_house": 480,
+          "wasser-einzelhandel|fonds_aldera|st_aldera": 944,
+          "wasser-einzelhandel|pilot_house|st_aldera": 256,
+          "wasser-einzelhandel|pilot_npc3|st_aldera": 144,
+          "wasser-einzelhandel|w5n_arbeit|st_nadir": 322,
+          "wasser-grosshandel|st_aldera|st_nadir": 1470
+        }
+      },
+      "owners": {
+        "arbeiter_werft_nadir": {
+          "cash": 0,
+          "id": "arbeiter_werft_nadir",
+          "kind": "labor"
+        },
+        "arbeitskraefte_nadir": {
+          "cash": 0,
+          "id": "arbeitskraefte_nadir",
+          "kind": "labor"
+        },
+        "eigner_house": {
+          "cash": 0,
+          "id": "eigner_house",
+          "kind": "haushalt"
+        },
+        "eigner_npc3": {
+          "cash": 0,
+          "id": "eigner_npc3",
+          "kind": "haushalt"
+        },
+        "eigner_st_aldera": {
+          "cash": 0,
+          "id": "eigner_st_aldera",
+          "kind": "haushalt"
+        },
+        "eigner_st_nadir": {
+          "cash": 0,
+          "id": "eigner_st_nadir",
+          "kind": "haushalt"
+        },
+        "eigner_transport": {
+          "cash": 0,
+          "id": "eigner_transport",
+          "kind": "haushalt"
+        },
+        "eigner_werft": {
+          "cash": 0,
+          "id": "eigner_werft",
+          "kind": "haushalt"
+        },
+        "erz_arbeit_sh001": {
+          "cash": 0,
+          "id": "erz_arbeit_sh001",
+          "kind": "escrow"
+        },
+        "erz_treuhand_sh001": {
+          "cash": 10,
+          "id": "erz_treuhand_sh001",
+          "kind": "escrow"
+        },
+        "export": {
+          "cash": 16500,
+          "id": "export",
+          "kind": "buyer"
+        },
+        "fonds_aldera": {
+          "cash": 358,
+          "id": "fonds_aldera",
+          "kind": "fund"
+        },
+        "fonds_transport": {
+          "cash": 0,
+          "id": "fonds_transport",
+          "kind": "fund"
+        },
+        "house": {
+          "cash": 2409,
+          "id": "house",
+          "kind": "player"
+        },
+        "j3_bauteil_arbeiter": {
+          "cash": 0,
+          "id": "j3_bauteil_arbeiter",
+          "kind": "labor"
+        },
+        "j4_jaeger_arbeiter": {
+          "cash": 0,
+          "id": "j4_jaeger_arbeiter",
+          "kind": "labor"
+        },
+        "k1_flug_sh001": {
+          "cash": 28,
+          "id": "k1_flug_sh001",
+          "kind": "k1-reserve"
+        },
+        "k1_flug_sh002": {
+          "cash": 0,
+          "id": "k1_flug_sh002",
+          "kind": "k1-reserve"
+        },
+        "k1_flug_sh004": {
+          "cash": 0,
+          "id": "k1_flug_sh004",
+          "kind": "k1-reserve"
+        },
+        "k1_rueckfracht": {
+          "cash": 0,
+          "id": "k1_rueckfracht",
+          "kind": "k1-reserve"
+        },
+        "npc3": {
+          "cash": 4922,
+          "id": "npc3",
+          "kind": "miner"
+        },
+        "pilot_eis": {
+          "cash": 0,
+          "id": "pilot_eis",
+          "kind": "private-pilot"
+        },
+        "pilot_erz": {
+          "cash": 0,
+          "id": "pilot_erz",
+          "kind": "private-pilot"
+        },
+        "pilot_house": {
+          "cash": 350,
+          "id": "pilot_house",
+          "kind": "haushalt"
+        },
+        "pilot_npc3": {
+          "cash": 104,
+          "id": "pilot_npc3",
+          "kind": "haushalt"
+        },
+        "st_aldera": {
+          "cash": 259,
+          "id": "st_aldera",
+          "kind": "station"
+        },
+        "st_nadir": {
+          "cash": 3452,
+          "id": "st_nadir",
+          "kind": "station"
+        },
+        "transport": {
+          "cash": 2000,
+          "id": "transport",
+          "kind": "carrier"
+        },
+        "w5ac_transfer_pilot": {
+          "cash": 0,
+          "id": "w5ac_transfer_pilot",
+          "kind": "w5ac-labor"
+        },
+        "w5ac_transfer_reserved": {
+          "cash": 0,
+          "id": "w5ac_transfer_reserved",
+          "kind": "w5ac-escrow"
+        },
+        "w5n_arbeit": {
+          "cash": 38,
+          "id": "w5n_arbeit",
+          "kind": "labor"
+        },
+        "w5n_fabrik_arbeit": {
+          "cash": 20,
+          "id": "w5n_fabrik_arbeit",
+          "kind": "w5n-reserve"
+        },
+        "w5n_fracht_arbeit": {
+          "cash": 0,
+          "id": "w5n_fracht_arbeit",
+          "kind": "w5n-reserve"
+        },
+        "w5n_fracht_kauf": {
+          "cash": 0,
+          "id": "w5n_fracht_kauf",
+          "kind": "w5n-reserve"
+        },
+        "werft_extern": {
+          "cash": 2550,
+          "id": "werft_extern",
+          "kind": "vendor"
+        }
+      },
+      "ships": {
+        "sh001": {
+          "ankunft": 0,
+          "arbeit": 0,
+          "auftrag": "foerdern",
+          "escorte": null,
+          "eskorte": null,
+          "flug": {
+            "andocken": true,
+            "anker": null,
+            "kurs": 113,
+            "lage": "frei",
+            "modus": "anflug",
+            "rest": 0,
+            "sollFahrt": 100,
+            "sollKurs": 113,
+            "vx": -1791,
+            "vy": 691,
+            "x": 776849,
+            "y": -309738,
+            "ziel": {
+              "art": "station",
+              "id": "st_aldera"
+            }
+          },
+          "heimat": "aldera",
+          "id": "sh001",
+          "klasse": "miner",
+          "ladung": {
+            "erz": 1
+          },
+          "owner": "npc3",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": "erz",
+          "warten": 0,
+          "ziel": null
+        },
+        "sh002": {
+          "ankunft": 0,
+          "arbeit": 0,
+          "auftrag": "halten",
+          "escorte": null,
+          "eskorte": null,
+          "flug": {
+            "andocken": false,
+            "anker": "st_aldera",
+            "kurs": 219,
+            "lage": "angedockt",
+            "modus": "halt",
+            "rest": 0,
+            "sollFahrt": 0,
+            "sollKurs": 219,
+            "vx": 0,
+            "vy": 0,
+            "x": 0,
+            "y": 0,
+            "ziel": null
+          },
+          "heimat": "aldera",
+          "id": "sh002",
+          "klasse": "miner",
+          "ladung": {},
+          "owner": "house",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": "eis",
+          "warten": 0,
+          "ziel": null
+        },
+        "sh003": {
+          "ankunft": 600,
+          "arbeit": 0,
+          "auftrag": "halten",
+          "escorte": null,
+          "flug": {
+            "andocken": false,
+            "anker": "st_aldera",
+            "kurs": 0,
+            "lage": "angedockt",
+            "modus": "halt",
+            "rest": 0,
+            "sollFahrt": 0,
+            "sollKurs": 0,
+            "vx": 0,
+            "vy": 0,
+            "x": 0,
+            "y": 0,
+            "ziel": null
+          },
+          "heimat": "aldera",
+          "id": "sh003",
+          "klasse": "frachter",
+          "ladung": {
+            "eis": 0
+          },
+          "owner": "house",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": null,
+          "warten": 0,
+          "ziel": null
+        },
+        "sh004": {
+          "ankunft": 0,
+          "arbeit": 0,
+          "auftrag": "halten",
+          "escorte": null,
+          "eskorte": null,
+          "flug": {
+            "andocken": false,
+            "anker": "st_aldera",
+            "kurs": 219,
+            "lage": "angedockt",
+            "modus": "halt",
+            "rest": 0,
+            "sollFahrt": 0,
+            "sollKurs": 219,
+            "vx": 0,
+            "vy": 0,
+            "x": 0,
+            "y": 0,
+            "ziel": null
+          },
+          "heimat": "aldera",
+          "id": "sh004",
+          "klasse": "miner",
+          "ladung": {},
+          "owner": "house",
+          "phase": "dock",
+          "system": "aldera",
+          "ware": "eis",
+          "warten": 0,
+          "ziel": null
+        }
+      }
+    }
+  ]
+}

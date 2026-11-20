@@ -64,10 +64,47 @@ function auswerten(w,s,angebote,auswahlId=null){
  if(!natural(frachtTarife)||!natural(frachtLoehne)||!natural(frachtBuchwert??0)
    ||frachtTarife<frachtLoehne)
    throw Error('P3 Werftfrachter: Original-Frachtbuch oder Schiffsbuchwert ungueltig');
+ // M3: account balances are CURRENT reserves; paid sums are HISTORICAL counters.
+ // These are original Rule204 fields, not player receivables or invented ledger entries.
+ const k7=s.kanon.industrieErz||{},balance=id=>s.owners[id]?.cash??0;
+ const buchungen=Object.freeze({
+  k7Phase:k7.phase||'frei',
+  auftraggeber:r.w3.kunde,
+  minerEigentuemer:k7.miner?(s.ships[k7.miner]?.owner||null):null,
+  frachterEigentuemer:k7.frachter?(s.ships[k7.frachter]?.owner||null):null,
+  raffinerieEigentuemer:r.w4.station,werftEigentuemer:r.w5.werft,
+  signaturen:Object.freeze({
+   bergbau:k7.signMiner===true,spediteur:k7.signFracht===true,werft:k7.signWerft===true
+  }),
+  w3:Object.freeze({
+   kaufReserve:balance('w3_kauf_treuhand'),arbeitsReserve:balance('w3_arbeit_treuhand'),
+   erzKaufGebucht:ore.kaufAusgaben??0,fluglohnBezahlt:ore.arbeitsKosten??0,
+   frachttarifAusgezahlt:ore.frachtUmsatz??0,phase:ore.auftrag?.phase||null
+  }),
+  w4:Object.freeze({
+   arbeitsReserve:balance('w4_arbeit_treuhand'),arbeitsGebucht:refinery.gebucht??0,
+   arbeitsBezahlt:refinery.gezahlt??0,auftragAktiv:!!refinery.auftrag
+  }),
+  w5:Object.freeze({
+   k7WerftReserve:balance('k7_werft_treuhand'),
+   materialBezahlt:yard.materialUmsatz??0,
+   arbeitsReserve:balance('w5_arbeit_treuhand'),
+   arbeitsGebunden:yard.arbeitsGebunden??0,
+   arbeitsBezahlt:yard.arbeitsGezahlt??0,auftragAktiv:!!yard.auftrag
+  })
+ });
+ const buchZahlen=[buchungen.w3.kaufReserve,buchungen.w3.arbeitsReserve,
+  buchungen.w3.erzKaufGebucht,buchungen.w3.fluglohnBezahlt,
+  buchungen.w3.frachttarifAusgezahlt,buchungen.w4.arbeitsReserve,
+  buchungen.w4.arbeitsGebucht,buchungen.w4.arbeitsBezahlt,
+  buchungen.w5.k7WerftReserve,buchungen.w5.materialBezahlt,
+  buchungen.w5.arbeitsReserve,buchungen.w5.arbeitsGebunden,buchungen.w5.arbeitsBezahlt];
+ if(buchZahlen.some(x=>!natural(x)))
+  throw Error('M3 Industrie: Original-Treuhand oder Zahlungszaehler ungueltig');
  const stage=signierteErzVertraege===0?'W3 – Erztransport':
    refinery.abgeschlossen===0?'W4 – bezahlte Verarbeitung':
    yard.fertig===0?'W5 – Material zur Werft':'W3 → W4 → W5 nachgewiesen';
- return Object.freeze({sichtbar:true,stage,tick:s.tick,
+ return Object.freeze({sichtbar:true,stage,tick:s.tick,buchungen,
   w3Vertraege:signierteErzVertraege,w3Geliefert:ore.geliefert,
   w3ProCharge:r.w3.fracht, w3Aktiv:!!ore.auftrag,
   w4Chargen:refinery.abgeschlossen,w4Material:refinery.materialErzeugt,

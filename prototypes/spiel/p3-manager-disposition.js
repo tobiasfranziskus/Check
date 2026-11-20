@@ -38,7 +38,8 @@ function auswerten(w,s,angebote){
      :{aktion:null,bereit:false,titel:'Eisförderung läuft',
         grund:waiting.length?'Eigener Eisauftrag läuft bereits. 60 Weltminuten fortsetzen oder im Auftragsverzeichnis beenden.':
           'Kein freier eigener Miner für einen neuen Eisauftrag in Aldera.'};
- const ownIds=new Set(carriers.map(sh=>sh.id));
+ // Completed/open freight belongs to the company even while its carrier is in Nadir.
+ const ownIds=new Set(owned.filter(sh=>sh.klasse==='frachter').map(sh=>sh.id));
  const entries=(s.kanon?.spielerFrachten?.auftraege||[])
    .filter(a=>ownIds.has(a.schiff));
  const open=entries.filter(a=>a.end===null).length;

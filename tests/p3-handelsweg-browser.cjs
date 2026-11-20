@@ -68,6 +68,8 @@ const server=http.createServer((req,res)=>{
     assert.equal(await kaufhinweis.isVisible(),true);
     await freight.tap();
     assert.equal(await page.locator('#hausgeld').innerText(),'1.650 ISK');
+    assert.match(await page.locator('#manager-betrieb-geld').innerText(),/Restbuchwert deiner Schiffe 1.350 ISK/);
+    assert.match(await page.locator('#manager-betrieb-geld').innerText(),/eigene Firmenkasse 1.650 ISK/i);
     assert.equal(await page.locator('#schiff-anzahl').innerText(),'2');
     assert.equal(await page.locator('#zeit').innerText(),zeitVorKauf,'purchases do not advance time');
     assert.equal(await kaufhinweis.isVisible(),false);
@@ -75,9 +77,12 @@ const server=http.createServer((req,res)=>{
     assert.equal(await mining.isEnabled(),true);
     await mining.tap();
     assert.equal(await mining.isEnabled(),false,'running miner cannot start a duplicate job');
+    assert.equal(await page.locator('#manager-aussetzen-aktion').isEnabled(),true,
+      'player may voluntarily stop only their existing original mineral pendulum');
     for(let i=0;i<2;i++){
      assert.equal(await handel.textContent(),'60 Spielminuten weiter');
-     await handel.tap();
+     if(i===0)await page.locator('#manager-zeit-aktion').tap();
+     else await handel.tap();
     }
     assert.equal(await handel.textContent(),'Eisfracht transportieren');
     assert.equal(await freight.isEnabled(),true);
@@ -87,8 +92,12 @@ const server=http.createServer((req,res)=>{
       'an open freight order is not a completed delivery');
     for(let i=0;i<2;i++){
      assert.equal(await handel.textContent(),'60 Spielminuten weiter');
-     await handel.tap();
+     if(i===0)await page.locator('#manager-zeit-aktion').tap();
+     else await handel.tap();
     }
+    assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/Frachterlöse 240 ISK/);
+    assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/F4-Pilotenlohn 120 ISK/);
+    assert.match(await page.locator('#manager-betrieb-risiko').innerText(),/Keine vollständige Gewinnrechnung/);
     assert.equal(await page.locator('#missions li:last-child').getAttribute('class'),'done',
       'paid completed freight must permanently complete the career milestone');
     assert.equal(await page.locator('#raumbereich').isVisible(),false);
@@ -128,6 +137,8 @@ const server=http.createServer((req,res)=>{
     const final=await page.evaluate(k=>localStorage.getItem(k),SLOT),s=JSON.parse(final);
     assert.ok(s.kanon.spielerFrachten.auftraege.filter(a=>a.end!==null).length>=2);
     assert.match(await page.locator('#p3-handelsstand').textContent(),/2 bezahlte Rundfahrten/);
+    assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/Frachterlöse 480 ISK/);
+    assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/F4-Pilotenlohn 240 ISK/);
     assert.ok(s.kanon.spielerFrachten.gebuehr>=480);
     await page.locator('#p3-handelsdetails summary').tap();
     assert.match(await page.locator('#p3-handelszahlen').innerText(),/Verfügbare Kasse/);

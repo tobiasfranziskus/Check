@@ -81,6 +81,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,.import-button:focus-vi
 .manager-disposition-card p{color:#bdd4e0;font-size:.86rem;line-height:1.45;overflow-wrap:anywhere}
 .manager-disposition-card button{width:100%;min-height:48px;margin-top:8px;font-weight:710}
 .manager-disposition-card .p3-sperre{min-height:1.4em;font-size:.82rem;color:#c6d4df}
+.manager-betrieb{margin-top:13px;padding:14px 15px;background:#11283a;border:1px solid #36576b;border-radius:10px}
+.manager-betrieb h5{font-size:.96rem;margin:0 0 9px;color:#ebf6ff}
+.manager-betrieb .note{font-size:.86rem;color:#c4d4df;line-height:1.45;margin:9px 0;overflow-wrap:anywhere}
+.manager-betrieb .economy-foot{font-size:.8rem;color:#adc5d5;line-height:1.45;overflow-wrap:anywhere}
+.manager-betrieb-aktionen{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px}
+.manager-betrieb-aktionen button{min-height:48px;width:100%;overflow-wrap:anywhere}
+@media(max-width:720px){.manager-betrieb-aktionen{grid-template-columns:1fr}}
 @media(max-width:720px){.manager-disposition-grid{grid-template-columns:1fr}}
 .orders,.ships{display:grid;gap:10px}
 .order{padding:15px;background:#15293e;border:1px solid #35576c;border-radius:10px}

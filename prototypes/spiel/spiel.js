@@ -225,6 +225,35 @@ function titel(a){return namen.find(x=>x[0]===a.id)?.[1]||(
 }
 function info(a){return namen.find(x=>x[0]===a.id)?.[2]||anzeigetext(a.label);}
 function datum(ms){return Math.floor(ms/1440)+' Tage · '+(ms%1440)+' Minuten';}
+
+/* Zwei lesende Manager-Dispositionskarten. Originalangebote sind bindend erst
+ * nach dem erneuten J8-Check bei Klick; keine zweite Wirtschaft und kein Pilot.
+ */
+function managerDispositionAnzeigen(s,angebote){
+ const host=$('manager-disposition');
+ if(!host||!scope.P3ManagerDisposition)return;
+ const p=scope.P3ManagerDisposition.auswerten(session.weltReferenz(),s,angebote);
+ $('manager-disposition-kassen').textContent='Deine Kasse '+fmt(p.hausKasse)+
+  ' ISK · Aldera-Käuferkasse '+fmt(p.alderaKasse)+' ISK · Nadir-Kasse '+
+  fmt(p.nadirKasse)+' ISK. Nur tatsächlich vorhandene Firmenmittel.';
+ $('manager-abbau-status').textContent=fmt(p.minerAnzahl)+' eigene Miner in Aldera · '+
+  fmt(p.minerAktiv)+' aktive Eisförderaufträge. Original-Charge '+fmt(p.eisCharge)+
+  ' Eis benötigt '+fmt(p.ankaufKosten)+' ISK Aldera-Käuferkapital für die Abnahme; '+
+  'das ist keine garantierte Bestellung.';
+ $('manager-transport-status').textContent=fmt(p.frachterAnzahl)+' eigene Frachter in Aldera · '+
+  fmt(p.eisLager)+' Eis tatsächlich im Aldera-Lager · '+
+  fmt(p.frachtOffen)+' laufende, '+fmt(p.frachtAbgeschlossen)+' abgeschlossene Eigenfrachten. '+
+  'Bisher gebuchte Frachtgebühren '+fmt(p.frachtGebuehrBisher)+
+  ' ISK, Fracht-Pilotenlöhne '+fmt(p.frachtLohnBisher)+
+  ' ISK; kein Nettogewinn (Wertverzehr und weitere Kosten fehlen).';
+ for(const [id,task] of [['abbau',p.abbau],['transport',p.transport]]){
+  const button=$('manager-'+id+'-aktion');
+  button.disabled=!task.bereit;button.textContent=task.titel;
+  $('manager-'+id+'-grund').textContent=task.bereit
+    ?'Echtes Originalangebot verfügbar – wird beim Auftrag erneut geprüft.'
+    :'Gesperrt: '+anzeigetext(task.grund||'Kein rechtmäßig finanzierter Auftrag verfügbar');
+ }
+}
 function missions(){
  const state=session.zustandReferenz(),mine=Object.values(state.ships).some(s=>s.owner==='house'&&s.klasse==='miner');
  const pilot=!!session.pilotStatus();
@@ -760,6 +789,7 @@ function anzeigen(){
   button.addEventListener('click',()=>auftrag(o.id));
   box.append(button,small);return box;
  }));
+ managerDispositionAnzeigen(s,alleAngebote);
  handelswegAnzeigen(s,alleAngebote);
  investitionAnzeigen(s,alleAngebote);
  wasserLohnAnzeigen(s,alleAngebote);
@@ -961,6 +991,20 @@ $('w6-p8h-toggle')?.addEventListener('click',()=>{
      'W6-P8h-Folgeversorgung pausiert. Laufende bereits bezahlte Originalaufträge bleiben gültig.');
  }catch(e){hinweis('W6-Folgeversorgung nicht geändert: '+error(e),true);}
 });
+/* Nur eigene Original-J8-Verträge: die UI legt nie selbst Waren/Kassen an. */
+function managerDispositionsAuftrag(art){
+ if(!session||!scope.P3ManagerDisposition)return;
+ try{
+  const p=scope.P3ManagerDisposition.auswerten(session.weltReferenz(),
+    session.zustandReferenz(),session.angebote());
+  const choice=art==='abbau'?p.abbau:art==='transport'?p.transport:null;
+  if(!choice?.bereit)throw Error(choice?.grund||'Kein echter Eigentümerauftrag verfügbar');
+  if(!choice.aktion)throw Error('Kein Originalangebot vorhanden');
+  auftrag(choice.aktion);
+ }catch(e){hinweis('Managerauftrag gesperrt: '+error(e),true);anzeigen();}
+}
+$('manager-abbau-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('abbau'));
+$('manager-transport-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('transport'));
 $('p3-handelsaktion')?.addEventListener('click',()=>{
  if(!session||!scope.P3Handelsweg)return;
  try{

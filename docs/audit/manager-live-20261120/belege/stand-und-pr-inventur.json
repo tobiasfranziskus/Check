@@ -343,5 +343,15 @@
     "prototypes/spiel/spiel.js",
     "prototypes/spiel/p3-handelsweg.js",
     "prototypes/verbund/konzern-session.js"
-  ]
+  ],
+  "abschlussAbgleich": {
+    "additionalOpenPr": 526,
+    "head": "b70f5995f9e260e8468886bf9597f2fbcceb33ba",
+    "paths": [
+      "docs/M3_INDUSTRIE_PARALLELAUDIT_20261120.md",
+      "tests/m3-industrie-audit.test.mjs"
+    ],
+    "result": "Industrie-Erklärung zu #526 abgegrenzt; hier nur drei UI-Arbeitspakete",
+    "ownDraftPr": 527
+  }
 }

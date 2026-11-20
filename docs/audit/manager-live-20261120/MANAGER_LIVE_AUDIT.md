@@ -146,7 +146,7 @@ Dieser Draft besitzt einen neuen eigenen Dokumentations-/Belegpfad. Die Arbeitsp
 | Determinismus | identische nachgespielte Befehlsfolge bytegleich zu drei Browser-Checkpoints |
 | Save/Load | manueller Save, Reload, Fortsetzen, Tick360-Exporte bytegleich |
 | JSON | Export und Dateiauswahl/Wiederaufnahme, Nachher-JSON bytegleich; Dialogabschluss nicht separat kontrolliert |
-| Node22-Gesamtregression | Ergebnis siehe `belege/teststatus.txt`; eingeschränkte Vorläufe abgebrochen, unter anderem `spawnSync git EPERM` in Archivprüfungen; nötige Prozessrechte für unveränderten Wiederholungslauf freigegeben |
+| Node22-Gesamtregression | **535/535 bestanden, 0 Fehler/Skips/Abbrüche, Exit0**, Node22.23.5, ca. 12 min 24 s; vollständiges Protokoll und Vorlaufgrenzen in `belege/teststatus.txt`. Eingeschränkte Vorläufe abgebrochen, unter anderem `spawnSync git EPERM`; unveränderter Wiederholungslauf mit nötigen Prozessrechten erfolgreich |
 | Neue Chromium-/WebKit-Touchmatrix | nicht ausgeführt; fremde CI nicht als eigener Lauf gezählt |
 | Cloud-Chrome | nicht verfügbar, integrierter Browser als explizite Ersatzebene |
 | Echtes iPad Safari / privates NAS | nicht getestet, kein NAS-Zugriff/Push |

@@ -1,6 +1,11 @@
-Stand: 20.11.2026 – Analyse-Draft, kein Integrationsgate.
+Stand: 20.11.2026 – Analyse-Draft, kein vollständiges Integrationsgate.
 
-Node22 v22.23.5: gezielter Originalexport-/Replay-Audit erfolgreich (audit-ergebnis.txt, unabhaengiger-audit.json).
-Node22 v22.23.5: vollständiger unveränderter Befehl node --test tests/*.test.mjs läuft noch. Noch kein Gesamt-Pass behauptet. Ergebnis und vollständiges Protokoll werden nach Abschluss ergänzt.
-Vorläufe: Node20-Gesamtlauf abgebrochen (Exit130), kein Gesamt-Pass. Eingeschränkter Node22-Gesamtlauf ebenfalls abgebrochen (Exit130); unter anderem Archiv-/Inventurfehler spawnSync git EPERM, siehe node22-eingeschraenkt-abgebrochen.log. Unveränderter Node22-Wiederholungslauf mit nötigen Prozessrechten; zuvor betroffene Archivtests dort bereits erfolgreich.
-Keine neue Chromium-/WebKit-Touchmatrix und kein echter Cloud-Chrome-, iPad-Safari- oder NAS-Test.
+BESTANDEN: Node22 v22.23.5, unveränderter Befehl node --test tests/*.test.mjs auf main ca8a41960ca41033326d7b105c974d55b083fb79.
+Exit0; 535 Tests, 535 bestanden, 0 Fehler, 0 abgebrochen, 0 übersprungen, 0 todo.
+Dauer 744339.966893 ms (ca. 12 min 24 s). Vollständiges TAP-Protokoll: node22-vollstaendig.log.gz.
+Gezielter Originalexport-/Replay-Audit ebenfalls unter Node22 erfolgreich (audit-ergebnis.txt, unabhaengiger-audit.json).
+
+Vorläufe: Node20-Gesamtlauf abgebrochen (Exit130), kein Gesamt-Pass. Eingeschränkter Node22-Gesamtlauf ebenfalls abgebrochen (Exit130); unter anderem Archiv-/Inventurfehler spawnSync git EPERM, siehe node22-eingeschraenkt-abgebrochen.log. Unveränderter Node22-Wiederholungslauf mit nötigen Prozessrechten vollständig erfolgreich. Keine Test-/Referenz- oder Quellcodeänderung für das Ergebnis.
+
+Keine neue Chromium-/WebKit-Touchmatrix und kein echter Cloud-Chrome-, iPad-Safari- oder NAS-Test. Keine M4-Retentionsabnahme, kein Merge/Deployment.
+SHA-256 des entpackten vollständigen TAP-Protokolls: 3b7d70f39c9d4241def521d9ac9bca090eff586f7e29b7b4b5f692c4c98e132e

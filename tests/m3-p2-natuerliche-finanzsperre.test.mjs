@@ -82,3 +82,57 @@ test('M3-P2 exploration: purchase only real Aldera ship offers after authentic S
     house:final.house,stock:final.nadirStock,hash}));
  }else console.log('M3_P2_NATURAL_FINANCE_ONLY_NOT_REACHED '+JSON.stringify(final));
 });
+
+test('M3-P2 timing survey: pay for genuine ships after K7 has begun, before W5 completes',()=>{
+ const candidates=[0,30,60,71,90,120,203,223];
+ const records=[],proved=[];
+ for(const purchaseAt of candidates){
+   const {j,w}=start();
+   for(let t=0;t<purchaseAt;t++)w.advance(j.zustandReferenz(),1);
+   const original=j.zustandReferenz();
+   const prior={tick:original.tick,k7:original.kanon.industrieErz?.phase,
+    w3Active:!!original.w3.auftrag,aldera:{...original.stations.st_aldera.lager}};
+   const purchased=[],blocked=[];
+   for(const id of ['buy-st_aldera-miner','buy-st_aldera-miner',
+     'buy-st_aldera-miner','buy-st_aldera-frachter']){
+     const q=j.angebote().find(x=>x.id===id);
+     if(q?.ok){
+       const before=j.zustandReferenz().owners.house.cash;
+       const a=j.ausfuehren(id);
+       assert.equal(a.ok,true,JSON.stringify({purchaseAt,id,a}));
+       assert.ok(j.zustandReferenz().owners.house.cash<before);
+       purchased.push(id);
+     }else blocked.push({id,reason:q?.reason||'absent'});
+   }
+   for(let t=purchaseAt;t<253;t++)w.advance(j.zustandReferenz(),1);
+   check(j);
+   const now=j.zustandReferenz(),nadirStock=now.stations.st_nadir.lager.frachter,
+     house=now.owners.house.cash,q=j.angebote().find(x=>x.id==='buy-st_nadir-frachter');
+   const result={purchaseAt,prior,purchased,blocked,house,nadirStock,
+     w3:now.w3.abgeschlossen,w4:now.w4.abgeschlossen,w5:now.w5.fertig,
+     offer:{ok:q?.ok??null,reason:q?.reason||null},hash:w.hash(now)};
+   if(nadirStock>0 && house<750){
+     assert.equal(q.ok,false,'original finance should refuse real stocked 750-ISK hull');
+     assert.ok(q.reason);
+     const before=j.exportieren(),hash=j.ansicht().hash,
+       out=j.ausfuehren('buy-st_nadir-frachter');
+     assert.equal(out.ok,false);
+     assert.equal(out.reason,q.reason);
+     assert.equal(j.exportieren(),before);
+     assert.equal(j.ansicht().hash,hash);
+     const direct=w.execute(now,{type:'shipBuy',owner:'house',station:'st_nadir',klasse:'frachter'});
+     assert.equal(direct.ok,false);
+     assert.equal(direct.reason,q.reason);
+     assert.equal(j.exportieren(),before);
+     check(j);
+     proved.push(result);
+   }
+   records.push(result);
+ }
+ console.log('M3_P2_PAID_TIMING_SURVEY '+JSON.stringify(records));
+ if(proved.length)console.log('M3_P2_AUTHENTIC_FINANCE_ONLY '+JSON.stringify(proved));
+ else console.log('M3_P2_FINANCE_ONLY_REMAINS_UNPROVEN '+JSON.stringify({
+   scenarios:candidates.length,allAudited:true,records:records.map(x=>({
+    purchaseAt:x.purchaseAt,house:x.house,nadirStock:x.nadirStock,w5:x.w5
+   }))}));
+});

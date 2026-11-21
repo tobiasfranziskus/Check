@@ -68,17 +68,27 @@ async function pruefe(browser,kind,width,height,base){
   await page.waitForTimeout(375);
   await action.tap();
   assert.equal(await el('#hausgeld').textContent(),'1.650 ISK');
-  // An intentional follow-up is distinct from a second tap on the purchase.
+  // Exercise actual S2 dispositions; the separate trade regression covers the guide.
+  const ownMinerId=(await ship('Bergbauschiff').getAttribute('data-sektor')).replace(/^schiff:/,'');
+  const ownCarrierId=(await ship('Frachter').getAttribute('data-sektor')).replace(/^schiff:/,'');
   await page.waitForTimeout(375);
-  await action.tap();
+  await el('#tab-flotte').tap();
+  await el('#manager-flotte-auswahl').selectOption(ownMinerId);
+  await el('[data-dispo-action="ice-'+ownMinerId+'"]').tap();
+  await el('#tab-auftraege').tap();
   assert.equal(await el('#sektor-auftraege').textContent(),'1');
   const plus=el('[data-advance="60"]');
   await plus.tap();await plus.tap();
   assert.match(await action.innerText(),/Eisfracht transportieren/);
   await page.waitForTimeout(375);
-  // Locator taps scroll and hit-test against the visual viewport on both engines.
-  await action.tap();
-  await action.tap();
+  await el('#tab-flotte').tap();
+  await el('#manager-flotte-auswahl').selectOption(ownCarrierId);
+  const freight=el('[data-dispo-action="freight-'+ownCarrierId+'"]');
+  await freight.scrollIntoViewIfNeeded();
+  const freightBox=await freight.boundingBox();
+  await page.touchscreen.tap(freightBox.x+freightBox.width/2,freightBox.y+freightBox.height/2);
+  await page.touchscreen.tap(freightBox.x+freightBox.width/2,freightBox.y+freightBox.height/2);
+  await el('#tab-auftraege').tap();
   assert.match(await el('#zeit').innerText(),/120 Minuten/);
   assert.equal(JSON.parse(await save()).kanon.spielerFrachten?.auftraege.length,1);
   const carrier=ship('Frachter');
@@ -141,6 +151,12 @@ async function pruefe(browser,kind,width,height,base){
   await page.touchscreen.tap(tapPoint.x,tapPoint.y);
   assert.equal(await save(),stopped,'Schneller zweiter Tipp darf die Förderung nicht wieder starten');
   assert.notEqual(await save(),original,'Nur echter Original-Stop verändert die Karriere');
+  assert.match(await el('#manager-flotte-stand').innerText(),/Kein laufender Wirtschaftsauftrag/);
+  await page.waitForTimeout(375);
+  await el('[data-dispo-action="ice-'+minerId+'"]').tap();
+  assert.match(await el('#manager-flotte-stand').innerText(),/Eisförderung/);
+  await page.waitForTimeout(375);
+  await el('[data-dispo-action="stop-'+minerId+'"]').tap();
   assert.match(await el('#manager-flotte-stand').innerText(),/Kein laufender Wirtschaftsauftrag/);
   await el('#tab-auftraege').tap();
   assert.equal(await el('#manager-betrieb').isVisible(),true);

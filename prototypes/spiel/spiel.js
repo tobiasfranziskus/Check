@@ -15,6 +15,7 @@ let cockpitGenutzt=false,flugerfahrung=false,managerTutor=null,pilotTutor=null,p
 let werftAuswahlId=null; // Only UI memory, never exported into a Rule204/207 save.
 let managerFlotteAuswahlId=null; // Current owned ship selection, ephemeral like the map.
 let managerFlotteAktionNach=0; // One touch gesture must not trigger a replacement action.
+let letzteAuftragsgeste=null; // Prevent one rapid gesture from booking the same offer twice.
 const safeText=(s)=>String(s==null?'':s);
 const error=(e)=>safeText(e&&e.message?e.message:e);
 // Zentrale Anzeigenamen: nur für die Oberfläche, nie als ID in Befehlen oder Spielständen.
@@ -199,6 +200,7 @@ function weiter(n){
  }
 }
 function auftrag(id){
+ if(letzteAuftragsgeste?.id===id&&performance.now()<letzteAuftragsgeste.bis)return;
  try{
   const a=session.angebote().find(x=>x.id===id);
   if(!a||!a.ok)throw Error(a?.reason||'Dieser Auftrag ist derzeit nicht verfügbar');
@@ -212,6 +214,7 @@ function auftrag(id){
   }
   const result=session.ausfuehren(id);
   if(!result.ok)throw Error(result.reason);
+  letzteAuftragsgeste={id,bis:performance.now()+350};
   speichern();anzeigen();
   managerTutor?.gebucht(id);
   hinweis('Auftrag gebucht: '+titel(a)+'.');

@@ -90,6 +90,8 @@ async function pruefe(browser,kind,width,height,base){
   await page.touchscreen.tap(freightBox.x+freightBox.width/2,freightBox.y+freightBox.height/2);
   await el('#tab-auftraege').tap();
   assert.match(await el('#zeit').innerText(),/120 Minuten/);
+  assert.match(await el('#auftrag-belege').innerText(),/Gestartet · Hinflug läuft/);
+  assert.match(await el('#auftrag-meldung').innerText(),/Gestartet/);
   assert.equal(JSON.parse(await save()).kanon.spielerFrachten?.auftraege.length,1);
   const carrier=ship('Frachter');
   assert.equal(await el('.sektor-strecke .sektor-schiff').count(),1);
@@ -113,6 +115,7 @@ async function pruefe(browser,kind,width,height,base){
   }
   await plus.tap();
   assert.match(await details.innerText(),/Nadir → Aldera.*leer.*Rückfahrt/s);
+  assert.match(await el('#auftrag-belege').innerText(),/50 Eis geliefert bei Tick 180/);
   await page.setViewportSize({width:height,height:width});
   assert.equal(await selection.inputValue(),await carrier.getAttribute('data-sektor'));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
@@ -122,6 +125,9 @@ async function pruefe(browser,kind,width,height,base){
   assert.match(await details.innerText(),/Am Dock · Aldera/);
   assert.match(await el('#p3-handelsstand').innerText(),/240 ISK Frachtgebühren · 120 ISK Fluglöhne/);
   assert.equal(await el('#raumbereich').isVisible(),false);
+  assert.match(await el('#auftrag-belege').innerText(),/Abgeschlossen/);
+  assert.match(await el('#auftrag-belege').innerText(),/Frachtgebühren: 240 ISK/);
+  assert.match(await el('#auftrag-belege').innerText(),/Frachtlöhne: 120 ISK/);
   const original=await save(),j=J8.erstellen();
   j.oeffnen204(original,true);
   assert.equal(j.ansicht().hash,'4e86f3fc27a6005a');
@@ -130,6 +136,7 @@ async function pruefe(browser,kind,width,height,base){
   await page.reload();
   await el('#fortsetzen').tap();
   assert.equal(await save(),original);
+  assert.match(await el('#auftrag-belege').textContent(),/Abgeschlossen/);
   assert.equal(await selection.inputValue(),'station:st_aldera');
   await el('#tab-universum').tap();
   assert.match(await el('#sektorwirtschaft').innerText(),/physische Bestände/);
@@ -160,6 +167,15 @@ async function pruefe(browser,kind,width,height,base){
   assert.match(await el('#manager-flotte-stand').innerText(),/Kein laufender Wirtschaftsauftrag/);
   await el('#tab-auftraege').tap();
   assert.equal(await el('#manager-betrieb').isVisible(),true);
+  assert.match(await el('#auftrag-meldung').innerText(),/Beendet/);
+  assert.equal(await el('#auftrag-minute').isDisabled(),true);
+  await page.waitForTimeout(375);
+  await el('#manager-abbau-aktion').tap();
+  assert.equal(await el('#auftrag-minute').isDisabled(),false);
+  const tickVor=JSON.parse(await save()).tick;
+  await el('#auftrag-minute').tap();
+  assert.equal(JSON.parse(await save()).tick,tickVor+1);
+  assert.match(await el('#auftrag-belege').innerText(),/Fortschritt/);
   assert.ok(await page.evaluate(()=>scrollY>0));
   assert.deepEqual(errors,[]);
   console.log('S1_BROWSER_OK',kind,width+'x'+height,new URL(base).pathname,j.ansicht().hash);

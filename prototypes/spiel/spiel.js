@@ -199,6 +199,7 @@ function weiter(n){
   hinweis('Zeitfortschritt verweigert: '+error(e),true);
  }
 }
+function auftragMeldung(text){$('auftrag-meldung').textContent=text;}
 function auftrag(id){
  if(letzteAuftragsgeste?.id===id&&performance.now()<letzteAuftragsgeste.bis)return;
  try{
@@ -217,9 +218,10 @@ function auftrag(id){
   letzteAuftragsgeste={id,bis:performance.now()+350};
   speichern();anzeigen();
   managerTutor?.gebucht(id);
+  auftragMeldung((id.startsWith('stop-')?'Beendet / Abbruch angefordert: ':id.startsWith('buy-')||id.startsWith('sil-sell-')?'Abgeschlossen / gebucht: ':'Gestartet: ')+titel(a)+' · Tick '+session.ansicht().tick+'. Bereits verbuchte Leistungen bleiben bestehen.');
   hinweis('Auftrag gebucht: '+titel(a)+'.');
   if(siliziumSchiff)pilotieren(siliziumSchiff);
- }catch(e){hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
+ }catch(e){auftragMeldung('Abgelehnt: '+error(e));hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
 }
 const namen=[
  ['buy-st_aldera-miner','Dein erstes Bergbauschiff kaufen','Aus dem Aldera-Werftbestand für 600 ISK.'],
@@ -842,9 +844,28 @@ function managerFlotteAuftrag(schiffId,aktionsId){
   auftrag(aktionsId); // J8 checks a FRESH quote once again, no direct book mutation.
  }catch(e){hinweis('Schiffsdisposition gesperrt: '+error(e),true);anzeigen();}
 }
+function auftragsfeedbackAnzeigen(s){
+ const p=scope.P3Auftragsfeedback.auswerten(session.weltReferenz(),s);
+ const lines=[
+ 'Belegstand: Tick '+p.tick,
+ 'Liquidität: '+fmt(p.cash)+' ISK eigene Firmenkasse',
+ 'Vorhandene Schiffsbuchwerte: '+fmt(p.buchwert)+' ISK',
+ 'Frachtgebühren: '+fmt(p.gebuehr)+' ISK kumulativ gebucht',
+ 'Frachtlöhne: '+fmt(p.lohn)+' ISK kumulativ an das separate Pilotenlohnkonto',
+ ...p.foerderung.map(x=>'Förderung '+x.schiff+' · Fortschritt: '+x.phase+' · Waren an Bord: '+x.ladung),
+ ...p.frachten.map(x=>'Fracht '+x.schiff+' · Start '+x.start+' · '+x.status+
+   ' · Warenbewegung: '+(x.geliefert===null?'noch keine Lieferung belegt':x.menge+' Eis geliefert bei Tick '+x.geliefert)+
+   (x.end===null?'':' · Abschluss Tick '+x.end)),
+ 'Keine vollständige Gewinnrechnung. Frachtlöhne enthalten keine Miner- oder sonstigen Löhne. Fehlende Belege werden nicht geschätzt.'
+ ];
+ $('auftrag-belege').replaceChildren(...lines.map(text=>{const el=d.createElement('p');el.textContent=text;return el;}));
+ $('auftrag-minute').disabled=!p.zeitAktiv;
+}
+$('auftrag-minute').addEventListener('click',()=>weiter(1));
 function anzeigen(){
  if(!session)return;
  const a=session.ansicht(),s=session.zustandReferenz();
+ auftragsfeedbackAnzeigen(s);
  const p8hControls=$('w6-p8h-controls'),p8hTaste=$('w6-p8h-toggle'),p8hStatus=$('w6-p8h-status');
  if(p8hControls&&p8hTaste&&p8hStatus){
    p8hControls.hidden=s.rulesVersion!==207;

@@ -1056,7 +1056,7 @@ let handelsaktionNach=0;
 $('p3-handelsaktion')?.addEventListener('click',e=>{
  // The same button changes purpose after a successful order. A double click
  // must not also accept the newly displayed offer or move the world clock.
- if(e.detail>1||e.timeStamp<handelsaktionNach||!session||!scope.P3Handelsweg)return;
+ if(e.timeStamp<handelsaktionNach||!session||!scope.P3Handelsweg)return;
  try{
   // Re-evaluate each click on actual current Core state; never trust the earlier DOM label.
   const p=scope.P3Handelsweg.auswerten(session.zustandReferenz(),session.angebote(),session.weltReferenz());

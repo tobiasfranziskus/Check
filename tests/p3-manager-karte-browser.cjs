@@ -52,6 +52,11 @@ async function pruefe(browser,kind,width,height,base){
   await selection.selectOption('station:st_aldera');
   assert.equal(await selection.inputValue(),'station:st_aldera');
   assert.match(await details.innerText(),/Aldera Handelsstation/);
+  await details.locator('summary').tap();
+  const vorKauf=await save();
+  await details.getByRole('button',{name:'Dein erstes Bergbauschiff kaufen'}).tap();
+  assert.equal(await save(),vorKauf);
+  assert.equal(await el('[data-action="buy-st_aldera-miner"]').evaluate(e=>e===document.activeElement),true);
   await action.tap();
   assert.equal(await el('#hausgeld').textContent(),'2.400 ISK');
   assert.equal(await ship('Bergbauschiff').count(),1);
@@ -73,14 +78,11 @@ async function pruefe(browser,kind,width,height,base){
   await page.touchscreen.tap(tap.x+tap.width/2,tap.y+tap.height/2);
   await page.touchscreen.tap(tap.x+tap.width/2,tap.y+tap.height/2);
   assert.match(await el('#zeit').innerText(),/120 Minuten/);
+  assert.equal(JSON.parse(await save()).kanon.spielerFrachten.auftraege.length,1);
   const carrier=ship('Frachter');
   assert.equal(await el('.sektor-strecke .sektor-schiff').count(),1);
   await carrier.tap();
   assert.match(await details.innerText(),/Aldera → Nadir.*eis: 50.*Hinfahrt/s);
-  const before=await save();
-  // Browser DOM click with detail=2 models the second click of the same gesture.
-  await action.dispatchEvent('click',{detail:2});
-  assert.equal(await save(),before);
   const shot=process.env.S1_SCREENSHOT_DIR;
   if(shot&&(width===1180||width===390)){
    await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));

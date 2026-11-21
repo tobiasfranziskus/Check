@@ -1053,18 +1053,18 @@ $('manager-aussetzen-aktion')?.addEventListener('click',()=>{
 $('manager-abbau-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('abbau'));
 $('manager-transport-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('transport'));
 let handelsaktionNach=0;
-$('p3-handelsaktion')?.addEventListener('click',e=>{
+$('p3-handelsaktion')?.addEventListener('click',()=>{
  // The same button changes purpose after a successful order. A double click
  // must not also accept the newly displayed offer or move the world clock.
- if(e.timeStamp<handelsaktionNach||!session||!scope.P3Handelsweg)return;
+ if(performance.now()<handelsaktionNach||!session||!scope.P3Handelsweg)return;
  try{
   // Re-evaluate each click on actual current Core state; never trust the earlier DOM label.
   const p=scope.P3Handelsweg.auswerten(session.zustandReferenz(),session.angebote(),session.weltReferenz());
   if(!p.bereit)throw Error(p.grund||'Das Originalangebot ist derzeit nicht finanzierbar');
   if(p.art==='zeit')weiter(60); // The same paid world-step as the existing clock button.
   else if(p.art==='auftrag'&&p.aktion){
-   handelsaktionNach=e.timeStamp+350;
    auftrag(p.aktion); // Original validated J8 command.
+   handelsaktionNach=performance.now()+350;
   }
  }catch(e){hinweis('Handelsauftrag gesperrt: '+error(e),true);anzeigen();}
 });

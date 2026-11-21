@@ -311,6 +311,21 @@ body.raum-aktiv .world{display:none}
 .sektor-schiff {font-size:.78rem;padding:5px;border-color:#449585;background:#0f2a30;color:#a2eee2}
 .sektor-strecke .sektor-schiff {border-style:solid;border-width:2px}
 .sektor-unterwegs {display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+/* S2: compact, touch-first fleet disposition without a second command core. */
+.manager-flotte{margin:16px 0 5px;padding:14px;border:1px solid #45677a;border-radius:12px;background:#10283a}
+.manager-flotte h4{font-size:1.02rem;color:var(--gold);margin:0 0 10px}
+.manager-flotte label{display:block;margin-bottom:6px;font-size:.87rem;color:#cbddec}
+#manager-flotte-auswahl{width:100%;min-height:48px;padding:8px;font:inherit;background:#101e31;color:var(--ink);border:1px solid #59758b;border-radius:8px}
+#manager-flotte-stand{font-size:.86rem;line-height:1.5;overflow-wrap:anywhere}
+.manager-flotte-aktionen{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.manager-flotte-aktion{min-width:0;border:1px solid #44667b;padding:10px;border-radius:9px;background:#173146}
+.manager-flotte-aktion button{width:100%;min-height:48px;white-space:normal}
+.manager-flotte-aktion small{display:block;margin-top:6px;color:#c8d7e5;overflow-wrap:anywhere}
+.manager-flotte-aktion small.p3-sperre{color:#ffbca8}
+.manager-flotte .economy-foot{font-size:.77rem}
+@media(max-width:560px){.manager-flotte-aktionen{grid-template-columns:1fr}}
+#manager-flotte-auswahl:focus-visible,.manager-flotte button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
 #management-spielfeld [aria-pressed=true] {outline:2px solid currentColor;outline-offset:-4px}
 #management-spielfeld :focus-visible,#spielwelt .sektor-zeit :focus-visible,#spielwelt .karriere-handelsweg :focus-visible {
  outline:3px solid var(--gold);outline-offset:2px;

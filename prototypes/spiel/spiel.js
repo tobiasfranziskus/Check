@@ -212,7 +212,7 @@ function auftrag(id){
   if(!result.ok)throw Error(result.reason);
   speichern();anzeigen();
   managerTutor?.gebucht(id);
-  hinweis('Auftrag gebucht: '+titel(a)+'. Konten und Eigentümer sind neu geprüft.');
+  hinweis('Auftrag gebucht: '+titel(a)+'.');
   if(siliziumSchiff)pilotieren(siliziumSchiff);
  }catch(e){hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
 }
@@ -309,7 +309,7 @@ function handelswegAnzeigen(s,angebote){
    :'';
  $('p3-handelszahlen').textContent='Aldera-Lager: '+fmt(p.eis)+' Eis · Verfügbare Kasse: '+
    fmt(p.hauskasse)+' ISK. Frachtgebühren und Fluglöhne bilden nur einen Teil des Ergebnisses.';
- $('p3-handelsziel').textContent=(p.abgeschlossen?'Runde '+(p.abgeschlossen+1)+': ':'Nächstes Handelsziel: ')+p.titel;
+ $('p3-handelsziel').textContent=(p.abgeschlossen?'Runde '+(p.abgeschlossen+1)+' · ':'')+p.titel;
  const kaufhinweis=$('p3-kaufhinweis');
  kaufhinweis.hidden=p.aktion!=='buy-st_aldera-miner'&&p.aktion!=='buy-st_aldera-frachter';
  $('p3-handelsanleitung').textContent=ausverkauft?'':p.offen?'Die Rundfahrt endet nach der Lieferung und der Rückkehr nach Aldera.'
@@ -1063,7 +1063,7 @@ $('p3-handelsaktion')?.addEventListener('click',e=>{
   if(!p.bereit)throw Error(p.grund||'Das Originalangebot ist derzeit nicht finanzierbar');
   if(p.art==='zeit')weiter(60); // The same paid world-step as the existing clock button.
   else if(p.art==='auftrag'&&p.aktion){
-   handelsaktionNach=performance.now()+350;
+   handelsaktionNach=e.timeStamp+350;
    auftrag(p.aktion); // Original validated J8 command.
   }
  }catch(e){hinweis('Handelsauftrag gesperrt: '+error(e),true);anzeigen();}

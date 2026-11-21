@@ -46,12 +46,12 @@ async function pruefe(browser,kind,width,height,base){
   await el('.sektor-nadir button').tap();
   assert.match(await details.innerText(),/Raffinerie.*In Bereitschaft/s);
   await selection.focus();
-  await selection.press('Tab');
-  await selection.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
+  assert.equal(await selection.evaluate(e=>e===document.activeElement&&e.matches(':focus-visible')),true);
   await selection.selectOption('station:st_aldera');
   assert.equal(await selection.inputValue(),'station:st_aldera');
   assert.match(await details.innerText(),/Aldera Handelsstation/);
-  assert.equal(await selection.evaluate(e=>e.matches(':focus-visible')),true);
   await action.tap();
   assert.equal(await el('#hausgeld').textContent(),'2.400 ISK');
   assert.equal(await ship('Bergbauschiff').count(),1);

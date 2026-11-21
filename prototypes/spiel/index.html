@@ -157,7 +157,18 @@
     </section>
     <div id="spieleraktionen" class="orders"></div>
    </div>
-   <div id="panel-flotte" class="tab-panel" hidden><div class="panel-head"><p class="eyebrow">EIGENE SCHIFFE</p><h3>Deine Flotte</h3></div><div id="spielerschiffe" class="ships"></div></div>
+   <div id="panel-flotte" class="tab-panel" hidden>
+    <div class="panel-head"><p class="eyebrow">EIGENE SCHIFFE</p><h3>Deine Flotte</h3></div>
+    <div id="spielerschiffe" class="ships"></div>
+    <section id="manager-flotte" class="manager-flotte" aria-label="Schiff einzeln disponieren" hidden>
+     <h4>Schiffsdisposition</h4>
+     <label for="manager-flotte-auswahl">Eigenes Schiff auswählen</label>
+     <select id="manager-flotte-auswahl"></select>
+     <p id="manager-flotte-stand" class="note" aria-live="polite"></p>
+     <div id="manager-flotte-aktionen" class="manager-flotte-aktionen"></div>
+     <p class="economy-foot">Nur aktuelle Originalangebote. Bei jedem Auftrag werden Eigentum, Finanzierung, Ware und freie Fahrt erneut geprüft. Ohne Angebot gibt es keine Freigabe.</p>
+    </section>
+   </div>
    <div id="panel-universum" class="tab-panel" hidden><div class="panel-head"><p class="eyebrow">SEKTORLAGE</p><h3>Eine Welt voller Unternehmen</h3></div><p class="economy-intro">Aktuelle Lager, Firmenkonten und geprüfte Kaufangebote aus deiner Karriere. Die unabhängigen Unternehmen bleiben eigenständig.</p>
     <div id="sektorwirtschaft" class="economy-terminal" aria-label="Aktueller Wirtschaftsbericht">Der Wirtschaftsbericht erscheint nach dem Start einer Karriere.</div></div>
    <div id="panel-jaeger" class="tab-panel" hidden>
@@ -368,5 +379,6 @@
 <script src="p3-npc-werft.js"></script>
 <script src="p3-industrie.js"></script>
 <script src="p3-manager-karte.js"></script>
+<script src="p3-manager-flotte.js"></script>
 <script src="spiel.js"></script>
 </body></html>

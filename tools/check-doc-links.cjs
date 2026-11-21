@@ -127,7 +127,7 @@ function audit(files) {
     let contents;
     try { contents = fs.readFileSync(source, 'utf8'); }
     catch (err) {
-      problems.push({ source, line: 0, target: file, reason: ${'Quelldatei nicht lesbar (' + (err.code || err.message) + ')' });
+      problems.push({ source, line: 0, target: file, reason: 'Quelldatei nicht lesbar (' + (err.code || err.message) + ')' });
       continue;
     }
     for (const { line, target } of targetsFromMarkdown(contents)) {

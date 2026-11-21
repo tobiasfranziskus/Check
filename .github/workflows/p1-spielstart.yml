@@ -51,6 +51,11 @@ jobs:
         run: |
           npm install --no-save --prefix "$RUNNER_TEMP/p1-playwright" playwright@1.62.0
           node "$RUNNER_TEMP/p1-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
+      - name: "M4/S1: Sektorkarte, Original-Eisfahrt und Save/Load in vier Touchgrößen"
+        run: node tests/p3-manager-karte-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/p1-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
       - name: "P3: Wiederholte Original-Eisfracht direkt aus der Karriere in vier Touchgrößen"
         run: node tests/p3-handelsweg-browser.cjs
         env:

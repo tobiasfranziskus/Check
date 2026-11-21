@@ -90,6 +90,14 @@ function hinweis(message,fail=false){
 function neueSitzung(){
  return scope.J8KonzernSitzung.erstellen();
 }
+const sektorKarte=scope.P3ManagerKarte?.verbinden($('management-spielfeld'),{
+ konzernname,titel,anzeigetext,fmt,
+ waehleAngebot:id=>{
+  tabZeigen('auftraege');
+  [...$('spieleraktionen').querySelectorAll('[data-action]')]
+   .find(b=>b.dataset.action===id)?.focus();
+ }
+});
 function aktiveSitzung(nachricht){
  if(!session)throw Error('Es wurde noch keine Karriere gestartet.');
  screen('spielwelt');
@@ -121,7 +129,7 @@ function startNeu(){
    const audit=welt.audit(zustand);
    if(!audit.ok)throw Error('W6: Wirtschaftsprüfung verweigert Start: '+audit.fehler.join('; '));
   }
-  session=neu;werftAuswahlId=null;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
+  session=neu;sektorKarte?.zuruecksetzen();werftAuswahlId=null;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
   pilotTutor?.zuruecksetzen();pilotMenu?.zeichnen();
   const ok=speichern(!!vorher);
   aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(p8gAktiv
@@ -154,7 +162,7 @@ function ladeSitzung(json,auswahl,backup=false){
  const a=regel===207?neu.oeffnenP8g(json,true):neu.oeffnen204(json,true);
  if(a.regel!==regel||a.weltgeld!==33000)
    throw Error('Die Prüfung der Wirtschaft und des Spielstands ist fehlgeschlagen.');
- session=neu;werftAuswahlId=null;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
+ session=neu;sektorKarte?.zuruecksetzen();werftAuswahlId=null;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
   pilotTutor?.zuruecksetzen();pilotMenu?.zeichnen();
  if(auswahl==='datei'||backup)speichern(!!gespeicherte(slot));
  aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Dein Spielstand wurde geprüft.');
@@ -204,7 +212,7 @@ function auftrag(id){
   if(!result.ok)throw Error(result.reason);
   speichern();anzeigen();
   managerTutor?.gebucht(id);
-  hinweis('Auftrag gebucht: '+a.label+'. Konten und Eigentümer sind neu geprüft.');
+  hinweis('Auftrag gebucht: '+titel(a)+'.');
   if(siliziumSchiff)pilotieren(siliziumSchiff);
  }catch(e){hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
 }
@@ -301,7 +309,7 @@ function handelswegAnzeigen(s,angebote){
    :'';
  $('p3-handelszahlen').textContent='Aldera-Lager: '+fmt(p.eis)+' Eis · Verfügbare Kasse: '+
    fmt(p.hauskasse)+' ISK. Frachtgebühren und Fluglöhne bilden nur einen Teil des Ergebnisses.';
- $('p3-handelsziel').textContent=(p.abgeschlossen?'Runde '+(p.abgeschlossen+1)+': ':'Nächstes Handelsziel: ')+p.titel;
+ $('p3-handelsziel').textContent=(p.abgeschlossen?'Runde '+(p.abgeschlossen+1)+' · ':'')+p.titel;
  const kaufhinweis=$('p3-kaufhinweis');
  kaufhinweis.hidden=p.aktion!=='buy-st_aldera-miner'&&p.aktion!=='buy-st_aldera-frachter';
  $('p3-handelsanleitung').textContent=ausverkauft?'':p.offen?'Die Rundfahrt endet nach der Lieferung und der Rückkehr nach Aldera.'
@@ -798,6 +806,8 @@ function anzeigen(){
    :mission.find(m=>!m.done).text;
  const allowed=new Set(namen.map(n=>n[0]));
  const alleAngebote=session.angebote();
+ if(sektorKarte)sektorKarte.anzeigen(
+  scope.P3ManagerKarte.auswerten(a,s,session.weltReferenz(),alleAngebote));
  const offers=alleAngebote.filter(o=>allowed.has(o.id)
    ||/^(ice-|stop-|sil-start-|sil-sell-|freight-|gate-freight-)/.test(o.id));
  $('spieleraktionen').replaceChildren(...offers.map(o=>{
@@ -982,8 +992,6 @@ function pilotBinden(){
    screen('raumbereich');
    raum.aktivieren();
  });
- const manager=$('manager-akademie'),pilot=$('pilotenausbildung');
- if(manager&&pilot)manager.after(pilot);
  pilotMenu.zeichnen();
 }
 $('w6-p8h-toggle')?.addEventListener('click',()=>{
@@ -1044,14 +1052,20 @@ $('manager-aussetzen-aktion')?.addEventListener('click',()=>{
 });
 $('manager-abbau-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('abbau'));
 $('manager-transport-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('transport'));
+let handelsaktionNach=0;
 $('p3-handelsaktion')?.addEventListener('click',()=>{
- if(!session||!scope.P3Handelsweg)return;
+ // The same button changes purpose after a successful order. A double click
+ // must not also accept the newly displayed offer or move the world clock.
+ if(performance.now()<handelsaktionNach||!session||!scope.P3Handelsweg)return;
  try{
   // Re-evaluate each click on actual current Core state; never trust the earlier DOM label.
   const p=scope.P3Handelsweg.auswerten(session.zustandReferenz(),session.angebote(),session.weltReferenz());
   if(!p.bereit)throw Error(p.grund||'Das Originalangebot ist derzeit nicht finanzierbar');
   if(p.art==='zeit')weiter(60); // The same paid world-step as the existing clock button.
-  else if(p.art==='auftrag'&&p.aktion)auftrag(p.aktion); // Original validated J8 command.
+  else if(p.art==='auftrag'&&p.aktion){
+   auftrag(p.aktion); // Original validated J8 command.
+   handelsaktionNach=performance.now()+350;
+  }
  }catch(e){hinweis('Handelsauftrag gesperrt: '+error(e),true);anzeigen();}
 });
 $('p3-invest-aktion')?.addEventListener('click',()=>{
@@ -1243,6 +1257,7 @@ if(scope.ManagerAkademie){
      }
    }
  });
+ $('pilotenausbildung').before($('manager-akademie'));
 }
 firmennamenAnzeigen();cockpitBinden();pilotBinden();menustand();screen('startseite');
 })(globalThis);

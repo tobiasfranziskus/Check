@@ -57,7 +57,9 @@ async function pruefe(browser,kind,width,height,base){
   await details.getByRole('button',{name:'Dein erstes Bergbauschiff kaufen'}).tap();
   assert.equal(await save(),vorKauf);
   assert.equal(await el('[data-action="buy-st_aldera-miner"]').evaluate(e=>e===document.activeElement),true);
-  await action.tap();
+  const kauf=el('[data-action="buy-st_aldera-miner"]');
+  await kauf.tap();
+  await kauf.tap();
   assert.equal(await el('#hausgeld').textContent(),'2.400 ISK');
   assert.equal(await ship('Bergbauschiff').count(),1);
   await ship('Bergbauschiff').tap();

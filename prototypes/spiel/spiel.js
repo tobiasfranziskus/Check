@@ -777,10 +777,11 @@ function siliziumBericht(zustand){
 /* M4/S2: selected OWN vessel. Offers are snapshots for display only.
  * Each actual click re-queries J8, which owns all permissions and cash/ware books.
  */
-function managerFlotteAnzeigen(kartenModell,angebote){
+function managerFlotteAnzeigen(kartenModell,angebote,zustand){
  const host=$('manager-flotte');
  if(!host||!kartenModell||!scope.P3ManagerFlotte)return;
- const p=scope.P3ManagerFlotte.auswerten(kartenModell.schiffe,angebote,managerFlotteAuswahlId);
+ const p=scope.P3ManagerFlotte.auswerten(kartenModell.schiffe,angebote,managerFlotteAuswahlId,
+  session.weltReferenz().bericht(zustand).schiffe);
  managerFlotteAuswahlId=p.auswahlId;
  host.hidden=!p.schiff;
  const auswahl=$('manager-flotte-auswahl');
@@ -797,7 +798,9 @@ function managerFlotteAnzeigen(kartenModell,angebote){
  auswahl.value=p.auswahlId;
  const sh=p.schiff;
  const wert=Number.isSafeInteger(sh.buchwert)?fmt(sh.buchwert)+' ISK':'nicht verfügbar';
- $('manager-flotte-stand').textContent=sh.ort+' · '+sh.ladung+
+ const status=sh.stillgelegt===true?'Stillgelegt · Original-Verschleißgrenze erreicht':
+  sh.phase==='reise'?'Unterwegs':sh.flug==='angedockt'?'Am Dock':'Im System';
+ $('manager-flotte-stand').textContent='Zustand: '+status+' · '+sh.ort+' · Ladung: '+sh.ladung+
   ' · Auftrag: '+sh.auftrag+' · Restbuchwert '+wert+'.';
  const aktionen=p.aktionen.map(aktion=>{
   const box=d.createElement('div'),b=d.createElement('button'),info=d.createElement('small');
@@ -905,7 +908,7 @@ function anzeigen(){
    else box.append(h,p,b);
    return box;
  }):[(()=>{const p=d.createElement('p');p.textContent='Deine Flotte ist noch leer. Kaufe dein erstes Bergbauschiff in Aldera.';return p;})()]));
- managerFlotteAnzeigen(kartenModell,alleAngebote);
+ managerFlotteAnzeigen(kartenModell,alleAngebote,s);
  managerTutor?.auffrischen();
  pilotMenu?.zeichnen();
 }

@@ -472,6 +472,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         if (!rules.world.fields.some((f) => f.system === sh.system && f.ware === cmd.ware)) return 'kein solches Vorkommen im System';
         if (hat(state.kanon.pendel, sh.id)) return 'K1: Pendelauftrag läuft bereits';
         if (sh.flug.lage !== 'angedockt') return 'K1: Pendelauftrag nur aus dem Dock';
+        if (m_core_anlage.stillgelegt(state, sh)) return 'K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen';
         if (cmd.ware === 'eis' && ((sh.ladung.erz || 0) > 0 || state.erzpilotVertraege?.[sh.id])) return 'Erz- und Eisfracht nicht mischen';
         return null;
       }

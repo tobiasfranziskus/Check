@@ -123,3 +123,27 @@ test('P3: published career shell binds only original buy/shuttle/freight/advance
  assert.doesNotMatch(src,/\.execute\(|\.advance\(|\.save\(|\.load\(|\.setItem\(|localStorage/);
  assert.doesNotMatch(js,/p3[^\n]*\b(?:minted|burned|\.cash\s*\+=)/);
 });
+
+test('M-UX1: starter prices come from current rules and a denied carrier does not stop eligible mining',()=>{
+ const j=start(),w=j.weltReferenz();
+ assert.equal(P3.kaufpreis(w,'buy-st_aldera-miner'),600);
+ assert.equal(P3.kaufpreis(w,'buy-st_aldera-frachter'),750);
+ assert.equal(P3.kaufpreis(w,'ice-sh001'),null);
+ assert.equal(P3.kaufpreis({rules:{economy:{waren:{miner:{basis:621}}}}},'buy-st_aldera-miner'),621);
+ assert.equal(j.ausfuehren('buy-st_aldera-miner').ok,true);
+ assert.equal(read(j).foerderaktion,null,'the real carrier offer takes precedence while available');
+ j.weiterspielen(1);
+ const s=j.zustandReferenz(),offers=j.angebote(),before=j.exportieren();
+ const p=P3.auswerten(s,offers,w);
+ assert.equal(p.bereit,false);
+ assert.equal(p.grund,'kein Komplettschiff auf Lager');
+ const ice=offers.find(a=>a.id===p.foerderaktion);
+ assert.ok(ice?.ok&&ice.id.startsWith('ice-'));
+ const denied=offers.map(a=>a===ice?{...a,ok:false,reason:'Sperre aus dem Core'}:a);
+ assert.equal(P3.auswerten(s,denied,w).foerderaktion,null);
+ assert.equal(P3.auswerten(s,offers.filter(a=>a!==ice),w).foerderaktion,null);
+ assert.equal(j.exportieren(),before);
+ assert.equal(j.ausfuehren(ice.id).ok,true);
+ assert.equal(read(j).foerderaktion,null,'running mining cannot be ordered again');
+ audit(j);
+});

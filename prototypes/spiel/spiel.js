@@ -94,7 +94,16 @@ function neueSitzung(){
  return scope.J8KonzernSitzung.erstellen();
 }
 const sektorKarte=scope.P3ManagerKarte?.verbinden($('management-spielfeld'),{
- konzernname,titel,anzeigetext,fmt,
+ konzernname,titel,fmt,
+ waehleSchiff:(id,karte)=>{
+  managerFlotteAuswahlId=id;
+  managerFlotteAnzeigen(karte,session.angebote(),session.zustandReferenz());
+ },
+ oeffneFlotte:id=>{
+  if(managerFlotteAuswahlId!==id)return;
+  tabZeigen('flotte');
+  $('manager-flotte-auswahl').focus();
+ },
  waehleAngebot:id=>{
   tabZeigen('auftraege');
   [...$('spieleraktionen').querySelectorAll('[data-action]')]
@@ -199,6 +208,7 @@ function weiter(n){
   hinweis('Zeitfortschritt verweigert: '+error(e),true);
  }
 }
+function auftragMeldung(text){$('auftrag-meldung').textContent=text;}
 function auftrag(id){
  if(letzteAuftragsgeste?.id===id&&performance.now()<letzteAuftragsgeste.bis)return;
  try{
@@ -212,23 +222,36 @@ function auftrag(id){
    const pilot=session.uebernehmen(siliziumSchiff,raum.laeuft());
    if(!pilot.ok)throw Error(pilot.reason);
   }
+  const kauf=namen.find(n=>n[0]===id);
+  const kasseVorher=kauf?session.ansicht().hausgeld:null;
   const result=session.ausfuehren(id);
   if(!result.ok)throw Error(result.reason);
+  const gesichert=speichern();
+  anzeigen();
+  // Leave the full gesture window after the purchase and its refreshed offers are visible.
   letzteAuftragsgeste={id,bis:performance.now()+350};
-  speichern();anzeigen();
   managerTutor?.gebucht(id);
-  hinweis('Auftrag gebucht: '+titel(a)+'.');
+  auftragMeldung((id.startsWith('stop-')?'Beendet / Abbruch angefordert: ':id.startsWith('buy-')||id.startsWith('sil-sell-')?'Abgeschlossen / gebucht: ':'Gestartet: ')+titel(a)+' · Tick '+session.ansicht().tick+'. Bereits verbuchte Leistungen bleiben bestehen.');
+  if(kauf){
+   const kasse=session.ansicht().hausgeld;
+   hinweis(kauf[1]+' gekauft in '+kauf[2]+' für '+fmt(kasseVorher-kasse)+
+    ' ISK. Deine Flotte wurde aktualisiert. Konzernkasse: '+fmt(kasse)+' ISK.'+
+    (gesichert?'':' Lokales Sichern fehlgeschlagen. Bitte verwende den JSON-Export.'),!gesichert);
+  }else if(gesichert){
+   hinweis(id.startsWith('ice-')?'Eisförderung beauftragt. Dein Miner hat jetzt einen Förderauftrag.':
+    'Auftrag gebucht: '+titel(a)+'.');
+  }
   if(siliziumSchiff)pilotieren(siliziumSchiff);
- }catch(e){hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
+ }catch(e){auftragMeldung('Abgelehnt: '+error(e));hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
 }
 const namen=[
- ['buy-st_aldera-miner','Dein erstes Bergbauschiff kaufen','Aus dem Aldera-Werftbestand für 600 ISK.'],
- ['buy-st_aldera-frachter','Frachter erwerben','Ein Transporter aus dem Aldera-Werftbestand, bezahlt aus deinem Kapital.'],
- ['buy-st_nadir-frachter','Frachter in Nadir erwerben','Nur lieferbare Schiffe aus dem Nadir-Werftbestand.'],
- ['buy-st_nadir-miner','Bergbauschiff in Nadir kaufen','Für dich vormerkbar, sobald eine fertige Schiffshülle bereitsteht.'],
- ['buy-st_nadir-jaeger','Jäger kaufen','Sobald die Nadir Schiffswerke einen vollständig finanzierten Jäger anbieten.']
+ ['buy-st_aldera-miner','Bergbauschiff','Aldera','Dein erstes Bergbauschiff kaufen'],
+ ['buy-st_aldera-frachter','Frachter','Aldera','Frachter erwerben'],
+ ['buy-st_nadir-frachter','Frachter','Nadir','Frachter in Nadir erwerben'],
+ ['buy-st_nadir-miner','Bergbauschiff','Nadir','Bergbauschiff in Nadir kaufen'],
+ ['buy-st_nadir-jaeger','Jäger','Nadir','Jäger kaufen']
 ];
-function titel(a){return namen.find(x=>x[0]===a.id)?.[1]||(
+function titel(a){return namen.find(x=>x[0]===a.id)?.[3]||(
  a.id.startsWith('ice-')?'Eisförderung beginnen':
  a.id.startsWith('stop-')?'Automatischen Pendelauftrag beenden':
  a.id.startsWith('sil-start-')?'Silizium fördern':
@@ -236,7 +259,14 @@ function titel(a){return namen.find(x=>x[0]===a.id)?.[1]||(
  a.id.startsWith('freight-')?'Eisfracht transportieren':
  a.id.startsWith('gate-freight-')?'Eisfracht über das Sprungtor':anzeigetext(a.label));
 }
-function info(a){return namen.find(x=>x[0]===a.id)?.[2]||anzeigetext(a.label);}
+function info(a){
+ const kauf=namen.find(n=>n[0]===a.id);
+ return kauf?'Schiff im Werftbestand von '+kauf[2]+'.':anzeigetext(a.label);
+}
+function angebotstitel(a){
+ const preis=scope.P3Handelsweg?.kaufpreis(session.weltReferenz(),a.id);
+ return a.ok&&Number.isSafeInteger(preis)?titel(a)+' · '+fmt(preis)+' ISK':titel(a);
+}
 function datum(ms){return Math.floor(ms/1440)+' Tage · '+(ms%1440)+' Minuten';}
 
 /* Zwei lesende Manager-Dispositionskarten. Originalangebote sind bindend erst
@@ -285,6 +315,9 @@ function managerDispositionAnzeigen(s,angebote){
   $('manager-'+id+'-grund').textContent=task.bereit
     ?'Echtes Originalangebot verfügbar – wird beim Auftrag erneut geprüft.'
     :'Gesperrt: '+anzeigetext(task.grund||'Kein rechtmäßig finanzierter Auftrag verfügbar');
+  const angebot=angebote.find(a=>a.id===task.aktion);
+  const preis=angebot?.ok?scope.P3Handelsweg?.kaufpreis(session.weltReferenz(),angebot.id):null;
+  if(Number.isSafeInteger(preis))button.textContent+=' · '+fmt(preis)+' ISK';
  }
 }
 function missions(){
@@ -316,16 +349,17 @@ function handelswegAnzeigen(s,angebote){
    fmt(p.hauskasse)+' ISK. Frachtgebühren und Fluglöhne bilden nur einen Teil des Ergebnisses.';
  $('p3-handelsziel').textContent=(p.abgeschlossen?'Runde '+(p.abgeschlossen+1)+' · ':'')+p.titel;
  const kaufhinweis=$('p3-kaufhinweis');
- kaufhinweis.hidden=p.aktion!=='buy-st_aldera-miner'&&p.aktion!=='buy-st_aldera-frachter';
+ kaufhinweis.hidden=!p.bereit||(p.aktion!=='buy-st_aldera-miner'&&p.aktion!=='buy-st_aldera-frachter');
  $('p3-handelsanleitung').textContent=ausverkauft?'':p.offen?'Die Rundfahrt endet nach der Lieferung und der Rückkehr nach Aldera.'
    :p.art==='zeit'?'Dein Miner arbeitet. Schau nach 60 Spielminuten wieder ins Lager.'
    :p.anleitung;
  const angebot=p.aktion?angebote.find(a=>a.id===p.aktion):null;
  const b=$('p3-handelsaktion');b.disabled=!p.bereit;
  b.textContent=p.art==='zeit'?'60 Spielminuten weiter':
-   angebot?titel(angebot):'Kein Auftrag verfügbar';
- $('p3-handelssperre').textContent=p.marktHinweis
-   ?anzeigetext(p.marktHinweis):grund?'Gesperrt: '+grund:'';
+   angebot?angebotstitel(angebot):'Kein Auftrag verfügbar';
+ $('p3-erste-foerderaktion').hidden=!p.foerderaktion;
+ $('p3-handelssperre').textContent=grund?'Gesperrt: '+grund+
+   (p.marktHinweis?' · '+anzeigetext(p.marktHinweis):''):'';
  $('p3-handelssperre-detail').textContent=grund;
 }
 // P3: exactly the Core's legal quote; asset view is read-only, not a second economy.
@@ -814,7 +848,7 @@ function managerFlotteAnzeigen(kartenModell,angebote,zustand){
    ?(aktion.kosten!==null&&aktion.minuten!==null
      ?'Original-Freigabe · '+fmt(aktion.kosten)+' ISK / '+fmt(aktion.minuten)+' Spielminuten. Bei Klick erneut geprüft.'
      :'Original-Freigabe · bei Klick erneut geprüft.')
-   :'Original-Sperre: '+anzeigetext(aktion.grund);
+   :'Original-Sperre: '+aktion.grund;
   if(!aktion.ok)info.className='p3-sperre';
   b.addEventListener('click',()=>managerFlotteAuftrag(p.auswahlId,aktion.id));
   box.append(b,info);
@@ -842,9 +876,28 @@ function managerFlotteAuftrag(schiffId,aktionsId){
   auftrag(aktionsId); // J8 checks a FRESH quote once again, no direct book mutation.
  }catch(e){hinweis('Schiffsdisposition gesperrt: '+error(e),true);anzeigen();}
 }
+function auftragsfeedbackAnzeigen(s){
+ const p=scope.P3Auftragsfeedback.auswerten(session.weltReferenz(),s);
+ const lines=[
+ 'Belegstand: Tick '+p.tick,
+ 'Liquidität: '+fmt(p.cash)+' ISK eigene Firmenkasse',
+ 'Vorhandene Schiffsbuchwerte: '+fmt(p.buchwert)+' ISK',
+ 'Frachtgebühren: '+fmt(p.gebuehr)+' ISK kumulativ gebucht',
+ 'Frachtlöhne: '+fmt(p.lohn)+' ISK kumulativ an das separate Pilotenlohnkonto',
+ ...p.foerderung.map(x=>'Förderung '+x.schiff+' · Fortschritt: '+x.phase+' · Waren an Bord: '+x.ladung),
+ ...p.frachten.map(x=>'Fracht '+x.schiff+' · Start '+x.start+' · '+x.status+
+   ' · Warenbewegung: '+(x.geliefert===null?'noch keine Lieferung belegt':x.menge+' Eis geliefert bei Tick '+x.geliefert)+
+   (x.end===null?'':' · Abschluss Tick '+x.end)),
+ 'Keine vollständige Gewinnrechnung. Frachtlöhne enthalten keine Miner- oder sonstigen Löhne. Fehlende Belege werden nicht geschätzt.'
+ ];
+ $('auftrag-belege').replaceChildren(...lines.map(text=>{const el=d.createElement('p');el.textContent=text;return el;}));
+ $('auftrag-minute').disabled=!p.zeitAktiv;
+}
+$('auftrag-minute').addEventListener('click',()=>weiter(1));
 function anzeigen(){
  if(!session)return;
  const a=session.ansicht(),s=session.zustandReferenz();
+ auftragsfeedbackAnzeigen(s);
  const p8hControls=$('w6-p8h-controls'),p8hTaste=$('w6-p8h-toggle'),p8hStatus=$('w6-p8h-status');
  if(p8hControls&&p8hTaste&&p8hStatus){
    p8hControls.hidden=s.rulesVersion!==207;
@@ -883,7 +936,7 @@ function anzeigen(){
  $('spieleraktionen').replaceChildren(...offers.map(o=>{
   const box=d.createElement('div'),button=d.createElement('button'),small=d.createElement('small');
   box.className='order';
-  button.type='button';button.dataset.action=o.id;button.textContent=titel(o);button.disabled=!o.ok;
+  button.type='button';button.dataset.action=o.id;button.textContent=angebotstitel(o);button.disabled=!o.ok;
   small.textContent=o.ok?info(o):'Zurzeit gesperrt: '+anzeigetext(o.reason);
   if(o.ok)small.className='available';
   button.addEventListener('click',()=>auftrag(o.id));
@@ -1125,8 +1178,20 @@ $('manager-abbau-aktion')?.addEventListener('click',()=>managerDispositionsAuftr
 $('manager-transport-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('transport'));
 $('manager-flotte-auswahl')?.addEventListener('change',event=>{
  managerFlotteAuswahlId=event.currentTarget.value;
+ sektorKarte?.eigenesSchiffWaehlen(managerFlotteAuswahlId);
  anzeigen(); // Selection is UI-only. No time step, command or save mutation.
  $('manager-flotte-auswahl').focus({preventScroll:true});
+});
+$('p3-erste-foerderaktion')?.addEventListener('click',()=>{
+ if(!session)return;
+ const p=scope.P3Handelsweg.auswerten(session.zustandReferenz(),session.angebote(),session.weltReferenz());
+ if(p.foerderaktion){
+  auftrag(p.foerderaktion);
+  if($('p3-erste-foerderaktion').hidden)$('p3-handelsziel').focus({preventScroll:true});
+ }else{
+  hinweis('Eisförderung derzeit gesperrt. Prüfe den aktuellen Grund in der Auftragszentrale.',true);
+  anzeigen();
+ }
 });
 let handelsaktionNach=0;
 $('p3-handelsaktion')?.addEventListener('click',()=>{

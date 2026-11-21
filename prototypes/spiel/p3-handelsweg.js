@@ -4,6 +4,10 @@
  */
 (function(scope){
 'use strict';
+function kaufpreis(welt,id){
+ const kauf=/^buy-st_(?:aldera|nadir)-(miner|frachter|jaeger)$/.exec(id);
+ return kauf?welt?.rules?.economy?.waren?.[kauf[1]]?.basis??null:null;
+}
 function auswerten(s,angebote,welt=null){
  if(!s||![204,207].includes(s.rulesVersion)||!s.kanon||!Array.isArray(angebote))
    throw Error('P3 benötigt den geprüften Regel204/207-Karrierestand mit Core-Angeboten');
@@ -28,11 +32,11 @@ function auswerten(s,angebote,welt=null){
  let aktion=null,art='auftrag',titel='',anleitung='',angebot=null,blockGrund=null;
  if(!miner.length){
   titel='Eigenen Miner erwerben';
-  anleitung='Für den ersten Schritt wird ein tatsächlich käuflicher Aldera-Miner benötigt.';
+  anleitung='Mit einem Bergbauschiff in Aldera kannst du Eisförderung beauftragen.';
   aktion='buy-st_aldera-miner';
  }else if(!schiffe.some(sh=>sh.klasse==='frachter')){
   titel='Eigenen Frachter erwerben';
-  anleitung='Eine Fracht benötigt einen rechtmäßig gekauften Transporter.';
+  anleitung='Mit einem Frachter in Aldera kannst du das geförderte Eis nach Nadir liefern.';
   aktion='buy-st_aldera-frachter';
  }else if(offen){
   titel='Laufende Fracht abrechnen';
@@ -58,7 +62,7 @@ function auswerten(s,angebote,welt=null){
  }else{
   titel='Eisförderung finanzieren';
   anleitung=eis>=50?'Für eine Fracht wird ein freier, eigener Frachter in Aldera benötigt.':
-   'Der vorhandene Miner kann nur auf einen vom Originalkern zugelassenen Eisauftrag gesetzt werden.';
+   'Beauftrage deinen Miner, Eis zu fördern und nach Aldera zu bringen.';
   if(eis>=50){art='blockiert';blockGrund='Kein freier eigener Frachter in Aldera.';}
   else {aktion='ice-'+miner[0].id;}
  }
@@ -81,12 +85,15 @@ function auswerten(s,angebote,welt=null){
     ?start+'Auch der Kauf in Nadir ist gesperrt: '+(nadir.reason||'Originalmarkt verweigert den Kauf')+'. Ein späteres Angebot ist nicht garantiert.'
     :start+'Für Nadir liegt gerade kein entsprechendes Kaufangebot vor. Ein späteres Angebot ist nicht garantiert.';
  }
+ // A blocked carrier purchase need not prevent a first mining order.
+ const foerderangebot=aktion==='buy-st_aldera-frachter'&&!bereit
+  ?miner.map(sh=>suchen('ice-'+sh.id)).find(a=>a?.ok):null;
  const text=abgeschlossen
   ?'Originalbelege: '+abgeschlossen+' abgeschlossene Eis-Rundfahrt'+(abgeschlossen===1?'':'en')+
     '. Jede weitere Fracht benötigt erneut Ware und zahlungsfähige Beteiligte.'
   :'Noch keine abgeschlossene Eis-Rundfahrt. Ein Auftrag ist erst nach Lieferung und Rückkehr abgeschlossen.';
  return Object.freeze({abgeschlossen,offen,eis,hauskasse,gebuehr,lohn,
-  titel,anleitung,art,aktion,bereit,grund,marktHinweis,text});
+  titel,anleitung,art,aktion,bereit,grund,marktHinweis,foerderaktion:foerderangebot?.id??null,text});
 }
 // Nur autoritative, vollständig abgerechnete Eigenfrachten zählen als dauerhafter
 // Karriere-Meilenstein; sichtbare Schiffsladung und begonnene Verträge zählen nicht.
@@ -102,7 +109,7 @@ function ersteBezahlteRundfahrt(s,welt){
    &&Number.isSafeInteger(a.geliefert)&&Number.isSafeInteger(a.end)
    &&a.start<=a.geliefert&&a.geliefert<=a.end);
 }
-const api=Object.freeze({auswerten,ersteBezahlteRundfahrt});
+const api=Object.freeze({auswerten,kaufpreis,ersteBezahlteRundfahrt});
 if(typeof module==='object'&&module.exports)module.exports=api;
 else scope.P3Handelsweg=api;
 })(globalThis);

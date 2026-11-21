@@ -40,6 +40,14 @@ async function pruefe(browser,kind,width,height,base){
   assert.equal(await el('.sektor-station').count(),2);
   assert.equal(await el('.sektor-schiff').count(),0);
   assert.equal(await el('#sektor-auftraege').textContent(),'0');
+  const startSave=await save(),startWelt=JSON.parse(startSave);
+  const fremd=Object.keys(startWelt.ships).find(id=>startWelt.ships[id].owner!=='house');
+  assert.ok(fremd);
+  await selection.selectOption('schiff:'+fremd);
+  assert.equal(await selection.locator('optgroup[label="Fremde Schiffe"] option:checked').count(),1);
+  assert.match(await details.innerText(),/Eigentümer.*Ort.*Auftrag/s);
+  assert.equal(await details.getByRole('button').count(),0);
+  assert.equal(await save(),startSave);
   assert.equal(await el('#pilotenausbildung-details').getAttribute('open'),null);
   const box=await action.boundingBox();
   assert.ok(box.height>=48&&box.y>=0&&box.y+box.height<=height,'erste Aktion liegt im Bildschirm');
@@ -72,8 +80,8 @@ async function pruefe(browser,kind,width,height,base){
   const ownMinerId=(await ship('Bergbauschiff').getAttribute('data-sektor')).replace(/^schiff:/,'');
   const ownCarrierId=(await ship('Frachter').getAttribute('data-sektor')).replace(/^schiff:/,'');
   await page.waitForTimeout(375);
-  await el('#tab-flotte').tap();
-  await el('#manager-flotte-auswahl').selectOption(ownMinerId);
+  await details.getByRole('button',{name:'In Flotte disponieren'}).tap();
+  assert.equal(await el('#manager-flotte-auswahl').inputValue(),ownMinerId);
   await el('[data-dispo-action="ice-'+ownMinerId+'"]').tap();
   await el('#tab-auftraege').tap();
   assert.equal(await el('#sektor-auftraege').textContent(),'1');
@@ -83,6 +91,7 @@ async function pruefe(browser,kind,width,height,base){
   await page.waitForTimeout(375);
   await el('#tab-flotte').tap();
   await el('#manager-flotte-auswahl').selectOption(ownCarrierId);
+  assert.equal(await selection.inputValue(),'schiff:'+ownCarrierId);
   const freight=el('[data-dispo-action="freight-'+ownCarrierId+'"]');
   await freight.scrollIntoViewIfNeeded();
   const freightBox=await freight.boundingBox();
@@ -90,6 +99,8 @@ async function pruefe(browser,kind,width,height,base){
   await page.touchscreen.tap(freightBox.x+freightBox.width/2,freightBox.y+freightBox.height/2);
   await el('#tab-auftraege').tap();
   assert.match(await el('#zeit').innerText(),/120 Minuten/);
+  assert.match(await el('#auftrag-belege').innerText(),/Gestartet · Hinflug läuft/);
+  assert.match(await el('#auftrag-meldung').innerText(),/Gestartet/);
   assert.equal(JSON.parse(await save()).kanon.spielerFrachten?.auftraege.length,1);
   const carrier=ship('Frachter');
   assert.equal(await el('.sektor-strecke .sektor-schiff').count(),1);
@@ -97,22 +108,35 @@ async function pruefe(browser,kind,width,height,base){
   assert.match(await details.innerText(),/Aldera → Nadir.*eis: 50.*Hinfahrt/s);
   const frachterId=(await carrier.getAttribute('data-sektor')).replace(/^schiff:/,'');
   const vorAuswahl=await save();
-  await el('#tab-flotte').tap();
+  await details.getByRole('button',{name:'In Flotte disponieren'}).tap();
   const fleetSelect=el('#manager-flotte-auswahl');
-  await fleetSelect.selectOption(frachterId);
+  assert.equal(await fleetSelect.inputValue(),frachterId);
   assert.match(await el('#manager-flotte-stand').innerText(),/Eisfracht · Hinfahrt/);
   const disabledFreight=el('#manager-flotte-aktionen [data-dispo-action="freight-'+frachterId+'"]');
   assert.equal(await disabledFreight.isDisabled(),true);
-  assert.match(await el('#manager-flotte-aktionen').innerText(),/Original-Sperre/);
+  const laufend=J8.erstellen();
+  laufend.oeffnen204(vorAuswahl,true);
+  const sperre=laufend.angebote().find(o=>o.id==='freight-'+frachterId);
+  assert.equal(sperre.ok,false);
+  assert.equal(await disabledFreight.locator('+ small').textContent(),'Original-Sperre: '+sperre.reason);
+  await details.locator('summary').tap();
+  assert.ok((await details.locator('p').allTextContents()).some(text=>text.endsWith(' · '+sperre.reason)));
+  await selection.selectOption('schiff:'+fremd);
+  assert.equal(await fleetSelect.inputValue(),frachterId);
+  assert.equal(await fleetSelect.locator('option[value="'+fremd+'"]').count(),0);
+  assert.equal(await details.getByRole('button').count(),0);
+  await carrier.tap();
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
   assert.equal(await save(),vorAuswahl,'Auswahl darf den Weltspielstand nicht verändern');
   await el('#tab-auftraege').tap();
   const shot=process.env.S1_SCREENSHOT_DIR;
-  if(shot&&(width===1180||width===390)){
+  if(shot&&(width===1180||width===1024||width===390)){
    await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
    await page.screenshot({path:path.join(shot,`s1-${kind}-${width}.jpg`),quality:88});
   }
   await plus.tap();
   assert.match(await details.innerText(),/Nadir → Aldera.*leer.*Rückfahrt/s);
+  assert.match(await el('#auftrag-belege').innerText(),/50 Eis geliefert bei Tick 180/);
   await page.setViewportSize({width:height,height:width});
   assert.equal(await selection.inputValue(),await carrier.getAttribute('data-sektor'));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
@@ -122,6 +146,9 @@ async function pruefe(browser,kind,width,height,base){
   assert.match(await details.innerText(),/Am Dock · Aldera/);
   assert.match(await el('#p3-handelsstand').innerText(),/240 ISK Frachtgebühren · 120 ISK Fluglöhne/);
   assert.equal(await el('#raumbereich').isVisible(),false);
+  assert.match(await el('#auftrag-belege').innerText(),/Abgeschlossen/);
+  assert.match(await el('#auftrag-belege').innerText(),/Frachtgebühren: 240 ISK/);
+  assert.match(await el('#auftrag-belege').innerText(),/Frachtlöhne: 120 ISK/);
   const original=await save(),j=J8.erstellen();
   j.oeffnen204(original,true);
   assert.equal(j.ansicht().hash,'4e86f3fc27a6005a');
@@ -130,6 +157,7 @@ async function pruefe(browser,kind,width,height,base){
   await page.reload();
   await el('#fortsetzen').tap();
   assert.equal(await save(),original);
+  assert.match(await el('#auftrag-belege').textContent(),/Abgeschlossen/);
   assert.equal(await selection.inputValue(),'station:st_aldera');
   await el('#tab-universum').tap();
   assert.match(await el('#sektorwirtschaft').innerText(),/physische Bestände/);
@@ -160,6 +188,15 @@ async function pruefe(browser,kind,width,height,base){
   assert.match(await el('#manager-flotte-stand').innerText(),/Kein laufender Wirtschaftsauftrag/);
   await el('#tab-auftraege').tap();
   assert.equal(await el('#manager-betrieb').isVisible(),true);
+  assert.match(await el('#auftrag-meldung').innerText(),/Beendet/);
+  assert.equal(await el('#auftrag-minute').isDisabled(),true);
+  await page.waitForTimeout(375);
+  await el('#manager-abbau-aktion').tap();
+  assert.equal(await el('#auftrag-minute').isDisabled(),false);
+  const tickVor=JSON.parse(await save()).tick;
+  await el('#auftrag-minute').tap();
+  assert.equal(JSON.parse(await save()).tick,tickVor+1);
+  assert.match(await el('#auftrag-belege').innerText(),/Fortschritt/);
   assert.ok(await page.evaluate(()=>scrollY>0));
   assert.deepEqual(errors,[]);
   console.log('S1_BROWSER_OK',kind,width+'x'+height,new URL(base).pathname,j.ansicht().hash);

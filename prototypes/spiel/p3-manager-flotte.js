@@ -10,13 +10,14 @@ const optionen=Object.freeze({
  'freight-':'50 Eis bezahlt transportieren',
  'reposition-':'Eigene Werfthülle bezahlt nach Aldera überführen'
 });
-function auswerten(schiffe,angebote,auswahlId=null){
+function auswerten(schiffe,angebote,auswahlId=null,schiffbericht=[]){
  if(!Array.isArray(schiffe)||!Array.isArray(angebote))
   throw TypeError('Flottendisposition benötigt eigene Schiffe und originale J8-Angebote');
  // Explicit owner check even when upstream map already exposes only own ships.
  const eigene=schiffe.filter(sh=>sh&&sh.owner==='house'&&typeof sh.id==='string');
  const gewählt=eigene.find(sh=>sh.id===auswahlId)||eigene[0]||null;
  if(!gewählt)return Object.freeze({schiffe:Object.freeze([]),auswahlId:null,schiff:null,aktionen:Object.freeze([])});
+ const original=Array.isArray(schiffbericht)?schiffbericht.find(sh=>sh.id===gewählt.id):null;
  const prefixes=gewählt.klasse==='miner'?['ice-','stop-']:
   gewählt.klasse==='frachter'?['freight-','reposition-']:[];
  const aktionen=prefixes.flatMap(prefix=>{
@@ -39,6 +40,7 @@ function auswerten(schiffe,angebote,auswahlId=null){
   auswahlId:gewählt.id,
   schiff:Object.freeze({
    id:gewählt.id,name:gewählt.name,ort:gewählt.ort,phase:gewählt.phase,
+   stillgelegt:typeof original?.stillgelegt==='boolean'?original.stillgelegt:null,
    flug:gewählt.flug,ladung:gewählt.ladung,
    auftrag:gewählt.auftrag||'Kein laufender Wirtschaftsauftrag',
    buchwert:gewählt.buchwert

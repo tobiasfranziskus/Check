@@ -226,6 +226,8 @@
 4. **[ABNAHME OFFEN]** Echtes iPad Safari, NAS-Liveprüfungen und unabhängiger produktiver Browser-Live-HTTP-Abruf; erfolgreiches Pages-Actions-Deployment ist keine Endgerätabnahme.
 5. **[REPO-HYGIENE]** Historische gestapelte/ersetzte Forschungs-PRs begründet klassifizieren, ohne Source-Branches/Backups/Original-Tests oder Spielstände zu löschen.
 
+**[M-UX1 / DRAFT · 21.11.2026]** Die Karriereführung auf Basis `ac480b4` zeigt reale Kaufpreise, bestätigt die Abbuchung und bietet beim gesperrten Frachterkauf einen bereits freigegebenen Eisförderauftrag an. Zwei frische Chromium-Touch-Kontexte bei 1024 × 768 haben den Kauf- und Ausverkaufspfad bis zum echten Auftrag mit Save/Reload geprüft. Ablauf, Grenzen und weitere Prüfergebnisse stehen im [M-UX1-Bericht](M_UX1_KARRIEREEINSTIEG_20261121.md).
+
 ## Quellen und Statuslabel
 
 [Verbindliche Roadmap](ROADMAP.md) · [Repo-/PR-Index](README.md) · [AGENTS.md](../AGENTS.md) · [Historisches Statusarchiv](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261115.md). Labels: **[MAIN]** gemergt, **[PAGES]** tatsächlich deployt, **[DRAFT]** ungemergt, **[ANALYSE]** begrenzter Nachweis, **[BESCHLOSSEN]** verbindliches Ziel, **[OPTION]** offen.

@@ -90,10 +90,12 @@
  <section id="p3-handelsauftrag" class="p3-handelsauftrag karriere-handelsweg" aria-label="Wiederholbarer Eis-Handelsauftrag">
   <h3>Nächster Schritt · Eishandel</h3>
   <p id="p3-kaufhinweis" hidden>Kaufe zuerst beide Schiffe, bevor du Wirtschaftszeit voranschreiten lässt. Andere Konzerne können den verfügbaren Frachter kaufen.</p>
-  <p id="p3-handelsziel" class="karriere-handelsziel"></p>
+  <p id="p3-handelsziel" tabindex="-1" class="karriere-handelsziel"></p>
   <p id="p3-handelsanleitung"></p>
-  <button id="p3-handelsaktion" class="primary" type="button" disabled>Wirtschaftsauftrag öffnen</button>
+  <button id="p3-handelsaktion" aria-describedby="p3-handelsanleitung p3-handelssperre" class="primary" type="button" disabled>Wirtschaftsauftrag öffnen</button>
   <p id="p3-handelssperre" class="p3-sperre" role="status"></p>
+  <button id="p3-erste-foerderaktion" class="ghost" type="button" hidden>Trotzdem Eisförderung beginnen</button>
+  <p id="welt-meldung" role="status" class="game-message"></p>
   <p id="p3-handelsstand" role="status"></p>
   <details id="p3-handelsdetails">
    <summary>Handelsbilanz und Vertragsdetails</summary>
@@ -101,7 +103,6 @@
    <p id="p3-handelssperre-detail"></p>
   </details>
  </section>
- <p id="welt-meldung" role="status" aria-live="polite" class="game-message"></p>
  <section id="management-spielfeld" aria-labelledby="sektor-titel">
   <div class="sektor-kopf">
    <h3 id="sektor-titel">Sektorkarte</h3>

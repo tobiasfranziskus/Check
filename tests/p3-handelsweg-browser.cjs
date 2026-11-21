@@ -17,12 +17,87 @@ const server=http.createServer((req,res)=>{
   res.end(fs.readFileSync(file));
  }catch{res.writeHead(404).end();}
 });
+async function karrierestart(browser,kind){
+ const width=1024,height=768;
+ for(const ausverkauft of [false,true]){
+  const ctx=await browser.newContext({viewport:{width,height},hasTouch:true});
+  try{
+   const page=await ctx.newPage(),errors=[];
+   page.on('pageerror',e=>errors.push(e.message));
+   const el=id=>page.locator('#'+id);
+   const save=()=>page.evaluate(key=>localStorage.getItem(key),SLOT);
+   const booking=el('p3-handelsaktion'),message=el('welt-meldung');
+   const bookingInView=async()=>{
+    const box=await booking.boundingBox();
+    assert.ok(box&&box.height>=48&&box.y>=0&&box.y+box.height<=height);
+   };
+   await page.goto('http://127.0.0.1:'+server.address().port+'/');
+   await page.getByRole('link',{name:/^Wirtschaftsmanager/}).tap();
+   await page.waitForURL('**/prototypes/spiel/index.html');
+   await page.waitForLoadState('load');
+   assert.equal(await save(),null);
+   await el('neues-spiel').tap();
+   await el('karriere-starten').tap();
+   await bookingInView();
+   assert.match(await booking.innerText(),/Bergbauschiff kaufen · 600 ISK/);
+   await booking.tap();
+   await booking.tap(); // A rapid second tap must not buy the newly displayed carrier.
+   assert.match(await message.innerText(),/Bergbauschiff gekauft in Aldera für 600 ISK.*2\.400 ISK/);
+   assert.match(await booking.innerText(),/Frachter erwerben · 750 ISK/);
+   await bookingInView();
+   const minerSave=JSON.parse(await save());
+   assert.equal(minerSave.owners.house.cash,2400);
+   assert.equal(minerSave.tick,0);
+   assert.equal(await el('schiff-anzahl').innerText(),'1');
+   const miner=Object.values(minerSave.ships).find(sh=>sh.owner==='house'&&sh.klasse==='miner');
+   assert.ok(miner);
+   if(ausverkauft){
+    await page.locator('[data-advance="1"]').tap();
+    const vorSperre=await save();
+    assert.equal(await booking.isDisabled(),true);
+    assert.equal(await el('p3-kaufhinweis').isVisible(),false);
+    assert.match(await el('p3-handelssperre').innerText(),/Gesperrt: kein Komplettschiff auf Lager/);
+    assert.equal(await save(),vorSperre);
+    await el('p3-erste-foerderaktion').tap();
+    assert.equal(await el('p3-erste-foerderaktion').isVisible(),false);
+   }else{
+    // Allow the existing guard against one tap booking two successive offers.
+    await page.waitForTimeout(375);
+    await booking.tap();
+    assert.match(await message.innerText(),/Frachter gekauft in Aldera für 750 ISK.*1\.650 ISK/);
+    assert.match(await booking.innerText(),/Eisförderung beginnen/);
+    assert.equal(await el('schiff-anzahl').innerText(),'2');
+    await bookingInView();
+    await page.waitForTimeout(375);
+    await booking.tap();
+   }
+   const json=await save(),state=JSON.parse(json);
+   const world=W.erstellenJ4c({carrierCash:state.w5ad.profile.carrierCash,buyerCash:state.w5ad.profile.buyerCash});
+   const loaded=world.load(json);
+   assert.equal(world.audit(loaded).ok,true);
+   assert.equal(state.tick,ausverkauft?1:0);
+   assert.equal(state.kanon.pendel[miner.id].ware,'eis');
+   assert.equal(Object.values(state.owners).reduce((sum,owner)=>sum+owner.cash,0),33000);
+   assert.equal(state.minted,0);
+   assert.equal(state.burned,0);
+   assert.match(await message.innerText(),/Eisförderung beauftragt/);
+   assert.equal(await el('raumbereich').isVisible(),false);
+   await page.reload();
+   await el('fortsetzen').tap();
+   assert.equal(await save(),json);
+   assert.deepEqual(errors,[]);
+   console.log('M_UX1_BROWSER_OK',JSON.stringify({kind,width,height,ausverkauft,tick:state.tick,hash:world.hash(loaded)}));
+  }finally{await ctx.close();}
+ }
+}
+
 (async()=>{
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  let browser;
  try{
   const kind=process.env.WELT_BROWSER==='webkit'?'webkit':'chromium';
-  browser=await (kind==='webkit'?webkit:chromium).launch(kind==='webkit'?{}:{args:['--no-sandbox']});
+  browser=await (kind==='webkit'?webkit:chromium).launch(kind==='webkit'?{}:{executablePath:process.env.S1_CHROMIUM_PATH||undefined,args:['--no-sandbox']});
+  await karrierestart(browser,kind);
   for(const [width,height] of [[1180,820],[1024,768],[820,1180],[390,844]]){
    const ctx=await browser.newContext({viewport:{width,height},hasTouch:true});
    const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(String(e)));

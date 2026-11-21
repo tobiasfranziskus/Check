@@ -24,7 +24,7 @@ test('Sektorkarte: tatsächliche Stationen und Angebote, keine Fremdflotte oder 
  const j=starten(),v=karte(j);
  assert.deepEqual(v.stationen.map(o=>o.name),['Aldera','Nadir']);
  assert.equal(v.stationen[1].werftBetreiber,'werft_extern');
- assert.equal(v.stationen[1].raffinerie,'In Bereitschaft');
+ assert.equal(v.stationen[1].raffinerie,'Kein laufender Auftrag');
  assert.ok(Object.values(j.zustandReferenz().ships).some(sh=>sh.owner!=='house'));
  assert.deepEqual(v.schiffe,[]);
  assert.equal(v.auftraege,0);

@@ -17,8 +17,8 @@ function auswerten(a,s,w,angebote){
   if(!st)return [];
   return [{...k,system,lager:st.lager,kasse:s.owners[k.id]?.cash,
    angebote:angebote.filter(o=>o.id.startsWith('buy-'+k.id+'-')),
-   raffinerie:w.rules.w4?.station===k.id&&s.w4?s.w4.auftrag?'In Betrieb':'In Bereitschaft':null,
-   werft:w.rules.w5?.station===k.id&&s.w5?s.w5.auftrag?'Baut eine Hülle':'In Bereitschaft':null,
+   raffinerie:w.rules.w4?.station===k.id&&s.w4?s.w4.auftrag?'In Betrieb':'Kein laufender Auftrag':null,
+   werft:w.rules.w5?.station===k.id&&s.w5?s.w5.auftrag?'Baut eine Hülle':'Kein laufender Auftrag':null,
    werftBetreiber:w.rules.w5?.station===k.id?w.rules.w5.werft:null}];
  });
  const eis=s.w5n?.frachtauftrag,erz=s.w3?.auftrag,transfer=s.w5ac?.active;

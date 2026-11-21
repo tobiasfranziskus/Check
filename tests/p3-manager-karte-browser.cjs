@@ -83,6 +83,17 @@ async function pruefe(browser,kind,width,height,base){
   assert.equal(await el('.sektor-strecke .sektor-schiff').count(),1);
   await carrier.tap();
   assert.match(await details.innerText(),/Aldera → Nadir.*eis: 50.*Hinfahrt/s);
+  const frachterId=(await carrier.getAttribute('data-sektor')).replace(/^schiff:/,'');
+  const vorAuswahl=await save();
+  await el('#tab-flotte').tap();
+  const fleetSelect=el('#manager-flotte-auswahl');
+  await fleetSelect.selectOption(frachterId);
+  assert.match(await el('#manager-flotte-stand').innerText(),/Eisfracht · Hinfahrt/);
+  const disabledFreight=el('#manager-flotte-aktionen [data-dispo-action="freight-'+frachterId+'"]');
+  assert.equal(await disabledFreight.isDisabled(),true);
+  assert.match(await el('#manager-flotte-aktionen').innerText(),/Original-Sperre/);
+  assert.equal(await save(),vorAuswahl,'Auswahl darf den Weltspielstand nicht verändern');
+  await el('#tab-auftraege').tap();
   const shot=process.env.S1_SCREENSHOT_DIR;
   if(shot&&(width===1180||width===390)){
    await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
@@ -112,6 +123,17 @@ async function pruefe(browser,kind,width,height,base){
   assert.match(await el('#sektorwirtschaft').innerText(),/physische Bestände/);
   await el('#tab-flotte').tap();
   assert.equal(await el('[data-pilot]').count(),2);
+  assert.equal(await el('#manager-flotte-auswahl option').count(),2);
+  await el('#manager-flotte-auswahl').selectOption(frachterId);
+  assert.match(await el('#manager-flotte-stand').innerText(),/Am Dock · Aldera/);
+  assert.equal(await save(),original,'Flottenwechsel nach Load ist rein lesend');
+  const minerId=await el('[data-pilot]').first().getAttribute('data-pilot');
+  await el('#manager-flotte-auswahl').selectOption(minerId);
+  const stop=el('#manager-flotte-aktionen [data-dispo-action="stop-'+minerId+'"]');
+  assert.equal(await stop.isEnabled(),true);
+  await stop.tap();
+  assert.notEqual(await save(),original,'Nur echter Original-Stop verändert die Karriere');
+  assert.match(await el('#manager-flotte-stand').innerText(),/Kein laufender Wirtschaftsauftrag/);
   await el('#tab-auftraege').tap();
   assert.equal(await el('#manager-betrieb').isVisible(),true);
   assert.ok(await page.evaluate(()=>scrollY>0));

@@ -44,7 +44,7 @@ async function pruefe(browser,kind,width,height,base){
   const box=await action.boundingBox();
   assert.ok(box.height>=48&&box.y>=0&&box.y+box.height<=height,'erste Aktion liegt im Bildschirm');
   await el('.sektor-nadir button').tap();
-  assert.match(await details.innerText(),/Raffinerie.*In Bereitschaft/s);
+  assert.match(await details.innerText(),/Raffinerie.*Kein laufender Auftrag/s);
   await selection.focus();
   await page.keyboard.press('Tab');
   await page.keyboard.press('Shift+Tab');

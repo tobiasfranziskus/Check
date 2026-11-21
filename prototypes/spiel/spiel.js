@@ -13,6 +13,9 @@ const fmt=n=>Number(n).toLocaleString('de-DE');
 let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung=0,patrouille=null,duell=null;
 let cockpitGenutzt=false,flugerfahrung=false,managerTutor=null,pilotTutor=null,pilotMenu=null;
 let werftAuswahlId=null; // Only UI memory, never exported into a Rule204/207 save.
+let managerFlotteAuswahlId=null; // Current owned ship selection, ephemeral like the map.
+let managerFlotteAktionNach=0; // One touch gesture must not trigger a replacement action.
+let letzteAuftragsgeste=null; // Prevent one rapid gesture from booking the same offer twice.
 const safeText=(s)=>String(s==null?'':s);
 const error=(e)=>safeText(e&&e.message?e.message:e);
 // Zentrale Anzeigenamen: nur für die Oberfläche, nie als ID in Befehlen oder Spielständen.
@@ -90,6 +93,14 @@ function hinweis(message,fail=false){
 function neueSitzung(){
  return scope.J8KonzernSitzung.erstellen();
 }
+const sektorKarte=scope.P3ManagerKarte?.verbinden($('management-spielfeld'),{
+ konzernname,titel,anzeigetext,fmt,
+ waehleAngebot:id=>{
+  tabZeigen('auftraege');
+  [...$('spieleraktionen').querySelectorAll('[data-action]')]
+   .find(b=>b.dataset.action===id)?.focus();
+ }
+});
 function aktiveSitzung(nachricht){
  if(!session)throw Error('Es wurde noch keine Karriere gestartet.');
  screen('spielwelt');
@@ -121,7 +132,7 @@ function startNeu(){
    const audit=welt.audit(zustand);
    if(!audit.ok)throw Error('W6: Wirtschaftsprüfung verweigert Start: '+audit.fehler.join('; '));
   }
-  session=neu;werftAuswahlId=null;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
+  session=neu;sektorKarte?.zuruecksetzen();werftAuswahlId=null;managerFlotteAuswahlId=null;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
   pilotTutor?.zuruecksetzen();pilotMenu?.zeichnen();
   const ok=speichern(!!vorher);
   aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(p8gAktiv
@@ -154,7 +165,7 @@ function ladeSitzung(json,auswahl,backup=false){
  const a=regel===207?neu.oeffnenP8g(json,true):neu.oeffnen204(json,true);
  if(a.regel!==regel||a.weltgeld!==33000)
    throw Error('Die Prüfung der Wirtschaft und des Spielstands ist fehlgeschlagen.');
- session=neu;werftAuswahlId=null;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
+ session=neu;sektorKarte?.zuruecksetzen();werftAuswahlId=null;managerFlotteAuswahlId=null;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
   pilotTutor?.zuruecksetzen();pilotMenu?.zeichnen();
  if(auswahl==='datei'||backup)speichern(!!gespeicherte(slot));
  aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Dein Spielstand wurde geprüft.');
@@ -189,6 +200,7 @@ function weiter(n){
  }
 }
 function auftrag(id){
+ if(letzteAuftragsgeste?.id===id&&performance.now()<letzteAuftragsgeste.bis)return;
  try{
   const a=session.angebote().find(x=>x.id===id);
   if(!a||!a.ok)throw Error(a?.reason||'Dieser Auftrag ist derzeit nicht verfügbar');
@@ -202,9 +214,10 @@ function auftrag(id){
   }
   const result=session.ausfuehren(id);
   if(!result.ok)throw Error(result.reason);
+  letzteAuftragsgeste={id,bis:performance.now()+350};
   speichern();anzeigen();
   managerTutor?.gebucht(id);
-  hinweis('Auftrag gebucht: '+a.label+'. Konten und Eigentümer sind neu geprüft.');
+  hinweis('Auftrag gebucht: '+titel(a)+'.');
   if(siliziumSchiff)pilotieren(siliziumSchiff);
  }catch(e){hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
 }
@@ -301,7 +314,7 @@ function handelswegAnzeigen(s,angebote){
    :'';
  $('p3-handelszahlen').textContent='Aldera-Lager: '+fmt(p.eis)+' Eis · Verfügbare Kasse: '+
    fmt(p.hauskasse)+' ISK. Frachtgebühren und Fluglöhne bilden nur einen Teil des Ergebnisses.';
- $('p3-handelsziel').textContent=(p.abgeschlossen?'Runde '+(p.abgeschlossen+1)+': ':'Nächstes Handelsziel: ')+p.titel;
+ $('p3-handelsziel').textContent=(p.abgeschlossen?'Runde '+(p.abgeschlossen+1)+' · ':'')+p.titel;
  const kaufhinweis=$('p3-kaufhinweis');
  kaufhinweis.hidden=p.aktion!=='buy-st_aldera-miner'&&p.aktion!=='buy-st_aldera-frachter';
  $('p3-handelsanleitung').textContent=ausverkauft?'':p.offen?'Die Rundfahrt endet nach der Lieferung und der Rückkehr nach Aldera.'
@@ -765,6 +778,70 @@ function siliziumBericht(zustand){
    );
  }
 }
+/* M4/S2: selected OWN vessel. Offers are snapshots for display only.
+ * Each actual click re-queries J8, which owns all permissions and cash/ware books.
+ */
+function managerFlotteAnzeigen(kartenModell,angebote,zustand){
+ const host=$('manager-flotte');
+ if(!host||!kartenModell||!scope.P3ManagerFlotte)return;
+ const p=scope.P3ManagerFlotte.auswerten(kartenModell.schiffe,angebote,managerFlotteAuswahlId,
+  session.weltReferenz().bericht(zustand).schiffe);
+ managerFlotteAuswahlId=p.auswahlId;
+ host.hidden=!p.schiff;
+ const auswahl=$('manager-flotte-auswahl');
+ auswahl.replaceChildren(...p.schiffe.map(sh=>{
+  const option=d.createElement('option');
+  option.value=sh.id;option.textContent=sh.name;
+  return option;
+ }));
+ if(!p.schiff){
+  $('manager-flotte-stand').textContent='';
+  $('manager-flotte-aktionen').replaceChildren();
+  return;
+ }
+ auswahl.value=p.auswahlId;
+ const sh=p.schiff;
+ const wert=Number.isSafeInteger(sh.buchwert)?fmt(sh.buchwert)+' ISK':'nicht verfügbar';
+ const status=sh.stillgelegt===true?'Stillgelegt · Original-Verschleißgrenze erreicht':
+  sh.phase==='reise'?'Unterwegs':sh.flug==='angedockt'?'Am Dock':'Im System';
+ $('manager-flotte-stand').textContent='Zustand: '+status+' · '+sh.ort+' · Ladung: '+sh.ladung+
+  ' · Auftrag: '+sh.auftrag+' · Restbuchwert '+wert+'.';
+ const aktionen=p.aktionen.map(aktion=>{
+  const box=d.createElement('div'),b=d.createElement('button'),info=d.createElement('small');
+  box.className='manager-flotte-aktion';
+  b.type='button';b.dataset.dispoAction=aktion.id;b.textContent=aktion.titel;b.disabled=!aktion.ok;
+  info.textContent=aktion.ok
+   ?(aktion.kosten!==null&&aktion.minuten!==null
+     ?'Original-Freigabe · '+fmt(aktion.kosten)+' ISK / '+fmt(aktion.minuten)+' Spielminuten. Bei Klick erneut geprüft.'
+     :'Original-Freigabe · bei Klick erneut geprüft.')
+   :'Original-Sperre: '+anzeigetext(aktion.grund);
+  if(!aktion.ok)info.className='p3-sperre';
+  b.addEventListener('click',()=>managerFlotteAuftrag(p.auswahlId,aktion.id));
+  box.append(b,info);
+  return box;
+ });
+ if(!aktionen.length){
+  const p=d.createElement('p');
+  p.textContent='Für dieses Schiff gibt es derzeit keine passende Original-Dispositionsaktion. Ein fehlendes Angebot ist keine Freigabe.';
+  aktionen.push(p);
+ }
+ $('manager-flotte-aktionen').replaceChildren(...aktionen);
+}
+function managerFlotteAuftrag(schiffId,aktionsId){
+ if(!session||!scope.P3ManagerFlotte||!scope.P3ManagerKarte)return;
+ if(performance.now()<managerFlotteAktionNach)return;
+ try{
+  if(managerFlotteAuswahlId!==schiffId)throw Error('Dieses Schiff ist nicht mehr ausgewählt');
+  const a=session.ansicht(),s=session.zustandReferenz(),angebote=session.angebote();
+  const k=scope.P3ManagerKarte.auswerten(a,s,session.weltReferenz(),angebote);
+  const p=scope.P3ManagerFlotte.auswerten(k.schiffe,angebote,schiffId);
+  if(p.auswahlId!==schiffId)throw Error('Dieses Schiff gehört nicht mehr deinem Konzern');
+  const angebot=p.aktionen.find(q=>q.id===aktionsId);
+  if(!angebot||!angebot.ok)throw Error(angebot?.grund||'Kein freigegebener Originalauftrag für dieses Schiff');
+  managerFlotteAktionNach=performance.now()+350;
+  auftrag(aktionsId); // J8 checks a FRESH quote once again, no direct book mutation.
+ }catch(e){hinweis('Schiffsdisposition gesperrt: '+error(e),true);anzeigen();}
+}
 function anzeigen(){
  if(!session)return;
  const a=session.ansicht(),s=session.zustandReferenz();
@@ -798,6 +875,9 @@ function anzeigen(){
    :mission.find(m=>!m.done).text;
  const allowed=new Set(namen.map(n=>n[0]));
  const alleAngebote=session.angebote();
+ const kartenModell=sektorKarte
+  ?scope.P3ManagerKarte.auswerten(a,s,session.weltReferenz(),alleAngebote):null;
+ if(kartenModell)sektorKarte.anzeigen(kartenModell);
  const offers=alleAngebote.filter(o=>allowed.has(o.id)
    ||/^(ice-|stop-|sil-start-|sil-sell-|freight-|gate-freight-)/.test(o.id));
  $('spieleraktionen').replaceChildren(...offers.map(o=>{
@@ -835,6 +915,7 @@ function anzeigen(){
    else box.append(h,p,b);
    return box;
  }):[(()=>{const p=d.createElement('p');p.textContent='Deine Flotte ist noch leer. Kaufe dein erstes Bergbauschiff in Aldera.';return p;})()]));
+ managerFlotteAnzeigen(kartenModell,alleAngebote,s);
  managerTutor?.auffrischen();
  pilotMenu?.zeichnen();
 }
@@ -982,8 +1063,6 @@ function pilotBinden(){
    screen('raumbereich');
    raum.aktivieren();
  });
- const manager=$('manager-akademie'),pilot=$('pilotenausbildung');
- if(manager&&pilot)manager.after(pilot);
  pilotMenu.zeichnen();
 }
 $('w6-p8h-toggle')?.addEventListener('click',()=>{
@@ -1044,14 +1123,25 @@ $('manager-aussetzen-aktion')?.addEventListener('click',()=>{
 });
 $('manager-abbau-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('abbau'));
 $('manager-transport-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('transport'));
+$('manager-flotte-auswahl')?.addEventListener('change',event=>{
+ managerFlotteAuswahlId=event.currentTarget.value;
+ anzeigen(); // Selection is UI-only. No time step, command or save mutation.
+ $('manager-flotte-auswahl').focus({preventScroll:true});
+});
+let handelsaktionNach=0;
 $('p3-handelsaktion')?.addEventListener('click',()=>{
- if(!session||!scope.P3Handelsweg)return;
+ // The same button changes purpose after a successful order. A double click
+ // must not also accept the newly displayed offer or move the world clock.
+ if(performance.now()<handelsaktionNach||!session||!scope.P3Handelsweg)return;
  try{
   // Re-evaluate each click on actual current Core state; never trust the earlier DOM label.
   const p=scope.P3Handelsweg.auswerten(session.zustandReferenz(),session.angebote(),session.weltReferenz());
   if(!p.bereit)throw Error(p.grund||'Das Originalangebot ist derzeit nicht finanzierbar');
   if(p.art==='zeit')weiter(60); // The same paid world-step as the existing clock button.
-  else if(p.art==='auftrag'&&p.aktion)auftrag(p.aktion); // Original validated J8 command.
+  else if(p.art==='auftrag'&&p.aktion){
+   auftrag(p.aktion); // Original validated J8 command.
+   handelsaktionNach=performance.now()+350;
+  }
  }catch(e){hinweis('Handelsauftrag gesperrt: '+error(e),true);anzeigen();}
 });
 $('p3-invest-aktion')?.addEventListener('click',()=>{
@@ -1243,6 +1333,7 @@ if(scope.ManagerAkademie){
      }
    }
  });
+ $('pilotenausbildung').before($('manager-akademie'));
 }
 firmennamenAnzeigen();cockpitBinden();pilotBinden();menustand();screen('startseite');
 })(globalThis);

@@ -1,0 +1,20 @@
+M0_MANAGER_BROWSER_OK {"kind":"chromium","width":1180,"height":820,"firstHash":"4e86f3fc27a6005a"}
+P3_WATER_BROWSER_OK {"kind":"chromium","width":1180,"height":820,"roundsBefore":4,"roundsAfter":5,"water":12,"wageDebit":192,"buyerBefore":68,"buyerAfter":260,"hash":"b7f8b0f7a891eb2e"}
+P3_NPC_MARKT_BROWSER_OK {"kind":"chromium","width":1180,"height":820,"aktion":"Vorfinanzierte Original-Fracht annehmen","tick":780,"hash":"a76d3876b316cc77"}
+P3_REINVEST_BROWSER_OK {"kind":"chromium","width":1180,"height":820,"rounds":3,"cash":1994,"newMiner":"sh004","alderaBudget":318,"world":33000,"mint":0,"burn":0,"hash":"33fcafb9b01ad9c5"}
+P3_TRADE_BROWSER_OK {"kind":"chromium","width":1180,"height":820,"freight":2,"fees":480,"house":2310,"world":33000}
+M0_MANAGER_BROWSER_OK {"kind":"chromium","width":1024,"height":768,"firstHash":"4e86f3fc27a6005a"}
+P3_WATER_BROWSER_OK {"kind":"chromium","width":1024,"height":768,"roundsBefore":4,"roundsAfter":5,"water":12,"wageDebit":192,"buyerBefore":68,"buyerAfter":260,"hash":"b7f8b0f7a891eb2e"}
+P3_NPC_MARKT_BROWSER_OK {"kind":"chromium","width":1024,"height":768,"aktion":"Vorfinanzierte Original-Fracht annehmen","tick":780,"hash":"a76d3876b316cc77"}
+P3_REINVEST_BROWSER_OK {"kind":"chromium","width":1024,"height":768,"rounds":3,"cash":1994,"newMiner":"sh004","alderaBudget":318,"world":33000,"mint":0,"burn":0,"hash":"33fcafb9b01ad9c5"}
+P3_TRADE_BROWSER_OK {"kind":"chromium","width":1024,"height":768,"freight":2,"fees":480,"house":2310,"world":33000}
+M0_MANAGER_BROWSER_OK {"kind":"chromium","width":820,"height":1180,"firstHash":"4e86f3fc27a6005a"}
+P3_WATER_BROWSER_OK {"kind":"chromium","width":820,"height":1180,"roundsBefore":4,"roundsAfter":5,"water":12,"wageDebit":192,"buyerBefore":68,"buyerAfter":260,"hash":"b7f8b0f7a891eb2e"}
+P3_NPC_MARKT_BROWSER_OK {"kind":"chromium","width":820,"height":1180,"aktion":"Vorfinanzierte Original-Fracht annehmen","tick":780,"hash":"a76d3876b316cc77"}
+P3_REINVEST_BROWSER_OK {"kind":"chromium","width":820,"height":1180,"rounds":3,"cash":1994,"newMiner":"sh004","alderaBudget":318,"world":33000,"mint":0,"burn":0,"hash":"33fcafb9b01ad9c5"}
+P3_TRADE_BROWSER_OK {"kind":"chromium","width":820,"height":1180,"freight":2,"fees":480,"house":2310,"world":33000}
+M0_MANAGER_BROWSER_OK {"kind":"chromium","width":390,"height":844,"firstHash":"4e86f3fc27a6005a"}
+P3_WATER_BROWSER_OK {"kind":"chromium","width":390,"height":844,"roundsBefore":4,"roundsAfter":5,"water":12,"wageDebit":192,"buyerBefore":68,"buyerAfter":260,"hash":"b7f8b0f7a891eb2e"}
+P3_NPC_MARKT_BROWSER_OK {"kind":"chromium","width":390,"height":844,"aktion":"Vorfinanzierte Original-Fracht annehmen","tick":780,"hash":"a76d3876b316cc77"}
+P3_REINVEST_BROWSER_OK {"kind":"chromium","width":390,"height":844,"rounds":3,"cash":1994,"newMiner":"sh004","alderaBudget":318,"world":33000,"mint":0,"burn":0,"hash":"33fcafb9b01ad9c5"}
+P3_TRADE_BROWSER_OK {"kind":"chromium","width":390,"height":844,"freight":2,"fees":480,"house":2310,"world":33000}

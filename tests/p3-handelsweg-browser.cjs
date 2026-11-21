@@ -46,6 +46,12 @@ const server=http.createServer((req,res)=>{
     assert.match(await page.locator('#p3-handelsziel').textContent(),/Miner erwerben/);
     assert.equal(await page.locator('#p3-handelsaktion').isEnabled(),true);
     const handel=page.locator('#p3-handelsaktion');
+    // Every tap in this regression is a distinct decision after the updated
+    // recommendation, rather than a rapid repeat of the previous tap.
+    const handelBewusstTippen=async()=>{
+     await page.waitForTimeout(375);
+     await handel.tap();
+    };
     assert.match(await handel.textContent(),/Bergbauschiff kaufen/);
     assert.equal(await page.locator('#p3-handelsdetails').getAttribute('open'),null);
     const knopf=await handel.boundingBox();
@@ -82,7 +88,7 @@ const server=http.createServer((req,res)=>{
     for(let i=0;i<2;i++){
      assert.equal(await handel.textContent(),'60 Spielminuten weiter');
      if(i===0)await page.locator('#manager-zeit-aktion').tap();
-     else await handel.tap();
+     else await handelBewusstTippen();
     }
     assert.equal(await handel.textContent(),'Eisfracht transportieren');
     assert.equal(await freight.isEnabled(),true);
@@ -93,7 +99,7 @@ const server=http.createServer((req,res)=>{
     for(let i=0;i<2;i++){
      assert.equal(await handel.textContent(),'60 Spielminuten weiter');
      if(i===0)await page.locator('#manager-zeit-aktion').tap();
-     else await handel.tap();
+     else await handelBewusstTippen();
     }
     assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/Frachterlöse 240 ISK/);
     assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/F4-Pilotenlohn 120 ISK/);
@@ -132,7 +138,7 @@ const server=http.createServer((req,res)=>{
      if(completed>=2)break;
      assert.equal(await page.locator('#p3-handelsaktion').isEnabled(),true,
        'Original P3 offer blocked after '+completed+' deliveries: '+await page.locator('#p3-handelssperre').textContent());
-     await page.locator('#p3-handelsaktion').tap();
+     await handelBewusstTippen();
     }
     const final=await page.evaluate(k=>localStorage.getItem(k),SLOT),s=JSON.parse(final);
     assert.ok(s.kanon.spielerFrachten.auftraege.filter(a=>a.end!==null).length>=2);
@@ -157,7 +163,7 @@ const server=http.createServer((req,res)=>{
      const json=await page.evaluate(k=>localStorage.getItem(k),SLOT),raw=JSON.parse(json);
      if((raw.kanon.spielerFrachten?.auftraege||[]).filter(a=>a.end!==null).length>=3)break;
      assert.equal(await page.locator('#p3-handelsaktion').isEnabled(),true);
-     await page.locator('#p3-handelsaktion').tap();
+     await handelBewusstTippen();
     }
     const preText=await page.evaluate(k=>localStorage.getItem(k),SLOT),pre=JSON.parse(preText);
     assert.equal(pre.kanon.spielerFrachten.auftraege.filter(a=>a.end!==null).length,3);
@@ -204,7 +210,7 @@ const server=http.createServer((req,res)=>{
      }
      assert.equal(await page.locator('#p3-handelsaktion').isEnabled(),true,
        'No legal buyer repayment path after '+i+' more player decisions');
-     await page.locator('#p3-handelsaktion').tap();
+     await handelBewusstTippen();
     }
     assert.ok(block,'original buyer shortage with a real affordable private-water route');
     const cost=wInvest.rules.w5n.charge*wInvest.rules.w5n.eisPreis;
@@ -225,7 +231,7 @@ const server=http.createServer((req,res)=>{
      const latest=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
      if(latest.kanon.spielerFrachten.auftraege.filter(a=>a.end!==null).length>existingRounds)break;
      assert.equal(await page.locator('#p3-handelsaktion').isEnabled(),true);
-     await page.locator('#p3-handelsaktion').tap();
+     await handelBewusstTippen();
     }
     const afterWaterText=await page.evaluate(k=>localStorage.getItem(k),SLOT);
     const afterWater=JSON.parse(afterWaterText);

@@ -85,10 +85,10 @@
 <section id="spielwelt" class="world" hidden>
  <div class="worldbar">
   <div><span class="eyebrow">DEIN KONZERN / ALDERA-SEKTOR</span><h2>Kommandobrücke</h2></div>
-  <div class="worldbar-right"><span id="w6-status" class="w6-world-indicator" hidden>Erweiterte Wirtschaft aktiv</span><span class="world-balance"><small>KONZERNKASSE</small><strong id="hausgeld">–</strong></span><span class="world-balance"><small>EIGENE SCHIFFE</small><strong id="schiff-anzahl">–</strong></span><span class="world-balance"><small>WELTZEIT</small><strong id="zeit">–</strong></span><button id="welt-sichern" type="button" class="ghost">Sichern</button></div>
+  <div class="worldbar-right"><span id="w6-status" class="w6-world-indicator" hidden>Erweiterte Wirtschaft aktiv</span><span class="world-balance"><small>KONZERNKASSE</small><strong id="hausgeld">–</strong></span><span class="world-balance"><small>EIGENE SCHIFFE</small><strong id="schiff-anzahl">–</strong></span><span class="world-balance"><small>LAUFENDE AUFTRÄGE</small><strong id="sektor-auftraege">–</strong></span><span class="world-balance"><small>WELTZEIT</small><strong id="zeit">–</strong></span><button id="welt-sichern" type="button" class="ghost">Sichern</button></div>
  </div>
  <section id="p3-handelsauftrag" class="p3-handelsauftrag karriere-handelsweg" aria-label="Wiederholbarer Eis-Handelsauftrag">
-  <h3>Eishandel</h3>
+  <h3>Nächster Schritt · Eishandel</h3>
   <p id="p3-kaufhinweis" hidden>Kaufe zuerst beide Schiffe, bevor du Wirtschaftszeit voranschreiten lässt. Andere Konzerne können den verfügbaren Frachter kaufen.</p>
   <p id="p3-handelsziel" class="karriere-handelsziel"></p>
   <p id="p3-handelsanleitung"></p>
@@ -101,18 +101,85 @@
    <p id="p3-handelssperre-detail"></p>
   </details>
  </section>
- <section id="pilotenausbildung" class="piloten-akademie" aria-label="Pilotenakademie">
-  <details id="pilotenausbildung-details">
-   <summary><span class="piloten-akademie-tag">APHROS ACADEMY · FLUGAUSBILDUNG</span>
-    <strong>Pilotenakademie</strong><span class="piloten-akademie-count">13 Flugübungen</span></summary>
-   <p class="piloten-akademie-hint">Lerne mit deinem eigenen Schiff. Wähle es unter „Meine Flotte“ aus, kehre zur Kommandobrücke zurück und starte eine Mission. Alle Flugkosten und Warenbewegungen bleiben Teil deiner Karriere.</p>
-   <h3>Dein erster Flug</h3>
-   <p id="missions-text"></p>
-   <ol class="missions" id="missions" aria-label="Optionales Flugjournal"></ol>
-   <div id="pilotenausbildung-karten"></div>
-  </details>
+ <p id="welt-meldung" role="status" aria-live="polite" class="game-message"></p>
+ <section id="management-spielfeld" aria-labelledby="sektor-titel">
+  <div class="sektor-kopf">
+   <h3 id="sektor-titel">Sektorkarte</h3>
+   <label for="sektor-auswahl">Station oder Schiff <select id="sektor-auswahl"></select></label>
+  </div>
+  <div class="sektor-spielfeld">
+   <div id="sektor-karte" aria-label="Wirtschaftsstandorte und eigene Schiffe" role="group"></div>
+   <section id="sektor-details" aria-label="Ausgewähltes Objekt" aria-live="polite"></section>
+  </div>
  </section>
+ <div class="time-buttons sektor-zeit" role="group" aria-label="Weltzeit fortsetzen">
+<button data-advance="1">+1 Minute</button><button data-advance="10">+10 Minuten</button><button data-advance="60">+60 Minuten</button><button data-advance="1440">+1 Spieltag</button>
+ </div>
  <div class="game-grid">
+  <section class="world-center" aria-label="Spielaktionen und Flotte">
+   <div class="tabs" role="group" aria-label="Konzerntabs">
+    <button id="tab-auftraege" data-tab="auftraege" aria-pressed="true">Aufträge</button>
+    <button id="tab-flotte" data-tab="flotte" aria-pressed="false">Meine Flotte</button>
+    <button id="tab-universum" data-tab="universum" aria-pressed="false">Wirtschaftsbericht</button>
+    <button id="tab-jaeger" data-tab="jaeger" aria-pressed="false">Jägerproduktion</button>
+   </div>
+   <div id="panel-auftraege" class="tab-panel">
+    <div class="panel-head"><div><p class="eyebrow">EIGENTUM / BEZAHLTE ENTSCHEIDUNGEN</p><h3>Deine nächsten Schritte</h3></div></div>
+    <section id="manager-disposition" class="manager-disposition" aria-label="Eigene Förder- und Transportaufträge">
+     <h4>Deine Auftragszentrale</h4>
+     <p id="manager-disposition-kassen" class="economy-foot">Originale Lager und Firmenkassen erscheinen nach dem Start.</p>
+     <div class="manager-disposition-grid">
+      <article class="manager-disposition-card" aria-label="Eisförderung disponieren">
+       <strong>1. Bergbau · Aldera</strong>
+       <p id="manager-abbau-status"></p>
+       <button id="manager-abbau-aktion" type="button" disabled>Bergbauangebot prüfen</button>
+       <p id="manager-abbau-grund" class="p3-sperre" role="status" aria-live="polite"></p>
+      </article>
+      <article class="manager-disposition-card" aria-label="Eigenen Eisfrachter beauftragen">
+       <strong>2. Transport · Aldera</strong>
+       <p id="manager-transport-status"></p>
+       <button id="manager-transport-aktion" type="button" disabled>Frachtangebot prüfen</button>
+       <p id="manager-transport-grund" class="p3-sperre" role="status" aria-live="polite"></p>
+      </article>
+     </div>
+     <section id="manager-betrieb" class="manager-betrieb" aria-label="Originale Betriebsrechnung und Weltzeit">
+      <h5>Betrieb · Geld, Löhne und Schiffsabnutzung</h5>
+      <p id="manager-betrieb-geld" class="note"></p>
+      <p id="manager-betrieb-frachten" class="note"></p>
+      <p id="manager-betrieb-risiko" class="economy-foot">Die gezeigten Buchwerte und Frachtbelege sind keine vollständige Gewinn- und Verlustrechnung.</p>
+      <div class="manager-betrieb-aktionen">
+       <button id="manager-zeit-aktion" type="button">60 Spielminuten weiter</button>
+       <button id="manager-aussetzen-aktion" type="button" disabled>Eigene Förderung beenden</button>
+      </div>
+      <p id="manager-aussetzen-grund" class="economy-foot" aria-live="polite"></p>
+     </section>
+     <p class="economy-foot">Aufträge werden beim Antippen erneut vom Originalkern geprüft. Eine freie Hülle, zahlungsfähige Käufer und echte Ware sind nicht garantiert. Die Weltzeit läuft nur über die bestehenden Zeittasten.</p>
+    </section>
+    <div id="spieleraktionen" class="orders"></div>
+   </div>
+   <div id="panel-flotte" class="tab-panel" hidden><div class="panel-head"><p class="eyebrow">EIGENE SCHIFFE</p><h3>Deine Flotte</h3></div><div id="spielerschiffe" class="ships"></div></div>
+   <div id="panel-universum" class="tab-panel" hidden><div class="panel-head"><p class="eyebrow">SEKTORLAGE</p><h3>Eine Welt voller Unternehmen</h3></div><p class="economy-intro">Aktuelle Lager, Firmenkonten und geprüfte Kaufangebote aus deiner Karriere. Die unabhängigen Unternehmen bleiben eigenständig.</p>
+    <div id="sektorwirtschaft" class="economy-terminal" aria-label="Aktueller Wirtschaftsbericht">Der Wirtschaftsbericht erscheint nach dem Start einer Karriere.</div></div>
+   <div id="panel-jaeger" class="tab-panel" hidden>
+    <div class="panel-head"><p class="eyebrow">INDUSTRIE / SCHIFFBAU</p><h3>Dein erster Jäger</h3></div>
+    <p class="economy-intro">Verfolge die Lieferkette bis zur fertigen Nadir-Hülle. Material, Firmenkassen, bezahlte Werftarbeit und Eigentum stammen aus derselben Karriere. Andere Firmen entscheiden weiterhin selbst.</p>
+    <p class="note">Nach dem Kauf deines Jägers: unter „Meine Flotte“ das Schiff in Nadir selbst fliegen, am Dock die <strong>Patrouille (3 Bojen)</strong> starten, kontrolliert fliegen und zurückkehren. Die Übung benötigt echten bezahlten Flug, erzeugt aber weder Gratis-ISK noch Beute. Nach einem Reload startet sie neu.</p>
+    <p class="note"><strong>Virtuelles Jägerduell:</strong> nach einem finanzierten Abdockflug in Nadir auf „Duelltraining“ tippen. Drohne anfliegen, Ziel ausrichten, Übungsprojektile abfeuern und gegnerischem Übungsfeuer ausweichen. Trefferpunkte sind reine Trainingswerte – keine Munition, Hüllenschäden, Beute oder ISK-Belohnungen. Die Übung ist nicht Teil deines JSON-Weltspielstands.</p>
+    <div id="jaeger-akte" class="jaeger-akte" aria-label="Aktuelle Jäger-Produktionsakte">Die Produktionsakte erscheint nach dem Karrierestart.</div>
+    <section aria-label="Deine spielbaren Beiträge"><h4>Deine spielbaren Beiträge</h4><p id="jaeger-beitrag-hinweis" class="note"></p><div id="jaeger-beitrag-aktionen" class="orders"></div><p id="jaeger-rohstoffe" class="note"></p></section>
+    <section aria-label="Siliziumversorgung und finanzielle Engpässe"><h4>Siliziumversorgung · Förder- und Finanzierungsstand</h4>
+     <div id="p8-silizium-lage" class="economy-terminal" aria-live="off">Die geprüfte Versorgungsdiagnose erscheint nach dem Karrierestart.</div>
+     <div id="w6-p8h-controls" hidden>
+      <button type="button" id="w6-p8h-toggle">Eigenfinanzierte NPC-Folgeversorgung aktivieren</button>
+      <p id="w6-p8h-status" class="note" aria-live="polite">Nur für die bewusst gewählte Regel207-Forschung. Es gibt keine garantierten Aufträge oder Rettungsgelder.</p>
+     </div>
+     <p class="note">Weitere Systeme und Lagerstätten erschließen sich durch finanzierte Aufträge. Neue Waren entstehen nur durch tatsächlichen Bergbau und Produktion.</p>
+    </section>
+    <section aria-label="Produktionsrechte und Finanzierung"><h4>Was die Unternehmen beitragen müssen</h4><div id="jaeger-sperren"></div><p id="jaeger-finanzierung" class="note"></p></section>
+    <div class="jaeger-aktion"><button id="jaeger-kaufweg" type="button" disabled>Zum Jäger-Kaufangebot</button>
+    <p id="jaeger-autoritaet" class="economy-foot">Kein Auftrag an fremde Unternehmen ohne deren eigene Freigabe.</p></div>
+   </div>
+  </section>
   <section class="task-panel" aria-label="Konzernentwicklung und Spielstand">
    <section id="p3-investition" class="p3-handelsauftrag p3-investition" aria-label="Kapital und Reinvestition" hidden>
     <p class="eyebrow">KAPITEL 03 / ENTSCHEIDEN &amp; INVESTIEREN</p>
@@ -190,70 +257,6 @@
    <button id="welt-export" type="button" class="ghost">Spielstand als JSON sichern</button>
    <p class="footnote">Autosave nur im eigenen Karriere-Slot dieser Seite. Der alte Wirtschaftsspielstand bleibt unberührt.</p>
   </section>
-  <section class="world-center" aria-label="Spielaktionen und Flotte">
-   <div class="tabs" role="group" aria-label="Konzerntabs">
-    <button id="tab-auftraege" data-tab="auftraege" aria-pressed="true">Aufträge</button>
-    <button id="tab-flotte" data-tab="flotte" aria-pressed="false">Meine Flotte</button>
-    <button id="tab-universum" data-tab="universum" aria-pressed="false">Das Universum</button>
-    <button id="tab-jaeger" data-tab="jaeger" aria-pressed="false">Jägerproduktion</button>
-   </div>
-   <div id="panel-auftraege" class="tab-panel">
-    <div class="panel-head"><div><p class="eyebrow">EIGENTUM / BEZAHLTE ENTSCHEIDUNGEN</p><h3>Deine nächsten Schritte</h3></div></div>
-    <section id="manager-disposition" class="manager-disposition" aria-label="Eigene Förder- und Transportaufträge">
-     <h4>Deine Auftragszentrale</h4>
-     <p id="manager-disposition-kassen" class="economy-foot">Originale Lager und Firmenkassen erscheinen nach dem Start.</p>
-     <div class="manager-disposition-grid">
-      <article class="manager-disposition-card" aria-label="Eisförderung disponieren">
-       <strong>1. Bergbau · Aldera</strong>
-       <p id="manager-abbau-status"></p>
-       <button id="manager-abbau-aktion" type="button" disabled>Bergbauangebot prüfen</button>
-       <p id="manager-abbau-grund" class="p3-sperre" role="status" aria-live="polite"></p>
-      </article>
-      <article class="manager-disposition-card" aria-label="Eigenen Eisfrachter beauftragen">
-       <strong>2. Transport · Aldera</strong>
-       <p id="manager-transport-status"></p>
-       <button id="manager-transport-aktion" type="button" disabled>Frachtangebot prüfen</button>
-       <p id="manager-transport-grund" class="p3-sperre" role="status" aria-live="polite"></p>
-      </article>
-     </div>
-     <section id="manager-betrieb" class="manager-betrieb" aria-label="Originale Betriebsrechnung und Weltzeit">
-      <h5>Betrieb · Geld, Löhne und Schiffsabnutzung</h5>
-      <p id="manager-betrieb-geld" class="note"></p>
-      <p id="manager-betrieb-frachten" class="note"></p>
-      <p id="manager-betrieb-risiko" class="economy-foot">Die gezeigten Buchwerte und Frachtbelege sind keine vollständige Gewinn- und Verlustrechnung.</p>
-      <div class="manager-betrieb-aktionen">
-       <button id="manager-zeit-aktion" type="button">60 Spielminuten weiter</button>
-       <button id="manager-aussetzen-aktion" type="button" disabled>Eigene Förderung beenden</button>
-      </div>
-      <p id="manager-aussetzen-grund" class="economy-foot" aria-live="polite"></p>
-     </section>
-     <p class="economy-foot">Aufträge werden beim Antippen erneut vom Originalkern geprüft. Eine freie Hülle, zahlungsfähige Käufer und echte Ware sind nicht garantiert. Die Weltzeit läuft nur über die bestehenden Zeittasten.</p>
-    </section>
-    <div id="spieleraktionen" class="orders"></div>
-   </div>
-   <div id="panel-flotte" class="tab-panel" hidden><div class="panel-head"><p class="eyebrow">EIGENE SCHIFFE</p><h3>Deine Flotte</h3></div><div id="spielerschiffe" class="ships"></div></div>
-   <div id="panel-universum" class="tab-panel" hidden><div class="panel-head"><p class="eyebrow">SEKTORLAGE</p><h3>Eine Welt voller Unternehmen</h3></div><p class="economy-intro">Aktuelle Lager, Firmenkonten und geprüfte Kaufangebote aus deiner Karriere. Die unabhängigen Unternehmen bleiben eigenständig.</p>
-    <div id="sektorwirtschaft" class="economy-terminal" aria-label="Aktueller Wirtschaftsbericht">Der Wirtschaftsbericht erscheint nach dem Start einer Karriere.</div></div>
-   <div id="panel-jaeger" class="tab-panel" hidden>
-    <div class="panel-head"><p class="eyebrow">INDUSTRIE / SCHIFFBAU</p><h3>Dein erster Jäger</h3></div>
-    <p class="economy-intro">Verfolge die Lieferkette bis zur fertigen Nadir-Hülle. Material, Firmenkassen, bezahlte Werftarbeit und Eigentum stammen aus derselben Karriere. Andere Firmen entscheiden weiterhin selbst.</p>
-    <p class="note">Nach dem Kauf deines Jägers: unter „Meine Flotte“ das Schiff in Nadir selbst fliegen, am Dock die <strong>Patrouille (3 Bojen)</strong> starten, kontrolliert fliegen und zurückkehren. Die Übung benötigt echten bezahlten Flug, erzeugt aber weder Gratis-ISK noch Beute. Nach einem Reload startet sie neu.</p>
-    <p class="note"><strong>Virtuelles Jägerduell:</strong> nach einem finanzierten Abdockflug in Nadir auf „Duelltraining“ tippen. Drohne anfliegen, Ziel ausrichten, Übungsprojektile abfeuern und gegnerischem Übungsfeuer ausweichen. Trefferpunkte sind reine Trainingswerte – keine Munition, Hüllenschäden, Beute oder ISK-Belohnungen. Die Übung ist nicht Teil deines JSON-Weltspielstands.</p>
-    <div id="jaeger-akte" class="jaeger-akte" aria-label="Aktuelle Jäger-Produktionsakte">Die Produktionsakte erscheint nach dem Karrierestart.</div>
-    <section aria-label="Deine spielbaren Beiträge"><h4>Deine spielbaren Beiträge</h4><p id="jaeger-beitrag-hinweis" class="note"></p><div id="jaeger-beitrag-aktionen" class="orders"></div><p id="jaeger-rohstoffe" class="note"></p></section>
-    <section aria-label="Siliziumversorgung und finanzielle Engpässe"><h4>Siliziumversorgung · Förder- und Finanzierungsstand</h4>
-     <div id="p8-silizium-lage" class="economy-terminal" aria-live="off">Die geprüfte Versorgungsdiagnose erscheint nach dem Karrierestart.</div>
-     <div id="w6-p8h-controls" hidden>
-      <button type="button" id="w6-p8h-toggle">Eigenfinanzierte NPC-Folgeversorgung aktivieren</button>
-      <p id="w6-p8h-status" class="note" aria-live="polite">Nur für die bewusst gewählte Regel207-Forschung. Es gibt keine garantierten Aufträge oder Rettungsgelder.</p>
-     </div>
-     <p class="note">Weitere Systeme und Lagerstätten erschließen sich durch finanzierte Aufträge. Neue Waren entstehen nur durch tatsächlichen Bergbau und Produktion.</p>
-    </section>
-    <section aria-label="Produktionsrechte und Finanzierung"><h4>Was die Unternehmen beitragen müssen</h4><div id="jaeger-sperren"></div><p id="jaeger-finanzierung" class="note"></p></section>
-    <div class="jaeger-aktion"><button id="jaeger-kaufweg" type="button" disabled>Zum Jäger-Kaufangebot</button>
-    <p id="jaeger-autoritaet" class="economy-foot">Kein Auftrag an fremde Unternehmen ohne deren eigene Freigabe.</p></div>
-   </div>
-  </section>
   <aside class="world-right" aria-label="Wirtschaftsnachrichten">
    <p class="eyebrow">NACHRICHTEN AUS DEM SEKTOR</p>
    <h3>Die Wirtschaft läuft weiter.</h3>
@@ -261,10 +264,19 @@
    <div class="world-stat"><span>Aldera · Kasse</span><strong id="aldera-kasse">–</strong></div>
    <div class="world-stat"><span>Nadir · Kasse</span><strong id="nadir-kasse">–</strong></div>
    <p class="note">Jede Investition zählt. Produktion, Flug und Transport belasten reale Firmenkassen. Andere Konzerne verfolgen ihre eigenen Ziele.</p>
-   <div class="time-buttons"><button data-advance="1">+1 Minute</button><button data-advance="10">+10 Minuten</button><button data-advance="60">+60 Minuten</button><button data-advance="1440">+1 Spieltag</button></div>
   </aside>
  </div>
- <div id="welt-meldung" role="status" aria-live="polite" class="game-message">Wähle einen Auftrag oder dein Schiff.</div>
+ <section id="pilotenausbildung" class="piloten-akademie" aria-label="Pilotenakademie">
+  <details id="pilotenausbildung-details">
+   <summary><span class="piloten-akademie-tag">APHROS ACADEMY · FLUGAUSBILDUNG</span>
+    <strong>Pilotenakademie</strong><span class="piloten-akademie-count">13 Flugübungen</span></summary>
+   <p class="piloten-akademie-hint">Lerne mit deinem eigenen Schiff. Wähle es unter „Meine Flotte“ aus, kehre zur Kommandobrücke zurück und starte eine Mission. Alle Flugkosten und Warenbewegungen bleiben Teil deiner Karriere.</p>
+   <h3>Dein erster Flug</h3>
+   <p id="missions-text"></p>
+   <ol class="missions" id="missions" aria-label="Optionales Flugjournal"></ol>
+   <div id="pilotenausbildung-karten"></div>
+  </details>
+ </section>
 </section>
 <section id="raumbereich" aria-label="Grafisches Raumcockpit deiner Karriere" hidden>
 <h2 class="raum-titel">Dein Schiff <span class="sub">– Trägheit spüren. Ziele erreichen. Kurs halten.</span></h2>
@@ -355,5 +367,6 @@
 <script src="p3-npc-markt.js"></script>
 <script src="p3-npc-werft.js"></script>
 <script src="p3-industrie.js"></script>
+<script src="p3-manager-karte.js"></script>
 <script src="spiel.js"></script>
 </body></html>

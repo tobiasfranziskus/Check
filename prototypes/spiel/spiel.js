@@ -94,7 +94,16 @@ function neueSitzung(){
  return scope.J8KonzernSitzung.erstellen();
 }
 const sektorKarte=scope.P3ManagerKarte?.verbinden($('management-spielfeld'),{
- konzernname,titel,anzeigetext,fmt,
+ konzernname,titel,fmt,
+ waehleSchiff:(id,karte)=>{
+  managerFlotteAuswahlId=id;
+  managerFlotteAnzeigen(karte,session.angebote(),session.zustandReferenz());
+ },
+ oeffneFlotte:id=>{
+  if(managerFlotteAuswahlId!==id)return;
+  tabZeigen('flotte');
+  $('manager-flotte-auswahl').focus();
+ },
  waehleAngebot:id=>{
   tabZeigen('auftraege');
   [...$('spieleraktionen').querySelectorAll('[data-action]')]
@@ -814,7 +823,7 @@ function managerFlotteAnzeigen(kartenModell,angebote,zustand){
    ?(aktion.kosten!==null&&aktion.minuten!==null
      ?'Original-Freigabe · '+fmt(aktion.kosten)+' ISK / '+fmt(aktion.minuten)+' Spielminuten. Bei Klick erneut geprüft.'
      :'Original-Freigabe · bei Klick erneut geprüft.')
-   :'Original-Sperre: '+anzeigetext(aktion.grund);
+   :'Original-Sperre: '+aktion.grund;
   if(!aktion.ok)info.className='p3-sperre';
   b.addEventListener('click',()=>managerFlotteAuftrag(p.auswahlId,aktion.id));
   box.append(b,info);
@@ -1125,6 +1134,7 @@ $('manager-abbau-aktion')?.addEventListener('click',()=>managerDispositionsAuftr
 $('manager-transport-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('transport'));
 $('manager-flotte-auswahl')?.addEventListener('change',event=>{
  managerFlotteAuswahlId=event.currentTarget.value;
+ sektorKarte?.eigenesSchiffWaehlen(managerFlotteAuswahlId);
  anzeigen(); // Selection is UI-only. No time step, command or save mutation.
  $('manager-flotte-auswahl').focus({preventScroll:true});
 });

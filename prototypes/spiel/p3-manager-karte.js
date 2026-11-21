@@ -23,7 +23,7 @@ function auswerten(a,s,w,angebote){
  });
  const eis=s.w5n?.frachtauftrag,erz=s.w3?.auftrag,transfer=s.w5ac?.active;
  const silizium=s.kanon.silizium?.auftrag;
- const schiffe=a.schiffe.map(sh=>{
+ function schiffAuswerten(sh){
   const original=s.ships[sh.id];
   const fracht=eis?.schiff===sh.id?eis:erz?.schiff===sh.id?erz:null;
   const ueberfuehrung=transfer?.id===sh.id&&transfer.owner===original.owner;
@@ -42,13 +42,19 @@ function auswerten(a,s,w,angebote){
   return {...sh,name:(klassen[sh.klasse]||sh.klasse)+' · '+sh.id,
    owner:original.owner,ort:ortText,auftrag,buchwert:w.buchwert(s,sh.id),
    gruppe:strecke?'strecke':reise?'unterwegs':sh.system,
-   angebote:angebote.filter(o=>['ice-','stop-','freight-','gate-freight-','sil-start-','sil-sell-']
-    .some(prefix=>o.id===prefix+sh.id))};
- });
- return {stationen,schiffe,auftraege:schiffe.filter(sh=>sh.auftrag).length};
+   angebote:original.owner==='house'?angebote.filter(o=>['ice-','stop-','freight-','gate-freight-','sil-start-','sil-sell-']
+    .some(prefix=>o.id===prefix+sh.id)):[]};
+ }
+ const schiffe=a.schiffe.map(schiffAuswerten);
+ const fremdeSchiffe=Object.entries(s.ships).filter(([,sh])=>sh.owner!=='house')
+  .sort(([a],[b])=>a.localeCompare(b)).map(([id,sh])=>schiffAuswerten({
+   id,klasse:sh.klasse,system:sh.system,phase:sh.phase,flug:sh.flug?.lage||null,
+   ladung:Object.entries(sh.ladung||{}).filter(([,n])=>n>0).map(([ware,n])=>ware+': '+n).join(' · ')||'leer'
+  }));
+ return {stationen,schiffe,fremdeSchiffe,auftraege:schiffe.filter(sh=>sh.auftrag).length};
 }
 
-function verbinden(wurzel,{waehleAngebot,konzernname,titel,anzeigetext,fmt}){
+function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,titel,fmt}){
  const d=wurzel.ownerDocument,$=id=>d.getElementById(id);
  const auswahl=$('sektor-auswahl'),karte=$('sektor-karte'),details=$('sektor-details');
  let modell=null,gewaehlt=null;
@@ -78,6 +84,12 @@ function verbinden(wurzel,{waehleAngebot,konzernname,titel,anzeigetext,fmt}){
   const liste=element('dl');
   for(const [label,value] of vals)if(value!==null)liste.append(element('dt',label),element('dd',value));
   details.replaceChildren(element('h3',obj.name),liste);
+  if(obj.owner==='house'){
+   const button=element('button','In Flotte disponieren','sektor-angebot');
+   button.type='button';
+   button.addEventListener('click',()=>oeffneFlotte(obj.id));
+   details.append(button);
+  }
   if(!obj.angebote.length)return;
   const angebote=element('details'),verfuegbar=obj.angebote.filter(o=>o.ok).length;
   angebote.open=details.dataset.object===gewaehlt&&details.dataset.offen==='true';
@@ -89,7 +101,7 @@ function verbinden(wurzel,{waehleAngebot,konzernname,titel,anzeigetext,fmt}){
     button.addEventListener('click',()=>waehleAngebot(angebot.id));
     angebote.append(button);
    }else{
-    angebote.append(element('p',titel(angebot)+' · '+anzeigetext(angebot.reason||'Zurzeit gesperrt')));
+    angebote.append(element('p',titel(angebot)+' · '+(angebot.reason||'Zurzeit gesperrt')));
    }
   }
   angebote.addEventListener('toggle',()=>{
@@ -99,12 +111,13 @@ function verbinden(wurzel,{waehleAngebot,konzernname,titel,anzeigetext,fmt}){
   details.dataset.offen=String(angebote.open);
   details.append(angebote);
  }
- function waehlen(id){
-  const obj=[...modell.stationen,...modell.schiffe].find(obj=>key(obj)===id);
+ function waehlen(id,benutzerauswahl=false){
+  const obj=[...modell.stationen,...modell.schiffe,...modell.fremdeSchiffe].find(obj=>key(obj)===id);
   if(!obj)return;
   gewaehlt=id;
   markieren();
   zeigeDetails(obj);
+  if(benutzerauswahl&&obj.owner==='house')waehleSchiff(obj.id,modell);
  }
  function knopf(obj,klasse,untertitel){
   const b=element('button',null,klasse);
@@ -112,21 +125,29 @@ function verbinden(wurzel,{waehleAngebot,konzernname,titel,anzeigetext,fmt}){
   b.dataset.sektor=key(obj);
   b.append(element('strong',obj.name));
   if(untertitel)b.append(element('small',untertitel));
-  b.addEventListener('click',()=>waehlen(key(obj)));
+  b.addEventListener('click',()=>waehlen(key(obj),true));
   return b;
  }
- auswahl.addEventListener('change',()=>waehlen(auswahl.value));
+ auswahl.addEventListener('change',()=>waehlen(auswahl.value,true));
  return {
+  eigenesSchiffWaehlen(id){if(modell?.schiffe.some(sh=>sh.id===id))waehlen('schiff:'+id);},
   zuruecksetzen(){gewaehlt=null;details.dataset.offen='false';},
   anzeigen(neu){
    const fokus=d.activeElement?.dataset?.sektor;
    modell=neu;
-   const objekte=[...neu.stationen,...neu.schiffe];
-   auswahl.replaceChildren(...objekte.map(obj=>{
+   const objekte=[...neu.stationen,...neu.schiffe,...neu.fremdeSchiffe];
+   function optionFuer(obj){
     const option=element('option',obj.owner?obj.name+' · '+obj.ort:obj.name);
     option.value=key(obj);
     return option;
-   }));
+   }
+   auswahl.replaceChildren(...neu.stationen.map(optionFuer),...neu.schiffe.map(optionFuer));
+   if(neu.fremdeSchiffe.length){
+    const gruppe=element('optgroup');
+    gruppe.label='Fremde Schiffe';
+    gruppe.append(...neu.fremdeSchiffe.map(optionFuer));
+    auswahl.append(gruppe);
+   }
    const uebrig=new Set(neu.schiffe);
    function schiffsgruppe(gruppe,klasse){
     const box=element('div',null,klasse);

@@ -20,13 +20,16 @@ Der Browser-Akzeptanztest ist in `tests/p3-handelsweg-browser.cjs` integriert un
 
 | Prüfung | Tatsächliches Ergebnis |
 | --- | --- |
+| Node22 in GitHub Actions | **567/567** Tests bestanden, 0 Fehler, 0 Skips, 0 Abbrüche auf `439e362`. Der separate bedingte Job zum Sicherheitsgeografie-Vergleich war ausgelassen. [JavaScript-Lauf #44904943497](https://github.com/tobiasfranziskus/Check/actions/runs/44904943497) |
+| Node 22.23.4 lokal, vollständige Suite | **567/567** Tests bestanden, 0 Fehler, 0 Skips, 0 Abbrüche, Exit 0 im Wiederholungslauf mit den erforderlichen Prozessrechten. |
 | Node 22.23.4, gezielte Regression | 10/10 Einzeltests bestanden, 0 Fehler, 0 Skips, 0 Abbrüche. Handelsweg, Manager-Disposition und unabhängiger S2-Audit. |
 | Chromium 154, Touch 1024 × 768, regulärer Start | Miner und Frachter für 600 und 750 ISK gekauft, 1.650 ISK nach Kauf. Eisförderung bei Tick 0 beauftragt. Save-/Audit-Hash `e75972b4126fd7bd`. |
 | Chromium 154, Touch 1024 × 768, ausverkaufter Frachter | Sperrgrund „kein Komplettschiff auf Lager“, danach rechtmäßig buchbare Eisförderung bei Tick 1. Save-/Audit-Hash `7333433214bb2d44`. |
 | Chromium 154, bestehender P3-Handelsweg | Alle vier Touchgrößen bestanden: 1180 × 820, 1024 × 768, 820 × 1180 und 390 × 844. Enthält bestehende Fracht-, Reinvestitions-, Wasser- und NPC-Marktprüfungen. Erste abgerechnete F4-Rundfahrt überall Hash `4e86f3fc27a6005a`. |
 | Original-Welt in beiden Browserfällen | 33.000 ISK Weltgeld, Mint/Burn 0, Originalaudit erfolgreich. Cockpit blieb geschlossen. |
 | Root/NAS-Dateiprüfung | `node scripts/build-w5-singlefile.mjs --check` meldet `W5_SINGLEFILE_OK`. Browserpfad per lokalem statischen HTTP. |
-| WebKit lokal | Browserlauf nicht gestartet. Der Download des Playwright-Browsers wurde mit HTTP 403 abgewiesen. Die neue Abnahme ist im PR für die vorhandene WebKit-CI vorgesehen. |
+| Chromium und WebKit in GitHub Actions | Die M-UX1-Abnahme und die Vier-Größen-Regression bestanden in beiden Browserjobs auf `5980322`. Auch die separaten S1/S2-Schritte bestanden dort. Der P1-HTTP-Schritt verglich die veröffentlichte Root mit `main` und erreichte den öffentlichen Karriere-Einstieg. [P1-Lauf #44905191939](https://github.com/tobiasfranziskus/Check/actions/runs/44905191939) |
+| WebKit lokal | Browserlauf nicht gestartet. Der Playwright-Download wurde mit HTTP 403 abgewiesen. |
 | Öffentliche Pages, echtes iPad Safari, privates NAS | Für M-UX1 nicht geprüft. |
 
 Beim ersten neuen Chromium-Lauf musste der Test vor der Storage-Abfrage explizit auf die Ziel-URL warten. Der erste parallele S1/S2-Check deckte außerdem auf, dass die 350-ms-Sperre für denselben Auftrag bereits während der teuren Neudarstellung ablaufen konnte. Der Start der Sperrfrist liegt jetzt nach der Neudarstellung. Die neue Startabnahme mit schnellem Zweittipp und beide Startpfade waren danach erfolgreich.
@@ -34,4 +37,4 @@ Beim ersten neuen Chromium-Lauf musste der Test vor der Storage-Abfrage explizit
 
 Der zusätzliche S1/S2-Browserlauf scheiterte im Kandidaten bei 820 × 1180 am schnellen zweiten Tipp nach einem Förderstopp im Flottentab (`tests/p3-manager-karte-browser.cjs:152`). Mit einem statisch ausgelieferten Git-Archiv der unveränderten Basis `ac480b4` trat derselbe Stop/Start-Fehler bei 390 × 844 auf. Der Flotten-Stop liegt hinter dem M-UX1-Abnahmepunkt. Die bestehende S2-Flottenlogik wurde im Draft belassen.
 
-Der erste vollständige Node22-Lauf im Standardsandboxprofil meldete Prozessrechtefehler (`spawnSync ... EPERM`) in fünf Testdateien. Der bereits fehlgeschlagene Lauf wurde während des Wiederholungslaufs beendet. Die Wiederholung verwendet das Ausführungsprofil mit den erforderlichen Prozessrechten.
+Der erste vollständige Node22-Lauf im Standardsandboxprofil meldete Prozessrechtefehler (`spawnSync ... EPERM`) in fünf Testdateien. Der bereits fehlgeschlagene Lauf wurde während des Wiederholungslaufs beendet. Die Wiederholung im Ausführungsprofil mit den erforderlichen Prozessrechten bestand vollständig.

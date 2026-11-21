@@ -112,3 +112,50 @@ test('S2: Überführungskosten stammen ausschließlich aus der übergebenen Orig
  assert.deepEqual([mitOriginalquote.aktionen[0].kosten,mitOriginalquote.aktionen[0].minuten],[40,60]);
  // This test is a pure UI-contract fixture, NOT proof that such a real ferry is currently available.
 });
+
+test('S2: tatsächlich gebaute Werfthülle mit rechtmäßig bezahlter W5ac-Überführung',()=>{
+ const j=starten(),w=j.weltReferenz(),s=j.zustandReferenz();
+ // Reuse the existing audited S02 configuration from p3-industrie.test.mjs.
+ w.politikSetzen(s,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
+ w.npcAutoSetzen(s,true);w.npcSiliziumSetzen(s,true);
+ for(let i=0;i<5;i++)j.weiterspielen(60);
+ befehl(j,'buy-st_nadir-frachter');
+ const ship=Object.values(j.zustandReferenz().ships).find(sh=>
+  sh.owner==='house'&&sh.system==='nadir'&&j.zustandReferenz().w5.schiffIds.includes(sh.id));
+ assert.ok(ship,'Nur eine wirklich bezahlte W5-Hülle eignet sich für die Prüfung');
+ const cmd='reposition-'+ship.id;
+ let quote=j.angebote().find(q=>q.id===cmd);
+ for(let i=0;i<24&&!quote?.ok;i++){
+  const blocked=ansehen(j,ship.id).aktionen.find(a=>a.id===cmd);
+  assert.equal(blocked?.ok,false);
+  assert.equal(blocked.grund,quote?.reason,'Originalsperre nicht übermalen');
+  j.weiterspielen(60);quote=j.angebote().find(q=>q.id===cmd);
+ }
+ assert.equal(quote?.ok,true,quote?.reason);
+ const cash=j.zustandReferenz().owners.house.cash,saved=j.exportieren();
+ const bereit=ansehen(j,ship.id);
+ const angebot=bereit.aktionen.find(a=>a.id===cmd);
+ assert.equal(angebot?.ok,true);
+ assert.deepEqual([angebot.kosten,angebot.minuten],[quote.kosten,quote.minuten]);
+ assert.equal(j.exportieren(),saved,'Bereitstellung ist nur eine lesende Auswahl');
+ befehl(j,cmd);
+ const active=j.zustandReferenz().w5ac.active;
+ assert.equal(active.id,ship.id);
+ assert.equal(active.owner,'house');
+ assert.equal(j.zustandReferenz().owners.house.cash,cash-quote.kosten);
+ const unterwegs=ansehen(j,ship.id);
+ assert.equal(unterwegs.schiff.auftrag,'Bezahlte Überführung');
+ const während=j.exportieren(),resume=J8.erstellen();resume.oeffnen204(während,true);
+ assert.deepEqual(ansehen(resume,ship.id),unterwegs);
+ assert.equal(resume.exportieren(),während);
+ assert.equal(j.ausfuehren(cmd).ok,false,'Doppelüberführung gesperrt');
+ assert.equal(j.exportieren(),während);
+ let rest=active.minuten;
+ while(rest>0){const min=rest>=60?60:rest>=10?10:1;j.weiterspielen(min);rest-=min;}
+ const end=j.zustandReferenz();
+ assert.equal(end.ships[ship.id].system,'aldera');
+ assert.ok(end.w5ac.completed.some(x=>x.id===ship.id&&x.owner==='house'&&x.kosten===quote.kosten));
+ assert.deepEqual(Audit.pruefen(w,end),[]);
+ assert.deepEqual([j.ansicht().weltgeld,end.minted,end.burned],[33000,0,0]);
+ assert.equal(ansehen(j,ship.id).schiff.auftrag,'Kein laufender Wirtschaftsauftrag');
+});

@@ -6,7 +6,7 @@
 - **Vorab-Backup:** Branch [`backup/main-before-m-ux123-20261121`](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-m-ux123-20261121) weist auf `ac480b4c8d5f06f52e6d1d657e0c6d7d6526fa8f` (voriger `main`). Rückkehr bei nachgewiesenem schwerem Fehler nur nach gesonderter Prüfung und ohne Löschen von Spieler-Saves.
 - **Integration:** [PR #555](https://github.com/tobiasfranziskus/Check/pull/555) erfolgreich gemergt, `main` exakt `5d96c696e4c69443bd8add97958534c94cef85da` bei Nachprüfung.
 - **Veröffentlichung:** [Pages #44952413315](https://github.com/tobiasfranziskus/Check/actions/runs/44952413315) für exakt `5d96c696` `completed/success`; `build`, `deploy`, `report-build-status` erfolgreich. Öffentliche Zieladresse: https://tobiasfranziskus.github.io/Check/. Ein **unabhängiger öffentlicher HTTP-Liveabruf** war wegen Netzwerkzugriffsbeschränkung nicht möglich; also keine zusätzliche HTTP- oder interaktive Browserabnahme behaupten.
-- **Nachlauf:** [JavaScript-Main-Push #44952414236](https://github.com/tobiasfranziskus/Check/actions/runs/44952414236) beim letzten Abruf noch `in_progress`; eigenständig erneut prüfen. **Offen:** neuer unabhängiger 60-Minuten-M4-Blindtest aus isoliertem Browserprofil; echtes iPad Safari/NAS; längere Wirtschaft/Spielspaß-Beurteilung.
+- **Nachlauf:** [JavaScript-Main-Push #44952414236](https://github.com/tobiasfranziskus/Check/actions/runs/44952414236) `completed/success` für exakt `5d96c696`. **Offen:** neuer unabhängiger 60-Minuten-M4-Blindtest aus isoliertem Browserprofil; echtes iPad Safari/NAS; längere Wirtschaft/Spielspaß-Beurteilung.
 
 ---
 

@@ -14,6 +14,7 @@ let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung
 let cockpitGenutzt=false,flugerfahrung=false,managerTutor=null,pilotTutor=null,pilotMenu=null;
 let werftAuswahlId=null; // Only UI memory, never exported into a Rule204/207 save.
 let managerFlotteAuswahlId=null; // Current owned ship selection, ephemeral like the map.
+let managerFlotteAktionNach=0; // One touch gesture must not trigger a replacement action.
 const safeText=(s)=>String(s==null?'':s);
 const error=(e)=>safeText(e&&e.message?e.message:e);
 // Zentrale Anzeigenamen: nur für die Oberfläche, nie als ID in Befehlen oder Spielständen.
@@ -825,13 +826,16 @@ function managerFlotteAnzeigen(kartenModell,angebote,zustand){
 }
 function managerFlotteAuftrag(schiffId,aktionsId){
  if(!session||!scope.P3ManagerFlotte||!scope.P3ManagerKarte)return;
+ if(performance.now()<managerFlotteAktionNach)return;
  try{
+  if(managerFlotteAuswahlId!==schiffId)throw Error('Dieses Schiff ist nicht mehr ausgewählt');
   const a=session.ansicht(),s=session.zustandReferenz(),angebote=session.angebote();
   const k=scope.P3ManagerKarte.auswerten(a,s,session.weltReferenz(),angebote);
   const p=scope.P3ManagerFlotte.auswerten(k.schiffe,angebote,schiffId);
   if(p.auswahlId!==schiffId)throw Error('Dieses Schiff gehört nicht mehr deinem Konzern');
   const angebot=p.aktionen.find(q=>q.id===aktionsId);
   if(!angebot||!angebot.ok)throw Error(angebot?.grund||'Kein freigegebener Originalauftrag für dieses Schiff');
+  managerFlotteAktionNach=performance.now()+350;
   auftrag(aktionsId); // J8 checks a FRESH quote once again, no direct book mutation.
  }catch(e){hinweis('Schiffsdisposition gesperrt: '+error(e),true);anzeigen();}
 }

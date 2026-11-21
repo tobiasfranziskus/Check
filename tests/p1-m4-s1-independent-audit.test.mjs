@@ -29,10 +29,10 @@ test('Unabhängiger S1-Audit: Karte liest nur Eigenbestand und ändert auch bei 
   assert.deepEqual(m.stationen.map(st=>st.id),['st_aldera','st_nadir']);
   assert.equal(j.exportieren(),initial,'Kartendarstellung darf das Save nicht ändern');
  }
- const fremderFrachter=npc.find(sh=>sh.klasse==='frachter');
- assert.ok(fremderFrachter,'Fremdes Schiff für Berechtigungsgrenze');
+ const fremderMiner=npc.find(sh=>sh.klasse==='miner');
+ assert.ok(fremderMiner,'Tatsächlich vorhandener fremder Miner für Berechtigungsgrenze');
  const before=j.exportieren();
- assert.equal(j.ausfuehren('freight-'+fremderFrachter.id).ok,false);
+ assert.equal(j.ausfuehren('ice-'+fremderMiner.id).ok,false);
  assert.equal(j.exportieren(),before,'Fremdauftrag darf keine Buchungen verursachen');
 });
 

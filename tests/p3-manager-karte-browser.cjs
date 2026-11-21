@@ -73,12 +73,11 @@ async function pruefe(browser,kind,width,height,base){
   const plus=el('[data-advance="60"]');
   await plus.tap();await plus.tap();
   assert.match(await action.innerText(),/Eisfracht transportieren/);
-  await action.scrollIntoViewIfNeeded();
-  const tap=await action.boundingBox();
-  await page.touchscreen.tap(tap.x+tap.width/2,tap.y+tap.height/2);
-  await page.touchscreen.tap(tap.x+tap.width/2,tap.y+tap.height/2);
+  // Locator taps scroll and hit-test against the visual viewport on both engines.
+  await action.tap();
+  await action.tap();
   assert.match(await el('#zeit').innerText(),/120 Minuten/);
-  assert.equal(JSON.parse(await save()).kanon.spielerFrachten.auftraege.length,1);
+  assert.equal(JSON.parse(await save()).kanon.spielerFrachten?.auftraege.length,1);
   const carrier=ship('Frachter');
   assert.equal(await el('.sektor-strecke .sektor-schiff').count(),1);
   await carrier.tap();

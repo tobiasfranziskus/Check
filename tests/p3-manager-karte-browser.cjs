@@ -57,6 +57,8 @@ async function pruefe(browser,kind,width,height,base){
   assert.equal(await ship('Bergbauschiff').count(),1);
   await ship('Bergbauschiff').tap();
   assert.match(await details.innerText(),/Dein Konzern.*Am Dock · Aldera.*600 ISK/s);
+  // Let the next intentional tap come after the gesture guard.
+  await page.waitForTimeout(350);
   await action.tap();
   assert.equal(await el('#hausgeld').textContent(),'1.650 ISK');
   // An intentional follow-up is distinct from a second tap on the purchase.

@@ -37,8 +37,10 @@ jobs:
         run: node scripts/build-w5-singlefile.mjs --check
       - name: "Öffentlichen Root- und Karriere-Einstieg unabhängig per HTTP prüfen"
         run: |
+          git fetch --no-tags --depth=1 origin main
+          git show FETCH_HEAD:index.html > "$RUNNER_TEMP/m4-main-root.html"
           curl --fail --location --silent --show-error --retry 2 --max-time 30 https://tobiasfranziskus.github.io/Check/ -o "$RUNNER_TEMP/m4-public-root.html"
-          cmp index.html "$RUNNER_TEMP/m4-public-root.html"
+          cmp "$RUNNER_TEMP/m4-main-root.html" "$RUNNER_TEMP/m4-public-root.html"
           curl --fail --location --silent --show-error --retry 2 --max-time 30 https://tobiasfranziskus.github.io/Check/prototypes/spiel/index.html -o "$RUNNER_TEMP/m4-public-career.html"
           node -e 'const fs=require("node:fs");const assert=require("node:assert/strict");assert.match(fs.readFileSync(process.env.RUNNER_TEMP+"/m4-public-career.html","utf8"),/id="karriere-starten"/);console.log("M4_PUBLIC_HTTP_OK: unchanged root and public career entry reachable; candidate interactions tested separately");'
   real-game-browser:

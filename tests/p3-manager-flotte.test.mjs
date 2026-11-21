@@ -19,7 +19,8 @@ function befehl(j,id){
 function ansehen(j,wahl=null){
  const quotes=j.angebote();
  const karte=Karte.auswerten(j.ansicht(),j.zustandReferenz(),j.weltReferenz(),quotes);
- return Flotte.auswerten(karte.schiffe,quotes,wahl);
+ return Flotte.auswerten(karte.schiffe,quotes,wahl,
+  j.weltReferenz().bericht(j.zustandReferenz()).schiffe);
 }
 test('S2: keine Fremdschiffe, keine Phantomaktionen, leerer Start bleibt lese- und save-neutral',()=>{
  const j=starten(),save=j.exportieren(),leer=ansehen(j);
@@ -158,4 +159,18 @@ test('S2: tatsächlich gebaute Werfthülle mit rechtmäßig bezahlter W5ac-Über
  assert.deepEqual(Audit.pruefen(w,end),[]);
  assert.deepEqual([j.ansicht().weltgeld,end.minted,end.burned],[33000,0,0]);
  assert.equal(ansehen(j,ship.id).schiff.auftrag,'Kein laufender Wirtschaftsauftrag');
+});
+
+test('S2: Stilllegung ist ein Original-Berichtswert und keine angenommene Schiffphase',()=>{
+ const id='eigener-verbrauchter-frachter';
+ const beispiel={id,owner:'house',klasse:'frachter',name:'Frachter',ort:'Am Dock · Aldera',
+  phase:'dock',flug:'angedockt',ladung:'leer',auftrag:null,buchwert:0};
+ const gesperrt=Flotte.auswerten([beispiel],[
+  {id:'freight-'+id,ok:false,reason:'K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen'}
+ ],id,[{id,stillgelegt:true,buchwert:0}]);
+ assert.equal(gesperrt.schiff.phase,'dock','Stilllegung ändert nicht künstlich den Original-Dockstatus');
+ assert.equal(gesperrt.schiff.stillgelegt,true);
+ assert.deepEqual(gesperrt.aktionen.map(a=>[a.ok,a.grund]),[
+  [false,'K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen']]);
+ // Synthetic projection only; the independent original-Core stilllegung test remains a separate gate.
 });

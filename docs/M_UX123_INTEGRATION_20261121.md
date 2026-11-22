@@ -1,4 +1,15 @@
-# Aphros Void – M-UX1/2/3 Integrationsprüfung [DRAFT]
+# Aphros Void – M-UX1/2/3 Integrationsprüfung [MAIN+PAGES]
+
+## Integrationsabschluss (21.11.2026; GitHub-Prüfung)
+
+- **Gemeinsamer PR-Head:** `3262baa35af53976cb7ca769c77160cac8bec479`; **5/5 gemeinsame CI-Workflows** `completed/success`: [JS/Wirtschaft #44951403511](https://github.com/tobiasfranziskus/Check/actions/runs/44951403511), [W5/Touch #44951403485](https://github.com/tobiasfranziskus/Check/actions/runs/44951403485), [P1 Chromium/WebKit #44951403534](https://github.com/tobiasfranziskus/Check/actions/runs/44951403534), [W6/P8a #44951403521](https://github.com/tobiasfranziskus/Check/actions/runs/44951403521), [W6/P8g #44951403543](https://github.com/tobiasfranziskus/Check/actions/runs/44951403543). Erfolgreiche Job-Prüfung einschließlich `real-game-browser (chromium)` und `(webkit)`, `ipad-touch-preflight` (kein physisches iPad), `main-safe-and-all-node22`, Wirtschaftsaudits. Im JS-Workflow ist der bedingt übersprungene Job `sicherheitsgeografie-vergleich` **nicht** als erfolgreich ausgeführt zu werten.
+- **Vorab-Backup:** Branch [`backup/main-before-m-ux123-20261121`](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-m-ux123-20261121) weist auf `ac480b4c8d5f06f52e6d1d657e0c6d7d6526fa8f` (voriger `main`). Rückkehr bei nachgewiesenem schwerem Fehler nur nach gesonderter Prüfung und ohne Löschen von Spieler-Saves.
+- **Integration:** [PR #555](https://github.com/tobiasfranziskus/Check/pull/555) erfolgreich gemergt, `main` exakt `5d96c696e4c69443bd8add97958534c94cef85da` bei Nachprüfung.
+- **Veröffentlichung:** [Pages #44952413315](https://github.com/tobiasfranziskus/Check/actions/runs/44952413315) für exakt `5d96c696` `completed/success`; `build`, `deploy`, `report-build-status` erfolgreich. Öffentliche Zieladresse: https://tobiasfranziskus.github.io/Check/. Ein **unabhängiger öffentlicher HTTP-Liveabruf** war wegen Netzwerkzugriffsbeschränkung nicht möglich; also keine zusätzliche HTTP- oder interaktive Browserabnahme behaupten.
+- **Nachlauf:** [JavaScript-Main-Push #44952414236](https://github.com/tobiasfranziskus/Check/actions/runs/44952414236) `completed/success` für exakt `5d96c696`. **Offen:** neuer unabhängiger 60-Minuten-M4-Blindtest aus isoliertem Browserprofil; echtes iPad Safari/NAS; längere Wirtschaft/Spielspaß-Beurteilung.
+
+---
+
 
 Erstellt: 21.11.2026. Ausgangs-main: ac480b4c8d5f06f52e6d1d657e0c6d7d6526fa8f. Git-Basis ist der M-UX1-Quell-Head cf39ef6551d407184a6d31c8ae4dca5bd08d7dfa.
 

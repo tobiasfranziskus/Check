@@ -5,6 +5,7 @@ const path=require('node:path');
 const http=require('node:http');
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const {engpassNach48}=require('./m4-u5-engpass-ablauf.cjs');
+const {marktS02}=require('../tools/m4-management-szenarien.cjs');
 
 const root=path.resolve(__dirname,'..');
 const slot='aphros-void:spielerkarriere:regel204:v1';
@@ -19,12 +20,21 @@ const server=http.createServer((req,res)=>{
  }catch{res.writeHead(404).end();}
 });
 
-async function pruefen(browser,art,width,height,json){
- const ctx=await browser.newContext({viewport:{width,height},hasTouch:true});
+async function pruefen(browser,art,width,height,json,markt){
+ // Disable smooth scroll during test gestures so a reload cannot restore its
+ // previous scroll offset between Playwright locating the button and the tap.
+ const ctx=await browser.newContext({viewport:{width,height},hasTouch:true,reducedMotion:'reduce'});
  const page=await ctx.newPage(),fehler=[];
  page.on('pageerror',e=>fehler.push(String(e)));
  const el=id=>page.locator('#'+id);
  const save=()=>page.evaluate(key=>localStorage.getItem(key),slot);
+ const neuLaden=async id=>{
+  await page.reload();
+  const taste=el(id);
+  await taste.scrollIntoViewIfNeeded();
+  await taste.tap();
+  await el('spielwelt').waitFor({state:'visible'});
+ };
  try{
   await page.goto('http://127.0.0.1:'+server.address().port+'/');
   await page.getByRole('link',{name:/^Wirtschaftsmanager/}).tap();
@@ -53,8 +63,7 @@ async function pruefen(browser,art,width,height,json){
   await page.waitForFunction(key=>JSON.parse(localStorage.getItem(key)).kanon.pendel.sh004?.beenden,slot);
   const nachher=await save();
   assert.deepEqual(JSON.parse(nachher).owners,JSON.parse(json).owners,'Stopp bewegt kein Geld');
-  await page.reload();
-  await el('fortsetzen').tap();
+  await neuLaden('fortsetzen');
   assert.equal(await save(),nachher);
   assert.deepEqual(fehler,[]);
   console.log(art,width,height,'48 Fahrten, Lager- und Käufersperren, Erzstopp, Reload');
@@ -79,15 +88,18 @@ async function pruefen(browser,art,width,height,json){
   const bounds=await permit.boundingBox();assert.ok(bounds&&bounds.width>=48&&bounds.height>=48);
   assert.match(await el('manager-industrie-status').innerText(),/Bergbau und Werft haben zugestimmt/);
   await permit.tap();
-  await advance.tap();
+  const signed=await transportSave();
+  assert.equal(JSON.parse(signed).kanon.industrieErz.signFracht,true);
+  assert.equal(await permit.count(),0,'accepted offer leaves no second enabled control');
+  assert.equal(JSON.parse(signed).w3.auftrag,null,'consent alone cannot bind funds');
+  await el('auftrag-minute').tap();
   const water=el('manager-industrie-aktionen').locator('[data-action="industry-water-sh003"]');
   await water.waitFor({state:'visible'});
   await water.tap();
   const checkpoint=await transportSave();
   assert.equal(JSON.parse(checkpoint).w3.auftrag.wasserZustimmung,true);
   assert.equal(await save(),nachher);
-  await page.reload();
-  await el('transport-fortsetzen').tap();
+  await neuLaden('transport-fortsetzen');
   await el('manager-industrie-transport').waitFor({state:'visible'});
   assert.equal(await transportSave(),checkpoint);
   for(let n=0;n<10&&JSON.parse(await transportSave()).w3.auftrag;n++)
@@ -97,6 +109,20 @@ async function pruefen(browser,art,width,height,json){
   assert.equal(finished.w5ad.freight.at(-1).owner,'house');
   assert.ok(finished.kanon.wasser.rueckGeliefert>1414);
   assert.match(await el('manager-industrie-status').innerText(),/Letzter Industrieauftrag/);
+  const minuten=page.locator('[data-advance="60"]');
+  for(let n=0;n<10&&JSON.parse(await transportSave()).w5.fertig===0;n++)await minuten.tap();
+  const built=JSON.parse(await transportSave());
+  assert.equal(built.w5.fertig,1);
+  assert.equal(built.w5.materialVerbraucht,5);
+  assert.equal(built.owners.k7_werft_treuhand.cash,0);
+  assert.match(await el('manager-industrie-werft').innerText(),/Werftkauf gesperrt.*Asterion/);
+  await el('manager-industrie-werftweg').tap();
+  await el('p3-industrie').waitFor({state:'visible'});
+  assert.equal(await el('p3-industrie-kauf').isEnabled(),false);
+  assert.match(await el('p3-industrie-w5').innerText(),/1 fertige Frachter/);
+  await el('auftrag-details').locator('summary').first().tap();
+  assert.match(await el('auftrag-belege').innerText(),/Industriefracht sh003 · 50 Erz/);
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   assert.equal(await save(),nachher);
   await el('open-menu').tap();
   await el('fortsetzen').tap();
@@ -104,11 +130,56 @@ async function pruefen(browser,art,width,height,json){
   assert.equal(await save(),nachher);
   assert.deepEqual(fehler,[]);
   console.log(art,width,height,'U7/U8: NPC-Angebot, Zustimmung, physische Industrie-/Wasserfahrt, separater Save und Wechsel zur Standardkarriere');
+  await page.reload();
+  await el('import-datei').setInputFiles({name:'s02-werft.json',mimeType:'application/json',buffer:Buffer.from(markt)});
+  await el('manager-industrie-transport').waitFor({state:'visible'});
+  assert.equal(await transportSave(),markt);
+  assert.match(await el('manager-industrie-werft').innerText(),/750 ISK verfügbar/);
+  await el('manager-industrie-werftweg').tap();
+  await el('p3-industrie-kauf').tap();
+  const nachKauf=await transportSave(),gekauft=JSON.parse(nachKauf);
+  const neue=gekauft.kanon.spielerFrachterKaeufe.at(-1);
+  assert.equal(neue.preis,750);
+  assert.equal(gekauft.ships[neue.id].owner,'house');
+  assert.equal(gekauft.owners.house.cash,JSON.parse(markt).owners.house.cash-750);
+  assert.equal(gekauft.stations.st_nadir.lager.frachter,0);
+  assert.equal(await el('p3-industrie-kauf').isEnabled(),false);
+  // Redraw can move the card in the viewport. Target the same physical control
+  // after scrolling so the second tap tests the sold hull, not the clock.
+  await el('p3-industrie-kauf').tap({force:true});
+  assert.ok((await transportSave())===nachKauf,'repeated touch cannot buy the sold hull');
+  for(let n=0;n<6&&!(await el('p3-industrie-transfer').isEnabled());n++)await minuten.tap();
+  await el('p3-industrie-transfer').tap();
+  assert.equal(JSON.parse(await transportSave()).w5ac.active.id,neue.id);
+  await minuten.tap();
+  const afterFerry=JSON.parse(await transportSave());
+  assert.equal(afterFerry.ships[neue.id].system,'aldera');
+  assert.equal(afterFerry.w5ac.completed.find(x=>x.id===neue.id).kosten,60);
+  for(let n=0;n<6&&!(await el('p3-industrie-fracht').isEnabled());n++){
+   const ice=el('spieleraktionen').locator('[data-action^="ice-"]:enabled');
+   if(await ice.count())await ice.first().tap();
+   else if(await el('spieleraktionen').locator('[data-action="buy-st_aldera-miner"]:enabled').count())
+    await el('spieleraktionen').locator('[data-action="buy-st_aldera-miner"]').tap();
+   await minuten.tap();
+  }
+  await el('p3-industrie-fracht').tap();
+  const freight=await transportSave();
+  await neuLaden('transport-fortsetzen');
+  assert.equal(await transportSave(),freight);
+  await minuten.tap();await minuten.tap();
+  const bezahlt=JSON.parse(await transportSave()).kanon.spielerFrachten.auftraege.at(-1);
+  assert.equal(bezahlt.schiff,neue.id);
+  assert.ok(bezahlt.end>bezahlt.geliefert);
+  assert.equal(bezahlt.menge,50);assert.equal(bezahlt.arbeit,120);assert.equal(bezahlt.fracht,240);
+  assert.equal(await save(),nachher);
+  assert.deepEqual(fehler,[]);
+  console.log(art,width,height,'S02: 750 ISK Kauf, 60 ISK Überführung, bezahlte Folgefracht und Reload',neue.id);
  }finally{await ctx.close();}
 }
 
 (async()=>{
  const json=engpassNach48().exportieren();
+ const {welt,s}=marktS02(),markt=welt.save(s);
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  let browser;
  try{
@@ -117,7 +188,7 @@ async function pruefen(browser,art,width,height,json){
    executablePath:process.env.S1_CHROMIUM_PATH||undefined,args:['--no-sandbox']
   });
   for(const [width,height] of [[1180,820],[1024,768],[820,1180],[390,844]])
-   await pruefen(browser,art,width,height,json);
+   await pruefen(browser,art,width,height,json,markt);
  }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));

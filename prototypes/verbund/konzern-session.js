@@ -71,8 +71,12 @@ function haushaltPlan(s,welt){
  }
  if(s.kanon.u7Manager===true){
    const i=s.kanon.industrieErz,a=s.w3?.auftrag;
-   if(i?.phase==='angebot'&&i.carrier==='house'&&!i.signFracht&&s.ships[i.frachter]?.owner==='house')
-     hinzu('industry-accept-'+i.frachter,'Erztransport nach Nadir annehmen · '+i.frachter+' · 240 ISK Fracht, 120 ISK Fluglohn',{type:'industrialOreAcceptFreight'});
+   if(i?.phase==='angebot'&&i.carrier==='house'&&!i.signFracht&&s.ships[i.frachter]?.owner==='house'){
+     const p=welt.industriePreise;
+     hinzu('industry-accept-'+i.frachter,p.menge+' Erz nach Nadir beauftragen · '+i.frachter+
+       ' · '+(p.nadiraufwand-p.alderakauf)+' ISK Frachttarif · '+p.frachtlohn+' ISK Flugreserve',
+       {type:'industrialOreAcceptFreight'});
+   }
    if(a?.carrier==='house'&&!a.wasserZustimmung&&s.ships[a.schiff]?.owner==='house')
      hinzu('industry-water-'+a.schiff,'Wasser-Rückladung freiwillig anbieten · '+a.schiff+' · bei gedecktem Bedarf',{type:'industrialWaterAcceptBackhaul',schiff:a.schiff});
  }

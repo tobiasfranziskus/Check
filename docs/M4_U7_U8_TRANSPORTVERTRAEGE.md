@@ -60,3 +60,7 @@ Vor U7-Erweiterung muss der echte NPC-Rückflug einschließlich Wasserzahlung un
 
 ### Werft-Folgekette und Browser-Gate
 Auf `d4b9e81f` sind die vollständigen neuen Browserprüfungen im Workflow [45067293649](https://github.com/tobiasfranziskus/Check/actions/runs/45067293649) gestartet/queued; kein Erfolg behauptet. Bei der Quellprüfung wurde erkannt, dass die signierte K7-Werftreserve bei U7 allein bisher nicht durch die vorhandene K7-Folgepolitik ausgelöst werden musste. `091fdbac` verwendet ausschließlich deren bestehende finanzierte Raffinerie-/Werftbefehle auch für den signierten Hausvertrag mit U7-Managerflag; allgemeine NPC-Automatik, Standardkarriere und reiner U8-Kontrolllauf bleiben unverändert. `2a8b9f0a` verlangt nach echter J8-Rückfahrt eine physische W5-Hülle, Materialverbrauch, vollständig gezahlte Werftarbeit, leere Werftreserven und identischen Replay nach Reload. Ergebnis der neuen CI offen. Keine neue Preisregel, keine Produktionsgarantie, keine Veröffentlichung.
+
+### Folgeprüfung #575
+
+Die [Managementabnahme](M4_U7_U8_MANAGEMENT_ABNAHME.md) dokumentiert den vollständig bezahlten Werftlauf, die zwei getrennten Marktausgänge und die 7-/30-/90-/365-/730-Tage-Messpunkte der U7/U8-Forschung. Der Bau in der 48-Fahrten-Kopie führt zu einem rechtmäßigen NPC-Kauf. Ein freiwilliger Hauskauf mit Überführung und Folgefracht gelingt aus einem getrennten S02-Start. Die Behandlung eines stillgelegten Vertragsminers mit Teilladung bleibt eine offene Regelentscheidung.

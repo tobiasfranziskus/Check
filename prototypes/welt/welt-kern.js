@@ -382,7 +382,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           if (ladungSumme(sh) > 0 && p.ware === 'eis') continue;
           if (p.beenden) { delete k.pendel[id]; continue; }
           if (m_core_anlage.stillgelegt(state, sh)) continue; // Pendel merken, bis ein echter Ersatzkauf erfolgreich ist
-          if (p.ware === 'erz' && p.ersatz && sh.auftrag !== 'foerdern') {
+          if (p.ware === 'erz' && (p.ersatz || sh.owner === rules.economy.start.owner)
+              && sh.auftrag !== 'foerdern') {
             const r = kern.execute(state, { type: 'shipMine', owner: sh.owner, schiff: id, ware: 'erz' }, rules);
             if (!r.ok) { merken('Erz-Ersatzauftrag: ' + r.reason); continue; }
             delete p.ersatz;
@@ -474,6 +475,26 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         if (sh.flug.lage !== 'angedockt') return 'K1: Pendelauftrag nur aus dem Dock';
         if (m_core_anlage.stillgelegt(state, sh)) return 'K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen';
         if (cmd.ware === 'eis' && ((sh.ladung.erz || 0) > 0 || state.erzpilotVertraege?.[sh.id])) return 'Erz- und Eisfracht nicht mischen';
+        // M4-U3: the original W1 mine/paid station acceptance is usable by the
+        // HOUSE miner as an alternative to ice. No W3 carrier signature,
+        // invented customer, new seed, price or free money is introduced.
+        // Require a fully affordable 50-unit job before offering the switch;
+        // the original W1 escrow and core audits remain authoritative at work time.
+        if (cmd.ware === 'erz' && sh.owner === rules.economy.start.owner) {
+          const cfg = rules.erzpilot;
+          if (!cfg || (sh.ladung.eis || 0) > 0 || (sh.ladung.erz || 0) > 0
+              || state.erzpilotVertraege?.[sh.id])
+            return 'Miner muss leer und ohne fremde Fracht im Dock sein';
+          const charge = cfg.auftragsMenge, kauf = charge * cfg.preis;
+          const lohn = charge * cfg.minerJeMinute;
+          if (!ganz(kauf) || kauf <= 0 || !ganz(lohn)) return 'Ungültige Original-Erzfinanzierung';
+          if (state.owners[cfg.station]?.cash < kauf)
+            return 'Aldera kann die volle Erzcharge derzeit nicht bezahlen';
+          if (state.owners[cfg.exportOwner]?.cash < kauf)
+            return 'Exportkäufer kann die Erzcharge derzeit nicht bezahlen';
+          if (state.owners[sh.owner].cash < lohn + KANON.flug.reserveMinuten * KANON.flug.lohnJeMinute)
+            return 'Eigene Erzarbeit und Flugreserve nicht gedeckt';
+        }
         return null;
       }
       return hat(state.kanon.pendel, sh.id) ? null : 'K1: kein laufender Pendelauftrag';

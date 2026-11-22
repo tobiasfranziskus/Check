@@ -2053,8 +2053,13 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   // commands. The player's browser only changes the optional policy flag;
   // it cannot sign on behalf of NPC companies or create cash, ships or ore.
   function industrieAutoSchritt(s) {
-    if (!k7 || (s.kanon.industrieAuto !== true && s.kanon.npcAuto !== true) || s.kanon.politik.automatik !== true) return;
+    if (!k7 || s.kanon.politik.automatik !== true) return;
+    const originaleAutomatik=s.kanon.industrieAuto===true||s.kanon.npcAuto===true;
     const i = s.kanon.industrieErz, nadir = s.stations[rules.w5.station].lager;
+    // A signed house contract must reach the ORIGINAL funded production
+    // stages too. Do not activate the general NPC carrier policy.
+    const hausFolge=u8Research&&s.kanon.u7Manager===true&&i.carrier==='house';
+    if(!originaleAutomatik&&!hausFolge)return;
     if (i.phase === 'aktiv' || i.phase === 'geliefert') {
       // Production may begin only after the existing physical Nadir arrival
       // and after full original W4 work funding has been checked.
@@ -2081,6 +2086,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       // signatures or issue a second W3 escrow in parallel.
       if (i.phase !== 'geliefert' || (!i.werftVerwendet&&!i.materialOnly)) return;
     }
+    if(!originaleAutomatik)return;
     if (!['frei','storniert','geliefert'].includes(i.phase)
       || s.w3.auftrag || s.w5n.frachtauftrag || s.w4.auftrag || s.w5.auftrag
       || s.kanon.minerWerft?.auftrag) return;

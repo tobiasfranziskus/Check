@@ -132,6 +132,25 @@ function run(w,s){
  return {outcome:'REAL_COMBINED_AND_49TH_ICE',before,arrival,delivered,after,
   load,iceQuote,iceArrival,iceReturn,nextIceQuote,events,probes};
 }
+// Use the real U7 buyer's candidacy rules. A refusal needs no submitted offer
+// and cannot reserve cash or pretend signatures on the buyer's behalf.
+function erneuteNachfrage(w,start){
+ const s=w.load(start),messungen=[];
+ for(let tag=1;tag<=3;tag++){
+  const gruende=new Map();
+  for(let min=0;min<1440;min++){
+   const q=w.industrieAngebotslage(s);
+   assert.equal(q.ok,false,'a genuine new offer changes the reported blocker');
+   gruende.set(q.grund,(gruende.get(q.grund)||0)+1);
+   w.advance(s,1);
+  }
+  check(w,s);
+  messungen.push({tag,gruende:[...gruende],...snapshot(w,s)});
+ }
+ assert.equal(s.w3.abgeschlossen,1);
+ assert.equal(s.w5n.frachtAbgeschlossen,49);
+ return {messungen,ende:w.save(s)};
+}
 test('M4-U7/U8: exact 48-round fork, paid combined delivery and 49th ice flight, deterministic replay',()=>{
  const j=engpassNach48(),original=j.exportieren(),old=j.weltReferenz();
  assert.equal(j.ansicht().hash,'f63f2cd09ba5a88c');
@@ -152,5 +171,17 @@ test('M4-U7/U8: exact 48-round fork, paid combined delivery and 49th ice flight,
  assert.equal(a.outcome,'REAL_COMBINED_AND_49TH_ICE',JSON.stringify(a));
  assert.equal(a.delivered.oreDone,a.before.oreDone+1);
  assert.equal(a.iceReturn.iceDone,49);
+ const nach49=w.save(s),nachlauf=erneuteNachfrage(w,nach49);
+ assert.deepEqual(nachlauf,erneuteNachfrage(w,nach49));
+ assert.equal(w.save(s),nach49);
+ console.log('M4_575_NACH_49 '+JSON.stringify(nachlauf.messungen));
+
+ const verschlissen=w.load(nach49);
+ w.politikSetzen(verschlissen,{stilllegung:true});
+ assert.equal(w.stillgelegt(verschlissen,'sh003'),true);
+ const alt=w.save(verschlissen);
+ const refusal=w.execute(verschlissen,cmd('shipFreightIce','house',{schiff:'sh003'}));
+ assert.match(refusal.reason,/stillgelegt/);
+ assert.equal(w.save(verschlissen),alt);
  console.log('M4_U7_U8_48_ROUND_RESULT '+JSON.stringify(a));
 });

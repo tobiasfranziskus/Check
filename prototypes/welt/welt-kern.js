@@ -1680,6 +1680,11 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           ||typeof i.signWerft!=='boolean'||typeof i.werftVerwendet!=='boolean'
           ||typeof i.erzAngenommen!=='boolean'))
           fehler.push('K7-Vertrag: unwirksame Eigentümer-/Unterschriftsbelege');
+        if (u8Research && i?.carrier === 'house' && i.phase === 'geliefert'
+          && (!i.signMiner || !i.signFracht || !i.signWerft || !i.erzAngenommen
+            || !state.w5ad.freight.some(x => x.owner === 'house' && x.id === i.frachter
+              && x.start >= i.erstellt)))
+          fehler.push('U7: Abschluss ohne Zustimmungen und bezahlten Originalfrachtbeleg');
         if(i && ['aktiv','geliefert'].includes(i.phase)
           &&sicherK7Reserve(state,i)!==(i.materialOnly||i.werftVerwendet?0:K7_PREIS.werft))
           fehler.push('K7-Werftreserve nicht einmalig aus eigenem Vermögen gebunden');
@@ -2150,22 +2155,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       }
       return;
     }
-    if(!['frei','storniert','geliefert'].includes(i.phase)||s.w3.auftrag||s.w5n.frachtauftrag
-       ||s.w5ac?.active||k.rueckfracht||s.w4.auftrag||s.w5.auftrag||k.minerWerft?.auftrag
-       ||(s.owners.k7_werft_treuhand?.cash||0)!==0)return;
-    const nadir=s.stations[rules.w5.station].lager;
-    if((nadir.frachter||0)>=rules.world.stations[rules.w5.station].ziel.frachter
-       ||(nadir.erz||0)>=rules.w4.erzJeCharge||(nadir.material||0)>=rules.w5.material
-       ||s.owners.st_aldera.cash<K7_PREIS.alderakauf||s.owners.st_nadir.cash<K7_PREIS.nadiraufwand
-       ||s.owners.npc3.cash<K7_PREIS.bergbau||s.owners.werft_extern.cash<K7_PREIS.werft)return;
-    const miner=ids(s.ships).map(id=>s.ships[id]).find(sh=>sh.owner==='npc3'&&sh.klasse==='miner'
-       &&sh.system==='aldera'&&sh.phase==='dock'&&sh.flug?.lage==='angedockt'
-       &&ladungSumme(sh)===0&&!s.erzpilotVertraege?.[sh.id]&&!m_core_anlage.stillgelegt(s,sh)
-       &&!k.pendel[sh.id]?.beenden&&(!k.pendel[sh.id]||k.pendel[sh.id].ware==='erz'));
-    const fr=ids(s.ships).map(id=>s.ships[id]).find(sh=>sh.owner==='house'&&sh.klasse==='frachter'
-       &&sh.system==='aldera'&&sh.phase==='dock'&&sh.flug?.lage==='angedockt'
-       &&sh.auftrag==='halten'&&ladungSumme(sh)===0&&!m_core_anlage.stillgelegt(s,sh));
-    if(!miner||!fr||s.owners.house.cash<K7_PREIS.frachtlohn)return;
+    const angebot = u7Angebotslage(s);
+    if (!angebot.ok) return;
+    const { miner, fr } = angebot;
     for(const cmd of [
       {type:'industrialOreOffer',owner:'st_nadir',miner:miner.id,frachter:fr.id},
       {type:'industrialOreAcceptMine',owner:'npc3'},
@@ -2173,10 +2165,51 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ]){
       const r=k7Befehl(s,cmd);
       if(!r.ok){
-        if(s.kanon.industrieErz.phase==='angebot')k7Befehl(s,{type:'industrialOreCancel',owner:'st_nadir'});
+        if(s.kanon.industrieErz.phase==='angebot')
+          k7Befehl(s,{type:'industrialOreCancel',owner:'st_nadir'});
         return;
       }
     }
+  }
+  // Same eligibility for NPC decisions and the read-only manager display.
+  function u7Angebotslage(s) {
+    const k = s.kanon, i = k.industrieErz;
+    const gesperrt = (grund) => ({ok:false, grund});
+    if (!u8Research || !k.politik.automatik)
+      return gesperrt('Nadir prüft derzeit keine Industrieangebote.');
+    if (!['frei','storniert','geliefert'].includes(i.phase) || s.w3.auftrag ||
+        s.w5n.frachtauftrag || s.w5ac?.active || k.rueckfracht)
+      return gesperrt('Ein Auftrag bindet die Strecke.');
+    if (s.w4.auftrag || s.w5.auftrag || k.minerWerft?.auftrag)
+      return gesperrt('Raffinerie oder Werft arbeiten noch am laufenden Auftrag.');
+    if ((s.owners.k7_werft_treuhand?.cash || 0) !== 0)
+      return gesperrt('Die Werftmittel sind noch für den vorigen Auftrag gebunden.');
+    const nadir = s.stations[rules.w5.station].lager;
+    if ((nadir.frachter || 0) >= rules.world.stations[rules.w5.station].ziel.frachter)
+      return gesperrt('Nadir hat genug Frachter im Lager.');
+    if ((nadir.erz || 0) >= rules.w4.erzJeCharge || (nadir.material || 0) >= rules.w5.material)
+      return gesperrt('Nadir hat bereits genug Erz oder Material für die nächste Produktion.');
+    const budgets = [
+      ['st_aldera', 'Aldera', K7_PREIS.alderakauf],
+      ['st_nadir', 'Nadir', K7_PREIS.nadiraufwand],
+      ['npc3', 'Meridian', K7_PREIS.bergbau],
+      ['werft_extern', 'Die Werft', K7_PREIS.werft]
+    ];
+    const knapp = budgets.find(([id,, kosten]) => s.owners[id].cash < kosten);
+    if (knapp) return gesperrt(knapp[1] + ' hat ' + s.owners[knapp[0]].cash +
+      ' ISK frei und benötigt ' + knapp[2] + ' ISK für diesen Auftrag.');
+    const miner=ids(s.ships).map(id=>s.ships[id]).find(sh=>sh.owner==='npc3'&&sh.klasse==='miner'
+       &&sh.system==='aldera'&&sh.phase==='dock'&&sh.flug?.lage==='angedockt'
+       &&ladungSumme(sh)===0&&!s.erzpilotVertraege?.[sh.id]&&!m_core_anlage.stillgelegt(s,sh)
+       &&!k.pendel[sh.id]?.beenden&&(!k.pendel[sh.id]||k.pendel[sh.id].ware==='erz'));
+    const fr=ids(s.ships).map(id=>s.ships[id]).find(sh=>sh.owner==='house'&&sh.klasse==='frachter'
+       &&sh.system==='aldera'&&sh.phase==='dock'&&sh.flug?.lage==='angedockt'
+       &&sh.auftrag==='halten'&&ladungSumme(sh)===0&&!m_core_anlage.stillgelegt(s,sh));
+    if (!miner) return gesperrt('Meridian hat keinen freien Erzminer am Aldera-Dock.');
+    if (!fr) return gesperrt('Dein Konzern hat keinen freien einsatzfähigen Frachter am Aldera-Dock.');
+    if (s.owners.house.cash < K7_PREIS.frachtlohn)
+      return gesperrt('Dein Konzern kann ' + K7_PREIS.frachtlohn + ' ISK Fluglohn nicht vorfinanzieren.');
+    return {ok:true, miner, fr};
   }
   function industrieAutoSetzen(s, aktiviert) {
     pruefeForm(s);
@@ -2275,6 +2308,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       return { ok: false, type, reason: 'K1: Wirtschaftsauftrag nur mit physisch angedocktem Frachter' };
     if (sh && hat(state.kanon.pendel, sh.id) && ['shipMine', 'shipWait', 'shipSellIce'].includes(type))
       return { ok: false, type, reason: 'K1: laufender Pendelauftrag steuert Förderung und Abnahme' };
+    if (u8Research && type === 'shipReposition' && sh && m_core_anlage.stillgelegt(state, sh))
+      return {ok:false,type,reason:'K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen'};
     if (sh && ['shipFreight', 'shipFreightIce'].includes(type) && m_core_anlage.stillgelegt(state, sh))
       return { ok: false, type, reason: 'K1: Hülle ist verbraucht und stillgelegt; Ersatz kaufen' };
     if (type === 'stationBuildShip' && state.kanon.minerWerft?.auftrag)
@@ -2473,6 +2508,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(p8bZweiFelder ? {p8bZweiEndlicheFelder:true} : {}),
     ...(p8cDravos||p8dFracht ? {p8cEchteDravosExpedition:true} : {}),
     ...(p8dFracht ? {p8dGetrennteSpedition:true,p8gMaterialOnlyW3:true} : {}),
+    ...(u8Research ? { industrieAngebotslage: (s) => {
+      const {ok, grund} = u7Angebotslage(s);
+      return {ok, grund};
+    }} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
     createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, npcMaterialKetteSetzen, materialSupplySetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,

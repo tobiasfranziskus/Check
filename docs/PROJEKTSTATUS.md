@@ -1,5 +1,7 @@
 # Aphros Void – aktueller Projektstatus [MAIN/M0/M1/P1/P3/W6] · 22.11.2026
 
+**[M4-U7/U8 · DRAFT / ANALYSE · 22.11.2026]** [#575](https://github.com/tobiasfranziskus/Check/issues/575) belegt im 48-Fahrten-Fork eine bezahlte Hausfracht bis zur Werfthülle und den rechtmäßigen Kauf durch Asterion. Separater S02-Lauf mit Hauskauf von sh004 für 750 ISK, 60 ISK Überführung und bezahlter Folgefracht. Ab Tag 30 sind im S02-U7/U8-Pfad 1.390 ISK durch einen stillgelegten Vertragsminer mit Teilladung gebunden. Siehe [Messpunkte, Tests und Regelentscheidung](M4_U7_U8_MANAGEMENT_ABNAHME.md). Standardkarriere und Pages bleiben auf ihrem geprüften Stand.
+
 **[M4-U7/U8 · FORSCHUNG · 22.11.2026]** [#574](https://github.com/tobiasfranziskus/Check/pull/574), `c86747bd`: [590/590 Node22](https://github.com/tobiasfranziskus/Check/actions/runs/45063587224/job/137334696654), echter Haus-W3-Transport 50 Erz / 10 Wasser, 250 ISK Vergütung, 120 ISK Lohn, Tick 402, Hash f5244270dea958ed; NPC-Kontrollhash unverändert. Exakter U5-48-Fahrten-Fork `942650c0` als neuer Test, CI ausstehend. Keine Produktaktivierung. [Technischer Bericht](M4_U7_U8_TRANSPORTVERTRAEGE.md).
 
 **[M4-U5 · MAIN+PAGES]** Integration [#572](https://github.com/tobiasfranziskus/Check/pull/572), `main d824040e`, [Pages #45043062024](https://github.com/tobiasfranziskus/Check/actions/runs/45043062024) erfolgreich. Die UI-Befunde unten sind historische Draft-Befunde, kein noch offener Merge; der wirtschaftliche Engpass und 60-Minuten-Test bleiben offen.

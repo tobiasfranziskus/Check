@@ -2176,6 +2176,8 @@ const m_core_w3 = (() => {
       return {ok:false,grund:'W3 nur im isolierten Transportkern'};
     const c=rules.w3,w=state.w3;
     if(!w||w.auftrag||state.w5n?.frachtauftrag)return {ok:false,grund:'Bereits ein W3-/Eisauftrag gebunden'};
+    if(rules.u7HouseFreight&&(state.w5ac?.active||state.kanon?.rueckfracht))
+      return {ok:false,grund:'Strecke durch Überführung oder Rückfracht belegt'};
     if(!sh||sh.owner!==c.spedition||sh.klasse!=='frachter'||sh.phase!=='dock'
       ||sh.system!=='aldera'||sh.auftrag!=='halten')
       return {ok:false,grund:'Bezahlter Frachter muss frei in Aldera liegen'};
@@ -3077,6 +3079,8 @@ const m_core_w5n=(()=>{
      return {ok:false,grund:'Eisroute nur in W5af/Rule194'};
    const c=r.w5n,w=s.w5n,p=preise(r);
    if(w.frachtauftrag||s.w3.auftrag)return {ok:false,grund:'Frachter bereits gebunden'};
+   if(r.u7HouseFreight&&(s.w5ac?.active||s.kanon?.rueckfracht))
+     return {ok:false,grund:'Strecke durch Überführung oder Rückfracht belegt'};
    // K1/Draft: derselbe Originalauftrag darf auch durch den rechtmaessigen
    // Spieler-Eigentuemer ausgefuehrt werden. W5/Regel195 bleibt Speditionsrecht.
    const spieler=r.kanon&&sh?.owner===r.economy.start.owner;

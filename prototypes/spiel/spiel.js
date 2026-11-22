@@ -590,11 +590,11 @@ function industrieAnzeigen(s,angebote){
   '. Diese fremden Aufträge gehören nicht deinem Konzern.';
  $('p3-industrie-k7').textContent='Erzauftrag: '+book.k7Phase+
   ' · Zustimmung Bergbau '+(book.signaturen.bergbau?'erteilt':'offen')+
-  ' · Spedition '+(book.signaturen.spediteur?'erteilt':'offen')+
+  ' · Frachter-Eigentümer '+(book.signaturen.spediteur?'erteilt':'offen')+
   ' · Werft '+(book.signaturen.werft?'erteilt':'offen')+
   '. Eine Zustimmung ist noch keine Lieferung oder Auszahlung.';
  $('p3-industrie-w3-geld').textContent='Erztransport: Nadir-Käuferreserve jetzt '+
-  fmt(book.w3.kaufReserve)+' ISK · Asterion-Fluglohnreserve jetzt '+
+  fmt(book.w3.kaufReserve)+' ISK · Fluglohnreserve jetzt '+
   fmt(book.w3.arbeitsReserve)+' ISK. Auftragsmittel bislang gebucht (einschließlich Tarifreserve) '+
   fmt(book.w3.erzKaufGebucht)+' ISK; Fluglöhne bereits gezahlt '+
   fmt(book.w3.fluglohnBezahlt)+' ISK; Speditionstarif bereits ausgezahlt '+
@@ -951,20 +951,50 @@ function transportForschungAnzeigen(s,angebote){
  if(host.hidden)return;
  const i=s.kanon.industrieErz,a=s.w3?.auftrag;
  const p=$('manager-industrie-status'),actions=$('manager-industrie-aktionen');
+ const welt=session.weltReferenz(),fracht=s.kanon.rueckfracht;
+ const kauf=angebote.find(o=>o.id==='buy-st_nadir-frachter');
+ const letzterKauf=s.w5.schiffIds.at(-1);
  if(a?.carrier==='house'){
-   p.textContent='Industriefracht '+a.schiff+' · '+({vorbestellt:'Erzbeschaffung läuft',hin:'Hinflug nach Nadir',rueck:'Rückflug nach Aldera'}[a.phase]||a.phase)
-    +(a.wasserZustimmung?' · Wasser-Rückladung angeboten; Kauf nur bei gedecktem Bedarf.':'');
+   const phase={vorbestellt:'Erz wird beschafft',hin:'Erz auf dem Weg nach Nadir',rueck:'Erz geliefert, Rückflug nach Aldera'};
+   const minerStillgelegt=a.phase==='vorbestellt'&&a.industrieMiner&&welt.stillgelegt(s,a.industrieMiner);
+   const lage=minerStillgelegt?'Erzbeschaffung blockiert. Miner '+a.industrieMiner+' ist stillgelegt. Die Vertragsmittel bleiben gebunden.'
+     :phase[a.phase]||a.phase;
+   p.textContent=a.schiff+' · '+lage+
+    (fracht?.schiff===a.schiff?' · '+fmt(fracht.menge)+' Wasser an Bord, '+fmt(fracht.gebuehr)+' ISK Rückfrachttarif gebunden.'
+      :a.wasserZustimmung?(a.phase==='rueck'?' · Aldera hat auf diesem Rückflug kein Wasser gekauft.'
+         :' · Wasser angeboten. Aldera prüft Bedarf und Kasse bei Ankunft.'):'.');
  }else if(i?.phase==='angebot'&&i.carrier==='house'){
-   p.textContent='Nadir bietet '+i.frachter+' einen Erztransport an. Bergbau und Werft haben zugestimmt. Deine Unterschrift fehlt'+(i.signFracht?' nicht mehr; Käufer prüft den Auftrag.':'.');
+   const status=i.signMiner&&i.signWerft?'Bergbau und Werft haben zugestimmt. ':'Die Zustimmung von Bergbau oder Werft steht aus. ';
+   p.textContent='Nadir bietet '+i.frachter+' einen Erztransport an. '+status+
+    (i.signFracht?'Deine Zustimmung ist erteilt. Nadir prüft die Finanzierung erneut.':'Deine Zustimmung steht aus.');
  }else{
-   const receipt=s.w5ad?.freight?.filter(x=>x.owner==='house').at(-1);
-   p.textContent=receipt?'Letzter Industrieauftrag: '+receipt.amount+' Erz · '+receipt.fee+' ISK Vergütung · '+receipt.work+' ISK Fluglohn. Weitere Angebote hängen von realem Bedarf ab.'
-     :'Derzeit kein Industrieangebot. Nadir, Meridian und die Werft prüfen Bedarf, Kapital und freie Schiffe bei Zeitfortschritt.';
+   const receipt=s.w5ad.freight.filter(x=>x.owner==='house').at(-1);
+   const grund=welt.industrieAngebotslage(s).grund||'Nadir prüft das Angebot bei der nächsten Spielminute.';
+   p.textContent=(receipt?'Letzter Industrieauftrag: '+fmt(receipt.amount)+' Erz · '+fmt(receipt.fee)+
+      ' ISK Frachttarif · '+fmt(receipt.work)+' ISK Fluglohn. ':'Derzeit kein Industrieangebot. ')+anzeigetext(grund);
  }
+ const bau=s.w5.auftrag?'Werftarbeit läuft.':s.w4.auftrag?'Raffineriearbeit läuft.':'';
+ const angebot=kauf?.ok?'Eine fertige Hülle ist für '+fmt(welt.rules.economy.waren.frachter.basis)+' ISK verfügbar.'
+   :'Werftkauf gesperrt: '+anzeigetext(kauf?.reason||'kein gültiges Angebot')+'.';
+ const verkauft=letzterKauf?' Letzte verkaufte Werfthülle: '+letzterKauf+' · '+konzernname(s.ships[letzterKauf]?.owner)+'.':'';
+ $('manager-industrie-werft').textContent=[bau,angebot+verkauft].filter(Boolean).join(' ');
  actions.replaceChildren(...angebote.filter(x=>x.id.startsWith('industry-')).map(o=>{
-  const b=d.createElement('button');b.type='button';b.dataset.action=o.id;b.textContent=anzeigetext(o.label);b.disabled=!o.ok;b.addEventListener('click',()=>auftrag(o.id));return b;
+  const box=d.createElement('div'),b=d.createElement('button');
+  b.type='button';b.dataset.action=o.id;b.textContent=anzeigetext(o.label);b.disabled=!o.ok;
+  b.addEventListener('click',()=>{if(b.isConnected)auftrag(o.id);});
+  box.append(b);
+  if(!o.ok){
+   const grund=d.createElement('p');grund.className='p3-sperre';grund.textContent=anzeigetext(o.reason);box.append(grund);
+  }
+  return box;
  }));
 }
+$('manager-industrie-werftweg')?.addEventListener('click',()=>{
+ const ziel=$('p3-industrie');
+ if(ziel.hidden)return;
+ ziel.scrollIntoView({block:'start'});
+ ziel.focus({preventScroll:true});
+});
 function auftragsfeedbackAnzeigen(s){
  const p=scope.P3Auftragsfeedback.auswerten(session.weltReferenz(),s);
  const frachtzeile=x=>'Fracht '+x.schiff+' · Start '+x.start+' · '+x.status+
@@ -976,6 +1006,9 @@ function auftragsfeedbackAnzeigen(s){
  'Vorhandene Schiffsbuchwerte: '+fmt(p.buchwert)+' ISK',
  'Frachtgebühren: '+fmt(p.gebuehr)+' ISK kumulativ gebucht',
  'Frachtlöhne: '+fmt(p.lohn)+' ISK kumulativ an das separate Pilotenlohnkonto',
+ ...(s.kanon.u7Manager===true?s.w5ad.freight.filter(x=>x.owner==='house').slice(-5).reverse()
+   .map(x=>'Industriefracht '+x.id+' · '+fmt(x.amount)+' Erz · '+fmt(x.fee)+' ISK Frachttarif · '+
+    fmt(x.work)+' ISK Fluglohn · Abschluss in Spielminute '+x.end):[]),
  ...p.foerderung.map(x=>'Förderung '+x.schiff+' · Fortschritt: '+x.phase+' · Waren an Bord: '+x.ladung),
  ...(p.frachten.length>5?['Die letzten fünf Eisfrachtbelege']:[]),
  ...p.frachten.slice(-5).reverse().map(frachtzeile),
@@ -986,7 +1019,10 @@ function auftragsfeedbackAnzeigen(s){
  const archiv=$('auftrag-belege-archiv');
  archiv.hidden=p.frachten.length<=5;
  $('auftrag-belege-aeltere').replaceChildren(...p.frachten.slice(0,-5).reverse().map(frachtzeile).map(absatz));
- $('auftrag-minute').disabled=!p.zeitAktiv&&s.w3?.auftrag?.carrier!=='house';
+ const industrieAktiv=s.kanon.u7Manager===true&&(s.w3.auftrag?.carrier==='house'||
+   s.kanon.industrieErz.signFracht&&s.kanon.industrieErz.phase==='angebot'||s.w4.auftrag||s.w5.auftrag||
+   s.w5ac.active?.owner==='house');
+ $('auftrag-minute').disabled=!p.zeitAktiv&&!industrieAktiv;
 }
 $('auftrag-minute').addEventListener('click',()=>weiter(1));
 function anzeigen(){
@@ -1027,7 +1063,7 @@ function anzeigen(){
   ?scope.P3ManagerKarte.auswerten(a,s,session.weltReferenz(),alleAngebote):null;
  if(kartenModell)sektorKarte.anzeigen(kartenModell);
  const offers=alleAngebote.filter(o=>allowed.has(o.id)
-   ||/^(ice-|ore-|stop-|sil-start-|sil-sell-|freight-|gate-freight-|industry-accept-|industry-water-)/.test(o.id));
+   ||/^(ice-|ore-|stop-|sil-start-|sil-sell-|freight-|gate-freight-)/.test(o.id));
  $('spieleraktionen').replaceChildren(...offers.map(o=>{
   const box=d.createElement('div'),button=d.createElement('button'),small=d.createElement('small');
   box.className='order';

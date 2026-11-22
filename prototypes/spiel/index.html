@@ -156,6 +156,10 @@
      <details id="auftrag-details" class="manager-feedback-details">
       <summary>Lieferungen, Zahlungen und Belege ansehen</summary>
       <div id="auftrag-belege"></div>
+      <details id="auftrag-belege-archiv" class="manager-feedback-details" hidden>
+       <summary>Ältere Eisfrachtbelege</summary>
+       <div id="auftrag-belege-aeltere"></div>
+      </details>
       <p>Die gesamte Wirtschaft läuft weiter. Zusätzliche Käufe erfolgen nur, wenn die Beteiligten sie tatsächlich bezahlen.</p>
      </details>
     </section>
@@ -221,7 +225,7 @@
     <p id="p3-invest-hinweis"></p>
     <button id="p3-invest-aktion" type="button" disabled>Originalangebot prüfen</button>
     <p id="p3-invest-sperre" class="p3-sperre" role="status" aria-live="polite"></p>
-    <p class="p3-einschraenkung">Vergleich der Spielerkasse und Original-Schiffsrestbuchwerte mit 3.000 ISK Startkapital – keine vollständige GuV. Waren, offene Treuhandansprüche und künftige Reparaturen sind darin nicht bewertet. Käufer und Erlöse bleiben endlich.</p>
+    <p class="p3-einschraenkung">Vergleich der Spielerkasse und Original-Schiffsrestbuchwerte mit 3.000 ISK Startkapital – keine vollständige Gewinn- und Verlustrechnung. Waren, offene Treuhandansprüche und künftige Reparaturen sind darin nicht bewertet. Käufer und Erlöse bleiben endlich.</p>
    </section>
    <section id="p3-wasser-kreislauf" class="p3-handelsauftrag p3-wasser" aria-label="Wasserkauf und private Kaufkraft" hidden>
     <p class="eyebrow">KAPITEL 04 / ECHTE KAUFKRAFT</p>
@@ -233,7 +237,7 @@
     <p id="p3-wasser-grund" class="p3-sperre" role="status" aria-live="polite"></p>
     <p class="p3-einschraenkung">Freiwilliger Verbrauch aus deinem bereits verdienten Privatlohnkonto, nicht aus der Firmenkasse. Der Originalkern bezahlt die Station und verbraucht die gelieferte Ware; kein geschenktes Geld, kein neuer Käufer und kein Zwang zum Geldausgeben. Aldera kann später wieder zahlungsunfähig werden.</p>
    </section>
-   <section id="p3-npc-markt" class="p3-handelsauftrag p3-npc-markt" aria-label="NPC-Nachfrage und echte Transportkapazität" hidden>
+   <section id="p3-npc-markt" class="p3-handelsauftrag p3-npc-markt" aria-label="Nachfrage und Transportkapazität" hidden>
     <p class="eyebrow">KAPITEL 05 / KONZERNE &amp; NACHFRAGE</p>
     <h3>Wer verdient? Wer liefert?</h3>
     <p id="p3-npc-geld" class="p3-zahlen"></p>
@@ -242,20 +246,20 @@
     <strong id="p3-npc-ziel"></strong>
     <button id="p3-npc-aktion" type="button" disabled>Originalwirtschaft prüfen</button>
     <p id="p3-npc-grund" class="p3-sperre" role="status" aria-live="polite"></p>
-    <p class="p3-einschraenkung">NPC-Haushalte kaufen nur aus ihren eigenen tatsächlich vorhandenen Löhnen und Dividendeneinnahmen; alle Zahlen sind historische Kernbuchungen. Du entscheidest selbst, ob du mit deinem eigenen Frachter einen bezahlten Auftrag annimmst oder die Weltzeit weiterlaufen lässt. Keine automatische Käuferrettung, kein zusätzliches Geld und keine Gratisflotte.</p>
+    <p class="p3-einschraenkung">Anwohner kaufen nur aus ihren eigenen tatsächlich vorhandenen Löhnen und Dividendeneinnahmen; alle Zahlen sind historische Kernbuchungen. Du entscheidest selbst, ob du mit deinem eigenen Frachter einen bezahlten Auftrag annimmst oder die Weltzeit weiterlaufen lässt. Keine automatische Käuferrettung, kein zusätzliches Geld und keine Gratisflotte.</p>
    </section>
-   <section id="p3-npc-werft" class="p3-handelsauftrag p3-npc-werft" aria-label="Echte NPC-Frachterbeschaffung" hidden>
-    <p class="eyebrow">W6 / NPC-SPEDITION · ORIGINALWIRTSCHAFT</p>
+   <section id="p3-npc-werft" class="p3-handelsauftrag p3-npc-werft" aria-label="Frachterbeschaffung der Spedition" hidden>
+    <p class="eyebrow">FRACHTERBESCHAFFUNG DER SPEDITION</p>
     <h3>Werft. Kauf. Überführung.</h3>
     <p id="p3-npc-werft-kassen" class="p3-zahlen"></p>
     <p id="p3-npc-werft-flotte"></p>
     <p id="p3-npc-werft-auftrag"></p>
     <button id="p3-npc-werft-aktion" type="button">60 echte Wirtschaftsminuten abrechnen</button>
     <p id="p3-npc-werft-grund" class="p3-sperre" role="status" aria-live="polite"></p>
-    <p class="p3-einschraenkung">Nur im ausdrücklich gewählten S02-NPC-Modus. Asterion und die Nadir-Werft handeln autonom aus eigenen Kassen und nur mit physisch vorhandenen Gütern. Diese Taste führt ausschließlich die reguläre Weltzeit fort, nicht einen fremden Firmenbefehl. Kein garantierter Frachter, kein kostenloser Ersatz.</p>
+    <p class="p3-einschraenkung">In der Karriere mit eigenständig handelnden Unternehmen. Asterion und die Nadir-Werft handeln autonom aus eigenen Kassen und nur mit physisch vorhandenen Gütern. Diese Taste führt ausschließlich die reguläre Weltzeit fort, nicht einen fremden Firmenbefehl. Kein garantierter Frachter, kein kostenloser Ersatz.</p>
    </section>
    <section id="p3-industrie" class="p3-handelsauftrag p3-industrie" aria-label="Echte Erz-Material-Werftkette" hidden>
-    <p class="eyebrow">KAPITEL 06 / INDUSTRIE · W3 → W4 → W5</p>
+    <p class="eyebrow">KAPITEL 06 / INDUSTRIE · ERZTRANSPORT, RAFFINERIE UND WERFT</p>
     <h3>Aus Erz wird dein nächster Frachter.</h3>
     <p id="p3-industrie-phase" class="p3-zahlen"></p>
     <p id="p3-industrie-w3"></p>
@@ -283,7 +287,7 @@
     <p id="p3-industrie-frachtgrund" class="p3-sperre" role="status" aria-live="polite" hidden></p>
     <p id="p3-industrie-cockpit-hinweis" class="p3-einschraenkung" hidden></p>
     <p id="p3-industrie-hinweis" class="p3-sperre" role="status" aria-live="polite"></p>
-    <p class="p3-einschraenkung">Die NPC-Konzerne bezahlen Erzfracht, Verarbeitung und Werftarbeit eigenständig. Du kaufst nur aus vorhandenen echten Nadir-Hüllen und allein mit deinem eigenen Kapital. Die angezeigten Frachttarife abzüglich Fracht-Pilotenlohn sind kein Nettogewinn: Wertverzehr, Minerbetrieb und Anschaffung bleiben zusätzlich zu berücksichtigen. Keine garantierten Käufer, kostenlosen Schiffe oder erzwungenen Käufe.</p>
+    <p class="p3-einschraenkung">Die beteiligten Unternehmen bezahlen Erzfracht, Verarbeitung und Werftarbeit eigenständig. Du kaufst nur aus vorhandenen echten Nadir-Hüllen und allein mit deinem eigenen Kapital. Die angezeigten Frachttarife abzüglich Fracht-Pilotenlohn sind kein Nettogewinn: Wertverzehr, Minerbetrieb und Anschaffung bleiben zusätzlich zu berücksichtigen. Keine garantierten Käufer, kostenlosen Schiffe oder erzwungenen Käufe.</p>
    </section>
    <button id="welt-export" type="button" class="ghost">Spielstand als JSON sichern</button>
    <p class="footnote">Autosave nur im eigenen Karriere-Slot dieser Seite. Der alte Wirtschaftsspielstand bleibt unberührt.</p>

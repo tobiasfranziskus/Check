@@ -140,7 +140,7 @@ const SLOT_W6='aphros-void:spielerkarriere:regel207-forschung:v1';
      await page.locator('#open-menu').tap();
      await page.locator('#fortsetzen').tap();
      assert.equal(await page.locator('#spielwelt').isVisible(),true,'standard career selected despite active Dravos');
-     assert.match(await page.locator('#auftrag-belege').textContent(),/Belegstand: Tick 0/,'standard world loaded in memory');
+     assert.match(await page.locator('#auftrag-belege').textContent(),/Belegstand: Spielminute 0/,'standard world loaded in memory');
      assert.equal(await page.locator('#auftrag-meldung').textContent(),
        'Noch kein Auftrag in dieser Sitzung angeklickt.','transient order feedback cleared on switch');
      assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),freshText);
@@ -149,7 +149,7 @@ const SLOT_W6='aphros-void:spielerkarriere:regel207-forschung:v1';
      await page.locator('#open-menu').tap();
      await page.locator('#fortsetzen-w6').tap();
      assert.equal(await page.locator('#spielwelt').isVisible(),true,'research career selected despite active standard');
-     assert.match(await page.locator('#auftrag-belege').textContent(),/Belegstand: Tick 1/,'Dravos world restored in memory');
+     assert.match(await page.locator('#auftrag-belege').textContent(),/Belegstand: Spielminute 1/,'Dravos world restored in memory');
      assert.equal(await page.locator('#auftrag-meldung').textContent(),
        'Noch kein Auftrag in dieser Sitzung angeklickt.','no stale standard order in Dravos');
      assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),freshText,'standard save preserved');

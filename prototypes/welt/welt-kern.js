@@ -2360,6 +2360,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     torPruefen: m_core_torfreigabe.pruefen, torFrachtPruefen: m_core_torfreigabe.darfFracht,
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,
     buchwert: (state, id) => m_core_anlage.buchwert(state, state.ships[id]),
+    stillgelegt: (state, id) => m_core_anlage.stillgelegt(state, state.ships[id]),
   });
 }
 

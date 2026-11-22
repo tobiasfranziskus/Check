@@ -40,7 +40,8 @@ test('S2: Eigenminer kann nur Originalförderung starten und pausieren',()=>{
  const vor=j.exportieren(),m=ansehen(j,miner.id);
  assert.equal(m.auswahlId,miner.id);
  assert.equal(m.schiff.buchwert,600);
- assert.deepEqual(m.aktionen.map(a=>a.id),['ice-'+miner.id]);
+ assert.deepEqual(m.aktionen.map(a=>a.id),['ice-'+miner.id,'ore-'+miner.id]);
+ assert.equal(m.aktionen[1].ok,j.angebote().find(a=>a.id==='ore-'+miner.id).ok);
  assert.equal(m.aktionen[0].ok,j.angebote().find(a=>a.id==='ice-'+miner.id).ok);
  assert.equal(j.exportieren(),vor);
  befehl(j,'ice-'+miner.id);

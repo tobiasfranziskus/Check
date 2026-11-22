@@ -41,7 +41,7 @@ function auswerten(a,s,w,angebote){
   const ziel=reise?stationen.find(st=>st.id===original.ziel):null;
   const auftrag=fracht?(fracht===eis?'Eisfracht':'Erzfracht')+' · '+(phasen[fracht.phase]||'Transport'):
    ueberfuehrung?'Bezahlte Überführung':
-   pendel?pendel.ware==='eis'?'Eisförderung':'Bergbaupendel':
+   pendel?pendel.ware==='eis'?'Eisförderung':'Erzförderung':
    silizium?.schiff===sh.id&&silizium.owner===original.owner?'Siliziumförderung':
    original.auftrag==='foerdern'?'Bergbau':null;
   const strecke=reise&&(fracht||ueberfuehrung)&&ziel&&
@@ -61,7 +61,7 @@ function auswerten(a,s,w,angebote){
    rueckfahrt:fracht?.phase==='rueck',nachAldera:reise&&ziel?.system==='aldera',
    buchwert:w.buchwert(s,sh.id),
    gruppe:strecke?'strecke':reise?'unterwegs':sh.system,
-   angebote:original.owner==='house'?angebote.filter(o=>['ice-','stop-','freight-','gate-freight-','sil-start-','sil-sell-']
+   angebote:original.owner==='house'?angebote.filter(o=>['ice-','ore-','stop-','freight-','gate-freight-','sil-start-','sil-sell-']
     .some(prefix=>o.id===prefix+sh.id)):[]};
  }
  const schiffe=a.schiffe.map(schiffAuswerten);

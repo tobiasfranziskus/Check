@@ -35,6 +35,7 @@ function auswerten(w,s,angebote){
    :{aktion:null,bereit:false,titel:'Keine laufende Eigenförderung',
       grund:'Nur ein rechtmäßig laufendes eigenes Eis-Pendel kann beendet werden.'};
  const nextMine=choose(idleMiners,'ice-');
+ const nextOre=choose(idleMiners,'ore-');
  const mineBuy=quote('buy-st_aldera-miner');
  const mine=miners.length===0
    ?{aktion:mineBuy?.id||null,bereit:mineBuy?.ok===true,
@@ -45,6 +46,16 @@ function auswerten(w,s,angebote){
      :{aktion:null,bereit:false,titel:'Eisförderung läuft',
         grund:waiting.length?'Eigener Eisauftrag läuft bereits. 60 Weltminuten fortsetzen oder im Auftragsverzeichnis beenden.':
           'Kein freier eigener Miner für einen neuen Eisauftrag in Aldera.'};
+ // Alternative W1 commodity: exclusively a quoted, paid, player-owned miner
+ // contract. No extra world, revenue formula or third-party industry authority.
+ const ore=miners.length===0
+   ?{aktion:null,bereit:false,titel:'Erzgeschäft: eigenen Miner benötigt',
+      grund:'Zuerst ein Bergbauschiff in Aldera kaufen.'}
+   :nextOre
+     ?{aktion:nextOre.id,bereit:nextOre.quote.ok===true,
+        titel:'50 Erz für Aldera fördern',grund:nextOre.quote.reason||null}
+     :{aktion:null,bereit:false,titel:'Erzauftrag erst nach Förderpause',
+        grund:'Laufendes Eis- oder Erzpendel zuerst beenden und Miner am Dock freigeben.'};
  // Completed/open freight belongs to the company even while its carrier is in Nadir.
  const ownIds=new Set(owned.filter(sh=>sh.klasse==='frachter').map(sh=>sh.id));
  const entries=(s.kanon?.spielerFrachten?.auftraege||[])
@@ -89,7 +100,8 @@ function auswerten(w,s,angebote){
   anlagewert,verschleiss,inventarindikator,
   // Never label this cash/book-value indicator as a balance sheet or net profit.
   aussetzen:Object.freeze(aussetzen),
-  abbau:Object.freeze(mine),transport:Object.freeze(freight)
+  abbau:Object.freeze(mine),transport:Object.freeze(freight),
+  erzauftrag:Object.freeze(ore)
  });
 }
 const api=Object.freeze({auswerten});

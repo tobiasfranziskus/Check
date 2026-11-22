@@ -107,7 +107,7 @@ async function pruefe(browser,kind,width,height,base){
   await el('#tab-auftraege').tap();
   assert.equal(await el('#auftrag-details').getAttribute('open'),null,'financial evidence is compact by default');
   const vorBelegKlick=await save();
-  await el('#auftrag-details summary').tap();
+  await el('#auftrag-details > summary').tap();
   assert.equal(await save(),vorBelegKlick,'opening receipts does not alter the original simulation');
   assert.match(await el('#zeit').innerText(),/120 Minuten/);
   assert.match(await el('#auftrag-belege').innerText(),/Gestartet · Hinflug läuft/);
@@ -169,7 +169,7 @@ async function pruefe(browser,kind,width,height,base){
   await el('#fortsetzen').tap();
   assert.equal(await save(),original);
   assert.equal(await el('#auftrag-details').getAttribute('open'),null,'receipt disclosure resets after reload');
-  await el('#auftrag-details summary').tap();
+  await el('#auftrag-details > summary').tap();
   assert.match(await el('#auftrag-belege').textContent(),/Abgeschlossen/);
   assert.equal(await selection.inputValue(),'station:st_aldera');
   await el('#tab-universum').tap();

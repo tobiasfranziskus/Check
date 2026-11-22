@@ -177,7 +177,7 @@ async function karrierestart(browser,kind){
      else await handelBewusstTippen();
     }
     assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/Frachterlöse 240 ISK/);
-    assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/F4-Pilotenlohn 120 ISK/);
+    assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/Pilotenlohn 120 ISK/);
     assert.match(await page.locator('#manager-betrieb-risiko').innerText(),/Keine vollständige Gewinnrechnung/);
     assert.equal(await page.locator('#missions li:last-child').getAttribute('class'),'done',
       'paid completed freight must permanently complete the career milestone');
@@ -219,7 +219,7 @@ async function karrierestart(browser,kind){
     assert.ok(s.kanon.spielerFrachten.auftraege.filter(a=>a.end!==null).length>=2);
     assert.match(await page.locator('#p3-handelsstand').textContent(),/2 bezahlte Rundfahrten/);
     assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/Frachterlöse 480 ISK/);
-    assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/F4-Pilotenlohn 240 ISK/);
+    assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/Pilotenlohn 240 ISK/);
     assert.ok(s.kanon.spielerFrachten.gebuehr>=480);
     await page.locator('#p3-handelsdetails summary').tap();
     assert.match(await page.locator('#p3-handelszahlen').innerText(),/Verfügbare Kasse/);

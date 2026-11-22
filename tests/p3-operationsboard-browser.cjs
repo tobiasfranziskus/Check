@@ -101,7 +101,7 @@ async function pruefen(browser,kind,base,width,height){
   const fremd=Object.values(JSON.parse(hin).ships).find(s=>s.owner!=='house');
   await marker(fremd.id).tap();
   assert.match(await marker(fremd.id).innerText(),/Fremd/);
-  assert.match(await details.innerText(),/Eigentümer.*Bergbau/s);
+  assert.match(await details.innerText(),/Eigentümer.*Erzförderung/s);
   assert.equal(await details.getByRole('button').count(),0);
   assert.equal(await marker(fremd.id).locator('svg g').count(),1);
   assert.equal(await marker(fremd.id).locator('svg > path').count(),0);

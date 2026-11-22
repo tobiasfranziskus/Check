@@ -97,7 +97,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   const engine = k7 ? (p8dFracht ? FACTORY.createP8dWelt(startkapital,ort) :
     p8cDravos ? FACTORY.createP8cWelt(startkapital,ort) :
     p8bZweiFelder ? FACTORY.createP8bWelt(startkapital,ort) :
-    jaegerFlug ? FACTORY.createJ4cWelt(startkapital,ort) :
+    jaegerFlug ? (u8Research?FACTORY.createU7U8Welt(startkapital,ort):FACTORY.createJ4cWelt(startkapital,ort)) :
     jaeger ? FACTORY.createJ4bWelt(startkapital,ort) :
     bauteile ? FACTORY.createJ3Welt(startkapital,ort) :
     silizium ? FACTORY.createJ2bWelt(startkapital, ort)
@@ -109,6 +109,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   const W = rules.w5n;
   // K7-Preise ausschließlich aus den Original-W1/W3/W5-Regeln ableiten,
   // keine zweite Tarif-/Balancingtabelle für den Forschungsauftrag.
+  const carrierAllowed=owner=>owner===rules.w3.spedition||(u8Research&&owner===rules.economy.start.owner);
   const K7_PREIS = k7 ? Object.freeze({
     menge: rules.w3.fracht,
     bergbau: rules.w3.fracht * rules.erzpilot.minerJeMinute,
@@ -542,11 +543,12 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       if (!u8Research || k.u8ErzRueckfracht!==true) return fail('U8: Forschung nicht ausgewählt');
       if (Object.keys(cmd).sort().join(',')!=='owner,schiff,type' || cmd.owner!==W.quellStation)
         return fail('U8: nur Aldera darf Wasser bestellen');
-      if (!a || a.phase!=='rueck' || a.schiff!==cmd.schiff || sh?.owner!==rules.w3.spedition
+      if (!a || a.phase!=='rueck' || a.schiff!==cmd.schiff || sh?.owner!==(a.carrier??rules.w3.spedition)||!carrierAllowed(sh?.owner)
           || sh.phase!=='reise' || sh.system!=='nadir' || sh.ziel!==W.quellStation
           || sh.ankunft-a.zeit!==state.tick || a.gearbeitet!==a.zeit
           || state.w5n.frachtauftrag || state.w5ac?.active || k.rueckfracht)
         return fail('U8: kein exklusiver gerade begonnener bezahlter W3-Rückflug');
+      if (a.carrier==='house'&&a.wasserZustimmung!==true)return fail('U8: Zustimmung des Frachter-Eigentümers fehlt');
       if (ladungSumme(sh)!==0 || m_core_anlage.stillgelegt(state,sh)) return fail('U8: Frachter nicht frei');
       const nadir=state.stations[W.zielStation].lager,aldera=state.stations[W.quellStation].lager;
       const stueck=W.wasserPreis+KANON.wasser.rueckfrachtJeEinheit;
@@ -1666,7 +1668,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         // beliebig neu verteilbare Namen. Auch nach der Lieferung prüfen.
         if(beteiligte && (state.ships[i.miner]?.owner!=='npc3'
           ||state.ships[i.miner]?.klasse!=='miner'
-          ||state.ships[i.frachter]?.owner!=='transport'
+          ||!carrierAllowed(i.carrier??'transport')
+          ||state.ships[i.frachter]?.owner!==(i.carrier??'transport')
+          ||(i.carrier!==undefined&&(!u8Research||i.carrier!=='house'))
           ||state.ships[i.frachter]?.klasse!=='frachter'
           ||!Number.isSafeInteger(i.erstellt)||i.erstellt<0||i.erstellt>state.tick
           ||typeof i.signMiner!=='boolean'||typeof i.signFracht!=='boolean'
@@ -1677,7 +1681,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           &&sicherK7Reserve(state,i)!==(i.materialOnly||i.werftVerwendet?0:K7_PREIS.werft))
           fehler.push('K7-Werftreserve nicht einmalig aus eigenem Vermögen gebunden');
         if(laufendeIndustrieFracht&&(!i||i.phase!=='aktiv'
-          ||i.miner!==a.industrieMiner||i.frachter!==a.schiff
+          ||i.miner!==a.industrieMiner||i.frachter!==a.schiff||i.carrier!==a.carrier
           ||i.signMiner!==true||i.signFracht!==true
           ||(i.materialOnly?i.signWerft!==false||k.materialSupplyEnabled!==true:i.signWerft!==true)
           ||(a.phase!=='vorbestellt'&&i.erzAngenommen!==true)))
@@ -1742,9 +1746,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       if (k.rueckfracht?.art!==undefined) {
         const r=k.rueckfracht,a=state.w3?.auftrag,sh=state.ships[r.schiff];
         if (!u8Research || r.art!=='erz' || !a || a.schiff!==r.schiff || a.phase!=='rueck'
-          || sh?.owner!==rules.w3.spedition || sh.phase!=='reise' || sh.system!=='nadir'
+          || sh?.owner!==(a.carrier??rules.w3.spedition) || !carrierAllowed(sh?.owner) || sh.phase!=='reise' || sh.system!=='nadir'
           || sh.ziel!==W.quellStation || sh.ladung.wasser!==r.menge || !ganz(r.menge) || r.menge<=0
-          || r.gebuehr!==r.menge*KANON.wasser.rueckfrachtJeEinheit || state.w5n.frachtauftrag)
+          || r.gebuehr!==r.menge*KANON.wasser.rueckfrachtJeEinheit || state.w5n.frachtauftrag
+          ||(a.carrier==='house'&&a.wasserZustimmung!==true))
           fehler.push('U8: Wasser ohne echten W3-Rückflug');
       } else if (u8Research && k.rueckfracht) {
         // A forged save must not hide an ore backhaul by deleting its tag
@@ -1920,11 +1925,11 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         return verwerfen('P8g: kein echter ungedeckter J3-Materialbedarf');
       if(cmd.owner!=='st_nadir')return verwerfen('nur realer Industriekäufer darf bestellen');
       if(!['frei','geliefert','storniert'].includes(i.phase))return verwerfen('Vertrag bereits vorhanden');
-      if(s.w3.auftrag||s.w5n.frachtauftrag)return verwerfen('bereits laufende Fracht');
+      if(s.w3.auftrag||s.w5n.frachtauftrag||(u8Research&&(s.w5ac?.active||s.kanon.rueckfracht)))return verwerfen('bereits laufende Fracht');
       if((s.owners.k7_werft_treuhand?.cash||0)!==0)
         return verwerfen('vorheriger Vertrag hat noch gebundenes Werftkapital');
       const mi=s.ships[cmd.miner],fr=s.ships[cmd.frachter];
-      if(!mi||mi.owner!=='npc3'||mi.klasse!=='miner'||!fr||fr.owner!=='transport'
+      if(!mi||mi.owner!=='npc3'||mi.klasse!=='miner'||!fr||!carrierAllowed(fr.owner)
         ||fr.klasse!=='frachter'||m_core_anlage.stillgelegt(s,mi)||m_core_anlage.stillgelegt(s,fr))
         return verwerfen('fremdes oder verschlissenes Schiff');
       if(mi.system!=='aldera'||mi.flug?.lage!=='angedockt'
@@ -1935,6 +1940,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       s.kanon.industrieErz={phase:'angebot',miner:mi.id,frachter:fr.id,
         signMiner:false,signFracht:false,signWerft:false,
         werftVerwendet:false,erzAngenommen:false,erstellt:s.tick,
+        ...(u8Research&&fr.owner==='house'?{carrier:'house'}:{}),
         ...(onlyMaterial?{materialOnly:true}:{})};
       return {ok:true,type};
     }
@@ -1946,9 +1952,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       i.signMiner=true;return {ok:true,type};
     }
     if(type==='industrialOreAcceptFreight'){
-      if(cmd.owner!=='transport'||!angebot)return verwerfen('nur Spedition darf unterschreiben');
+      if(!angebot||cmd.owner!==(i.carrier??'transport')||!carrierAllowed(cmd.owner))return verwerfen('nur tatsächlicher Frachter-Eigentümer darf unterschreiben');
       if(i.signFracht)return verwerfen('Transport bereits unterschrieben');
-      if(s.ships[i.frachter]?.owner!=='transport'||s.owners.transport.cash<K7_PREIS.frachtlohn)
+      if(s.ships[i.frachter]?.owner!==cmd.owner||s.owners[cmd.owner].cash<K7_PREIS.frachtlohn)
         return verwerfen('echte Frachtarbeit nicht gedeckt');
       i.signFracht=true;return {ok:true,type};
     }
@@ -1986,7 +1992,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       if(cmd.owner!=='st_nadir'||!angebot||!i.signMiner||!i.signFracht||(!onlyMaterial&&!i.signWerft))
         return verwerfen('nur der Käufer bestätigt nach beiden Eigentümerzustimmungen');
       const mi=s.ships[i.miner],fr=s.ships[i.frachter];
-      if(!mi||!fr||mi.owner!=='npc3'||fr.owner!=='transport'
+      if(!mi||!fr||mi.owner!=='npc3'||fr.owner!==(i.carrier??'transport')||!carrierAllowed(fr.owner)
         ||mi.klasse!=='miner'||fr.klasse!=='frachter'
         ||mi.system!=='aldera'||fr.system!=='aldera'
         ||mi.phase!=='dock'||mi.flug?.lage!=='angedockt'
@@ -1999,7 +2005,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         ||(s.kanon.pendel[i.miner]&&s.kanon.pendel[i.miner].ware!=='erz'))
         return verwerfen('Einsatzschiffe/Erzauftrag seit Signatur nicht mehr verfügbar');
       if(s.owners.npc3.cash<K7_PREIS.bergbau||s.owners.st_aldera.cash<K7_PREIS.alderakauf
-        ||s.owners.st_nadir.cash<K7_PREIS.nadiraufwand||s.owners.transport.cash<K7_PREIS.frachtlohn
+        ||s.owners.st_nadir.cash<K7_PREIS.nadiraufwand||s.owners[fr.owner].cash<K7_PREIS.frachtlohn
+        ||(u8Research&&(s.w5ac?.active||s.kanon.rueckfracht))
         ||(!onlyMaterial&&s.owners.werft_extern.cash<K7_PREIS.werft))
         return verwerfen('unvollständig vorfinanzierte Firmenkette');
       try { kern.industryOrePrebook(s,i.frachter,i.miner); }
@@ -2196,6 +2203,14 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (type === 'shipFreightGateIce') return m_core_torfreigabe.starten(state,cmd);
     if (type === 'stationBuildMiner') return m_core_minerwerft.bauen(state, cmd);
     if (typeof type === 'string' && hat(m_core_kreislauf.BEFEHLE, type)) return m_core_kreislauf.ausfuehren(state, cmd);
+    if(type==='industrialWaterAcceptBackhaul'){
+      const a=state.w3?.auftrag,sh=state.ships[cmd.schiff];
+      if(!u8Research||Object.keys(cmd).sort().join(',')!=='owner,schiff,type'
+        ||cmd.owner!=='house'||a?.carrier!=='house'||a.schiff!==cmd.schiff||a.phase!=='rueck'
+        ||sh?.owner!==cmd.owner||sh.ankunft-a.zeit!==state.tick||a.wasserZustimmung
+        ||state.kanon.rueckfracht)return {ok:false,type,reason:'U8: keine freiwillige freie Rückfrachtzusage'};
+      a.wasserZustimmung=true;return {ok:true,type};
+    }
     if (type === 'industrialWaterBackhaul') return m_core_kreislauf.erzWasserAbholung(state,cmd);
     if (type === 'pilotWaterBuy')
       return { ok: false, type, reason: 'K1: Wasser nur am Wohnort über householdBuy; kein ortsloser Kauf' };

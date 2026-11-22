@@ -30,3 +30,14 @@ Der bisherige Wasser-Rücktarif (1 ISK je Einheit) deckt allein keine eigenstän
 4. Gesamtsuite Node22, 13×90 und 365/730-Tage-Szenarien mit Geld-/Waren-/Eigentumsaudit, ursprüngliche Hashes, Chromium/WebKit mit vier Touchgrößen, Root und Save/Load. Langzeit-Engpässe als Ergebnis zulassen.
 
 **Empfehlung:** U7 mit U8-Rückladung gemeinsam spezifizieren und testen; eigenständiger Wasserauftrag als zweiter Tarifpfad im selben Paket. Kein autonomes Produktionsfeature ohne Regel-/Vertragsfreigabe und vollständige Integration. M4-U4 bleibt offen.
+
+
+## U8-Nachweisstand (22.11.2026)
+
+- Kalkulationshead 4084bad3: 2/2 Workflows, 587/587 Node22; die Budgets sind bestätigt, keine ausgeführten neuen Aufträge.
+- Kernhead 798f2b2e: explizites Rule204-Forschungsprofil mit originalbezahltem W3-Rückflug, neuer Aldera-Wasserbestellung und K1-Rückfrachtbuch. 588/589 Node22; Test erreicht keinen passenden Ankunftszustand. Originale 13×90- und S02×365/730-Referenzläufe erfolgreich, keine U8-Langzeitabnahme.
+- Folgehead 15b71499: [CI-Log](https://github.com/tobiasfranziskus/Check/actions/runs/45059634961/job/137322442015), 588/589 Node22. Tatsächliche Eisfahrt und Wasserproduktion (10 Einheiten) gelungen; bei Tick 451 Aldera-Kasse 0, zwei NPC-Miner im freien Förderflug. U8-Bestellung noch nicht erreicht. Die stündliche W2-Krisensteuerung in rule200-k7-industry-core.js läuft auch bei deaktivierter äußerer K1-Automatik.
+- 857fbbc4: Testtreiber benutzt nur reguläre NPC-Eigentümerbefehle zum Stoppen leerer, vertragsfreier Miner; bereits finanzierter Bergbau und laufender Industrievertrag bleiben unberührt. Auswahl erst bei realen Dock-/Budgetbedingungen aller Beteiligten. Keine Änderung der W2-Produktregeln.
+- feff75de / 8350e451: U8-Audit bindet auch ungetaggte Wasser-Rückfracht an echten F4-Auftrag; Tests für doppelt manipulierten Beleg und exakt einmalige Zahlung an realen Carrier. CI für neue Änderungen noch nicht nachgewiesen. Keine produktive Aktivierung.
+
+Vor U7-Erweiterung muss der echte NPC-Rückflug einschließlich Wasserzahlung und Reload erfolgreich sein. Anschließend separate freiwillige Carrier-Zustimmung zur Zusatzladung und Eigentümerbuchungen für den Hausfrachter; keine bloße Umgehung der bestehenden Speditionsrechte. Regel204-Standardspiel bleibt unverändert.

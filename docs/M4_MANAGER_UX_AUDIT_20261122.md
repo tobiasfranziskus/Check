@@ -21,7 +21,7 @@
 
 ## Prioritäten (kein zweiter Produkt-Roadmap-Ersatz)
 
-1. **P1 · Sitzungsklarheit:** Slotwechsel-/Feedback-Fehler aus dem realen Blindtest beheben, unabhängig prüfen (gesonderter PR #558).
+1. **P1 · Sitzungsklarheit:** Slotwechsel-/Feedback-Fehler aus dem realen Blindtest über PR #558 nach vollständiger GitHub-CI in `main e63325f5` übernommen; Pages-Deploy und Geräteprüfung separat nachweisen.
 2. **P1 · Ereignisführung:** Nächste reale Lieferung, Verkaufssperre oder Vertragsphase nennen; gezielte Zeitfortschrittsoption erst nach deterministischer Prüfung. Keine Ereignisse, Zeitpunkte oder Verkäufe erfinden.
 3. **P1 · Informationsarchitektur:** Auftragsentscheidung und Status sichtbar lassen, komplette Fracht-/Buchungslisten bei Bedarf aufklappbar machen; unnötige Core-Begriffe entfernen. Dieses Arbeitspaket.
 4. **P2 · Kontextuelle Engpässe:** Käuferkasse, erforderliche Summe und tatsächliche Wahlmöglichkeiten direkt an die betroffene Auftragskarte binden, ohne neue Wirtschaftsbefehle.

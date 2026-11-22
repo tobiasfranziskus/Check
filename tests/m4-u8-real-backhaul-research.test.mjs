@@ -124,6 +124,10 @@ test('U8 research: real NPC W3 return, paid optional water, atomic rejection and
  assert.throws(()=>w.load(JSON.stringify(fake)));
  const wrong=JSON.parse(loaded);delete wrong.kanon.rueckfracht.art;
  assert.throws(()=>w.load(JSON.stringify(wrong)));
+ wrong.kanon.rueckfracht.schiff='fake';
+ assert.throws(()=>w.load(JSON.stringify(wrong)),'tag and ship id cannot both be removed to bypass audit');
+ const feeKey='rueckfracht|k1_rueckfracht|transport';
+ const paidBefore=s.kanon.buch.summen[feeKey]||0;
  const copy=w.load(loaded),minutes=a.zeit;
  w.advance(s,minutes);w.advance(copy,minutes);
  assert.equal(w.save(s),w.save(copy));
@@ -132,6 +136,7 @@ test('U8 research: real NPC W3 return, paid optional water, atomic rejection and
  assert.equal(s.kanon.wasser.rueckGeliefert-earned,p.menge);
  assert.equal(s.stations.st_aldera.lager.wasser,stock+p.menge);
  assert.equal(s.owners.k1_rueckfracht.cash,0);
+ assert.equal((s.kanon.buch.summen[feeKey]||0)-paidBefore,p.gebuehr,'exact fee paid once to actual carrier');
  assert.equal(s.ships[ship].ladung.wasser,undefined);
  assert.equal(s.ships[ship].owner,'transport');
  check(w,s);

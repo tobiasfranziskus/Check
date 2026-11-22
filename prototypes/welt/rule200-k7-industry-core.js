@@ -4057,6 +4057,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   pilotW5TransferStand, pilotW5TransferKalkulation,
   pilotWageTradeStand,pilotWageTradeQuote,
   pilotWaterStand,pilotWaterQuote,pilotIceFreightQuote,pilotWaterFactoryQuote,
+  eisfrachtPreise:m_core_w5n.preise,
   pilotPrivateWageStand,pilotPrivateWaterQuote,
   replacementQuote:(s,id,reserve=0)=>m_core_w5_replacement.quote(s,W5_RULES,
     W5_RULES.w3.spedition,id,reserve),

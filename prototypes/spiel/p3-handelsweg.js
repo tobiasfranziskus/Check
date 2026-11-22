@@ -25,6 +25,7 @@ function auswerten(s,angebote,welt=null){
  const gebuehr=s.kanon.spielerFrachten?.gebuehr||0;
  const lohn=s.kanon.spielerFrachten?.lohn||0;
  const suchen=id=>angebote.find(a=>a.id===id);
+ const frachtangebot=frachter.map(sh=>suchen('freight-'+sh.id)).find(a=>a?.ok);
  // The original W5n rule defines the charge price, never the UI.
  const w=welt?.rules?.w5n;
  const eisAnkaufKosten=Number.isSafeInteger(w?.charge)&&Number.isSafeInteger(w?.eisPreis)
@@ -45,7 +46,7 @@ function auswerten(s,angebote,welt=null){
  }else if(eis>=50&&frachter.length){
   titel='Nächste Eis-Rundfracht beauftragen';
   anleitung='50 physische Einheiten Eis sind in Aldera verfügbar. Käuferbudget, Löhne und Frachter werden bei der Buchung erneut geprüft.';
-  aktion='freight-'+frachter[0].id;
+  aktion=frachtangebot?.id??'freight-'+frachter[0].id;
  }else if(miner.some(sh=>s.kanon.pendel?.[sh.id]?.ware==='eis')){
   if(eisAnkaufKosten!==null&&s.owners.st_aldera.cash<eisAnkaufKosten){
    titel='Eisabnahme in Aldera nicht finanziert';

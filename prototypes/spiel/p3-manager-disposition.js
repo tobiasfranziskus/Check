@@ -18,6 +18,13 @@ function auswerten(w,s,angebote){
    .sort((a,b)=>a.id.localeCompare(b.id));
  const miners=owned.filter(sh=>sh.klasse==='miner'&&sh.system==='aldera');
  const carriers=owned.filter(sh=>sh.klasse==='frachter'&&sh.system==='aldera');
+ const abnahme=w.rules.erzpilot;
+ const erzKosten=abnahme.auftragsMenge*abnahme.preis;
+ const erzExportKasse=s.owners[abnahme.exportOwner].cash;
+ const ziel=w.rules.w5n.zielStation;
+ const eislagerNadir=s.stations[ziel].lager.eis||0;
+ const eisFrei=Math.max(0,w.kern.obergrenze(s,w.rules,ziel,'eis')-eislagerNadir);
+ const frachtPreise=w.kern.eisfrachtPreise(w.rules);
  const quote=id=>angebote.find(x=>x.id===id)||null;
  const choose=(ships,prefix)=>{
   const orders=ships.map(sh=>({id:prefix+sh.id,quote:quote(prefix+sh.id)}))
@@ -28,12 +35,15 @@ function auswerten(w,s,angebote){
    s.kanon.pendel[sh.id].ware==='eis');
  const idleMiners=miners.filter(sh=>!s.kanon?.pendel?.[sh.id]);
  // M2: only stop an already running OWN pendulum via the original quote.
- const stopMine=choose(waiting,'stop-');
+ const erzAktiv=miners.filter(sh=>s.kanon?.pendel?.[sh.id]?.ware==='erz');
+ const stopKandidaten=erzExportKasse<erzKosten
+  ?[...erzAktiv,...waiting]:[...waiting,...erzAktiv];
+ const stopMine=choose(stopKandidaten.filter(sh=>!s.kanon.pendel[sh.id].beenden),'stop-');
  const aussetzen=stopMine
    ?{aktion:stopMine.id,bereit:stopMine.quote.ok===true,
-      titel:'Eigene Eisförderung beenden',grund:stopMine.quote.reason||null}
+      titel:s.kanon.pendel[stopMine.id.slice(5)].ware==='erz'?'Eigene Erzförderung beenden':'Eigene Eisförderung beenden',grund:stopMine.quote.reason||null}
    :{aktion:null,bereit:false,titel:'Keine laufende Eigenförderung',
-      grund:'Nur ein rechtmäßig laufendes eigenes Eis-Pendel kann beendet werden.'};
+      grund:'Du kannst einen laufenden Eis- oder Erzauftrag deiner Schiffe beenden.'};
  const nextMine=choose(idleMiners,'ice-');
  const nextOre=choose(idleMiners,'ore-');
  const mineBuy=quote('buy-st_aldera-miner');
@@ -43,9 +53,9 @@ function auswerten(w,s,angebote){
    :nextMine
      ?{aktion:nextMine.id,bereit:nextMine.quote.ok===true,
         titel:'Eisförderung beauftragen',grund:nextMine.quote.reason||null}
-     :{aktion:null,bereit:false,titel:'Eisförderung läuft',
-        grund:waiting.length?'Eigener Eisauftrag läuft bereits. 60 Weltminuten fortsetzen oder im Auftragsverzeichnis beenden.':
-          'Kein freier eigener Miner für einen neuen Eisauftrag in Aldera.'};
+     :{aktion:null,bereit:false,titel:waiting.length?'Eisförderung läuft':'Kein freies Bergbauschiff',
+        grund:waiting.length?'Ein Eisauftrag läuft bereits. Du kannst ihn in der Flotte beenden.':
+          'Deine Bergbauschiffe in Aldera sind für andere Aufträge eingeteilt.'};
  // Alternative W1 commodity: exclusively a quoted, paid, player-owned miner
  // contract. No extra world, revenue formula or third-party industry authority.
  const ore=miners.length===0
@@ -53,7 +63,7 @@ function auswerten(w,s,angebote){
       grund:'Zuerst ein Bergbauschiff in Aldera kaufen.'}
    :nextOre
      ?{aktion:nextOre.id,bereit:nextOre.quote.ok===true,
-        titel:'50 Erz für Aldera fördern',grund:nextOre.quote.reason||null}
+        titel:abnahme.auftragsMenge+' Erz für Aldera fördern',grund:nextOre.quote.reason||null}
      :{aktion:null,bereit:false,titel:'Erzauftrag erst nach Förderpause',
         grund:'Laufendes Eis- oder Erzpendel zuerst beenden und Miner am Dock freigeben.'};
  // Completed/open freight belongs to the company even while its carrier is in Nadir.
@@ -64,12 +74,17 @@ function auswerten(w,s,angebote){
  const completed=entries.filter(a=>natural(a.end)&&natural(a.geliefert)).length;
  const nextFreight=choose(carriers,'freight-');
  const freightBuy=quote('buy-st_aldera-frachter');
- const freight=carriers.length===0
+ const frachterStillgelegt=carriers.length>0&&carriers.every(sh=>w.stillgelegt(s,sh.id));
+ const ersatz=frachterStillgelegt?['buy-st_aldera-frachter','buy-st_nadir-frachter']
+  .map(quote).find(a=>a?.ok):null;
+ const freight=ersatz
+   ?{aktion:ersatz.id,bereit:true,titel:'Ersatzfrachter in '+(ersatz.id.includes('nadir')?'Nadir':'Aldera')+' kaufen',grund:null}
+   :carriers.length===0
    ?{aktion:freightBuy?.id||null,bereit:freightBuy?.ok===true,
       titel:'Frachter kaufen',grund:freightBuy?.reason||'Kein originales Frachterangebot in Aldera'}
    :nextFreight
      ?{aktion:nextFreight.id,bereit:nextFreight.quote.ok===true,
-        titel:'50 Eis transportieren',grund:nextFreight.quote.reason||null}
+        titel:charge+' Eis transportieren',grund:nextFreight.quote.reason||null}
      :{aktion:null,bereit:false,titel:'Eistransport nicht verfügbar',
        grund:'Kein originaler Frachtauftrag für einen eigenen Aldera-Frachter'};
  // M2: original book values, receipts and paid wages; never infer a full profit.
@@ -93,7 +108,13 @@ function auswerten(w,s,angebote){
  return Object.freeze({
   hausKasse:house,alderaKasse:aldera,nadirKasse:nadir,eisLager:ice,
   eisCharge:charge,ankaufKosten:charge*price,
-  minerAnzahl:miners.length,minerAktiv:waiting.length,
+  minerAnzahl:miners.length,minerAktiv:waiting.length,erzAktiv:erzAktiv.length,
+  eislagerNadir,eisFrei,wasserNadir:s.stations[ziel].lager.wasser||0,
+  eisWasserwerkSchwelle:s.kanon.politik.wasserwerkBis,
+  nadirFrachtbedarf:frachtPreise.gesamt,frachtLohnbedarf:frachtPreise.arbeit,
+  erzKosten,erzExportKasse,
+  frachterStillgelegt,
+  ersatzAldera:freightBuy,ersatzNadir:quote('buy-st_nadir-frachter'),
   frachterAnzahl:carriers.length,frachtOffen:open,frachtAbgeschlossen:completed,
   frachtGebuehrBisher:gebuehr,
   frachtLohnBisher:lohn,

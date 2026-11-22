@@ -31,7 +31,12 @@ function konzernname(id){return Object.prototype.hasOwnProperty.call(KONZERN_ANZ
  ?KONZERN_ANZEIGENAMEN[id]:safeText(id);}
 // Anzeigeebene für ältere Auftragsmeldungen: technische IDs sind niemals Spielernamen.
 function anzeigetext(value){
- return safeText(value).replace(/(^|[^A-Za-z0-9_])(house|npc3|transport|werft_extern|st_aldera|st_nadir)(?=$|[^A-Za-z0-9_])/g,
+ return safeText(value)
+  .replace(/^(?:K1(?:\/F4)?|K2(?:\/J2a)?|J4b|W5ac): +/,'')
+  .replace(/^F[46] · /,'')
+  .replace('Hin-/Rueckfracht','Hin- und Rückfracht')
+  .replace('beide Fluege','beide Flüge')
+  .replace(/(^|[^A-Za-z0-9_])(house|npc3|transport|werft_extern|st_aldera|st_nadir)(?=$|[^A-Za-z0-9_])/g,
   (_match,prefix,id)=>prefix+konzernname(id));
 }
 function firmennamenAnzeigen(){
@@ -94,7 +99,7 @@ function neueSitzung(){
  return scope.J8KonzernSitzung.erstellen();
 }
 const sektorKarte=scope.P3ManagerKarte?.verbinden($('management-spielfeld'),{
- konzernname,titel,fmt,
+ konzernname,titel,fmt,anzeigetext,
  waehleSchiff:(id,karte)=>{
   managerFlotteAuswahlId=id;
   managerFlotteAnzeigen(karte,session.angebote(),session.zustandReferenz());
@@ -243,7 +248,7 @@ function auftrag(id){
   // Leave the full gesture window after the purchase and its refreshed offers are visible.
   letzteAuftragsgeste={id,bis:performance.now()+350};
   managerTutor?.gebucht(id);
-  auftragMeldung((id.startsWith('stop-')?'Beendet / Abbruch angefordert: ':id.startsWith('buy-')||id.startsWith('sil-sell-')?'Abgeschlossen / gebucht: ':'Gestartet: ')+titel(a)+' · Tick '+session.ansicht().tick+'. Bereits verbuchte Leistungen bleiben bestehen.');
+  auftragMeldung((id.startsWith('stop-')?'Beendet / Abbruch angefordert: ':id.startsWith('buy-')||id.startsWith('sil-sell-')?'Abgeschlossen / gebucht: ':'Gestartet: ')+titel(a)+' · Spielminute '+session.ansicht().tick+'. Bereits verbuchte Leistungen bleiben bestehen.');
   if(kauf){
    const kasse=session.ansicht().hausgeld;
    hinweis(kauf[1]+' gekauft in '+kauf[2]+' für '+fmt(kasseVorher-kasse)+
@@ -254,7 +259,7 @@ function auftrag(id){
     'Auftrag gebucht: '+titel(a)+'.');
   }
   if(siliziumSchiff)pilotieren(siliziumSchiff);
- }catch(e){auftragMeldung('Abgelehnt: '+error(e));hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
+ }catch(e){auftragMeldung('Abgelehnt: '+anzeigetext(error(e)));hinweis('Auftrag nicht ausgeführt: '+error(e),true);}
 }
 const namen=[
  ['buy-st_aldera-miner','Bergbauschiff','Aldera','Dein erstes Bergbauschiff kaufen'],
@@ -294,10 +299,10 @@ function managerDispositionAnzeigen(s,angebote){
   ' ISK · Restbuchwert deiner Schiffe '+fmt(p.anlagewert)+
   ' ISK · bisheriger Wertverzehr deiner aktuellen Schiffe '+fmt(p.verschleiss)+
   ' ISK. Kasse + Schiffsbuchwerte gegenüber Originalstart: '+diff+'.';
- $('manager-betrieb-frachten').textContent='Belegte eigene F4-Rundfahrten: '+
+ $('manager-betrieb-frachten').textContent='Eigene Eis-Rundfahrten: '+
   fmt(p.frachtAbgeschlossen)+' abgeschlossen, '+fmt(p.frachtOffen)+
   ' unterwegs · tatsächliche Frachterlöse '+fmt(p.frachtGebuehrBisher)+
-  ' ISK · ausgezahlter F4-Pilotenlohn '+fmt(p.frachtLohnBisher)+
+  ' ISK · ausgezahlter Pilotenlohn '+fmt(p.frachtLohnBisher)+
   ' ISK (separates Pilotenlohnkonto).';
  $('manager-betrieb-risiko').textContent='Keine vollständige Gewinnrechnung: Waren, Reserven, '+
   'Verbindlichkeiten, Minerarbeit und weitere Kosten sind hier nicht saldiert. '+
@@ -311,18 +316,18 @@ function managerDispositionAnzeigen(s,angebote){
  $('manager-disposition-kassen').textContent='Deine Kasse '+fmt(p.hausKasse)+
   ' ISK · Aldera-Käuferkasse '+fmt(p.alderaKasse)+' ISK · Nadir-Kasse '+
   fmt(p.nadirKasse)+' ISK. Nur tatsächlich vorhandene Firmenmittel.';
- $('manager-abbau-status').textContent=fmt(p.minerAnzahl)+' eigene Miner in Aldera · '+
-  fmt(p.minerAktiv)+' aktive Eisförderaufträge. Original-Charge '+fmt(p.eisCharge)+
-  ' Eis benötigt '+fmt(p.ankaufKosten)+' ISK Aldera-Käuferkapital für die Abnahme; '+
-  'das ist keine garantierte Bestellung.';
- $('manager-transport-status').textContent=fmt(p.frachterAnzahl)+' eigene Frachter in Aldera · '+
-  fmt(p.eisLager)+' Eis tatsächlich im Aldera-Lager · '+
-  fmt(p.frachtOffen)+' laufende, '+fmt(p.frachtAbgeschlossen)+' abgeschlossene Eigenfrachten. '+
-  'Bisher gebuchte Frachtgebühren '+fmt(p.frachtGebuehrBisher)+
-  ' ISK, Fracht-Pilotenlöhne '+fmt(p.frachtLohnBisher)+
-  ' ISK; kein Nettogewinn (Wertverzehr und weitere Kosten fehlen).';
- $('manager-erz-status').textContent='Original-W1-Exportkäufer und Aldera-Kasse finanzieren die Erzabnahme. '+
-   'Dein Miner trägt seine echten Förder- und Fluglöhne. Dies ist keine W3-Speditionsberechtigung.';
+ $('manager-abbau-status').textContent=fmt(p.minerAnzahl)+' eigene Bergbauschiffe in Aldera · '+
+  fmt(p.minerAktiv)+' für Eis und '+fmt(p.erzAktiv)+' für Erz eingeteilt. Für die Eisabnahme fehlen '+
+  fmt(Math.max(0,p.ankaufKosten-p.alderaKasse))+' ISK von '+fmt(p.ankaufKosten)+' ISK.';
+ $('manager-transport-status').textContent=fmt(p.eisLager)+' Eis in Aldera. Nadir: '+
+  fmt(p.eislagerNadir)+' Eis auf Lager, '+fmt(p.eisFrei)+' Plätze frei. Eine Rundfahrt liefert '+
+  fmt(p.eisCharge)+' Eis.';
+ $('manager-erz-status').textContent='Für eine Erzcharge brauchen Aldera und der Exportkäufer jeweils '+
+  fmt(p.erzKosten)+' ISK. Es fehlen '+fmt(Math.max(0,p.erzKosten-p.alderaKasse))+
+  ' ISK in Aldera und '+fmt(Math.max(0,p.erzKosten-p.erzExportKasse))+' ISK beim Exportkäufer.'+
+  (p.erzAktiv>0&&p.erzExportKasse<p.erzKosten
+   ?' Laufende Erzaufträge können weiter Fluglöhne kosten. Du kannst sie unter „Meine Flotte“ beenden.'
+   :'');
  for(const [id,task] of [['abbau',p.abbau],['transport',p.transport],['erz',p.erzauftrag]]){
   const button=$('manager-'+id+'-aktion');
   button.disabled=!task.bereit;button.textContent=task.titel;
@@ -332,6 +337,32 @@ function managerDispositionAnzeigen(s,angebote){
   const angebot=angebote.find(a=>a.id===task.aktion);
   const preis=angebot?.ok?scope.P3Handelsweg?.kaufpreis(session.weltReferenz(),angebot.id):null;
   if(Number.isSafeInteger(preis))button.textContent+=' · '+fmt(preis)+' ISK';
+ }
+ const transportGrund=$('manager-transport-grund');
+ if(!p.transport.bereit){
+  switch(p.transport.grund){
+   case 'Eislager Nadir voll':
+    transportGrund.textContent='Nadir hat zu wenig Platz für die volle Ladung. '+
+     'Kleinere Lieferungen sind derzeit nicht im Angebot.'+
+     (p.wasserNadir>=p.eisWasserwerkSchwelle
+      ?' Bei '+fmt(p.wasserNadir)+' Wasser wartet das Wasserwerk auf Absatz, bevor es wieder Eis verarbeitet.'
+      :'');
+    break;
+   case 'Nadir kann Eis und Hin-/Rueckfracht nicht bezahlen':
+    transportGrund.textContent='Nadir fehlen '+fmt(p.nadirFrachtbedarf-p.nadirKasse)+
+     ' ISK für Eis und Rundfahrt.';
+    break;
+   case 'Spieler kann beide Fluege nicht vorfinanzieren':
+    transportGrund.textContent='Deiner Firmenkasse fehlen '+fmt(p.frachtLohnbedarf-p.hausKasse)+
+     ' ISK für die Fluglöhne.';
+    break;
+  }
+  if(p.frachterStillgelegt){
+   transportGrund.textContent+=' Ersatz in Aldera: '+anzeigetext(p.ersatzAldera?.reason||'kein Angebot')+
+    '. Ersatz in Nadir: '+anzeigetext(p.ersatzNadir?.reason||'kein Angebot')+'.';
+  }
+ }else if(p.transport.aktion==='buy-st_nadir-frachter'){
+  transportGrund.textContent='Der Frachter bleibt nach dem Kauf in Nadir. Für Eisfracht ab Aldera brauchst du anschließend eine bezahlte Überführung.';
  }
 }
 function missions(){
@@ -416,7 +447,8 @@ function wasserLohnAnzeigen(s,angebote){
     fmt(p.fehlbetrag)+' ISK. Für den Ausgleich wären '+fmt(p.zielMenge)+' Einheiten Wasser nötig ('+
     fmt(p.zielKosten)+' ISK aus deinem PRIVATEN Pilotenlohn). Tatsächlich im Aldera-Lager: '+
     fmt(p.wasser)+' Einheiten. Ob der Kauf jetzt möglich ist, entscheidet das Originalangebot.'
-  :'Die nächste Original-Eischarge ist derzeit bereits finanzierbar. Du darfst deinen Lohn behalten.';
+  :'Die nächste Eischarge ist aus Alderas Kasse bereits finanzierbar.';
+ $('p3-wasser-bedarf').textContent+=' Privatkäufe verwenden Alderas Wasserlager. Wasser aus Nadir kann nur als bezahlte Rückladung einer bereits gestarteten Eisfahrt nach Aldera gelangen.';
  const b=$('p3-wasser-aktion');b.disabled=!p.zielBereit;
  b.textContent=p.fehlbetrag>0
   ?fmt(p.zielMenge)+' Wasser für '+fmt(p.zielKosten)+' ISK privat kaufen'
@@ -435,8 +467,8 @@ function npcMarktAnzeigen(s,angebote){
  const p=scope.P3NPCMarkt.auswerten(session.weltReferenz(),s,angebote,scope.AphrosWelt.DATEN);
  host.hidden=!p.sichtbar;
  if(!p.sichtbar)return;
- $('p3-npc-geld').textContent='Bisherige NPC-Wasserkäufe: Aldera '+fmt(p.npcWasserAl)+
-  ' ISK · Nadir '+fmt(p.npcWasserNadir)+' ISK · reale Dividenden an NPC-Haushalte: '+
+ $('p3-npc-geld').textContent='Wasserkäufe der Anwohner: Aldera '+fmt(p.npcWasserAl)+
+  ' ISK · Nadir '+fmt(p.npcWasserNadir)+' ISK · Dividenden an Anwohner: '+
   fmt(p.npcDividenden)+' ISK.';
  $('p3-npc-ware').textContent='Aldera: '+fmt(p.alderakasse)+' ISK Käuferkasse · '+
   fmt(p.eis)+' Eis · '+fmt(p.wasser)+' Wasser. Nadir: '+fmt(p.nadirkasse)+
@@ -446,7 +478,7 @@ function npcMarktAnzeigen(s,angebote){
   fmt(p.eigeneFrachter)+'.';
  $('p3-npc-ziel').textContent=p.art==='fracht'?
   'Übernimm die tatsächlich angebotene Eisfracht mit deinem eigenen Schiff':
-  'NPC-Markt beobachten: Einnahmen, Waren und echte Transportangebote';
+  'Markt beobachten: Einnahmen, Waren und echte Transportangebote';
  const button=$('p3-npc-aktion');
  button.disabled=!p.bereit;
  button.textContent=p.art==='fracht'?'Vorfinanzierte Original-Fracht annehmen':
@@ -469,7 +501,7 @@ function npcWerftAnzeigen(s){
  $('p3-npc-werft-flotte').textContent='Asterion besitzt '+fmt(p.gesamtFlotte)+
    ' Frachter, davon '+fmt(p.fahrbereit)+' nicht vollständig verschlissen und '+
    fmt(p.freiAldera)+' frei am Aldera-Dock. '+fmt(p.werftherkunft)+
-   ' dieser Frachter stammen aus nachweislich gebauten W5-Hüllen; '+fmt(p.ueberfuehrt)+
+   ' dieser Frachter stammen aus nachweislich gebauten Werfthüllen; '+fmt(p.ueberfuehrt)+
    ' abgeschlossene Originalüberführungen.';
  $('p3-npc-werft-auftrag').textContent='Nadir-Werft: '+fmt(p.werftGebaut)+
    ' produzierte Hüllen, '+fmt(p.nadirStock)+' Frachter im Verkaufs-Lager, '+
@@ -479,7 +511,7 @@ function npcWerftAnzeigen(s){
  const location=p.angebot.station==='st_nadir'?'Nadir':'Aldera';
  $('p3-npc-werft-grund').textContent=p.angebot.ok?
    'Ein Original-Frachterkauf durch Asterion wäre derzeit am '+location+
-   '-Dock grundsätzlich gedeckt. Die Entscheidung trifft ausschließlich die NPC-Politik.':
+   '-Dock grundsätzlich gedeckt. Die Entscheidung trifft die Spedition aus eigener Kasse.':
    'Original-Frachterkauf '+location+' derzeit nicht möglich: '+
    anzeigetext(p.angebot.grund||'Werftbestand oder eigenes Firmenkapital unzureichend')+
    (p.engpass?' · Bereits dokumentierter Engpass: '+anzeigetext(p.engpass):'');
@@ -505,15 +537,15 @@ function industrieAnzeigen(s,angebote){
  }));
  if(p.werftSpielerSchiffId)select.value=p.werftSpielerSchiffId;
  $('p3-industrie-phase').textContent=p.stage+' · '+p.produktionslage;
- $('p3-industrie-w3').textContent='W3 Transport: '+fmt(p.w3Vertraege)+
+ $('p3-industrie-w3').textContent='Erztransport: '+fmt(p.w3Vertraege)+
   ' vollständig bezahlte Erzfrachten mit '+fmt(p.w3Geliefert)+' geliefertem Erz ('+
   fmt(p.w3ProCharge)+' je Vertrag). Nadir lagert '+fmt(p.erzNadir)+
   ' Erz, Aldera '+fmt(p.erzAldera)+'.';
- $('p3-industrie-w4').textContent='W4 Raffinerie: '+fmt(p.w4Chargen)+
+ $('p3-industrie-w4').textContent='Raffinerie: '+fmt(p.w4Chargen)+
   ' fertige bezahlte Chargen, '+fmt(p.w4ErzVerbraucht)+' Erz verbraucht und '+
   fmt(p.w4Material)+' Material erzeugt. Originalrezept: '+fmt(p.w4RezeptErz)+
   ' Erz → '+fmt(p.w4RezeptMaterial)+' Material.';
- $('p3-industrie-w5').textContent='W5 Schiffbau: '+fmt(p.w5Gebaut)+
+ $('p3-industrie-w5').textContent='Schiffbau: '+fmt(p.w5Gebaut)+
   ' fertige Frachter aus '+fmt(p.w5MaterialVerbraucht)+' verarbeitetem Material ('+
   fmt(p.w5MaterialJeSchiff)+' Material je Hülle). Im Nadir-Lager: '+
   fmt(p.materialNadir)+' Material, '+fmt(p.hullenNadir)+' verkäufliche Hüllen.';
@@ -581,7 +613,7 @@ function industrieAnzeigen(s,angebote){
  strecke.hidden=!transferSichtbar;
  strecke.textContent=transferSichtbar
   ?'Strecke Nadir–Aldera jetzt: '+(p.werftStreckeBelegt
-    ?p.werftStreckenAuftraege.join(' · '):'kein aktiver W3-/W5n-/W5ac-Auftrag')+
+    ?p.werftStreckenAuftraege.map(auftrag=>auftrag.replace(/^W(?:3|5n|5ac)-/,'')).join(' · '):'kein laufender Transport')+
    '. Original-Überführung für '+eigeneId+': '+
    (p.werftTransferBereit?'freigegeben – wird beim Klick erneut geprüft.'
     :'gesperrt – '+anzeigetext(p.werftTransferGrund||'kein freigegebenes Originalangebot')+
@@ -592,7 +624,7 @@ function industrieAnzeigen(s,angebote){
  const freight=$('p3-industrie-fracht');
  const freightStand=$('p3-industrie-frachtzahlen'),freightGrund=$('p3-industrie-frachtgrund');
  freight.hidden=!eigeneId;freight.disabled=!p.werftFrachtBereit;
- freight.textContent='50 Eis mit Werftfrachter '+(eigeneId||'')+' transportieren (Original-F4)';
+ freight.textContent='50 Eis mit Werftfrachter '+(eigeneId||'')+' transportieren';
  freightStand.hidden=!eigeneId;
  freightStand.textContent=eigeneId
   ?'Eigene Werftfracht: '+fmt(p.werftFrachtRunden)+' abgeschlossene Runden · '+
@@ -604,7 +636,7 @@ function industrieAnzeigen(s,angebote){
  freightGrund.hidden=!eigeneId;
  freightGrund.textContent=eigeneId
   ?p.werftFrachtBereit?'Echt vorfinanzierter Originalauftrag verfügbar. Käufer- und Pilotengeld werden beim Start gebunden.'
-   :'Neuer F4-Auftrag gesperrt: '+anzeigetext(p.werftFrachtGrund||
+   :'Eisfracht gesperrt: '+anzeigetext(p.werftFrachtGrund||
     (p.werftTransferAktiv?'Die bezahlte Werftüberführung läuft noch.':
       'Nur ein eigener, freier und wirklich angedockter Frachter in Aldera darf die Ladung übernehmen.'))
   :'';
@@ -617,7 +649,7 @@ function industrieAnzeigen(s,angebote){
     (transferSichtbar
      ?'. Original-Überführung: '+(p.werftTransferBereit
        ?'durch eigenen bezahlten Auftrag verfügbar'
-       :anzeigetext(p.werftTransferGrund||'Finanzierung, W3-Fracht oder Transportkapazität nicht frei'))
+       :anzeigetext(p.werftTransferGrund||'Finanzierung oder Transportstrecke nicht frei'))
      :'');
 }
 // J12: read-only station and company report from the SAME validated Rule204 session.
@@ -862,7 +894,7 @@ function managerFlotteAnzeigen(kartenModell,angebote,zustand){
    ?(aktion.kosten!==null&&aktion.minuten!==null
      ?'Original-Freigabe · '+fmt(aktion.kosten)+' ISK / '+fmt(aktion.minuten)+' Spielminuten. Bei Klick erneut geprüft.'
      :'Original-Freigabe · bei Klick erneut geprüft.')
-   :'Original-Sperre: '+aktion.grund;
+   :'Gesperrt: '+anzeigetext(aktion.grund);
   if(!aktion.ok)info.className='p3-sperre';
   b.addEventListener('click',()=>managerFlotteAuftrag(p.auswahlId,aktion.id));
   box.append(b,info);
@@ -886,25 +918,31 @@ function managerFlotteAuftrag(schiffId,aktionsId){
   if(p.auswahlId!==schiffId)throw Error('Dieses Schiff gehört nicht mehr deinem Konzern');
   const angebot=p.aktionen.find(q=>q.id===aktionsId);
   if(!angebot||!angebot.ok)throw Error(angebot?.grund||'Kein freigegebener Originalauftrag für dieses Schiff');
-  managerFlotteAktionNach=performance.now()+350;
   auftrag(aktionsId); // J8 checks a FRESH quote once again, no direct book mutation.
+  managerFlotteAktionNach=performance.now()+350;
  }catch(e){hinweis('Schiffsdisposition gesperrt: '+error(e),true);anzeigen();}
 }
 function auftragsfeedbackAnzeigen(s){
  const p=scope.P3Auftragsfeedback.auswerten(session.weltReferenz(),s);
+ const frachtzeile=x=>'Fracht '+x.schiff+' · Start '+x.start+' · '+x.status+
+  ' · Warenbewegung: '+(x.geliefert===null?'noch keine Lieferung belegt':x.menge+' Eis geliefert in Spielminute '+x.geliefert)+
+  (x.end===null?'':' · Abschluss in Spielminute '+x.end);
  const lines=[
- 'Belegstand: Tick '+p.tick,
+ 'Belegstand: Spielminute '+p.tick,
  'Liquidität: '+fmt(p.cash)+' ISK eigene Firmenkasse',
  'Vorhandene Schiffsbuchwerte: '+fmt(p.buchwert)+' ISK',
  'Frachtgebühren: '+fmt(p.gebuehr)+' ISK kumulativ gebucht',
  'Frachtlöhne: '+fmt(p.lohn)+' ISK kumulativ an das separate Pilotenlohnkonto',
  ...p.foerderung.map(x=>'Förderung '+x.schiff+' · Fortschritt: '+x.phase+' · Waren an Bord: '+x.ladung),
- ...p.frachten.map(x=>'Fracht '+x.schiff+' · Start '+x.start+' · '+x.status+
-   ' · Warenbewegung: '+(x.geliefert===null?'noch keine Lieferung belegt':x.menge+' Eis geliefert bei Tick '+x.geliefert)+
-   (x.end===null?'':' · Abschluss Tick '+x.end)),
+ ...(p.frachten.length>5?['Die letzten fünf Eisfrachtbelege']:[]),
+ ...p.frachten.slice(-5).reverse().map(frachtzeile),
  'Keine vollständige Gewinnrechnung. Frachtlöhne enthalten keine Miner- oder sonstigen Löhne. Fehlende Belege werden nicht geschätzt.'
  ];
- $('auftrag-belege').replaceChildren(...lines.map(text=>{const el=d.createElement('p');el.textContent=text;return el;}));
+ const absatz=text=>{const el=d.createElement('p');el.textContent=text;return el;};
+ $('auftrag-belege').replaceChildren(...lines.map(absatz));
+ const archiv=$('auftrag-belege-archiv');
+ archiv.hidden=p.frachten.length<=5;
+ $('auftrag-belege-aeltere').replaceChildren(...p.frachten.slice(0,-5).reverse().map(frachtzeile).map(absatz));
  $('auftrag-minute').disabled=!p.zeitAktiv;
 }
 $('auftrag-minute').addEventListener('click',()=>weiter(1));
@@ -1311,7 +1349,7 @@ $('p3-industrie-fracht')?.addEventListener('click',()=>{
   if(!p.sichtbar||!p.werftFrachtBereit||!p.werftFrachtId
     ||s.ships[p.werftSpielerSchiffId]?.owner!=='house'
     ||!s.w5.schiffIds.includes(p.werftSpielerSchiffId))
-   throw Error(p.werftFrachtGrund||'Keine echte bezahlbare F4-Fracht fuer die Werfthuelle');
+   throw Error(p.werftFrachtGrund||'Keine bezahlbare Eisfracht für den Werftfrachter');
   auftrag(p.werftFrachtId);
  }catch(e){hinweis('Werftfracht gesperrt: '+error(e),true);anzeigen();}
 });

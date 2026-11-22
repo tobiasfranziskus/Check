@@ -40,8 +40,8 @@ async function karrierestart(browser,kind){
    await el('karriere-starten').tap();
    await bookingInView();
    assert.match(await booking.innerText(),/Bergbauschiff kaufen · 600 ISK/);
-   await booking.tap();
-   await booking.tap(); // A rapid second tap must not buy the newly displayed carrier.
+   // Keep the rapid clicks inside one browser task, including on loaded runners.
+   await booking.evaluate(button=>{button.click();button.click();});
    assert.match(await message.innerText(),/Bergbauschiff gekauft in Aldera für 600 ISK.*2\.400 ISK/);
    assert.match(await booking.innerText(),/Frachter erwerben · 750 ISK/);
    await bookingInView();
@@ -177,7 +177,7 @@ async function karrierestart(browser,kind){
      else await handelBewusstTippen();
     }
     assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/Frachterlöse 240 ISK/);
-    assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/F4-Pilotenlohn 120 ISK/);
+    assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/Pilotenlohn 120 ISK/);
     assert.match(await page.locator('#manager-betrieb-risiko').innerText(),/Keine vollständige Gewinnrechnung/);
     assert.equal(await page.locator('#missions li:last-child').getAttribute('class'),'done',
       'paid completed freight must permanently complete the career milestone');
@@ -219,7 +219,7 @@ async function karrierestart(browser,kind){
     assert.ok(s.kanon.spielerFrachten.auftraege.filter(a=>a.end!==null).length>=2);
     assert.match(await page.locator('#p3-handelsstand').textContent(),/2 bezahlte Rundfahrten/);
     assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/Frachterlöse 480 ISK/);
-    assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/F4-Pilotenlohn 240 ISK/);
+    assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/Pilotenlohn 240 ISK/);
     assert.ok(s.kanon.spielerFrachten.gebuehr>=480);
     await page.locator('#p3-handelsdetails summary').tap();
     assert.match(await page.locator('#p3-handelszahlen').innerText(),/Verfügbare Kasse/);
@@ -326,7 +326,7 @@ async function karrierestart(browser,kind){
 
     // Chapter 05: real NPC earnings and independent freight market.
     assert.equal(await page.locator('#p3-npc-markt').isVisible(),true);
-    assert.match(await page.locator('#p3-npc-geld').textContent(),/NPC-Wasserkäufe: Aldera/);
+    assert.match(await page.locator('#p3-npc-geld').textContent(),/Wasserkäufe der Anwohner: Aldera/);
     assert.match(await page.locator('#p3-npc-frachter').textContent(),/Asterion-Frachter:/);
     assert.equal(await page.locator('#p3-npc-aktion').isEnabled(),true);
     const beforeNpc=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
@@ -345,7 +345,7 @@ async function karrierestart(browser,kind){
     const npcHash=wInvest.hash(wInvest.load(npcJson));
     await page.reload();await page.locator('#fortsetzen').tap();
     assert.equal(wInvest.hash(wInvest.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),npcHash);
-    assert.equal(await page.locator('#p3-npc-markt').isVisible(),true);
+    await page.locator('#p3-npc-markt').waitFor({state:'visible'});
     assert.deepEqual(errors,[]);
     console.log('P3_NPC_MARKT_BROWSER_OK',JSON.stringify({
       kind,width,height,aktion:button,tick:afterNpc.tick,hash:npcHash

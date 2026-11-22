@@ -66,8 +66,8 @@ async function pruefe(browser,kind,width,height,base){
   assert.equal(await save(),vorKauf);
   assert.equal(await el('[data-action="buy-st_aldera-miner"]').evaluate(e=>e===document.activeElement),true);
   const kauf=el('[data-action="buy-st_aldera-miner"]');
-  await kauf.tap();
-  await kauf.tap();
+  // Dispatch inside one browser task so runner load cannot turn this into two separate gestures.
+  await kauf.evaluate(button=>{button.click();button.click();});
   assert.equal(await el('#hausgeld').textContent(),'2.400 ISK');
   assert.equal(await ship('Bergbauschiff').count(),1);
   await ship('Bergbauschiff').tap();
@@ -107,7 +107,7 @@ async function pruefe(browser,kind,width,height,base){
   await el('#tab-auftraege').tap();
   assert.equal(await el('#auftrag-details').getAttribute('open'),null,'financial evidence is compact by default');
   const vorBelegKlick=await save();
-  await el('#auftrag-details summary').tap();
+  await el('#auftrag-details > summary').tap();
   assert.equal(await save(),vorBelegKlick,'opening receipts does not alter the original simulation');
   assert.match(await el('#zeit').innerText(),/120 Minuten/);
   assert.match(await el('#auftrag-belege').innerText(),/Gestartet · Hinflug läuft/);
@@ -129,9 +129,10 @@ async function pruefe(browser,kind,width,height,base){
   laufend.oeffnen204(vorAuswahl,true);
   const sperre=laufend.angebote().find(o=>o.id==='freight-'+frachterId);
   assert.equal(sperre.ok,false);
-  assert.equal(await disabledFreight.locator('+ small').textContent(),'Original-Sperre: '+sperre.reason);
+  const sperrtext=sperre.reason.replace(/^K1: /,'');
+ assert.equal(await disabledFreight.locator('+ small').textContent(),'Gesperrt: '+sperrtext);
   await details.locator('summary').tap();
-  assert.ok((await details.locator('p').allTextContents()).some(text=>text.endsWith(' · '+sperre.reason)));
+  assert.ok((await details.locator('p').allTextContents()).some(text=>text.endsWith(' · '+sperrtext)));
   await selection.selectOption('schiff:'+fremd);
   assert.equal(await fleetSelect.inputValue(),frachterId);
   assert.equal(await fleetSelect.locator('option[value="'+fremd+'"]').count(),0);
@@ -147,7 +148,7 @@ async function pruefe(browser,kind,width,height,base){
   }
   await plus.tap();
   assert.match(await details.innerText(),/Nadir → Aldera.*leer.*Rückfahrt/s);
-  assert.match(await el('#auftrag-belege').innerText(),/50 Eis geliefert bei Tick 180/);
+  assert.match(await el('#auftrag-belege').innerText(),/50 Eis geliefert in Spielminute 180/);
   await page.setViewportSize({width:height,height:width});
   assert.equal(await selection.inputValue(),await carrier.getAttribute('data-sektor'));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
@@ -169,7 +170,7 @@ async function pruefe(browser,kind,width,height,base){
   await el('#fortsetzen').tap();
   assert.equal(await save(),original);
   assert.equal(await el('#auftrag-details').getAttribute('open'),null,'receipt disclosure resets after reload');
-  await el('#auftrag-details summary').tap();
+  await el('#auftrag-details > summary').tap();
   assert.match(await el('#auftrag-belege').textContent(),/Abgeschlossen/);
   assert.equal(await selection.inputValue(),'station:st_aldera');
   await el('#tab-universum').tap();
@@ -184,14 +185,15 @@ async function pruefe(browser,kind,width,height,base){
   await el('#manager-flotte-auswahl').selectOption(minerId);
   const stop=el('#manager-flotte-aktionen [data-dispo-action="stop-'+minerId+'"]');
   assert.equal(await stop.isEnabled(),true);
-  await stop.scrollIntoViewIfNeeded();
-  const stopBox=await stop.boundingBox();
-  const tapPoint={x:stopBox.x+stopBox.width/2,y:stopBox.y+stopBox.height/2};
-  await page.touchscreen.tap(tapPoint.x,tapPoint.y);
+  await stop.evaluate(button=>{
+   const aktionen=button.closest('#manager-flotte-aktionen');
+   button.click();
+   aktionen.querySelector('[data-dispo-action^="ice-"]').click();
+  });
   const stopped=await save();
-  await page.touchscreen.tap(tapPoint.x,tapPoint.y);
-  assert.equal(await save(),stopped,'Schneller zweiter Tipp darf die Förderung nicht wieder starten');
-  assert.notEqual(await save(),original,'Nur echter Original-Stop verändert die Karriere');
+  assert.equal(JSON.parse(stopped).kanon.pendel[minerId],undefined,
+   'Schnelle Folgeaktion darf die Förderung nicht wieder starten');
+  assert.notEqual(stopped,original,'Nur echter Original-Stop verändert die Karriere');
   assert.match(await el('#manager-flotte-stand').innerText(),/Kein laufender Wirtschaftsauftrag/);
   await page.waitForTimeout(375);
   await el('[data-dispo-action="ice-'+minerId+'"]').tap();

@@ -1,0 +1,79 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const http=require('node:http');
+const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const {engpassNach48}=require('./m4-u5-engpass-ablauf.cjs');
+
+const root=path.resolve(__dirname,'..');
+const slot='aphros-void:spielerkarriere:regel204:v1';
+const server=http.createServer((req,res)=>{
+ const url=new URL(req.url,'http://localhost');
+ const file=path.resolve(root,'.'+(url.pathname==='/'?'/index.html':url.pathname));
+ if(file!==path.join(root,'index.html')&&!file.startsWith(path.join(root,'prototypes')+path.sep))
+  return res.writeHead(404).end();
+ try{
+  res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css','.html':'text/html'})[path.extname(file)]||'text/plain');
+  res.end(fs.readFileSync(file));
+ }catch{res.writeHead(404).end();}
+});
+
+async function pruefen(browser,art,width,height,json){
+ const ctx=await browser.newContext({viewport:{width,height},hasTouch:true});
+ const page=await ctx.newPage(),fehler=[];
+ page.on('pageerror',e=>fehler.push(String(e)));
+ const el=id=>page.locator('#'+id);
+ const save=()=>page.evaluate(key=>localStorage.getItem(key),slot);
+ try{
+  await page.goto('http://127.0.0.1:'+server.address().port+'/');
+  await page.getByRole('link',{name:/^Wirtschaftsmanager/}).tap();
+  await page.waitForURL('**/prototypes/spiel/index.html');
+  await el('import-datei').setInputFiles({name:'m4-u5-replay.json',mimeType:'application/json',buffer:Buffer.from(json)});
+  await el('manager-transport-status').waitFor({state:'visible'});
+  assert.equal(await save(),json);
+  assert.match(await el('manager-transport-status').innerText(),/130 Eis auf Lager, 20 Plätze frei.*50 Eis/);
+  assert.match(await el('manager-transport-grund').innerText(),/zu wenig Platz.*118 Wasser/);
+  assert.match(await el('manager-erz-status').innerText(),/500 ISK beim Exportkäufer.*Fluglöhne/);
+  assert.equal(await el('manager-transport-aktion').isEnabled(),false);
+  assert.equal(await el('manager-erz-aktion').isEnabled(),false);
+  assert.match(await el('manager-aussetzen-aktion').innerText(),/Erzförderung beenden/);
+  assert.doesNotMatch(await el('manager-disposition').innerText(),/\b(?:F4|W1|W3|K1)\b/);
+  await el('auftrag-details').locator('summary').first().tap();
+  assert.equal(await el('auftrag-belege').getByText(/^Fracht sh003/).count(),5);
+  assert.equal(await el('auftrag-belege-archiv').isVisible(),true);
+  await el('tab-flotte').tap();
+  await el('manager-flotte-auswahl').selectOption('sh004');
+  assert.match(await el('manager-flotte-stand').innerText(),/Erzförderung/);
+  const stop=page.locator('[data-dispo-action="stop-sh004"]');
+  const box=await stop.boundingBox();
+  assert.ok(box&&box.width>=48&&box.height>=48);
+  if(width===390){await stop.focus();await page.keyboard.press('Enter');}
+  else await stop.tap();
+  await page.waitForFunction(key=>JSON.parse(localStorage.getItem(key)).kanon.pendel.sh004?.beenden,slot);
+  const nachher=await save();
+  assert.deepEqual(JSON.parse(nachher).owners,JSON.parse(json).owners,'Stopp bewegt kein Geld');
+  await page.reload();
+  await el('fortsetzen').tap();
+  assert.equal(await save(),nachher);
+  assert.deepEqual(fehler,[]);
+  console.log(art,width,height,'48 Fahrten, Lager- und Käufersperren, Erzstopp, Reload');
+ }finally{await ctx.close();}
+}
+
+(async()=>{
+ const json=engpassNach48().exportieren();
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ let browser;
+ try{
+  const art=process.env.WELT_BROWSER==='webkit'?'webkit':'chromium';
+  browser=art==='webkit'?await webkit.launch():await chromium.launch({
+   executablePath:process.env.S1_CHROMIUM_PATH||undefined,args:['--no-sandbox']
+  });
+  for(const [width,height] of [[1180,820],[1024,768],[820,1180],[390,844]])
+   await pruefen(browser,art,width,height,json);
+ }finally{
+  if(browser)await browser.close();
+  await new Promise(resolve=>server.close(resolve));
+ }
+})().catch(e=>{console.error(e);process.exitCode=1;});

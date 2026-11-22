@@ -1,4 +1,4 @@
-name: "M4-U3 – wirklich bezahlter eigener Erzauftrag (Node22 + Touch)"
+name: "M4 – Erzgeschäft und Wirtschaftsengpass (Node22 + Touch)"
 on:
   pull_request:
     paths:
@@ -7,6 +7,8 @@ on:
       - 'prototypes/spiel/**'
       - 'tests/m4-u3-house-ore.test.mjs'
       - 'tests/m4-u3-ore-browser.cjs'
+      - 'tests/m4-u5-*'
+      - 'prototypes/welt/rule200-k7-industry-core.js'
       - '.github/workflows/m4-u3-ore.yml'
   workflow_dispatch:
 permissions:
@@ -21,7 +23,7 @@ jobs:
         with:
           node-version: '22'
       - name: "Originalfinanzierung, Seed42, Geld, Waren, Save, Negativ- und Replay-Fälle"
-        run: node --test tests/m4-u3-house-ore.test.mjs
+        run: node --test tests/m4-u3-house-ore.test.mjs tests/m4-u5-wirtschaft.test.mjs
   ore-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -40,6 +42,11 @@ jobs:
           node "$RUNNER_TEMP/m4-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
       - name: "Öffentliches Root → eigener Erzminer → echte W1-Kaufquittung, Reload und vier Touchgrößen"
         run: node tests/m4-u3-ore-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/m4-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+      - name: "48-Fahrten-Replay importieren, Handelssperren, Erzpause und Reload prüfen"
+        run: node tests/m4-u5-browser.cjs
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/m4-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}

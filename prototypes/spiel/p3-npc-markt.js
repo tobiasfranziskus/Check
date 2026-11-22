@@ -40,8 +40,8 @@ function auswerten(w,s,angebote,daten){
  const grund=kannFracht
   ?'Eine originale, rechtmäßig bezahlte Eisfracht ist möglich. Du kannst selbst transportieren.'
   :npcFrachter.length===0
-    ?'Die NPC-Spedition besitzt derzeit keinen eigenen Frachter; neue Hüllen entstehen nicht kostenlos.'
-    :'Eine neue bezahlte Spielerfracht ist noch nicht angeboten. Warte auf reale Ware und Finanzierung.';
+    ?'Die Spedition besitzt derzeit keinen eigenen Frachter; neue Hüllen entstehen nicht kostenlos.'
+    :'Eine neue bezahlte Spielerfracht ist noch nicht angeboten. Prüfe Lagerbestand und Käuferkasse.';
  return Object.freeze({
   sichtbar:runde>=2,runde,npcWasserAl,npcWasserNadir,npcDividenden,
   alderakasse:s.owners.st_aldera.cash,nadirkasse:s.owners.st_nadir.cash,

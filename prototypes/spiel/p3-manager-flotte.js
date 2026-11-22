@@ -6,6 +6,7 @@
 'use strict';
 const optionen=Object.freeze({
  'ice-':'Eisförderung beginnen',
+ 'ore-':'Erzförderung beginnen',
  'stop-':'Eigene Förderung beenden',
  'freight-':'50 Eis bezahlt transportieren',
  'reposition-':'Eigene Werfthülle bezahlt nach Aldera überführen'
@@ -18,7 +19,7 @@ function auswerten(schiffe,angebote,auswahlId=null,schiffbericht=[]){
  const gewählt=eigene.find(sh=>sh.id===auswahlId)||eigene[0]||null;
  if(!gewählt)return Object.freeze({schiffe:Object.freeze([]),auswahlId:null,schiff:null,aktionen:Object.freeze([])});
  const original=Array.isArray(schiffbericht)?schiffbericht.find(sh=>sh.id===gewählt.id):null;
- const prefixes=gewählt.klasse==='miner'?['ice-','stop-']:
+ const prefixes=gewählt.klasse==='miner'?['ice-','ore-','stop-']:
   gewählt.klasse==='frachter'?['freight-','reposition-']:[];
  const aktionen=prefixes.flatMap(prefix=>{
   const id=prefix+gewählt.id;

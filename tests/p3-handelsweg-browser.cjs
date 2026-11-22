@@ -345,7 +345,7 @@ async function karrierestart(browser,kind){
     const npcHash=wInvest.hash(wInvest.load(npcJson));
     await page.reload();await page.locator('#fortsetzen').tap();
     assert.equal(wInvest.hash(wInvest.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),npcHash);
-    assert.equal(await page.locator('#p3-npc-markt').isVisible(),true);
+    await page.locator('#p3-npc-markt').waitFor({state:'visible'});
     assert.deepEqual(errors,[]);
     console.log('P3_NPC_MARKT_BROWSER_OK',JSON.stringify({
       kind,width,height,aktion:button,tick:afterNpc.tick,hash:npcHash

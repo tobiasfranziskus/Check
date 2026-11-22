@@ -185,14 +185,14 @@ async function pruefe(browser,kind,width,height,base){
   await el('#manager-flotte-auswahl').selectOption(minerId);
   const stop=el('#manager-flotte-aktionen [data-dispo-action="stop-'+minerId+'"]');
   assert.equal(await stop.isEnabled(),true);
-  await stop.scrollIntoViewIfNeeded();
-  const stopBox=await stop.boundingBox();
-  const tapPoint={x:stopBox.x+stopBox.width/2,y:stopBox.y+stopBox.height/2};
-  await page.touchscreen.tap(tapPoint.x,tapPoint.y);
-  await page.touchscreen.tap(tapPoint.x,tapPoint.y);
+  await stop.evaluate(button=>{
+   const aktionen=button.closest('#manager-flotte-aktionen');
+   button.click();
+   aktionen.querySelector('[data-dispo-action^="ice-"]').click();
+  });
   const stopped=await save();
   assert.equal(JSON.parse(stopped).kanon.pendel[minerId],undefined,
-   'Schneller zweiter Tipp darf die Förderung nicht wieder starten');
+   'Schnelle Folgeaktion darf die Förderung nicht wieder starten');
   assert.notEqual(stopped,original,'Nur echter Original-Stop verändert die Karriere');
   assert.match(await el('#manager-flotte-stand').innerText(),/Kein laufender Wirtschaftsauftrag/);
   await page.waitForTimeout(375);

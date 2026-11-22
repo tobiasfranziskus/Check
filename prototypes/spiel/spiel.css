@@ -362,3 +362,22 @@ body.raum-aktiv .world{display:none}
 @media(prefers-reduced-motion:reduce){
  #management-spielfeld *,#spielwelt .karriere-handelsweg * {transition:none;animation:none}
 }
+
+
+/* M4: show the player's decision first, keep technical accounting one tap away. */
+.manager-feedback{margin:15px 0;padding:14px 15px;border:1px solid #3a5d70;border-radius:12px;background:#0c2031}
+.manager-feedback>h3{margin:0 0 7px;font-size:1rem;color:#f1f6fc}
+.manager-feedback #auftrag-meldung{margin:0 0 12px;color:#c4e4e2;line-height:1.45;font-size:.88rem;overflow-wrap:anywhere}
+.manager-feedback #auftrag-minute{width:100%;min-height:48px;justify-content:center;font-weight:650}
+.manager-feedback-details{margin-top:13px;border-top:1px solid #38556a}
+.manager-feedback-details summary,.manager-pilot-extra summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:11px 0;cursor:pointer;font-size:.87rem;font-weight:700;color:#a8e2df;list-style:none}
+.manager-feedback-details summary::-webkit-details-marker,.manager-pilot-extra summary::-webkit-details-marker{display:none}
+.manager-feedback-details summary::after,.manager-pilot-extra summary::after{content:"+";font-size:1.2rem;line-height:1;flex:none}
+.manager-feedback-details[open] summary::after,.manager-pilot-extra[open] summary::after{content:"−"}
+.manager-feedback-details summary:focus-visible,.manager-pilot-extra summary:focus-visible{outline:3px solid #9ef1de;outline-offset:3px;border-radius:5px}
+#auftrag-belege{display:grid;gap:6px;margin:0 0 13px}
+#auftrag-belege p{margin:0;padding:8px 10px;border-left:2px solid #487b83;border-radius:4px;background:#102b3d;font-size:.81rem;color:#c7dbe8;line-height:1.45;overflow-wrap:anywhere}
+.manager-feedback-details>p{font-size:.81rem;color:#9db9c7;line-height:1.5}
+.manager-pilot-extra{margin:12px 0 16px;padding:0 14px;border:1px solid #435b6b;border-radius:11px;background:#102337}
+.manager-pilot-extra .note{font-size:.86rem;line-height:1.5}
+@media(max-width:600px){.manager-feedback{padding:12px}.manager-pilot-extra{padding:0 12px}}

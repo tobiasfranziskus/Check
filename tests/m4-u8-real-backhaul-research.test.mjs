@@ -5,7 +5,7 @@ const require=createRequire(import.meta.url);
 const K=require('../prototypes/welt/welt-kern.js');
 const W6=require('../tools/w6-szenarien.cjs');
 const opts={carrierCash:2000,buyerCash:4000};
-const policy={...W6.SZENARIEN.find(x=>x.id==='S02').politik,sparquoteStandard:1000,rueckfracht:false};
+const policy={automatik:false,rueckfracht:false};
 function check(w,s){
  assert.deepEqual(W6.pruefen(w,s),[]);
  assert.equal(w.save(w.load(w.save(s))),w.save(s));
@@ -23,21 +23,52 @@ test('U8 research: explicit profile gate rejects ordinary saves and commands',()
 });
 test('U8 research: real NPC W3 return, paid optional water, atomic rejection and reload',()=>{
  const w=K.erstellenU8(opts),s=w.createState(42,{politik:policy});
- w.npcAutoSetzen(s,true);w.npcSiliziumSetzen(s,true);
- // Find a real arrival with original funded ore contract and produced water.
- // No manual inventory/cash injection, no generated hull or fabricated proof.
- let ship=null;
- for(let i=0;i<14*1440;i++){
-  w.advance(s,1);
-  const a=s.w3.auftrag,sh=a&&s.ships[a.schiff];
-  if(a?.phase==='rueck'&&sh.ankunft-a.zeit===s.tick
-    &&s.stations.st_nadir.lager.wasser>0&&s.owners.st_aldera.cash>=15
-    &&s.stations.st_aldera.lager.wasser<100&&!s.w5ac.active&&!s.w5n.frachtauftrag
-    &&!s.kanon.rueckfracht&&!w.stillgelegt(s,sh.id)){
-   ship=sh.id;break;
-  }
- }
- assert.ok(ship,'original W3 arrival with produced water and funded buyer required');
+ const doCmd=cmd=>{
+  const r=w.execute(s,cmd);
+  assert.equal(r.ok,true,JSON.stringify(cmd)+': '+r.reason);
+  check(w,s);
+  return r;
+ };
+ const until=(predicate,limit,label)=>{
+  for(let i=0;i<limit&&!predicate();i++)w.advance(s,1);
+  assert.ok(predicate(),label+' bei Minute '+s.tick+' '+JSON.stringify({
+   aldera:s.owners.st_aldera.cash,nadir:s.owners.st_nadir.cash,
+   ice:s.stations.st_aldera.lager.eis,water:s.stations.st_nadir.lager.wasser,
+   ore:s.w3.auftrag,ships:Object.values(s.ships).map(x=>[x.id,x.owner,x.auftrag,x.flug?.lage])
+  }));
+  check(w,s);
+ };
+ // Explicit legal sequence, no injected stock or fabricated opening balances.
+ const npc=Object.values(s.ships).find(x=>x.owner==='npc3'&&x.klasse==='miner').id;
+ doCmd({type:'shipShuttleStop',owner:'npc3',schiff:npc});
+ doCmd({type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_aldera'});
+ doCmd({type:'shipBuy',owner:'house',klasse:'miner',station:'st_aldera'});
+ const ship=Object.values(s.ships).find(x=>x.owner==='transport'&&x.klasse==='frachter').id;
+ const miner=Object.values(s.ships).find(x=>x.owner==='house'&&x.klasse==='miner').id;
+ doCmd({type:'shipShuttle',owner:'house',schiff:miner,ware:'eis'});
+ until(()=>s.stations.st_aldera.lager.eis>=w.rules.w5n.charge,240,'physically mined ice');
+ doCmd({type:'shipShuttleStop',owner:'house',schiff:miner});
+ doCmd({type:'shipFreightIce',owner:'transport',schiff:ship});
+ w.advance(s,2*w.rules.w5n.flugMinuten);
+ check(w,s);
+ doCmd({type:'stationWater',owner:'st_nadir',station:'st_nadir'});
+ w.advance(s,w.rules.w5n.fabrikMinuten);
+ assert.ok(s.stations.st_nadir.lager.wasser>0,'real water production');
+ check(w,s);
+ // Original signers commit one original K7 contract only after ice and water.
+ until(()=>s.ships[npc].flug.lage==='angedockt'
+   &&!s.erzpilotVertraege?.[npc]&&Object.values(s.ships[npc].ladung).every(x=>x===0),
+   240,'available NPC miner');
+ for(const cmd of [
+  {type:'industrialOreOffer',owner:'st_nadir',miner:npc,frachter:ship},
+  {type:'industrialOreAcceptMine',owner:'npc3'},
+  {type:'industrialOreAcceptFreight',owner:'transport'},
+  {type:'industrialOreAcceptYard',owner:'werft_extern'},
+  {type:'industrialOreCommit',owner:'st_nadir'}
+ ])doCmd(cmd);
+ until(()=>s.w3.auftrag?.phase==='rueck'&&s.ships[ship].ankunft-s.w3.auftrag.zeit===s.tick,
+   360,'original W3 arrival');
+ assert.ok(s.owners.st_aldera.cash>=15&&s.stations.st_nadir.lager.wasser>0);
  check(w,s);
  const before=w.save(s),a=s.w3.auftrag,lohn=s.w3.arbeitsKosten,tarif=s.w3.frachtUmsatz;
  const source=s.stations.st_nadir.lager.wasser,stock=s.stations.st_aldera.lager.wasser;

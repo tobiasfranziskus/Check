@@ -306,7 +306,7 @@ function managerDispositionAnzeigen(s,angebote){
  stop.disabled=!p.aussetzen.bereit;
  stop.textContent=p.aussetzen.titel;
  $('manager-aussetzen-grund').textContent=p.aussetzen.bereit
-  ?'Nur dein eigenes laufendes Eis-Pendel: Originalauftrag wird bei Klick erneut geprüft.'
+  ?'Nur dein eigenes laufendes Förderpendel: Originalauftrag wird bei Klick erneut geprüft.'
   :'Gesperrt: '+anzeigetext(p.aussetzen.grund);
  $('manager-disposition-kassen').textContent='Deine Kasse '+fmt(p.hausKasse)+
   ' ISK · Aldera-Käuferkasse '+fmt(p.alderaKasse)+' ISK · Nadir-Kasse '+
@@ -321,7 +321,9 @@ function managerDispositionAnzeigen(s,angebote){
   'Bisher gebuchte Frachtgebühren '+fmt(p.frachtGebuehrBisher)+
   ' ISK, Fracht-Pilotenlöhne '+fmt(p.frachtLohnBisher)+
   ' ISK; kein Nettogewinn (Wertverzehr und weitere Kosten fehlen).';
- for(const [id,task] of [['abbau',p.abbau],['transport',p.transport]]){
+ $('manager-erz-status').textContent='Original-W1-Exportkäufer und Aldera-Kasse finanzieren die Erzabnahme. '+
+   'Dein Miner trägt seine echten Förder- und Fluglöhne. Dies ist keine W3-Speditionsberechtigung.';
+ for(const [id,task] of [['abbau',p.abbau],['transport',p.transport],['erz',p.erzauftrag]]){
   const button=$('manager-'+id+'-aktion');
   button.disabled=!task.bereit;button.textContent=task.titel;
   $('manager-'+id+'-grund').textContent=task.bereit
@@ -944,7 +946,7 @@ function anzeigen(){
   ?scope.P3ManagerKarte.auswerten(a,s,session.weltReferenz(),alleAngebote):null;
  if(kartenModell)sektorKarte.anzeigen(kartenModell);
  const offers=alleAngebote.filter(o=>allowed.has(o.id)
-   ||/^(ice-|stop-|sil-start-|sil-sell-|freight-|gate-freight-)/.test(o.id));
+   ||/^(ice-|ore-|stop-|sil-start-|sil-sell-|freight-|gate-freight-)/.test(o.id));
  $('spieleraktionen').replaceChildren(...offers.map(o=>{
   const box=d.createElement('div'),button=d.createElement('button'),small=d.createElement('small');
   box.className='order';
@@ -1161,7 +1163,7 @@ function managerDispositionsAuftrag(art){
  try{
   const p=scope.P3ManagerDisposition.auswerten(session.weltReferenz(),
     session.zustandReferenz(),session.angebote());
-  const choice=art==='abbau'?p.abbau:art==='transport'?p.transport:null;
+  const choice=art==='abbau'?p.abbau:art==='transport'?p.transport:art==='erz'?p.erzauftrag:null;
   if(!choice?.bereit)throw Error(choice?.grund||'Kein echter Eigentümerauftrag verfügbar');
   if(!choice.aktion)throw Error('Kein Originalangebot vorhanden');
   auftrag(choice.aktion);
@@ -1187,6 +1189,7 @@ $('manager-aussetzen-aktion')?.addEventListener('click',()=>{
  }catch(e){hinweis('Förderpause gesperrt: '+error(e),true);anzeigen();}
 });
 $('manager-abbau-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('abbau'));
+$('manager-erz-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('erz'));
 $('manager-transport-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('transport'));
 $('manager-flotte-auswahl')?.addEventListener('change',event=>{
  managerFlotteAuswahlId=event.currentTarget.value;

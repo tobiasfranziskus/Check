@@ -240,9 +240,13 @@ function ladeTransport(json,kopie,extern=false,wiederherstellen=false){
  }
  if(wiederherstellen&&!scope.confirm('Vorherige Transportforschung wiederherstellen? Der aktuelle Transportstand bleibt als vorherige Version erhalten.'))return;
  if(session&&!speichern())throw Error('Laufende Karriere zuerst sichern');
+ // Persist the validated destination before switching live session. Failed
+ // replacement leaves both the current session and the previous slots intact.
+ const stand=neu.exportieren();
+ if(stand.length>MAX)throw Error('Transportstand übersteigt 5 MB.');
+ transportSpeichern(stand,!!vorher&&(kopie||json!==vorher));
  session=neu;sitzungsUiZuruecksetzen();
- const ok=speichern(!!vorher&&(kopie||json!==vorher));
- aktiveSitzung(ok?'Getrennte Transportforschung geöffnet. Die normale Karriere bleibt erhalten.':'Transportforschung geöffnet. Bitte JSON exportieren.');
+ aktiveSitzung(wiederherstellen?'Vorherige Transportforschung wiederhergestellt.':'Getrennte Transportforschung geöffnet. Die normale Karriere bleibt erhalten.');
 }
 function weiter(n){
  let vorher=null;

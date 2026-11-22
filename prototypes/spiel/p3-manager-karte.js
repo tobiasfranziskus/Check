@@ -133,7 +133,7 @@ function schiffsbild(d,obj){
  return svg;
 }
 
-function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,titel,fmt}){
+function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,titel,fmt,anzeigetext}){
  const d=wurzel.ownerDocument,$=id=>d.getElementById(id);
  const auswahl=$('sektor-auswahl'),karte=$('sektor-karte'),details=$('sektor-details');
  let modell=null,gewaehlt=null;
@@ -188,7 +188,7 @@ function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,t
     button.addEventListener('click',()=>waehleAngebot(angebot.id));
     angebote.append(button);
    }else{
-    angebote.append(element('p',titel(angebot)+' · '+(angebot.reason||'Zurzeit gesperrt')));
+    angebote.append(element('p',titel(angebot)+' · '+(angebot.reason?anzeigetext(angebot.reason):'Zurzeit gesperrt')));
    }
   }
   details.append(angebote);

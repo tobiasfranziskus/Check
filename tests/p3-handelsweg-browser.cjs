@@ -326,7 +326,7 @@ async function karrierestart(browser,kind){
 
     // Chapter 05: real NPC earnings and independent freight market.
     assert.equal(await page.locator('#p3-npc-markt').isVisible(),true);
-    assert.match(await page.locator('#p3-npc-geld').textContent(),/NPC-Wasserkäufe: Aldera/);
+    assert.match(await page.locator('#p3-npc-geld').textContent(),/Wasserkäufe der Anwohner: Aldera/);
     assert.match(await page.locator('#p3-npc-frachter').textContent(),/Asterion-Frachter:/);
     assert.equal(await page.locator('#p3-npc-aktion').isEnabled(),true);
     const beforeNpc=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));

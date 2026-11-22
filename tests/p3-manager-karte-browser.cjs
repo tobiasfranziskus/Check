@@ -129,9 +129,10 @@ async function pruefe(browser,kind,width,height,base){
   laufend.oeffnen204(vorAuswahl,true);
   const sperre=laufend.angebote().find(o=>o.id==='freight-'+frachterId);
   assert.equal(sperre.ok,false);
-  assert.equal(await disabledFreight.locator('+ small').textContent(),'Original-Sperre: '+sperre.reason);
+  const sperrtext=sperre.reason.replace(/^K1: /,'');
+ assert.equal(await disabledFreight.locator('+ small').textContent(),'Gesperrt: '+sperrtext);
   await details.locator('summary').tap();
-  assert.ok((await details.locator('p').allTextContents()).some(text=>text.endsWith(' · '+sperre.reason)));
+  assert.ok((await details.locator('p').allTextContents()).some(text=>text.endsWith(' · '+sperrtext)));
   await selection.selectOption('schiff:'+fremd);
   assert.equal(await fleetSelect.inputValue(),frachterId);
   assert.equal(await fleetSelect.locator('option[value="'+fremd+'"]').count(),0);

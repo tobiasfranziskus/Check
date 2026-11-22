@@ -99,7 +99,7 @@ function neueSitzung(){
  return scope.J8KonzernSitzung.erstellen();
 }
 const sektorKarte=scope.P3ManagerKarte?.verbinden($('management-spielfeld'),{
- konzernname,titel,fmt,
+ konzernname,titel,fmt,anzeigetext,
  waehleSchiff:(id,karte)=>{
   managerFlotteAuswahlId=id;
   managerFlotteAnzeigen(karte,session.angebote(),session.zustandReferenz());

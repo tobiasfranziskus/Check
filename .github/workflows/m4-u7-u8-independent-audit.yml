@@ -6,6 +6,7 @@ on:
     paths:
       - 'tests/m4-u7-u8-import-consent-audit.test.mjs'
       - 'tests/m4-u7-u8-independent-ledger-audit.test.mjs'
+      - 'tests/m4-u7-u8-stale-offer-audit.test.mjs'
       - '.github/workflows/m4-u7-u8-independent-audit.yml'
   pull_request:
     branches:
@@ -13,6 +14,7 @@ on:
     paths:
       - 'tests/m4-u7-u8-import-consent-audit.test.mjs'
       - 'tests/m4-u7-u8-independent-ledger-audit.test.mjs'
+      - 'tests/m4-u7-u8-stale-offer-audit.test.mjs'
       - '.github/workflows/m4-u7-u8-independent-audit.yml'
 permissions:
   contents: read
@@ -31,6 +33,5 @@ jobs:
           git rev-parse HEAD
           node --version
           node --test tests/m4-u7-u8-import-consent-audit.test.mjs
-          if test -f tests/m4-u7-u8-independent-ledger-audit.test.mjs; then
-            node --test tests/m4-u7-u8-independent-ledger-audit.test.mjs
-          fi
+          node --test tests/m4-u7-u8-independent-ledger-audit.test.mjs
+          node --test tests/m4-u7-u8-stale-offer-audit.test.mjs

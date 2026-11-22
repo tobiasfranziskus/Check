@@ -918,8 +918,8 @@ function managerFlotteAuftrag(schiffId,aktionsId){
   if(p.auswahlId!==schiffId)throw Error('Dieses Schiff gehört nicht mehr deinem Konzern');
   const angebot=p.aktionen.find(q=>q.id===aktionsId);
   if(!angebot||!angebot.ok)throw Error(angebot?.grund||'Kein freigegebener Originalauftrag für dieses Schiff');
-  managerFlotteAktionNach=performance.now()+350;
   auftrag(aktionsId); // J8 checks a FRESH quote once again, no direct book mutation.
+  managerFlotteAktionNach=performance.now()+350;
  }catch(e){hinweis('Schiffsdisposition gesperrt: '+error(e),true);anzeigen();}
 }
 function auftragsfeedbackAnzeigen(s){

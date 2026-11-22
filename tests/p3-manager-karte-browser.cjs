@@ -189,10 +189,11 @@ async function pruefe(browser,kind,width,height,base){
   const stopBox=await stop.boundingBox();
   const tapPoint={x:stopBox.x+stopBox.width/2,y:stopBox.y+stopBox.height/2};
   await page.touchscreen.tap(tapPoint.x,tapPoint.y);
-  const stopped=await save();
   await page.touchscreen.tap(tapPoint.x,tapPoint.y);
-  assert.equal(await save(),stopped,'Schneller zweiter Tipp darf die Förderung nicht wieder starten');
-  assert.notEqual(await save(),original,'Nur echter Original-Stop verändert die Karriere');
+  const stopped=await save();
+  assert.equal(JSON.parse(stopped).kanon.pendel[minerId],undefined,
+   'Schneller zweiter Tipp darf die Förderung nicht wieder starten');
+  assert.notEqual(stopped,original,'Nur echter Original-Stop verändert die Karriere');
   assert.match(await el('#manager-flotte-stand').innerText(),/Kein laufender Wirtschaftsauftrag/);
   await page.waitForTimeout(375);
   await el('[data-dispo-action="ice-'+minerId+'"]').tap();

@@ -52,9 +52,10 @@ test('M4-U3: funded W1 ore from second owned miner is playable after an actual p
  let end;
  for(let i=0;i<16;i++){
    j.weiterspielen(60);end=audit(j);
-   if(end.stats.konto.house.erloes>=oldRevenue+500)break;
+   if(end.stats.konto.house.erloes>=oldRevenue+500 && (end.stats.verkaeufe?.[second.id]||0)>=1)break;
  }
  assert.ok(end.stats.konto.house.erloes>=oldRevenue+500,'a real additional 500 ISK sale must occur');
+ assert.ok((end.stats.verkaeufe?.[second.id]||0)>=1,'the purchased ore miner, not incidental ice sales, must receive an original station purchase');
  assert.equal(end.w3.abgeschlossen,0,'local W1 is not W3 shipping');
  assert.equal(end.ships[second.id].owner,'house');
  const json=j.exportieren(),copy=J8.erstellen();
@@ -63,6 +64,6 @@ test('M4-U3: funded W1 ore from second owned miner is playable after an actual p
  assert.equal(copy.ansicht().hash,j.ansicht().hash);
  console.log('M4_U3_AFTER_ICE',JSON.stringify({
    minute:end.tick,houseRevenueGain:end.stats.konto.house.erloes-oldRevenue,
-   alderaBefore:before.owners.st_aldera.cash,hash:j.ansicht().hash
+   alderaBefore:before.owners.st_aldera.cash,oreMinerSales:end.stats.verkaeufe[second.id],hash:j.ansicht().hash
  }));
 });

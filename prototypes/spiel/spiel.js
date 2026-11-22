@@ -8,6 +8,7 @@ const d=scope.document,$=id=>d.getElementById(id);
 const SLOT='aphros-void:spielerkarriere:regel204:v1';
 const SLOT_W6='aphros-void:spielerkarriere:regel207-forschung:v1';
 const BACKUP=SLOT+':vorherige';
+const SLOT_U7='aphros-void:spielerkarriere:transport-forschung:v1';
 const MAX=5*1024*1024;
 const fmt=n=>Number(n).toLocaleString('de-DE');
 let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung=0,patrouille=null,duell=null;
@@ -52,7 +53,10 @@ function speichern(copyOld=false){
  // is a separate explicit branch, not a generic alias that could silently
  // redirect any existing Rule204/195 career storage.
  try {
-   if(session.ansicht().regel===207){
+   if(session.ansicht().transportForschung===true){
+     if(copyOld){const old=scope.localStorage.getItem(SLOT_U7);if(old)scope.localStorage.setItem(SLOT_U7+':vorherige',old);}
+     scope.localStorage.setItem(SLOT_U7,json);
+   }else if(session.ansicht().regel===207){
      if(copyOld){const old=scope.localStorage.getItem(SLOT_W6);
        if(old)scope.localStorage.setItem(SLOT_W6+':vorherige',old);}
      scope.localStorage.setItem(SLOT_W6,json);
@@ -73,6 +77,8 @@ function gespeicherte(key=SLOT){
 function menustand(){
  $('fortsetzen').disabled=!gespeicherte();
  $('fortsetzen-w6').disabled=!gespeicherte(SLOT_W6);
+ $('transport-kopie').disabled=!gespeicherte();
+ $('transport-fortsetzen').hidden=!gespeicherte(SLOT_U7);
  const old=$('vorige-karriere');
  if(old)old.hidden=!gespeicherte(BACKUP);
  const w6Backup=$('vorige-forschung');
@@ -168,9 +174,14 @@ function ladeSitzung(json,auswahl,backup=false){
  // A named local resume may switch between independent Rule204 and Rule207 slots.
  // Other load paths (JSON import and backups) retain the existing active-session guard.
  const zielRegel=auswahl==='lokal'?204:auswahl==='forschung'?207:null;
- const wechsel=!!session&&zielRegel!==null&&session.ansicht().regel!==zielRegel;
+ const wechsel=!!session&&zielRegel!==null&&(session.ansicht().regel!==zielRegel||session.ansicht().transportForschung===true);
  if(session&&!wechsel)throw Error('Laufende Karriere zuerst als JSON exportieren und die Seite neu öffnen.');
  const raw=JSON.parse(json),regel=raw?.rulesVersion;
+ if(raw?.kanon?.u8ErzRueckfracht===true){
+   if(auswahl!=='datei')throw Error('Transportforschung nur über ihren eigenen Zugang öffnen');
+   if(!scope.confirm('Transportforschungsstand separat importieren? Die normale Karriere bleibt unverändert.'))return;
+   return ladeTransport(json,false);
+ }
  if(regel!==204&&regel!==207)throw Error('Dieser Spielstand gehört nicht zu einer unterstützten Karriere.');
  if(regel===207&&!['forschung','forschung-backup','datei'].includes(auswahl))
    throw Error('Bitte die experimentelle Karriere über ihren eigenen Zugang öffnen.');
@@ -196,6 +207,17 @@ function ladeSitzung(json,auswahl,backup=false){
  if(auswahl==='datei'||backup)speichern(!!gespeicherte(slot));
  aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Dein Spielstand wurde geprüft.');
 }
+function ladeTransport(json,kopie){
+ const vorher=gespeicherte(SLOT_U7);
+ if(kopie&&!scope.confirm('Eine getrennte Transport-Forschungskopie der gespeicherten normalen Karriere erstellen? Deine normale Karriere bleibt erhalten.'))return;
+ if((kopie||json!==vorher)&&vorher&&!scope.confirm('Bisherige Transportforschung als vorherige Version sichern und ersetzen?'))return;
+ const neu=neueSitzung(),a=neu.oeffnenU7U8(json,true);
+ if(a.transportForschung!==true||a.weltgeld!==33000)throw Error('Transportforschung nicht validiert');
+ if(session&&!speichern())throw Error('Laufende Karriere zuerst sichern');
+ session=neu;sitzungsUiZuruecksetzen();
+ const ok=speichern(!!vorher&&(kopie||json!==vorher));
+ aktiveSitzung(ok?'Getrennte Transportforschung geöffnet. Die normale Karriere bleibt erhalten.':'Transportforschung geöffnet. Bitte JSON exportieren.');
+}
 function weiter(n){
  let vorher=null;
  try{
@@ -214,7 +236,8 @@ function weiter(n){
   if(vorher!==null){
    try{
     const restore=neueSitzung();
-    if(session?.ansicht().regel===207)restore.oeffnenP8g(vorher,true);
+    if(session?.ansicht().transportForschung===true)restore.oeffnenU7U8(vorher,true);
+    else if(session?.ansicht().regel===207)restore.oeffnenP8g(vorher,true);
     else restore.oeffnen204(vorher,true);
     session=restore;anzeigen();
    }catch(restoreError){
@@ -922,6 +945,26 @@ function managerFlotteAuftrag(schiffId,aktionsId){
   managerFlotteAktionNach=performance.now()+350;
  }catch(e){hinweis('Schiffsdisposition gesperrt: '+error(e),true);anzeigen();}
 }
+function transportForschungAnzeigen(s,angebote){
+ const host=$('manager-industrie-transport');
+ host.hidden=s.kanon.u7Manager!==true;
+ if(host.hidden)return;
+ const i=s.kanon.industrieErz,a=s.w3?.auftrag;
+ const p=$('manager-industrie-status'),actions=$('manager-industrie-aktionen');
+ if(a?.carrier==='house'){
+   p.textContent='Industriefracht '+a.schiff+' · '+({vorbestellt:'Erzbeschaffung läuft',hin:'Hinflug nach Nadir',rueck:'Rückflug nach Aldera'}[a.phase]||a.phase)
+    +(a.wasserZustimmung?' · Wasser-Rückladung angeboten; Kauf nur bei gedecktem Bedarf.':'');
+ }else if(i?.phase==='angebot'&&i.carrier==='house'){
+   p.textContent='Nadir bietet '+i.frachter+' einen Erztransport an. Bergbau und Werft haben zugestimmt. Deine Unterschrift fehlt'+(i.signFracht?' nicht mehr; Käufer prüft den Auftrag.':'.');
+ }else{
+   const receipt=s.w5ad?.freight?.filter(x=>x.owner==='house').at(-1);
+   p.textContent=receipt?'Letzter Industrieauftrag: '+receipt.amount+' Erz · '+receipt.fee+' ISK Vergütung · '+receipt.work+' ISK Fluglohn. Weitere Angebote hängen von realem Bedarf ab.'
+     :'Derzeit kein Industrieangebot. Nadir, Meridian und die Werft prüfen Bedarf, Kapital und freie Schiffe bei Zeitfortschritt.';
+ }
+ actions.replaceChildren(...angebote.filter(x=>x.id.startsWith('industry-')).map(o=>{
+  const b=d.createElement('button');b.type='button';b.dataset.action=o.id;b.textContent=anzeigetext(o.label);b.disabled=!o.ok;b.addEventListener('click',()=>auftrag(o.id));return b;
+ }));
+}
 function auftragsfeedbackAnzeigen(s){
  const p=scope.P3Auftragsfeedback.auswerten(session.weltReferenz(),s);
  const frachtzeile=x=>'Fracht '+x.schiff+' · Start '+x.start+' · '+x.status+
@@ -943,7 +986,7 @@ function auftragsfeedbackAnzeigen(s){
  const archiv=$('auftrag-belege-archiv');
  archiv.hidden=p.frachten.length<=5;
  $('auftrag-belege-aeltere').replaceChildren(...p.frachten.slice(0,-5).reverse().map(frachtzeile).map(absatz));
- $('auftrag-minute').disabled=!p.zeitAktiv;
+ $('auftrag-minute').disabled=!p.zeitAktiv&&s.w3?.auftrag?.carrier!=='house';
 }
 $('auftrag-minute').addEventListener('click',()=>weiter(1));
 function anzeigen(){
@@ -984,7 +1027,7 @@ function anzeigen(){
   ?scope.P3ManagerKarte.auswerten(a,s,session.weltReferenz(),alleAngebote):null;
  if(kartenModell)sektorKarte.anzeigen(kartenModell);
  const offers=alleAngebote.filter(o=>allowed.has(o.id)
-   ||/^(ice-|ore-|stop-|sil-start-|sil-sell-|freight-|gate-freight-)/.test(o.id));
+   ||/^(ice-|ore-|stop-|sil-start-|sil-sell-|freight-|gate-freight-|industry-accept-|industry-water-)/.test(o.id));
  $('spieleraktionen').replaceChildren(...offers.map(o=>{
   const box=d.createElement('div'),button=d.createElement('button'),small=d.createElement('small');
   box.className='order';
@@ -995,6 +1038,7 @@ function anzeigen(){
   box.append(button,small);return box;
  }));
  managerDispositionAnzeigen(s,alleAngebote);
+ transportForschungAnzeigen(s,alleAngebote);
  handelswegAnzeigen(s,alleAngebote);
  investitionAnzeigen(s,alleAngebote);
  wasserLohnAnzeigen(s,alleAngebote);
@@ -1388,7 +1432,7 @@ $('jaeger-kaufweg').addEventListener('click',()=>{
 $('neues-spiel').addEventListener('click',()=>screen('briefing'));
 $('karriere-starten').addEventListener('click',startNeu);
 $('fortsetzen').addEventListener('click',()=>{try{
-   if(session?.ansicht().regel===204){aktiveSitzung('Deine laufende Karriere ist geöffnet.');return;}
+   if(session?.ansicht().regel===204&&!session.ansicht().transportForschung){aktiveSitzung('Deine laufende Karriere ist geöffnet.');return;}
    const json=gespeicherte();if(!json)throw Error('Keine Karriere gespeichert');
    ladeSitzung(json,'lokal');
  }catch(e){hinweis('Karriere nicht geöffnet: '+error(e),true);}});
@@ -1397,6 +1441,15 @@ $('fortsetzen-w6').addEventListener('click',()=>{try{
    const json=gespeicherte(SLOT_W6);if(!json)throw Error('Kein separater Forschungsstand gespeichert');
    ladeSitzung(json,'forschung');
  }catch(e){hinweis('Experimentelle Karriere nicht geöffnet: '+error(e),true);}});
+$('transport-kopie').addEventListener('click',()=>{try{
+ const json=gespeicherte();if(!json)throw Error('Keine normale Karriere gespeichert');
+ ladeTransport(json,true);
+}catch(e){hinweis('Transportforschung nicht geöffnet: '+error(e),true);}});
+$('transport-fortsetzen').addEventListener('click',()=>{try{
+ if(session?.ansicht().transportForschung){aktiveSitzung('Deine Transportforschung ist geöffnet.');return;}
+ const json=gespeicherte(SLOT_U7);if(!json)throw Error('Kein separater Transportstand');
+ ladeTransport(json,false);
+}catch(e){hinweis('Transportforschung nicht geöffnet: '+error(e),true);}});
 $('w6-npc-start').addEventListener('change',()=>{
  if($('w6-npc-start').checked)$('w6-p8g-start').checked=false;
 });

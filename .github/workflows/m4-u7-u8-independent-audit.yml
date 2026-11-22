@@ -1,0 +1,36 @@
+name: M4 U7/U8 independent audit
+on:
+  push:
+    branches:
+      - audit/m4-u7-u8-consent-import-20261122
+    paths:
+      - 'tests/m4-u7-u8-import-consent-audit.test.mjs'
+      - 'tests/m4-u7-u8-independent-ledger-audit.test.mjs'
+      - '.github/workflows/m4-u7-u8-independent-audit.yml'
+  pull_request:
+    branches:
+      - research/m4-u7-u8-transport-20261122
+    paths:
+      - 'tests/m4-u7-u8-import-consent-audit.test.mjs'
+      - 'tests/m4-u7-u8-independent-ledger-audit.test.mjs'
+      - '.github/workflows/m4-u7-u8-independent-audit.yml'
+permissions:
+  contents: read
+jobs:
+  independent-node22:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          git rev-parse HEAD
+          node --version
+          node --test tests/m4-u7-u8-import-consent-audit.test.mjs
+          if test -f tests/m4-u7-u8-independent-ledger-audit.test.mjs; then
+            node --test tests/m4-u7-u8-independent-ledger-audit.test.mjs
+          fi

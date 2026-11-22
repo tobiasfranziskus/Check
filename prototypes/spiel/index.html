@@ -31,6 +31,8 @@
    <button id="fortsetzen-w6" type="button" disabled>Experimentelle Karriere fortsetzen</button>
    <button id="vorige-karriere" type="button" hidden>Vorherige Karriere wiederherstellen</button>
    <button id="vorige-forschung" type="button" hidden>Vorherige experimentelle Karriere wiederherstellen</button>
+   <button id="transport-kopie" type="button" disabled>Transportforschung als Kopie starten</button>
+   <button id="transport-fortsetzen" type="button" hidden>Transportforschung fortsetzen</button>
    <button id="import-aktion" type="button">Spielstand importieren</button>
    <input id="import-datei" type="file" accept=".json,application/json" hidden>
   </div>
@@ -149,6 +151,11 @@
        <p id="manager-erz-grund" class="p3-sperre" role="status" aria-live="polite"></p>
       </article>
      </div>
+     <section id="manager-industrie-transport" class="manager-disposition-card" aria-label="Industriefracht" hidden>
+      <strong>Industriefracht · Transportforschung</strong>
+      <p id="manager-industrie-status" role="status" aria-live="polite"></p>
+      <div id="manager-industrie-aktionen"></div>
+     </section>
      <section class="manager-feedback" aria-label="Auftragsfeedback">
      <h3>Auftragsverlauf</h3>
      <p id="auftrag-meldung" role="status" aria-live="polite">Noch kein Auftrag in dieser Sitzung angeklickt.</p>

@@ -241,43 +241,56 @@ body.raum-aktiv .world{display:none}
 .p3-industrie #p3-industrie-auswahl[hidden],.p3-industrie #p3-industrie-auswahl-label[hidden]{display:none}
 
 /* Management: the trade decision and sector are the primary career view. */
-#spielwelt {max-width:1440px;margin-inline:auto}
+#spielwelt {
+ --manager-raum:#081019;--manager-panel:#17232c;--manager-instrument:#101b25;
+ --manager-stahl:#43545d;--manager-messing:#c6a36c;--manager-route:#77c7be;
+ --manager-text:#e7e6dc;--manager-leise:#b7c5c8;--manager-warnung:#d18461;
+ max-width:1440px;margin-inline:auto;
+}
 #spielwelt .worldbar {gap:12px;margin-bottom:14px}
 #spielwelt .worldbar h2 {font-size:clamp(1.5rem,3vw,2.6rem)}
 #spielwelt .worldbar-right {gap:6px}
-#spielwelt .world-balance strong {font-size:1rem}
+#spielwelt .world-balance {background:var(--manager-panel);border-color:var(--manager-stahl)}
+#spielwelt .world-balance strong {
+ color:var(--manager-text);font-size:clamp(1rem,2vw,1.22rem);font-variant-numeric:tabular-nums;
+}
 #spielwelt .worldbar button,#spielwelt .tabs button {min-height:48px}
 #spielwelt .karriere-handelsweg {
  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 18px;align-items:center;
- margin:0;padding:12px 16px;border-color:#547d81;background:#10232e;
+ margin:0;padding:12px 16px;border-color:var(--manager-stahl);background:var(--manager-panel);
 }
 #spielwelt .karriere-handelsweg > * {grid-column:1/-1;margin:0}
-#spielwelt .karriere-handelsweg h3 {grid-column:1;font-size:.76rem;color:#abd2d8}
+#spielwelt .karriere-handelsweg h3 {grid-column:1;font-size:.76rem;color:var(--manager-messing)}
 #spielwelt .karriere-handelsweg #p3-handelsziel {grid-column:1;font-size:1.06rem}
-#spielwelt .karriere-handelsweg #p3-handelsaktion {grid-area:1/2/span 2/3}
+#spielwelt .karriere-handelsweg #p3-handelsaktion {
+ grid-area:1/2/span 2/3;background:var(--manager-route);border-color:var(--manager-route);
+ color:var(--manager-raum);box-shadow:none;
+}
+#spielwelt .karriere-handelsweg #p3-handelsaktion:hover:not(:disabled) {background:#a7e0da}
+#spielwelt .karriere-handelsweg .p3-sperre {color:var(--manager-warnung)}
 #spielwelt .karriere-handelsweg #p3-erste-foerderaktion {justify-self:start;width:auto;max-width:100%;min-height:48px}
 #spielwelt .karriere-handelsweg .game-message {margin:4px 0;padding:6px 10px;min-height:0;font-size:.86rem}
 #spielwelt .game-message:empty {display:none}
 #management-spielfeld {
- margin:12px 0;border:1px solid var(--line);border-radius:15px;background:#0e1b2a;overflow:hidden;
+ margin:12px 0;border:1px solid var(--manager-stahl);border-radius:12px;background:var(--manager-panel);
 }
 .sektor-kopf {
  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;padding:10px 16px;
 }
-.sektor-kopf h3 {margin:0;font-size:1.15rem}
-.sektor-kopf label {display:flex;align-items:center;flex-wrap:wrap;gap:8px;color:var(--muted);font-size:.84rem}
+.sektor-kopf h3 {margin:0;font-size:1.2rem;color:var(--manager-text)}
+.sektor-kopf label {display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0;color:var(--manager-leise);font-size:.88rem}
 #sektor-auswahl {
- min-height:48px;max-width:min(100%,280px);font:inherit;padding:7px;background:#101e31;
- color:var(--ink);border:1px solid #4a657b;border-radius:8px;
+ min-height:48px;max-width:min(100%,280px);font:inherit;padding:7px;background:var(--manager-instrument);
+ color:var(--manager-text);border:1px solid var(--manager-stahl);border-radius:8px;
 }
-.sektor-spielfeld {display:grid;grid-template-columns:minmax(0,3fr) minmax(220px,1fr);border-top:1px solid var(--line)}
+.sektor-spielfeld {display:grid;grid-template-columns:minmax(0,3fr) minmax(240px,1fr);border-top:1px solid var(--manager-stahl)}
 #sektor-karte {
- padding:clamp(10px,2vw,24px);min-height:285px;display:grid;align-content:center;gap:14px;
- background-color:#081320;
- background-image:radial-gradient(ellipse at 18% 25%,#19334d80,transparent 55%),
-  radial-gradient(ellipse at 86% 70%,#302d5480,transparent 55%),
-  linear-gradient(#91bdd311 1px,transparent 1px),linear-gradient(90deg,#91bdd311 1px,transparent 1px);
- background-size:auto,auto,24px 24px,24px 24px;
+ min-width:0;padding:clamp(12px,2vw,24px);min-height:285px;
+ display:grid;align-content:start;gap:14px;border-end-start-radius:11px;
+ background-color:var(--manager-raum);
+ background-image:radial-gradient(ellipse at 45% 32%,#20343d8f,transparent 75%),
+  linear-gradient(#82979e19 1px,transparent 1px),linear-gradient(90deg,#82979e19 1px,transparent 1px);
+ background-size:auto,24px 24px,24px 24px;
 }
 .sektor-netz {
  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr) minmax(0,1fr);
@@ -285,32 +298,30 @@ body.raum-aktiv .world{display:none}
 }
 .sektor-hafen,.sektor-strecke {display:grid;min-width:0;gap:7px;justify-items:stretch}
 .sektor-aldera {grid-area:aldera}
-.sektor-nadir {grid-area:nadir;--sektor-akzent:#c7b6f5}
-.sektor-dravos {grid-column:1/-1;justify-self:center;width:min(190px,100%);margin-top:16px;--sektor-akzent:#f1c787}
+.sektor-nadir {grid-area:nadir}
+.sektor-dravos {grid-column:1/-1;justify-self:center;width:min(190px,100%);margin-top:12px}
 .sektor-strecke {
- grid-area:strecke;text-align:center;font-size:.76rem;color:#becfdf;padding-top:30px;
+ grid-area:strecke;text-align:center;font-size:.8rem;color:var(--manager-leise);padding-top:44px;
 }
-.sektor-strecke::before {content:"";border-top:2px dashed #7b9ab4;margin-inline:-6px}
-.sektor-strecke:has(.sektor-schiff)::before {border-color:var(--cyan)}
-.sektor-station,.sektor-schiff {
+.sektor-strecke::before {content:"";border-top:2px dashed var(--manager-stahl);margin-inline:-6px}
+.sektor-strecke:has(.sektor-schiff)::before {border-color:var(--manager-route)}
+.sektor-station,.sektor-schiff,.sektor-kontakt {
  display:flex;flex-direction:column;align-items:center;justify-content:center;
- min-width:0;min-height:48px;text-align:center;white-space:normal;overflow-wrap:anywhere;
+ min-width:48px;min-height:48px;gap:3px;text-align:center;white-space:normal;overflow-wrap:anywhere;
 }
 .sektor-station {
- min-height:120px;padding:8px 3px;border-color:#4f6e89;background:#101f34;
- color:var(--sektor-akzent,#9ed0f5);
+ min-height:120px;padding:5px;border-color:var(--manager-stahl);background:var(--manager-panel);
+ color:var(--manager-messing);
 }
-.sektor-station::before {
- content:"";width:38px;height:38px;margin-bottom:5px;
- border:1px solid currentColor;transform:rotate(45deg) scale(.72);
- background:repeating-linear-gradient(0deg,transparent 0 6px,currentColor 7px 8px,transparent 9px 13px);
- box-shadow:0 0 14px #a4d5ff30,inset 0 0 0 4px #101f34;
-}
-.sektor-nadir .sektor-station::before {border-radius:50%;background:radial-gradient(circle,currentColor 24%,transparent 28% 47%,currentColor 49% 52%,transparent 55%)}
-.sektor-station strong {font-size:clamp(.96rem,2.4vw,1.5rem)}
-.sektor-station small,.sektor-schiff small {color:#c0d2e2;font-size:.73rem}
-.sektor-schiff {font-size:.78rem;padding:5px;border-color:#449585;background:#0f2a30;color:#a2eee2}
-.sektor-strecke .sektor-schiff {border-style:solid;border-width:2px}
+#sektor-karte button:hover:not(:disabled) {background:#26363f;border-color:currentColor}
+.sektor-station svg {display:block;width:100%;height:clamp(44px,8vw,74px)}
+.sektor-station strong {font-size:clamp(1rem,2.4vw,1.5rem)}
+.sektor-station small,.sektor-schiff small,.sektor-kontakt small {color:var(--manager-leise);font-size:.78rem}
+.sektor-schiff,.sektor-kontakt {font-size:.83rem;padding:6px;max-width:100%}
+.sektor-schiff {border-color:var(--manager-route);background:#132826;color:var(--manager-route)}
+.sektor-kontakt {border:1px dashed var(--manager-stahl);background:var(--manager-instrument);color:var(--manager-messing)}
+.sektor-schiff svg,.sektor-kontakt svg {max-width:100%;flex:none}
+.sektor-strecke .sektor-schiff {border-width:2px}
 .sektor-unterwegs {display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 /* S2: compact, touch-first fleet disposition without a second command core. */
 .manager-flotte{margin:16px 0 5px;padding:14px;border:1px solid #45677a;border-radius:12px;background:#10283a}
@@ -329,16 +340,21 @@ body.raum-aktiv .world{display:none}
 
 #management-spielfeld [aria-pressed=true] {outline:2px solid currentColor;outline-offset:-4px}
 #management-spielfeld :focus-visible,#spielwelt .sektor-zeit :focus-visible,#spielwelt .karriere-handelsweg :focus-visible {
- outline:3px solid var(--gold);outline-offset:2px;
+ outline:3px solid var(--manager-messing);outline-offset:2px;
 }
-#sektor-details {padding:14px 16px;min-width:0;border-left:1px solid var(--line);font-size:.87rem}
-#sektor-details h3 {margin:0 0 10px;font-size:1.08rem}
+#sektor-details {padding:14px 16px;min-width:0;border-left:1px solid var(--manager-stahl);font-size:.9rem}
+#sektor-details h3 {margin:0 0 10px;font-size:1.08rem;overflow-wrap:anywhere}
 #sektor-details dl {display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0}
-#sektor-details dt {color:var(--muted)}
+#sektor-details dt {color:var(--manager-leise)}
 #sektor-details dd {margin:0;overflow-wrap:anywhere}
-#sektor-details summary {min-height:48px;padding-block:14px;cursor:pointer}
-#sektor-details p {font-size:.8rem;margin:0 0 8px;color:#e9c9b6}
-#sektor-details button {min-height:48px;margin-bottom:5px}
+#sektor-details summary {min-height:48px;padding-block:14px;cursor:pointer;color:var(--manager-messing)}
+#sektor-details .sektor-buchwert {margin-bottom:8px;font-variant-numeric:tabular-nums}
+#sektor-details p {font-size:.8rem;margin:0 0 8px;color:var(--manager-warnung)}
+#sektor-details button {min-height:48px;max-width:100%;margin:5px 0;overflow-wrap:anywhere}
+#sektor-details details {border-top:1px solid var(--manager-stahl);margin-top:8px}
+#spielwelt .manager-disposition,#spielwelt .manager-disposition-card,#spielwelt .manager-betrieb {
+ background:var(--manager-panel);border-color:var(--manager-stahl);
+}
 #spielwelt .sektor-zeit {display:flex;flex-wrap:wrap;gap:7px;margin:0 0 18px}
 #spielwelt .sektor-zeit button {min-height:48px}
 #spielwelt .game-grid {grid-template-columns:minmax(0,2fr) minmax(0,1fr);margin-bottom:16px}
@@ -346,7 +362,8 @@ body.raum-aktiv .world{display:none}
 #spielwelt .world-right {grid-column:auto}
 @media(max-width:850px){
  .sektor-spielfeld {grid-template-columns:1fr}
- #sektor-details {border-left:0;border-top:1px solid var(--line)}
+ #sektor-karte {border-radius:0}
+ #sektor-details {border-left:0;border-top:1px solid var(--manager-stahl)}
  #spielwelt .game-grid {grid-template-columns:minmax(0,1fr)}
  #spielwelt .world-center {grid-row:1}
 }
@@ -358,7 +375,28 @@ body.raum-aktiv .world{display:none}
  .sektor-kopf {padding:8px 10px}
  .sektor-kopf label {flex:1 1 190px;justify-content:flex-end}
  #sektor-karte {min-height:195px}
+ .sektor-strecke {padding-top:30px}
 }
 @media(prefers-reduced-motion:reduce){
+ html {scroll-behavior:auto}
  #management-spielfeld *,#spielwelt .karriere-handelsweg * {transition:none;animation:none}
 }
+
+
+/* M4: show the player's decision first, keep technical accounting one tap away. */
+.manager-feedback{margin:15px 0;padding:14px 15px;border:1px solid var(--manager-stahl);border-radius:12px;background:var(--manager-instrument)}
+.manager-feedback>h3{margin:0 0 7px;font-size:1rem;color:var(--manager-text)}
+.manager-feedback #auftrag-meldung{margin:0 0 12px;color:var(--manager-text);line-height:1.45;font-size:.88rem;overflow-wrap:anywhere}
+.manager-feedback #auftrag-minute{width:100%;min-height:48px;justify-content:center;font-weight:650}
+.manager-feedback-details{margin-top:13px;border-top:1px solid var(--manager-stahl)}
+.manager-feedback-details summary,.manager-pilot-extra summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:11px 0;cursor:pointer;font-size:.87rem;font-weight:700;color:var(--manager-messing);list-style:none}
+.manager-feedback-details summary::-webkit-details-marker,.manager-pilot-extra summary::-webkit-details-marker{display:none}
+.manager-feedback-details summary::after,.manager-pilot-extra summary::after{content:"+";font-size:1.2rem;line-height:1;flex:none}
+.manager-feedback-details[open] summary::after,.manager-pilot-extra[open] summary::after{content:"−"}
+.manager-feedback-details summary:focus-visible,.manager-pilot-extra summary:focus-visible{outline:3px solid var(--manager-messing);outline-offset:3px;border-radius:5px}
+#auftrag-belege{display:grid;gap:6px;margin:0 0 13px}
+#auftrag-belege p{margin:0;padding:8px 10px;border-left:2px solid var(--manager-stahl);border-radius:4px;background:var(--manager-panel);font-size:.86rem;color:var(--manager-text);line-height:1.45;overflow-wrap:anywhere}
+.manager-feedback-details>p{font-size:.81rem;color:var(--manager-leise);line-height:1.5}
+.manager-pilot-extra{margin:12px 0 16px;padding:0 14px;border:1px solid var(--manager-stahl);border-radius:11px;background:var(--manager-panel)}
+.manager-pilot-extra .note{font-size:.86rem;line-height:1.5}
+@media(max-width:600px){.manager-feedback{padding:12px}.manager-pilot-extra{padding:0 12px}}

@@ -65,6 +65,12 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/p1-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}
+      - name: "M4: Operationsboard, Originalphasen und Kartenbedienung in vier Touchgrößen"
+        if: ${{ !cancelled() && steps.playwright.outcome == 'success' }}
+        run: node tests/p3-operationsboard-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/p1-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
       - name: "M-UX1: frischer Karrierestart und P3-Eisfracht in vier Touchgrößen"
         if: ${{ !cancelled() && steps.playwright.outcome == 'success' }}
         run: node tests/p3-handelsweg-browser.cjs

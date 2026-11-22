@@ -71,7 +71,14 @@ async function pruefe(browser,kind,width,height,base){
   assert.equal(await el('#hausgeld').textContent(),'2.400 ISK');
   assert.equal(await ship('Bergbauschiff').count(),1);
   await ship('Bergbauschiff').tap();
-  assert.match(await details.innerText(),/Dein Konzern.*Am Dock · Aldera.*600 ISK/s);
+  assert.match(await details.innerText(),/Dein Konzern.*Am Dock · Aldera/s);
+  const buchwert=details.getByText('Restbuchwert: 600 ISK',{exact:true});
+  assert.equal(await buchwert.isVisible(),false);
+  const schiffsdetails=details.getByText('Schiffsdetails',{exact:true});
+  await schiffsdetails.tap();
+  assert.equal(await buchwert.isVisible(),true);
+  await schiffsdetails.tap();
+  assert.equal(await buchwert.isVisible(),false);
   // Let the next intentional tap come after the gesture guard.
   await page.waitForTimeout(375);
   await action.tap();
@@ -98,6 +105,10 @@ async function pruefe(browser,kind,width,height,base){
   await page.touchscreen.tap(freightBox.x+freightBox.width/2,freightBox.y+freightBox.height/2);
   await page.touchscreen.tap(freightBox.x+freightBox.width/2,freightBox.y+freightBox.height/2);
   await el('#tab-auftraege').tap();
+  assert.equal(await el('#auftrag-details').getAttribute('open'),null,'financial evidence is compact by default');
+  const vorBelegKlick=await save();
+  await el('#auftrag-details summary').tap();
+  assert.equal(await save(),vorBelegKlick,'opening receipts does not alter the original simulation');
   assert.match(await el('#zeit').innerText(),/120 Minuten/);
   assert.match(await el('#auftrag-belege').innerText(),/Gestartet · Hinflug läuft/);
   assert.match(await el('#auftrag-meldung').innerText(),/Gestartet/);
@@ -157,6 +168,8 @@ async function pruefe(browser,kind,width,height,base){
   await page.reload();
   await el('#fortsetzen').tap();
   assert.equal(await save(),original);
+  assert.equal(await el('#auftrag-details').getAttribute('open'),null,'receipt disclosure resets after reload');
+  await el('#auftrag-details summary').tap();
   assert.match(await el('#auftrag-belege').textContent(),/Abgeschlossen/);
   assert.equal(await selection.inputValue(),'station:st_aldera');
   await el('#tab-universum').tap();

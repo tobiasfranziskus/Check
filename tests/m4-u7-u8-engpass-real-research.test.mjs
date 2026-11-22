@@ -21,6 +21,7 @@ function snapshot(w,s){
   waterA:a.wasser,waterN:n.wasser,iceN:n.eis,
   iceFree:w.kern.obergrenze(s,w.rules,'st_nadir','eis')-n.eis,
   oreDone:s.w3.abgeschlossen,waterReturned:s.kanon.wasser.rueckGeliefert,
+  iceDone:s.w5n.frachtAbgeschlossen,iceDelivered:s.w5n.eisGeliefert,iceFee:s.w5n.frachtUmsatz,iceWages:s.w5n.frachtLohn,
   hash:w.hash(s)};
 }
 function run(w,s){
@@ -100,10 +101,38 @@ function run(w,s){
  // Allow genuine existing water production to run, never change inventories.
  w.advance(s,180);check(w,s);
  const after=snapshot(w,s),iceQuote=w.kern.pilotIceFreightQuote(s,ship);
- return {outcome:load.ok?'REAL_COMBINED_DELIVERY':'REAL_ORE_ONLY',before,arrival,delivered,after,
-  load,iceQuote,events,probes};
+ // Not just a quote: complete the previously blocked 49th ice round.
+ // The successful research counterexample must remain a strict regression.
+ assert.equal(load.ok,true,load.reason);
+ assert.equal(load.menge,22);
+ assert.equal(after.iceFree,50);
+ assert.equal(iceQuote.ok,true,iceQuote.grund);
+ assert.equal(after.iceDone,48);
+ const feeBefore=s.w5n.frachtUmsatz,workBefore=s.w5n.frachtLohn;
+ yes(cmd('shipFreightIce','house',{schiff:ship}));
+ const inTransit=w.save(s);
+ const collision=w.execute(s,cmd('shipFreightIce','house',{schiff:ship}));
+ assert.equal(collision.ok,false);
+ assert.equal(w.save(s),inTransit);
+ w.advance(s,iceQuote.zeit);check(w,s);
+ assert.equal(s.w5n.eisGeliefert,after.iceDelivered+50);
+ assert.equal(s.w5n.frachtauftrag.phase,'rueck');
+ const iceArrival=snapshot(w,s);
+ w.advance(s,iceQuote.zeit);check(w,s);
+ assert.equal(s.w5n.frachtAbgeschlossen,49);
+ assert.equal(s.w5n.frachtUmsatz-feeBefore,240);
+ assert.equal(s.w5n.frachtLohn-workBefore,120);
+ assert.equal(s.w5n.frachtauftrag,null);
+ assert.equal(s.ships[ship].owner,'house');
+ assert.equal(s.ships[ship].system,'aldera');
+ assert.equal(s.ships[ship].flug.lage,'angedockt');
+ for(const id of ['w5n_fracht_kauf','w5n_fracht_arbeit','w3_kauf_treuhand','w3_arbeit_treuhand','k1_rueckfracht'])
+  assert.equal(s.owners[id]?.cash??0,0,id);
+ const iceReturn=snapshot(w,s),nextIceQuote=w.kern.pilotIceFreightQuote(s,ship);
+ return {outcome:'REAL_COMBINED_AND_49TH_ICE',before,arrival,delivered,after,
+  load,iceQuote,iceArrival,iceReturn,nextIceQuote,events,probes};
 }
-test('M4-U7/U8: exact 48-round fork, original owner commands, audited delivery or explicit real blocker',()=>{
+test('M4-U7/U8: exact 48-round fork, paid combined delivery and 49th ice flight, deterministic replay',()=>{
  const j=engpassNach48(),original=j.exportieren(),old=j.weltReferenz();
  assert.equal(j.ansicht().hash,'f63f2cd09ba5a88c');
  const raw=JSON.parse(original),capital=raw.w5ad.profile;
@@ -120,7 +149,8 @@ test('M4-U7/U8: exact 48-round fork, original owner commands, audited delivery o
  assert.equal(j.exportieren(),original,'no changes to original test career');
  assert.equal(Object.values(s.owners).reduce((sum,x)=>sum+x.cash,0),33000);
  assert.equal(s.minted,0);assert.equal(s.burned,0);
- if(a.outcome.startsWith('BLOCKED'))assert.equal(a.after.oreDone,a.before.oreDone);
- else assert.equal(a.delivered.oreDone,a.before.oreDone+1);
+ assert.equal(a.outcome,'REAL_COMBINED_AND_49TH_ICE',JSON.stringify(a));
+ assert.equal(a.delivered.oreDone,a.before.oreDone+1);
+ assert.equal(a.iceReturn.iceDone,49);
  console.log('M4_U7_U8_48_ROUND_RESULT '+JSON.stringify(a));
 });

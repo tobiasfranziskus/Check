@@ -1,6 +1,6 @@
 # M4-U3 · Eigenes Erzgeschäft auf originaler W1-Abnahme
 
-**[DRAFT / implementiert, Abnahme ausstehend · 22.11.2026]** Eigenständiger Branch auf `main e23bc747`, PR #567. Weder in `main` noch auf Pages veröffentlicht. **Keine** Behauptung eines erfolgreichen 60-Minuten-Browsertests. Die Tests auf dem endgültigen Branch-Head sind separat in GitHub Actions zu verifizieren.
+**[INTEGRATIONSKANDIDAT / nicht gemergt · 22.11.2026]** Quell-Draft [#567](https://github.com/tobiasfranziskus/Check/pull/567) auf `main e23bc747`; separater Integrationsbranch mit unverändertem Produktcode. Weder in `main` noch auf Pages veröffentlicht. **Keine** Behauptung eines 60-Minuten-Blindtests. Die folgenden Resultate gelten für den gleichen Quellcode auf Commit `bebb15eb0` und sind keine automatische Abnahme des späteren Merge-/Pages-SHAs.
 
 ## Produktumfang und Trennung zu W3
 
@@ -30,6 +30,12 @@ Die Prüfsummen sind **Vorabgrenzen**, keine erfundenen Zahlungen im UI. Der Cor
 - `tests/m4-u3-house-ore.test.mjs`: realer Seed42-Erzverkauf, Originalhauskasse/-eigentum, Erzlager-/Erlösbelege, unveränderte alte F4-Referenz, 33.000 ISK Weltgeld, 0 Mint/Burn, manipulationsfeste Ablehnung, JSON/Replay.
 - `tests/m4-u3-ore-browser.cjs` und eigenständiger Workflow: Root-Navigation → echter Manager-Kauf → Erzangebot → Weltzeit → bezahlter Originalverkauf → Wiederaufnahme; Chromium/WebKit mit 1180×820, 1024×768, 820×1180, 390×844. Separate Workflow-Datei vermeidet die Kollision mit Forschungs-PR #565 am P1-Workflow.
 - Wirtschaftliche Langzeitstabilität und W3-Frachterberechtigung **nicht** aus einem bezahlten lokalen Erzauftrag ableiten; 13×90/365-/730-Prüfungen bei tatsächlicher wirtschaftlicher Ausweitung separat auswerten.
+
+## Durch GitHub Actions tatsächlich nachgewiesen
+
+- [M4-U3-Original-Workflow #45004203241](https://github.com/tobiasfranziskus/Check/actions/runs/45004203241): **3/3 Jobs erfolgreich**, der gezielte Node22-Test **2/2**, Chromium und WebKit je vier Touchgrößen. In beiden Browsern ist ein wirklich bezahlter Erzverkauf nach 120 Weltminuten sichtbar: 500 ISK Haus-Bruttoerlös, Hash `2109e1dda33e33a7`. Weltgeld 33.000 ISK, kein Mint/Burn. Global gefördertes Erz im Protokoll: 100, darin auch die unabhängige NPC-Förderung; die Haus-Abnahme ist 50 Erz.
+- [W5-RC1 #45004203158](https://github.com/tobiasfranziskus/Check/actions/runs/45004203158): volle Node22-Regression **583/583 bestanden, 0 Fehler und 0 Skips** laut tatsächlichem Job-Log `main-safe-and-all-node22`, iPad-Touch-Preflight erfolgreich. Andere Job-/Workflow-Ergebnisse, einschließlich NAS-Paket-Check, sind separat zu prüfen.
+- P1-Chromium/WebKit-Gesamtmatrix und übrige CI dürfen erst als vollständig bestanden dokumentiert werden, wenn ihre Jobs tatsächlich beendet sind. Echtes iPad Safari, privates NAS und der 60-Minuten-Erstspieler-Blindtest bleiben **OFFEN**. 13×90 und 365/730 Tage werden nicht aus einem kurzen Erstverkauf abgeleitet.
 
 ## Rückfall / Integration
 

@@ -116,6 +116,13 @@ function aktiveSitzung(nachricht){
  hinweis(nachricht||'Willkommen in Aldera. Dein Konzern wartet auf seinen ersten Auftrag.');
  menustand();
 }
+function sitzungsUiZuruecksetzen(){
+ sektorKarte?.zuruecksetzen();
+ werftAuswahlId=null;managerFlotteAuswahlId=null;managerFlotteAktionNach=0;letzteAuftragsgeste=null;
+ flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
+ $('auftrag-meldung').textContent='Noch kein Auftrag in dieser Sitzung angeklickt.';
+ pilotTutor?.zuruecksetzen();pilotMenu?.zeichnen();
+}
 function startNeu(){
  try{
   if(!scope.W5acSession||!scope.J8KonzernSitzung)throw Error('Original-Wirtschaftskern wurde nicht geladen');
@@ -141,8 +148,7 @@ function startNeu(){
    const audit=welt.audit(zustand);
    if(!audit.ok)throw Error('W6: Wirtschaftsprüfung verweigert Start: '+audit.fehler.join('; '));
   }
-  session=neu;sektorKarte?.zuruecksetzen();werftAuswahlId=null;managerFlotteAuswahlId=null;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
-  pilotTutor?.zuruecksetzen();pilotMenu?.zeichnen();
+  session=neu;sitzungsUiZuruecksetzen();
   const ok=speichern(!!vorher);
   aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(p8gAktiv
    ?'Experimentelle Dravos-Karriere mit bezahltem Bergbau, Transport und Materialverträgen; deine normale Karriere bleibt unverändert.'
@@ -154,7 +160,11 @@ function startNeu(){
 function ladeSitzung(json,auswahl,backup=false){
  if(typeof json!=='string'||json.length<1||json.length>MAX)
    throw Error('Ungültige Größe des Karriere-Spielstands.');
- if(session)throw Error('Laufende Karriere zuerst als JSON exportieren und die Seite neu öffnen.');
+ // A named local resume may switch between independent Rule204 and Rule207 slots.
+ // Other load paths (JSON import and backups) retain the existing active-session guard.
+ const zielRegel=auswahl==='lokal'?204:auswahl==='forschung'?207:null;
+ const wechsel=!!session&&zielRegel!==null&&session.ansicht().regel!==zielRegel;
+ if(session&&!wechsel)throw Error('Laufende Karriere zuerst als JSON exportieren und die Seite neu öffnen.');
  const raw=JSON.parse(json),regel=raw?.rulesVersion;
  if(regel!==204&&regel!==207)throw Error('Dieser Spielstand gehört nicht zu einer unterstützten Karriere.');
  if(regel===207&&!['forschung','forschung-backup','datei'].includes(auswahl))
@@ -174,8 +184,10 @@ function ladeSitzung(json,auswahl,backup=false){
  const a=regel===207?neu.oeffnenP8g(json,true):neu.oeffnen204(json,true);
  if(a.regel!==regel||a.weltgeld!==33000)
    throw Error('Die Prüfung der Wirtschaft und des Spielstands ist fehlgeschlagen.');
- session=neu;sektorKarte?.zuruecksetzen();werftAuswahlId=null;managerFlotteAuswahlId=null;flugSchritte=0;flugSeitSicherung=0;cockpitGenutzt=false;flugerfahrung=false;patrouille=null;duell=null;
-  pilotTutor?.zuruecksetzen();pilotMenu?.zeichnen();
+ // Validate the destination first, then persist the old live session to its own slot.
+ // If saving fails, keep the old in-memory career and do not switch.
+ if(wechsel&&!speichern())throw Error('Laufende Karriere vor dem Wechsel nicht gespeichert. Bitte zuerst als JSON exportieren.');
+ session=neu;sitzungsUiZuruecksetzen();
  if(auswahl==='datei'||backup)speichern(!!gespeicherte(slot));
  aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Dein Spielstand wurde geprüft.');
 }
@@ -1335,12 +1347,12 @@ $('jaeger-kaufweg').addEventListener('click',()=>{
 $('neues-spiel').addEventListener('click',()=>screen('briefing'));
 $('karriere-starten').addEventListener('click',startNeu);
 $('fortsetzen').addEventListener('click',()=>{try{
-   if(session){aktiveSitzung('Deine laufende Karriere ist geöffnet.');return;}
+   if(session?.ansicht().regel===204){aktiveSitzung('Deine laufende Karriere ist geöffnet.');return;}
    const json=gespeicherte();if(!json)throw Error('Keine Karriere gespeichert');
    ladeSitzung(json,'lokal');
  }catch(e){hinweis('Karriere nicht geöffnet: '+error(e),true);}});
 $('fortsetzen-w6').addEventListener('click',()=>{try{
-   if(session){aktiveSitzung('Deine laufende Karriere ist geöffnet.');return;}
+   if(session?.ansicht().regel===207){aktiveSitzung('Deine laufende Karriere ist geöffnet.');return;}
    const json=gespeicherte(SLOT_W6);if(!json)throw Error('Kein separater Forschungsstand gespeichert');
    ladeSitzung(json,'forschung');
  }catch(e){hinweis('Experimentelle Karriere nicht geöffnet: '+error(e),true);}});

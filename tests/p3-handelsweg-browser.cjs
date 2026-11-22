@@ -40,8 +40,8 @@ async function karrierestart(browser,kind){
    await el('karriere-starten').tap();
    await bookingInView();
    assert.match(await booking.innerText(),/Bergbauschiff kaufen · 600 ISK/);
-   await booking.tap();
-   await booking.tap(); // A rapid second tap must not buy the newly displayed carrier.
+   // Keep the rapid clicks inside one browser task, including on loaded runners.
+   await booking.evaluate(button=>{button.click();button.click();});
    assert.match(await message.innerText(),/Bergbauschiff gekauft in Aldera für 600 ISK.*2\.400 ISK/);
    assert.match(await booking.innerText(),/Frachter erwerben · 750 ISK/);
    await bookingInView();

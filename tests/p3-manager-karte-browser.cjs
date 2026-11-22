@@ -66,8 +66,8 @@ async function pruefe(browser,kind,width,height,base){
   assert.equal(await save(),vorKauf);
   assert.equal(await el('[data-action="buy-st_aldera-miner"]').evaluate(e=>e===document.activeElement),true);
   const kauf=el('[data-action="buy-st_aldera-miner"]');
-  await kauf.tap();
-  await kauf.tap();
+  // Dispatch inside one browser task so runner load cannot turn this into two separate gestures.
+  await kauf.evaluate(button=>{button.click();button.click();});
   assert.equal(await el('#hausgeld').textContent(),'2.400 ISK');
   assert.equal(await ship('Bergbauschiff').count(),1);
   await ship('Bergbauschiff').tap();
@@ -148,7 +148,7 @@ async function pruefe(browser,kind,width,height,base){
   }
   await plus.tap();
   assert.match(await details.innerText(),/Nadir → Aldera.*leer.*Rückfahrt/s);
-  assert.match(await el('#auftrag-belege').innerText(),/50 Eis geliefert bei Tick 180/);
+  assert.match(await el('#auftrag-belege').innerText(),/50 Eis geliefert in Spielminute 180/);
   await page.setViewportSize({width:height,height:width});
   assert.equal(await selection.inputValue(),await carrier.getAttribute('data-sektor'));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);

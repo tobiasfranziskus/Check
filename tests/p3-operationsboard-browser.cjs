@@ -92,7 +92,7 @@ async function pruefen(browser,kind,base,width,height){
   await details.getByText('Schiffsdetails',{exact:true}).tap();
   const buchwert=j.weltReferenz().buchwert(j.zustandReferenz(),frachter);
   assert.equal(await details.getByText('Restbuchwert: '+buchwert+' ISK').isVisible(),true);
-  const sperre=j.angebote().find(o=>o.id==='freight-'+frachter).reason;
+  const sperre=j.angebote().find(o=>o.id==='freight-'+frachter).reason.replace(/^K1: /,'');
   assert.ok((await details.locator('p').allTextContents()).some(text=>text.endsWith(' · '+sperre)));
   await details.locator('summary').focus();
   await page.keyboard.press('Enter');

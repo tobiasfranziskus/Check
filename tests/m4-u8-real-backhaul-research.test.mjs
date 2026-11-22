@@ -21,7 +21,7 @@ test('U8 research: explicit profile gate rejects ordinary saves and commands',()
  assert.equal(fresh.execute(r,{type:'industrialWaterBackhaul',owner:'st_aldera',schiff:'sh001'}).ok,false);
  assert.equal(fresh.save(r),rb);
 });
-test('U8 research: real NPC W3 return, paid optional water, atomic rejection and reload',()=>{
+for(const carrier of ['transport','house'])test('U7/U8 research: real '+carrier+' W3 return, paid optional water, atomic rejection and reload',()=>{
  const w=K.erstellenU8(opts),s=w.createState(42,{politik:policy});
  const doCmd=cmd=>{
   const r=w.execute(s,cmd);
@@ -58,14 +58,14 @@ test('U8 research: real NPC W3 return, paid optional water, atomic rejection and
  };
  // Explicit legal sequence, no injected stock or fabricated opening balances.
  pauseUnbound();
- doCmd({type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_aldera'});
+ doCmd({type:'shipBuy',owner:carrier,klasse:'frachter',station:'st_aldera'});
  doCmd({type:'shipBuy',owner:'house',klasse:'miner',station:'st_aldera'});
- const ship=Object.values(s.ships).find(x=>x.owner==='transport'&&x.klasse==='frachter').id;
+ const ship=Object.values(s.ships).find(x=>x.owner===carrier&&x.klasse==='frachter').id;
  const miner=Object.values(s.ships).find(x=>x.owner==='house'&&x.klasse==='miner').id;
  doCmd({type:'shipShuttle',owner:'house',schiff:miner,ware:'eis'});
  until(()=>s.stations.st_aldera.lager.eis>=w.rules.w5n.charge,240,'physically mined ice');
  doCmd({type:'shipShuttleStop',owner:'house',schiff:miner});
- doCmd({type:'shipFreightIce',owner:'transport',schiff:ship});
+ doCmd({type:'shipFreightIce',owner:carrier,schiff:ship});
  advance(2*w.rules.w5n.flugMinuten);
  check(w,s);
  doCmd({type:'stationWater',owner:'st_nadir',station:'st_nadir'});
@@ -79,13 +79,13 @@ test('U8 research: real NPC W3 return, paid optional water, atomic rejection and
   &&!s.kanon.pendel[sh.id]?.beenden&&!w.stillgelegt(s,sh.id));
  until(()=>!!eligibleMiner()&&s.owners.st_aldera.cash>=500
   &&s.owners.npc3.cash>=140&&s.owners.st_nadir.cash>=740
-  &&s.owners.transport.cash>=120&&s.owners.werft_extern.cash>=530,
+  &&s.owners[carrier].cash>=120&&s.owners.werft_extern.cash>=530,
   1440,'available NPC miner and actual owner budgets');
  const npc=eligibleMiner().id;
  for(const cmd of [
   {type:'industrialOreOffer',owner:'st_nadir',miner:npc,frachter:ship},
   {type:'industrialOreAcceptMine',owner:'npc3'},
-  {type:'industrialOreAcceptFreight',owner:'transport'},
+  {type:'industrialOreAcceptFreight',owner:carrier},
   {type:'industrialOreAcceptYard',owner:'werft_extern'},
   {type:'industrialOreCommit',owner:'st_nadir'}
  ])doCmd(cmd);
@@ -93,7 +93,15 @@ test('U8 research: real NPC W3 return, paid optional water, atomic rejection and
    360,'original W3 arrival');
  assert.ok(s.owners.st_aldera.cash>=15&&s.stations.st_nadir.lager.wasser>0);
  check(w,s);
- const before=w.save(s),a=s.w3.auftrag,lohn=s.w3.arbeitsKosten,tarif=s.w3.frachtUmsatz;
+ const a=s.w3.auftrag,lohn=s.w3.arbeitsKosten,tarif=s.w3.frachtUmsatz;
+ assert.equal(a.carrier,carrier==='house'?'house':undefined);
+ if(carrier==='house'){
+  const unsigned=w.save(s);
+  assert.equal(w.execute(s,{type:'industrialWaterBackhaul',owner:'st_aldera',schiff:ship}).ok,false);
+  assert.equal(w.save(s),unsigned);
+  doCmd({type:'industrialWaterAcceptBackhaul',owner:carrier,schiff:ship});
+ }
+ const before=w.save(s);
  const source=s.stations.st_nadir.lager.wasser,stock=s.stations.st_aldera.lager.wasser;
  const buyer=s.owners.st_aldera.cash,producer=s.owners.st_nadir.cash;
  const earned=s.kanon.wasser.rueckGeliefert;
@@ -126,7 +134,8 @@ test('U8 research: real NPC W3 return, paid optional water, atomic rejection and
  assert.throws(()=>w.load(JSON.stringify(wrong)));
  wrong.kanon.rueckfracht.schiff='fake';
  assert.throws(()=>w.load(JSON.stringify(wrong)),'tag and ship id cannot both be removed to bypass audit');
- const feeKey='rueckfracht|k1_rueckfracht|transport';
+ const feeKey='rueckfracht|k1_rueckfracht|'+carrier;
+ const carrierCash=s.owners[carrier].cash;
  const paidBefore=s.kanon.buch.summen[feeKey]||0;
  const copy=w.load(loaded),minutes=a.zeit;
  w.advance(s,minutes);w.advance(copy,minutes);
@@ -138,7 +147,8 @@ test('U8 research: real NPC W3 return, paid optional water, atomic rejection and
  assert.equal(s.owners.k1_rueckfracht.cash,0);
  assert.equal((s.kanon.buch.summen[feeKey]||0)-paidBefore,p.gebuehr,'exact fee paid once to actual carrier');
  assert.equal(s.ships[ship].ladung.wasser,undefined);
- assert.equal(s.ships[ship].owner,'transport');
+ assert.equal(s.ships[ship].owner,carrier);
+ assert.equal(s.owners[carrier].cash-carrierCash,240+p.gebuehr,'fee and backhaul paid to executing company');
  check(w,s);
- console.log('M4_U8_REAL_RETURN',JSON.stringify({ship,menge:p.menge,extraFee:p.gebuehr,returnMinutes:minutes,pauses,tick:s.tick,hash:w.hash(s)}));
+ console.log('M4_U8_REAL_RETURN',JSON.stringify({ship,carrier,menge:p.menge,extraFee:p.gebuehr,returnMinutes:minutes,pauses,tick:s.tick,hash:w.hash(s)}));
 });

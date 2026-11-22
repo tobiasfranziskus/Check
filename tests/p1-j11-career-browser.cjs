@@ -6,6 +6,7 @@ const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const W=require('../prototypes/welt/welt-kern.js');
 const SLOT='aphros-void:spielerkarriere:regel204:v1';
+const SLOT_W6='aphros-void:spielerkarriere:regel207-forschung:v1';
 (async()=>{
  const root=path.resolve(__dirname,'..');
  const server=http.createServer((req,res)=>{
@@ -121,6 +122,40 @@ const SLOT='aphros-void:spielerkarriere:regel204:v1';
      await page.reload();await page.locator('#fortsetzen').tap();
      assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),freshText,
        'new, not previous career resumes after reload');
+     // M4 blindtest P1: switching between distinct career slots must work in the
+     // same browser tab, without reloading or overwriting either world.
+     await page.locator('#open-menu').tap();
+     await page.locator('#neues-spiel').tap();
+     await page.locator('#w6-p8g-start').check();
+     page.once('dialog',dialog=>dialog.accept()); // Explicit Rule207 research authorization.
+     await page.locator('#karriere-starten').tap();
+     assert.equal(await page.locator('#spielwelt').isVisible(),true,'Dravos starts in same tab');
+     await page.locator('[data-advance="1"]').tap();
+     const dravosText=await page.evaluate(k=>localStorage.getItem(k),SLOT_W6);
+     assert.equal(JSON.parse(dravosText).rulesVersion,207);
+     assert.equal(JSON.parse(dravosText).tick,1,'research time distinctly advanced');
+     assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),freshText,
+       'research launch must leave standard slot untouched');
+     await page.evaluate(()=>{document.getElementById('auftrag-meldung').textContent='Alter Auftrag aus anderer Karriere · Tick 2350';});
+     await page.locator('#open-menu').tap();
+     await page.locator('#fortsetzen').tap();
+     assert.equal(await page.locator('#spielwelt').isVisible(),true,'standard career selected despite active Dravos');
+     assert.match(await page.locator('#auftrag-belege').textContent(),/Belegstand: Tick 0/,'standard world loaded in memory');
+     assert.equal(await page.locator('#auftrag-meldung').textContent(),
+       'Noch kein Auftrag in dieser Sitzung angeklickt.','transient order feedback cleared on switch');
+     assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),freshText);
+     assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT_W6),dravosText);
+     await page.evaluate(()=>{document.getElementById('auftrag-meldung').textContent='Alte Standardfracht · Tick 2350';});
+     await page.locator('#open-menu').tap();
+     await page.locator('#fortsetzen-w6').tap();
+     assert.equal(await page.locator('#spielwelt').isVisible(),true,'research career selected despite active standard');
+     assert.match(await page.locator('#auftrag-belege').textContent(),/Belegstand: Tick 1/,'Dravos world restored in memory');
+     assert.equal(await page.locator('#auftrag-meldung').textContent(),
+       'Noch kein Auftrag in dieser Sitzung angeklickt.','no stale standard order in Dravos');
+     assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),freshText,'standard save preserved');
+     assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT_W6),dravosText,'Dravos save preserved');
+     assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT_W6+':vorherige'),null,
+       'switching does not create an unwanted backup or overwrite');
      assert.deepEqual(errors,[],'browser must not report exceptions');
      console.log('J11_P1_GAME_BROWSER_OK',JSON.stringify({
        browser:kind,width,height,seed:42,freighter:freighter.id,miner:miner.id,

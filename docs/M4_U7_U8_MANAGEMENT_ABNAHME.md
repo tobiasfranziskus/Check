@@ -34,6 +34,8 @@ Das Werkzeug erfasst Kassen pro Konto, gebundene Gelder, Warenbestände, aktive 
 | 365 Tage | 3 | 137 | 4.337 | 6 | 7.329 | 1.390 | `51abf0dbad3b0edb` |
 | 730 Tage | 3 | 137 | 4.337 | 6 | 7.329 | 1.390 | `6a050e671330da20` |
 
+Die gepaarte Standardregel204-Kontrolle erreichte nach 7/30/90 Tagen 3/8/20 W3-Frachten und 73/335/1.000 Eisrunden. An Tag 365 und 730 blieben die Abschlusszahlen bei 20 und 1.000, mit 49 gebauten Frachtern, 95 Stilllegungen, 7.127 ISK Hauskasse und ebenfalls 1.390 ISK im laufenden Originalvertrag. Die Endhashes lauten `b4d8f92122c1bbcc` und `1ba1d8cfe8539dd3`. In der U7/U8-Variante tritt die Blockade früher ein. Seeds 7 und 123 wiederholen die Mengen und Bindungen an Tag 90 bei eigenen Hashes. Der S02-Direktstart ohne die umfassende Konzernpolitik liefert zwei U7-Erzaufträge, 28 Eisrunden und 895 Wasser retour. Ein Hauskauf samt Überführung gelingt dort, für die Hülle kommt keine bezahlte Folgefracht zustande.
+
 Alle 13 U7/U8-Krisenszenarien erreichten Tag 90 mit 33.000 ISK Weltgeld und 0 Emission/Senke. Zwischen 1 und 13 abgeschlossene W3-Frachten, 3 bis 704 Eisrunden und 1 bis 34 gebaute Hüllen. In S08 kam kein Wasser zurück, in S09 stoppt die Verarbeitung. S11 erreichte 13 Erzfrachten, 704 Eisrunden, 34 Hüllen und 64 Stilllegungen. Auch dort waren am Endpunkt 1.390 ISK gebunden. Der erste Hauskauf und eine bezahlte Folgefahrt waren in jedem Lauf mit der gewählten S02-Eröffnungsstrategie möglich. Die Spanne beschreibt diese Versuche, aus ihr folgt keine Absatzgarantie.
 
 ## Blocker und Regelentscheidung

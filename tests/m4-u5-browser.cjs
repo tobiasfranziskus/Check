@@ -137,9 +137,10 @@ async function pruefen(browser,art,width,height,json,markt){
   assert.equal(gekauft.owners.house.cash,JSON.parse(markt).owners.house.cash-750);
   assert.equal(gekauft.stations.st_nadir.lager.frachter,0);
   assert.equal(await el('p3-industrie-kauf').isEnabled(),false);
-  const kaufTaste=await el('p3-industrie-kauf').boundingBox();
-  await page.touchscreen.tap(kaufTaste.x+kaufTaste.width/2,kaufTaste.y+kaufTaste.height/2);
-  assert.equal(await transportSave(),nachKauf,'repeated touch cannot buy the sold hull');
+  // Redraw can move the card in the viewport. Target the same physical control
+  // after scrolling so the second tap tests the sold hull, not the clock.
+  await el('p3-industrie-kauf').tap({force:true});
+  assert.ok((await transportSave())===nachKauf,'repeated touch cannot buy the sold hull');
   for(let n=0;n<6&&!(await el('p3-industrie-transfer').isEnabled());n++)await minuten.tap();
   await el('p3-industrie-transfer').tap();
   assert.equal(JSON.parse(await transportSave()).w5ac.active.id,neue.id);

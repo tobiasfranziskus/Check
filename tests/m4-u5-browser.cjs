@@ -58,6 +58,52 @@ async function pruefen(browser,art,width,height,json){
   assert.equal(await save(),nachher);
   assert.deepEqual(fehler,[]);
   console.log(art,width,height,'48 Fahrten, Lager- und Käufersperren, Erzstopp, Reload');
+  // The new transport career must never autosave into the standard slot.
+  const transportSlot='aphros-void:spielerkarriere:transport-forschung:v1';
+  const transportSave=()=>page.evaluate(key=>localStorage.getItem(key),transportSlot);
+  assert.equal(await el('manager-industrie-transport').isVisible(),false);
+  await el('open-menu').tap();
+  page.on('dialog',dialog=>dialog.accept());
+  await el('transport-kopie').tap();
+  await el('manager-industrie-transport').waitFor({state:'visible'});
+  assert.equal(await save(),nachher);
+  assert.equal(JSON.parse(await transportSave()).kanon.u7Manager,true);
+  await el('tab-auftraege').tap();
+  const stopOther=el('spieleraktionen').locator('[data-action="stop-sh005"]');
+  await stopOther.tap();
+  const advance=page.locator('[data-advance="1"]');
+  const permit=el('manager-industrie-aktionen').locator('[data-action="industry-accept-sh003"]');
+  for(let n=0;n<240&&!(await permit.count());n++)await advance.tap();
+  await permit.waitFor({state:'visible'});
+  assert.equal(await permit.isEnabled(),true);
+  const bounds=await permit.boundingBox();assert.ok(bounds&&bounds.width>=48&&bounds.height>=48);
+  assert.match(await el('manager-industrie-status').innerText(),/Bergbau und Werft haben zugestimmt/);
+  await permit.tap();
+  await advance.tap();
+  const water=el('manager-industrie-aktionen').locator('[data-action="industry-water-sh003"]');
+  await water.waitFor({state:'visible'});
+  await water.tap();
+  const checkpoint=await transportSave();
+  assert.equal(JSON.parse(checkpoint).w3.auftrag.wasserZustimmung,true);
+  assert.equal(await save(),nachher);
+  await page.reload();
+  await el('transport-fortsetzen').tap();
+  await el('manager-industrie-transport').waitFor({state:'visible'});
+  assert.equal(await transportSave(),checkpoint);
+  for(let n=0;n<10&&JSON.parse(await transportSave()).w3.auftrag;n++)
+   await page.locator('[data-advance="60"]').tap();
+  const finished=JSON.parse(await transportSave());
+  assert.equal(finished.w3.abgeschlossen,1);
+  assert.equal(finished.w5ad.freight.at(-1).owner,'house');
+  assert.ok(finished.kanon.wasser.rueckGeliefert>1414);
+  assert.match(await el('manager-industrie-status').innerText(),/Letzter Industrieauftrag/);
+  assert.equal(await save(),nachher);
+  await el('open-menu').tap();
+  await el('fortsetzen').tap();
+  assert.equal(await el('manager-industrie-transport').isVisible(),false);
+  assert.equal(await save(),nachher);
+  assert.deepEqual(fehler,[]);
+  console.log(art,width,height,'U7/U8: NPC-Angebot, Zustimmung, physische Industrie-/Wasserfahrt, separater Save und Wechsel zur Standardkarriere');
  }finally{await ctx.close();}
 }
 

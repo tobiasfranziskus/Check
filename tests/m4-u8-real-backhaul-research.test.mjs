@@ -29,18 +29,35 @@ test('U8 research: real NPC W3 return, paid optional water, atomic rejection and
   check(w,s);
   return r;
  };
+ // W2's hourly restart remains authoritative even with outer automatik=false.
+ // Explicit NPC-owner test commands may request a safe pause; never cancel
+ // a live funded contract or remove a loaded ship. Do not edit state/policies.
+ let pauses=0;
+ const pauseUnbound=()=>{
+  for(const sh of Object.values(s.ships).sort((a,b)=>a.id.localeCompare(b.id))){
+   const p=s.kanon.pendel[sh.id];
+   if(sh.owner!=='npc3'||sh.klasse!=='miner'||!p||p.beenden
+     ||s.w3.auftrag?.industrieMiner===sh.id
+     ||s.erzpilotVertraege?.[sh.id]
+     ||Object.values(sh.ladung).some(x=>x!==0)
+     ||!['frei','angedockt'].includes(sh.flug?.lage))continue;
+   const result=w.execute(s,{type:'shipShuttleStop',owner:'npc3',schiff:sh.id});
+   assert.equal(result.ok,true,result.reason);pauses++;
+  }
+ };
+ const step=()=>{pauseUnbound();w.advance(s,1);};
+ const advance=(n)=>{for(let i=0;i<n;i++)step();};
  const until=(predicate,limit,label)=>{
-  for(let i=0;i<limit&&!predicate();i++)w.advance(s,1);
+  for(let i=0;i<limit&&!predicate();i++)step();
   assert.ok(predicate(),label+' bei Minute '+s.tick+' '+JSON.stringify({
    aldera:s.owners.st_aldera.cash,nadir:s.owners.st_nadir.cash,
    ice:s.stations.st_aldera.lager.eis,water:s.stations.st_nadir.lager.wasser,
-   ore:s.w3.auftrag,ships:Object.values(s.ships).map(x=>[x.id,x.owner,x.auftrag,x.flug?.lage])
+   ore:s.w3.auftrag,export:s.owners.export.cash,escrow:s.erzpilotVertraege,pauses,ships:Object.values(s.ships).map(x=>[x.id,x.owner,x.auftrag,x.flug?.lage])
   }));
   check(w,s);
  };
  // Explicit legal sequence, no injected stock or fabricated opening balances.
- const npc=Object.values(s.ships).find(x=>x.owner==='npc3'&&x.klasse==='miner').id;
- doCmd({type:'shipShuttleStop',owner:'npc3',schiff:npc});
+ pauseUnbound();
  doCmd({type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_aldera'});
  doCmd({type:'shipBuy',owner:'house',klasse:'miner',station:'st_aldera'});
  const ship=Object.values(s.ships).find(x=>x.owner==='transport'&&x.klasse==='frachter').id;
@@ -49,16 +66,22 @@ test('U8 research: real NPC W3 return, paid optional water, atomic rejection and
  until(()=>s.stations.st_aldera.lager.eis>=w.rules.w5n.charge,240,'physically mined ice');
  doCmd({type:'shipShuttleStop',owner:'house',schiff:miner});
  doCmd({type:'shipFreightIce',owner:'transport',schiff:ship});
- w.advance(s,2*w.rules.w5n.flugMinuten);
+ advance(2*w.rules.w5n.flugMinuten);
  check(w,s);
  doCmd({type:'stationWater',owner:'st_nadir',station:'st_nadir'});
- w.advance(s,w.rules.w5n.fabrikMinuten);
+ advance(w.rules.w5n.fabrikMinuten);
  assert.ok(s.stations.st_nadir.lager.wasser>0,'real water production');
  check(w,s);
  // Original signers commit one original K7 contract only after ice and water.
- until(()=>s.ships[npc].flug.lage==='angedockt'
-   &&!s.erzpilotVertraege?.[npc]&&Object.values(s.ships[npc].ladung).every(x=>x===0),
-   240,'available NPC miner');
+ const eligibleMiner=()=>Object.values(s.ships).sort((a,b)=>a.id.localeCompare(b.id)).find(sh=>
+  sh.owner==='npc3'&&sh.klasse==='miner'&&sh.flug?.lage==='angedockt'
+  &&!s.erzpilotVertraege?.[sh.id]&&Object.values(sh.ladung).every(x=>x===0)
+  &&!s.kanon.pendel[sh.id]?.beenden&&!w.stillgelegt(s,sh.id));
+ until(()=>!!eligibleMiner()&&s.owners.st_aldera.cash>=500
+  &&s.owners.npc3.cash>=140&&s.owners.st_nadir.cash>=740
+  &&s.owners.transport.cash>=120&&s.owners.werft_extern.cash>=530,
+  1440,'available NPC miner and actual owner budgets');
+ const npc=eligibleMiner().id;
  for(const cmd of [
   {type:'industrialOreOffer',owner:'st_nadir',miner:npc,frachter:ship},
   {type:'industrialOreAcceptMine',owner:'npc3'},
@@ -112,5 +135,5 @@ test('U8 research: real NPC W3 return, paid optional water, atomic rejection and
  assert.equal(s.ships[ship].ladung.wasser,undefined);
  assert.equal(s.ships[ship].owner,'transport');
  check(w,s);
- console.log('M4_U8_REAL_RETURN',JSON.stringify({ship,menge:p.menge,extraFee:p.gebuehr,returnMinutes:minutes,tick:s.tick,hash:w.hash(s)}));
+ console.log('M4_U8_REAL_RETURN',JSON.stringify({ship,menge:p.menge,extraFee:p.gebuehr,returnMinutes:minutes,pauses,tick:s.tick,hash:w.hash(s)}));
 });

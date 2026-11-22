@@ -85,7 +85,8 @@ const m_data_kanon = (() => {
   return { KANON, tiefFrieren };
 })();
 
-function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false) {
+function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false, u8Research = false) {
+  if (u8Research && (!jaegerFlug || p8bZweiFelder || p8cDravos || p8dFracht)) throw Error('U8: ausschließlich isolierte 204-Forschungswelt');
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
@@ -533,6 +534,34 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     }
     // Wasser-Rückfracht: Aldera kauft bei Ankunft des Eisfrachters in Nadir reales Wasser,
     // zahlt Ware und Rückfracht aus eigener Kasse; entladen wird erst am Dock in Aldera.
+    // Expliziter, separat finanzierter Wasserauftrag auf bereits bezahltem W3-Rückflug.
+    // Nur das eigene Forschungsprofil; keinerlei neue Flugminute oder Spielerrecht.
+    function erzWasserAbholung(state, cmd) {
+      const fail = reason => ({ok:false,type:cmd.type,reason});
+      const k=state.kanon,a=state.w3?.auftrag,sh=state.ships[cmd.schiff];
+      if (!u8Research || k.u8ErzRueckfracht!==true) return fail('U8: Forschung nicht ausgewählt');
+      if (Object.keys(cmd).sort().join(',')!=='owner,schiff,type' || cmd.owner!==W.quellStation)
+        return fail('U8: nur Aldera darf Wasser bestellen');
+      if (!a || a.phase!=='rueck' || a.schiff!==cmd.schiff || sh?.owner!==rules.w3.spedition
+          || sh.phase!=='reise' || sh.system!=='nadir' || sh.ziel!==W.quellStation
+          || sh.ankunft-a.zeit!==state.tick || a.gearbeitet!==a.zeit
+          || state.w5n.frachtauftrag || state.w5ac?.active || k.rueckfracht)
+        return fail('U8: kein exklusiver gerade begonnener bezahlter W3-Rückflug');
+      if (ladungSumme(sh)!==0 || m_core_anlage.stillgelegt(state,sh)) return fail('U8: Frachter nicht frei');
+      const nadir=state.stations[W.zielStation].lager,aldera=state.stations[W.quellStation].lager;
+      const stueck=W.wasserPreis+KANON.wasser.rueckfrachtJeEinheit;
+      const menge=Math.max(0,Math.min(k.politik.wasserZielAldera-aldera.wasser,nadir.wasser,
+          KANON.wasser.lagerAldera-aldera.wasser,rules.economy.cargo,
+          Math.floor(state.owners[W.quellStation].cash/stueck)));
+      if (!Number.isSafeInteger(menge) || menge<=0) return fail('U8: kein gedeckter Wasserbedarf');
+      const gebuehr=menge*KANON.wasser.rueckfrachtJeEinheit;
+      m_core_buch.transfer(state,W.quellStation,W.zielStation,menge*W.wasserPreis,'wasser-grosshandel');
+      m_core_buch.transfer(state,W.quellStation,'k1_rueckfracht',gebuehr,'rueckfracht-reserve');
+      nadir.wasser-=menge; sh.ladung.wasser=menge;
+      k.wasser.abNadir+=menge; k.wasser.rueckGeladen+=menge;
+      k.rueckfracht={schiff:sh.id,menge,gebuehr,art:'erz'};
+      return {ok:true,type:cmd.type,menge,gebuehr};
+    }
     function rueckfracht(state) {
       const k = state.kanon, a = state.w5n.frachtauftrag, p = k.politik;
       if (a && a.phase === 'rueck' && !k.rueckfracht && p.rueckfracht) {
@@ -567,7 +596,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         }
       }
     }
-    return { BEFEHLE, pruefen, ausfuehren, rueckfracht, ausschuettbar, verfuegbar, einkommen };
+    return { BEFEHLE, pruefen, ausfuehren, rueckfracht, erzWasserAbholung, ausschuettbar, verfuegbar, einkommen };
   })();
 
 
@@ -1609,6 +1638,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (state === null || typeof state !== 'object' || state.rulesVersion !== rules.rulesVersion || state.schema !== KANON.schema)
       throw Error('K1: fremde Regelversion oder Schema; keine automatische Migration');
     const k = state.kanon;
+    if (u8Research ? k?.u8ErzRueckfracht!==true : k?.u8ErzRueckfracht!==undefined)
+      throw Error('U8: Forschungsprofil explizit getrennt von normalen Saves');
     if (!k || k.modell !== KANON.modell || !k.netto || !k.buch || !k.wasser || !k.pendel || !k.flugdienst
       || !k.verschleiss || !k.haushalte || !k.politik || !state.flug)
       throw Error('K1: Weltbuch unvollständig');
@@ -1708,6 +1739,15 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         || unterwegs !== (k.rueckfracht ? k.rueckfracht.menge : 0)
         || state.owners.k1_rueckfracht.cash !== (k.rueckfracht ? k.rueckfracht.gebuehr : 0))
         fehler.push('Wasserbuch');
+      if (k.rueckfracht?.art!==undefined) {
+        const r=k.rueckfracht,a=state.w3?.auftrag,sh=state.ships[r.schiff];
+        if (!u8Research || r.art!=='erz' || !a || a.schiff!==r.schiff || a.phase!=='rueck'
+          || sh?.owner!==rules.w3.spedition || sh.phase!=='reise' || sh.system!=='nadir'
+          || sh.ziel!==W.quellStation || sh.ladung.wasser!==r.menge || !ganz(r.menge) || r.menge<=0
+          || r.gebuehr!==r.menge*KANON.wasser.rueckfrachtJeEinheit || state.w5n.frachtauftrag)
+          fehler.push('U8: Wasser ohne echten W3-Rückflug');
+      } else if (u8Research && k.rueckfracht && state.w3?.auftrag?.schiff===k.rueckfracht.schiff)
+        fehler.push('U8: fehlender Rückfracht-Vertragsnachweis');
       const einzel = m_core_buch.summe(state, 'wasser-einzelhandel');
       if (einzel !== w.verkauftNadir * W.wasserPreis + w.verkauftAldera * KANON.wasser.preisAldera
         || m_core_buch.summe(state, 'wasser-grosshandel') !== w.rueckGeladen * W.wasserPreis
@@ -1778,6 +1818,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       fluglohnMinuten: 0, rueckfracht: null, engpass: null,
       politik: JSON.parse(JSON.stringify(KANON.politik)),
     };
+    if (u8Research) state.kanon.u8ErzRueckfracht=true;
     if (opt.politik) politikSetzen(state, opt.politik);
     m_core_flugplan.koerperSync(state);
     // Die Kern-Initialisierung beauftragt den NPC-Miner bereits mit Erz: er erhält denselben
@@ -2147,6 +2188,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (type === 'shipFreightGateIce') return m_core_torfreigabe.starten(state,cmd);
     if (type === 'stationBuildMiner') return m_core_minerwerft.bauen(state, cmd);
     if (typeof type === 'string' && hat(m_core_kreislauf.BEFEHLE, type)) return m_core_kreislauf.ausfuehren(state, cmd);
+    if (type === 'industrialWaterBackhaul') return m_core_kreislauf.erzWasserAbholung(state,cmd);
     if (type === 'pilotWaterBuy')
       return { ok: false, type, reason: 'K1: Wasser nur am Wohnort über householdBuy; kein ortsloser Kauf' };
     const sh = cmd && typeof cmd.schiff === 'string' ? state.ships[cmd.schiff] : null;
@@ -2616,6 +2658,8 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   erstellenJ3:(kapital={})=>erstellen(kapital,true,true,true),
   erstellenJ4b:(kapital={})=>erstellen(kapital,true,true,true,true),
   erstellenJ4c:(kapital={})=>erstellen(kapital,true,true,true,true,true),
+  // Explizite Testwelt; normale Rule204-Lader akzeptieren ihre JSON nicht.
+  erstellenU8:(kapital={})=>erstellen(kapital,true,true,true,true,true,false,false,false,true),
   // Nur experimenteller Rule205-Bergbau in zwei getrennten Nadir-Feldern.
   // Kein Produkt-/Save-Autoupgrade, keine Dravos-Miner und keine Zusatz-ISK.
   erstellenP8b:(kapital={})=>erstellen(kapital,true,true,true,true,true,true),

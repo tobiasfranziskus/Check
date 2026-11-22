@@ -10,6 +10,7 @@ on:
       - 'prototypes/verbund/**'
       - 'tests/p2-*'
       - 'tests/p1-*'
+      - 'tests/p3-handelsweg-browser.cjs'
       - 'tests/p4-karriere-patrouille.test.mjs'
       - 'tests/p4-karriere-duell.test.mjs'
       - 'tests/tutorial-pilot-*'

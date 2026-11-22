@@ -82,13 +82,40 @@ for(const carrier of ['transport','house'])test('U7/U8 research: real '+carrier+
   &&s.owners[carrier].cash>=120&&s.owners.werft_extern.cash>=530,
   1440,'available NPC miner and actual owner budgets');
  const npc=eligibleMiner().id;
+ const reserveBefore=s.owners[carrier].cash;
+ const otherCarrier=carrier==='house'?'transport':'house';
+ const otherBefore=s.owners[otherCarrier].cash;
+ const nadirBefore=s.owners.st_nadir.cash;
+ doCmd({type:'industrialOreOffer',owner:'st_nadir',miner:npc,frachter:ship});
+ const offered=w.save(s);
+ assert.equal(w.execute(s,{type:'industrialOreAcceptFreight',owner:otherCarrier}).ok,false);
+ assert.equal(w.save(s),offered,'wrong carrier may not sign');
  for(const cmd of [
-  {type:'industrialOreOffer',owner:'st_nadir',miner:npc,frachter:ship},
   {type:'industrialOreAcceptMine',owner:'npc3'},
   {type:'industrialOreAcceptFreight',owner:carrier},
   {type:'industrialOreAcceptYard',owner:'werft_extern'},
   {type:'industrialOreCommit',owner:'st_nadir'}
  ])doCmd(cmd);
+ assert.equal(s.owners[carrier].cash,reserveBefore-120);
+ assert.equal(s.owners[otherCarrier].cash,otherBefore);
+ assert.equal(s.owners.st_nadir.cash,nadirBefore-740);
+ assert.equal(s.owners.w3_arbeit_treuhand.cash,120);
+ assert.equal(s.owners.w3_kauf_treuhand.cash,740);
+ const reserved=w.save(s);
+ for(const cmd of [
+  {type:'shipFreightIce',owner:carrier,schiff:ship},
+  {type:'shipReposition',owner:carrier,schiff:ship},
+  {type:'industrialOreCommit',owner:'st_nadir'},
+ ]) {
+  assert.equal(w.execute(s,cmd).ok,false,JSON.stringify(cmd));
+  assert.equal(w.save(s),reserved);
+ }
+ if(carrier==='house'){
+  const forged=JSON.parse(reserved);delete forged.w3.auftrag.carrier;
+  assert.throws(()=>w.load(JSON.stringify(forged)),'active house contract cannot lose owner');
+  const forgedSignature=JSON.parse(reserved);forgedSignature.kanon.industrieErz.carrier='transport';
+  assert.throws(()=>w.load(JSON.stringify(forgedSignature)),'foreign signature mismatch');
+ }
  until(()=>s.w3.auftrag?.phase==='rueck'&&s.ships[ship].ankunft-s.w3.auftrag.zeit===s.tick,
    360,'original W3 arrival');
  assert.ok(s.owners.st_aldera.cash>=15&&s.stations.st_nadir.lager.wasser>0);
@@ -150,5 +177,15 @@ for(const carrier of ['transport','house'])test('U7/U8 research: real '+carrier+
  assert.equal(s.ships[ship].owner,carrier);
  assert.equal(s.owners[carrier].cash-carrierCash,240+p.gebuehr,'fee and backhaul paid to executing company');
  check(w,s);
+ const completed=s.w5ad.freight.at(-1);
+ assert.equal(completed.id,ship);
+ assert.equal(completed.work,120);
+ assert.equal(completed.fee,240);
+ assert.equal(completed.owner,carrier==='house'?'house':undefined);
+ if(carrier==='house'){
+  const final=w.save(s),forged=JSON.parse(final);delete forged.w5ad.freight.at(-1).owner;
+  assert.throws(()=>w.load(JSON.stringify(forged)),'receipt cannot be attributed to NPC company');
+  assert.equal(w.save(s),final);
+ }
  console.log('M4_U8_REAL_RETURN',JSON.stringify({ship,carrier,menge:p.menge,extraFee:p.gebuehr,returnMinutes:minutes,pauses,tick:s.tick,hash:w.hash(s)}));
 });

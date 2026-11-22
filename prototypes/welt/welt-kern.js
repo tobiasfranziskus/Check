@@ -1642,6 +1642,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     const k = state.kanon;
     if (u8Research ? k?.u8ErzRueckfracht!==true : k?.u8ErzRueckfracht!==undefined)
       throw Error('U8: Forschungsprofil explizit getrennt von normalen Saves');
+    if(k?.u7Manager!==undefined&&(!u8Research||k.u7Manager!==true))throw Error('U7: ungültiges Management-Forschungsprofil');
     if (!k || k.modell !== KANON.modell || !k.netto || !k.buch || !k.wasser || !k.pendel || !k.flugdienst
       || !k.verschleiss || !k.haushalte || !k.politik || !state.flug)
       throw Error('K1: Weltbuch unvollständig');
@@ -1651,6 +1652,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     try {
       pruefeForm(state);
       const k = state.kanon, fehler = [];
+      const w3=state.w3?.auftrag;
+      if(w3?.wasserZustimmung!==undefined&&(!u8Research||w3.carrier!=='house'||w3.wasserZustimmung!==true))fehler.push('U7: ungültige Rückladungszustimmung');
       m_core_firmenpolitik.audit(state, fehler);
       if(k.materialSupplyEnabled!==undefined
         &&(!p8dFracht||typeof k.materialSupplyEnabled!=='boolean'))
@@ -2127,6 +2130,48 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       }
     }
   }
+  // U7: opt-in NPC policy, never a house signature or artificial demand.
+  function u7ManagerSchritt(s){
+    if(!u8Research||s.kanon.u7Manager!==true||!s.kanon.politik.automatik)return;
+    const k=s.kanon,i=k.industrieErz,a=s.w3?.auftrag;
+    if(a?.carrier==='house'&&a.phase==='rueck'&&a.wasserZustimmung===true
+        &&s.ships[a.schiff].ankunft-a.zeit===s.tick)
+      m_core_kreislauf.erzWasserAbholung(s,{type:'industrialWaterBackhaul',owner:'st_aldera',schiff:a.schiff});
+    if(i.phase==='angebot'&&i.carrier==='house'){
+      if(i.signFracht){
+        const r=k7Befehl(s,{type:'industrialOreCommit',owner:'st_nadir'});
+        if(!r.ok)k7Befehl(s,{type:'industrialOreCancel',owner:'st_nadir'});
+      }
+      return;
+    }
+    if(!['frei','storniert','geliefert'].includes(i.phase)||s.w3.auftrag||s.w5n.frachtauftrag
+       ||s.w5ac?.active||k.rueckfracht||s.w4.auftrag||s.w5.auftrag||k.minerWerft?.auftrag
+       ||(s.owners.k7_werft_treuhand?.cash||0)!==0)return;
+    const nadir=s.stations[rules.w5.station].lager;
+    if((nadir.frachter||0)>=rules.world.stations[rules.w5.station].ziel.frachter
+       ||(nadir.erz||0)>=rules.w4.erzJeCharge||(nadir.material||0)>=rules.w5.material
+       ||s.owners.st_aldera.cash<K7_PREIS.alderakauf||s.owners.st_nadir.cash<K7_PREIS.nadiraufwand
+       ||s.owners.npc3.cash<K7_PREIS.bergbau||s.owners.werft_extern.cash<K7_PREIS.werft)return;
+    const miner=ids(s.ships).map(id=>s.ships[id]).find(sh=>sh.owner==='npc3'&&sh.klasse==='miner'
+       &&sh.system==='aldera'&&sh.phase==='dock'&&sh.flug?.lage==='angedockt'
+       &&ladungSumme(sh)===0&&!s.erzpilotVertraege?.[sh.id]&&!m_core_anlage.stillgelegt(s,sh)
+       &&!k.pendel[sh.id]?.beenden&&(!k.pendel[sh.id]||k.pendel[sh.id].ware==='erz'));
+    const fr=ids(s.ships).map(id=>s.ships[id]).find(sh=>sh.owner==='house'&&sh.klasse==='frachter'
+       &&sh.system==='aldera'&&sh.phase==='dock'&&sh.flug?.lage==='angedockt'
+       &&sh.auftrag==='halten'&&ladungSumme(sh)===0&&!m_core_anlage.stillgelegt(s,sh));
+    if(!miner||!fr||s.owners.house.cash<K7_PREIS.frachtlohn)return;
+    for(const cmd of [
+      {type:'industrialOreOffer',owner:'st_nadir',miner:miner.id,frachter:fr.id},
+      {type:'industrialOreAcceptMine',owner:'npc3'},
+      {type:'industrialOreAcceptYard',owner:'werft_extern'}
+    ]){
+      const r=k7Befehl(s,cmd);
+      if(!r.ok){
+        if(s.kanon.industrieErz.phase==='angebot')k7Befehl(s,{type:'industrialOreCancel',owner:'st_nadir'});
+        return;
+      }
+    }
+  }
   function industrieAutoSetzen(s, aktiviert) {
     pruefeForm(s);
     if (!k7) throw Error('K7-Automatik ist ausschließlich Regel200-Forschung');
@@ -2206,8 +2251,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if(type==='industrialWaterAcceptBackhaul'){
       const a=state.w3?.auftrag,sh=state.ships[cmd.schiff];
       if(!u8Research||Object.keys(cmd).sort().join(',')!=='owner,schiff,type'
-        ||cmd.owner!=='house'||a?.carrier!=='house'||a.schiff!==cmd.schiff||a.phase!=='rueck'
-        ||sh?.owner!==cmd.owner||sh.ankunft-a.zeit!==state.tick||a.wasserZustimmung
+        ||cmd.owner!=='house'||a?.carrier!=='house'||a.schiff!==cmd.schiff
+        ||!(a.phase==='rueck'&&sh?.ankunft-a.zeit===state.tick
+             ||state.kanon.u7Manager===true&&['vorbestellt','hin'].includes(a.phase))
+        ||sh?.owner!==cmd.owner||a.wasserZustimmung
         ||state.kanon.rueckfracht)return {ok:false,type,reason:'U8: keine freiwillige freie Rückfrachtzusage'};
       a.wasserZustimmung=true;return {ok:true,type};
     }
@@ -2273,6 +2320,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     m_core_kreislauf.rueckfracht(state);
     m_core_minerwerft.transport(state);
     // Signed K7-W5 reserve takes priority over discretionary NPC shipbuilding.
+    u7ManagerSchritt(state);
     industrieAutoSchritt(state);
     m_core_firmenpolitik.schritt(state);
     m_core_disponent.schritt(state);

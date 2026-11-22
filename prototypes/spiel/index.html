@@ -143,7 +143,16 @@
        <p id="manager-transport-grund" class="p3-sperre" role="status" aria-live="polite"></p>
       </article>
      </div>
-     <section aria-label="Auftragsfeedback"><h3>Auftragsverlauf und Belege</h3><p id="auftrag-meldung" role="status" aria-live="polite">Noch kein Auftrag in dieser Sitzung angeklickt.</p><div id="auftrag-belege"></div><button id="auftrag-minute" type="button" disabled>Auftrag: 1 Weltminute weiter</button><p>Jeder Klick nutzt den vorhandenen Core-Tick. Die gesamte Welt läuft mit; keine automatische Nachfrage oder zusätzlichen Käufe durch diese Bedienung.</p></section>
+     <section class="manager-feedback" aria-label="Auftragsfeedback">
+     <h3>Auftragsverlauf</h3>
+     <p id="auftrag-meldung" role="status" aria-live="polite">Noch kein Auftrag in dieser Sitzung angeklickt.</p>
+     <button id="auftrag-minute" type="button" disabled>+1 Minute für laufende Aufträge</button>
+     <details id="auftrag-details" class="manager-feedback-details">
+      <summary>Lieferungen, Zahlungen und Belege ansehen</summary>
+      <div id="auftrag-belege"></div>
+      <p>Die gesamte Wirtschaft läuft weiter. Zusätzliche Käufe erfolgen nur, wenn die Beteiligten sie tatsächlich bezahlen.</p>
+     </details>
+    </section>
      <section id="manager-betrieb" class="manager-betrieb" aria-label="Originale Betriebsrechnung und Weltzeit">
       <h5>Betrieb · Geld, Löhne und Schiffsabnutzung</h5>
       <p id="manager-betrieb-geld" class="note"></p>
@@ -155,7 +164,7 @@
       </div>
       <p id="manager-aussetzen-grund" class="economy-foot" aria-live="polite"></p>
      </section>
-     <p class="economy-foot">Aufträge werden beim Antippen erneut vom Originalkern geprüft. Eine freie Hülle, zahlungsfähige Käufer und echte Ware sind nicht garantiert. Die Weltzeit läuft nur über die bestehenden Zeittasten.</p>
+     <p class="economy-foot">Vor jedem Auftrag werden Ware, Käufer und Geld erneut geprüft. Nicht jedes Geschäft ist jederzeit möglich.</p>
     </section>
     <div id="spieleraktionen" class="orders"></div>
    </div>
@@ -176,8 +185,11 @@
    <div id="panel-jaeger" class="tab-panel" hidden>
     <div class="panel-head"><p class="eyebrow">INDUSTRIE / SCHIFFBAU</p><h3>Dein erster Jäger</h3></div>
     <p class="economy-intro">Verfolge die Lieferkette bis zur fertigen Nadir-Hülle. Material, Firmenkassen, bezahlte Werftarbeit und Eigentum stammen aus derselben Karriere. Andere Firmen entscheiden weiterhin selbst.</p>
-    <p class="note">Nach dem Kauf deines Jägers: unter „Meine Flotte“ das Schiff in Nadir selbst fliegen, am Dock die <strong>Patrouille (3 Bojen)</strong> starten, kontrolliert fliegen und zurückkehren. Die Übung benötigt echten bezahlten Flug, erzeugt aber weder Gratis-ISK noch Beute. Nach einem Reload startet sie neu.</p>
-    <p class="note"><strong>Virtuelles Jägerduell:</strong> nach einem finanzierten Abdockflug in Nadir auf „Duelltraining“ tippen. Drohne anfliegen, Ziel ausrichten, Übungsprojektile abfeuern und gegnerischem Übungsfeuer ausweichen. Trefferpunkte sind reine Trainingswerte – keine Munition, Hüllenschäden, Beute oder ISK-Belohnungen. Die Übung ist nicht Teil deines JSON-Weltspielstands.</p>
+    <details class="manager-pilot-extra">
+     <summary>Optional: Jäger selbst fliegen und trainieren</summary>
+     <p class="note">Nach dem Kauf deines Jägers kannst du ihn unter „Meine Flotte“ in Nadir übernehmen. Die <strong>Patrouille (3 Bojen)</strong> beginnt am Dock, benötigt bezahlte Flugzeit und startet nach einem Neuladen von vorn.</p>
+     <p class="note"><strong>Virtuelles Jägerduell:</strong> Nach einem finanzierten Abdockflug kannst du im Cockpit „Duelltraining“ wählen. Die Übung vergibt weder Waren noch Geld; sie verändert den Wirtschaftsspielstand nicht.</p>
+    </details>
     <div id="jaeger-akte" class="jaeger-akte" aria-label="Aktuelle Jäger-Produktionsakte">Die Produktionsakte erscheint nach dem Karrierestart.</div>
     <section aria-label="Deine spielbaren Beiträge"><h4>Deine spielbaren Beiträge</h4><p id="jaeger-beitrag-hinweis" class="note"></p><div id="jaeger-beitrag-aktionen" class="orders"></div><p id="jaeger-rohstoffe" class="note"></p></section>
     <section aria-label="Siliziumversorgung und finanzielle Engpässe"><h4>Siliziumversorgung · Förder- und Finanzierungsstand</h4>

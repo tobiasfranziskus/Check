@@ -1746,8 +1746,16 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           || sh.ziel!==W.quellStation || sh.ladung.wasser!==r.menge || !ganz(r.menge) || r.menge<=0
           || r.gebuehr!==r.menge*KANON.wasser.rueckfrachtJeEinheit || state.w5n.frachtauftrag)
           fehler.push('U8: Wasser ohne echten W3-Rückflug');
-      } else if (u8Research && k.rueckfracht && state.w3?.auftrag?.schiff===k.rueckfracht.schiff)
-        fehler.push('U8: fehlender Rückfracht-Vertragsnachweis');
+      } else if (u8Research && k.rueckfracht) {
+        // A forged save must not hide an ore backhaul by deleting its tag
+        // AND changing its ship id. Untagged cargo belongs only to real F4.
+        const r=k.rueckfracht,a=state.w5n?.frachtauftrag,sh=state.ships[r.schiff];
+        if (!a || a.schiff!==r.schiff || a.phase!=='rueck' || sh?.phase!=='reise'
+          || sh.system!=='nadir' || sh.ziel!==W.quellStation
+          || sh.ladung.wasser!==r.menge || !ganz(r.menge) || r.menge<=0
+          || r.gebuehr!==r.menge*KANON.wasser.rueckfrachtJeEinheit)
+          fehler.push('U8: fehlender Rückfracht-Vertragsnachweis');
+      }
       const einzel = m_core_buch.summe(state, 'wasser-einzelhandel');
       if (einzel !== w.verkauftNadir * W.wasserPreis + w.verkauftAldera * KANON.wasser.preisAldera
         || m_core_buch.summe(state, 'wasser-grosshandel') !== w.rueckGeladen * W.wasserPreis

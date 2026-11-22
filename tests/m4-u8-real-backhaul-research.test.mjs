@@ -102,6 +102,32 @@ for(const carrier of ['transport','house'])test('U7/U8 research: real '+carrier+
  assert.equal(s.owners.w3_arbeit_treuhand.cash,120);
  assert.equal(s.owners.w3_kauf_treuhand.cash,740);
  const reserved=w.save(s);
+ // Independent branch of the real signed contract: cancel before any work.
+ // This is an actual original cancellation, not a ledger adjustment.
+ const cancellation=w.load(reserved);
+ const cancel={type:'industrialOreCancel',owner:'st_nadir'};
+ const cancelWrong={type:'industrialOreCancel',owner:carrier};
+ assert.equal(w.execute(cancellation,cancelWrong).ok,false);
+ assert.equal(w.save(cancellation),reserved);
+ const balances=Object.fromEntries(Object.entries(cancellation.owners).map(([id,o])=>[id,o.cash]));
+ const receiptBefore=cancellation.w3.storniert;
+ const canceled=w.execute(cancellation,cancel);
+ assert.equal(canceled.ok,true,canceled.reason);
+ assert.equal(cancellation.owners[carrier].cash,reserveBefore);
+ assert.equal(cancellation.owners[otherCarrier].cash,otherBefore);
+ assert.equal(cancellation.owners.st_nadir.cash,nadirBefore);
+ assert.equal(cancellation.owners.werft_extern.cash,
+  balances.werft_extern+balances.k7_werft_treuhand);
+ for(const id of ['w3_arbeit_treuhand','w3_kauf_treuhand','k7_werft_treuhand'])
+  assert.equal(cancellation.owners[id].cash,0);
+ assert.equal(cancellation.w3.storniert,receiptBefore+1);
+ assert.equal(cancellation.w3.auftrag,null);
+ assert.deepEqual(cancellation.ledger,s.ledger,'cancellation creates/removes no goods');
+ check(w,cancellation);
+ const afterCancel=w.save(cancellation);
+ assert.equal(w.execute(cancellation,cancel).ok,false);
+ assert.equal(w.save(cancellation),afterCancel,'second cancellation cannot refund twice');
+ assert.equal(w.save(s),reserved,'live contract untouched by cancellation fork');
  for(const cmd of [
   {type:'shipFreightIce',owner:carrier,schiff:ship},
   {type:'shipReposition',owner:carrier,schiff:ship},
@@ -119,6 +145,9 @@ for(const carrier of ['transport','house'])test('U7/U8 research: real '+carrier+
  until(()=>s.w3.auftrag?.phase==='rueck'&&s.ships[ship].ankunft-s.w3.auftrag.zeit===s.tick,
    360,'original W3 arrival');
  assert.ok(s.owners.st_aldera.cash>=15&&s.stations.st_nadir.lager.wasser>0);
+ const loadedOre=w.save(s);
+ assert.equal(w.execute(s,{type:'industrialOreCancel',owner:'st_nadir'}).ok,false);
+ assert.equal(w.save(s),loadedOre,'completed outward work cannot be canceled/refunded');
  check(w,s);
  const a=s.w3.auftrag,lohn=s.w3.arbeitsKosten,tarif=s.w3.frachtUmsatz;
  assert.equal(a.carrier,carrier==='house'?'house':undefined);

@@ -387,7 +387,7 @@ const m_data_erzpilot = (() => {
         ...W5_RULES.economy.waren,silizium:{stufe:'rohstoff',basis:24}
       }};
     }
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug','siliziumZweitesFeld','siliziumDravos','siliziumFracht'].includes(k))
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug','siliziumZweitesFeld','siliziumDravos','siliziumFracht','u7HouseFreight'].includes(k))
       || (Object.hasOwn(research,'kanon')&&(research.kanon!==true||research.personalWages!==true))
       || (Object.hasOwn(research,'ort')!==(research.kanon===true))
       || (research.kanon===true&&(typeof research.ort?.imFeld!=='function'
@@ -402,6 +402,7 @@ const m_data_erzpilot = (() => {
       || (Object.hasOwn(research,'bauteile')&&(research.bauteile!==true||research.silizium!==true))
       || (Object.hasOwn(research,'jaeger')&&(research.jaeger!==true||research.bauteile!==true))
       || (Object.hasOwn(research,'jaegerFlug')&&(research.jaegerFlug!==true||research.jaeger!==true))
+      || (Object.hasOwn(research,'u7HouseFreight')&&(research.u7HouseFreight!==true||research.jaegerFlug!==true||research.siliziumZweitesFeld===true))
       || (Object.hasOwn(research,'siliziumZweitesFeld')&&
         (research.siliziumZweitesFeld!==true||research.jaegerFlug!==true))
       || (Object.hasOwn(research,'siliziumDravos')&&

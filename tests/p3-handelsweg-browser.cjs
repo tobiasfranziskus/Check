@@ -221,6 +221,23 @@ async function karrierestart(browser,kind){
     assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/Frachterlöse 480 ISK/);
     assert.match(await page.locator('#manager-betrieb-frachten').innerText(),/F4-Pilotenlohn 240 ISK/);
     assert.ok(s.kanon.spielerFrachten.gebuehr>=480);
+    assert.equal(world.hash(world.load(final)),'1df0f18ff779fd4c');
+    assert.equal(s.stations.st_nadir.lager.frachter,0);
+    const nadir=page.locator('#sektor-karte [data-sektor="station:st_nadir"]');
+    const nadirBox=await nadir.boundingBox();
+    assert.ok(nadirBox&&nadirBox.width>=48&&nadirBox.height>=48);
+    await nadir.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.locator('#sektor-auswahl').inputValue(),'station:st_nadir');
+    const nadirDetails=page.locator('#sektor-details');
+    assert.match(await nadirDetails.innerText(),/Stationsbetreiber/);
+    const nadirAngebote=nadirDetails.locator('summary');
+    assert.match(await nadirAngebote.innerText(),/0 verfügbar/);
+    await nadirAngebote.tap();
+    assert.match(await nadirDetails.innerText(),/kein Komplettschiff auf Lager/);
+    assert.equal(await nadirDetails.getByRole('button').count(),0);
+    assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),final,
+      'Selecting foreign infrastructure must not book a purchase or task');
     await page.locator('#p3-handelsdetails summary').tap();
     assert.match(await page.locator('#p3-handelszahlen').innerText(),/Verfügbare Kasse/);
     assert.equal(final.includes('p3-handels'),false);

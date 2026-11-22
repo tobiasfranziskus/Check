@@ -97,6 +97,30 @@ const SLOT='aphros-void:spielerkarriere:regel204:v1';
      assert.equal(await page.locator('#spielwelt').isVisible(),true);
      const resumed=await page.evaluate(k=>localStorage.getItem(k),SLOT);
      assert.equal(w.hash(w.load(resumed)),hash,'same saved career and original world hash');
+     // M4: Blindtest-Neustart aus einem bereits belegten Karriere-Slot.
+     // Ablehnung darf weder Slot noch World-State antasten; Zustimmung beginnt Seed 42 neu.
+     await page.locator('#open-menu').tap();
+     await page.locator('#neues-spiel').tap();
+     let dialogText='';
+     page.once('dialog',async dialog=>{dialogText=dialog.message();await dialog.dismiss();});
+     await page.locator('#karriere-starten').tap();
+     assert.match(dialogText,/schon ein Spielstand|bisherige Version/i,'existing save prompts before replacement');
+     assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),resumed,'cancel must not replace saved career');
+     page.once('dialog',dialog=>dialog.accept());
+     await page.locator('#karriere-starten').tap();
+     assert.equal(await page.locator('#spielwelt').isVisible(),true,'confirmed new career reaches the world');
+     const freshText=await page.evaluate(k=>localStorage.getItem(k),SLOT),fresh=JSON.parse(freshText);
+     assert.equal(fresh.tick,0,'new career must start at world minute zero');
+     assert.equal(fresh.owners.house.cash,3000,'original initial budget restored');
+     assert.equal(Object.values(fresh.ships).filter(s=>s.owner==='house').length,0,'no carry-over owned ships');
+     assert.equal(fresh.minted,0);assert.equal(fresh.burned,0);
+     assert.equal(Object.values(fresh.owners).reduce((n,o)=>n+o.cash,0),33000);
+     assert.equal(w.audit(w.load(freshText)).ok,true,'fresh original economy is balanced');
+     assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT+':vorherige'),resumed,
+       'replaced career is available in the established backup slot');
+     await page.reload();await page.locator('#fortsetzen').tap();
+     assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),freshText,
+       'new, not previous career resumes after reload');
      assert.deepEqual(errors,[],'browser must not report exceptions');
      console.log('J11_P1_GAME_BROWSER_OK',JSON.stringify({
        browser:kind,width,height,seed:42,freighter:freighter.id,miner:miner.id,

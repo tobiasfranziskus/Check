@@ -44,9 +44,15 @@ function haushaltPlan(s,welt){
  }
  for(const sh of Object.values(s.ships).filter(x=>x.owner==='house'&&x.klasse==='miner').sort((a,b)=>a.id.localeCompare(b.id))){
    if(s.kanon.pendel?.[sh.id]){
-     hinzu('stop-'+sh.id,'Eis-Pendel von '+sh.id+' beenden',{type:'shipShuttleStop',schiff:sh.id});
+     hinzu('stop-'+sh.id,(s.kanon.pendel[sh.id].ware==='erz'?'Erz':'Eis')+
+       '-Pendel von '+sh.id+' beenden',{type:'shipShuttleStop',schiff:sh.id});
    }else if(sh.system==='aldera'){
      hinzu('ice-'+sh.id,'Eisförderung mit '+sh.id+' (Original-Pendel)',{type:'shipShuttle',schiff:sh.id,ware:'eis'});
+     // Existing W1 escrow, ore field and finite original export demand.
+     // The J8 core quote validates buyer cash, own wages, ship ownership and dock.
+     if(s.rulesVersion===204)
+       hinzu('ore-'+sh.id,'Erzförderung und bezahlte Aldera-Abnahme mit '+sh.id,
+         {type:'shipShuttle',schiff:sh.id,ware:'erz'});
    }
    if(sh.system==='nadir'){
      hinzu('sil-start-'+sh.id,'Siliziumauftrag für '+sh.id+' vorfinanzieren',{type:'siliconMineStart',schiff:sh.id});

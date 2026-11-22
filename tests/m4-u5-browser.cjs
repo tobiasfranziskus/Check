@@ -21,11 +21,20 @@ const server=http.createServer((req,res)=>{
 });
 
 async function pruefen(browser,art,width,height,json,markt){
- const ctx=await browser.newContext({viewport:{width,height},hasTouch:true});
+ // Disable smooth scroll during test gestures so a reload cannot restore its
+ // previous scroll offset between Playwright locating the button and the tap.
+ const ctx=await browser.newContext({viewport:{width,height},hasTouch:true,reducedMotion:'reduce'});
  const page=await ctx.newPage(),fehler=[];
  page.on('pageerror',e=>fehler.push(String(e)));
  const el=id=>page.locator('#'+id);
  const save=()=>page.evaluate(key=>localStorage.getItem(key),slot);
+ const neuLaden=async id=>{
+  await page.reload();
+  const taste=el(id);
+  await taste.scrollIntoViewIfNeeded();
+  await taste.tap();
+  await el('spielwelt').waitFor({state:'visible'});
+ };
  try{
   await page.goto('http://127.0.0.1:'+server.address().port+'/');
   await page.getByRole('link',{name:/^Wirtschaftsmanager/}).tap();
@@ -54,8 +63,7 @@ async function pruefen(browser,art,width,height,json,markt){
   await page.waitForFunction(key=>JSON.parse(localStorage.getItem(key)).kanon.pendel.sh004?.beenden,slot);
   const nachher=await save();
   assert.deepEqual(JSON.parse(nachher).owners,JSON.parse(json).owners,'Stopp bewegt kein Geld');
-  await page.reload();
-  await el('fortsetzen').tap();
+  await neuLaden('fortsetzen');
   assert.equal(await save(),nachher);
   assert.deepEqual(fehler,[]);
   console.log(art,width,height,'48 Fahrten, Lager- und Käufersperren, Erzstopp, Reload');
@@ -91,8 +99,7 @@ async function pruefen(browser,art,width,height,json,markt){
   const checkpoint=await transportSave();
   assert.equal(JSON.parse(checkpoint).w3.auftrag.wasserZustimmung,true);
   assert.equal(await save(),nachher);
-  await page.reload();
-  await el('transport-fortsetzen').tap();
+  await neuLaden('transport-fortsetzen');
   await el('manager-industrie-transport').waitFor({state:'visible'});
   assert.equal(await transportSave(),checkpoint);
   for(let n=0;n<10&&JSON.parse(await transportSave()).w3.auftrag;n++)
@@ -157,8 +164,7 @@ async function pruefen(browser,art,width,height,json,markt){
   }
   await el('p3-industrie-fracht').tap();
   const freight=await transportSave();
-  await page.reload();
-  await el('transport-fortsetzen').tap();
+  await neuLaden('transport-fortsetzen');
   assert.equal(await transportSave(),freight);
   await minuten.tap();await minuten.tap();
   const bezahlt=JSON.parse(await transportSave()).kanon.spielerFrachten.auftraege.at(-1);

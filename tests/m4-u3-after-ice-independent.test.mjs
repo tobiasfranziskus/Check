@@ -27,9 +27,9 @@ function audit(j){
 test('M4-U3: funded W1 ore from second owned miner is playable after an actual paid F4 ice round',()=>{
  const j=start();
  for(const cmd of ['buy-st_aldera-miner','buy-st_aldera-frachter','ice-sh002']) action(j,cmd);
- j.weiterspielen(120);
+ j.weiterspielen(60);j.weiterspielen(60);
  action(j,'freight-sh003');
- j.weiterspielen(120);
+ j.weiterspielen(60);j.weiterspielen(60);
  assert.equal(j.ansicht().hash,'4e86f3fc27a6005a','existing first-round reference must remain intact');
  const before=audit(j);
  assert.equal(before.kanon.spielerFrachten.gebuehr,240);

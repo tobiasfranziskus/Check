@@ -1,0 +1,28 @@
+name: M4 U9 – contractual preflight research
+on:
+  pull_request:
+    branches:
+      - research/m4-575-management
+    paths:
+      - 'tools/m4-u9-vertragsvorsorge.cjs'
+      - 'tools/m4-management-szenarien.cjs'
+      - 'tests/m4-u9-vertragsvorsorge-research.cjs'
+      - '.github/workflows/m4-u9-vertragsvorsorge.yml'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          git rev-parse HEAD
+          node --check tools/m4-management-szenarien.cjs
+          node --check tools/m4-u9-vertragsvorsorge.cjs
+          node --test tests/m4-u9-vertragsvorsorge-research.cjs

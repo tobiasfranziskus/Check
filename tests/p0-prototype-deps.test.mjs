@@ -33,3 +33,25 @@ test('P0 distinguishes runtime modules from unintegrated legacy demos',()=>{
  assert.equal(byPath.get('prototypes/legacy-pilot/pilot.js')?.demo,true);
  assert.equal(byPath.get('prototypes/legacy-mining-scanner/scanner.js')?.demo,true);
 });
+
+// Direkte Nebenpfade und die aktuelle Management-Oberfläche dürfen nicht
+// aus der statischen Schutzmenge verschwinden.
+test('P0 protects public compatibility and standalone pilot entry as well as management assets',()=>{
+ const {summary,files}=JSON.parse(run('--json'));
+ const byPath=new Map(files.map(x=>[x.path,x]));
+ for(const p of [
+  'prototypes/verbund/index.html',
+  'prototypes/tutorial-pilot/index.html'
+ ])assert.ok(summary.public_entrypoints.includes(p),p);
+ for(const p of [
+  'prototypes/verbund/pruefung-ui.js',
+  'prototypes/tutorial-pilot/seite.js',
+  'prototypes/tutorial-pilot/akademie.js',
+  'prototypes/tutorial-pilot/menue.js',
+  'prototypes/tutorial-manager/manager.js',
+  'prototypes/spiel/p3-manager-disposition.js',
+  'prototypes/spiel/p3-manager-karte.js',
+  'prototypes/spiel/p3-manager-flotte.js',
+  'prototypes/spiel/p3-auftragsfeedback.js'
+ ])assert.equal(byPath.get(p)?.public,true,p);
+});

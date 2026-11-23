@@ -4,13 +4,15 @@ import J8 from '../prototypes/verbund/konzern-session.js';
 
 function kontakt(){
  const j=J8.erstellen(); j.startenPiraten(true);
- const w=j.weltReferenz(),s=j.zustandReferenz();
+ const w=j.weltReferenz();
  assert(j.ausfuehren('buy-st_aldera-frachter').ok);
  assert(j.ausfuehren('buy-st_aldera-miner').ok);
  const f=j.ansicht().schiffe.find(sh=>sh.klasse==='frachter').id;
  const m=j.ansicht().schiffe.find(sh=>sh.klasse==='miner').id;
  assert(j.ausfuehren('ice-'+m).ok);
- w.advance(s,120); assert(j.ausfuehren('freight-'+f).ok);
+ w.advance(j.zustandReferenz(),120);
+ assert(j.ausfuehren('freight-'+f).ok);
+ const s=j.zustandReferenz();
  w.advance(s,56);
  assert.equal(s.ships[f].ankunft-s.tick,4);
  assert.equal(s.ships[f].ladung.eis,50);

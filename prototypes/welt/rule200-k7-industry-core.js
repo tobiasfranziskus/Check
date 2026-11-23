@@ -387,7 +387,7 @@ const m_data_erzpilot = (() => {
         ...W5_RULES.economy.waren,silizium:{stufe:'rohstoff',basis:24}
       }};
     }
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug','siliziumZweitesFeld','siliziumDravos','siliziumFracht','u7HouseFreight'].includes(k))
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug','siliziumZweitesFeld','siliziumDravos','siliziumFracht','u7HouseFreight','u9ExportReserve'].includes(k))
       || (Object.hasOwn(research,'kanon')&&(research.kanon!==true||research.personalWages!==true))
       || (Object.hasOwn(research,'ort')!==(research.kanon===true))
       || (research.kanon===true&&(typeof research.ort?.imFeld!=='function'
@@ -487,6 +487,7 @@ const m_data_erzpilot = (() => {
       // Forschungswert fuer Verschleiß aus dem vorhandenen 300‰-K1-Maß.
       W5_RULES.rulesVersion=204;
       if(research.u7HouseFreight===true)W5_RULES.u7HouseFreight=true;
+      if(research.u9ExportReserve===true)W5_RULES.u9ExportReserve=true;
       W5_RULES.j4c=Object.freeze({owner:'house',station:'st_nadir',
         verschleissMilliJeMinute:300});
     }
@@ -1994,7 +1995,13 @@ const m_core_erzpilot = (() => {
     const lager = state.stations[cfg.station].lager;
     const kaeufer = state.owners[cfg.exportOwner];
     const station = state.owners[cfg.station];
-    const menge = Math.min(anzahl(lager, 'erz'),
+    // U9f isolated counterfactual: a signed, prefunded W3 order has first
+    // claim on its physical source stock. All surplus remains exportable.
+    const a=state.w3?.auftrag,i=state.kanon?.industrieErz;
+    const gebunden=rules.u9ExportReserve===true&&a?.phase==='vorbestellt'&&
+      i?.phase==='aktiv'&&i.miner===a.industrieMiner&&i.frachter===a.schiff
+      ?a.menge:0;
+    const menge = Math.min(Math.max(0,anzahl(lager, 'erz')-gebunden),
       Math.floor(kaeufer.cash / cfg.preis), cfg.maximalJeStunde);
     if (menge <= 0) return 0;
     const wert = menge * cfg.preis;
@@ -4182,12 +4189,13 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
       silizium:true,bauteile:true,jaeger:true,jaegerFlug:true,
       siliziumZweitesFeld:true,ort});
   },
-  createU7U8Welt:(options,ort)=>{
+  createU7U8Welt:(options,ort,exportReserve=false)=>{
     if(options==null)options={};
+    if(typeof exportReserve!=='boolean'||(exportReserve&&!(typeof module==='object'&&module.exports)))throw TypeError('U9f: nur expliziter Node-Forschungsversuch');
     if(typeof options!=='object'||Array.isArray(options)||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
       throw TypeError('U7/U8: nur nachweisbare Anfangskassen');
     return createEngine({},{...options,wageTrade:true,waterTrade:true,personalWages:true,kanon:true,industryOre:true,
-      silizium:true,bauteile:true,jaeger:true,jaegerFlug:true,u7HouseFreight:true,ort});
+      silizium:true,bauteile:true,jaeger:true,jaegerFlug:true,u7HouseFreight:true,...(exportReserve?{u9ExportReserve:true}:{}),ort});
   },
   createJ4cWelt:(options,ort)=>{
     if(options==null)options={};

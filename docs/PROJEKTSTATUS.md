@@ -1,5 +1,8 @@
 # Aphros Void – aktueller Projektstatus [MAIN/M0/M1/P1/P3/W6] · 22.11.2026
 
+**M4-U9e/U9f [FORSCHUNG · 23.11.2026]:** #583: 60%-Vorlauf nach 365 Tagen 4132 Eis-/77 Erzfrachten, 177 gelieferte Miner, 201 Frachter gebaut, gleicher Replayhash `f0c15f0261a70864`; 730/60 noch offen. 40% nach Leerstorno 1009 Eisfrachten bis Tag730, neuer Blocker 49/50 Erz trotz Annahme, intakte Hüllen. U9f expliziter Node-Gegenversuch zum Schutz physisch gebundener Erzware vor Export, Trace/CI offen. Keine Produktfreigabe. [Fachbericht](M4_U9_VERTRAGSVORSORGE.md).
+
+
 **M4-U9d/U9e [FORSCHUNG · 23.11.2026]:** [#582](https://github.com/tobiasfranziskus/Check/pull/582) 21/21 Forschungsjobs, 3/3 Workflows. S02 Tag90: 137 Eisfrachten original, 816 mit 40%, 1014 mit 60%, 783 mit 80%; 40% bis Tag730 ohne weitere Frachten. Neuer Blocker sh040, leer/stillgelegt in Aldera, NPC-Carrier sh079, 1390 ISK gebunden. U9e offline Original-Leerstorno und 40/60%-365/730-Replays; neue CI offen. Keine Integration oder Stabilitätsfreigabe. [Fachbericht](M4_U9_VERTRAGSVORSORGE.md).
 
 

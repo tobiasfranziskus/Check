@@ -51,6 +51,21 @@ async function run(browser,art,width,height,f){
   await page.evaluate(({keys,f})=>{[f.original,f.offered,f.early].forEach((v,i)=>localStorage.setItem(keys[i],v));},{keys,f});
   await reload();
   const initial=await read();
+  // If no backup existed, a failed replacement must restore that exact absence.
+  await page.evaluate(({slot,backup})=>{
+   localStorage.removeItem(backup);
+   const set=Storage.prototype.setItem;let fail=true;
+   Storage.prototype.setItem=function(k,v){
+    if(fail&&k===slot){fail=false;throw new DOMException('Injected quota failure','QuotaExceededError');}
+    return set.call(this,k,v);
+   };
+  },{slot,backup});
+  await upload(f.fake);
+  same(await read(),[initial[0],initial[1],null]);
+  assert.equal(await el('startseite').isVisible(),true);
+  await page.evaluate(({backup,v})=>localStorage.setItem(backup,v),{backup,v:initial[2]});
+  await reload();
+  same(await read(),initial);
   deny=/Diesen konkreten Auftrag/;
   await upload(f.fake);
   assert.ok(dialogs.some(x=>deny.test(x)));same(await read(),initial);

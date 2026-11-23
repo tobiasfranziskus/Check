@@ -137,6 +137,20 @@ function erstellen(){
    const w=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
    return aktivieren(w,w.load(text),'Fortgesetzter Regel204-Export',w.hash(w.load(text)));
  }
+ function startenPiraten(bestaetigt){
+   if(bestaetigt!==true||welt)throw Error('PIR-1: getrennten Forschungsstart bestätigen');
+   const w=W.erstellenPiraten(), s=w.createState(42);
+   w.politikSetzen(s,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
+   w.npcAutoSetzen(s,true);
+   w.npcSiliziumSetzen(s,true);
+   return aktivieren(w,s,'PIR-1 · Forschungsstart Nadir',w.hash(s));
+ }
+ function oeffnenPiraten(text,bestaetigt){
+   if(bestaetigt!==true||welt)throw Error('PIR-1: separaten Forschungsstand bestätigen');
+   paket(text);
+   const w=W.erstellenPiraten(), s=w.load(text);
+   return aktivieren(w,s,'PIR-1 · Forschungsstand Nadir',w.hash(s));
+ }
  // W6/P8g DRAFT: eine echte NEUE Regel207-Forschungswelt aus dem
  // originalfinanzierten Seed; niemals eine bestehende Regel204-Karriere umwandeln.
  // Das ist kein Importpfad, keine Gratisreserve und keine neue Simulationsuhr.
@@ -361,7 +375,7 @@ function erstellen(){
  function flugAudit(){requireState();return welt.audit(zustand);}
 
  function exportieren(){requireState();return welt.save(zustand);}
- return Object.freeze({starten195,oeffnen204,startenP8g,oeffnenP8g,ansicht,angebote,ausfuehren,weiterspielen,exportieren,
+ return Object.freeze({starten195,oeffnen204,startenPiraten,oeffnenPiraten,startenP8g,oeffnenP8g,ansicht,angebote,ausfuehren,weiterspielen,exportieren,
   piloten,uebernehmen,pilotStatus,flugBefehl,flugAngebot,flugSchritte,weltReferenz,zustandReferenz,flugAudit});
 }
 const API=Object.freeze({erstellen});

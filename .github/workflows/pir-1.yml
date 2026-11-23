@@ -1,0 +1,29 @@
+name: PIR-1 Forschungsabnahme
+on:
+  pull_request:
+    paths:
+      - 'prototypes/welt/**'
+      - 'prototypes/spiel/**'
+      - 'prototypes/verbund/konzern-session.js'
+      - 'tests/pir-1*'
+      - 'tools/pir-wirtschaftsvergleich.cjs'
+      - '.github/workflows/pir-1.yml'
+jobs:
+  touch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --prefix "$RUNNER_TEMP/pir-playwright" playwright@1.62.0
+      - run: node "$RUNNER_TEMP/pir-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
+      - run: node tests/pir-1-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/pir-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}

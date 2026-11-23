@@ -692,6 +692,8 @@ const FIELDS = {
   stationWater:['station'],workerWaterBuy:['menge'],pilotWaterBuy:['menge'],
 };
 function checkShape(state, cmd, rules) {
+  if (state.kanon?.piraten && (cmd?.schiff === 'pir001' || cmd?.owner === 'piraten'))
+    return 'PIR-1: Fraktionsschiff gehört zur NPC-Patrouille';
   if (cmd === null || typeof cmd !== 'object' || Array.isArray(cmd)) return 'Befehl ist kein Objekt';
   if (!Object.hasOwn(FIELDS, cmd.type)) return 'unbekannter Befehlstyp';
   if (typeof cmd.owner !== 'string' || !Object.hasOwn(state.owners, cmd.owner)) return 'unbekannter Besitzer';

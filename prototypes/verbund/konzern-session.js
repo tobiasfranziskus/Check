@@ -139,19 +139,19 @@ function erstellen(){
  }
  function startenPiraten(bestaetigt, anflug=false){
    if(bestaetigt!==true||welt)throw Error('PIR-1: getrennten Forschungsstart bestätigen');
-   const w=anflug===true ? W.erstellenPirAnflug() : W.erstellenPiraten();
+   const w=anflug==='abfangen' ? W.erstellenPirAbfang() : anflug===true ? W.erstellenPirAnflug() : W.erstellenPiraten();
    const s=w.createState(42);
    w.politikSetzen(s,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
    w.npcAutoSetzen(s,true);
    w.npcSiliziumSetzen(s,true);
-   return aktivieren(w,s,anflug===true ? 'PIR-2d · Anflugforschung Nadir' : 'PIR-1 · Forschungsstart Nadir',w.hash(s));
+   return aktivieren(w,s,anflug==='abfangen' ? 'PIR-2e · Abfangforschung Nadir' : anflug===true ? 'PIR-2d · Anflugforschung Nadir' : 'PIR-1 · Forschungsstart Nadir',w.hash(s));
  }
  function oeffnenPiraten(text,bestaetigt,anflug=false){
    if(bestaetigt!==true||welt)throw Error('PIR-1: separaten Forschungsstand bestätigen');
    paket(text);
-   const w=anflug===true ? W.erstellenPirAnflug() : W.erstellenPiraten();
+   const w=anflug==='abfangen' ? W.erstellenPirAbfang() : anflug===true ? W.erstellenPirAnflug() : W.erstellenPiraten();
    const s=w.load(text);
-   return aktivieren(w,s,anflug===true ? 'PIR-2d · Anflugforschung Nadir' : 'PIR-1 · Forschungsstand Nadir',w.hash(s));
+   return aktivieren(w,s,anflug==='abfangen' ? 'PIR-2e · Abfangforschung Nadir' : anflug===true ? 'PIR-2d · Anflugforschung Nadir' : 'PIR-1 · Forschungsstand Nadir',w.hash(s));
  }
  // W6/P8g DRAFT: eine echte NEUE Regel207-Forschungswelt aus dem
  // originalfinanzierten Seed; niemals eine bestehende Regel204-Karriere umwandeln.

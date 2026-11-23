@@ -5,6 +5,7 @@ import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 const J8=require('../prototypes/verbund/konzern-session.js');
 const OLD=require('../prototypes/w5ac/session.js');
+const Karte=require('../prototypes/spiel/p3-manager-karte.js');
 const Manager=require('../prototypes/spiel/p3-manager-disposition.js');
 const Handel=require('../prototypes/spiel/p3-handelsweg.js');
 const W6=require('../tools/w6-szenarien.cjs');
@@ -39,9 +40,13 @@ function buy(j){
 test('M4: real blocked W5ac quote is displayed instead of suggesting another carrier purchase',()=>{
  const j=start(),w=j.weltReferenz();
  for(let i=0;i<253;i++)w.advance(j.zustandReferenz(),1);
+ const offer=view(j).q.find(q=>q.id==='buy-st_nadir-frachter');
+ assert.equal(offer.ok,true);
+ assert.equal(offer.kaufPlan.kaufpreis,750);
  const id=buy(j),before=j.exportieren(),p=view(j);
  const quote=p.q.find(q=>q.id==='reposition-'+id);
  assert.equal(quote.ok,false);
+ assert.equal(offer.kaufPlan.ueberfuehrung.grund,quote.reason);
  assert.equal(p.m.transport.aktion,quote.id);
  assert.equal(p.m.transport.bereit,false);
  assert.equal(p.m.transport.grund,quote.reason);
@@ -53,7 +58,22 @@ test('M4: existing Nadir carrier gets a real paid ferry and then completes an or
  function run(){
   const j=start(),w=j.weltReferenz();
   for(let i=0;i<5;i++)j.weiterspielen(60);
+  const before=j.exportieren();
+  const quote=view(j).q.find(q=>q.id==='buy-st_nadir-frachter').kaufPlan;
+  assert.equal(quote.kaufpreis,750);
+  assert.equal(quote.ueberfuehrung.kosten,60);
+  assert.equal(quote.ueberfuehrung.restkasse,quote.restkasse-60);
+  const nadir=Karte.auswerten(j.ansicht(),j.zustandReferenz(),w,j.angebote())
+   .stationen.find(st=>st.system==='nadir');
+  assert.equal(nadir.frachterbestand,1);
+  assert.ok(nadir.asterion.anzahl>=0);
+  assert.equal(j.exportieren(),before);
   const id=buy(j);
+  assert.ok(j.zustandReferenz().w5.schiffIds.includes(id));
+  const plan=Karte.auswerten(j.ansicht(),j.zustandReferenz(),w,j.angebote());
+  assert.equal(plan.schiffe.find(sh=>sh.id===id).rest,2500);
+  assert.equal(plan.hauskasse,quote.restkasse);
+  assert.equal(plan.fremdeSchiffe.every(sh=>sh.angebote.length===0),true);
   let p=view(j);
   assert.equal(p.m.transport.aktion,'reposition-'+id);
   assert.equal(p.m.transport.bereit,true,p.m.transport.grund);

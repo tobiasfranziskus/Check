@@ -80,6 +80,12 @@ async function pruefen(browser,kind,base,width,height){
    await loc('#management-spielfeld').screenshot({path:path.join(bilder,kind+'-'+width+'x'+height+'-karte.jpg'),quality:88});
   }
   if(basis)return;
+  assert.match(await loc('#sektor-flottenlage').innerText(),/Konzernkasse .* ISK/);
+  assert.match(await details.innerText(),/Gebundener Fluglohn\s+110 ISK/);
+  await karte.locator('[data-sektor="station:st_nadir"]').tap();
+  assert.match(await details.innerText(),/Frachter im Lager/);
+  assert.match(await details.innerText(),/Erz für nächste Raffineriecharge/);
+  await marker(frachter).tap();
   assert.equal(await page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches),true);
   const markerPosition=()=>marker(frachter).locator('svg g').getAttribute('transform');
   assert.match(await marker(frachter).innerText(),/10 \/ 60 Flugminuten/);

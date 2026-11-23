@@ -122,14 +122,24 @@ function marktS02() {
 }
 
 function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', versuch = null) {
-  const {welt, s, quellhash} = start(szenario, seed, forschung, startpfad);
+  let {welt, s, quellhash} = start(szenario, seed, forschung, startpfad);
   const entscheidungen = {}, industrieRueckladungen = [];
   const beginn = kontrollstand(welt, s), verlauf = [];
   for (let tag = 1; tag <= tage; tag++) {
     const ende = tag * MINUTEN_PRO_TAG;
     while (s.tick < ende) {
       const naechsterTermin = Math.min(s.tick + 60, ende);
-      if (versuch?.vorEntscheidung) versuch.vorEntscheidung(welt, s);
+      if (versuch?.vorEntscheidung) {
+        const ersatzJson = versuch.vorEntscheidung(welt, s);
+        if (ersatzJson !== undefined) {
+          // Explicit audited research fork, not a mutation or production import.
+          assert.equal(typeof ersatzJson, 'string');
+          const probe = welt.load(ersatzJson);
+          assert.equal(probe.tick, s.tick);
+          assert.deepEqual(pruefen(welt, probe), []);
+          s = probe;
+        }
+      }
       verwaltung(welt, s, entscheidungen, szenario.id !== 'S08');
       // Sample each physical W3 return at its arrival tick.
       while (s.tick < naechsterTermin && s.w3.auftrag) {

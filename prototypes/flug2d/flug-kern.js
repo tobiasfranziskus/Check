@@ -128,6 +128,36 @@ function steuerbarerTransit(state, sh) {
     && sh.phase==='reise' && sh.flug?.lage==='transit' && (ice || transfer);
 }
 
+// PIR-2d: explicit isolated research profile, only the original paid house
+// inbound F4 contract. No other transport or legacy profile changes.
+const PIR_ANFLUG = Object.freeze({punkte:144000,minuten:4,kurs:128});
+function frachtAnflugFenster(state, sh) {
+  const a=state.w5n?.frachtauftrag;
+  if(state.rulesVersion!==204||state.kanon?.piraten?.profil!==2
+    ||!sh||sh.owner!=='house'||sh.klasse!=='frachter'||sh.phase!=='reise'
+    ||sh.auftrag!=='eisfracht'||sh.ziel!=='st_nadir'||a?.phase!=='hin'||a.schiff!==sh.id
+    ||sh.ladung?.eis!==a.menge)return false;
+  const rest=sh.ankunft-state.tick;
+  return Number.isSafeInteger(rest)&&rest>=1&&rest<=PIR_ANFLUG.minuten;
+}
+function frachtAnflugKoerper(flug=FLUG){
+  return {...koerperAngedockt('nadir',flug),x:PIR_ANFLUG.punkte,
+    kurs:PIR_ANFLUG.kurs,sollKurs:PIR_ANFLUG.kurs,
+    lage:'frei',anker:null,modus:'anflug',ziel:{art:'station',id:'st_nadir'},andocken:true};
+}
+// Independent exact path check. No additional simulation clock in the game:
+// the miniature object is discarded and used solely for validation.
+function frachtAnflugBelegt(state,sh,extra=0,flug=FLUG){
+  if(!frachtAnflugFenster(state,sh)||sh.system!=='nadir')return false;
+  const steps=(PIR_ANFLUG.minuten-(sh.ankunft-state.tick))*flug.schritteJeMinute
+    +state.flug.schritt+extra;
+  if(!Number.isSafeInteger(steps)||steps<0||steps>PIR_ANFLUG.minuten*flug.schritteJeMinute)return false;
+  const test={rulesVersion:204,flug:{schritt:0},ships:{[sh.id]:{id:sh.id,klasse:'frachter',
+    system:'nadir',flug:frachtAnflugKoerper(flug)}}};
+  for(let i=0;i<steps;i++)schritt(test,flug,[sh.id]);
+  const canon=v=>v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canon(v[k])])):v;
+  return JSON.stringify(canon(test.ships[sh.id].flug))===JSON.stringify(canon(sh.flug));
+}
 function koerperAngedockt(system, flug = FLUG) {
   const st = flug.systeme[system].station;
   return { x: st.x, y: st.y, vx: 0, vy: 0, kurs: 0, lage: 'angedockt', anker: st.id, rest: 0,
@@ -345,7 +375,10 @@ function audit(state, flug = FLUG) {
       return fehler(id + ': Flugzahl außerhalb des Wertebereichs');
     if (!LAGEN.includes(b.lage) || !['hand', 'anflug', 'halt', ...(state.rulesVersion === 204 ? ['orbit','folgen'] : [])].includes(b.modus) || typeof b.andocken !== 'boolean')
       return fehler(id + ': unbekannte Lage oder Steuerart');
-    if ((b.lage === 'transit') !== (s.phase === 'reise')) return fehler(id + ': Transit passt nicht zur Core-Phase');
+    const lokalerAnflug=frachtAnflugFenster(state,s);
+    if(lokalerAnflug&&!frachtAnflugBelegt(state,s,0,flug))
+      return fehler(id+': lokaler F4-Anflug ohne Originalflugnachweis');
+    if ((b.lage === 'transit') !== (s.phase === 'reise'&&!lokalerAnflug)) return fehler(id + ': Transit passt nicht zur Core-Phase');
     const fest = b.lage === 'angedockt' || b.lage === 'andocken' || b.lage === 'abdocken';
     if (fest !== (b.anker !== null) || (fest && b.anker !== sys.station.id)) return fehler(id + ': Anker passt nicht zur Lage');
     if (b.lage !== 'frei' && !steuerbarerTransit(state,s)
@@ -380,7 +413,7 @@ function audit(state, flug = FLUG) {
 }
 
 return { BEFEHLE, sin, cos, isqrt, richtungZu, drehen, koerperAngedockt, pruefen, ausfuehren, schritt,
-  imFeld, angedocktAn, fuehreZu, audit };
+  imFeld, angedocktAn, fuehreZu, audit, frachtAnflugFenster, frachtAnflugKoerper, frachtAnflugBelegt };
 })();
 
 const api = Object.freeze({ DATEN: m_data_flug.FLUG, VIERTEL: m_data_flug.VIERTEL, ...m_core_flug });

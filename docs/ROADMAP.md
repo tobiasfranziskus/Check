@@ -1,5 +1,8 @@
 # Aphros Void – verbindliche Produkt-Roadmap
 
+**M4-U9b/U9c [FORSCHUNG · 23.11.2026]:** U9b #580: [Originaltest erfolgreich](https://github.com/tobiasfranziskus/Check/actions/runs/45122565754/job/137519465585), 22 Erz rechtmäßig abgerechnet, 1.390 ISK Treuhand freigegeben, danach ohne zusätzliche Managerentscheidungen sieben Tage ohne neue Frachten. U9c: dreifacher gepaarter Folgeversuch mit Original-Managerstrategie und optionaler gedeckter Meridian-Ersatzentscheidung; CI offen. [Fachbericht](M4_U9_VERTRAGSVORSORGE.md). Kein produktives Feature, kein Merge/Deploy.
+
+
 **M4-U9a/U9b [FORSCHUNG, 23.11.2026]:** U9a #579: 30-Tage-Vergleich 334 statt 137 Eisfrachten, 7 statt 3 Erzfrachten und 307 statt 1.390 ISK gebunden (2/2 Versuche bestanden). U9b: geordnete Teilladungsabrechnung ausschließlich auf auditierter Node-Spielstandkopie mit expliziter Zustimmung aller Vertragsparteien; eigene CI offen. U9c: rechtmäßig finanziertes Ersatzschiff und bezahlte Folgeaufträge. Details: [U9-Fachbericht](M4_U9_VERTRAGSVORSORGE.md). Kein Main-Merge.
 
 

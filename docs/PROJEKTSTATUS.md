@@ -2,6 +2,8 @@
 
 **[M4-U10 · MAIN+PAGES · 23.11.2026]** [#595](https://github.com/tobiasfranziskus/Check/pull/595) integriert auf `53c1dfc2`: 9/9 Workflows, 591/591 Node22, Chromium/WebKit je vier Größen, 13×90 und S02×365/730. [Pages](https://github.com/tobiasfranziskus/Check/actions/runs/45249824690) und [Push-CI](https://github.com/tobiasfranziskus/Check/actions/runs/45249825458) erfolgreich. Backup `backup/main-before-m4-u10-20261123`. [U10-Bericht](M4_U10_INDUSTRIELEITSTAND.md), [Integrationsaudit](M4_U10_INTEGRATIONSAUDIT_20261123.md). M4-U4, W3-Hausrechte, iPad/NAS offen.
 
+**[PIR-2d · DRAFT / FORSCHUNG · 23.11.2026]** [Baseline #603](https://github.com/tobiasfranziskus/Check/pull/603) korrigiert die alte Zustandsreferenz nach J8-Befehlen. [Anflug #604](https://github.com/tobiasfranziskus/Check/pull/604) koppelt den Originalvertrag an ein physisches Dock in Nadir. Der gezielte Node-22-Test belegt Dock nach 135 von 240 Schritten, unveränderte F4-Vergütung und einen Halt bei verfehltem Dock. [Abnahme und Grenzen](PIR_2D_ANKUNFTSGATE.md). P0 [#586](https://github.com/tobiasfranziskus/Check/pull/586) und der Startbildschirm [#599](https://github.com/tobiasfranziskus/Check/pull/599) bleiben separat.
+
 **[PIR-0/1 · DRAFT / INTEGRATION]** Quelle [#594](https://github.com/tobiasfranziskus/Check/pull/594) `3b505bec`: 10/10 Workflows, PIR-Matrix 17/17 nach Timeoutkorrektur. Gemeinsamer Kandidat mit U10 auf `53c1dfc2`; eigene CI offen. Getrennter Forschungsstart, keine Angriffe oder neue Vertragsrechte. [Forschungsbericht](PIR_0_1_PIRATENFORSCHUNG.md). P0 #586 führt Archivierung und Triage.
 
 

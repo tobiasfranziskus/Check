@@ -89,20 +89,28 @@ test('PIR-2d flies the financed approach and books the original round trip once'
  assert.deepEqual([sh.flug.x,sh.flug.y,sh.flug.kurs],expected);
  assert.equal(sh.system,'nadir');
  const geld=s.initialSupply, start=s.tick, delivered=s.w5n.eisGeliefert;
- const kopie=w.load(w.save(s));
+ const kopien=[w.load(w.save(s))];
  for(let i=1;i<=240;i++){
   w.teilschritt(s);
   if(i===135) assert.equal(sh.flug.lage,'angedockt');
   if(i<240) assert.equal(sh.ladung.eis,50);
-  if(i%17===0||i%60===0) assert.equal(w.save(w.load(w.save(s))),w.save(s));
+  if(i%17===0||i%60===0){
+   const exportiert=w.save(s);
+   const geladen=w.load(exportiert);
+   assert.equal(w.save(geladen),exportiert);
+   if(i%60===0||i===17) kopien.push(geladen);
+  }
  }
  assert.equal(s.tick,start+4);
  assert.equal(s.w5n.frachtauftrag.phase,'rueck');
  assert.equal(s.w5n.eisGeliefert,delivered+50);
  assert.equal(s.owners.w5n_fracht_kauf.cash,240);
  assert.equal(s.owners.w5n_fracht_arbeit.cash,60);
- w.advance(s,60); w.advance(kopie,64);
- assert.equal(w.hash(s),w.hash(kopie));
+ w.advance(s,60);
+ for(const kopie of kopien){
+  w.advance(kopie,s.tick-kopie.tick);
+  assert.equal(w.hash(s),w.hash(kopie));
+ }
  assert.equal(s.kanon.spielerFrachten.lohn,120);
  assert.equal(s.kanon.spielerFrachten.gebuehr,240);
  assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),geld);
@@ -118,6 +126,10 @@ test('PIR-2d rejects forged docking, profile and commands and halts a missed arr
  for(const owner of ['house','transport']){
   assert.equal(w.execute(s,{type:'shipDock',schiff:f,owner,station:'st_nadir'}).ok,false);
  }
+ const neueSitzung=J8.erstellen();
+ assert.throws(()=>neueSitzung.oeffnenPiraten(before,true),/PIR-1/);
+ neueSitzung.oeffnenPiraten(before,true,true);
+ assert.equal(neueSitzung.exportieren(),before);
  assert.equal(w.save(s),before);
  // Inject a flight fault at the live core boundary, not by authorizing a save import.
  w.advance(s,3);

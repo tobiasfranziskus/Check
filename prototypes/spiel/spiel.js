@@ -79,7 +79,7 @@ function transportSpeichern(json,copyOld){
  store.setItem(key,old);
  try{store.setItem(SLOT_U7,json);}
  catch(e){
-  if(backup===null)store.removeItem(key);else store.setItem(key,backup);
+  if(backup===null)store.removeItem(SLOT_U7+':vorherige');else store.setItem(key,backup);
   throw e;
  }
 }

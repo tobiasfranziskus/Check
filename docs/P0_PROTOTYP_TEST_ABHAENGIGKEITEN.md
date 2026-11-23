@@ -86,3 +86,33 @@ Die bisherigen öffentlichen URLs `prototypes/legacy-hub/` sowie `prototypes/leg
 **Freigabe-Gate:** Vor Merge Node22-Gesamtsuite, Root-/NAS-Buildcheck, W5x-Chromium-Touchprüfung sowie Chromium/WebKit je vier Touchgrößen über `j4e-public-smoke` nachweisbar grün. Vorversion auf `backup/main-before-p0-w5x-demo-archive-20261116` sichern; Merge und GitHub-Pages-Deploy separat prüfen. Im historischen PR-Entwurf zunächst [DRAFT]; nach bestandener Abnahme [MAIN/PAGES], siehe nachfolgenden Release-Beleg. Echte iPad-/NAS-Gerätetests offen.
 
 **[MAIN / PAGES / GEPRÜFT 16.11.2026]** [PR #450](https://github.com/tobiasfranziskus/Check/pull/450) nach dem korrigierten Code-/Test-Head `40186064d75a89069fed2fdc0ee0dbf77a5691f2` als `main 0245aba2e63274778bb3d373c1cb903eb8a47306` integriert. [Pages #43969493021](https://github.com/tobiasfranziskus/Check/actions/runs/43969493021) `completed/success` **für genau den Main-SHA**. [Node22-Gesamtsuite, W5x-Chromium-Touch, Original-W5/NAS-Build #43968388741](https://github.com/tobiasfranziskus/Check/actions/runs/43968388741), [Chromium/WebKit inklusive W5x-Alt-URL je vier Touchgrößen #43968388821](https://github.com/tobiasfranziskus/Check/actions/runs/43968388821) und [Wirtschaft/13×90 #43968388820](https://github.com/tobiasfranziskus/Check/actions/runs/43968388820) alle erfolgreich; nur historisch konditionaler Sicherheitsgeografie-Job `skipped`. Beim ersten P0-Browserlauf [#43967553407](https://github.com/tobiasfranziskus/Check/actions/runs/43967553407) schlug ein **neuer Testselektor** fehl, weil das unveränderte W5x-Original seine Tabellenzeilen ohne explizites `tbody` erzeugt; ausschließlich dieser Test wurde repariert, danach beide Browser grün. Vorversion: [Backup](https://github.com/tobiasfranziskus/Check/tree/backup/main-before-p0-w5x-demo-archive-20261116). Kein Core-/Save-/Finanzierungswechsel, keine NAS-Auslieferung. Hardwareabnahme offen.
+
+## P0 Aktualisierung der Schutzinventur · 23.11.2026 [ANALYSE / DRAFT]
+
+**Basis:** Main `d824040e20e0f9a69188cbe34282901ed6497976`, vollständiger Git-Tree mit 548 Einträgen, davon 495 Dateien, 141 unter `prototypes/`, 180 unter `tests/` (inklusive Hilfs-/Nachweisdateien), 134 unter `docs/`, zehn CI-Workflows. Gegenüber der ursprünglichen Inventur sind 26 Prototyp- und 70 Testverzeichnis-Dateien hinzugekommen. Alte Inventurabschnitte sind historische Momentaufnahmen, keine aktuellen Feature- oder Freigabeaussagen.
+
+### Direkt nachgewiesene HTML-Abhängigkeiten
+
+| Einstieg | JS | CSS | Schutzgrund |
+| --- | ---: | ---: | --- |
+| `prototypes/spiel/index.html` | 37 | 4 | Reguläre Karriere; sämtliche 16 Dateien in `spiel/` sind Einstieg oder direkt eingebundene Assets. Manager-Karte, Flotte, Disposition, Auftragsfeedback, beide Akademien sowie Welt-/Raumcore. |
+| `prototypes/j4c/index.html` | 17 | 1 | Jägertraining, weiter mit regulärem Root verlinkt. |
+| `prototypes/verbund/konzern.html` | 15 | 1 | Frühere öffentliche Konzernansicht. |
+| `prototypes/verbund/index.html` | 8 | 0 | Vom Jäger- und Konzernpfad verlinkte Kompatibilitätsprüfung; `pruefung-ui.js` schützen. |
+| `prototypes/tutorial-pilot/index.html` | 23 | 2 | Separat erreichbare Pilotenseite; explizit in `tests/tutorial-pilot-browser.cjs` für Chromium/WebKit geöffnet. |
+| `prototypes/w5ag/index.html` | 15 | 7 | Buildquelle beider Einzeldateien, zusätzlich zwei Legacy-Shadow-CSS. |
+
+Die sechs HTML-Dateien und `scripts/pages-entry.html` wurden auf dem gepinnten SHA gelesen, relative script/src-, stylesheet/href- und a/href-Ziele gegen den vollständigen Git-Tree geprüft: **kein fehlendes Ziel** in diesen sieben Quellen. Der direkte, deduplizierte Schutzumfang umfasst 54 Prototypdateien für fünf Karriere-/Nebenpfade (einschließlich HTML) und 25 für den Build (einschließlich Quelle/Shadow-CSS), drei Überschneidungen, insgesamt **76 verschiedene Prototypdateien**. Der übrige Bestand von 65 Dateien ist **nicht** als entbehrlich klassifiziert. Kein vollständiger JS-/CSS-Transitivgraph, keine Ausführung des Inventurskripts in einem vollständigen Checkout, keine Aussage über alle dynamischen Pfade, externe Deep Links oder sämtliche Testverweise.
+
+### Schutzlücke und technischer Fix im Draft
+
+Der bisherige `scripts/p0-prototype-deps.mjs` führte die Kompatibilitäts- und eigenständige Piloten-HTML ausschließlich im Demo-Graph, obwohl die eine verlinkt und die andere tatsächlich in einem Browsertest geöffnet wird. Der Draft ergänzt beide explizit zur Liste geschützter öffentlicher Einstiege, sowie neun zusätzliche erforderliche Module aus Manager-, Akademie- und Kompatibilitätscode. `tests/p0-prototype-deps.test.mjs` verankert beide Einstiege und die neun Modulklassifikationen. Der bestehende W5-Preflight startet bei Änderungen unter scripts/tests die vollständige Node22-Suite und den bytegenauen Singlefile-Buildcheck. **CI des neuen Drafts erst nach tatsächlicher Ausführung bewerten.**
+
+### Archivierungskandidaten – Entscheidung
+
+- Legacy-Hub, Fitting, Pilot und W5x: vorhandene Weiterleitungs-/Archivverträge beibehalten; Node- und Browserprüfungen referenzieren die Original-URLs und Archivziele.
+- Mining-Scanner, Konzern- und Stations-Demo: die drei Original-HTMLs und zugehörigen CSS/JS bleiben unter den bisherigen URLs. Ihre Browser-Testserver bedienen die entsprechenden Verzeichnisse. Konzern/Stations-JS und CSS bleiben außerdem Buildquellen.
+- W5x: der originale W2-Core, Session, Bootstrap, Extension, HTML-Weiterleitung und Archiv-HTML werden konkret im Regel16-Test gelesen. Nicht entfernen.
+- Tutorial-Nachweisbilder (zwei PNGs) nicht als Laufzeitassets gezählt; mögliche Dokumentations-/Wiederverwendungsreferenzen noch separat prüfen. Nicht löschen.
+
+**Abgrenzung:** Kein produktiver Code, Spielstand, Regel-, Hash- oder Buildquellenwechsel; keine Dateien verschoben/gelöscht, kein Merge, kein Deployment. Lokaler Git-Checkout war wegen fehlender GitHub-Netzwerkauflösung in der Prüfungsumgebung nicht möglich. Die statische Prüfung oben ist tatsächlich über die GitHub-Dateiinhalte erfolgt, keine vorgetäuschte Node-/Browserausführung. Nächstes P0-Paket: nach grünem CI eine separate filegenaue Prüfung der drei verbliebenen Legacy-Demo-Einstiege samt alten Testservern; Archivierung ausschließlich bei nachgewiesenem Nutzen und vollständigem Pfad-/Browsererhalt.

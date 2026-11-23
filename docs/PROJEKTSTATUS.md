@@ -1,5 +1,8 @@
 # Aphros Void – aktueller Projektstatus [MAIN/M0/M1/P1/P3/W6] · 22.11.2026
 
+**M4-U9f/U9g [FORSCHUNG · 23.11.2026]:** #583 3/3 CI, #584 6/6 CI. Erzexportkollision Tick128760 konkret nachgewiesen, Gegenprobe lädt 50 statt blockierte49 Erz. S02 Tag730: 40% 2371 Eis-/44 Erzfrachten, 60% 4380/81, beide schließlich stillstehend. 60%-Blocker sh366 mit voller 50er-Ladung; U9g Original-W1-Vollabnahme statt Storno, Fracht-/Replay-/13×90-Gate neu, CI offen. Keine Produktfreigabe. [Fachbericht](M4_U9_VERTRAGSVORSORGE.md).
+
+
 **M4-U9e/U9f [FORSCHUNG · 23.11.2026]:** #583: 60%-Vorlauf nach 365 Tagen 4132 Eis-/77 Erzfrachten, 177 gelieferte Miner, 201 Frachter gebaut, gleicher Replayhash `f0c15f0261a70864`; 730/60 noch offen. 40% nach Leerstorno 1009 Eisfrachten bis Tag730, neuer Blocker 49/50 Erz trotz Annahme, intakte Hüllen. U9f expliziter Node-Gegenversuch zum Schutz physisch gebundener Erzware vor Export, Trace/CI offen. Keine Produktfreigabe. [Fachbericht](M4_U9_VERTRAGSVORSORGE.md).
 
 

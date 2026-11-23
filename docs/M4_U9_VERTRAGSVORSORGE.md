@@ -17,3 +17,14 @@ Vorgeschlagene isolierte Vertragsregel: Nadir, Meridian und der tatsächliche Fr
 ## Gate
 
 Erst U9a-CI und U9b-Abwicklung, dann 13×90, S02×365/730 mit gleicher Kontrollstrategie/Seeds, dokumentierte Wiederaufnahme echter bezahlter Leistungen und ehrlicher Vergleich zur Standardregel. Wirtschaftliche Krisen sind zulässig. #574/#577/#578 benötigen gemeinsame Abnahme vor einer Integration. Stand bei Erstellung: U9-Code und Tests committed, lokale Ausführung durch DNS-Fehler nicht möglich; CI offen. Kein Erfolg einer Gegenprobe oder einer Vertragsrettung behauptet.
+
+
+## U9a geprüfter Befund und U9b Folgeversuch – 23.11.2026
+
+[U9a Node22-Job](https://github.com/tobiasfranziskus/Check/actions/runs/45115938820/job/137498678553) auf `a78e2363`: 2/2 Tests. Kontrollhash `478696c8bbb0c153`, 137 Eis-/3 Erzfrachten, 1.390 ISK gebunden. Ein nachgewiesen ungeeigneter Miner sh011 (31 Restaktivminuten, 50 Mindestförderminuten) führte bei Tick 17940 nach 42 Probe-Minuten zum Rückzug des unbestätigten Angebots. Gegenversuch: 334 Eis-/7 Erzfrachten, 307 ISK gebunden, Hash `68882ecfc58324a9` nach 30 Tagen. Kein Langzeitstabilitätsbeweis.
+
+U9b auf getrenntem Folgebranch: Node-only Funktion `u9TeilabrechnungProbe` auf dem isolierten U7/U8-Profil. Sie liefert ausschließlich eine neue auditierte JSON-Kopie; der Originalzustand bleibt unverändert. Der Testtreiber muss alle fünf fiktiven Vertragsparteien (Nadir, Aldera, Meridian, tatsächlicher Carrier, Werft) für den exakten Ausgangshash ausdrücklich zustimmen lassen. Dies simuliert eine einstimmige Abwicklungsentscheidung, ist noch keine echte Spielerzustimmungs-UI und keine Signatur. Kein Browserpfad und keine automatische Ausführung.
+
+Nur aktive, noch nicht befahrene Vorbestellung, stillgelegter Meridian-Miner physisch am Dock und freier Carrier im selben Dock. Keine bereits begonnene Werftleistung. Originale W1-Kaufreserve und Teilabrechnung werden wiederverwendet; bei fehlender W1-Reserve muss Aldera nach echter vorhandener industrieller Nachfrage, Kasse und Lager eine neue gedeckte W1-Reserve bilden können. Teilladung vollständig verkaufen oder auf der unveränderten Originalwelt ablehnen. Danach der Original-K7-Storno (Nadir 740, Carrier 120, Werft 530 ISK zurück; keine Frachtvergütung, geleistete Arbeit bleibt bezahlt). Kein Überschreiben eines Saves oder tatsächlicher NPC-Geschäftsabschluss ohne späteren Regel-/Integrationsschritt.
+
+Test `node --test tests/m4-u9b-teilabrechnung-research.cjs`: realer S02-Tag30-Originalhash, 22 Erz, falscher Hash/fehlende/falsche Zustimmung, identische Gegenprobe, Save/Load, exakte Zahlungs- und Warenprüfung, Eigentum, 7-Tage-Replay nach erfolgreicher Abrechnung. Finanzierungsmangel ist ein explizit zulässiges Ergebnis, kein künstlicher Ankauf. Neue CI bei Erstellung noch offen. U9c bleibt finanziertes Ersatzschiff/erneute Originalaufträge mit echter Spielerentscheidung; keine Veröffentlichung.

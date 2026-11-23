@@ -13,6 +13,8 @@
 5. **[P0-Aufräumprozess](PROJEKTLEITUNG_SUPERVISION.md)**, [P0-Inventur und PR-Triage](P0_GROSSPUTZ_PR_TRIAGE.md) und [Wiederverwendungskatalog Void Echoes](VOID_ECHOES_CODEKATALOG.md) nur bei entsprechendem Bedarf.
 6. **[P0-Prototyp-/Test-Abhängigkeiten](P0_PROTOTYP_TEST_ABHAENGIGKEITEN.md)** vor jeder geplanten Archivierung/Dateiverschiebung konsultieren; Root-Build, Legacy-Tests und öffentliche Neben-Einstiege schützen.
 
+**[Konzernzentrale, Stationsansicht und Bergbauscanner – geprüfter Wiederverwendungskatalog](https://github.com/tobiasfranziskus/Check/blob/7f1528cbbda1e0e0820cd6bdedbfdd268aab7018/docs/P0_LEGACY_MODULE_WIEDERVERWENDUNG.md)** (Draft #589): vorhandene UI-Muster, produktive Buildabhängigkeiten, Core-Grenzen und Testverträge. Vor Neuentwicklung dieser drei Ansichten konsultieren.
+
 ## Produktcode und passende Einstiege
 
 | Aufgabe | Erst hier nachsehen |

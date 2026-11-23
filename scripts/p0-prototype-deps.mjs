@@ -13,7 +13,10 @@ const publicHtml=[
  'aphros-void.html',
  'prototypes/spiel/index.html',
  'prototypes/j4c/index.html',
- 'prototypes/verbund/konzern.html'
+ 'prototypes/verbund/konzern.html',
+ 'prototypes/verbund/index.html',
+ // Separat erreichbare, durch tutorial-pilot-browser.cjs geprüfte Alt-URL.
+ 'prototypes/tutorial-pilot/index.html'
 ];
 const buildSources=[
  'prototypes/w5ag/index.html',
@@ -28,7 +31,16 @@ const required=[
  'prototypes/spiel/spiel.js',
  'prototypes/f8-jaeger/f8-duell.js',
  'prototypes/legacy-hub/core-adapter.js',
- 'prototypes/w5ac/rule191-w5-ferry-core.js'
+ 'prototypes/w5ac/rule191-w5-ferry-core.js',
+ 'prototypes/verbund/pruefung-ui.js',
+ 'prototypes/tutorial-pilot/seite.js',
+ 'prototypes/tutorial-pilot/akademie.js',
+ 'prototypes/tutorial-pilot/menue.js',
+ 'prototypes/tutorial-manager/manager.js',
+ 'prototypes/spiel/p3-manager-disposition.js',
+ 'prototypes/spiel/p3-manager-karte.js',
+ 'prototypes/spiel/p3-manager-flotte.js',
+ 'prototypes/spiel/p3-auftragsfeedback.js'
 ];
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const exists=p=>present.has(p);

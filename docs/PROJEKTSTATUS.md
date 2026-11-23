@@ -1,5 +1,8 @@
 # Aphros Void – aktueller Projektstatus [MAIN/M0/M1/P1/P3/W6] · 22.11.2026
 
+**[M4-U9a/U9b · FORSCHUNG · 23.11.2026]** #579 auf `a78e2363`: [U9a 2/2 Node22](https://github.com/tobiasfranziskus/Check/actions/runs/45115938820/job/137498678553), 334 statt 137 Eisfrachten, 7 statt 3 Erzfrachten, 307 statt 1.390 ISK gebunden am Tag30. U9b: isolierte Teilabrechnung auf einem Save-Klon, reale W1-/W3-/K7-Abrechnung, Negativ- und Replaytests hinzugefügt; neue CI noch offen. [Fachbericht](M4_U9_VERTRAGSVORSORGE.md). Kein neuer Produktpfad, kein Merge/Deploy.
+
+
 **[M4-U9 · FORSCHUNG · 23.11.2026]** [U9a-Versuchsaufbau](M4_U9_VERTRAGSVORSORGE.md) ergänzt den bestehenden Managementtreiber um einen isolierten Vorabtest auf Save-Klonen mit Originalkommandos und S02-30-Tage-Kontrolle. Neue Node22-CI noch offen; kein bestätigtes Gegenversuchsergebnis. U9b-Teilabwicklung bleibt offen, kein Merge/Deploy.
 
 

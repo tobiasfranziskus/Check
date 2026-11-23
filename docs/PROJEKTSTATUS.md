@@ -1,5 +1,8 @@
 # Aphros Void – aktueller Projektstatus [MAIN/M0/M1/P1/P3/W6] · 22.11.2026
 
+**M4-U9b/U9c [FORSCHUNG · 23.11.2026]:** U9b #580: [Originaltest erfolgreich](https://github.com/tobiasfranziskus/Check/actions/runs/45122565754/job/137519465585), 22 Erz rechtmäßig abgerechnet, 1.390 ISK Treuhand freigegeben, danach ohne zusätzliche Managerentscheidungen sieben Tage ohne neue Frachten. U9c: dreifacher gepaarter Folgeversuch mit Original-Managerstrategie und optionaler gedeckter Meridian-Ersatzentscheidung; CI offen. [Fachbericht](M4_U9_VERTRAGSVORSORGE.md). Kein produktives Feature, kein Merge/Deploy.
+
+
 **[M4-U9a/U9b · FORSCHUNG · 23.11.2026]** #579 auf `a78e2363`: [U9a 2/2 Node22](https://github.com/tobiasfranziskus/Check/actions/runs/45115938820/job/137498678553), 334 statt 137 Eisfrachten, 7 statt 3 Erzfrachten, 307 statt 1.390 ISK gebunden am Tag30. U9b: isolierte Teilabrechnung auf einem Save-Klon, reale W1-/W3-/K7-Abrechnung, Negativ- und Replaytests hinzugefügt; neue CI noch offen. [Fachbericht](M4_U9_VERTRAGSVORSORGE.md). Kein neuer Produktpfad, kein Merge/Deploy.
 
 

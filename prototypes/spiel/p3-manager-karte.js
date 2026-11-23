@@ -20,10 +20,13 @@ function flugzeit(tick,ankunft,dauer){
 
 function auswerten(a,s,w,angebote){
  const r=w.rules;
+ const asterion=Object.values(s.ships).filter(sh=>sh.owner==='transport'&&sh.klasse==='frachter'
+  &&!w.stillgelegt(s,sh.id));
  const stationen=Object.entries(standorte).flatMap(([system,k])=>{
   if(system==='dravos'&&a.regel!==207)return [];
   const st=a.stationen.find(st=>st.id===k.id&&st.system===system);
   if(!st)return [];
+  const frachterbestand=s.stations[k.id].lager.frachter||0;
   return [{...k,system,lager:st.lager,kasse:s.owners[k.id]?.cash,
    angebote:angebote.filter(o=>o.id.startsWith('buy-'+k.id+'-')),
    bedarf:[
@@ -35,7 +38,10 @@ function auswerten(a,s,w,angebote){
    raffinerie:w.rules.w4?.station===k.id&&s.w4?s.w4.auftrag?'In Betrieb':'Kein laufender Auftrag':null,
    werft:w.rules.w5?.station===k.id&&s.w5?s.w5.auftrag?'Baut eine Hülle':'Kein laufender Auftrag':null,
    erzZulauf:system==='nadir'&&s.w3?.auftrag?.phase==='hin'?s.w3.auftrag.menge:null,
-   frachterbestand:s.stations[k.id].lager.frachter||0,
+   frachterbestand,
+   asterion:system==='nadir'&&frachterbestand===1?{
+    anzahl:asterion.length,rest:asterion.length===1?w.restAktivminuten(s,asterion[0].id):null
+   }:null,
    werftBetreiber:w.rules.w5?.station===k.id?w.rules.w5.werft:null}];
  });
  const eis=s.w5n?.frachtauftrag,erz=s.w3?.auftrag,transfer=s.w5ac?.active;
@@ -179,6 +185,8 @@ function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,t
    ['Stationsbetreiber',konzernname(obj.id)],['Lager',obj.lager],
    ['Stationskasse',Number.isSafeInteger(obj.kasse)?fmt(obj.kasse)+' ISK':null],
    ['Frachter im Lager',fmt(obj.frachterbestand)],
+   ['Asterion-Flotte',obj.asterion?fmt(obj.asterion.anzahl)+' einsatzfähig'+
+    (obj.asterion.rest!==null?' · '+fmt(obj.asterion.rest)+' Aktivminuten':''):null],
    ['Raffinerie',obj.raffinerie],['Werft',obj.werft],
    ['Erz auf dem Hinflug',Number.isSafeInteger(obj.erzZulauf)?fmt(obj.erzZulauf):null],
    ...obj.bedarf.map(b=>[b.ware,b.fehlend?fmt(b.fehlend)+' fehlen':'Bestand reicht']),

@@ -63,6 +63,10 @@ test('M4: existing Nadir carrier gets a real paid ferry and then completes an or
   assert.equal(quote.kaufpreis,750);
   assert.equal(quote.ueberfuehrung.kosten,60);
   assert.equal(quote.ueberfuehrung.restkasse,quote.restkasse-60);
+  const nadir=Karte.auswerten(j.ansicht(),j.zustandReferenz(),w,j.angebote())
+   .stationen.find(st=>st.system==='nadir');
+  assert.equal(nadir.frachterbestand,1);
+  assert.ok(nadir.asterion.anzahl>=0);
   assert.equal(j.exportieren(),before);
   const id=buy(j);
   assert.ok(j.zustandReferenz().w5.schiffIds.includes(id));

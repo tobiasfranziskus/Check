@@ -1,0 +1,18 @@
+name: PIR-2d Vertragsankunft
+on:
+  pull_request:
+    paths:
+      - 'tests/pir-2d-ankunftsgate.test.mjs'
+      - '.github/workflows/pir-2d-ankunftsgate.yml'
+      - 'prototypes/welt/**'
+      - 'prototypes/flug2d/**'
+jobs:
+  arrival-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/pir-2d-ankunftsgate.test.mjs

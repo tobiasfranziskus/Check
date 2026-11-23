@@ -60,6 +60,8 @@ function auswerten(a,s,w,angebote){
   const pirat=lage?.kontakt?.id===sh.id?lage.kontakt:null;
   const unterFeuer=kampf?.aktiv&&kampf.ziel===sh.id;
   const kampfereignisse=kampf?.ereignisse.filter(e=>e.angreifer===sh.id||e.ziel===sh.id)||[];
+  const entwarnung=kampf?.ziel===sh.id&&lage?.kontakt?.phase==='rueckkehr'
+   &&kampfereignisse.some(e=>e.ziel===sh.id);
   const huelle=kampf?.huellen[sh.id]??(pirat&&kampf?kampf.huelleMax:null);
   const exponiert=lage?.exponiert.includes(sh.id)||false;
   const fracht=eis?.schiff===sh.id?eis:erz?.schiff===sh.id?erz:null;
@@ -87,7 +89,7 @@ function auswerten(a,s,w,angebote){
    ?{menge:frachtbeleg.menge,ziel:ort(sh.system)}:null;
   return {...sh,name:(pirat?'Piratenjäger':klassen[sh.klasse]||sh.klasse)+' · '+sh.id,
    owner:original.owner,ort:ortText,auftrag:pirat?(kampf?.aktiv?'Greift Frachter an':piratenAktivitaet[pirat.phase]):lokal?.blockiert?'Eisfracht · Docktermin verfehlt':lokal?'Eisfracht · Nadir-Anflug':auftrag,zeit,lieferung,
-   pirat,exponiert,unterFeuer,kampfereignisse,huelle,huelleMax:kampf?.huelleMax,...(lokal?{lokal}:{}),
+   pirat,exponiert,unterFeuer,entwarnung,kampfereignisse,huelle,huelleMax:kampf?.huelleMax,...(lokal?{lokal}:{}),
    rueckfahrt:fracht?.phase==='rueck',nachAldera:reise&&ziel?.system==='aldera',
    rest:original.owner==='house'?w.restAktivminuten(s,sh.id):null,
    buchwert:w.buchwert(s,sh.id),
@@ -285,6 +287,7 @@ function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,t
   if(untertitel)b.append(element('small',untertitel));
   if(obj.sicherheit)b.append(element('small',obj.sicherheit,'sektor-sicherheitsstufe'));
   if(obj.unterFeuer)b.append(element('small','Unter Feuer','sektor-exposition'));
+  else if(obj.entwarnung)b.append(element('small','Angriff beendet'));
   else if(obj.exponiert)b.append(element('small','Exponierte Route','sektor-exposition'));
   if(obj.zeit)b.append(element('small',obj.zeit.vergangen===0&&!obj.rueckfahrt?'Abflug':
    fmt(obj.zeit.vergangen)+' / '+fmt(obj.zeit.dauer)+' Flugminuten'));

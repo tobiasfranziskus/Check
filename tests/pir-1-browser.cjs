@@ -93,6 +93,8 @@ async function pruefen(browser,url,width,height){
   await tap('#sektor-details summary');
   assert.match(await page.locator('#sektor-details').textContent(),/Hülle: 72 \/ 96/);
   assert.equal(await page.evaluate(()=>window.testAnflugMinute()),0);
+  assert.match(await frachter.textContent(),/Angriff beendet/);
+  assert.doesNotMatch(await frachter.textContent(),/Unter Feuer/);
   assert.equal(await page.evaluate(()=>window.testAnflugMinute()),0);
   assert.equal(await page.evaluate(()=>window.testAnflugMinute()),50);
   assert.equal(await frachter.count(),0);

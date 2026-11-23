@@ -274,14 +274,15 @@ function titel(a){return namen.find(x=>x[0]===a.id)?.[3]||(
  a.id.startsWith('sil-start-')?'Silizium fördern':
  a.id.startsWith('sil-sell-')?'Silizium verkaufen':
  a.id.startsWith('freight-')?'Eisfracht transportieren':
- a.id.startsWith('gate-freight-')?'Eisfracht über das Sprungtor':anzeigetext(a.label));
+ a.id.startsWith('gate-freight-')?'Eisfracht über das Sprungtor':
+ a.id.startsWith('reposition-')?'Frachter nach Aldera überführen':anzeigetext(a.label));
 }
 function info(a){
  const kauf=namen.find(n=>n[0]===a.id);
  return kauf?'Schiff im Werftbestand von '+kauf[2]+'.':anzeigetext(a.label);
 }
 function angebotstitel(a){
- const preis=scope.P3Handelsweg?.kaufpreis(session.weltReferenz(),a.id);
+ const preis=a.id.startsWith('reposition-')?a.kosten:scope.P3Handelsweg?.kaufpreis(session.weltReferenz(),a.id);
  return a.ok&&Number.isSafeInteger(preis)?titel(a)+' · '+fmt(preis)+' ISK':titel(a);
 }
 function datum(ms){return Math.floor(ms/1440)+' Tage · '+(ms%1440)+' Minuten';}
@@ -335,7 +336,7 @@ function managerDispositionAnzeigen(s,angebote){
     ?'Echtes Originalangebot verfügbar – wird beim Auftrag erneut geprüft.'
     :'Gesperrt: '+anzeigetext(task.grund||'Kein rechtmäßig finanzierter Auftrag verfügbar');
   const angebot=angebote.find(a=>a.id===task.aktion);
-  const preis=angebot?.ok?scope.P3Handelsweg?.kaufpreis(session.weltReferenz(),angebot.id):null;
+  const preis=angebot?.ok?(angebot.id.startsWith('reposition-')?angebot.kosten:scope.P3Handelsweg?.kaufpreis(session.weltReferenz(),angebot.id)):null;
   if(Number.isSafeInteger(preis))button.textContent+=' · '+fmt(preis)+' ISK';
  }
  const transportGrund=$('manager-transport-grund');
@@ -396,6 +397,7 @@ function handelswegAnzeigen(s,angebote){
  const kaufhinweis=$('p3-kaufhinweis');
  kaufhinweis.hidden=!p.bereit||(p.aktion!=='buy-st_aldera-miner'&&p.aktion!=='buy-st_aldera-frachter');
  $('p3-handelsanleitung').textContent=ausverkauft?'':p.offen?'Die Rundfahrt endet nach der Lieferung und der Rückkehr nach Aldera.'
+   :p.art==='zeit'&&p.titel==='Bezahlte Überführung abschließen'?p.anleitung
    :p.art==='zeit'?'Dein Miner arbeitet. Schau nach 60 Spielminuten wieder ins Lager.'
    :p.anleitung;
  const angebot=p.aktion?angebote.find(a=>a.id===p.aktion):null;

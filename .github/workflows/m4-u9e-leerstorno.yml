@@ -1,0 +1,58 @@
+name: M4 U9e – empty retired miner cancellation
+on:
+  pull_request:
+    branches:
+      - research/m4-u9d-ersatzvorlauf-20261123
+    paths:
+      - 'tools/m4-u9d-langzeit.cjs'
+      - 'tests/m4-u9e-leerstorno-research.cjs'
+      - '.github/workflows/m4-u9e-leerstorno.yml'
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          git rev-parse HEAD
+          node --test tests/m4-u9d-langzeit-research.cjs tests/m4-u9e-leerstorno-research.cjs
+  horizon:
+    needs: reference
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        days: [365, 730]
+        lead: [40, 60]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/m4-u9d-langzeit.cjs S02 ${{ matrix.days }} 42 leerstorno ${{ matrix.lead }} 1
+  comparison:
+    needs: reference
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        days: [365, 730]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/m4-u9d-langzeit.cjs S02 ${{ matrix.days }} 42 kombiniert 60 1

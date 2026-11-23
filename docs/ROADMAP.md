@@ -1,5 +1,8 @@
 # Aphros Void – verbindliche Produkt-Roadmap
 
+**M4-U9c/U9d [FORSCHUNG · 23.11.2026]:** [U9c #581](https://github.com/tobiasfranziskus/Check/pull/581), 3/3 CI: nach Abrechnung sechs reale Eisrundfahrten (1.440 ISK Fracht, 720 ISK Lohn), keine Erzfolgefracht. Ersatzkauf trotz 3.188 ISK Meridian-Kasse bei Nullbestand in Aldera unmöglich. U9d: kombinierte Vorsorge/Teilabrechnung, Vergleich des Original-Ersatzvorlaufs 40/60/80 %, 13 gepaarte 90-Tage-Regime plus S02×365/730 mit Replay; Referenztest und neue CI offen. Keine produktive Regeländerung. [Fachbericht](M4_U9_VERTRAGSVORSORGE.md).
+
+
 **M4-U9b/U9c [FORSCHUNG · 23.11.2026]:** U9b #580: [Originaltest erfolgreich](https://github.com/tobiasfranziskus/Check/actions/runs/45122565754/job/137519465585), 22 Erz rechtmäßig abgerechnet, 1.390 ISK Treuhand freigegeben, danach ohne zusätzliche Managerentscheidungen sieben Tage ohne neue Frachten. U9c: dreifacher gepaarter Folgeversuch mit Original-Managerstrategie und optionaler gedeckter Meridian-Ersatzentscheidung; CI offen. [Fachbericht](M4_U9_VERTRAGSVORSORGE.md). Kein produktives Feature, kein Merge/Deploy.
 
 

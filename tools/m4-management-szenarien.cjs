@@ -121,7 +121,7 @@ function marktS02() {
   return start(SZENARIEN.find(x => x.id === 'S02'), 42, true, 'konzerne');
 }
 
-function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne') {
+function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', versuch = null) {
   const {welt, s, quellhash} = start(szenario, seed, forschung, startpfad);
   const entscheidungen = {}, industrieRueckladungen = [];
   const beginn = kontrollstand(welt, s), verlauf = [];
@@ -129,6 +129,7 @@ function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne') {
     const ende = tag * MINUTEN_PRO_TAG;
     while (s.tick < ende) {
       const naechsterTermin = Math.min(s.tick + 60, ende);
+      if (versuch?.vorEntscheidung) versuch.vorEntscheidung(welt, s);
       verwaltung(welt, s, entscheidungen, szenario.id !== 'S08');
       // Sample each physical W3 return at its arrival tick.
       while (s.tick < naechsterTermin && s.w3.auftrag) {

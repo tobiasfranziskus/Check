@@ -26,6 +26,10 @@ function auswerten(s,angebote,welt=null){
  const lohn=s.kanon.spielerFrachten?.lohn||0;
  const suchen=id=>angebote.find(a=>a.id===id);
  const frachtangebot=frachter.map(sh=>suchen('freight-'+sh.id)).find(a=>a?.ok);
+ const nadirFrachter=schiffe.filter(sh=>sh.klasse==='frachter'&&sh.system==='nadir');
+ const ueberfuehrungen=nadirFrachter.map(sh=>suchen('reposition-'+sh.id)).filter(Boolean);
+ const ueberfuehrung=ueberfuehrungen.find(a=>a.ok===true)||ueberfuehrungen[0];
+ const unterwegsNachAldera=nadirFrachter.some(sh=>s.w5ac?.active?.id===sh.id&&s.w5ac.active.owner==='house');
  // The original W5n rule defines the charge price, never the UI.
  const w=welt?.rules?.w5n;
  const eisAnkaufKosten=Number.isSafeInteger(w?.charge)&&Number.isSafeInteger(w?.eisPreis)
@@ -43,6 +47,14 @@ function auswerten(s,angebote,welt=null){
   titel='Laufende Fracht abrechnen';
   anleitung='Der Originalvertrag ist unterwegs. Zeit nur mit regulärer, finanzierter Weltabrechnung fortsetzen.';
   art='zeit';
+ }else if(!frachter.length&&unterwegsNachAldera){
+  titel='Bezahlte Überführung abschließen';
+  anleitung='Dein Frachter ist unterwegs nach Aldera. Die reguläre Weltzeit führt den bereits finanzierten Flug fort.';
+  art='zeit';
+ }else if(!frachter.length&&ueberfuehrung){
+  titel='Eigenen Nadir-Frachter nach Aldera überführen';
+  anleitung='Du besitzt bereits einen Frachter in Nadir. Die Überführung nutzt das echte bezahlte Angebot; erst nach Ankunft kann er Eis transportieren.';
+  aktion=ueberfuehrung.id;
  }else if(eis>=50&&frachter.length){
   titel='Nächste Eis-Rundfracht beauftragen';
   anleitung='50 physische Einheiten Eis sind in Aldera verfügbar. Käuferbudget, Löhne und Frachter werden bei der Buchung erneut geprüft.';

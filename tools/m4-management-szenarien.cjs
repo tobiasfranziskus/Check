@@ -123,6 +123,11 @@ function marktS02() {
 
 function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', versuch = null) {
   let {welt, s, quellhash} = start(szenario, seed, forschung, startpfad);
+  if(versuch?.weltFabrik){
+    const json=welt.save(s),hash=welt.hash(s);
+    welt=versuch.weltFabrik(s.w5ad.profile);
+    s=welt.load(json);assert.equal(welt.hash(s),hash);
+  }
   const entscheidungen = {}, industrieRueckladungen = [];
   const beginn = kontrollstand(welt, s), verlauf = [];
   for (let tag = 1; tag <= tage; tag++) {
@@ -143,7 +148,9 @@ function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', versuch =
       verwaltung(welt, s, entscheidungen, szenario.id !== 'S08');
       // Sample each physical W3 return at its arrival tick.
       while (s.tick < naechsterTermin && s.w3.auftrag) {
+        if(versuch?.vorMinute)versuch.vorMinute(welt,s);
         welt.advance(s, 1);
+        if(versuch?.nachMinute)versuch.nachMinute(welt,s);
         const a = s.w3.auftrag;
         if (a?.phase !== 'rueck' || s.ships[a.schiff].ankunft - a.zeit !== s.tick) continue;
         const rueck = s.kanon.rueckfracht;

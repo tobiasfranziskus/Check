@@ -2054,6 +2054,44 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     return verwerfen('unbekannte Vertragsaktion');
   }
 
+  // U9b offline experiment only: the caller supplies all fictional parties'
+  // explicit approval for this exact snapshot. No real UI authorization or
+  // cryptographic signature is inferred. The original state is never mutated.
+  function u9TeilabrechnungProbe(state, zustimmung) {
+    const fail=reason=>({ok:false,reason});
+    if(!NODE||!u8Research||state.kanon.u7Manager!==true)return fail('U9: nur isolierter Node-Forschungsversuch');
+    let json;
+    try{json=save(state);}catch(e){return fail(e.message);}
+    const a=state.w3?.auftrag,i=state.kanon.industrieErz;
+    if(a?.phase!=='vorbestellt'||i?.phase!=='aktiv'||i.erzAngenommen||i.werftVerwendet||
+       i.materialOnly||a.gearbeitet!==0||a.industrieMiner!==i.miner||a.schiff!==i.frachter)
+      return fail('U9: kein unbefahrener aktiver Industrieauftrag');
+    const mi=state.ships[i.miner],fr=state.ships[i.frachter];
+    const carrier=i.carrier??'transport';
+    if(!mi||!fr||mi.owner!=='npc3'||fr.owner!==carrier||
+       mi.system!=='aldera'||mi.flug?.lage!=='angedockt'||mi.phase!=='dock'||
+       fr.system!=='aldera'||fr.flug?.lage!=='angedockt'||fr.phase!=='dock'||
+       ladungSumme(fr)!==0||fr.auftrag!=='halten'||
+       !m_core_anlage.stillgelegt(state,mi))
+      return fail('U9: Eigentum, Dock oder Stilllegung nicht belegt');
+    const parteien=['st_nadir','st_aldera','npc3',carrier,'werft_extern'].sort();
+    if(!zustimmung||zustimmung.hash!==kern.hash(state)||
+       !Array.isArray(zustimmung.parteien)||zustimmung.parteien.length!==parteien.length||
+       [...zustimmung.parteien].sort().some((x,j)=>x!==parteien[j]))
+      return fail('U9: konkrete Zustimmung aller Vertragsparteien fehlt');
+    try{
+      const q=load(json);
+      const abrechnung=kern.industryOrePartialDockSettlement(q,mi.id);
+      // Existing original cancellation now sees an empty docked miner and
+      // no remaining W1 contract. Original W3/K7 refund logic stays unchanged.
+      const r=k7Befehl(q,{type:'industrialOreCancel',owner:'st_nadir'});
+      if(!r.ok)return fail(r.reason);
+      const ergebnis=save(q);
+      if(save(load(ergebnis))!==ergebnis)throw Error('U9: Roundtrip abweichend');
+      return {ok:true,abrechnung,json:ergebnis,hash:kern.hash(q)};
+    }catch(e){return fail(e.message);}
+  }
+
   // K7 research-only: independent NPC signers use the existing validated K7
   // commands. The player's browser only changes the optional policy flag;
   // it cannot sign on behalf of NPC companies or create cash, ships or ore.
@@ -2508,6 +2546,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(p8bZweiFelder ? {p8bZweiEndlicheFelder:true} : {}),
     ...(p8cDravos||p8dFracht ? {p8cEchteDravosExpedition:true} : {}),
     ...(p8dFracht ? {p8dGetrennteSpedition:true,p8gMaterialOnlyW3:true} : {}),
+    ...(u8Research && NODE ? {u9TeilabrechnungProbe} : {}),
     ...(u8Research ? { industrieAngebotslage: (s) => {
       const {ok, grund} = u7Angebotslage(s);
       return {ok, grund};

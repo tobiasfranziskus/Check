@@ -2,6 +2,8 @@
 
 **Nur Navigation, keine zweite Roadmap und kein eigenständiger Projektstatus.** Stand der Indexstruktur: 15.11.2026. **Für aktuelle Fakten stets `main`, CI und die kanonischen Dateien prüfen.** Frühere vollständige Fassung als [Git-Snapshot vor P0](https://github.com/tobiasfranziskus/Check/blob/31d0197dc0c2d6d9a3ea1af06440426065a4a0dd/docs/README.md) erhalten.
 
+**Archivgrenze 23.11.2026:** [Roadmap-Historie](archiv/ROADMAP_HISTORIE_BIS_20261123.md) und [Statuschronik](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261123.md) enthalten die vollständigen bisherigen Berichte mit gepinnten Originalen. Nur gezielt bei Nachweisbedarf lesen. Aktive Roadmap und Status sind kompakte Arbeitsdokumente.
+
 ## Einstieg für ChatGPT, Codex und Projektleitung
 
 1. **Zuerst** aktuellen [main-Commit](https://github.com/tobiasfranziskus/Check/commits/main), [Pages-Deploy](https://github.com/tobiasfranziskus/Check/actions) und relevante Diff-/PR-Metadaten ermitteln; nichts aus Datum/Chat-Erinnerungen als aktuellen Stand ableiten.

@@ -1,0 +1,42 @@
+name: M4 U9j – original warehouse ore first
+on:
+  pull_request:
+    branches:
+      - research/m4-u9i-reserve-kaufzeitfenster-20261123
+    paths:
+      - 'tools/m4-u9j-erz-zuerst.cjs'
+      - '.github/workflows/m4-u9j-erz-zuerst.yml'
+permissions:
+  contents: read
+jobs:
+  paired-90:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          git rev-parse HEAD
+          node --check tools/m4-u9j-erz-zuerst.cjs
+          node tools/m4-u9j-erz-zuerst.cjs control 90
+          node tools/m4-u9j-erz-zuerst.cjs stockfirst 90
+  paired-730:
+    needs: paired-90
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [control, stockfirst]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/m4-u9j-erz-zuerst.cjs ${{ matrix.variant }} 730

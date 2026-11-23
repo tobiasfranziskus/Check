@@ -49,3 +49,8 @@ Das Forschungswaffenprofil der vorhandenen Piratenhülle verwendet Reichweite 26
 Bei höchstens 24 Hüllenpunkten endet die Verfolgung. Ein so beschädigter Hausfrachter kann einen gebundenen F4-Vertrag noch abwickeln und erhält keine Freigabe für einen neuen F4-Auftrag. Ladung und Eigentum bleiben am realen Schiff. Reparatur, Totalverlust, Restwert, Ladungsbergung und Verrechnung mit einem bestehenden Treuhandvertrag sind Gegenstand von PIR-3b.
 
 Im Originalablauf schießt `pir001` in Weltsekunde 10561 auf den realen Frachter `sh002` und verfehlt ihn. Die Treffer bei 10597 und 10633 senken seine Hülle auf 72 und 48. Der Kampf-Replay endet nach der vollständigen Frachtfahrt mit Hash `aa301a2025e848cb`. Die vorhandene Karte zeigt echten Ort, Abfangen, Aufschaltung, Angriff, Rückkehr und aufklappbare Hüllen- und Schussbelege. Ein gesetzloses System ist in dieser Regel204-Forschungswelt kein operativer Einsatzort.
+
+### Nachweise
+
+- Der PIR-2d-Stand bestand 606/606 Node-22-Tests, 13×90 Wirtschaftsszenarien sowie S02×365 und ×730 mit deaktiviertem Anflugprofil. Der zivile S02-730-Kontrollhash lautet `cabda24fb8cf9622`. Die separate [Touchmatrix](https://github.com/tobiasfranziskus/Check/actions/runs/45263557545) zeigt auf diesem Stand Chromium und WebKit je vier Größen.
+- Aktive Kampfforschung über 90 und 365 Tage hält Weltgeld 33.240 ISK, Mint/Burn 0, die 50er-Eischarge, die F4-Gesamtvergütung und 48 Hüllenpunkte. Tag 90 ergibt `f87030f008bf4121`, Tag 365 `5dfe31404263cfd0`. Der Piratenpilot erhält insgesamt 203 ISK aus der vorhandenen Reserve.

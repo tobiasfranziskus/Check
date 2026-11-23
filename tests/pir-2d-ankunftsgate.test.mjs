@@ -169,11 +169,13 @@ test('PIR-2e intercepts and locks the real loaded freighter only after local arr
 
 test('PIR-3 journals and applies real nonlethal hull damage with deterministic replay',()=>{
  const {w,s,f}=kontakt('kampf');
- let vorAngriff=null;
+ let vorAngriff=null, aufRueckkehr=null;
  for(let i=0;i<240;i++){
   w.teilschritt(s);
   if(vorAngriff===null&&s.kanon.piraten.kampf.ereignisse.some(e=>e.schaden>0))
    vorAngriff=w.load(w.save(s));
+  if(aufRueckkehr===null && s.kanon.piraten.phase==='rueckkehr')
+   aufRueckkehr=w.load(w.save(s));
  }
  const k=s.kanon.piraten.kampf;
  assert(vorAngriff,'the original real freighter must actually receive damage');
@@ -182,6 +184,9 @@ test('PIR-3 journals and applies real nonlethal hull damage with deterministic r
  assert.equal(s.w5n.eisGeliefert,50);
  w.advance(s,60); w.advance(vorAngriff,s.tick-vorAngriff.tick);
  assert.equal(w.hash(vorAngriff),w.hash(s));
+ assert(aufRueckkehr);
+ w.advance(aufRueckkehr,s.tick-aufRueckkehr.tick);
+ assert.equal(w.hash(aufRueckkehr),w.hash(s));
  assert.equal(s.kanon.spielerFrachten.lohn,120);
  assert.equal(s.kanon.spielerFrachten.gebuehr,240);
  assert.deepEqual(w.audit(s).fehler,[]);
@@ -213,4 +218,20 @@ test('PIR-3 stops firing without a valid target, local jurisdiction, or return r
  }
  assert.equal(w.sicherheitslage(basis.s).stufen.aldera,'sicher');
  assert.equal(w.sicherheitslage(basis.s).stufen.nadir,'umkaempft');
+});
+
+test('PIR-2e orders equal-value reachable contacts by stable ID',()=>{
+ const {w,s,f}=kontakt('abfangen');
+ const origin=s.ships[f], anderer=Object.values(s.ships)
+  .find(sh=>sh.klasse==='miner'&&sh.owner==='house');
+ assert(anderer);
+ // Synthetic equal-value freighter contacts assigned to two existing IDs.
+ anderer.klasse='frachter';
+ anderer.system=origin.system;
+ anderer.flug=structuredClone(origin.flug);
+ anderer.ladung=structuredClone(origin.ladung);
+ anderer.phase='dock';
+ const k=w.piratenZielbewertung(s).kandidaten.filter(x=>[f,anderer.id].includes(x.id));
+ assert.deepEqual(k.map(x=>x.id),[f,anderer.id].sort());
+ assert(k.every(x=>x.verfolgbar&&x.referenzwert===250));
 });

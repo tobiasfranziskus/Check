@@ -1432,8 +1432,11 @@ $('vorige-pir').addEventListener('click',()=>{try{
  ladeSitzung(gespeicherte(SLOT_PIR+':vorherige'),'pir-backup',true);
 }catch(e){hinweis('Piratenforschung nicht wiederhergestellt: '+error(e),true);}});
 if(kampfZugang){
- const titel=d.querySelector('label[for="pir-start"] strong');
- if(titel)titel.textContent='PIR-3 · Kampfforschung in Nadir';
+ const option=d.querySelector('label[for="pir-start"]');
+ if(option){
+  option.querySelector('strong').textContent='PIR-3 · Kampfforschung in Nadir';
+  option.querySelector('small').textContent='Bezahlte Patrouillen können Hausfrachter angreifen. Die Sitzung bleibt bis zum Schließen der Seite fortsetzbar.';
+ }
 }
 const startOptionen=['w6-npc-start','w6-p8g-start','pir-start'].map($);
 for(const option of startOptionen)option.addEventListener('change',()=>{

@@ -4,6 +4,8 @@
 
 **[PIR-2d · DRAFT / FORSCHUNG · 23.11.2026]** [Baseline #603](https://github.com/tobiasfranziskus/Check/pull/603) korrigiert die alte Zustandsreferenz nach J8-Befehlen. [Anflug #604](https://github.com/tobiasfranziskus/Check/pull/604) koppelt den Originalvertrag an ein physisches Dock in Nadir. Der gezielte Node-22-Test belegt Dock nach 135 von 240 Schritten, unveränderte F4-Vergütung und einen Halt bei verfehltem Dock. [Abnahme und Grenzen](PIR_2D_ANKUNFTSGATE.md). P0 [#586](https://github.com/tobiasfranziskus/Check/pull/586) und der Startbildschirm [#599](https://github.com/tobiasfranziskus/Check/pull/599) bleiben separat.
 
+**[PIR-2e / PIR-3 · DRAFT / FORSCHUNG]** [#608](https://github.com/tobiasfranziskus/Check/pull/608) verfolgt und erfasst den bezahlten F4-Frachter. [#610](https://github.com/tobiasfranziskus/Check/pull/610) dokumentiert zwei Treffer von `pir001` auf `sh002` in Nadir, Hülle 96 → 48, danach vollständige Lieferung und Originalvergütung. [Ereignisse, Forschungsparameter und offene Integration](PIR_2D_ANKUNFTSGATE.md).
+
 **[PIR-0/1 · DRAFT / INTEGRATION]** Quelle [#594](https://github.com/tobiasfranziskus/Check/pull/594) `3b505bec`: 10/10 Workflows, PIR-Matrix 17/17 nach Timeoutkorrektur. Gemeinsamer Kandidat mit U10 auf `53c1dfc2`; eigene CI offen. Getrennter Forschungsstart, keine Angriffe oder neue Vertragsrechte. [Forschungsbericht](PIR_0_1_PIRATENFORSCHUNG.md). P0 #586 führt Archivierung und Triage.
 
 

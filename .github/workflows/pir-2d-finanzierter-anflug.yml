@@ -1,0 +1,18 @@
+name: PIR-2d Physischer F4-Anflug
+on:
+  pull_request:
+    paths:
+      - 'prototypes/flug2d/flug-kern.js'
+      - 'prototypes/welt/welt-kern.js'
+      - 'tests/pir-2d-finanzierter-anflug.test.mjs'
+      - '.github/workflows/pir-2d-finanzierter-anflug.yml'
+jobs:
+  funded-local-flight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/pir-2d-finanzierter-anflug.test.mjs

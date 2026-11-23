@@ -91,7 +91,7 @@ const PIR = Object.freeze({ owner:'piraten', pilot:'pilot_piraten', schiff:'pir0
   sicherheit:Object.freeze({aldera:'sicher',cyris:'sicher',veldra:'sicher',
     orion:'umkaempft',nadir:'umkaempft',dravos:'gesetzlos',meridian:'gesetzlos'}) });
 
-function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false, piraten = false) {
+function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false, piraten = false, piratenAnflug = false) {
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
@@ -240,6 +240,14 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           sh.flug = FLUG.koerperAngedockt(sh.system);
         }
         const b = sh.flug;
+        if(piratenAnflug&&FLUG.frachtAnflugFenster(state,sh)){
+          if(b.lage==='transit'){
+            if(sh.ankunft-state.tick!==4||sh.system!=='aldera')
+              throw Error('PIR-2d: lokaler Anflug ohne belegten Toreintritt');
+            sh.system='nadir';sh.flug=FLUG.frachtAnflugKoerper();
+          }
+          continue;
+        }
         if (sh.phase === 'reise' && b.lage !== 'transit') {
           if (b.lage !== 'angedockt') throw Error('K1: Transit nur aus dem Dock ' + id);
           sh.flug = { ...FLUG.koerperAngedockt(sh.system), lage: 'transit', anker: null };
@@ -449,12 +457,12 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         system:PIR.system, heimat:PIR.system, phase:'dock', auftrag:'pirat', ziel:null,
         ankunft:0, ladung:{}, warten:0, ware:null, arbeit:0, escorte:null};
       s.stats.verkaeufe[PIR.schiff] = 0;
-      s.kanon.piraten = {profil:1, rng:s.rng, phase:'bereit', bis:0, kontakt:null};
+      s.kanon.piraten = {profil:piratenAnflug?2:1, rng:s.rng, phase:'bereit', bis:0, kontakt:null};
     }
     // Intersystemischer Verkehr ist in den letzten vier Minuten am Zieltor
     // oder beim Abflug im Korridorbericht sichtbar. Keine interpolierte Position.
     function torverkehr(s, sh, system) {
-      if (sh.klasse !== 'frachter' || sh.phase !== 'reise') return false;
+      if (sh.klasse !== 'frachter' || sh.phase !== 'reise' || (piratenAnflug&&sh.flug?.lage!=='transit')) return false;
       const ziel = s.stations[sh.ziel]?.system, rest = sh.ankunft - s.tick;
       return rest > 0 && ((ziel === system && rest <= 4)
         || (sh.system === system && rest === W.flugMinuten));
@@ -560,14 +568,14 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       return {stufen, kontakt:{id:sh.id, system:sh.system, phase:p.phase,
         x:sh.flug.x, y:sh.flug.y, ziel:sh.flug.ziel && {...sh.flug.ziel}, sicht:p.kontakt && {...p.kontakt}},
         exponiert:aktiv ? Object.values(s.ships).filter(t => t.owner === 'house'
-          && torverkehr(s,t,sh.system)).map(t => t.id) : []};
+          && (torverkehr(s,t,sh.system)||(piratenAnflug&&FLUG.frachtAnflugFenster(s,t)&&kontakte(s,sh).includes(t)))).map(t => t.id) : []};
     }
     function audit(s) {
       const p = s.kanon.piraten, sh = s.ships[PIR.schiff];
       const eigene = Object.values(s.ships).filter(x => x.owner === PIR.owner);
       if (!piraten) return p === undefined && !sh && !eigene.length
         && !s.owners[PIR.owner] && !s.owners[PIR.pilot] && !s.owners[konto];
-      if (!p || p.profil !== 1 || !ganz(p.rng) || p.rng > 0xffffffff
+      if (!p || p.profil !== (piratenAnflug?2:1) || !ganz(p.rng) || p.rng > 0xffffffff
         || !ganz(p.bis) || p.bis > s.tick + 12
         || !['bereit','auslaufen','patrouille','beobachten','folgen','rueckkehr',
              'gestrandet','keinKapital','verschlissen'].includes(p.phase)
@@ -1104,7 +1112,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           if (++aktiv !== 1 || i !== f.auftraege.length - 1 || !a
             || a.schiff !== x.schiff || !ganz(a.gearbeitet)
             || a.gearbeitet >= dauer || s.tick !== x.start + a.gearbeitet
-            || sh.phase !== 'reise' || sh.flug?.lage !== 'transit'
+            || sh.phase !== 'reise'
+            || (piratenAnflug&&a.phase==='hin'&&sh.ankunft!==x.start+x.zeit)
+            || (sh.flug?.lage !== 'transit' && !(piratenAnflug&&FLUG.frachtAnflugFenster(s,sh)
+               &&FLUG.frachtAnflugBelegt(s,sh)))
             || x.geliefert !== (a.phase === 'rueck' ? x.start + x.zeit : null))
             return false;
           lohn += a.gearbeitet * W.fliegerLohn;
@@ -1899,6 +1910,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         const sh = state.ships[id];
         if (hat(FLUG.DATEN.klassen, sh.klasse) && !sh.flug) fehler.push('Körper fehlt ' + id);
         if (sh.klasse === 'frachter' && sh.flug && !['angedockt', 'transit'].includes(sh.flug.lage)
+          && !(piratenAnflug&&FLUG.frachtAnflugFenster(state,sh)&&FLUG.frachtAnflugBelegt(state,sh))
           && (sh.owner !== rules.economy.start.owner || sh.system !== 'aldera'
             || sh.phase !== 'dock' || sh.auftrag !== 'halten' || ladungSumme(sh) !== 0))
           fehler.push('Unzulässiger Frachter im Freiflug ' + id);
@@ -2363,6 +2375,17 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   }
   // Abschluss einer Wirtschaftsminute in fester Reihenfolge.
   function wirtschaftsMinute(state) {
+    // The existing W5n escrow pays each minute. Prevent the original arrival
+    // transaction before actual docking. A failed experimental trajectory
+    // stops before any economic write; no unpaid extension or forced docking.
+    if(piratenAnflug){
+      const a=state.w5n.frachtauftrag,sh=state.ships[a?.schiff];
+      if(a?.phase==='hin'&&sh?.owner==='house'
+        &&(a.gearbeitet+1===a.zeit||sh.ankunft===state.tick+1)
+        &&(a.gearbeitet+1!==a.zeit||sh.ankunft!==state.tick+1
+           ||sh.flug?.lage!=='angedockt'||!FLUG.frachtAnflugBelegt(state,sh,FLUG.DATEN.schritteJeMinute)))
+        throw Error('PIR-2d: keine Frachtannahme ohne fristgerechten physischen Docknachweis');
+    }
     const vorher = {};
     for (const id of ids(state.ships)) vorher[id] = ladungSumme(state.ships[id]);
     const frachter = ids(state.ships).filter((id) => state.ships[id].klasse === 'frachter' && state.ships[id].phase === 'reise');
@@ -2804,6 +2827,8 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   erstellenJ4b:(kapital={})=>erstellen(kapital,true,true,true,true),
   erstellenJ4c:(kapital={})=>erstellen(kapital,true,true,true,true,true),
   erstellenPiraten:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,true),
+  // New explicit research constructor; no old save conversion or browser slot.
+  erstellenPiratenAnflug:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,true,true),
   // Nur experimenteller Rule205-Bergbau in zwei getrennten Nadir-Feldern.
   // Kein Produkt-/Save-Autoupgrade, keine Dravos-Miner und keine Zusatz-ISK.
   erstellenP8b:(kapital={})=>erstellen(kapital,true,true,true,true,true,true),

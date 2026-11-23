@@ -4026,6 +4026,28 @@ function createW5State(seed = W5_RULES.startSeed) {
 const loadW5 = (json) => loadErz(json,W5_RULES);
 const industryOrePrebook=(s,carrierId,minerId)=>m_core_w3.vorbestellen(s,W5_RULES,carrierId,minerId);
 const industryOreCancel=(s)=>m_core_w3.stornierenVorArbeit(s,W5_RULES);
+ // U9b research helper on a disposable, validated clone only. No tick or new production.
+ // Reuse W1's purchase reserve and physical dock settlement, including original accounting.
+ const industryOrePartialDockSettlement=(s,minerId)=>{
+   if(research?.u7HouseFreight!==true)throw Error('U9: Forschungsprofil erforderlich');
+   const a=s.w3?.auftrag,mi=s.ships[minerId],cfg=W5_RULES.erzpilot;
+   if(a?.phase!=='vorbestellt'||a.industrieMiner!==minerId||mi?.owner!==cfg.npcInvestor
+     ||mi.phase!=='dock'||!m_core_kanon.amDock(mi,cfg.station)||mi.auftrag!=='halten')
+     throw Error('U9: kein geeigneter physischer Teilladungsfall');
+   const menge=mi.ladung.erz||0;
+   if(!Number.isSafeInteger(menge)||menge<=0||menge>=a.menge
+      ||Object.entries(mi.ladung).some(([ware,n])=>ware!=='erz'&&n!==0))
+     throw Error('U9: keine reine Erzteilcharge');
+   // Existing contract takes priority. Without one the legitimate original
+   // industrial demand enables a new W1 reserve from Aldera's real cash.
+   const v=s.erzpilotVertraege?.[minerId]||m_core_erzpilot.beauftragen(s,W5_RULES,mi);
+   if(!v||v.menge<menge||s.owners[v.konto]?.cash<menge*cfg.preis)
+     throw Error('U9: Teilmenge nicht vollständig gedeckt');
+   const bezahlt=m_core_erzpilot.stornieren(s,W5_RULES,mi);
+   if(bezahlt!==menge||(mi.ladung.erz||0)!==0||s.erzpilotVertraege?.[minerId])
+     throw Error('U9: Originalabrechnung nicht vollständig');
+   return {menge,wert:menge*cfg.preis};
+ };
 const pilotW3Stand = (state) => m_core_w3.audit(state,
   state.rulesVersion===W5_RULES.rulesVersion?W5_RULES:
     state.rulesVersion===W4_RULES.rulesVersion?W4_RULES:W3_RULES);
@@ -4076,6 +4098,7 @@ const { ersatzkauf, zuschuss } = m_core_schiffbau;
 return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS, audit, protokolliere, rngNext, rngInt, div, faktorFormel, preisFormel, handel, verkaufbar, aufnehmbar, reserve, obergrenze, stationspreis, gebuehr, route, verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende, wirksamerFreibetrag, reise, kampf, patrouille, ueberfall, piratenErsatz, ersatzkauf, zuschuss, CURRENT_SCHEMA: RULES.schema, ERZ_RULES, W2_RULES, W3_RULES, W4_RULES, W5_RULES,
   pilotAuftragsStand, pilotWirtschaftsStand, pilotNpcInvestition, pilotNpcKrisenLage,
   industryOrePrebook,industryOreCancel,
+  ...(research?.u7HouseFreight===true?{industryOrePartialDockSettlement}:{}),
   pilotW3Stand, pilotW3Kalkulation, pilotW4Stand, pilotW4Kalkulation,
   pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf,
   pilotW5TransferStand, pilotW5TransferKalkulation,

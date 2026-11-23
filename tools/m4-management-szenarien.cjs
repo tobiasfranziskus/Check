@@ -34,7 +34,7 @@ function stand(welt, s) {
   });
 }
 
-function verwaltung(welt, s, zahlen, wasserErlaubt) {
+function verwaltung(welt, s, zahlen, wasserErlaubt, option = null) {
   const k = s.kanon, haus = Object.values(s.ships).filter(sh => sh.owner === 'house');
   const i = k.industrieErz, a = s.w3.auftrag;
   const versuch = (type, daten = {}) => {
@@ -69,6 +69,7 @@ function verwaltung(welt, s, zahlen, wasserErlaubt) {
   if (nadirFrachter && versuch('shipReposition', {schiff: nadirFrachter.id})) return;
   // One additional working hull at most. Purchase only from physical stock.
   if (nadir.frachter > 0 && frachter.length < 2 &&
+      (option?.nadirKaufErlaubt?.(welt,s,frachter) ?? true) &&
       versuch('shipBuy', {station: 'st_nadir', klasse: 'frachter'})) return;
   if (frachter.length === 0 && alder.frachter > 0 &&
       versuch('shipBuy', {station: 'st_aldera', klasse: 'frachter'})) return;
@@ -146,7 +147,7 @@ function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', versuch =
         }
       }
       if(versuch?.vorDisposition)versuch.vorDisposition(welt,s);
-      verwaltung(welt, s, entscheidungen, szenario.id !== 'S08');
+      verwaltung(welt, s, entscheidungen, szenario.id !== 'S08', versuch);
       // Sample each physical W3 return at its arrival tick.
       while (s.tick < naechsterTermin && s.w3.auftrag) {
         if(versuch?.vorMinute)versuch.vorMinute(welt,s);

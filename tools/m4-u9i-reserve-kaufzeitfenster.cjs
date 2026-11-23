@@ -52,7 +52,7 @@ function lauf(sz,tage,seed,lead,mode){
    if(windows.length<24)windows.push({tick:s.tick,stock,cash,rest:rest[0],routeBusy,old:fleet[0].id});
    if(mode==='control'||(mode==='routefree'&&routeBusy))return;
    const original=w.save(s),q=w.load(original),ids=new Set(Object.keys(s.ships));
-   const enc=state=>JSON.stringify([state.w3.auftrag,state.w5n.frachtauftrag,state.w5ac.active,state.kanon.rueckfracht,state.kanon.industrieErz]);
+   const enc=state=>JSON.parse(JSON.stringify([state.w3.auftrag,state.w5n.frachtauftrag,state.w5ac.active,state.kanon.rueckfracht,state.kanon.industrieErz]));
    const contracts=enc(s);
    const cmd={type:'shipBuy',owner,klasse:'frachter',station};
    const probe=w.execute(q,cmd);
@@ -61,10 +61,11 @@ function lauf(sz,tage,seed,lead,mode){
    assert.equal(neu.length,1);assert.equal(q.ships[neu[0]].owner,owner);
    assert.equal(q.ships[neu[0]].system,'nadir');assert.equal(q.owners[owner].cash,cash-preis);
    assert.equal(q.stations[station].lager.frachter,stock-1);
-   assert.equal(enc(q),contracts,'buying an idle hull does not alter existing contracts');
+   assert.deepEqual(enc(q),contracts,'buying an idle hull does not alter existing contracts');
    assert.deepEqual(pruefen(w,q),[]);
    assert.equal(w.save(s),original);
    const r=w.execute(s,cmd);assert.equal(r.ok,true,r.reason);assert.equal(w.save(s),w.save(q));
+   assert.deepEqual(enc(s),contracts,'committed purchase preserves existing contracts');
    buys.push({tick:s.tick,old:fleet[0].id,new:neu[0],rest:rest[0],stock,cash,preis,transfer,arbeit,routeBusy,before:w.hash(w.load(original)),after:w.hash(s)});
  },amEnde(w,s){
    assert.deepEqual(pruefen(w,s),[]);

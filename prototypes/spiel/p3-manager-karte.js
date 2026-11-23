@@ -28,7 +28,7 @@ function auswerten(a,s,w,angebote){
  const r=w.rules;
  const asterion=Object.values(s.ships).filter(sh=>sh.owner==='transport'&&sh.klasse==='frachter'
   &&!w.stillgelegt(s,sh.id));
- const lage=w.sicherheitslage?.(s), anflug=w.pirAnflugLage?.(s);
+ const lage=w.sicherheitslage?.(s), anflug=w.pirAnflugLage?.(s), kampf=w.pirKampfLage?.(s);
  const stationen=Object.entries(standorte).flatMap(([system,k])=>{
   if(system==='dravos'&&a.regel!==207)return [];
   const st=a.stationen.find(st=>st.id===k.id&&st.system===system);
@@ -58,6 +58,11 @@ function auswerten(a,s,w,angebote){
  function schiffAuswerten(sh){
   const original=s.ships[sh.id];
   const pirat=lage?.kontakt?.id===sh.id?lage.kontakt:null;
+  const unterFeuer=kampf?.aktiv&&kampf.ziel===sh.id;
+  const kampfereignisse=kampf?.ereignisse.filter(e=>e.angreifer===sh.id||e.ziel===sh.id)||[];
+  const entwarnung=kampf?.ziel===sh.id&&lage?.kontakt?.phase==='rueckkehr'
+   &&kampfereignisse.some(e=>e.ziel===sh.id);
+  const huelle=kampf?.huellen[sh.id]??(pirat&&kampf?kampf.huelleMax:null);
   const exponiert=lage?.exponiert.includes(sh.id)||false;
   const fracht=eis?.schiff===sh.id?eis:erz?.schiff===sh.id?erz:null;
   const ueberfuehrung=transfer?.id===sh.id&&transfer.owner===original.owner;
@@ -83,8 +88,8 @@ function auswerten(a,s,w,angebote){
    &&frachtbeleg?.schiff===sh.id&&frachtbeleg.end===null&&Number.isSafeInteger(frachtbeleg.geliefert)
    ?{menge:frachtbeleg.menge,ziel:ort(sh.system)}:null;
   return {...sh,name:(pirat?'Piratenjäger':klassen[sh.klasse]||sh.klasse)+' · '+sh.id,
-   owner:original.owner,ort:ortText,auftrag:pirat?piratenAktivitaet[pirat.phase]:lokal?.blockiert?'Eisfracht · Docktermin verfehlt':lokal?'Eisfracht · Nadir-Anflug':auftrag,zeit,lieferung,
-   pirat,exponiert,...(lokal?{lokal}:{}),
+   owner:original.owner,ort:ortText,auftrag:pirat?(kampf?.aktiv?'Greift Frachter an':piratenAktivitaet[pirat.phase]):lokal?.blockiert?'Eisfracht · Docktermin verfehlt':lokal?'Eisfracht · Nadir-Anflug':auftrag,zeit,lieferung,
+   pirat,exponiert,unterFeuer,entwarnung,kampfereignisse,huelle,huelleMax:kampf?.huelleMax,...(lokal?{lokal}:{}),
    rueckfahrt:fracht?.phase==='rueck',nachAldera:reise&&ziel?.system==='aldera',
    rest:original.owner==='house'?w.restAktivminuten(s,sh.id):null,
    buchwert:w.buchwert(s,sh.id),
@@ -233,6 +238,15 @@ function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,t
   const summary=element('summary',buchwert?'Schiffsdetails':'Angebote · '+verfuegbar+' verfügbar');
   summary.dataset.sektorDetail='details';
   angebote.append(summary);
+  if(obj.huelle!==null&&obj.huelle!==undefined)
+   angebote.append(element('div','Hülle: '+fmt(obj.huelle)+' / '+fmt(obj.huelleMax),'sektor-buchwert'));
+  if(obj.kampfereignisse?.length){
+   const journal=element('ul');
+   for(const e of obj.kampfereignisse)
+    journal.append(element('li','Weltsekunde '+fmt(e.sekunde)+' · '+e.angreifer+' → '+e.ziel
+     +' · '+fmt(Math.floor(Math.sqrt(e.distanzQuadrat)))+' P · '+(e.schaden?'Hüllenschaden '+fmt(e.schaden):'Fehlschuss')));
+   angebote.append(journal);
+  }
   if(buchwert)angebote.append(element('div','Restbuchwert: '+fmt(obj.buchwert)+' ISK','sektor-buchwert'));
   for(const angebot of obj.angebote){
    if(angebot.ok){
@@ -272,7 +286,9 @@ function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,t
   b.append(element('strong',obj.name));
   if(untertitel)b.append(element('small',untertitel));
   if(obj.sicherheit)b.append(element('small',obj.sicherheit,'sektor-sicherheitsstufe'));
-  if(obj.exponiert)b.append(element('small','Exponierte Route','sektor-exposition'));
+  if(obj.unterFeuer)b.append(element('small','Unter Feuer','sektor-exposition'));
+  else if(obj.entwarnung)b.append(element('small','Angriff beendet'));
+  else if(obj.exponiert)b.append(element('small','Exponierte Route','sektor-exposition'));
   if(obj.zeit)b.append(element('small',obj.zeit.vergangen===0&&!obj.rueckfahrt?'Abflug':
    fmt(obj.zeit.vergangen)+' / '+fmt(obj.zeit.dauer)+' Flugminuten'));
   b.addEventListener('click',()=>waehlen(key(obj),true));

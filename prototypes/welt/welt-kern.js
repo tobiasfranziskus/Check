@@ -93,11 +93,15 @@ const PIR = Object.freeze({ owner:'piraten', pilot:'pilot_piraten', schiff:'pir0
 
 // Nur exakte, in diesem Lauf auditierte Forschungsstände sind wieder ladbar.
 const pirAnflugSaves = new Set();
+// F8-E: Reichweite, Intervall, Schaden und nominelle Hüllenpunkte.
+const PIR_WAFFE = Object.freeze({reichweite:260000, intervall:36, schaden:24, huelle:96,
+  rueckzug:24, stationsschutz:16000, winkel:24});
 const PIR_TOR = Object.freeze({x:96000,y:0,kurs:128,minuten:4});
 
 function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false, piraten = false) {
   const pirAnflug = piraten >= 2;
   const pirAbfang = piraten >= 3;
+  const pirKampf = piraten === 4;
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
@@ -494,6 +498,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         ankunft:0, ladung:{}, warten:0, ware:null, arbeit:0, escorte:null};
       s.stats.verkaeufe[PIR.schiff] = 0;
       s.kanon.piraten = {profil:Number(piraten), rng:s.rng, phase:'bereit', bis:0, kontakt:null};
+      if (pirKampf) s.kanon.piraten.kampf = {ereignisse:[], huellen:{}};
     }
     // Intersystemischer Verkehr ist in den letzten vier Minuten am Zieltor
     // oder beim Abflug im Korridorbericht sichtbar. Keine interpolierte Position.
@@ -556,20 +561,21 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         rueckkehrSchwelleISK:12,patrouillenRestminuten:aktiv?p.bis-s.tick:0,
         kandidaten};
     }
+    const verfolgt = (p) => ['abfangen','folgen','angriffsfenster'].includes(p.phase);
     const folgeabstand = 32000;
     const angreifbar = (s, t, sh) => t?.flug?.lage === 'frei' && t.system === sh.system
       && PIR.sicherheit[sh.system] !== 'sicher' && !m_core_anlage.verbraucht(s,t)
-      && ladungSumme(t) > 0;
+      && ladungSumme(t) > 0 && huellenzustand(s,t.id) > PIR_WAFFE.rueckzug;
     function abfangen(s, p, sh, befehl) {
       const b = sh.flug, ziel = s.ships[p.kontakt?.id];
-      if (['abfangen','folgen','angriffsfenster'].includes(p.phase)) {
+      if (verfolgt(p)) {
         if (!angreifbar(s,ziel,sh) || b.ziel?.id !== ziel.id
           || (ziel.flug.x-b.x)**2+(ziel.flug.y-b.y)**2 > reichweite2) {
           return false;
         }
         const dx=ziel.flug.x-b.x, dy=ziel.flug.y-b.y;
         // F8-E Forschungsreichweite. Das Fenster beschreibt Aufschaltung und Ort.
-        p.phase = b.erfassung?.id === ziel.id && dx*dx+dy*dy <= 260000**2
+        p.phase = b.erfassung?.id === ziel.id && dx*dx+dy*dy <= PIR_WAFFE.reichweite**2
           ? 'angriffsfenster' : 'folgen';
         return true;
       }
@@ -588,6 +594,55 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         p.phase = 'abfangen';
       }
       return true;
+    }
+    function huellenzustand(s,id) {
+      return (pirKampf && s.kanon.piraten.kampf.huellen[id]) || PIR_WAFFE.huelle;
+    }
+    function kampfschritt(s, sekunde) {
+      const p = s.kanon.piraten, a = s.ships[PIR.schiff], t = s.ships[p.kontakt?.id];
+      if (!verfolgt(p) || !piratenSchiff(s,a)
+        || a.flug.lage !== 'frei' || !angreifbar(s,t,a)
+        || a.flug.erfassung?.id !== t.id || s.tick >= p.bis
+        || s.kanon.flugdienst[a.id]?.gestrandet || s.owners[konto]?.cash <= 12
+        || m_core_anlage.verbraucht(s,a)) return;
+      const k = p.kampf, vorher = k.ereignisse.at(-1);
+      if (vorher && sekunde-vorher.sekunde < PIR_WAFFE.intervall) return;
+      const {x,y} = t.flug, dx=x-a.flug.x, dy=y-a.flug.y;
+      const distanzQuadrat = dx*dx+dy*dy;
+      const st = FLUG.DATEN.systeme[t.system].station;
+      if (distanzQuadrat > PIR_WAFFE.reichweite**2
+        || (x-st.x)**2+(y-st.y)**2 <= PIR_WAFFE.stationsschutz**2) return;
+      const richtung = FLUG.richtungZu(dx,dy);
+      const differenz = Math.abs(richtung-a.flug.kurs);
+      const winkel = Math.min(differenz,256-differenz);
+      const huelleVor = huellenzustand(s,t.id);
+      const schaden = winkel <= PIR_WAFFE.winkel ? Math.min(PIR_WAFFE.schaden,huelleVor-1) : 0;
+      if (schaden) k.huellen[t.id] = huelleVor-schaden;
+      k.ereignisse.push({sekunde,angreifer:a.id,ziel:t.id,system:a.system,
+        distanzQuadrat,winkel,waffe:'gefeuert',schaden,huelle:huelleVor-schaden});
+    }
+    function kampfaudit(s,p) {
+      if (!pirKampf) return p.kampf === undefined;
+      const k = p.kampf;
+      if (!k || !Array.isArray(k.ereignisse) || !k.huellen || Array.isArray(k.huellen)) return false;
+      const huellen = {};
+      let vorher = -PIR_WAFFE.intervall;
+      for (const e of k.ereignisse) {
+        const t = e && s.ships[e.ziel];
+        if (!t || t.klasse !== 'frachter' || t.owner === PIR.owner || e.angreifer !== PIR.schiff
+          || e.system !== PIR.system || e.waffe !== 'gefeuert'
+          || !ganz(e.sekunde) || e.sekunde-vorher < PIR_WAFFE.intervall
+          || e.sekunde > s.tick*N+s.flug.schritt || !ganz(e.distanzQuadrat)
+          || e.distanzQuadrat > PIR_WAFFE.reichweite**2 || !ganz(e.winkel) || e.winkel > 128)
+          return false;
+        const hp = huellen[e.ziel] ?? PIR_WAFFE.huelle;
+        if (hp <= PIR_WAFFE.rueckzug || e.schaden !== (e.winkel <= PIR_WAFFE.winkel ? PIR_WAFFE.schaden : 0)
+          || e.huelle !== hp-e.schaden) return false;
+        if (e.schaden) huellen[e.ziel] = e.huelle;
+        vorher = e.sekunde;
+      }
+      return Object.keys(huellen).length === Object.keys(k.huellen).length
+        && Object.entries(huellen).every(([id,hp])=>k.huellen[id]===hp);
     }
     function minute(s) {
       const p = s.kanon.piraten, sh = s.ships[PIR.schiff];
@@ -648,7 +703,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       const eigene = Object.values(s.ships).filter(x => x.owner === PIR.owner);
       if (!piraten) return p === undefined && !sh && !eigene.length
         && !s.owners[PIR.owner] && !s.owners[PIR.pilot] && !s.owners[konto];
-      if (!p || p.profil !== Number(piraten) || !ganz(p.rng) || p.rng > 0xffffffff
+      if (!p || !kampfaudit(s,p) || p.profil !== Number(piraten) || !ganz(p.rng) || p.rng > 0xffffffff
         || !ganz(p.bis) || p.bis > s.tick + 12
         || !['bereit','auslaufen','patrouille','beobachten','folgen','rueckkehr',
              'gestrandet','keinKapital','verschlissen',...(pirAbfang?['abfangen','angriffsfenster']:[])].includes(p.phase)
@@ -660,7 +715,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         || s.stats.verkaeufe[sh.id] !== 0 || Object.hasOwn(s.sollflotte,PIR.owner)
         || s.queue.some(cmd => cmd?.owner === PIR.owner || cmd?.schiff === PIR.schiff)
         || s.initialSupply !== PIR.kontrollgeld + PIR.startkasse) return false;
-      if (pirAbfang && ['abfangen','folgen','angriffsfenster'].includes(p.phase)
+      if (pirAbfang && verfolgt(p)
         && (!p.kontakt || p.kontakt.art !== 'nah' || !s.ships[p.kontakt.id]
           || (s.flug.schritt === 0 && (sh.flug.ziel?.id !== p.kontakt.id
             || sh.flug.erfassung?.id !== p.kontakt.id)))) return false;
@@ -680,7 +735,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       return lohn === pilot.cash && lohn === (s.kanon.verschleiss[sh.id] || 0) * KANON.flug.lohnJeMinute
         && o.cash === PIR.startkasse - ein + rueck && (k?.cash || 0) === ein - lohn - rueck;
     }
-    return {start,minute,lage,audit,zielbewertung};
+    return {start,minute,lage,audit,zielbewertung,kampfschritt,huellenzustand,verfolgt};
   })();
 
   function merke(engpass, tick, grund) {
@@ -2402,6 +2457,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     pruefeForm(state);
     const type = cmd && cmd.type;
     if (pirAnflug && anflugBlockiert(state)) return {ok:false,type,reason:'PIR-2d: Docktermin verfehlt'};
+    if (pirKampf && ['shipFreightIce','shipFreightGateIce'].includes(type) && state.ships[cmd.schiff]
+      && m_core_piraten.huellenzustand(state,cmd.schiff) <= PIR_WAFFE.rueckzug)
+      return {ok:false,type,reason:'PIR-3: beschädigte Hülle nicht für einen neuen Einsatz freigegeben'};
     if (piraten && (cmd?.owner === PIR.owner || cmd?.schiff === PIR.schiff))
       return {ok:false,type,reason:'PIR-1: Fraktionsschiff gehört zur NPC-Patrouille'};
     if(jaeger&&type==='stationBuildFighter')
@@ -2514,7 +2572,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     const pruefen = lokal && lokal.ankunft === state.tick+1 && !FLUG.angedocktAn(lokal,W.zielStation);
     const vorher = pruefen && Object.values(state.ships).filter(sh => sh.flug)
       .map(sh => [sh,JSON.parse(JSON.stringify(sh.flug))]);
+    const sekunde = state.tick*N + state.flug.schritt + 1;
     if (!FLUG.schritt(state, FLUG.DATEN, sortierteSchiffIds)) {
+      if (pirKampf) m_core_piraten.kampfschritt(state,sekunde);
       m_core_flugplan.plan(state, false, false); return null;
     }
     if (pruefen && !FLUG.angedocktAn(lokal,W.zielStation)) {
@@ -2523,6 +2583,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       state.kanon.piraten.ankunftBlockiert = true;
       return [];
     }
+    if (pirKampf) m_core_piraten.kampfschritt(state,sekunde);
     return wirtschaftsMinute(state);
   }
   function teilschritt(state) { return pirAnflug && anflugBlockiert(state) ? [] : teilschrittIntern(state); }
@@ -2532,7 +2593,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (state.flug.schritt === 0) {
       m_core_flugplan.plan(state, true, false);
       // Bitgleiche Abkürzung: ruhende Körper ändern sich in 60 Teilschritten nicht.
-      if (m_core_flugplan.alleRuhend(state)) return wirtschaftsMinute(state);
+      if (!(pirKampf && m_core_piraten.verfolgt(state.kanon.piraten))
+        && m_core_flugplan.alleRuhend(state)) return wirtschaftsMinute(state);
     }
     // Die bis zu 60 Flugschritte benutzen nur bewegliche Koerper und Schiffe,
     // die der Dock-Flugplan innerhalb dieser Minute noch abdocken lassen kann.
@@ -2665,6 +2727,14 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       const sh=lokalerAnflug(s);
       return sh ? {id:sh.id,x:sh.flug.x,y:sh.flug.y,lage:sh.flug.lage,blockiert:anflugBlockiert(s)} : null;
     }} : {}),piratenZielbewertung:m_core_piraten.zielbewertung} : {}), sicherheitslage:m_core_piraten.lage,
+    ...(pirKampf ? {pirKampfLage:s=>({
+      aktiv:m_core_piraten.verfolgt(s.kanon.piraten)
+        && s.kanon.piraten.kampf.ereignisse.at(-1)?.ziel===s.kanon.piraten.kontakt?.id
+        && s.tick*N+s.flug.schritt-s.kanon.piraten.kampf.ereignisse.at(-1)?.sekunde<=N,
+      ziel:s.kanon.piraten.kontakt?.id ?? null,
+      huelleMax:PIR_WAFFE.huelle, huellen:{...s.kanon.piraten.kampf.huellen},
+      ereignisse:s.kanon.piraten.kampf.ereignisse.slice(-5).map(e=>({...e}))
+    })} : {}),
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
     torPruefen: m_core_torfreigabe.pruefen, torFrachtPruefen: m_core_torfreigabe.darfFracht,
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,
@@ -2926,6 +2996,7 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   erstellenJ3:(kapital={})=>erstellen(kapital,true,true,true),
   erstellenJ4b:(kapital={})=>erstellen(kapital,true,true,true,true),
   erstellenJ4c:(kapital={})=>erstellen(kapital,true,true,true,true,true),
+  erstellenPirKampf:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,4),
   erstellenPirAbfang:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,3),
   erstellenPirAnflug:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,2),
   erstellenPiraten:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,true),

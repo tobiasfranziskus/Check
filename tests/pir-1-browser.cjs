@@ -61,7 +61,7 @@ async function pruefen(browser,url,width,height){
   assert.equal(await marke.count(),0);assert.equal(await save(standard),normal);
   await page.evaluate(()=>{
    const j=J8KonzernSitzung.erstellen();
-   j.startenPiraten(true,true);
+   j.startenPiraten(true,'kampf');
    const w=j.weltReferenz();
    for(const id of ['buy-st_aldera-frachter','buy-st_aldera-miner']){
     if(!j.ausfuehren(id).ok)throw Error('Forschungskauf fehlgeschlagen');
@@ -86,14 +86,27 @@ async function pruefen(browser,url,width,height){
   const tor=await position();
   assert.equal(await page.evaluate(()=>window.testAnflugMinute()),0);
   assert.notEqual(await position(),tor);
+  assert.match(await frachter.textContent(),/Unter Feuer/);
+  assert.match(await page.locator('.sektor-pirat').textContent(),/Greift Frachter an/);
   await frachter.tap({timeout:8000});
   assert.match(await page.locator('#sektor-details').textContent(),/Nadir-Anflug/);
+  await tap('#sektor-details summary');
+  assert.match(await page.locator('#sektor-details').textContent(),/Hülle: 72 \/ 96/);
   assert.equal(await page.evaluate(()=>window.testAnflugMinute()),0);
+  assert.match(await frachter.textContent(),/Angriff beendet/);
+  assert.doesNotMatch(await frachter.textContent(),/Unter Feuer/);
   assert.equal(await page.evaluate(()=>window.testAnflugMinute()),0);
   assert.equal(await page.evaluate(()=>window.testAnflugMinute()),50);
   assert.equal(await frachter.count(),0);
   assert.equal(await save(standard),normal);
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.goto(new URL('prototypes/spiel/index.html?pir-forschung=kampf',url).href);
+  await tap('#neues-spiel');
+  await tap('label[for="pir-start"]');
+  await tap('#karriere-starten');
+  assert.match(await page.locator('#mode-indicator').textContent(),/PIR-3/);
+  assert.equal(await save(standard),normal);
+  assert.equal(await save(pir),text);
   assert.deepEqual(errors,[]);
   console.log(JSON.stringify({browser:browserName,width,height,hash:w.hash(result),lohn:result.owners.pilot_piraten.cash}));
  }finally{await context.close();}

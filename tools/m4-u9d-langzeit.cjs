@@ -7,8 +7,36 @@ const {lauf}=require('./m4-management-szenarien.cjs');
 const {restAktivMinuten,vorpruefung}=require('./m4-u9-vertragsvorsorge.cjs');
 const {SZENARIEN,pruefen}=require('./w6-szenarien.cjs');
 
+function leerstornoProbe(welt,s){
+ const a=s.w3?.auftrag,i=s.kanon.industrieErz,mi=s.ships[a?.industrieMiner];
+ if(a?.phase!=='vorbestellt'||i?.phase!=='aktiv'||a.industrieMiner!==i.miner||
+    a.schiff!==i.frachter||!mi||mi.owner!=='npc3'||!welt.stillgelegt(s,mi.id)||
+    mi.flug?.lage!=='angedockt'||mi.system!=='aldera'||Object.values(mi.ladung).some(n=>n!==0)||
+    s.erzpilotVertraege?.[mi.id]||i.erzAngenommen||i.werftVerwendet||a.gearbeitet!==0)
+   return {ok:false,reason:'Kein unbegonnener leerer Stilllegungsfall'};
+ const original=welt.save(s),q=welt.load(original),carrier=i.carrier??'transport';
+ const reserve=s.owners.k7_werft_treuhand?.cash??0;
+ const r=welt.execute(q,{type:'industrialOreCancel',owner:'st_nadir'});
+ assert.equal(welt.save(s),original);
+ if(!r.ok){assert.equal(welt.save(q),original);return {ok:false,reason:r.reason};}
+ assert.equal(q.w3.auftrag,null);assert.equal(q.kanon.industrieErz.phase,'storniert');
+ assert.equal(q.owners.st_nadir.cash,s.owners.st_nadir.cash+a.gesamt);
+ assert.equal(q.owners[carrier].cash,s.owners[carrier].cash+a.arbeitsKosten);
+ assert.equal(q.owners.werft_extern.cash,s.owners.werft_extern.cash+reserve);
+ assert.equal(q.owners.w3_kauf_treuhand.cash,0);
+ assert.equal(q.owners.w3_arbeit_treuhand.cash,0);
+ assert.equal(q.owners.k7_werft_treuhand?.cash??0,0);
+ assert.equal(q.w3.frachtUmsatz,s.w3.frachtUmsatz);
+ assert.equal(q.w3.arbeitsKosten,s.w3.arbeitsKosten);
+ assert.equal(q.w3.geliefert,s.w3.geliefert);
+ assert.deepEqual(q.ledger,s.ledger);assert.deepEqual(pruefen(welt,q),[]);
+ const json=welt.save(q);assert.equal(welt.save(welt.load(json)),json);
+ return {ok:true,json,miner:mi.id,carrier,freigegeben:a.gesamt+a.arbeitsKosten+reserve,
+   vor:welt.hash(s),nach:welt.hash(q)};
+}
+
 function simulation(sz,tage,seed,mode,vorlauf){
- const stats={vorsorge:0,abrechnung:0,abgelehnt:0,belege:[],gruende:{}};
+ const stats={vorsorge:0,abrechnung:0,abgelehnt:0,belege:[],gruende:{},...(mode==='leerstorno'?{leerstorno:0}:{})};
  const add=(obj,key)=>{obj[key]=(obj[key]||0)+1;};
  // An explicit override explores an existing policy parameter, not a new rule.
  const scenario=vorlauf===undefined?sz:{...sz,politik:{...sz.politik,ersatzVorlaufProzent:vorlauf}};
@@ -31,7 +59,16 @@ function simulation(sz,tage,seed,mode,vorlauf){
          }
        }
      }
-     if(mode!=='kombiniert'||a?.phase!=='vorbestellt'||i?.phase!=='aktiv'||
+     if(mode==='leerstorno'&&a?.phase==='vorbestellt'&&i?.phase==='aktiv'){
+       const p=leerstornoProbe(welt,s);
+       if(p.ok){
+         stats.leerstorno++;
+         const {json,...beleg}=p;
+         stats.belege.push({typ:'leerstorno',tick:s.tick,...beleg});
+         return json;
+       }
+     }
+     if(!['kombiniert','leerstorno'].includes(mode)||a?.phase!=='vorbestellt'||i?.phase!=='aktiv'||
         s.tick-letzteProbe<1440)return;
      const mi=s.ships[a.industrieMiner];
      if(!mi||!welt.stillgelegt(s,mi.id)||mi.flug?.lage!=='angedockt'||!(mi.ladung.erz>0))return;
@@ -60,12 +97,12 @@ function simulation(sz,tage,seed,mode,vorlauf){
     entscheidungen:end.entscheidungen,huellen:end.huellen,kassen:end.kassen,
     folgefahrten:report.folgefahrten}};
 }
-module.exports={simulation};
+module.exports={simulation,leerstornoProbe};
 if(require.main===module){
  const [id='S02',dauer='90',seed='42',mode='kombiniert',vorlauf='original',replay='0']=process.argv.slice(2);
  const sz=SZENARIEN.find(x=>x.id===id);
  assert.ok(sz&&Number.isSafeInteger(+dauer)&&+dauer>0&&+dauer<=730&&Number.isSafeInteger(+seed));
- assert.ok(['original','vorsorge','kombiniert'].includes(mode));
+ assert.ok(['original','vorsorge','kombiniert','leerstorno'].includes(mode));
  assert.ok(vorlauf==='original'||['40','60','80'].includes(vorlauf));
  const args=[sz,+dauer,+seed,mode,vorlauf==='original'?undefined:+vorlauf];
  const result=simulation(...args);

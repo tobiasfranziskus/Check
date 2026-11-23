@@ -5,6 +5,8 @@ const path=require('node:path');
 const http=require('node:http');
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const {engpassNach48}=require('./m4-u5-engpass-ablauf.cjs');
+const J8=require('../prototypes/verbund/konzern-session.js');
+const OLD=require('../prototypes/w5ac/session.js');
 
 const root=path.resolve(__dirname,'..');
 const slot='aphros-void:spielerkarriere:regel204:v1';
@@ -61,8 +63,58 @@ async function pruefen(browser,art,width,height,json){
  }finally{await ctx.close();}
 }
 
+// Isolated original paid W5 fixture, not a fabricated market or a blind test.
+function werftStand(){
+ const j=J8.erstellen();j.starten195(OLD.create(42,'private195').export(),true);
+ const w=j.weltReferenz(),s=j.zustandReferenz();
+ w.politikSetzen(s,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
+ w.npcAutoSetzen(s,true);w.npcSiliziumSetzen(s,true);
+ for(let i=0;i<5;i++)j.weiterspielen(60);
+ assert.equal(j.ausfuehren('buy-st_nadir-frachter').ok,true);
+ assert.equal(j.ausfuehren('buy-st_aldera-miner').ok,true);
+ const id=Object.values(j.zustandReferenz().ships).find(sh=>sh.owner==='house'&&sh.klasse==='frachter').id;
+ return {id,json:j.exportieren()};
+}
+async function pruefeUeberfuehrung(browser,art,width,height,fixture){
+ const ctx=await browser.newContext({viewport:{width,height},hasTouch:true});
+ const page=await ctx.newPage(),fehler=[];
+ page.on('pageerror',e=>fehler.push(String(e)));
+ const el=id=>page.locator('#'+id);
+ const save=()=>page.evaluate(key=>localStorage.getItem(key),slot);
+ try{
+  await page.goto('http://127.0.0.1:'+server.address().port+'/');
+  await page.getByRole('link',{name:/^Wirtschaftsmanager/}).tap();
+  await page.waitForURL('**/prototypes/spiel/index.html');
+  await el('import-datei').setInputFiles({name:'m4-werft.json',mimeType:'application/json',buffer:Buffer.from(fixture.json)});
+  await el('manager-transport-status').waitFor({state:'visible'});
+  assert.equal(await save(),fixture.json);
+  assert.match(await el('manager-transport-aktion').innerText(),/Nadir-Frachter bezahlt nach Aldera überführen/);
+  assert.match(await el('p3-handelsaktion').innerText(),/Frachter nach Aldera überführen/);
+  assert.equal(await el('manager-transport-aktion').isEnabled(),true);
+  const button=el('manager-transport-aktion');
+  await button.scrollIntoViewIfNeeded();
+  if(width===390){await button.focus();await page.keyboard.press('Enter');}
+  else await button.tap();
+  await page.waitForFunction(({key,id})=>JSON.parse(localStorage.getItem(key)).w5ac.active?.id===id,{key:slot,id:fixture.id});
+  assert.match(await el('p3-handelsanleitung').innerText(),/Frachter ist unterwegs nach Aldera/);
+  assert.doesNotMatch(await el('p3-handelsanleitung').innerText(),/Miner arbeitet/);
+  const pending=await save();
+  await page.reload();
+  await el('fortsetzen').tap();
+  assert.equal(await save(),pending);
+  await el('p3-handelsaktion').tap();
+  await page.waitForFunction(({key,id})=>JSON.parse(localStorage.getItem(key)).w5ac.completed.some(t=>t.id===id&&t.owner==='house'&&t.kosten===60),{key:slot,id:fixture.id});
+  const final=JSON.parse(await save());
+  assert.equal(final.ships[fixture.id].system,'aldera');
+  assert.equal(final.ships[fixture.id].heimat,'nadir');
+  assert.equal(Object.values(final.owners).reduce((n,o)=>n+o.cash,0),33000);
+  assert.deepEqual(fehler,[]);
+  console.log(art,width,height,'M4_OWNED_CARRIER_BROWSER_OK',fixture.id);
+ }finally{await ctx.close();}
+}
+
 (async()=>{
- const json=engpassNach48().exportieren();
+ const json=engpassNach48().exportieren(),fixture=werftStand();
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  let browser;
  try{
@@ -70,8 +122,10 @@ async function pruefen(browser,art,width,height,json){
   browser=art==='webkit'?await webkit.launch():await chromium.launch({
    executablePath:process.env.S1_CHROMIUM_PATH||undefined,args:['--no-sandbox']
   });
-  for(const [width,height] of [[1180,820],[1024,768],[820,1180],[390,844]])
+  for(const [width,height] of [[1180,820],[1024,768],[820,1180],[390,844]]){
    await pruefen(browser,art,width,height,json);
+   await pruefeUeberfuehrung(browser,art,width,height,fixture);
+  }
  }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));

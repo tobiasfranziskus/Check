@@ -1,5 +1,8 @@
 # Aphros Void – verbindliche Produkt-Roadmap
 
+**M4-U9a/U9b [FORSCHUNG, 23.11.2026]:** U9a #579: 30-Tage-Vergleich 334 statt 137 Eisfrachten, 7 statt 3 Erzfrachten und 307 statt 1.390 ISK gebunden (2/2 Versuche bestanden). U9b: geordnete Teilladungsabrechnung ausschließlich auf auditierter Node-Spielstandkopie mit expliziter Zustimmung aller Vertragsparteien; eigene CI offen. U9c: rechtmäßig finanziertes Ersatzschiff und bezahlte Folgeaufträge. Details: [U9-Fachbericht](M4_U9_VERTRAGSVORSORGE.md). Kein Main-Merge.
+
+
 **M4-U9 [FORSCHUNG]:** [Vertragsvorsorge und Teilabwicklung](M4_U9_VERTRAGSVORSORGE.md) auf Basis #578. Zuerst originalbefehlsbasierte Vorprüfung und kontrollierte S02-Gegenprobe, dann freiwillige gedeckte Abwicklung bereits geförderter Teilladungen. Keine produktive Regelaktivierung vor Abnahme.
 
 

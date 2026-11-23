@@ -91,7 +91,12 @@ const PIR = Object.freeze({ owner:'piraten', pilot:'pilot_piraten', schiff:'pir0
   sicherheit:Object.freeze({aldera:'sicher',cyris:'sicher',veldra:'sicher',
     orion:'umkaempft',nadir:'umkaempft',dravos:'gesetzlos',meridian:'gesetzlos'}) });
 
+// Nur exakte, in diesem Lauf auditierte Forschungsstände sind wieder ladbar.
+const pirAnflugSaves = new Set();
+const PIR_TOR = Object.freeze({x:96000,y:0,kurs:128,minuten:4});
+
 function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false, piraten = false) {
+  const pirAnflug = piraten === 2;
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
@@ -219,6 +224,44 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     return { restAktivminuten, aktiv, abschreibung, buchwert, verbraucht, stillgelegt, huellen, anlagewert, ruecklage };
   })();
 
+  // Die Freigabe ist eine Eigenschaft der Weltinstanz. Ein Vertrag kann
+  // weder über seine JSON-Felder noch durch einen Spielerbefehl freigeschaltet werden.
+  function nadirVertrag(s) {
+    if (!pirAnflug) return null;
+    const a = s.w5n?.frachtauftrag;
+    const b = s.kanon.spielerFrachten?.auftraege.at(-1);
+    const sh = a && s.ships[a.schiff];
+    if (!sh || sh.owner !== rules.economy.start.owner || sh.klasse !== 'frachter'
+      || !s.kanon.spielerFrachterKaeufe?.some(x => x.id === sh.id)
+      || !b || b.schiff !== sh.id || b.end !== null || b.geliefert !== null
+      || a.phase !== 'hin' || sh.phase !== 'reise' || sh.auftrag !== 'eisfracht'
+      || sh.ziel !== W.zielStation || sh.ladung.eis !== W.charge
+      || a.zeit !== W.flugMinuten || a.menge !== W.charge
+      || a.eis !== W.charge * W.eisPreis || a.fracht !== 2 * a.zeit * W.frachtJeMinute
+      || a.arbeit !== 2 * a.zeit * W.fliegerLohn
+      || s.tick !== b.start + a.gearbeitet || sh.ankunft !== b.start + a.zeit
+      || s.owners.w5n_fracht_kauf?.cash !== a.eis + a.fracht
+      || s.owners.w5n_fracht_arbeit?.cash !== a.arbeit - a.gearbeitet * W.fliegerLohn)
+      return null;
+    return sh;
+  }
+  function lokalerAnflug(s) {
+    const sh = nadirVertrag(s);
+    return sh && sh.system === PIR.system && sh.ankunft - s.tick >= 1
+      && sh.ankunft - s.tick <= PIR_TOR.minuten ? sh : null;
+  }
+  function anflugBeginnen(s) {
+    const sh = nadirVertrag(s);
+    if (!sh || sh.system !== 'aldera' || sh.flug.lage !== 'transit'
+      || sh.ankunft - s.tick !== PIR_TOR.minuten) return;
+    sh.system = PIR.system;
+    sh.flug = {...FLUG.koerperAngedockt(sh.system), x:PIR_TOR.x, y:PIR_TOR.y,
+      kurs:PIR_TOR.kurs, sollKurs:PIR_TOR.kurs, lage:'frei', anker:null};
+    const r = FLUG.ausfuehren(s,{type:'shipDock',owner:sh.owner,schiff:sh.id,station:W.zielStation});
+    if (!r.ok) throw Error('PIR-2d: ungültiger Toranflug: ' + r.reason);
+  }
+  const anflugBlockiert = (s) => s.kanon.piraten?.ankunftBlockiert === true;
+
   const pilotFuer = (sh) => piraten && sh.id === PIR.schiff && sh.owner === PIR.owner
     ? PIR.pilot : KANON.piloten[sh.owner];
   const piratenSchiff = (state, sh) => piraten && state.kanon.piraten
@@ -240,7 +283,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           sh.flug = FLUG.koerperAngedockt(sh.system);
         }
         const b = sh.flug;
-        if (sh.phase === 'reise' && b.lage !== 'transit') {
+        if (sh.phase === 'reise' && b.lage !== 'transit' && sh !== lokalerAnflug(state)) {
           if (b.lage !== 'angedockt') throw Error('K1: Transit nur aus dem Dock ' + id);
           sh.flug = { ...FLUG.koerperAngedockt(sh.system), lage: 'transit', anker: null };
         } else if (sh.phase !== 'reise' && b.lage === 'transit') {
@@ -449,7 +492,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         system:PIR.system, heimat:PIR.system, phase:'dock', auftrag:'pirat', ziel:null,
         ankunft:0, ladung:{}, warten:0, ware:null, arbeit:0, escorte:null};
       s.stats.verkaeufe[PIR.schiff] = 0;
-      s.kanon.piraten = {profil:1, rng:s.rng, phase:'bereit', bis:0, kontakt:null};
+      s.kanon.piraten = {profil:pirAnflug ? 2 : 1, rng:s.rng, phase:'bereit', bis:0, kontakt:null};
     }
     // Intersystemischer Verkehr ist in den letzten vier Minuten am Zieltor
     // oder beim Abflug im Korridorbericht sichtbar. Keine interpolierte Position.
@@ -482,7 +525,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         wasser:W.wasserPreis,material:rules.w5?.materialPreis};
       const kandidaten = aktiv ? kontakte(s,sh).filter(t => t.klasse === 'frachter')
         .map(t => {
-          const tor = torverkehr(s,t,sh.system);
+          const tor = t.flug.lage === 'transit' && torverkehr(s,t,sh.system);
           const ladung = Object.entries(t.ladung).filter(([,n]) => n > 0)
             .sort(([a],[b]) => a < b ? -1 : a > b ? 1 : 0)
             .map(([ware,menge]) => {
@@ -560,14 +603,15 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       return {stufen, kontakt:{id:sh.id, system:sh.system, phase:p.phase,
         x:sh.flug.x, y:sh.flug.y, ziel:sh.flug.ziel && {...sh.flug.ziel}, sicht:p.kontakt && {...p.kontakt}},
         exponiert:aktiv ? Object.values(s.ships).filter(t => t.owner === 'house'
-          && torverkehr(s,t,sh.system)).map(t => t.id) : []};
+          && (torverkehr(s,t,sh.system) || (pirAnflug && t === lokalerAnflug(s)
+            && t.flug.lage === 'frei'))).map(t => t.id) : []};
     }
     function audit(s) {
       const p = s.kanon.piraten, sh = s.ships[PIR.schiff];
       const eigene = Object.values(s.ships).filter(x => x.owner === PIR.owner);
       if (!piraten) return p === undefined && !sh && !eigene.length
         && !s.owners[PIR.owner] && !s.owners[PIR.pilot] && !s.owners[konto];
-      if (!p || p.profil !== 1 || !ganz(p.rng) || p.rng > 0xffffffff
+      if (!p || p.profil !== (pirAnflug ? 2 : 1) || !ganz(p.rng) || p.rng > 0xffffffff
         || !ganz(p.bis) || p.bis > s.tick + 12
         || !['bereit','auslaufen','patrouille','beobachten','folgen','rueckkehr',
              'gestrandet','keinKapital','verschlissen'].includes(p.phase)
@@ -583,7 +627,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       const dienst = s.kanon.flugdienst[sh.id];
       if (!o || o.id !== PIR.owner || o.kind !== 'piratenfraktion' || !pilot
         || pilot.id !== PIR.pilot || pilot.kind !== 'piratenpilot'
-        || (sh.flug.lage === 'angedockt') !== !dienst
+        || (!dienst && sh.flug.lage !== 'angedockt')
+        || (dienst && sh.flug.lage === 'angedockt' && !(pirAnflug && s.flug.schritt > 0))
         || (dienst && (dienst.konto !== konto || !k || (dienst.gestrandet ? k.cash !== 0 : k.cash < 1)))) return false;
       const buch = s.kanon.buch.summen;
       const arten = ['flugreserve|'+PIR.owner+'|'+konto,'fluglohn|'+konto+'|'+PIR.pilot,
@@ -1104,7 +1149,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           if (++aktiv !== 1 || i !== f.auftraege.length - 1 || !a
             || a.schiff !== x.schiff || !ganz(a.gearbeitet)
             || a.gearbeitet >= dauer || s.tick !== x.start + a.gearbeitet
-            || sh.phase !== 'reise' || sh.flug?.lage !== 'transit'
+            || sh.phase !== 'reise' || (sh.flug?.lage !== 'transit' && sh !== lokalerAnflug(s))
             || x.geliefert !== (a.phase === 'rueck' ? x.start + x.zeit : null))
             return false;
           lohn += a.gearbeitet * W.fliegerLohn;
@@ -1848,7 +1893,19 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           ||(i.phase==='geliefert'&&a?.industrieMiner===i.miner)
           ||(i.phase==='angebot'&&a?.industrieMiner)) fehler.push('K7-Industrieerzkette/Signaturen');
       }
-      const flug = FLUG.audit(state);
+      const lokal = lokalerAnflug(state);
+      const flug = FLUG.audit(state, FLUG.DATEN, lokal?.id);
+      const auftrag = state.w5n.frachtauftrag;
+      const hin = auftrag?.phase === 'hin' && state.ships[auftrag.schiff];
+      if (pirAnflug && hin && hin.owner === rules.economy.start.owner
+        && (hin.system !== 'aldera' || hin.ankunft - state.tick <= PIR_TOR.minuten)
+        && (!lokal || !['frei','andocken','angedockt'].includes(lokal.flug.lage)))
+        fehler.push('PIR-2d: fehlender lokaler Vertragskörper');
+      if (state.kanon.piraten?.ankunftBlockiert !== undefined
+        && (!pirAnflug || !anflugBlockiert(state) || !lokal
+          || lokal.ankunft !== state.tick+1 || state.flug.schritt !== N-1
+          || FLUG.angedocktAn(lokal,W.zielStation)))
+        fehler.push('PIR-2d: ungültige Ankunftsunterbrechung');
       if (!flug.ok) fehler.push('Flug: ' + flug.grund);
       const wirtschaft = kern.audit(state);
       if (!wirtschaft.ok) fehler.push('Wirtschaft: ' + Object.keys(wirtschaft).filter((x) => wirtschaft[x] && wirtschaft[x].ok === false).join(','));
@@ -1899,7 +1956,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         const sh = state.ships[id];
         if (hat(FLUG.DATEN.klassen, sh.klasse) && !sh.flug) fehler.push('Körper fehlt ' + id);
         if (sh.klasse === 'frachter' && sh.flug && !['angedockt', 'transit'].includes(sh.flug.lage)
-          && (sh.owner !== rules.economy.start.owner || sh.system !== 'aldera'
+          && sh !== lokal && (sh.owner !== rules.economy.start.owner || sh.system !== 'aldera'
             || sh.phase !== 'dock' || sh.auftrag !== 'halten' || ladungSumme(sh) !== 0))
           fehler.push('Unzulässiger Frachter im Freiflug ' + id);
         if (!ganz(k.verschleiss[id] ?? 0)) fehler.push('Verschleiß ' + id);
@@ -2303,6 +2360,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   function execute(state, cmd) {
     pruefeForm(state);
     const type = cmd && cmd.type;
+    if (pirAnflug && anflugBlockiert(state)) return {ok:false,type,reason:'PIR-2d: Docktermin verfehlt'};
     if (piraten && (cmd?.owner === PIR.owner || cmd?.schiff === PIR.schiff))
       return {ok:false,type,reason:'PIR-1: Fraktionsschiff gehört zur NPC-Patrouille'};
     if(jaeger&&type==='stationBuildFighter')
@@ -2371,7 +2429,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     const vorherEislohn = state.w5n.frachtLohn;
     const vorherEisgeliefert = state.w5n.eisGeliefert;
     const vorherEisgebuehr = state.w5n.frachtUmsatz;
-    const ergebnis = kern.step(state, rules);
+    const lokal = lokalerAnflug(state);
+    const ankunft = lokal && lokal.ankunft === state.tick + 1 ? lokal : null;
+    const ergebnis = kern.step(state, rules, pirAnflug);
+    if (ankunft) ankunft.flug = {...FLUG.koerperAngedockt(ankunft.system),lage:'transit',anker:null};
     m_core_spielerfracht.minute(state, vorherEisauftrag, vorherEislohn,
       vorherEisgeliefert, vorherEisgebuehr);
     if(k7&&state.kanon.industrieErz?.phase==='aktiv'
@@ -2397,6 +2458,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     m_core_disponent.schritt(state);
     m_core_flugplan.koerperSync(state);
     m_core_flugplan.plan(state, true, true);
+    if (pirAnflug) anflugBeginnen(state);
     if (piraten) m_core_piraten.minute(state);
     return ergebnis;
   }
@@ -2407,14 +2469,25 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   function teilschrittIntern(state, sortierteSchiffIds = null) {
     pruefeForm(state);
     if (state.flug.schritt === 0) m_core_flugplan.plan(state, true, false);
+    const lokal = state.flug.schritt === N-1 ? lokalerAnflug(state) : null;
+    const pruefen = lokal && lokal.ankunft === state.tick+1 && !FLUG.angedocktAn(lokal,W.zielStation);
+    const vorher = pruefen && Object.values(state.ships).filter(sh => sh.flug)
+      .map(sh => [sh,JSON.parse(JSON.stringify(sh.flug))]);
     if (!FLUG.schritt(state, FLUG.DATEN, sortierteSchiffIds)) {
       m_core_flugplan.plan(state, false, false); return null;
     }
+    if (pruefen && !FLUG.angedocktAn(lokal,W.zielStation)) {
+      for (const [sh,flug] of vorher) sh.flug = flug;
+      state.flug.schritt = N-1;
+      state.kanon.piraten.ankunftBlockiert = true;
+      return [];
+    }
     return wirtschaftsMinute(state);
   }
-  function teilschritt(state) { return teilschrittIntern(state); }
+  function teilschritt(state) { return pirAnflug && anflugBlockiert(state) ? [] : teilschrittIntern(state); }
   function minute(state) {
     pruefeForm(state);
+    if (pirAnflug && anflugBlockiert(state)) return [];
     if (state.flug.schritt === 0) {
       m_core_flugplan.plan(state, true, false);
       // Bitgleiche Abkürzung: ruhende Körper ändern sich in 60 Teilschritten nicht.
@@ -2435,7 +2508,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   }
   function advance(state, minuten) {
     if (!ganz(minuten) || minuten > 1440 * 3650) throw RangeError('K1: ungültige Zahl an Wirtschaftsminuten');
-    for (let i = 0; i < minuten; i++) minute(state);
+    for (let i = 0; i < minuten && !(pirAnflug && anflugBlockiert(state)); i++) minute(state);
   }
   // P8g: Freigabe darf niemals aus einem importierten, beliebig editierbaren
   // JSON-Flag folgen. Fuer *lokale, unmittelbar ausgegebene* Save/Load-Runden
@@ -2449,6 +2522,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     const a = audit(state);
     if (!a.ok) throw Error('K1: ungültigen Zustand nicht speichern: ' + a.fehler.join('; '));
     const json=kern.save(state);
+    if (pirAnflug) {
+      if (pirAnflugSaves.size >= 64) pirAnflugSaves.delete(pirAnflugSaves.values().next().value);
+      pirAnflugSaves.add(json);
+    }
     if(p8dFracht&&state.kanon.materialSupplyEnabled===true){
       if(lokalVertrauenswuerdigeP8gSaves.size>=64)
         lokalVertrauenswuerdigeP8gSaves.delete(lokalVertrauenswuerdigeP8gSaves.values().next().value);
@@ -2468,6 +2545,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     let roh;
     try { roh = JSON.parse(json); } catch (_) { throw Error('K1: JSON nicht lesbar'); }
     pruefeForm(roh);
+    if (pirAnflug && !pirAnflugSaves.has(json))
+      throw Error('PIR-2d: nur unveränderte Stände aus diesem Forschungslauf');
     if(roh.kanon.materialSupplyEnabled===true
       &&!lokalVertrauenswuerdigeP8gSaves.has(json)
       &&optionen?.p8gImportFreigegeben!==true)
@@ -2541,7 +2620,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(p8dFracht ? {p8dGetrennteSpedition:true,p8gMaterialOnlyW3:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
     createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, npcMaterialKetteSetzen, materialSupplySetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
-    ...(piraten ? {piratenProfil:true,piratenZielbewertung:m_core_piraten.zielbewertung} : {}), sicherheitslage:m_core_piraten.lage,
+    ...(piraten ? {piratenProfil:true,...(pirAnflug ? {pirAnflug:true, pirAnflugLage:s=>{
+      const sh=lokalerAnflug(s);
+      return sh ? {id:sh.id,x:sh.flug.x,y:sh.flug.y,lage:sh.flug.lage,blockiert:anflugBlockiert(s)} : null;
+    }} : {}),piratenZielbewertung:m_core_piraten.zielbewertung} : {}), sicherheitslage:m_core_piraten.lage,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
     torPruefen: m_core_torfreigabe.pruefen, torFrachtPruefen: m_core_torfreigabe.darfFracht,
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,
@@ -2803,6 +2885,7 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   erstellenJ3:(kapital={})=>erstellen(kapital,true,true,true),
   erstellenJ4b:(kapital={})=>erstellen(kapital,true,true,true,true),
   erstellenJ4c:(kapital={})=>erstellen(kapital,true,true,true,true,true),
+  erstellenPirAnflug:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,2),
   erstellenPiraten:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,true),
   // Nur experimenteller Rule205-Bergbau in zwei getrennten Nadir-Feldern.
   // Kein Produkt-/Save-Autoupgrade, keine Dravos-Miner und keine Zusatz-ISK.

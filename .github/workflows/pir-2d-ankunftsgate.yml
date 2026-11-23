@@ -6,8 +6,11 @@ on:
       - '.github/workflows/pir-2d-ankunftsgate.yml'
       - 'prototypes/welt/**'
       - 'prototypes/flug2d/**'
+      - 'prototypes/spiel/**'
+      - 'prototypes/verbund/konzern-session.js'
+      - 'tools/pir-anflug-langzeit.cjs'
 jobs:
-  arrival-baseline:
+  arrival:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -16,3 +19,17 @@ jobs:
         with:
           node-version: '22'
       - run: node --test tests/pir-2d-ankunftsgate.test.mjs
+
+  anflug-langzeit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        tage: [90, 365]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/pir-anflug-langzeit.cjs ${{ matrix.tage }}

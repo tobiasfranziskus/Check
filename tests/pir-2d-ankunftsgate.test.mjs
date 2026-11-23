@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import J8 from '../prototypes/verbund/konzern-session.js';
 
-function kontakt(){
- const j=J8.erstellen(); j.startenPiraten(true);
+function kontakt(anflug=false){
+ const j=J8.erstellen(); j.startenPiraten(true,anflug);
  const w=j.weltReferenz();
  assert(j.ausfuehren('buy-st_aldera-frachter').ok);
  assert(j.ausfuehren('buy-st_aldera-miner').ok);
@@ -81,4 +81,54 @@ test('PIR-2d baseline: original delivery and return use the clock, not a Nadir d
  assert.deepEqual(w.audit(s).fehler,[]);
  assert.equal(w.save(w.load(w.save(s))),w.save(s));
  console.log('PIR_2D_ARRIVAL_BASELINE '+JSON.stringify({rows,hash:w.hash(s)}));
+});
+
+test('PIR-2d flies the financed approach and books the original round trip once',()=>{
+ const {w,s,f}=kontakt(true);
+ const sh=s.ships[f],expected=[96000,0,128];
+ assert.deepEqual([sh.flug.x,sh.flug.y,sh.flug.kurs],expected);
+ assert.equal(sh.system,'nadir');
+ const geld=s.initialSupply, start=s.tick, delivered=s.w5n.eisGeliefert;
+ const kopie=w.load(w.save(s));
+ for(let i=1;i<=240;i++){
+  w.teilschritt(s);
+  if(i===135) assert.equal(sh.flug.lage,'angedockt');
+  if(i<240) assert.equal(sh.ladung.eis,50);
+  if(i%17===0||i%60===0) assert.equal(w.save(w.load(w.save(s))),w.save(s));
+ }
+ assert.equal(s.tick,start+4);
+ assert.equal(s.w5n.frachtauftrag.phase,'rueck');
+ assert.equal(s.w5n.eisGeliefert,delivered+50);
+ assert.equal(s.owners.w5n_fracht_kauf.cash,240);
+ assert.equal(s.owners.w5n_fracht_arbeit.cash,60);
+ w.advance(s,60); w.advance(kopie,64);
+ assert.equal(w.hash(s),w.hash(kopie));
+ assert.equal(s.kanon.spielerFrachten.lohn,120);
+ assert.equal(s.kanon.spielerFrachten.gebuehr,240);
+ assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),geld);
+ assert.deepEqual(w.audit(s).fehler,[]);
+});
+
+test('PIR-2d rejects forged docking, profile and commands and halts a missed arrival',()=>{
+ const {w,s,f}=kontakt(true), before=w.save(s), raw=JSON.parse(before);
+ raw.ships[f].flug=w.flugKern.koerperAngedockt('nadir');
+ assert.throws(()=>w.load(JSON.stringify(raw)),/unveränderte/);
+ const normal=kontakt().w;
+ assert.throws(()=>normal.load(before),/PIR-1/);
+ for(const owner of ['house','transport']){
+  assert.equal(w.execute(s,{type:'shipDock',schiff:f,owner,station:'st_nadir'}).ok,false);
+ }
+ assert.equal(w.save(s),before);
+ // Inject a flight fault at the live core boundary, not by authorizing a save import.
+ w.advance(s,3);
+ const sh=s.ships[f];
+ Object.assign(sh.flug,{lage:'frei',x:96000,y:0,anker:null,modus:'halt',andocken:false,ziel:null});
+ const kauf=s.owners.w5n_fracht_kauf.cash,lohn=s.owners.w5n_fracht_arbeit.cash,tick=s.tick;
+ w.advance(s,30);
+ assert.equal(s.tick,tick);
+ assert.equal(s.kanon.piraten.ankunftBlockiert,true);
+ assert.equal(s.owners.w5n_fracht_kauf.cash,kauf);
+ assert.equal(s.owners.w5n_fracht_arbeit.cash,lohn);
+ assert.equal(sh.ladung.eis,50);
+ assert.equal(w.save(w.load(w.save(s))),w.save(s));
 });

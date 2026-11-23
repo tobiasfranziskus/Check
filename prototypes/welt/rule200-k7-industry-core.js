@@ -3123,7 +3123,7 @@ const m_core_w5n=(()=>{
    w.fabrikGebucht+=p.arbeit;w.fabrikBegonnen++;
    w.fabrikauftrag={gearbeitet:0,arbeit:p.arbeit};
  }
- function tick(s,r){
+ function tick(s,r,lokalesNadirDock=false){
    const c=r.w5n,w=s.w5n,a=w.frachtauftrag;
    if(a){
      const sh=s.ships[a.schiff],work=s.owners.w5n_fracht_arbeit,
@@ -3131,6 +3131,11 @@ const m_core_w5n=(()=>{
      if(!sh||sh.auftrag!=='eisfracht'||sh.phase!=='reise'
        ||!work||!kauf||work.cash<c.fliegerLohn)
        throw Error('W5n unbezahlte Frachtminute');
+     if(lokalesNadirDock && a.phase==='hin' && s.tick===sh.ankunft
+       && sh.owner===r.economy.start.owner
+       && (sh.system!==s.stations[c.zielStation].system || sh.flug?.lage!=='angedockt'
+         ||sh.flug.anker!==c.zielStation))
+       throw Error('W5n: Nadir-Dock für lokale Vertragsankunft fehlt');
      work.cash-=c.fliegerLohn;
      if(r.w5ag)m_core_w5ag.pay(s,r,'eis',c.fliegerLohn,sh.id);
      else s.owners.fonds_transport.cash+=c.fliegerLohn;
@@ -3505,7 +3510,7 @@ const { verbrauch, betriebskosten, aussenhandel, npcAusgaben, fonds, dividende }
 const { patrouille, ueberfall, piratenErsatz, schutzgeld, escorteBewegen } = m_core_sicherheit;
 const { ersatzkauf } = m_core_schiffbau;
 
-function step(state, rules) {
+function step(state, rules, lokalesNadirDock = false) {
   state.tick += 1;
   const wartend = state.queue; state.queue = [];
   const ergebnisse = wartend.map((cmd) => execute(state, cmd, rules));
@@ -3514,7 +3519,7 @@ function step(state, rules) {
   });
   if (rules.erzpilot) {
     if (rules.w3) m_core_w3.tick(state,rules);
-    if(rules.w5n)m_core_w5n.tick(state,rules);
+    if(rules.w5n)m_core_w5n.tick(state,rules,lokalesNadirDock);
     if (rules.w4) m_core_w4.tick(state,rules);
     if (rules.w5) m_core_w5.tick(state,rules);
     if (rules.w5Transfer) m_core_w5_transfer.tick(state,rules);

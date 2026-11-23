@@ -19,3 +19,13 @@ Auf diesem Branch ein **explizit isoliertes, nicht öffentlich aktiviertes PIR-A
 4. Original F4-Nadir-Andockung an Minutengrenze belegen: 50 Eis, 250 ISK Kaufwert, 120 ISK Lohn, 240 ISK Tarif; Eigentum, beide Treuhandkonten und Original-Rückfracht/K2-Verladung erhalten. Standard F4 Referenz `e4514490aedc13bd` erhalten; PIR-1 Referenzen und bestehende Matrix erhalten. Zwei echte Replays, Gesamt-Node22, WebKit/Chromium und 13x90 plus S02-365/730 (Profil aus); zusätzliche PIR-Profilläufe. Erst nach diesen Gates separate echte Verfolgungsentscheidung und PIR-3-Kampf/Schäden. Keine neue Geldemission, Verluste oder Beute in diesem Paket.
 
 #599 Startbildschirm und P0 #586 bleiben unabhängig. Roadmap-/Projektstatus-Konsolidierung mit P0 koordinieren. Kein Merge/Deploy.
+
+## Physischer Anflug im Forschungsentwurf
+
+J8 startet den Anflugversuch ausdrücklich über `startenPiraten(true, true)`. Der normale Startdialog bietet weiterhin den bisherigen PIR-1-Stand an. Der laufende Hausauftrag muss eine erworbene Hülle, die echte Eischarge, einen offenen Spielerfrachtbeleg und die beiden vollständigen Restreserven vorweisen. Bei vier Restminuten setzt der Weltkern den Körper einmal am Nadir-Tor ein. Der bestehende Andockbefehl gibt den Kurs an den gemeinsamen Flugkern. Auch eine frühe Andockung löst die Originalbuchung erst am vertraglichen Termin aus. Der Rückweg verwendet das bestehende W5n-Transitmodell.
+
+Verfehlt der Frachter das Dock, wird der letzte Teilschritt zurückgenommen. Der Forschungsstand bleibt an der Grenze vor der Ankunftsminute stehen. Beide Treuhandkonten, die Eischarge und der Vertragsstatus bleiben dabei gebunden. Diese Unterbrechung dient der technischen Abnahme. Eine spielbare Wiederaufnahme oder Auflösung eines gescheiterten Vertrags benötigt eine eigene bilanzierte Regel.
+
+Der Ladepfad prüft exakte, zuvor auditierte Ausgaben des laufenden Prozesses. Pro Lauf stehen bis zu 64 solche Exporte zur Verfügung. Der Forschungsimport verlangt die ausdrückliche Profilwahl außerhalb der Datei. Neustart und frei bearbeitbare externe Forschungs-JSONs sind mit dieser Implementierung nicht als Wiederaufnahme vorgesehen. Standard- und PIR-1-Speicherpfade verwenden weiterhin ihre eigenen Prüfungen.
+
+Die lokale Prüfung unter Node 22 reproduziert das Nadir-Dock nach Schritt 135, den vertraglichen Übergang nach Schritt 240 sowie beide Treuhandbewegungen. Geprüft sind Teilschritt-Exporte, ein identischer Replay-Hash über die volle Frachtfahrt, verworfene Dockfälschung und ein absichtlich verfehltes Dock. Die unabhängige Abnahme umfasst zusätzlich die vollständige Regressions-, Wirtschafts- und Browsermatrix. PIR-2e und PIR-3 bleiben bis zu deren Ergebnis offen.

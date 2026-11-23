@@ -27,7 +27,7 @@ function auswerten(a,s,w,angebote){
  const r=w.rules;
  const asterion=Object.values(s.ships).filter(sh=>sh.owner==='transport'&&sh.klasse==='frachter'
   &&!w.stillgelegt(s,sh.id));
- const lage=w.sicherheitslage?.(s);
+ const lage=w.sicherheitslage?.(s), anflug=w.pirAnflugLage?.(s);
  const stationen=Object.entries(standorte).flatMap(([system,k])=>{
   if(system==='dravos'&&a.regel!==207)return [];
   const st=a.stationen.find(st=>st.id===k.id&&st.system===system);
@@ -61,7 +61,8 @@ function auswerten(a,s,w,angebote){
   const fracht=eis?.schiff===sh.id?eis:erz?.schiff===sh.id?erz:null;
   const ueberfuehrung=transfer?.id===sh.id&&transfer.owner===original.owner;
   const pendel=s.kanon.pendel?.[sh.id];
-  const reise=sh.phase==='reise'||sh.flug==='transit';
+  const lokal=anflug?.id===sh.id?anflug:null;
+  const reise=!lokal&&(sh.phase==='reise'||sh.flug==='transit');
   const ziel=reise?stationen.find(st=>st.id===original.ziel):null;
   const auftrag=fracht?(fracht===eis?'Eisfracht':'Erzfracht')+' · '+(phasen[fracht.phase]||'Transport'):
    ueberfuehrung?'Bezahlte Überführung':
@@ -81,8 +82,8 @@ function auswerten(a,s,w,angebote){
    &&frachtbeleg?.schiff===sh.id&&frachtbeleg.end===null&&Number.isSafeInteger(frachtbeleg.geliefert)
    ?{menge:frachtbeleg.menge,ziel:ort(sh.system)}:null;
   return {...sh,name:(pirat?'Piratenjäger':klassen[sh.klasse]||sh.klasse)+' · '+sh.id,
-   owner:original.owner,ort:ortText,auftrag:pirat?piratenAktivitaet[pirat.phase]:auftrag,zeit,lieferung,
-   pirat,exponiert,
+   owner:original.owner,ort:ortText,auftrag:pirat?piratenAktivitaet[pirat.phase]:lokal?.blockiert?'Eisfracht · Docktermin verfehlt':lokal?'Eisfracht · Nadir-Anflug':auftrag,zeit,lieferung,
+   pirat,exponiert,...(lokal?{lokal}:{}),
    rueckfahrt:fracht?.phase==='rueck',nachAldera:reise&&ziel?.system==='aldera',
    rest:original.owner==='house'?w.restAktivminuten(s,sh.id):null,
    buchwert:w.buchwert(s,sh.id),
@@ -152,9 +153,10 @@ function schiffsbild(d,obj){
  const {zeit}=obj;
  // Der Marker springt ausschließlich mit dem nächsten angezeigten Welt-Tick.
  const x=zeit?24+72*(obj.nachAldera?1-zeit.vergangen/zeit.dauer:zeit.vergangen/zeit.dauer):60;
- if(obj.pirat){
-  const px=60+Math.max(-47,Math.min(47,obj.pirat.x/10500));
-  const py=18+Math.max(-13,Math.min(13,obj.pirat.y/37000));
+ const position=obj.pirat||obj.lokal;
+ if(position){
+  const px=60+Math.max(-47,Math.min(47,position.x/10500));
+  const py=18+Math.max(-13,Math.min(13,position.y/37000));
   svg.append(svgElement(d,'path',{d:'M4 18H116 M60 2V34',stroke:'#56666e','stroke-dasharray':'2 4'}),
    svgElement(d,'path',{d:'M0 -5L5 0L0 5L-5 0Z',transform:'translate('+px+' '+py+')',fill:farbe}));
   return svg;

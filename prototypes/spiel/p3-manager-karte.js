@@ -19,14 +19,23 @@ function flugzeit(tick,ankunft,dauer){
 }
 
 function auswerten(a,s,w,angebote){
+ const r=w.rules;
  const stationen=Object.entries(standorte).flatMap(([system,k])=>{
   if(system==='dravos'&&a.regel!==207)return [];
   const st=a.stationen.find(st=>st.id===k.id&&st.system===system);
   if(!st)return [];
   return [{...k,system,lager:st.lager,kasse:s.owners[k.id]?.cash,
    angebote:angebote.filter(o=>o.id.startsWith('buy-'+k.id+'-')),
+   bedarf:[
+    ...(r.w4?.station===k.id&&s.w4&&!s.w4.auftrag
+     ?[{ware:'Erz für nächste Raffineriecharge',fehlend:Math.max(0,r.w4.erzJeCharge-(s.stations[k.id].lager.erz||0))}]:[]),
+    ...(r.w5?.station===k.id&&s.w5&&!s.w5.auftrag
+     ?[{ware:'Material für nächste Frachterhülle',fehlend:Math.max(0,r.w5.material-(s.stations[k.id].lager.material||0))}]:[])
+   ],
    raffinerie:w.rules.w4?.station===k.id&&s.w4?s.w4.auftrag?'In Betrieb':'Kein laufender Auftrag':null,
    werft:w.rules.w5?.station===k.id&&s.w5?s.w5.auftrag?'Baut eine Hülle':'Kein laufender Auftrag':null,
+   erzZulauf:system==='nadir'&&s.w3?.auftrag?.phase==='hin'?s.w3.auftrag.menge:null,
+   frachterbestand:s.stations[k.id].lager.frachter||0,
    werftBetreiber:w.rules.w5?.station===k.id?w.rules.w5.werft:null}];
  });
  const eis=s.w5n?.frachtauftrag,erz=s.w3?.auftrag,transfer=s.w5ac?.active;
@@ -59,9 +68,10 @@ function auswerten(a,s,w,angebote){
   return {...sh,name:(klassen[sh.klasse]||sh.klasse)+' · '+sh.id,
    owner:original.owner,ort:ortText,auftrag,zeit,lieferung,
    rueckfahrt:fracht?.phase==='rueck',nachAldera:reise&&ziel?.system==='aldera',
+   rest:original.owner==='house'?w.restAktivminuten(s,sh.id):null,
    buchwert:w.buchwert(s,sh.id),
    gruppe:strecke?'strecke':reise?'unterwegs':sh.system,
-   angebote:original.owner==='house'?angebote.filter(o=>['ice-','ore-','stop-','freight-','gate-freight-','sil-start-','sil-sell-']
+   angebote:original.owner==='house'?angebote.filter(o=>['ice-','ore-','stop-','freight-','reposition-','gate-freight-','sil-start-','sil-sell-']
     .some(prefix=>o.id===prefix+sh.id)):[]};
  }
  const schiffe=a.schiffe.map(schiffAuswerten);
@@ -70,7 +80,14 @@ function auswerten(a,s,w,angebote){
    id,klasse:sh.klasse,system:sh.system,phase:sh.phase,flug:sh.flug?.lage||null,
    ladung:Object.entries(sh.ladung||{}).filter(([,n])=>n>0).map(([ware,n])=>ware+': '+n).join(' · ')||'leer'
   }));
- return {stationen,schiffe,fremdeSchiffe,auftraege:schiffe.filter(sh=>sh.auftrag).length};
+ const letzteFrachter=schiffe.filter(sh=>sh.klasse==='frachter'&&sh.rest!==0);
+ const rest=letzteFrachter.length===1?letzteFrachter[0].rest:null;
+ const runde=r.w5n?2*r.w5n.flugMinuten:null;
+ const ersatz=!letzteFrachter.length?'Kein einsatzfähiger eigener Frachter':
+  rest!==null&&runde!==null&&rest<=runde?'Letzter eigener Frachter erreicht die Verschleißgrenze spätestens nach einer Eisrunde':null;
+ return {stationen,schiffe,fremdeSchiffe,ersatz,hauskasse:s.owners.house.cash,
+  frachtreserve:eis&&s.ships[eis.schiff]?.owner==='house'?s.owners.w5n_fracht_arbeit?.cash??0:null,
+  auftraege:schiffe.filter(sh=>sh.auftrag).length};
 }
 
 const stationGrafik={
@@ -154,11 +171,17 @@ function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,t
   const vals=obj.owner?[
    ['Eigentümer',konzernname(obj.owner)],['Ort',obj.ort],['Ladung',obj.ladung],
    ['Auftrag',obj.auftrag||'Kein laufender Wirtschaftsauftrag'],
+   ['Einsatzreserve',obj.rest===0?'Stillgelegt':Number.isSafeInteger(obj.rest)?fmt(obj.rest)+' Aktivminuten':null],
+   ['Gebundener Fluglohn',obj.owner==='house'&&obj.auftrag?.startsWith('Eisfracht')&&modell.frachtreserve!==null
+    ?fmt(modell.frachtreserve)+' ISK':null],
    ['Lieferung',obj.lieferung?fmt(obj.lieferung.menge)+' Eis in '+obj.lieferung.ziel+' geliefert':null]
   ]:[
    ['Stationsbetreiber',konzernname(obj.id)],['Lager',obj.lager],
    ['Stationskasse',Number.isSafeInteger(obj.kasse)?fmt(obj.kasse)+' ISK':null],
+   ['Frachter im Lager',fmt(obj.frachterbestand)],
    ['Raffinerie',obj.raffinerie],['Werft',obj.werft],
+   ['Erz auf dem Hinflug',Number.isSafeInteger(obj.erzZulauf)?fmt(obj.erzZulauf):null],
+   ...obj.bedarf.map(b=>[b.ware,b.fehlend?fmt(b.fehlend)+' fehlen':'Bestand reicht']),
    ['Werftbetreiber',obj.werftBetreiber?konzernname(obj.werftBetreiber):null]
   ];
   const liste=element('dl');
@@ -187,6 +210,15 @@ function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,t
     button.dataset.sektorDetail=angebot.id;
     button.addEventListener('click',()=>waehleAngebot(angebot.id));
     angebote.append(button);
+    if(angebot.id.startsWith('reposition-'))
+     angebote.append(element('div',fmt(angebot.kosten)+' ISK · '+fmt(angebot.minuten)+' Min.','sektor-buchwert'));
+    if(angebot.kaufPlan){
+     const p=angebot.kaufPlan,f=p.ueberfuehrung;
+     angebote.append(element('div',fmt(p.kaufpreis)+' ISK Kauf · '+fmt(p.restkasse)+' ISK Kasse danach','sektor-buchwert'));
+     if(f?.grund)angebote.append(element('p','Überführung nach Kauf: '+anzeigetext(f.grund)));
+     else if(f)angebote.append(element('div','Überführung heute: '+fmt(f.kosten)+' ISK · '+
+      fmt(f.minuten)+' Min. · '+fmt(f.restkasse)+' ISK Kasse danach','sektor-buchwert'));
+    }
    }else{
     angebote.append(element('p',titel(angebot)+' · '+(angebot.reason?anzeigetext(angebot.reason):'Zurzeit gesperrt')));
    }
@@ -272,6 +304,8 @@ function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,t
     }
     karte.append(box);
    }
+   const lage=$('sektor-flottenlage');
+   if(lage)lage.textContent='Konzernkasse '+fmt(neu.hauskasse)+' ISK'+(neu.ersatz?' · '+neu.ersatz:'');
    $('sektor-auftraege').textContent=fmt(neu.auftraege);
    if(objekte.length)waehlen(objekte.some(obj=>key(obj)===gewaehlt)?gewaehlt:key(objekte[0]));
    if(fokusDetail)([...details.querySelectorAll('[data-sektor-detail]')]

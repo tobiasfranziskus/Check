@@ -172,12 +172,17 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   // Nutzungsabhängiger Wertverzehr. Rücklage ist gebundenes Eigengeld, kein Transfer.
   const m_core_anlage = (() => {
     const aktiv = (state, id) => state.kanon.verschleiss[id] || 0;
+    // J4b-Jäger bleiben bis zur F8-Flugintegration angedockt.
+    const satz = (sh) => jaegerFlug && sh.klasse === 'jaeger'
+      ? rules.j4c.verschleissMilliJeMinute : (KANON.verschleiss.milliJeMinute[sh.klasse] ?? 0);
     const abschreibung = (state, sh) => Math.min(kaufpreis(sh.klasse),
-      // J4b-Jäger bleiben bis zur expliziten F8-Flugintegration angedockt.
-      // Keine frei erfundene Abschreibung oder Wartung, aber realer Anlagewert.
-      Math.floor(aktiv(state, sh.id) * (jaegerFlug && sh.klasse==='jaeger'
-        ? rules.j4c.verschleissMilliJeMinute
-        : (KANON.verschleiss.milliJeMinute[sh.klasse] ?? 0)) / 1000));
+      Math.floor(aktiv(state, sh.id) * satz(sh) / 1000));
+    const restAktivminuten = (state, sh) => {
+      const rate = satz(sh);
+      return rate > 0 && state.kanon.politik.stilllegung === true
+        ? Math.max(0, Math.ceil(kaufpreis(sh.klasse) * 1000 / rate) - aktiv(state, sh.id))
+        : null;
+    };
     const buchwert = (state, sh) => kaufpreis(sh.klasse) - abschreibung(state, sh);
     const verbraucht = (state, sh) => buchwert(state, sh) === 0;
     const stillgelegt = (state, sh) => state.kanon.politik.stilllegung === true && verbraucht(state, sh);
@@ -205,7 +210,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       }
       return summe;
     };
-    return { aktiv, abschreibung, buchwert, verbraucht, stillgelegt, huellen, anlagewert, ruecklage };
+    return { restAktivminuten, aktiv, abschreibung, buchwert, verbraucht, stillgelegt, huellen, anlagewert, ruecklage };
   })();
 
   // ---------------------------------------------------------------- m_core_flugplan
@@ -2360,6 +2365,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     torPruefen: m_core_torfreigabe.pruefen, torFrachtPruefen: m_core_torfreigabe.darfFracht,
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,
     buchwert: (state, id) => m_core_anlage.buchwert(state, state.ships[id]),
+    restAktivminuten: (state, id) => m_core_anlage.restAktivminuten(state, state.ships[id]),
     stillgelegt: (state, id) => m_core_anlage.stillgelegt(state, state.ships[id]),
   });
 }

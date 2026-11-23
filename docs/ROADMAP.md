@@ -95,6 +95,10 @@
 - **[BESCHLOSSEN]** Unbegrenztes Sparen des Spielers, wirtschaftliches Scheitern von NPC-Firmen erlaubt. Keine individuellen Rettungen oder Gratis-Schiffe/Geld/Waren. Unternehmen können fremdes Eigentum nur durch finanzierten Vertrag/Kauf/Übernahme erlangen.
 - **[BESCHLOSSEN]** Ein exportierter, validierter Spielstand muss nach Load/Replay dieselben deterministischen Kern- und Buchungswerte liefern. Bestehende Formate und Speicherorte niemals still migrieren.
 
+### M4-U10 · Industrielle Versorgung und Flottenerhalt [DRAFT]
+
+Die [U10-Abnahme](M4_U10_INDUSTRIELEITSTAND.md) konsolidiert die U9-Nachweise und ergänzt das Operationsboard um Verschleiß, reale Werftbestände, finanzierbare Überführung und Materialbedarf. Nur dieser lesende Managementpfad kommt nach dem AGENTS-Gate für die Integration infrage. Spielerrechte für W3/Wasser und die Abwicklung physischer Teilladungen erfordern eine Produktentscheidung. [P0 #586](https://github.com/tobiasfranziskus/Check/pull/586) führt weiter die Archivierung und PR-Triage. PIR-0/1 folgt separat nach U10.
+
 ## 2. W0–W6: verbindliche Wirtschaftsreihenfolge
 
 | Stufe | Abnahmeziel | Integrierte Grundlage / offene Lücke |

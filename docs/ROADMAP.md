@@ -1,5 +1,8 @@
 # Aphros Void – verbindliche Produkt-Roadmap
 
+**M4-U9 [FORSCHUNG]:** [Vertragsvorsorge und Teilabwicklung](M4_U9_VERTRAGSVORSORGE.md) auf Basis #578. Zuerst originalbefehlsbasierte Vorprüfung und kontrollierte S02-Gegenprobe, dann freiwillige gedeckte Abwicklung bereits geförderter Teilladungen. Keine produktive Regelaktivierung vor Abnahme.
+
+
 
 ## Aktueller Produktbeschluss – erwachsene Retro-Sci-Fi-Managementwelt [BESCHLOSSEN 22.11.2026]
 

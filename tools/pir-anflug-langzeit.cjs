@@ -7,7 +7,7 @@ const { SZENARIEN, pruefen } = require('./w6-szenarien.cjs');
 const tage = Number(process.argv[2] || 90);
 assert(Number.isSafeInteger(tage) && tage >= 1 && tage <= 730);
 const j = J8.erstellen();
-j.startenPiraten(true, true);
+j.startenPiraten(true, process.argv[3] === 'kampf' ? 'kampf' : true);
 const welt = j.weltReferenz();
 welt.politikSetzen(j.zustandReferenz(), SZENARIEN[1].politik);
 assert(j.ausfuehren('buy-st_aldera-frachter').ok);
@@ -26,6 +26,7 @@ for (let tag = 1; ; tag = Math.min(tage, tag + 30)) {
   const fehler = pruefen(welt, s).filter(f => f !== 'Weltgeld 33240');
   assert.deepEqual(fehler, []);
   assert.equal(Object.values(s.owners).reduce((summe, o) => summe + o.cash, 0), 33240);
+  if (welt.pirKampfLage) assert.equal(s.kanon.piraten.kampf.huellen[f], 48);
   s = welt.load(welt.save(s));
   console.log(JSON.stringify({ tag, hash: welt.hash(s), pilotlohn: s.owners.pilot_piraten.cash,
     eisGeliefert: s.w5n.eisGeliefert, wasser: s.w5n.wasserProduziert, weltgeld: s.initialSupply }));

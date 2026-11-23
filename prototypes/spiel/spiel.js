@@ -9,6 +9,9 @@ const SLOT='aphros-void:spielerkarriere:regel204:v1';
 const SLOT_W6='aphros-void:spielerkarriere:regel207-forschung:v1';
 const BACKUP=SLOT+':vorherige';
 const SLOT_PIR='aphros-void:spielerkarriere:pir-1:v1';
+const kampfZugang=new URLSearchParams(scope.location?.search).get('pir-forschung')==='kampf';
+const kampfSitzung=()=>!!session?.weltReferenz().pirKampfLage;
+const kampfSaves=new Map();
 const piratenSitzung=()=>session?.weltReferenz().piratenProfil===true;
 const aktuellerSlot=()=>piratenSitzung()?SLOT_PIR:session?.weltReferenz().regel===207?SLOT_W6:SLOT;
 const MAX=5*1024*1024;
@@ -56,7 +59,10 @@ function speichern(copyOld=false){
  // is a separate explicit branch, not a generic alias that could silently
  // redirect any existing Rule204/195 career storage.
  try {
-   if(piratenSitzung()){
+   if(kampfSitzung()){
+     if(copyOld&&kampfSaves.has(SLOT_PIR))kampfSaves.set(SLOT_PIR+':vorherige',kampfSaves.get(SLOT_PIR));
+     kampfSaves.set(SLOT_PIR,json);
+   }else if(piratenSitzung()){
      if(copyOld){const old=scope.localStorage.getItem(SLOT_PIR);
        if(old)scope.localStorage.setItem(SLOT_PIR+':vorherige',old);}
      scope.localStorage.setItem(SLOT_PIR,json);
@@ -76,7 +82,7 @@ function speichern(copyOld=false){
  }
 }
 function gespeicherte(key=SLOT){
- try{return scope.localStorage.getItem(key)||null;}catch{return null;}
+ try{return kampfZugang&&key.startsWith(SLOT_PIR)?kampfSaves.get(key)||null:scope.localStorage.getItem(key)||null;}catch{return null;}
 }
 function menustand(){
  $('fortsetzen').disabled=!gespeicherte();
@@ -94,7 +100,7 @@ function screen(id){
  if(id!=='raumbereich'&&raum)raum.deaktivieren();
  $('open-menu').hidden=id==='startseite';
  $('mode-indicator').textContent=id==='startseite'?'OFFLINE · ALDERA-SEKTOR':
-   id==='briefing'?'PROLOG · ALDERA-SEKTOR':piratenSitzung()?'PIR-1 · FORSCHUNG':'ONLINE · ALDERA-SEKTOR';
+   id==='briefing'?'PROLOG · ALDERA-SEKTOR':kampfSitzung()?'PIR-3 · KAMPFFORSCHUNG':piratenSitzung()?'PIR-1 · FORSCHUNG':'ONLINE · ALDERA-SEKTOR';
  if(id==='spielwelt'&&session)anzeigen();
  scope.scrollTo?.({top:0,left:0,behavior:'instant'});
 }
@@ -147,11 +153,11 @@ function startNeu(){
   const pirAktiv=$('pir-start').checked;
   if([w6Aktiv,p8gAktiv,pirAktiv].filter(Boolean).length>1)throw Error('Bitte nur einen erweiterten Karrieremodus wählen');
   const slot=pirAktiv?SLOT_PIR:p8gAktiv?SLOT_W6:SLOT,vorher=gespeicherte(slot);
-  if(pirAktiv&&!scope.confirm('PIR-1 als separate Forschungskarriere beginnen?'))return;
+  if(pirAktiv&&!scope.confirm(kampfZugang?'PIR-3 als flüchtige Forschungskarriere beginnen?':'PIR-1 als separate Forschungskarriere beginnen?'))return;
   if(p8gAktiv&&!scope.confirm('Die experimentelle Dravos-Karriere besitzt eine eigene Spielwelt mit begrenzten Rohstofffeldern. Deine normale Karriere bleibt unverändert. Experimentelle Karriere beginnen?'))return;
   if(vorher&&!scope.confirm('Für dieses Profil besteht schon ein Spielstand. Die bisherige Version bleibt als „Vorherige Karriere“ gesichert. Trotzdem neu beginnen?'))return;
   const neu=neueSitzung();
-  const a=pirAktiv?neu.startenPiraten(true):p8gAktiv?neu.startenP8g(true):neu.starten195(scope.W5acSession.create(42,'private195').export(),true);
+  const a=pirAktiv?neu.startenPiraten(true,kampfZugang?'kampf':false):p8gAktiv?neu.startenP8g(true):neu.starten195(scope.W5acSession.create(42,'private195').export(),true);
   if(a.regel!==(p8gAktiv?207:204)||a.weltgeld!==(pirAktiv?33240:33000))
     throw Error('Ausgangswelt nicht autoritativ validiert');
   if(w6Aktiv){
@@ -167,7 +173,7 @@ function startNeu(){
   }
   session=neu;sitzungsUiZuruecksetzen();
   const ok=speichern(!!vorher);
-  aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(pirAktiv?'PIR-1 · Bezahlte Patrouille ab Nadir.':p8gAktiv
+  aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(pirAktiv?(kampfZugang?'PIR-3 · Nichtletale Kampfforschung in Nadir.':'PIR-1 · Bezahlte Patrouille ab Nadir.'):p8gAktiv
    ?'Experimentelle Dravos-Karriere mit bezahltem Bergbau, Transport und Materialverträgen; deine normale Karriere bleibt unverändert.'
    :w6Aktiv?'Unabhängige Konzerne arbeiten auf eigene Rechnung; jeder Auftrag bleibt finanziert.'
    :'Klassische Karriere ohne autonome Industrieaufträge.')+' Kein kostenloses Schiff.');
@@ -201,7 +207,7 @@ function ladeSitzung(json,auswahl,backup=false){
  if(auswahl==='datei'&&gespeicherte(slot)&&!scope.confirm(
    'Dieser Datei-Spielstand ersetzt NUR die gleichnamige Karriere-Speicherstelle. Die bisherige wird zuvor gesichert. Fortfahren?'))return;
  const neu=neueSitzung();
- const a=pir?neu.oeffnenPiraten(json,true):regel===207?neu.oeffnenP8g(json,true):neu.oeffnen204(json,true);
+ const a=pir?neu.oeffnenPiraten(json,true,kampfZugang?'kampf':false):regel===207?neu.oeffnenP8g(json,true):neu.oeffnen204(json,true);
  if(a.regel!==regel||a.weltgeld!==(pir?33240:33000))
    throw Error('Die Prüfung der Wirtschaft und des Spielstands ist fehlgeschlagen.');
  // Validate the destination first, then persist the old live session to its own slot.
@@ -213,6 +219,7 @@ function ladeSitzung(json,auswahl,backup=false){
 }
 function weiter(n){
  let vorher=null;
+ const start=session?.zustandReferenz().tick;
  try{
   if(n===1440){
    // Kein neuer schneller Wirtschaftstick: 24 echte, einzeln validierte 60-Minuten-Schritte.
@@ -224,12 +231,14 @@ function weiter(n){
   if(patrouille&&['bereit','flug'].includes(patrouille.status))patrouille.status='unterbrochen';
   pilotTutor?.beobachten(session.zustandReferenz());pilotStatusAktualisieren();
   speichern();anzeigen();
-  hinweis(n+' bezahlte Weltminuten vergangen. Alle Waren und Konten wurden regulär verbucht.');
+  const s=session.zustandReferenz();
+  if(s.kanon.piraten?.ankunftBlockiert)hinweis('Docktermin verfehlt. Fracht und Treuhandmittel bleiben gebunden.',true);
+  else hinweis((s.tick-start)+' bezahlte Weltminuten vergangen. Alle Waren und Konten wurden regulär verbucht.');
  }catch(e){
   if(vorher!==null){
    try{
     const restore=neueSitzung();
-    if(piratenSitzung())restore.oeffnenPiraten(vorher,true);
+    if(piratenSitzung())restore.oeffnenPiraten(vorher,true,kampfSitzung()?'kampf':false);
     else if(session?.ansicht().regel===207)restore.oeffnenP8g(vorher,true);
     else restore.oeffnen204(vorher,true);
     session=restore;anzeigen();
@@ -1422,6 +1431,10 @@ $('fortsetzen-pir').addEventListener('click',()=>{try{
 $('vorige-pir').addEventListener('click',()=>{try{
  ladeSitzung(gespeicherte(SLOT_PIR+':vorherige'),'pir-backup',true);
 }catch(e){hinweis('Piratenforschung nicht wiederhergestellt: '+error(e),true);}});
+if(kampfZugang){
+ const titel=d.querySelector('label[for="pir-start"] strong');
+ if(titel)titel.textContent='PIR-3 · Kampfforschung in Nadir';
+}
 const startOptionen=['w6-npc-start','w6-p8g-start','pir-start'].map($);
 for(const option of startOptionen)option.addEventListener('change',()=>{
  if(option.checked)for(const andere of startOptionen)if(andere!==option)andere.checked=false;

@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import J8 from '../prototypes/verbund/konzern-session.js';
+import Karte from '../prototypes/spiel/p3-manager-karte.js';
+
+test('PIR/U10: one audited F4 state feeds industrial and security indicators without booking twice',()=>{
+ const j=J8.erstellen();j.startenPiraten(true);
+ const w=j.weltReferenz();
+ assert(j.ausfuehren('buy-st_aldera-frachter').ok);
+ assert(j.ausfuehren('buy-st_aldera-miner').ok);
+ const f=j.ansicht().schiffe.find(sh=>sh.klasse==='frachter').id;
+ const m=j.ansicht().schiffe.find(sh=>sh.klasse==='miner').id;
+ assert(j.ausfuehren('ice-'+m).ok);
+ w.advance(j.zustandReferenz(),120);
+ assert(j.ausfuehren('freight-'+f).ok);
+ const s=j.zustandReferenz();w.advance(s,56);
+ const before=j.exportieren(),q=j.angebote(),a=Karte.auswerten(j.ansicht(),s,w,q);
+ const ship=a.schiffe.find(sh=>sh.id===f),station=a.stationen.find(st=>st.system==='nadir');
+ assert.equal(ship.exponiert,true);
+ assert.equal(ship.rest,w.restAktivminuten(s,f));
+ assert.equal(a.hauskasse,s.owners.house.cash);
+ assert.equal(a.frachtreserve,s.owners.w5n_fracht_arbeit.cash);
+ assert.equal(station.sicherheit,'Umkämpft');
+ assert.equal(station.frachterbestand,s.stations.st_nadir.lager.frachter||0);
+ assert.deepEqual(a.fremdeSchiffe.find(sh=>sh.id==='pir001').angebote,[]);
+ assert.equal(j.exportieren(),before);
+ const cold=J8.erstellen();cold.oeffnenPiraten(before,true);
+ w.advance(s,64);cold.weltReferenz().advance(cold.zustandReferenz(),64);
+ assert.equal(j.exportieren(),cold.exportieren());
+ assert.equal(s.kanon.spielerFrachten.gebuehr,240);
+ assert.equal(s.kanon.spielerFrachten.lohn,120);
+ assert.deepEqual(w.audit(s).fehler,[]);
+ assert.equal(s.minted+s.burned,0);
+});

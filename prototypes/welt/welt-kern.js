@@ -85,7 +85,8 @@ const m_data_kanon = (() => {
   return { KANON, tiefFrieren };
 })();
 
-function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false, u8Research = false) {
+function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false, u8Research = false, u9ExportReserve = false) {
+  if(u9ExportReserve&&(!NODE||!u8Research))throw Error('U9f: isolierter Node-Forschungsversuch');
   if (u8Research && (!jaegerFlug || p8bZweiFelder || p8cDravos || p8dFracht)) throw Error('U8: ausschließlich isolierte 204-Forschungswelt');
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
@@ -97,7 +98,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   const engine = k7 ? (p8dFracht ? FACTORY.createP8dWelt(startkapital,ort) :
     p8cDravos ? FACTORY.createP8cWelt(startkapital,ort) :
     p8bZweiFelder ? FACTORY.createP8bWelt(startkapital,ort) :
-    jaegerFlug ? (u8Research?FACTORY.createU7U8Welt(startkapital,ort):FACTORY.createJ4cWelt(startkapital,ort)) :
+    jaegerFlug ? (u8Research?FACTORY.createU7U8Welt(startkapital,ort,u9ExportReserve):FACTORY.createJ4cWelt(startkapital,ort)) :
     jaeger ? FACTORY.createJ4bWelt(startkapital,ort) :
     bauteile ? FACTORY.createJ3Welt(startkapital,ort) :
     silizium ? FACTORY.createJ2bWelt(startkapital, ort)
@@ -2815,6 +2816,7 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   erstellenJ4c:(kapital={})=>erstellen(kapital,true,true,true,true,true),
   // Explizite Testwelt; normale Rule204-Lader akzeptieren ihre JSON nicht.
   erstellenU8:(kapital={})=>erstellen(kapital,true,true,true,true,true,false,false,false,true),
+  ...(NODE?{erstellenU9f:(kapital={})=>erstellen(kapital,true,true,true,true,true,false,false,false,true,true)}:{}),
   // Nur experimenteller Rule205-Bergbau in zwei getrennten Nadir-Feldern.
   // Kein Produkt-/Save-Autoupgrade, keine Dravos-Miner und keine Zusatz-ISK.
   erstellenP8b:(kapital={})=>erstellen(kapital,true,true,true,true,true,true),

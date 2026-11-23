@@ -1,0 +1,55 @@
+name: M4 U9f – physical ore reservation trace
+on:
+  pull_request:
+    branches:
+      - research/m4-u9e-leerstorno-20261123
+    paths:
+      - 'prototypes/welt/**'
+      - 'tools/m4-*.cjs'
+      - 'tests/m4-u9f-erzreservierung-research.cjs'
+      - '.github/workflows/m4-u9f-erzreservierung.yml'
+permissions:
+  contents: read
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          git rev-parse HEAD
+          node --check prototypes/welt/rule200-k7-industry-core.js
+          node --check prototypes/welt/welt-kern.js
+          node --test tests/m4-u9f-erzreservierung-research.cjs
+  horizon:
+    needs: trace
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        lead: [40, 60]
+        days: [365, 730]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          node - <<'NODE'
+          const assert=require('node:assert/strict');
+          const {simulation}=require('./tools/m4-u9d-langzeit.cjs');
+          const {SZENARIEN}=require('./tools/w6-szenarien.cjs');
+          const {erstellenU9f}=require('./prototypes/welt/welt-kern.js');
+          const sz=SZENARIEN.find(x=>x.id==='S02');
+          const weltFabrik=p=>erstellenU9f({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+          const run=()=>simulation(sz,${{ matrix.days }},42,'leerstorno',${{ matrix.lead }},{weltFabrik});
+          const a=run();assert.deepEqual(run(),a);console.log(JSON.stringify(a));
+          NODE

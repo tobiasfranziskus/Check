@@ -401,3 +401,8 @@ body.raum-aktiv .world{display:none}
 .manager-pilot-extra{margin:12px 0 16px;padding:0 14px;border:1px solid var(--manager-stahl);border-radius:11px;background:var(--manager-panel)}
 .manager-pilot-extra .note{font-size:.86rem;line-height:1.5}
 @media(max-width:600px){.manager-feedback{padding:12px}.manager-pilot-extra{padding:0 12px}}
+
+/* PIR-1 · Korridorbericht auf dem bestehenden Operationsboard */
+#sektor-karte .sektor-pirat { border-inline-start: 3px solid #d18461; }
+#sektor-karte .sektor-exposition { color: #edaa8c; }
+#sektor-karte .sektor-sicherheitsstufe { color: #c6a36c; }

@@ -1,0 +1,47 @@
+name: PIR-1 Forschungsabnahme
+on:
+  pull_request:
+    paths:
+      - 'prototypes/welt/**'
+      - 'prototypes/spiel/**'
+      - 'prototypes/verbund/konzern-session.js'
+      - 'tests/pir-1*'
+      - 'tools/pir-wirtschaftsvergleich.cjs'
+      - '.github/workflows/pir-1.yml'
+jobs:
+  touch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --prefix "$RUNNER_TEMP/pir-playwright" playwright@1.62.0
+      - run: node "$RUNNER_TEMP/pir-playwright/node_modules/playwright/cli.js" install --with-deps ${{ matrix.browser }}
+      - run: node tests/pir-1-browser.cjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/pir-playwright/node_modules/playwright
+          WELT_BROWSER: ${{ matrix.browser }}
+  wirtschaft:
+    runs-on: ubuntu-latest
+    # The 730-day paired simulation can exceed 20 minutes on shared runners.
+    timeout-minutes: ${{ matrix.tage == 730 && 45 || 20 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        szenario: [S01, S02, S03, S04, S05, S06, S07, S08, S09, S10, S11, S12, S13]
+        tage: [90]
+        include:
+          - {szenario: S02, tage: 365}
+          - {szenario: S02, tage: 730}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/pir-wirtschaftsvergleich.cjs ${{ matrix.szenario }} ${{ matrix.tage }}

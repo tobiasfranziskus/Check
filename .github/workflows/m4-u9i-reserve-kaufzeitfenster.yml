@@ -5,6 +5,7 @@ on:
       - research/m4-u9h-frachterreserve-20261123
     paths:
       - 'tools/m4-u9i-reserve-kaufzeitfenster.cjs'
+      - 'tools/m4-u9i-langzeit-report.cjs'
       - 'tests/m4-u9i-reserve-kaufzeitfenster-research.cjs'
       - '.github/workflows/m4-u9i-reserve-kaufzeitfenster.yml'
 permissions:
@@ -24,3 +25,20 @@ jobs:
           git rev-parse HEAD
           node --check tools/m4-u9i-reserve-kaufzeitfenster.cjs
           node --test tests/m4-u9i-reserve-kaufzeitfenster-research.cjs
+  paired-long:
+    needs: paired-90
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [control, routefree, purchase]
+        days: [365, 730]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/m4-u9i-langzeit-report.cjs ${{ matrix.variant }} ${{ matrix.days }}

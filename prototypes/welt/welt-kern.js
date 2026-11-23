@@ -466,6 +466,52 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           && t.flug.x**2 + t.flug.y**2 <= reichweite2
           && (t.flug.x-x)**2 + (t.flug.y-y)**2 <= reichweite2)));
     }
+    // PIR-2a research: current contact projection only. No orders, RNG, or
+    // bookings; no claim of an intercept ETA or effective escort protection.
+    function zielbewertung(s) {
+      const p = s.kanon.piraten, sh = s.ships[PIR.schiff];
+      if (!p || !sh || !piratenSchiff(s, sh)) return null;
+      const dienst = s.kanon.flugdienst[sh.id];
+      const gebunden = s.owners[konto]?.cash ?? 0;
+      const rest = m_core_anlage.restAktivminuten(s, sh);
+      const aktiv = ['patrouille','beobachten','folgen'].includes(p.phase)
+        && sh.flug.lage === 'frei' && !dienst?.gestrandet
+        && !!dienst && s.tick < p.bis && gebunden > 12
+        && !m_core_anlage.verbraucht(s, sh);
+      const preise = {erz:rules.erzpilot.preis,eis:W.eisPreis,
+        wasser:W.wasserPreis,material:rules.w5?.materialPreis};
+      const kandidaten = aktiv ? kontakte(s,sh).filter(t => t.klasse === 'frachter')
+        .map(t => {
+          const tor = torverkehr(s,t,sh.system);
+          const ladung = Object.entries(t.ladung).filter(([,n]) => n > 0)
+            .sort(([a],[b]) => a < b ? -1 : a > b ? 1 : 0)
+            .map(([ware,menge]) => {
+              const preis = preise[ware];
+              return {ware,menge,referenzpreis:ganz(preis)?preis:null};
+            });
+          const wert = ladung.every(x => x.referenzpreis !== null)
+            ? ladung.reduce((n,x) => n+x.menge*x.referenzpreis,0) : null;
+          const distanzQuadrat = tor ? null :
+            (t.flug.x-sh.flug.x)**2+(t.flug.y-sh.flug.y)**2;
+          // A legacy assignment is not a financed, operational escort.
+          const begleitZuordnung = ids(s.ships).filter(id => {
+            const e=s.ships[id];
+            return e.klasse==='jaeger' && e.owner===t.owner
+              && e.auftrag==='eskorte' && e.escorte===t.id;
+          });
+          return {id:t.id,owner:t.owner,art:tor?'tor':'nah',ladung,
+            referenzwert:wert,distanzQuadrat,restAktivminuten:m_core_anlage.restAktivminuten(s,t),
+            stillgelegt:m_core_anlage.stillgelegt(s,t),begleitZuordnung,
+            schutzwirkung:null,verfolgbar:!tor && t.flug.lage==='frei',
+            transitRestminuten:tor?t.ankunft-s.tick:null};
+        }).sort((a,b) => (a.referenzwert===null)-(b.referenzwert===null)
+          || (b.referenzwert??0)-(a.referenzwert??0)
+          || (a.id<b.id?-1:a.id>b.id?1:0)) : [];
+      return {tick:s.tick,system:sh.system,sicherheit:PIR.sicherheit[sh.system],
+        aktiv,gebundenerFluglohn:gebunden,restAktivminuten:rest,
+        rueckkehrSchwelleISK:12,patrouillenRestminuten:aktiv?p.bis-s.tick:0,
+        kandidaten};
+    }
     function minute(s) {
       const p = s.kanon.piraten, sh = s.ships[PIR.schiff];
       if (!sh || !piratenSchiff(s, sh)) return;
@@ -548,7 +594,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       return lohn === pilot.cash && lohn === (s.kanon.verschleiss[sh.id] || 0) * KANON.flug.lohnJeMinute
         && o.cash === PIR.startkasse - ein + rueck && (k?.cash || 0) === ein - lohn - rueck;
     }
-    return {start,minute,lage,audit};
+    return {start,minute,lage,audit,zielbewertung};
   })();
 
   function merke(engpass, tick, grund) {
@@ -2495,7 +2541,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(p8dFracht ? {p8dGetrennteSpedition:true,p8gMaterialOnlyW3:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
     createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, npcMaterialKetteSetzen, materialSupplySetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
-    ...(piraten ? {piratenProfil:true} : {}), sicherheitslage:m_core_piraten.lage,
+    ...(piraten ? {piratenProfil:true,piratenZielbewertung:m_core_piraten.zielbewertung} : {}), sicherheitslage:m_core_piraten.lage,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
     torPruefen: m_core_torfreigabe.pruefen, torFrachtPruefen: m_core_torfreigabe.darfFracht,
     ruht: m_core_flugplan.ruht, ausschuettbar: m_core_kreislauf.ausschuettbar,

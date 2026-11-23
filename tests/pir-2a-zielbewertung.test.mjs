@@ -1,0 +1,56 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import J8 from '../prototypes/verbund/konzern-session.js';
+import W from '../prototypes/welt/welt-kern.js';
+
+test('PIR-2a reads a real loaded F4 contact; no position invented for transit',()=>{
+ const j=J8.erstellen();j.startenPiraten(true);
+ const w=j.weltReferenz();
+ assert.equal(w.piratenZielbewertung(j.zustandReferenz()).aktiv,false);
+ assert(j.ausfuehren('buy-st_aldera-frachter').ok);
+ assert(j.ausfuehren('buy-st_aldera-miner').ok);
+ const f=j.ansicht().schiffe.find(sh=>sh.klasse==='frachter').id;
+ const m=j.ansicht().schiffe.find(sh=>sh.klasse==='miner').id;
+ assert(j.ausfuehren('ice-'+m).ok);
+ w.advance(j.zustandReferenz(),120);
+ assert(j.ausfuehren('freight-'+f).ok);
+ const s=j.zustandReferenz();w.advance(s,56);
+ const original=j.exportieren(), hash=w.hash(s);
+ const a=w.piratenZielbewertung(s), t=a.kandidaten.find(x=>x.id===f);
+ assert.equal(a.aktiv,true);
+ assert.equal(a.sicherheit,'umkaempft');
+ assert.equal(a.gebundenerFluglohn,s.owners.k1_flug_pir001.cash);
+ assert.equal(a.restAktivminuten,w.restAktivminuten(s,'pir001'));
+ assert.equal(t.art,'tor');assert.equal(t.distanzQuadrat,null);
+ assert.equal(t.transitRestminuten,4);
+ assert.equal(t.verfolgbar,false);
+ assert.deepEqual(t.ladung,[{ware:'eis',menge:50,referenzpreis:w.rules.w5n.eisPreis}]);
+ assert.equal(t.referenzwert,50*w.rules.w5n.eisPreis);
+ assert.equal(t.schutzwirkung,null);
+ assert.deepEqual(t.begleitZuordnung,[]);
+ assert.equal(t.restAktivminuten,w.restAktivminuten(s,f));
+ assert.deepEqual(w.piratenZielbewertung(s),a);
+ assert.equal(w.hash(s),hash);assert.equal(j.exportieren(),original);
+ const replay=w.load(original);
+ assert.deepEqual(w.piratenZielbewertung(replay),a);
+ w.advance(s,64);w.advance(replay,64);
+ assert.equal(w.save(s),w.save(replay));
+ assert.equal(s.kanon.spielerFrachten.gebuehr,240);
+ assert.equal(s.kanon.spielerFrachten.lohn,120);
+ assert.deepEqual(w.audit(s).fehler,[]);
+ assert.equal(s.minted+s.burned,0);
+ w.advance(s,500);
+ const end=w.piratenZielbewertung(s);
+ assert.equal(end.aktiv,false);assert.deepEqual(end.kandidaten,[]);
+});
+
+test('PIR-2a is absent from standard world API and makes no new state or RNG fields',()=>{
+ const normal=W.erstellenJ4c({carrierCash:2000,buyerCash:4000});
+ const s=normal.createState(42);
+ assert.equal(normal.piratenZielbewertung,undefined);
+ assert.equal(s.kanon.piraten,undefined);
+ const pir=W.erstellenPiraten(), p=pir.createState(42);
+ const before=pir.save(p);
+ assert.deepEqual(pir.piratenZielbewertung(p).kandidaten,[]);
+ assert.equal(pir.save(p),before);
+});

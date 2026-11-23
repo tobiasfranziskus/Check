@@ -1,6 +1,8 @@
 # Aphros Void – verbindliche Produkt-Roadmap
 
 
+**[BESCHLOSSEN 23.11.2026 / PIR-Freigabe]** Der Nutzer hat den zuvor erläuterten PIR-Entwicklungsstrang einschließlich echter lokaler Frachter-Tor-/Dockphase und der geplanten Folgestufen freigegeben. Umsetzung in separat geprüften Forschungs- und Integrationspaketen, ohne bestehende Saves zu verändern; AGENTS-Gates bleiben verbindlich. [PIR-2b Entscheidungsgrundlage](PIR_2B_ABFANGGRENZE.md), [PIR-2c Geometrieprobe](PIR_2C_LOKALER_ANFLUG.md). Die Freigabe ist kein Integrationsnachweis und keine Genehmigung ungedeckter Buchungen.
+
 ## Aktueller Produktbeschluss – erwachsene Retro-Sci-Fi-Managementwelt [BESCHLOSSEN 22.11.2026]
 
 **Zielgruppe und visuelle Identität:** Aphros Void richtet sich an **junge Erwachsene ab ca. 18 Jahren** und anspruchsvolle Wirtschafts-/Weltraumstrategen. Die Manageroberfläche folgt der eigenständigen **„Used Future“-/Retro-Science-Fiction-Art-Direction**: edle, matte und sichtbar benutzte Raumfahrt-/Industrieinstrumente; Graphit, dunkles Stahlblau, Messing, zurückhaltendes Phosphortürkis, dezente Patina. Fallout ist eine *atmosphärische* Referenz, **keine** Aufforderung zum Kopieren geschützter Spielgrafik oder des Pip-Boy-Stils. Verbindliche kurze Gestaltungsdetails: [Mini-Style-Bible](MANAGER_RETRO_SF_STYLE_BIBLE.md).

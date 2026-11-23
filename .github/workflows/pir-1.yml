@@ -27,3 +27,20 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/pir-playwright/node_modules/playwright
           WELT_BROWSER: ${{ matrix.browser }}
+  wirtschaft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        szenario: [S01, S02, S03, S04, S05, S06, S07, S08, S09, S10, S11, S12, S13]
+        tage: [90]
+        include:
+          - {szenario: S02, tage: 365}
+          - {szenario: S02, tage: 730}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/pir-wirtschaftsvergleich.cjs ${{ matrix.szenario }} ${{ matrix.tage }}

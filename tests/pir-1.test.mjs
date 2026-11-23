@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import fs from 'node:fs';
 import W from '../prototypes/welt/welt-kern.js';
 import J8 from '../prototypes/verbund/konzern-session.js';
 import Karte from '../prototypes/spiel/p3-manager-karte.js';
@@ -93,4 +94,51 @@ test('Operationsboard liest Stufe, Piratenkontakt und Patrouillenmeldung aus gen
  const pirat=karte.fremdeSchiffe.find(sh=>sh.pirat);
  assert.equal(pirat.id,'pir001');assert.equal(pirat.pirat.sicht.id,'sh002');
  assert.deepEqual(pirat.angebote,[]);assert.equal(w.hash(s),hash);
+});
+
+test('Eigene bezahlte F4-Route ist nur während tatsächlicher Beobachtung exponiert',()=>{
+ const {sitzung:j,w}=start();
+ assert(j.ausfuehren('buy-st_aldera-frachter').ok);
+ assert(j.ausfuehren('buy-st_aldera-miner').ok);
+ const frachter=j.ansicht().schiffe.find(sh=>sh.klasse==='frachter').id;
+ const miner=j.ansicht().schiffe.find(sh=>sh.klasse==='miner').id;
+ assert(j.ausfuehren('ice-'+miner).ok);
+ w.advance(j.zustandReferenz(),120);
+ assert(j.ausfuehren('freight-'+frachter).ok);
+ const s=j.zustandReferenz();w.advance(s,56);
+ const karte=Karte.auswerten(j.ansicht(),s,w,j.angebote());
+ assert.equal(karte.schiffe.find(sh=>sh.id===frachter).exponiert,true);
+ assert.equal(s.kanon.piraten.kontakt.id,frachter);
+ w.advance(s,4);
+ assert.deepEqual(w.sicherheitslage(s).exponiert,[]);
+ w.advance(s,60);
+ assert.equal(s.kanon.spielerFrachten.gebuehr,240);
+ assert.equal(s.kanon.spielerFrachten.lohn,120);
+ assert.deepEqual(w.audit(s).fehler,[]);
+});
+
+test('PIR folgt einem legitim gekauften Freiflugjäger und stoppt bei Zielverlust',()=>{
+ const w=W.erstellenPiraten(), b=w.createState(42);
+ // Testaufbau mit Original-J4c-Kaufbeleg und separatem PIR-Startbestand.
+ // Die produktiven Einstiegspfade bieten keine Kombination mit Altsaves an.
+ const datei=new URL('../prototypes/j4c/beispiel-jaeger-seed42.json',import.meta.url);
+ const s=standard().load(fs.readFileSync(datei,'utf8'));
+ for(const id of ['piraten','pilot_piraten'])s.owners[id]=b.owners[id];
+ s.ships.pir001=b.ships.pir001;
+ s.stats.verkaeufe.pir001=0;
+ s.initialSupply=b.initialSupply;
+ s.kanon.piraten=b.kanon.piraten;
+ assert.deepEqual(w.audit(s).fehler,[]);
+ const ziel=s.ships.sh023, cmd={owner:'house',schiff:ziel.id};
+ assert(w.execute(s,{...cmd,type:'shipUndock'}).ok);
+ w.advance(s,2);
+ assert.equal(s.kanon.piraten.phase,'folgen');
+ assert.deepEqual(s.ships.pir001.flug.ziel,{art:'schiff',id:ziel.id,abstand:32000});
+ assert.equal(w.save(w.load(w.save(s))),w.save(s));
+ assert(w.execute(s,{...cmd,type:'shipDock',station:'st_nadir'}).ok);
+ w.advance(s,2);
+ assert.equal(s.ships.pir001.flug.ziel,null);
+ assert.equal(s.kanon.piraten.phase,'beobachten');
+ assert.equal(ziel.owner,'house');
+ assert.deepEqual(w.audit(s).fehler,[]);
 });

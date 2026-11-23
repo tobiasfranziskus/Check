@@ -1,0 +1,17 @@
+name: PIR-4a – Leichter Jäger Kostenmodell
+on:
+  pull_request:
+    paths:
+      - 'tests/pir-4a-leichter-jaeger-kosten.test.mjs'
+      - '.github/workflows/pir-4a-leichter-jaeger-kosten.yml'
+      - 'prototypes/welt/**'
+  workflow_dispatch:
+jobs:
+  cost-model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/pir-4a-leichter-jaeger-kosten.test.mjs

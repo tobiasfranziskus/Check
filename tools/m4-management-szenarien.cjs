@@ -171,7 +171,7 @@ function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', versuch =
     tage, ergebnis, quellhash, starthash:beginn.hash, folgefahrten, verlauf};
 }
 
-module.exports = {lauf, marktS02};
+module.exports = {lauf, marktS02, verwaltung, kontrollstand};
 if (require.main === module) {
   const [wahl = 'S02', dauer = '90', anfang = '42', profil = 'paar', startpfad = 'konzerne'] = process.argv.slice(2);
   const tage = Number(dauer), seed = Number(anfang);

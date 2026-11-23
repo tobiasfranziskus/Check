@@ -4055,6 +4055,25 @@ const industryOreCancel=(s)=>m_core_w3.stornierenVorArbeit(s,W5_RULES);
      throw Error('U9: Originalabrechnung nicht vollständig');
    return {menge,wert:menge*cfg.preis};
  };
+// U9g: completed physical cargo can still fulfill its signed W1/W3 deal
+// at the dock. No travel or mining is performed by a retired hull.
+const industryOreFullDockSettlement=(s,minerId)=>{
+  if(research?.u9ExportReserve!==true)throw Error('U9g: isoliertes Forschungsprofil erforderlich');
+  const a=s.w3?.auftrag,i=s.kanon?.industrieErz,mi=s.ships[minerId],cfg=W5_RULES.erzpilot;
+  if(a?.phase!=='vorbestellt'||i?.phase!=='aktiv'||i.erzAngenommen||
+     a.industrieMiner!==minerId||i.miner!==minerId||mi?.owner!==cfg.npcInvestor||
+     mi.phase!=='dock'||!m_core_kanon.amDock(mi,cfg.station)||mi.auftrag!=='halten'||
+     mi.ladung.erz!==a.menge||Object.entries(mi.ladung).some(([ware,n])=>ware!=='erz'&&n!==0))
+    throw Error('U9g: keine vollständige physische Erzcharge');
+  const menge=a.menge;
+  const v=s.erzpilotVertraege?.[minerId]||m_core_erzpilot.beauftragen(s,W5_RULES,mi);
+  if(!v||v.menge!==menge||s.owners[v.konto]?.cash!==menge*cfg.preis)
+    throw Error('U9g: vollständige W1-Abnahme nicht gedeckt');
+  const bezahlt=m_core_erzpilot.abliefern(s,W5_RULES,mi);
+  if(bezahlt!==menge||(mi.ladung.erz||0)!==0||s.erzpilotVertraege?.[minerId]||!i.erzAngenommen)
+    throw Error('U9g: Originalabnahme nicht vollständig');
+  return {menge,wert:menge*cfg.preis};
+};
 const pilotW3Stand = (state) => m_core_w3.audit(state,
   state.rulesVersion===W5_RULES.rulesVersion?W5_RULES:
     state.rulesVersion===W4_RULES.rulesVersion?W4_RULES:W3_RULES);
@@ -4106,6 +4125,7 @@ return { hash, hashString, canonical, save, migrate, MIGRATIONS, RULE_MIGRATIONS
   pilotAuftragsStand, pilotWirtschaftsStand, pilotNpcInvestition, pilotNpcKrisenLage,
   industryOrePrebook,industryOreCancel,
   ...(research?.u7HouseFreight===true?{industryOrePartialDockSettlement}:{}),
+  ...(research?.u9ExportReserve===true?{industryOreFullDockSettlement}:{}),
   pilotW3Stand, pilotW3Kalkulation, pilotW4Stand, pilotW4Kalkulation,
   pilotW5Stand, pilotW5Kalkulation, pilotW5Verkauf,
   pilotW5TransferStand, pilotW5TransferKalkulation,

@@ -1,5 +1,8 @@
 # Aphros Void – aktueller Projektstatus [MAIN/M0/M1/P1/P3/W6] · 22.11.2026
 
+**M4-U9d/U9e [FORSCHUNG · 23.11.2026]:** [#582](https://github.com/tobiasfranziskus/Check/pull/582) 21/21 Forschungsjobs, 3/3 Workflows. S02 Tag90: 137 Eisfrachten original, 816 mit 40%, 1014 mit 60%, 783 mit 80%; 40% bis Tag730 ohne weitere Frachten. Neuer Blocker sh040, leer/stillgelegt in Aldera, NPC-Carrier sh079, 1390 ISK gebunden. U9e offline Original-Leerstorno und 40/60%-365/730-Replays; neue CI offen. Keine Integration oder Stabilitätsfreigabe. [Fachbericht](M4_U9_VERTRAGSVORSORGE.md).
+
+
 **M4-U9c/U9d [FORSCHUNG · 23.11.2026]:** [U9c #581](https://github.com/tobiasfranziskus/Check/pull/581), 3/3 CI: nach Abrechnung sechs reale Eisrundfahrten (1.440 ISK Fracht, 720 ISK Lohn), keine Erzfolgefracht. Ersatzkauf trotz 3.188 ISK Meridian-Kasse bei Nullbestand in Aldera unmöglich. U9d: kombinierte Vorsorge/Teilabrechnung, Vergleich des Original-Ersatzvorlaufs 40/60/80 %, 13 gepaarte 90-Tage-Regime plus S02×365/730 mit Replay; Referenztest und neue CI offen. Keine produktive Regeländerung. [Fachbericht](M4_U9_VERTRAGSVORSORGE.md).
 
 

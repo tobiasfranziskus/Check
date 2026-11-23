@@ -36,7 +36,7 @@ function leerstornoProbe(welt,s){
 }
 
 function simulation(sz,tage,seed,mode,vorlauf,option={}){
- const stats={vorsorge:0,abrechnung:0,abgelehnt:0,belege:[],gruende:{},...(mode==='leerstorno'?{leerstorno:0}:{})};
+ const stats={vorsorge:0,abrechnung:0,abgelehnt:0,belege:[],gruende:{},...(['leerstorno','vollabnahme'].includes(mode)?{leerstorno:0}:{}),...(mode==='vollabnahme'?{vollabnahme:0}:{})};
  const add=(obj,key)=>{obj[key]=(obj[key]||0)+1;};
  // An explicit override explores an existing policy parameter, not a new rule.
  const scenario=vorlauf===undefined?sz:{...sz,politik:{...sz.politik,ersatzVorlaufProzent:vorlauf}};
@@ -61,7 +61,7 @@ function simulation(sz,tage,seed,mode,vorlauf,option={}){
          }
        }
      }
-     if(mode==='leerstorno'&&a?.phase==='vorbestellt'&&i?.phase==='aktiv'){
+     if(['leerstorno','vollabnahme'].includes(mode)&&a?.phase==='vorbestellt'&&i?.phase==='aktiv'){
        const p=leerstornoProbe(welt,s);
        if(p.ok){
          stats.leerstorno++;
@@ -70,19 +70,25 @@ function simulation(sz,tage,seed,mode,vorlauf,option={}){
          return json;
        }
      }
-     if(!['kombiniert','leerstorno'].includes(mode)||a?.phase!=='vorbestellt'||i?.phase!=='aktiv'||
+     if(!['kombiniert','leerstorno','vollabnahme'].includes(mode)||a?.phase!=='vorbestellt'||i?.phase!=='aktiv'||
         s.tick-letzteProbe<1440)return;
      const mi=s.ships[a.industrieMiner];
      if(!mi||!welt.stillgelegt(s,mi.id)||mi.flug?.lage!=='angedockt'||!(mi.ladung.erz>0))return;
      letzteProbe=s.tick;
      const vor=welt.save(s),hash=welt.hash(s);
-     const q=welt.u9TeilabrechnungProbe(s,{hash,parteien:['st_nadir','st_aldera','npc3',i.carrier??'transport','werft_extern']});
+     const zustimmung={hash,parteien:['st_nadir','st_aldera','npc3',i.carrier??'transport','werft_extern']};
+     const voll=mode==='vollabnahme'&&mi.ladung.erz===a.menge;
+     const q=voll?welt.u9VollabnahmeProbe(s,zustimmung):welt.u9TeilabrechnungProbe(s,zustimmung);
      assert.equal(welt.save(s),vor);
      if(!q.ok){stats.abgelehnt++;add(stats.gruende,q.reason);return;}
      const neu=welt.load(q.json);
-     assert.equal(neu.w3.auftrag,null);assert.deepEqual(pruefen(welt,neu),[]);
-     stats.abrechnung++;
-     stats.belege.push({typ:'abrechnung',tick:s.tick,miner:mi.id,...q.abrechnung,vor:hash,nach:q.hash});
+     if(voll){
+       assert.deepEqual(neu.w3.auftrag,a);
+       assert.equal(neu.kanon.industrieErz.erzAngenommen,true);
+       stats.vollabnahme++;
+     }else{assert.equal(neu.w3.auftrag,null);stats.abrechnung++;}
+     assert.deepEqual(pruefen(welt,neu),[]);
+     stats.belege.push({typ:voll?'vollabnahme':'abrechnung',tick:s.tick,miner:mi.id,...q.abrechnung,vor:hash,nach:q.hash});
      return q.json;
    }
  });

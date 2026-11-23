@@ -1,0 +1,28 @@
+name: M4 U9b – partial contract settlement research
+on:
+  pull_request:
+    branches:
+      - research/m4-u9-vertragsrettung-20261123
+    paths:
+      - 'prototypes/welt/rule200-k7-industry-core.js'
+      - 'prototypes/welt/welt-kern.js'
+      - 'tests/m4-u9b-teilabrechnung-research.cjs'
+      - '.github/workflows/m4-u9b-teilabrechnung.yml'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          git rev-parse HEAD
+          node --check prototypes/welt/rule200-k7-industry-core.js
+          node --check prototypes/welt/welt-kern.js
+          node --test tests/m4-u9b-teilabrechnung-research.cjs

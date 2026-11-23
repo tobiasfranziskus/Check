@@ -48,3 +48,21 @@ K2 baut bereits Miner aus realem W4-Material; das Original verlangt fünf Materi
 U9d: `node tools/m4-u9d-langzeit.cjs S02 90 42 kombiniert 60`. Vergleich der Original-U7/U8-Strategie, U9a-Vorsorge und kombinierter U9a/U9b-Teststrategie auf den originalen S01–S13-Regimen. Für die rechenintensive Vorabprobe werden nur Angebote mit Restaktivzeit unter der mathematischen Mindestförderzeit betrachtet; auch diese werden ausschließlich bei provenienztreuem Originalbefehls-Gegenversuch mit belegtem Scheitern zurückgezogen. Der 30-Tage-Referenztest verlangt unveränderte Original- und U9a-Hashes und deterministischen Replay des kombinierten Laufs. U9b-Abwicklung wird höchstens einmal pro Spieltag auf einem geprüften Save-Klon mit expliziter, simuliert einstimmiger Entscheidung versucht; ein Fehlschlag bleibt unverändert; nur ein auditierter Ersatz-JSON desselben Ticks darf in den Forschungstreiber übernommen werden. Keine produktive Importfunktion und keine automatische Zustimmung im Browser.
 
 CI-Gate: zuerst S02-30-Tage-Reproduktion, dann 13 gepaarte 90-Tage-Regime, drei 90-Tage-Vorlaufvarianten und jeweils gepaarte/reproduzierte S02-365-/730-Tage-Läufe. Geld, Ware, Save/Load, vorhandene Frachtbelege, Fertigung, Lieferung, Kassen und konkrete Engpässe werden erfasst. Ein grüner Test zeigt gültige Simulationen, nicht automatisch nachhaltige Wirtschaft. Kein wirtschaftlicher Erfolg angenommen, bis die tatsächlichen Laufprotokolle vorliegen. Kein Main-Merge/Deploy.
+
+
+## U9d Langzeitbefund und U9e Original-Leerstorno – 23.11.2026
+
+[U9d CI](https://github.com/tobiasfranziskus/Check/actions/runs/45161347704) auf `216326e6`: 21/21 Forschungsjobs, 3/3 Workflows insgesamt erfolgreich. Alle 13 gepaarten 90-Tage-Regime geprüft; bei S02 und S11 ändern sich die Hashes, die übrigen 11 bleiben in diesem Vergleich identisch. S11: 722 statt 704 Eisfrachten, 0 statt 1390 ISK gebunden, 18 Vorsorgestornos; keine allgemeine Stabilitätsaussage.
+
+S02, Tag90 (Eisfrachten/Erzfrachten/Miner gebaut/geliefert/Frachter gebaut):
+- Original: 137/3/5/4/6.
+- Kombiniert 40%: 816/16/36/35/40; Hash `857f885bf2a25827`.
+- Kombiniert 60%: 1014/21/46/45/51; Hash `5e14d64c83e6e942`.
+- Kombiniert 80%: 783/15/34/33/37; Hash `b991aad837bded8b`.
+
+40%-Langzeit: zwischen Tag90 und Tag730 keine weitere abgeschlossene Eis-/Erzfracht; 1390 ISK dauerhaft gebunden; Endhash `66baaf28e89a7279` (Original `6a050e671330da20` mit 137 Eisfrachten). Beide Replays identisch und Geld 33000 ISK. 60% ist eine vorteilhafte 90-Tage-Variante, nicht freigegeben und noch nicht langfristig nachgewiesen.
+
+[Original S02-Job](https://github.com/tobiasfranziskus/Check/actions/runs/45161347704/job/137647538510): neuer Blocker K7 erstellt Tick104136, W3 vorbestellt, Miner sh040 (npc3, 2004 Aktivminuten, stillgelegt, Aldera-Dock, leere Ladung), Frachter sh079 (transport, 1620 Aktivminuten, Buchwert264, Aldera-Dock). Keine W1-Reserve, kein begonnenes W3, keine Werftleistung. Gebunden 740 Nadir +120 Spedition +530 Werft. Der U9d-Teilladungsversuch berücksichtigte leere Miner gerade nicht; der Originalstorno ist für diesen Fall vorgesehen. Dies ist kein Mangel an einem neuen Wirtschaftsrezept.
+
+U9e-Folgebranch: neue reine Node-Testvariante `leerstorno` verwendet bei einem tatsächlich stillgelegten, leeren, angedockten, vorbestellten Miner ohne W1-Vertrag und ohne begonnene W3-/Werftleistung den vorhandenen Nadir-Stornobefehl auf einer geprüften Kopie. Rückzahlungen an ursprüngliche Zahler werden exakt geprüft, keine Ware/Arbeitsvergütung nachträglich geändert. Nur auditierter Same-Tick-JSON darf im Testtreiber übernommen werden. Abgrenzung zur Teilabrechnung: geladenes Original und bereits stornierter Zustand müssen abgelehnt werden. Kein Produktpfad, keine neue Regel, keine Spielerzustimmung fingiert. Die simulierte Nadir-Entscheidung erfolgt nur im Experiment. Nach Referenzprüfung auf 90 Tage (sh040) folgen 365/730-Tage-Replays für 40 und 60%, zusätzlich 60%-Vergleich ohne Leerstorno. Neue CI bei Erstellung offen. Integration weiter gesperrt bis zum realen Material-/Ersatzkreislauf- und Produktnachweis.
+

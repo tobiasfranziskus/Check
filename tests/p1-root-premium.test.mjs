@@ -61,3 +61,11 @@ test('M4 UX: public gateway has one primary action, collapsed alternatives and n
  assert.match(css,/body:not\(:has\(:target\)\) > :is\(section,nav,main\)/);
  assert.match(css,/body:has\(#klassische-wirtschaft:target\) #root-portal\{display:none\}/);
 });
+
+test('M4 UX: legacy return is a same-document link and short landscape keeps navigation separate',()=>{
+ const pages=read('index.html'),css=read('scripts/pages-entry.css');
+ assert.match(pages,/<a class="root-back" href="#root-portal">Zum Spieleinstieg<\/a>/);
+ assert.ok(css.includes('body:has(#root-portal:target) > :is(section,nav,main)'));
+ assert.ok(css.includes('grid-template-columns:minmax(0,1fr) minmax(220px,.9fr)'));
+ assert.doesNotMatch(read('aphros-void.html'),/class="root-back"/);
+});

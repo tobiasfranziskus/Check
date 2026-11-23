@@ -149,6 +149,7 @@ function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', versuch =
           ankunftAldera: s.w5ad.freight.find(y => y.id === x.schiff && y.start === x.start)?.end ?? null}))});
     else if (tag % 7 === 0) assert.deepEqual(pruefen(welt, s), []);
   }
+  if (versuch?.amEnde) versuch.amEnde(welt, s);
   const ende = verlauf.at(-1);
   const folgefahrten = ende.werftkaeufe.flatMap(kauf => {
     const transfer = ende.ueberfuehrungen.find(x => x.id === kauf.id && x.owner === 'house');

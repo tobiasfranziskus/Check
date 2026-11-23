@@ -144,3 +144,25 @@ test('PIR-2d rejects forged docking, profile and commands and halts a missed arr
  assert.equal(sh.ladung.eis,50);
  assert.equal(w.save(w.load(w.save(s))),w.save(s));
 });
+
+test('PIR-2e intercepts and locks the real loaded freighter only after local arrival',()=>{
+ const {w,s,f}=kontakt('abfangen');
+ const pirat=s.ships.pir001, mission=s.kanon.piraten;
+ assert.equal(mission.phase,'abfangen');
+ assert.equal(pirat.flug.ziel.id,f);
+ assert.equal(pirat.flug.erfassung.id,f);
+ const geladen=w.load(w.save(s));
+ w.advance(s,1);
+ assert.equal(mission.phase,'angriffsfenster');
+ assert.equal(s.ships[f].ladung.eis,50);
+ assert.equal(w.execute(s,{type:'shipUnlock',owner:'piraten',schiff:pirat.id}).ok,false);
+ w.advance(s,1);
+ assert.equal(mission.phase,'rueckkehr');
+ const rueckkehr=w.load(w.save(s));
+ w.advance(s,2); w.advance(geladen,4); w.advance(rueckkehr,2);
+ assert.equal(w.hash(s),w.hash(geladen));
+ assert.equal(w.hash(s),w.hash(rueckkehr));
+ assert.equal(mission.phase,'bereit');
+ assert.equal(pirat.flug.erfassung,undefined);
+ assert.deepEqual(w.audit(s).fehler,[]);
+});

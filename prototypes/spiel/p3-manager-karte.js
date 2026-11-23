@@ -10,6 +10,7 @@ const klassen={miner:'Bergbauschiff',frachter:'Frachter',jaeger:'Jäger'};
 const phasen={hin:'Hinfahrt',rueck:'Rückfahrt',vorbestellt:'Vorbestellt'};
 const sicherheitsnamen={sicher:'Sicher',umkaempft:'Umkämpft',gesetzlos:'Gesetzlos'};
 const piratenAktivitaet={bereit:'Patrouille in Bereitschaft',auslaufen:'Läuft aus',patrouille:'Auf Patrouille',
+ abfangen:'Fängt Frachter ab',angriffsfenster:'Frachter aufgeschaltet',
  beobachten:'Beobachtet Handelsrouten',folgen:'Folgt einem Kontakt',rueckkehr:'Rückkehr zum Dock',
  gestrandet:'Einsatz abgebrochen · Kein Fluglohn',keinKapital:'Einsatz beendet · Reserve fehlt',
  verschlissen:'Einsatz beendet · Hülle verschlissen'};

@@ -1,0 +1,37 @@
+name: M4 U7 import and recovery
+on:
+  push:
+    branches:
+      - fix/m4-u7-import-recovery-20261122
+  pull_request:
+    branches:
+      - research/m4-u7-u8-transport-20261122
+    paths:
+      - 'tests/m4-u7-import-recovery-browser.cjs'
+      - '.github/workflows/m4-u7-import-recovery.yml'
+permissions:
+  contents: read
+jobs:
+  recovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          git rev-parse HEAD
+          node --check prototypes/spiel/spiel.js
+          node --check tests/m4-u7-import-recovery-browser.cjs
+          npm install --no-save --no-package-lock playwright@1.51.1
+          npx playwright install --with-deps ${{ matrix.browser }}
+      - run: node tests/m4-u7-import-recovery-browser.cjs
+        env:
+          WELT_BROWSER: ${{ matrix.browser }}

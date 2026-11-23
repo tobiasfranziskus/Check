@@ -54,8 +54,7 @@ function speichern(copyOld=false){
  // redirect any existing Rule204/195 career storage.
  try {
    if(session.ansicht().transportForschung===true){
-     if(copyOld){const old=scope.localStorage.getItem(SLOT_U7);if(old)scope.localStorage.setItem(SLOT_U7+':vorherige',old);}
-     scope.localStorage.setItem(SLOT_U7,json);
+     transportSpeichern(json,copyOld);
    }else if(session.ansicht().regel===207){
      if(copyOld){const old=scope.localStorage.getItem(SLOT_W6);
        if(old)scope.localStorage.setItem(SLOT_W6+':vorherige',old);}
@@ -71,6 +70,19 @@ function speichern(copyOld=false){
    return false;
  }
 }
+// Two-slot replacement: never discard the only backup on a failed current-slot write.
+function transportSpeichern(json,copyOld){
+ const store=scope.localStorage,key=SLOT_U7+':vorherige';
+ const old=copyOld?store.getItem(SLOT_U7):null;
+ if(!old||old===json){store.setItem(SLOT_U7,json);return;}
+ const backup=store.getItem(key);
+ store.setItem(key,old);
+ try{store.setItem(SLOT_U7,json);}
+ catch(e){
+  if(backup===null)store.removeItem(SLOT_U7+':vorherige');else store.setItem(key,backup);
+  throw e;
+ }
+}
 function gespeicherte(key=SLOT){
  try{return scope.localStorage.getItem(key)||null;}catch{return null;}
 }
@@ -79,6 +91,7 @@ function menustand(){
  $('fortsetzen-w6').disabled=!gespeicherte(SLOT_W6);
  $('transport-kopie').disabled=!gespeicherte();
  $('transport-fortsetzen').hidden=!gespeicherte(SLOT_U7);
+ $('transport-wiederherstellen').hidden=!gespeicherte(SLOT_U7+':vorherige');
  const old=$('vorige-karriere');
  if(old)old.hidden=!gespeicherte(BACKUP);
  const w6Backup=$('vorige-forschung');
@@ -180,7 +193,7 @@ function ladeSitzung(json,auswahl,backup=false){
  if(raw?.kanon?.u8ErzRueckfracht===true){
    if(auswahl!=='datei')throw Error('Transportforschung nur über ihren eigenen Zugang öffnen');
    if(!scope.confirm('Transportforschungsstand separat importieren? Die normale Karriere bleibt unverändert.'))return;
-   return ladeTransport(json,false);
+   return ladeTransport(json,false,true);
  }
  if(regel!==204&&regel!==207)throw Error('Dieser Spielstand gehört nicht zu einer unterstützten Karriere.');
  if(regel===207&&!['forschung','forschung-backup','datei'].includes(auswahl))
@@ -207,16 +220,33 @@ function ladeSitzung(json,auswahl,backup=false){
  if(auswahl==='datei'||backup)speichern(!!gespeicherte(slot));
  aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Dein Spielstand wurde geprüft.');
 }
-function ladeTransport(json,kopie){
+function ladeTransport(json,kopie,extern=false,wiederherstellen=false){
  const vorher=gespeicherte(SLOT_U7);
  if(kopie&&!scope.confirm('Eine getrennte Transport-Forschungskopie der gespeicherten normalen Karriere erstellen? Deine normale Karriere bleibt erhalten.'))return;
- if((kopie||json!==vorher)&&vorher&&!scope.confirm('Bisherige Transportforschung als vorherige Version sichern und ersetzen?'))return;
+ if(!wiederherstellen&&(kopie||json!==vorher)&&vorher&&!scope.confirm('Bisherige Transportforschung als vorherige Version sichern und ersetzen?'))return;
  const neu=neueSitzung(),a=neu.oeffnenU7U8(json,true);
  if(a.transportForschung!==true||a.weltgeld!==33000)throw Error('Transportforschung nicht validiert');
+ // External JSON is not a proof of consent. Show pending actions from the
+ // validated candidate before changing either a session or a storage slot.
+ if(extern){
+  const s=neu.zustandReferenz(),i=s.kanon.industrieErz,w=s.w3.auftrag;
+  if(i?.phase==='angebot'&&i.carrier==='house'&&i.signFracht===true){
+   if(!scope.confirm('Offener Erztransport mit '+i.frachter+': 240 ISK Frachtvergütung, 120 ISK Fluglohn. Die importierte Zusage kann beim nächsten Zeitschritt einen finanzierten Auftrag auslösen. Diesen konkreten Auftrag jetzt ausdrücklich übernehmen?'))return;
+  }
+  if(w?.carrier==='house'&&w.wasserZustimmung===true&&!s.kanon.rueckfracht
+     &&['vorbestellt','hin'].includes(w.phase)){
+   if(!scope.confirm('Offene Wasser-Rückladung mit '+w.schiff+': Bei gedecktem Bedarf kann Aldera auf dem Rückflug Wasser bestellen. Diese noch nicht ausgeführte freiwillige Rückladung ausdrücklich übernehmen?'))return;
+  }
+ }
+ if(wiederherstellen&&!scope.confirm('Vorherige Transportforschung wiederherstellen? Der aktuelle Transportstand bleibt als vorherige Version erhalten.'))return;
  if(session&&!speichern())throw Error('Laufende Karriere zuerst sichern');
+ // Persist the validated destination before switching live session. Failed
+ // replacement leaves both the current session and the previous slots intact.
+ const stand=neu.exportieren();
+ if(stand.length>MAX)throw Error('Transportstand übersteigt 5 MB.');
+ transportSpeichern(stand,!!vorher&&(kopie||json!==vorher));
  session=neu;sitzungsUiZuruecksetzen();
- const ok=speichern(!!vorher&&(kopie||json!==vorher));
- aktiveSitzung(ok?'Getrennte Transportforschung geöffnet. Die normale Karriere bleibt erhalten.':'Transportforschung geöffnet. Bitte JSON exportieren.');
+ aktiveSitzung(wiederherstellen?'Vorherige Transportforschung wiederhergestellt.':'Getrennte Transportforschung geöffnet. Die normale Karriere bleibt erhalten.');
 }
 function weiter(n){
  let vorher=null;
@@ -1450,6 +1480,15 @@ $('transport-fortsetzen').addEventListener('click',()=>{try{
  const json=gespeicherte(SLOT_U7);if(!json)throw Error('Kein separater Transportstand');
  ladeTransport(json,false);
 }catch(e){hinweis('Transportforschung nicht geöffnet: '+error(e),true);}});
+$('transport-wiederherstellen').addEventListener('click',()=>{try{
+ if(session)throw Error('Erst die aktuelle Karriere als JSON sichern und die Seite neu öffnen');
+ const json=gespeicherte(SLOT_U7+':vorherige');
+ if(!json)throw Error('Keine vorherige Transportforschung gespeichert');
+ const raw=JSON.parse(json);
+ if(raw?.kanon?.u8ErzRueckfracht!==true||raw?.kanon?.u7Manager!==true)
+  throw Error('Keine gültige Transportforschungssicherung');
+ ladeTransport(json,false,false,true);
+}catch(e){hinweis('Vorherige Transportforschung nicht geöffnet: '+error(e),true);}});
 $('w6-npc-start').addEventListener('change',()=>{
  if($('w6-npc-start').checked)$('w6-p8g-start').checked=false;
 });

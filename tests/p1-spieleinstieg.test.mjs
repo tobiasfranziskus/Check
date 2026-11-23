@@ -76,7 +76,10 @@ test('P1: standalone player entry only adds a separate shell, no core or old sav
  assert.match(js,/session\.exportieren\(\)/);
  assert.match(js,/\.oeffnen204\(/);
  assert.match(js,/localStorage\.setItem\(SLOT,json\)/);
- assert.doesNotMatch(js,/indexedDB\.deleteDatabase|localStorage\.clear\(|\.removeItem\(/);
+ // The only allowed deletion rolls back a newly created U7 backup key after a failed write.
+ // No existing save, other storage key or database may be deleted.
+ const rollback="if(backup===null)store.removeItem(SLOT_U7+':vorherige');else store.setItem(key,backup);";
+ assert.doesNotMatch(js.replace(rollback,''),/indexedDB\.deleteDatabase|localStorage\.clear\(|\.removeItem\(/);
  assert.doesNotMatch(html,/<script[^>]*src="https?:/i);
  assert.doesNotMatch(css,/@import|url\(https?:/);
  for(const match of html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)="(\.\.\/[^"]+)"/g)){

@@ -2093,6 +2093,40 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     }catch(e){return fail(e.message);}
   }
 
+  // U9g offline counterfactual: accept a physically complete docked cargo
+  // without cancelling the valid signed downstream contract.
+  function u9VollabnahmeProbe(state,zustimmung){
+    const fail=reason=>({ok:false,reason});
+    if(!NODE||!u8Research||!u9ExportReserve||state.kanon.u7Manager!==true)
+      return fail('U9g: nur isolierte Node-Forschungswelt');
+    let json;
+    try{json=save(state);}catch(e){return fail(e.message);}
+    const a=state.w3?.auftrag,i=state.kanon.industrieErz;
+    if(a?.phase!=='vorbestellt'||i?.phase!=='aktiv'||i.erzAngenommen||i.werftVerwendet||
+       i.materialOnly||a.gearbeitet!==0||a.industrieMiner!==i.miner||a.schiff!==i.frachter)
+      return fail('U9g: kein unbefahrener aktiver Industrieauftrag');
+    const mi=state.ships[i.miner],fr=state.ships[i.frachter],carrier=i.carrier??'transport';
+    if(!mi||!fr||mi.owner!=='npc3'||fr.owner!==carrier||mi.system!=='aldera'||
+       mi.flug?.lage!=='angedockt'||mi.phase!=='dock'||mi.auftrag!=='halten'||
+       !m_core_anlage.stillgelegt(state,mi)||mi.ladung.erz!==a.menge||
+       Object.entries(mi.ladung).some(([ware,n])=>ware!=='erz'&&n!==0)||
+       fr.system!=='aldera'||fr.flug?.lage!=='angedockt'||fr.phase!=='dock'||
+       ladungSumme(fr)!==0||fr.auftrag!=='halten'||m_core_anlage.stillgelegt(state,fr))
+      return fail('U9g: vollständige Ladung, Eigentum, Dock oder Stilllegung nicht belegt');
+    const parteien=['st_nadir','st_aldera','npc3',carrier,'werft_extern'].sort();
+    if(!zustimmung||zustimmung.hash!==kern.hash(state)||!Array.isArray(zustimmung.parteien)||
+       zustimmung.parteien.length!==parteien.length||[...zustimmung.parteien].sort().some((x,j)=>x!==parteien[j]))
+      return fail('U9g: konkrete Zustimmung aller Vertragsparteien fehlt');
+    try{
+      const q=load(json),abrechnung=kern.industryOreFullDockSettlement(q,mi.id);
+      if(q.w3.auftrag?.phase!=='vorbestellt'||!q.kanon.industrieErz.erzAngenommen)
+        throw Error('U9g: gültiger W3-Vertrag verloren');
+      const ergebnis=save(q);
+      if(save(load(ergebnis))!==ergebnis)throw Error('U9g: Roundtrip abweichend');
+      return {ok:true,abrechnung,json:ergebnis,hash:kern.hash(q)};
+    }catch(e){return fail(e.message);}
+  }
+
   // K7 research-only: independent NPC signers use the existing validated K7
   // commands. The player's browser only changes the optional policy flag;
   // it cannot sign on behalf of NPC companies or create cash, ships or ore.
@@ -2548,6 +2582,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(p8cDravos||p8dFracht ? {p8cEchteDravosExpedition:true} : {}),
     ...(p8dFracht ? {p8dGetrennteSpedition:true,p8gMaterialOnlyW3:true} : {}),
     ...(u8Research && NODE ? {u9TeilabrechnungProbe} : {}),
+    ...(u9ExportReserve && NODE ? {u9VollabnahmeProbe} : {}),
     ...(u8Research ? { industrieAngebotslage: (s) => {
       const {ok, grund} = u7Angebotslage(s);
       return {ok, grund};

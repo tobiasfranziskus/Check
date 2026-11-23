@@ -329,7 +329,7 @@ function fuehreZu(state, s, sollort, flug = FLUG) {
   return cmd({ type: 'shipApproach', zielArt: 'feld', ziel: sollort.id });
 }
 
-function audit(state, flug = FLUG) {
+function audit(state, flug = FLUG, lokalerVertrag = null) {
   const fehler = (grund) => ({ ok: false, grund });
   if (!state.flug || !ganz(state.flug.schritt, 0, flug.schritteJeMinute - 1) || Object.keys(state.flug).length !== 1)
     return fehler('Flugschrittzähler ungültig');
@@ -345,7 +345,7 @@ function audit(state, flug = FLUG) {
       return fehler(id + ': Flugzahl außerhalb des Wertebereichs');
     if (!LAGEN.includes(b.lage) || !['hand', 'anflug', 'halt', ...(state.rulesVersion === 204 ? ['orbit','folgen'] : [])].includes(b.modus) || typeof b.andocken !== 'boolean')
       return fehler(id + ': unbekannte Lage oder Steuerart');
-    if ((b.lage === 'transit') !== (s.phase === 'reise')) return fehler(id + ': Transit passt nicht zur Core-Phase');
+    if ((b.lage === 'transit') !== (s.phase === 'reise' && id !== lokalerVertrag)) return fehler(id + ': Transit passt nicht zur Core-Phase');
     const fest = b.lage === 'angedockt' || b.lage === 'andocken' || b.lage === 'abdocken';
     if (fest !== (b.anker !== null) || (fest && b.anker !== sys.station.id)) return fehler(id + ': Anker passt nicht zur Lage');
     if (b.lage !== 'frei' && !steuerbarerTransit(state,s)

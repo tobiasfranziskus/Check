@@ -59,6 +59,41 @@ async function pruefen(browser,url,width,height){
   assert.equal(await save(pir),text);
   await tap('#open-menu');await tap('#fortsetzen');
   assert.equal(await marke.count(),0);assert.equal(await save(standard),normal);
+  await page.evaluate(()=>{
+   const j=J8KonzernSitzung.erstellen();
+   j.startenPiraten(true,true);
+   const w=j.weltReferenz();
+   for(const id of ['buy-st_aldera-frachter','buy-st_aldera-miner']){
+    if(!j.ausfuehren(id).ok)throw Error('Forschungskauf fehlgeschlagen');
+   }
+   const f=j.ansicht().schiffe.find(sh=>sh.klasse==='frachter').id;
+   const m=j.ansicht().schiffe.find(sh=>sh.klasse==='miner').id;
+   if(!j.ausfuehren('ice-'+m).ok)throw Error('Eisauftrag fehlt');
+   w.advance(j.zustandReferenz(),120);
+   if(!j.ausfuehren('freight-'+f).ok)throw Error('Frachtauftrag fehlt');
+   const s=j.zustandReferenz();
+   w.advance(s,56);
+   const karte=P3ManagerKarte.verbinden(document.documentElement,{
+    waehleAngebot(){},waehleSchiff(){},oeffneFlotte(){},konzernname:String,
+    titel:a=>a.label,fmt:String,anzeigetext:String
+   });
+   const zeichnen=()=>karte.anzeigen(P3ManagerKarte.auswerten(j.ansicht(),s,w,[]));
+   zeichnen();
+   window.testAnflugMinute=()=>{w.advance(s,1);zeichnen();return s.w5n.eisGeliefert;};
+  });
+  const frachter=page.locator('.sektor-nadir .sektor-schiff').filter({hasText:'Nadir-Anflug'});
+  const position=()=>frachter.locator('path[transform]').getAttribute('transform');
+  const tor=await position();
+  assert.equal(await page.evaluate(()=>window.testAnflugMinute()),0);
+  assert.notEqual(await position(),tor);
+  await frachter.tap({timeout:8000});
+  assert.match(await page.locator('#sektor-details').textContent(),/Nadir-Anflug/);
+  assert.equal(await page.evaluate(()=>window.testAnflugMinute()),0);
+  assert.equal(await page.evaluate(()=>window.testAnflugMinute()),0);
+  assert.equal(await page.evaluate(()=>window.testAnflugMinute()),50);
+  assert.equal(await frachter.count(),0);
+  assert.equal(await save(standard),normal);
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   assert.deepEqual(errors,[]);
   console.log(JSON.stringify({browser:browserName,width,height,hash:w.hash(result),lohn:result.owners.pilot_piraten.cash}));
  }finally{await context.close();}

@@ -34,7 +34,7 @@ function stand(welt, s) {
   });
 }
 
-function verwaltung(welt, s, zahlen, wasserErlaubt) {
+function verwaltung(welt, s, zahlen, wasserErlaubt, eisFreigabe = null) {
   const k = s.kanon, haus = Object.values(s.ships).filter(sh => sh.owner === 'house');
   const i = k.industrieErz, a = s.w3.auftrag;
   const versuch = (type, daten = {}) => {
@@ -79,7 +79,12 @@ function verwaltung(welt, s, zahlen, wasserErlaubt) {
   // Prefer a bought Nadir hull for a genuinely executable follow-up.
   const kandidatin = frachter.filter(sh => sh.system === 'aldera' && sh.flug?.lage === 'angedockt')
     .sort((x, y) => Number(s.w5.schiffIds.includes(y.id)) - Number(s.w5.schiffIds.includes(x.id)))[0];
-  if (kandidatin) versuch('shipFreightIce', {schiff: kandidatin.id});
+  if (kandidatin) {
+    if(eisFreigabe&&!eisFreigabe(welt,s,kandidatin)){
+      const key='Forschungsstrategie: letzte Transportreserve erhalten';
+      zahlen[key]=(zahlen[key]||0)+1;
+    }else versuch('shipFreightIce', {schiff: kandidatin.id});
+  }
 }
 
 function kontrollstand(welt, s) {
@@ -145,7 +150,8 @@ function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', versuch =
           s = probe;
         }
       }
-      verwaltung(welt, s, entscheidungen, szenario.id !== 'S08');
+      if(versuch?.vorVerwaltung)versuch.vorVerwaltung(welt,s);
+      verwaltung(welt, s, entscheidungen, szenario.id !== 'S08', versuch?.eisFreigabe);
       // Sample each physical W3 return at its arrival tick.
       while (s.tick < naechsterTermin && s.w3.auftrag) {
         if(versuch?.vorMinute)versuch.vorMinute(welt,s);

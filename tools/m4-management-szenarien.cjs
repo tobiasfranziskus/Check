@@ -145,6 +145,7 @@ function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', versuch =
           s = probe;
         }
       }
+      if(versuch?.vorDisposition)versuch.vorDisposition(welt,s);
       verwaltung(welt, s, entscheidungen, szenario.id !== 'S08');
       // Sample each physical W3 return at its arrival tick.
       while (s.tick < naechsterTermin && s.w3.auftrag) {

@@ -642,6 +642,15 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
     assert.equal(await page.locator('#klassische-wirtschaft').count(),1);
     assert.equal(await page.locator('#save').count(),1,'original W0-W5 save button kept');
     assert.equal(await page.locator('#import').count(),1,'original W0-W5 import kept');
+    assert.equal(await page.locator('#save').isHidden(),true,'legacy controls must not appear on public start');
+    assert.equal(await page.locator('#root-portal .root-more').evaluate(el=>el.open),false);
+    assert.equal(await page.locator('#root-portal .root-cards, #root-portal .root-info').count(),0);
+    if(width>height)assert.equal(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+2),true,'closed public menu fits landscape');
+    await page.locator('#root-portal .root-more summary').tap();
+    await page.locator('#root-portal a[href="#klassische-wirtschaft"]').tap();
+    assert.equal(await page.locator('#save').isVisible(),true,'explicit legacy entry retains original controls');
+    await page.goto(base+'/');
+    assert.equal(await page.locator('#save').isHidden(),true,'normal start hides the legacy again');
     assert.doesNotMatch(await gateway.textContent(),/Regel\s*20[47]|Prototyp|richtiger Miner/i);
     const entry=page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/spiel/index.html"]');
     assert.equal(await entry.count(),1,'visible first-class game entry from public root');

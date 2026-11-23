@@ -1,0 +1,84 @@
+name: M4 U9g – full retired cargo fulfillment
+on:
+  pull_request:
+    branches:
+      - research/m4-u9f-erzreservierung-20261123
+    paths:
+      - 'prototypes/welt/**'
+      - 'tools/m4-u9d-langzeit.cjs'
+      - 'tests/m4-u9g-vollcharge-research.cjs'
+      - '.github/workflows/m4-u9g-vollcharge.yml'
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          git rev-parse HEAD
+          node --check prototypes/welt/rule200-k7-industry-core.js
+          node --check prototypes/welt/welt-kern.js
+          node --test tests/m4-u9g-vollcharge-research.cjs
+  horizon:
+    needs: reference
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        days: [365, 730]
+        lead: [40, 60]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          node - <<'NODE'
+          const assert=require('node:assert/strict');
+          const {simulation}=require('./tools/m4-u9d-langzeit.cjs');
+          const {SZENARIEN}=require('./tools/w6-szenarien.cjs');
+          const {erstellenU9f}=require('./prototypes/welt/welt-kern.js');
+          const sz=SZENARIEN.find(x=>x.id==='S02');
+          const weltFabrik=p=>erstellenU9f({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+          const run=()=>simulation(sz,${{ matrix.days }},42,'vollabnahme',${{ matrix.lead }},{weltFabrik});
+          const a=run();assert.deepEqual(run(),a);console.log(JSON.stringify(a));
+          NODE
+  regimes:
+    needs: reference
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        scenario: [S01, S02, S03, S04, S05, S06, S07, S08, S09, S10, S11, S12, S13]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          node - <<'NODE'
+          const assert=require('node:assert/strict');
+          const {simulation}=require('./tools/m4-u9d-langzeit.cjs');
+          const {SZENARIEN}=require('./tools/w6-szenarien.cjs');
+          const {erstellenU9f}=require('./prototypes/welt/welt-kern.js');
+          const sz=SZENARIEN.find(x=>x.id==='${{ matrix.scenario }}');
+          const weltFabrik=p=>erstellenU9f({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+          const a=simulation(sz,90,42,'original');
+          const b=simulation(sz,90,42,'vollabnahme',sz.politik.stilllegung?60:undefined,{weltFabrik});
+          for(const x of [a,b])assert.equal(x.verlauf.at(-1).weltgeld,33000);
+          console.log(JSON.stringify(a));console.log(JSON.stringify(b));
+          NODE

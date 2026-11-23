@@ -1,0 +1,45 @@
+name: M4 U9k – real market purchase competition
+on:
+  pull_request:
+    branches:
+      - research/m4-u9j-erz-zuerst-20261123
+    paths:
+      - 'tools/m4-u9k-werftkonkurrenz.cjs'
+      - 'tools/m4-management-szenarien.cjs'
+      - '.github/workflows/m4-u9k-werftkonkurrenz.yml'
+permissions:
+  contents: read
+jobs:
+  paired-90:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          git rev-parse HEAD
+          node --check tools/m4-management-szenarien.cjs
+          node --check tools/m4-u9k-werftkonkurrenz.cjs
+          node tools/m4-u9k-werftkonkurrenz.cjs control 90
+          node tools/m4-u9k-werftkonkurrenz.cjs defer 90
+  long:
+    needs: paired-90
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [control, defer]
+        days: [365, 730]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/m4-u9k-werftkonkurrenz.cjs ${{ matrix.variant }} ${{ matrix.days }}

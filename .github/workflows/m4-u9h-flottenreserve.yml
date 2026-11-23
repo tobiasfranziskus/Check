@@ -1,0 +1,44 @@
+name: M4 U9h – last carrier reserve and owner dispatch
+on:
+  pull_request:
+    branches:
+      - research/m4-u9g-vollcharge-20261123
+    paths:
+      - 'tools/m4-management-szenarien.cjs'
+      - 'tools/m4-u9h-flottenreserve.cjs'
+      - 'tests/m4-u9h-flottenreserve-research.cjs'
+      - '.github/workflows/m4-u9h-flottenreserve.yml'
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          git rev-parse HEAD
+          node --check tools/m4-u9h-flottenreserve.cjs
+          node --test tests/m4-u9h-flottenreserve-research.cjs
+  horizon:
+    needs: reference
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        strategy: [reserve, kombiniert]
+        seed: [42, 7]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/m4-u9h-flottenreserve.cjs S02 730 ${{ matrix.seed }} ${{ matrix.strategy }} 1

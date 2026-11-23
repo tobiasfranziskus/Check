@@ -1,5 +1,8 @@
 # Aphros Void – aktueller Projektstatus [MAIN/M0/M1/P1/P3/W6] · 22.11.2026
 
+**M4-U9g/U9h [FORSCHUNG · 23.11.2026]:** [#585](https://github.com/tobiasfranziskus/Check/pull/585) 6/6 CI-Workflows, 18/18 Forschungsjobs. Originale W1-Vollabnahme 50 Erz/500 ISK und nachfolgende bezahlte W3-Rundfahrt nachgewiesen. S02/60% nach 730 Tagen 6269 Eis-/115 Erzfrachten,267 gelieferte Miner,303 gebaute Frachter,0 ISK gebunden,33.000 Weltgeld, Replayhash `35e809440b315ae4`; dennoch nach rund 550 Tagen erneuter Stillstand ohne einsatzfähige Frachter. Spedition2000, Werft1060, Nadir4000, Haus17550 ISK, keine Nadir-Material-/Hüllenbestände. U9h beobachtet den Flottenausfall und vergleicht bestehende Vorratspolitik mit rechtzeitigem, eigenfinanziertem Kauf realer Reservehüllen (reiner Node-Test, 365/730-Replays). CI offen. Keine Produktfreigabe. [Fachbericht](M4_U9_VERTRAGSVORSORGE.md).
+
+
 **M4-U9f/U9g [FORSCHUNG · 23.11.2026]:** #583 3/3 CI, #584 6/6 CI. Erzexportkollision Tick128760 konkret nachgewiesen, Gegenprobe lädt 50 statt blockierte49 Erz. S02 Tag730: 40% 2371 Eis-/44 Erzfrachten, 60% 4380/81, beide schließlich stillstehend. 60%-Blocker sh366 mit voller 50er-Ladung; U9g Original-W1-Vollabnahme statt Storno, Fracht-/Replay-/13×90-Gate neu, CI offen. Keine Produktfreigabe. [Fachbericht](M4_U9_VERTRAGSVORSORGE.md).
 
 

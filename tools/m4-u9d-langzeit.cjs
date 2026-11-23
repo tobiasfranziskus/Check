@@ -35,14 +35,16 @@ function leerstornoProbe(welt,s){
    vor:welt.hash(s),nach:welt.hash(q)};
 }
 
-function simulation(sz,tage,seed,mode,vorlauf){
+function simulation(sz,tage,seed,mode,vorlauf,option={}){
  const stats={vorsorge:0,abrechnung:0,abgelehnt:0,belege:[],gruende:{},...(mode==='leerstorno'?{leerstorno:0}:{})};
  const add=(obj,key)=>{obj[key]=(obj[key]||0)+1;};
  // An explicit override explores an existing policy parameter, not a new rule.
  const scenario=vorlauf===undefined?sz:{...sz,politik:{...sz.politik,ersatzVorlaufProzent:vorlauf}};
  let letzteProbe=-1440;
- const report=lauf(scenario,tage,seed,true,'konzerne',mode==='original'?null:{
+ const report=lauf(scenario,tage,seed,true,'konzerne',mode==='original'&&Object.keys(option).length===0?null:{
+   ...option,
    vorEntscheidung(welt,s){
+     if(mode==='original')return;
      const i=s.kanon.industrieErz,a=s.w3.auftrag;
      // Only mathematically insufficient minimum mining time needs a costly
      // original-command counterfactual. No automatic cancellation on estimate.

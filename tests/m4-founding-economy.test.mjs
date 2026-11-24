@@ -92,3 +92,59 @@ test('M4 founding hull: public standard vs explicit S02, house-first vs NPC-firs
  }
  console.log('M4_FOUNDING_MAIN '+JSON.stringify(cases));
 });
+
+function earlyMiner(mode){
+ const {j,w}=begin(mode==='s02');
+ if(mode==='k7-only')assert.equal(w.industrieAutoSetzen(j.zustandReferenz(),true).ok,true);
+ const actions=[],failed={}; let f=null, firstF4=null, firstF4End=null, firstHull=null;
+ const act=id=>{
+   const tick=j.zustandReferenz().tick,r=j.ausfuehren(id);
+   if(r.ok)actions.push({tick,id});
+   else failed[r.reason??'unknown']=(failed[r.reason??'unknown']||0)+1;
+   return r;
+ };
+ assert(act('buy-st_aldera-miner').ok);
+ const m=j.ansicht().schiffe.find(x=>x.klasse==='miner').id;
+ assert(act('ice-'+m).ok);
+ const checkpoints=[];
+ for(let i=0;i<7*1440;i+=10){
+   let s=j.zustandReferenz();
+   if(!f&&s.stations.st_nadir.lager.frachter>0){
+     if(act('buy-st_nadir-frachter').ok){
+       s=j.zustandReferenz(); f=j.ansicht().schiffe.find(x=>x.klasse==='frachter').id;
+       assert.equal(s.ships[f].owner,'house');
+       assert(s.w5.schiffIds.includes(f));
+       firstHull=s.tick;
+     }
+   }
+   s=j.zustandReferenz();
+   if(f&&s.ships[f].system==='nadir'&&s.ships[f].phase==='dock')
+     act('reposition-'+f);
+   s=j.zustandReferenz();
+   if(f&&s.ships[f].system==='aldera'&&s.ships[f].flug.lage==='angedockt'
+     &&!s.w5n.frachtauftrag&&!s.w3.auftrag&&(s.stations.st_aldera.lager.eis||0)>=50){
+     if(act('freight-'+f).ok&&firstF4===null)firstF4=s.tick;
+   }
+   s=j.zustandReferenz();
+   w.advance(s,10);
+   const receipts=s.kanon.spielerFrachten?.auftraege||[];
+   if(firstF4End===null&&receipts.some(r=>r.end!==null))firstF4End=s.tick;
+   if(s.tick%1440===0){
+     checkpoints.push({...report(w,s),paidF4:receipts.filter(r=>r.end!==null).length,
+       f4Tariff:s.kanon.spielerFrachten?.gebuehr??0,f4Wages:s.kanon.spielerFrachten?.lohn??0});
+   }
+ }
+ const end=j.zustandReferenz(), receipts=end.kanon.spielerFrachten?.auftraege||[];
+ assert.equal(end.tick,10080);
+ assert.equal(receipts.filter(r=>r.end!==null).length,checkpoints.at(-1).paidF4);
+ return {mode,firstHull,firstF4,firstF4End,actions,failed,checkpoints};
+}
+test('M4 active miner-first career: standard, existing K7-only policy, and S02, repeatable real manager decisions',()=>{
+ const cases=[];
+ for(const mode of ['standard','k7-only','s02']){
+   const a=earlyMiner(mode),b=earlyMiner(mode);
+   assert.deepEqual(a,b);
+   cases.push(a);
+ }
+ console.log('M4_MINER_FIRST '+JSON.stringify(cases));
+});

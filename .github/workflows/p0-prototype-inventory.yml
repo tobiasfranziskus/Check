@@ -1,0 +1,51 @@
+name: P0 - Prototype inventory
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'aphros-void.html'
+      - 'prototypes/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
+      - 'versionen/**'
+      - 'spieltest/**'
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check dependency guard and report contract
+        run: |
+          node scripts/p0-prototype-deps.mjs --check
+          node --test tests/p0-prototype-deps.test.mjs
+      - name: Generate complete commit-bound inventory
+        run: |
+          mkdir -p "$RUNNER_TEMP/p0-inventory"
+          node scripts/p0-prototype-deps.mjs --json > "$RUNNER_TEMP/p0-inventory/prototype-dependencies.json"
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import {execFileSync} from "node:child_process";
+            const {summary,files}=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
+            if(summary.commit!==execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim()) throw Error("Commit mismatch");
+            console.log("P0_INVENTORY_SUMMARY "+JSON.stringify(summary));
+            for(const f of files) console.log("P0_INVENTORY_FILE "+JSON.stringify({path:f.path,category:f.category,public:f.public,build:f.build,test:f.test,demo:f.demo,references:f.test_references.length}));
+          ' "$RUNNER_TEMP/p0-inventory/prototype-dependencies.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: p0-prototype-inventory
+          path: ${{ runner.temp }}/p0-inventory/prototype-dependencies.json
+          if-no-files-found: error
+          retention-days: 30

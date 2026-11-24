@@ -235,3 +235,37 @@ test('PIR-2e orders equal-value reachable contacts by stable ID',()=>{
  assert.deepEqual(k.map(x=>x.id),[f,anderer.id].sort());
  assert(k.every(x=>x.verfolgbar&&x.referenzwert===250));
 });
+
+test('PIR-3b: authentic damage quote cannot teleport material or repair the ship',()=>{
+ const {w,s,f}=kontakt('kampf');
+ w.advance(s,64);
+ const before=w.save(s), sh=s.ships[f];
+ assert.equal(sh.system,'aldera');
+ assert.equal(sh.flug.lage,'angedockt');
+ assert.equal(s.kanon.piraten.kampf.huellen[f],48);
+ const local=w.reparaturAngebot(s,{owner:'house',schiff:f,station:'st_aldera'});
+ assert.equal(local.ok,false);
+ assert.equal(local.angedockt,true);
+ assert.equal(local.werftVorhanden,false);
+ assert.equal(local.bestand,0);
+ assert.equal(local.material,3);
+ assert.equal(local.minuten,15);
+ assert.equal(local.kosten,315);
+ const remote=w.reparaturAngebot(s,{owner:'house',schiff:f,station:'st_nadir'});
+ assert.equal(remote.werftVorhanden,true);
+ assert.equal(remote.angedockt,false);
+ assert.equal(remote.bestand,s.stations.st_nadir.lager.material||0);
+ assert.equal(remote.ok,false);
+ assert.equal(w.reparaturAngebot(s,{owner:'transport',schiff:f,station:'st_nadir'}).ok,false);
+ assert.equal(w.reparaturAngebot(s,{owner:'house',schiff:f,station:'st_nadir',kosten:0}).ok,false);
+ assert.equal(w.execute(s,{type:'shipRepair',owner:'house',schiff:f,station:'st_aldera'}).ok,false);
+ assert.equal(w.execute(s,{type:'shipRepair',owner:'house',schiff:f,station:'st_nadir'}).ok,false);
+ assert.equal(w.save(s),before);
+ assert.deepEqual(w.reparaturAngebot(w.load(before),{owner:'house',schiff:f,station:'st_nadir'}),remote);
+ const fake=structuredClone(s);
+ fake.kanon.piraten.kampf.huellen[f]=72;
+ assert.equal(w.reparaturAngebot(fake,{owner:'house',schiff:f,station:'st_nadir'}).grund,'Welt- oder Schadensbeleg ungültig');
+ assert.throws(()=>w.load(JSON.stringify(fake)),/unveränderte/);
+ assert.deepEqual(w.audit(s).fehler,[]);
+ console.log('PIR_3B_REPAIR_GATE '+JSON.stringify({local,remote,hash:w.hash(s)}));
+});

@@ -2453,9 +2453,51 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     return {ok:true, aktiviert};
   }
 
+  // PIR-3b: Lesendes Reparaturgate. Keine Fernreparatur, keine kostenlose
+  // Materialbereitstellung. Mengen/Zeiten proportional zum W5-Neubau,
+  // ausdrücklich nur Forschungsannahme; noch kein Reparaturauftrag.
+  function reparaturAngebot(s, cmd) {
+    const fail = grund => ({ok:false,grund});
+    if (!pirKampf) return fail('Kampfforschung nicht aktiv');
+    if (!cmd || typeof cmd !== 'object' || Array.isArray(cmd)
+      || Object.keys(cmd).sort().join(',') !== 'owner,schiff,station')
+      return fail('Ungültige Angebotsanfrage');
+    const sh = s.ships[cmd.schiff], c = rules.w5;
+    if (!sh || sh.owner !== cmd.owner || sh.owner !== rules.economy.start.owner
+      || sh.klasse !== 'frachter') return fail('Kein eigener Frachter');
+    const a = audit(s);
+    if (!a.ok) return fail('Welt- oder Schadensbeleg ungültig');
+    const huelle = m_core_piraten.huellenzustand(s,sh.id);
+    const schaden = PIR_WAFFE.huelle - huelle;
+    if (!schaden) return fail('Hülle unbeschädigt');
+    const material = Math.ceil(c.material * schaden / PIR_WAFFE.huelle);
+    const minuten = Math.ceil(c.dauer * schaden / PIR_WAFFE.huelle);
+    const materialKosten = material * c.materialPreis;
+    const arbeitKosten = minuten * c.lohnJeMinute;
+    const kosten = materialKosten + arbeitKosten;
+    const ort = s.stations[cmd.station];
+    const werftVorhanden = cmd.station === c.station && !!ort;
+    const angedockt = !!ort && sh.phase === 'dock'
+      && FLUG.angedocktAn(sh,cmd.station);
+    const bestand = werftVorhanden ? (ort.lager.material || 0) : 0;
+    const kasse = s.owners[cmd.owner].cash;
+    const blocker = [];
+    if (!werftVorhanden) blocker.push('Keine finanzierte W5-Werft am angefragten Ort');
+    if (!angedockt) blocker.push('Frachter nicht physisch am Reparaturort angedockt');
+    if (bestand < material) blocker.push('Reales lokales Material fehlt');
+    if (kasse < kosten) blocker.push('Eigenes Geld reicht nicht');
+    if (s.w5.auftrag || s.kanon.minerWerft?.auftrag || s.kanon.jaeger?.auftrag)
+      blocker.push('Werftarbeit bereits gebunden');
+    blocker.push('Reparaturauftrag noch nicht freigegeben');
+    return {ok:false,schiff:sh.id,owner:sh.owner,station:cmd.station,
+      werft:c.station,huelle,schaden,material,minuten,materialKosten,arbeitKosten,
+      kosten,bestand,kasse,angedockt,werftVorhanden,blocker};
+  }
+
   function execute(state, cmd) {
     pruefeForm(state);
     const type = cmd && cmd.type;
+    if (type === 'shipRepair') return {ok:false,type,reason:'PIR-3b: Reparaturauftrag noch nicht freigegeben'};
     if (pirAnflug && anflugBlockiert(state)) return {ok:false,type,reason:'PIR-2d: Docktermin verfehlt'};
     if (pirKampf && ['shipFreightIce','shipFreightGateIce'].includes(type) && state.ships[cmd.schiff]
       && m_core_piraten.huellenzustand(state,cmd.schiff) <= PIR_WAFFE.rueckzug)
@@ -2727,7 +2769,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       const sh=lokalerAnflug(s);
       return sh ? {id:sh.id,x:sh.flug.x,y:sh.flug.y,lage:sh.flug.lage,blockiert:anflugBlockiert(s)} : null;
     }} : {}),piratenZielbewertung:m_core_piraten.zielbewertung} : {}), sicherheitslage:m_core_piraten.lage,
-    ...(pirKampf ? {pirKampfLage:s=>({
+    ...(pirKampf ? {reparaturAngebot,pirKampfLage:s=>({
       aktiv:m_core_piraten.verfolgt(s.kanon.piraten)
         && s.kanon.piraten.kampf.ereignisse.at(-1)?.ziel===s.kanon.piraten.kontakt?.id
         && s.tick*N+s.flug.schritt-s.kanon.piraten.kampf.ereignisse.at(-1)?.sekunde<=N,

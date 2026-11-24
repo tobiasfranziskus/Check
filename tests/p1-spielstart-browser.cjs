@@ -385,7 +385,7 @@ async function karriereDuell(browser,base,width,height,kind){
  page.on('pageerror',e=>errors.push(String(e)));
  try{
   await page.goto(base+'/');
-  await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/spiel/index.html"]').tap();
+  await page.waitForURL('**/prototypes/spiel/index.html');
   await page.locator('#fortsetzen').tap();
   await page.locator('#tab-flotte').tap();
   await page.locator('[data-pilot="sh023"]').tap();
@@ -596,6 +596,17 @@ async function kurzerSpieleinstieg(browser,base,kind){
  page.on('pageerror',e=>errors.push(String(e)));
  try{
   await page.goto(base+'/');
+  await page.waitForURL('**/prototypes/spiel/index.html');
+  await page.locator('#startseite').waitFor();
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+2),true,'direct career fits short landscape');
+  for(const id of ['karriere-direkt','fortsetzen','import-aktion','neues-spiel']){
+   const b=await page.locator('#'+id).boundingBox();assert(b&&b.height>=48&&b.x>=0&&b.y>=0&&b.x+b.width<=667&&b.y+b.height<=375,'direct career touch target inside viewport: '+id);
+  }
+  await page.locator('#neues-spiel').tap();
+  await page.locator('#career-legacy summary').tap();
+  await page.locator('#career-legacy a[href="../../index.html#klassische-wirtschaft"]').tap();
+  assert.equal(await page.locator('#save').isVisible(),true);
+  await page.locator('#klassische-wirtschaft .root-back').tap();
   const gateway=page.locator('#root-portal'),more=gateway.locator('.root-more summary');
   const primary=gateway.locator('.root-primary');
   const fits=()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2&&document.documentElement.scrollHeight<=innerHeight+2);
@@ -673,7 +684,7 @@ async function kurzerSpieleinstieg(browser,base,kind){
    });
 
    try{
-    await page.goto(base+'/');
+    await page.goto(base+'/#root-portal');
     assert.equal(await page.title(),'Aphros Void · Dein Weltraumkonzern');
     const gateway=page.locator('#root-portal');
     assert.equal(await gateway.isVisible(),true,'public root must offer the premium game entry');
@@ -690,13 +701,12 @@ async function kurzerSpieleinstieg(browser,base,kind){
     await page.locator('#root-portal .root-more summary').tap();
     await page.locator('#root-portal a[href="#klassische-wirtschaft"]').tap();
     assert.equal(await page.locator('#save').isVisible(),true,'explicit legacy entry retains original controls');
-    await page.goto(base+'/');
-    assert.equal(await page.locator('#save').isHidden(),true,'normal start hides the legacy again');
+    await page.goto(base+'/#root-portal');
+    assert.equal(await page.locator('#save').isHidden(),true,'explicit fallback hides legacy controls again');
     assert.doesNotMatch(await gateway.textContent(),/Regel\s*20[47]|Prototyp|richtiger Miner/i);
-    const entry=page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/spiel/index.html"]');
-    assert.equal(await entry.count(),1,'visible first-class game entry from public root');
-    await entry.tap();
+    await page.goto(base+'/');
     await page.waitForURL('**/prototypes/spiel/index.html');
+    assert.equal(await page.locator('#root-portal').count(),0,'no duplicate start portal in the career');
     assert.equal(await page.locator('#startseite').isVisible(),true);
     assert.equal(await page.locator('#fortsetzen').isDisabled(),true);
     assert.equal(await page.locator('.entry-features article,.hero-side').count(),0);

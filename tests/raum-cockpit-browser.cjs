@@ -53,7 +53,7 @@ const Welt=require('../prototypes/welt/welt-kern.js');
    const lage=re=>page.waitForFunction(q=>new RegExp(q).test(document.querySelector('#raum-lage').textContent),re,{timeout:30000});
    const zustand=()=>page.evaluate(()=>RaumCockpit.sitzung.zustand());
    try{
-    await page.goto(basis+'/');
+    await page.goto(basis+'/#root-portal');
     await page.locator('#root-portal .root-more summary').tap();
     await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/j4c/index.html"]').tap();
     await page.waitForURL('**/prototypes/j4c/index.html');

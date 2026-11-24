@@ -26,7 +26,7 @@ const {erzeugen}=require('./j10b-k2-kauf-fixture.cjs');
    const page=await ctx.newPage(),errors=[];
    page.on('pageerror',e=>errors.push(String(e)));
    // Actual public root entry – no hidden prototype-only test shortcut.
-   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html');
+   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html#root-portal');
    const corporateLink=page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/verbund/konzern.html"]');
    assert.equal(await corporateLink.count(),1);
    assert.equal(await corporateLink.isVisible(),false,'legacy choice initially collapsed');

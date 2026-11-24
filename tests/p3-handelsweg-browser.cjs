@@ -32,7 +32,6 @@ async function karrierestart(browser,kind){
     assert.ok(box&&box.height>=48&&box.y>=0&&box.y+box.height<=height);
    };
    await page.goto('http://127.0.0.1:'+server.address().port+'/');
-   await page.getByRole('link',{name:/^Wirtschaftsmanager/}).tap();
    await page.waitForURL('**/prototypes/spiel/index.html');
    await page.waitForLoadState('load');
    assert.equal(await save(),null);
@@ -103,7 +102,6 @@ async function karrierestart(browser,kind){
    const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(String(e)));
    try{
     await page.goto('http://127.0.0.1:'+server.address().port+'/');
-    await page.getByRole('link',{name:/^Wirtschaftsmanager/}).tap();
     // The navigation may complete before all bottom-of-body JavaScript listeners
     // have been installed. Wait for actual document load BEFORE the mobile tap.
     await page.waitForURL('**/prototypes/spiel/index.html');

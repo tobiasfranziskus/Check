@@ -119,12 +119,14 @@ test('PIR-3b original industrial policy counterfactual: real refinery stock vers
   const {w,s,f}=original(), source=w.save(s), initial=w.hash(s);
   const run=(optIn)=>{
     const c=w.load(source);
-    if(optIn){
-      // Existing S02 policy and original K7/NPC opt-ins, not a new repair order.
-      w.politikSetzen(c,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
-      assert.equal(w.npcAutoSetzen(c,true).ok,true);
-      assert.equal(w.npcSiliziumSetzen(c,true).ok,true);
-    }
+    // J8 PIR start ALREADY activates S02/NPC/Silicon. A real paired
+    // experiment switches off only the existing NPC dispatcher in the control.
+    // The civil policy and all existing obligations remain identical.
+    assert.equal(c.kanon.npcAuto,true);
+    assert.equal(c.kanon.npcSilizium.aktiv,true);
+    if(!optIn) assert.equal(w.npcAutoSetzen(c,false).ok,true);
+    assert.equal(c.kanon.npcAuto,optIn);
+    assert.deepEqual(w.audit(c).fehler,[]);
     const start=c.tick, baseProduced=c.ledger.material.produced, baseConsumed=c.ledger.material.consumed;
     let firstNadir=null,firstAldera=null,peakNadir=0,peakAldera=0;
     const rows=[];
@@ -147,11 +149,50 @@ test('PIR-3b original industrial policy counterfactual: real refinery stock vers
         rows.push({elapsed:i,nadir:c.stations.st_nadir.lager.material||0,aldera:c.stations.st_aldera.lager.material||0,produced:c.ledger.material.produced-baseProduced,consumed:c.ledger.material.consumed-baseConsumed,ore:c.stations.st_nadir.lager.erz||0,contract:c.kanon.industrieErz.phase,house:c.owners.house.cash});
       }
     }
+    assert.equal(c.tick,start+7*1440,'no silently halted simulation');
     assert.equal(w.hash(w.load(w.save(c))),w.hash(c));
     return {optIn,start,firstNadir,firstAldera,peakNadir,peakAldera,rows,hash:w.hash(c)};
   };
   const control=run(false), industry=run(true), replay=run(true);
   assert.deepEqual(industry,replay);
+  assert.notEqual(control.hash,industry.hash,'actual different NPC setting');
   assert.equal(w.hash(w.load(source)),initial);
   console.log('PIR_3B_SUPPLY_PAIR '+JSON.stringify({control,industry}));
+});
+
+test('PIR-3b original K7 contract prerequisites and real command counterprobe',()=>{
+  const {w,s}=original(), source=w.save(s), initial=w.hash(s), rows=[];
+  const thresholds={npc3:w.industriePreise.bergbau,st_aldera:w.industriePreise.alderakauf,
+    st_nadir:w.industriePreise.nadiraufwand,transport:w.industriePreise.frachtlohn,
+    werft_extern:w.industriePreise.werft};
+  const c=w.load(source);
+  for(const delta of [0,60,240,1140,8640]){
+    w.advance(c,delta);
+    assert.deepEqual(w.audit(c).fehler,[]);
+    const before=w.save(c), probe=w.load(before), start=probe.tick;
+    const cash=Object.entries(thresholds).map(([id,need])=>({id,need,actual:probe.owners[id].cash}));
+    const fleet=Object.values(probe.ships).filter(sh=>sh.owner==='npc3'||sh.owner==='transport').map(sh=>({id:sh.id,owner:sh.owner,klasse:sh.klasse,system:sh.system,phase:sh.phase,lage:sh.flug?.lage,auftrag:sh.auftrag,ladung:sh.ladung,pendel:probe.kanon.pendel[sh.id]??null,stillgelegt:w.buchwert(probe,sh.id)===0}));
+    const miners=fleet.filter(sh=>sh.owner==='npc3'&&sh.klasse==='miner'&&!sh.stillgelegt);
+    const freighters=fleet.filter(sh=>sh.owner==='transport'&&sh.klasse==='frachter'&&!sh.stillgelegt);
+    const m=miners.find(sh=>sh.system==='aldera'&&sh.lage==='angedockt'&&Object.values(sh.ladung).every(n=>n===0))??miners[0];
+    const f=freighters.find(sh=>sh.system==='aldera'&&sh.phase==='dock'&&sh.auftrag==='halten'&&Object.values(sh.ladung).every(n=>n===0))??freighters[0];
+    const commands=[];
+    if(m&&f){
+      for(const cmd of [{type:'industrialOreOffer',owner:'st_nadir',miner:m.id,frachter:f.id},{type:'industrialOreAcceptMine',owner:'npc3'},{type:'industrialOreAcceptFreight',owner:'transport'},{type:'industrialOreAcceptYard',owner:'werft_extern'},{type:'industrialOreCommit',owner:'st_nadir'}]){
+        const pre=w.hash(probe), r=w.execute(probe,cmd);
+        commands.push({type:cmd.type,ok:r.ok,reason:r.reason??null});
+        if(!r.ok){assert.equal(w.hash(probe),pre,'rejection must be atomic');break;}
+      }
+      if(commands.length===5&&commands.every(x=>x.ok)){
+        w.advance(probe,300);
+        assert.deepEqual(w.audit(probe).fehler,[]);
+      }
+    }
+    assert.equal(w.save(c),before,'counterprobe never changes original');
+    assert.equal(Object.values(probe.owners).reduce((n,o)=>n+o.cash,0),probe.initialSupply);
+    assert.equal(probe.minted+probe.burned,0);
+    rows.push({tick:start,actualTick:probe.tick,cash,fleet,commands,contract:probe.kanon.industrieErz.phase,material:probe.stations.st_nadir.lager.material||0,produced:probe.ledger.material.produced,npcPauses:c.kanon.npc.pausen});
+  }
+  assert.equal(w.hash(w.load(source)),initial);
+  console.log('PIR_3B_K7_GATES '+JSON.stringify(rows));
 });

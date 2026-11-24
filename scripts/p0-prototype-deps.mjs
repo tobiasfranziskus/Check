@@ -13,7 +13,10 @@ const publicHtml=[
  'aphros-void.html',
  'prototypes/spiel/index.html',
  'prototypes/j4c/index.html',
- 'prototypes/verbund/konzern.html'
+ 'prototypes/verbund/konzern.html',
+ 'prototypes/verbund/index.html',
+ // Separat erreichbare, durch tutorial-pilot-browser.cjs geprüfte Alt-URL.
+ 'prototypes/tutorial-pilot/index.html'
 ];
 const buildSources=[
  'prototypes/w5ag/index.html',
@@ -28,7 +31,16 @@ const required=[
  'prototypes/spiel/spiel.js',
  'prototypes/f8-jaeger/f8-duell.js',
  'prototypes/legacy-hub/core-adapter.js',
- 'prototypes/w5ac/rule191-w5-ferry-core.js'
+ 'prototypes/w5ac/rule191-w5-ferry-core.js',
+ 'prototypes/verbund/pruefung-ui.js',
+ 'prototypes/tutorial-pilot/seite.js',
+ 'prototypes/tutorial-pilot/akademie.js',
+ 'prototypes/tutorial-pilot/menue.js',
+ 'prototypes/tutorial-manager/manager.js',
+ 'prototypes/spiel/p3-manager-disposition.js',
+ 'prototypes/spiel/p3-manager-karte.js',
+ 'prototypes/spiel/p3-manager-flotte.js',
+ 'prototypes/spiel/p3-auftragsfeedback.js'
 ];
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const exists=p=>present.has(p);
@@ -109,7 +121,13 @@ const report=prototypes.map(p=>({
  category:publicGraph.files.has(p)?'LIVE':buildGraph.files.has(p)?'BUILD':
   testRefs.has(p)?'TEST_PINNED':demoGraph.files.has(p)?'DEMO_REVIEW':'MANUAL_REVIEW'
 }));
-const missing=[...new Set([...publicGraph.missing,...buildGraph.missing])];
+// pages-entry.html is inserted at the generated root, not served from scripts/.
+const rootNavigation=read('scripts/pages-entry.html');
+const rootNavigationTargets=[...rootNavigation.matchAll(/\bhref="([^"#]+)"/g)]
+ .map(m=>local('index.html',m[1])).filter(Boolean);
+const rootRedirectTarget=/location\.replace\("([^"]+)"\s*\+\s*location\.search\)/.exec(rootNavigation)?.[1]||null;
+const rootNavMissing=rootNavigationTargets.filter(p=>!exists(p)||!publicGraph.files.has(p));
+const missing=[...new Set([...publicGraph.missing,...buildGraph.missing,...rootNavMissing])];
 const guarded={
  paths_total:tracked.length,
  prototypes_total:prototypes.length,
@@ -120,10 +138,13 @@ const guarded={
  manual_review:report.filter(x=>x.category==='MANUAL_REVIEW').length,
  missing_static_assets:missing,
  missing_archived_hub_assets:archivedHub.missing,
+ root_navigation_targets:rootNavigationTargets,
+ root_redirect_target:rootRedirectTarget,
  public_entrypoints:publicHtml,
  build_sources:buildSources
 };
 if(process.argv.includes('--check')){
+ if(rootRedirectTarget!=='prototypes/spiel/index.html'||!rootNavigationTargets.includes(rootRedirectTarget))throw Error('P0 default career redirect or fallback changed; review public entrypoints');
  if(missing.length)throw Error('P0 dangling public/build assets: '+missing.join('; '));
  if(archivedHub.missing.length)throw Error('P0 dangling archived hub assets: '+archivedHub.missing.join('; '));
  for(const p of required){

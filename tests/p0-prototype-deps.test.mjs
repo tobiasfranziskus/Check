@@ -33,3 +33,36 @@ test('P0 distinguishes runtime modules from unintegrated legacy demos',()=>{
  assert.equal(byPath.get('prototypes/legacy-pilot/pilot.js')?.demo,true);
  assert.equal(byPath.get('prototypes/legacy-mining-scanner/scanner.js')?.demo,true);
 });
+
+// Direkte Nebenpfade und die aktuelle Management-Oberfläche dürfen nicht
+// aus der statischen Schutzmenge verschwinden.
+test('P0 protects public compatibility and standalone pilot entry as well as management assets',()=>{
+ const {summary,files}=JSON.parse(run('--json'));
+ const byPath=new Map(files.map(x=>[x.path,x]));
+ for(const p of [
+  'prototypes/verbund/index.html',
+  'prototypes/tutorial-pilot/index.html'
+ ])assert.ok(summary.public_entrypoints.includes(p),p);
+ for(const p of [
+  'prototypes/verbund/pruefung-ui.js',
+  'prototypes/tutorial-pilot/seite.js',
+  'prototypes/tutorial-pilot/akademie.js',
+  'prototypes/tutorial-pilot/menue.js',
+  'prototypes/tutorial-manager/manager.js',
+  'prototypes/spiel/p3-manager-disposition.js',
+  'prototypes/spiel/p3-manager-karte.js',
+  'prototypes/spiel/p3-manager-flotte.js',
+  'prototypes/spiel/p3-auftragsfeedback.js'
+ ])assert.equal(byPath.get(p)?.public,true,p);
+});
+
+// Pages navigation is generated at repository root; paths resolve there.
+test('P0 protects current root redirect and all static alternative entry links',()=>{
+ const {summary}=JSON.parse(run('--json'));
+ assert.equal(summary.root_redirect_target,'prototypes/spiel/index.html');
+ for(const p of ['prototypes/spiel/index.html','prototypes/j4c/index.html','prototypes/verbund/konzern.html']){
+  assert.ok(summary.root_navigation_targets.includes(p),p);
+  assert.ok(summary.public_entrypoints.includes(p),p);
+ }
+ assert.deepEqual(summary.missing_static_assets,[]);
+});

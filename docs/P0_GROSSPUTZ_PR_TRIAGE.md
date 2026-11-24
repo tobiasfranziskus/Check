@@ -111,3 +111,18 @@ Erhaltene Nachfolger-CI: #511 Head `da686630d2cb12d1802aa9b8fc775665da17179f`, d
 ## Nachbereitung der Morgensupervision 24.11.2026
 
 Main 679ba6c1, 66 offene PRs laut gespeichertem Morgenlauf (zeitpunktbezogen). P0-Kurzfassung gegen den neuen Main-Stand konsolidiert; frühere Archive unverändert. #599 UX-CI-Fehler identifiziert und im Quell-Draft korrigiert, neue CI offen. #610 Kampfstack aktiv; #611 gezielte Langzeitbelege ausgewertet. #573/#576/#577 getrennte Sicherheits-/Wirtschaftsforschung vor Integration erhalten. Keine pauschale Schließung oder Regelaktivierung.
+
+
+## Fortsetzung 24.11.2026 – fünf übernommene Legacy-Quellen geschlossen
+
+Main `fb229ea5f3cb6c3018240ed321b6a281a06fffe4`, PR #620; 603/603 Node22 ([CI](https://github.com/tobiasfranziskus/Check/actions/runs/45469561655)). Alle 39 ursprünglichen Dateien vorhanden, 29 SHA-identisch, 10 abweichende Dateien einzeln auf Quellzeilen und Archiv-HTML geprüft. Release-Baum ba0c1861, Archivierung #449/055d96cb. Ursprüngliche Testdateien erhalten.
+
+| Quelle | Beleg | Ergebnis |
+|---|---|---|
+| #198 | 6/8 identisch; Kapitalbeschriftung, ShadowRoot-Fokus, selectShip, Mount-Guard | geschlossen, kein Merge |
+| #195 | 6/8 identisch; ShadowRoot-Fokus, Mount-Guard | geschlossen, kein Merge |
+| #189 | 6/8 identisch; ShadowRoot-Fokus, Archiv-Weiterleitung mit Originalressourcen | geschlossen, kein Merge |
+| #187 | 6/8 identisch; optionale Hub-Navigation, ShadowRoot-Fokus, Mount-Guard | geschlossen, kein Merge |
+| #186 | 5/7 identisch; Mount-Guard und Archiv-Weiterleitung mit Originalressourcen | geschlossen, kein Merge |
+
+Einzelbelege in den jeweiligen PR-Kommentaren. #291 und #170 bleiben offen: nicht alle ursprünglichen Berichte/Tests im aktuellen Baum vorhanden; kein vollständiger Nachfolgernachweis. Keine Branch- oder Dateilöschung. 67 → 61 offene PRs inklusive #620-Merge, vor neuem Doku-Draft. Aktive M4-/PIR-Stacks unverändert.

@@ -167,3 +167,18 @@ Keine Schließung, kein neuer Produktcode, keine Branchlöschung. Aktive M4-/PIR
 ### Dokumentations-Gate
 
 #621 erweitert den vorhandenen P0-Workflow um Trigger für AGENTS.md, README.md, docs/** und den Linkprüfer. Bei diesen Änderungen laufen bestehende Parser-Fixtures und der kanonische Repository-Linktest (AGENTS, ROADMAP, PROJEKTSTATUS) zusätzlich zur Inventur. Lokale Dateiziele, nicht externe URLs oder vollständige Ankerprüfung. Kein neuer Lauf als erfolgreich behauptet, solange die CI offen ist.
+
+
+### Historische Manager-Nachweise für die offenen Abnahme-Gates (24.11.2026)
+
+Lesender Abgleich der fünf offenen PRs mit den jeweiligen fest gepinnten Originalberichten. Keine Übernahme von Testspielständen, keine erneute Ausführung historischer Tests, keine Übertragung von Regel204/S02 auf die heutige Standardkarriere. Quellen bleiben offen und unangetastet.
+
+| Originalnachweis (fest gepinnt) | Belegter historischer Befund | Verwendung vor heutiger Abnahme |
+|---|---|---|
+| [#526 Industrieaudit](https://github.com/tobiasfranziskus/Check/blob/b70f5995f9e260e8468886bf9597f2fbcceb33ba/docs/M3_INDUSTRIE_PARALLELAUDIT_20261120.md) | Originale NPC-Kette: 740 ISK W3-Käuferreserve, 120 ISK Fluglohn, 530 ISK Werftreserve; Fremdrechte fehlen. | M4/W3–W5: gleiche Eigentümer- und Finanzierungsgrenzen gegen den aktuellen Kern nachprüfen; kein Hausrecht ableiten. |
+| [#527 interaktiver Manager-Erstspieltest](https://github.com/tobiasfranziskus/Check/blob/7446f5da8c798da33b55e37e176612da219a06fd/docs/audit/manager-live-20261120/MANAGER_LIVE_AUDIT.md) | Vier bezahlte F4-Runden, Originalexporte und Replay; 600 Weltminuten, keine 60 Minuten Echtzeit-Retention. | M4-U4: historische UX-Baseline, nicht als aktuelle Blindtestabnahme zählen; keine Original-Saves importieren. |
+| [#528 Rechte-/Buchungsansicht](https://github.com/tobiasfranziskus/Check/blob/4707e059f1c4fa5dad2341a0f52b33900b6dba5d/docs/M3_P1_RECHTE_BUCHUNGSANSICHT.md) | Spezifikation sechs originaler Checkpoints; getrennte Kassen, Rollen, Kaufangebote; keine implementierte UI. | M4-U10: vorhandene Projektion wiederverwenden; historische Sichtbarkeitsgates und Felder gegen aktuellen Code prüfen, keine zweite Buchungslogik. |
+| [#496 F4-Folgezyklen](https://github.com/tobiasfranziskus/Check/blob/2d0cfd2643317c047df0f9ca7be39a2053c5f8cf/docs/P3_WERFTFRACHT_FOLGEZYKLEN.md) | Vier bezahlte Fahrten mit echter W5-Hülle; 240 Tarif minus 120 Lohn minus 36 Verschleiß = 84 ISK enger Deckungsbeitrag pro Fahrt, kein Gesamtgewinn. | M4/W6: Vergleichspunkt für echten Ersatzkauf; keine dauerhafte Rentabilität daraus ableiten. |
+| [#501 Zweitfrachter](https://github.com/tobiasfranziskus/Check/blob/eefdd0943b6e0a5447624a92ad2bee2e18a1c05b/docs/P3_WERFT_ZWEITBETRIEB.md) | Zweite Hülle bezahlt, 145/145 Überführungsangebote blockiert; 120 W5n, 19 W3, 6 W5ac laut PR. | M4/W6 und #511: positive Zweitfahrt erst bei tatsächlichem Originalabschluss; keine Teleportation oder Streckenfreigabe aus der historischen Probe ableiten. |
+
+P0-CI auf vorherigem #621-Head `673a7ace8e40a5a0c662f5a969a2edc5b6aba4e1`: [Run 45480001290](https://github.com/tobiasfranziskus/Check/actions/runs/45480001290) completed/success; Inventurvertrag, Dokumentationslink-/Parser-Tests, commitgebundene Inventur und Artefakt-Upload einzeln success. Neue Dokumentationsrevision benötigt ihren eigenen Lauf. Kein vollständiger neuer Node22-, Browser- oder Wirtschaftstest in diesem lesenden Indexschritt.

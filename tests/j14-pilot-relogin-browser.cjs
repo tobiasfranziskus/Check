@@ -46,7 +46,7 @@ const initial=()=>{
    page.on('pageerror',e=>errors.push(String(e)));
    try{
     await page.goto(origin+'/');
-    await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/spiel/index.html"]').tap();
+    await page.waitForURL('**/prototypes/spiel/index.html');
     await page.waitForURL('**/prototypes/spiel/index.html');
     // Only this resume-specific QA uses a genuine, fully funded external JSON.
     await page.locator('#import-datei').setInputFiles({

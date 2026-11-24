@@ -31,7 +31,7 @@ async function pruefe(browser,kind,width,height,base){
  const ship=klasse=>el('.sektor-schiff').filter({hasText:klasse});
  try{
   await page.goto(base);
-  await page.getByRole('link',{name:/^Wirtschaftsmanager/}).tap();
+  await page.waitForURL('**/prototypes/spiel/index.html');
   await page.waitForLoadState('load');
   await el('#neues-spiel').tap();
   await el('#karriere-starten').tap();

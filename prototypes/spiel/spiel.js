@@ -80,8 +80,8 @@ function gespeicherte(key=SLOT){
 }
 function menustand(){
  $('fortsetzen').disabled=!gespeicherte();
- $('fortsetzen-w6').disabled=!gespeicherte(SLOT_W6);
- $('fortsetzen-pir').disabled=!gespeicherte(SLOT_PIR);
+ $('fortsetzen-w6').hidden=$('fortsetzen-w6').disabled=!gespeicherte(SLOT_W6);
+ $('fortsetzen-pir').hidden=$('fortsetzen-pir').disabled=!gespeicherte(SLOT_PIR);
  $('vorige-pir').hidden=!gespeicherte(SLOT_PIR+':vorherige');
  const old=$('vorige-karriere');
  if(old)old.hidden=!gespeicherte(BACKUP);
@@ -94,7 +94,7 @@ function screen(id){
  if(id!=='raumbereich'&&raum)raum.deaktivieren();
  $('open-menu').hidden=id==='startseite';
  $('mode-indicator').textContent=id==='startseite'?'OFFLINE · ALDERA-SEKTOR':
-   id==='briefing'?'PROLOG · ALDERA-SEKTOR':piratenSitzung()?'PIR-1 · FORSCHUNG':'ONLINE · ALDERA-SEKTOR';
+   id==='briefing'?'WEITERE SPIELMODI':piratenSitzung()?'PIR-1 · FORSCHUNG':'ONLINE · ALDERA-SEKTOR';
  if(id==='spielwelt'&&session)anzeigen();
  scope.scrollTo?.({top:0,left:0,behavior:'instant'});
 }
@@ -1403,7 +1403,11 @@ $('jaeger-kaufweg').addEventListener('click',()=>{
    .find(el=>el.dataset.action==='buy-st_nadir-jaeger');
  target?.focus(); // Navigiert nur; niemals automatisch kaufen.
 });
-$('neues-spiel').addEventListener('click',()=>screen('briefing'));
+// Standardkarriere ohne Prolog: niemals eine vorherige Forschungswahl übernehmen.
+const standardStart=()=>{for(const id of ['w6-npc-start','w6-p8g-start','pir-start'])$(id).checked=false;startNeu();};
+$('karriere-direkt').addEventListener('click',standardStart);
+$('neues-spiel').addEventListener('click',()=>{for(const id of ['w6-npc-start','w6-p8g-start','pir-start'])$(id).checked=false;screen('briefing');});
+$('zurueck-hauptmenue').addEventListener('click',()=>{screen('startseite');menustand();});
 $('karriere-starten').addEventListener('click',startNeu);
 $('fortsetzen').addEventListener('click',()=>{try{
    if(session&&aktuellerSlot()===SLOT){aktiveSitzung('Deine laufende Karriere ist geöffnet.');return;}

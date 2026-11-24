@@ -699,7 +699,7 @@ async function kurzerSpieleinstieg(browser,base,kind){
     await page.waitForURL('**/prototypes/spiel/index.html');
     assert.equal(await page.locator('#startseite').isVisible(),true);
     assert.equal(await page.locator('#fortsetzen').isDisabled(),true);
-    assert.equal(await page.locator('.entry-features article').count(),3);
+    assert.equal(await page.locator('.entry-features article,.hero-side').count(),0);
     assert.doesNotMatch(await page.locator('#startseite').textContent(),/Regel\s*20[47]|Prototyp|richtiger Miner/i);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,
       'premium career start must not have horizontal overflow');
@@ -707,13 +707,13 @@ async function kurzerSpieleinstieg(browser,base,kind){
     assert.match(await page.locator('h1').textContent(),/APHROS\s+VOID/);
     await page.locator('#neues-spiel').tap();
     assert.equal(await page.locator('#briefing').isVisible(),true);
-    assert.equal(await page.locator('.faction').count(),4);
-    assert.match(await page.locator('#briefing').textContent(),/Meridian Rohstoffwerke/);
-    assert.match(await page.locator('#briefing').textContent(),/Asterion Logistik/);
-    assert.match(await page.locator('#briefing').textContent(),/Nadir Schiffswerke/);
-    assert.doesNotMatch(await page.locator('#briefing').textContent(),/Regel\s*20[47]|P8g|Prototyp|richtiger Miner/i);
-    assert.match(await page.locator('#briefing').textContent(),/Aldera.*Nadir/s);
-    await page.locator('#karriere-starten').tap();
+    assert.equal(await page.locator('.faction').count(),0);
+    await page.locator('#pir-start').check();
+    await page.locator('#zurueck-hauptmenue').tap();
+    assert.equal(await page.locator('#briefing').isHidden(),true);
+    // Returning from an unconfirmed research selection must not activate it.
+    await page.locator('#karriere-direkt').tap();
+    assert.equal(await page.locator('#briefing').isHidden(),true);
     assert.equal(await page.locator('#spielwelt').isVisible(),true);
     assert.equal(await page.locator('#startseite').isVisible(),false);
     assert.match(await page.locator('#hausgeld').textContent(),/3[.,]000\s*ISK/);

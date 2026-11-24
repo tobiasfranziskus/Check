@@ -4,13 +4,13 @@ import J8 from '../prototypes/verbund/konzern-session.js';
 
 function original(){
   const j=J8.erstellen(); j.startenPiraten(true,'kampf');
-  const w=j.weltReferenz(), s=j.zustandReferenz();
+  const w=j.weltReferenz();
   assert(j.ausfuehren('buy-st_aldera-frachter').ok);
   assert(j.ausfuehren('buy-st_aldera-miner').ok);
   const f=j.ansicht().schiffe.find(sh=>sh.klasse==='frachter').id;
   const m=j.ansicht().schiffe.find(sh=>sh.klasse==='miner').id;
-  assert(j.ausfuehren('ice-'+m).ok); w.advance(s,120);
-  assert(j.ausfuehren('freight-'+f).ok); w.advance(s,56);
+  assert(j.ausfuehren('ice-'+m).ok); w.advance(j.zustandReferenz(),120);
+  assert(j.ausfuehren('freight-'+f).ok); const s=j.zustandReferenz(); w.advance(s,56);
   for(let i=0;i<240;i++) w.teilschritt(s);
   w.advance(s,60);
   assert.equal(s.kanon.piraten.kampf.huellen[f],48);

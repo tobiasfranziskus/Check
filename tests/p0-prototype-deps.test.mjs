@@ -66,3 +66,20 @@ test('P0 protects current root redirect and all static alternative entry links',
  }
  assert.deepEqual(summary.missing_static_assets,[]);
 });
+
+// Der CI-Bericht ist vollständig, eindeutig und an den ausgecheckten Commit gebunden.
+test('P0 inventory contains one evidence row per tracked prototype and conservative references',()=>{
+ const {summary,files}=JSON.parse(run('--json'));
+ const cwd=fileURLToPath(new URL('../',import.meta.url));
+ const tracked=execFileSync('git',['ls-files','-z'],{cwd,encoding:'utf8'}).split('\0').filter(p=>p.startsWith('prototypes/'));
+ assert.deepEqual(files.map(x=>x.path),tracked);
+ assert.equal(summary.commit,execFileSync('git',['rev-parse','HEAD'],{cwd,encoding:'utf8'}).trim());
+ const categories=['LIVE','BUILD','TEST_PINNED','DEMO_REVIEW','MANUAL_REVIEW'];
+ assert.deepEqual(summary.category_counts,Object.fromEntries(categories.map(c=>[c,files.filter(f=>f.category===c).length])));
+ assert.equal(Object.values(summary.category_counts).reduce((a,b)=>a+b,0),files.length);
+ for(const f of files){
+  assert.equal(f.test,f.test_references.length>0,f.path);
+  for(const r of f.test_references){assert.ok(r.source);assert.ok(['path','directory'].includes(r.match));}
+  assert.equal(f.category,f.public?'LIVE':f.build?'BUILD':f.test?'TEST_PINNED':f.demo?'DEMO_REVIEW':'MANUAL_REVIEW');
+ }
+});

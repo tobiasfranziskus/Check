@@ -28,11 +28,6 @@
    <button id="fortsetzen" type="button" disabled>Karriere fortsetzen</button>
    <button id="import-aktion" type="button">Spielstand laden</button>
    <button id="neues-spiel" type="button">Weitere Spielmodi <span aria-hidden="true">+</span></button>
-   <button id="fortsetzen-w6" type="button" disabled hidden>Experimentelle Karriere fortsetzen</button>
-   <button id="fortsetzen-pir" type="button" disabled hidden>Piratenforschung fortsetzen</button>
-   <button id="vorige-pir" type="button" hidden>Vorherige Piratenforschung wiederherstellen</button>
-   <button id="vorige-karriere" type="button" hidden>Vorherige Karriere wiederherstellen</button>
-   <button id="vorige-forschung" type="button" hidden>Vorherige experimentelle Karriere wiederherstellen</button>
    <input id="import-datei" type="file" accept=".json,application/json" hidden>
   </div>
   <p id="menumeldung" class="statusline" role="status" aria-live="polite"></p>
@@ -64,6 +59,22 @@
   <div><strong>Kaufe Miner und Frachter, fördere Eis und beauftrage den Transport.</strong><p>Kaufe beide Schiffe, bevor du Wirtschaftszeit voranschreiten lässt. Andere Konzerne können den verfügbaren Frachter kaufen.</p></div>
   <button id="karriere-starten" class="primary" type="button">Ausgewählte Karriere beginnen <span aria-hidden="true">→</span></button>
  </div>
+ <details class="career-extras" id="career-recovery"><summary>Weitere Spielstände und Wiederherstellung</summary>
+  <div class="career-extra-actions">
+   <button id="fortsetzen-w6" type="button" disabled hidden>Experimentelle Karriere fortsetzen</button>
+   <button id="fortsetzen-pir" type="button" disabled hidden>Piratenforschung fortsetzen</button>
+   <button id="vorige-pir" type="button" hidden>Vorherige Piratenforschung wiederherstellen</button>
+   <button id="vorige-karriere" type="button" hidden>Vorherige Karriere wiederherstellen</button>
+   <button id="vorige-forschung" type="button" hidden>Vorherige experimentelle Karriere wiederherstellen</button>
+  </div>
+ </details>
+ <details class="career-extras" id="career-legacy"><summary>Klassische Spielmodi und Training</summary>
+  <nav class="career-extra-actions" aria-label="Klassische Spielmodi">
+   <a href="../../index.html#klassische-wirtschaft">Klassische Wirtschaft</a>
+   <a href="../j4c/index.html">Jägertraining</a>
+   <a href="../verbund/konzern.html">Frühere Konzernansicht</a>
+  </nav>
+ </details>
  <button id="zurueck-hauptmenue" class="ghost" type="button">Zurück zum Hauptmenü</button>
  <p id="briefing-meldung" class="statusline" role="status" aria-live="polite"></p>
 </section>

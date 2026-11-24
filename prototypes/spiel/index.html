@@ -29,6 +29,8 @@
    <button class="primary" id="neues-spiel" type="button">Neue Karriere <span aria-hidden="true">→</span></button>
    <button id="fortsetzen" type="button" disabled>Karriere fortsetzen</button>
    <button id="fortsetzen-w6" type="button" disabled>Experimentelle Karriere fortsetzen</button>
+   <button id="fortsetzen-pir" type="button" disabled>Piratenforschung fortsetzen</button>
+   <button id="vorige-pir" type="button" hidden>Vorherige Piratenforschung wiederherstellen</button>
    <button id="vorige-karriere" type="button" hidden>Vorherige Karriere wiederherstellen</button>
    <button id="vorige-forschung" type="button" hidden>Vorherige experimentelle Karriere wiederherstellen</button>
    <button id="import-aktion" type="button">Spielstand importieren</button>
@@ -74,6 +76,11 @@
   <span><strong>Experimentelle Dravos-Karriere</strong>
    <small>Eigenständige Spielwelt mit begrenzten Siliziumfeldern, Eigentumsrechten, bezahlter Dravos-Fracht und finanzierter Erzversorgung. Dein normaler Karrierespielstand bleibt erhalten. Keine automatische Übernahme bestehender Spielstände.</small></span>
  </label>
+ <label class="w6-start-option" for="pir-start">
+  <input id="pir-start" type="checkbox">
+  <span><strong>PIR-1 · Piratenforschung in Nadir</strong>
+   <small>Eigene Karriere mit bezahlten Patrouillen und Handelsbeobachtung. Die Fraktion startet mit einer Hülle und endlicher Kasse. Es gibt keine Angriffe.</small></span>
+ </label>
  </section>
  <div class="briefing-bottom">
   <div><strong>Kaufe Miner und Frachter, fördere Eis und beauftrage den Transport.</strong><p>Kaufe beide Schiffe, bevor du Wirtschaftszeit voranschreiten lässt. Andere Konzerne können den verfügbaren Frachter kaufen.</p></div>
@@ -108,6 +115,7 @@
    <h3 id="sektor-titel">Operationsboard</h3>
    <label for="sektor-auswahl">Station oder Schiff <select id="sektor-auswahl"></select></label>
   </div>
+  <p id="sektor-flottenlage" class="sektor-flottenlage"></p>
   <div class="sektor-spielfeld">
    <div id="sektor-karte" aria-label="Wirtschaftsstandorte und Schiffe" role="group"></div>
    <section id="sektor-details" aria-label="Ausgewähltes Objekt" aria-live="polite"></section>

@@ -137,6 +137,20 @@ function erstellen(){
    const w=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
    return aktivieren(w,w.load(text),'Fortgesetzter Regel204-Export',w.hash(w.load(text)));
  }
+ function startenPiraten(bestaetigt){
+   if(bestaetigt!==true||welt)throw Error('PIR-1: getrennten Forschungsstart bestätigen');
+   const w=W.erstellenPiraten(), s=w.createState(42);
+   w.politikSetzen(s,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
+   w.npcAutoSetzen(s,true);
+   w.npcSiliziumSetzen(s,true);
+   return aktivieren(w,s,'PIR-1 · Forschungsstart Nadir',w.hash(s));
+ }
+ function oeffnenPiraten(text,bestaetigt){
+   if(bestaetigt!==true||welt)throw Error('PIR-1: separaten Forschungsstand bestätigen');
+   paket(text);
+   const w=W.erstellenPiraten(), s=w.load(text);
+   return aktivieren(w,s,'PIR-1 · Forschungsstand Nadir',w.hash(s));
+ }
  // W6/P8g DRAFT: eine echte NEUE Regel207-Forschungswelt aus dem
  // originalfinanzierten Seed; niemals eine bestehende Regel204-Karriere umwandeln.
  // Das ist kein Importpfad, keine Gratisreserve und keine neue Simulationsuhr.
@@ -191,7 +205,7 @@ function erstellen(){
        :'Regel204 – manuelle JSON-Sicherung, kein automatischer Rückweg nach Regel195'
    });
  }
- function angebot(cmd){
+ function angebot(cmd,mitKaufPlan=false){
    requireState();
    const clone=pruefen(welt,zustand),hash=welt.hash(clone);
    try{
@@ -203,17 +217,37 @@ function erstellen(){
      // never recalculated using a second UI pricing formula.
      const actualFerry=result.ok&&cmd.type==='shipReposition'
        &&clone.w5ac?.active?.id===cmd.schiff ?clone.w5ac.active:null;
-     return {ok:result.ok,reason:result.reason||null,hash,
+     let kaufPlan;
+     if(mitKaufPlan&&result.ok&&cmd.type==='shipBuy'&&cmd.station==='st_nadir'&&cmd.klasse==='frachter'
+       &&zustand.rulesVersion===204){
+       const schiff=clone.w5?.schiffIds?.find(id=>clone.ships[id]?.owner==='house'
+         &&zustand.ships[id]?.owner!=='house');
+       kaufPlan={kaufpreis:zustand.owners.house.cash-clone.owners.house.cash,
+         restkasse:clone.owners.house.cash,ueberfuehrung:null};
+       if(schiff){
+         try{
+           const q=welt.execute(clone,{type:'shipReposition',owner:'house',schiff});
+           if(q.ok)pruefen(welt,clone);
+           const f=q.ok?clone.w5ac.active:null;
+           kaufPlan.ueberfuehrung=f?{kosten:f.kosten,minuten:f.minuten,restkasse:clone.owners.house.cash}
+             :{grund:q.reason||'Keine Überführung bestätigt'};
+         }catch{
+           kaufPlan.ueberfuehrung={grund:'Keine Überführung bestätigt'};
+         }
+       }
+     }
+     return {ok:result.ok,reason:result.reason||null,hash,kaufPlan,
        ...(actualFerry?{kosten:actualFerry.kosten,minuten:actualFerry.minuten}: {})};
    }catch(e){return {ok:false,reason:String(e.message||e),hash};}
  }
  function angebote(){
    requireState();
    return haushaltPlan(zustand,welt).map(x=>{
-     const a=angebot(x.befehl);
+     const a=angebot(x.befehl,true);
      return Object.freeze({id:x.id,label:x.label,ok:a.ok,reason:a.reason,
        ...(x.befehl.type==='shipReposition'&&a.ok
-          ?{kosten:a.kosten,minuten:a.minuten}: {})});
+          ?{kosten:a.kosten,minuten:a.minuten}: {}),
+       ...(a.kaufPlan?{kaufPlan:a.kaufPlan}:{})});
    });
  }
  function ausfuehren(id){
@@ -361,7 +395,7 @@ function erstellen(){
  function flugAudit(){requireState();return welt.audit(zustand);}
 
  function exportieren(){requireState();return welt.save(zustand);}
- return Object.freeze({starten195,oeffnen204,startenP8g,oeffnenP8g,ansicht,angebote,ausfuehren,weiterspielen,exportieren,
+ return Object.freeze({starten195,oeffnen204,startenPiraten,oeffnenPiraten,startenP8g,oeffnenP8g,ansicht,angebote,ausfuehren,weiterspielen,exportieren,
   piloten,uebernehmen,pilotStatus,flugBefehl,flugAngebot,flugSchritte,weltReferenz,zustandReferenz,flugAudit});
 }
 const API=Object.freeze({erstellen});

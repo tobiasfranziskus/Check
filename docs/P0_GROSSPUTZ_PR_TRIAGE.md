@@ -106,3 +106,8 @@ Erhaltene Nachfolger-CI: #511 Head `da686630d2cb12d1802aa9b8fc775665da17179f`, d
 4. **Kontextbudget**: `README`/kurzer `docs/README` zuerst, dann Änderungen seit main und nur betroffene Roadmap-/Status-/Codebereiche. Kein blindes Einlesen des ganzen Archivs, aller gestapelten PRs oder des privaten `void-echoes`-Repos.
 
 **Regeln:** Jede PR-Schließung ist **keine Codeintegration**. Basen, SHAs und Originaltests bleiben erhalten. Kein Löschen historischer Dateien oder Branches in diesem Schritt. Keine Änderungen an Core, UI, Save, Wirtschaft, Pages oder NAS.
+
+
+## Nachbereitung der Morgensupervision 24.11.2026
+
+Main 679ba6c1, 66 offene PRs laut gespeichertem Morgenlauf (zeitpunktbezogen). P0-Kurzfassung gegen den neuen Main-Stand konsolidiert; frühere Archive unverändert. #599 UX-CI-Fehler identifiziert und im Quell-Draft korrigiert, neue CI offen. #610 Kampfstack aktiv; #611 gezielte Langzeitbelege ausgewertet. #573/#576/#577 getrennte Sicherheits-/Wirtschaftsforschung vor Integration erhalten. Keine pauschale Schließung oder Regelaktivierung.

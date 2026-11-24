@@ -8,6 +8,11 @@ const standorte={
 };
 const klassen={miner:'Bergbauschiff',frachter:'Frachter',jaeger:'Jäger'};
 const phasen={hin:'Hinfahrt',rueck:'Rückfahrt',vorbestellt:'Vorbestellt'};
+const sicherheitsnamen={sicher:'Sicher',umkaempft:'Umkämpft',gesetzlos:'Gesetzlos'};
+const piratenAktivitaet={bereit:'Patrouille in Bereitschaft',auslaufen:'Läuft aus',patrouille:'Auf Patrouille',
+ beobachten:'Beobachtet Handelsrouten',folgen:'Folgt einem Kontakt',rueckkehr:'Rückkehr zum Dock',
+ gestrandet:'Einsatz abgebrochen · Kein Fluglohn',keinKapital:'Einsatz beendet · Reserve fehlt',
+ verschlissen:'Einsatz beendet · Hülle verschlissen'};
 const ort=name=>standorte[name]?.name||name;
 
 // Schematische Etappe aus dem Core-Takt. Ohne belegte Dauer und Ankunft
@@ -19,14 +24,31 @@ function flugzeit(tick,ankunft,dauer){
 }
 
 function auswerten(a,s,w,angebote){
+ const r=w.rules;
+ const asterion=Object.values(s.ships).filter(sh=>sh.owner==='transport'&&sh.klasse==='frachter'
+  &&!w.stillgelegt(s,sh.id));
+ const lage=w.sicherheitslage?.(s);
  const stationen=Object.entries(standorte).flatMap(([system,k])=>{
   if(system==='dravos'&&a.regel!==207)return [];
   const st=a.stationen.find(st=>st.id===k.id&&st.system===system);
   if(!st)return [];
+  const frachterbestand=s.stations[k.id].lager.frachter||0;
   return [{...k,system,lager:st.lager,kasse:s.owners[k.id]?.cash,
+   sicherheit:sicherheitsnamen[lage?.stufen[system]]||null,
    angebote:angebote.filter(o=>o.id.startsWith('buy-'+k.id+'-')),
+   bedarf:[
+    ...(r.w4?.station===k.id&&s.w4&&!s.w4.auftrag
+     ?[{ware:'Erz für nächste Raffineriecharge',fehlend:Math.max(0,r.w4.erzJeCharge-(s.stations[k.id].lager.erz||0))}]:[]),
+    ...(r.w5?.station===k.id&&s.w5&&!s.w5.auftrag
+     ?[{ware:'Material für nächste Frachterhülle',fehlend:Math.max(0,r.w5.material-(s.stations[k.id].lager.material||0))}]:[])
+   ],
    raffinerie:w.rules.w4?.station===k.id&&s.w4?s.w4.auftrag?'In Betrieb':'Kein laufender Auftrag':null,
    werft:w.rules.w5?.station===k.id&&s.w5?s.w5.auftrag?'Baut eine Hülle':'Kein laufender Auftrag':null,
+   erzZulauf:system==='nadir'&&s.w3?.auftrag?.phase==='hin'?s.w3.auftrag.menge:null,
+   frachterbestand,
+   asterion:system==='nadir'&&frachterbestand===1?{
+    anzahl:asterion.length,rest:asterion.length===1?w.restAktivminuten(s,asterion[0].id):null
+   }:null,
    werftBetreiber:w.rules.w5?.station===k.id?w.rules.w5.werft:null}];
  });
  const eis=s.w5n?.frachtauftrag,erz=s.w3?.auftrag,transfer=s.w5ac?.active;
@@ -34,6 +56,8 @@ function auswerten(a,s,w,angebote){
  const frachtbeleg=s.kanon.spielerFrachten?.auftraege?.at(-1);
  function schiffAuswerten(sh){
   const original=s.ships[sh.id];
+  const pirat=lage?.kontakt?.id===sh.id?lage.kontakt:null;
+  const exponiert=lage?.exponiert.includes(sh.id)||false;
   const fracht=eis?.schiff===sh.id?eis:erz?.schiff===sh.id?erz:null;
   const ueberfuehrung=transfer?.id===sh.id&&transfer.owner===original.owner;
   const pendel=s.kanon.pendel?.[sh.id];
@@ -56,12 +80,14 @@ function auswerten(a,s,w,angebote){
   const lieferung=eis?.schiff===sh.id&&eis.phase==='rueck'&&original.owner==='house'
    &&frachtbeleg?.schiff===sh.id&&frachtbeleg.end===null&&Number.isSafeInteger(frachtbeleg.geliefert)
    ?{menge:frachtbeleg.menge,ziel:ort(sh.system)}:null;
-  return {...sh,name:(klassen[sh.klasse]||sh.klasse)+' · '+sh.id,
-   owner:original.owner,ort:ortText,auftrag,zeit,lieferung,
+  return {...sh,name:(pirat?'Piratenjäger':klassen[sh.klasse]||sh.klasse)+' · '+sh.id,
+   owner:original.owner,ort:ortText,auftrag:pirat?piratenAktivitaet[pirat.phase]:auftrag,zeit,lieferung,
+   pirat,exponiert,
    rueckfahrt:fracht?.phase==='rueck',nachAldera:reise&&ziel?.system==='aldera',
+   rest:original.owner==='house'?w.restAktivminuten(s,sh.id):null,
    buchwert:w.buchwert(s,sh.id),
    gruppe:strecke?'strecke':reise?'unterwegs':sh.system,
-   angebote:original.owner==='house'?angebote.filter(o=>['ice-','ore-','stop-','freight-','gate-freight-','sil-start-','sil-sell-']
+   angebote:original.owner==='house'?angebote.filter(o=>['ice-','ore-','stop-','freight-','reposition-','gate-freight-','sil-start-','sil-sell-']
     .some(prefix=>o.id===prefix+sh.id)):[]};
  }
  const schiffe=a.schiffe.map(schiffAuswerten);
@@ -70,7 +96,14 @@ function auswerten(a,s,w,angebote){
    id,klasse:sh.klasse,system:sh.system,phase:sh.phase,flug:sh.flug?.lage||null,
    ladung:Object.entries(sh.ladung||{}).filter(([,n])=>n>0).map(([ware,n])=>ware+': '+n).join(' · ')||'leer'
   }));
- return {stationen,schiffe,fremdeSchiffe,auftraege:schiffe.filter(sh=>sh.auftrag).length};
+ const letzteFrachter=schiffe.filter(sh=>sh.klasse==='frachter'&&sh.rest!==0);
+ const rest=letzteFrachter.length===1?letzteFrachter[0].rest:null;
+ const runde=r.w5n?2*r.w5n.flugMinuten:null;
+ const ersatz=!letzteFrachter.length?'Kein einsatzfähiger eigener Frachter':
+  rest!==null&&runde!==null&&rest<=runde?'Letzter eigener Frachter erreicht die Verschleißgrenze spätestens nach einer Eisrunde':null;
+ return {stationen,schiffe,fremdeSchiffe,ersatz,hauskasse:s.owners.house.cash,
+  frachtreserve:eis&&s.ships[eis.schiff]?.owner==='house'?s.owners.w5n_fracht_arbeit?.cash??0:null,
+  auftraege:schiffe.filter(sh=>sh.auftrag).length};
 }
 
 const stationGrafik={
@@ -111,7 +144,7 @@ function stationsbild(d,system){
 }
 
 function schiffsbild(d,obj){
- const eigen=obj.owner==='house',farbe=eigen?'#e7e6dc':'#c6a36c';
+ const eigen=obj.owner==='house',farbe=obj.pirat?'#d18461':eigen?'#e7e6dc':'#c6a36c';
  const grafik=scope.RaumGrafik;
  const modell=grafik?.MODELLE[grafik.KLASSE_MODELL[obj.klasse]];
  const svg=svgElement(d,'svg',{viewBox:'0 0 120 36',width:96,height:29,
@@ -119,6 +152,13 @@ function schiffsbild(d,obj){
  const {zeit}=obj;
  // Der Marker springt ausschließlich mit dem nächsten angezeigten Welt-Tick.
  const x=zeit?24+72*(obj.nachAldera?1-zeit.vergangen/zeit.dauer:zeit.vergangen/zeit.dauer):60;
+ if(obj.pirat){
+  const px=60+Math.max(-47,Math.min(47,obj.pirat.x/10500));
+  const py=18+Math.max(-13,Math.min(13,obj.pirat.y/37000));
+  svg.append(svgElement(d,'path',{d:'M4 18H116 M60 2V34',stroke:'#56666e','stroke-dasharray':'2 4'}),
+   svgElement(d,'path',{d:'M0 -5L5 0L0 5L-5 0Z',transform:'translate('+px+' '+py+')',fill:farbe}));
+  return svg;
+ }
  if(zeit)svg.append(svgElement(d,'path',{d:'M4 18H116 M5 14V22 M115 14V22',
   stroke:eigen?'#77c7be':farbe,'stroke-dasharray':'3 3',fill:'none'}));
  if(modell){
@@ -154,11 +194,22 @@ function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,t
   const vals=obj.owner?[
    ['Eigentümer',konzernname(obj.owner)],['Ort',obj.ort],['Ladung',obj.ladung],
    ['Auftrag',obj.auftrag||'Kein laufender Wirtschaftsauftrag'],
+   ['Einsatzreserve',obj.rest===0?'Stillgelegt':Number.isSafeInteger(obj.rest)?fmt(obj.rest)+' Aktivminuten':null],
+   ['Gebundener Fluglohn',obj.owner==='house'&&obj.auftrag?.startsWith('Eisfracht')&&modell.frachtreserve!==null
+    ?fmt(modell.frachtreserve)+' ISK':null],
+   ['Routenexposition',obj.exponiert?'An der Nadir-Patrouille vorbeigeführt':null],
+   ['Letzte Patrouillensichtung',obj.pirat?.sicht?obj.pirat.sicht.id+' · Weltminute '+fmt(obj.pirat.sicht.tick)
+     +(obj.pirat.sicht.art==='tor'?' · Korridorbericht':' · Nahkontakt'):null],
    ['Lieferung',obj.lieferung?fmt(obj.lieferung.menge)+' Eis in '+obj.lieferung.ziel+' geliefert':null]
   ]:[
-   ['Stationsbetreiber',konzernname(obj.id)],['Lager',obj.lager],
+   ['Sicherheitsstufe',obj.sicherheit],['Stationsbetreiber',konzernname(obj.id)],['Lager',obj.lager],
    ['Stationskasse',Number.isSafeInteger(obj.kasse)?fmt(obj.kasse)+' ISK':null],
+   ['Frachter im Lager',fmt(obj.frachterbestand)],
+   ['Asterion-Flotte',obj.asterion?fmt(obj.asterion.anzahl)+' einsatzfähig'+
+    (obj.asterion.rest!==null?' · '+fmt(obj.asterion.rest)+' Aktivminuten':''):null],
    ['Raffinerie',obj.raffinerie],['Werft',obj.werft],
+   ['Erz auf dem Hinflug',Number.isSafeInteger(obj.erzZulauf)?fmt(obj.erzZulauf):null],
+   ...obj.bedarf.map(b=>[b.ware,b.fehlend?fmt(b.fehlend)+' fehlen':'Bestand reicht']),
    ['Werftbetreiber',obj.werftBetreiber?konzernname(obj.werftBetreiber):null]
   ];
   const liste=element('dl');
@@ -187,6 +238,15 @@ function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,t
     button.dataset.sektorDetail=angebot.id;
     button.addEventListener('click',()=>waehleAngebot(angebot.id));
     angebote.append(button);
+    if(angebot.id.startsWith('reposition-'))
+     angebote.append(element('div',fmt(angebot.kosten)+' ISK · '+fmt(angebot.minuten)+' Min.','sektor-buchwert'));
+    if(angebot.kaufPlan){
+     const p=angebot.kaufPlan,f=p.ueberfuehrung;
+     angebote.append(element('div',fmt(p.kaufpreis)+' ISK Kauf · '+fmt(p.restkasse)+' ISK Kasse danach','sektor-buchwert'));
+     if(f?.grund)angebote.append(element('p','Überführung nach Kauf: '+anzeigetext(f.grund)));
+     else if(f)angebote.append(element('div','Überführung heute: '+fmt(f.kosten)+' ISK · '+
+      fmt(f.minuten)+' Min. · '+fmt(f.restkasse)+' ISK Kasse danach','sektor-buchwert'));
+    }
    }else{
     angebote.append(element('p',titel(angebot)+' · '+(angebot.reason?anzeigetext(angebot.reason):'Zurzeit gesperrt')));
    }
@@ -208,6 +268,8 @@ function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,t
   b.append(obj.owner?schiffsbild(d,obj):stationsbild(d,obj.system));
   b.append(element('strong',obj.name));
   if(untertitel)b.append(element('small',untertitel));
+  if(obj.sicherheit)b.append(element('small',obj.sicherheit,'sektor-sicherheitsstufe'));
+  if(obj.exponiert)b.append(element('small','Exponierte Route','sektor-exposition'));
   if(obj.zeit)b.append(element('small',obj.zeit.vergangen===0&&!obj.rueckfahrt?'Abflug':
    fmt(obj.zeit.vergangen)+' / '+fmt(obj.zeit.dauer)+' Flugminuten'));
   b.addEventListener('click',()=>waehlen(key(obj),true));
@@ -254,6 +316,8 @@ function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,t
     }
     const gruppe=schiffsgruppe(st.system,'sektor-hafen sektor-'+st.system);
     gruppe.prepend(knopf(st,'sektor-station',st.profil));
+    for(const sh of neu.fremdeSchiffe.filter(sh=>sh.pirat?.system===st.system))
+     gruppe.append(knopf(sh,'sektor-kontakt sektor-pirat',sh.auftrag+' · '+sh.ort));
     netz.append(gruppe);
    }
    karte.replaceChildren(netz);
@@ -262,16 +326,19 @@ function verbinden(wurzel,{waehleAngebot,waehleSchiff,oeffneFlotte,konzernname,t
     for(const sh of uebrig)box.append(knopf(sh,'sektor-schiff',sh.auftrag||sh.ort));
     karte.append(box);
    }
-   if(neu.fremdeSchiffe.length){
+   const zivil=neu.fremdeSchiffe.filter(sh=>!sh.pirat);
+   if(zivil.length){
     const box=element('div',null,'sektor-unterwegs');
     box.setAttribute('aria-label','Fremde Schiffe');
     box.setAttribute('role','group');
-    for(const sh of neu.fremdeSchiffe){
+    for(const sh of zivil){
      const button=knopf(sh,'sektor-kontakt','Fremd · '+sh.ort);
      box.append(button);
     }
     karte.append(box);
    }
+   const lage=$('sektor-flottenlage');
+   if(lage)lage.textContent='Konzernkasse '+fmt(neu.hauskasse)+' ISK'+(neu.ersatz?' · '+neu.ersatz:'');
    $('sektor-auftraege').textContent=fmt(neu.auftraege);
    if(objekte.length)waehlen(objekte.some(obj=>key(obj)===gewaehlt)?gewaehlt:key(objekte[0]));
    if(fokusDetail)([...details.querySelectorAll('[data-sektor-detail]')]

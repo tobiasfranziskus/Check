@@ -75,9 +75,16 @@ function auswerten(w,s,angebote){
  const nextFreight=choose(carriers,'freight-');
  const freightBuy=quote('buy-st_aldera-frachter');
  const frachterStillgelegt=carriers.length>0&&carriers.every(sh=>w.stillgelegt(s,sh.id));
+ // Use a hull already owned by the house before advertising another purchase.
+ // The original J8 quote alone authorizes a paid Nadir -> Aldera transfer.
+ const ueberfuehrung=(!carriers.length||frachterStillgelegt)&&!open
+  ?choose(owned.filter(sh=>sh.klasse==='frachter'&&sh.system==='nadir'&&!w.stillgelegt(s,sh.id)),'reposition-'):null;
  const ersatz=frachterStillgelegt?['buy-st_aldera-frachter','buy-st_nadir-frachter']
   .map(quote).find(a=>a?.ok):null;
- const freight=ersatz
+ const freight=ueberfuehrung
+   ?{aktion:ueberfuehrung.id,bereit:ueberfuehrung.quote.ok===true,
+      titel:'Eigenen Nadir-Frachter bezahlt nach Aldera überführen',grund:ueberfuehrung.quote.reason||null}
+   :ersatz
    ?{aktion:ersatz.id,bereit:true,titel:'Ersatzfrachter in '+(ersatz.id.includes('nadir')?'Nadir':'Aldera')+' kaufen',grund:null}
    :carriers.length===0
    ?{aktion:freightBuy?.id||null,bereit:freightBuy?.ok===true,

@@ -342,6 +342,7 @@ body.raum-aktiv .world{display:none}
 #management-spielfeld :focus-visible,#spielwelt .sektor-zeit :focus-visible,#spielwelt .karriere-handelsweg :focus-visible {
  outline:3px solid var(--manager-messing);outline-offset:2px;
 }
+.sektor-flottenlage {margin:0;padding:8px 16px;color:var(--manager-leise);font-variant-numeric:tabular-nums}
 #sektor-details {padding:14px 16px;min-width:0;border-left:1px solid var(--manager-stahl);font-size:.9rem}
 #sektor-details h3 {margin:0 0 10px;font-size:1.08rem;overflow-wrap:anywhere}
 #sektor-details dl {display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0}
@@ -400,3 +401,8 @@ body.raum-aktiv .world{display:none}
 .manager-pilot-extra{margin:12px 0 16px;padding:0 14px;border:1px solid var(--manager-stahl);border-radius:11px;background:var(--manager-panel)}
 .manager-pilot-extra .note{font-size:.86rem;line-height:1.5}
 @media(max-width:600px){.manager-feedback{padding:12px}.manager-pilot-extra{padding:0 12px}}
+
+/* PIR-1 · Korridorbericht auf dem bestehenden Operationsboard */
+#sektor-karte .sektor-pirat { border-inline-start: 3px solid #d18461; }
+#sektor-karte .sektor-exposition { color: #edaa8c; }
+#sektor-karte .sektor-sicherheitsstufe { color: #c6a36c; }

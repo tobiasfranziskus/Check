@@ -29,8 +29,10 @@ const {erzeugen}=require('./j10b-k2-kauf-fixture.cjs');
    await page.goto('http://127.0.0.1:'+server.address().port+'/index.html');
    const corporateLink=page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/verbund/konzern.html"]');
    assert.equal(await corporateLink.count(),1);
-   assert.equal(await corporateLink.isVisible(),true);
-   await corporateLink.click();
+   assert.equal(await corporateLink.isVisible(),false,'legacy choice initially collapsed');
+   await page.locator('#root-portal .root-more summary').tap();
+   assert.equal(await corporateLink.isVisible(),true,'actual menu opens legacy choice');
+   await corporateLink.tap();
    await page.waitForURL(url);
    assert.equal(await page.locator('#start204').isDisabled(),true);
    await page.locator('#quelle204').setInputFiles({

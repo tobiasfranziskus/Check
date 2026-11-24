@@ -52,3 +52,20 @@ test('P1 Root: premium portal is static, original cockpit/save slots untouched',
  assert.match(build,/for\(const \[name,expected\] of \[\['index.html',pages\],\['aphros-void.html',out\]\]\)/);
  assert.doesNotMatch(read('aphros-void.html'),/prototypes\/spiel\/index\.html/);
 });
+
+test('M4 UX: public gateway has one primary action, collapsed alternatives and no marketing tiles',()=>{
+ const source=read('scripts/pages-entry.html'),css=read('scripts/pages-entry.css');
+ assert.equal((source.match(/class="root-primary"/g)||[]).length,1);
+ assert.match(source,/<details class="root-more">\s*<summary>Weitere Spielmodi<\/summary>/);
+ assert.doesNotMatch(source,/root-cards|root-info|root-eyebrow|root-sub|<article|<aside/);
+ assert.match(css,/body:not\(:has\(:target\)\) > :is\(section,nav,main\)/);
+ assert.match(css,/body:has\(#klassische-wirtschaft:target\) #root-portal\{display:none\}/);
+});
+
+test('M4 UX: legacy return is a same-document link and short landscape keeps navigation separate',()=>{
+ const pages=read('index.html'),css=read('scripts/pages-entry.css');
+ assert.match(pages,/<a class="root-back" href="#root-portal">Zum Spieleinstieg<\/a>/);
+ assert.ok(css.includes('body:has(#root-portal:target) > :is(section,nav,main)'));
+ assert.ok(css.includes('grid-template-columns:minmax(0,1fr) minmax(220px,.9fr)'));
+ assert.doesNotMatch(read('aphros-void.html'),/class="root-back"/);
+});

@@ -51,6 +51,7 @@ const Welt=require('../prototypes/welt/welt-kern.js');
       'older W0–W5 mode and its technical identity remain available');
     const href=await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/j4c/index.html"]').getAttribute('href');
     assert.equal(href,'prototypes/j4c/index.html','öffentliches Hauptspiel verlinkt den Jäger');
+    await page.locator('#root-portal .root-more summary').tap();
     await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/j4c/index.html"]').tap();
     await page.waitForURL('**/prototypes/j4c/index.html');
     assert.equal(await page.locator('#duell-start').isDisabled(),true);

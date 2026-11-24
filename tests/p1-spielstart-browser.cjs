@@ -588,6 +588,46 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
  }finally{await ctx.close();}
 }
 
+// A short landscape viewport is particularly susceptible to a clipped menu.
+// Keep this root-only test separate from the existing full four-size career matrix.
+async function kurzerSpieleinstieg(browser,base,kind){
+ const ctx=await browser.newContext({viewport:{width:667,height:375},hasTouch:true});
+ const page=await ctx.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(String(e)));
+ try{
+  await page.goto(base+'/');
+  const gateway=page.locator('#root-portal'),more=gateway.locator('.root-more summary');
+  const primary=gateway.locator('.root-primary');
+  const fits=()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2&&document.documentElement.scrollHeight<=innerHeight+2);
+  assert.equal(await fits(),true,'closed root fits short landscape without scrolling');
+  for(const control of [primary,more]){
+   const b=await control.boundingBox();
+   assert(b&&b.height>=48&&b.x>=0&&b.y>=0&&b.x+b.width<=667&&b.y+b.height<=375,'touch target inside viewport');
+  }
+  await more.tap();
+  assert.equal(await gateway.locator('.root-more').evaluate(x=>x.open),true);
+  for(const item of await gateway.locator('.root-alternatives a').all()){
+   assert.equal(await item.isVisible(),true);
+   assert((await item.boundingBox()).height>=48);
+  }
+  await gateway.locator('a[href="#klassische-wirtschaft"]').tap();
+  assert.equal(await page.locator('#save').isVisible(),true);
+  await page.evaluate(()=>{window.__menuNavigationProbe=42;});
+  await page.locator('#klassische-wirtschaft .root-back').tap();
+  assert.equal(await page.evaluate(()=>window.__menuNavigationProbe),42,'return uses same document');
+  assert.equal(await gateway.isVisible(),true);
+  assert.equal(await page.locator('#save').isHidden(),true);
+  await more.tap();
+  assert.equal(await fits(),true);
+  await page.setViewportSize({width:375,height:667});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),true);
+  await page.setViewportSize({width:667,height:375});
+  assert.equal(await fits(),true);
+  assert.deepEqual(errors,[]);
+  console.log('M4_UX_SHORT_ROOT_OK '+JSON.stringify({kind,width:667,height:375,legacyReturnSameDocument:true}));
+ }finally{await ctx.close();}
+}
+
 (async()=>{
  const root=path.resolve(__dirname,'..');
  const server=http.createServer((req,res)=>{
@@ -607,6 +647,7 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
  try{
   browser=await factory.launch(kind==='webkit'?{}:{args:['--no-sandbox']});
   const base='http://127.0.0.1:'+server.address().port;
+  await kurzerSpieleinstieg(browser,base,kind);
   for(const [width,height] of [[1180,820],[1024,768],[820,1180],[390,844]]){
    const ctx=await browser.newContext({viewport:{width,height},hasTouch:true,acceptDownloads:true});
    const page=await ctx.newPage(),errors=[];
@@ -642,6 +683,15 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
     assert.equal(await page.locator('#klassische-wirtschaft').count(),1);
     assert.equal(await page.locator('#save').count(),1,'original W0-W5 save button kept');
     assert.equal(await page.locator('#import').count(),1,'original W0-W5 import kept');
+    assert.equal(await page.locator('#save').isHidden(),true,'legacy controls must not appear on public start');
+    assert.equal(await page.locator('#root-portal .root-more').evaluate(el=>el.open),false);
+    assert.equal(await page.locator('#root-portal .root-cards, #root-portal .root-info').count(),0);
+    if(width>height)assert.equal(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+2),true,'closed public menu fits landscape');
+    await page.locator('#root-portal .root-more summary').tap();
+    await page.locator('#root-portal a[href="#klassische-wirtschaft"]').tap();
+    assert.equal(await page.locator('#save').isVisible(),true,'explicit legacy entry retains original controls');
+    await page.goto(base+'/');
+    assert.equal(await page.locator('#save').isHidden(),true,'normal start hides the legacy again');
     assert.doesNotMatch(await gateway.textContent(),/Regel\s*20[47]|Prototyp|richtiger Miner/i);
     const entry=page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/spiel/index.html"]');
     assert.equal(await entry.count(),1,'visible first-class game entry from public root');

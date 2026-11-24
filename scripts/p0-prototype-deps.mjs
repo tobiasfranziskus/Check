@@ -106,7 +106,7 @@ const testBodies=testAndCi.map(p=>[p,read(p)]);
 const testRefs=new Map();
 for(const p of tracked.filter(p=>p.startsWith('prototypes/')||p.startsWith('versionen/')||p.startsWith('spieltest/'))){
  const dir=p.split('/').slice(0,2).join('/')+'/';
- const refs=testBodies.filter(([source,body])=>body.includes(p)||body.includes(dir)).map(([source])=>source);
+ const refs=testBodies.flatMap(([source,body])=>body.includes(p)?[{source,match:'path'}]:body.includes(dir)?[{source,match:'directory'}]:[]);
  if(refs.length)testRefs.set(p,refs);
 }
 const prototypes=tracked.filter(p=>p.startsWith('prototypes/'));
@@ -115,6 +115,7 @@ const report=prototypes.map(p=>({
  public:publicGraph.files.has(p),
  build:buildGraph.files.has(p),
  test:testRefs.has(p),
+ test_references:testRefs.get(p)||[],
  demo:demoGraph.files.has(p),
  // Bewusst KEINE "sicher löschbar"-Kategorie: dynamische Pfade, URLs und Branches
  // lassen sich nicht allein durch diesen statischen Scan ausschließen.
@@ -128,7 +129,10 @@ const rootNavigationTargets=[...rootNavigation.matchAll(/\bhref="([^"#]+)"/g)]
 const rootRedirectTarget=/location\.replace\("([^"]+)"\s*\+\s*location\.search\)/.exec(rootNavigation)?.[1]||null;
 const rootNavMissing=rootNavigationTargets.filter(p=>!exists(p)||!publicGraph.files.has(p));
 const missing=[...new Set([...publicGraph.missing,...buildGraph.missing,...rootNavMissing])];
+const categories=['LIVE','BUILD','TEST_PINNED','DEMO_REVIEW','MANUAL_REVIEW'];
 const guarded={
+ commit:execFileSync('git',['rev-parse','HEAD'],{cwd:root}).toString('utf8').trim(),
+ category_counts:Object.fromEntries(categories.map(c=>[c,report.filter(x=>x.category===c).length])),
  paths_total:tracked.length,
  prototypes_total:prototypes.length,
  public_direct_or_transitive:report.filter(x=>x.public).length,

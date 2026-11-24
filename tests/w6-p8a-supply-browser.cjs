@@ -33,9 +33,7 @@ const SLOT='aphros-void:spielerkarriere:regel204:v1';
    page.on('pageerror',e=>errors.push(String(e)));
    try{
     await page.goto(rootURL+'/');
-    const entry=page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/spiel/index.html"]');
-    assert.equal(await entry.count(),1);
-    await entry.tap();await page.waitForURL('**/prototypes/spiel/index.html');
+    await page.waitForURL('**/prototypes/spiel/index.html');
     await page.locator('#neues-spiel').tap();
     assert.equal(await page.locator('#w6-npc-start').isChecked(),false);
     await page.locator('label[for="w6-npc-start"]').tap();

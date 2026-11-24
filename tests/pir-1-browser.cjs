@@ -21,7 +21,7 @@ async function pruefen(browser,url,width,height){
   const tap=sel=>page.locator(sel).tap({timeout:8000});
   const save=key=>page.evaluate(id=>localStorage.getItem(id),key);
   await page.goto(url);
-  await tap('#root-portal .root-primary');
+  await page.waitForURL('**/prototypes/spiel/index.html');
   await tap('#neues-spiel');await tap('#karriere-starten');
   const normal=await save(standard);
   assert(normal&&!JSON.parse(normal).kanon.piraten);
@@ -51,7 +51,7 @@ async function pruefen(browser,url,width,height){
   const download=page.waitForEvent('download');await tap('#welt-export');
   const json=await readFile(await (await download).path());
   assert.equal(json.toString(),text);
-  await page.reload();await tap('#fortsetzen-pir');
+  await page.reload();await tap('#neues-spiel');await tap('#career-recovery summary');await tap('#fortsetzen-pir');
   assert.equal(await save(pir),text);
   await page.reload();
   await page.locator('#import-datei').setInputFiles({name:'pir.json',mimeType:'application/json',buffer:json});

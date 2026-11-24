@@ -196,3 +196,63 @@ test('PIR-3b original K7 contract prerequisites and real command counterprobe',(
   assert.equal(w.hash(w.load(source)),initial);
   console.log('PIR_3B_K7_GATES '+JSON.stringify(rows));
 });
+
+test('PIR-3b real founding-hull competition: carrier first versus house first, without new stock',()=>{
+  const snapshot=(w,s)=>({
+    tick:s.tick,house:s.owners.house.cash,transport:s.owners.transport.cash,
+    stock:Object.fromEntries(Object.keys(s.stations).sort().map(id=>[id,s.stations[id].lager.frachter||0])),
+    consumed:s.ledger.frachter.consumed,produced:s.ledger.frachter.produced,
+    fleet:Object.values(s.ships).filter(sh=>sh.klasse==='frachter').map(sh=>({id:sh.id,owner:sh.owner,system:sh.system})),
+    contract:s.kanon.industrieErz.phase,material:s.stations.st_nadir.lager.material||0,
+    materialProduced:s.ledger.material.produced,oreDelivered:s.w3.geliefert??null,hash:w.hash(s)
+  });
+  const start=()=>{
+    const j=J8.erstellen(); j.startenPiraten(true,'kampf');
+    return {j,w:j.weltReferenz()};
+  };
+  const clean=(w,s)=>{
+    assert.deepEqual(w.audit(s).fehler,[]);
+    assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),s.initialSupply);
+    assert.equal(s.minted+s.burned,0);
+  };
+  const a=start(), b=start();
+  const initial=snapshot(a.w,a.j.zustandReferenz());
+  assert.deepEqual(snapshot(b.w,b.j.zustandReferenz()),initial);
+  assert(a.j.ausfuehren('buy-st_aldera-frachter').ok);
+  const houseFirst=snapshot(a.w,a.j.zustandReferenz());
+  const sa=a.j.zustandReferenz();
+  a.w.advance(sa,1); clean(a.w,sa);
+  const houseFirstMinute=snapshot(a.w,sa);
+  const sb=b.j.zustandReferenz();
+  b.w.advance(sb,1);clean(b.w,sb);
+  const carrierFirstMinute=snapshot(b.w,sb);
+  const offer=b.j.ausfuehren('buy-st_aldera-frachter');
+  const houseAfterCarrier=snapshot(b.w,b.j.zustandReferenz());
+  if(!offer.ok) assert.deepEqual(houseAfterCarrier,carrierFirstMinute);
+  const c=b.j.zustandReferenz();
+  const rows=[];
+  for(const delta of [59,240,1140,8640]){
+    b.w.advance(c,delta);clean(b.w,c);rows.push(snapshot(b.w,c));
+  }
+  assert.equal(c.tick,10080);
+  assert.equal(b.w.hash(b.w.load(b.w.save(c))),b.w.hash(c));
+  // Also try each existing ship market after the actual damaged F4.
+  const o=original(), saved=o.w.save(o.s);
+  const attempts=[];
+  for(const station of ['st_aldera','st_nadir']){
+    const copy=o.w.load(saved), before=snapshot(o.w,copy);
+    const r=o.w.execute(copy,{type:'shipBuy',owner:'transport',klasse:'frachter',station});
+    const after=snapshot(o.w,copy);
+    if(!r.ok)assert.deepEqual(after,before);
+    else{
+      assert.equal(before.transport-after.transport,o.w.rules.economy.waren.frachter.basis);
+      assert.equal(after.stock[station],before.stock[station]-1);
+      assert.equal(after.consumed,before.consumed+1);
+      assert.equal(after.fleet.filter(x=>x.owner==='transport').length,before.fleet.filter(x=>x.owner==='transport').length+1);
+    }
+    clean(o.w,copy);
+    attempts.push({station,ok:r.ok,reason:r.reason??null,before,after});
+  }
+  assert.equal(o.w.save(o.s),saved);
+  console.log('PIR_3B_FOUNDING_PAIR '+JSON.stringify({initial,houseFirst,houseFirstMinute,carrierFirstMinute,houseAfterCarrier,houseBuy:{ok:offer.ok,reason:offer.reason??null},rows,attempts}));
+});

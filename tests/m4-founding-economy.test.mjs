@@ -80,7 +80,7 @@ function run(optIn,houseFirst){
  }
  const s=j.zustandReferenz(),before=report(w,s);
  assert(s.tick<10080); w.advance(s,10080-s.tick);
- const end=report(w,s);assert.equal(end.tick,10080);
+ const end=report(w,s);assert.equal(end.tick,days*1440);
  return {optIn,houseFirst,start,actions,before,end};
 }
 test('M4 founding hull: public standard vs explicit S02, house-first vs NPC-first',()=>{
@@ -93,7 +93,7 @@ test('M4 founding hull: public standard vs explicit S02, house-first vs NPC-firs
  console.log('M4_FOUNDING_MAIN '+JSON.stringify(cases));
 });
 
-function earlyMiner(mode){
+function earlyMiner(mode, days=7, regional=false){
  const {j,w}=begin(mode==='s02');
  if(mode==='k7-only')assert.equal(w.industrieAutoSetzen(j.zustandReferenz(),true).ok,true);
  const actions=[],failed={}; let f=null, firstF4=null, firstF4End=null, firstHull=null;
@@ -107,7 +107,7 @@ function earlyMiner(mode){
  const m=j.ansicht().schiffe.find(x=>x.klasse==='miner').id;
  assert(act('ice-'+m).ok);
  const checkpoints=[];
- for(let i=0;i<7*1440;i+=10){
+ for(let i=0;i<days*1440;i+=10){
    let s=j.zustandReferenz();
    if(!f&&s.stations.st_nadir.lager.frachter>0){
      if(act('buy-st_nadir-frachter').ok){
@@ -129,9 +129,10 @@ function earlyMiner(mode){
    w.advance(s,10);
    const receipts=s.kanon.spielerFrachten?.auftraege||[];
    if(firstF4End===null&&receipts.some(r=>r.end!==null))firstF4End=s.tick;
-   if(s.tick%1440===0){
+   if(s.tick%1440===0 && (!regional || [7,30,90].includes(s.tick/1440))){
      checkpoints.push({...report(w,s),paidF4:receipts.filter(r=>r.end!==null).length,
-       f4Tariff:s.kanon.spielerFrachten?.gebuehr??0,f4Wages:s.kanon.spielerFrachten?.lohn??0});
+       f4Tariff:s.kanon.spielerFrachten?.gebuehr??0,f4Wages:s.kanon.spielerFrachten?.lohn??0,
+       ...(regional ? {households:regionalAccounts(s),water:{aldera:s.stations.st_aldera.lager.wasser||0,nadir:s.stations.st_nadir.lager.wasser||0},iceNadir:s.stations.st_nadir.lager.eis||0} : {})});
    }
  }
  const end=j.zustandReferenz(), receipts=end.kanon.spielerFrachten?.auftraege||[];
@@ -147,4 +148,17 @@ test('M4 active miner-first career: standard, existing K7-only policy, and S02, 
    cases.push(a);
  }
  console.log('M4_MINER_FIRST '+JSON.stringify(cases));
+});
+
+function regionalAccounts(s){
+ const groups={aldera:['fonds_aldera','pilot_erz','pilot_eis','w5ac_transfer_pilot','pilot_house','pilot_npc3','eigner_house','eigner_npc3','eigner_transport','eigner_st_aldera'],nadir:['w5n_arbeit','arbeitskraefte_nadir','arbeiter_werft_nadir','eigner_st_nadir','eigner_werft']};
+ return Object.fromEntries(Object.entries(groups).map(([region,ids])=>[region,ids.map(id=>({id,cash:s.owners[id].cash,spent:s.kanon.haushalte[id]?.ausgegeben||0,bought:s.kanon.haushalte[id]?.gekauft||0}))]));
+}
+test('M4 regional household audit: 7/30/90 day checkpoints, paired replay',()=>{
+ for(const mode of ['standard','k7-only','s02']){
+   const a=earlyMiner(mode,90,true),b=earlyMiner(mode,90,true);
+   assert.deepEqual(a,b);
+   assert.deepEqual(a.checkpoints.map(x=>x.tick),[10080,43200,129600]);
+   console.log('M4_REGIONAL '+JSON.stringify({mode,checkpoints:a.checkpoints,failed:a.failed}));
+ }
 });

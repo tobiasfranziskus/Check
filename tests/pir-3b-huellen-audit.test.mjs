@@ -256,3 +256,63 @@ test('PIR-3b real founding-hull competition: carrier first versus house first, w
   assert.equal(o.w.save(o.s),saved);
   console.log('PIR_3B_FOUNDING_PAIR '+JSON.stringify({initial,houseFirst,houseFirstMinute,carrierFirstMinute,houseAfterCarrier,houseBuy:{ok:offer.ok,reason:offer.reason??null},rows,attempts}));
 });
+
+test('PIR-3b carrier-first followed by real player purchase and paid ferry',()=>{
+  const j=J8.erstellen();j.startenPiraten(true,'kampf');
+  const w=j.weltReferenz(),start=j.zustandReferenz();
+  w.advance(start,300);
+  assert.equal(start.stations.st_nadir.lager.frachter,1);
+  assert.equal(start.w5.fertig,1);
+  const original=w.save(start),control=w.load(original);
+  const cash=start.owners.house.cash, ids=new Set(Object.keys(start.ships));
+  assert(j.ausfuehren('buy-st_nadir-frachter').ok);
+  let s=j.zustandReferenz();
+  const sh=Object.values(s.ships).find(x=>!ids.has(x.id));
+  assert(sh&&sh.owner==='house'&&sh.system==='nadir'&&s.w5.schiffIds.includes(sh.id));
+  const f=sh.id;
+  assert.equal(cash-s.owners.house.cash,750);
+  assert.equal(s.stations.st_nadir.lager.frachter,0);
+  assert.equal(s.w5.fertig,1);
+  let ferry=null;
+  for(let i=0;i<=24;i++){
+    const q=j.angebote().find(x=>x.id==='reposition-'+f);
+    if(q?.ok){
+      const before=j.zustandReferenz().owners.house.cash;
+      assert(j.ausfuehren('reposition-'+f).ok);
+      s=j.zustandReferenz();
+      ferry={tick:s.tick,cost:q.kosten,duration:q.minuten};
+      assert.equal(before-s.owners.house.cash,q.kosten);
+      w.advance(s,q.minuten);
+      assert.equal(s.ships[f].system,'aldera');
+      assert.equal(s.ships[f].flug.lage,'angedockt');
+      break;
+    }
+    if(i<24)j.weiterspielen(60);
+  }
+  s=j.zustandReferenz();
+  const afterFerry=s.tick,minerBuy=j.ausfuehren('buy-st_aldera-miner');
+  let ice=null,freight=null;
+  if(minerBuy.ok){
+    const m=j.ansicht().schiffe.find(x=>x.klasse==='miner').id;
+    ice=j.ausfuehren('ice-'+m);
+    if(ice.ok){
+      w.advance(j.zustandReferenz(),120);
+      freight=j.ausfuehren('freight-'+f);
+      if(freight.ok)w.advance(j.zustandReferenz(),120);
+    }
+  }
+  s=j.zustandReferenz();
+  const elapsed=7*1440;
+  assert(s.tick<elapsed);
+  w.advance(s,elapsed-s.tick); w.advance(control,elapsed-control.tick);
+  const report=x=>{
+    assert.equal(x.tick,elapsed);
+    assert.deepEqual(w.audit(x).fehler,[]);
+    assert.equal(Object.values(x.owners).reduce((n,o)=>n+o.cash,0),x.initialSupply);
+    assert.equal(x.minted+x.burned,0);
+    assert.equal(w.hash(w.load(w.save(x))),w.hash(x));
+    return {tick:x.tick,house:x.owners.house.cash,transport:x.owners.transport.cash,ore:x.w3.geliefert,materialProduced:x.ledger.material.produced,materialNadir:x.stations.st_nadir.lager.material||0,frachterBuilt:x.w5.fertig,frachterStock:x.stations.st_nadir.lager.frachter||0,fleet:Object.values(x.ships).filter(y=>y.klasse==='frachter').map(y=>({id:y.id,owner:y.owner,system:y.system})),hulls:x.kanon.piraten.kampf.huellen,hash:w.hash(x)};
+  };
+  assert.equal(w.hash(w.load(original)),w.hash(start));
+  console.log('PIR_3B_PLAYER_SECOND '+JSON.stringify({f,ferry,afterFerry,minerBuy,ice,freight,player:report(s),control:report(control)}));
+});

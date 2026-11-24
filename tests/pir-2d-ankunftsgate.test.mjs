@@ -269,3 +269,77 @@ test('PIR-3b: authentic damage quote cannot teleport material or repair the ship
  assert.deepEqual(w.audit(s).fehler,[]);
  console.log('PIR_3B_REPAIR_GATE '+JSON.stringify({local,remote,hash:w.hash(s)}));
 });
+
+test('PIR-3b: real Nadir dock is not a free repair window in a prepaid F4 round trip',()=>{
+ const {w,s,f}=kontakt('kampf');
+ const start=s.tick;
+ const anfrage={owner:'house',schiff:f,station:'st_nadir'};
+ let dock=null;
+ for(let i=1;i<=240;i++){
+  w.teilschritt(s);
+  if(i===135){
+   const before=w.save(s);
+   dock=w.reparaturAngebot(s,anfrage);
+   assert.equal(dock.physischAngedockt,true);
+   assert.equal(dock.angedockt,false);
+   assert.equal(dock.huelle,48);
+   assert.equal(dock.frachtBindung.phase,'hin');
+   assert.equal(dock.frachtBindung.geliefert,null);
+   assert.equal(dock.frachtBindung.ende,start+64);
+   assert.equal(dock.frachtBindung.restLohn,62);
+   assert.equal(dock.frachtBindung.restKaufUndTarif,490);
+   assert.equal(w.execute(s,{type:'shipRepair',...anfrage}).ok,false);
+   assert.equal(w.save(s),before);
+  }
+ }
+ assert.ok(dock);
+ const rueck=w.reparaturAngebot(s,anfrage);
+ assert.equal(rueck.physischAngedockt,false);
+ assert.equal(rueck.frachtBindung.phase,'rueck');
+ assert.equal(rueck.frachtBindung.geliefert,start+4);
+ assert.equal(rueck.frachtBindung.restLohn,60);
+ assert.equal(rueck.frachtBindung.restKaufUndTarif,240);
+ w.advance(s,60);
+ const ende=w.reparaturAngebot(s,{...anfrage,station:'st_aldera'});
+ assert.equal(ende.frachtBindung,null);
+ assert.equal(ende.angedockt,true);
+ assert.equal(s.kanon.spielerFrachten.lohn,120);
+ assert.equal(s.kanon.spielerFrachten.gebuehr,240);
+ assert.equal(w.hash(s),'aa301a2025e848cb');
+ assert.deepEqual(w.audit(s).fehler,[]);
+ console.log('PIR_3B_DOCK_WINDOW '+JSON.stringify({dock,rueck,ende}));
+});
+
+test('PIR-3b: search for real W4 repair material without altering the original economy',()=>{
+ const {w,s,f}=kontakt('kampf');
+ w.advance(s,64);
+ const initial=w.save(s),firstTick=s.tick;
+ const anfrage={owner:'house',schiff:f,station:'st_nadir'};
+ const q0=w.reparaturAngebot(s,anfrage);
+ assert.equal(q0.bestand,0);
+ let stock=null;
+ // Existing S02 NPC policy is already enabled by the real J8 PIR start.
+ // Never inject stock, funding, signed contracts or force a sale.
+ for(let i=0;i<1440;i++){
+  w.minute(s);
+  if((s.stations.st_nadir.lager.material||0)>=q0.material){
+   stock=w.reparaturAngebot(s,anfrage);
+   assert.equal(stock.bestand,s.stations.st_nadir.lager.material);
+   assert.ok(s.w4.materialErzeugt>=stock.bestand);
+   assert.equal(stock.physischAngedockt,false);
+   assert.equal(stock.ok,false);
+   break;
+  }
+ }
+ assert.deepEqual(w.audit(s).fehler,[]);
+ assert.equal(s.minted,0);assert.equal(s.burned,0);
+ assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),33240);
+ assert.equal(s.kanon.piraten.kampf.huellen[f],48);
+ const replay=w.load(initial);
+ w.advance(replay,s.tick-firstTick);
+ assert.equal(w.hash(replay),w.hash(s));
+ console.log('PIR_3B_REAL_MATERIAL '+JSON.stringify({tick:s.tick,stock,
+  ore:s.w3.geliefert,produced:s.w4.materialErzeugt,
+  consumed:s.ledger.material.consumed,remaining:s.stations.st_nadir.lager.material,
+  hash:w.hash(s),materialAvailable:stock!==null}));
+});

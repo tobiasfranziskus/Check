@@ -2477,13 +2477,24 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     const kosten = materialKosten + arbeitKosten;
     const ort = s.stations[cmd.station];
     const werftVorhanden = cmd.station === c.station && !!ort;
-    const angedockt = !!ort && sh.phase === 'dock'
-      && FLUG.angedocktAn(sh,cmd.station);
+    // Physische Ankunft allein gibt die bereits bezahlte Hülle nicht frei.
+    const physischAngedockt = !!ort && !!sh.flug && FLUG.angedocktAn(sh,cmd.station);
+    const aFracht = s.w5n.frachtauftrag?.schiff === sh.id ? s.w5n.frachtauftrag : null;
+    const originalBeleg = aFracht && s.kanon.spielerFrachten.auftraege.at(-1);
+    const frachtBindung = aFracht ? {
+      phase:aFracht.phase, geliefert:originalBeleg.geliefert,
+      ende:originalBeleg.start + 2 * originalBeleg.zeit,
+      restLohn:s.owners.w5n_fracht_arbeit.cash,
+      restKaufUndTarif:s.owners.w5n_fracht_kauf.cash
+    } : null;
+    const angedockt = physischAngedockt && sh.phase === 'dock' && !aFracht;
     const bestand = werftVorhanden ? (ort.lager.material || 0) : 0;
     const kasse = s.owners[cmd.owner].cash;
     const blocker = [];
     if (!werftVorhanden) blocker.push('Keine finanzierte W5-Werft am angefragten Ort');
-    if (!angedockt) blocker.push('Frachter nicht physisch am Reparaturort angedockt');
+    if (!physischAngedockt) blocker.push('Frachter nicht physisch am Reparaturort angedockt');
+    if (frachtBindung) blocker.push('Original-F4-Vertrag bindet die Hülle bis zur bezahlten Rückkehr');
+    if (physischAngedockt && !angedockt && !frachtBindung) blocker.push('Hülle noch nicht frei verfügbar');
     if (bestand < material) blocker.push('Reales lokales Material fehlt');
     if (kasse < kosten) blocker.push('Eigenes Geld reicht nicht');
     if (s.w5.auftrag || s.kanon.minerWerft?.auftrag || s.kanon.jaeger?.auftrag)
@@ -2491,7 +2502,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     blocker.push('Reparaturauftrag noch nicht freigegeben');
     return {ok:false,schiff:sh.id,owner:sh.owner,station:cmd.station,
       werft:c.station,huelle,schaden,material,minuten,materialKosten,arbeitKosten,
-      kosten,bestand,kasse,angedockt,werftVorhanden,blocker};
+      kosten,bestand,kasse,angedockt,physischAngedockt,frachtBindung,werftVorhanden,blocker};
   }
 
   function execute(state, cmd) {

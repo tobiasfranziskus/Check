@@ -104,7 +104,7 @@ test('PIR-3b repair feasibility inventory uses original audited stocks and dock'
     assert.deepEqual(w.audit(s).fehler,[]);
     const hash=w.hash(s);
     const stationen=Object.keys(s.stations).sort().map(id=>({
-      id,material:s.stations[id].lager.material??0,bauteile:s.stations[id].lager.bauteile??0,
+      id,material:s.stations[id].lager.material??0,bauteile:s.stations[id].lager.bauteil??0,
       cash:s.owners[id]?.cash??null
     }));
     rows.push({tick:s.tick,system:sh.system,lage:sh.flug.lage,huelle:s.kanon.piraten.kampf.huellen[f],buchwert:w.buchwert(s,f),haus:s.owners.house.cash,stationen,werftkonten:Object.keys(s.owners).filter(id=>id.includes('werft')).sort().map(id=>({id,cash:s.owners[id].cash})),weltgeld:Object.values(s.owners).reduce((n,o)=>n+o.cash,0)});
@@ -113,4 +113,45 @@ test('PIR-3b repair feasibility inventory uses original audited stocks and dock'
   }
   assert.equal(w.hash(w.load(before)),'aa301a2025e848cb');
   console.log('PIR_3B_REPAIR_STOCK '+JSON.stringify(rows));
+});
+
+test('PIR-3b original industrial policy counterfactual: real refinery stock versus actual repair dock',()=>{
+  const {w,s,f}=original(), source=w.save(s), initial=w.hash(s);
+  const run=(optIn)=>{
+    const c=w.load(source);
+    if(optIn){
+      // Existing S02 policy and original K7/NPC opt-ins, not a new repair order.
+      w.politikSetzen(c,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
+      assert.equal(w.npcAutoSetzen(c,true).ok,true);
+      assert.equal(w.npcSiliziumSetzen(c,true).ok,true);
+    }
+    const start=c.tick, baseProduced=c.ledger.material.produced, baseConsumed=c.ledger.material.consumed;
+    let firstNadir=null,firstAldera=null,peakNadir=0,peakAldera=0;
+    const rows=[];
+    function observe(){
+      const a=c.stations.st_aldera.lager.material||0,n=c.stations.st_nadir.lager.material||0;
+      if(a>0&&firstAldera===null)firstAldera=c.tick;
+      if(n>0&&firstNadir===null)firstNadir=c.tick;
+      peakAldera=Math.max(peakAldera,a);peakNadir=Math.max(peakNadir,n);
+      assert.equal(c.ships[f].owner,'house');
+      assert.equal(c.ships[f].system,'aldera');
+      assert.equal(c.kanon.piraten.kampf.huellen[f],48);
+      assert.equal(c.owners.house.cash,2028);
+    }
+    for(let i=1;i<=7*1440;i++){
+      w.advance(c,1);observe();
+      if(i===60||i===300||i%1440===0){
+        assert.deepEqual(w.audit(c).fehler,[]);
+        assert.equal(Object.values(c.owners).reduce((n,o)=>n+o.cash,0),c.initialSupply);
+        assert.equal(c.minted+c.burned,0);
+        rows.push({elapsed:i,nadir:c.stations.st_nadir.lager.material||0,aldera:c.stations.st_aldera.lager.material||0,produced:c.ledger.material.produced-baseProduced,consumed:c.ledger.material.consumed-baseConsumed,ore:c.stations.st_nadir.lager.erz||0,contract:c.kanon.industrieErz.phase,house:c.owners.house.cash});
+      }
+    }
+    assert.equal(w.hash(w.load(w.save(c))),w.hash(c));
+    return {optIn,start,firstNadir,firstAldera,peakNadir,peakAldera,rows,hash:w.hash(c)};
+  };
+  const control=run(false), industry=run(true), replay=run(true);
+  assert.deepEqual(industry,replay);
+  assert.equal(w.hash(w.load(source)),initial);
+  console.log('PIR_3B_SUPPLY_PAIR '+JSON.stringify({control,industry}));
 });

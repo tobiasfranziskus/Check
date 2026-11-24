@@ -10,6 +10,10 @@ on:
       - '.github/workflows/**'
       - 'versionen/**'
       - 'spieltest/**'
+      - 'AGENTS.md'
+      - 'README.md'
+      - 'docs/**'
+      - 'tools/check-doc-links.cjs'
   push:
     branches: [main]
   workflow_dispatch:
@@ -31,6 +35,8 @@ jobs:
         run: |
           node scripts/p0-prototype-deps.mjs --check
           node --test tests/p0-prototype-deps.test.mjs
+      - name: Check canonical documentation links and parser fixtures
+        run: node --test tests/hydrogen-doc-links.test.mjs tests/p0-doc-links-repository.test.mjs
       - name: Generate complete commit-bound inventory
         run: |
           mkdir -p "$RUNNER_TEMP/p0-inventory"

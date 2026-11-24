@@ -2,6 +2,8 @@
 
 **Nur Navigation, keine zweite Roadmap und kein eigenständiger Projektstatus.** Stand der Indexstruktur: 15.11.2026. **Für aktuelle Fakten stets `main`, CI und die kanonischen Dateien prüfen.** Frühere vollständige Fassung als [Git-Snapshot vor P0](https://github.com/tobiasfranziskus/Check/blob/31d0197dc0c2d6d9a3ea1af06440426065a4a0dd/docs/README.md) erhalten.
 
+**Archivgrenze 23.11.2026:** [Roadmap-Historie](archiv/ROADMAP_HISTORIE_BIS_20261123.md) und [Statuschronik](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261123.md) enthalten die vollständigen bisherigen Berichte mit gepinnten Originalen. Nur gezielt bei Nachweisbedarf lesen. Aktive Roadmap und Status sind kompakte Arbeitsdokumente.
+
 ## Einstieg für ChatGPT, Codex und Projektleitung
 
 1. **Zuerst** aktuellen [main-Commit](https://github.com/tobiasfranziskus/Check/commits/main), [Pages-Deploy](https://github.com/tobiasfranziskus/Check/actions) und relevante Diff-/PR-Metadaten ermitteln; nichts aus Datum/Chat-Erinnerungen als aktuellen Stand ableiten.
@@ -10,6 +12,8 @@
 4. **Gewählten Codebereich gezielt öffnen** und seine echten Tests/Abhängigkeiten prüfen. **Nicht** auf Verdacht `docs/archiv/`, alle Prototypen oder sämtliche alten PRs einlesen.
 5. **[P0-Aufräumprozess](PROJEKTLEITUNG_SUPERVISION.md)**, [P0-Inventur und PR-Triage](P0_GROSSPUTZ_PR_TRIAGE.md) und [Wiederverwendungskatalog Void Echoes](VOID_ECHOES_CODEKATALOG.md) nur bei entsprechendem Bedarf.
 6. **[P0-Prototyp-/Test-Abhängigkeiten](P0_PROTOTYP_TEST_ABHAENGIGKEITEN.md)** vor jeder geplanten Archivierung/Dateiverschiebung konsultieren; Root-Build, Legacy-Tests und öffentliche Neben-Einstiege schützen.
+
+**[Konzernzentrale, Stationsansicht und Bergbauscanner – geprüfter Wiederverwendungskatalog](https://github.com/tobiasfranziskus/Check/blob/7f1528cbbda1e0e0820cd6bdedbfdd268aab7018/docs/P0_LEGACY_MODULE_WIEDERVERWENDUNG.md)** (Draft #589): vorhandene UI-Muster, produktive Buildabhängigkeiten, Core-Grenzen und Testverträge. Vor Neuentwicklung dieser drei Ansichten konsultieren.
 
 ## Produktcode und passende Einstiege
 

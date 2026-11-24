@@ -50,7 +50,7 @@ const nl=String.fromCharCode(10);
 const pagesStyle='<style id="pages-premium-entry">'+nl+
   fs.readFileSync(path.join(root,'scripts/pages-entry.css'),'utf8')+nl+'</style>'+nl;
 const pagesNavigation=fs.readFileSync(path.join(root,'scripts/pages-entry.html'),'utf8');
-const pagesLegacyDivider="<section id=\"klassische-wirtschaft\" aria-label=\"Klassischer Wirtschaftsmodus\"><h2>Klassische Wirtschaft · W0–W5</h2><p>Der bisherige Wirtschaftseinstieg bleibt mit seinen bisherigen Spielständen, Funktionen und JSON-Importen erhalten. Das neue Spiel erreichst du über „Wirtschaftsmanager“.</p></section>";
+const pagesLegacyDivider="<section id=\"klassische-wirtschaft\" aria-label=\"Klassischer Wirtschaftsmodus\"><h2>Klassische Wirtschaft · W0–W5</h2><p>Deine bisherigen Spielstände und Funktionen bleiben erhalten.</p><a class=\"root-back\" href=\"#root-portal\">Zum Spieleinstieg</a></section>";
 const pagesDetailsStart="<details id=\"root-legacy-info\"><summary>Hintergrund zum klassischen Wirtschaftsmodus</summary>";
 const heading='<h1>Aphros Void – W0–W5</h1>';
 assert.ok(out.includes(heading),'W0–W5 Spieltitel fehlt');

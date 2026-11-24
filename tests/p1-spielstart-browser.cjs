@@ -605,6 +605,8 @@ async function kurzerSpieleinstieg(browser,base,kind){
   await page.locator('#neues-spiel').tap();
   await page.locator('#career-legacy summary').tap();
   await page.locator('#career-legacy a[href="../../index.html#klassische-wirtschaft"]').tap();
+  await page.waitForURL('**/index.html#klassische-wirtschaft');
+  await page.locator('#save').waitFor({state:'visible'});
   assert.equal(await page.locator('#save').isVisible(),true);
   await page.locator('#klassische-wirtschaft .root-back').tap();
   const gateway=page.locator('#root-portal'),more=gateway.locator('.root-more summary');

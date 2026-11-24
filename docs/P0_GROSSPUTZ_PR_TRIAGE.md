@@ -126,3 +126,44 @@ Main `fb229ea5f3cb6c3018240ed321b6a281a06fffe4`, PR #620; 603/603 Node22 ([CI](h
 | #186 | 5/7 identisch; Mount-Guard und Archiv-Weiterleitung mit Originalressourcen | geschlossen, kein Merge |
 
 Einzelbelege in den jeweiligen PR-Kommentaren. #291 und #170 bleiben offen: nicht alle ursprünglichen Berichte/Tests im aktuellen Baum vorhanden; kein vollständiger Nachfolgernachweis. Keine Branch- oder Dateilöschung. 67 → 61 offene PRs inklusive #620-Merge, vor neuem Doku-Draft. Aktive M4-/PIR-Stacks unverändert.
+
+
+## Fortsetzung 24.11.2026 – ältere Forschungsnachweise geschützt
+
+Basis `fb229ea5f3cb6c3018240ed321b6a281a06fffe4`. Push-Regression [#45471314787](https://github.com/tobiasfranziskus/Check/actions/runs/45471314787) completed/success. Vor der Prüfung 62 offene PRs einschließlich #621. Abgleich der PR-Dateilisten mit dem rekursiven Main-Baum (Blob-SHA und Pfad; keine semantische Gleichwertigkeit aus abweichenden Dateien abgeleitet):
+
+| PR | Dateien | SHA-identisch | Pfad fehlt in main | Schwerpunkt |
+|---|---:|---:|---:|---|
+| [#305](https://github.com/tobiasfranziskus/Check/pull/305) | 7 | 0 | 5 | K1-Cockpit/Browser |
+| [#317](https://github.com/tobiasfranziskus/Check/pull/317) | 7 | 0 | 5 | Abschnittsteuerung |
+| [#321](https://github.com/tobiasfranziskus/Check/pull/321) | 10 | 0 | 7 | Torfreigabe/Browser |
+| [#335](https://github.com/tobiasfranziskus/Check/pull/335) | 5 | 0 | 5 | J1-Audit/90 Tage |
+| [#337](https://github.com/tobiasfranziskus/Check/pull/337) | 11 | 2 | 7 | F8E-Duelltraining |
+| [#376](https://github.com/tobiasfranziskus/Check/pull/376) | 2 | 0 | 2 | J10d-Finanzierungsblocker |
+| [#423](https://github.com/tobiasfranziskus/Check/pull/423) | 3 | 1 | 2 | P8e/P8f-Materialgate |
+| [#470](https://github.com/tobiasfranziskus/Check/pull/470) | 24 | 0 | 19 | Rohstoffforschung und Replay |
+| [#490](https://github.com/tobiasfranziskus/Check/pull/490) | 10 | 0 | 10 | W6-Langzeitbelege |
+| [#496](https://github.com/tobiasfranziskus/Check/pull/496) | 6 | 0 | 6 | F4-Folgezyklen |
+| [#501](https://github.com/tobiasfranziskus/Check/pull/501) | 3 | 0 | 3 | Zweitbetrieb |
+| [#526](https://github.com/tobiasfranziskus/Check/pull/526) | 2 | 0 | 2 | M3-Industrieaudit |
+| [#527](https://github.com/tobiasfranziskus/Check/pull/527) | 14 | 0 | 14 | Manager-Live-Audit |
+| [#528](https://github.com/tobiasfranziskus/Check/pull/528) | 1 | 0 | 1 | Rechte-/Buchungsansicht |
+
+Alle 14 bleiben offen: fehlende Pfade sind kein Beweis für fehlende Funktion, aber ohne Einzelübernahme der Berichte/Tests kein hinreichender Nachfolgerbeleg. Zusätzlich acht Git-Compare-Abfragen zwischen möglichen Nachfolgern, jeweils Status `diverged`:
+
+| Quelle → Kandidat | Kandidat ahead | Kandidat behind |
+|---|---:|---:|
+| #305 → #317 | 70 | 7 |
+| #317 → #321 | 67 | 13 |
+| #496 → #501 | 7 | 4 |
+| #501 → #511 | 39 | 3 |
+| #376 → #423 | 114 | 12 |
+| #423 → #490 | 78 | 75 |
+| #335 → #337 | 42 | 5 |
+| #526 → #528 | 2 | 1 |
+
+Keine Schließung, kein neuer Produktcode, keine Branchlöschung. Aktive M4-/PIR-Forschung nicht bearbeitet. Nächster Schritt: die wenigen historischen Nachweise mit konkretem Bezug zu offenen Management-Gates gezielt und commitgebunden indexieren, keine pauschale Codeübernahme.
+
+### Dokumentations-Gate
+
+#621 erweitert den vorhandenen P0-Workflow um Trigger für AGENTS.md, README.md, docs/** und den Linkprüfer. Bei diesen Änderungen laufen bestehende Parser-Fixtures und der kanonische Repository-Linktest (AGENTS, ROADMAP, PROJEKTSTATUS) zusätzlich zur Inventur. Lokale Dateiziele, nicht externe URLs oder vollständige Ankerprüfung. Kein neuer Lauf als erfolgreich behauptet, solange die CI offen ist.

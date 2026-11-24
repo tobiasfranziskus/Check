@@ -85,7 +85,7 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
       'enter/exit cockpit changes only pilot selection, not Rule207 economy');
     await page.reload();
     assert.equal(await page.locator('#fortsetzen-w6').isDisabled(),false);
-    await page.locator('#fortsetzen-w6').tap();
+    await page.locator('#neues-spiel').tap();await page.locator('#career-recovery summary').tap();await page.locator('#fortsetzen-w6').tap();
     assert.equal(await page.locator('#spielwelt').isVisible(),true);
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),researchSlot),paid,
       'Rule207 research resume cannot migrate or mutate old authored save');

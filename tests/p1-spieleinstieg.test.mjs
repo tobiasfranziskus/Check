@@ -72,6 +72,9 @@ test('P1: standalone player entry only adds a separate shell, no core or old sav
  assert.match(html,/src="\.\.\/raum\/raum-cockpit\.js"/);
  assert.match(html,/src="\.\.\/w5ac\/session\.js"/);
  assert.match(html,/id="neues-spiel"/);
+ assert.match(html,/id="karriere-direkt"/);
+ assert.doesNotMatch(html,/class="entry-features"|class="hero-side"|class="faction"/);
+ assert.match(js,/const standardStart=\(\)=>\{for\(const id of \[\x27w6-npc-start\x27,\x27w6-p8g-start\x27,\x27pir-start\x27\]\)\$\(id\)\.checked=false;startNeu\(\);\}/);
  assert.match(js,/W5acSession\.create\(42,'private195'\)\.export\(\)/);
  assert.match(js,/session\.exportieren\(\)/);
  assert.match(js,/\.oeffnen204\(/);

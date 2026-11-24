@@ -34,7 +34,7 @@ const w=W.erstellenJ4c(JSON.parse(sample).w5ad.profile);
     }return result;
    });
    try{
-    await page.goto(base+'/');await page.waitForFunction(()=>document.querySelector('#storage-status').textContent!=='Speicher wird geprüft …');
+    await page.goto(base+'/#root-portal');await page.waitForFunction(()=>document.querySelector('#storage-status').textContent!=='Speicher wird geprüft …');
     assert.match(await page.locator('#root-game-title').textContent(),/APHROS\s+VOID/);
     assert.match(await page.locator('#root-legacy-info h1').textContent(),/W0–W5/,
       'classic economic world remains present even behind its secondary disclosure');

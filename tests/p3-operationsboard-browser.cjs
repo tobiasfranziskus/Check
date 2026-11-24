@@ -65,7 +65,7 @@ async function pruefen(browser,kind,base,width,height){
    if(!localStorage.getItem(experiment))localStorage.setItem(experiment,researchSave);
   },[slot,forschung,hin,dravos]);
   await page.goto(base);
-  await page.getByRole('link',{name:/^Wirtschaftsmanager/}).tap();
+  await page.waitForURL('**/prototypes/spiel/index.html');
   await loc('#fortsetzen').tap();
   assert.equal(await karte.locator('.sektor-station').count(),2);
   assert.equal(await marker(frachter).locator('..').getAttribute('class'),'sektor-strecke');
@@ -160,7 +160,7 @@ async function pruefen(browser,kind,base,width,height){
   assert.match(await details.innerText(),/Am Dock · Aldera/);
   assert.equal(await save(),dock);
   await loc('#open-menu').tap();
-  await loc('#fortsetzen-w6').tap();
+  await loc('#neues-spiel').tap();await loc('#career-recovery summary').tap();await loc('#fortsetzen-w6').tap();
   await karte.locator('.sektor-dravos button').tap();
   assert.match(await details.innerText(),/Dravos/);
   assert.equal(await karte.locator('.sektor-station').count(),3);

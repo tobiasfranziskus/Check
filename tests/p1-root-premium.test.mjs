@@ -42,7 +42,11 @@ test('P1 Root: one first-class career CTA, explicit and still navigable legacy W
 test('P1 Root: premium portal is static, original cockpit/save slots untouched',()=>{
  const s=read('scripts/pages-entry.html'),css=read('scripts/pages-entry.css'),
    build=read('scripts/build-w5-singlefile.mjs');
- assert.doesNotMatch(s,/<script|<form|\blocalStorage\b|indexedDB|onclick=|fetch\(/i);
+ const route=s.match(/<script id="pages-career-route">[\s\S]*?<\/script>/g)||[];
+ assert.equal(route.length,1);
+ assert.match(route[0],/if \(!location\.hash\) location\.replace\("prototypes\/spiel\/index\.html" \+ location\.search\);/);
+ assert.doesNotMatch(s.replace(route[0],''),/<script|<form|\blocalStorage\b|indexedDB|onclick=|fetch\(/i);
+ assert.doesNotMatch(route[0],/localStorage|indexedDB|fetch\(/);
  assert.doesNotMatch(css,/@import|url\(|https?:\/\//);
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
  assert.match(css,/focus-visible/);

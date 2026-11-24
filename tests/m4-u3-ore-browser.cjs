@@ -23,7 +23,7 @@ async function check(browser,kind,width,height){
  page.on('pageerror',err=>errors.push(String(err)));
  try{
   await page.goto('http://127.0.0.1:'+server.address().port+'/');
-  await page.getByRole('link',{name:/^Wirtschaftsmanager/}).tap();
+  await page.waitForURL('**/prototypes/spiel/index.html');
   await page.waitForURL('**/prototypes/spiel/index.html');
   await page.waitForLoadState('load');
   await page.locator('#neues-spiel').tap();

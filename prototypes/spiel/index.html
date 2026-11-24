@@ -21,48 +21,21 @@
 <main>
 <section id="startseite" class="splash">
  <div class="hero-content">
-  <p class="eyebrow"><span class="signal"></span> EINE WELT. DEINE ENTSCHEIDUNGEN.</p>
   <h1>APHROS <em>VOID</em></h1>
-  <p class="lead">Miner und Frachter kaufen, Eis fördern und Transport beauftragen.</p>
-  <p class="hero-caption">Führe deinen Konzern von der Kommandobrücke aus. Du kannst deine Schiffe auch selbst fliegen.</p>
+  <p class="lead">Dein Konzern. Deine Zukunft.</p>
   <div class="menu-actions">
-   <button class="primary" id="neues-spiel" type="button">Neue Karriere <span aria-hidden="true">→</span></button>
+   <button class="primary" id="karriere-direkt" type="button">Neue Karriere <span aria-hidden="true">→</span></button>
    <button id="fortsetzen" type="button" disabled>Karriere fortsetzen</button>
-   <button id="fortsetzen-w6" type="button" disabled>Experimentelle Karriere fortsetzen</button>
-   <button id="fortsetzen-pir" type="button" disabled>Piratenforschung fortsetzen</button>
-   <button id="vorige-pir" type="button" hidden>Vorherige Piratenforschung wiederherstellen</button>
-   <button id="vorige-karriere" type="button" hidden>Vorherige Karriere wiederherstellen</button>
-   <button id="vorige-forschung" type="button" hidden>Vorherige experimentelle Karriere wiederherstellen</button>
-   <button id="import-aktion" type="button">Spielstand importieren</button>
+   <button id="import-aktion" type="button">Spielstand laden</button>
+   <button id="neues-spiel" type="button">Weitere Spielmodi <span aria-hidden="true">+</span></button>
    <input id="import-datei" type="file" accept=".json,application/json" hidden>
   </div>
-  <p id="menumeldung" class="statusline" role="status" aria-live="polite">Deine Karriere wird getrennt von anderen Spielständen gespeichert.</p>
-  <div class="entry-features" aria-label="Entdecke Aphros Void">
-   <article><span>WIRTSCHAFT</span><h2>Wirtschaft</h2><p>Rohstoffe fördern, Transporte finanzieren und Produktionsketten aufbauen.</p></article>
-   <article><span>FLOTTE</span><h2>Flotte</h2><p>Bergbauschiffe, Frachter und Jäger kaufen und selbst übernehmen.</p></article>
-   <article><span>UNIVERSUM</span><h2>Universum</h2><p>Handel und Flugrouten zwischen Aldera, Nadir und weiteren Sektoren erkunden.</p></article>
-  </div>
- </div>
- <div class="hero-side" aria-label="Spielwelt">
-  <span class="hero-side-kicker">SEKTORBERICHT / 01</span>
-  <strong>ALDERA</strong>
-  <span>Ein sicherer Ausgangspunkt. Doch das Universum wartet nicht auf dich.</span>
-  <div class="separator"></div>
-  <span><b>1</b> gemeinsame Wirtschaft</span>
-  <span><b>3</b> persönlich steuerbare Schiffsklassen</span>
-  <span>Deine Entscheidungen gestalten das Universum.</span>
+  <p id="menumeldung" class="statusline" role="status" aria-live="polite"></p>
  </div>
 </section>
 
 <section id="briefing" class="chapter" hidden>
- <div class="chapter-heading"><p class="eyebrow">PROLOG / DER ERSTE AUFTRAG</p><h2>Niemand wartet auf einen neuen Konzern.</h2>
- <p>Die Handelswege sind vergeben, die Werften ausgelastet, die besten Schiffe gehören anderen. Du hast Kapital, aber noch keine eigene Flotte. Was daraus wird, entscheidest du.</p></div>
- <div class="factions" aria-label="Unternehmen und Orte der Spielwelt">
-  <article class="faction"><span class="faction-icon">◈</span><span class="faction-type">DEIN UNTERNEHMEN</span><h3>Dein Konzern</h3><p>Du verwaltest dein eigenes Konto. Jeder Miner und Frachter muss tatsächlich gekauft werden.</p><span class="faction-foot">Eigentümer: <span data-company-display="house">Dein Konzern</span></span></article>
-  <article class="faction"><span class="faction-icon">◇</span><span class="faction-type">ROHSTOFFE / MERIDIAN</span><h3>Meridian Rohstoffwerke</h3><p>Eigenständiger Bergbaukonzern. Seine Schiffe, Löhne und Aufträge gehören nicht dir.</p><span class="faction-foot">Unternehmen: <span data-company-display="npc3">Meridian Rohstoffwerke</span></span></article>
-  <article class="faction"><span class="faction-icon">▣</span><span class="faction-type">HANDEL / INDUSTRIE</span><h3>Aldera & Nadir</h3><p>Aldera handelt mit Rohstoffen. In Nadir warten Raffinerien und Werften – wenn sie finanziert werden.</p><span class="faction-foot">Stationen: <span data-company-display="st_aldera">Aldera</span> · <span data-company-display="st_nadir">Nadir</span></span></article>
-  <article class="faction"><span class="faction-icon">⇢</span><span class="faction-type">LOGISTIK / SCHIFFBAU</span><h3>Asterion & Nadir Schiffswerke</h3><p>Asterion verbindet die Handelsstationen. Die Nadir Schiffswerke produzieren nur mit Material, Personal und Finanzierung.</p><span class="faction-foot">Firmen: <span data-company-display="transport">Asterion Logistik</span> · <span data-company-display="werft_extern">Nadir Schiffswerke</span></span></article>
- </div>
+ <div class="chapter-heading"><h2>Weitere Spielmodi</h2></div>
  <section class="advanced-start" aria-label="Weitere Karrieremodi">
   <p class="advanced-heading">WEITERE SPIELMODI <span>Freiwillig</span></p>
   <p class="advanced-note">Du kannst mit der klassischen Karriere beginnen oder eine erweiterte Simulation wählen. Bestehende Spielstände bleiben getrennt.</p>
@@ -78,14 +51,31 @@
  </label>
  <label class="w6-start-option" for="pir-start">
   <input id="pir-start" type="checkbox">
-  <span><strong>PIR-1 · Piratenforschung in Nadir</strong>
+  <span><strong>Piratenforschung in Nadir</strong>
    <small>Eigene Karriere mit bezahlten Patrouillen und Handelsbeobachtung. Die Fraktion startet mit einer Hülle und endlicher Kasse. Es gibt keine Angriffe.</small></span>
  </label>
  </section>
  <div class="briefing-bottom">
   <div><strong>Kaufe Miner und Frachter, fördere Eis und beauftrage den Transport.</strong><p>Kaufe beide Schiffe, bevor du Wirtschaftszeit voranschreiten lässt. Andere Konzerne können den verfügbaren Frachter kaufen.</p></div>
-  <button id="karriere-starten" class="primary" type="button">Karriere in Aldera beginnen <span aria-hidden="true">→</span></button>
+  <button id="karriere-starten" class="primary" type="button">Ausgewählte Karriere beginnen <span aria-hidden="true">→</span></button>
  </div>
+ <details class="career-extras" id="career-recovery"><summary>Weitere Spielstände und Wiederherstellung</summary>
+  <div class="career-extra-actions">
+   <button id="fortsetzen-w6" type="button" disabled hidden>Experimentelle Karriere fortsetzen</button>
+   <button id="fortsetzen-pir" type="button" disabled hidden>Piratenforschung fortsetzen</button>
+   <button id="vorige-pir" type="button" hidden>Vorherige Piratenforschung wiederherstellen</button>
+   <button id="vorige-karriere" type="button" hidden>Vorherige Karriere wiederherstellen</button>
+   <button id="vorige-forschung" type="button" hidden>Vorherige experimentelle Karriere wiederherstellen</button>
+  </div>
+ </details>
+ <details class="career-extras" id="career-legacy"><summary>Klassische Spielmodi und Training</summary>
+  <nav class="career-extra-actions" aria-label="Klassische Spielmodi">
+   <a href="../../index.html#klassische-wirtschaft">Klassische Wirtschaft</a>
+   <a href="../j4c/index.html">Jägertraining</a>
+   <a href="../verbund/konzern.html">Frühere Konzernansicht</a>
+  </nav>
+ </details>
+ <button id="zurueck-hauptmenue" class="ghost" type="button">Zurück zum Hauptmenü</button>
  <p id="briefing-meldung" class="statusline" role="status" aria-live="polite"></p>
 </section>
 

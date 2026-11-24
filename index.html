@@ -155,6 +155,10 @@
 </head>
 <body>
 <header>
+<script id="pages-career-route">
+// The default public entry is the real career; explicit legacy fragments remain local.
+if (!location.hash) location.replace("prototypes/spiel/index.html" + location.search);
+</script>
 <section id="root-portal" aria-label="Aphros Void – Spieleinstieg">
  <div class="root-grid">
   <h1 id="root-game-title">APHROS <em>VOID</em></h1>

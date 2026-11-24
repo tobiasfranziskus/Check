@@ -29,7 +29,6 @@ async function pruefen(browser,art,width,height,json){
  const save=()=>page.evaluate(key=>localStorage.getItem(key),slot);
  try{
   await page.goto('http://127.0.0.1:'+server.address().port+'/');
-  await page.getByRole('link',{name:/^Wirtschaftsmanager/}).tap();
   await page.waitForURL('**/prototypes/spiel/index.html');
   await el('import-datei').setInputFiles({name:'m4-u5-replay.json',mimeType:'application/json',buffer:Buffer.from(json)});
   await el('manager-transport-status').waitFor({state:'visible'});
@@ -83,7 +82,6 @@ async function pruefeUeberfuehrung(browser,art,width,height,fixture){
  const save=()=>page.evaluate(key=>localStorage.getItem(key),slot);
  try{
   await page.goto('http://127.0.0.1:'+server.address().port+'/');
-  await page.getByRole('link',{name:/^Wirtschaftsmanager/}).tap();
   await page.waitForURL('**/prototypes/spiel/index.html');
   await el('import-datei').setInputFiles({name:'m4-werft.json',mimeType:'application/json',buffer:Buffer.from(fixture.json)});
   await el('manager-transport-status').waitFor({state:'visible'});

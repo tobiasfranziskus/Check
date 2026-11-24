@@ -93,7 +93,7 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
 
     // Persistent opt-in on reload without a second side-effect.
     await page.reload();
-    await page.locator('#fortsetzen-w6').tap();
+    await page.locator('#neues-spiel').tap();await page.locator('#career-recovery summary').tap();await page.locator('#fortsetzen-w6').tap();
     await page.locator('#tab-jaeger').tap();
     assert.match(await page.locator('#w6-p8h-toggle').textContent(),/pausieren/);
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),w6Slot),active);

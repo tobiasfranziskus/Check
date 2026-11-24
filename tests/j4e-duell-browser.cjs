@@ -45,7 +45,7 @@ const Welt=require('../prototypes/welt/welt-kern.js');
     await node.scrollIntoViewIfNeeded();await node.tap();
    };
    try{
-    await page.goto('http://127.0.0.1:'+server.address().port+'/');
+    await page.goto('http://127.0.0.1:'+server.address().port+'/#root-portal');
     assert.match(await page.locator('#root-game-title').textContent(),/APHROS\s+VOID/);
     assert.match(await page.locator('#root-legacy-info h1').textContent(),/W0–W5/,
       'older W0–W5 mode and its technical identity remain available');

@@ -34,7 +34,6 @@ const SLOT_W6='aphros-void:spielerkarriere:regel207-forschung:v1';
    page.on('pageerror',e=>errors.push(String(e)));
    try {
      await page.goto(base+'/');
-     await page.locator('nav[aria-label="Spielmodi"] a[href="prototypes/spiel/index.html"]').tap();
      await page.waitForURL('**/prototypes/spiel/index.html');
      await page.locator('#neues-spiel').tap();
      await page.locator('#karriere-starten').tap();
@@ -147,7 +146,7 @@ const SLOT_W6='aphros-void:spielerkarriere:regel207-forschung:v1';
      assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT_W6),dravosText);
      await page.evaluate(()=>{document.getElementById('auftrag-meldung').textContent='Alte Standardfracht · Tick 2350';});
      await page.locator('#open-menu').tap();
-     await page.locator('#fortsetzen-w6').tap();
+     await page.locator('#neues-spiel').tap();await page.locator('#career-recovery summary').tap();await page.locator('#fortsetzen-w6').tap();
      assert.equal(await page.locator('#spielwelt').isVisible(),true,'research career selected despite active standard');
      assert.match(await page.locator('#auftrag-belege').textContent(),/Belegstand: Spielminute 1/,'Dravos world restored in memory');
      assert.equal(await page.locator('#auftrag-meldung').textContent(),

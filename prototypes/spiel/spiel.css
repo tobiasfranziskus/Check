@@ -406,3 +406,28 @@ body.raum-aktiv .world{display:none}
 #sektor-karte .sektor-pirat { border-inline-start: 3px solid #d18461; }
 #sektor-karte .sektor-exposition { color: #edaa8c; }
 #sektor-karte .sektor-sicherheitsstufe { color: #c6a36c; }
+
+/* M4-UX 2a: compact career menu, scoped to the actual entry only. */
+#startseite.splash{min-height:100vh;min-height:100svh;display:grid;grid-template-columns:minmax(0,1fr);align-items:center;padding:clamp(16px,5vw,64px);gap:0;background:linear-gradient(110deg,#080e15bf,#14273270 68%,transparent)}
+#startseite .hero-content{width:min(100%,680px);display:grid;gap:12px;max-width:none}
+#startseite h1{margin:0;font-size:clamp(2.7rem,9vw,7rem);letter-spacing:-.065em;color:#f4f0e6}
+#startseite h1 em{color:#d4b583}
+#startseite .lead{margin:0;font-size:clamp(1rem,2vw,1.35rem);color:#c9d4d5}
+#startseite .menu-actions{display:grid;gap:6px;width:min(100%,340px);margin:12px 0 0;max-width:none}
+#startseite .menu-actions>*{min-width:0;min-height:48px;max-width:100%;padding:8px 14px;overflow-wrap:anywhere}
+#startseite .primary{background:#315f60;border-color:#80aaa4;box-shadow:none}
+#startseite .statusline{margin:0;min-height:0}
+#startseite .statusline:empty{display:none}
+body:has(#startseite:not([hidden])) .topline,body:has(#startseite:not([hidden])) .page-footer{display:none}
+#briefing.chapter{padding:20px clamp(16px,5vw,64px);min-height:0}
+#briefing .chapter-heading h2{font-size:clamp(1.7rem,4vw,2.5rem)}
+#briefing .briefing-bottom{flex-wrap:wrap;gap:12px;padding:12px 0}
+#briefing .briefing-bottom>div{max-width:650px}
+@media(min-width:600px) and (max-height:430px) and (orientation:landscape){#startseite.splash{padding:16px 20px}#startseite .hero-content{width:100%;grid-template-columns:minmax(0,1fr) minmax(220px,.9fr);column-gap:20px;align-items:center}#startseite h1{grid-column:1;align-self:end;font-size:clamp(2.5rem,7vw,4.2rem)}#startseite .lead{grid-column:1;align-self:start}#startseite .menu-actions{grid-column:2;grid-row:1/span 2;margin:0;justify-self:end}#startseite .statusline{grid-column:1/-1}}
+
+/* M4-UX 2b: secondary modes never crowd the main entry. */
+#briefing .career-extras{margin:12px 0;border:1px solid #71838a66;border-radius:8px;background:#0a1720d9}
+#briefing .career-extras summary{min-height:48px;padding:12px 16px;cursor:pointer;color:#e5ebeb}
+#briefing .career-extra-actions{display:grid;gap:6px;padding:0 12px 12px;margin:0}
+#briefing .career-extra-actions a,#briefing .career-extra-actions button{display:flex;align-items:center;min-height:48px;padding:8px 12px;border:1px solid #71838a66;border-radius:8px;color:#e5ebeb;text-decoration:none;overflow-wrap:anywhere}
+#briefing .career-extra-actions a:focus-visible,#briefing .career-extras summary:focus-visible{outline:3px solid #adeee6;outline-offset:2px}

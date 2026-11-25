@@ -46,7 +46,8 @@ async function session(root,out,{chromium,executablePath}={}){
    return u.origin===origin?route.continue():route.abort();
   });
   const page=await ctx.newPage();page.setDefaultTimeout(4000);page.setDefaultNavigationTimeout(8000);
-  page.on('dialog',d=>d.dismiss().catch(()=>{})); // native browser dialogs are not screenshot-visible
+  let nativeDialog=false;
+  page.on('dialog',d=>{nativeDialog=true;d.dismiss().catch(()=>{});}); // report unsupported native dialogs, never confirm silently
   ctx.on('page',p=>{if(p!==page)p.close().catch(()=>{});});
   await page.goto(origin+'/');
   await page.waitForTimeout(300);
@@ -56,6 +57,7 @@ async function session(root,out,{chromium,executablePath}={}){
   const elapsed=()=>Math.round(performance.now()-started);
   async function observe(){
    if(closed)throw Error('Session closed');
+   if(nativeDialog)return {round:rounds,elapsedMs:elapsed(),done:true,error:'Native browser dialog unsupported; infrastructure blocked'};
    const name='round-'+String(rounds).padStart(2,'0')+'.jpg';
    await page.screenshot({path:path.join(out,name),type:'jpeg',quality:65,timeout:4000});
    return {round:rounds,elapsedMs:elapsed(),remaining:Math.max(0,LIMIT-rounds),screenshot:name,width:WIDTH,height:HEIGHT,done:rounds>=LIMIT||elapsed()>=MS};
@@ -83,6 +85,7 @@ async function main(){
  const rl=readline.createInterface({input:process.stdin,terminal:false});
  const emit=x=>console.log(JSON.stringify({...x,...(x.screenshot?{screenshot:path.join(out,x.screenshot)}:{})}));
  const first=await s.observe();emit(first);
+ if(first.done){rl.close();process.stdin.pause();await s.close();return;}
  const timer=setTimeout(()=>{rl.close();process.stdin.destroy();},Math.max(0,MS-first.elapsedMs));
  try{for await(const line of rl){
   let result;try{result=await s.step(JSON.parse(line));}catch{emit({error:'Invalid action JSON or arguments'});continue;}

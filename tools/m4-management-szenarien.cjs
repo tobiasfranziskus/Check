@@ -262,7 +262,83 @@ function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne') {
     tage, ergebnis, quellhash, starthash:beginn.hash, folgefahrten, verlauf};
 }
 
-module.exports = {lauf, marktS02, VERGLEICH};
+// Research-only observation of the original S02 management schedule.
+// No new commands, prices, policy, state fields or estimated route duration.
+// At most one simulation minute elapses between samples.
+function verschleissDiagnose() {
+  const {welt, s} = marktS02();
+  const entscheidungen = {}, protokoll = [];
+  let offen = null, blockiert = null;
+  const vorher = () => ({
+    tick: s.tick,
+    miner: Object.fromEntries(Object.values(s.ships)
+      .filter(sh => sh.owner === 'npc3' && sh.klasse === 'miner')
+      .map(sh => [sh.id, {
+        rest: welt.restAktivminuten(s, sh.id),
+        aktiv: s.kanon.verschleiss[sh.id] || 0
+      }]))
+  });
+  function beobachten(vor) {
+    const a = s.w3.auftrag, i = s.kanon.industrieErz;
+    if (!offen && a?.phase === 'vorbestellt' && a.industrieMiner) {
+      const id = a.industrieMiner, mi = s.ships[id];
+      const basis = vor.miner[id];
+      offen = {miner: id, carrier: a.carrier ?? 'transport',
+        vorTick: vor.tick, gebundenBeobachtet: s.tick,
+        bereitsBeiStartGebunden: vor.tick === s.tick,
+        restVorBindung: basis?.rest ?? null, aktivVorBindung: basis?.aktiv ?? null,
+        cargoBeiBeobachtung: mi.ladung.erz || 0};
+    }
+    if (!offen) return;
+    const mi = s.ships[offen.miner];
+    const aktiv = s.kanon.verschleiss[mi.id] || 0;
+    const messung = {...offen, tick: s.tick, rest: welt.restAktivminuten(s, mi.id),
+      aktivSeitVorBindung: offen.aktivVorBindung === null ? null : aktiv - offen.aktivVorBindung,
+      erzAnBord: mi.ladung.erz || 0};
+    if (i.miner === mi.id && i.erzAngenommen) {
+      protokoll.push({...messung, ergebnis: 'ERZ_ANGENOMMEN'});
+      offen = null;
+    } else if (a?.phase === 'vorbestellt' && a.industrieMiner === mi.id &&
+        welt.stillgelegt(s, mi.id)) {
+      const save = welt.save(s), kopie = welt.load(save);
+      const storno = welt.execute(kopie, {type:'industrialOreCancel',owner:'st_nadir'});
+      if (!storno.ok) assert.equal(welt.save(kopie), save);
+      assert.deepEqual(pruefen(welt, s), []);
+      blockiert = {...messung, ergebnis: 'STILLGELEGT_VOR_LIEFERUNG',
+        treuhand: Object.fromEntries(['w3_kauf_treuhand','w3_arbeit_treuhand','k7_werft_treuhand']
+          .map(id => [id, s.owners[id]?.cash || 0])), storno};
+      protokoll.push(blockiert);
+      offen = null;
+    } else if (!a || a.industrieMiner !== mi.id) {
+      protokoll.push({...messung, ergebnis: 'VERTRAG_ENDE_OHNE_BESTAETIGTE_ERZANNAHME'});
+      offen = null;
+    }
+  }
+  beobachten(vorher());
+  const ende = 13 * MINUTEN_PRO_TAG;
+  while (s.tick < ende && !blockiert) {
+    const tagEnde = (Math.floor(s.tick / MINUTEN_PRO_TAG) + 1) * MINUTEN_PRO_TAG;
+    const termin = Math.min(s.tick + 60, tagEnde, ende);
+    const vor = vorher();
+    verwaltung(welt, s, entscheidungen, true);
+    beobachten(vor);
+    while (s.tick < termin && !blockiert) {
+      const v = vorher();
+      welt.advance(s, 1);
+      beobachten(v);
+    }
+  }
+  assert.deepEqual(pruefen(welt, s), []);
+  const save = welt.save(s);
+  assert.equal(welt.save(welt.load(save)), save);
+  return {seed:42, profil:'S02/U7U8', tick:s.tick, hash:welt.hash(s),
+    weltgeld:welt.bericht(s).weltgeld, mint:s.minted, burn:s.burned,
+    // This is a necessary lower bound only; local flight/waiting time is extra.
+    reineFoerderminuten:welt.rules.w3.fracht,
+    protokoll, blockiert};
+}
+
+module.exports = {lauf, marktS02, VERGLEICH, verschleissDiagnose};
 if (require.main === module) {
   const [wahl = 'S02', dauer = '90', anfang = '42', profil = 'paar', startpfad = 'konzerne'] = process.argv.slice(2);
   const tage = Number(dauer), seed = Number(anfang);

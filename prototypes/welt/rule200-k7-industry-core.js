@@ -1232,7 +1232,7 @@ function entladen(state, rules, s) {
     // PIR-3f: Original-F4 hinterlaesst eis:0. Nur die belegte leere
     // Werftreise darf in Regel204 denselben Nullmengen-Schutz nutzen.
     const werft=state.kanon?.pirWerft;
-    const werftAnkunft=rules.rulesVersion===204 && state.kanon?.piraten?.profil===7
+    const werftAnkunft=rules.rulesVersion===204 && [7,8].includes(state.kanon?.piraten?.profil)
       && werft?.schiff===s.id && werft.ende===state.tick && s.phase==='dock'
       && s.system==='nadir' && s.ankunft===state.tick;
     if((rules.rulesVersion===207 || werftAnkunft) && anzahl(s.ladung,ware)===0)continue;
@@ -2505,6 +2505,7 @@ const m_core_w4 = (() => {
         -(state.kanon?.minerWerft?.materialVerbraucht??0)
         -(state.kanon?.bauteile?.materialVerbraucht??0)
         -(state.kanon?.jaeger?.materialVerbraucht??0)
+        -(state.kanon?.piraten?.profil===8?(state.kanon.pirReparatur?.materialVerbraucht??0):0)
       && (!a || (a.erz===c.erzJeCharge&&a.material===c.materialJeCharge
         && a.arbeitsBudget===p&&Number.isSafeInteger(a.gearbeitet)
         && a.gearbeitet>=0&&a.gearbeitet<c.dauer));
@@ -2534,7 +2535,8 @@ const m_core_w5 = (() => {
     const c=rules.w5,w=state.w5,k=plan(rules);
     if(owner!==c.werft || station!==c.station)
       return {ok:false,grund:'Nur die finanzierende Werft darf Nadir-Schiffe bauen'};
-    if(!w || w.auftrag)
+    const repair=state.kanon?.piraten?.profil===8?state.kanon.pirReparatur:null;
+    if(!w || w.auftrag || (repair&&repair.bezahlt<repair.minuten))
       return {ok:false,grund:'Eine Werftcharge ist bereits beauftragt'};
     if(anzahl(state.stations[c.station].lager,'material')<k.material)
       return {ok:false,grund:'Nicht genug reales W4-Material in Nadir'};
@@ -2644,10 +2646,12 @@ const m_core_w5 = (() => {
         +(state.kanon?.minerWerft?.materialVerbraucht??0)
         +(state.kanon?.bauteile?.materialVerbraucht??0)
         +(state.kanon?.jaeger?.materialVerbraucht??0)
+        +(state.kanon?.piraten?.profil===8?(state.kanon.pirReparatur?.materialVerbraucht??0):0)
       && st.material===state.w4.materialErzeugt-w.materialVerbraucht-(state.w5ae?.purchased??0)
         -(state.kanon?.minerWerft?.materialVerbraucht??0)
         -(state.kanon?.bauteile?.materialVerbraucht??0)
         -(state.kanon?.jaeger?.materialVerbraucht??0)
+        -(state.kanon?.piraten?.profil===8?(state.kanon.pirReparatur?.materialVerbraucht??0):0)
       && state.ledger.frachter.produced===w.fertig
       && st.frachter===w.fertig-w.verkauft
       && w.verkauft===shipIds.length&&w.verkauft<=w.fertig
@@ -2776,7 +2780,7 @@ const m_core_w5_transfer=(()=>{
           ||(!!r.kanon&&s.w5n?.frachtauftrag?.schiff===x.id)
           // PIR-3f research: historical Nadir->Aldera receipt stays immutable.
           // The separate, paid repair ferry is validated by the outer K1 audit.
-          ||(s.kanon?.piraten?.profil===7&&x.owner==='house'&&(()=>{
+          ||([7,8].includes(s.kanon?.piraten?.profil)&&x.owner==='house'&&(()=>{
             const f=s.kanon.pirWerft,sh=s.ships[x.id];
             if(!f||f.schiff!==x.id||f.owner!==x.owner||f.start<x.ankunft
               ||f.dauer!==duration||f.ende!==f.start+duration

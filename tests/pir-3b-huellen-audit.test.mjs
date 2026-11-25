@@ -580,6 +580,9 @@ test('PIR-3f paid repair ferry uses original arrival without rewriting original 
     assert.equal(s.kanon.piraten.kampf.huellen[f],72);
     w.advance(s,2375-s.tick);
     const f4=structuredClone(s.kanon.spielerFrachten),w5ac=structuredClone(s.w5ac.completed.find(x=>x.id===f));
+    assert.equal(s.ships[f].ladung.eis,0,'original W5n retains empty ice field');
+    const emptyCargo=structuredClone(s.ships[f].ladung);
+    assert(Object.values(emptyCargo).every(n=>n===0));
     const q=w.werftreiseAngebot(s,cmd),pre=w.hash(s);
     assert(q.ok,q.grund);assert.equal(q.kosten,60);assert.equal(q.dauer,60);
     assert.equal(w.hash(s),pre);
@@ -625,6 +628,7 @@ test('PIR-3f paid repair ferry uses original arrival without rewriting original 
     w.advance(clone,30);assert.equal(w.hash(clone),w.hash(s));
     assert.equal(s.tick,2435);
     assert.equal(s.ships[f].system,'nadir');assert.equal(s.ships[f].flug.lage,'angedockt');
+    assert.deepEqual(s.ships[f].ladung,emptyCargo,'no fictitious sale or cargo rewrite at ferry arrival');
     assert.equal(s.kanon.piraten.kampf.huellen[f],72);
     const repair=w.reparaturAngebot(s,{owner:'house',schiff:f,station:'st_nadir'});
     assert.equal(repair.angedockt,true);assert.equal(repair.kosten,208);

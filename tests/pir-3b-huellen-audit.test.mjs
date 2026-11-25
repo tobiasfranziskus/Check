@@ -316,3 +316,74 @@ test('PIR-3b carrier-first followed by real player purchase and paid ferry',()=>
   assert.equal(w.hash(w.load(original)),w.hash(start));
   console.log('PIR_3B_PLAYER_SECOND '+JSON.stringify({f,ferry,afterFerry,minerBuy,ice,freight,player:report(s),control:report(control)}));
 });
+
+
+test('PIR-3b financed patrol lifetime versus early and carrier-first F4 arrival',()=>{
+  // Compare actual command schedules, not artificial pirates or injected cash.
+  function run(carrierFirst){
+    const j=J8.erstellen();j.startenPiraten(true,'kampf');
+    const w=j.weltReferenz(), rows=[], phases={};
+    let firstNoCapital=null,lastPaidTick=null,previousWage=0,f=null;
+    const snapshot=()=>{
+      const s=j.zustandReferenz(),p=s.kanon.piraten,sh=s.ships.pir001;
+      const dienst=s.kanon.flugdienst.pir001;
+      return {tick:s.tick,phase:p.phase,lage:sh.flug.lage,bis:p.bis,
+        pirateCash:s.owners.piraten.cash,pilotCash:s.owners.pilot_piraten.cash,
+        reserve:dienst?s.owners[dienst.konto].cash:0,
+        contact:p.kontakt?.id??null,shots:p.kampf.ereignisse.length,
+        target:f?{id:f,phase:s.ships[f].phase,system:s.ships[f].system,
+          lage:s.ships[f].flug.lage,arrival:s.ships[f].ankunft,
+          ice:s.ships[f].ladung.eis??0,hull:p.kampf.huellen[f]??96}:null};
+    };
+    function advance(n,observe=false){
+      for(let i=0;i<n;i++){
+        const s=j.zustandReferenz(),t=s.tick;
+        w.advance(s,1);
+        assert.equal(s.tick,t+1,'simulation advances exactly one minute');
+        const r=snapshot();
+        phases[r.phase]=(phases[r.phase]??0)+1;
+        if(r.phase==='keinKapital'&&firstNoCapital===null)firstNoCapital=r.tick;
+        if(r.pilotCash>previousWage)lastPaidTick=r.tick;
+        previousWage=r.pilotCash;
+        if(observe||r.tick%60===0)rows.push(r);
+      }
+    }
+    if(carrierFirst)advance(300);
+    const s0=j.zustandReferenz(),ids=new Set(Object.keys(s0.ships));
+    const market=carrierFirst?'st_nadir':'st_aldera';
+    assert(j.ausfuehren('buy-'+market+'-frachter').ok);
+    f=Object.values(j.zustandReferenz().ships).find(sh=>!ids.has(sh.id)).id;
+    if(carrierFirst){
+      const q=j.angebote().find(x=>x.id==='reposition-'+f);
+      assert(q?.ok);assert(j.ausfuehren('reposition-'+f).ok);
+      advance(q.minuten);
+    }
+    assert(j.ausfuehren('buy-st_aldera-miner').ok);
+    const m=j.ansicht().schiffe.find(sh=>sh.klasse==='miner').id;
+    assert(j.ausfuehren('ice-'+m).ok);advance(120);
+    const freightStart=j.zustandReferenz().tick;
+    assert(j.ausfuehren('freight-'+f).ok);
+    rows.push(snapshot());
+    advance(120,true);
+    const s=j.zustandReferenz(),end=snapshot();
+    assert.equal(s.tick,freightStart+120);
+    assert.equal(s.kanon.spielerFrachten.lohn,120);
+    assert.equal(s.kanon.spielerFrachten.gebuehr,240);
+    assert.equal(s.w5n.eisGeliefert,50);
+    assert.equal(s.ships[f].owner,'house');
+    assert.deepEqual(w.audit(s).fehler,[]);
+    assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),s.initialSupply);
+    assert.equal(s.minted+s.burned,0);
+    const hash=w.hash(s);assert.equal(w.hash(w.load(w.save(s))),hash);
+    const window=rows.filter(r=>r.target?.ice>0&&r.target.system==='nadir'&&r.target.lage!=='transit');
+    return {carrierFirst,freightStart,firstNoCapital,lastPaidTick,phases,
+      arrivalWindow:window,end,hash};
+  }
+  const early=run(false),late=run(true);
+  assert.deepEqual(run(false),early);
+  assert.deepEqual(run(true),late);
+  assert.equal(early.hash,'aa301a2025e848cb');
+  assert.equal(early.end.target.hull,48);
+  // Late hull outcome and patrol overlap are diagnostic. No forced attack.
+  console.log('PIR_3B_PATROL_LIFETIME '+JSON.stringify({early,late}));
+});

@@ -84,6 +84,7 @@ test('mobile workflow has explicit main consent, protected environment and no PR
  assert.match(y,/environment: m4-blindtest/);assert.match(y,/persist-credentials: false/);
  assert.equal((y.match(/secrets\.OPENROUTER_API_KEY/g)||[]).length,1);
  assert.match(y,/retention-days: 7/);assert.match(y,/UNREVIEWED/);
+ assert.match(y,/default: 'google\/gemma-4-26b-a4b-it:free'/);assert.doesNotMatch(y,/M4_AI_MODEL===\x22openrouter\/free\x22/);
 });
 
  test('free router allowed only with explicit consent and key',()=>{
@@ -113,17 +114,17 @@ test('authentication failure is not retried and error body is not logged',async(
 const remoteCfg=model=>config({M4_AI_PROVIDER:'openrouter',M4_AI_MODEL:model,M4_ALLOW_REMOTE:'1',OPENROUTER_API_KEY:'MOCK_ONLY_SECRET'});
 const click={action:{op:'click',x:10,y:10},note:'visible'};
 const stop={action:{op:'stop'},note:'done'};
-test('429 honors delay, fallback only before first action, router discovery pinned',async()=>{
- const cfg=remoteCfg('inclusionai/ling-3.2-flash:free'),f=fixture(),calls=[],delays=[],events=[];
+test('explicit router opt-in honors delay, fallback only before first action, model pinned',async()=>{
+ const cfg=remoteCfg('openrouter/free'),f=fixture(),calls=[],delays=[],events=[];
  let clock=0;
  const result=await run({relay:f.relay,cfg,module:'A',now:()=>clock,sleep:async ms=>{delays.push(ms);clock+=ms;},emit:e=>events.push(e),fetcher:async(url,opts)=>{
   const model=JSON.parse(opts.body).model;calls.push(model);
   if(calls.length<=2)return new Response('SECRET_SENTINEL',{status:429,headers:{'retry-after':'4'}});
-  if(calls.length===3)return response(click,'particle-ai/particle-1:free');
-  return response(stop,'particle-ai/particle-1:free');
+  if(calls.length===3)return response(click,'google/gemma-4-26b-a4b-it:free');
+  return response(stop,'google/gemma-4-26b-a4b-it:free');
  }});
- assert.deepEqual(calls,[cfg.model,cfg.model,'openrouter/free','particle-ai/particle-1:free']);
- assert.deepEqual(delays,[4000,8000]);assert.equal(result.model,'particle-ai/particle-1:free');
+ assert.deepEqual(calls,[cfg.model,cfg.model,'google/gemma-4-26b-a4b-it:free','google/gemma-4-26b-a4b-it:free']);
+ assert.deepEqual(delays,[4000,8000]);assert.equal(result.model,'google/gemma-4-26b-a4b-it:free');
  assert.equal(result.reason,'MODEL_STOP');assert.equal(result.actions,1);
  assert.equal(events.filter(e=>e.kind==='model_selected').length,1);
  assert.doesNotMatch(JSON.stringify(events),/SECRET_SENTINEL|MOCK_ONLY_SECRET/);
@@ -175,4 +176,27 @@ test('safe empty/truncated/invalid JSON diagnosis, corrective prompt and no raw 
   assert.match(calls[1].messages[0].content,/vorige Antwort/);
   assert.doesNotMatch(JSON.stringify(events),/SECRET_SENTINEL/);
  }
+});
+
+
+test('fixed Gemma model uses JSON object format and never switches even before first action',async()=>{
+ const model='google/gemma-4-26b-a4b-it:free',cfg=remoteCfg(model);
+ for(const error of ['quota','different-model']){
+  const f=fixture(),calls=[],delays=[];
+  const result=await run({relay:f.relay,cfg,module:'A',sleep:async ms=>delays.push(ms),fetcher:async(url,opts)=>{
+   const b=JSON.parse(opts.body);calls.push(b.model);
+   assert.deepEqual(b.response_format,{type:'json_object'});assert.equal(b.max_tokens,1024);
+   return error==='quota'?new Response('private',{status:429}):response(click,'particle-ai/particle-1:free');
+  }});
+  assert.deepEqual(calls,[model,model]);assert.deepEqual(delays,[error==='quota'?3000:1000]);
+  assert.equal(result.reason,'INFRASTRUCTURE');assert.equal(result.actions,0);
+  assert.equal(f.closed(),1);
+ }
+ const f=fixture(),calls=[];
+ const result=await run({relay:f.relay,cfg,module:'A',fetcher:async(url,opts)=>{
+  const b=JSON.parse(opts.body);calls.push(b.model);assert.deepEqual(b.response_format,{type:'json_object'});
+  return response(calls.length===1?click:stop,model);
+ }});
+ assert.deepEqual(calls,[model,model]);assert.equal(result.model,model);assert.equal(result.actions,1);
+ assert.equal(result.reason,'MODEL_STOP');
 });

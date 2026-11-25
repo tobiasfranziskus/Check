@@ -85,3 +85,11 @@ test('mobile workflow has explicit main consent, protected environment and no PR
  assert.equal((y.match(/secrets\.OPENROUTER_API_KEY/g)||[]).length,1);
  assert.match(y,/retention-days: 7/);assert.match(y,/UNREVIEWED/);
 });
+
+ test('free router allowed only with explicit consent and key',()=>{
+ const env={M4_AI_PROVIDER:'openrouter',M4_AI_MODEL:'openrouter/free',M4_ALLOW_REMOTE:'1',OPENROUTER_API_KEY:'mock'};
+ assert.equal(config(env).model,'openrouter/free');
+ assert.throws(()=>config({...env,M4_ALLOW_REMOTE:'0'}));
+ assert.throws(()=>config({...env,OPENROUTER_API_KEY:''}));
+ assert.throws(()=>config({...env,M4_AI_MODEL:'openrouter:free/paid'}));
+ });

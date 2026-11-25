@@ -1229,7 +1229,13 @@ function entladen(state, rules, s) {
     // Rule207: leere 0er-Bestandsfelder sind keine Ware. Beim neuen
     // externen Dock-Transit duerfen sie keinen automatischen Ankaufsversuch
     // ausloesen (kein Preis/Teiler fuer Nullmengen). Alte Regeln bitgleich.
-    if(rules.rulesVersion===207 && anzahl(s.ladung,ware)===0)continue;
+    // PIR-3f: Original-F4 hinterlaesst eis:0. Nur die belegte leere
+    // Werftreise darf in Regel204 denselben Nullmengen-Schutz nutzen.
+    const werft=state.kanon?.pirWerft;
+    const werftAnkunft=rules.rulesVersion===204 && state.kanon?.piraten?.profil===7
+      && werft?.schiff===s.id && werft.ende===state.tick && s.phase==='dock'
+      && s.system==='nadir' && s.ankunft===state.tick;
+    if((rules.rulesVersion===207 || werftAnkunft) && anzahl(s.ladung,ware)===0)continue;
     const m = Math.min(anzahl(s.ladung, ware), aufnehmbar(state, rules, station, ware));
     if (m > 0 && handel(state, rules, s, station, ware, m, false)) {
       state.stats.handel += 1; state.stats.verkaeufe[s.id] += 1;

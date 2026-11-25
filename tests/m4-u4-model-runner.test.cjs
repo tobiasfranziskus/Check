@@ -35,7 +35,7 @@ test('mock model drives real protocol calls; no automatic success verdict',async
  assert.match(calls[1].body.messages[1].content,/Visible 1/);assert.equal(calls[0].headers.Authorization,undefined);
  assert.equal(events.filter(x=>x.kind==='observation').length,2);
 });
-test('quota or malformed output aborts without action; no retry',async()=>{
+test('persistent quota or malformed output aborts without action',async()=>{
  for(const fetcher of [async()=>new Response('quota',{status:429}),async()=>response({action:{op:'evaluate'},note:'bad'})]){
   const f=fixture(),r=await run({relay:f.relay,cfg,module:'B',fetcher});
   assert.equal(r.reason,'INFRASTRUCTURE');assert.equal(f.actions.length,0);assert.equal(f.closed(),1);
@@ -93,3 +93,18 @@ test('mobile workflow has explicit main consent, protected environment and no PR
  assert.throws(()=>config({...env,OPENROUTER_API_KEY:''}));
  assert.throws(()=>config({...env,M4_AI_MODEL:'openrouter:free/paid'}));
  });
+
+test('fenced JSON and one bounded retry without duplicate action',async()=>{
+ const f=fixture(),events=[];let calls=0;
+ const r=await run({relay:f.relay,cfg,module:'A',emit:e=>events.push(e),fetcher:async()=>{
+  calls++;if(calls===1)return response({action:{op:'evaluate'},note:'invalid'});
+  if(calls===2)return new Response(JSON.stringify({choices:[{message:{content:'```json\n{"action":{"op":"click","x":10,"y":10},"note":"visible"}\n```'}}]}));
+  return response({action:{op:'stop'},note:'done'});
+ }});
+ assert.equal(calls,3);assert.equal(r.reason,'MODEL_STOP');assert.equal(f.actions.length,1);assert.equal(events.filter(e=>e.kind==='model_error').length,1);
+});
+test('authentication failure is not retried and error body is not logged',async()=>{
+ const f=fixture(),events=[];let calls=0;
+ const r=await run({relay:f.relay,cfg,module:'A',emit:e=>events.push(e),fetcher:async()=>{calls++;return new Response('SECRET_SENTINEL',{status:401});}});
+ assert.equal(calls,1);assert.equal(r.detail,'Model HTTP 401');assert.equal(f.actions.length,0);assert.doesNotMatch(JSON.stringify(events),/SECRET_SENTINEL/);
+});

@@ -320,8 +320,8 @@ test('PIR-3b carrier-first followed by real player purchase and paid ferry',()=>
 
 test('PIR-3b financed patrol lifetime versus early and carrier-first F4 arrival',()=>{
   // Compare actual command schedules, not artificial pirates or injected cash.
-  function run(carrierFirst){
-    const j=J8.erstellen();j.startenPiraten(true,'kampf');
+  function run(carrierFirst,profil='kampf'){
+    const j=J8.erstellen();j.startenPiraten(true,profil);
     const w=j.weltReferenz(), rows=[], phases={};
     let firstNoCapital=null,lastPaidTick=null,previousWage=0,f=null;
     const snapshot=()=>{
@@ -386,4 +386,49 @@ test('PIR-3b financed patrol lifetime versus early and carrier-first F4 arrival'
   assert.equal(early.end.target.hull,48);
   // Late hull outcome and patrol overlap are diagnostic. No forced attack.
   console.log('PIR_3B_PATROL_LIFETIME '+JSON.stringify({early,late}));
+  const earlyTraffic=run(false,'verkehr'),lateTraffic=run(true,'verkehr');
+  assert.deepEqual(run(false,'verkehr'),earlyTraffic);
+  assert.deepEqual(run(true,'verkehr'),lateTraffic);
+  for(const r of [earlyTraffic,lateTraffic]){
+    assert.equal(r.firstNoCapital,null);
+    assert(r.end.pilotCash>0 && r.end.pilotCash<40,'one funded short patrol');
+    assert.equal(r.end.pirateCash+r.end.pilotCash+r.end.reserve,240);
+    assert(r.arrivalWindow.some(x=>x.lage==='frei' && x.reserve>12),'actual financed overlap');
+    assert.equal(r.end.reserve,0,'full unused reserve returned');
+    assert.equal(r.end.lage,'angedockt');
+    assert.equal(r.end.target.ice,0);
+  }
+  assert.equal(late.end.shots,0);
+  // Actual shots and damage are independently reported; no artificial hit.
+  console.log('PIR_3C_TRAFFIC '+JSON.stringify({earlyTraffic,lateTraffic}));
 });
+
+test('PIR-3c without authenticated F4: no patrol cost, profile cannot cross-load',()=>{
+  const j=J8.erstellen();j.startenPiraten(true,'verkehr');
+  const w=j.weltReferenz(),s=j.zustandReferenz(),initial=w.save(s);
+  const classic=J8.erstellen();classic.startenPiraten(true,'kampf');
+  const cw=classic.weltReferenz(),cs=classic.zustandReferenz(),other=cw.save(cs);
+  assert.throws(()=>cw.load(initial));
+  assert.throws(()=>w.load(other));
+  const forged=JSON.parse(initial);forged.kanon.piraten.profil=4;
+  assert.throws(()=>w.load(JSON.stringify(forged)));
+  const forbidden=J8.erstellen();
+  assert.throws(()=>forbidden.startenPiraten(false,'verkehr'));
+  for(const day of [7,90]){
+    w.advance(s,day*1440-s.tick);
+    assert.equal(s.tick,day*1440);
+    assert.equal(s.kanon.piraten.profil,5);
+    assert.equal(s.ships.pir001.flug.lage,'angedockt');
+    assert.equal(s.kanon.piraten.phase,'bereit');
+    assert.equal(s.owners.piraten.cash,240);
+    assert.equal(s.owners.pilot_piraten.cash,0);
+    assert.equal(s.kanon.flugdienst.pir001,undefined);
+    assert.deepEqual(s.kanon.piraten.kampf.ereignisse,[]);
+    assert.deepEqual(w.audit(s).fehler,[]);
+    assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),s.initialSupply);
+    assert.equal(s.minted+s.burned,0);
+    const hash=w.hash(s);assert.equal(w.hash(w.load(w.save(s))),hash);
+    console.log('PIR_3C_IDLE '+JSON.stringify({day,hash,pirateCash:s.owners.piraten.cash,pilotCash:s.owners.pilot_piraten.cash,worldMoney:s.initialSupply}));
+  }
+});
+

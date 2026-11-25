@@ -21,7 +21,8 @@ const create=({rules,transfer,summe,ganz})=>{
     if(cmd.owner!==C.owner||cmd.station!==C.station)
       return 'J4b: nur Nadir als echter Materialeigentümer';
     const b=s.kanon?.jaeger,st=s.stations[C.station];
-    if(!b||!st||b.auftrag||s.w5?.auftrag||s.kanon.minerWerft?.auftrag)
+    const repair=s.kanon?.piraten?.profil===8?s.kanon.pirReparatur:null;
+    if(!b||!st||b.auftrag||s.w5?.auftrag||s.kanon.minerWerft?.auftrag||(repair&&repair.bezahlt<repair.minuten))
       return 'J4b: Werft belegt oder Auftragsbuch fehlt';
     if(st.lager.bauteil<C.bauteile||st.lager.material<C.material)
       return 'J4b: acht echte Bauteile und vier echte Material fehlen';

@@ -1,0 +1,8 @@
+# PIR-3e – Zugang zur Reparatur im wirtschaftlich finanzierten Lokalprofil [DRAFT / FORSCHUNG]
+Basis #630 1ba3c8e6, main aa716c46. Lesendes Reparaturangebot aus #616 e26944d0 exakt wiederverwendet; kein neues Reparaturrezept oder ausführender Auftrag. PIR-3d hat im gezielten Audit 11/11 bestanden: 24 Schaden, 3 ISK Lohn, 237 ISK Piratenkasse, später F4 Hash a9ef1e5e5c473ce7.
+
+## Abnahme
+Original NPC-first, Kauf und bezahlte W5ac-Überführung, danach F4 mit wirklichem lokalem Angriff. Reparaturangebot im tatsächlichen Nadir-Dock (Minute539), nach bezahlter Rückkehr (600), anschließende 7-Tage-Minuteninventur: Zeitpunkt, Maximum und erstmals ausreichendes Material bei freier Werft. Quote aus bestehendem proportionalem W5-Forschungsparameter, kein freigegebener Tarif. Prüfen, dass reguläres shipMove, nur Nadir→Aldera zugelassenes W5ac shipReposition und unfreigegebene shipRepair den beschädigten Frachter nicht teleportieren oder gratis reparieren. Vier abgelehnte Befehle atomar; fremdes Eigentum und Preisfälschung abweisen. Vollständige F4-Buchungen, Audit, Replay, Save, Weltgeld, keine Emission. Neuer Test noch nicht ausgeführt.
+
+## Folgeschritt
+Wenn Material verfügbar ist, einen separaten vorfinanzierten Werft-Hin-/Rückflug mit eigener lückenloser Buchung und den bestehenden W5ac/F4-Historien kompatibel spezifizieren. Bestehendes einmaliges W5ac-Journal darf nicht umgedeutet werden; aktuelle Originalregeln erlauben keinen freien Rückflug zur Nadir-Werft. Falls kein ausreichendes Material, Industrieengpass zuerst schließen. Reparaturverbrauch, Arbeitsreserve, Hüllenhistorie und Importgate unabhängig absichern, keine Regelaktivierung ohne Freigabe. Keine produktiven Änderungen, kein Merge/Deploy.

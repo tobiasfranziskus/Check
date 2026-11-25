@@ -1,0 +1,16 @@
+name: M4 founding economy audit
+on:
+  pull_request:
+    paths:
+      - 'tests/m4-founding-economy.test.mjs'
+      - '.github/workflows/m4-founding-economy.yml'
+jobs:
+  paired:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/m4-founding-economy.test.mjs

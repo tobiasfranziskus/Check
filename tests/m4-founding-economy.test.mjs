@@ -80,7 +80,7 @@ function run(optIn,houseFirst){
  }
  const s=j.zustandReferenz(),before=report(w,s);
  assert(s.tick<10080); w.advance(s,10080-s.tick);
- const end=report(w,s);assert.equal(end.tick,days*1440);
+ const end=report(w,s);assert.equal(end.tick,10080);
  return {optIn,houseFirst,start,actions,before,end};
 }
 test('M4 founding hull: public standard vs explicit S02, house-first vs NPC-first',()=>{
@@ -136,7 +136,7 @@ function earlyMiner(mode, days=7, regional=false){
    }
  }
  const end=j.zustandReferenz(), receipts=end.kanon.spielerFrachten?.auftraege||[];
- assert.equal(end.tick,10080);
+ assert.equal(end.tick,days*1440);
  assert.equal(receipts.filter(r=>r.end!==null).length,checkpoints.at(-1).paidF4);
  return {mode,firstHull,firstF4,firstF4End,actions,failed,checkpoints};
 }

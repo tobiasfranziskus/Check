@@ -473,3 +473,83 @@ test('PIR-3d no local target: idle budget and cross-profile save rejection',()=>
   const hash=w.hash(s);assert.equal(w.hash(w.load(w.save(s))),hash);
   console.log('PIR_3D_IDLE '+JSON.stringify({tick:s.tick,hash,pirateCash:s.owners.piraten.cash}));
 });
+
+
+test('PIR-3e original damaged NPC-first F4: material, dock binding and legal relocation gates',()=>{
+  function run(){
+    const j=J8.erstellen();j.startenPiraten(true,'lokal');
+    const w=j.weltReferenz();
+    w.advance(j.zustandReferenz(),300);
+    const ids=new Set(Object.keys(j.zustandReferenz().ships));
+    assert(j.ausfuehren('buy-st_nadir-frachter').ok);
+    const f=Object.values(j.zustandReferenz().ships).find(sh=>!ids.has(sh.id)).id;
+    assert(j.ausfuehren('reposition-'+f).ok);
+    w.advance(j.zustandReferenz(),60);
+    assert(j.ausfuehren('buy-st_aldera-miner').ok);
+    const m=j.ansicht().schiffe.find(sh=>sh.klasse==='miner').id;
+    assert(j.ausfuehren('ice-'+m).ok);
+    w.advance(j.zustandReferenz(),120);
+    assert(j.ausfuehren('freight-'+f).ok);
+    const s=j.zustandReferenz(),start=s.tick,rows=[];
+    const quote=(station)=>w.reparaturAngebot(s,{owner:'house',schiff:f,station});
+    const observe=()=>{
+      assert.deepEqual(w.audit(s).fehler,[]);
+      const hash=w.hash(s),nadir=quote('st_nadir'),aldera=quote('st_aldera');
+      assert.equal(w.hash(s),hash,'read-only quote');
+      assert.equal(nadir.ok,false);assert.equal(aldera.ok,false);
+      assert.equal(nadir.huelle,72);assert.equal(nadir.schaden,24);
+      assert.equal(nadir.material,Math.ceil(w.rules.w5.material/4));
+      assert.equal(nadir.minuten,Math.ceil(w.rules.w5.dauer/4));
+      assert.equal(nadir.kosten,nadir.material*w.rules.w5.materialPreis+nadir.minuten*w.rules.w5.lohnJeMinute);
+      assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),s.initialSupply);
+      assert.equal(s.minted+s.burned,0);
+      rows.push({tick:s.tick,system:s.ships[f].system,phase:s.ships[f].phase,hash,nadir,aldera});
+    };
+    w.advance(s,59);
+    assert.equal(s.tick,start+59);
+    observe();
+    assert.equal(rows.at(-1).nadir.physischAngedockt,true);
+    assert.equal(rows.at(-1).nadir.angedockt,false);
+    assert.equal(rows.at(-1).nadir.frachtBindung.phase,'hin');
+    w.advance(s,61);
+    assert.equal(s.tick,start+120);
+    assert.equal(w.hash(s),'a9ef1e5e5c473ce7');
+    assert.equal(s.kanon.spielerFrachten.lohn,120);
+    assert.equal(s.kanon.spielerFrachten.gebuehr,240);
+    assert.equal(s.w5n.eisGeliefert,50);
+    observe();
+    assert.equal(rows.at(-1).aldera.angedockt,true);
+    assert.equal(rows.at(-1).aldera.werftVorhanden,false);
+    assert.equal(rows.at(-1).nadir.physischAngedockt,false);
+    const cmds=[
+      {type:'shipMove',owner:'house',schiff:f,ziel:'st_nadir'},
+      {type:'shipReposition',owner:'house',schiff:f},
+      {type:'shipRepair',owner:'house',schiff:f,station:'st_nadir'},
+      {type:'shipRepair',owner:'transport',schiff:f,station:'st_nadir'}
+    ];
+    const rejections=[];
+    for(const cmd of cmds){
+      const c=structuredClone(s),h=w.hash(c),r=w.execute(c,cmd);
+      assert.equal(r.ok,false,cmd.type);
+      assert.equal(w.hash(c),h,'rejected command atomic: '+cmd.type);
+      rejections.push({cmd,reason:r.reason??null});
+    }
+    assert.equal(w.reparaturAngebot(s,{owner:'transport',schiff:f,station:'st_nadir'}).ok,false);
+    assert.equal(w.reparaturAngebot(s,{owner:'house',schiff:f,station:'st_nadir',kosten:0}).ok,false);
+    let peak=0,firstEnough=null,firstFreeEnough=null;
+    const need=rows.at(-1).nadir.material,baseProduction=s.ledger.material.produced;
+    for(let i=1;i<=7*1440;i++){
+      const t=s.tick;w.advance(s,1);assert.equal(s.tick,t+1);
+      const n=s.stations.st_nadir.lager.material||0;
+      peak=Math.max(peak,n);
+      if(n>=need&&firstEnough===null)firstEnough=s.tick;
+      if(n>=need&&!s.w5.auftrag&&!s.kanon.minerWerft?.auftrag&&!s.kanon.jaeger?.auftrag&&firstFreeEnough===null)firstFreeEnough=s.tick;
+      if(i===60||i%1440===0)observe();
+    }
+    const hash=w.hash(s);assert.equal(w.hash(w.load(w.save(s))),hash);
+    return {f,need,peak,firstEnough,firstFreeEnough,materialProduced:s.ledger.material.produced-baseProduction,
+      rejections,rows,hash};
+  }
+  const a=run(),b=run();assert.deepEqual(a,b);
+  console.log('PIR_3E_REPAIR_ACCESS '+JSON.stringify(a));
+});

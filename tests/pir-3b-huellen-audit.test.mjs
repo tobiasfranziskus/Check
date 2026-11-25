@@ -553,3 +553,101 @@ test('PIR-3e original damaged NPC-first F4: material, dock binding and legal rel
   const a=run(),b=run();assert.deepEqual(a,b);
   console.log('PIR_3E_REPAIR_ACCESS '+JSON.stringify(a));
 });
+
+
+test('PIR-3f paid repair ferry uses original arrival without rewriting original F4 or W5ac',()=>{
+  function run(){
+    const j=J8.erstellen();j.startenPiraten(true,'werft');
+    const w=j.weltReferenz();
+    w.advance(j.zustandReferenz(),300);
+    const ids=new Set(Object.keys(j.zustandReferenz().ships));
+    assert(j.ausfuehren('buy-st_nadir-frachter').ok);
+    const f=Object.values(j.zustandReferenz().ships).find(sh=>!ids.has(sh.id)).id;
+    assert(j.ausfuehren('reposition-'+f).ok);
+    w.advance(j.zustandReferenz(),60);
+    const premature=j.zustandReferenz();
+    assert(!w.werftreiseAngebot(premature,{type:'shipRepairFerry',owner:'house',schiff:f}).ok);
+    assert(j.ausfuehren('buy-st_aldera-miner').ok);
+    const m=j.ansicht().schiffe.find(sh=>sh.klasse==='miner').id;
+    assert(j.ausfuehren('ice-'+m).ok);
+    w.advance(j.zustandReferenz(),120);
+    assert(j.ausfuehren('freight-'+f).ok);
+    const s=j.zustandReferenz(),cmd={type:'shipRepairFerry',owner:'house',schiff:f};
+    w.advance(s,59);
+    assert(!w.werftreiseAngebot(s,cmd).ok,'cannot leave active F4');
+    w.advance(s,61);
+    assert.equal(s.tick,600);
+    assert.equal(s.kanon.piraten.kampf.huellen[f],72);
+    w.advance(s,2375-s.tick);
+    const f4=structuredClone(s.kanon.spielerFrachten),w5ac=structuredClone(s.w5ac.completed.find(x=>x.id===f));
+    assert.equal(s.ships[f].ladung.eis,0,'original W5n retains empty ice field');
+    const emptyCargo=structuredClone(s.ships[f].ladung);
+    assert(Object.values(emptyCargo).every(n=>n===0));
+    const q=w.werftreiseAngebot(s,cmd),pre=w.hash(s);
+    assert(q.ok,q.grund);assert.equal(q.kosten,60);assert.equal(q.dauer,60);
+    assert.equal(w.hash(s),pre);
+    const reject=(st,c)=>{
+      const h=w.hash(st),r=w.execute(st,c);assert(!r.ok,JSON.stringify(c));assert.equal(w.hash(st),h);
+    };
+    reject(s,{...cmd,owner:'transport'});
+    reject(s,{...cmd,kosten:0});
+    reject(s,{type:'shipMove',owner:'house',schiff:f,ziel:'st_nadir'});
+    const classic=J8.erstellen();classic.startenPiraten(true,'lokal');
+    const cw=classic.weltReferenz(),cs=classic.zustandReferenz(),ch=cw.hash(cs);
+    assert(!cw.execute(cs,cmd).ok);assert.equal(cw.hash(cs),ch);
+    const cash=s.owners.house.cash,old=s.owners.pilot_house.cash,wear=s.kanon.verschleiss[f];
+    const start=w.execute(s,cmd);
+    assert(start.ok,start.reason);
+    assert.equal(s.owners.house.cash,cash-60);
+    assert.equal(s.owners.k1_pir_werftflug.cash,60);
+    assert.equal(s.ships[f].flug.lage,'transit');
+    assert.deepEqual(w.audit(s).fehler,[]);
+    reject(s,cmd);
+    reject(s,{type:'shipRepair',owner:'house',schiff:f,station:'st_nadir'});
+    reject(s,{type:'shipFreightIce',owner:'house',schiff:f});
+    const snapshots=[];
+    function checkpoint(x){
+      const a=x.kanon.pirWerft;
+      assert.deepEqual(w.audit(x).fehler,[]);
+      assert.equal(Object.values(x.owners).reduce((n,o)=>n+o.cash,0),x.initialSupply);
+      assert.equal(x.minted+x.burned,0);
+      assert.equal(x.owners.k1_pir_werftflug.cash,60-a.bezahlt);
+      assert.equal(x.kanon.buch.summen['pir-werftflug-lohn|k1_pir_werftflug|pilot_house']??0,a.bezahlt);
+      assert.equal(x.kanon.verschleiss[f],wear+a.bezahlt);
+      assert.deepEqual(x.kanon.spielerFrachten,f4);
+      assert.deepEqual(x.w5ac.completed.find(r=>r.id===f),w5ac);
+      const hash=w.hash(x);assert.equal(w.hash(w.load(w.save(x))),hash);
+      snapshots.push({tick:x.tick,system:x.ships[f].system,phase:x.ships[f].phase,
+        paid:a.bezahlt,escrow:x.owners.k1_pir_werftflug.cash,hash});
+    }
+    checkpoint(s);
+    w.advance(s,30);checkpoint(s);
+    const midway=w.save(s),clone=w.load(midway);
+    w.advance(s,29);checkpoint(s);
+    w.advance(s,1);checkpoint(s);
+    w.advance(clone,30);assert.equal(w.hash(clone),w.hash(s));
+    assert.equal(s.tick,2435);
+    assert.equal(s.ships[f].system,'nadir');assert.equal(s.ships[f].flug.lage,'angedockt');
+    assert.deepEqual(s.ships[f].ladung,emptyCargo,'no fictitious sale or cargo rewrite at ferry arrival');
+    assert.equal(s.kanon.piraten.kampf.huellen[f],72);
+    const repair=w.reparaturAngebot(s,{owner:'house',schiff:f,station:'st_nadir'});
+    assert.equal(repair.angedockt,true);assert.equal(repair.kosten,208);
+    const final=w.save(s);
+    for(const mutate of [
+      x=>{delete x.kanon.pirWerft},
+      x=>{x.kanon.pirWerft.bezahlt--},
+      x=>{x.kanon.pirWerft.hp=96},
+      x=>{x.ships[f].system='aldera'},
+      x=>{x.kanon.pirWerft.f4End++}
+    ]){
+      const x=JSON.parse(final);mutate(x);
+      assert(!w.audit(x).ok);assert.throws(()=>w.load(JSON.stringify(x)));
+    }
+    assert.throws(()=>classic.weltReferenz().load(final));
+    assert.throws(()=>w.load(cw.save(cs)));
+    return {f,q,snapshots,repair,oldPilotCash:old,pilotCash:s.owners.pilot_house.cash,
+      worldMoney:s.initialSupply,hash:w.hash(s)};
+  }
+  const a=run(),b=run();assert.deepEqual(a,b);
+  console.log('PIR_3F_FERRY '+JSON.stringify(a));
+});

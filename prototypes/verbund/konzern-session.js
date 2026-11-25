@@ -139,21 +139,21 @@ function erstellen(){
  }
  function startenPiraten(bestaetigt, anflug=false){
    if(bestaetigt!==true||welt)throw Error('PIR-1: getrennten Forschungsstart bestätigen');
-   if(['verkehr','lokal'].includes(anflug)&&!NODE)throw Error('PIR-3c: nur Node-Forschungsprofil');
-   const w=anflug==='lokal' ? W.erstellenPirLokal() : anflug==='verkehr' ? W.erstellenPirVerkehr() : anflug==='kampf' ? W.erstellenPirKampf() : anflug==='abfangen' ? W.erstellenPirAbfang() : anflug===true ? W.erstellenPirAnflug() : W.erstellenPiraten();
+   if(['verkehr','lokal','werft'].includes(anflug)&&!NODE)throw Error('PIR-3c: nur Node-Forschungsprofil');
+   const w=anflug==='werft' ? W.erstellenPirWerft() : anflug==='lokal' ? W.erstellenPirLokal() : anflug==='verkehr' ? W.erstellenPirVerkehr() : anflug==='kampf' ? W.erstellenPirKampf() : anflug==='abfangen' ? W.erstellenPirAbfang() : anflug===true ? W.erstellenPirAnflug() : W.erstellenPiraten();
    const s=w.createState(42);
    w.politikSetzen(s,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
    w.npcAutoSetzen(s,true);
    w.npcSiliziumSetzen(s,true);
-   return aktivieren(w,s,anflug==='lokal' ? 'PIR-3d · Lokale Sichtung (Node-Forschung)' : anflug==='verkehr' ? 'PIR-3c · Verkehrsdisposition (Node-Forschung)' : anflug==='kampf' ? 'PIR-3 · Kampfforschung Nadir' : anflug==='abfangen' ? 'PIR-2e · Abfangforschung Nadir' : anflug===true ? 'PIR-2d · Anflugforschung Nadir' : 'PIR-1 · Forschungsstart Nadir',w.hash(s));
+   return aktivieren(w,s,anflug==='werft' ? 'PIR-3f · Werftreise (Node-Forschung)' : anflug==='lokal' ? 'PIR-3d · Lokale Sichtung (Node-Forschung)' : anflug==='verkehr' ? 'PIR-3c · Verkehrsdisposition (Node-Forschung)' : anflug==='kampf' ? 'PIR-3 · Kampfforschung Nadir' : anflug==='abfangen' ? 'PIR-2e · Abfangforschung Nadir' : anflug===true ? 'PIR-2d · Anflugforschung Nadir' : 'PIR-1 · Forschungsstart Nadir',w.hash(s));
  }
  function oeffnenPiraten(text,bestaetigt,anflug=false){
    if(bestaetigt!==true||welt)throw Error('PIR-1: separaten Forschungsstand bestätigen');
    paket(text);
-   if(['verkehr','lokal'].includes(anflug)&&!NODE)throw Error('PIR-3c: nur Node-Forschungsprofil');
-   const w=anflug==='lokal' ? W.erstellenPirLokal() : anflug==='verkehr' ? W.erstellenPirVerkehr() : anflug==='kampf' ? W.erstellenPirKampf() : anflug==='abfangen' ? W.erstellenPirAbfang() : anflug===true ? W.erstellenPirAnflug() : W.erstellenPiraten();
+   if(['verkehr','lokal','werft'].includes(anflug)&&!NODE)throw Error('PIR-3c: nur Node-Forschungsprofil');
+   const w=anflug==='werft' ? W.erstellenPirWerft() : anflug==='lokal' ? W.erstellenPirLokal() : anflug==='verkehr' ? W.erstellenPirVerkehr() : anflug==='kampf' ? W.erstellenPirKampf() : anflug==='abfangen' ? W.erstellenPirAbfang() : anflug===true ? W.erstellenPirAnflug() : W.erstellenPiraten();
    const s=w.load(text);
-   return aktivieren(w,s,anflug==='lokal' ? 'PIR-3d · Lokale Sichtung (Node-Forschung)' : anflug==='verkehr' ? 'PIR-3c · Verkehrsdisposition (Node-Forschung)' : anflug==='kampf' ? 'PIR-3 · Kampfforschung Nadir' : anflug==='abfangen' ? 'PIR-2e · Abfangforschung Nadir' : anflug===true ? 'PIR-2d · Anflugforschung Nadir' : 'PIR-1 · Forschungsstand Nadir',w.hash(s));
+   return aktivieren(w,s,anflug==='werft' ? 'PIR-3f · Werftreise (Node-Forschung)' : anflug==='lokal' ? 'PIR-3d · Lokale Sichtung (Node-Forschung)' : anflug==='verkehr' ? 'PIR-3c · Verkehrsdisposition (Node-Forschung)' : anflug==='kampf' ? 'PIR-3 · Kampfforschung Nadir' : anflug==='abfangen' ? 'PIR-2e · Abfangforschung Nadir' : anflug===true ? 'PIR-2d · Anflugforschung Nadir' : 'PIR-1 · Forschungsstand Nadir',w.hash(s));
  }
  // W6/P8g DRAFT: eine echte NEUE Regel207-Forschungswelt aus dem
  // originalfinanzierten Seed; niemals eine bestehende Regel204-Karriere umwandeln.

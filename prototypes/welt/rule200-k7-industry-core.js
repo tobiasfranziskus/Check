@@ -1229,7 +1229,13 @@ function entladen(state, rules, s) {
     // Rule207: leere 0er-Bestandsfelder sind keine Ware. Beim neuen
     // externen Dock-Transit duerfen sie keinen automatischen Ankaufsversuch
     // ausloesen (kein Preis/Teiler fuer Nullmengen). Alte Regeln bitgleich.
-    if(rules.rulesVersion===207 && anzahl(s.ladung,ware)===0)continue;
+    // PIR-3f: Original-F4 hinterlaesst eis:0. Nur die belegte leere
+    // Werftreise darf in Regel204 denselben Nullmengen-Schutz nutzen.
+    const werft=state.kanon?.pirWerft;
+    const werftAnkunft=rules.rulesVersion===204 && state.kanon?.piraten?.profil===7
+      && werft?.schiff===s.id && werft.ende===state.tick && s.phase==='dock'
+      && s.system==='nadir' && s.ankunft===state.tick;
+    if((rules.rulesVersion===207 || werftAnkunft) && anzahl(s.ladung,ware)===0)continue;
     const m = Math.min(anzahl(s.ladung, ware), aufnehmbar(state, rules, station, ware));
     if (m > 0 && handel(state, rules, s, station, ware, m, false)) {
       state.stats.handel += 1; state.stats.verkaeufe[s.id] += 1;
@@ -2768,6 +2774,21 @@ const m_core_w5_transfer=(()=>{
         &&((lost(x.id)?.tick>=x.ankunft&&lost(x.id)?.system===c.ziel)
           ||s.w3.auftrag?.schiff===x.id
           ||(!!r.kanon&&s.w5n?.frachtauftrag?.schiff===x.id)
+          // PIR-3f research: historical Nadir->Aldera receipt stays immutable.
+          // The separate, paid repair ferry is validated by the outer K1 audit.
+          ||(s.kanon?.piraten?.profil===7&&x.owner==='house'&&(()=>{
+            const f=s.kanon.pirWerft,sh=s.ships[x.id];
+            if(!f||f.schiff!==x.id||f.owner!==x.owner||f.start<x.ankunft
+              ||f.dauer!==duration||f.ende!==f.start+duration
+              ||f.lohn!==c.lohnJeMinute||f.bezahlt!==Math.min(duration,s.tick-f.start)
+              ||(s.owners.k1_pir_werftflug?.cash??-1)!==(duration-f.bezahlt)*f.lohn
+              ||(s.kanon.buch.summen['pir-werftflug-reserve|house|k1_pir_werftflug']??0)!==duration*f.lohn
+              ||(s.kanon.buch.summen['pir-werftflug-lohn|k1_pir_werftflug|pilot_house']??0)!==f.bezahlt*f.lohn)
+              return false;
+            return s.tick<f.ende
+              ?sh.system===c.ziel&&sh.phase==='reise'&&sh.ziel===r.w5.station&&sh.ankunft===f.ende
+              :sh.system===c.quelle&&sh.phase==='dock'&&sh.auftrag==='halten'&&sh.ankunft===f.ende;
+          })())
           // Rule207: legitime Anschlussverwendung einer bereits mit W5ac
           // bezahlten Werft-Huelle. W5ac-Kauf-/Flugjournal bleibt unveraendert;
           // der NEUE Fremdfrachtbeleg wird separat vom P8d-K1-Audit geprueft.

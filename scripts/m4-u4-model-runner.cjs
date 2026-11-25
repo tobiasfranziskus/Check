@@ -27,15 +27,18 @@ function config(env){
  throw Error('Unsupported provider');
 }
 // Only previously observed free model identifiers, not a guarantee of availability.
-const FREE_FALLBACKS=['openrouter/free','inclusionai/ling-3.2-flash:free','particle-ai/particle-1:free'];
+const FIXED_DEFAULT='google/gemma-4-26b-a4b-it:free';
+const FREE_FALLBACKS=[FIXED_DEFAULT,'particle-ai/particle-1:free'];
 const freeModel=id=>typeof id==='string'&&id.length<=160&&/^[A-Za-z0-9._/-]+:free$/.test(id);
-const candidates=cfg=>cfg.provider==='openrouter'
- ? [...new Set([cfg.model,...FREE_FALLBACKS])].slice(0,3) : [cfg.model];
+// A named free model is fixed for the entire run, even before its first decision.
+// Legacy router mode remains opt-in for non-mobile experiments only.
+const candidates=cfg=>cfg.provider==='openrouter'&&cfg.model==='openrouter/free'
+ ? [cfg.model,...FREE_FALLBACKS] : [cfg.model];
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function requestBody(cfg,goal,obs,history,correction=false){
  const prior=history.slice(-2).map(h=>({action:h.action,note:h.note}));
  const data={goal,round:obs.round,remaining:obs.remaining,screen:String(obs.visibleText||'').slice(0,1800),recent:prior};
- return {model:cfg.model,stream:false,temperature:0,max_tokens:1024,messages:[{role:'system',content:SYSTEM+(correction?' Die vorige Antwort entsprach nicht dem Schema. Gib ausschließlich ein gültiges JSON-Objekt mit genau action und note aus.':'')},{role:'user',content:JSON.stringify(data)}]};
+ return {model:cfg.model,stream:false,temperature:0,max_tokens:1024,...(cfg.provider==='openrouter'&&cfg.model===FIXED_DEFAULT?{response_format:{type:'json_object'}}:{}),messages:[{role:'system',content:SYSTEM+(correction?' Die vorige Antwort entsprach nicht dem Schema. Gib ausschließlich ein gültiges JSON-Objekt mit genau action und note aus.':'')},{role:'user',content:JSON.stringify(data)}]};
 }
 function decision(raw){
  if(typeof raw!=='string'||raw.length>1600)throw Error('Invalid model output');

@@ -1,0 +1,6 @@
+# PIR-3d – Lokale Sichtung statt Vertragsprognose [DRAFT / FORSCHUNG]
+Basis #629 0730fae9, main aa716c46. Void-Echoes-Katalog bereits für PIR-3c geprüft; heutige Kontakte, Flugreserve, Abfangen und Kampf weiterverwendet.
+
+PIR-3c auf f6e97734: 10/10 gezielte Audittests, realer früher und später F4 je 7 ISK Fluglohn, Hülle 48/96, 233 ISK Rest. Der Vertragsfahrplan ist privilegiertes Wissen. Neues Node-only Profil 6 (J8 startenPiraten(true,'lokal')) vergleicht dagegen nur tatsächlich lokale, frei fliegende beladene Frachter im gemeinsamen System und vorhandener Sichtweite. Keine Vertragszeit, kein Tor-Transit als Ziel, keine neue Ware, kein RNG-Wurf oder garantierter Treffer. Sicht vom Dock ist ein experimentelles Sensorikmodell, noch keine separate Stationseinrichtung.
+
+Prüfung: beide originalfinanzierten F4-Fahrpläne zweimal, Abflug erst im realen lokalen Fenster (vier Restminuten), vollständige Reserven, Löhne, Rückkehr, Originalfracht und Hash; Schusszahl und Schaden als Ergebnis, nicht als Sollwert. Sieben Tage ohne lokale geeignete Ziele, unveränderte 240 ISK, Profil-/Save-Trennung. Alte Profile 4/5 bleiben mit Referenzen geprüft. CI offen. Kein Browser- oder Produktzugang, kein Merge/Deploy. Reparatur, Schadenshistorie und Piratenerlöse bleiben offen.

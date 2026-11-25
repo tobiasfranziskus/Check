@@ -21,7 +21,7 @@ function config(env){
   return {provider,model,url:'http://127.0.0.1:'+port+'/v1/chat/completions'};
  }
  if(provider==='openrouter'){
-  if(env.M4_ALLOW_REMOTE!=='1'||!model.endsWith(':free')||!env.OPENROUTER_API_KEY)throw Error('Remote requires explicit opt-in, :free model and local API key');
+  if(env.M4_ALLOW_REMOTE!=='1'||!/^[A-Za-z0-9._/-]+:free$/.test(model)||!env.OPENROUTER_API_KEY)throw Error('Remote requires explicit opt-in, :free model and local API key');
   return {provider,model,url:'https://openrouter.ai/api/v1/chat/completions',key:env.OPENROUTER_API_KEY};
  }
  throw Error('Unsupported provider');
@@ -79,7 +79,10 @@ async function run({relay,cfg,module,emit=()=>{},fetcher=fetch,now=()=>performan
 async function main(){
  const module=process.argv[2],root=path.resolve(process.argv[3]||'.');
  if(!Object.hasOwn(GOALS,module))throw Error('Usage: node scripts/m4-u4-model-runner.cjs A|B|C|D|E|F [root]');
- const cfg=config(process.env),out=fs.mkdtempSync(path.join(os.tmpdir(),'m4-u4-model-'));
+ const cfg=config(process.env);
+ // Keep credentials only in the controller; do not inherit them into browser processes.
+ delete process.env.OPENROUTER_API_KEY;
+ const out=fs.mkdtempSync(path.join(os.tmpdir(),'m4-u4-model-'));
  const file=path.join(out,'evidence.jsonl');
  const emit=x=>fs.appendFileSync(file,JSON.stringify(x)+'\n',{mode:0o600});
  emit({kind:'start',module,goal:GOALS[module],provider:cfg.provider,model:cfg.model,productSha:process.env.M4_PRODUCT_SHA||'UNVERIFIED',testMode:'text',started:new Date().toISOString()});

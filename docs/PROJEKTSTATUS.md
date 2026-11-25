@@ -1,5 +1,8 @@
 # Aphros Void – aktueller Projektstatus [MAIN/M0/M1/P1/P3/W6] · 24.11.2026
 
+
+**[W6 · DRAFT · 25.11.2026]** [Kombinierte Erz-/Wasserfracht](W6_KOMBINIERTER_WARENKREISLAUF.md) auf `main fb229ea5` mit gezielter Wiederverwendung aus #574/#578. Sechs gepaarte 7-/30-/90-Tage-Läufe mit exaktem Replay. Vier finanzierte Haus-Rundfahrten mit je 50 Erz und 41 Wasser über die drei Forschungsprofile. S02 blockiert ab Minute 18.000 mit 22 Erz auf einem stillgelegten Miner und 1.390 ISK Treuhand. [Haushaltsaudit #618](M4_GRUENDUNGSWIRTSCHAFT_AUDIT.md) auf `5dd997a7` in vier Workflows erfolgreich. W6 und die Abwicklung bezahlter Teilladungen bleiben offen.
+
 > Aktive Kurzfassung. Historische Zwischenstände, ursprüngliche Testzahlen, Negativbefunde und alle damaligen PR-/Commit-/CI-Links vollständig in der [Statuschronik bis 23.11.2026](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261123.md). Produktentscheidungen stehen in [ROADMAP.md](ROADMAP.md).
 
 ## Aktueller integrierter Stand

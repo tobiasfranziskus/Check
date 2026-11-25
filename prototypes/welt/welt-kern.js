@@ -103,9 +103,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   const pirAbfang = piraten >= 3;
   // Profile 5 is a Node-only research counterfactual. Existing profiles
   // retain their exact state shape, RNG sequence and patrol rules.
-  if ([5,6].includes(piraten) && !NODE) throw Error('PIR-3c/3d: nur Node-Forschungsprofil');
+  if ([5,6,7].includes(piraten) && !NODE) throw Error('PIR-3c/3d: nur Node-Forschungsprofil');
   const pirVerkehr = piraten === 5;
-  const pirLokal = piraten === 6;
+  const pirWerft = piraten === 7;
+  const pirLokal = piraten === 6 || pirWerft;
   const pirKampf = piraten === 4 || pirVerkehr || pirLokal;
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
@@ -1960,6 +1961,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       pruefeForm(state);
       const k = state.kanon, fehler = [];
       m_core_firmenpolitik.audit(state, fehler);
+      if (!werftreiseAudit(state)) fehler.push('PIR-3f: Original-Werftreise-/Lohnbeleg');
       if (!m_core_piraten.audit(state)) fehler.push('PIR-1: Szenariobestand, Eigentum oder Fluglohn');
       if(k.materialSupplyEnabled!==undefined
         &&(!p8dFracht||typeof k.materialSupplyEnabled!=='boolean'))
@@ -2134,6 +2136,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     };
     if (opt.politik) politikSetzen(state, opt.politik);
     if (piraten) m_core_piraten.start(state);
+    if (pirWerft) state.kanon.pirWerft=null;
     m_core_flugplan.koerperSync(state);
     // Die Kern-Initialisierung beauftragt den NPC-Miner bereits mit Erz: er erhält denselben
     // Pendelauftrag wie jedes Spielerschiff und muss ab jetzt wirklich zum Feld fliegen.
@@ -2525,9 +2528,99 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       kosten,bestand,kasse,angedockt,physischAngedockt,frachtBindung,werftVorhanden,blocker};
   }
 
+  // PIR-3f: one separate, fully funded one-way repair ferry on the original
+  // route/arrival integrator. Not a generic shipMove authorization or repair.
+  const werftKonto = 'k1_pir_werftflug';
+  const werftRoute = () => kern.route(rules.world,'aldera','nadir');
+  const werftLohn = () => rules.w5Transfer.lohnJeMinute;
+  function werftBeleg(s,sh) {
+    return sh && sh.owner==='house' && sh.klasse==='frachter' && sh.heimat==='nadir'
+      && s.kanon.spielerFrachterKaeufe?.some(x=>x.id===sh.id&&x.station==='st_nadir')
+      && s.w5ac.completed.some(x=>x.id===sh.id&&x.owner==='house')
+      && s.kanon.spielerFrachten?.auftraege.filter(x=>x.schiff===sh.id&&x.end!==null).at(-1);
+  }
+  function werftreiseAngebot(s,cmd) {
+    const fail=grund=>({ok:false,grund});
+    if(!pirWerft) return fail('PIR-3f: getrenntes Forschungsprofil erforderlich');
+    if(!cmd||typeof cmd!=='object'||Array.isArray(cmd)
+      ||Object.keys(cmd).sort().join()!=='owner,schiff,type'
+      ||cmd.type!=='shipRepairFerry'||cmd.owner!=='house')return fail('Ungültiger Reiseauftrag');
+    if(!audit(s).ok)return fail('Ungültige Ausgangsbilanz');
+    const sh=s.ships[cmd.schiff],b=werftBeleg(s,sh),r=werftRoute(),lohn=werftLohn();
+    if(!b||s.kanon.pirWerft!==null||s.flug.schritt!==0||sh.system!=='aldera'
+      ||sh.phase!=='dock'||sh.auftrag!=='halten'||!FLUG.angedocktAn(sh,'st_aldera')
+      ||ladungSumme(sh)!==0||m_core_anlage.stillgelegt(s,sh)
+      ||s.kanon.flugdienst[sh.id]||s.w5n.frachtauftrag?.schiff===sh.id
+      ||s.w3.auftrag?.schiff===sh.id||s.w5ac.active?.id===sh.id
+      ||s.queue.some(x=>x.schiff===sh.id))return fail('Nur freie eigene beschädigte W5-Hülle nach Original-F4');
+    const hp=m_core_piraten.huellenzustand(s,sh.id);
+    if(hp===PIR_WAFFE.huelle||hp<=0||!s.kanon.piraten.kampf.ereignisse.some(e=>e.ziel===sh.id&&e.schaden>0&&e.sekunde<=b.end*N))
+      return fail('Kein originaler F4-Schaden');
+    if(!r||r.zeit!==W.flugMinuten||!ganz(lohn)||lohn===0)return fail('Keine Originalroute');
+    const kosten=r.zeit*lohn;
+    if(s.owners.house.cash<kosten||s.owners[werftKonto])return fail('Reise nicht vollständig finanzierbar');
+    return {ok:true,schiff:sh.id,von:'aldera',nach:'nadir',dauer:r.zeit,lohn,kosten,hp,f4End:b.end};
+  }
+  function werftreiseStart(s,cmd) {
+    const q=werftreiseAngebot(s,cmd);
+    if(!q.ok)return {ok:false,type:cmd?.type,reason:q.grund};
+    const sh=s.ships[q.schiff];
+    s.owners[werftKonto]={id:werftKonto,kind:'k1-reserve',cash:0};
+    m_core_buch.transfer(s,'house',werftKonto,q.kosten,'pir-werftflug-reserve');
+    s.kanon.pirWerft={schiff:sh.id,owner:'house',start:s.tick,ende:s.tick+q.dauer,
+      dauer:q.dauer,lohn:q.lohn,bezahlt:0,hp:q.hp,f4End:q.f4End};
+    // Identical transit fields to original shipMove. Its normal public
+    // command gate remains unchanged; the original kern.step handles arrival.
+    sh.phase='reise';sh.ziel='st_nadir';sh.ankunft=s.tick+q.dauer;sh.warten=0;sh.eskorte=null;
+    m_core_flugplan.koerperSync(s);
+    return {ok:true,type:cmd.type,...q};
+  }
+  function werftreiseMinute(s) {
+    const a=s.kanon.pirWerft;
+    if(!pirWerft||!a||a.bezahlt===a.dauer)return;
+    const sh=s.ships[a.schiff];
+    if(!sh||sh.owner!==a.owner||s.tick!==a.start+a.bezahlt+1)
+      throw Error('PIR-3f: Reiseminute ohne Originalbeleg');
+    if(s.tick===a.ende
+      ?sh.phase!=='dock'||sh.system!=='nadir'||sh.ankunft!==a.ende
+      :sh.phase!=='reise'||sh.system!=='aldera'||sh.ziel!=='st_nadir'||sh.ankunft!==a.ende)
+      throw Error('PIR-3f: Originalankunft fehlt');
+    m_core_buch.transfer(s,werftKonto,'pilot_house',a.lohn,'pir-werftflug-lohn');
+    a.bezahlt++;
+  }
+  function werftreiseAudit(s) {
+    const a=s.kanon.pirWerft,k=s.owners[werftKonto];
+    const reserve=m_core_buch.summe(s,'pir-werftflug-reserve');
+    const paid=m_core_buch.summe(s,'pir-werftflug-lohn');
+    if(!pirWerft)return a===undefined&&!k&&reserve===0&&paid===0;
+    if(a===null)return !k&&reserve===0&&paid===0;
+    if(!a||Object.keys(a).sort().join()!=='bezahlt,dauer,ende,f4End,hp,lohn,owner,schiff,start'
+      ||a.owner!=='house'||!ganz(a.start)||!ganz(a.ende)||!ganz(a.bezahlt)
+      ||a.start>s.tick||a.dauer!==werftRoute()?.zeit||a.lohn!==werftLohn()
+      ||a.ende!==a.start+a.dauer||a.bezahlt!==Math.min(a.dauer,s.tick-a.start)
+      ||!k||k.id!==werftKonto||k.kind!=='k1-reserve'
+      ||reserve!==a.dauer*a.lohn||paid!==a.bezahlt*a.lohn||k.cash!==reserve-paid
+      ||m_core_buch.summe(s,'pir-werftflug-reserve',(v,n)=>v==='house'&&n===werftKonto)!==reserve
+      ||m_core_buch.summe(s,'pir-werftflug-lohn',(v,n)=>v===werftKonto&&n==='pilot_house')!==paid)return false;
+    const sh=s.ships[a.schiff],b=werftBeleg(s,sh);
+    if(!b||a.f4End!==b.end||b.end>a.start||a.hp!==m_core_piraten.huellenzustand(s,sh.id)
+      ||a.hp>=PIR_WAFFE.huelle||ladungSumme(sh)!==0||sh.auftrag!=='halten'
+      ||!s.kanon.piraten.kampf.ereignisse.some(e=>e.ziel===sh.id&&e.schaden>0&&e.sekunde<=b.end*N)
+      ||s.w5n.frachtauftrag?.schiff===sh.id||s.w3.auftrag?.schiff===sh.id
+      ||s.w5ac.active?.id===sh.id||s.kanon.flugdienst[sh.id]
+      ||s.queue.some(x=>x.schiff===sh.id))return false;
+    return s.tick<a.ende
+      ?sh.system==='aldera'&&sh.phase==='reise'&&sh.ziel==='st_nadir'
+        &&sh.ankunft===a.ende&&sh.flug.lage==='transit'
+      :sh.system==='nadir'&&sh.phase==='dock'&&sh.ankunft===a.ende&&FLUG.angedocktAn(sh,'st_nadir');
+  }
+
   function execute(state, cmd) {
     pruefeForm(state);
     const type = cmd && cmd.type;
+    if (type === 'shipRepairFerry') return werftreiseStart(state,cmd);
+    if (pirWerft && state.kanon.pirWerft && cmd?.schiff === state.kanon.pirWerft.schiff)
+      return {ok:false,type,reason:'PIR-3f: Werftreise bindet diese Hülle'};
     if (pirKampf && type === 'shipRepair') return {ok:false,type,reason:'PIR-3b: Reparaturauftrag noch nicht freigegeben'};
     if (pirAnflug && anflugBlockiert(state)) return {ok:false,type,reason:'PIR-2d: Docktermin verfehlt'};
     if (pirKampf && ['shipFreightIce','shipFreightGateIce'].includes(type) && state.ships[cmd.schiff]
@@ -2613,6 +2706,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     m_core_minerwerft.tick(state);
     if(silizium)m_core_silizium.minute(state);
     if(p8cDravos||p8dFracht)m_core_p8c_reise.minute(state);
+    if(pirWerft)werftreiseMinute(state);
     if(p8dFracht)m_core_p8d.minute(state);
     if(bauteile)m_core_bauteile.minute(state);
     if(jaeger)m_core_jaeger.minute(state);
@@ -2800,6 +2894,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       const sh=lokalerAnflug(s);
       return sh ? {id:sh.id,x:sh.flug.x,y:sh.flug.y,lage:sh.flug.lage,blockiert:anflugBlockiert(s)} : null;
     }} : {}),piratenZielbewertung:m_core_piraten.zielbewertung} : {}), sicherheitslage:m_core_piraten.lage,
+    ...(pirWerft ? {werftreiseAngebot} : {}),
     ...(pirKampf ? {reparaturAngebot,pirKampfLage:s=>({
       aktiv:m_core_piraten.verfolgt(s.kanon.piraten)
         && s.kanon.piraten.kampf.ereignisse.at(-1)?.ziel===s.kanon.piraten.kontakt?.id
@@ -3073,7 +3168,9 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   ...(NODE ? {erstellenPirVerkehr:()=>erstellen({carrierCash:2000,buyerCash:4000},
     true,true,true,true,true,false,false,false,5),
     erstellenPirLokal:()=>erstellen({carrierCash:2000,buyerCash:4000},
-      true,true,true,true,true,false,false,false,6)} : {}),
+      true,true,true,true,true,false,false,false,6),
+    erstellenPirWerft:()=>erstellen({carrierCash:2000,buyerCash:4000},
+      true,true,true,true,true,false,false,false,7)} : {}),
   erstellenPirAbfang:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,3),
   erstellenPirAnflug:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,2),
   erstellenPiraten:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,true),

@@ -1,6 +1,6 @@
 # W6 · Finanzierte Erz-Hinfracht und Wasser-Rückfracht
 
-**Forschungsstand vom 25.11.2026.** Basis ist [`main fb229ea5`](https://github.com/tobiasfranziskus/Check/commit/fb229ea5f3cb6c3018240ed321b6a281a06fffe4). Der Branch übernimmt gezielt den U7/U8-Kern aus [#574](https://github.com/tobiasfranziskus/Check/pull/574) sowie die J8-Befehle, Eigentumsprüfungen und das Szenariogerüst aus [#578](https://github.com/tobiasfranziskus/Check/pull/578). Einstieg für die Untersuchung ist eine ausdrücklich bestätigte Regel204-Forschungskopie. Die Standardkarriere und der PIR-Forschungsstart behalten ihre Ladepfade. Der öffentliche Einstieg bleibt auf dem Produktpfad.
+**Forschungsstand vom 25.11.2026.** Die Simulationsbasis ist [`main fb229ea5`](https://github.com/tobiasfranziskus/Check/commit/fb229ea5f3cb6c3018240ed321b6a281a06fffe4). Der Branch übernimmt gezielt den U7/U8-Kern aus [#574](https://github.com/tobiasfranziskus/Check/pull/574) sowie die J8-Befehle, Eigentumsprüfungen und das Szenariogerüst aus [#578](https://github.com/tobiasfranziskus/Check/pull/578). Einstieg für die Untersuchung ist eine ausdrücklich bestätigte Regel204-Forschungskopie. Die Standardkarriere und der PIR-Forschungsstart behalten ihre Ladepfade. Der öffentliche Einstieg bleibt auf dem Produktpfad. Während des Laufs wurde der Branch mit [`main 2ed9d54`](https://github.com/tobiasfranziskus/Check/commit/2ed9d54830f74a5b412a1f12431023f35369ca6f) abgeglichen. Dessen Änderungen aus #624 betreffen M4-U4-Werkzeuge und Dokumentation.
 
 Nadir bestellt 50 Erz mit 740 ISK, Aldera stellt 500 ISK für den Erzankauf bereit, und der Frachter-Eigentümer bindet 120 ISK Fluglohn. Beim Wechsel zur Rückfahrt kauft Aldera aus seiner dann verfügbaren Kasse physisches Wasser für 14 ISK je Einheit und reserviert 1 ISK je Einheit für die Fracht. Eine Hausrückfracht setzt die Zustimmung des Eigentümers voraus. Sowohl der Tarif als auch die Warenbewegung werden erst mit der echten Fahrt abgerechnet.
 
@@ -20,7 +20,7 @@ Jeder der sechs Läufe wurde vollständig wiederholt. Der Vergleich verlangt ide
 
 Kumulative Mengen. Kombiniert zählt W3-Rundfahrten mit geladener und in Aldera eingetroffener Wasserfracht. Die Ersatzspalte gibt den Ersatzwirtschaftszähler des Kerns wieder. Einzelne Werftkäufe und der Besitzerwechsel stehen separat in den Belegen.
 
-| Politik | Profil | Tag | Erz W3 | Kombiniert / Wasser | Wasser Haushalte | Eis / Wasser produziert | Material / Frachter gebaut | Ersatz | Hash |
+| Politik | Profil | Tag | Erz W3 | Kombiniert / Wasser | Wasser Haushalte | Eis gefördert / Wasser produziert | Material / Frachter gebaut | Ersatz | Hash |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | Standard | 204 | 7 | 0 | 0 / 0 | 2369 | 2750 / 2580 | 0 / 0 | 0 | `dbfa30c31d105505` |
 | Standard | 204 | 30 | 0 | 0 / 0 | 2369 | 2750 / 2580 | 0 / 0 | 0 | `4c425e523b102987` |
@@ -85,3 +85,10 @@ Der jeweils tatsächliche **Kassenbeitrag des gesamten Stationsprozesses** (inkl
 - **Langzeitentscheidung.** 365 und 730 Tage wurden für dieses Paket nicht gestartet. Keine Forschungsvariante erreicht wiederkehrende Kombinationen bis Tag 90 und S02 stagniert bereits zwischen Tag 30 und Tag 90. Die historischen 365-/730-Nachweise von #578 gelten für dessen Stand.
 
 Der [separate Haushaltsaudit #618](M4_GRUENDUNGSWIRTSCHAFT_AUDIT.md) benutzt Miner-first und einen anderen Hausentscheidungsplan. Er dient als überprüfter Ausgangsbefund für die Gründung. Die Zahlen seiner drei Profile sind deshalb nicht direkt mit der U7/U8-Matrix austauschbar.
+
+## Regression
+
+- Node 22.23.4, `node --test tests/*.test.mjs` mit 613/613 erfolgreich, 0 Fehler und 0 übersprungen. Enthalten sind die vorhandene 13×90-Matrix und die separate Regel207-S02-Regression bis Tag 365/730. Der übernommene 48-Fahrten-Fork bestätigte 22 Wasser Rückfracht und eine tatsächlich abgeschlossene 49. Eisfahrt. Die Tests für Haus- und NPC-Frachter bestätigen Eigentum, atomare Ablehnungen, reservierte Löhne und Save/Load während der Fahrt.
+- Lokales Chromium, M4-U3 und M4-U5 jeweils 4/4 bei 1180×820, 1024×768, 820×1180 und 390×844. Statischer Root-Einstieg, echter W1-Verkauf, Lager- und Käufersperren, Erzpause, eigener Frachter, Import und Reload.
+- Ergänzende M4-U4-Regressionsdateien aus dem späteren `main`-Abgleich mit Chromium-Dry-Run 12/12, 0 Fehler und 0 übersprungen.
+- WebKit lokal durch Download-HTTP-403 blockiert. GitHub-CI separat im Draft. Physisches iPad und privates NAS bleiben ausstehend.

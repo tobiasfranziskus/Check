@@ -44,7 +44,7 @@ jobs:
           M4_MODULE: ${{ inputs.module }}
           M4_AI_MODEL: ${{ inputs.model }}
         run: |
-          node -e 'if (!["A","B"].includes(process.env.M4_MODULE) || !(process.env.M4_AI_MODEL==='openrouter/free'||/^[A-Za-z0-9._/-]+:free$/.test(process.env.M4_AI_MODEL)) || process.env.M4_AI_MODEL.length>160) process.exit(1)'
+          node -e 'if (!["A","B"].includes(process.env.M4_MODULE) || !(process.env.M4_AI_MODEL==="openrouter/free"||/^[A-Za-z0-9._/-]+:free$/.test(process.env.M4_AI_MODEL)) || process.env.M4_AI_MODEL.length>160) process.exit(1)'
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}

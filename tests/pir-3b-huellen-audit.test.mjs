@@ -651,3 +651,99 @@ test('PIR-3f paid repair ferry uses original arrival without rewriting original 
   const a=run(),b=run();assert.deepEqual(a,b);
   console.log('PIR_3F_FERRY '+JSON.stringify(a));
 });
+
+
+test('PIR-3g one paid repair preserves damage history and original contracts',()=>{
+  function run(){
+    const j=J8.erstellen();j.startenPiraten(true,'reparatur');
+    const w=j.weltReferenz();
+    w.advance(j.zustandReferenz(),300);
+    const oldIds=new Set(Object.keys(j.zustandReferenz().ships));
+    assert(j.ausfuehren('buy-st_nadir-frachter').ok);
+    const f=Object.values(j.zustandReferenz().ships).find(sh=>!oldIds.has(sh.id)).id;
+    assert(j.ausfuehren('reposition-'+f).ok);
+    w.advance(j.zustandReferenz(),60);
+    assert(j.ausfuehren('buy-st_aldera-miner').ok);
+    const m=j.ansicht().schiffe.find(sh=>sh.klasse==='miner').id;
+    assert(j.ausfuehren('ice-'+m).ok);
+    w.advance(j.zustandReferenz(),120);
+    assert(j.ausfuehren('freight-'+f).ok);
+    const s=j.zustandReferenz(),qcmd={owner:'house',schiff:f,station:'st_nadir'};
+    const cmd={...qcmd,type:'shipRepair'};
+    function reject(c,pattern){
+      const h=w.hash(s),r=w.execute(s,c);
+      assert(!r.ok,JSON.stringify(c));if(pattern)assert.match(r.reason,pattern);
+      assert.equal(w.hash(s),h);
+    }
+    reject(cmd);
+    w.advance(s,120);
+    assert.equal(s.kanon.piraten.kampf.huellen[f],72);
+    w.advance(s,2375-s.tick);
+    reject(cmd);
+    assert(w.execute(s,{type:'shipRepairFerry',owner:'house',schiff:f}).ok);
+    w.advance(s,60);
+    assert.equal(s.tick,2435);
+    const q=w.reparaturAngebot(s,qcmd);
+    assert(q.ok,JSON.stringify(q));assert.equal(q.kosten,208);
+    assert.equal(q.material,2);assert.equal(q.minuten,8);
+    const before=w.hash(s);
+    assert.deepEqual(w.reparaturAngebot(s,qcmd),q);assert.equal(w.hash(s),before);
+    reject({...cmd,owner:'transport'});reject({...cmd,station:'st_aldera'});
+    reject({...cmd,kosten:0});reject({...cmd,schiff:'missing'});
+    const stock=s.stations.st_nadir.lager.material,consumed=s.ledger.material.consumed,
+      cash=s.owners.house.cash,stationCash=s.owners.st_nadir.cash,
+      history=structuredClone(s.kanon.piraten.kampf.ereignisse),
+      f4=structuredClone(s.kanon.spielerFrachten),w5ac=structuredClone(s.w5ac.completed),
+      wear=s.kanon.verschleiss[f],receipt=structuredClone(s.kanon.pirWerft);
+    const result=w.execute(s,cmd);assert(result.ok,JSON.stringify(result));
+    assert.equal(s.owners.house.cash,cash-208);
+    assert.equal(s.owners.st_nadir.cash,stationCash+200);
+    assert.equal(s.stations.st_nadir.lager.material,stock-2);
+    assert.equal(s.ledger.material.consumed,consumed+2);
+    assert.equal(s.owners.k1_pir_reparatur.cash,8);
+    assert.equal(s.kanon.piraten.kampf.huellen[f],72);
+    reject(cmd);reject({type:'shipMove',owner:'house',schiff:f,ziel:'st_aldera'});
+    reject({type:'stationBuildShip',owner:'werft_extern',station:'st_nadir'},/Werft|beauftragt/);
+    reject({type:'stationBuildMiner',owner:'werft_extern',station:'st_nadir',besteller:'house'},/Werft/);
+    reject({type:'stationBuildFighter',owner:'st_nadir',station:'st_nadir'},/Werft/);
+    const checkpoints=[];
+    function check(x,paid){
+      assert.deepEqual(w.audit(x).fehler,[]);
+      assert.equal(x.kanon.pirReparatur.bezahlt,paid);
+      assert.equal(x.owners.k1_pir_reparatur.cash,8-paid);
+      assert.equal(x.kanon.buch.summen['pir-reparatur-lohn|k1_pir_reparatur|arbeiter_werft_nadir']??0,paid);
+      assert.equal(x.kanon.piraten.kampf.huellen[f],paid===8?96:72);
+      assert.deepEqual(x.kanon.piraten.kampf.ereignisse.slice(0,history.length),history);
+      assert.deepEqual(x.kanon.spielerFrachten,f4);
+      assert.deepEqual(x.w5ac.completed.find(y=>y.id===f),w5ac.find(y=>y.id===f));
+      assert.deepEqual(x.kanon.pirWerft,receipt);
+      assert.equal(x.kanon.verschleiss[f],wear);
+      assert.equal(Object.values(x.owners).reduce((n,o)=>n+o.cash,0),x.initialSupply);
+      assert.equal(x.minted+x.burned,0);
+      const hash=w.hash(x);assert.equal(w.hash(w.load(w.save(x))),hash);
+      checkpoints.push({tick:x.tick,paid,hp:x.kanon.piraten.kampf.huellen[f],hash});
+    }
+    check(s,0);w.advance(s,4);check(s,4);
+    const mid=w.load(w.save(s));w.advance(s,3);check(s,7);w.advance(s,1);check(s,8);
+    w.advance(mid,4);assert.equal(w.hash(mid),w.hash(s));
+    assert.equal(s.tick,2443);reject(cmd);
+    const json=w.save(s);
+    for(const mutate of [
+      x=>{delete x.kanon.pirReparatur},
+      x=>{x.kanon.pirReparatur.bezahlt--},
+      x=>{x.kanon.pirReparatur.materialVerbraucht++},
+      x=>{x.kanon.pirReparatur.huelleVor=48},
+      x=>{x.kanon.piraten.kampf.huellen[f]=72},
+      x=>{x.owners.k1_pir_reparatur.cash++}
+    ]){
+      const x=JSON.parse(json);mutate(x);
+      assert(!w.audit(x).ok);assert.throws(()=>w.load(JSON.stringify(x)));
+    }
+    const other=J8.erstellen();other.startenPiraten(true,'werft');
+    assert.throws(()=>other.weltReferenz().load(json));
+    assert.throws(()=>w.load(other.weltReferenz().save(other.zustandReferenz())));
+    return {f,q,checkpoints,worldMoney:s.initialSupply,hash:w.hash(s)};
+  }
+  const a=run(),b=run();assert.deepEqual(a,b);
+  console.log('PIR_3G_REPAIR '+JSON.stringify(a));
+});

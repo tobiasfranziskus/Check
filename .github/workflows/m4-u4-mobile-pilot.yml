@@ -10,10 +10,10 @@ on:
           - B
         default: A
       model:
-        description: 'Startmodell (openrouter/free oder :free); Ersatz nur vor erster Aktion'
+        description: 'Festes kostenloses Modell (:free), kein Modellwechsel'
         type: string
         required: true
-        default: 'openrouter/free'
+        default: 'google/gemma-4-26b-a4b-it:free'
       consent:
         description: 'Sichtbare Testspieltexte an OpenRouter senden; Testprotokoll als GitHub-Artefakt speichern'
         type: boolean
@@ -45,7 +45,7 @@ jobs:
           M4_MODULE: ${{ inputs.module }}
           M4_AI_MODEL: ${{ inputs.model }}
         run: |
-          node -e 'if (!["A","B"].includes(process.env.M4_MODULE) || !(process.env.M4_AI_MODEL==="openrouter/free"||/^[A-Za-z0-9._/-]+:free$/.test(process.env.M4_AI_MODEL)) || process.env.M4_AI_MODEL.length>160) process.exit(1)'
+          node -e 'if (!["A","B"].includes(process.env.M4_MODULE) || !/^[A-Za-z0-9._/-]+:free$/.test(process.env.M4_AI_MODEL) || process.env.M4_AI_MODEL.length>160) process.exit(1)'
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}

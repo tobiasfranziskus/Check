@@ -1,0 +1,88 @@
+name: M4-U4 KI-Blindtest (mobil)
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: 'Pilotmodul A oder B'
+        type: choice
+        options:
+          - A
+          - B
+        default: A
+      model:
+        description: 'Exakter OpenRouter-Modellname mit :free'
+        type: string
+        required: true
+      consent:
+        description: 'Sichtbare Testspieltexte an OpenRouter senden; Testprotokoll als GitHub-Artefakt speichern'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: m4-u4-live-pilot
+  cancel-in-progress: false
+jobs:
+  pilot:
+    if: github.ref == 'refs/heads/main' && inputs.consent == true
+    environment: m4-blindtest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Validate pilot and free model (no secret)
+        env:
+          M4_MODULE: ${{ inputs.module }}
+          M4_AI_MODEL: ${{ inputs.model }}
+        run: |
+          node -e 'if (!["A","B"].includes(process.env.M4_MODULE) || !/^[A-Za-z0-9._/-]+:free$/.test(process.env.M4_AI_MODEL) || process.env.M4_AI_MODEL.length>160) process.exit(1)'
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser without model credentials
+        run: |
+          npm install --prefix "$RUNNER_TEMP/m4-ui" playwright@1.51.1
+          "$RUNNER_TEMP/m4-ui/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Run independent model pilot
+        env:
+          M4_MODULE: ${{ inputs.module }}
+          M4_AI_MODEL: ${{ inputs.model }}
+          M4_AI_PROVIDER: openrouter
+          M4_ALLOW_REMOTE: '1'
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          M4_PRODUCT_SHA: ${{ github.sha }}
+          TMPDIR: ${{ runner.temp }}/m4-live
+        run: |
+          mkdir -p "$TMPDIR"
+          if [ -z "$OPENROUTER_API_KEY" ]; then
+            echo 'Fehlendes Environment-Secret OPENROUTER_API_KEY.' >&2
+            exit 1
+          fi
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/m4-ui/node_modules/playwright"
+          node scripts/m4-u4-model-runner.cjs "$M4_MODULE" . > "$TMPDIR/result.json"
+      - name: Summarize transport status, not UX verdict
+        if: always()
+        env:
+          TMPDIR: ${{ runner.temp }}/m4-live
+        run: |
+          node -e '
+            const fs=require("node:fs"),path=require("node:path");
+            let r; try {r=JSON.parse(fs.readFileSync(path.join(process.env.TMPDIR,"result.json"),"utf8"));} catch {r={reason:"INFRASTRUCTURE"};}
+            const reason=["INFRASTRUCTURE","MODEL_STOP","LIMIT"].includes(r.reason)?r.reason:"INFRASTRUCTURE";
+            const n=Number.isInteger(r.actions)&&r.actions>=0&&r.actions<=12?r.actions:"unbekannt";
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,"## M4-U4 Pilot\n\nTransportstatus: "+reason+"\n\nAktionen: "+n+"\n\nSpielabnahme: UNREVIEWED. Evidenz separat bewerten.\n");
+            if(reason==="INFRASTRUCTURE") process.exitCode=1;
+          '
+      - name: Upload isolated test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m4-u4-pilot-${{ inputs.module }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/m4-live/result.json
+            ${{ runner.temp }}/m4-live/m4-u4-model-*/evidence.jsonl
+          retention-days: 7
+          if-no-files-found: warn

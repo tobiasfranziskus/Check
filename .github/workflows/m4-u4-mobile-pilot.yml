@@ -10,10 +10,10 @@ on:
           - B
         default: A
       model:
-        description: 'openrouter/free oder exakter Modellname mit :free'
+        description: 'Festes kostenloses Modell (:free), kein Modellwechsel'
         type: string
         required: true
-        default: 'openrouter/free'
+        default: 'google/gemma-4-26b-a4b-it:free'
       consent:
         description: 'Sichtbare Testspieltexte an OpenRouter senden; Testprotokoll als GitHub-Artefakt speichern'
         type: boolean
@@ -45,7 +45,7 @@ jobs:
           M4_MODULE: ${{ inputs.module }}
           M4_AI_MODEL: ${{ inputs.model }}
         run: |
-          node -e 'if (!["A","B"].includes(process.env.M4_MODULE) || !(process.env.M4_AI_MODEL==="openrouter/free"||/^[A-Za-z0-9._/-]+:free$/.test(process.env.M4_AI_MODEL)) || process.env.M4_AI_MODEL.length>160) process.exit(1)'
+          node -e 'if (!["A","B"].includes(process.env.M4_MODULE) || !/^[A-Za-z0-9._/-]+:free$/.test(process.env.M4_AI_MODEL) || process.env.M4_AI_MODEL.length>160) process.exit(1)'
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
@@ -84,7 +84,11 @@ jobs:
             let r; try {r=JSON.parse(fs.readFileSync(path.join(process.env.TMPDIR,"result.json"),"utf8"));} catch {r={reason:"INFRASTRUCTURE"};}
             const reason=["INFRASTRUCTURE","MODEL_STOP","LIMIT"].includes(r.reason)?r.reason:"INFRASTRUCTURE";
             const n=Number.isInteger(r.actions)&&r.actions>=0&&r.actions<=12?r.actions:"unbekannt";
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,"## M4-U4 Pilot\n\nTransportstatus: "+reason+"\n\nAktionen: "+n+"\n\nSpielabnahme: UNREVIEWED. Evidenz separat bewerten.\n");
+            const allowed=["Invalid model decision format","Invalid model JSON","Model output truncated","Model output empty","Unverified free model identity","Model identity mismatch","Model response too large","Empty model response","Invalid provider JSON","Model transport or response failed","Model timeout","Browser observation failed","Browser action failed"];
+            const detail=reason==="INFRASTRUCTURE"&&(allowed.includes(r.detail)||/^Model HTTP [0-9]{3}$/.test(r.detail))?r.detail:reason==="INFRASTRUCTURE"?"Keine sichere Detaildiagnose verfügbar.":"-";
+            const model=typeof r.model==="string"&&r.model.length<=160&&/^[A-Za-z0-9._/-]+:free$/.test(r.model)?r.model:"Noch nicht festgelegt";
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,"## M4-U4 Pilot\n\nTransportstatus: "+reason+"\n\nDiagnose: "+detail+"\n\nFestgelegtes Modell: "+model+"\n\nAktionen: "+n+"\n\nSpielabnahme: UNREVIEWED. Evidenz separat bewerten.\n");
+            if(reason==="INFRASTRUCTURE") console.error("M4-U4: "+detail);
             if(reason==="INFRASTRUCTURE") process.exitCode=1;
           '
       - name: Upload isolated test evidence

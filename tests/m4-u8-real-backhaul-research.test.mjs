@@ -88,6 +88,38 @@ for(const carrier of ['transport','house'])test('U7/U8 research: real '+carrier+
  const nadirBefore=s.owners.st_nadir.cash;
  doCmd({type:'industrialOreOffer',owner:'st_nadir',miner:npc,frachter:ship});
  const offered=w.save(s);
+ // Deliberate boundary fixtures on disposable copies, not real-world wear evidence.
+ // The original live scenario remains unchanged.
+ const setRest=(copy,id,rest)=>{
+  const sh=copy.ships[id], rate=w.daten.verschleiss.milliJeMinute[sh.klasse];
+  copy.kanon.verschleiss[id]=Math.ceil(w.rules.economy.waren[sh.klasse].basis*1000/rate)-rest;
+  assert.equal(w.restAktivminuten(copy,id),rest);
+ };
+ const minOre=Math.ceil(w.rules.w3.fracht/w.rules.economy.miningRate);
+ const minFreight=2*w.kern.route(w.rules.world,'aldera','nadir').zeit;
+ for(const [id,minimum] of [[npc,minOre],[ship,minFreight]]){
+  const copy=w.load(offered);
+  w.politikSetzen(copy,{stilllegung:true});
+  setRest(copy,id,minimum-1);
+  for(const c of [
+   {type:'industrialOreAcceptMine',owner:'npc3'},
+   {type:'industrialOreAcceptFreight',owner:carrier},
+   {type:'industrialOreAcceptYard',owner:'werft_extern'}
+  ])assert.equal(w.execute(copy,c).ok,true);
+  const before=w.save(copy);
+  const rejected=w.execute(copy,{type:'industrialOreCommit',owner:'st_nadir'});
+  assert.equal(rejected.ok,false);
+  assert.match(rejected.reason,/Restaktivminuten/);
+  assert.equal(w.save(copy),before,'commit refusal before escrow');
+  const cancel=w.execute(copy,{type:'industrialOreCancel',owner:'st_nadir'});
+  assert.equal(cancel.ok,true);
+  const after=w.save(copy);
+  const quote=w.execute(copy,{type:'industrialOreOffer',owner:'st_nadir',miner:npc,frachter:ship});
+  assert.equal(quote.ok,false);
+  assert.match(quote.reason,/Restaktivminuten/);
+  assert.equal(w.save(copy),after,'offer refusal is atomic');
+ }
+ assert.equal(w.save(s),offered,'original experiment untouched');
  assert.equal(w.execute(s,{type:'industrialOreAcceptFreight',owner:otherCarrier}).ok,false);
  assert.equal(w.save(s),offered,'wrong carrier may not sign');
  for(const cmd of [

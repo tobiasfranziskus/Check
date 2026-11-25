@@ -12,3 +12,7 @@ Bestehende 9 Auditfälle einschließlich Originalhash; beide tatsächlichen Kauf
 
 ## Grenzen
 Der interne Historienrollback aus #617 und der Reparaturblocker #616 bleiben offen. Geld wird nur gespart, nicht verdient. Vor Spielerfreigabe braucht es eine glaubwürdige beobachtbare Informationsquelle, sichere Schadenshistorie und eine unabhängig integrierte Save-/Wirtschafts-/Browserprüfung. Keine Beute, kein Schwarzmarkt, keine kostenlose Hülle. Zentrale Roadmap und Projektstatus erst im abgestimmten Integrations-/P0-PR nachführen; kein Konflikt mit M4-U4.
+
+
+## CI-Auswertung 25.11.2026
+Head f6e97734: [gezielter Audit](https://github.com/tobiasfranziskus/Check/actions/runs/45628519578/job/139255093301) 10/10. Beide echten F4-Fahrpläne (Haus-first, NPC-first) zweimal exakt reproduziert. Beide drei Schüsse, 48/96 Hülle, 7 ISK tatsächlicher Pilotlohn, 233 ISK verbleibende Piratenkasse, 0 gebundene Reserve nach Rückkehr. Hashes 66c48349f41288f1 / 0e4d83cdec5cde41; alter Kampfhash aa301a2025e848cb bleibt erhalten. Kein F4 in 7/90 Tagen: 240 ISK Kasse, 0 Lohn, keine Schüsse, Hash a978eb4a8020f82d / 5cca7e6ca9a3a953; Weltgeld 33240 ISK, Mint/Burn 0. Exakt ausgegebene Saves und Profiltrennung geprüft. Kein Nachweis dauerhafter Erlöse oder öffentlicher Integration. Nächster Vergleich: rein lokaler Kontakt ohne privilegierte Vertragsprognose.

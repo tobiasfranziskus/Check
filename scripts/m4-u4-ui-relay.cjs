@@ -32,7 +32,66 @@ function action(raw){
  if(op==='type'&&(typeof raw.text!=='string'||raw.text.length>300||/[\u0000-\u001f]/.test(raw.text)))throw Error('Invalid text');
  return raw;
 }
-async function session(root,out,{chromium,executablePath}={}){
+
+// Fixed, conservative viewport projection. It never serializes attributes, HTML, hidden
+// state, storage, source, accessible-only labels or offscreen nodes. Not a pixel OCR.
+function viewportText(){
+ const maxChars=1800, maxRows=32, words=[];
+ const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+ const range=document.createRange();
+ function visible(el){
+  for(let p=el;p;p=p.parentElement){
+   if(['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','TITLE','TEXTAREA','SELECT','OPTION'].includes(p.tagName))return false;
+   const c=getComputedStyle(p);
+   if(c.display==='none'||c.visibility!=='visible'||Number(c.opacity)<0.1||c.contentVisibility==='hidden'||c.clipPath!=='none'||c.filter!=='none')return false;
+   if(c.color==='transparent'||/^rgba\(.*,\s*0(?:\.0+)?\)$/.test(c.color))return false;
+   if(parseFloat(c.fontSize)<8)return false;
+  }
+  return true;
+ }
+ function onScreen(rect,el){
+  if(rect.width<1||rect.height<7||rect.left<0||rect.top<0||rect.right>innerWidth||rect.bottom>innerHeight)return false;
+  const y=(rect.top+rect.bottom)/2;
+  return [rect.left+Math.min(1,rect.width/2),(rect.left+rect.right)/2,rect.right-Math.min(1,rect.width/2)].every(x=>{
+   const hit=document.elementFromPoint(x,y);
+   return !!hit&&(hit===el||el.contains(hit));
+  });
+ }
+ let n,visited=0;
+ while((n=walker.nextNode())&&++visited<=4000&&words.length<800){
+  const el=n.parentElement;
+  if(!el||!visible(el))continue;
+  const text=n.nodeValue;
+  for(const match of text.matchAll(/\S+/gu)){
+   if(match[0].length>100)continue;
+   range.setStart(n,match.index);range.setEnd(n,match.index+match[0].length);
+   const rects=Array.from(range.getClientRects());
+   if(rects.length!==1||!onScreen(rects[0],el))continue;
+   const b=rects[0];
+   words.push({x:Math.round(b.left),y:Math.round((b.top+b.bottom)/2),right:Math.round(b.right),t:match[0]});
+   if(words.length>=800)break;
+  }
+ }
+ // Preserve reading order across rows and separate distant columns. The coordinates
+ // refer to visible words, not inferred game actions or hidden control identities.
+ words.sort((a,b)=>a.y-b.y||a.x-b.x);
+ const lines=[];
+ for(const w of words){
+  const last=lines[lines.length-1];
+  if(last&&Math.abs(last.y-w.y)<=4&&w.x>=last.right-2&&w.x-last.right<=28){
+   last.t+=' '+w.t;last.right=w.right;
+  }else lines.push({...w});
+ }
+ let result='',count=0;
+ for(const l of lines){
+  const row='('+l.x+','+l.y+') '+l.t.slice(0,140);
+  if(count>=maxRows||result.length+row.length+1>maxChars-24){result+='\n[Anzeige gekürzt]';break;}
+  result+=(result?'\n':'')+row;count++;
+ }
+ return result||'[Kein sichtbarer Text erkannt]';
+}
+
+async function session(root,out,{chromium,executablePath,textMode=false}={}){
  const browserType=chromium||require(process.env.PLAYWRIGHT_MODULE||'playwright').chromium;
  const server=serverFor(root);
  let browser,ctx;
@@ -58,9 +117,11 @@ async function session(root,out,{chromium,executablePath}={}){
   async function observe(){
    if(closed)throw Error('Session closed');
    if(nativeDialog)return {round:rounds,elapsedMs:elapsed(),done:true,error:'Native browser dialog unsupported; infrastructure blocked'};
-   const name='round-'+String(rounds).padStart(2,'0')+'.jpg';
-   await page.screenshot({path:path.join(out,name),type:'jpeg',quality:65,timeout:4000});
-   return {round:rounds,elapsedMs:elapsed(),remaining:Math.max(0,LIMIT-rounds),screenshot:name,width:WIDTH,height:HEIGHT,done:rounds>=LIMIT||elapsed()>=MS};
+   const obs={round:rounds,remaining:Math.max(0,LIMIT-rounds),width:WIDTH,height:HEIGHT};
+   if(textMode)obs.visibleText=await page.evaluate(viewportText);
+   else{const name='round-'+String(rounds).padStart(2,'0')+'.jpg';
+    await page.screenshot({path:path.join(out,name),type:'jpeg',quality:65,timeout:4000});obs.screenshot=name;}
+   return {...obs,elapsedMs:elapsed(),done:rounds>=LIMIT||elapsed()>=MS};
   }
   async function step(raw){
    const a=action(raw);
@@ -81,7 +142,7 @@ async function session(root,out,{chromium,executablePath}={}){
 }
 async function main(){
  const root=path.resolve(process.argv[2]||'.'),out=fs.mkdtempSync(path.join(os.tmpdir(),'blind-ui-'));
- const s=await session(root,out,{executablePath:process.env.CHROMIUM_PATH});
+ const s=await session(root,out,{executablePath:process.env.CHROMIUM_PATH,textMode:process.env.M4_UI_TEXT==='1'});
  const rl=readline.createInterface({input:process.stdin,terminal:false});
  const emit=x=>console.log(JSON.stringify({...x,...(x.screenshot?{screenshot:path.join(out,x.screenshot)}:{})}));
  const first=await s.observe();emit(first);

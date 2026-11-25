@@ -31,3 +31,31 @@ test('actual public root copy: fresh screenshot and bounded UI observation (not 
   const b=await s.step({op:'wait',ms:500});assert.equal(b.round,1);assert.equal(b.error,undefined);
  }finally{if(s)await s.close();fs.rmSync(out,{recursive:true,force:true});}
 });
+
+
+test('text mode: visible coordinates only, hidden and offscreen data omitted',{skip:!process.env.M4_UI_BROWSER},async()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'m4-text-'));
+ fs.writeFileSync(path.join(root,'index.html'),'<html><style>body{margin:0}button{width:200px;height:80px} .hidden{display:none}.off{position:absolute;top:2000px}.covered{position:absolute;top:150px;left:10px} .cover{position:absolute;top:140px;left:0;width:200px;height:60px;background:white;z-index:2}</style><button onclick="this.textContent=\'CHANGED\'" data-private="ATTR_SECRET">VISIBLE</button><p class="hidden">HIDDEN_SECRET</p><p style="opacity:0">OPACITY_SECRET</p><p class="off">OFFSCREEN_SECRET</p><p class="covered">COVERED_SECRET</p><div class="cover"></div><script>window.secret="SCRIPT_SECRET"</script></html>');
+ let s;
+ try{
+  s=await session(root,path.join(root,'out'),{textMode:true});
+  const a=await s.observe();
+  assert.match(a.visibleText,/\(\d+,\d+\) VISIBLE/);
+  assert.doesNotMatch(a.visibleText,/SECRET/);
+  assert.equal(a.screenshot,undefined);
+  assert.ok(a.visibleText.length<=1800);
+  const b=await s.step({op:'click',x:100,y:40});
+  assert.match(b.visibleText,/CHANGED/);
+  assert.doesNotMatch(b.visibleText,/VISIBLE|SECRET/);
+  assert.ok(b.visibleText.length<=1800);
+ }finally{if(s)await s.close();fs.rmSync(root,{recursive:true,force:true});}
+});
+test('actual root copy: bounded visible text observation (not blind play)',{skip:!process.env.M4_UI_BROWSER},async()=>{
+ const out=fs.mkdtempSync(path.join(os.tmpdir(),'m4-text-root-'));let s;
+ try{s=await session(path.resolve(__dirname,'..'),out,{textMode:true});
+  const a=await s.observe();assert.equal(typeof a.visibleText,'string');
+  assert.notEqual(a.visibleText,'[Kein sichtbarer Text erkannt]');
+  assert.ok(a.visibleText.length<=1800);
+  assert.equal(a.screenshot,undefined);
+ }finally{if(s)await s.close();fs.rmSync(out,{recursive:true,force:true});}
+});

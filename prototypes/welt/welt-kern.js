@@ -101,7 +101,11 @@ const PIR_TOR = Object.freeze({x:96000,y:0,kurs:128,minuten:4});
 function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false, piraten = false) {
   const pirAnflug = piraten >= 2;
   const pirAbfang = piraten >= 3;
-  const pirKampf = piraten === 4;
+  // Profile 5 is a Node-only research counterfactual. Existing profiles
+  // retain their exact state shape, RNG sequence and patrol rules.
+  if (piraten === 5 && !NODE) throw Error('PIR-3c: nur Node-Forschungsprofil');
+  const pirVerkehr = piraten === 5;
+  const pirKampf = piraten === 4 || pirVerkehr;
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
@@ -654,7 +658,17 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       if (b.lage === 'angedockt') {
         p.phase = s.owners[sh.owner].cash < reserve ? 'keinKapital'
           : m_core_anlage.verbraucht(s, sh) ? 'verschlissen' : 'bereit';
-        if (p.phase === 'bereit' && s.tick >= p.bis && befehl('shipUndock')) p.phase = 'auslaufen';
+        // Only the existing authenticated, fully financed F4 inbound contract
+        // can trigger this experiment. Seven minutes is a research lead time,
+        // not a new physical sensor, ETA guarantee or public balancing rule.
+        const vertrag = pirVerkehr ? nadirVertrag(s) : null;
+        const rest = vertrag ? vertrag.ankunft - s.tick : 0;
+        const gelegenheit = !pirVerkehr || (vertrag && rest >= PIR_TOR.minuten
+          && rest <= PIR_TOR.minuten + 3
+          && !m_core_anlage.verbraucht(s,vertrag)
+          && huellenzustand(s,vertrag.id) > PIR_WAFFE.rueckzug);
+        if (p.phase === 'bereit' && s.tick >= p.bis && gelegenheit
+          && befehl('shipUndock')) p.phase = 'auslaufen';
         return;
       }
       if (b.lage !== 'frei') return;
@@ -2997,6 +3011,8 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   erstellenJ4b:(kapital={})=>erstellen(kapital,true,true,true,true),
   erstellenJ4c:(kapital={})=>erstellen(kapital,true,true,true,true,true),
   erstellenPirKampf:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,4),
+  ...(NODE ? {erstellenPirVerkehr:()=>erstellen({carrierCash:2000,buyerCash:4000},
+    true,true,true,true,true,false,false,false,5)} : {}),
   erstellenPirAbfang:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,3),
   erstellenPirAnflug:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,2),
   erstellenPiraten:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,true),

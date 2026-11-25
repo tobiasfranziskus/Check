@@ -1,0 +1,25 @@
+name: PIR-4a / W6 – 365 und 730 Tage
+on:
+  pull_request:
+    paths:
+      - 'tests/pir-4a-silizium-langzeit.test.mjs'
+      - 'tests/helpers/pir-4a-geology.mjs'
+      - '.github/workflows/pir-4a-silizium-langzeit.yml'
+      - 'prototypes/welt/**'
+  workflow_dispatch:
+jobs:
+  long-horizon:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        experiment: [finite, monthly, reserved-demand]
+    env:
+      PIR_LONG_CASE: ${{ matrix.experiment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/pir-4a-silizium-langzeit.test.mjs

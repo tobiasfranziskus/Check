@@ -1,0 +1,11 @@
+# PIR-3g – finanzierte Reparatur am realen Werftdock [DRAFT / FORSCHUNG]
+
+Basis #633, 879b3bd9. Der [PIR-3f-Audit](https://github.com/tobiasfranziskus/Check/actions/runs/45663719800) auf d6985e0c meldet 13/13: Hülle 72/96, 60 ISK Fahrt, Nadir Minute2435, 5 Material, 3112 ISK Hauskasse, Quote 208 ISK; Hash 8abbd7e12dddbd18, Weltgeld 33240, Mint/Burn 0. Der vollständige CI-Lauf war bei Arbeitsbeginn noch nicht abgeschlossen.
+
+## Implementierter Forschungsumfang
+Separates Node-Profil8 (J8 startenPiraten(true,'reparatur')), keine Änderung der öffentlichen Karriere oder Migration. Nur eine tatsächlich beschädigte eigene W5-Hülle mit vollständig abgeschlossenem F4 und bezahlter Werftreise. Originalquote wiederverwendet, kein Preis vom Aufrufer. Provisorischer Direktkostenvertrag: Eigentümer bezahlt 2 physische Materialeinheiten (200 ISK an Nadir), bindet alle 8 Lohn-ISK; Material wird nach W5-Vorbild am Start verbraucht. Jede echte Wirtschaftsminute bezahlt den bestehenden Werftarbeiter. Die Hülle erreicht 96 erst nach vollständigem Lohnabschluss. Keine Abschreibungsrücksetzung und kein neues Schiff. Kein zusätzlicher Werftaufschlag: Forschungsannahme, kein freigegebenes Geschäftsmodell.
+
+Separates Reparaturjournal, unveränderte Kampfhistorie und F4-/W5ac-/Fährbelege. W4/W5-Materialgleichungen umfassen den separaten Verbrauch nur in Profil8. W5-, K2-, J4- und K7-Baustart bei aktiver Reparatur gesperrt. Nach Abschluss bleibt die Hülle am Dock gebunden; Rückreise und erneuter Einsatz sind nächste getrennte Forschungsaufgabe. Keine Reparatur bei aktivem F4, fremder Hülle oder nicht finanzierter Quote. Same-session-Importgrenze bleibt bestehen; konsistent manipulierte Historiensätze sind weiterhin kein kryptographisch gesicherter Nachweis.
+
+## Abnahme
+Neuer gezielter Test mit Original-NPC-first-Aufbau, tatsächlichem Schaden, bezahlter Werftfahrt, atomaren Ablehnungen, Konkurrenzaufträgen, 0/4/7/8 Arbeitsminuten, Geld-/Waren-/Hüllen-/Originaljournal-Audit, Save-Reload in Reparatur und doppeltem Replay. Negative Import-/Auditproben. Alter Profil7-Test und historische Referenzen nicht geändert. CI noch offen, keine lokale Ausführung (git-Netzzugang/DNS fehlt), kein Merge/Deploy.

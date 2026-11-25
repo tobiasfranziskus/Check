@@ -103,9 +103,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   const pirAbfang = piraten >= 3;
   // Profile 5 is a Node-only research counterfactual. Existing profiles
   // retain their exact state shape, RNG sequence and patrol rules.
-  if ([5,6,7].includes(piraten) && !NODE) throw Error('PIR-3c/3d: nur Node-Forschungsprofil');
+  if ([5,6,7,8].includes(piraten) && !NODE) throw Error('PIR-3c/3d: nur Node-Forschungsprofil');
   const pirVerkehr = piraten === 5;
-  const pirWerft = piraten === 7;
+  const pirReparatur = piraten === 8;
+  const pirWerft = piraten === 7 || pirReparatur;
   const pirLokal = piraten === 6 || pirWerft;
   const pirKampf = piraten === 4 || pirVerkehr || pirLokal;
   const { KANON } = m_data_kanon;
@@ -147,6 +148,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   const kaufpreis = (klasse) => rules.economy.waren[klasse].basis;
   const startCash = (id) => rules.owners.find((o) => o.id === id)?.cash ?? 0;
   const ladungSumme = (sh) => Object.values(sh.ladung).reduce((n, x) => n + x, 0);
+  const reparaturAktiv = s => pirReparatur && !!s.kanon.pirReparatur && s.kanon.pirReparatur.bezahlt < s.kanon.pirReparatur.minuten;
 
   // ---------------------------------------------------------------- m_core_buch
   // Einziger Weg für K1-Geld: gepaarter Transfer vorhandener ISK mit benannter Art.
@@ -647,6 +649,14 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         if (e.schaden) huellen[e.ziel] = e.huelle;
         vorher = e.sekunde;
       }
+      // Profile8: the original hit journal is immutable; a completed, separately
+      // audited repair is the sole permitted restoration of this bound hull.
+      const r=s.kanon.pirReparatur;
+      if(pirReparatur && r){
+        if(huellen[r.schiff]!==r.huelleVor
+          || k.ereignisse.some(e=>e.ziel===r.schiff && e.sekunde>r.start*N))return false;
+        if(r.bezahlt===r.minuten)huellen[r.schiff]=PIR_WAFFE.huelle;
+      }
       return Object.keys(huellen).length === Object.keys(k.huellen).length
         && Object.entries(huellen).every(([id,hp])=>k.huellen[id]===hp);
     }
@@ -935,7 +945,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         || !['house', 'npc3'].includes(cmd.besteller))
         return 'K2: Nur Nadir-Werft und bekannte Eigentümer';
       const b = s.kanon.minerWerft;
-      if (s.w5.auftrag || b?.auftrag || b?.wartetAuf || b?.transport
+      if (reparaturAktiv(s) || s.w5.auftrag || b?.auftrag || b?.wartetAuf || b?.transport
         || (s.stations[C.station].lager.miner || 0) > 0) return 'K2: Werft/Lieferung belegt';
       if ((s.stations[C.station].lager.material || 0) < C.material)
         return 'K2: reales W4-Material fehlt';
@@ -1962,6 +1972,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       const k = state.kanon, fehler = [];
       m_core_firmenpolitik.audit(state, fehler);
       if (!werftreiseAudit(state)) fehler.push('PIR-3f: Original-Werftreise-/Lohnbeleg');
+      if (!reparaturAudit(state)) fehler.push('PIR-3g: Reparatur-/Material-/Lohnbeleg');
       if (!m_core_piraten.audit(state)) fehler.push('PIR-1: Szenariobestand, Eigentum oder Fluglohn');
       if(k.materialSupplyEnabled!==undefined
         &&(!p8dFracht||typeof k.materialSupplyEnabled!=='boolean'))
@@ -2137,6 +2148,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (opt.politik) politikSetzen(state, opt.politik);
     if (piraten) m_core_piraten.start(state);
     if (pirWerft) state.kanon.pirWerft=null;
+    if (pirReparatur) state.kanon.pirReparatur=null;
     m_core_flugplan.koerperSync(state);
     // Die Kern-Initialisierung beauftragt den NPC-Miner bereits mit Erz: er erhält denselben
     // Pendelauftrag wie jedes Spielerschiff und muss ab jetzt wirklich zum Feld fliegen.
@@ -2277,7 +2289,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           &&s.w3.auftrag.industrieMiner===i.miner&&i.erzAngenommen);
       if(cmd.owner!=='werft_extern'||!echtGeliefert||!i.signWerft||i.werftVerwendet)
         return verwerfen('nur signierte Werft darf einmal nach echter Nadir-Ankunft bauen');
-      if(s.owners.k7_werft_treuhand?.cash!==K7_PREIS.werft||s.w5.auftrag
+      if(reparaturAktiv(s)||s.owners.k7_werft_treuhand?.cash!==K7_PREIS.werft||s.w5.auftrag
         ||s.kanon.minerWerft?.auftrag
         ||(s.stations[rules.w5.station].lager.material||0)<rules.w5.material
         ||(s.stations[rules.w5.station].lager.frachter||0)
@@ -2522,8 +2534,18 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (kasse < kosten) blocker.push('Eigenes Geld reicht nicht');
     if (s.w5.auftrag || s.kanon.minerWerft?.auftrag || s.kanon.jaeger?.auftrag)
       blocker.push('Werftarbeit bereits gebunden');
-    blocker.push('Reparaturauftrag noch nicht freigegeben');
-    return {ok:false,schiff:sh.id,owner:sh.owner,station:cmd.station,
+    if(!pirReparatur)blocker.push('Reparaturauftrag noch nicht freigegeben');
+    else {
+      const f=s.kanon.pirWerft;
+      if(!f||f.schiff!==sh.id||f.bezahlt!==f.dauer||f.ende>s.tick)
+        blocker.push('Bezahlte Werftreise fehlt');
+      if(s.kanon.pirReparatur!==null)blocker.push('Reparatur bereits beauftragt');
+      if(s.flug.schritt!==0||sh.auftrag!=='halten'||ladungSumme(sh)!==0
+        ||m_core_anlage.stillgelegt(s,sh)||s.kanon.flugdienst[sh.id]
+        ||s.queue.some(x=>x.schiff===sh.id||['stationBuildShip','stationBuildMiner','stationBuildFighter','industrialOreBuildShip'].includes(x.type)))
+        blocker.push('Keine freie, verwendbare Hülle oder Werftminute');
+    }
+    return {ok:blocker.length===0,schiff:sh.id,owner:sh.owner,station:cmd.station,
       werft:c.station,huelle,schaden,material,minuten,materialKosten,arbeitKosten,
       kosten,bestand,kasse,angedockt,physischAngedockt,frachtBindung,werftVorhanden,blocker};
   }
@@ -2603,7 +2625,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       ||m_core_buch.summe(s,'pir-werftflug-reserve',(v,n)=>v==='house'&&n===werftKonto)!==reserve
       ||m_core_buch.summe(s,'pir-werftflug-lohn',(v,n)=>v===werftKonto&&n==='pilot_house')!==paid)return false;
     const sh=s.ships[a.schiff],b=werftBeleg(s,sh);
-    if(!b||a.f4End!==b.end||b.end>a.start||a.hp!==m_core_piraten.huellenzustand(s,sh.id)
+    const r=pirReparatur?s.kanon.pirReparatur:null;
+    const hp=r&&r.schiff===a.schiff?r.huelleVor:m_core_piraten.huellenzustand(s,sh.id);
+    if(!b||a.f4End!==b.end||b.end>a.start||a.hp!==hp
       ||a.hp>=PIR_WAFFE.huelle||ladungSumme(sh)!==0||sh.auftrag!=='halten'
       ||!s.kanon.piraten.kampf.ereignisse.some(e=>e.ziel===sh.id&&e.schaden>0&&e.sekunde<=b.end*N)
       ||s.w5n.frachtauftrag?.schiff===sh.id||s.w3.auftrag?.schiff===sh.id
@@ -2615,10 +2639,76 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       :sh.system==='nadir'&&sh.phase==='dock'&&sh.ankunft===a.ende&&FLUG.angedocktAn(sh,'st_nadir');
   }
 
+  // PIR-3g: one direct-cost repair, only on the completed research ferry.
+  // Material is purchased and consumed at start like original W5. Work is
+  // fully prepaid and credited to the original Nadir worker each minute.
+  const reparaturKonto='k1_pir_reparatur';
+  function reparaturStart(s,cmd) {
+    const fail=reason=>({ok:false,type:cmd?.type,reason});
+    if(!pirReparatur||!cmd||Object.keys(cmd).sort().join()!=='owner,schiff,station,type'
+      ||cmd.owner!=='house'||cmd.type!=='shipRepair')return fail('PIR-3g: Forschungsauftrag ungültig');
+    const q=reparaturAngebot(s,{owner:cmd.owner,schiff:cmd.schiff,station:cmd.station});
+    if(!q.ok||s.owners[reparaturKonto])return fail(q.blocker?.join('; ')||q.grund||'Reparatur nicht frei');
+    const c=rules.w5;
+    s.owners[reparaturKonto]={id:reparaturKonto,kind:'k1-reserve',cash:0};
+    m_core_buch.transfer(s,q.owner,c.station,q.materialKosten,'pir-reparatur-material');
+    m_core_buch.transfer(s,q.owner,reparaturKonto,q.arbeitKosten,'pir-reparatur-reserve');
+    s.stations[c.station].lager.material-=q.material;
+    s.ledger.material.consumed+=q.material;
+    s.kanon.pirReparatur={schiff:q.schiff,owner:q.owner,station:c.station,
+      start:s.tick,ende:s.tick+q.minuten,minuten:q.minuten,bezahlt:0,
+      huelleVor:q.huelle,materialVerbraucht:q.material,
+      materialKosten:q.materialKosten,arbeitKosten:q.arbeitKosten};
+    return {ok:true,type:cmd.type,...q};
+  }
+  function reparaturMinute(s) {
+    if(!reparaturAktiv(s))return;
+    const r=s.kanon.pirReparatur,c=rules.w5,sh=s.ships[r.schiff];
+    if(s.tick!==r.start+r.bezahlt+1||!sh||sh.owner!==r.owner
+      ||sh.phase!=='dock'||!FLUG.angedocktAn(sh,c.station)
+      ||s.w5.auftrag||s.kanon.minerWerft?.auftrag||s.kanon.jaeger?.auftrag)
+      throw Error('PIR-3g: Reparaturminute ohne freie Werft oder Hülle');
+    m_core_buch.transfer(s,reparaturKonto,c.arbeiter,c.lohnJeMinute,'pir-reparatur-lohn');
+    r.bezahlt++;
+    if(r.bezahlt===r.minuten)s.kanon.piraten.kampf.huellen[r.schiff]=PIR_WAFFE.huelle;
+  }
+  function reparaturAudit(s) {
+    const r=s.kanon.pirReparatur,k=s.owners[reparaturKonto],c=rules.w5;
+    const mat=m_core_buch.summe(s,'pir-reparatur-material');
+    const reserve=m_core_buch.summe(s,'pir-reparatur-reserve');
+    const paid=m_core_buch.summe(s,'pir-reparatur-lohn');
+    if(!pirReparatur)return r===undefined&&!k&&mat===0&&reserve===0&&paid===0;
+    if(r===null)return !k&&mat===0&&reserve===0&&paid===0;
+    if(!r||Object.keys(r).sort().join()!=='arbeitKosten,bezahlt,ende,huelleVor,materialKosten,materialVerbraucht,minuten,owner,schiff,start,station'
+      ||r.owner!=='house'||r.station!==c.station||!ganz(r.start)||!ganz(r.ende)
+      ||!ganz(r.bezahlt)||!ganz(r.huelleVor)||r.huelleVor<=0||r.huelleVor>=PIR_WAFFE.huelle)
+      return false;
+    const f=s.kanon.pirWerft,sh=s.ships[r.schiff];
+    const schaden=PIR_WAFFE.huelle-r.huelleVor;
+    const material=Math.ceil(c.material*schaden/PIR_WAFFE.huelle);
+    const minuten=Math.ceil(c.dauer*schaden/PIR_WAFFE.huelle);
+    if(!f||f.schiff!==r.schiff||f.hp!==r.huelleVor||f.bezahlt!==f.dauer
+      ||f.ende>r.start||r.start>s.tick||!sh||sh.owner!==r.owner
+      ||sh.phase!=='dock'||!FLUG.angedocktAn(sh,c.station)
+      ||r.materialVerbraucht!==material||r.minuten!==minuten
+      ||r.materialKosten!==material*c.materialPreis||r.arbeitKosten!==minuten*c.lohnJeMinute
+      ||r.ende!==r.start+minuten||r.bezahlt!==Math.min(minuten,s.tick-r.start)
+      ||!k||k.id!==reparaturKonto||k.kind!=='k1-reserve'
+      ||mat!==r.materialKosten||reserve!==r.arbeitKosten||paid!==r.bezahlt*c.lohnJeMinute
+      ||k.cash!==reserve-paid
+      ||m_core_buch.summe(s,'pir-reparatur-material',(v,n)=>v===r.owner&&n===c.station)!==mat
+      ||m_core_buch.summe(s,'pir-reparatur-reserve',(v,n)=>v===r.owner&&n===reparaturKonto)!==reserve
+      ||m_core_buch.summe(s,'pir-reparatur-lohn',(v,n)=>v===reparaturKonto&&n===c.arbeiter)!==paid
+      ||m_core_piraten.huellenzustand(s,r.schiff)!==(r.bezahlt===minuten?PIR_WAFFE.huelle:r.huelleVor))
+      return false;
+    return !reparaturAktiv(s)||!(s.w5.auftrag||s.kanon.minerWerft?.auftrag||s.kanon.jaeger?.auftrag);
+  }
+
   function execute(state, cmd) {
     pruefeForm(state);
     const type = cmd && cmd.type;
     if (type === 'shipRepairFerry') return werftreiseStart(state,cmd);
+    if (pirReparatur && type==='shipRepair') return reparaturStart(state,cmd);
     if (pirWerft && state.kanon.pirWerft && cmd?.schiff === state.kanon.pirWerft.schiff)
       return {ok:false,type,reason:'PIR-3f: Werftreise bindet diese Hülle'};
     if (pirKampf && type === 'shipRepair') return {ok:false,type,reason:'PIR-3b: Reparaturauftrag noch nicht freigegeben'};
@@ -2707,6 +2797,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if(silizium)m_core_silizium.minute(state);
     if(p8cDravos||p8dFracht)m_core_p8c_reise.minute(state);
     if(pirWerft)werftreiseMinute(state);
+    if(pirReparatur)reparaturMinute(state);
     if(p8dFracht)m_core_p8d.minute(state);
     if(bauteile)m_core_bauteile.minute(state);
     if(jaeger)m_core_jaeger.minute(state);
@@ -3170,7 +3261,9 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
     erstellenPirLokal:()=>erstellen({carrierCash:2000,buyerCash:4000},
       true,true,true,true,true,false,false,false,6),
     erstellenPirWerft:()=>erstellen({carrierCash:2000,buyerCash:4000},
-      true,true,true,true,true,false,false,false,7)} : {}),
+      true,true,true,true,true,false,false,false,7),
+    erstellenPirReparatur:()=>erstellen({carrierCash:2000,buyerCash:4000},
+      true,true,true,true,true,false,false,false,8)} : {}),
   erstellenPirAbfang:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,3),
   erstellenPirAnflug:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,2),
   erstellenPiraten:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,true),

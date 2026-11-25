@@ -1,0 +1,36 @@
+name: M4-U4 UI relay
+on:
+  pull_request:
+    paths:
+      - 'scripts/m4-u4-ui-relay.cjs'
+      - 'scripts/m4-u4-model-runner.cjs'
+      - 'tests/m4-u4-model-runner.test.cjs'
+      - 'tests/m4-u4-ui-relay.test.cjs'
+      - '.github/workflows/m4-u4-ui-relay.yml'
+      - '.github/workflows/m4-u4-mobile-pilot.yml'
+      - 'index.html'
+      - 'prototypes/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  relay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install development-only browser
+        run: |
+          npm install --prefix "$RUNNER_TEMP/m4-ui" playwright@1.51.1
+          "$RUNNER_TEMP/m4-ui/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Relay protocol and browser smoke
+        env:
+          M4_UI_BROWSER: '1'
+        run: |
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/m4-ui/node_modules/playwright"
+          node --test tests/m4-u4-ui-relay.test.cjs tests/m4-u4-model-runner.test.cjs
+      - name: Existing Node regression
+        run: node --test tests/*.test.mjs

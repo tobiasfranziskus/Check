@@ -1,0 +1,67 @@
+# M4-U4 – UI-Relay und Pilotläufe A/B [DRAFT 25.11.2026]
+
+Entwicklungswerkzeug auf Basis der [modularen Abnahme](M4_U4_KI_BLINDABNAHME.md), gestapelt auf #622. Kein Spielcode, keine Regel-/Save-Änderung. Anders als die vorhandenen Playwright-Funktionstests besitzt der Relay keine spielbezogenen Selektoren, Lösungsschritte oder Zugriff auf den Core. Technische Prüfung und Blindtester bleiben getrennt.
+
+## Lokaler Start (Linux/macOS, Node22, im Checkout)
+
+```sh
+npm install --prefix /tmp/aphros-ui playwright@1.51.1
+/tmp/aphros-ui/node_modules/.bin/playwright install chromium
+export PLAYWRIGHT_MODULE=/tmp/aphros-ui/node_modules/playwright
+git rev-parse HEAD
+node scripts/m4-u4-ui-relay.cjs .
+```
+
+Optional CHROMIUM_PATH für ein vorhandenes kompatibles Chromium. Technische Testleitung vergleicht den bereitgestellten Produktbaum mit dem nachgewiesenen Pages-Stand. Lokaler HTTP-Server auf zufälligem Loopback-Port, frischer nichtpersistenter Browserkontext, keine Nutzerprofile. Nur statische Root-/Prototypdateien, externe Requests blockiert, keine DevTools-/JavaScript-/Netzwerkbefehle im Protokoll. Kein Zugriff auf Live- oder NAS-Saves. Der Screenshot wird lokal gespeichert; technische Testleitung übermittelt ausschließlich das Bild und das neutrale Ziel an den unabhängigen Tester. Keine Repo-Zugriffsrechte für den Tester. CLI ist keine Sicherheits-Sandbox für einen beliebig privilegierten lokalen Agenten.
+
+Eine JSON-Zeile je Aktion auf stdin; Ausgabe jeweils ein JSON-Objekt mit Bildpfad, Runde und Zeit. 1180×820, JPEG, max. zwölf Aktionen und fünf Minuten, begrenzte Wartezeiten; bei Dialog-/Werkzeugfehler als Infrastrukturblockade abbrechen. Native Browserdialoge werden nicht bestätigt; Unterstützung hierfür und für Dateiimport/-export ist noch offen. Normale HTML-Dialoge sind sichtbar und anklickbar.
+
+```json
+{"op":"click","x":500,"y":300}
+{"op":"type","text":"Beispiel"}
+{"op":"scroll","x":900,"y":700,"dy":500}
+{"op":"wait","ms":500}
+{"op":"reload"}
+{"op":"stop"}
+```
+
+Koordinaten nur Beispiele, keine Spielanleitung. Frischer Chat mit Bildfähigkeit, keine Projektkonversation, kein Quellcode. Bei manuellem Relay entscheidet die KI, Testleitung übermittelt nur Bild und Aktion unverändert. Ein automatischer Text-Modellanschluss für lokales Ollama und ausdrücklich freigegebene OpenRouter-Free-Modelle ist implementiert (siehe unten), aber noch nicht mit einem realen Modell getestet. ChatGPT-Abonnement ist kein API-Zugang. Text-only-Modelle können alternativ mit `M4_UI_TEXT=1 node scripts/m4-u4-ui-relay.cjs .` bedient werden. Pro Runde maximal 1.800 Zeichen und 32 Zeilen mit sichtbaren Textfragmenten und (x,y)-Koordinaten. Die KI darf nur diese Projektion und das neutrale Ziel erhalten. Keine Attribute, HTML, Skripte oder versteckte Zustände; konservative Viewport-/Trefferprüfung. Abgeschnittene, überdeckte, grafische oder schwer erkennbare Inhalte können fehlen; Darstellung ist keine pixelgenaue OCR oder Grafik-/Touch-Abnahme. Wenn die Projektion keine ausreichenden Informationen liefert, Screenshot-Modus oder Infrastrukturblockade statt erfundener Aktion.
+
+## A/B – getrennte Pilotaufträge
+
+A: Neue Standardkarriere. Ziel: „Beginne eine Karriere und finde heraus, was du als Manager tun kannst.“ Erste sichtbare Aktion und gewähltes Ziel protokollieren. B: Frische Sitzung; Ziel: „Erziele mit deiner Flotte Einnahmen.“ Erst mit Standardstart versuchen; falls zwölf Aktionen nicht reichen, getrennt einen validierten, regulär erspielten Teststand mit vorhandenem einsatzfähigem Schiff und offenem Auftrag vorbereiten. Keine Lösungsfolge oder spezifischen Klicks mitteilen. B-Teststand noch nicht erzeugt; dafür bestehenden M4-U3-UI-/Auditpfad als technische Grundlage nutzen, echten JSON-Export und Hash prüfen und nur regulär importieren. Kein Storage-Injektionsweg im Relay. Der vorbereitete Importpfad benötigt weitere Unterstützung und Prüfung.
+
+## Nachweise und Grenzen
+
+CI ist auf Ubuntu 24.04 festgelegt, nachdem der [erste Lauf](https://github.com/tobiasfranziskus/Check/actions/runs/45545330985) bereits bei der Browserinstallation unter Ubuntu 26.04 scheiterte. Die Prüfungen wurden dort übersprungen. CI testet das Aktionsprotokoll, isolierte Browserkontexte, echte Koordinatenklicks, Reload und Rundenlimit auf neutraler Fixture sowie Screenshot- und Text-Smoke vom tatsächlichen Root der Checkout-Kopie. Eine zusätzliche neutrale Fixture prüft sichtbare Koordinaten, tatsächliche Klickwirkung, Ausgabegrenze sowie Ausschluss versteckter, überdeckter, transparenter, außerhalb des Viewports liegender Texte und Attribute. Das ist kein Spieltest A/B und keine UX-Abnahme. Node22-Gesamtregression separat im Workflow. Lokaler Checkout/Browser-Node-Abhängigkeit hier nicht verfügbar; tatsächliche CI-Ergebnisse abwarten und separat dokumentieren. Weitere Module, Live-Modell-Pilot, validierte Teststände, echte iPad-/NAS-Abnahme bleiben offen.
+
+## Automatisierter Pilot A/B (Textmodus)
+
+Der Runner `scripts/m4-u4-model-runner.cjs` übermittelt pro Runde nur das neutrale Ziel, maximal 1.800 Zeichen sichtbaren Text und die letzten zwei Entscheidungen mit je maximal 240 Zeichen Notiz. Keine Toolrechte, kein Codezugriff für das Modell. Maximal zwölf echte Aktionen, fünf Minuten, 20 Sekunden je Modellaufruf, 256 angeforderte Antworttokens; keine automatische Wiederholung bei Quoten-/Formatfehlern. Die JSON-Ausgaben sind strikt validiert. Ein Modellstopp ist keine Abnahme: die lokale JSONL-Evidenz wird unabhängig auf reale Beobachtungen und Modulkriterien geprüft; Status UNREVIEWED. Der technische SHA muss durch die Testleitung vorab anhand der tatsächlichen Produktdateien verifiziert werden.
+
+Lokaler Start mit bereits installiertem und laufendem Ollama, Modellname ausdrücklich setzen (vorher `ollama list`):
+
+```sh
+export M4_AI_MODEL='NAME_DES_LOKALEN_MODELLS'
+export M4_PRODUCT_SHA='VERIFIZIERTER_PRODUKT_SHA'
+node scripts/m4-u4-model-runner.cjs A .
+node scripts/m4-u4-model-runner.cjs B .
+```
+
+Optional OpenRouter: `M4_AI_PROVIDER=openrouter`, `M4_ALLOW_REMOTE=1`, `M4_AI_MODEL` endet zwingend auf `:free`; `OPENROUTER_API_KEY` lokal als Umgebungsvariable (nicht im Repository, Chat oder Logs). Nur bei bewusster Zustimmung: sichtbare Testspieltexte und kurze Entscheidungen werden an den externen Anbieter gesendet. Keine automatische Modellauswahl oder kostenpflichtige Ausweichroute; Free-Verfügbarkeit/Quota nicht garantiert. Ein lokaler Modellserver ist ebenfalls keine garantierte Testfähigkeit. CI nutzt ausschließlich Mock-Antworten, keine API-Schlüssel/Live-Kosten. Keine realen API-Aufrufe in diesem Arbeitsgang. Modell A/B mit frischem Start; spätere vorbereitete Spielstände brauchen separaten regulären Importweg.
+
+## Mobiler Cloud-Pilot über GitHub Actions [DRAFT]
+
+Workflow: [M4-U4 KI-Blindtest (mobil)](../.github/workflows/m4-u4-mobile-pilot.yml). Ausschließlich manueller Start auf main mit ausdrücklichem Zustimmungsfeld; nur A oder B, expliziter OpenRouter-Name mit `:free`, kein bezahlter Ersatz. Der Workflow ist erst nach Integration in den Default-Branch nutzbar. Er testet eine isolierte lokale Kopie des exakten main-Checkout-SHA, nicht die Live-Pages-Domain. Die Testleitung muss Pages-Produktgleichheit separat belegen. Keine Verbindung zu persönlichen Browser-/NAS-Spielständen.
+
+### Einmalige Einrichtung am iPhone/iPad (Safari, ggf. Desktop-Website anfordern)
+
+1. [OpenRouter API Keys](https://openrouter.ai/keys): eigenen Schlüssel für diesen Testzweck erstellen bzw. vorhandenen dafür geeigneten Schlüssel verwenden. Kein Guthaben für einen kostenpflichtigen Ausweichpfad vorsehen. Schlüssel nie in Chat, Commit oder Workflow-Input eintragen.
+2. [GitHub Check – Environments](https://github.com/tobiasfranziskus/Check/settings/environments): Environment `m4-blindtest` anlegen. Unter Deployment branches/tags nur den Branch `main` zulassen. Falls die notwendige Branchbeschränkung nicht verfügbar ist, vor Hinterlegen des Secrets stoppen und Alternativen prüfen. Nicht als allgemeines Repository-Secret hinterlegen.
+3. In diesem Environment unter Environment secrets `OPENROUTER_API_KEY` hinzufügen und den Schlüssel als Value speichern. Nicht in Environment variables eintragen. GitHub-Einstellungen/Secret müssen vom Nutzer selbst vorgenommen werden.
+4. Nach Integration: [Actions](https://github.com/tobiasfranziskus/Check/actions) öffnen, Workflow **M4-U4 KI-Blindtest (mobil)** auswählen, **Run workflow**, Branch main, Modul A und einen tatsächlich aktuell verfügbaren exakten Modellnamen mit `:free` aus dem [OpenRouter-Katalog](https://openrouter.ai/models) wählen. Zustimmungsfeld für externe Übermittlung der sichtbaren Testspieltexte und GitHub-Artefakt bewusst aktivieren. Erst dann starten. Free-Quota und Verfügbarkeit sind nicht garantiert.
+5. Run öffnen: Summary zeigt Transportstatus und Aktionszahl, niemals automatisch BESTANDEN. Unter Artifacts ist die ZIP-Datei mit result.json und evidence.jsonl für sieben Tage verfügbar. Testprotokolle und Actions-Daten können entsprechend der Sichtbarkeit und Zugriffsrechte des Repositories einsehbar sein; keine personenbezogenen Daten eingeben. ZIP für unabhängige Auswertung bereitstellen. Danach Modul B separat starten.
+
+Sicherheitsgrenzen: Workflow nur manuell auf main, read-only GitHub-Token, Checkout ohne persistierte Credentials, Browserinstallation vor Secret-Übergabe, Secret ausschließlich im Modellschritt; Controller entfernt OPENROUTER_API_KEY vor Browserstart aus dem Prozessumfeld. Nur neutraler Teststart, maximal zwölf Aktionen, keine Produktänderung/kein Push. Kein automatisches Bestehen bei Provider-Fehler, Modellstopp oder Limit. Workflow-Datei und Runner sind durch den Repository-Verantwortlichen vor Integration zu prüfen. Ein Environment allein ist kein Schutz, wenn seine Branchrestriktion fehlt. Tests ohne echte Zugangsdaten in der PR-CI; Live-Dispatch noch nicht ausgeführt.
+
+Vorheriger geprüfter Adapterhead 31f6ac30: [CI #45546114353](https://github.com/tobiasfranziskus/Check/actions/runs/45546114353), 10/10 Adapter-/Mocktests und 603/603 Node22-Regression, keine Fehler/Skips. Die Cloud-Erweiterung ist neu und benötigt erneute CI, danach Integration von #622/#623 unter Berücksichtigung von #621. Kein Nachweis eines echten KI-Spieltests.

@@ -33,7 +33,8 @@ function requestBody(cfg,goal,obs,history){
 }
 function decision(raw){
  if(typeof raw!=='string'||raw.length>1600)throw Error('Invalid model output');
- const x=JSON.parse(raw);
+ const fenced=raw.trim().match(/^```(?:json)?\s*\n([\s\S]*?)\n```$/i);
+ const x=JSON.parse(fenced?fenced[1]:raw);
  if(!x||typeof x!=='object'||Array.isArray(x)||Object.keys(x).some(k=>k!=='action'&&k!=='note')||typeof x.note!=='string'||x.note.length>240||/[\u0000-\u001f]/.test(x.note))throw Error('Invalid model decision');
  return {action:action(x.action),note:x.note};
 }
@@ -49,7 +50,8 @@ async function ask(cfg,body,timeout,fetcher=fetch){
   for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>65536)throw Error('Model response too large');chunks.push(Buffer.from(value));}
  }finally{await reader.cancel().catch(()=>{});}
  const x=JSON.parse(Buffer.concat(chunks).toString('utf8'));
- const d=decision(x.choices?.[0]?.message?.content);
+ let d;
+ try{d=decision(x.choices?.[0]?.message?.content);}catch{throw Error('Invalid model decision format');}
  if(typeof x.model==='string'&&/^[A-Za-z0-9._:/-]{1,160}$/.test(x.model))d.reportedModel=x.model;
  return d;
 }
@@ -66,8 +68,16 @@ async function run({relay,cfg,module,emit=()=>{},fetcher=fetch,now=()=>performan
    if(obs.error)return finish('INFRASTRUCTURE','Browser observation failed');
    if(remaining<=0||obs.done)return finish('LIMIT','Time or action budget reached');
    let d;
-   try{d=await ask(cfg,requestBody(cfg,GOALS[module],obs,history),Math.max(1,Math.min(20000,remaining)),fetcher);}
-   catch(e){const msg=String(e?.message||'');const detail=/^Model HTTP [0-9]{3}$/.test(msg)?msg:e?.name==='TimeoutError'?'Model timeout':'Model request or output format failed';return finish('INFRASTRUCTURE',detail);}
+   for(let attempt=1;attempt<=2;attempt++){
+    const budget=Math.floor(MS-(now()-started));
+    if(budget<=0)return finish('LIMIT','Time budget reached before model request');
+    try{d=await ask(cfg,requestBody(cfg,GOALS[module],obs,history),Math.max(1,Math.min(20000,budget)),fetcher);break;}
+    catch(e){const msg=String(e?.message||'');const detail=/^Model HTTP [0-9]{3}$/.test(msg)?msg:e?.name==='TimeoutError'?'Model timeout':msg==='Invalid model decision format'?'Invalid model decision format':e instanceof SyntaxError?'Invalid provider JSON':'Model transport or response failed';
+     const retryable=/^Model HTTP (408|429|5[0-9]{2})$/.test(detail)||!detail.startsWith('Model HTTP ');
+     emit({kind:'model_error',round:obs.round,attempt,detail});
+     if(attempt===2||!retryable)return finish('INFRASTRUCTURE',detail);
+    }
+   }
    if(now()-started>=MS)return finish('LIMIT','Time budget reached before action');
    history.push(d);emit({kind:'decision',...d});
    if(d.action.op==='stop')return finish('MODEL_STOP',d.note);

@@ -2033,6 +2033,20 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     return {ok:true,aktiviert};
   }
 
+  // W6: notwendige Restkapazitaet, ausschliesslich in der U7/U8-Forschung.
+  // Keine Prognose der lokalen An-/Rueckflugzeit oder Finanzierung.
+  function industrieRestGrund(s, sh) {
+    if(!u8Research)return null;
+    const rest=m_core_anlage.restAktivminuten(s,sh);
+    if(rest===null)return null;
+    const route=sh.klasse==='frachter'?kern.route(rules.world,'aldera','nadir'):null;
+    if(sh.klasse==='frachter'&&(!route||route.zeit<=0))return 'keine Original-W3-Route';
+    const minimum=sh.klasse==='miner'
+      ?Math.ceil(rules.w3.fracht/rules.economy.miningRate):2*route.zeit;
+    return rest<minimum
+      ?'W6: '+sh.klasse+' Restaktivminuten '+rest+' < Mindestbedarf '+minimum:null;
+  }
+
   // K7: drei getrennt durch Original-Firmenrechte signierte Vertragsparteien.
   // Ein Angebot und die Signaturen erzeugen keine Ware, Geld oder Schiff.
   function k7Befehl(s, cmd) {
@@ -2080,7 +2094,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         ||Object.values(mi.ladung).some(x=>x!==0)||s.erzpilotVertraege?.[mi.id]
         ||fr.system!=='aldera'||fr.phase!=='dock'||fr.auftrag!=='halten'
         ||Object.values(fr.ladung).some(x=>x!==0))return verwerfen('Schiffe nicht frei im Dock');
-      if(s.owners.st_nadir.cash<K7_PREIS.nadiraufwand)return verwerfen('Nadir kann Kauf und Rundfracht nicht vorfinanzieren');
+      const restGrund=industrieRestGrund(s,mi)||industrieRestGrund(s,fr);
+       if(restGrund)return verwerfen(restGrund);
+       if(s.owners.st_nadir.cash<K7_PREIS.nadiraufwand)return verwerfen('Nadir kann Kauf und Rundfracht nicht vorfinanzieren');
       s.kanon.industrieErz={phase:'angebot',miner:mi.id,frachter:fr.id,
         signMiner:false,signFracht:false,signWerft:false,
         werftVerwendet:false,erzAngenommen:false,erstellt:s.tick,
@@ -2148,7 +2164,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         ||s.erzpilotVertraege?.[mi.id]
         ||(s.kanon.pendel[i.miner]&&s.kanon.pendel[i.miner].ware!=='erz'))
         return verwerfen('Einsatzschiffe/Erzauftrag seit Signatur nicht mehr verfügbar');
-      if(s.owners.npc3.cash<K7_PREIS.bergbau||s.owners.st_aldera.cash<K7_PREIS.alderakauf
+      const restGrund=industrieRestGrund(s,mi)||industrieRestGrund(s,fr);
+       if(restGrund)return verwerfen(restGrund);
+       if(s.owners.npc3.cash<K7_PREIS.bergbau||s.owners.st_aldera.cash<K7_PREIS.alderakauf
         ||s.owners.st_nadir.cash<K7_PREIS.nadiraufwand||s.owners[fr.owner].cash<K7_PREIS.frachtlohn
         ||(u8Research&&(s.w5ac?.active||s.kanon.rueckfracht))
         ||(!onlyMaterial&&s.owners.werft_extern.cash<K7_PREIS.werft))
@@ -2252,13 +2270,13 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       || (!materialOnly&&s.owners.werft_extern.cash < K7_PREIS.werft)) return;
     const miner = ids(s.ships).map(id=>s.ships[id]).find(sh =>
       sh.owner === 'npc3' && sh.klasse === 'miner' && sh.system === 'aldera'
-      && sh.flug?.lage === 'angedockt' && !m_core_anlage.stillgelegt(s, sh)
+      && sh.flug?.lage === 'angedockt' && !m_core_anlage.stillgelegt(s, sh) && !industrieRestGrund(s,sh)
       && ladungSumme(sh) === 0 && !s.erzpilotVertraege?.[sh.id]
       && (!s.kanon.pendel[sh.id] || s.kanon.pendel[sh.id].ware === 'erz'));
     const frachter = ids(s.ships).map(id=>s.ships[id]).find(sh =>
       sh.owner === 'transport' && sh.klasse === 'frachter'
       && sh.system === 'aldera' && sh.phase === 'dock'
-      && sh.auftrag === 'halten' && !m_core_anlage.stillgelegt(s, sh)
+      && sh.auftrag === 'halten' && !m_core_anlage.stillgelegt(s, sh) && !industrieRestGrund(s,sh)
       && ladungSumme(sh) === 0);
     if (!miner || !frachter) return;
     const befehle = [
@@ -2336,11 +2354,11 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       ' ISK frei und benötigt ' + knapp[2] + ' ISK für diesen Auftrag.');
     const miner=ids(s.ships).map(id=>s.ships[id]).find(sh=>sh.owner==='npc3'&&sh.klasse==='miner'
        &&sh.system==='aldera'&&sh.phase==='dock'&&sh.flug?.lage==='angedockt'
-       &&ladungSumme(sh)===0&&!s.erzpilotVertraege?.[sh.id]&&!m_core_anlage.stillgelegt(s,sh)
+       &&ladungSumme(sh)===0&&!s.erzpilotVertraege?.[sh.id]&&!m_core_anlage.stillgelegt(s,sh) && !industrieRestGrund(s,sh)
        &&!k.pendel[sh.id]?.beenden&&(!k.pendel[sh.id]||k.pendel[sh.id].ware==='erz'));
     const fr=ids(s.ships).map(id=>s.ships[id]).find(sh=>sh.owner==='house'&&sh.klasse==='frachter'
        &&sh.system==='aldera'&&sh.phase==='dock'&&sh.flug?.lage==='angedockt'
-       &&sh.auftrag==='halten'&&ladungSumme(sh)===0&&!m_core_anlage.stillgelegt(s,sh));
+       &&sh.auftrag==='halten'&&ladungSumme(sh)===0&&!m_core_anlage.stillgelegt(s,sh) && !industrieRestGrund(s,sh));
     if (!miner) return gesperrt('Meridian hat keinen freien Erzminer am Aldera-Dock.');
     if (!fr) return gesperrt('Dein Konzern hat keinen freien einsatzfähigen Frachter am Aldera-Dock.');
     if (s.owners.house.cash < K7_PREIS.frachtlohn)

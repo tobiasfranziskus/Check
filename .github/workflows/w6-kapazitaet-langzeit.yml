@@ -1,0 +1,41 @@
+name: W6 capacity gate – paired 90-day research
+on:
+  pull_request:
+    branches:
+      - research/w6-mindestkapazitaet-20261125
+    paths:
+      - 'tools/w6-kapazitaet-vergleich.cjs'
+      - '.github/workflows/w6-kapazitaet-langzeit.yml'
+permissions:
+  contents: read
+jobs:
+  comparison:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [Standard, K7, S02]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: candidate
+      - uses: actions/checkout@v4
+        with:
+          ref: bf11fcbc3e19e0d1220cecc8e721035c43f43537
+          path: baseline
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify and compare
+        run: |
+          git -C baseline rev-parse HEAD
+          git -C candidate rev-parse HEAD
+          node --check candidate/tools/w6-kapazitaet-vergleich.cjs
+          node candidate/tools/w6-kapazitaet-vergleich.cjs baseline candidate "${{ matrix.profile }}" "w6-${{ matrix.profile }}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: w6-capacity-${{ matrix.profile }}
+          path: w6-${{ matrix.profile }}.json
+          if-no-files-found: error

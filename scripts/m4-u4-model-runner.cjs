@@ -21,7 +21,7 @@ function config(env){
   return {provider,model,url:'http://127.0.0.1:'+port+'/v1/chat/completions'};
  }
  if(provider==='openrouter'){
-  if(env.M4_ALLOW_REMOTE!=='1'||!/^[A-Za-z0-9._/-]+:free$/.test(model)||!env.OPENROUTER_API_KEY)throw Error('Remote requires explicit opt-in, :free model and local API key');
+  if(env.M4_ALLOW_REMOTE!=='1'||!(model==='openrouter/free'||/^[A-Za-z0-9._/-]+:free$/.test(model))||!env.OPENROUTER_API_KEY)throw Error('Remote requires explicit opt-in, free model and local API key');
   return {provider,model,url:'https://openrouter.ai/api/v1/chat/completions',key:env.OPENROUTER_API_KEY};
  }
  throw Error('Unsupported provider');
@@ -49,7 +49,9 @@ async function ask(cfg,body,timeout,fetcher=fetch){
   for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>65536)throw Error('Model response too large');chunks.push(Buffer.from(value));}
  }finally{await reader.cancel().catch(()=>{});}
  const x=JSON.parse(Buffer.concat(chunks).toString('utf8'));
- return decision(x.choices?.[0]?.message?.content);
+ const d=decision(x.choices?.[0]?.message?.content);
+ if(typeof x.model==='string'&&/^[A-Za-z0-9._:/-]{1,160}$/.test(x.model))d.reportedModel=x.model;
+ return d;
 }
 async function run({relay,cfg,module,emit=()=>{},fetcher=fetch,now=()=>performance.now()}){
  if(!Object.hasOwn(GOALS,module))throw Error('Invalid module');
@@ -65,7 +67,7 @@ async function run({relay,cfg,module,emit=()=>{},fetcher=fetch,now=()=>performan
    if(remaining<=0||obs.done)return finish('LIMIT','Time or action budget reached');
    let d;
    try{d=await ask(cfg,requestBody(cfg,GOALS[module],obs,history),Math.max(1,Math.min(20000,remaining)),fetcher);}
-   catch{return finish('INFRASTRUCTURE','Model request, quota, timeout or output format failed');}
+   catch(e){const msg=String(e?.message||'');const detail=/^Model HTTP [0-9]{3}$/.test(msg)?msg:e?.name==='TimeoutError'?'Model timeout':'Model request or output format failed';return finish('INFRASTRUCTURE',detail);}
    if(now()-started>=MS)return finish('LIMIT','Time budget reached before action');
    history.push(d);emit({kind:'decision',...d});
    if(d.action.op==='stop')return finish('MODEL_STOP',d.note);

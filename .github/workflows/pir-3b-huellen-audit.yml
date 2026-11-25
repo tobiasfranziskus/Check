@@ -1,0 +1,16 @@
+name: PIR-3b independent hull audit
+on:
+  pull_request:
+    paths:
+      - 'tests/pir-3b-huellen-audit.test.mjs'
+      - '.github/workflows/pir-3b-huellen-audit.yml'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/pir-3b-huellen-audit.test.mjs

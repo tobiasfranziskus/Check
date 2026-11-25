@@ -1,0 +1,10 @@
+# PIR-3d – Lokale Sichtung statt Vertragsprognose [DRAFT / FORSCHUNG]
+Basis #629 0730fae9, main aa716c46. Void-Echoes-Katalog bereits für PIR-3c geprüft; heutige Kontakte, Flugreserve, Abfangen und Kampf weiterverwendet.
+
+PIR-3c auf f6e97734: 10/10 gezielte Audittests, realer früher und später F4 je 7 ISK Fluglohn, Hülle 48/96, 233 ISK Rest. Der Vertragsfahrplan ist privilegiertes Wissen. Neues Node-only Profil 6 (J8 startenPiraten(true,'lokal')) vergleicht dagegen nur tatsächlich lokale, frei fliegende beladene Frachter im gemeinsamen System und vorhandener Sichtweite. Keine Vertragszeit, kein Tor-Transit als Ziel, keine neue Ware, kein RNG-Wurf oder garantierter Treffer. Sicht vom Dock ist ein experimentelles Sensorikmodell, noch keine separate Stationseinrichtung.
+
+Prüfung: beide originalfinanzierten F4-Fahrpläne zweimal, Abflug erst im realen lokalen Fenster (vier Restminuten), vollständige Reserven, Löhne, Rückkehr, Originalfracht und Hash; Schusszahl und Schaden als Ergebnis, nicht als Sollwert. Sieben Tage ohne lokale geeignete Ziele, unveränderte 240 ISK, Profil-/Save-Trennung. Alte Profile 4/5 bleiben mit Referenzen geprüft. CI offen. Kein Browser- oder Produktzugang, kein Merge/Deploy. Reparatur, Schadenshistorie und Piratenerlöse bleiben offen.
+
+
+## CI-Auswertung 25.11.2026
+Head 0b544172: [Auditjob 139256794676](https://github.com/tobiasfranziskus/Check/actions/runs/45628995728/job/139256794676) 11/11, beide Fahrpläne exakt wiederholt. Abflug erst bei tatsächlicher lokaler Sichtung (176/536), eine Schussbuchung, 24 Schaden, Hülle 72/96, 3 ISK Fluglohn, 237 ISK verbleibende Kasse, keine Restreserve. Original-F4 und Weltgeld auditiert. Hashes 4444f38e37eecdc5 / a9ef1e5e5c473ce7; sieben Tage ohne lokales Ziel: 240 ISK, 0 Lohn, Hash 3926c5f030b676b7. Gegenüber Profil5 geringerer Schaden und geringerer Verbrauch ohne privilegierten Fahrplan. Profil6 als späterer Integrationskandidat bevorzugt, dockseitige Sicht weiterhin Forschungsannahme. Allgemeine CI noch offen.

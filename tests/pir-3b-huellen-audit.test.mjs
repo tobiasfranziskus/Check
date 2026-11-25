@@ -401,6 +401,26 @@ test('PIR-3b financed patrol lifetime versus early and carrier-first F4 arrival'
   assert.equal(late.end.shots,0);
   // Actual shots and damage are independently reported; no artificial hit.
   console.log('PIR_3C_TRAFFIC '+JSON.stringify({earlyTraffic,lateTraffic}));
+  const earlyLocal=run(false,'lokal'),lateLocal=run(true,'lokal');
+  assert.deepEqual(run(false,'lokal'),earlyLocal);
+  assert.deepEqual(run(true,'lokal'),lateLocal);
+  for(const r of [earlyLocal,lateLocal]){
+    assert.equal(r.firstNoCapital,null);
+    assert.equal(r.end.pirateCash+r.end.pilotCash+r.end.reserve,240);
+    assert(r.end.pilotCash>0 && r.end.pilotCash<40,'actual short paid sortie');
+    assert.equal(r.end.reserve,0);
+    assert.equal(r.end.lage,'angedockt');
+    const launch=r.arrivalWindow.find(x=>x.phase==='auslaufen');
+    assert(launch,'launch only on actual local arrival');
+    assert.equal(launch.tick,r.freightStart+56);
+    assert.equal(launch.target.lage,'frei');
+    assert.equal(launch.target.ice,50);
+    assert.equal(launch.shots,0);
+    assert.equal(launch.pilotCash,0,'no earlier paid sortie');
+    assert.equal(launch.reserve,40);
+  }
+  // A launch from an actual observation is required, not a guaranteed hit.
+  console.log('PIR_3D_LOCAL '+JSON.stringify({earlyLocal,lateLocal}));
 });
 
 test('PIR-3c without authenticated F4: no patrol cost, profile cannot cross-load',()=>{
@@ -432,3 +452,24 @@ test('PIR-3c without authenticated F4: no patrol cost, profile cannot cross-load
   }
 });
 
+
+
+test('PIR-3d no local target: idle budget and cross-profile save rejection',()=>{
+  const j=J8.erstellen();j.startenPiraten(true,'lokal');
+  const w=j.weltReferenz(),s=j.zustandReferenz();
+  const traffic=J8.erstellen();traffic.startenPiraten(true,'verkehr');
+  assert.throws(()=>traffic.weltReferenz().load(w.save(s)));
+  assert.throws(()=>w.load(traffic.weltReferenz().save(traffic.zustandReferenz())));
+  w.advance(s,7*1440);
+  assert.equal(s.tick,7*1440);
+  assert.equal(s.kanon.piraten.profil,6);
+  assert.equal(s.owners.piraten.cash,240);
+  assert.equal(s.owners.pilot_piraten.cash,0);
+  assert.equal(s.ships.pir001.flug.lage,'angedockt');
+  assert.deepEqual(s.kanon.piraten.kampf.ereignisse,[]);
+  assert.deepEqual(w.audit(s).fehler,[]);
+  assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),s.initialSupply);
+  assert.equal(s.minted+s.burned,0);
+  const hash=w.hash(s);assert.equal(w.hash(w.load(w.save(s))),hash);
+  console.log('PIR_3D_IDLE '+JSON.stringify({tick:s.tick,hash,pirateCash:s.owners.piraten.cash}));
+});

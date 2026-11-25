@@ -2768,6 +2768,21 @@ const m_core_w5_transfer=(()=>{
         &&((lost(x.id)?.tick>=x.ankunft&&lost(x.id)?.system===c.ziel)
           ||s.w3.auftrag?.schiff===x.id
           ||(!!r.kanon&&s.w5n?.frachtauftrag?.schiff===x.id)
+          // PIR-3f research: historical Nadir->Aldera receipt stays immutable.
+          // The separate, paid repair ferry is validated by the outer K1 audit.
+          ||(s.kanon?.piraten?.profil===7&&x.owner==='house'&&(()=>{
+            const f=s.kanon.pirWerft,sh=s.ships[x.id];
+            if(!f||f.schiff!==x.id||f.owner!==x.owner||f.start<x.ankunft
+              ||f.dauer!==duration||f.ende!==f.start+duration
+              ||f.lohn!==c.lohnJeMinute||f.bezahlt!==Math.min(duration,s.tick-f.start)
+              ||(s.owners.k1_pir_werftflug?.cash??-1)!==(duration-f.bezahlt)*f.lohn
+              ||(s.kanon.buch.summen['pir-werftflug-reserve|house|k1_pir_werftflug']??0)!==duration*f.lohn
+              ||(s.kanon.buch.summen['pir-werftflug-lohn|k1_pir_werftflug|pilot_house']??0)!==f.bezahlt*f.lohn)
+              return false;
+            return s.tick<f.ende
+              ?sh.system===c.ziel&&sh.phase==='reise'&&sh.ziel===r.w5.station&&sh.ankunft===f.ende
+              :sh.system===c.quelle&&sh.phase==='dock'&&sh.auftrag==='halten'&&sh.ankunft===f.ende;
+          })())
           // Rule207: legitime Anschlussverwendung einer bereits mit W5ac
           // bezahlten Werft-Huelle. W5ac-Kauf-/Flugjournal bleibt unveraendert;
           // der NEUE Fremdfrachtbeleg wird separat vom P8d-K1-Audit geprueft.

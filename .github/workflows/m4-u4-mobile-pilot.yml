@@ -10,7 +10,7 @@ on:
           - B
         default: A
       model:
-        description: 'Exakter OpenRouter-Modellname mit :free'
+        description: 'openrouter/free oder exakter Modellname mit :free'
         type: string
         required: true
       consent:
@@ -23,7 +23,17 @@ concurrency:
   group: m4-u4-live-pilot
   cancel-in-progress: false
 jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check branch and consent (no secret)
+        env:
+          M4_CONSENT: ${{ inputs.consent }}
+        run: |
+          if [ "$GITHUB_REF" != refs/heads/main ]; then echo 'Bitte main auswählen.' >&2; exit 1; fi
+          if [ "$M4_CONSENT" != true ]; then echo 'Consent fehlt: Bitte Zustimmung aktivieren.' >&2; exit 1; fi
   pilot:
+    needs: preflight
     if: github.ref == 'refs/heads/main' && inputs.consent == true
     environment: m4-blindtest
     runs-on: ubuntu-24.04
@@ -34,7 +44,7 @@ jobs:
           M4_MODULE: ${{ inputs.module }}
           M4_AI_MODEL: ${{ inputs.model }}
         run: |
-          node -e 'if (!["A","B"].includes(process.env.M4_MODULE) || !/^[A-Za-z0-9._/-]+:free$/.test(process.env.M4_AI_MODEL) || process.env.M4_AI_MODEL.length>160) process.exit(1)'
+          node -e 'if (!["A","B"].includes(process.env.M4_MODULE) || !(process.env.M4_AI_MODEL==='openrouter/free'||/^[A-Za-z0-9._/-]+:free$/.test(process.env.M4_AI_MODEL)) || process.env.M4_AI_MODEL.length>160) process.exit(1)'
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}

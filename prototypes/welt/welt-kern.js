@@ -103,9 +103,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   const pirAbfang = piraten >= 3;
   // Profile 5 is a Node-only research counterfactual. Existing profiles
   // retain their exact state shape, RNG sequence and patrol rules.
-  if (piraten === 5 && !NODE) throw Error('PIR-3c: nur Node-Forschungsprofil');
+  if ([5,6].includes(piraten) && !NODE) throw Error('PIR-3c/3d: nur Node-Forschungsprofil');
   const pirVerkehr = piraten === 5;
-  const pirKampf = piraten === 4 || pirVerkehr;
+  const pirLokal = piraten === 6;
+  const pirKampf = piraten === 4 || pirVerkehr || pirLokal;
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
@@ -663,7 +664,12 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         // not a new physical sensor, ETA guarantee or public balancing rule.
         const vertrag = pirVerkehr ? nadirVertrag(s) : null;
         const rest = vertrag ? vertrag.ankunft - s.tick : 0;
-        const gelegenheit = !pirVerkehr || (vertrag && rest >= PIR_TOR.minuten
+        // Profile 6 deliberately cannot use contract timing or distant transit.
+        // The existing contact projection is reused at the actual dock position.
+        // Dockside observation is a research assumption, not yet a station sensor.
+        const lokalSichtbar = pirLokal && kontakte(s,sh).some(t =>
+          t.klasse === 'frachter' && angreifbar(s,t,sh));
+        const gelegenheit = pirLokal ? lokalSichtbar : !pirVerkehr || (vertrag && rest >= PIR_TOR.minuten
           && rest <= PIR_TOR.minuten + 3
           && !m_core_anlage.verbraucht(s,vertrag)
           && huellenzustand(s,vertrag.id) > PIR_WAFFE.rueckzug);
@@ -3012,7 +3018,9 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   erstellenJ4c:(kapital={})=>erstellen(kapital,true,true,true,true,true),
   erstellenPirKampf:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,4),
   ...(NODE ? {erstellenPirVerkehr:()=>erstellen({carrierCash:2000,buyerCash:4000},
-    true,true,true,true,true,false,false,false,5)} : {}),
+    true,true,true,true,true,false,false,false,5),
+    erstellenPirLokal:()=>erstellen({carrierCash:2000,buyerCash:4000},
+      true,true,true,true,true,false,false,false,6)} : {}),
   erstellenPirAbfang:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,3),
   erstellenPirAnflug:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,2),
   erstellenPiraten:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,true),

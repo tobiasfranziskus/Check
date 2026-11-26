@@ -1,0 +1,47 @@
+name: W6 Geldumlauf, Absatz und Wasserlogistik
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/w6-geldumlauf.yml'
+      - 'tools/w6-geldumlauf.cjs'
+      - 'tools/w6-gesamtpaket.cjs'
+      - 'prototypes/welt/welt-kern.js'
+
+permissions:
+  contents: read
+
+jobs:
+  forschung:
+    name: Geldumlauf (${{ matrix.scenario }}, ${{ matrix.days }}, ${{ matrix.seed }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [S01, S02, S03, S04, S05, S06, S07, S08, S09, S10, S11, S12, S13]
+        seed: [42, 7, 113]
+        days: [90]
+        include:
+          - {scenario: S02, seed: 42, days: 365}
+          - {scenario: S02, seed: 7, days: 365}
+          - {scenario: S02, seed: 113, days: 365}
+          - {scenario: S02, seed: 42, days: 730}
+          - {scenario: S02, seed: 7, days: 730}
+          - {scenario: S02, seed: 113, days: 730}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+      - name: Wirtschaft, Originalbefehle und Replay prüfen
+        env:
+          SCENARIO: ${{ matrix.scenario }}
+          DAYS: ${{ matrix.days }}
+          SEED: ${{ matrix.seed }}
+        run: |
+          node tools/w6-geldumlauf.cjs "$SCENARIO" "$DAYS" "$SEED" > report.json
+          node -e 'const r = require("./report.json"); console.log(JSON.stringify({id:r.id, tage:r.tage, seed:r.seed, ende:r.verlauf.at(-1), endfenster:r.endfenster, wasser:r.untersuchung.wasser}));'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: geldumlauf-${{ matrix.scenario }}-${{ matrix.days }}-${{ matrix.seed }}
+          path: report.json

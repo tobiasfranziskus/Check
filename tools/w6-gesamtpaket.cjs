@@ -31,17 +31,20 @@ function freiwilligeJaegerKaufprobe(welt,s) {
   return {ok:true,vorher,lager,preis,beleg,hash:welt.hash(q)};
 }
 
-function abnahme(id, tage, seed, profil, replay = true) {
+function abnahme(id, tage, seed, profil, replay = true, untersuchen = null) {
   const szenario = SZENARIEN.find(s => s.id === id);
   assert.ok(szenario && Number.isSafeInteger(seed) && [90,365,730].includes(tage));
   assert.ok(['204','u8','60','gesamt'].includes(profil));
   const vorlauf60 = ['60','gesamt'].includes(profil) && id !== 'S11';
   const sz = vorlauf60 ? {...szenario, politik:{...szenario.politik, ersatzVorlaufProzent:60}} : szenario;
   const run = () => {
-    let kaufprobe;
+    let kaufprobe, untersuchung;
     const simulation = lauf(sz,tage,seed,profil === 'gesamt' ? 'gesamt' : profil !== '204',
-      'konzerne',null,true,null,(w,s)=>{ kaufprobe = freiwilligeJaegerKaufprobe(w,s); });
-    return {...simulation,kaufprobe};
+      'konzerne',null,true,null,(w,s)=>{
+        kaufprobe = freiwilligeJaegerKaufprobe(w,s);
+        if (untersuchen) untersuchung = untersuchen(w,s);
+      });
+    return {...simulation,kaufprobe,untersuchung};
   };
   const ergebnis = run();
   if (profil === '60' && id === 'S02' && seed === 42)
@@ -63,6 +66,7 @@ function abnahme(id, tage, seed, profil, replay = true) {
         .map(key=>[key,end[key]-start[key]]))};
   });
   return {id,tage,seed,profil,replay,quellhash:ergebnis.quellhash,starthash:ergebnis.starthash,kaufprobe:ergebnis.kaufprobe,verlauf,endfenster,
+    ...(untersuchen ? {untersuchung:ergebnis.untersuchung} : {}),
     ende:{letzterVertrag:v.aktiveAuftraege.k7,w3:v.aktiveAuftraege.w3,
       schiffe:v.huellen.filter(h=>!h.stillgelegt), lager:v.lager, kassen:v.kassen,
       entscheidungen:v.entscheidungen, ersterStillstand:v.ersterStillstand}};

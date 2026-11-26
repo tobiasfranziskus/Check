@@ -26,6 +26,16 @@ Diese Regeln gelten für das gesamte Repository. Konkrete Anweisungen des Nutzer
 - **Systemanweisungen synchron halten:** `docs/CHATGPT_PROJEKTANWEISUNGEN.md` ist die kopierbare Vorlage, `AGENTS.md` die Repository-Regel, `docs/ROADMAP.md` allein die Produktentscheidung. ChatGPT-Projekteinstellungen können durch einen GitHub-Commit **nicht** automatisch aktualisiert werden.
 - **Umfang und Grenzen des täglichen Prozesses:** technische Prüfungen/Änderungen nur dann als ausgeführt melden, wenn die jeweilige Ausführung wirklich stattgefunden hat; kein stilles Erfinden von Lint/CI/Gerätetests. Detailliertes SOP und Checkliste in [docs/PROJEKTLEITUNG_SUPERVISION.md](docs/PROJEKTLEITUNG_SUPERVISION.md).
 
+## Zentrale Projektsteuerung – Management-first [BESCHLOSSEN 26.11.2026]
+
+Die technische Projektleitung bündelt drei Arbeitsstränge (P0, Wirtschaft W0–W6, Piraten/Sicherheit). Integration und UX sind gemeinsame Führungsaufgaben, die unabhängige KI-Blindabnahme ist Qualitätssicherung, kein vierter Entwicklungsstrang. Maßgeblich sind die bestehenden Management-Gates M0–M4 der Roadmap; keine zusätzliche Produktstufe oder neue Kampf-/Wirtschaftsregel.
+
+- Ein allgemeines „Weiter“ im Leitungsdialog bedeutet: aktuellen Stand und Morgenbefund abgleichen, den wichtigsten konkreten Manager-Blocker auswählen, bis zum nachprüfbaren Ergebnis bearbeiten. Explizite Strangaufträge bleiben auf diesen begrenzt.
+- Pro Strang grundsätzlich ein aktives Hauptpaket mit Ziel, Branch/PR, Dateigrenze, Abnahme und Integrationsziel; weitere Arbeiten nur begründet und konfliktfrei. Gestapelte Vorläufer als Abhängigkeiten, nicht als getrennte aktive Pakete zählen. Vor neuen Forschungszweigen zuerst vorhandene Ergebnisse und offene Integrations-Gates prüfen. Keine doppelte Bearbeitung durch Chat/Work/Codex.
+- Die Projektleitung führt die kurze Steuerungsübersicht am Anfang von [docs/PROJEKTSTATUS.md](docs/PROJEKTSTATUS.md). Forschungsstränge melden Übergaben mit Basis/Head, Beleg, Risiken und nächstem Gate. Zentrale Dokumente nicht in konkurrierenden Forschungsbranches als autoritative Planung fortschreiben.
+- Bei Übergabe in einen neuen Chat eine knappe, datierte, belegte Übergabe mit main/Pages, aktiven PRs, Freigaben, Blockern und nächstem Auftrag im Status festhalten. Kein behaupteter Zugriff auf eine exakte Chat-Kontextfüllanzeige.
+- Der Morgenlauf priorisiert und berichtet; echte Integration erfolgt nur im konkreten Entwicklungsauftrag nach bestehender Dauerfreigabe und vollständigem Gate. Blindtestbefunde werden in die Priorisierung übernommen, die Tester bleiben ohne Entwicklerwissen. Das gültige modulare Verfahren steht in [docs/M4_U4_KI_BLINDABNAHME.md](docs/M4_U4_KI_BLINDABNAHME.md); Diagnostik ist keine formale Abnahme.
+
 ## Produkt und Technik
 
 - Aphros Void bleibt eine statisch auslieferbare Anwendung aus HTML, CSS und Vanilla JavaScript. `index.html` enthält Oberfläche, Styles und JavaScript-Module. Kein Framework, npm-Laufzeitpaket, CDN, Build-Zwang oder Backend ohne ausdrücklichen Auftrag.

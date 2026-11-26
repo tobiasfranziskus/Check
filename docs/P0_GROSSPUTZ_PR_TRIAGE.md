@@ -111,3 +111,108 @@ Erhaltene Nachfolger-CI: #511 Head `da686630d2cb12d1802aa9b8fc775665da17179f`, d
 ## Nachbereitung der Morgensupervision 24.11.2026
 
 Main 679ba6c1, 66 offene PRs laut gespeichertem Morgenlauf (zeitpunktbezogen). P0-Kurzfassung gegen den neuen Main-Stand konsolidiert; frühere Archive unverändert. #599 UX-CI-Fehler identifiziert und im Quell-Draft korrigiert, neue CI offen. #610 Kampfstack aktiv; #611 gezielte Langzeitbelege ausgewertet. #573/#576/#577 getrennte Sicherheits-/Wirtschaftsforschung vor Integration erhalten. Keine pauschale Schließung oder Regelaktivierung.
+
+
+## Fortsetzung 24.11.2026 – fünf übernommene Legacy-Quellen geschlossen
+
+Main `fb229ea5f3cb6c3018240ed321b6a281a06fffe4`, PR #620; 603/603 Node22 ([CI](https://github.com/tobiasfranziskus/Check/actions/runs/45469561655)). Alle 39 ursprünglichen Dateien vorhanden, 29 SHA-identisch, 10 abweichende Dateien einzeln auf Quellzeilen und Archiv-HTML geprüft. Release-Baum ba0c1861, Archivierung #449/055d96cb. Ursprüngliche Testdateien erhalten.
+
+| Quelle | Beleg | Ergebnis |
+|---|---|---|
+| #198 | 6/8 identisch; Kapitalbeschriftung, ShadowRoot-Fokus, selectShip, Mount-Guard | geschlossen, kein Merge |
+| #195 | 6/8 identisch; ShadowRoot-Fokus, Mount-Guard | geschlossen, kein Merge |
+| #189 | 6/8 identisch; ShadowRoot-Fokus, Archiv-Weiterleitung mit Originalressourcen | geschlossen, kein Merge |
+| #187 | 6/8 identisch; optionale Hub-Navigation, ShadowRoot-Fokus, Mount-Guard | geschlossen, kein Merge |
+| #186 | 5/7 identisch; Mount-Guard und Archiv-Weiterleitung mit Originalressourcen | geschlossen, kein Merge |
+
+Einzelbelege in den jeweiligen PR-Kommentaren. #291 und #170 bleiben offen: nicht alle ursprünglichen Berichte/Tests im aktuellen Baum vorhanden; kein vollständiger Nachfolgernachweis. Keine Branch- oder Dateilöschung. 67 → 61 offene PRs inklusive #620-Merge, vor neuem Doku-Draft. Aktive M4-/PIR-Stacks unverändert.
+
+
+## Fortsetzung 24.11.2026 – ältere Forschungsnachweise geschützt
+
+Basis `fb229ea5f3cb6c3018240ed321b6a281a06fffe4`. Push-Regression [#45471314787](https://github.com/tobiasfranziskus/Check/actions/runs/45471314787) completed/success. Vor der Prüfung 62 offene PRs einschließlich #621. Abgleich der PR-Dateilisten mit dem rekursiven Main-Baum (Blob-SHA und Pfad; keine semantische Gleichwertigkeit aus abweichenden Dateien abgeleitet):
+
+| PR | Dateien | SHA-identisch | Pfad fehlt in main | Schwerpunkt |
+|---|---:|---:|---:|---|
+| [#305](https://github.com/tobiasfranziskus/Check/pull/305) | 7 | 0 | 5 | K1-Cockpit/Browser |
+| [#317](https://github.com/tobiasfranziskus/Check/pull/317) | 7 | 0 | 5 | Abschnittsteuerung |
+| [#321](https://github.com/tobiasfranziskus/Check/pull/321) | 10 | 0 | 7 | Torfreigabe/Browser |
+| [#335](https://github.com/tobiasfranziskus/Check/pull/335) | 5 | 0 | 5 | J1-Audit/90 Tage |
+| [#337](https://github.com/tobiasfranziskus/Check/pull/337) | 11 | 2 | 7 | F8E-Duelltraining |
+| [#376](https://github.com/tobiasfranziskus/Check/pull/376) | 2 | 0 | 2 | J10d-Finanzierungsblocker |
+| [#423](https://github.com/tobiasfranziskus/Check/pull/423) | 3 | 1 | 2 | P8e/P8f-Materialgate |
+| [#470](https://github.com/tobiasfranziskus/Check/pull/470) | 24 | 0 | 19 | Rohstoffforschung und Replay |
+| [#490](https://github.com/tobiasfranziskus/Check/pull/490) | 10 | 0 | 10 | W6-Langzeitbelege |
+| [#496](https://github.com/tobiasfranziskus/Check/pull/496) | 6 | 0 | 6 | F4-Folgezyklen |
+| [#501](https://github.com/tobiasfranziskus/Check/pull/501) | 3 | 0 | 3 | Zweitbetrieb |
+| [#526](https://github.com/tobiasfranziskus/Check/pull/526) | 2 | 0 | 2 | M3-Industrieaudit |
+| [#527](https://github.com/tobiasfranziskus/Check/pull/527) | 14 | 0 | 14 | Manager-Live-Audit |
+| [#528](https://github.com/tobiasfranziskus/Check/pull/528) | 1 | 0 | 1 | Rechte-/Buchungsansicht |
+
+Alle 14 bleiben offen: fehlende Pfade sind kein Beweis für fehlende Funktion, aber ohne Einzelübernahme der Berichte/Tests kein hinreichender Nachfolgerbeleg. Zusätzlich acht Git-Compare-Abfragen zwischen möglichen Nachfolgern, jeweils Status `diverged`:
+
+| Quelle → Kandidat | Kandidat ahead | Kandidat behind |
+|---|---:|---:|
+| #305 → #317 | 70 | 7 |
+| #317 → #321 | 67 | 13 |
+| #496 → #501 | 7 | 4 |
+| #501 → #511 | 39 | 3 |
+| #376 → #423 | 114 | 12 |
+| #423 → #490 | 78 | 75 |
+| #335 → #337 | 42 | 5 |
+| #526 → #528 | 2 | 1 |
+
+Keine Schließung, kein neuer Produktcode, keine Branchlöschung. Aktive M4-/PIR-Forschung nicht bearbeitet. Nächster Schritt: die wenigen historischen Nachweise mit konkretem Bezug zu offenen Management-Gates gezielt und commitgebunden indexieren, keine pauschale Codeübernahme.
+
+### Dokumentations-Gate
+
+#621 erweitert den vorhandenen P0-Workflow um Trigger für AGENTS.md, README.md, docs/** und den Linkprüfer. Bei diesen Änderungen laufen bestehende Parser-Fixtures und der kanonische Repository-Linktest (AGENTS, ROADMAP, PROJEKTSTATUS) zusätzlich zur Inventur. Lokale Dateiziele, nicht externe URLs oder vollständige Ankerprüfung. Kein neuer Lauf als erfolgreich behauptet, solange die CI offen ist.
+
+
+### Historische Manager-Nachweise für die offenen Abnahme-Gates (24.11.2026)
+
+Lesender Abgleich der fünf offenen PRs mit den jeweiligen fest gepinnten Originalberichten. Keine Übernahme von Testspielständen, keine erneute Ausführung historischer Tests, keine Übertragung von Regel204/S02 auf die heutige Standardkarriere. Quellen bleiben offen und unangetastet.
+
+| Originalnachweis (fest gepinnt) | Belegter historischer Befund | Verwendung vor heutiger Abnahme |
+|---|---|---|
+| [#526 Industrieaudit](https://github.com/tobiasfranziskus/Check/blob/b70f5995f9e260e8468886bf9597f2fbcceb33ba/docs/M3_INDUSTRIE_PARALLELAUDIT_20261120.md) | Originale NPC-Kette: 740 ISK W3-Käuferreserve, 120 ISK Fluglohn, 530 ISK Werftreserve; Fremdrechte fehlen. | M4/W3–W5: gleiche Eigentümer- und Finanzierungsgrenzen gegen den aktuellen Kern nachprüfen; kein Hausrecht ableiten. |
+| [#527 interaktiver Manager-Erstspieltest](https://github.com/tobiasfranziskus/Check/blob/7446f5da8c798da33b55e37e176612da219a06fd/docs/audit/manager-live-20261120/MANAGER_LIVE_AUDIT.md) | Vier bezahlte F4-Runden, Originalexporte und Replay; 600 Weltminuten, keine 60 Minuten Echtzeit-Retention. | M4-U4: historische UX-Baseline, nicht als aktuelle Blindtestabnahme zählen; keine Original-Saves importieren. |
+| [#528 Rechte-/Buchungsansicht](https://github.com/tobiasfranziskus/Check/blob/4707e059f1c4fa5dad2341a0f52b33900b6dba5d/docs/M3_P1_RECHTE_BUCHUNGSANSICHT.md) | Spezifikation sechs originaler Checkpoints; getrennte Kassen, Rollen, Kaufangebote; keine implementierte UI. | M4-U10: vorhandene Projektion wiederverwenden; historische Sichtbarkeitsgates und Felder gegen aktuellen Code prüfen, keine zweite Buchungslogik. |
+| [#496 F4-Folgezyklen](https://github.com/tobiasfranziskus/Check/blob/2d0cfd2643317c047df0f9ca7be39a2053c5f8cf/docs/P3_WERFTFRACHT_FOLGEZYKLEN.md) | Vier bezahlte Fahrten mit echter W5-Hülle; 240 Tarif minus 120 Lohn minus 36 Verschleiß = 84 ISK enger Deckungsbeitrag pro Fahrt, kein Gesamtgewinn. | M4/W6: Vergleichspunkt für echten Ersatzkauf; keine dauerhafte Rentabilität daraus ableiten. |
+| [#501 Zweitfrachter](https://github.com/tobiasfranziskus/Check/blob/eefdd0943b6e0a5447624a92ad2bee2e18a1c05b/docs/P3_WERFT_ZWEITBETRIEB.md) | Zweite Hülle bezahlt, 145/145 Überführungsangebote blockiert; 120 W5n, 19 W3, 6 W5ac laut PR. | M4/W6 und #511: positive Zweitfahrt erst bei tatsächlichem Originalabschluss; keine Teleportation oder Streckenfreigabe aus der historischen Probe ableiten. |
+
+P0-CI auf vorherigem #621-Head `673a7ace8e40a5a0c662f5a969a2edc5b6aba4e1`: [Run 45480001290](https://github.com/tobiasfranziskus/Check/actions/runs/45480001290) completed/success; Inventurvertrag, Dokumentationslink-/Parser-Tests, commitgebundene Inventur und Artefakt-Upload einzeln success. Neue Dokumentationsrevision benötigt ihren eigenen Lauf. Kein vollständiger neuer Node22-, Browser- oder Wirtschaftstest in diesem lesenden Indexschritt.
+
+## Abgleich historischer Regressionen mit M4-Gründungswirtschaft (24.11.2026)
+
+[#618, geprüfter Head 0ea66da](https://github.com/tobiasfranziskus/Check/tree/0ea66da06e8a9ca1424f596e6ddbdca1c5bbb679) hat drei erfolgreiche Workflows: [Audit](https://github.com/tobiasfranziskus/Check/actions/runs/45463394273), [JS](https://github.com/tobiasfranziskus/Check/actions/runs/45463394322), [W5](https://github.com/tobiasfranziskus/Check/actions/runs/45463394393). Gegen aktuellen main nicht konfliktfrei; kein Integrationsnachweis. Die zwei Tests in `tests/m4-founding-economy.test.mjs` prüfen Standard/S02, Haus-/NPC-first sowie Miner-first mit K7-only, sieben Tage, Replay, Geldsumme und Save-Roundtrip. Historische M3-Tests ergänzen dagegen gezielte Fremdrechte, unveränderte Zustände nach Ablehnung und manipulierte Saves; P3-Folgezyklen ergänzen Verschleiß und Kapital inklusive Restbuchwert; P3-Zweitbetrieb ergänzt zweite Hülle und konkrete Kapazitätsablehnung. Diese Unterschiede sind Kandidaten für einen Abgleich mit der bestehenden main-Suite, keine bereits nachgewiesenen Testlücken. Keine parallele Änderung an #618. Miner-first-Ergebnis nicht aus grünem CI-Status ableiten; tatsächliche Ergebnisdaten separat prüfen.
+
+### Ausgewerteter Miner-first-CI-Log
+
+[Job 138691766193](https://github.com/tobiasfranziskus/Check/actions/runs/45463394273/job/138691766193), `M4_MINER_FIRST`, Tag 7: Standard Haus 12849 ISK, Erz/Material/Hüllen/F4 0/0/0/0; K7-only Haus 2880, 100/10/2/0; S02 Haus 2751, 100/10/1/0. K7/S02 erste Haus-Werfthülle Minute230, keine eigene F4 begonnen. Ablehnungsversuche: K7 61 aktive W3/Überführung und 851 Nadir-Eislager voll; S02 61 und 870. Wiederholte Abfragen sind keine unabhängigen Ereignisse. K7-only ist kein freigegebener Standardmodus. Kein Nachweis für dauerhafte Nachfrage oder Rentabilität. Nächste Ursachenprüfung: reale Wasserproduktion, Lagerabfluss und finanzierte Käufer; keine künstliche Nachfrage. Keine Produktänderung.
+
+### Wasserabsatz: vorhandene Nachweise statt neuer Parallelentwicklung
+
+Main-Bericht [M4_U5_WIRTSCHAFTSENGPASS](M4_U5_WIRTSCHAFTSENGPASS.md): historische 48-Fahrten-Reproduktion Nadir 130/150 Eis, 118 Wasser, Produktionsstart unter 115 Wasser, 2884 ISK Nadir, kein Haushalt dort mit 14 ISK Kaufkraft. Aldera-Privatkauf räumt Nadir nicht direkt. Nicht mit dem neuen Miner-first-Zustand gleichsetzen. [#574](https://github.com/tobiasfranziskus/Check/pull/574) belegt im Forschungsprofil 50 Erz/22 Wasser und reale 49. Eisfahrt (d3f25b07, 591/591), danach erneut Lagersperre. [#578](https://github.com/tobiasfranziskus/Check/pull/578) dokumentiert zusätzlich 13×90 und S02×730 Replay sowie 1390 ISK gebunden bei stillgelegtem Miner mit Teilladung. Keine dauerhafte Absatzlösung daraus ableiten. Vor neuer Wassermechanik aktuelle U7/U8-Integration und bestehende Haushalts-/Lohnpfade prüfen; keine neue Parallelimplementierung oder Regeländerung.
+
+## Koordinationsstand 25.11.2026: M4-U4 und W6
+
+- [#618](https://github.com/tobiasfranziskus/Check/pull/618), Head `5dd997a72da7b517ed718ac4670d1f4cc30e2f10`: auf main-Basis `fb229ea5` synchronisiert; vier erfolgreiche Workflows einschließlich [P0](https://github.com/tobiasfranziskus/Check/actions/runs/45546061313). Der frühere Commit-mismatch ist auf diesem Head nicht mehr vorhanden. Keine Produktintegration.
+- Regionalaudit am vorherigen Head `9618869` ([CI](https://github.com/tobiasfranziskus/Check/actions/runs/45543706017)): Standard, K7-only und S02 je 90 Tage mit Replay; in K7/S02 keine Änderung der erfassten Haushaltsbilanzen zwischen Tag 7 und 90, kein eigener bezahlter F4. Wasserlager Aldera 0, Nadir 117/116. Kein Nachhaltigkeitsnachweis. Kombinierter finanzierter Transport bleibt W6-Auftrag; keine parallele Implementierung in P0.
+- [#624](https://github.com/tobiasfranziskus/Check/pull/624), Head `145cdee1eb61d53e541edcbaddb456711ef4992c`: separater Integrationskandidat für modulare M4-U4-Abnahme (#622/#623). PR-Bericht nennt 603/603 Node22 und 12/12 Adapter-/Mocktests, keine reale KI-Abnahme. Roadmap und Projektstatus erst nach bestätigter Integration als MAIN markieren; bis dahin getrennte Draft-/Integrationsnachweise. P0 nicht mit dem laufenden Integrationsbranch vermischen.
+
+
+## Commitgebundene Prototypinventur und Integrations-Gate · 26.11.2026
+
+[PR #621](https://github.com/tobiasfranziskus/Check/pull/621), Head `4ee31de6ef66f37ac96dcab0b4463f6ea612b830`, Basis main `d23a1e95427f77c4dcb5634061189ed873421fb4`. [P0-Run 45824509075](https://github.com/tobiasfranziskus/Check/actions/runs/45824509075) completed/success; [Job 139925094899](https://github.com/tobiasfranziskus/Check/actions/runs/45824509075/job/139925094899) belegt 5/5 Abhängigkeitstests und 13/13 Dokumentations-/Parser-Tests, je 0 Fehler/Skips. Artefakt-ID 15119876055, SHA256 dea30c40c91b27e7faa54bf3cb7ede3bb2ceb7293b836f0e46d81a4a97b7c6fa, Aufbewahrung bis 26.12.2026. 520 getrackte Pfade, davon 141 Prototypdateien, keine fehlenden statischen Assets oder archivierten Hub-Assets.
+
+| Gruppe | LIVE | BUILD | TEST_PINNED |
+|---|---:|---:|---:|
+| Spiel/Welt/Flug/Raum/Jäger/Verbund/Tutorials/J4c/J6w | 51 | 0 | 4 |
+| Legacy-Familien | 1 | 4 | 32 |
+| W5-Familien | 2 | 18 | 29 |
+| Gesamt | 54 | 22 | 65 |
+
+Kategorien sind disjunkt nach Priorität, nicht die tatsächlichen überlappenden Graphen (54 öffentliche, 25 Build- und 75 Demo-Abhängigkeiten; alle 141 konservativ testreferenziert). Der Scan folgt lokalen HTML-Script-/Stylesheet- und CSS-Referenzen, aber nicht jedem dynamischen JS-Import; Testreferenzen können vollständige Pfade oder nur das jeweilige Verzeichnis sein. TEST_PINNED bedeutet daher Schutz vor ungeprüfter Löschung, nicht einen individuellen Nutzungsnachweis für jede Datei. Die 65 Dateien dürfen nicht pauschal archiviert werden. Nächster Inventur-Schritt: die vorhandenen `test_references.match`-Werte path/directory pro Datei getrennt auswerten; anschließend Demo-Graph, reale Tests und aktive Forschungsbranches prüfen. Keine Löschung oder Verschiebung.
+
+Das neue P0-Dokumentations-Gate lief erfolgreich, aber nicht die vollständige Node22-Suite. Die bestehende JavaScript-Regressions-CI erhält deshalb zusätzlich den exakten Pfad des P0-Workflows als PR- und Main-Push-Trigger (keine breite Aktivierung für Markdown-only). Keine neuen Testkommandos, keine Änderung an Spielcode, Referenzen oder Regelversionen. Neue CI des erweiterten Heads separat prüfen; keine Aussage zur Integration oder Veröffentlichung.

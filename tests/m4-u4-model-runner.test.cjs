@@ -360,3 +360,17 @@ test('explicit named free model still probes exactly once, even on provider over
  assert.equal(calls,1);assert.equal(r.attempts.length,1);assert.equal(r.reason,'INFRASTRUCTURE');
  for(const selection of ['openrouter/free','some/paid'])await assert.rejects(selectProbe({cfg:remoteCfg(model),selection,fetcher:async()=>{throw Error('must not call');}}),/explicit free mode/);
 });
+
+test('local model gets longer per-request budget without changing remote or total deadlines',async()=>{
+ const original=AbortSignal.timeout;
+ try {
+  for(const [provider,budget,expected] of [['ollama',300000,90000],['ollama',45000,45000],['openrouter',300000,20000]]){
+   let clock=0,seen=[];
+   const cfg=provider==='ollama'?config({M4_AI_MODEL:'gemma4:e4b'}):remoteCfg('test/model:free');
+   const f=fixture();
+   AbortSignal.timeout=ms=>{seen.push(ms);return original(ms);};
+   const result=await run({relay:f.relay,cfg,module:'A',now:()=>clock,emit:e=>{if(e.kind==='observation')clock=300000-budget;},fetcher:async()=>response({action:{op:'stop'},note:'done'},cfg.model)});
+   assert.deepEqual(seen,[expected]);assert.equal(result.reason,'MODEL_STOP');assert.equal(result.actions,0);assert.equal(f.closed(),1);
+  }
+ } finally {AbortSignal.timeout=original;}
+});

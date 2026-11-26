@@ -2308,6 +2308,17 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   const frachterTauglich = (s, sh, minuten) => !m_core_anlage.stillgelegt(s,sh) &&
     (!w6Research || (m_core_anlage.restAktivminuten(s,sh) ?? Infinity) >= minuten);
 
+  function industrieMinerPendel(s, sh) {
+    const pendel = s.kanon.pendel[sh.id];
+    return !pendel || (!pendel.beenden && (pendel.ware === 'erz' ||
+      (w6Research && pendel.ware === 'eis' && s.stations[W.quellStation].lager.eis >= W.charge)));
+  }
+  function industrieMinerFreigeben(s, miner) {
+    if (w6Research && s.kanon.pendel[miner.id]?.ware === 'eis')
+      return m_core_kreislauf.ausfuehren(s,{type:'shipShuttleStop',owner:miner.owner,schiff:miner.id});
+    return {ok:true};
+  }
+
   function vertragsbefehle(miner, frachter, materialOnly = false) {
     return [
       {type:materialOnly?'industrialOreOfferMaterial':'industrialOreOffer',owner:'st_nadir',miner:miner.id,frachter:frachter.id},
@@ -2320,6 +2331,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     // Reject when the bounded window does not prove completion.
     const q = structuredClone(s);
     vertragsproben.add(q);
+    if (miner) {
+      const r = industrieMinerFreigeben(q,miner);
+      if (!r.ok) return r.reason;
+    }
     const commands = miner ? vertragsbefehle(miner,frachter) : [];
     const i = q.kanon.industrieErz;
     if (miner || !i.signFracht)
@@ -2421,7 +2436,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       sh.owner === 'npc3' && sh.klasse === 'miner' && sh.system === 'aldera'
       && sh.flug?.lage === 'angedockt' && !m_core_anlage.stillgelegt(s, sh) && !industrieRestGrund(s,sh)
       && ladungSumme(sh) === 0 && !s.erzpilotVertraege?.[sh.id]
-      && (!s.kanon.pendel[sh.id] || s.kanon.pendel[sh.id].ware === 'erz'));
+      && (w6Research ? industrieMinerPendel(s,sh) :
+        (!s.kanon.pendel[sh.id] || s.kanon.pendel[sh.id].ware === 'erz')));
     const frachterKandidaten = kandidaten(s, sh =>
       sh.owner === 'transport' && sh.klasse === 'frachter'
       && sh.system === 'aldera' && sh.phase === 'dock'
@@ -2430,6 +2446,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     const paar = w6Partner(s,minerKandidaten,frachterKandidaten);
     if (!paar) return;
     const {miner, fr:frachter} = paar;
+    if (!industrieMinerFreigeben(s,miner).ok) return;
     const befehle = [
       ...vertragsbefehle(miner,frachter,materialOnly),
       {type:'industrialOreAcceptFreight',owner:'transport'},
@@ -2462,6 +2479,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     const angebot = u7Angebotslage(s,true);
     if (!angebot.ok) return;
     const { miner, fr } = angebot;
+    if (!industrieMinerFreigeben(s,miner).ok) return;
     for(const cmd of vertragsbefehle(miner,fr)){
       const r=k7Befehl(s,cmd);
       if(!r.ok){
@@ -2501,7 +2519,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     const minerKandidaten=kandidaten(s,sh=>sh.owner==='npc3'&&sh.klasse==='miner'
        &&sh.system==='aldera'&&sh.phase==='dock'&&sh.flug?.lage==='angedockt'
        &&ladungSumme(sh)===0&&!s.erzpilotVertraege?.[sh.id]&&!m_core_anlage.stillgelegt(s,sh) && !industrieRestGrund(s,sh)
-       &&!k.pendel[sh.id]?.beenden&&(!k.pendel[sh.id]||k.pendel[sh.id].ware==='erz'));
+       &&industrieMinerPendel(s,sh));
     const frachterKandidaten=kandidaten(s,sh=>sh.owner==='house'&&sh.klasse==='frachter'
        &&sh.system==='aldera'&&sh.phase==='dock'&&sh.flug?.lage==='angedockt'
        &&sh.auftrag==='halten'&&ladungSumme(sh)===0&&!m_core_anlage.stillgelegt(s,sh) && !industrieRestGrund(s,sh));

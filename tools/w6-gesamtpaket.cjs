@@ -45,7 +45,8 @@ function abnahme(id, tage, seed, profil, replay = true) {
   };
   const ergebnis = run();
   if (profil === '60' && id === 'S02' && seed === 42)
-    for (const v of ergebnis.verlauf) assert.equal(v.hash,referenzS02[v.tag]);
+    for (const v of ergebnis.verlauf.filter(v=>Object.hasOwn(referenzS02,v.tag)))
+      assert.equal(v.hash,referenzS02[v.tag]);
   if (replay) assert.deepEqual(run(),ergebnis);
   const verlauf = ergebnis.verlauf.map(v => ({
     tag:v.tag, hash:v.hash, weltgeld:v.weltgeld, mint:v.mint, burn:v.burn, gebunden:v.gebunden,
@@ -55,7 +56,13 @@ function abnahme(id, tage, seed, profil, replay = true) {
     letzteHausEis:v.fracht.eisHaus.findLast(a=>a.end !== null)?.end ?? null,
   }));
   const v = ergebnis.verlauf.at(-1);
-  return {id,tage,seed,profil,replay,quellhash:ergebnis.quellhash,starthash:ergebnis.starthash,kaufprobe:ergebnis.kaufprobe,verlauf,
+  const endfenster = [30,7].map(tageFenster => {
+    const end = verlauf.at(-1), start = verlauf.find(x=>x.tag === tage-tageFenster);
+    return {tage:tageFenster,...Object.fromEntries(
+      ['eisfrachten','w3','wasserProduziert','materialErzeugt','frachterGebaut','minerGeliefert','jaegerVerkauft','ersatz']
+        .map(key=>[key,end[key]-start[key]]))};
+  });
+  return {id,tage,seed,profil,replay,quellhash:ergebnis.quellhash,starthash:ergebnis.starthash,kaufprobe:ergebnis.kaufprobe,verlauf,endfenster,
     ende:{letzterVertrag:v.aktiveAuftraege.k7,w3:v.aktiveAuftraege.w3,
       schiffe:v.huellen.filter(h=>!h.stillgelegt), lager:v.lager, kassen:v.kassen,
       entscheidungen:v.entscheidungen, ersterStillstand:v.ersterStillstand}};

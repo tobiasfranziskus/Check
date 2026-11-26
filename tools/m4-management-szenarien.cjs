@@ -273,7 +273,7 @@ function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', beobachte
         };
       }
     }
-    if ([7, 30, 90, 365, 730, tage, ...(forschung === 'gesamt' ? [tage-30, tage-7] : [])].includes(tag))
+    if ([7, 30, 90, 365, 730, tage, ...(abschluss ? [tage-30, tage-7] : [])].includes(tag))
       verlauf.push({tag, ...kontrollstand(welt, s), entscheidungen: {...entscheidungen},
         ersterStillstand, rentabilitaet: transportBilanz(welt, s, industrieRueckladungen),
         industrieRueckladungen: industrieRueckladungen.map(x => ({...x,

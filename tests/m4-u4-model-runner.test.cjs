@@ -1,6 +1,6 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {config,requestBody,decision,run,probe}=require('../scripts/m4-u4-model-runner.cjs');
+const {config,requestBody,decision,run,probe,selectProbe,AUTO_FREE_MODELS}=require('../scripts/m4-u4-model-runner.cjs');
 const cfg=config({M4_AI_MODEL:'local-test'}),response=(x,model)=>new Response(JSON.stringify({model,choices:[{message:{content:JSON.stringify(x)}}]}));
 function fixture(){
  let round=0,closed=0;const actions=[];
@@ -83,7 +83,7 @@ test('mobile workflow has explicit main consent, protected environment and no PR
  assert.match(y,/github\.ref == 'refs\/heads\/main' && inputs\.consent == true/);
  assert.match(y,/environment: m4-blindtest/);assert.match(y,/persist-credentials: false/);
  assert.equal((y.match(/secrets\.OPENROUTER_API_KEY/g)||[]).length,2);
- const probeStep=y.indexOf('      - name: Probe fixed free model before browser installation');
+ const probeStep=y.indexOf('      - name: Probe free models before browser installation');
  const installStep=y.indexOf('      - name: Install browser without model credentials');
  const pilotStep=y.indexOf('      - name: Run independent model pilot');
  assert.ok(probeStep>0&&probeStep<installStep&&installStep<pilotStep);
@@ -91,7 +91,8 @@ test('mobile workflow has explicit main consent, protected environment and no PR
  assert.doesNotMatch(y.slice(installStep,pilotStep),/OPENROUTER_API_KEY|continue-on-error|if: always/);
  assert.match(y,/m4-live\/probe\.json/);
  assert.match(y,/retention-days: 7/);assert.match(y,/UNREVIEWED/);
- assert.match(y,/default: 'particle-ai\/particle-1:free'/);assert.doesNotMatch(y,/M4_AI_MODEL===\x22openrouter\/free\x22/);
+ assert.match(y,/default: 'auto-free'/);
+ assert.match(y.slice(pilotStep),/M4_AI_MODEL: \$\{\{ steps\.probe\.outputs\.model \}\}/);assert.doesNotMatch(y,/M4_AI_MODEL===\x22openrouter\/free\x22/);
 });
 
  test('free router allowed only with explicit consent and key',()=>{
@@ -301,4 +302,61 @@ test('fixed Particle pilot uses JSON mode and never switches after successful pr
  }});
  assert.deepEqual(calls,[model,model,model]);assert.equal(result.actions,1);
  assert.equal(result.reason,'INFRASTRUCTURE');assert.equal(result.model,model);
+});
+
+
+test('auto-free selects a verified candidate once, after provider-local 429 and malformed response',async()=>{
+ const calls=[],selection='auto-free';
+ const result=await selectProbe({cfg:remoteCfg(AUTO_FREE_MODELS[0]),selection,fetcher:async(url,opts)=>{
+  const b=JSON.parse(opts.body);calls.push(b.model);
+  assert.deepEqual(b.response_format,{type:'json_object'});
+  assert.doesNotMatch(opts.body,/Karriere|MOCK_ONLY_SECRET/);
+  if(calls.length===1)return new Response(JSON.stringify({error:{metadata:{limit_source:'upstream_provider_shared_pool',raw:'SECRET_SENTINEL'}}}),{status:429});
+  if(calls.length===2)return response(click,b.model);
+  return response({action:{op:'stop'},note:'probe'},b.model);
+ }});
+ assert.deepEqual(calls,AUTO_FREE_MODELS.slice(0,3));
+ assert.equal(result.reason,'PROBE_OK');assert.equal(result.model,AUTO_FREE_MODELS[2]);assert.equal(result.attempts.length,3);
+ assert.equal(result.actions,0);assert.equal(result.verdict,'UNREVIEWED');
+ assert.doesNotMatch(JSON.stringify(result),/SECRET_SENTINEL|MOCK_ONLY_SECRET/);
+ const f=fixture(),pilotCalls=[];
+ await run({relay:f.relay,cfg:remoteCfg(result.model),module:'A',sleep:async()=>{},fetcher:async(url,opts)=>{
+  const b=JSON.parse(opts.body);pilotCalls.push(b.model);
+  assert.doesNotMatch(opts.body,/"note":"probe"/);
+  return pilotCalls.length===1?response(click,b.model):new Response('private',{status:429});
+ }});
+ assert.deepEqual(pilotCalls,[result.model,result.model,result.model]);
+});
+
+test('auto-free exhausts at most five unique explicitly free models on provider-local limits',async()=>{
+ const calls=[];
+ const result=await selectProbe({cfg:remoteCfg(AUTO_FREE_MODELS[0]),selection:'auto-free',fetcher:async(url,opts)=>{
+  calls.push(JSON.parse(opts.body).model);
+  return new Response(JSON.stringify({error:{metadata:{limit_source:'upstream_provider_shared_pool'}}}),{status:429});
+ }});
+ assert.equal(AUTO_FREE_MODELS.length,5);assert.equal(new Set(AUTO_FREE_MODELS).size,5);
+ assert.ok(AUTO_FREE_MODELS.every(m=>/^[A-Za-z0-9._/-]+:free$/.test(m)));
+ assert.deepEqual(calls,AUTO_FREE_MODELS);assert.equal(result.attempts.length,5);
+ assert.equal(result.reason,'INFRASTRUCTURE');assert.equal(result.model,undefined);assert.equal(result.actions,0);
+});
+
+test('auto-free stops at account limits, unknown rate limits and identity mismatch, never bypassing them',async()=>{
+ for(const [status,source] of [[429,'openrouter_free_tier_daily'],[429,'openrouter_free_tier_per_minute'],[429,'openrouter_in_flight_budget'],[429,'unknown'],[401,'unknown'],[402,'openrouter_credits'],[403,'openrouter_key_limit'],[200,'identity']]){
+  let calls=0;
+  const result=await selectProbe({cfg:remoteCfg(AUTO_FREE_MODELS[0]),selection:'auto-free',fetcher:async()=>{
+   calls++;
+   return status===200?response({action:{op:'stop'},note:'probe'},'wrong/model:free'):new Response(JSON.stringify({error:{metadata:{limit_source:source}}}),{status});
+  }});
+  assert.equal(calls,1,source);assert.equal(result.attempts.length,1);assert.equal(result.reason,'INFRASTRUCTURE');
+  assert.equal(result.actions,0);assert.equal(result.model,undefined);
+ }
+});
+
+test('explicit named free model still probes exactly once, even on provider overload; paid/router rejected',async()=>{
+ const model='particle-ai/particle-1:free';let calls=0;
+ const r=await selectProbe({cfg:remoteCfg(model),selection:model,fetcher:async()=>{
+  calls++;return new Response(JSON.stringify({error:{metadata:{limit_source:'upstream_provider_shared_pool'}}}),{status:429});
+ }});
+ assert.equal(calls,1);assert.equal(r.attempts.length,1);assert.equal(r.reason,'INFRASTRUCTURE');
+ for(const selection of ['openrouter/free','some/paid'])await assert.rejects(selectProbe({cfg:remoteCfg(model),selection,fetcher:async()=>{throw Error('must not call');}}),/explicit free mode/);
 });

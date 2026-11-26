@@ -45,6 +45,12 @@ Nach jedem Lauf den ausgegebenen JSON-Resultatpfad (evidence.jsonl) samt Termina
 
 Prüfung des Starter-Blobs 292e04f3705913ede0dc496ca573bef9497998c6 am 26.11.: Bash- und eingebettete Node22-Syntax erfolgreich, ungültiges Modul mit Exit 2 abgelehnt; isoliertes temporäres Git-Repository und simulierter Loopback-Modellserver mit Stub des bestehenden Runners: 4/4 Fälle (fester Provider/Modell und Start, fehlendes Modell, falsche Probe, unsauberer Checkout). Kein echter Ollama-, Browser- oder Spieltest in dieser Prüfung; keine Änderung des Spielcodes.
 
+### Erster lokaler Lauf A: Infrastrukturblockade (26.11.2026)
+
+Nutzer-Terminalausgabe für Checkout `1d4e6211`: Browserinstallation erfolgreich (Playwright-Fallback Ubuntu 20.04, OS nicht offiziell unterstützt), gemma4:e4b installiert; synthetische JSON-Proben 32.690 ms kalt und 12.625 ms warm. Lauf A: INFRASTRUCTURE / Model timeout, 0 Aktionen, 41.170 ms, UNREVIEWED. Keine UX-Abnahme, keine Aussage über Spielbarkeit.
+
+Korrektur im selben Draft #642: lokaler Ollama-Aufruf maximal 90 s statt 20 s, begrenzt durch verbleibendes unverändertes 300-s-Budget. Remote-Aufruf weiterhin maximal 20 s, maximal zwei Versuche und 12 Aktionen unverändert. Drei simulierte Budgetfälle am aus GitHub abgerufenen run()-Code bestanden (90 s lokal, 45 s Restbudget, 20 s remote); zusätzliche Node-Regression im PR, CI noch nicht geprüft. Reales Modell erneut starten; bei erneutem Timeout oder Formatfehler Evidenzdatei auswerten. Keine Verlängerung des Abnahmebudgets, keine Modellumstellung und kein Spielcodewechsel. Testcheckout aktualisieren: `git pull --ff-only`, danach `bash scripts/m4-u4-ollama-local.sh A`.
+
 ## A/B – getrennte Pilotaufträge
 
 A: Neue Standardkarriere. Ziel: „Beginne eine Karriere und finde heraus, was du als Manager tun kannst.“ Erste sichtbare Aktion und gewähltes Ziel protokollieren. B: Frische Sitzung; Ziel: „Erziele mit deiner Flotte Einnahmen.“ Erst mit Standardstart versuchen; falls zwölf Aktionen nicht reichen, getrennt einen validierten, regulär erspielten Teststand mit vorhandenem einsatzfähigem Schiff und offenem Auftrag vorbereiten. Keine Lösungsfolge oder spezifischen Klicks mitteilen. B-Teststand noch nicht erzeugt; dafür bestehenden M4-U3-UI-/Auditpfad als technische Grundlage nutzen, echten JSON-Export und Hash prüfen und nur regulär importieren. Kein Storage-Injektionsweg im Relay. Der vorbereitete Importpfad benötigt weitere Unterstützung und Prüfung.

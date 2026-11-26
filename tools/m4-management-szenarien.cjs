@@ -117,7 +117,7 @@ function ankunftErfassen(s, rueckladungen) {
     tarif:rueck?.art==='erz' ? rueck.gebuehr : 0, zustimmung:a.wasserZustimmung===true});
 }
 
-function start(szenario, seed, forschung, startpfad) {
+function start(szenario, seed, forschung, startpfad, siliziumAktiv = true) {
   const original = J8.erstellen();
   original.starten195(W5.create(seed, 'private195').export(), true);
   const w = original.weltReferenz(), z = original.zustandReferenz();
@@ -125,7 +125,7 @@ function start(szenario, seed, forschung, startpfad) {
   if (startpfad === 'k7') assert.ok(w.industrieAutoSetzen(z, true).ok);
   if (startpfad === 'konzerne') {
     w.npcAutoSetzen(z, true);
-    w.npcSiliziumSetzen(z, true);
+    assert.equal(w.npcSiliziumSetzen(z, siliziumAktiv).ok,true);
   }
   const quelle = original.exportieren(), quellhash = original.ansicht().hash;
   const sitzung = J8.erstellen();
@@ -210,8 +210,8 @@ const VERGLEICH = [
   [SZENARIEN.find(x => x.id === 'S02'), 'konzerne'],
 ];
 
-function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', beobachter = null) {
-  const {welt: originalWelt, s, quellhash, industrieRueckladungen} = start(szenario, seed, forschung, startpfad);
+function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', beobachter = null, siliziumAktiv = true) {
+  const {welt: originalWelt, s, quellhash, industrieRueckladungen} = start(szenario, seed, forschung, startpfad, siliziumAktiv);
   // Optional offline audit. Default path and manager decisions stay identical.
   const welt = beobachter ? {...originalWelt, advance(state, minuten) {
     if (state !== s) return originalWelt.advance(state, minuten);

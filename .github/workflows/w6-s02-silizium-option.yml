@@ -1,0 +1,32 @@
+name: W6 S02 silicon opportunity cost
+on:
+  pull_request:
+    branches:
+      - audit/w6-s02-folgestillstand-20261126
+    paths:
+      - 'tools/w6-s02-silizium-option.cjs'
+      - 'tools/m4-management-szenarien.cjs'
+      - '.github/workflows/w6-s02-silizium-option.yml'
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compare existing policy with identical manager decisions
+        run: |
+          node --check tools/m4-management-szenarien.cjs
+          node --check tools/w6-s02-silizium-option.cjs
+          node tools/w6-s02-silizium-option.cjs w6-silizium-option.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: w6-silizium-option
+          path: w6-silizium-option.json
+          if-no-files-found: error

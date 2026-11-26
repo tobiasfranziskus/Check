@@ -439,3 +439,30 @@ test('native pilot receives unchanged-text feedback and a dedicated confirmation
  const f=fixture();const unexpected=await run({relay:f.relay,cfg:local,module:'A',fetcher:async()=>new Response(JSON.stringify({model:local.model,done:true,message:{content:JSON.stringify({action:{op:'dialog',choice:'accept'},note:'bad'})}}))});
  assert.equal(unexpected.reason,'INFRASTRUCTURE');assert.equal(f.actions.length,0);
 });
+
+test('native local memory detects three-action cycles without hidden state or automatic actions',async()=>{
+ const {rememberScreen}=require('../scripts/m4-u4-model-runner.cjs');
+ const local=config({M4_AI_MODEL:'gemma4:e4b',M4_OLLAMA_NATIVE:'1'}),events=[],actions=[],calls=[];
+ const views=['bridge','menu','confirm?','bridge','menu','confirm?','bridge'];
+ const observation=n=>({round:n,remaining:12-n,visibleText:views[n],...(views[n]==='confirm?'?{dialog:'confirm'}:{}),done:false,secret:'never forward'});
+ const decisions=[{op:'click',x:10,y:10},{op:'click',x:20,y:20},{op:'dialog',choice:'accept'},{op:'click',x:10,y:10},{op:'click',x:20,y:20},{op:'dialog',choice:'accept'},{op:'stop'}];
+ const relay={observe:async()=>observation(0),step:async a=>{actions.push(a);return observation(actions.length);},close:async()=>{}};
+ const result=await run({relay,cfg:local,module:'A',emit:e=>events.push(e),fetcher:async(url,opts)=>{
+  const body=JSON.parse(opts.body);const n=calls.length;calls.push(JSON.parse(body.messages[1].content));
+  return new Response(JSON.stringify({model:local.model,done:true,message:{content:JSON.stringify({action:decisions[n],note:'not forwarded'})}}));
+ }});
+ assert.equal(result.reason,'MODEL_STOP');assert.deepEqual(actions,decisions.slice(0,6));
+ assert.deepEqual(calls.map(c=>c.view),['S1','S2','S3','S1','S2','S3','S1']);
+ assert.deepEqual(calls.map(c=>c.visits),[1,1,1,2,2,2,3]);
+ assert.equal(calls[3].lastTextUnchanged,false);
+ assert.equal(calls[6].history,'1:click(10,10) S1>S2; 2:click(20,20) S2>S3; 3:dialog(accept) S3>S1; 4:click(10,10) S1>S2; 5:click(20,20) S2>S3; 6:dialog(accept) S3>S1');
+ assert.doesNotMatch(JSON.stringify(calls),/never forward|not forwarded/);
+ assert.equal(rememberScreen(observation(0),new Map()).screenVisits,1);
+ const seen=new Map();
+ assert.notEqual(rememberScreen({visibleText:'same'},seen).screenId,rememberScreen({visibleText:'same',dialog:'confirm'},seen).screenId);
+ const bad={error:'hidden',visibleText:'x'};assert.equal(rememberScreen(bad,seen),bad);
+ const remote=requestBody(cfg,'goal',{...observation(0),screenId:'S1',screenVisits:2},[{action:{op:'stop'},note:'old'}]);
+ const legacy=JSON.parse(remote.messages[1].content);assert.equal(legacy.view,undefined);assert.equal(legacy.history,undefined);assert.equal(legacy.recent[0].note,'old');
+ const bounded=JSON.parse(requestBody(local,'goal',observation(0),Array.from({length:50},()=>({action:{op:'type',text:'x'.repeat(300)}}))).messages[1].content);
+ assert.equal(bounded.history.split('; ').length,12);assert.ok(bounded.history.length<1100);assert.doesNotMatch(bounded.history,/x{49}/);
+});

@@ -8,13 +8,13 @@ const {pruefen}=require('./w6-szenarien.cjs');
 const [sz,pfad]=VERGLEICH.find(([x])=>x.id==='S02');
 const reference=['85030b8df72a12ce','4e2e3657ef684657','7038f094f7aa754d'];
 const horizon=240;
-function preflight(w,s){
+function preflight(w,s,force = false){
   const i=s.kanon.industrieErz;
   if(i?.phase!=='angebot'||i.carrier!=='house'||i.signFracht||s.w3.auftrag)return null;
   const rest=w.restAktivminuten(s,i.miner);
   // More rest than the bounded observation window cannot be exhausted
   // in that window. This is NOT a guarantee of successful delivery.
-  if(rest===null||rest>horizon)return null;
+  if(!force&&(rest===null||rest>horizon))return null;
   const original=w.save(s),q=w.load(original),id=i.miner;
   const accepted=w.execute(q,{type:'industrialOreAcceptFreight',owner:'house'});
   let status='UNGEKLAERT',minutes=0,commit=false;
@@ -43,7 +43,7 @@ function preflight(w,s){
   return {tick:s.tick,miner:id,frachter:i.frachter,rest,minutes,status,commit,
     ladung:q.ships[id].ladung.erz||0,probeHash:w.hash(q)};
 }
-function experiment(vorsorge, eisErlaubt = null){
+function experiment(vorsorge, eisErlaubt = null, alternative = null){
   const probes=[],bindings=[],decisions={};
   let prev=null,active=null,block=null;
   function observe(w,s,phase){
@@ -59,6 +59,7 @@ function experiment(vorsorge, eisErlaubt = null){
           assert.equal(s.w3.auftrag,null);
           assert.deepEqual(pruefen(w,s),[]);
           p.storno=true;
+          if(alternative)alternative(w,s,p);
         }else{
           assert.equal(w.save(s),before);
           p.storno=false;

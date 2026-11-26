@@ -6,7 +6,7 @@ const fs=require('node:fs');
 const {experiment}=require('./w6-s02-vertragsvorsorge.cjs');
 const {pruefen}=require('./w6-szenarien.cjs');
 const expected=['85030b8df72a12ce','4e2e3657ef684657','f4b785f43855f12e'];
-function run(reserve){
+function run(reserve, alternative = null){
   const reasons={},windows=[];
   function permit(w,s,sh){
     const count=k=>reasons[k]=(reasons[k]||0)+1;
@@ -39,9 +39,11 @@ function run(reserve){
       angebot:w.industrieAngebotslage(s),verzicht:reserve});
     return !reserve;
   }
-  const report=experiment(true,permit);
+  const report=experiment(true,permit,alternative);
   return {report,reasons,windows};
 }
+module.exports={run};
+if(require.main===module){
 const a=run(false),b=run(true);
 assert.deepEqual(a.report.report.verlauf.map(x=>x.hash),expected);
 assert.deepEqual(experiment(true),a.report,'observation alone preserves #645');
@@ -65,3 +67,4 @@ for(const x of [a,b])for(const v of x.report.report.verlauf){
 }
 fs.writeFileSync(process.argv[2]||'w6-letzte-frachtrunde.json',JSON.stringify({seed:42,a,b},null,2)+'\n');
 console.log('W6_LETZTE_FRACHTRUNDE '+JSON.stringify({control:summary(a),reserve:summary(b),deterministic:true,controlUnchanged:true}));
+}

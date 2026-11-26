@@ -59,3 +59,18 @@ test('actual root copy: bounded visible text observation (not blind play)',{skip
   assert.equal(a.screenshot,undefined);
  }finally{if(s)await s.close();fs.rmSync(out,{recursive:true,force:true});}
 });
+
+test('opt-in button markers distinguish visible native buttons from headings, disabled and hidden controls',{skip:!process.env.M4_UI_BROWSER},async()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'m4-buttons-'));let s;
+ fs.writeFileSync(path.join(root,'index.html'),'<html><style>body{margin:0}button{display:block;width:200px;height:60px} .off{position:absolute;top:2000px}</style><h2>Heading</h2><button><span>Enabled Button</span></button><button disabled>Disabled Button</button><button style="display:none">HIDDEN_SECRET</button><button class="off">OFFSCREEN_SECRET</button><button data-private="ATTR_SECRET">Other Button</button></html>');
+ try{
+  s=await session(root,path.join(root,'out'),{textMode:true,markButtons:true});
+  const a=await s.observe();
+  assert.match(a.visibleText,/\[B\] Enabled Button/);
+  assert.match(a.visibleText,/\[B\] Other Button/);
+  assert.match(a.visibleText,/\) Heading/);
+  assert.match(a.visibleText,/\) Disabled Button/);
+  assert.doesNotMatch(a.visibleText,/SECRET|\[B\] Heading|\[B\] Disabled/);
+  assert.ok(a.visibleText.length<=1800);
+ }finally{if(s)await s.close();fs.rmSync(root,{recursive:true,force:true});}
+});

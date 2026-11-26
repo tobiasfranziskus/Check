@@ -2842,7 +2842,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(p8bZweiFelder ? {p8bZweiEndlicheFelder:true} : {}),
     ...(p8cDravos||p8dFracht ? {p8cEchteDravosExpedition:true} : {}),
     ...(p8dFracht ? {p8dGetrennteSpedition:true,p8gMaterialOnlyW3:true} : {}),
-    ...(w6Research ? { u9TeilabrechnungProbe, u9VollabnahmeProbe } : {}),
+    ...(w6Research ? { u9TeilabrechnungProbe, u9VollabnahmeProbe,
+      haushaltVerfuegbar: (s, id) => m_core_kreislauf.verfuegbar(s, id),
+    } : {}),
     ...(u8Research ? { industrieAngebotslage: (s) => {
       const {ok, grund} = u7Angebotslage(s);
       return {ok, grund};

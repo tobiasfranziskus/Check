@@ -367,11 +367,16 @@ async function main(){
  delete process.env.OPENROUTER_API_KEY;
  delete process.env.GEMINI_API_KEY;
  delete process.env.GOOGLE_API_KEY;
+ const prepared=process.env.M4_PREPARED_START==='1'&&module!=='A';
+ if(prepared&&fs.realpathSync(root)!==fs.realpathSync(path.resolve(__dirname,'..')))throw Error('Prepared start requires matching product checkout');
+ const setup=prepared?require('./m4-u4-startstand.cjs'):null;
+ const fixture=setup?setup.prepare(module):null;
  const out=fs.mkdtempSync(path.join(os.tmpdir(),'m4-u4-model-'));
  const file=path.join(out,'evidence.jsonl');
  const emit=x=>fs.appendFileSync(file,JSON.stringify(x)+'\n',{mode:0o600});
- emit({kind:'start',module,goal:GOALS[module],provider:cfg.provider,model:cfg.model,productSha:process.env.M4_PRODUCT_SHA||'UNVERIFIED',testMode:cfg.diagnostic?'text-controls-diagnostic':'text',started:new Date().toISOString()});
- const relay=await session(root,out,{textMode:true,markButtons:cfg.native===true,allowDialogs:cfg.native===true,executablePath:process.env.CHROMIUM_PATH});
+ emit({kind:'start',module,goal:GOALS[module],provider:cfg.provider,model:cfg.model,productSha:process.env.M4_PRODUCT_SHA||'UNVERIFIED',testMode:cfg.diagnostic?'text-controls-diagnostic':'text',testStart:fixture?{id:fixture.id,hash:fixture.hash,sha256:fixture.sha256}:{id:'fresh'},started:new Date().toISOString()});
+ const relay=await session(root,out,{textMode:true,markButtons:cfg.native===true,allowDialogs:cfg.native===true,executablePath:process.env.CHROMIUM_PATH,...(fixture?{preparePage:page=>setup.importPrepared(page,fixture)}:{})});
+ if(fixture)emit({kind:'test_start_validated',id:fixture.id,hash:fixture.hash,sha256:fixture.sha256});
  const result=await run({relay,cfg,module,emit});
  console.log(JSON.stringify({evidence:file,...result}));
 }

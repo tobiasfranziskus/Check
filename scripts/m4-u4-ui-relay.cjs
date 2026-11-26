@@ -94,7 +94,7 @@ function viewportText(markButtons=false){
  return result||'[Kein sichtbarer Text erkannt]';
 }
 
-async function session(root,out,{chromium,executablePath,textMode=false,markButtons=false,allowDialogs=false}={}){
+async function session(root,out,{chromium,executablePath,textMode=false,markButtons=false,allowDialogs=false,preparePage}={}){
  const browserType=chromium||require(process.env.PLAYWRIGHT_MODULE||'playwright').chromium;
  const server=serverFor(root);
  let browser,ctx;
@@ -120,6 +120,10 @@ async function session(root,out,{chromium,executablePath,textMode=false,markButt
   ctx.on('page',p=>{if(p!==page)p.close().catch(()=>{});});
   await page.goto(origin+'/');
   await page.waitForTimeout(300);
+  if(preparePage!==undefined){
+   if(typeof preparePage!=='function')throw Error('Invalid trusted setup');
+   await preparePage(page);
+  }
   const started=performance.now();let rounds=0,closed=false;
   fs.mkdirSync(out,{recursive:true});
   async function close(){if(closed)return;closed=true;if(pending){const d=pending;pending=null;await d.dismiss().catch(()=>{});}await ctx.close();await browser.close();await new Promise(resolve=>server.close(resolve));}

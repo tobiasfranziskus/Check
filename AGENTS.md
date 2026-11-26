@@ -87,7 +87,7 @@ Die technische Projektleitung bündelt drei Arbeitsstränge (P0, Wirtschaft W0�
 5. Diff auf unbeabsichtigte Änderungen prüfen. Dokumentation und Projektstatus bei relevanten Änderungen aktualisieren; historische Testberichte nicht nachträglich als aktuelle Abnahme darstellen.
 6. Pull Request mit Problem, Änderung, Kompatibilität, Tests und Grenzen erstellen. Spielbare und ausreichend geprüfte Änderungen dürfen mit der **stehenden Nutzerfreigabe vom 14.11.2026** nach den obigen Schutz- und Integrations-Gates selbstständig nach `main` gemergt und über GitHub Pages veröffentlicht werden. Offene Forschungsprojekte, neue Produktregeln und destruktive Migrationen sind dadurch nicht automatisch freigegeben. Ein erfolgreicher Testlauf beweist weder Merge noch Veröffentlichung.
 
-Die bestehende GitHub-Actions-Prüfung verwendet Node.js 22 und reagiert nur auf `index.html`, `tests/**` und die Workflow-Datei. Bei reinen Markdown-Änderungen den Testbefehl trotzdem lokal ausführen; einen nicht gestarteten CI-Lauf nicht als bestanden melden.
+Die JavaScript-Regressionsprüfung verwendet Node.js 22 und reagiert auf `index.html`, `tests/**` sowie ihre eigene und die P0-Inventur-Workflow-Datei. Der P0-Workflow prüft auch Dokumentationsänderungen mit den vorhandenen Inventur- und Linktests. Die vollständige Node22-Suite weiterhin tatsächlich lokal oder in CI für den Integrationsstand ausführen; bei fehlendem Checkout und nicht gestartetem CI-Lauf bleibt das Gate offen. Keine ausgefallene Prüfung als bestanden melden.
 
 
 ## Zentrale Roadmap und fortlaufende Dokumentationspflege

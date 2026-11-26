@@ -4,6 +4,8 @@ on:
     paths:
       - 'scripts/m4-u4-ui-relay.cjs'
       - 'scripts/m4-u4-model-runner.cjs'
+      - 'scripts/m4-u4-startstand.cjs'
+      - 'tests/m4-u4-startstand.test.cjs'
       - 'tests/m4-u4-model-runner.test.cjs'
       - 'tests/m4-u4-ui-relay.test.cjs'
       - '.github/workflows/m4-u4-ui-relay.yml'
@@ -32,6 +34,6 @@ jobs:
           M4_UI_BROWSER: '1'
         run: |
           export PLAYWRIGHT_MODULE="$RUNNER_TEMP/m4-ui/node_modules/playwright"
-          node --test tests/m4-u4-ui-relay.test.cjs tests/m4-u4-model-runner.test.cjs
+          node --test tests/m4-u4-ui-relay.test.cjs tests/m4-u4-model-runner.test.cjs tests/m4-u4-startstand.test.cjs
       - name: Existing Node regression
         run: node --test tests/*.test.mjs

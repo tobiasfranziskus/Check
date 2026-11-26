@@ -2,7 +2,15 @@
 // Test-only controller. The model receives no source, DOM, storage, save or game commands.
 const fs=require('node:fs'), os=require('node:os'), path=require('node:path');
 const {performance}=require('node:perf_hooks');
-const {action,session,LIMIT,MS}=require('./m4-u4-ui-relay.cjs');
+const {action,session,LIMIT,MS,WIDTH,HEIGHT}=require('./m4-u4-ui-relay.cjs');
+const int=(minimum,maximum)=>({type:'integer',minimum,maximum});
+const xy={x:int(0,WIDTH-1),y:int(0,HEIGHT-1)};
+const variant=(op,fields={})=>({type:'object',properties:{op:{type:'string',enum:[op]},...fields},required:['op',...Object.keys(fields)],additionalProperties:false});
+const DECISION_SCHEMA={type:'object',properties:{
+ action:{oneOf:[variant('click',xy),variant('scroll',{...xy,dy:int(-1500,1500)}),variant('type',{text:{type:'string',maxLength:300}}),variant('wait',{ms:int(0,2000)}),variant('reload'),variant('stop')]},
+ note:{type:'string',maxLength:240}
+},required:['action','note'],additionalProperties:false};
+const INVALID_REASONS=new Set(['Invalid model output','Invalid model decision','Expected action object','Unsupported action or field','Invalid x','Invalid y','Invalid dy','Invalid ms','Invalid text']);
 const GOALS={
  A:'Beginne eine Karriere und finde heraus, was du als Manager tun kannst.',
  B:'Erziele mit deiner Flotte Einnahmen.',
@@ -83,7 +91,7 @@ async function ask(cfg,body,timeout,fetcher=fetch){
  const headers={'Content-Type':'application/json'};
  if(cfg.key)headers.Authorization='Bearer '+cfg.key;
  const native=cfg.provider==='ollama'&&cfg.native===true;
- const payload=native?{model:cfg.model,messages:body.messages,stream:false,think:false,format:'json',keep_alive:'5m',options:{temperature:0,num_predict:256}}:body;
+ const payload=native?{model:cfg.model,messages:body.messages,stream:false,think:false,format:DECISION_SCHEMA,keep_alive:'5m',options:{temperature:0,num_predict:256}}:body;
  const res=await fetcher(cfg.url,{method:'POST',headers,body:JSON.stringify(payload),redirect:'error',signal:AbortSignal.timeout(timeout)});
  if(!res.ok){
   const err=Error('Model HTTP '+res.status);
@@ -105,7 +113,11 @@ async function ask(cfg,body,timeout,fetcher=fetch){
  if((native?x.done_reason:choice?.finish_reason)==='length')throw Error('Model output truncated');
  if(typeof raw!=='string'||!raw.trim())throw Error('Model output empty');
  let d;
- try{d=decision(raw);}catch(e){throw Error(e instanceof SyntaxError?'Invalid model JSON':'Invalid model decision format');}
+ try{d=decision(raw);}catch(e){
+  const err=Error(e instanceof SyntaxError?'Invalid model JSON':'Invalid model decision format');
+  if(native)err.validation=INVALID_REASONS.has(e.message)?e.message:e instanceof SyntaxError?'JSON syntax':'Unknown validation failure';
+  throw err;
+ }
  if(typeof x.model==='string'&&/^[A-Za-z0-9._:/-]{1,160}$/.test(x.model))d.reportedModel=x.model;
  if(native){
   if(d.reportedModel!==cfg.model)throw Error('Model identity mismatch');
@@ -197,7 +209,7 @@ async function run({relay,cfg,module,emit=()=>{},fetcher=fetch,now=()=>performan
       const next=retryable&&!daily&&(attempt<2||(!selected&&m+1<models.length));
       correction=/Invalid model|Model output (truncated|empty)/.test(detail);
       const delay=next?Math.max(detail==='Model HTTP 429'?(attempt===1?3000:8000):1000,e?.retryAfter??0):0;
-      emit({kind:'model_error',round:obs.round,model,attempt,detail,retryDelayMs:delay,...(quota?{quota}:{})});
+      emit({kind:'model_error',round:obs.round,model,attempt,detail,retryDelayMs:delay,...(quota?{quota}:{}),...(cfg.native&&INVALID_REASONS.has(e.validation)?{validation:e.validation}:{})});
       if(!next)return finish('INFRASTRUCTURE',detail,quota);
       if(delay>=MS-(now()-started))return finish('INFRASTRUCTURE',detail,quota);
       await sleep(delay);
@@ -238,4 +250,4 @@ async function main(){
  console.log(JSON.stringify({evidence:file,...result}));
 }
 if(require.main===module)main().catch(()=>{console.error('Model runner setup or relay failed; see local configuration');process.exitCode=1;});
-module.exports={config,requestBody,decision,ask,probe,selectProbe,AUTO_FREE_MODELS,run,GOALS};
+module.exports={config,requestBody,decision,ask,probe,selectProbe,AUTO_FREE_MODELS,run,GOALS,DECISION_SCHEMA};

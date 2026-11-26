@@ -123,6 +123,17 @@ M4_GEMINI_FREE_CONFIRMED=1 M4_LOCAL_DIAGNOSTIC=1 bash scripts/m4-u4-gemini-local
 
 Gleiche sichtbare Textprojektion, Buttonnummern, Koordinatenabbildung, Sitzungsverlauf, Ziel sowie Zeit-/Aktionsgrenzen wie E4B-Diagnose; keine Änderung des Spiels, keine zusätzliche Spielanleitung. Native Gemini-JSON-Schema-Übersetzung der vorhandenen dynamischen Auswahl, Validierung und tatsächliche Klickausführung gemeinsam genutzt. Free-Projekt-Bestätigung und Modellidentitätsprüfung bleiben erforderlich, kein OpenRouter-Fallback. Standardmodus (freie Koordinatenauswahl) und synthetischer Probeaufruf unverändert. Diagnose bleibt ausdrücklich kein Ersatz für die formale Blindabnahme. Neun gezielte Prüfungen des abgerufenen Codes im Mock-Transport bestanden, Regressionstest ergänzt. Neuer echter API-Lauf und CI offen, keine Behauptung über Spielleistung im neuen Profil. Produktgleichheit separat zu prüfen; kein Merge.
 
+### Gemini 4 Hydrogen (26.11.2026)
+
+Auf Nutzerwunsch `gemini-4-hydrogen` zur festen Modellliste des direkten Gemini-Providers und Launchers hinzugefügt. [Googles offizielle Preisliste](https://ai.google.dev/gemini-api/docs/pricing#gemini-4-hydrogen) bestätigt kostenloses Standard-Input/Output einschließlich Thinking im Free-Tier; Projekt ohne aktivierte Abrechnung weiterhin erforderlich. Tatsächliches Kontingent und Verfügbarkeit nicht verifiziert. Beibehaltung der bisherigen Standardmodellwahl und der expliziten Modellwahl ohne Fallback. Hydrogen verwendet das bestehende Thinking-Level low, feste Modellidentität, 45-s-Requestlimit und unveränderte Sitzungsgrenzen.
+
+```bash
+M4_GEMINI_FREE_CONFIRMED=1 bash scripts/m4-u4-gemini-local.sh A gemini-4-hydrogen
+M4_GEMINI_FREE_CONFIRMED=1 M4_LOCAL_DIAGNOSTIC=1 bash scripts/m4-u4-gemini-local.sh A gemini-4-hydrogen
+```
+
+Erster Befehl freier Koordinatentest, zweiter gesonderte Bedien-Diagnose. Neun gezielte Mock-Prüfungen des abgerufenen Codes erfolgreich, Regressionstest hinzugefügt. Reale API-Probe, Spieltest und neue CI offen. Keine Spielcode-/Abnahmeänderung oder Integration in main.
+
 ## A/B – getrennte Pilotaufträge
 
 A: Neue Standardkarriere. Ziel: „Beginne eine Karriere und finde heraus, was du als Manager tun kannst.“ Erste sichtbare Aktion und gewähltes Ziel protokollieren. B: Frische Sitzung; Ziel: „Erziele mit deiner Flotte Einnahmen.“ Erst mit Standardstart versuchen; falls zwölf Aktionen nicht reichen, getrennt einen validierten, regulär erspielten Teststand mit vorhandenem einsatzfähigem Schiff und offenem Auftrag vorbereiten. Keine Lösungsfolge oder spezifischen Klicks mitteilen. B-Teststand noch nicht erzeugt; dafür bestehenden M4-U3-UI-/Auditpfad als technische Grundlage nutzen, echten JSON-Export und Hash prüfen und nur regulär importieren. Kein Storage-Injektionsweg im Relay. Der vorbereitete Importpfad benötigt weitere Unterstützung und Prüfung.

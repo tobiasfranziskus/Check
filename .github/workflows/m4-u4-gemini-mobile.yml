@@ -1,0 +1,128 @@
+name: M4-U4 Gemini-Spieltest (mobil)
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: 'Pilotmodul A oder B (beide starten eine neue Karriere)'
+        type: choice
+        options:
+          - A
+          - B
+        default: A
+      model:
+        description: 'Festes Gemini-Modell, keine automatische Umschaltung'
+        type: choice
+        options:
+          - gemini-3.5-flash-lite
+          - gemini-4-hydrogen
+          - gemini-3.8-flash
+        default: gemini-3.5-flash-lite
+      diagnostic:
+        description: 'Nummerierte Buttons (funktionale Diagnose, keine formale Blindabnahme)'
+        type: boolean
+        default: true
+      consent:
+        description: 'Google-Free-Projekt ohne Abrechnung; sichtbare Testtexte senden und GitHub-Artefakt speichern'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: m4-u4-live-pilot
+  cancel-in-progress: false
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Validate branch, consent and model without secrets
+        env:
+          M4_CONSENT: ${{ inputs.consent }}
+          M4_MODULE: ${{ inputs.module }}
+          M4_AI_MODEL: ${{ inputs.model }}
+        run: |
+          if [ "$GITHUB_REF" != refs/heads/main ]; then echo 'Bitte main auswählen.' >&2; exit 1; fi
+          if [ "$M4_CONSENT" != true ]; then echo 'Bitte Free-Tier und Datenübermittlung bestätigen.' >&2; exit 1; fi
+          case "$M4_MODULE" in A|B) ;; *) exit 1;; esac
+          case "$M4_AI_MODEL" in gemini-3.5-flash-lite|gemini-4-hydrogen|gemini-3.8-flash) ;; *) exit 1;; esac
+  pilot:
+    needs: preflight
+    if: github.ref == 'refs/heads/main' && inputs.consent == true
+    environment: m4-blindtest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Probe fixed Gemini model (no game text)
+        env:
+          M4_AI_PROVIDER: gemini
+          M4_AI_MODEL: ${{ inputs.model }}
+          M4_ALLOW_REMOTE: '1'
+          M4_GEMINI_FREE_CONFIRMED: '1'
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TMPDIR: ${{ runner.temp }}/m4-live
+        run: |
+          mkdir -p "$TMPDIR"
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo 'Fehlendes Environment-Secret GEMINI_API_KEY.' >&2
+            exit 1
+          fi
+          node scripts/m4-u4-model-runner.cjs --gemini-probe > "$TMPDIR/probe.json"
+      - name: Install browser without model credentials
+        run: |
+          npm install --prefix "$RUNNER_TEMP/m4-ui" --no-audit --no-fund playwright@1.51.1
+          "$RUNNER_TEMP/m4-ui/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Run isolated Gemini pilot
+        env:
+          M4_MODULE: ${{ inputs.module }}
+          M4_AI_MODEL: ${{ inputs.model }}
+          M4_AI_PROVIDER: gemini
+          M4_ALLOW_REMOTE: '1'
+          M4_GEMINI_FREE_CONFIRMED: '1'
+          M4_LOCAL_DIAGNOSTIC: ${{ inputs.diagnostic && '1' || '0' }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          M4_PRODUCT_SHA: ${{ github.sha }}
+          TMPDIR: ${{ runner.temp }}/m4-live
+        run: |
+          mkdir -p "$TMPDIR"
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/m4-ui/node_modules/playwright"
+          node scripts/m4-u4-model-runner.cjs "$M4_MODULE" . > "$TMPDIR/result.json"
+      - name: Summarize transport status, not UX verdict
+        if: always()
+        env:
+          TMPDIR: ${{ runner.temp }}/m4-live
+          M4_AI_MODEL: ${{ inputs.model }}
+          M4_MODULE: ${{ inputs.module }}
+          M4_LOCAL_DIAGNOSTIC: ${{ inputs.diagnostic && '1' || '0' }}
+        run: |
+          node -e '
+            const fs=require("node:fs"),path=require("node:path");
+            const read=name=>{try{return JSON.parse(fs.readFileSync(path.join(process.env.TMPDIR,name),"utf8"));}catch{return null;}};
+            const p=read("probe.json"),r=read("result.json")||p||{};
+            const reason=["INFRASTRUCTURE","MODEL_STOP","LIMIT"].includes(r.reason)?r.reason:"INFRASTRUCTURE";
+            const known=["Invalid model decision format","Invalid model JSON","Model output truncated","Model output empty","Model identity mismatch","Model response too large","Empty model response","Invalid provider JSON","Model transport or response failed","Model timeout","Browser observation failed","Browser action failed","Probe response mismatch","Gemini response blocked or incomplete","Unexpected dialog decision"];
+            const detail=reason==="INFRASTRUCTURE"&&(known.includes(r.detail)||/^Model HTTP [0-9]{3}$/.test(r.detail))?r.detail:reason==="INFRASTRUCTURE"?"Setup oder Probe nicht abgeschlossen":"-";
+            const model=["gemini-3.5-flash-lite","gemini-4-hydrogen","gemini-3.8-flash"].includes(process.env.M4_AI_MODEL)?process.env.M4_AI_MODEL:"unbekannt";
+            const module=["A","B"].includes(process.env.M4_MODULE)?process.env.M4_MODULE:"unbekannt";
+            const n=Number.isInteger(r.actions)&&r.actions>=0&&r.actions<=12?r.actions:0;
+            const elapsed=Number.isFinite(r.elapsedMs)&&r.elapsedMs>=0&&r.elapsedMs<=600000?(r.elapsedMs/1000).toFixed(2)+" s":"nicht gemeldet";
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,["## M4-U4 Gemini-Spieltest","","Modul: "+module,"Modell: "+model,"Profil: "+(process.env.M4_LOCAL_DIAGNOSTIC==="1"?"Nummerierte Buttons (Diagnose)":"Freie Koordinaten"),"API-Probe: "+(p?.reason==="PROBE_OK"?"OK":"Nicht erfolgreich"),"Transportstatus: "+reason,"Diagnose: "+detail,"Aktionen: "+n,"Dauer: "+elapsed,"Checkout: "+process.env.GITHUB_SHA,"","Spielabnahme: UNREVIEWED. Evidenz und Pages-Gleichheit separat prüfen."].join("\n"));
+            if(reason==="INFRASTRUCTURE"){console.error("M4-U4 Gemini: "+detail);process.exitCode=1;}
+          '
+      - name: Upload isolated test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m4-u4-gemini-${{ inputs.module }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/m4-live/probe.json
+            ${{ runner.temp }}/m4-live/result.json
+            ${{ runner.temp }}/m4-live/m4-u4-model-*/evidence.jsonl
+          retention-days: 7
+          if-no-files-found: warn

@@ -1,4 +1,4 @@
-# Aphros Void – aktueller Projektstatus [MAIN/M0/M1/P1/P3/W6] · 24.11.2026
+# Aphros Void – aktueller Projektstatus [MAIN/M0/M1/P1/P3/W6] · 26.11.2026
 
 > Aktive Kurzfassung. Historische Zwischenstände, ursprüngliche Testzahlen, Negativbefunde und alle damaligen PR-/Commit-/CI-Links vollständig in der [Statuschronik bis 23.11.2026](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261123.md). Produktentscheidungen stehen in [ROADMAP.md](ROADMAP.md).
 
@@ -6,7 +6,7 @@
 
 **[W6 / DRAFT · 26.11.2026]** [#650](https://github.com/tobiasfranziskus/Check/pull/650) mit [Abnahmebericht](W6_GESAMTPAKET.md). 616/616 Node22-Regressionen, 13×90 Tage mit drei Seeds und Originalkontrollen. S02/42 erreicht 1100 Eisfrachten, 22 W3 und 54.870 Wasser. Das letzte 30-Tage-Fenster an Tag 365 und 730 bleibt bei null Produktion und null gebundener Treuhand. Früherer Vertragsstillstand ist beseitigt, Absatz- und Liquiditätsengpass bleiben. Integrationsstatus Forschung.
 
-**[W6 / DRAFT · 26.11.2026]** [#651](https://github.com/tobiasfranziskus/Check/pull/651) dokumentiert den reproduzierten S02-Langzeitstillstand und die [Finanzierungs- und Investitionsproben](W6_GELDUMLAUF_WASSERLOGISTIK.md). An Tag 365 und 730 liegen 23.595 von 33.000 ISK beim Haus und seinem Piloten. In S02 fehlt für eigenständige Wasserlogistik ein gedeckter Absatz. Freiwillige Originalkäufe reaktivieren Teile der bestehenden Kette vorübergehend, gefolgt von einem neuen Produktionsplateau. Node22 lokal 616/616 ohne Fehler oder Skips. Eigenständiger Wasservertrag und Vorfinanzierung bleiben offene Produktentscheidungen.
+**[W6 / DRAFT · 26.11.2026]** [#651](https://github.com/tobiasfranziskus/Check/pull/651) dokumentiert den reproduzierten S02-Langzeitstillstand und die [Finanzierungs- und Investitionsproben](W6_GELDUMLAUF_WASSERLOGISTIK.md). An Tag 365 und 730 liegen 23.595 von 33.000 ISK beim Haus und seinem Piloten. In S02 fehlt für eigenständige Wasserlogistik ein gedeckter Absatz. Freiwillige Originalkäufe bringen einmalig +19 F4/+950 Wasser (Frachter) beziehungsweise +18 F4/+910 Wasser (Miner), anschließend Stillstand bis Tag 730. Node22 lokal 616/616 ohne Fehler oder Skips. [45/45 Forschungsjobs](https://github.com/tobiasfranziskus/Check/actions/runs/45827486733) mit exakten Replays für 13 Regime × 3 Seeds und alle S02-Horizonte. Eigenständiger Wasservertrag und Vorfinanzierung bleiben offene Produktentscheidungen.
 
 ## Aktueller integrierter Stand
 

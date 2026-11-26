@@ -5,7 +5,7 @@ set -euo pipefail
 module="${1:-A}"
 model="${2:-gemini-3.8-flash}"
 case "$module" in A|B|C|D|E|F) ;; *) echo "Aufruf: bash scripts/m4-u4-gemini-local.sh A|B|C|D|E|F [Modell]" >&2; exit 2;; esac
-case "$model" in gemini-3.8-flash|gemini-3.5-flash-lite) ;; *) echo "Nicht freigegebenes Gemini-Modell" >&2; exit 2;; esac
+case "$model" in gemini-3.8-flash|gemini-3.5-flash-lite|gemini-4-hydrogen) ;; *) echo "Nicht freigegebenes Gemini-Modell" >&2; exit 2;; esac
 if [[ $# -gt 2 || "${M4_GEMINI_FREE_CONFIRMED:-}" != 1 ]]; then
  echo "Nur Projekt ohne aktivierte Abrechnung: Free-Tier in AI Studio prüfen und M4_GEMINI_FREE_CONFIRMED=1 setzen." >&2; exit 2
 fi

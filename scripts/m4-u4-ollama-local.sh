@@ -10,7 +10,7 @@ if [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
   exit 1
 fi
 unset OPENROUTER_API_KEY M4_ALLOW_REMOTE
-export M4_AI_PROVIDER=ollama M4_AI_MODEL=gemma4:e4b M4_AI_PORT=11434
+export M4_AI_PROVIDER=ollama M4_AI_MODEL=gemma4:e4b M4_AI_PORT=11434 M4_OLLAMA_NATIVE=1
 export M4_PRODUCT_SHA="$(git rev-parse HEAD)"
 echo "Lokaler Checkout: $M4_PRODUCT_SHA (Pages-Gleichheit separat prüfen)"
 # Dev-only pinned browser, installed outside the repository. No sudo, no global install.
@@ -32,7 +32,7 @@ const {config,ask}=require('./scripts/m4-u4-model-runner.cjs');
   const model=data.models?.find(m=>m.name==='gemma4:e4b'||m.model==='gemma4:e4b');
   if(!model)throw Error('gemma4:e4b fehlt: ollama list; ggf. ollama pull gemma4:e4b');
   const cfg=config(process.env);
-  const body={model:cfg.model,stream:false,temperature:0,max_tokens:1024,messages:[
+  const body={model:cfg.model,stream:false,temperature:0,max_tokens:256,messages:[
     {role:'system',content:'Return only this JSON object: {"action":{"op":"stop"},"note":"probe"}'},
     {role:'user',content:'Return the requested JSON object.'}
   ]};
@@ -40,7 +40,7 @@ const {config,ask}=require('./scripts/m4-u4-model-runner.cjs');
     const started=Date.now();
     const d=await ask(cfg,body,timeout);
     if(d.action.op!=='stop'||d.note!=='probe'||(d.reportedModel&&d.reportedModel!==cfg.model))throw Error('Unerwartete Probeantwort oder Modellidentität');
-    console.log('JSON-Probe OK: '+(Date.now()-started)+' ms (Limit '+timeout+' ms)');
+    console.log('JSON-Probe OK: '+(Date.now()-started)+' ms (Limit '+timeout+' ms) '+JSON.stringify(d.metrics||{}));
   }
   console.log('Installiertes Modell: '+cfg.model+(typeof model.digest==='string'&&/^[a-f0-9]{64}$/.test(model.digest)?' / '+model.digest:''));
 })().catch(e=>{console.error('Ollama-Vorprüfung fehlgeschlagen:',e.message);process.exitCode=1;});

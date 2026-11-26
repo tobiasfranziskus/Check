@@ -35,7 +35,7 @@ function action(raw){
 
 // Fixed, conservative viewport projection. It never serializes attributes, HTML, hidden
 // state, storage, source, accessible-only labels or offscreen nodes. Not a pixel OCR.
-function viewportText(){
+function viewportText(markButtons=false){
  const maxChars=1800, maxRows=32, words=[];
  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
  const range=document.createRange();
@@ -62,13 +62,15 @@ function viewportText(){
   const el=n.parentElement;
   if(!el||!visible(el))continue;
   const text=n.nodeValue;
+  const button=markButtons?el.closest('button'):null;
+  const control=button&&!button.matches(':disabled')?button:null;
   for(const match of text.matchAll(/\S+/gu)){
    if(match[0].length>100)continue;
    range.setStart(n,match.index);range.setEnd(n,match.index+match[0].length);
    const rects=Array.from(range.getClientRects());
    if(rects.length!==1||!onScreen(rects[0],el))continue;
    const b=rects[0];
-   words.push({x:Math.round(b.left),y:Math.round((b.top+b.bottom)/2),right:Math.round(b.right),t:match[0]});
+   words.push({x:Math.round(b.left),y:Math.round((b.top+b.bottom)/2),right:Math.round(b.right),t:match[0],control});
    if(words.length>=800)break;
   }
  }
@@ -78,20 +80,20 @@ function viewportText(){
  const lines=[];
  for(const w of words){
   const last=lines[lines.length-1];
-  if(last&&Math.abs(last.y-w.y)<=4&&w.x>=last.right-2&&w.x-last.right<=28){
+  if(last&&last.control===w.control&&Math.abs(last.y-w.y)<=4&&w.x>=last.right-2&&w.x-last.right<=28){
    last.t+=' '+w.t;last.right=w.right;
   }else lines.push({...w});
  }
  let result='',count=0;
  for(const l of lines){
-  const row='('+l.x+','+l.y+') '+l.t.slice(0,140);
+  const row='('+l.x+','+l.y+') '+(l.control?'[B] ':'')+l.t.slice(0,140);
   if(count>=maxRows||result.length+row.length+1>maxChars-24){result+='\n[Anzeige gekürzt]';break;}
   result+=(result?'\n':'')+row;count++;
  }
  return result||'[Kein sichtbarer Text erkannt]';
 }
 
-async function session(root,out,{chromium,executablePath,textMode=false}={}){
+async function session(root,out,{chromium,executablePath,textMode=false,markButtons=false}={}){
  const browserType=chromium||require(process.env.PLAYWRIGHT_MODULE||'playwright').chromium;
  const server=serverFor(root);
  let browser,ctx;
@@ -118,7 +120,7 @@ async function session(root,out,{chromium,executablePath,textMode=false}={}){
    if(closed)throw Error('Session closed');
    if(nativeDialog)return {round:rounds,elapsedMs:elapsed(),done:true,error:'Native browser dialog unsupported; infrastructure blocked'};
    const obs={round:rounds,remaining:Math.max(0,LIMIT-rounds),width:WIDTH,height:HEIGHT};
-   if(textMode)obs.visibleText=await page.evaluate(viewportText);
+   if(textMode)obs.visibleText=await page.evaluate(viewportText,markButtons);
    else{const name='round-'+String(rounds).padStart(2,'0')+'.jpg';
     await page.screenshot({path:path.join(out,name),type:'jpeg',quality:65,timeout:4000});obs.screenshot=name;}
    return {...obs,elapsedMs:elapsed(),done:rounds>=LIMIT||elapsed()>=MS};

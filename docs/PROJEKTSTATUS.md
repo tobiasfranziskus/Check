@@ -2,7 +2,7 @@
 
 > Aktive Kurzfassung. Historische Zwischenstände, ursprüngliche Testzahlen, Negativbefunde und alle damaligen PR-/Commit-/CI-Links vollständig in der [Statuschronik bis 23.11.2026](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261123.md). Produktentscheidungen stehen in [ROADMAP.md](ROADMAP.md).
 
-**[BESCHLOSSEN / ABNAHME OFFEN · 25.11.2026]** Nutzerfreigabe: [M4-U4 modular](M4_U4_KI_BLINDABNAHME.md) ersetzt die frühere 60-Minuten-Einzelabnahme. Frühere Berichte bleiben historische Nachweise, keine Module als bestanden verbucht. Browseradapter und Teststände noch nicht umgesetzt/geprüft; echte Geräteabnahme unverändert offen.
+**[BESCHLOSSEN / ABNAHME OFFEN · 25.11.2026]** Nutzerfreigabe: [M4-U4 modular](M4_U4_KI_BLINDABNAHME.md) ersetzt die frühere 60-Minuten-Einzelabnahme. Frühere Berichte bleiben historische Nachweise, keine Module als bestanden verbucht. Browseradapter und fester Gratis-Modellrunner in [#635](https://github.com/tobiasfranziskus/Check/pull/635) in main d80618b integriert (21/21 Relay/Browser, 603/603 Node22, 4/4 CI). [Gemma-Live-Lauf 45706501523](https://github.com/tobiasfranziskus/Check/actions/runs/45706501523) durch HTTP 429 blockiert, keine UX-Abnahme. Limitquellen-Diagnose als separater Fix in Arbeit; echte Geräteabnahme und modulare Blindabnahme unverändert offen.
 
 ## Aktueller integrierter Stand
 

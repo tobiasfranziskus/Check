@@ -87,8 +87,12 @@ jobs:
             const allowed=["Invalid model decision format","Invalid model JSON","Model output truncated","Model output empty","Unverified free model identity","Model identity mismatch","Model response too large","Empty model response","Invalid provider JSON","Model transport or response failed","Model timeout","Browser observation failed","Browser action failed"];
             const detail=reason==="INFRASTRUCTURE"&&(allowed.includes(r.detail)||/^Model HTTP [0-9]{3}$/.test(r.detail))?r.detail:reason==="INFRASTRUCTURE"?"Keine sichere Detaildiagnose verfügbar.":"-";
             const model=typeof r.model==="string"&&r.model.length<=160&&/^[A-Za-z0-9._/-]+:free$/.test(r.model)?r.model:"Noch nicht festgelegt";
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,"## M4-U4 Pilot\n\nTransportstatus: "+reason+"\n\nDiagnose: "+detail+"\n\nFestgelegtes Modell: "+model+"\n\nAktionen: "+n+"\n\nSpielabnahme: UNREVIEWED. Evidenz separat bewerten.\n");
-            if(reason==="INFRASTRUCTURE") console.error("M4-U4: "+detail);
+            const sources={openrouter_free_tier_per_minute:"OpenRouter-Minutenlimit",openrouter_free_tier_daily:"OpenRouter-Tageslimit",upstream_provider_shared_pool:"Modellanbieter ausgelastet",openrouter_in_flight_budget:"OpenRouter-Budget laufender Anfragen",openrouter_key_limit:"Schlüssellimit",openrouter_credits:"Guthabenlimit",unknown:"Quelle nicht gemeldet"};
+            const source=reason==="INFRASTRUCTURE"&&Object.hasOwn(sources,r.quota?.limitSource)?sources[r.quota.limitSource]:"-";
+            const reset=r.quota?.resetAt;
+            const resetText=Number.isSafeInteger(reset)&&reset>=1000000000000&&reset<=8640000000000000?new Date(reset).toISOString():"nicht gemeldet";
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,"## M4-U4 Pilot\n\nTransportstatus: "+reason+"\n\nDiagnose: "+detail+"\n\nLimitquelle: "+source+"\n\nReset (UTC): "+resetText+"\n\nFestgelegtes Modell: "+model+"\n\nAktionen: "+n+"\n\nSpielabnahme: UNREVIEWED. Evidenz separat bewerten.\n");
+            if(reason==="INFRASTRUCTURE") console.error("M4-U4: "+detail+"; Limitquelle: "+source+"; Reset (UTC): "+resetText);
             if(reason==="INFRASTRUCTURE") process.exitCode=1;
           '
       - name: Upload isolated test evidence

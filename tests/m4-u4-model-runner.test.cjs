@@ -200,3 +200,53 @@ test('fixed Gemma model uses JSON object format and never switches even before f
  assert.deepEqual(calls,[model,model]);assert.equal(result.model,model);assert.equal(result.actions,1);
  assert.equal(result.reason,'MODEL_STOP');
 });
+
+
+test('daily quota stops immediately, sanitized metadata only, fixed model unchanged',async()=>{
+ const f=fixture(),events=[],calls=[];
+ const result=await run({relay:f.relay,cfg:remoteCfg('google/gemma-4-26b-a4b-it:free'),module:'A',sleep:async()=>{throw Error('daily limit must not sleep');},emit:e=>events.push(e),fetcher:async(url,opts)=>{
+  calls.push(JSON.parse(opts.body).model);
+  return new Response(JSON.stringify({error:{message:'SECRET_SENTINEL',metadata:{limit_source:'openrouter_free_tier_daily',raw:'SECRET_SENTINEL',provider_name:'SECRET_SENTINEL'}}}),{status:429});
+ }});
+ assert.equal(calls.length,1);assert.equal(result.actions,0);assert.equal(result.reason,'INFRASTRUCTURE');
+ assert.equal(result.quota.limitSource,'openrouter_free_tier_daily');assert.equal(f.closed(),1);
+ assert.doesNotMatch(JSON.stringify(events),/SECRET_SENTINEL|MOCK_ONLY_SECRET/);
+});
+test('minute limit honors millisecond reset, upstream honors retry_after_seconds, no model change',async()=>{
+ for(const source of ['openrouter_free_tier_per_minute','upstream_provider_shared_pool']){
+  const f=fixture(),events=[],calls=[],delays=[];const model='google/gemma-4-26b-a4b-it:free';
+  const reset=Date.now()+20000;
+  const result=await run({relay:f.relay,cfg:remoteCfg(model),module:'A',sleep:async ms=>delays.push(ms),emit:e=>events.push(e),fetcher:async(url,opts)=>{
+   calls.push(JSON.parse(opts.body).model);
+   if(calls.length>1)return response(stop,model);
+   const metadata=source==='openrouter_free_tier_per_minute'?{limit_source:source,headers:{'X-RateLimit-Reset':String(reset)}}:{limit_source:source,retry_after_seconds:59};
+   return new Response(JSON.stringify({error:{metadata}}),{status:429});
+  }});
+  assert.deepEqual(calls,[model,model]);assert.equal(result.reason,'MODEL_STOP');
+  assert.equal(events.find(e=>e.kind==='model_error').quota.limitSource,source);
+  if(source==='openrouter_free_tier_per_minute'){assert.ok(delays[0]>=19000&&delays[0]<=21000);assert.equal(events.find(e=>e.kind==='model_error').quota.resetAt,reset);}
+  else assert.deepEqual(delays,[59000]);
+ }
+});
+test('quota reset exceeding time budget blocks retry; unknown and oversized metadata remain private',async()=>{
+ for(const mode of ['future','unknown','oversize','malformed']){
+  const f=fixture(),events=[];let calls=0;
+  const result=await run({relay:f.relay,cfg:remoteCfg('google/gemma-4-26b-a4b-it:free'),module:'A',now:()=>0,sleep:async()=>{},emit:e=>events.push(e),fetcher:async()=>{
+   calls++;
+   const raw=mode==='future'?JSON.stringify({error:{metadata:{limit_source:'openrouter_free_tier_per_minute'}}}):mode==='unknown'?JSON.stringify({error:{metadata:{limit_source:'SECRET_SENTINEL',provider_name:'SECRET_SENTINEL'}}}):mode==='oversize'?'SECRET_SENTINEL'.repeat(2000):'{SECRET_SENTINEL';
+   return new Response(raw,{status:429,headers:mode==='future'?{'X-RateLimit-Reset':String(Date.now()+600000)}:{}});
+  }});
+  assert.equal(calls,mode==='future'?1:2);assert.equal(result.reason,'INFRASTRUCTURE');assert.equal(result.actions,0);
+  assert.equal(result.quota.limitSource,mode==='future'?'openrouter_free_tier_per_minute':'unknown');
+  assert.doesNotMatch(JSON.stringify(events),/SECRET_SENTINEL|MOCK_ONLY_SECRET/);
+ }
+});
+test('credit and key diagnoses never enable paid or fallback retries',async()=>{
+ for(const [status,source] of [[402,'openrouter_credits'],[403,'openrouter_key_limit']]){
+  const f=fixture();let calls=0;
+  const result=await run({relay:f.relay,cfg:remoteCfg('openrouter/free'),module:'A',fetcher:async()=>{
+   calls++;return new Response(JSON.stringify({error:{metadata:{limit_source:source}}}),{status});
+  }});
+  assert.equal(calls,1);assert.equal(result.quota.limitSource,source);assert.equal(result.actions,0);
+ }
+});

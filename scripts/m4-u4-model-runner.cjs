@@ -47,6 +47,27 @@ function decision(raw){
  if(!x||typeof x!=='object'||Array.isArray(x)||Object.keys(x).some(k=>k!=='action'&&k!=='note')||typeof x.note!=='string'||x.note.length>240||/[\u0000-\u001f]/.test(x.note))throw Error('Invalid model decision');
  return {action:action(x.action),note:x.note};
 }
+// Never forward raw provider error bodies, messages, hints, or arbitrary metadata.
+const LIMIT_SOURCES=new Set(['openrouter_free_tier_per_minute','openrouter_free_tier_daily','upstream_provider_shared_pool','openrouter_in_flight_budget','openrouter_key_limit','openrouter_credits']);
+async function boundedJSON(res,limit=65536){
+ if(!res.body)throw Error('Empty model response');
+ const reader=res.body.getReader();let size=0;const chunks=[];
+ try{
+  for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>limit)throw Error('Model response too large');chunks.push(Buffer.from(value));}
+ }finally{await reader.cancel().catch(()=>{});}
+ return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+}
+async function quotaDiagnosis(res){
+ let meta={};
+ try{meta=(await boundedJSON(res,16384))?.error?.metadata??{};}catch{}
+ const limitSource=LIMIT_SOURCES.has(meta.limit_source)?meta.limit_source:'unknown';
+ const num=v=>typeof v==='string'&&/^\d{1,16}$/.test(v)?Number(v):typeof v==='number'&&Number.isSafeInteger(v)&&v>=0?v:null;
+ const reset=num(res.headers?.get('x-ratelimit-reset'))??num(meta.headers?.['X-RateLimit-Reset']);
+ const resetAt=reset!==null&&reset>=1000000000000&&reset<=8640000000000000?reset:null;
+ const retrySeconds=num(meta.retry_after_seconds);
+ const delay=Math.max(resetAt===null?0:resetAt-Date.now()+1000,retrySeconds===null?0:retrySeconds*1000);
+ return {limitSource,resetAt,retryDelayMs:delay};
+}
 async function ask(cfg,body,timeout,fetcher=fetch){
  const headers={'Content-Type':'application/json'};
  if(cfg.key)headers.Authorization='Bearer '+cfg.key;
@@ -59,15 +80,13 @@ async function ask(cfg,body,timeout,fetcher=fetch){
    const delay=/^\d+$/.test(h)?Number(h)*1000:Date.parse(h)-Date.now();
    if(Number.isFinite(delay)&&delay>=0)err.retryAfter=Math.ceil(delay);
   }
+  if(cfg.provider==='openrouter'&&[429,402,403].includes(res.status)){
+   err.quota=await quotaDiagnosis(res);
+   err.retryAfter=Math.max(err.retryAfter??0,err.quota.retryDelayMs);
+  }else if(res.body)await res.body.cancel().catch(()=>{});
   throw err;
  }
- // Bound even an unexpected response. Do not record or forward provider error bodies.
- if(!res.body)throw Error('Empty model response');
- const reader=res.body.getReader();let size=0;const chunks=[];
- try{
-  for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>65536)throw Error('Model response too large');chunks.push(Buffer.from(value));}
- }finally{await reader.cancel().catch(()=>{});}
- const x=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+ const x=await boundedJSON(res);
  const choice=x.choices?.[0],raw=choice?.message?.content;
  if(choice?.finish_reason==='length')throw Error('Model output truncated');
  if(typeof raw!=='string'||!raw.trim())throw Error('Model output empty');
@@ -85,7 +104,7 @@ async function run({relay,cfg,module,emit=()=>{},fetcher=fetch,now=()=>performan
  const started=now(),history=[];
  const pool=candidates(cfg);let selected=null;
  let obs;
- const finish=(reason,detail)=>{const result={kind:'end',reason,detail,actions:history.filter(h=>h.action.op!=='stop').length,elapsedMs:Math.round(now()-started),model:selected??null,verdict:'UNREVIEWED'};emit(result);return result;};
+ const finish=(reason,detail,quota)=>{const result={kind:'end',reason,detail,...(quota?{quota}:{}),actions:history.filter(h=>h.action.op!=='stop').length,elapsedMs:Math.round(now()-started),model:selected??null,verdict:'UNREVIEWED'};emit(result);return result;};
  try{
   obs=await relay.observe();
   emit({kind:'observation',...obs});
@@ -115,12 +134,14 @@ async function run({relay,cfg,module,emit=()=>{},fetcher=fetch,now=()=>performan
       const detail=/^Model HTTP [0-9]{3}$/.test(msg)?msg:e?.name==='TimeoutError'?'Model timeout':known.includes(msg)?msg:e instanceof SyntaxError?'Invalid provider JSON':'Model transport or response failed';
       lastDetail=detail;
       const retryable=/^Model HTTP (408|429|5[0-9]{2})$/.test(detail)||!detail.startsWith('Model HTTP ');
-      const next=retryable&&(attempt<2||(!selected&&m+1<models.length));
+      const quota=e?.quota;
+      const daily=quota?.limitSource==='openrouter_free_tier_daily';
+      const next=retryable&&!daily&&(attempt<2||(!selected&&m+1<models.length));
       correction=/Invalid model|Model output (truncated|empty)/.test(detail);
       const delay=next?Math.max(detail==='Model HTTP 429'?(attempt===1?3000:8000):1000,e?.retryAfter??0):0;
-      emit({kind:'model_error',round:obs.round,model,attempt,detail,retryDelayMs:delay});
-      if(!next)return finish('INFRASTRUCTURE',detail);
-      if(delay>=MS-(now()-started))return finish('INFRASTRUCTURE',detail);
+      emit({kind:'model_error',round:obs.round,model,attempt,detail,retryDelayMs:delay,...(quota?{quota}:{})});
+      if(!next)return finish('INFRASTRUCTURE',detail,quota);
+      if(delay>=MS-(now()-started))return finish('INFRASTRUCTURE',detail,quota);
       await sleep(delay);
      }
     }

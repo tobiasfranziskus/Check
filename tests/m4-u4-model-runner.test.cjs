@@ -499,3 +499,29 @@ test('opt-in control diagnostic maps only model-selected visible buttons; defaul
  assert.equal(modal.controls,undefined);assert.equal(modal.dialog,'confirm');
  assert.equal(controlPalette({visibleText:'(1180,20) [B] Outside'}).controls.length,0);
 });
+
+test('direct Gemini requires explicit free-project confirmation and never routes via OpenRouter',async()=>{
+ const {ask,geminiPayload}=require('../scripts/m4-u4-model-runner.cjs');
+ const env={M4_AI_PROVIDER:'gemini',M4_AI_MODEL:'gemini-3.8-flash',M4_ALLOW_REMOTE:'1',M4_GEMINI_FREE_CONFIRMED:'1',GEMINI_API_KEY:'synthetic-key'};
+ for(const patch of [{M4_GEMINI_FREE_CONFIRMED:'0'},{M4_ALLOW_REMOTE:'0'},{M4_AI_MODEL:'gemini-4-argon'},{GEMINI_API_KEY:''}])assert.throws(()=>config({...env,...patch}));
+ const local=config(env),body=requestBody(local,'goal',{round:0,remaining:12,visibleText:'visible',secret:'NEVER_FORWARD'},[]);
+ assert.equal(local.url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent');
+ const answer=(op='stop',version=local.model,finishReason='STOP')=>new Response(JSON.stringify({modelVersion:version,candidates:[{finishReason,content:{parts:[{thought:true,text:'HIDDEN_THOUGHT'},{text:JSON.stringify({action:op==='stop'?{op}:{op,x:10,y:20},note:'probe'})}]}}],usageMetadata:{promptTokenCount:123,thoughtsTokenCount:9}}));
+ const d=await ask(local,body,45000,async(url,opts)=>{
+  assert.equal(url,local.url);assert.equal(opts.headers['x-goog-api-key'],'synthetic-key');assert.equal(opts.headers.Authorization,undefined);assert.equal(opts.redirect,'error');
+  const q=JSON.parse(opts.body);assert.equal(q.generationConfig.thinkingConfig.thinkingLevel,'low');assert.equal(q.generationConfig.thinkingConfig.includeThoughts,false);assert.equal(q.generationConfig.responseMimeType,'application/json');
+  assert.equal(q.generationConfig.responseJsonSchema.properties.action.anyOf.length,6);assert.doesNotMatch(opts.body,/synthetic-key|NEVER_FORWARD|openrouter/);assert.equal(q.tools,undefined);
+  return answer();
+ });
+ assert.equal(d.reportedModel,local.model);assert.equal(d.modelVersion,local.model);assert.deepEqual(d.metrics,{promptTokenCount:123,thoughtsTokenCount:9});assert.doesNotMatch(JSON.stringify(d),/HIDDEN_THOUGHT|synthetic-key/);
+ await assert.rejects(ask(local,body,45000,async()=>answer('stop','gemini-4-argon')));
+ await assert.rejects(ask(local,body,45000,async()=>answer('stop',local.model,'MAX_TOKENS')));
+ const lite=config({...env,M4_AI_MODEL:'gemini-3.5-flash-lite'});assert.equal(geminiPayload(lite,body).generationConfig.thinkingConfig.thinkingLevel,'minimal');
+ const modal=geminiPayload(local,{...body,dialog:'confirm'});assert.deepEqual(modal.generationConfig.responseJsonSchema.properties.action.anyOf.map(v=>v.properties.op.enum[0]),['dialog','stop']);
+ const f=fixture(),events=[];let calls=0;
+ const quota=await run({relay:f.relay,cfg:local,module:'A',emit:e=>events.push(e),fetcher:async()=>{calls++;return new Response('private quota detail',{status:429});}});
+ assert.equal(quota.reason,'INFRASTRUCTURE');assert.equal(quota.detail,'Model HTTP 429');assert.equal(calls,1);assert.equal(f.actions.length,0);assert.doesNotMatch(JSON.stringify(events),/private quota detail|synthetic-key/);
+ const g=fixture();let round=0;
+ const changed=await run({relay:g.relay,cfg:local,module:'A',fetcher:async()=>answer('click',round++?local.model+'-002':local.model+'-001')});
+ assert.equal(changed.detail,'Model identity mismatch');assert.equal(g.actions.length,1);
+});

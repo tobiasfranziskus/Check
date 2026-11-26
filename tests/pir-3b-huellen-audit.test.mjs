@@ -747,3 +747,160 @@ test('PIR-3g one paid repair preserves damage history and original contracts',()
   const a=run(),b=run();assert.deepEqual(a,b);
   console.log('PIR_3G_REPAIR '+JSON.stringify(a));
 });
+
+
+// PIR-3h: direct Node-only factory, no public session/UI profile.
+import World from '../prototypes/welt/welt-kern.js';
+test('PIR-3h original repaired hull returns on prepaid route and can resume original F4',()=>{
+  function run(){
+    const w=World.erstellenPirRueck(),s=w.createState(42);
+    w.politikSetzen(s,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
+    w.npcAutoSetzen(s,true);w.npcSiliziumSetzen(s,true);
+    const ok=cmd=>{const r=w.execute(s,cmd);assert(r.ok,JSON.stringify({cmd,r,tick:s.tick}));return r;};
+    const reject=(cmd,pattern,x=s)=>{
+      const h=w.hash(x),r=w.execute(x,cmd);
+      assert(!r.ok,JSON.stringify(cmd));if(pattern)assert.match(r.reason,pattern);
+      assert.equal(w.hash(x),h,'rejected command mutates state');
+    };
+    const check=x=>{
+      assert.deepEqual(w.audit(x).fehler,[]);
+      assert.equal(Object.values(x.owners).reduce((n,o)=>n+o.cash,0),x.initialSupply);
+      assert.equal(x.minted+x.burned,0);
+      assert.equal(w.hash(w.load(w.save(x))),w.hash(x));
+    };
+    w.advance(s,300);
+    const oldIds=new Set(Object.keys(s.ships));
+    ok({type:'shipBuy',owner:'house',station:'st_nadir',klasse:'frachter'});
+    const f=Object.values(s.ships).find(sh=>!oldIds.has(sh.id)).id;
+    ok({type:'shipReposition',owner:'house',schiff:f});
+    w.advance(s,60);
+    ok({type:'shipBuy',owner:'house',station:'st_aldera',klasse:'miner'});
+    const m=Object.values(s.ships).find(sh=>sh.owner==='house'&&sh.klasse==='miner').id;
+    ok({type:'shipShuttle',owner:'house',schiff:m,ware:'eis'});
+    w.advance(s,120);
+    const freight={type:'shipFreightIce',owner:'house',schiff:f};
+    const ret=()=>({type:'shipRepairReturn',owner:'house',schiff:f,tick:s.tick});
+    ok(freight);reject(ret());reject(freight);
+    w.advance(s,120);assert.equal(s.kanon.piraten.kampf.huellen[f],72);
+    w.advance(s,2375-s.tick);reject(ret());
+    ok({type:'shipRepairFerry',owner:'house',schiff:f});reject(ret());reject(freight);
+    w.advance(s,60);assert.equal(s.tick,2435);reject(ret());
+    const quote=w.reparaturAngebot(s,{owner:'house',schiff:f,station:'st_nadir'});
+    assert(quote.ok);assert.equal(quote.kosten,208);
+    ok({type:'shipRepair',owner:'house',schiff:f,station:'st_nadir'});
+    w.advance(s,7);assert.equal(s.kanon.piraten.kampf.huellen[f],72);
+    reject(ret());reject(freight);check(s);
+    w.advance(s,1);check(s);assert.equal(s.tick,2443);
+    assert.equal(s.kanon.piraten.kampf.huellen[f],96);
+    const q=w.rueckreiseAngebot(s,ret());
+    assert(q.ok,JSON.stringify(q));assert.equal(q.kosten,60);assert.equal(q.dauer,60);
+    const h=w.hash(s);assert.deepEqual(w.rueckreiseAngebot(s,ret()),q);assert.equal(w.hash(s),h);
+    reject({...ret(),owner:'transport'},/ungültiger/);
+    const foreign=Object.values(s.ships).find(sh=>sh.owner==='transport'&&sh.klasse==='frachter');
+    assert(foreign);reject({...ret(),schiff:foreign.id});
+    reject({...ret(),tick:s.tick-1},/veralteter/);
+    reject({...ret(),kosten:0},/ungültiger/);
+    reject({type:'shipMove',owner:'house',schiff:f,ziel:'st_aldera'});
+    reject({type:'shipReposition',owner:'house',schiff:f});
+    reject(freight);
+    // Negative-only budget fixture: paired redistribution of existing money
+    // on a detached clone. Not an executed player transaction or a replay input.
+    const poor=structuredClone(s),diff=poor.owners.house.cash-59;
+    assert(diff>0);
+    poor.owners.house.cash-=diff;poor.owners.eigner_house.cash+=diff;
+    poor.kanon.netto.house=(poor.kanon.netto.house||0)+diff;
+    poor.kanon.netto.eigner_house=(poor.kanon.netto.eigner_house||0)-diff;
+    const key='pir-test-budget|house|eigner_house';
+    poor.kanon.buch.summen[key]=diff;poor.kanon.buch.belege++;
+    assert.deepEqual(w.audit(poor).fehler,[],'balanced negative fixture');
+    reject(ret(),/nicht vollständig finanzierbar/,poor);
+    const queued=structuredClone(s);
+    queued.queue.push(freight);
+    reject(ret(),undefined,queued);
+    const original={history:structuredClone(s.kanon.piraten.kampf.ereignisse),
+      f4:structuredClone(s.kanon.spielerFrachten.auftraege),
+      w5ac:structuredClone(s.w5ac.completed.find(x=>x.id===f)),
+      repair:structuredClone(s.kanon.pirReparatur),
+      outbound:structuredClone(s.kanon.pirWerft),
+      cargo:structuredClone(s.ships[f].ladung),
+      wear:s.kanon.verschleiss[f]};
+    const cash=s.owners.house.cash,receipt=ret();
+    ok(receipt);assert.equal(s.owners.house.cash,cash-60);
+    const checkpoints=[];
+    function checkpoint(x,paid){
+      check(x);
+      assert.equal(x.kanon.pirRueck.bezahlt,paid);
+      assert.equal(x.owners.k1_pir_rueckflug.cash,60-paid);
+      assert.equal(x.kanon.buch.summen['pir-rueckflug-lohn|k1_pir_rueckflug|pilot_house']??0,paid);
+      assert.equal(x.ships[f].owner,'house');
+      assert.equal(x.ships[f].heimat,'nadir');
+      assert.equal(x.kanon.piraten.kampf.huellen[f],96);
+      assert.equal(x.kanon.verschleiss[f],original.wear+paid);
+      assert.deepEqual(x.ships[f].ladung,original.cargo);
+      assert.deepEqual(x.kanon.pirReparatur,original.repair);
+      assert.deepEqual(x.kanon.pirWerft,original.outbound);
+      assert.deepEqual(x.w5ac.completed.find(y=>y.id===f),original.w5ac);
+      assert.deepEqual(x.kanon.spielerFrachten.auftraege,original.f4);
+      assert.deepEqual(x.kanon.piraten.kampf.ereignisse.slice(0,original.history.length),original.history);
+      assert.equal(x.ships[f].phase,paid===60?'dock':'reise');
+      assert.equal(x.ships[f].system,paid===60?'aldera':'nadir');
+      checkpoints.push({tick:x.tick,paid,escrow:60-paid,hash:w.hash(x)});
+    }
+    checkpoint(s,0);reject(ret());reject(freight);
+    w.advance(s,30);checkpoint(s,30);reject(ret());reject(receipt);reject(freight);
+    const mid=w.load(w.save(s));
+    w.advance(s,29);checkpoint(s,59);reject(freight);
+    w.advance(s,1);checkpoint(s,60);
+    assert.equal(s.tick,2503);assert.equal(s.ships[f].flug.anker,'st_aldera');
+    w.advance(mid,30);assert.equal(w.hash(mid),w.hash(s));
+    reject(ret());reject(receipt);
+    const end=w.save(s);
+    for(const mutate of [
+      x=>{delete x.kanon.pirRueck},
+      x=>{x.kanon.pirRueck.bezahlt--},
+      x=>{x.kanon.pirRueck.reparaturEnd++},
+      x=>{x.kanon.pirRueck.schiff=foreign.id},
+      x=>{x.owners.k1_pir_rueckflug.cash++},
+      x=>{x.ships[f].ankunft--},
+      x=>{x.kanon.piraten.kampf.huellen[f]=72}
+    ]){
+      const x=JSON.parse(end);mutate(x);assert(!w.audit(x).ok);assert.throws(()=>w.load(JSON.stringify(x)));
+    }
+    const previous=World.erstellenPirReparatur(),old=previous.createState(42);
+    assert.throws(()=>previous.load(end));assert.throws(()=>w.load(previous.save(old)));
+    // No artificial Anschlussnachfrage: try the original command, then allow
+    // only real NPC/production/consumption steps if an ordinary blocker exists.
+    const attempts=[];
+    let next;
+    for(let i=0;i<=7*24;i++){
+      const before=w.hash(s),result=w.execute(s,freight);
+      attempts.push({tick:s.tick,ok:result.ok,reason:result.reason??null,
+        source:s.stations.st_aldera.lager.eis??0,dest:s.stations.st_nadir.lager.eis??0,
+        buyer:s.owners.st_nadir.cash,house:s.owners.house.cash});
+      if(result.ok){next=s.kanon.spielerFrachten.auftraege.at(-1);break;}
+      assert.equal(w.hash(s),before);
+      if(i<7*24)w.advance(s,60);
+    }
+    check(s);
+    if(next){
+      const start=next.start,lohn=s.kanon.spielerFrachten.lohn,fee=s.kanon.spielerFrachten.gebuehr;
+      assert.equal(next.schiff,f);assert(start>=2503);
+      reject(freight);w.advance(s,60);check(s);w.advance(s,60);check(s);
+      assert.equal(s.kanon.spielerFrachten.auftraege.at(-1).end,start+120);
+      assert.equal(s.kanon.spielerFrachten.lohn-lohn,120);
+      assert.equal(s.kanon.spielerFrachten.gebuehr-fee,240);
+    }else{
+      assert(attempts.every(a=>a.reason&&/Fracht|Frachter|Eis|finanz|bezahlen|stillgelegt/i.test(a.reason)));
+    }
+    assert.deepEqual(s.kanon.spielerFrachten.auftraege.slice(0,original.f4.length),original.f4);
+    assert.deepEqual(s.kanon.piraten.kampf.ereignisse.slice(0,original.history.length),original.history);
+    assert.deepEqual(s.kanon.pirReparatur,original.repair);
+    assert.deepEqual(s.kanon.pirWerft,original.outbound);
+    assert.deepEqual(s.w5ac.completed.find(x=>x.id===f),original.w5ac);
+    check(s);
+    return {f,q,checkpoints,resumed:!!next,attempts:attempts.length,first:attempts[0],
+      last:attempts.at(-1),endTick:s.tick,hp:s.kanon.piraten.kampf.huellen[f],worldMoney:s.initialSupply,hash:w.hash(s)};
+  }
+  const a=run(),b=run();assert.deepEqual(a,b);
+  console.log('PIR_3H_RETURN '+JSON.stringify(a));
+});

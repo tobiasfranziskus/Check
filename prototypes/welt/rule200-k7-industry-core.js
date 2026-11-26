@@ -1117,7 +1117,7 @@ function execute(state, cmd, rules) {
   }
   return { ok: true, type: cmd.type };
 }
-return { submit, execute };
+return { submit, execute, checkShape };
 })();
 
 const m_core_preis = (() => {
@@ -2143,10 +2143,12 @@ const m_core_erzpilot = (() => {
       // Ein bezahlbarer Auftrag darf wieder anlaufen; nie zwei ungeprüfte
       // Neustarts gleichzeitig auf dasselbe noch nicht gesperrte Budget.
       if (!eigene.some((sh) => sh.auftrag === 'foerdern' && !buch[sh.id])) {
-        const frei = eigene.find((sh) => sh.auftrag === 'halten');
+        const bergbau = (sh) => ({type:'shipMine',owner,schiff:sh.id,ware:'erz'});
+        const frei = eigene.find((sh) => sh.auftrag === 'halten' &&
+          (!rules.u9ExportReserve || state.kanon?.w6Gesamtwirtschaft !== true ||
+            !m_core_commands.checkShape(state,bergbau(sh),rules)));
         if (frei) {
-          const res = m_core_commands.execute(state,
-            { type: 'shipMine', owner, schiff: frei.id, ware: 'erz' }, rules);
+          const res = m_core_commands.execute(state,bergbau(frei),rules);
           if (!res.ok) throw Error('W2: Finanzierter Wiederanlauf abgelehnt: ' + res.reason);
           protokolliere(state, 'auftrag',
             `${frei.id}: NPC-Bergbau nach Finanzierungsprüfung wieder angefordert`, owner);

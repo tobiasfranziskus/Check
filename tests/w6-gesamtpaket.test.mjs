@@ -43,3 +43,12 @@ test('W6: echter W3-Abschluss mit Löhnen, Eigentum, Folgeproduktion und Replay'
   assert.equal(last.produktion.jaegerGebaut,0);
   assert.equal(last.produktion.jaegerVerkauft,0);
 });
+
+test('W6: S05-Wiederanlauf prüft den Originalbefehl vor dem Wechsel von Eis zu Erz', () => {
+  const s05 = SZENARIEN.find(s => s.id === 'S05');
+  const vorlauf = {...s05, politik:{...s05.politik, ersatzVorlaufProzent:60}};
+  const run = () => lauf(vorlauf,90,42,'gesamt');
+  const report = run();
+  assert.deepEqual(run(),report);
+  assert.equal(report.verlauf.at(-1).weltgeld,33000);
+});

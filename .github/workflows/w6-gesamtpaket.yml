@@ -40,7 +40,8 @@ jobs:
           SEED: ${{ matrix.seed }}
         run: |
           for profil in 204 u8 gesamt; do
-            node tools/w6-gesamtpaket.cjs "$REGIME" 90 "$SEED" "$profil" | tee "$profil.json"
+            node tools/w6-gesamtpaket.cjs "$REGIME" 90 "$SEED" "$profil" > "$profil.json"
+            cat "$profil.json"
           done
       - uses: actions/upload-artifact@v4
         with:
@@ -65,7 +66,9 @@ jobs:
           DAYS: ${{ matrix.days }}
           SEED: ${{ matrix.seed }}
           PROFILE: ${{ matrix.profile }}
-        run: node tools/w6-gesamtpaket.cjs S02 "$DAYS" "$SEED" "$PROFILE" | tee report.json
+        run: |
+          node tools/w6-gesamtpaket.cjs S02 "$DAYS" "$SEED" "$PROFILE" > report.json
+          cat report.json
       - uses: actions/upload-artifact@v4
         with:
           name: w6-S02-${{ matrix.days }}-${{ matrix.seed }}-${{ matrix.profile }}

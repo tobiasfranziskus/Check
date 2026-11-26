@@ -111,6 +111,18 @@ Der Starter fragt bei nicht gesetztem GEMINI_API_KEY verdeckt nach dem vorhanden
 
 13 gezielte Prüfungen des tatsächlich abgerufenen Codes im Mock-Transport/Browser bestanden, Regressionstest hinzugefügt (Opt-in, feste URL, Header, Schema, kein Schlüssel/verborgene Felder/Tools im Prompt, bereinigte Antwort, falsches Modell, Tokenlimit, Lite/Modal, 429, Versionswechsel). Realer Google-API-Aufruf, Launcher auf Nutzergerät und neue CI noch nicht durchgeführt. Keine Aussage zu tatsächlich verfügbaren Gratisquoten, Geschwindigkeit oder Eignung. Produktstand-/Pages-Gleichheit und Abnahme bleiben offen. Kein Merge.
 
+### Direkter Modellvergleich mit identischer Bedienprojektion (26.11.2026)
+
+Realer E4B-Diagnoselauf f846ed2: 10 Aktionen/300.003 ms, 240 Weltminuten, Miner/Frachter, Eisförderung, 50 Eis, eine bezahlte Eis-Rundfahrt (240 ISK Frachtgebühren, 120 ISK Fluglöhne), zweite Rundfahrt beauftragt, zuletzt 1.908 ISK, 2 Schiffe/2 Aufträge; Model timeout, UNREVIEWED. Realer Gemini-3.5-Flash-Lite-Lauf ca6a04ad: 12 Aktionen/45.897 s, ein 503 mit erfolgreichem Retry, Karrierestart, beide Schiffskäufe und Förderauftrag, Menü/Neustart/Bestätigung, erneute Käufe/Förderauftrag, Menü; zuletzt sichtbare Karriere 1.650 ISK, 2 Schiffe, 1 Auftrag, Weltzeit 0, kein Erlös. LIMIT/UNREVIEWED. Beide Läufe sind keine formale Abnahme. Gemini 3.8 Flash: Metadatenabruf erfolgreich, minimale Generierung 503 (high demand). Alle vier CI-Workflows auf ca6a04ad erfolgreich.
+
+Für kontrollierteren Vergleich ist das bereits vorhandene nummerierte Bedien-Diagnoseprofil jetzt auch für Gemini ausdrücklich zuschaltbar:
+
+```bash
+M4_GEMINI_FREE_CONFIRMED=1 M4_LOCAL_DIAGNOSTIC=1 bash scripts/m4-u4-gemini-local.sh A gemini-3.5-flash-lite
+```
+
+Gleiche sichtbare Textprojektion, Buttonnummern, Koordinatenabbildung, Sitzungsverlauf, Ziel sowie Zeit-/Aktionsgrenzen wie E4B-Diagnose; keine Änderung des Spiels, keine zusätzliche Spielanleitung. Native Gemini-JSON-Schema-Übersetzung der vorhandenen dynamischen Auswahl, Validierung und tatsächliche Klickausführung gemeinsam genutzt. Free-Projekt-Bestätigung und Modellidentitätsprüfung bleiben erforderlich, kein OpenRouter-Fallback. Standardmodus (freie Koordinatenauswahl) und synthetischer Probeaufruf unverändert. Diagnose bleibt ausdrücklich kein Ersatz für die formale Blindabnahme. Neun gezielte Prüfungen des abgerufenen Codes im Mock-Transport bestanden, Regressionstest ergänzt. Neuer echter API-Lauf und CI offen, keine Behauptung über Spielleistung im neuen Profil. Produktgleichheit separat zu prüfen; kein Merge.
+
 ## A/B – getrennte Pilotaufträge
 
 A: Neue Standardkarriere. Ziel: „Beginne eine Karriere und finde heraus, was du als Manager tun kannst.“ Erste sichtbare Aktion und gewähltes Ziel protokollieren. B: Frische Sitzung; Ziel: „Erziele mit deiner Flotte Einnahmen.“ Erst mit Standardstart versuchen; falls zwölf Aktionen nicht reichen, getrennt einen validierten, regulär erspielten Teststand mit vorhandenem einsatzfähigem Schiff und offenem Auftrag vorbereiten. Keine Lösungsfolge oder spezifischen Klicks mitteilen. B-Teststand noch nicht erzeugt; dafür bestehenden M4-U3-UI-/Auditpfad als technische Grundlage nutzen, echten JSON-Export und Hash prüfen und nur regulär importieren. Kein Storage-Injektionsweg im Relay. Der vorbereitete Importpfad benötigt weitere Unterstützung und Prüfung.

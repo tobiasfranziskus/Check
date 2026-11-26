@@ -1,0 +1,30 @@
+name: W6 S02 contractual preflight
+on:
+  pull_request:
+    branches:
+      - research/w6-s02-silizium-opportunitaet-20261126
+    paths:
+      - 'tools/w6-s02-vertragsvorsorge.cjs'
+      - '.github/workflows/w6-s02-vertragsvorsorge.yml'
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reproduce and compare original-command preflight
+        run: |
+          node --check tools/w6-s02-vertragsvorsorge.cjs
+          node tools/w6-s02-vertragsvorsorge.cjs w6-s02-vertragsvorsorge.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: w6-s02-vertragsvorsorge
+          path: w6-s02-vertragsvorsorge.json
+          if-no-files-found: error

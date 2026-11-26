@@ -200,3 +200,19 @@ Main-Bericht [M4_U5_WIRTSCHAFTSENGPASS](M4_U5_WIRTSCHAFTSENGPASS.md): historisch
 - [#618](https://github.com/tobiasfranziskus/Check/pull/618), Head `5dd997a72da7b517ed718ac4670d1f4cc30e2f10`: auf main-Basis `fb229ea5` synchronisiert; vier erfolgreiche Workflows einschließlich [P0](https://github.com/tobiasfranziskus/Check/actions/runs/45546061313). Der frühere Commit-mismatch ist auf diesem Head nicht mehr vorhanden. Keine Produktintegration.
 - Regionalaudit am vorherigen Head `9618869` ([CI](https://github.com/tobiasfranziskus/Check/actions/runs/45543706017)): Standard, K7-only und S02 je 90 Tage mit Replay; in K7/S02 keine Änderung der erfassten Haushaltsbilanzen zwischen Tag 7 und 90, kein eigener bezahlter F4. Wasserlager Aldera 0, Nadir 117/116. Kein Nachhaltigkeitsnachweis. Kombinierter finanzierter Transport bleibt W6-Auftrag; keine parallele Implementierung in P0.
 - [#624](https://github.com/tobiasfranziskus/Check/pull/624), Head `145cdee1eb61d53e541edcbaddb456711ef4992c`: separater Integrationskandidat für modulare M4-U4-Abnahme (#622/#623). PR-Bericht nennt 603/603 Node22 und 12/12 Adapter-/Mocktests, keine reale KI-Abnahme. Roadmap und Projektstatus erst nach bestätigter Integration als MAIN markieren; bis dahin getrennte Draft-/Integrationsnachweise. P0 nicht mit dem laufenden Integrationsbranch vermischen.
+
+
+## Commitgebundene Prototypinventur und Integrations-Gate · 26.11.2026
+
+[PR #621](https://github.com/tobiasfranziskus/Check/pull/621), Head `4ee31de6ef66f37ac96dcab0b4463f6ea612b830`, Basis main `d23a1e95427f77c4dcb5634061189ed873421fb4`. [P0-Run 45824509075](https://github.com/tobiasfranziskus/Check/actions/runs/45824509075) completed/success; [Job 139925094899](https://github.com/tobiasfranziskus/Check/actions/runs/45824509075/job/139925094899) belegt 5/5 Abhängigkeitstests und 13/13 Dokumentations-/Parser-Tests, je 0 Fehler/Skips. Artefakt-ID 15119876055, SHA256 dea30c40c91b27e7faa54bf3cb7ede3bb2ceb7293b836f0e46d81a4a97b7c6fa, Aufbewahrung bis 26.12.2026. 520 getrackte Pfade, davon 141 Prototypdateien, keine fehlenden statischen Assets oder archivierten Hub-Assets.
+
+| Gruppe | LIVE | BUILD | TEST_PINNED |
+|---|---:|---:|---:|
+| Spiel/Welt/Flug/Raum/Jäger/Verbund/Tutorials/J4c/J6w | 51 | 0 | 4 |
+| Legacy-Familien | 1 | 4 | 32 |
+| W5-Familien | 2 | 18 | 29 |
+| Gesamt | 54 | 22 | 65 |
+
+Kategorien sind disjunkt nach Priorität, nicht die tatsächlichen überlappenden Graphen (54 öffentliche, 25 Build- und 75 Demo-Abhängigkeiten; alle 141 konservativ testreferenziert). Der Scan folgt lokalen HTML-Script-/Stylesheet- und CSS-Referenzen, aber nicht jedem dynamischen JS-Import; Testreferenzen können vollständige Pfade oder nur das jeweilige Verzeichnis sein. TEST_PINNED bedeutet daher Schutz vor ungeprüfter Löschung, nicht einen individuellen Nutzungsnachweis für jede Datei. Die 65 Dateien dürfen nicht pauschal archiviert werden. Nächster Inventur-Schritt: die vorhandenen `test_references.match`-Werte path/directory pro Datei getrennt auswerten; anschließend Demo-Graph, reale Tests und aktive Forschungsbranches prüfen. Keine Löschung oder Verschiebung.
+
+Das neue P0-Dokumentations-Gate lief erfolgreich, aber nicht die vollständige Node22-Suite. Die bestehende JavaScript-Regressions-CI erhält deshalb zusätzlich den exakten Pfad des P0-Workflows als PR- und Main-Push-Trigger (keine breite Aktivierung für Markdown-only). Keine neuen Testkommandos, keine Änderung an Spielcode, Referenzen oder Regelversionen. Neue CI des erweiterten Heads separat prüfen; keine Aussage zur Integration oder Veröffentlichung.

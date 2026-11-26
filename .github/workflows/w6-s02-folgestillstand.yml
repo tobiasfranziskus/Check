@@ -1,0 +1,32 @@
+name: W6 S02 follow-up stall audit
+on:
+  pull_request:
+    branches:
+      - research/w6-kapazitaet-langzeit-20261125
+    paths:
+      - 'tools/w6-s02-folgestillstand.cjs'
+      - 'tools/m4-management-szenarien.cjs'
+      - '.github/workflows/w6-s02-folgestillstand.yml'
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run audited scenario and replay
+        run: |
+          node --check tools/m4-management-szenarien.cjs
+          node --check tools/w6-s02-folgestillstand.cjs
+          node tools/w6-s02-folgestillstand.cjs w6-s02-folgestillstand.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: w6-s02-folgestillstand
+          path: w6-s02-folgestillstand.json
+          if-no-files-found: error

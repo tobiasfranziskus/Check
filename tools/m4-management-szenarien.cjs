@@ -210,8 +210,17 @@ const VERGLEICH = [
   [SZENARIEN.find(x => x.id === 'S02'), 'konzerne'],
 ];
 
-function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne') {
-  const {welt, s, quellhash, industrieRueckladungen} = start(szenario, seed, forschung, startpfad);
+function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', beobachter = null) {
+  const {welt: originalWelt, s, quellhash, industrieRueckladungen} = start(szenario, seed, forschung, startpfad);
+  // Optional offline audit. Default path and manager decisions stay identical.
+  const welt = beobachter ? {...originalWelt, advance(state, minuten) {
+    if (state !== s) return originalWelt.advance(state, minuten);
+    for (let i = 0; i < minuten; i++) {
+      originalWelt.advance(state, 1);
+      beobachter(originalWelt, state, 'minute');
+    }
+  }} : originalWelt;
+  if (beobachter) beobachter(originalWelt, s, 'start');
   const entscheidungen = {};
   let ersterStillstand = null;
   const beginn = kontrollstand(welt, s), verlauf = [];
@@ -219,7 +228,9 @@ function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne') {
     const ende = tag * MINUTEN_PRO_TAG;
     while (s.tick < ende) {
       const naechsterTermin = Math.min(s.tick + 60, ende);
+      if (beobachter) beobachter(originalWelt, s, 'vorVerwaltung');
       verwaltung(welt, s, entscheidungen, szenario.id !== 'S08');
+      if (beobachter) beobachter(originalWelt, s, 'nachVerwaltung');
       beobachten(welt, s, naechsterTermin, industrieRueckladungen);
       const a = s.w3.auftrag;
       if (!ersterStillstand && a?.phase === 'vorbestellt' && welt.stillgelegt(s, a.industrieMiner)) {

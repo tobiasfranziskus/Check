@@ -99,6 +99,18 @@ Keine weitere Wiederholung mit unverändertem Runner empfohlen. Opt-in `M4_LOCAL
 
 Zwölf gezielte Prüfungen des abgerufenen Codes mit Mock-Provider/Browser bestanden, Regressionstest ergänzt. Neuer CI-/Ollama-Lauf offen; keine gemessene Beschleunigung oder bessere Spielleistung. Keine Änderung der Abnahmebedingungen, kein Merge.
 
+### Direkter Gemini-Developer-API-Pilot (26.11.2026)
+
+Auf Nutzerwunsch direkte Google-Anbindung zusätzlich zu Ollama/OpenRouter. Feste Modell-Allowlist `gemini-3.8-flash` (Default) und `gemini-3.5-flash-lite`: laut [Google-Preisliste](https://ai.google.dev/gemini-api/docs/pricing) am 26.11.2026 Free-Tier für Standard-Textanfragen. Tatsächlicher Zugriff und Kontingente projektabhängig. Nur eigenes kostenloses Google-AI-Studio-Projekt ohne aktivierte Abrechnung verwenden; der Runner kann den Tarif anhand eines API-Schlüssels nicht verifizieren. Explizite Nutzerbestätigung erforderlich, keine kostenpflichtige Modellwahl oder automatische Fallbacks. Free-Tier-Inhalte können laut Google zur Produktverbesserung genutzt werden; ausschließlich isolierte sichtbare Testspieltexte und neutrales Modulziel übermitteln.
+
+```bash
+M4_GEMINI_FREE_CONFIRMED=1 bash scripts/m4-u4-gemini-local.sh A
+```
+
+Der Starter fragt bei nicht gesetztem GEMINI_API_KEY verdeckt nach dem vorhandenen Schlüssel. Kein Schlüssel in Repo, Prompt, URL, Ausgabe oder Browser-Umgebung; Transport ausschließlich HTTPS an festes generativelanguage.googleapis.com/v1beta/models/<modell>:generateContent per x-goog-api-key-Header, keine Redirects. Keine Google-Suche, Computer-use-Tools oder andere Zusatzdienste. Ein synthetischer JSON-Probeaufruf vor Spielstart, bei Fehler kein Spielstart. Native generateContent-JSON-Schema, Thinking-Level low (Flash) bzw. minimal (Lite), max. 1024 Ausgabetokens inkl. Thinking, nur sichtbarer Antworttext, Nutzungsmetrik ohne Gedankentext. Feste Modell-ID, Versionswechsel innerhalb einer Sitzung blockiert, HTTP 429 beendet den Lauf ohne Wiederholung. Max. 45 s je Modellanfrage, weiterhin höchstens 5 Minuten/12 Aktionen insgesamt. Unveränderte sichtbare Koordinaten-UI mit S-ID-Gedächtnis und expliziter Dialogentscheidung; kein nummeriertes Diagnoseprofil für Gemini. Ollama- und OpenRouter-Transport bleiben unverändert, Schlüssel zusätzlich vor Browserstart aus Prozessumgebung entfernt.
+
+13 gezielte Prüfungen des tatsächlich abgerufenen Codes im Mock-Transport/Browser bestanden, Regressionstest hinzugefügt (Opt-in, feste URL, Header, Schema, kein Schlüssel/verborgene Felder/Tools im Prompt, bereinigte Antwort, falsches Modell, Tokenlimit, Lite/Modal, 429, Versionswechsel). Realer Google-API-Aufruf, Launcher auf Nutzergerät und neue CI noch nicht durchgeführt. Keine Aussage zu tatsächlich verfügbaren Gratisquoten, Geschwindigkeit oder Eignung. Produktstand-/Pages-Gleichheit und Abnahme bleiben offen. Kein Merge.
+
 ## A/B – getrennte Pilotaufträge
 
 A: Neue Standardkarriere. Ziel: „Beginne eine Karriere und finde heraus, was du als Manager tun kannst.“ Erste sichtbare Aktion und gewähltes Ziel protokollieren. B: Frische Sitzung; Ziel: „Erziele mit deiner Flotte Einnahmen.“ Erst mit Standardstart versuchen; falls zwölf Aktionen nicht reichen, getrennt einen validierten, regulär erspielten Teststand mit vorhandenem einsatzfähigem Schiff und offenem Auftrag vorbereiten. Keine Lösungsfolge oder spezifischen Klicks mitteilen. B-Teststand noch nicht erzeugt; dafür bestehenden M4-U3-UI-/Auditpfad als technische Grundlage nutzen, echten JSON-Export und Hash prüfen und nur regulär importieren. Kein Storage-Injektionsweg im Relay. Der vorbereitete Importpfad benötigt weitere Unterstützung und Prüfung.

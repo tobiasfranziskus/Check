@@ -1,0 +1,35 @@
+name: W6 S02 replacement lead matrix
+on:
+  pull_request:
+    branches:
+      - research/w6-s02-silizium-opportunitaet-20261126
+    paths:
+      - 'tools/w6-s02-ersatzvorlauf.cjs'
+      - '.github/workflows/w6-s02-ersatzvorlauf.yml'
+permissions:
+  contents: read
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        lead: [40, 60, 80]
+        silicon: ['on', 'off']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run paired policy cell twice
+        run: |
+          node --check tools/w6-s02-ersatzvorlauf.cjs
+          node tools/w6-s02-ersatzvorlauf.cjs ${{ matrix.lead }} ${{ matrix.silicon }} w6-ersatzvorlauf.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: w6-ersatzvorlauf-${{ matrix.lead }}-${{ matrix.silicon }}
+          path: w6-ersatzvorlauf.json
+          if-no-files-found: error

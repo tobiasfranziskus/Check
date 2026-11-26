@@ -93,6 +93,9 @@ const PIR = Object.freeze({ owner:'piraten', pilot:'pilot_piraten', schiff:'pir0
 
 function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false, piraten = false, u8Research = false, w6Research = false) {
   if (w6Research && (!NODE || !u8Research)) throw Error('W6: isoliertes Node-Forschungsprofil');
+  // Only transient disposable reservation copies may contain these accounts.
+  const wasserReserveProben = new WeakSet();
+  const WASSER_KAUF = 'w6_wasser_kauf_treuhand', WASSER_LOHN = 'w6_wasser_lohn_treuhand';
   if (u8Research && (!jaegerFlug || p8bZweiFelder || p8cDravos || p8dFracht || piraten)) throw Error('U8: ausschließlich isolierte 204-Forschungswelt');
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
@@ -1791,6 +1794,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (state === null || typeof state !== 'object' || state.rulesVersion !== rules.rulesVersion || state.schema !== KANON.schema)
       throw Error('K1: fremde Regelversion oder Schema; keine automatische Migration');
     const k = state.kanon;
+    if ((k?.w6WasserReserve !== undefined || state.owners?.[WASSER_KAUF] !== undefined ||
+        state.owners?.[WASSER_LOHN] !== undefined) &&
+        (!w6Research || !wasserReserveProben.has(state)))
+      throw Error('W6: fluechtige Wasserreservierung ist kein importierbarer Spielstand');
     if (u8Research ? k?.u8ErzRueckfracht!==true : k?.u8ErzRueckfracht!==undefined)
       throw Error('U8: Forschungsprofil explizit getrennt von normalen Saves');
     if (w6Research ? k?.w6Gesamtwirtschaft !== true : k?.w6Gesamtwirtschaft !== undefined)
@@ -1869,6 +1876,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       const wirtschaft = kern.audit(state);
       if (!wirtschaft.ok) fehler.push('Wirtschaft: ' + Object.keys(wirtschaft).filter((x) => wirtschaft[x] && wirtschaft[x].ok === false).join(','));
       if (!m_core_buch.audit(state)) fehler.push('K1-Buch');
+      if (wasserReserveProben.has(state) && !wasserReserveAudit(state)) fehler.push('W6-Wasserreservierungsbuch');
       if (!m_core_minerwerft.audit(state)) fehler.push('K2-Minerwerft/Transport');
       if (silizium && !m_core_silizium.audit(state)) fehler.push('J2b-Silizium-/Geld-/Feldbuch');
       if (!m_core_p8c_reise.audit(state)) fehler.push('P8c: authentische Dravos-Fracht-/Piloten-Kassenbelege');
@@ -2298,6 +2306,86 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       const ergebnis=save(q);
       if(save(load(ergebnis))!==ergebnis)throw Error('U9g: Roundtrip abweichend');
       return {ok:true,abrechnung,json:ergebnis,hash:kern.hash(q)};
+    }catch(e){return fail(e.message);}
+  }
+
+  // Research proof of real core-booked reservation/refund, before any work.
+  // Never exposes the transient world or permits its loading as a save.
+  function wasserReserveAudit(s) {
+    const r=s.kanon.w6WasserReserve,a=r?.angebot;
+    if(!a || !['reserviert','storniert'].includes(r.phase) || s.tick!==a.tick ||
+       s.owners[WASSER_KAUF]?.kind!=='w6-water-reserve' ||
+       s.owners[WASSER_LOHN]?.kind!=='w6-water-reserve' ||
+       s.ships[a.schiff]?.owner!==a.frachtfuehrer ||
+       s.ships[a.schiff]?.phase!=='dock' || ladungSumme(s.ships[a.schiff])!==0 ||
+       (s.stations[a.quelle].lager.wasser||0)<a.menge ||
+       KANON.wasser.lagerAldera-(s.stations[a.ziel].lager.wasser||0)<a.menge)
+      return false;
+    const aktiv=r.phase==='reserviert',buch=s.kanon.buch.summen;
+    if(s.owners[WASSER_KAUF].cash!==(aktiv?a.vorbestellwert:0) ||
+       s.owners[WASSER_LOHN].cash!==(aktiv?a.lohn:0) ||
+       (buch['w6-wasser-lohnreserve|'+a.frachtfuehrer+'|'+WASSER_LOHN]||0)!==a.lohn ||
+       (buch['w6-wasser-lohnreserve-rueck|'+WASSER_LOHN+'|'+a.frachtfuehrer]||0)!==(aktiv?0:a.lohn))
+      return false;
+    let summe=0;
+    for(const b of a.bestellungen){
+      summe+=b.kosten;
+      if((buch['w6-wasser-kaufreserve|'+b.owner+'|'+WASSER_KAUF]||0)!==b.kosten ||
+         (buch['w6-wasser-kaufreserve-rueck|'+WASSER_KAUF+'|'+b.owner]||0)!==(aktiv?0:b.kosten))
+        return false;
+    }
+    return summe===a.vorbestellwert && a.warenwert+a.tarif+a.stationsmarge===a.vorbestellwert;
+  }
+  function w6WasserReservierungsProbe(state,request,zustimmungen) {
+    const fail=grund=>({ok:false,grund});
+    if(!NODE||!w6Research)return fail('PROFIL');
+    try{
+      const original=save(state);
+      const q=load(original);
+      // The exact same quote and consent validator as the independent #653.
+      const admission=require('./w6-wasser-vorbestellung.cjs').pruefeZustimmungen(api,q,request,zustimmungen);
+      if(!admission.ok)return admission;
+      const a=admission.angebot;
+      if(q.owners[WASSER_KAUF]||q.owners[WASSER_LOHN])return fail('RESERVE_BEREITS_VORHANDEN');
+      const cash=s=>Object.fromEntries(ids(s.owners).map(id=>[id,s.owners[id].cash]));
+      const initial=cash(q),bestand=JSON.stringify(q.stations),schiffe=JSON.stringify(q.ships),
+        ledger=JSON.stringify(q.ledger),mint=q.minted,burn=q.burned;
+      const geld=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
+      const weltgeld=geld(q);
+      wasserReserveProben.add(q);
+      q.owners[WASSER_KAUF]={id:WASSER_KAUF,kind:'w6-water-reserve',cash:0};
+      q.owners[WASSER_LOHN]={id:WASSER_LOHN,kind:'w6-water-reserve',cash:0};
+      q.kanon.w6WasserReserve={phase:'reserviert',angebot:a};
+      for(const b of a.bestellungen)m_core_buch.transfer(q,b.owner,WASSER_KAUF,b.kosten,'w6-wasser-kaufreserve');
+      m_core_buch.transfer(q,a.frachtfuehrer,WASSER_LOHN,a.lohn,'w6-wasser-lohnreserve');
+      const check=()=>{
+        const result=audit(q);
+        if(!result.ok)throw Error(result.fehler.join('; '));
+        if(geld(q)!==weltgeld||q.minted!==mint||q.burned!==burn||
+           JSON.stringify(q.stations)!==bestand||JSON.stringify(q.ships)!==schiffe||
+           JSON.stringify(q.ledger)!==ledger||q.tick!==a.tick)
+          throw Error('W6: nicht gedeckte Reservierungsmutation');
+      };
+      check();
+      const reserviert={kauf:q.owners[WASSER_KAUF].cash,lohn:q.owners[WASSER_LOHN].cash,
+        besteller:a.bestellungen.map(b=>({owner:b.owner,delta:q.owners[b.owner].cash-initial[b.owner]})),
+        carrierDelta:q.owners[a.frachtfuehrer].cash-initial[a.frachtfuehrer],
+        wasserLogischGebunden:a.menge,hash:kern.hash(q),audit:true};
+      // Neither current nor refunded transient copies can become ordinary saves.
+      let importAbgelehnt=false;
+      try{load(kern.save(q));}catch(e){importAbgelehnt=/fluechtige Wasserreservierung/.test(e.message);}
+      if(!importAbgelehnt)throw Error('W6: fluechtiger Reservierungsstand importierbar');
+      for(const b of a.bestellungen)m_core_buch.transfer(q,WASSER_KAUF,b.owner,b.kosten,'w6-wasser-kaufreserve-rueck');
+      m_core_buch.transfer(q,WASSER_LOHN,a.frachtfuehrer,a.lohn,'w6-wasser-lohnreserve-rueck');
+      q.kanon.w6WasserReserve.phase='storniert';
+      check();
+      for(const [id,betrag] of Object.entries(initial))
+        if(q.owners[id].cash!==betrag)throw Error('W6: unvollstaendige Rueckzahlung '+id);
+      if(save(state)!==original)throw Error('W6: Quellwelt veraendert');
+      return {ok:true,status:'RESERVIERUNG_UND_LEERSTORNO_AUF_KOPIE',
+        angebot:a.id,reserviert,storno:{kauf:0,lohn:0,alleKassenWiederhergestellt:true,
+          wasserLogischGebunden:0,hash:kern.hash(q),audit:true},
+        weltgeld,mint,burn,importAbgelehnt,originalUnveraendert:true};
     }catch(e){return fail(e.message);}
   }
 
@@ -2833,7 +2921,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     };
   }
 
-  return Object.freeze({
+  const api = Object.freeze({
     ...(k7 ? {f7Werftfrachter:true, industriePreise:K7_PREIS} : {}),
     ...(silizium ? {j2bSilizium:true,siliziumFeld:rules.j2b.feld} : {}),
     ...(bauteile ? {j3Bauteile:true} : {}),
@@ -2842,7 +2930,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(p8bZweiFelder ? {p8bZweiEndlicheFelder:true} : {}),
     ...(p8cDravos||p8dFracht ? {p8cEchteDravosExpedition:true} : {}),
     ...(p8dFracht ? {p8dGetrennteSpedition:true,p8gMaterialOnlyW3:true} : {}),
-    ...(w6Research ? { u9TeilabrechnungProbe, u9VollabnahmeProbe,
+    ...(w6Research ? { u9TeilabrechnungProbe, u9VollabnahmeProbe, w6WasserReservierungsProbe,
       haushaltVerfuegbar: (s, id) => m_core_kreislauf.verfuegbar(s, id),
     } : {}),
     ...(u8Research ? { industrieAngebotslage: (s) => {
@@ -2859,6 +2947,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     restAktivminuten: (state, id) => m_core_anlage.restAktivminuten(state, state.ships[id]),
     stillgelegt: (state, id) => m_core_anlage.stillgelegt(state, state.ships[id]),
   });
+  return api;
 }
 
 // W6/P8b: AUSSCHLIESSLICH explizite Regel204→205-Forschungsuebernahme.

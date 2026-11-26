@@ -1,0 +1,49 @@
+name: W6 water reservation and refund proof
+on:
+  pull_request:
+    branches:
+      - research/w6-wasser-vorbestellung-20261126
+    paths:
+      - 'prototypes/welt/welt-kern.js'
+      - 'prototypes/welt/w6-wasser-vorbestellung.cjs'
+      - 'tools/w6-wasser-reserve-audit.cjs'
+      - '.github/workflows/w6-wasser-reserve-audit.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [S08, S02]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+      - name: Reserve and refund original cash on isolated copies
+        run: |
+          node --check prototypes/welt/welt-kern.js
+          node --check prototypes/welt/w6-wasser-vorbestellung.cjs
+          node --check tools/w6-wasser-reserve-audit.cjs
+          node tools/w6-wasser-reserve-audit.cjs ${{ matrix.scenario }} report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wasser-reserve-${{ matrix.scenario }}
+          path: report.json
+          if-no-files-found: error
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+      - run: node --test tests/*.test.mjs

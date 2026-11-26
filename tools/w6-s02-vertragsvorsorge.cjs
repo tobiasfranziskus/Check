@@ -43,7 +43,7 @@ function preflight(w,s){
   return {tick:s.tick,miner:id,frachter:i.frachter,rest,minutes,status,commit,
     ladung:q.ships[id].ladung.erz||0,probeHash:w.hash(q)};
 }
-function experiment(vorsorge){
+function experiment(vorsorge, eisErlaubt = null){
   const probes=[],bindings=[],decisions={};
   let prev=null,active=null,block=null;
   function observe(w,s,phase){
@@ -94,9 +94,11 @@ function experiment(vorsorge){
         .map(x=>[x.id,w.restAktivminuten(s,x.id)]))};
     }
   }
-  const report=lauf(sz,90,42,true,pfad,observe,false);
+  const report=lauf(sz,90,42,true,pfad,observe,false,eisErlaubt);
   return {report,bindings,block,probes,decisions};
 }
+module.exports={experiment,preflight};
+if(require.main===module){
 const a=experiment(false),b=experiment(true);
 assert.deepEqual(a.report.verlauf.map(v=>v.hash),reference,'#644 control');
 assert.equal(a.report.verlauf.at(-1).gebunden,1390);
@@ -115,3 +117,4 @@ function summary(r){return {bindings:r.bindings,block:r.block,decisions:r.decisi
     live:v.huellen.filter(h=>!h.stillgelegt),entscheidungen:v.entscheidungen}))};}
 fs.writeFileSync(process.argv[2]||'w6-s02-vertragsvorsorge.json',JSON.stringify({seed:42,a,b},null,2)+'\n');
 console.log('W6_S02_VERTRAGSVORSORGE '+JSON.stringify({control:summary(a),candidate:summary(b),deterministic:true,controlUnchanged:true}));
+}

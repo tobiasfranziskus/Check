@@ -1,0 +1,11 @@
+# W6 – letzte finanzierte Frachtrunde für die Ersatzindustrie [FORSCHUNG]
+
+26.11.2026. Basis #645 aec6e5c2. [Vertragsvorsorge](https://github.com/tobiasfranziskus/Check/actions/runs/45812882244) und [P0](https://github.com/tobiasfranziskus/Check/actions/runs/45812882122) success, Job 139884995926. Seed 42, Silizium aus.
+
+## Nachweis
+sh024: Bindung Tick 60421 bei 57 Restaktivminuten (reine Förderung benötigt 50); Stilllegung 60478 mit 47 Erz, 1390 ISK gebunden, Storno abgelehnt. Vorabprobe auf Originalkopie erkennt den Ausfall, einmaliges rechtmäßiges Storno vor Unterschrift. Kontrolle/Variante Tag 7 und 30 identisch, Tag 90 7038f094f7aa754d / f4b785f43855f12e. Wasser 23650→23750, Eisfrachten 473→475, W3 8→8, Ersatz 40→40, Haus 8053→8464, Treuhand 1390→0. Weltgeld und Replay stabil; keine wirtschaftliche Langzeitstabilität. Danach alle Frachter stillgelegt, noch sh044 Miner in Aldera; 87 Eis, kein Erz, kein Material und keine Komplettschiffe im Lager. Kein aktiver W3.
+
+## Gegenversuch
+Beide Arme nutzen die vorhandene Vorsorge aus #645 und dieselben Entscheidungen bis auf eine freiwillige Eisfracht-Disposition. Nur wenn eine weitere Eisfahrt die Restkapazität des letzten eigenen Frachters unter die notwendige W3-Rundreise senken würde, keine reale Ersatzhülle in den beiden Lagern liegt und der Original-Eisauftrag auf validierter Kopie tatsächlich akzeptiert wird, verzichtet der Testmanager auf diese Buchung. Route und Dauer aus Originalkern; kein fester empirischer Schwellenwert. Originalentscheidung im Kontrollarm, vollständige Wiederholung, gepinnte Hashes und Vergleich mit unverändertem #645-Aufruf. Protokoll tatsächlicher Verzichtsfenster, später bezahlter W3-Fahrten, Hüllen, Geld/Ware und Endzustand. Eine reservierte Runde kann mangels passender Miner oder Käufern ungenutzt bleiben; kein erzwungener Vertrag und kein Stabilitätsversprechen. Die Option betrifft allein die Teststrategie; kein Produkt-Gate oder NPC-Markteingriff, kein neuer Schiffskauf. Frühere #587/#590–592 untersuchten andere Vorratskauf-/Wettbewerbsstrategien, werden nicht pauschal wiederholt.
+
+Neue CI bei Anlage offen. Bei erfolgreicher Nutzung der Reserve erneute Engpassanalyse und 365/730; bei Stillstand die Ursache anhand realer Angebotsgründe untersuchen. Jägerpriorisierung bleibt getrennt und offen. Main/Pages/Ollama unverändert.

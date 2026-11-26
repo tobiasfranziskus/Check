@@ -1,0 +1,34 @@
+name: W6 S02 last freight round reserve
+on:
+  pull_request:
+    branches:
+      - research/w6-s02-vertragsvorsorge-20261126
+    paths:
+      - 'tools/m4-management-szenarien.cjs'
+      - 'tools/w6-s02-vertragsvorsorge.cjs'
+      - 'tools/w6-s02-letzte-frachtrunde.cjs'
+      - '.github/workflows/w6-s02-letzte-frachtrunde.yml'
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Paired original manager experiment
+        run: |
+          node --check tools/m4-management-szenarien.cjs
+          node --check tools/w6-s02-vertragsvorsorge.cjs
+          node --check tools/w6-s02-letzte-frachtrunde.cjs
+          node tools/w6-s02-letzte-frachtrunde.cjs w6-letzte-frachtrunde.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: w6-letzte-frachtrunde
+          path: w6-letzte-frachtrunde.json
+          if-no-files-found: error

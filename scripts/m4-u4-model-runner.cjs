@@ -239,6 +239,21 @@ async function probe({cfg,fetcher=fetch,now=()=>performance.now()}){
   return finish('INFRASTRUCTURE',safeDetail(e),e?.quota?{quota:e.quota}:{});
  }
 }
+// One synthetic Gemini request, independent of the browser and game.
+async function geminiProbe({cfg,fetcher=fetch,now=()=>performance.now()}){
+ if(cfg.provider!=='gemini'||!GEMINI_MODELS.includes(cfg.model))throw Error('Probe requires configured Gemini');
+ const started=now();
+ const finish=(reason,detail,extra={})=>({phase:'PROBE',reason,detail,requestedModel:cfg.model,actions:0,elapsedMs:Math.round(now()-started),verdict:'UNREVIEWED',...extra});
+ try{
+  const body={messages:[
+   {role:'system',content:'Return only this JSON object: {"action":{"op":"stop"},"note":"probe"}'},
+   {role:'user',content:'Return the requested JSON object.'}
+  ]};
+  const d=await ask(cfg,body,45000,fetcher);
+  if(d.action.op!=='stop'||d.note!=='probe'||d.reportedModel!==cfg.model)throw Error('Probe response mismatch');
+  return finish('PROBE_OK','Synthetic response validated',{model:d.reportedModel,modelVersion:d.modelVersion,metrics:d.metrics});
+ }catch(e){return finish('INFRASTRUCTURE',safeDetail(e));}
+}
 // Never try another model to evade an account-wide or unknown rate limit.
 // Only an explicitly provider-local 429 or invalid synthetic answer qualifies.
 function canTryNextProbe(result){
@@ -331,6 +346,13 @@ async function run({relay,cfg,module,emit=()=>{},fetcher=fetch,now=()=>performan
 }
 async function main(){
  const module=process.argv[2],root=path.resolve(process.argv[3]||'.');
+ if(module==='--gemini-probe'){
+  const cfg=config(process.env);
+  delete process.env.GEMINI_API_KEY;delete process.env.GOOGLE_API_KEY;delete process.env.OPENROUTER_API_KEY;
+  const result=await geminiProbe({cfg});console.log(JSON.stringify(result));
+  if(result.reason!=='PROBE_OK')process.exitCode=1;
+  return;
+ }
  if(module==='--probe'){
   const selection=process.env.M4_AI_MODEL;
   const cfg=config({...process.env,M4_AI_MODEL:selection==='auto-free'?AUTO_FREE_MODELS[0]:selection});
@@ -354,4 +376,4 @@ async function main(){
  console.log(JSON.stringify({evidence:file,...result}));
 }
 if(require.main===module)main().catch(()=>{console.error('Model runner setup or relay failed; see local configuration');process.exitCode=1;});
-module.exports={config,requestBody,decision,ask,probe,selectProbe,AUTO_FREE_MODELS,run,GOALS,DECISION_SCHEMA,CONFIRM_SCHEMA,rememberScreen,controlPalette,paletteSchema,GEMINI_MODELS,geminiPayload};
+module.exports={config,requestBody,decision,ask,probe,selectProbe,AUTO_FREE_MODELS,run,GOALS,DECISION_SCHEMA,CONFIRM_SCHEMA,rememberScreen,controlPalette,paletteSchema,GEMINI_MODELS,geminiPayload,geminiProbe};

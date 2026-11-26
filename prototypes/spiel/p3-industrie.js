@@ -7,8 +7,8 @@
 'use strict';
 const natural=n=>Number.isSafeInteger(n)&&n>=0;
 function auswerten(w,s,angebote,auswahlId=null){
- if(s?.rulesVersion!==204||s?.kanon?.npcAuto!==true||
-   s?.kanon?.npcSilizium?.aktiv!==true)return Object.freeze({sichtbar:false});
+ if(s?.rulesVersion!==204||(!w?.hausErzProfil&&(s?.kanon?.npcAuto!==true||
+   s?.kanon?.npcSilizium?.aktiv!==true)))return Object.freeze({sichtbar:false});
  if(!w||w.regel!==204||!w.audit(s).ok||!Array.isArray(angebote))
    throw Error('W4/W5-Produktionsakte benötigt eine auditierte Original-S02-Welt');
  const r=w.rules,ore=s.w3,refinery=s.w4,yard=s.w5;
@@ -74,7 +74,8 @@ function auswerten(w,s,angebote,auswahlId=null){
   frachterEigentuemer:k7.frachter?(s.ships[k7.frachter]?.owner||null):null,
   raffinerieEigentuemer:r.w4.station,werftEigentuemer:r.w5.werft,
   signaturen:Object.freeze({
-   bergbau:k7.signMiner===true,spediteur:k7.signFracht===true,werft:k7.signWerft===true
+   bergbau:k7.signMiner===true,spediteur:k7.signFracht===true,werft:k7.signWerft===true,
+   ...(w.hausErzProfil?{aldera:k7.signaturen?.st_aldera===k7.kennung&&!!k7.kennung}:{})
   }),
   w3:Object.freeze({
    kaufReserve:balance('w3_kauf_treuhand'),arbeitsReserve:balance('w3_arbeit_treuhand'),

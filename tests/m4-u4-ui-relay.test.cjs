@@ -59,3 +59,36 @@ test('actual root copy: bounded visible text observation (not blind play)',{skip
   assert.equal(a.screenshot,undefined);
  }finally{if(s)await s.close();fs.rmSync(out,{recursive:true,force:true});}
 });
+
+test('opt-in button markers distinguish visible native buttons from headings, disabled and hidden controls',{skip:!process.env.M4_UI_BROWSER},async()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'m4-buttons-'));let s;
+ fs.writeFileSync(path.join(root,'index.html'),'<html><style>body{margin:0}button{display:block;width:200px;height:60px} .off{position:absolute;top:2000px}</style><h2>Heading</h2><button><span>Enabled Button</span></button><button disabled>Disabled Button</button><button style="display:none">HIDDEN_SECRET</button><button class="off">OFFSCREEN_SECRET</button><button data-private="ATTR_SECRET">Other Button</button></html>');
+ try{
+  s=await session(root,path.join(root,'out'),{textMode:true,markButtons:true});
+  const a=await s.observe();
+  assert.match(a.visibleText,/\[B\] Enabled Button/);
+  assert.match(a.visibleText,/\[B\] Other Button/);
+  assert.match(a.visibleText,/\) Heading/);
+  assert.match(a.visibleText,/\) Disabled Button/);
+  assert.doesNotMatch(a.visibleText,/SECRET|\[B\] Heading|\[B\] Disabled/);
+  assert.ok(a.visibleText.length<=1800);
+ }finally{if(s)await s.close();fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test('native confirm is visible and only explicit decisions accept or dismiss it',{skip:!process.env.M4_UI_BROWSER},async()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'m4-confirm-'));let s;
+ fs.writeFileSync(path.join(root,'index.html'),'<html><style>body{margin:0}button{width:200px;height:80px}</style><button onclick="this.textContent=confirm(\'Replace test career?\')?\'ACCEPTED\':\'DISMISSED\'">Open confirmation</button></html>');
+ try{
+  s=await session(root,path.join(root,'out'),{textMode:true,markButtons:true,allowDialogs:true});
+  const a=await s.observe();assert.match(a.visibleText,/Open confirmation/);
+  const b=await s.step({op:'click',x:100,y:40});
+  assert.equal(b.dialog,'confirm');assert.match(b.visibleText,/Replace test career/);assert.equal(b.error,undefined);
+  const c=await s.step({op:'click',x:100,y:40});assert.equal(c.dialog,'confirm');
+  const d=await s.step({op:'dialog',choice:'dismiss'});assert.match(d.visibleText,/DISMISSED/);assert.equal(d.dialog,undefined);
+  const e=await s.step({op:'click',x:100,y:40});assert.equal(e.dialog,'confirm');
+  const g=await s.step({op:'dialog',choice:'accept'});assert.match(g.visibleText,/ACCEPTED/);assert.equal(g.dialog,undefined);assert.equal(g.round,5);
+  await s.step({op:'click',x:100,y:40});await s.close();s=null;
+  s=await session(root,path.join(root,'legacy'),{textMode:true});
+  const legacy=await s.step({op:'click',x:100,y:40});assert.equal(legacy.done,true);assert.match(legacy.error,/Native browser dialog unsupported/);
+ }finally{if(s)await s.close();fs.rmSync(root,{recursive:true,force:true});}
+});

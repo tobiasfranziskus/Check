@@ -23,19 +23,20 @@ function serverFor(root){
 }
 function action(raw){
  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Expected action object');
- const {op}=raw, fields={click:['x','y'],type:['text'],scroll:['x','y','dy'],wait:['ms'],reload:[],stop:[]};
+ const {op}=raw, fields={click:['x','y'],type:['text'],scroll:['x','y','dy'],wait:['ms'],reload:[],stop:[],dialog:['choice']};
  if(!Object.hasOwn(fields,op)||Object.keys(raw).some(k=>k!=='op'&&!fields[op].includes(k)))throw Error('Unsupported action or field');
  const integer=(k,min,max)=>{if(!Number.isInteger(raw[k])||raw[k]<min||raw[k]>max)throw Error('Invalid '+k);};
  if(op==='click'||op==='scroll'){integer('x',0,WIDTH-1);integer('y',0,HEIGHT-1);}
  if(op==='scroll')integer('dy',-1500,1500);
  if(op==='wait')integer('ms',0,2000);
  if(op==='type'&&(typeof raw.text!=='string'||raw.text.length>300||/[\u0000-\u001f]/.test(raw.text)))throw Error('Invalid text');
+ if(op==='dialog'&&!['accept','dismiss'].includes(raw.choice))throw Error('Invalid choice');
  return raw;
 }
 
 // Fixed, conservative viewport projection. It never serializes attributes, HTML, hidden
 // state, storage, source, accessible-only labels or offscreen nodes. Not a pixel OCR.
-function viewportText(){
+function viewportText(markButtons=false){
  const maxChars=1800, maxRows=32, words=[];
  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
  const range=document.createRange();
@@ -62,13 +63,15 @@ function viewportText(){
   const el=n.parentElement;
   if(!el||!visible(el))continue;
   const text=n.nodeValue;
+  const button=markButtons?el.closest('button'):null;
+  const control=button&&!button.matches(':disabled')?button:null;
   for(const match of text.matchAll(/\S+/gu)){
    if(match[0].length>100)continue;
    range.setStart(n,match.index);range.setEnd(n,match.index+match[0].length);
    const rects=Array.from(range.getClientRects());
    if(rects.length!==1||!onScreen(rects[0],el))continue;
    const b=rects[0];
-   words.push({x:Math.round(b.left),y:Math.round((b.top+b.bottom)/2),right:Math.round(b.right),t:match[0]});
+   words.push({x:Math.round(b.left),y:Math.round((b.top+b.bottom)/2),right:Math.round(b.right),t:match[0],control});
    if(words.length>=800)break;
   }
  }
@@ -78,20 +81,20 @@ function viewportText(){
  const lines=[];
  for(const w of words){
   const last=lines[lines.length-1];
-  if(last&&Math.abs(last.y-w.y)<=4&&w.x>=last.right-2&&w.x-last.right<=28){
+  if(last&&last.control===w.control&&Math.abs(last.y-w.y)<=4&&w.x>=last.right-2&&w.x-last.right<=28){
    last.t+=' '+w.t;last.right=w.right;
   }else lines.push({...w});
  }
  let result='',count=0;
  for(const l of lines){
-  const row='('+l.x+','+l.y+') '+l.t.slice(0,140);
+  const row='('+l.x+','+l.y+') '+(l.control?'[B] ':'')+l.t.slice(0,140);
   if(count>=maxRows||result.length+row.length+1>maxChars-24){result+='\n[Anzeige gekürzt]';break;}
   result+=(result?'\n':'')+row;count++;
  }
  return result||'[Kein sichtbarer Text erkannt]';
 }
 
-async function session(root,out,{chromium,executablePath,textMode=false}={}){
+async function session(root,out,{chromium,executablePath,textMode=false,markButtons=false,allowDialogs=false,preparePage}={}){
  const browserType=chromium||require(process.env.PLAYWRIGHT_MODULE||'playwright').chromium;
  const server=serverFor(root);
  let browser,ctx;
@@ -105,20 +108,34 @@ async function session(root,out,{chromium,executablePath,textMode=false}={}){
    return u.origin===origin?route.continue():route.abort();
   });
   const page=await ctx.newPage();page.setDefaultTimeout(4000);page.setDefaultNavigationTimeout(8000);
-  let nativeDialog=false;
-  page.on('dialog',d=>{nativeDialog=true;d.dismiss().catch(()=>{});}); // report unsupported native dialogs, never confirm silently
+  let nativeDialog=false,pending=null,wake=null,inFlight=null;
+  page.on('dialog',d=>{
+   // Only an actual confirm in an opted-in text session during a UI action
+   // may await an explicit tester decision. No automatic acceptance.
+   if(allowDialogs&&textMode&&wake&&!pending&&d.type()==='confirm'){
+    pending=d;wake();return;
+   }
+   nativeDialog=true;d.dismiss().catch(()=>{});
+  });
   ctx.on('page',p=>{if(p!==page)p.close().catch(()=>{});});
   await page.goto(origin+'/');
   await page.waitForTimeout(300);
+  if(preparePage!==undefined){
+   if(typeof preparePage!=='function')throw Error('Invalid trusted setup');
+   await preparePage(page);
+  }
   const started=performance.now();let rounds=0,closed=false;
   fs.mkdirSync(out,{recursive:true});
-  async function close(){if(closed)return;closed=true;await ctx.close();await browser.close();await new Promise(resolve=>server.close(resolve));}
+  async function close(){if(closed)return;closed=true;if(pending){const d=pending;pending=null;await d.dismiss().catch(()=>{});}await ctx.close();await browser.close();await new Promise(resolve=>server.close(resolve));}
   const elapsed=()=>Math.round(performance.now()-started);
   async function observe(){
    if(closed)throw Error('Session closed');
    if(nativeDialog)return {round:rounds,elapsedMs:elapsed(),done:true,error:'Native browser dialog unsupported; infrastructure blocked'};
    const obs={round:rounds,remaining:Math.max(0,LIMIT-rounds),width:WIDTH,height:HEIGHT};
-   if(textMode)obs.visibleText=await page.evaluate(viewportText);
+   if(pending){
+    obs.visibleText='[Browser-Bestätigungsdialog] '+pending.message().replace(/[\u0000-\u001f]/g,' ').slice(0,600)+'\n[dialog: accept = bestätigen, dismiss = abbrechen]';
+    obs.dialog='confirm';
+   }else if(textMode)obs.visibleText=await page.evaluate(viewportText,markButtons);
    else{const name='round-'+String(rounds).padStart(2,'0')+'.jpg';
     await page.screenshot({path:path.join(out,name),type:'jpeg',quality:65,timeout:4000});obs.screenshot=name;}
    return {...obs,elapsedMs:elapsed(),done:rounds>=LIMIT||elapsed()>=MS};
@@ -128,12 +145,29 @@ async function session(root,out,{chromium,executablePath,textMode=false}={}){
    if(closed||rounds>=LIMIT||elapsed()>=MS||a.op==='stop'){await close();return {done:true,round:rounds,elapsedMs:elapsed()};}
    rounds++;
    try{
-    if(a.op==='click')await page.mouse.click(a.x,a.y);
-    if(a.op==='type')await page.keyboard.insertText(a.text);
-    if(a.op==='scroll'){await page.mouse.move(a.x,a.y);await page.mouse.wheel(0,a.dy);}
-    if(a.op==='wait')await page.waitForTimeout(Math.min(a.ms,Math.max(0,MS-elapsed())));
-    if(a.op==='reload')await page.reload({waitUntil:'domcontentloaded'});
-    await page.waitForTimeout(150);
+    if(pending&&a.op!=='dialog')return await observe();
+    if(a.op==='dialog'&&!pending)throw Error('No pending confirmation');
+    // A Playwright mouse/keyboard call can wait for the modal to close.
+    // Race the entire operation against the actual dialog event, retaining
+    // the in-flight task until the tester explicitly responds.
+    const opened=new Promise(resolve=>{wake=resolve;});
+    const previous=inFlight;
+    const task=(async()=>{
+     if(a.op==='dialog'){
+      const d=pending;pending=null;
+      if(a.choice==='accept')await d.accept();else await d.dismiss();
+      if(previous)await previous;
+     }
+     if(a.op==='click')await page.mouse.click(a.x,a.y);
+     if(a.op==='type')await page.keyboard.insertText(a.text);
+     if(a.op==='scroll'){await page.mouse.move(a.x,a.y);await page.mouse.wheel(0,a.dy);}
+     if(a.op==='wait')await page.waitForTimeout(Math.min(a.ms,Math.max(0,MS-elapsed())));
+     if(a.op==='reload')await page.reload({waitUntil:'domcontentloaded'});
+     await page.waitForTimeout(150);
+    })();
+    inFlight=task;
+    try{await Promise.race([task,opened]);}finally{wake=null;}
+    if(!pending)inFlight=null;
     return await observe();
    }catch{await close();return {done:true,round:rounds,elapsedMs:elapsed(),error:'UI action or observation failed'};}
   }

@@ -6,6 +6,12 @@
 
 ChatGPT koordiniert priorisierte, spielbare Entwicklung und die technische Wahrheit. Die laufende Automatik führt **Supervision, Triage und gegebenenfalls nicht-destruktive Dokumentationspflege** aus. Das ist **keine Genehmigung zum täglichen automatischen Code-Commit, Merge, Pages-Deploy, NAS-Push, Branchlöschen oder zur Freigabe neuer Wirtschaftsregeln**. Jede echte Entwicklung erfolgt in unabhängig prüfbaren, gegen den aktuellen `main` gerichteten Arbeits-PRs nach `AGENTS.md`; die bestehende stehende Integrationsfreigabe für bestandene, spielbare Aufträge bleibt davon getrennt. Fehlende Tool-/GitHub-/Browserrechte offen melden.
 
+## Zentrales Tagescockpit [BESCHLOSSEN 26.11.2026]
+
+Der Bericht beginnt mit dem gemeinsamen M0–M4-Managementziel, tatsächlichem main/Pages-Stand und einer kurzen Übersicht der drei Stränge P0, Wirtschaft, Piraten/Sicherheit (je ein Hauptpaket: PR/Head, Abnahme, Blocker, nächster Auftrag). Separate QA-Zeile: formale Blindmodule A–F, Diagnostik, Infrastrukturfehler und echte Geräteabnahme ausdrücklich unterscheiden. Danach genau eine strängeübergreifende Tagespriorität, erforderliche Nutzerentscheidungen und höchstens 2–4 konfliktfreie Arbeitspakete. Technische P/W-Matrix, Nachweise und Triage darunter. Kein neues paralleles Planungssystem: belegten Ausgangspunkt in PROJEKTSTATUS pflegen, Produktziele ausschließlich in ROADMAP.
+
+Vor neuen Forschungs-PRs prüfen, ob ein bestehender Stack die nächste spielbare Managerhandlung ermöglicht. Bei jeder Übergabe Integrationsziel, Branch-Basis/Head, Dateigrenzen, vorhandene CI und fehlende Gates erfassen; gestapelte Vorläufer gruppieren. Priorisierung nach konkretem Spieler-Nutzen und Blockern, nicht PR-Anzahl. Bei absehbarem Kontextverlust knappe belegte Übergabe für einen neuen Leitungsdialog erstellen; genaue Chat-Füllung ist nicht verlässlich messbar. Die Automatik bleibt read-only bzw. docs-only-Draft wie bisher.
+
 ## Verbindlicher morgendlicher Ablauf
 
 0. **Tokenarme Orientierung:** [docs/README.md](README.md) zuerst als kurzen Quellenindex lesen, dann Git-Metadaten; große Roadmap-/Status-Dateien nur abschnittsweise. [P0-Triage](P0_GROSSPUTZ_PR_TRIAGE.md) und [Void-Echoes-Katalog](VOID_ECHOES_CODEKATALOG.md) bei passender Aufgabe gezielt nutzen. Alte PR-Bodies, Archive und das Legacy-Repository nicht routinemäßig vollständig lesen.
@@ -33,7 +39,7 @@ ChatGPT koordiniert priorisierte, spielbare Entwicklung und die technische Wahrh
 
 ## Leitentscheidungen für Planung
 
-- **Spielbarkeit parallel zur Wirtschaft:** Konkrete neue Spielerentscheidung oder Tätigkeit vor zusätzlichen isolierten Systemen; Richtwert 50 % Integration/UX, 35 % W6/Wirtschaft, 15 % Ordnung/QA.
+- **Spielbarkeit parallel zur Wirtschaft:** Konkrete neue Spielerentscheidung oder Tätigkeit vor zusätzlichen isolierten Systemen; Integration/UX als gemeinsame Aufgabe priorisieren, Wirtschaft und P0 nach konkreten Blockern, Piraten nur im Management-relevanten Umfang; keine starre Quote.
 - **W0→W6 unverändert; P0→P6 für Erleben und Umsetzung.** NPC dürfen scheitern. Keine Gratisware/ISK/Rettung. Echte Schäden schaffen nur finanzierbaren Bedarf, keinen automatischen Käufer.
 - **Bewährtes wiederverwenden:** `void-echoes` für Touch- und Bedienmuster; niemals dessen veraltete Core- oder Speicherlogik unkontrolliert in den aktuellen autoritativen Kern einführen.
 - **Wissenschaftlich korrekt:** Ein endliches Siliziumfeld beweist keine unendliche Versorgung; P8b/P8c sind Forschung. Negative 13×90-Befunde stehen als echte Risiken.

@@ -10,10 +10,10 @@ on:
           - B
         default: A
       model:
-        description: 'openrouter/free oder exakter Modellname mit :free'
+        description: 'auto-free (max. 5 Gratis-Proben) oder ein festes :free-Modell'
         type: string
         required: true
-        default: 'openrouter/free'
+        default: 'auto-free'
       consent:
         description: 'Sichtbare Testspieltexte an OpenRouter senden; Testprotokoll als GitHub-Artefakt speichern'
         type: boolean
@@ -45,7 +45,7 @@ jobs:
           M4_MODULE: ${{ inputs.module }}
           M4_AI_MODEL: ${{ inputs.model }}
         run: |
-          node -e 'if (!["A","B"].includes(process.env.M4_MODULE) || !(process.env.M4_AI_MODEL==="openrouter/free"||/^[A-Za-z0-9._/-]+:free$/.test(process.env.M4_AI_MODEL)) || process.env.M4_AI_MODEL.length>160) process.exit(1)'
+          node -e 'if (!["A","B"].includes(process.env.M4_MODULE) || !(process.env.M4_AI_MODEL==="auto-free"||/^[A-Za-z0-9._/-]+:free$/.test(process.env.M4_AI_MODEL)) || process.env.M4_AI_MODEL.length>160) process.exit(1)'
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
@@ -53,6 +53,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Probe free models before browser installation
+        id: probe
+        env:
+          M4_AI_MODEL: ${{ inputs.model }}
+          M4_AI_PROVIDER: openrouter
+          M4_ALLOW_REMOTE: '1'
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          TMPDIR: ${{ runner.temp }}/m4-live
+        run: |
+          mkdir -p "$TMPDIR"
+          node scripts/m4-u4-model-runner.cjs --probe > "$TMPDIR/probe.json"
+          node -e 'const fs=require("node:fs"),path=require("node:path"),{AUTO_FREE_MODELS}=require("./scripts/m4-u4-model-runner.cjs"); const p=JSON.parse(fs.readFileSync(path.join(process.env.TMPDIR,"probe.json"),"utf8")),wanted=process.env.M4_AI_MODEL; if(p.reason!=="PROBE_OK"||typeof p.model!=="string"||p.model.length>160||!/^[A-Za-z0-9._/-]+:free$/.test(p.model)||!(wanted==="auto-free"?AUTO_FREE_MODELS.includes(p.model):p.model===wanted))process.exit(1); fs.appendFileSync(process.env.GITHUB_OUTPUT,"model="+p.model+"\n");'
       - name: Install browser without model credentials
         run: |
           npm install --prefix "$RUNNER_TEMP/m4-ui" playwright@1.51.1
@@ -60,7 +72,7 @@ jobs:
       - name: Run independent model pilot
         env:
           M4_MODULE: ${{ inputs.module }}
-          M4_AI_MODEL: ${{ inputs.model }}
+          M4_AI_MODEL: ${{ steps.probe.outputs.model }}
           M4_AI_PROVIDER: openrouter
           M4_ALLOW_REMOTE: '1'
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
@@ -81,10 +93,23 @@ jobs:
         run: |
           node -e '
             const fs=require("node:fs"),path=require("node:path");
-            let r; try {r=JSON.parse(fs.readFileSync(path.join(process.env.TMPDIR,"result.json"),"utf8"));} catch {r={reason:"INFRASTRUCTURE"};}
+            let probe; try {probe=JSON.parse(fs.readFileSync(path.join(process.env.TMPDIR,"probe.json"),"utf8"));} catch {probe=null;}
+            const probeStatus=probe?.reason==="PROBE_OK"?"Erfolgreich":probe?.reason==="INFRASTRUCTURE"?"Blockiert":"Nicht abgeschlossen";
+            let r; try {r=JSON.parse(fs.readFileSync(path.join(process.env.TMPDIR,"result.json"),"utf8"));} catch {r=probe?.reason==="INFRASTRUCTURE"?probe:{reason:"INFRASTRUCTURE",detail:"Pilot setup incomplete",actions:0};}
             const reason=["INFRASTRUCTURE","MODEL_STOP","LIMIT"].includes(r.reason)?r.reason:"INFRASTRUCTURE";
             const n=Number.isInteger(r.actions)&&r.actions>=0&&r.actions<=12?r.actions:"unbekannt";
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,"## M4-U4 Pilot\n\nTransportstatus: "+reason+"\n\nAktionen: "+n+"\n\nSpielabnahme: UNREVIEWED. Evidenz separat bewerten.\n");
+            const allowed=["Invalid model decision format","Invalid model JSON","Model output truncated","Model output empty","Unverified free model identity","Model identity mismatch","Model response too large","Empty model response","Invalid provider JSON","Model transport or response failed","Model timeout","Browser observation failed","Browser action failed","Probe response mismatch","Pilot setup incomplete"];
+            const detail=reason==="INFRASTRUCTURE"&&(allowed.includes(r.detail)||/^Model HTTP [0-9]{3}$/.test(r.detail))?r.detail:reason==="INFRASTRUCTURE"?"Keine sichere Detaildiagnose verfügbar.":"-";
+            const pinned=probe?.reason==="PROBE_OK"?probe.model:null;
+            const model=typeof pinned==="string"&&pinned.length<=160&&/^[A-Za-z0-9._/-]+:free$/.test(pinned)?pinned:"Noch nicht festgelegt";
+            const sources={openrouter_free_tier_per_minute:"OpenRouter-Minutenlimit",openrouter_free_tier_daily:"OpenRouter-Tageslimit",upstream_provider_shared_pool:"Modellanbieter ausgelastet",openrouter_in_flight_budget:"OpenRouter-Budget laufender Anfragen",openrouter_key_limit:"Schlüssellimit",openrouter_credits:"Guthabenlimit",unknown:"Quelle nicht gemeldet"};
+            const source=reason==="INFRASTRUCTURE"&&Object.hasOwn(sources,r.quota?.limitSource)?sources[r.quota.limitSource]:"-";
+            const reset=r.quota?.resetAt;
+            const resetText=Number.isSafeInteger(reset)&&reset>=1000000000000&&reset<=8640000000000000?new Date(reset).toISOString():"nicht gemeldet";
+            const attempts=Array.isArray(probe?.attempts)?probe.attempts.slice(0,5):[];
+            const lines=attempts.filter(a=>typeof a?.requestedModel==="string"&&a.requestedModel.length<=160&&/^[A-Za-z0-9._/-]+:free$/.test(a.requestedModel)).map(a=>a.requestedModel+": "+(a.reason==="PROBE_OK"?"OK":allowed.includes(a.detail)||/^Model HTTP [0-9]{3}$/.test(a.detail)?a.detail:"Unbekannt")+(Object.hasOwn(sources,a.quota?.limitSource)?" ("+sources[a.quota.limitSource]+")":""));
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,"## M4-U4 Pilot\n\nErreichbarkeitsprüfung: "+probeStatus+"\n\nModellproben ("+lines.length+"/5):\n"+lines.map(l=>"- "+l).join("\n")+"\n\nTransportstatus: "+reason+"\n\nDiagnose: "+detail+"\n\nLimitquelle: "+source+"\n\nReset (UTC): "+resetText+"\n\nFestgelegtes Modell: "+model+"\n\nAktionen: "+n+"\n\nSpielabnahme: UNREVIEWED. Evidenz separat bewerten.\n");
+            if(reason==="INFRASTRUCTURE") console.error("M4-U4: Probe "+probeStatus+"; "+detail+"; Limitquelle: "+source+"; Reset (UTC): "+resetText);
             if(reason==="INFRASTRUCTURE") process.exitCode=1;
           '
       - name: Upload isolated test evidence
@@ -93,6 +118,7 @@ jobs:
         with:
           name: m4-u4-pilot-${{ inputs.module }}-${{ github.run_attempt }}
           path: |
+            ${{ runner.temp }}/m4-live/probe.json
             ${{ runner.temp }}/m4-live/result.json
             ${{ runner.temp }}/m4-live/m4-u4-model-*/evidence.jsonl
           retention-days: 7

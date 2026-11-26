@@ -1232,10 +1232,14 @@ function entladen(state, rules, s) {
     // PIR-3f: Original-F4 hinterlaesst eis:0. Nur die belegte leere
     // Werftreise darf in Regel204 denselben Nullmengen-Schutz nutzen.
     const werft=state.kanon?.pirWerft;
-    const werftAnkunft=rules.rulesVersion===204 && [7,8].includes(state.kanon?.piraten?.profil)
+    const werftAnkunft=rules.rulesVersion===204 && [7,8,9].includes(state.kanon?.piraten?.profil)
       && werft?.schiff===s.id && werft.ende===state.tick && s.phase==='dock'
       && s.system==='nadir' && s.ankunft===state.tick;
-    if((rules.rulesVersion===207 || werftAnkunft) && anzahl(s.ladung,ware)===0)continue;
+    const rueck=state.kanon?.pirRueck;
+    const rueckAnkunft=rules.rulesVersion===204 && state.kanon?.piraten?.profil===9
+      && rueck?.schiff===s.id && rueck.ende===state.tick && s.phase==='dock'
+      && s.system==='aldera' && s.ankunft===state.tick;
+    if((rules.rulesVersion===207 || werftAnkunft || rueckAnkunft) && anzahl(s.ladung,ware)===0)continue;
     const m = Math.min(anzahl(s.ladung, ware), aufnehmbar(state, rules, station, ware));
     if (m > 0 && handel(state, rules, s, station, ware, m, false)) {
       state.stats.handel += 1; state.stats.verkaeufe[s.id] += 1;
@@ -2505,7 +2509,7 @@ const m_core_w4 = (() => {
         -(state.kanon?.minerWerft?.materialVerbraucht??0)
         -(state.kanon?.bauteile?.materialVerbraucht??0)
         -(state.kanon?.jaeger?.materialVerbraucht??0)
-        -(state.kanon?.piraten?.profil===8?(state.kanon.pirReparatur?.materialVerbraucht??0):0)
+        -([8,9].includes(state.kanon?.piraten?.profil)?(state.kanon.pirReparatur?.materialVerbraucht??0):0)
       && (!a || (a.erz===c.erzJeCharge&&a.material===c.materialJeCharge
         && a.arbeitsBudget===p&&Number.isSafeInteger(a.gearbeitet)
         && a.gearbeitet>=0&&a.gearbeitet<c.dauer));
@@ -2535,7 +2539,7 @@ const m_core_w5 = (() => {
     const c=rules.w5,w=state.w5,k=plan(rules);
     if(owner!==c.werft || station!==c.station)
       return {ok:false,grund:'Nur die finanzierende Werft darf Nadir-Schiffe bauen'};
-    const repair=state.kanon?.piraten?.profil===8?state.kanon.pirReparatur:null;
+    const repair=[8,9].includes(state.kanon?.piraten?.profil)?state.kanon.pirReparatur:null;
     if(!w || w.auftrag || (repair&&repair.bezahlt<repair.minuten))
       return {ok:false,grund:'Eine Werftcharge ist bereits beauftragt'};
     if(anzahl(state.stations[c.station].lager,'material')<k.material)
@@ -2646,12 +2650,12 @@ const m_core_w5 = (() => {
         +(state.kanon?.minerWerft?.materialVerbraucht??0)
         +(state.kanon?.bauteile?.materialVerbraucht??0)
         +(state.kanon?.jaeger?.materialVerbraucht??0)
-        +(state.kanon?.piraten?.profil===8?(state.kanon.pirReparatur?.materialVerbraucht??0):0)
+        +([8,9].includes(state.kanon?.piraten?.profil)?(state.kanon.pirReparatur?.materialVerbraucht??0):0)
       && st.material===state.w4.materialErzeugt-w.materialVerbraucht-(state.w5ae?.purchased??0)
         -(state.kanon?.minerWerft?.materialVerbraucht??0)
         -(state.kanon?.bauteile?.materialVerbraucht??0)
         -(state.kanon?.jaeger?.materialVerbraucht??0)
-        -(state.kanon?.piraten?.profil===8?(state.kanon.pirReparatur?.materialVerbraucht??0):0)
+        -([8,9].includes(state.kanon?.piraten?.profil)?(state.kanon.pirReparatur?.materialVerbraucht??0):0)
       && state.ledger.frachter.produced===w.fertig
       && st.frachter===w.fertig-w.verkauft
       && w.verkauft===shipIds.length&&w.verkauft<=w.fertig
@@ -2780,7 +2784,7 @@ const m_core_w5_transfer=(()=>{
           ||(!!r.kanon&&s.w5n?.frachtauftrag?.schiff===x.id)
           // PIR-3f research: historical Nadir->Aldera receipt stays immutable.
           // The separate, paid repair ferry is validated by the outer K1 audit.
-          ||([7,8].includes(s.kanon?.piraten?.profil)&&x.owner==='house'&&(()=>{
+          ||([7,8,9].includes(s.kanon?.piraten?.profil)&&x.owner==='house'&&(()=>{
             const f=s.kanon.pirWerft,sh=s.ships[x.id];
             if(!f||f.schiff!==x.id||f.owner!==x.owner||f.start<x.ankunft
               ||f.dauer!==duration||f.ende!==f.start+duration
@@ -2789,6 +2793,19 @@ const m_core_w5_transfer=(()=>{
               ||(s.kanon.buch.summen['pir-werftflug-reserve|house|k1_pir_werftflug']??0)!==duration*f.lohn
               ||(s.kanon.buch.summen['pir-werftflug-lohn|k1_pir_werftflug|pilot_house']??0)!==f.bezahlt*f.lohn)
               return false;
+            const b=s.kanon.pirRueck;
+            if(s.kanon.piraten.profil===9&&b&&b.schiff===x.id&&s.tick<b.ende){
+              const repair=s.kanon.pirReparatur;
+              return f.bezahlt===duration&&repair?.schiff===x.id
+                &&repair.bezahlt===repair.minuten&&b.reparaturEnd===repair.ende
+                &&b.start>=repair.ende&&b.owner===x.owner&&b.dauer===duration
+                &&b.ende===b.start+duration&&b.lohn===c.lohnJeMinute
+                &&b.bezahlt===s.tick-b.start&&b.bezahlt>=0
+                &&s.owners.k1_pir_rueckflug?.cash===(duration-b.bezahlt)*b.lohn
+                &&s.kanon.buch.summen['pir-rueckflug-reserve|house|k1_pir_rueckflug']===duration*b.lohn
+                &&(s.kanon.buch.summen['pir-rueckflug-lohn|k1_pir_rueckflug|pilot_house']??0)===b.bezahlt*b.lohn
+                &&sh.system===c.quelle&&sh.phase==='reise'&&sh.ziel===c.zielStation&&sh.ankunft===b.ende;
+            }
             return s.tick<f.ende
               ?sh.system===c.ziel&&sh.phase==='reise'&&sh.ziel===r.w5.station&&sh.ankunft===f.ende
               :sh.system===c.quelle&&sh.phase==='dock'&&sh.auftrag==='halten'&&sh.ankunft===f.ende;

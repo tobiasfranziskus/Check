@@ -35,7 +35,7 @@ function prepare(module){
  const copy=J8.erstellen();copy.oeffnen204(json,true);
  assert.equal(copy.exportieren(),json);assert.equal(copy.ansicht().hash,hash);
  const fleet=Object.values(s.ships).filter(sh=>sh.owner==='house');
- const fees=s.kanon.spielerFrachten.gebuehr, cash=s.owners.house.cash;
+ const fees=s.kanon.spielerFrachten?.gebuehr??0, cash=s.owners.house.cash;
  const expect={B:[0,1650,0,2],C:[240,2028,240,2],D:[6300,12263,11520,4],E:[360,2310,480,2],F:[120,1659,0,2]};
  assert.deepEqual([s.tick,cash,fees,fleet.length],expect[module]);
  if(module==='D'){

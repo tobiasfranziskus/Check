@@ -37,7 +37,7 @@ function stand(welt, s) {
   });
 }
 
-function verwaltung(welt, s, zahlen, wasserErlaubt) {
+function verwaltung(welt, s, zahlen, wasserErlaubt, eisErlaubt = null) {
   const k = s.kanon, haus = Object.values(s.ships).filter(sh => sh.owner === 'house');
   const i = k.industrieErz, a = s.w3.auftrag;
   const versuch = (type, daten = {}) => {
@@ -82,7 +82,8 @@ function verwaltung(welt, s, zahlen, wasserErlaubt) {
   // Prefer a bought Nadir hull for a genuinely executable follow-up.
   const kandidatin = frachter.filter(sh => sh.system === 'aldera' && sh.flug?.lage === 'angedockt')
     .sort((x, y) => Number(s.w5.schiffIds.includes(y.id)) - Number(s.w5.schiffIds.includes(x.id)))[0];
-  if (kandidatin) versuch('shipFreightIce', {schiff: kandidatin.id});
+  if (kandidatin && (!eisErlaubt || eisErlaubt(welt, s, kandidatin)))
+    versuch('shipFreightIce', {schiff: kandidatin.id});
 }
 
 function kontrollstand(welt, s) {
@@ -210,7 +211,7 @@ const VERGLEICH = [
   [SZENARIEN.find(x => x.id === 'S02'), 'konzerne'],
 ];
 
-function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', beobachter = null, siliziumAktiv = true) {
+function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', beobachter = null, siliziumAktiv = true, eisErlaubt = null) {
   const {welt: originalWelt, s, quellhash, industrieRueckladungen} = start(szenario, seed, forschung, startpfad, siliziumAktiv);
   // Optional offline audit. Default path and manager decisions stay identical.
   const welt = beobachter ? {...originalWelt, advance(state, minuten) {
@@ -229,7 +230,7 @@ function lauf(szenario, tage, seed, forschung, startpfad = 'konzerne', beobachte
     while (s.tick < ende) {
       const naechsterTermin = Math.min(s.tick + 60, ende);
       if (beobachter) beobachter(originalWelt, s, 'vorVerwaltung');
-      verwaltung(welt, s, entscheidungen, szenario.id !== 'S08');
+      verwaltung(welt, s, entscheidungen, szenario.id !== 'S08', eisErlaubt);
       if (beobachter) beobachter(originalWelt, s, 'nachVerwaltung');
       beobachten(welt, s, naechsterTermin, industrieRueckladungen);
       const a = s.w3.auftrag;

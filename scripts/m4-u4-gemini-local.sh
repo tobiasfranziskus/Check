@@ -10,7 +10,7 @@ if [[ $# -gt 2 || "${M4_GEMINI_FREE_CONFIRMED:-}" != 1 ]]; then
  echo "Nur Projekt ohne aktivierte Abrechnung: Free-Tier in AI Studio prüfen und M4_GEMINI_FREE_CONFIRMED=1 setzen." >&2; exit 2
 fi
 # Do not pass credentials to npm, git or browser installation.
-unset GOOGLE_API_KEY OPENROUTER_API_KEY M4_LOCAL_DIAGNOSTIC M4_OLLAMA_NATIVE
+unset GOOGLE_API_KEY OPENROUTER_API_KEY M4_OLLAMA_NATIVE
 # Keep an already supplied key only as a non-exported shell variable.
 gemini_key="${GEMINI_API_KEY:-}"
 export -n gemini_key

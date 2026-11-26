@@ -376,6 +376,7 @@ async function main(){
  const emit=x=>fs.appendFileSync(file,JSON.stringify(x)+'\n',{mode:0o600});
  emit({kind:'start',module,goal:GOALS[module],provider:cfg.provider,model:cfg.model,productSha:process.env.M4_PRODUCT_SHA||'UNVERIFIED',testMode:cfg.diagnostic?'text-controls-diagnostic':'text',testStart:fixture?{id:fixture.id,hash:fixture.hash,sha256:fixture.sha256}:{id:'fresh'},started:new Date().toISOString()});
  const relay=await session(root,out,{textMode:true,markButtons:cfg.native===true,allowDialogs:cfg.native===true,executablePath:process.env.CHROMIUM_PATH,...(fixture?{preparePage:page=>setup.importPrepared(page,fixture)}:{})});
+ if(fixture)emit({kind:'test_start_validated',id:fixture.id,hash:fixture.hash,sha256:fixture.sha256});
  const result=await run({relay,cfg,module,emit});
  console.log(JSON.stringify({evidence:file,...result}));
 }

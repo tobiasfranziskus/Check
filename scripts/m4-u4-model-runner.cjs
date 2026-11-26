@@ -27,7 +27,7 @@ const GEMINI_MODELS=Object.freeze(['gemini-3.8-flash','gemini-3.5-flash-lite']);
 function config(env){
  const provider=env.M4_AI_PROVIDER||'ollama',model=env.M4_AI_MODEL;
  const diagnostic=env.M4_LOCAL_DIAGNOSTIC==='1';
- if(diagnostic&&(provider!=='ollama'||env.M4_OLLAMA_NATIVE!=='1'))throw Error('Control diagnostic requires native local Ollama');
+ if(diagnostic&&provider!=='gemini'&&(provider!=='ollama'||env.M4_OLLAMA_NATIVE!=='1'))throw Error('Control diagnostic requires native local Ollama or explicitly opted-in Gemini');
  if(!model||!/^[A-Za-z0-9._:/-]{1,160}$/.test(model))throw Error('Set M4_AI_MODEL explicitly');
  if(provider==='ollama'){
   const port=Number(env.M4_AI_PORT||11434);
@@ -38,7 +38,7 @@ function config(env){
  if(provider==='gemini'){
   if(env.M4_ALLOW_REMOTE!=='1'||env.M4_GEMINI_FREE_CONFIRMED!=='1'||!GEMINI_MODELS.includes(model)||!env.GEMINI_API_KEY)throw Error('Gemini requires explicit remote opt-in, confirmed free project, allowed model and API key');
   // native marks the existing text/dialog UI protocol, not the Ollama transport.
-  return {provider,model,native:true,url:'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent',key:env.GEMINI_API_KEY};
+  return {provider,model,native:true,url:'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent',key:env.GEMINI_API_KEY,...(diagnostic?{diagnostic:true}:{})};
  }
  if(provider==='openrouter'){
   if(env.M4_ALLOW_REMOTE!=='1'||!(model==='openrouter/free'||/^[A-Za-z0-9._/-]+:free$/.test(model))||!env.OPENROUTER_API_KEY)throw Error('Remote requires explicit opt-in, free model and local API key');
@@ -151,7 +151,7 @@ async function quotaDiagnosis(res){
  return {limitSource,resetAt,retryDelayMs:delay};
 }
 function geminiPayload(cfg,body){
- const schema=body.dialog==='confirm'?CONFIRM_SCHEMA:DECISION_SCHEMA;
+ const schema=body.dialog==='confirm'?CONFIRM_SCHEMA:cfg.diagnostic&&body.controls?.length?paletteSchema(body.controls):DECISION_SCHEMA;
  return {
   systemInstruction:{parts:[{text:body.messages[0].content}]},
   contents:[{role:'user',parts:[{text:body.messages[1].content}]}],
@@ -191,7 +191,7 @@ async function ask(cfg,body,timeout,fetcher=fetch){
  if(gemini&&candidate?.finishReason!=='STOP')throw Error('Gemini response blocked or incomplete');
  if(typeof raw!=='string'||!raw.trim())throw Error('Model output empty');
  let d;
- try{d=decision(raw,native&&cfg.diagnostic?body.controls:undefined);}catch(e){
+ try{d=decision(raw,(native||gemini)&&cfg.diagnostic?body.controls:undefined);}catch(e){
   const err=Error(e instanceof SyntaxError?'Invalid model JSON':'Invalid model decision format');
   if(native)err.validation=INVALID_REASONS.has(e.message)?e.message:e instanceof SyntaxError?'JSON syntax':'Unknown validation failure';
   throw err;

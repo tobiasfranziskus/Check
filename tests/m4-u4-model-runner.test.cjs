@@ -52,14 +52,14 @@ test('round and time limits; no action after model timeout budget',async()=>{
 
 test('cloud pilot dry-run: actual browser and mocked free-model transport, no API call',{skip:!process.env.M4_UI_BROWSER},async()=>{
  const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
- const {session}=require('../scripts/m4-u4-ui-relay.cjs');
+ const {session,browserOptions}=require('../scripts/m4-u4-ui-relay.cjs');
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'m4-mobile-mock-'));
  const remote=config({M4_AI_PROVIDER:'openrouter',M4_AI_MODEL:'test/model:free',M4_ALLOW_REMOTE:'1',OPENROUTER_API_KEY:'MOCK_ONLY_SECRET'});
  fs.writeFileSync(path.join(root,'index.html'),'<html><style>body{margin:0}button{width:220px;height:100px}</style><button onclick="this.textContent=\'RESULT_OK\'">START_TEST</button><p hidden>HIDDEN_SENTINEL</p></html>');
  const events=[],calls=[];
  let s;
  try{
-  s=await session(root,path.join(root,'out'),{textMode:true});
+  s=await session(root,path.join(root,'out'),{...browserOptions(process.env),textMode:true});
   const result=await run({relay:s,cfg:remote,module:'A',emit:e=>events.push(e),fetcher:async(url,opts)=>{
    assert.equal(url,'https://openrouter.ai/api/v1/chat/completions');
    assert.equal(opts.headers.Authorization,'Bearer MOCK_ONLY_SECRET');

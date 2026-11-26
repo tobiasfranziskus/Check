@@ -106,7 +106,8 @@ async function diagnose(module,options,out){
   }
   if(module==='E'){
    await navigate('#p3-invest-aktion');
-   assert.match(view.visibleText,/Ertrag oder Rücklage|Miner verbindlich|Kapital sparen/);
+   assert.ok(view.targets.some(t=>t.kind==='button'&&/Miner verbindlich kaufen/.test(t.label)),
+    'Investment offer missing from the visible target inventory');
    f.investment=await label('#p3-invest-ziel');
    f.investmentEnabled=await page.locator('#p3-invest-aktion').isEnabled();
    f.investmentButton=await label('#p3-invest-aktion');

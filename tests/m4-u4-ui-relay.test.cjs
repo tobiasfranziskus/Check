@@ -93,3 +93,50 @@ test('native confirm is visible and only explicit decisions accept or dismiss it
   const legacy=await s.step({op:'click',x:100,y:40});assert.equal(legacy.done,true);assert.match(legacy.error,/Native browser dialog unsupported/);
  }finally{if(s)await s.close();fs.rmSync(root,{recursive:true,force:true});}
 });
+
+test('browser isolation blocks other origins, sockets, and download persistence',
+ {skip:!process.env.M4_UI_BROWSER,timeout:20000},async()=>{
+  const http=require('node:http');
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'m4-isolation-')),out=path.join(root,'out');
+  fs.writeFileSync(path.join(root,'README.md'),'Outside the static product');
+  fs.mkdirSync(path.join(root,'prototypes'));
+  fs.writeFileSync(path.join(root,'prototypes','test.json'),'{}');
+  fs.writeFileSync(path.join(root,'index.html'),
+   '<!doctype html><a download href="/prototypes/test.json">Download fixture</a>');
+  let traffic=0,s,page;
+  const other=http.createServer((_req,res)=>{traffic++;res.end('Other origin');});
+  other.on('upgrade',(_req,socket)=>{traffic++;socket.destroy();});
+  try{
+   await new Promise(resolve=>other.listen(0,'127.0.0.1',resolve));
+   const foreign='http://127.0.0.1:'+other.address().port;
+   s=await session(root,out,{...options,textMode:true,preparePage:p=>{page=p;}});
+   const first=await s.observe();
+   const requests=await page.evaluate(async origin=>{
+    const httpBlocked=await fetch(origin).then(()=>false,()=>true);
+    const socketBlocked=await new Promise(resolve=>{
+     const socket=new WebSocket(origin.replace('http:','ws:'));
+     socket.onclose=socket.onerror=()=>resolve(true);
+     socket.onopen=()=>{resolve(false);socket.close();};
+     setTimeout(()=>resolve(false),3000);
+    });
+    const readme=(await fetch('/README.md')).status;
+    const post=(await fetch('/',{method:'POST'})).status;
+    return {httpBlocked,socketBlocked,readme,post};
+   },foreign);
+   assert.deepEqual(requests,{httpBlocked:true,socketBlocked:true,readme:404,post:404});
+   assert.equal(traffic,0);
+   const link=first.targets.find(t=>t.label==='Download fixture');
+   assert.ok(link);
+   const [download,result]=await Promise.all([
+    page.waitForEvent('download',{timeout:5000}),
+    s.step({op:'pick',id:link.id})
+   ]);
+   assert.equal(result.error,undefined);
+   assert.match(await download.failure(),/acceptDownloads/);
+   assert.deepEqual(fs.readdirSync(out),[]);
+  }finally{
+   if(s)await s.close();
+   await new Promise(resolve=>other.close(resolve));
+   fs.rmSync(root,{recursive:true,force:true});
+  }
+ });

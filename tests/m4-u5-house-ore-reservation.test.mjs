@@ -190,3 +190,26 @@ test('Haus-Erz: Standardkopie, lokale Zusage, externer Reset und bezahlter Impor
   assert.equal(importiert.zustandReferenz().w3.auftrag.carrier,'house');
   assert.equal(j.exportieren(),original);
 });
+
+test('Haus-Erz: eine weitere real gekaufte Hülle darf während W3 bezahlt überführen',()=>{
+  const {w,s}=bereit();
+  w.politikSetzen(s,{automatik:false});
+  exec(w,s,commit(unterschreiben(w,s)));
+  while(s.w5.fertig===0&&s.tick<360)w.minute(s);
+  assert.equal(s.w5.fertig,1);
+  exec(w,s,{type:'shipBuy',owner:'house',klasse:'frachter',station:'st_nadir'});
+  const frei=s.w5.schiffIds.find(id=>s.ships[id].owner==='house');
+  while(s.kanon.industrieErz.phase!=='angebot'&&s.tick<540)w.minute(s);
+  assert.equal(s.kanon.industrieErz.phase,'angebot');
+  const id=unterschreiben(w,s);
+  exec(w,s,commit(id));
+  exec(w,s,{type:'shipReposition',owner:'house',schiff:frei});
+  assert.equal(s.w5ac.active.id,frei);
+  const neu=runde(w,s);
+  w.advance(neu,60);
+  assert.equal(neu.w5ac.completed.at(-1).id,frei);
+  assert.equal(neu.w3.auftrag.kennung,id);
+  w.advance(neu,200);
+  assert.ok(neu.w5ad.freight.some(b=>b.kennung===id));
+  runde(w,neu);
+});

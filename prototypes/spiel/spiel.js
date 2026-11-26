@@ -84,13 +84,12 @@ function gespeicherte(key=SLOT){
 }
 function hausErzSpeichern(json,vorversion){
  const storage=scope.localStorage,backup=SLOT_HAUS_ERZ+':vorherige';
- const vorher=storage.getItem(SLOT_HAUS_ERZ),alt=storage.getItem(backup);
- if(!vorversion||!vorher){storage.setItem(SLOT_HAUS_ERZ,json);return;}
- storage.setItem(backup,vorher);
- try{storage.setItem(SLOT_HAUS_ERZ,json);}
+ const vorher=storage.getItem(SLOT_HAUS_ERZ);
+ storage.setItem(SLOT_HAUS_ERZ,json);
+ if(!vorversion||!vorher)return;
+ try{storage.setItem(backup,vorher);}
  catch(e){
-   if(alt===null)storage.removeItem(backup);
-   else storage.setItem(backup,alt);
+   storage.setItem(SLOT_HAUS_ERZ,vorher);
    throw e;
  }
 }

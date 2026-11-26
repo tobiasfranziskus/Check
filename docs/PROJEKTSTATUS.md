@@ -1,4 +1,17 @@
-# Aphros Void – aktueller Projektstatus [MAIN/M0/M1/P1/P3/W6] · 24.11.2026
+# Aphros Void – aktueller Projektstatus
+
+## Steuerungsübersicht · 26.11.2026
+
+**Gemeinsames Ziel:** Management-first, bestehende M0–M4-Gates gemäß [Roadmap](ROADMAP.md). Diese Übersicht dokumentiert den Ausgangspunkt der Reorganisation, keine neue Produktfreigabe. **[MAIN]** [d4f9127e](https://github.com/tobiasfranziskus/Check/commit/d4f9127e0b829302603744e25be68db60e447d8e), mobile Gemini-/lokale Ollama-Testinfrastruktur (#642), Spielcode laut Commit unverändert. Pages-SHA in dieser Sichtung nicht erneut verifiziert. GitHub-Suche: 86 offene PRs vor Anlage des Reorganisations-PRs (Momentaufnahme).
+
+| Strang | Aktives Hauptpaket / Ausgangspunkt | Blocker und nächstes Gate |
+| --- | --- | --- |
+| P0 | [#621](https://github.com/tobiasfranziskus/Check/pull/621), Inventur/CI-Schutz | Aktuellen Head und CI prüfen, Konflikte mit main auflösen; PR-Ketten nach Nachfolgern triagieren, nichts ungeprüft löschen. |
+| Wirtschaft | [#655](https://github.com/tobiasfranziskus/Check/pull/655) und Vorläufer, physische Wasserlieferung | Forschungsnachweis, keine Standardkarriere; minimalen finanzierbaren Management-Integrationspfad bestimmen, Rechte/Save/Replay/Langzeit/CI prüfen. |
+| Piraten | [#634](https://github.com/tobiasfranziskus/Check/pull/634) und Vorläufer, finanzierte Reparatur | Forschungsprofil; Abhängigkeiten und Integrationsgrenzen prüfen, keine neue Kampf-/Preisregel ohne Freigabe. |
+| Unabhängige QA | [Modulare Blindabnahme A–F](M4_U4_KI_BLINDABNAHME.md) | Infrastruktur vorhanden; formale Abnahme offen, Diagnose separat. Echte iPad-/NAS-Abnahme offen. |
+
+**Zentraler nächster Auftrag:** Steuerungsregeln integrieren, Morgenaudit synchronisieren; dann P0-/Wirtschafts-/PIR-Ketten auf wenige prüfbare Integrationspakete reduzieren. Weitere Forschung nur bei nachgewiesenem Manager-Nutzen oder zwingendem Gate. Diese Übersicht bei tatsächlichen Änderungen aktualisieren, nicht täglich kosmetisch umschreiben.
 
 > Aktive Kurzfassung. Historische Zwischenstände, ursprüngliche Testzahlen, Negativbefunde und alle damaligen PR-/Commit-/CI-Links vollständig in der [Statuschronik bis 23.11.2026](archiv/PROJEKTSTATUS_HISTORIE_BIS_20261123.md). Produktentscheidungen stehen in [ROADMAP.md](ROADMAP.md).
 

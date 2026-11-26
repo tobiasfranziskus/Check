@@ -525,3 +525,28 @@ test('direct Gemini requires explicit free-project confirmation and never routes
  const changed=await run({relay:g.relay,cfg:local,module:'A',fetcher:async()=>answer('click',round++?local.model+'-002':local.model+'-001')});
  assert.equal(changed.detail,'Model identity mismatch');assert.equal(g.actions.length,1);
 });
+
+test('Gemini opt-in diagnostic reuses the visible control mapping and preserves normal and probe modes',async()=>{
+ const {ask,geminiPayload,paletteSchema}=require('../scripts/m4-u4-model-runner.cjs');
+ const env={M4_AI_PROVIDER:'gemini',M4_AI_MODEL:'gemini-3.5-flash-lite',M4_ALLOW_REMOTE:'1',M4_GEMINI_FREE_CONFIRMED:'1',GEMINI_API_KEY:'synthetic-key'};
+ const local=config({...env,M4_LOCAL_DIAGNOSTIC:'1'}),normal=config(env);
+ const obs={round:0,remaining:12,visibleText:'(10,20) Heading\n(25,35) [B] First\n(80,90) [B] Second',done:false};
+ const body=requestBody(local,'goal',obs,[]),ordinary=requestBody(normal,'goal',obs,[]);
+ assert.equal(local.diagnostic,true);assert.equal(normal.diagnostic,undefined);
+ assert.throws(()=>config({...env,M4_LOCAL_DIAGNOSTIC:'1',M4_GEMINI_FREE_CONFIRMED:'0'}));
+ assert.equal(ordinary.controls,undefined);assert.equal(JSON.parse(ordinary.messages[1].content).screen,obs.visibleText);
+ const schema=geminiPayload(local,body).generationConfig.responseJsonSchema.properties.action.anyOf;
+ assert.deepEqual(schema,paletteSchema(body.controls).properties.action.oneOf);
+ assert.equal(schema.some(v=>v.properties.op.enum[0]==='click'),false);
+ assert.equal(geminiPayload(local,{messages:body.messages}).generationConfig.responseJsonSchema.properties.action.anyOf[0].properties.op.enum[0],'click');
+ const response=action=>new Response(JSON.stringify({modelVersion:local.model,candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify({action,note:'test'})}]}}]}));
+ const d=await ask(local,body,45000,async(url,opts)=>{
+  assert.equal(url,local.url);assert.equal(opts.headers['x-goog-api-key'],'synthetic-key');
+  assert.doesNotMatch(opts.body,/synthetic-key|"controls"/);return response({op:'pick',id:2});
+ });
+ assert.deepEqual(d.action,{op:'click',x:80,y:90});assert.deepEqual(d.chosenControl,{id:2,label:'Second'});
+ await assert.rejects(ask(local,body,45000,async()=>response({op:'pick',id:3})));
+ await assert.rejects(ask(normal,ordinary,45000,async()=>response({op:'pick',id:2})));
+ const modal=requestBody(local,'goal',{...obs,dialog:'confirm'},[]);
+ assert.equal(modal.controls,undefined);assert.deepEqual(geminiPayload(local,modal).generationConfig.responseJsonSchema.properties.action.anyOf.map(v=>v.properties.op.enum[0]),['dialog','stop']);
+});

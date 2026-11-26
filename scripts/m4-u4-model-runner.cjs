@@ -29,7 +29,16 @@ function config(env){
 // Only previously observed free model identifiers, not a guarantee of availability.
 const FIXED_DEFAULT='particle-ai/particle-1:free';
 const FREE_FALLBACKS=[FIXED_DEFAULT,'google/gemma-4-26b-a4b-it:free'];
-const JSON_MODELS=new Set(FREE_FALLBACKS);
+// Reviewed explicit free IDs. Different model families; no claim of live availability.
+// Previously blocked Particle/Gemma are last. No router alias in automatic mobile selection.
+const AUTO_FREE_MODELS=Object.freeze([
+ 'inclusionai/ling-3.2-flash:free',
+ 'baidu/ernie-5.5-flash-preview:free',
+ 'nvidia/nemotron-3.5-super-vl:free',
+ FIXED_DEFAULT,
+ 'google/gemma-4-26b-a4b-it:free'
+]);
+const JSON_MODELS=new Set(AUTO_FREE_MODELS);
 const freeModel=id=>typeof id==='string'&&id.length<=160&&/^[A-Za-z0-9._/-]+:free$/.test(id);
 // A named free model is fixed for the entire run, even before its first decision.
 // Legacy router mode remains opt-in for non-mobile experiments only.
@@ -119,6 +128,25 @@ async function probe({cfg,fetcher=fetch,now=()=>performance.now()}){
   return finish('INFRASTRUCTURE',safeDetail(e),e?.quota?{quota:e.quota}:{});
  }
 }
+// Never try another model to evade an account-wide or unknown rate limit.
+// Only an explicitly provider-local 429 or invalid synthetic answer qualifies.
+function canTryNextProbe(result){
+ if(result.detail==='Model HTTP 429')return result.quota?.limitSource==='upstream_provider_shared_pool';
+ return ['Invalid model decision format','Invalid model JSON','Model output truncated','Model output empty','Probe response mismatch'].includes(result.detail);
+}
+async function selectProbe({cfg,selection=cfg.model,fetcher=fetch,now=()=>performance.now()}){
+ if(cfg.provider!=='openrouter'||!(selection==='auto-free'||freeModel(selection)))throw Error('Probe selection requires explicit free mode');
+ const models=selection==='auto-free'?AUTO_FREE_MODELS:[selection],attempts=[];
+ const started=now();
+ for(const model of models){
+  const result=await probe({cfg:{...cfg,model},fetcher,now});
+  attempts.push(result);
+  if(result.reason==='PROBE_OK'||!canTryNextProbe(result)||attempts.length===models.length){
+   return {...result,selection,attempts,elapsedMs:Math.round(now()-started)};
+  }
+ }
+ throw Error('Empty probe selection');
+}
 async function run({relay,cfg,module,emit=()=>{},fetcher=fetch,now=()=>performance.now(),sleep=pause}){
  if(!Object.hasOwn(GOALS,module))throw Error('Invalid module');
  const started=now(),history=[];
@@ -178,8 +206,10 @@ async function run({relay,cfg,module,emit=()=>{},fetcher=fetch,now=()=>performan
 async function main(){
  const module=process.argv[2],root=path.resolve(process.argv[3]||'.');
  if(module==='--probe'){
-  const cfg=config(process.env);delete process.env.OPENROUTER_API_KEY;
-  const result=await probe({cfg});console.log(JSON.stringify(result));
+  const selection=process.env.M4_AI_MODEL;
+  const cfg=config({...process.env,M4_AI_MODEL:selection==='auto-free'?AUTO_FREE_MODELS[0]:selection});
+  delete process.env.OPENROUTER_API_KEY;
+  const result=await selectProbe({cfg,selection});console.log(JSON.stringify(result));
   if(result.reason!=='PROBE_OK')process.exitCode=1;
   return;
  }
@@ -196,4 +226,4 @@ async function main(){
  console.log(JSON.stringify({evidence:file,...result}));
 }
 if(require.main===module)main().catch(()=>{console.error('Model runner setup or relay failed; see local configuration');process.exitCode=1;});
-module.exports={config,requestBody,decision,ask,probe,run,GOALS};
+module.exports={config,requestBody,decision,ask,probe,selectProbe,AUTO_FREE_MODELS,run,GOALS};

@@ -61,7 +61,7 @@
 - **[BESCHLOSSEN]** Unbegrenztes Sparen des Spielers, wirtschaftliches Scheitern von NPC-Firmen erlaubt. Keine individuellen Rettungen oder Gratis-Schiffe/Geld/Waren. Unternehmen können fremdes Eigentum nur durch finanzierten Vertrag/Kauf/Übernahme erlangen.
 - **[BESCHLOSSEN]** Ein exportierter, validierter Spielstand muss nach Load/Replay dieselben deterministischen Kern- und Buchungswerte liefern. Bestehende Formate und Speicherorte niemals still migrieren.
 
-**[W6 / FORSCHUNG · 26.11.2026]** Isoliertes [Gesamtpaket für Ersatz, Verträge und Langzeitabnahme](W6_GESAMTPAKET.md). 60 Prozent bleiben Forschungsparameter. Offene Produktentscheidungen betreffen verbindliche Teilabwicklung, dauerhaften Jägerbedarf und eine spätere Freigabe der Ersatzprioritäten.
+**[W6 / FORSCHUNG · 26.11.2026]** [Gesamtpaket für Ersatz, Verträge und Langzeitabnahme](W6_GESAMTPAKET.md). Geprüfte Vertragsvorsorge und physische Abwicklung lösen den früheren S02-Treuhandstillstand im Kandidaten. Die S02-Langzeitläufe enden ohne weiteren Absatz und Produktionsfortschritt. 60 Prozent bleiben Forschungsparameter. Offene Produktentscheidungen betreffen Ersatzpriorität, verbindliche Abwicklung, finanzierbaren Wassertransport und dauerhaften Jägerbedarf.
 
 ## 2. W0–W6: verbindliche Wirtschaftsreihenfolge
 

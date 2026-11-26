@@ -18,7 +18,8 @@ function config(env){
  if(provider==='ollama'){
   const port=Number(env.M4_AI_PORT||11434);
   if(!Number.isInteger(port)||port<1||port>65535)throw Error('Invalid loopback port');
-  return {provider,model,url:'http://127.0.0.1:'+port+'/v1/chat/completions'};
+  const native=env.M4_OLLAMA_NATIVE==='1';
+  return {provider,model,url:'http://127.0.0.1:'+port+(native?'/api/chat':'/v1/chat/completions'),...(native?{native:true}:{})};
  }
  if(provider==='openrouter'){
   if(env.M4_ALLOW_REMOTE!=='1'||!(model==='openrouter/free'||/^[A-Za-z0-9._/-]+:free$/.test(model))||!env.OPENROUTER_API_KEY)throw Error('Remote requires explicit opt-in, free model and local API key');
@@ -81,7 +82,9 @@ async function quotaDiagnosis(res){
 async function ask(cfg,body,timeout,fetcher=fetch){
  const headers={'Content-Type':'application/json'};
  if(cfg.key)headers.Authorization='Bearer '+cfg.key;
- const res=await fetcher(cfg.url,{method:'POST',headers,body:JSON.stringify(body),redirect:'error',signal:AbortSignal.timeout(timeout)});
+ const native=cfg.provider==='ollama'&&cfg.native===true;
+ const payload=native?{model:cfg.model,messages:body.messages,stream:false,think:false,format:'json',keep_alive:'5m',options:{temperature:0,num_predict:256}}:body;
+ const res=await fetcher(cfg.url,{method:'POST',headers,body:JSON.stringify(payload),redirect:'error',signal:AbortSignal.timeout(timeout)});
  if(!res.ok){
   const err=Error('Model HTTP '+res.status);
   // Honor Retry-After instead of retrying against a provider's stated limit.
@@ -97,12 +100,21 @@ async function ask(cfg,body,timeout,fetcher=fetch){
   throw err;
  }
  const x=await boundedJSON(res);
- const choice=x.choices?.[0],raw=choice?.message?.content;
- if(choice?.finish_reason==='length')throw Error('Model output truncated');
+ const choice=x.choices?.[0],raw=native?x.message?.content:choice?.message?.content;
+ if(native&&x.done!==true)throw Error('Invalid provider JSON');
+ if((native?x.done_reason:choice?.finish_reason)==='length')throw Error('Model output truncated');
  if(typeof raw!=='string'||!raw.trim())throw Error('Model output empty');
  let d;
  try{d=decision(raw);}catch(e){throw Error(e instanceof SyntaxError?'Invalid model JSON':'Invalid model decision format');}
  if(typeof x.model==='string'&&/^[A-Za-z0-9._:/-]{1,160}$/.test(x.model))d.reportedModel=x.model;
+ if(native){
+  if(d.reportedModel!==cfg.model)throw Error('Model identity mismatch');
+  const metrics={};
+  for(const key of ['total_duration','load_duration','prompt_eval_duration','eval_duration','prompt_eval_count','eval_count']){
+   const n=x[key];if(Number.isSafeInteger(n)&&n>=0)metrics[key.endsWith('_duration')?key+'_ms':key]=key.endsWith('_duration')?Math.round(n/1e6):n;
+  }
+  d.metrics=metrics;
+ }
  if(cfg.provider==='openrouter'){
   if(!freeModel(d.reportedModel))throw Error('Unverified free model identity');
   if(cfg.model!=='openrouter/free'&&d.reportedModel!==cfg.model)throw Error('Model identity mismatch');

@@ -27,6 +27,24 @@ Eine JSON-Zeile je Aktion auf stdin; Ausgabe jeweils ein JSON-Objekt mit Bildpfa
 
 Koordinaten nur Beispiele, keine Spielanleitung. Frischer Chat mit Bildfähigkeit, keine Projektkonversation, kein Quellcode. Bei manuellem Relay entscheidet die KI, Testleitung übermittelt nur Bild und Aktion unverändert. Ein automatischer Text-Modellanschluss für lokales Ollama und ausdrücklich freigegebene OpenRouter-Free-Modelle ist implementiert (siehe unten), aber noch nicht mit einem realen Modell getestet. ChatGPT-Abonnement ist kein API-Zugang. Text-only-Modelle können alternativ mit `M4_UI_TEXT=1 node scripts/m4-u4-ui-relay.cjs .` bedient werden. Pro Runde maximal 1.800 Zeichen und 32 Zeilen mit sichtbaren Textfragmenten und (x,y)-Koordinaten. Die KI darf nur diese Projektion und das neutrale Ziel erhalten. Keine Attribute, HTML, Skripte oder versteckte Zustände; konservative Viewport-/Trefferprüfung. Abgeschnittene, überdeckte, grafische oder schwer erkennbare Inhalte können fehlen; Darstellung ist keine pixelgenaue OCR oder Grafik-/Touch-Abnahme. Wenn die Projektion keine ausreichenden Informationen liefert, Screenshot-Modus oder Infrastrukturblockade statt erfundener Aktion.
 
+## Lokaler Gemma-4-E4B-Pilot [DRAFT · 26.11.2026]
+
+Auf Nutzerwunsch ist `gemma4:e4b` der feste lokale Pilot, ohne OpenRouter, API-Key, Self-hosted Actions-Runner oder öffentlich erreichbaren Ollama-Port. Der neue Starter `scripts/m4-u4-ollama-local.sh` nutzt den bestehenden Text-Relay und das vorhandene Aktionsprotokoll unverändert. Voraussetzung: Linux/macOS, Git, Node.js ab 22, npm, laufendes Ollama auf 127.0.0.1:11434 und lokal vorhandenes Modell.
+
+Separater Checkout (vorerst Draft-Branch):
+```sh
+git clone --branch test/m4-u4-ollama-e4b-local-20261126 --single-branch https://github.com/tobiasfranziskus/Check.git Aphros-Blindtest
+cd Aphros-Blindtest
+ollama list
+bash scripts/m4-u4-ollama-local.sh A
+```
+
+Der Starter prüft einen sauberen Checkout, setzt Modell, Provider und Loopback-Port fest, entfernt Remote-Credentials aus seiner Umgebung, installiert Playwright 1.51.1/Chromium bei Bedarf im Benutzer-Cache (kein sudo), prüft die lokale Modellliste und verlangt zwei synthetische valide JSON-Entscheidungen (Kaltstart max. 120 s, Warmstart max. 20 s). Keine Probe erhält Spielinhalte. Erst danach startet das isolierte Modul A. Bei Erfolg des Transports Modul B separat mit `bash scripts/m4-u4-ollama-local.sh B` ausführen. Bei fehlendem Modell `ollama pull gemma4:e4b`, bei fehlendem Dienst Ollama lokal starten; bei Browser-Systembibliotheksfehler die konkrete Meldung prüfen. Keine automatische Absenkung des Modells, keine Verlängerung des Abnahmebudgets, keine Remote-Fallbacks. Optional vorhandenes kompatibles Chromium über CHROMIUM_PATH.
+
+Nach jedem Lauf den ausgegebenen JSON-Resultatpfad (evidence.jsonl) samt Terminalausgabe sichern. Checkout-SHA und gegebenenfalls Modell-Digest werden ausgegeben. Produktgleichheit zum veröffentlichten Pages-Stand ist separat nachzuweisen. Jede Sitzung ist neu und nichtpersistent. Auswertung bleibt UNREVIEWED; Textprojektion ist keine visuelle Designabnahme. Die Module C–F benötigen teilweise geeignete regulär erzeugte Teststände und weitere Import-/Save-Prüfung; sie sind noch nicht abgenommen.
+
+Prüfung des Starter-Blobs 292e04f3705913ede0dc496ca573bef9497998c6 am 26.11.: Bash- und eingebettete Node22-Syntax erfolgreich, ungültiges Modul mit Exit 2 abgelehnt; isoliertes temporäres Git-Repository und simulierter Loopback-Modellserver mit Stub des bestehenden Runners: 4/4 Fälle (fester Provider/Modell und Start, fehlendes Modell, falsche Probe, unsauberer Checkout). Kein echter Ollama-, Browser- oder Spieltest in dieser Prüfung; keine Änderung des Spielcodes.
+
 ## A/B – getrennte Pilotaufträge
 
 A: Neue Standardkarriere. Ziel: „Beginne eine Karriere und finde heraus, was du als Manager tun kannst.“ Erste sichtbare Aktion und gewähltes Ziel protokollieren. B: Frische Sitzung; Ziel: „Erziele mit deiner Flotte Einnahmen.“ Erst mit Standardstart versuchen; falls zwölf Aktionen nicht reichen, getrennt einen validierten, regulär erspielten Teststand mit vorhandenem einsatzfähigem Schiff und offenem Auftrag vorbereiten. Keine Lösungsfolge oder spezifischen Klicks mitteilen. B-Teststand noch nicht erzeugt; dafür bestehenden M4-U3-UI-/Auditpfad als technische Grundlage nutzen, echten JSON-Export und Hash prüfen und nur regulär importieren. Kein Storage-Injektionsweg im Relay. Der vorbereitete Importpfad benötigt weitere Unterstützung und Prüfung.

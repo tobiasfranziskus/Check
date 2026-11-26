@@ -374,3 +374,20 @@ test('local model gets longer per-request budget without changing remote or tota
   }
  } finally {AbortSignal.timeout=original;}
 });
+
+test('native Ollama sends short non-thinking JSON requests and validates response plus safe timing metrics',async()=>{
+ const {ask}=require('../scripts/m4-u4-model-runner.cjs');
+ const cfg=config({M4_AI_MODEL:'gemma4:e4b',M4_OLLAMA_NATIVE:'1'});
+ assert.equal(cfg.url,'http://127.0.0.1:11434/api/chat');
+ const body=requestBody(cfg,'goal',{round:0,remaining:12,visibleText:'(10,10) Visible'},[]);
+ const data={model:cfg.model,done:true,done_reason:'stop',message:{content:JSON.stringify({action:{op:'stop'},note:'done'}),thinking:'DO_NOT_LOG'},eval_count:20,total_duration:12000000};
+ const d=await ask(cfg,body,90000,async(url,opts)=>{
+  assert.equal(url,cfg.url);assert.equal(opts.headers.Authorization,undefined);
+  const q=JSON.parse(opts.body);assert.equal(q.think,false);assert.equal(q.format,'json');assert.equal(q.options.num_predict,256);assert.equal(q.stream,false);assert.deepEqual(q.messages,body.messages);
+  return new Response(JSON.stringify(data));
+ });
+ assert.equal(d.action.op,'stop');assert.deepEqual(d.metrics,{total_duration_ms:12,eval_count:20});assert.doesNotMatch(JSON.stringify(d),/DO_NOT_LOG/);
+ for(const bad of [{...data,model:'different'},{...data,done:false},{...data,done_reason:'length'},{...data,message:{content:'{"action":{"op":"evaluate"},"note":"bad"}'}}]){
+  await assert.rejects(ask(cfg,body,90000,async()=>new Response(JSON.stringify(bad))));
+ }
+});

@@ -2462,10 +2462,21 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         r.phase='hin';
         wasserTransitStart(q,sh,a.quelle,r.hin);
         const belege=[];
+        const diagnose=()=>({tick:q.tick,phase:r.phase,gearbeitet:r.gearbeitet,
+          schiff:sh.id,owner:sh.owner,system:sh.system,auftrag:sh.auftrag,ziel:sh.ziel,
+          ankunft:sh.ankunft,ladung:{...sh.ladung},kauf:q.owners[WASSER_KAUF].cash,
+          lohn:q.owners[WASSER_LOHN].cash,w5ac:q.w5ac.completed.find(x=>x.id===sh.id)||null,
+          nadirWasser:q.stations[a.quelle].lager.wasser,alderaWasser:q.stations[a.ziel].lager.wasser});
+        const startDiagnose=diagnose();
         for(let i=0;i<a.minuten;i++){
-          minute(q);
-          const auditResult=audit(q);
-          if(!auditResult.ok)throw Error('W6 Minute '+q.tick+': '+auditResult.fehler.join('; '));
+          const vor=diagnose();
+          try{
+            minute(q);
+            const auditResult=audit(q);
+            if(!auditResult.ok)throw Error('W6 Minute '+q.tick+': '+auditResult.fehler.join('; '));
+          }catch(e){
+            return {ok:false,grund:e.message,stack:e.stack,vor,nach:diagnose()};
+          }
           if(i===0||i+1===r.hin||i+1===a.minuten-1||i+1===a.minuten)
             belege.push({tick:q.tick,phase:r.phase,system:sh.system,flug:sh.flug.lage,
               ladung:sh.ladung.wasser||0,kauf:q.owners[WASSER_KAUF].cash,
@@ -2484,7 +2495,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
             aktivMinuten:m_core_anlage.aktiv(q,sh.id)-r.verschleissVor,
             verbraucht:q.ledger.wasser.consumed-r.verbrauchVor,
             kasseKauf:q.owners[WASSER_KAUF].cash,kasseLohn:q.owners[WASSER_LOHN].cash,
-            hash:kern.hash(q),belege},weltgeld,mint,burn,
+            hash:kern.hash(q),belege,startDiagnose,endeDiagnose:diagnose()},weltgeld,mint,burn,
           importAbgelehnt:finalImportAbgelehnt,originalUnveraendert:true};
       }
       for(const b of a.bestellungen)m_core_buch.transfer(q,WASSER_KAUF,b.owner,b.kosten,'w6-wasser-kaufreserve-rueck');

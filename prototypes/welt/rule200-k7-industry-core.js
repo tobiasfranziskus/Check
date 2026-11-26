@@ -1257,12 +1257,21 @@ function ankunft(state, rules) {
   for (const id of ids(state.ships)) {
     const s = state.ships[id];
     if (s.phase !== 'reise' || s.ankunft > state.tick) continue;
+    // Prepaid water is not a free market sale in EITHER direction.
+    // The empty outward leg may still have a legacy {eis:0} cargo key.
+    // Only the explicit funded water contract owns this arrival.
+    const w=state.kanon?.w6WasserReserve,a=w?.angebot;
+    const wasserAnkunft=rules.u9ExportReserve===true&&s.auftrag==='w6-wasser'&&
+      a?.schiff===s.id&&a.frachtfuehrer===s.owner&&s.ankunft===state.tick&&
+      state.owners.w6_wasser_kauf_treuhand?.cash===a.vorbestellwert&&
+      ((w.phase==='hin'&&s.system==='aldera'&&s.ziel===a.quelle&&
+        state.tick===a.tick+w.hin&&Object.values(s.ladung).every(n=>n===0))||
+       (w.phase==='rueck'&&s.system==='nadir'&&s.ziel===a.ziel&&
+        state.tick===a.tick+a.minuten&&s.ladung.wasser===a.menge&&
+        Object.entries(s.ladung).every(([ware,n])=>ware==='wasser'||n===0)));
     s.system = rules.world.stations[s.ziel].system;
     s.phase = 'dock'; s.ziel = null; s.ankunft = state.tick;
-    // W6 prepaid water has its own dock settlement, not a free-market sale.
-    const wasser=state.kanon?.w6WasserReserve;
-    if(!(rules.u9ExportReserve && wasser?.phase==='rueck' && wasser.angebot?.schiff===s.id))
-      entladen(state, rules, s);
+    if(!wasserAnkunft)entladen(state, rules, s);
   }
 }
 return { entladen, reise, ankunft };
@@ -2778,6 +2787,31 @@ const m_core_w5_transfer=(()=>{
       &&(s.ships[x.id]||lost(x.id))?.owner===x.owner&&ownerOk(r,x.owner)
       &&(s.ships[x.id]||lost(x.id))?.klasse==='frachter'
       &&(s.ships[x.id]||lost(x.id))?.heimat===c.quelle;
+    // A completed W5ac delivery remains historical proof when the same
+    // purchased hull undertakes the separately funded water round trip.
+    // This is a new, narrow successor relation, not removal of the audit.
+    function wasserFolgefahrt(x){
+      const v=s.kanon?.w6WasserReserve,b=v?.angebot,sh=s.ships[x.id];
+      if(r.u9ExportReserve!==true||s.kanon?.w6Gesamtwirtschaft!==true||
+        !b||b.schiff!==x.id||b.frachtfuehrer!==x.owner||b.start!=='aldera'||
+        b.quelle!=='st_nadir'||
+        b.ziel!==c.zielStation||b.tick<x.ankunft||!sh||sh.owner!==x.owner||
+        sh.auftrag!=='w6-wasser'||sh.phase!=='reise'||sh.flug?.lage!=='transit'||
+        !Number.isSafeInteger(v.gearbeitet)||v.gearbeitet<0||
+        s.tick!==b.tick+v.gearbeitet||v.hin!==m_core_route.route(r.world,'aldera','nadir')?.zeit||
+        v.rueck!==m_core_route.route(r.world,'nadir','aldera')?.zeit||
+        b.minuten!==v.hin+v.rueck||b.lohn!==b.minuten*r.w5n.fliegerLohn||
+        s.owners.w6_wasser_kauf_treuhand?.cash!==b.vorbestellwert||
+        s.owners.w6_wasser_lohn_treuhand?.cash!==b.lohn-v.gearbeitet*r.w5n.fliegerLohn||
+        (s.kanon.buch.summen['w6-wasser-lohnreserve|'+x.owner+'|w6_wasser_lohn_treuhand']||0)!==b.lohn||
+        (s.kanon.buch.summen['w6-wasser-fluglohn|w6_wasser_lohn_treuhand|'+v.lohnempfaenger]||0)!==v.gearbeitet*r.w5n.fliegerLohn)
+        return false;
+      return (v.phase==='hin'&&v.gearbeitet<v.hin&&sh.system==='aldera'&&sh.ziel===b.quelle&&
+        sh.ankunft===b.tick+v.hin&&Object.values(sh.ladung).every(n=>n===0))||
+        (v.phase==='rueck'&&v.gearbeitet>=v.hin&&v.gearbeitet<b.minuten&&
+        sh.system==='nadir'&&sh.ziel===b.ziel&&sh.ankunft===b.tick+b.minuten&&
+        sh.ladung.wasser===b.menge&&Object.entries(sh.ladung).every(([ware,n])=>ware==='wasser'||n===0));
+    }
     const activeOk=!a||(validShip(a)&&ownerOk(r,a.owner)
       &&a.minuten===duration&&a.lohn===c.lohnJeMinute&&a.kosten===cost
       &&Number.isSafeInteger(a.gearbeitet)&&a.gearbeitet>=0&&a.gearbeitet<duration
@@ -2797,6 +2831,7 @@ const m_core_w5_transfer=(()=>{
         &&((lost(x.id)?.tick>=x.ankunft&&lost(x.id)?.system===c.ziel)
           ||s.w3.auftrag?.schiff===x.id
           ||(!!r.kanon&&s.w5n?.frachtauftrag?.schiff===x.id)
+          ||wasserFolgefahrt(x)
           // Rule207: legitime Anschlussverwendung einer bereits mit W5ac
           // bezahlten Werft-Huelle. W5ac-Kauf-/Flugjournal bleibt unveraendert;
           // der NEUE Fremdfrachtbeleg wird separat vom P8d-K1-Audit geprueft.

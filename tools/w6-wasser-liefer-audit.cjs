@@ -23,6 +23,19 @@ function check(w,s){
   [60,'rueck','nadir','transit',100,1600,60],
   [119,'rueck','nadir','transit',100,1600,1],
   [120,'geliefert','aldera','angedockt',0,0,0]]);
+ assert.equal(l.startDiagnose.schiff,request.schiff);
+ assert.equal(l.startDiagnose.kauf,1600);
+ assert.equal(l.startDiagnose.lohn,120);
+ assert.equal(l.startDiagnose.auftrag,'w6-wasser');
+ assert.ok(Object.values(l.startDiagnose.ladung).every(n=>n===0));
+ if(id==='S02'){
+   assert.ok(l.startDiagnose.w5ac,'S02: bought hull with genuine prior paid repositioning');
+   assert.deepEqual(l.endeDiagnose.w5ac,l.startDiagnose.w5ac);
+ }
+ assert.equal(l.endeDiagnose.kauf,0);
+ assert.equal(l.endeDiagnose.lohn,0);
+ assert.equal(l.endeDiagnose.nadirWasser,l.startDiagnose.nadirWasser-100);
+ assert.equal(l.endeDiagnose.alderaWasser,l.startDiagnose.alderaWasser);
  assert.equal(result.weltgeld,33000);
  assert.equal(result.mint,0);assert.equal(result.burn,0);
  assert.equal(result.importAbgelehnt,true);assert.equal(result.originalUnveraendert,true);

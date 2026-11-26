@@ -69,6 +69,10 @@ function haushaltPlan(s,welt){
      hinzu('reposition-'+sh.id,'W5ac · eigene Werfthuelle bezahlt nach Aldera ueberfuehren',
        {type:'shipReposition',schiff:sh.id});
  }
+ const industrie=s.kanon.industrieErz;
+ if(welt.hausErzProfil&&industrie.phase==='angebot'&&industrie.carrier==='house'&&!industrie.signFracht)
+   hinzu('haus-erz-'+industrie.kennung,'50 Erz nach Nadir transportieren: Angebot für '+industrie.frachter+' unterschreiben',
+     {type:'industrialOreAcceptFreight',kennung:industrie.kennung});
  for(const [station,klasse] of [
    ['st_aldera','miner'],
    ['st_aldera','frachter'],['st_nadir','frachter'],['st_nadir','jaeger']
@@ -137,6 +141,33 @@ function erstellen(){
    const w=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
    return aktivieren(w,w.load(text),'Fortgesetzter Regel204-Export',w.hash(w.load(text)));
  }
+ function oeffnenHausErz(text,bestaetigt,herkunft){
+   if(bestaetigt!==true||welt)throw Error('Haus-Erz: getrennten Spielstand ausdrücklich bestätigen');
+   const raw=paket(text),p=raw.w5ad?.profile;
+   if(raw.rulesVersion!==204||raw.schema!==8||!safe(p?.carrierCash)||!safe(p?.buyerCash)
+     ||!['kopie','lokal','datei'].includes(herkunft))
+     throw Error('Haus-Erz: geprüfter Regel204-Stand und ausdrücklicher Ladeweg erforderlich');
+   const kapital={carrierCash:p.carrierCash,buyerCash:p.buyerCash};
+   const w=W.erstellenHausErz(kapital);
+   if(herkunft==='kopie'){
+     const standard=W.erstellenJ4c(kapital),quelle=standard.load(text);
+     if(quelle.w3.auftrag||quelle.w5n.frachtauftrag||quelle.w5ac.active||quelle.kanon.rueckfracht
+       ||quelle.kanon.industrieErz.phase==='angebot'
+       ||quelle.kanon.industrieErz.phase==='aktiv'||quelle.owners.k7_werft_treuhand?.cash)
+       throw Error('Haus-Erz: erst laufende Verträge und offene Angebote der normalen Karriere abschließen');
+     const hash=standard.hash(quelle);
+     quelle.kanon.hausErz={folge:0};
+     return aktivieren(w,w.load(w.canonical(quelle)),'Freiwillige Haus-Erz-Kopie aus Regel204',hash);
+   }
+   const s=w.load(text),hash=w.hash(s);
+   // Offline JSON is data. Pending consent from a file does not authorize execution.
+   const i=s.kanon.industrieErz;
+   if(herkunft==='datei'&&i.phase==='angebot'&&i.carrier==='house'){
+     const r=w.execute(s,{type:'industrialOreCancel',owner:'st_nadir',kennung:i.kennung});
+     if(!r.ok)throw Error(r.reason);
+   }
+   return aktivieren(w,s,'Getrennter Haus-Erz-Spielstand',hash);
+ }
  function startenPiraten(bestaetigt){
    if(bestaetigt!==true||welt)throw Error('PIR-1: getrennten Forschungsstart bestätigen');
    const w=W.erstellenPiraten(), s=w.createState(42);
@@ -200,7 +231,7 @@ function erstellen(){
      herkunft,quelleHash,regel:welt.regel,tick:s.tick,hash:welt.hash(s),
      weltgeld:gleichesGeld(s),hausgeld:s.owners.house.cash,schiffe,stationen,
      eigenerJaeger:jaeger.length, pilotierbar:schiffe.some(sh=>['jaeger','miner','frachter'].includes(sh.klasse)),
-     ausgabe:welt.regel===207
+     ausgabe:welt.hausErzProfil?'Haus-Erz · getrennter Spielstand':welt.regel===207
        ?'Regel207 – isolierte Forschungskopie, kein automatisches Upgrade oder Import in 204'
        :'Regel204 – manuelle JSON-Sicherung, kein automatischer Rückweg nach Regel195'
    });
@@ -395,7 +426,7 @@ function erstellen(){
  function flugAudit(){requireState();return welt.audit(zustand);}
 
  function exportieren(){requireState();return welt.save(zustand);}
- return Object.freeze({starten195,oeffnen204,startenPiraten,oeffnenPiraten,startenP8g,oeffnenP8g,ansicht,angebote,ausfuehren,weiterspielen,exportieren,
+ return Object.freeze({starten195,oeffnen204,oeffnenHausErz,startenPiraten,oeffnenPiraten,startenP8g,oeffnenP8g,ansicht,angebote,ausfuehren,weiterspielen,exportieren,
   piloten,uebernehmen,pilotStatus,flugBefehl,flugAngebot,flugSchritte,weltReferenz,zustandReferenz,flugAudit});
 }
 const API=Object.freeze({erstellen});

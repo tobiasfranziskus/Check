@@ -63,6 +63,8 @@
 
 **[W6 / FORSCHUNG · 26.11.2026]** [Gesamtpaket für Ersatz, Verträge und Langzeitabnahme](W6_GESAMTPAKET.md). Geprüfte Vertragsvorsorge und physische Abwicklung lösen den früheren S02-Treuhandstillstand im Kandidaten. Die S02-Langzeitläufe enden ohne weiteren Absatz und Produktionsfortschritt. 60 Prozent bleiben Forschungsparameter. Offene Produktentscheidungen betreffen Ersatzpriorität, verbindliche Abwicklung, finanzierbaren Wassertransport und dauerhaften Jägerbedarf.
 
+**[W6 / FORSCHUNG · 26.11.2026]** [Geldumlauf, Absatz und eigenständige Wasserlogistik](W6_GELDUMLAUF_WASSERLOGISTIK.md). S02 bestätigt den Stillstand trotz physischer Frachter und hoher privater Liquidität. Freiwillige Original-Werftkäufe beleben den Kreislauf zeitweise. Ein eigenständiger Transportweg braucht nachgewiesenen, kostendeckenden Absatz, ausdrückliche Zustimmung und eine Entscheidung über die Vorfinanzierung.
+
 ## 2. W0–W6: verbindliche Wirtschaftsreihenfolge
 
 | Stufe | Abnahmeziel | Integrierte Grundlage / offene Lücke |

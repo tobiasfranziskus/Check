@@ -1,0 +1,11 @@
+# W6 – alternative reale Miner nach fehlgeschlagenem Angebot [FORSCHUNG]
+
+26.11.2026, Basis #646 b946e22c. [Wirtschafts-CI](https://github.com/tobiasfranziskus/Check/actions/runs/45813826716) und [P0](https://github.com/tobiasfranziskus/Check/actions/runs/45813826562) success.
+
+## Negativbefund der Frachterreserve
+Tick 60420: Hausfrachter sh004 160 Restaktivminuten, W3 und Eis jeweils 120. Keine Ersatzhülle, kein NPC-Frachter. sh024 57 Restaktivminuten, sh044 1021, beide in Aldera am Dock. Original-U7-Angebotsauswahl benutzt erstes passendes ID-sortiertes Schiff; die Mindestförderprüfung lässt sh024 noch zu. Die Vorsorge weist dessen Auftrag nachweislich ab. Mit Reserve folgen 1153 Stornos, keine W3-Folgefahrt, Ende weiterhin sh004 160 Minuten, sh024 57 und sh044 1021. Ohne Reserve 475 Eisfahrten, 23750 Wasser; mit Reserve 473 und 23650; beide 8 W3, 40 Ersatzkäufe, 0 gebunden. Tag90 Reservehash 0fcba572b1065146. Die Anwesenheit von sh044 allein beweist nicht, dass er signierbar oder tatsächlich einsetzbar ist.
+
+## Neuer Versuch
+Nach nachgewiesenem Fehlschlag und originalem Storno des noch nicht vom Haus signierten Angebots: alternative tatsächlich vorhandene NPC3-Miner im freien Aldera-Dock nach Restaktivminuten sortieren, ID-Tie-Break. Originale U7-Filter und Befehle für Nadir, Meridian und Werft. Jede Alternative auf separater validierter Same-Tick-Kopie vollständig mit Originalbefehlen signieren lassen und mit bestehender Vorprüfung bis zur realen Erzverladung (max. 240 Minuten) prüfen. Nur bei Erfolg wird exakt dieselbe Befehlsfolge in der Forschungswelt ausgeführt; regulärer Manager signiert danach. Kein zusätzlicher Auftraggeber, keine erfundene Ware, keine neuen Rechte, kein Eingriff in bezahlte Arbeit. Fehlende Kandidaten/Abweisungen ausdrücklich berichten. Kein Nachweis für alle zukünftigen Fälle oder NPC-only-Verträge.
+
+Kontrollarm identisch zu #646 Reserve (7/30/90 gepinnt), beide 90-Tage-Arme exakt wiederholen. Vollständige Geld-/Waren-/Save-Audits, real abgeschlossene W3-Fahrten und Ersatzproduktion prüfen. Der parallele #647-Vorlaufvergleich läuft unabhängig. Keine Produkt-/Kern-/Save-/Main-/Pages-/Ollama-Änderung. CI offen; erst nach Auswertung eine echte Kernintegration oder weitergehende Langzeitprüfung entwerfen.

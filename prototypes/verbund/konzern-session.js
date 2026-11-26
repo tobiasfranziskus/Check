@@ -69,6 +69,17 @@ function haushaltPlan(s,welt){
      hinzu('reposition-'+sh.id,'W5ac · eigene Werfthuelle bezahlt nach Aldera ueberfuehren',
        {type:'shipReposition',schiff:sh.id});
  }
+ if(s.kanon.u7Manager===true){
+   const i=s.kanon.industrieErz,a=s.w3?.auftrag;
+   if(i?.phase==='angebot'&&i.carrier==='house'&&!i.signFracht&&s.ships[i.frachter]?.owner==='house'){
+     const p=welt.industriePreise;
+     hinzu('industry-accept-'+i.frachter,p.menge+' Erz nach Nadir beauftragen · '+i.frachter+
+       ' · '+(p.nadiraufwand-p.alderakauf)+' ISK Frachttarif · '+p.frachtlohn+' ISK Flugreserve',
+       {type:'industrialOreAcceptFreight'});
+   }
+   if(a?.carrier==='house'&&!a.wasserZustimmung&&s.ships[a.schiff]?.owner==='house')
+     hinzu('industry-water-'+a.schiff,'Wasser-Rückladung freiwillig anbieten · '+a.schiff+' · bei gedecktem Bedarf',{type:'industrialWaterAcceptBackhaul',schiff:a.schiff});
+ }
  for(const [station,klasse] of [
    ['st_aldera','miner'],
    ['st_aldera','frachter'],['st_nadir','frachter'],['st_nadir','jaeger']
@@ -151,6 +162,22 @@ function erstellen(){
    const w=W.erstellenPiraten(), s=w.load(text);
    return aktivieren(w,s,'PIR-1 · Forschungsstand Nadir',w.hash(s));
  }
+ // U7/U8: confirmed, separate research copy; the ordinary loader rejects it.
+ function oeffnenU7U8(text,bestaetigt){
+   if(bestaetigt!==true)throw Error('U7: separate Forschungskopie ausdrücklich bestätigen');
+   if(welt)throw Error('J8: laufende Sitzung nicht überschreiben');
+   const raw=paket(text),p=raw.w5ad?.profile;
+   if(raw.rulesVersion!==204||raw.schema!==8||!safe(p?.carrierCash)||!safe(p?.buyerCash))throw Error('U7: vollständige Originalfinanzierung erforderlich');
+   const capital={carrierCash:p.carrierCash,buyerCash:p.buyerCash},w=W.erstellenU8(capital);
+   if(raw.kanon?.u8ErzRueckfracht===true){
+     if(raw.kanon.u7Manager!==true)throw Error('U7: kein Management-Forschungssave');
+     const s=w.load(text);return aktivieren(w,s,'Separate U7/U8-Forschung',w.hash(s));
+   }
+   const old=W.erstellenJ4c(capital),s=old.load(text),hash=old.hash(s);
+   if(s.w3.auftrag||s.w5n.frachtauftrag||s.w5ac?.active||s.kanon.rueckfracht||s.kanon.industrieErz?.phase==='angebot')throw Error('U7: Kopie nur ohne gebundenen Frachtauftrag');
+   const copy=JSON.parse(old.save(s));copy.kanon.u8ErzRueckfracht=true;copy.kanon.u7Manager=true;
+   return aktivieren(w,w.load(JSON.stringify(copy)),'Separate U7/U8-Kopie aus Regel204',hash);
+ }
  // W6/P8g DRAFT: eine echte NEUE Regel207-Forschungswelt aus dem
  // originalfinanzierten Seed; niemals eine bestehende Regel204-Karriere umwandeln.
  // Das ist kein Importpfad, keine Gratisreserve und keine neue Simulationsuhr.
@@ -200,7 +227,8 @@ function erstellen(){
      herkunft,quelleHash,regel:welt.regel,tick:s.tick,hash:welt.hash(s),
      weltgeld:gleichesGeld(s),hausgeld:s.owners.house.cash,schiffe,stationen,
      eigenerJaeger:jaeger.length, pilotierbar:schiffe.some(sh=>['jaeger','miner','frachter'].includes(sh.klasse)),
-     ausgabe:welt.regel===207
+     ...(s.kanon.u7Manager===true?{transportForschung:true}:{}),
+     ausgabe:s.kanon.u7Manager===true?'U7/U8 – getrennte Transportforschung, keine Standardkarriere':welt.regel===207
        ?'Regel207 – isolierte Forschungskopie, kein automatisches Upgrade oder Import in 204'
        :'Regel204 – manuelle JSON-Sicherung, kein automatischer Rückweg nach Regel195'
    });
@@ -395,7 +423,7 @@ function erstellen(){
  function flugAudit(){requireState();return welt.audit(zustand);}
 
  function exportieren(){requireState();return welt.save(zustand);}
- return Object.freeze({starten195,oeffnen204,startenPiraten,oeffnenPiraten,startenP8g,oeffnenP8g,ansicht,angebote,ausfuehren,weiterspielen,exportieren,
+ return Object.freeze({starten195,oeffnen204,startenPiraten,oeffnenPiraten,startenP8g,oeffnenP8g,oeffnenU7U8,ansicht,angebote,ausfuehren,weiterspielen,exportieren,
   piloten,uebernehmen,pilotStatus,flugBefehl,flugAngebot,flugSchritte,weltReferenz,zustandReferenz,flugAudit});
 }
 const API=Object.freeze({erstellen});

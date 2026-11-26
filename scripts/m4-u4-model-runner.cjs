@@ -27,8 +27,9 @@ function config(env){
  throw Error('Unsupported provider');
 }
 // Only previously observed free model identifiers, not a guarantee of availability.
-const FIXED_DEFAULT='google/gemma-4-26b-a4b-it:free';
-const FREE_FALLBACKS=[FIXED_DEFAULT,'particle-ai/particle-1:free'];
+const FIXED_DEFAULT='particle-ai/particle-1:free';
+const FREE_FALLBACKS=[FIXED_DEFAULT,'google/gemma-4-26b-a4b-it:free'];
+const JSON_MODELS=new Set(FREE_FALLBACKS);
 const freeModel=id=>typeof id==='string'&&id.length<=160&&/^[A-Za-z0-9._/-]+:free$/.test(id);
 // A named free model is fixed for the entire run, even before its first decision.
 // Legacy router mode remains opt-in for non-mobile experiments only.
@@ -38,7 +39,7 @@ const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function requestBody(cfg,goal,obs,history,correction=false){
  const prior=history.slice(-2).map(h=>({action:h.action,note:h.note}));
  const data={goal,round:obs.round,remaining:obs.remaining,screen:String(obs.visibleText||'').slice(0,1800),recent:prior};
- return {model:cfg.model,stream:false,temperature:0,max_tokens:1024,...(cfg.provider==='openrouter'&&cfg.model===FIXED_DEFAULT?{response_format:{type:'json_object'}}:{}),messages:[{role:'system',content:SYSTEM+(correction?' Die vorige Antwort entsprach nicht dem Schema. Gib ausschließlich ein gültiges JSON-Objekt mit genau action und note aus.':'')},{role:'user',content:JSON.stringify(data)}]};
+ return {model:cfg.model,stream:false,temperature:0,max_tokens:1024,...(cfg.provider==='openrouter'&&JSON_MODELS.has(cfg.model)?{response_format:{type:'json_object'}}:{}),messages:[{role:'system',content:SYSTEM+(correction?' Die vorige Antwort entsprach nicht dem Schema. Gib ausschließlich ein gültiges JSON-Objekt mit genau action und note aus.':'')},{role:'user',content:JSON.stringify(data)}]};
 }
 function decision(raw){
  if(typeof raw!=='string'||raw.length>1600)throw Error('Invalid model output');
@@ -99,6 +100,25 @@ async function ask(cfg,body,timeout,fetcher=fetch){
  }
  return d;
 }
+function safeDetail(e){
+ const msg=String(e?.message||'');
+ const known=['Invalid model decision format','Invalid model JSON','Model output truncated','Model output empty','Unverified free model identity','Model identity mismatch','Model response too large','Empty model response','Probe response mismatch'];
+ return /^Model HTTP [0-9]{3}$/.test(msg)?msg:e?.name==='TimeoutError'?'Model timeout':known.includes(msg)?msg:e instanceof SyntaxError?'Invalid provider JSON':'Model transport or response failed';
+}
+// A single synthetic request; no browser, game text, history, or game state.
+async function probe({cfg,fetcher=fetch,now=()=>performance.now()}){
+ if(cfg.provider!=='openrouter'||!freeModel(cfg.model))throw Error('Probe requires fixed free remote model');
+ const started=now();
+ const finish=(reason,detail,extra={})=>({phase:'PROBE',reason,detail,requestedModel:cfg.model,actions:0,elapsedMs:Math.round(now()-started),verdict:'UNREVIEWED',...extra});
+ try{
+  const body={model:cfg.model,stream:false,temperature:0,max_tokens:1024,...(JSON_MODELS.has(cfg.model)?{response_format:{type:'json_object'}}:{}),messages:[{role:'system',content:'Return a single JSON object, no markdown: {"action":{"op":"stop"},"note":"probe"}'},{role:'user',content:'Return the requested JSON object.'}]};
+  const d=await ask(cfg,body,20000,fetcher);
+  if(d.action.op!=='stop'||d.note!=='probe')throw Error('Probe response mismatch');
+  return finish('PROBE_OK','Synthetic response validated',{model:d.reportedModel});
+ }catch(e){
+  return finish('INFRASTRUCTURE',safeDetail(e),e?.quota?{quota:e.quota}:{});
+ }
+}
 async function run({relay,cfg,module,emit=()=>{},fetcher=fetch,now=()=>performance.now(),sleep=pause}){
  if(!Object.hasOwn(GOALS,module))throw Error('Invalid module');
  const started=now(),history=[];
@@ -129,9 +149,7 @@ async function run({relay,cfg,module,emit=()=>{},fetcher=fetch,now=()=>performan
       }
       break;
      }catch(e){
-      const msg=String(e?.message||'');
-      const known=['Invalid model decision format','Invalid model JSON','Model output truncated','Model output empty','Unverified free model identity','Model identity mismatch','Model response too large','Empty model response'];
-      const detail=/^Model HTTP [0-9]{3}$/.test(msg)?msg:e?.name==='TimeoutError'?'Model timeout':known.includes(msg)?msg:e instanceof SyntaxError?'Invalid provider JSON':'Model transport or response failed';
+      const detail=safeDetail(e);
       lastDetail=detail;
       const retryable=/^Model HTTP (408|429|5[0-9]{2})$/.test(detail)||!detail.startsWith('Model HTTP ');
       const quota=e?.quota;
@@ -159,6 +177,12 @@ async function run({relay,cfg,module,emit=()=>{},fetcher=fetch,now=()=>performan
 }
 async function main(){
  const module=process.argv[2],root=path.resolve(process.argv[3]||'.');
+ if(module==='--probe'){
+  const cfg=config(process.env);delete process.env.OPENROUTER_API_KEY;
+  const result=await probe({cfg});console.log(JSON.stringify(result));
+  if(result.reason!=='PROBE_OK')process.exitCode=1;
+  return;
+ }
  if(!Object.hasOwn(GOALS,module))throw Error('Usage: node scripts/m4-u4-model-runner.cjs A|B|C|D|E|F [root]');
  const cfg=config(process.env);
  // Keep credentials only in the controller; do not inherit them into browser processes.
@@ -172,4 +196,4 @@ async function main(){
  console.log(JSON.stringify({evidence:file,...result}));
 }
 if(require.main===module)main().catch(()=>{console.error('Model runner setup or relay failed; see local configuration');process.exitCode=1;});
-module.exports={config,requestBody,decision,ask,run,GOALS};
+module.exports={config,requestBody,decision,ask,probe,run,GOALS};

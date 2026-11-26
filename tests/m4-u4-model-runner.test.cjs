@@ -572,3 +572,22 @@ test('Gemini 4 Hydrogen uses fixed free opt-in and both existing UI modes',async
  assert.deepEqual(picked.action,d.action);
  await assert.rejects(ask(cfg,body,45000,async()=>response({op:'stop'},'gemini-4-carbon')));
 });
+
+test('mobile Gemini preflight uses one synthetic request and safe failure evidence',async()=>{
+ const {geminiProbe}=require('../scripts/m4-u4-model-runner.cjs');
+ const cfg=config({M4_AI_PROVIDER:'gemini',M4_AI_MODEL:'gemini-3.5-flash-lite',M4_ALLOW_REMOTE:'1',M4_GEMINI_FREE_CONFIRMED:'1',GEMINI_API_KEY:'synthetic-key'});
+ let calls=0;
+ const ok=await geminiProbe({cfg,fetcher:async(url,opts)=>{
+  calls++;assert.equal(url,cfg.url);assert.equal(opts.headers['x-goog-api-key'],'synthetic-key');
+  assert.match(opts.body,/Return the requested JSON object/);
+  assert.doesNotMatch(opts.body,/synthetic-key|Aldera|Karriere/);
+  return new Response(JSON.stringify({modelVersion:cfg.model,candidates:[{finishReason:'STOP',content:{parts:[{text:'{"action":{"op":"stop"},"note":"probe"}'}]}}]}));
+ }});
+ assert.equal(ok.reason,'PROBE_OK');assert.equal(ok.model,cfg.model);assert.equal(ok.actions,0);assert.equal(calls,1);
+ for(const status of [429,503]){
+  let count=0;const failure=await geminiProbe({cfg,fetcher:async()=>{count++;return new Response('private key synthetic-key and raw provider details',{status});}});
+  assert.equal(failure.reason,'INFRASTRUCTURE');assert.equal(failure.detail,'Model HTTP '+status);assert.equal(count,1);assert.doesNotMatch(JSON.stringify(failure),/synthetic-key|private key|raw provider/);
+ }
+ const wrong=await geminiProbe({cfg,fetcher:async()=>new Response(JSON.stringify({modelVersion:'gemini-4-argon',candidates:[{finishReason:'STOP',content:{parts:[{text:'{"action":{"op":"stop"},"note":"probe"}'}]}}]}))});
+ assert.equal(wrong.detail,'Model identity mismatch');
+});

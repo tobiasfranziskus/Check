@@ -1259,7 +1259,10 @@ function ankunft(state, rules) {
     if (s.phase !== 'reise' || s.ankunft > state.tick) continue;
     s.system = rules.world.stations[s.ziel].system;
     s.phase = 'dock'; s.ziel = null; s.ankunft = state.tick;
-    entladen(state, rules, s);
+    // W6 prepaid water has its own dock settlement, not a free-market sale.
+    const wasser=state.kanon?.w6WasserReserve;
+    if(!(rules.u9ExportReserve && wasser?.phase==='rueck' && wasser.angebot?.schiff===s.id))
+      entladen(state, rules, s);
   }
 }
 return { entladen, reise, ankunft };

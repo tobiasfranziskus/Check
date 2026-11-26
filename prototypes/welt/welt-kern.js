@@ -1907,10 +1907,12 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       // Wasserbuch: jede Einheit hat Herkunft (Wasserwerk) und Verbleib.
       const w = k.wasser, an = state.stations[W.quellStation].lager.wasser;
       const unterwegs = ids(state.ships).reduce((n, id) => n + (state.ships[id].ladung.wasser || 0), 0);
+      const vorbestelltUnterwegs=wasserReserveProben.has(state) &&
+        k.w6WasserReserve?.phase==='rueck' ? k.w6WasserReserve.angebot.menge : 0;
       if (![w.abNadir, w.konsum, w.rueckGeladen, w.rueckGeliefert, w.verkauftAldera, w.verkauftNadir, an].every(ganz)
         || w.abNadir !== w.verkauftNadir + w.rueckGeladen || w.rueckGeladen !== w.rueckGeliefert + unterwegs
         || an !== w.rueckGeliefert - w.verkauftAldera || w.konsum !== w.verkauftNadir + w.verkauftAldera
-        || unterwegs !== (k.rueckfracht ? k.rueckfracht.menge : 0)
+        || unterwegs !== (k.rueckfracht ? k.rueckfracht.menge : 0)+vorbestelltUnterwegs
         || state.owners.k1_rueckfracht.cash !== (k.rueckfracht ? k.rueckfracht.gebuehr : 0))
         fehler.push('Wasserbuch');
       if (k.rueckfracht?.art!==undefined) {
@@ -1933,7 +1935,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       }
       const einzel = m_core_buch.summe(state, 'wasser-einzelhandel');
       if (einzel !== w.verkauftNadir * W.wasserPreis + w.verkauftAldera * KANON.wasser.preisAldera
-        || m_core_buch.summe(state, 'wasser-grosshandel') !== w.rueckGeladen * W.wasserPreis
+        || m_core_buch.summe(state, 'wasser-grosshandel') !== (w.rueckGeladen-vorbestelltUnterwegs) * W.wasserPreis
         || ids(k.haushalte).reduce((n, id) => n + k.haushalte[id].ausgegeben, 0) !== einzel)
         fehler.push('Wasserzahlungen');
       // Jede Hülle hat genau einen Körper; Transit folgt der Kernphase; Pendel nur für Miner.
@@ -2309,10 +2311,82 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     }catch(e){return fail(e.message);}
   }
 
+  // This is a closed counterfactual, using the existing economic clock,
+  // route and arrival/docking logic. It is not a persistent player contract.
+  function wasserTransitStart(s,sh,ziel,minuten){
+    if(sh.phase!=='dock'||sh.flug.lage!=='angedockt')throw Error('W6: Abflug nur am Dock');
+    sh.phase='reise';sh.ziel=ziel;sh.ankunft=s.tick+minuten;sh.auftrag='w6-wasser';
+    m_core_flugplan.koerperSync(s);
+  }
+  function wasserLieferMinute(s){
+    const r=s.kanon.w6WasserReserve,a=r?.angebot;
+    if(!wasserReserveProben.has(s)||!['hin','rueck'].includes(r?.phase))return;
+    const sh=s.ships[a.schiff],lohn=rules.w5n.fliegerLohn;
+    if(s.tick!==a.tick+r.gearbeitet+1||r.gearbeitet>=a.minuten||sh.owner!==a.frachtfuehrer)
+      throw Error('W6: nicht belegte Flugminute');
+    m_core_buch.transfer(s,WASSER_LOHN,r.lohnempfaenger,lohn,'w6-wasser-fluglohn');
+    r.gearbeitet++;
+    if(r.phase==='hin'&&r.gearbeitet===r.hin){
+      if(sh.phase!=='dock'||sh.system!=='nadir'||sh.ankunft!==s.tick||
+        s.stations[a.quelle].lager.wasser<a.menge||ladungSumme(sh)!==0)
+        throw Error('W6: Nadir-Ankunft oder physische Ware fehlt');
+      m_core_flugplan.koerperSync(s);
+      s.stations[a.quelle].lager.wasser-=a.menge;
+      sh.ladung.wasser=a.menge;
+      s.kanon.wasser.abNadir+=a.menge;s.kanon.wasser.rueckGeladen+=a.menge;
+      r.phase='rueck';wasserTransitStart(s,sh,a.ziel,r.rueck);
+    }else if(r.phase==='rueck'&&r.gearbeitet===a.minuten){
+      const lager=s.stations[a.ziel].lager;
+      if(sh.phase!=='dock'||sh.system!=='aldera'||sh.ankunft!==s.tick||
+        sh.ladung.wasser!==a.menge||lager.wasser+a.menge>KANON.wasser.lagerAldera||
+        s.owners[WASSER_KAUF].cash!==a.vorbestellwert||s.owners[WASSER_LOHN].cash!==0)
+        throw Error('W6: Lieferung ohne echte Ware oder Deckung');
+      delete sh.ladung.wasser;lager.wasser+=a.menge;sh.auftrag='halten';
+      s.kanon.wasser.rueckGeliefert+=a.menge;
+      // Atomic within this synchronous, non-exportable transaction: release
+      // prepaid funds to the original owners and invoke the original retail
+      // command immediately. No double consumption or discretionary refund.
+      for(const b of a.bestellungen){
+        m_core_buch.transfer(s,WASSER_KAUF,b.owner,b.kosten,'w6-wasser-kaufreserve-abnahme');
+        const k=m_core_kreislauf.ausfuehren(s,{type:'householdBuy',owner:b.owner,menge:b.menge});
+        if(!k.ok)throw Error('W6: Originalabnahme '+k.reason);
+      }
+      m_core_buch.transfer(s,a.ziel,a.quelle,a.warenwert,'wasser-grosshandel');
+      m_core_buch.transfer(s,a.ziel,a.frachtfuehrer,a.tarif,'w6-wasser-frachttarif');
+      r.phase='geliefert';
+    }
+  }
+  function wasserLieferAudit(s,r){
+    const a=r.angebot,sh=s.ships[a.schiff],g=r.gearbeitet,
+      done=r.phase==='geliefert',loaded=r.phase==='rueck',buch=s.kanon.buch.summen;
+    if(!ganz(g)||g>a.minuten||s.tick!==a.tick+g||r.hin+r.rueck!==a.minuten||
+       sh?.owner!==a.frachtfuehrer||
+       s.owners[WASSER_KAUF]?.cash!==(done?0:a.vorbestellwert)||
+       s.owners[WASSER_LOHN]?.cash!==a.lohn-g*rules.w5n.fliegerLohn||
+       (buch['w6-wasser-fluglohn|'+WASSER_LOHN+'|'+r.lohnempfaenger]||0)!==g*rules.w5n.fliegerLohn||
+       (buch['w6-wasser-lohnreserve|'+a.frachtfuehrer+'|'+WASSER_LOHN]||0)!==a.lohn||
+       (buch['w6-wasser-frachttarif|'+a.ziel+'|'+a.frachtfuehrer]||0)!==(done?a.tarif:0)||
+       m_core_anlage.aktiv(s,sh.id)!==r.verschleissVor+g||
+       s.ledger.wasser.consumed!==r.verbrauchVor+(done?a.menge:0)||
+       s.kanon.wasser.rueckGeladen!==r.wasserGeladenVor+(loaded||done?a.menge:0)||
+       s.kanon.wasser.rueckGeliefert!==r.wasserGeliefertVor+(done?a.menge:0))return false;
+    for(const b of a.bestellungen){
+      if((buch['w6-wasser-kaufreserve|'+b.owner+'|'+WASSER_KAUF]||0)!==b.kosten||
+         (buch['w6-wasser-kaufreserve-abnahme|'+WASSER_KAUF+'|'+b.owner]||0)!==(done?b.kosten:0))return false;
+    }
+    if(done)return g===a.minuten&&sh.phase==='dock'&&sh.system==='aldera'&&
+      sh.flug.lage==='angedockt'&&ladungSumme(sh)===0&&sh.auftrag==='halten';
+    if(sh.phase!=='reise'||sh.flug.lage!=='transit'||sh.auftrag!=='w6-wasser')return false;
+    return loaded?g>=r.hin&&g<a.minuten&&sh.system==='nadir'&&sh.ziel===a.ziel&&
+      sh.ankunft===a.tick+a.minuten&&sh.ladung.wasser===a.menge:
+      g<r.hin&&sh.system==='aldera'&&sh.ziel===a.quelle&&sh.ankunft===a.tick+r.hin&&ladungSumme(sh)===0;
+  }
+
   // Research proof of real core-booked reservation/refund, before any work.
   // Never exposes the transient world or permits its loading as a save.
   function wasserReserveAudit(s) {
     const r=s.kanon.w6WasserReserve,a=r?.angebot;
+    if (r && ['hin','rueck','geliefert'].includes(r.phase)) return wasserLieferAudit(s,r);
     if(!a || !['reserviert','storniert'].includes(r.phase) || s.tick!==a.tick ||
        s.owners[WASSER_KAUF]?.kind!=='w6-water-reserve' ||
        s.owners[WASSER_LOHN]?.kind!=='w6-water-reserve' ||
@@ -2336,7 +2410,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     }
     return summe===a.vorbestellwert && a.warenwert+a.tarif+a.stationsmarge===a.vorbestellwert;
   }
-  function w6WasserReservierungsProbe(state,request,zustimmungen) {
+  function w6WasserReservierungsProbe(state,request,zustimmungen,lieferung=false) {
     const fail=grund=>({ok:false,grund});
     if(!NODE||!w6Research)return fail('PROFIL');
     try{
@@ -2375,6 +2449,44 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       let importAbgelehnt=false;
       try{load(kern.save(q));}catch(e){importAbgelehnt=/fluechtige Wasserreservierung/.test(e.message);}
       if(!importAbgelehnt)throw Error('W6: fluechtiger Reservierungsstand importierbar');
+      if(lieferung){
+        if(a.start!=='aldera')return fail('ERSTE_PROBE_NUR_RUNDFAHRT');
+        const r=q.kanon.w6WasserReserve,sh=q.ships[a.schiff];
+        r.gearbeitet=0;r.verschleissVor=m_core_anlage.aktiv(q,sh.id);
+        r.verbrauchVor=q.ledger.wasser.consumed;
+        r.wasserGeladenVor=q.kanon.wasser.rueckGeladen;
+        r.wasserGeliefertVor=q.kanon.wasser.rueckGeliefert;
+        r.lohnempfaenger=a.frachtfuehrer==='house'?'pilot_house':rules.w5ag.pilots.eis;
+        r.hin=kern.route(rules.world,'aldera','nadir').zeit;
+        r.rueck=kern.route(rules.world,'nadir','aldera').zeit;
+        r.phase='hin';
+        wasserTransitStart(q,sh,a.quelle,r.hin);
+        const belege=[];
+        for(let i=0;i<a.minuten;i++){
+          minute(q);
+          const auditResult=audit(q);
+          if(!auditResult.ok)throw Error('W6 Minute '+q.tick+': '+auditResult.fehler.join('; '));
+          if(i===0||i+1===r.hin||i+1===a.minuten-1||i+1===a.minuten)
+            belege.push({tick:q.tick,phase:r.phase,system:sh.system,flug:sh.flug.lage,
+              ladung:sh.ladung.wasser||0,kauf:q.owners[WASSER_KAUF].cash,
+              lohn:q.owners[WASSER_LOHN].cash,hash:kern.hash(q)});
+        }
+        if(r.phase!=='geliefert'||r.gearbeitet!==a.minuten||geld(q)!==weltgeld||
+           q.minted!==mint||q.burned!==burn||save(state)!==original)
+          throw Error('W6: Lieferabschluss nicht konsistent');
+        let finalImportAbgelehnt=false;
+        try{load(kern.save(q));}catch(e){finalImportAbgelehnt=/fluechtige Wasserreservierung/.test(e.message);}
+        if(!finalImportAbgelehnt)throw Error('W6: fluechtiger Lieferstand importierbar');
+        return {ok:true,status:'LIEFERUNG_AUF_KOPIE',angebot:a.id,reserviert,
+          lieferung:{start:a.tick,ende:q.tick,menge:a.menge,lohn:a.lohn,
+            lohnempfaenger:r.lohnempfaenger,tarif:a.tarif,warenwert:a.warenwert,
+            stationsmarge:a.stationsmarge,wertverzehr:a.wertverzehr,
+            aktivMinuten:m_core_anlage.aktiv(q,sh.id)-r.verschleissVor,
+            verbraucht:q.ledger.wasser.consumed-r.verbrauchVor,
+            kasseKauf:q.owners[WASSER_KAUF].cash,kasseLohn:q.owners[WASSER_LOHN].cash,
+            hash:kern.hash(q),belege},weltgeld,mint,burn,
+          importAbgelehnt:finalImportAbgelehnt,originalUnveraendert:true};
+      }
       for(const b of a.bestellungen)m_core_buch.transfer(q,WASSER_KAUF,b.owner,b.kosten,'w6-wasser-kaufreserve-rueck');
       m_core_buch.transfer(q,WASSER_LOHN,a.frachtfuehrer,a.lohn,'w6-wasser-lohnreserve-rueck');
       q.kanon.w6WasserReserve.phase='storniert';
@@ -2755,6 +2867,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     const vorherEisgeliefert = state.w5n.eisGeliefert;
     const vorherEisgebuehr = state.w5n.frachtUmsatz;
     const ergebnis = kern.step(state, rules);
+    wasserLieferMinute(state);
     m_core_spielerfracht.minute(state, vorherEisauftrag, vorherEislohn,
       vorherEisgeliefert, vorherEisgebuehr);
     if(k7&&state.kanon.industrieErz?.phase==='aktiv'
@@ -2782,10 +2895,12 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           !state.erzpilotVertraege?.[mi.id] && !state.kanon.industrieErz.erzAngenommen)
         k7Befehl(state,{type:'industrialOreCancel',owner:'st_nadir'});
     }
-    u7ManagerSchritt(state);
-    industrieAutoSchritt(state);
-    m_core_firmenpolitik.schritt(state);
-    m_core_disponent.schritt(state);
+    if(!wasserReserveProben.has(state)){
+      u7ManagerSchritt(state);
+      industrieAutoSchritt(state);
+      m_core_firmenpolitik.schritt(state);
+      m_core_disponent.schritt(state);
+    }
     m_core_flugplan.koerperSync(state);
     m_core_flugplan.plan(state, true, true);
     if (piraten) m_core_piraten.minute(state);
@@ -2930,7 +3045,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(p8bZweiFelder ? {p8bZweiEndlicheFelder:true} : {}),
     ...(p8cDravos||p8dFracht ? {p8cEchteDravosExpedition:true} : {}),
     ...(p8dFracht ? {p8dGetrennteSpedition:true,p8gMaterialOnlyW3:true} : {}),
-    ...(w6Research ? { u9TeilabrechnungProbe, u9VollabnahmeProbe, w6WasserReservierungsProbe,
+    ...(w6Research ? { u9TeilabrechnungProbe, u9VollabnahmeProbe,
+      w6WasserReservierungsProbe: (s,r,z)=>w6WasserReservierungsProbe(s,r,z),
+      w6WasserLieferProbe: (s,r,z)=>w6WasserReservierungsProbe(s,r,z,true),
       haushaltVerfuegbar: (s, id) => m_core_kreislauf.verfuegbar(s, id),
     } : {}),
     ...(u8Research ? { industrieAngebotslage: (s) => {

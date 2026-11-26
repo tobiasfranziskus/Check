@@ -6,12 +6,14 @@ on:
       - index.html
       - tests/**
       - .github/workflows/ui-regression.yml
+      - .github/workflows/p0-prototype-inventory.yml
   push:
     branches: [main]
     paths:
       - index.html
       - tests/**
       - .github/workflows/ui-regression.yml
+      - .github/workflows/p0-prototype-inventory.yml
 
 permissions:
   contents: read

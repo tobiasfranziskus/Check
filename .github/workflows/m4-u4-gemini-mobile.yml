@@ -3,11 +3,15 @@ on:
   workflow_dispatch:
     inputs:
       module:
-        description: 'Pilotmodul A oder B (beide starten eine neue Karriere)'
+        description: 'A: Neustart; B–F: geprüfte unabhängige Startspielstände'
         type: choice
         options:
           - A
           - B
+          - C
+          - D
+          - E
+          - F
         default: A
       model:
         description: 'Festes Gemini-Modell, keine automatische Umschaltung'
@@ -43,7 +47,7 @@ jobs:
         run: |
           if [ "$GITHUB_REF" != refs/heads/main ]; then echo 'Bitte main auswählen.' >&2; exit 1; fi
           if [ "$M4_CONSENT" != true ]; then echo 'Bitte Free-Tier und Datenübermittlung bestätigen.' >&2; exit 1; fi
-          case "$M4_MODULE" in A|B) ;; *) exit 1;; esac
+          case "$M4_MODULE" in A|B|C|D|E|F) ;; *) exit 1;; esac
           case "$M4_AI_MODEL" in gemini-3.5-flash-lite|gemini-4-hydrogen|gemini-3.8-flash) ;; *) exit 1;; esac
   pilot:
     needs: preflight
@@ -86,6 +90,7 @@ jobs:
           M4_ALLOW_REMOTE: '1'
           M4_GEMINI_FREE_CONFIRMED: '1'
           M4_LOCAL_DIAGNOSTIC: ${{ inputs.diagnostic && '1' || '0' }}
+          M4_PREPARED_START: '1'
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           M4_PRODUCT_SHA: ${{ github.sha }}
           TMPDIR: ${{ runner.temp }}/m4-live
@@ -109,7 +114,7 @@ jobs:
             const known=["Invalid model decision format","Invalid model JSON","Model output truncated","Model output empty","Model identity mismatch","Model response too large","Empty model response","Invalid provider JSON","Model transport or response failed","Model timeout","Browser observation failed","Browser action failed","Probe response mismatch","Gemini response blocked or incomplete","Unexpected dialog decision"];
             const detail=reason==="INFRASTRUCTURE"&&(known.includes(r.detail)||/^Model HTTP [0-9]{3}$/.test(r.detail))?r.detail:reason==="INFRASTRUCTURE"?"Setup oder Probe nicht abgeschlossen":"-";
             const model=["gemini-3.5-flash-lite","gemini-4-hydrogen","gemini-3.8-flash"].includes(process.env.M4_AI_MODEL)?process.env.M4_AI_MODEL:"unbekannt";
-            const module=["A","B"].includes(process.env.M4_MODULE)?process.env.M4_MODULE:"unbekannt";
+            const module=["A","B","C","D","E","F"].includes(process.env.M4_MODULE)?process.env.M4_MODULE:"unbekannt";
             const n=Number.isInteger(r.actions)&&r.actions>=0&&r.actions<=12?r.actions:0;
             const elapsed=Number.isFinite(r.elapsedMs)&&r.elapsedMs>=0&&r.elapsedMs<=600000?(r.elapsedMs/1000).toFixed(2)+" s":"nicht gemeldet";
             fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,["## M4-U4 Gemini-Spieltest","","Modul: "+module,"Modell: "+model,"Profil: "+(process.env.M4_LOCAL_DIAGNOSTIC==="1"?"Nummerierte Buttons (Diagnose)":"Freie Koordinaten"),"API-Probe: "+(p?.reason==="PROBE_OK"?"OK":"Nicht erfolgreich"),"Transportstatus: "+reason,"Diagnose: "+detail,"Aktionen: "+n,"Dauer: "+elapsed,"Checkout: "+process.env.GITHUB_SHA,"","Spielabnahme: UNREVIEWED. Evidenz und Pages-Gleichheit separat prüfen."].join("\n"));

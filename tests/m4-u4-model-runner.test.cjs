@@ -550,3 +550,25 @@ test('Gemini opt-in diagnostic reuses the visible control mapping and preserves 
  const modal=requestBody(local,'goal',{...obs,dialog:'confirm'},[]);
  assert.equal(modal.controls,undefined);assert.deepEqual(geminiPayload(local,modal).generationConfig.responseJsonSchema.properties.action.anyOf.map(v=>v.properties.op.enum[0]),['dialog','stop']);
 });
+
+test('Gemini 4 Hydrogen uses fixed free opt-in and both existing UI modes',async()=>{
+ const {ask,geminiPayload,GEMINI_MODELS}=require('../scripts/m4-u4-model-runner.cjs');
+ const env={M4_AI_PROVIDER:'gemini',M4_AI_MODEL:'gemini-4-hydrogen',M4_ALLOW_REMOTE:'1',M4_GEMINI_FREE_CONFIRMED:'1',GEMINI_API_KEY:'synthetic-key'};
+ assert.ok(GEMINI_MODELS.includes(env.M4_AI_MODEL));
+ for(const patch of [{M4_GEMINI_FREE_CONFIRMED:'0'},{M4_ALLOW_REMOTE:'0'},{GEMINI_API_KEY:''},{M4_AI_MODEL:'gemini-4-neon'},{M4_AI_MODEL:'gemini-4-carbon'},{M4_AI_MODEL:'gemini-4-argon'}])assert.throws(()=>config({...env,...patch}));
+ const cfg=config(env),diag=config({...env,M4_LOCAL_DIAGNOSTIC:'1'});
+ const obs={round:0,remaining:12,visibleText:'(25,35) [B] First'};
+ const body=requestBody(cfg,'goal',obs,[]),palette=requestBody(diag,'goal',obs,[]);
+ assert.equal(cfg.url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-4-hydrogen:generateContent');
+ assert.equal(geminiPayload(cfg,body).generationConfig.thinkingConfig.thinkingLevel,'low');
+ assert.equal(geminiPayload(cfg,body).generationConfig.responseJsonSchema.properties.action.anyOf[0].properties.op.enum[0],'click');
+ const response=(action,version=cfg.model)=>new Response(JSON.stringify({modelVersion:version,candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify({action,note:'test'})}]}}]}));
+ const d=await ask(cfg,body,45000,async(url,opts)=>{
+  assert.equal(url,cfg.url);assert.equal(opts.headers['x-goog-api-key'],'synthetic-key');assert.doesNotMatch(opts.body,/synthetic-key/);
+  return response({op:'click',x:25,y:35});
+ });
+ assert.deepEqual(d.action,{op:'click',x:25,y:35});assert.equal(d.reportedModel,cfg.model);
+ const picked=await ask(diag,palette,45000,async()=>response({op:'pick',id:1}));
+ assert.deepEqual(picked.action,d.action);
+ await assert.rejects(ask(cfg,body,45000,async()=>response({op:'stop'},'gemini-4-carbon')));
+});

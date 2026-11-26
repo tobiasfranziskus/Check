@@ -414,3 +414,28 @@ test('native validation errors reveal only known categories, never rejected mode
  assert.equal(events.filter(e=>e.validation==='Unsupported action or field').length,2);
  assert.doesNotMatch(JSON.stringify(events),/DO_NOT_LOG|invalid_secret/);
 });
+
+test('native pilot receives unchanged-text feedback and a dedicated confirmation schema',async()=>{
+ const {DECISION_SCHEMA,CONFIRM_SCHEMA}=require('../scripts/m4-u4-model-runner.cjs');
+ const local=config({M4_AI_MODEL:'gemma4:e4b',M4_OLLAMA_NATIVE:'1'}),events=[],actions=[],calls=[];
+ const observations=[
+  {round:0,remaining:12,visibleText:'visible',done:false},
+  {round:1,remaining:11,visibleText:'visible',done:false},
+  {round:2,remaining:10,visibleText:'confirm?',dialog:'confirm',done:false},
+  {round:3,remaining:9,visibleText:'cancelled',done:false}
+ ];
+ const decisions=[{op:'click',x:10,y:10},{op:'click',x:20,y:20},{op:'dialog',choice:'dismiss'},{op:'stop'}];
+ const relay={observe:async()=>observations[0],step:async a=>{actions.push(a);return observations[actions.length];},close:async()=>{}};
+ const result=await run({relay,cfg:local,module:'A',emit:e=>events.push(e),fetcher:async(url,opts)=>{
+  const body=JSON.parse(opts.body);const n=calls.length;calls.push(body);
+  return new Response(JSON.stringify({model:local.model,done:true,message:{content:JSON.stringify({action:decisions[n],note:'test'})}}));
+ }});
+ assert.equal(result.reason,'MODEL_STOP');assert.equal(result.actions,3);assert.deepEqual(actions,decisions.slice(0,3));
+ assert.deepEqual(calls.map(c=>c.format),[DECISION_SCHEMA,DECISION_SCHEMA,CONFIRM_SCHEMA,DECISION_SCHEMA]);
+ assert.equal(JSON.parse(calls[1].messages[1].content).lastTextUnchanged,true);
+ assert.equal(JSON.parse(calls[2].messages[1].content).lastTextUnchanged,false);
+ assert.equal(events.filter(e=>e.kind==='observation'&&e.sameText===true).length,1);
+ assert.throws(()=>decision('{"action":{"op":"dialog","choice":"auto"},"note":"bad"}'));
+ const f=fixture();const unexpected=await run({relay:f.relay,cfg:local,module:'A',fetcher:async()=>new Response(JSON.stringify({model:local.model,done:true,message:{content:JSON.stringify({action:{op:'dialog',choice:'accept'},note:'bad'})}}))});
+ assert.equal(unexpected.reason,'INFRASTRUCTURE');assert.equal(f.actions.length,0);
+});

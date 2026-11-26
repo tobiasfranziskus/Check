@@ -1,6 +1,7 @@
 name: Aphros Void – JavaScript-Regressionsprüfung
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - index.html

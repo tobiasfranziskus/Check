@@ -360,3 +360,234 @@ test('explicit named free model still probes exactly once, even on provider over
  assert.equal(calls,1);assert.equal(r.attempts.length,1);assert.equal(r.reason,'INFRASTRUCTURE');
  for(const selection of ['openrouter/free','some/paid'])await assert.rejects(selectProbe({cfg:remoteCfg(model),selection,fetcher:async()=>{throw Error('must not call');}}),/explicit free mode/);
 });
+
+test('local model gets longer per-request budget without changing remote or total deadlines',async()=>{
+ const original=AbortSignal.timeout;
+ try {
+  for(const [provider,budget,expected] of [['ollama',300000,90000],['ollama',45000,45000],['openrouter',300000,20000]]){
+   let clock=0,seen=[];
+   const cfg=provider==='ollama'?config({M4_AI_MODEL:'gemma4:e4b'}):remoteCfg('test/model:free');
+   const f=fixture();
+   AbortSignal.timeout=ms=>{seen.push(ms);return original(ms);};
+   const result=await run({relay:f.relay,cfg,module:'A',now:()=>clock,emit:e=>{if(e.kind==='observation')clock=300000-budget;},fetcher:async()=>response({action:{op:'stop'},note:'done'},cfg.model)});
+   assert.deepEqual(seen,[expected]);assert.equal(result.reason,'MODEL_STOP');assert.equal(result.actions,0);assert.equal(f.closed(),1);
+  }
+ } finally {AbortSignal.timeout=original;}
+});
+
+test('native Ollama sends short non-thinking JSON requests and validates response plus safe timing metrics',async()=>{
+ const {ask}=require('../scripts/m4-u4-model-runner.cjs');
+ const cfg=config({M4_AI_MODEL:'gemma4:e4b',M4_OLLAMA_NATIVE:'1'});
+ assert.equal(cfg.url,'http://127.0.0.1:11434/api/chat');
+ const body=requestBody(cfg,'goal',{round:0,remaining:12,visibleText:'(10,10) Visible'},[]);
+ const data={model:cfg.model,done:true,done_reason:'stop',message:{content:JSON.stringify({action:{op:'stop'},note:'done'}),thinking:'DO_NOT_LOG'},eval_count:20,total_duration:12000000};
+ const d=await ask(cfg,body,90000,async(url,opts)=>{
+  assert.equal(url,cfg.url);assert.equal(opts.headers.Authorization,undefined);
+  const q=JSON.parse(opts.body);assert.equal(q.think,false);assert.deepEqual(q.format,require('../scripts/m4-u4-model-runner.cjs').DECISION_SCHEMA);assert.equal(q.options.num_predict,256);assert.equal(q.stream,false);assert.deepEqual(q.messages,body.messages);
+  return new Response(JSON.stringify(data));
+ });
+ assert.equal(d.action.op,'stop');assert.deepEqual(d.metrics,{total_duration_ms:12,eval_count:20});assert.doesNotMatch(JSON.stringify(d),/DO_NOT_LOG/);
+ for(const bad of [{...data,model:'different'},{...data,done:false},{...data,done_reason:'length'},{...data,message:{content:'{"action":{"op":"evaluate"},"note":"bad"}'}}]){
+  await assert.rejects(ask(cfg,body,90000,async()=>new Response(JSON.stringify(bad))));
+ }
+});
+
+test('native schema enumerates only valid UI commands with exact fields and bounds',()=>{
+ const {DECISION_SCHEMA:s}=require('../scripts/m4-u4-model-runner.cjs');
+ assert.deepEqual(s.required,['action','note']);assert.equal(s.additionalProperties,false);
+ const v=s.properties.action.oneOf;
+ assert.deepEqual(v.map(a=>a.properties.op.enum[0]),['click','scroll','type','wait','reload','stop']);
+ for(const a of v){assert.equal(a.additionalProperties,false);assert.deepEqual(a.required,Object.keys(a.properties));}
+ assert.deepEqual(v[0].properties.x,{type:'integer',minimum:0,maximum:1179});
+ assert.deepEqual(v[0].properties.y,{type:'integer',minimum:0,maximum:819});
+ assert.equal(v[3].properties.ms.maximum,2000);
+});
+test('native validation errors reveal only known categories, never rejected model text',async()=>{
+ const {ask}=require('../scripts/m4-u4-model-runner.cjs');
+ const cfg=config({M4_AI_MODEL:'gemma4:e4b',M4_OLLAMA_NATIVE:'1'});
+ const responseFor=action=>new Response(JSON.stringify({model:cfg.model,done:true,message:{content:JSON.stringify({action,note:'DO_NOT_LOG'})}}));
+ const err=await ask(cfg,{messages:[]},1000,async()=>responseFor({op:'click',x:9999,y:12})).catch(e=>e);
+ assert.equal(err.validation,'Invalid x');
+ const f=fixture(),events=[];
+ const result=await run({relay:f.relay,cfg,module:'A',emit:e=>events.push(e),sleep:async()=>{},fetcher:async()=>responseFor({op:'invalid_secret'})});
+ assert.equal(result.reason,'INFRASTRUCTURE');assert.equal(result.actions,0);
+ assert.equal(events.filter(e=>e.validation==='Unsupported action or field').length,2);
+ assert.doesNotMatch(JSON.stringify(events),/DO_NOT_LOG|invalid_secret/);
+});
+
+test('native pilot receives unchanged-text feedback and a dedicated confirmation schema',async()=>{
+ const {DECISION_SCHEMA,CONFIRM_SCHEMA}=require('../scripts/m4-u4-model-runner.cjs');
+ const local=config({M4_AI_MODEL:'gemma4:e4b',M4_OLLAMA_NATIVE:'1'}),events=[],actions=[],calls=[];
+ const observations=[
+  {round:0,remaining:12,visibleText:'visible',done:false},
+  {round:1,remaining:11,visibleText:'visible',done:false},
+  {round:2,remaining:10,visibleText:'confirm?',dialog:'confirm',done:false},
+  {round:3,remaining:9,visibleText:'cancelled',done:false}
+ ];
+ const decisions=[{op:'click',x:10,y:10},{op:'click',x:20,y:20},{op:'dialog',choice:'dismiss'},{op:'stop'}];
+ const relay={observe:async()=>observations[0],step:async a=>{actions.push(a);return observations[actions.length];},close:async()=>{}};
+ const result=await run({relay,cfg:local,module:'A',emit:e=>events.push(e),fetcher:async(url,opts)=>{
+  const body=JSON.parse(opts.body);const n=calls.length;calls.push(body);
+  return new Response(JSON.stringify({model:local.model,done:true,message:{content:JSON.stringify({action:decisions[n],note:'test'})}}));
+ }});
+ assert.equal(result.reason,'MODEL_STOP');assert.equal(result.actions,3);assert.deepEqual(actions,decisions.slice(0,3));
+ assert.deepEqual(calls.map(c=>c.format),[DECISION_SCHEMA,DECISION_SCHEMA,CONFIRM_SCHEMA,DECISION_SCHEMA]);
+ assert.equal(JSON.parse(calls[1].messages[1].content).lastTextUnchanged,true);
+ assert.equal(JSON.parse(calls[2].messages[1].content).lastTextUnchanged,false);
+ assert.equal(events.filter(e=>e.kind==='observation'&&e.sameText===true).length,1);
+ assert.throws(()=>decision('{"action":{"op":"dialog","choice":"auto"},"note":"bad"}'));
+ const f=fixture();const unexpected=await run({relay:f.relay,cfg:local,module:'A',fetcher:async()=>new Response(JSON.stringify({model:local.model,done:true,message:{content:JSON.stringify({action:{op:'dialog',choice:'accept'},note:'bad'})}}))});
+ assert.equal(unexpected.reason,'INFRASTRUCTURE');assert.equal(f.actions.length,0);
+});
+
+test('native local memory detects three-action cycles without hidden state or automatic actions',async()=>{
+ const {rememberScreen}=require('../scripts/m4-u4-model-runner.cjs');
+ const local=config({M4_AI_MODEL:'gemma4:e4b',M4_OLLAMA_NATIVE:'1'}),events=[],actions=[],calls=[];
+ const views=['bridge','menu','confirm?','bridge','menu','confirm?','bridge'];
+ const observation=n=>({round:n,remaining:12-n,visibleText:views[n],...(views[n]==='confirm?'?{dialog:'confirm'}:{}),done:false,secret:'never forward'});
+ const decisions=[{op:'click',x:10,y:10},{op:'click',x:20,y:20},{op:'dialog',choice:'accept'},{op:'click',x:10,y:10},{op:'click',x:20,y:20},{op:'dialog',choice:'accept'},{op:'stop'}];
+ const relay={observe:async()=>observation(0),step:async a=>{actions.push(a);return observation(actions.length);},close:async()=>{}};
+ const result=await run({relay,cfg:local,module:'A',emit:e=>events.push(e),fetcher:async(url,opts)=>{
+  const body=JSON.parse(opts.body);const n=calls.length;calls.push(JSON.parse(body.messages[1].content));
+  return new Response(JSON.stringify({model:local.model,done:true,message:{content:JSON.stringify({action:decisions[n],note:'not forwarded'})}}));
+ }});
+ assert.equal(result.reason,'MODEL_STOP');assert.deepEqual(actions,decisions.slice(0,6));
+ assert.deepEqual(calls.map(c=>c.view),['S1','S2','S3','S1','S2','S3','S1']);
+ assert.deepEqual(calls.map(c=>c.visits),[1,1,1,2,2,2,3]);
+ assert.equal(calls[3].lastTextUnchanged,false);
+ assert.equal(calls[6].history,'1:click(10,10) S1>S2; 2:click(20,20) S2>S3; 3:dialog(accept) S3>S1; 4:click(10,10) S1>S2; 5:click(20,20) S2>S3; 6:dialog(accept) S3>S1');
+ assert.doesNotMatch(JSON.stringify(calls),/never forward|not forwarded/);
+ assert.equal(rememberScreen(observation(0),new Map()).screenVisits,1);
+ const seen=new Map();
+ assert.notEqual(rememberScreen({visibleText:'same'},seen).screenId,rememberScreen({visibleText:'same',dialog:'confirm'},seen).screenId);
+ const bad={error:'hidden',visibleText:'x'};assert.equal(rememberScreen(bad,seen),bad);
+ const remote=requestBody(cfg,'goal',{...observation(0),screenId:'S1',screenVisits:2},[{action:{op:'stop'},note:'old'}]);
+ const legacy=JSON.parse(remote.messages[1].content);assert.equal(legacy.view,undefined);assert.equal(legacy.history,undefined);assert.equal(legacy.recent[0].note,'old');
+ const bounded=JSON.parse(requestBody(local,'goal',observation(0),Array.from({length:50},()=>({action:{op:'type',text:'x'.repeat(300)}}))).messages[1].content);
+ assert.equal(bounded.history.split('; ').length,12);assert.ok(bounded.history.length<1100);assert.doesNotMatch(bounded.history,/x{49}/);
+});
+
+test('opt-in control diagnostic maps only model-selected visible buttons; default stays unchanged',async()=>{
+ const {controlPalette,paletteSchema,DECISION_SCHEMA,CONFIRM_SCHEMA}=require('../scripts/m4-u4-model-runner.cjs');
+ const local=config({M4_AI_MODEL:'gemma4:e4b',M4_OLLAMA_NATIVE:'1',M4_LOCAL_DIAGNOSTIC:'1'});
+ assert.throws(()=>config({M4_AI_MODEL:'local-test',M4_LOCAL_DIAGNOSTIC:'1'}));
+ const obs={round:0,remaining:12,visibleText:'(10,20) Heading\n(25,35) [B] First\n(60,70) Disabled\n(80,90) [B] Second',done:false};
+ const body=requestBody(local,'goal',obs,[]);
+ assert.deepEqual(body.controls,[{id:1,x:25,y:35,label:'First'},{id:2,x:80,y:90,label:'Second'}]);
+ const data=JSON.parse(body.messages[1].content);assert.deepEqual(data.buttons,['1 First','2 Second']);assert.equal(data.text,'Heading\nDisabled');assert.equal(data.screen,undefined);
+ assert.deepEqual(paletteSchema(body.controls).properties.action.oneOf[0].properties.id.enum,[1,2]);
+ assert.throws(()=>decision('{"action":{"op":"pick","id":9},"note":"bad"}',body.controls));
+ assert.throws(()=>decision('{"action":{"op":"click","x":10,"y":20},"note":"bad"}',body.controls));
+ assert.throws(()=>decision('{"action":{"op":"pick","id":1},"note":"bad"}'));
+ const next={round:1,remaining:11,visibleText:'(1,2) [B] Continue',done:false};
+ const calls=[],actions=[],events=[];
+ const relay={observe:async()=>obs,step:async a=>{actions.push(a);return next;},close:async()=>{}};
+ const result=await run({relay,cfg:local,module:'A',emit:e=>events.push(e),fetcher:async(url,opts)=>{
+  calls.push(JSON.parse(opts.body));const action=calls.length===1?{op:'pick',id:2}:{op:'stop'};
+  return new Response(JSON.stringify({model:local.model,done:true,message:{content:JSON.stringify({action,note:'test'})}}));
+ }});
+ assert.equal(result.reason,'MODEL_STOP');assert.deepEqual(actions,[{op:'click',x:80,y:90}]);
+ assert.deepEqual(events.find(e=>e.kind==='decision').chosenControl,{id:2,label:'Second'});
+ assert.match(JSON.parse(calls[1].messages[1].content).history,/pick\(2\)/);
+ assert.equal(JSON.parse(calls[0].messages[1].content).controls,undefined);
+ assert.deepEqual(calls[0].format,paletteSchema(body.controls));
+ const normal=requestBody(config({M4_AI_MODEL:'gemma4:e4b',M4_OLLAMA_NATIVE:'1'}),'goal',obs,[]);
+ assert.equal(normal.controls,undefined);assert.equal(JSON.parse(normal.messages[1].content).screen,obs.visibleText);
+ const empty=requestBody(local,'goal',{...obs,visibleText:'(1,2) Text'},[]);
+ assert.equal(empty.controls,undefined);assert.equal(JSON.parse(empty.messages[1].content).screen,'(1,2) Text');
+ const modal=requestBody(local,'goal',{...obs,dialog:'confirm'},[]);
+ assert.equal(modal.controls,undefined);assert.equal(modal.dialog,'confirm');
+ assert.equal(controlPalette({visibleText:'(1180,20) [B] Outside'}).controls.length,0);
+});
+
+test('direct Gemini requires explicit free-project confirmation and never routes via OpenRouter',async()=>{
+ const {ask,geminiPayload}=require('../scripts/m4-u4-model-runner.cjs');
+ const env={M4_AI_PROVIDER:'gemini',M4_AI_MODEL:'gemini-3.8-flash',M4_ALLOW_REMOTE:'1',M4_GEMINI_FREE_CONFIRMED:'1',GEMINI_API_KEY:'synthetic-key'};
+ for(const patch of [{M4_GEMINI_FREE_CONFIRMED:'0'},{M4_ALLOW_REMOTE:'0'},{M4_AI_MODEL:'gemini-4-argon'},{GEMINI_API_KEY:''}])assert.throws(()=>config({...env,...patch}));
+ const local=config(env),body=requestBody(local,'goal',{round:0,remaining:12,visibleText:'visible',secret:'NEVER_FORWARD'},[]);
+ assert.equal(local.url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent');
+ const answer=(op='stop',version=local.model,finishReason='STOP')=>new Response(JSON.stringify({modelVersion:version,candidates:[{finishReason,content:{parts:[{thought:true,text:'HIDDEN_THOUGHT'},{text:JSON.stringify({action:op==='stop'?{op}:{op,x:10,y:20},note:'probe'})}]}}],usageMetadata:{promptTokenCount:123,thoughtsTokenCount:9}}));
+ const d=await ask(local,body,45000,async(url,opts)=>{
+  assert.equal(url,local.url);assert.equal(opts.headers['x-goog-api-key'],'synthetic-key');assert.equal(opts.headers.Authorization,undefined);assert.equal(opts.redirect,'error');
+  const q=JSON.parse(opts.body);assert.equal(q.generationConfig.thinkingConfig.thinkingLevel,'low');assert.equal(q.generationConfig.thinkingConfig.includeThoughts,false);assert.equal(q.generationConfig.responseMimeType,'application/json');
+  assert.equal(q.generationConfig.responseJsonSchema.properties.action.anyOf.length,6);assert.doesNotMatch(opts.body,/synthetic-key|NEVER_FORWARD|openrouter/);assert.equal(q.tools,undefined);
+  return answer();
+ });
+ assert.equal(d.reportedModel,local.model);assert.equal(d.modelVersion,local.model);assert.deepEqual(d.metrics,{promptTokenCount:123,thoughtsTokenCount:9});assert.doesNotMatch(JSON.stringify(d),/HIDDEN_THOUGHT|synthetic-key/);
+ await assert.rejects(ask(local,body,45000,async()=>answer('stop','gemini-4-argon')));
+ await assert.rejects(ask(local,body,45000,async()=>answer('stop',local.model,'MAX_TOKENS')));
+ const lite=config({...env,M4_AI_MODEL:'gemini-3.5-flash-lite'});assert.equal(geminiPayload(lite,body).generationConfig.thinkingConfig.thinkingLevel,'minimal');
+ const modal=geminiPayload(local,{...body,dialog:'confirm'});assert.deepEqual(modal.generationConfig.responseJsonSchema.properties.action.anyOf.map(v=>v.properties.op.enum[0]),['dialog','stop']);
+ const f=fixture(),events=[];let calls=0;
+ const quota=await run({relay:f.relay,cfg:local,module:'A',emit:e=>events.push(e),fetcher:async()=>{calls++;return new Response('private quota detail',{status:429});}});
+ assert.equal(quota.reason,'INFRASTRUCTURE');assert.equal(quota.detail,'Model HTTP 429');assert.equal(calls,1);assert.equal(f.actions.length,0);assert.doesNotMatch(JSON.stringify(events),/private quota detail|synthetic-key/);
+ const g=fixture();let round=0;
+ const changed=await run({relay:g.relay,cfg:local,module:'A',fetcher:async()=>answer('click',round++?local.model+'-002':local.model+'-001')});
+ assert.equal(changed.detail,'Model identity mismatch');assert.equal(g.actions.length,1);
+});
+
+test('Gemini opt-in diagnostic reuses the visible control mapping and preserves normal and probe modes',async()=>{
+ const {ask,geminiPayload,paletteSchema}=require('../scripts/m4-u4-model-runner.cjs');
+ const env={M4_AI_PROVIDER:'gemini',M4_AI_MODEL:'gemini-3.5-flash-lite',M4_ALLOW_REMOTE:'1',M4_GEMINI_FREE_CONFIRMED:'1',GEMINI_API_KEY:'synthetic-key'};
+ const local=config({...env,M4_LOCAL_DIAGNOSTIC:'1'}),normal=config(env);
+ const obs={round:0,remaining:12,visibleText:'(10,20) Heading\n(25,35) [B] First\n(80,90) [B] Second',done:false};
+ const body=requestBody(local,'goal',obs,[]),ordinary=requestBody(normal,'goal',obs,[]);
+ assert.equal(local.diagnostic,true);assert.equal(normal.diagnostic,undefined);
+ assert.throws(()=>config({...env,M4_LOCAL_DIAGNOSTIC:'1',M4_GEMINI_FREE_CONFIRMED:'0'}));
+ assert.equal(ordinary.controls,undefined);assert.equal(JSON.parse(ordinary.messages[1].content).screen,obs.visibleText);
+ const schema=geminiPayload(local,body).generationConfig.responseJsonSchema.properties.action.anyOf;
+ assert.deepEqual(schema,paletteSchema(body.controls).properties.action.oneOf);
+ assert.equal(schema.some(v=>v.properties.op.enum[0]==='click'),false);
+ assert.equal(geminiPayload(local,{messages:body.messages}).generationConfig.responseJsonSchema.properties.action.anyOf[0].properties.op.enum[0],'click');
+ const response=action=>new Response(JSON.stringify({modelVersion:local.model,candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify({action,note:'test'})}]}}]}));
+ const d=await ask(local,body,45000,async(url,opts)=>{
+  assert.equal(url,local.url);assert.equal(opts.headers['x-goog-api-key'],'synthetic-key');
+  assert.doesNotMatch(opts.body,/synthetic-key|"controls"/);return response({op:'pick',id:2});
+ });
+ assert.deepEqual(d.action,{op:'click',x:80,y:90});assert.deepEqual(d.chosenControl,{id:2,label:'Second'});
+ await assert.rejects(ask(local,body,45000,async()=>response({op:'pick',id:3})));
+ await assert.rejects(ask(normal,ordinary,45000,async()=>response({op:'pick',id:2})));
+ const modal=requestBody(local,'goal',{...obs,dialog:'confirm'},[]);
+ assert.equal(modal.controls,undefined);assert.deepEqual(geminiPayload(local,modal).generationConfig.responseJsonSchema.properties.action.anyOf.map(v=>v.properties.op.enum[0]),['dialog','stop']);
+});
+
+test('Gemini 4 Hydrogen uses fixed free opt-in and both existing UI modes',async()=>{
+ const {ask,geminiPayload,GEMINI_MODELS}=require('../scripts/m4-u4-model-runner.cjs');
+ const env={M4_AI_PROVIDER:'gemini',M4_AI_MODEL:'gemini-4-hydrogen',M4_ALLOW_REMOTE:'1',M4_GEMINI_FREE_CONFIRMED:'1',GEMINI_API_KEY:'synthetic-key'};
+ assert.ok(GEMINI_MODELS.includes(env.M4_AI_MODEL));
+ for(const patch of [{M4_GEMINI_FREE_CONFIRMED:'0'},{M4_ALLOW_REMOTE:'0'},{GEMINI_API_KEY:''},{M4_AI_MODEL:'gemini-4-neon'},{M4_AI_MODEL:'gemini-4-carbon'},{M4_AI_MODEL:'gemini-4-argon'}])assert.throws(()=>config({...env,...patch}));
+ const cfg=config(env),diag=config({...env,M4_LOCAL_DIAGNOSTIC:'1'});
+ const obs={round:0,remaining:12,visibleText:'(25,35) [B] First'};
+ const body=requestBody(cfg,'goal',obs,[]),palette=requestBody(diag,'goal',obs,[]);
+ assert.equal(cfg.url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-4-hydrogen:generateContent');
+ assert.equal(geminiPayload(cfg,body).generationConfig.thinkingConfig.thinkingLevel,'low');
+ assert.equal(geminiPayload(cfg,body).generationConfig.responseJsonSchema.properties.action.anyOf[0].properties.op.enum[0],'click');
+ const response=(action,version=cfg.model)=>new Response(JSON.stringify({modelVersion:version,candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify({action,note:'test'})}]}}]}));
+ const d=await ask(cfg,body,45000,async(url,opts)=>{
+  assert.equal(url,cfg.url);assert.equal(opts.headers['x-goog-api-key'],'synthetic-key');assert.doesNotMatch(opts.body,/synthetic-key/);
+  return response({op:'click',x:25,y:35});
+ });
+ assert.deepEqual(d.action,{op:'click',x:25,y:35});assert.equal(d.reportedModel,cfg.model);
+ const picked=await ask(diag,palette,45000,async()=>response({op:'pick',id:1}));
+ assert.deepEqual(picked.action,d.action);
+ await assert.rejects(ask(cfg,body,45000,async()=>response({op:'stop'},'gemini-4-carbon')));
+});
+
+test('mobile Gemini preflight uses one synthetic request and safe failure evidence',async()=>{
+ const {geminiProbe}=require('../scripts/m4-u4-model-runner.cjs');
+ const cfg=config({M4_AI_PROVIDER:'gemini',M4_AI_MODEL:'gemini-3.5-flash-lite',M4_ALLOW_REMOTE:'1',M4_GEMINI_FREE_CONFIRMED:'1',GEMINI_API_KEY:'synthetic-key'});
+ let calls=0;
+ const ok=await geminiProbe({cfg,fetcher:async(url,opts)=>{
+  calls++;assert.equal(url,cfg.url);assert.equal(opts.headers['x-goog-api-key'],'synthetic-key');
+  assert.match(opts.body,/Return the requested JSON object/);
+  assert.doesNotMatch(opts.body,/synthetic-key|Aldera|Karriere/);
+  return new Response(JSON.stringify({modelVersion:cfg.model,candidates:[{finishReason:'STOP',content:{parts:[{text:'{"action":{"op":"stop"},"note":"probe"}'}]}}]}));
+ }});
+ assert.equal(ok.reason,'PROBE_OK');assert.equal(ok.model,cfg.model);assert.equal(ok.actions,0);assert.equal(calls,1);
+ for(const status of [429,503]){
+  let count=0;const failure=await geminiProbe({cfg,fetcher:async()=>{count++;return new Response('private key synthetic-key and raw provider details',{status});}});
+  assert.equal(failure.reason,'INFRASTRUCTURE');assert.equal(failure.detail,'Model HTTP '+status);assert.equal(count,1);assert.doesNotMatch(JSON.stringify(failure),/synthetic-key|private key|raw provider/);
+ }
+ const wrong=await geminiProbe({cfg,fetcher:async()=>new Response(JSON.stringify({modelVersion:'gemini-4-argon',candidates:[{finishReason:'STOP',content:{parts:[{text:'{"action":{"op":"stop"},"note":"probe"}'}]}}]}))});
+ assert.equal(wrong.detail,'Model identity mismatch');
+});

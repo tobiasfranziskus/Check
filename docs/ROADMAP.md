@@ -117,7 +117,7 @@
 
 **[M0 / MAIN]** [#518](https://github.com/tobiasfranziskus/Check/pull/518) belegt einen finanzierten Manager-only-Einstieg. Die vollständige Management-Abnahme M4 bleibt offen.
 
-**Arbeitsgewichtung als Steuerungsrichtwert [PLANUNG, nicht mechanisch erzwingen]:** etwa **50 % spielbare Integration/UX, 35 % Wirtschaft und W6-Nachweis, 15 % Qualität/Repository-Pflege**. Keine Expansion nur für einen grünen Test: Jede größere Arbeitsphase muss eine **neue sinnvolle Spielentscheidung oder Tätigkeit** oder einen klaren, entscheidungsrelevanten Negativbefund liefern.
+**Arbeitsgewichtung [PLANUNG]:** Seit der zentralen Steuerung vom 26.11.2026 keine feste Quote; spielbare Integration/UX priorisieren, Wirtschaft und P0 nach konkreten Blockern, Piraten nur im Management-relevanten Umfang. Keine Expansion nur für einen grünen Test: Jede größere Arbeitsphase muss eine **neue sinnvolle Spielentscheidung oder Tätigkeit** oder einen klaren, entscheidungsrelevanten Negativbefund liefern.
 
 **Integrationsgate je Spieler-Meilenstein:** selbst von der öffentlichen Root spielbar; erster valider, real finanzierter Nutzerpfad; unveränderte/kompatible Saves und Altzugänge; deterministische Core-, Geld-, Waren-, Schiffs- und Eigentumsprüfungen; Chromium/WebKit-Touchmatrix und klare Dokumentation des tatsächlichen `main`- und Pages-Status. Echtgeräte-Abnahme darf bis zur späten Produktphase ausstehen, **wird niemals als simuliert bestanden bezeichnet**.
 

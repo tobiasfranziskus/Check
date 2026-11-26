@@ -169,7 +169,7 @@ async function run({relay,cfg,module,emit=()=>{},fetcher=fetch,now=()=>performan
      if(budget<=0)return finish('LIMIT','Time budget reached before model request');
      try{
       const current={...cfg,model};
-      d=await ask(current,requestBody(current,GOALS[module],obs,history,correction),Math.max(1,Math.min(20000,budget)),fetcher);
+      d=await ask(current,requestBody(current,GOALS[module],obs,history,correction),Math.max(1,Math.min(cfg.provider==='ollama'?90000:20000,budget)),fetcher);
       // A router can discover the first model, never control subsequent turns.
       if(!selected){
        selected=cfg.provider==='openrouter'?d.reportedModel:model;

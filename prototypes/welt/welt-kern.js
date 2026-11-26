@@ -183,9 +183,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       ? rules.j4c.verschleissMilliJeMinute : (KANON.verschleiss.milliJeMinute[sh.klasse] ?? 0);
     const abschreibung = (state, sh) => Math.min(kaufpreis(sh.klasse),
       Math.floor(aktiv(state, sh.id) * satz(sh) / 1000));
-    const restAktivminuten = (state, sh, auchOhneStilllegung = false) => {
+    const restAktivminuten = (state, sh) => {
       const rate = satz(sh);
-      return rate > 0 && (auchOhneStilllegung || state.kanon.politik.stilllegung === true)
+      return rate > 0 && state.kanon.politik.stilllegung === true
         ? Math.max(0, Math.ceil(kaufpreis(sh.klasse) * 1000 / rate) - aktiv(state, sh.id))
         : null;
     };
@@ -2041,8 +2041,8 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       return 'ein benötigter Originalauftrag ist belegt';
     const route=kern.route(rules.world,'aldera','nadir');
     if(!route||route.zeit!==W.flugMinuten) return 'keine Original-W3-Route';
-    if(m_core_anlage.restAktivminuten(s,mi,true)<Math.ceil(K7_PREIS.menge/rules.economy.miningRate)
-      ||m_core_anlage.restAktivminuten(s,fr,true)<2*route.zeit)
+    if((m_core_anlage.restAktivminuten(s,mi)??Infinity)<Math.ceil(K7_PREIS.menge/rules.economy.miningRate)
+      ||(m_core_anlage.restAktivminuten(s,fr)??Infinity)<2*route.zeit)
       return 'zu wenig Restaktivzeit für die zugesagte Leistung';
     if(s.owners.npc3.cash<K7_PREIS.bergbau+KANON.flug.reserveMinuten*KANON.flug.lohnJeMinute
       ||s.owners.st_aldera.cash<K7_PREIS.alderakauf||s.owners.st_nadir.cash<K7_PREIS.nadiraufwand
@@ -2076,7 +2076,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     q.kanon.hausErz.folge=v.folge;
     const w4=q.w4.erzVerbraucht,w5=q.w5.fertig;
     const startAktiv=m_core_anlage.aktiv(q,i.miner);
-    const rest=m_core_anlage.restAktivminuten(q,q.ships[i.miner],true);
+    const rest=m_core_anlage.restAktivminuten(q,q.ships[i.miner])??Infinity;
     try {
       hausErzBinden(q,v);
       for(let n=0;n<360;n++){

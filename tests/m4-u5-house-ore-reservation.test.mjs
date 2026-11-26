@@ -7,6 +7,7 @@ const W=require('../prototypes/welt/welt-kern.js');
 const J8=require('../prototypes/verbund/konzern-session.js');
 const OLD=require('../prototypes/w5ac/session.js');
 const {pruefen}=require('../tools/w6-szenarien.cjs');
+const {engpassNach48}=require('./m4-u5-engpass-ablauf.cjs');
 const signaturen=[
   ['industrialOreAcceptMine','npc3'],['industrialOreAcceptSource','st_aldera'],
   ['industrialOreAcceptYard','werft_extern'],['industrialOreAcceptFreight','house']
@@ -212,4 +213,25 @@ test('Haus-Erz: eine weitere real gekaufte Hülle darf während W3 bezahlt über
   w.advance(neu,200);
   assert.ok(neu.w5ad.freight.some(b=>b.kennung===id));
   runde(w,neu);
+});
+
+test('Haus-Erz: der finanzierte 48-Fahrten-Stand kann bei ausgeschalteter Stilllegung seine Hülle einsetzen',()=>{
+  const original=engpassNach48(),json=original.exportieren(),haus=J8.erstellen();
+  haus.oeffnenHausErz(json,true,'kopie');
+  const s=haus.zustandReferenz(),w=haus.weltReferenz();
+  assert.equal(s.tick,6300);
+  assert.equal(s.kanon.politik.stilllegung,false);
+  assert.equal(s.kanon.verschleiss.sh003,5760);
+  assert.equal(w.buchwert(s,'sh003'),0);
+  w.minute(s);
+  const angebot=s.kanon.industrieErz;
+  assert.equal(angebot.phase,'angebot');
+  assert.equal(angebot.frachter,'sh003');
+  exec(w,s,action('industrialOreAcceptFreight','house',angebot.kennung));
+  w.advance(s,192);
+  const b=s.w5ad.freight.find(f=>f.kennung===angebot.kennung);
+  assert.deepEqual([b.id,b.amount,b.end-b.start,b.fee,b.work],['sh003',50,120,240,120]);
+  assert.ok(s.w4.abgeschlossen>0&&s.w5.fertig>0);
+  assert.equal(original.exportieren(),json);
+  runde(w,s);
 });

@@ -383,11 +383,34 @@ test('native Ollama sends short non-thinking JSON requests and validates respons
  const data={model:cfg.model,done:true,done_reason:'stop',message:{content:JSON.stringify({action:{op:'stop'},note:'done'}),thinking:'DO_NOT_LOG'},eval_count:20,total_duration:12000000};
  const d=await ask(cfg,body,90000,async(url,opts)=>{
   assert.equal(url,cfg.url);assert.equal(opts.headers.Authorization,undefined);
-  const q=JSON.parse(opts.body);assert.equal(q.think,false);assert.equal(q.format,'json');assert.equal(q.options.num_predict,256);assert.equal(q.stream,false);assert.deepEqual(q.messages,body.messages);
+  const q=JSON.parse(opts.body);assert.equal(q.think,false);assert.deepEqual(q.format,require('../scripts/m4-u4-model-runner.cjs').DECISION_SCHEMA);assert.equal(q.options.num_predict,256);assert.equal(q.stream,false);assert.deepEqual(q.messages,body.messages);
   return new Response(JSON.stringify(data));
  });
  assert.equal(d.action.op,'stop');assert.deepEqual(d.metrics,{total_duration_ms:12,eval_count:20});assert.doesNotMatch(JSON.stringify(d),/DO_NOT_LOG/);
  for(const bad of [{...data,model:'different'},{...data,done:false},{...data,done_reason:'length'},{...data,message:{content:'{"action":{"op":"evaluate"},"note":"bad"}'}}]){
   await assert.rejects(ask(cfg,body,90000,async()=>new Response(JSON.stringify(bad))));
  }
+});
+
+test('native schema enumerates only valid UI commands with exact fields and bounds',()=>{
+ const {DECISION_SCHEMA:s}=require('../scripts/m4-u4-model-runner.cjs');
+ assert.deepEqual(s.required,['action','note']);assert.equal(s.additionalProperties,false);
+ const v=s.properties.action.oneOf;
+ assert.deepEqual(v.map(a=>a.properties.op.enum[0]),['click','scroll','type','wait','reload','stop']);
+ for(const a of v){assert.equal(a.additionalProperties,false);assert.deepEqual(a.required,Object.keys(a.properties));}
+ assert.deepEqual(v[0].properties.x,{type:'integer',minimum:0,maximum:1179});
+ assert.deepEqual(v[0].properties.y,{type:'integer',minimum:0,maximum:819});
+ assert.equal(v[3].properties.ms.maximum,2000);
+});
+test('native validation errors reveal only known categories, never rejected model text',async()=>{
+ const {ask}=require('../scripts/m4-u4-model-runner.cjs');
+ const cfg=config({M4_AI_MODEL:'gemma4:e4b',M4_OLLAMA_NATIVE:'1'});
+ const responseFor=action=>new Response(JSON.stringify({model:cfg.model,done:true,message:{content:JSON.stringify({action,note:'DO_NOT_LOG'})}}));
+ const err=await ask(cfg,{messages:[]},1000,async()=>responseFor({op:'click',x:9999,y:12})).catch(e=>e);
+ assert.equal(err.validation,'Invalid x');
+ const f=fixture(),events=[];
+ const result=await run({relay:f.relay,cfg,module:'A',emit:e=>events.push(e),sleep:async()=>{},fetcher:async()=>responseFor({op:'invalid_secret'})});
+ assert.equal(result.reason,'INFRASTRUCTURE');assert.equal(result.actions,0);
+ assert.equal(events.filter(e=>e.validation==='Unsupported action or field').length,2);
+ assert.doesNotMatch(JSON.stringify(events),/DO_NOT_LOG|invalid_secret/);
 });

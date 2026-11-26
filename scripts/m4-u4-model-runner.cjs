@@ -368,6 +368,7 @@ async function main(){
  delete process.env.GEMINI_API_KEY;
  delete process.env.GOOGLE_API_KEY;
  const prepared=process.env.M4_PREPARED_START==='1'&&module!=='A';
+ if(prepared&&fs.realpathSync(root)!==fs.realpathSync(path.resolve(__dirname,'..')))throw Error('Prepared start requires matching product checkout');
  const setup=prepared?require('./m4-u4-startstand.cjs'):null;
  const fixture=setup?setup.prepare(module):null;
  const out=fs.mkdtempSync(path.join(os.tmpdir(),'m4-u4-model-'));

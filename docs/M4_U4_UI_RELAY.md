@@ -2,6 +2,25 @@
 
 Entwicklungswerkzeug auf Basis der [modularen Abnahme](M4_U4_KI_BLINDABNAHME.md), gestapelt auf #622. Kein Spielcode, keine Regel-/Save-Änderung. Anders als die vorhandenen Playwright-Funktionstests besitzt der Relay keine spielbezogenen Selektoren, Lösungsschritte oder Zugriff auf den Core. Technische Prüfung und Blindtester bleiben getrennt.
 
+## Aktueller Stand – mobiler Gemini-Test und vorbereitete Module (26.11.2026)
+
+**[MAIN / LIVE]** #642 integriert in `d4f9127e0b829302603744e25be68db60e447d8e`, 4/4 PR-CI, Push-Regression [45843932460](https://github.com/tobiasfranziskus/Check/actions/runs/45843932460), Pages [45843932322](https://github.com/tobiasfranziskus/Check/actions/runs/45843932322) erfolgreich. Mobiler [Live-Lauf 45845899648](https://github.com/tobiasfranziskus/Check/actions/runs/45845899648) mit Flash-Lite und nummerierten Buttons: Artefakt 15130622976 vollständig ausgewertet, beide Jobs erfolgreich, 12/12 wirksame Aktionen in 42,728 s, 360 Weltminuten, zwei bezahlte Eisrundfahrten, 480 ISK Frachtgebühren, 240 ISK Fluglöhne, 2.310 ISK Hauskasse. Zwei HTTP 503 jeweils erfolgreich wiederholt. Identischer sichtbarer wirtschaftlicher Endstand zum Laptop-Diagnoselauf. LIMIT/UNREVIEWED, keine formale Blindabnahme. Environment-Policy bleibt separat zu prüfen.
+
+**[DRAFT]** Reproduzierbare Startstände B–F über `scripts/m4-u4-startstand.cjs`. Kein Spielcode, keine gespeicherten Nutzerstände, keine neuen Wirtschaftsregeln. Originale Standardkarriere Seed 42, Regel204/Schema8; reguläre J8-Befehle, originaler Zeitfortschritt und vorhandener Engpass-Replay `tests/m4-u5-engpass-ablauf.cjs`. Keine direkte Manipulation von Geld, Waren, Eigentum oder Speichern. Core-Audit, unabhängige Geld-/Warenprüfung, identischer Export nach regulärem Load und bekannte Referenzhashes sind verpflichtend. Die technische Testleitung importiert das geprüfte JSON einmalig vor dem ersten Modellkontakt über den vorhandenen Dateiimport in einen frischen Browserkontext und prüft das gespeicherte JSON lesend auf exakte Gleichheit. Erst danach beginnt das unveränderte Zeit-/Aktionsbudget; die Modelle erhalten ausschließlich neutrale Ziele und sichtbare Beobachtungen. Die JSON-Datei, Vorbereitungskommandos, Sollwerte und technische Hashes bleiben außerhalb der Modellanfrage. Fixture-ID, Core-Hash und SHA-256 des Exports werden in der technischen Evidenz protokolliert, erfolgreiche Importvalidierung separat.
+
+| Modul | Technischer Startpunkt (nicht an den Tester weitergeben) | Weltminute | Hauskasse | Frachtgebühren | Core-Hash |
+|---|---|---:|---:|---:|---|
+| A | Neue Standardkarriere | 0 | 3000 | 0 | Neustart |
+| B | Miner und Frachter regulär gekauft, noch keine Fracht | 0 | 1650 | 0 | 0645b65fac6fa3a8 |
+| C | Erste bezahlte Eisrunde | 240 | 2028 | 240 | 4e86f3fc27a6005a |
+| D | Originaler Engpass nach 48 Eisrunden | 6300 | 12263 | 11520 | f63f2cd09ba5a88c |
+| E | Zweite bezahlte Eisrunde | 360 | 2310 | 480 | 1df0f18ff779fd4c |
+| F | Erste bezahlte Fracht beauftragt, noch nicht abgeschlossen | 120 | 1659 | 0 | 30a46fa2f3f3a2e3 |
+
+Alle fünf vorbereiteten Zustände wurden mit dem aus GitHub abgerufenen unveränderten Originalkern in einer JS-Ausführungsumgebung erzeugt und anhand der im Generator enthaltenen Audits/Referenzwerte geprüft; Node-Assert/Path/Crypto wurden dort ersetzt, SHA-256 nicht geprüft. B zunächst fehlendes Frachtledger vor erster Buchung erkannt, korrigiert und zweimal byteidentisch erzeugt. Ein weiterer Gesamtwiederholungslauf brach durch Tool-Verbindungsfehler ab. Vollständige Node22- und echte Chromium-Import-/Reload-Prüfungen (alle fünf Module) sind in der PR-CI vorgesehen und bis zum tatsächlichen Erfolg offen.
+
+Mobiler Gemini-Workflow: Auswahl A–F, B–F jeweils eigener validierter Startstand, A unverändert frischer Start. Der bestehende OpenRouter-Workflow und nicht explizit aktivierte lokale Starts bleiben unverändert. Kein automatischer Start, kein Modellwechsel. Diagnoseprofil bleibt Standard für funktionale Tests, für reguläre Koordinaten-Blindtests ausschalten. F kann den regulären Save-/Reload-/Fortsetzen-Weg nutzen; allgemeiner KI-gesteuerter Dateiimport/-export bleibt offen. Kein Abnahmepass durch erfolgreiche technische Vorbereitung oder grünen Workflow allein.
+
 ## Lokaler Start (Linux/macOS, Node22, im Checkout)
 
 ```sh

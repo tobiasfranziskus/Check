@@ -67,7 +67,7 @@
 
 ## 2. W0–W6: verbindliche Wirtschaftsreihenfolge
 
-**[BESCHLOSSEN 26.11.2026 / FORSCHUNG]** Freiwilliges, marktbasiertes Auftrags- und Finanzierungssystem aus bestehenden Kassen und physischen Waren. Keine Zwangskäufe, Geldemission oder garantierten Gewinne. Erster Wasserpfad: [Zulassungsprüfung #653](W6_WASSER_VORBESTELLUNG.md), [Reservierungs-/Leerstornoprobe](W6_WASSER_RESERVIERUNG.md), tatsächliche Flug-/Lieferabnahme und separate Vertragsrechte offen.
+**[BESCHLOSSEN 26.11.2026 / FORSCHUNG]** Freiwilliges, marktbasiertes Auftrags- und Finanzierungssystem aus bestehenden Kassen und physischen Waren. Keine Zwangskäufe, Geldemission oder garantierten Gewinne. Erster Wasserpfad: [Zulassungsprüfung #653](W6_WASSER_VORBESTELLUNG.md), [Reservierungs-/Leerstornoprobe](W6_WASSER_RESERVIERUNG.md), [physische Lieferprobe](W6_WASSER_LIEFERUNG.md) implementiert, CI und dauerhafte Vertragsrechte offen.
 
 | Stufe | Abnahmeziel | Integrierte Grundlage / offene Lücke |
 | --- | --- | --- |

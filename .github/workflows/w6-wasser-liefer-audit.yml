@@ -1,0 +1,47 @@
+name: W6 physical water delivery proof
+on:
+  pull_request:
+    branches:
+      - research/w6-wasser-reservierungsprobe-20261126
+    paths:
+      - 'prototypes/welt/**'
+      - 'tools/w6-wasser-liefer-audit.cjs'
+      - '.github/workflows/w6-wasser-liefer-audit.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [S08, S02]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+      - run: |
+          node --check prototypes/welt/welt-kern.js
+          node --check prototypes/welt/rule200-k7-industry-core.js
+          node --check tools/w6-wasser-liefer-audit.cjs
+          node tools/w6-wasser-liefer-audit.cjs ${{ matrix.scenario }} report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wasser-lieferung-${{ matrix.scenario }}
+          path: report.json
+          if-no-files-found: error
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+      - run: node --test tests/*.test.mjs

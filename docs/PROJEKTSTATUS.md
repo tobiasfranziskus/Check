@@ -10,6 +10,8 @@
 
 **[W6 / FORSCHUNG · 26.11.2026]** Freiwillige Vorbestellungen: #653 S08/S12 CI erfolgreich, S02 noch offen bei Anlage. [Reservierungsprobe](W6_WASSER_RESERVIERUNG.md) verwendet Original-K1-Buchung auf isolierter Kopie; neue CI offen, keine echte Flugausführung oder Produktintegration. #652 Investitionsarme unabhängig 3/3 reproduziert.
 
+**[W6 / FORSCHUNG · 26.11.2026]** #653 und #654 vollständig erfolgreich (10/10 Workflows, 616/616 Regressionen). [Physische Lieferprobe](W6_WASSER_LIEFERUNG.md) implementiert; CI offen. Nur Forschungskopie, keine Produktintegration.
+
 ## Aktueller integrierter Stand
 
 **[MAIN+PAGES · 24.11.2026]** [#596](https://github.com/tobiasfranziskus/Check/pull/596) tatsächlich gemergt auf `679ba6c1fdb05435164e29b2e21514ddaa676279`, [Pages-Deploy #45263372828](https://github.com/tobiasfranziskus/Check/actions/runs/45263372828) und [Main-CI #45263374110](https://github.com/tobiasfranziskus/Check/actions/runs/45263374110) laut heutiger Supervision erfolgreich für diesen SHA. Getrenntes PIR-0/1-Forschungsprofil (finanzierte Patrouille, keine Angriffe/Schadensregel im Standardspiel). [Integrationsbericht](PIR_01_U10_INTEGRATION_20261123.md) beschreibt noch den historischen Kandidaten. [#595](https://github.com/tobiasfranziskus/Check/pull/595) integrierte M4-U10 auf 53c1dfc2: 9/9 CI, 591/591 Node22, Chromium/WebKit je vier Größen, 13×90 und S02×365/730; [Pages](https://github.com/tobiasfranziskus/Check/actions/runs/45249824690) und [Push-CI](https://github.com/tobiasfranziskus/Check/actions/runs/45249825458) erfolgreich. Backup `backup/main-before-m4-u10-20261123`. [U10-Bericht](M4_U10_INDUSTRIELEITSTAND.md), [Audit](M4_U10_INTEGRATIONSAUDIT_20261123.md). W3-Hausrechte, M4-U4, echtes iPad/NAS offen.

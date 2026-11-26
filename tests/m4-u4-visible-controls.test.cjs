@@ -112,6 +112,77 @@ for(const size of ['1180x820','1024x768']){
  });
 }
 
+for(const size of ['1180x820','1024x768']){
+ const options=browserOptions({...process.env,M4_UI_VIEWPORT:size});
+ for(const [name,content] of [
+  ['covered','<button id="guarded">COVERED_SENTINEL</button><div class="cover"></div>'],
+  ['masked','<button id="guarded" style="-webkit-text-security:disc">MASKED_SENTINEL</button>'],
+  ['transparent','<button id="guarded" style="-webkit-text-fill-color:transparent">FILL_SENTINEL</button>'],
+  ['replacement','<button id="guarded">Guarded control</button>'],
+  ['hover-replacement','<button id="guarded">Guarded control</button>'],
+  ['focus','<select id="guarded"><option>First</option><option>Second</option></select> <select id="other"><option>First</option><option>Second</option></select>'],
+ ]){
+  test(`${options.engine} ${size} visibility boundary: ${name}`,{
+   skip:!process.env.M4_UI_BROWSER,timeout:15000
+  },async()=>{
+   const root=fs.mkdtempSync(path.join(os.tmpdir(),'m4-boundary-'));
+   fs.writeFileSync(path.join(root,'index.html'),`<!doctype html><style>
+    #guarded{position:absolute;left:40px;top:140px;width:220px;height:60px}
+    .cover{position:absolute;left:30px;top:130px;width:240px;height:80px;z-index:2;background:#fff;pointer-events:none}
+    </style><button>Visible control</button>${content}`);
+   const evidence=process.env.M4_U4_EVIDENCE;
+   const out=evidence?path.join(evidence,`boundary-${options.engine}-${size}-${name}`):path.join(root,'out');
+   let relay,page;
+   const observations=[];
+   try{
+    relay=await session(root,out,{...options,textMode:true,captureScreenshots:!!evidence,preparePage:p=>{page=p;}});
+    if(name==='focus')await page.locator('#guarded').focus();
+    const first=await relay.observe();
+    observations.push(first);
+    assert.ok(first.targets.some(t=>t.label==='Visible control'));
+    if(name==='replacement'||name==='hover-replacement'){
+     const target=first.targets.find(t=>t.label==='Guarded control');
+     assert.ok(target);
+     await page.locator('#guarded').evaluate((el,hover)=>{
+      const replace=()=>{
+       const replacement=el.cloneNode(true);
+       replacement.addEventListener('click',()=>{replacement.textContent='Replacement clicked';});
+       el.replaceWith(replacement);
+      };
+      if(hover)el.addEventListener('pointerenter',replace,{once:true});
+      else replace();
+     },name==='hover-replacement');
+     const fresh=await relay.step({op:'pick',id:target.id});
+     observations.push(fresh);
+     assert.equal(fresh.error,undefined);
+     assert.equal(await page.locator('#guarded').textContent(),'Guarded control');
+     assert.deepEqual(fresh.targets,first.targets);
+    }else if(name==='focus'){
+     assert.equal(first.selectKeys,true);
+     await page.locator('#other').focus();
+     const fresh=await relay.step({op:'key',key:'ArrowDown'});
+     observations.push(fresh);
+     assert.equal(fresh.error,undefined);
+     assert.equal(fresh.selectKeys,true);
+     assert.equal(await page.locator('#other').evaluate(el=>el.selectedIndex),0);
+    }else{
+     const box=await page.locator('#guarded').boundingBox();
+     const guarded=({x,y})=>x>=box.x&&x<box.x+box.width&&y>=box.y&&y<box.y+box.height;
+     assert.deepEqual({
+      sentinel:/_SENTINEL/.test(JSON.stringify(first)),
+      target:first.targets.some(guarded),
+     },{sentinel:false,target:false});
+     assert.ok(first.visibleText.includes('Visible control'));
+    }
+   }finally{
+    if(evidence&&fs.existsSync(out))fs.writeFileSync(path.join(out,'observations.json'),JSON.stringify(observations,null,2));
+    if(relay)await relay.close();
+    fs.rmSync(root,{recursive:true,force:true});
+   }
+  });
+ }
+}
+
 test('viewport options and added actions use strict bounds',()=>{
  const small={width:1024,height:768};
  assert.throws(()=>browserOptions({M4_UI_VIEWPORT:'1024x820'}));

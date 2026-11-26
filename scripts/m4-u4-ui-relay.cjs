@@ -2,6 +2,7 @@
 // Development-only generic UI relay. No game selectors, saves, core calls or model API.
 const fs=require('node:fs'), path=require('node:path'), http=require('node:http');
 const readline=require('node:readline'), os=require('node:os');
+const {randomUUID}=require('node:crypto');
 const {performance}=require('node:perf_hooks');
 const WIDTH=1180, HEIGHT=820, LIMIT=12, MS=300000;
 const TARGETS_PER_PAGE=20, MAX_TARGETS=4000;
@@ -52,19 +53,117 @@ function action(raw,viewport=DEFAULT_VIEWPORT){
  return raw;
 }
 
+// Keep node identity and the input guard inside the current document. Only the relay
+// sees the opaque identities, and a navigation invalidates every previous identity.
+function installInputGuard(key){
+ const identities=new WeakMap();
+ const documentId=crypto.randomUUID();
+ let next=0,acceptInput;
+ Object.defineProperty(window,key,{value:{
+  identity(el){
+   if(!identities.has(el))identities.set(el,documentId+':'+(++next));
+   return identities.get(el);
+  },
+  arm(check){acceptInput=check;}
+ }});
+ for(const type of ['pointerdown','mousedown','pointerup','mouseup','click','keydown','keypress','keyup']){
+  window.addEventListener(type,event=>{
+   if(!event.isTrusted||!acceptInput||acceptInput(event))return;
+   event.preventDefault();
+   event.stopImmediatePropagation();
+  },true);
+ }
+}
+
 // Fixed, conservative viewport projection. It never serializes attributes, HTML, hidden
 // state, storage, source, accessible-only labels or offscreen nodes. Not a pixel OCR.
-function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,maxTargets}){
+function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,maxTargets,guardKey,expected}){
+ const guard=window[guardKey];
+ guard.arm(null);
  const maxChars=1800, maxRows=32, words=[];
  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
  const range=document.createRange();
+ const styles=new Map();
+ function style(el){
+  if(!styles.has(el))styles.set(el,getComputedStyle(el));
+  return styles.get(el);
+ }
+ function transparent(color){
+  return color==='transparent'||/^rgba\(.*,\s*0(?:\.0+)?\)$/.test(color)||/\/\s*0(?:\.0+)?%?\s*\)$/.test(color);
+ }
+ function protectedInk(c){
+  const security=c.getPropertyValue('-webkit-text-security');
+  return (security&&security!=='none')||transparent(c.color)||transparent(c.getPropertyValue('-webkit-text-fill-color'));
+ }
+ function insideViewport(r){
+  return r.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight;
+ }
+ function ignoredPaint(){
+  // The DOM hit stack omits pointer-transparent layers. A rendered box in that
+  // set is potentially in front, so reject an overlap without guessing paint order.
+  const boxes=[];
+  const viewport={left:0,top:0,right:innerWidth,bottom:innerHeight};
+  const all=document.createTreeWalker(document.documentElement,NodeFilter.SHOW_ELEMENT);
+  let el=document.documentElement,scanned=0;
+  do{
+   if(++scanned>8000)return null;
+   const c=style(el);
+   if(c.display==='none'||c.visibility!=='visible'||Number(c.opacity)===0)continue;
+   const rects=Array.from(el.getClientRects()).filter(insideViewport);
+   if(!rects.length)continue;
+   if(c.pointerEvents==='none'){
+    // Treat effects with unknown paint bounds as potentially viewport-wide.
+    const unbounded=c.filter!=='none'||c.boxShadow!=='none'||c.textShadow!=='none'||c.outlineStyle!=='none';
+    const bounds=unbounded?[viewport]:rects;
+    boxes.push(...bounds.map(rect=>({el,rect})));
+    if(boxes.length>512)return null;
+   }
+   for(const pseudo of ['::before','::after']){
+    const generated=getComputedStyle(el,pseudo);
+    if(generated.content==='none'||generated.content==='normal'||generated.display==='none'||
+       generated.visibility!=='visible'||Number(generated.opacity)===0)continue;
+    if(generated.pointerEvents!=='none'&&!['absolute','fixed'].includes(generated.position))continue;
+    // Generated layers have no DOM rectangles. A negative layer in an
+    // isolated host paints behind the host's ordinary content only.
+    const behindContents=c.isolation==='isolate'&&Number(generated.zIndex)<0;
+    boxes.push({el,rect:viewport,behindContents});
+    if(boxes.length>512)return null;
+   }
+  }while((el=all.nextNode()));
+  return boxes;
+ }
+ const ignoredBoxes=ignoredPaint();
+ function positionedZ(el){
+  const c=style(el);
+  return c.position!=='static'&&c.zIndex!=='auto'?Number(c.zIndex):NaN;
+ }
+ function paintsBelow(layer,el){
+  // Explicit z-indices on sibling stacking contexts establish paint order
+  // for their entire contents. Leave other overlapping arrangements out.
+  for(let context=layer;context?.parentElement;context=context.parentElement){
+   const z=positionedZ(context),parent=context.parentElement;
+   if(!Number.isFinite(z)||context.contains(el)||!parent.contains(el))continue;
+   let branch=el;
+   while(branch&&branch.parentElement!==parent)branch=branch.parentElement;
+   if(branch&&z<positionedZ(branch))return true;
+  }
+  return false;
+ }
+ function unobscured(r,el,boxes=ignoredBoxes){
+  return !!el&&boxes!==null&&!boxes.some(({el:layer,rect:b,behindContents})=>
+   r.left<b.right&&r.right>b.left&&r.top<b.bottom&&r.bottom>b.top&&
+   !(behindContents&&layer.contains(el))&&!paintsBelow(layer,el));
+ }
  function visible(el,text=false){
+
   for(let p=el;p;p=p.parentElement){
    if(text&&['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','TITLE','TEXTAREA','SELECT','OPTION'].includes(p.tagName))return false;
-   const c=getComputedStyle(p);
+   const c=style(p);
    if(c.display==='none'||c.visibility!=='visible'||Number(c.opacity)<0.1||c.contentVisibility==='hidden'||(c.clip&&c.clip!=='auto')||c.clipPath!=='none'||c.filter!=='none')return false;
+   if([c.maskImage,c.getPropertyValue('-webkit-mask-image'),c.backdropFilter,c.getPropertyValue('-webkit-backdrop-filter')]
+    .some(value=>value&&value!=='none')||c.mixBlendMode!=='normal')return false;
    if(!text)continue;
-   if(c.color==='transparent'||/^rgba\(.*,\s*0(?:\.0+)?\)$/.test(c.color))return false;
+   if(protectedInk(c))return false;
    if(parseFloat(c.fontSize)<8)return false;
   }
   return true;
@@ -75,10 +174,9 @@ function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,ma
  }
  function onScreen(rect,el){
   if(rect.width<1||rect.height<7||rect.left<0||rect.top<0||rect.right>innerWidth||rect.bottom>innerHeight)return false;
-  const y=(rect.top+rect.bottom)/2;
-  return [rect.left+rect.width/4,(rect.left+rect.right)/2,rect.right-rect.width/4].every(x=>{
-   return hit(el,x,y);
-  });
+  return unobscured(rect,el)&&[0.1,0.5,0.9].every(v=>
+   [0.1,0.5,0.9].every(u=>hit(el,rect.left+rect.width*u,rect.top+rect.height*v)));
+
  }
  let n,visited=0;
  while((n=walker.nextNode())&&++visited<=4000&&words.length<800){
@@ -114,7 +212,7 @@ function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,ma
   result+=(result?'\n':'')+row;count++;
  }
  const observation={visibleText:result||'[Kein sichtbarer Text erkannt]'};
- if(!inventory)return observation;
+ if(!inventory)return {observation};
 
  // Only return points hit-tested against the control itself or one of its descendants.
  // Try the center and a bounded set of interior points in the visible fragment.
@@ -126,22 +224,46 @@ function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,ma
    for(const v of [0.5,0.25,0.75]){
     for(const u of [0.5,0.25,0.75]){
      const x=Math.round(left+(right-left)*u),y=Math.round(top+(bottom-top)*v);
-     if(accepts(x,y))return {x,y};
+     if(accepts(x,y)&&unobscured({left:x,top:y,right:x+1,bottom:y+1},document.elementFromPoint(x,y)))return {x,y};
     }
    }
   }
   return null;
  }
+ const controlSelector='button,a[href],details > summary:first-of-type,select';
+ function controlAt(x,y){
+  return document.elementFromPoint(x,y)?.closest(controlSelector);
+ }
+ function protectedControl(el){
+  for(let p=el;p;p=p.parentElement){
+   if(protectedInk(style(p)))return true;
+  }
+  if(el.tagName==='SELECT'){
+   const option=el.selectedOptions[0];
+   return !!option&&protectedInk(style(option));
+  }
+  // A control with protected ink in a rendered label is ambiguous even if
+  // the background or border remains visible. Omit its action as well.
+  const text=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);
+  let n,visited=0;
+  while((n=text.nextNode())){
+   if(++visited>80)return true;
+   if(!/\S/u.test(n.nodeValue))continue;
+   for(let child=n.parentElement;child&&child!==el;child=child.parentElement){
+    if(protectedInk(style(child))&&Array.from(child.getClientRects()).some(insideViewport))return true;
+   }
+  }
+  return false;
+ }
  function eligible(el){
-  return !el.matches(':disabled')&&!el.closest('[inert]')&&visible(el);
+  return el.isConnected&&!el.matches(':disabled')&&!el.closest('[inert]')&&visible(el)&&!protectedControl(el);
  }
  function caption(el){
   if(el.tagName==='SELECT'){
    // Collapsed, single-line native selects paint the selected option label, never
    // the submitted value or the unselected options. Omit ambiguous/clipped labels.
-   const r=el.getBoundingClientRect(),c=getComputedStyle(el);
-   if(!c.fontSize||parseFloat(c.fontSize)<8||c.color==='transparent'||
-      /^rgba\(.*,\s*0(?:\.0+)?\)$/.test(c.color)||!onScreen(r,el))return '';
+   const r=el.getBoundingClientRect(),c=style(el);
+   if(!c.fontSize||parseFloat(c.fontSize)<8||!onScreen(r,el))return '';
    const option=el.selectedOptions[0];
    if(!option||option.hidden||option.closest('optgroup[hidden]'))return '';
    const label=option.label.trim().replace(/\s+/gu,' ');
@@ -166,15 +288,15 @@ function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,ma
   return label;
  }
  function collapsedSelect(el){
-  return !el.multiple&&el.size<=1&&getComputedStyle(el).appearance!=='none';
+  return !el.multiple&&el.size<=1&&style(el).appearance!=='none';
  }
  // Scan independently of the text budget. IDs describe the current page of targets.
- const candidates=document.querySelectorAll('button,a[href],details > summary:first-of-type,select');
+ const candidates=document.querySelectorAll(controlSelector);
  const hits=[];
  let scanTruncated=false;
  for(const el of candidates){
   if(!eligible(el)||(el.tagName==='SELECT'&&!collapsedSelect(el)))continue;
-  const p=point(el,(x,y)=>document.elementFromPoint(x,y)?.closest('button,a[href],summary,select')===el);
+  const p=point(el,(x,y)=>controlAt(x,y)===el);
   if(!p)continue;
   if(hits.length===maxTargets){scanTruncated=true;break;}
   hits.push({el,...p});
@@ -182,7 +304,8 @@ function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,ma
  hits.sort((a,b)=>a.y-b.y||a.x-b.x);
  const pages=Math.max(1,Math.ceil(hits.length/targetsPerPage));
  const current=Math.min(targetPage,pages);
- const targets=hits.slice((current-1)*targetsPerPage,current*targetsPerPage).map(({el,x,y},i)=>({
+ const pageHits=hits.slice((current-1)*targetsPerPage,current*targetsPerPage);
+ const targets=pageHits.map(({el,x,y},i)=>({
   id:i+1,x,y,kind:el.tagName==='A'?'link':el.tagName.toLowerCase(),label:caption(el)
  }));
 
@@ -203,7 +326,7 @@ function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,ma
   if(p)scrollRegions.push({...p,up,down,kind:root?'page':'region'});
  }
  function wheelScrollable(el){
-  return el.scrollHeight>el.clientHeight+1&&['auto','scroll'].includes(getComputedStyle(el).overflowY);
+  return el.scrollHeight>el.clientHeight+1&&['auto','scroll'].includes(style(el).overflowY);
  }
  // Scroll containers need not have interactive descendants.
  const root=document.scrollingElement;
@@ -214,10 +337,34 @@ function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,ma
   if(wheelScrollable(el)&&visible(el))scrollRegion(el);
  }
  const focused=document.activeElement;
- return {...observation,targets,targetInventory:{page:current,pages,total:hits.length,scanTruncated},
+ const focusPoint=focused?.tagName==='SELECT'&&collapsedSelect(focused)&&eligible(focused)&&
+  point(focused,(x,y)=>controlAt(x,y)===focused);
+ const focus=focusPoint?{identity:guard.identity(focused),...focusPoint,label:caption(focused)}:null;
+ const identities=pageHits.map(({el})=>guard.identity(el));
+ if(expected){
+  const {target,identity}=expected;
+  const prior=target??expected.focus;
+  const currentTarget=target?targets[target.id-1]:focus;
+  if(!currentTarget||Object.keys(prior).some(k=>currentTarget[k]!==prior[k])||
+     (target&&identities[target.id-1]!==identity))return {ready:false};
+  if(expected.probe)return {ready:true};
+  const el=target?pageHits[target.id-1].el:focused;
+  // Input is dispatched by the browser after projection. Drop a trusted event
+  // whose recipient changed in that interval, even if its caption is identical.
+  guard.arm(event=>{
+   const keyboardEvent=event.type.startsWith('key');
+   if(keyboardEvent===!!target)return true;
+   if(!eligible(el)||!el.contains(event.target))return false;
+   const {x,y}=prior;
+   if(keyboardEvent?document.activeElement!==el:event.clientX!==x||event.clientY!==y)return false;
+   const hit=document.elementFromPoint(x,y);
+   return controlAt(x,y)===el&&unobscured({left:x,top:y,right:x+1,bottom:y+1},hit,ignoredPaint());
+  });
+  return {ready:true};
+ }
+ return {identities,focus,observation:{...observation,targets,targetInventory:{page:current,pages,total:hits.length,scanTruncated},
   scrollRegions:scrollRegions.slice(0,8),scrollInventoryTruncated:scrollRegions.length>8||scrollScan>4000,
-  ...(focused?.tagName==='SELECT'&&collapsedSelect(focused)&&eligible(focused)&&point(focused)?{selectKeys:true}:{})};
-
+  ...(focus?{selectKeys:true}:{})}};
 }
 
 // Wheel and focus may animate scrolling after Playwright has delivered the input.
@@ -260,6 +407,8 @@ async function session(root,out,{chromium,engine='chromium',viewport,executableP
   });
   await ctx.routeWebSocket('**/*',socket=>socket.close());
   const page=await ctx.newPage();page.setDefaultTimeout(4000);page.setDefaultNavigationTimeout(8000);
+  const guardKey='__m4_'+randomUUID();
+  if(textMode)await page.addInitScript(installInputGuard,guardKey);
   let nativeDialog=false,pending=null,wake=null,inFlight=null;
   page.on('dialog',d=>{
    // Only an actual confirm in an opted-in text session during a UI action
@@ -277,8 +426,9 @@ async function session(root,out,{chromium,engine='chromium',viewport,executableP
    await preparePage(page);
   }
   const started=performance.now();let rounds=0,closed=false,targetPage=1,lastObservation;
-  const project=()=>page.evaluate(viewportObservation,{
-   markButtons,inventory,targetPage,targetsPerPage:TARGETS_PER_PAGE,maxTargets:MAX_TARGETS
+  let lastProjection;
+  const project=expected=>page.evaluate(viewportObservation,{
+   markButtons,inventory,targetPage,targetsPerPage:TARGETS_PER_PAGE,maxTargets:MAX_TARGETS,guardKey,expected
   });
   fs.mkdirSync(out,{recursive:true});
   async function close(){if(closed)return;closed=true;if(pending){const d=pending;pending=null;await d.dismiss().catch(()=>{});}await ctx.close();await browser.close();await new Promise(resolve=>server.close(resolve));}
@@ -290,7 +440,10 @@ async function session(root,out,{chromium,engine='chromium',viewport,executableP
    if(pending){
     obs.visibleText='[Browser-Bestätigungsdialog] '+pending.message().replace(/[\u0000-\u001f]/g,' ').slice(0,600)+'\n[dialog: accept = bestätigen, dismiss = abbrechen]';
     obs.dialog='confirm';
-   }else if(textMode)Object.assign(obs,await project());
+   }else if(textMode){
+    lastProjection=await project();
+    Object.assign(obs,lastProjection.observation);
+   }
    if(!pending&&(!textMode||captureScreenshots)){const name='round-'+String(rounds).padStart(2,'0')+'.jpg';
     await page.screenshot({path:path.join(out,name),type:'jpeg',quality:65,timeout:4000});obs.screenshot=name;}
    lastObservation=obs;
@@ -312,10 +465,12 @@ async function session(root,out,{chromium,engine='chromium',viewport,executableP
     if(pending&&a.op!=='dialog')return await observe();
     if(a.op==='targets'){targetPage=a.page;return await observe();}
     if(a.op==='pick'){
-     const fresh=(await project()).targets?.find(target=>target.id===a.id);
-     if(!fresh||Object.keys(picked).some(k=>picked[k]!==fresh[k]))return await observe();
+     const expected={target:picked,identity:lastProjection.identities[a.id-1]};
+     if(!(await project({...expected,probe:true})).ready)return await observe();
+     await page.mouse.move(picked.x,picked.y);
+     if(!(await project(expected)).ready)return await observe();
     }
-    if(a.op==='key'&&!(await project()).selectKeys)return await observe();
+    if(a.op==='key'&&!(await project({focus:lastProjection.focus})).ready)return await observe();
     if(a.op!=='wait')targetPage=1;
     if(elapsed()>=MS)return await observe();
     if(a.op==='dialog'&&!pending)throw Error('No pending confirmation');
@@ -331,7 +486,10 @@ async function session(root,out,{chromium,engine='chromium',viewport,executableP
       if(previous)await previous;
      }
      if(a.op==='click')await page.mouse.click(a.x,a.y);
-     if(a.op==='pick')await page.mouse.click(picked.x,picked.y);
+     if(a.op==='pick'){
+      await page.mouse.down();
+      await page.mouse.up();
+     }
      if(a.op==='key')await page.keyboard.press(a.key);
      if(a.op==='type')await page.keyboard.insertText(a.text);
      if(a.op==='scroll'){await page.mouse.move(a.x,a.y);await page.mouse.wheel(0,a.dy);}

@@ -13,6 +13,15 @@ unset OPENROUTER_API_KEY M4_ALLOW_REMOTE
 export M4_AI_PROVIDER=ollama M4_AI_MODEL=gemma4:e4b M4_AI_PORT=11434
 export M4_PRODUCT_SHA="$(git rev-parse HEAD)"
 echo "Lokaler Checkout: $M4_PRODUCT_SHA (Pages-Gleichheit separat prüfen)"
+# Dev-only pinned browser, installed outside the repository. No sudo, no global install.
+cache="$HOME/.cache/aphros-void/m4-playwright-1.51.1"
+export PLAYWRIGHT_MODULE="$cache/node_modules/playwright"
+if [[ ! -f "$PLAYWRIGHT_MODULE/package.json" ]]; then
+  npm install --prefix "$cache" --no-audit --no-fund playwright@1.51.1
+fi
+if [[ -z "${CHROMIUM_PATH:-}" ]]; then
+  "$cache/node_modules/.bin/playwright" install chromium
+fi
 echo "Prüfe installiertes Modell und JSON-Antwort vor dem Spielstart ..."
 node - <<'NODE'
 const {config,ask}=require('./scripts/m4-u4-model-runner.cjs');
@@ -36,15 +45,6 @@ const {config,ask}=require('./scripts/m4-u4-model-runner.cjs');
   console.log('Installiertes Modell: '+cfg.model+(typeof model.digest==='string'&&/^[a-f0-9]{64}$/.test(model.digest)?' / '+model.digest:''));
 })().catch(e=>{console.error('Ollama-Vorprüfung fehlgeschlagen:',e.message);process.exitCode=1;});
 NODE
-# Dev-only pinned browser, installed outside the repository. No sudo, no global install.
-cache="$HOME/.cache/aphros-void/m4-playwright-1.51.1"
-export PLAYWRIGHT_MODULE="$cache/node_modules/playwright"
-if [[ ! -f "$PLAYWRIGHT_MODULE/package.json" ]]; then
-  npm install --prefix "$cache" --no-audit --no-fund playwright@1.51.1
-fi
-if [[ -z "${CHROMIUM_PATH:-}" ]]; then
-  "$cache/node_modules/.bin/playwright" install chromium
-fi
 echo "Starte isoliertes Modul $module (max. 5 Minuten / 12 Aktionen)."
 echo "Das Ergebnis bleibt UNREVIEWED; evidence.jsonl steht im ausgegebenen Pfad."
 exec node scripts/m4-u4-model-runner.cjs "$module" .

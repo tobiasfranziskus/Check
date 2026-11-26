@@ -1,0 +1,75 @@
+name: W6 Gesamtpaket – Wirtschaft und Replays
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/w6-gesamtpaket.yml'
+      - 'tools/w6-gesamtpaket.cjs'
+      - 'tools/m4-management-szenarien.cjs'
+      - 'tests/w6-gesamtpaket.test.mjs'
+      - 'prototypes/welt/**'
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/*.test.mjs
+  regimes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [S01, S02, S03, S04, S05, S06, S07, S08, S09, S10, S11, S12, S13]
+        seed: [42, 7, 113]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Gepaarte 90-Tage-Läufe mit vollständigen Replays
+        env:
+          REGIME: ${{ matrix.scenario }}
+          SEED: ${{ matrix.seed }}
+        run: |
+          for profil in 204 u8 gesamt; do
+            node tools/w6-gesamtpaket.cjs "$REGIME" 90 "$SEED" "$profil" > "$profil.json"
+            cat "$profil.json"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: w6-${{ matrix.scenario }}-90-${{ matrix.seed }}
+          path: '*.json'
+  horizons:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        days: [365, 730]
+        seed: [42, 7, 113]
+        profile: [60, gesamt]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audits, Replays und Endproduktion
+        env:
+          DAYS: ${{ matrix.days }}
+          SEED: ${{ matrix.seed }}
+          PROFILE: ${{ matrix.profile }}
+        run: |
+          node tools/w6-gesamtpaket.cjs S02 "$DAYS" "$SEED" "$PROFILE" > report.json
+          cat report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: w6-S02-${{ matrix.days }}-${{ matrix.seed }}-${{ matrix.profile }}
+          path: report.json

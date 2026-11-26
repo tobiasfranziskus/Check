@@ -466,3 +466,36 @@ test('native local memory detects three-action cycles without hidden state or au
  const bounded=JSON.parse(requestBody(local,'goal',observation(0),Array.from({length:50},()=>({action:{op:'type',text:'x'.repeat(300)}}))).messages[1].content);
  assert.equal(bounded.history.split('; ').length,12);assert.ok(bounded.history.length<1100);assert.doesNotMatch(bounded.history,/x{49}/);
 });
+
+test('opt-in control diagnostic maps only model-selected visible buttons; default stays unchanged',async()=>{
+ const {controlPalette,paletteSchema,DECISION_SCHEMA,CONFIRM_SCHEMA}=require('../scripts/m4-u4-model-runner.cjs');
+ const local=config({M4_AI_MODEL:'gemma4:e4b',M4_OLLAMA_NATIVE:'1',M4_LOCAL_DIAGNOSTIC:'1'});
+ assert.throws(()=>config({M4_AI_MODEL:'local-test',M4_LOCAL_DIAGNOSTIC:'1'}));
+ const obs={round:0,remaining:12,visibleText:'(10,20) Heading\n(25,35) [B] First\n(60,70) Disabled\n(80,90) [B] Second',done:false};
+ const body=requestBody(local,'goal',obs,[]);
+ assert.deepEqual(body.controls,[{id:1,x:25,y:35,label:'First'},{id:2,x:80,y:90,label:'Second'}]);
+ const data=JSON.parse(body.messages[1].content);assert.deepEqual(data.buttons,['1 First','2 Second']);assert.equal(data.text,'Heading\nDisabled');assert.equal(data.screen,undefined);
+ assert.deepEqual(paletteSchema(body.controls).properties.action.oneOf[0].properties.id.enum,[1,2]);
+ assert.throws(()=>decision('{"action":{"op":"pick","id":9},"note":"bad"}',body.controls));
+ assert.throws(()=>decision('{"action":{"op":"click","x":10,"y":20},"note":"bad"}',body.controls));
+ assert.throws(()=>decision('{"action":{"op":"pick","id":1},"note":"bad"}'));
+ const next={round:1,remaining:11,visibleText:'(1,2) [B] Continue',done:false};
+ const calls=[],actions=[],events=[];
+ const relay={observe:async()=>obs,step:async a=>{actions.push(a);return next;},close:async()=>{}};
+ const result=await run({relay,cfg:local,module:'A',emit:e=>events.push(e),fetcher:async(url,opts)=>{
+  calls.push(JSON.parse(opts.body));const action=calls.length===1?{op:'pick',id:2}:{op:'stop'};
+  return new Response(JSON.stringify({model:local.model,done:true,message:{content:JSON.stringify({action,note:'test'})}}));
+ }});
+ assert.equal(result.reason,'MODEL_STOP');assert.deepEqual(actions,[{op:'click',x:80,y:90}]);
+ assert.deepEqual(events.find(e=>e.kind==='decision').chosenControl,{id:2,label:'Second'});
+ assert.match(JSON.parse(calls[1].messages[1].content).history,/pick\(2\)/);
+ assert.equal(JSON.parse(calls[0].messages[1].content).controls,undefined);
+ assert.deepEqual(calls[0].format,paletteSchema(body.controls));
+ const normal=requestBody(config({M4_AI_MODEL:'gemma4:e4b',M4_OLLAMA_NATIVE:'1'}),'goal',obs,[]);
+ assert.equal(normal.controls,undefined);assert.equal(JSON.parse(normal.messages[1].content).screen,obs.visibleText);
+ const empty=requestBody(local,'goal',{...obs,visibleText:'(1,2) Text'},[]);
+ assert.equal(empty.controls,undefined);assert.equal(JSON.parse(empty.messages[1].content).screen,'(1,2) Text');
+ const modal=requestBody(local,'goal',{...obs,dialog:'confirm'},[]);
+ assert.equal(modal.controls,undefined);assert.equal(modal.dialog,'confirm');
+ assert.equal(controlPalette({visibleText:'(1180,20) [B] Outside'}).controls.length,0);
+});

@@ -234,6 +234,10 @@ function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,ma
  function controlAt(x,y){
   return document.elementFromPoint(x,y)?.closest(controlSelector);
  }
+ function clearControlPoint(el,x,y,boxes=ignoredBoxes){
+  return x>=0&&y>=0&&x<innerWidth&&y<innerHeight&&controlAt(x,y)===el&&
+   unobscured({left:x,top:y,right:x+1,bottom:y+1},el,boxes);
+ }
  function protectedControl(el){
   for(let p=el;p;p=p.parentElement){
    if(protectedInk(style(p)))return true;
@@ -343,22 +347,24 @@ function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,ma
  const identities=pageHits.map(({el})=>guard.identity(el));
  if(expected){
   const {target,identity}=expected;
-  const prior=target??expected.focus;
-  const currentTarget=target?targets[target.id-1]:focus;
-  if(!currentTarget||Object.keys(prior).some(k=>currentTarget[k]!==prior[k])||
-     (target&&identities[target.id-1]!==identity))return {ready:false};
+  const index=target?identities.indexOf(identity):-1;
+  const el=target?pageHits[index]?.el:focused;
+  const ready=target?
+   !!el&&targets[index].kind===target.kind&&targets[index].label===target.label&&clearControlPoint(el,target.x,target.y):
+   !!focus&&focus.identity===expected.focus.identity&&focus.label===expected.focus.label;
+  if(!ready)return {ready:false};
   if(expected.probe)return {ready:true};
-  const el=target?pageHits[target.id-1].el:focused;
   // Input is dispatched by the browser after projection. Drop a trusted event
   // whose recipient changed in that interval, even if its caption is identical.
   guard.arm(event=>{
    const keyboardEvent=event.type.startsWith('key');
    if(keyboardEvent===!!target)return true;
-   if(!eligible(el)||!el.contains(event.target))return false;
-   const {x,y}=prior;
-   if(keyboardEvent?document.activeElement!==el:event.clientX!==x||event.clientY!==y)return false;
-   const hit=document.elementFromPoint(x,y);
-   return controlAt(x,y)===el&&unobscured({left:x,top:y,right:x+1,bottom:y+1},hit,ignoredPaint());
+   if(!eligible(el)||!el.contains(event.target)||(keyboardEvent&&document.activeElement!==el))return false;
+   const {x,y}=target??focus;
+   const boxes=ignoredPaint();
+   // Use the browser's event coordinates as well as the observed hit point.
+   // Rounding or a different sample point in the same control is harmless.
+   return clearControlPoint(el,x,y,boxes)&&(keyboardEvent||clearControlPoint(el,event.clientX,event.clientY,boxes));
   });
   return {ready:true};
  }
@@ -486,10 +492,7 @@ async function session(root,out,{chromium,engine='chromium',viewport,executableP
       if(previous)await previous;
      }
      if(a.op==='click')await page.mouse.click(a.x,a.y);
-     if(a.op==='pick'){
-      await page.mouse.down();
-      await page.mouse.up();
-     }
+     if(a.op==='pick')await page.mouse.click(picked.x,picked.y);
      if(a.op==='key')await page.keyboard.press(a.key);
      if(a.op==='type')await page.keyboard.insertText(a.text);
      if(a.op==='scroll'){await page.mouse.move(a.x,a.y);await page.mouse.wheel(0,a.dy);}

@@ -154,7 +154,7 @@ for(const transport of [cfg,gemini])for(const size of ['1180x820','1024x768']){
 }
 
 // Build an intact, small RGB image with the dimensions of the synthetic viewport.
-function mockObservation(width=1024,height=768){
+function mockObservation(width=1024,height=768,fill=0){
  const {crc32,deflateSync}=require('node:zlib');
  const chunk=(type,data)=>{
   const output=Buffer.alloc(12+data.length);
@@ -165,7 +165,7 @@ function mockObservation(width=1024,height=768){
  const header=Buffer.alloc(13);
  header.writeUInt32BE(width);header.writeUInt32BE(height,4);header[8]=8;header[9]=2;
  const image=Buffer.concat([Buffer.from('89504e470d0a1a0a','hex'),chunk('IHDR',header),
-  chunk('IDAT',deflateSync(Buffer.alloc(height*(1+width*3)))),chunk('IEND',Buffer.alloc(0))]);
+  chunk('IDAT',deflateSync(Buffer.alloc(height*(1+width*3),fill))),chunk('IEND',Buffer.alloc(0))]);
  return {width,height,image,round:0,remaining:LIMIT};
 }
 
@@ -370,4 +370,112 @@ test('Gemini visual stops at twelve actions even if the relay continues to offer
  assert.equal(result.reason,'LIMIT');
  assert.equal(result.actions,LIMIT);
  assert.equal(requests,LIMIT);
+});
+
+test('neutral calibration payload is confined to the explicit technical route',async()=>{
+ const {CALIBRATION_GOAL}=require('../scripts/m4-u4-model-runner.cjs');
+ const obs=mockObservation(),neutral={...gemini,calibration:true};
+ const body=requestBody(neutral,CALIBRATION_GOAL,obs,[]);
+ await assert.rejects(ask(gemini,body,1000,rejectTransport),/explicit consent/);
+ await assert.rejects(ask(neutral,requestBody(neutral,GOALS.A,obs,[]),1000,rejectTransport),/explicit consent/);
+ await assert.rejects(run({cfg:neutral,module:'A',fetcher:rejectTransport}),/Invalid module/);
+ await assert.rejects(ask(neutral,requestBody(neutral,CALIBRATION_GOAL,{...obs,round:2,remaining:LIMIT-2},[]),1000,rejectTransport),/explicit consent/);
+ const result=await ask(neutral,body,1000,async(url,init)=>{
+  const p=JSON.parse(init.body);
+  assert.match(p.systemInstruction.parts[0].text,/neutrale Bedienoberfläche/);
+  assert.doesNotMatch(p.systemInstruction.parts[0].text,/Manager|Karriere|Handflug/);
+  assert.deepEqual(JSON.parse(p.contents[0].parts[0].text),{goal:CALIBRATION_GOAL,round:0,remaining:2,viewport:{width:1024,height:768}});
+  return geminiReply({op:'click',xNorm:700,yNorm:400});
+ });
+ assert.deepEqual(result.action,{op:'click',x:716,y:307});
+});
+test('neutral calibration stops after first miss, malformed response or transport failure; no retry',async()=>{
+ const {runCalibration}=require('../scripts/m4-u4-gemini-calibration.cjs');
+ for(const mode of ['consent','wrong','missing','pixel','identity','quota','timeout','invalid-image','invalid-meta','invalid-crc']){
+  const out=fs.mkdtempSync(path.join(os.tmpdir(),'m4-calibration-mock-'));let calls=0,steps=0,opens=0;
+  try{
+   const first=mockObservation(1180,820);
+   if(mode==='invalid-image')first.image=Buffer.alloc(10);
+   if(mode==='invalid-meta')first.remaining=1;
+   if(mode==='invalid-crc')first.image[40]^=1;
+   const result=await runCalibration({out,cfg:mode==='consent'?{...gemini,googleVisualConsent:false}:gemini,
+    open:async(root,dir,opts)=>{opens++;opts.preparePage({evaluate:async()=>mode==='missing'?[]:[{id:'GAMMA',x:236,y:410,trusted:true}]});
+     return {observe:async()=>({...first,screenshot:'round-00.png'}),step:async()=>{steps++;return {...first,round:1,remaining:LIMIT-1,image:Buffer.from('changed'),screenshot:'round-01.png'};},close:async()=>{}};
+    },fetcher:async()=>{calls++;if(mode==='quota')return new Response('',{status:429});if(mode==='timeout')throw Object.assign(Error('private'),{name:'TimeoutError'});
+     return geminiReply(mode==='pixel'?{op:'click',x:200,y:500}:{op:'click',xNorm:200,yNorm:500},mode==='identity'?'wrong-model':gemini.model);}
+   });
+   assert.equal(calls,['consent','invalid-image','invalid-meta','invalid-crc'].includes(mode)?0:1);assert.equal(result.requests,calls);assert.equal(opens,mode==='consent'?0:1);
+   assert.equal(steps,['wrong','missing'].includes(mode)?1:0);
+   assert.equal(result.reason,['wrong','missing','pixel'].includes(mode)?'CALIBRATION_FAIL':'INFRASTRUCTURE');
+   assert.equal(result.hits,0);assert.equal(result.verdict,'NOT_GAME_ACCEPTANCE');
+   assert.doesNotMatch(fs.readFileSync(path.join(out,'result.json'),'utf8'),/synthetic-google-key|private/);
+  }finally{fs.rmSync(out,{recursive:true,force:true});}
+ }
+});
+
+test('neutral calibration checks global deadline through final click, evidence and cleanup, counting actual fetches',async()=>{
+ const {runCalibration}=require('../scripts/m4-u4-gemini-calibration.cjs');
+ for(const [mode,limit] of [['step',MS-1],['step',MS],['step',MS+1],['event',MS],['cleanup',MS],['response',MS],['fetch-boundary',MS]]){
+  const out=fs.mkdtempSync(path.join(os.tmpdir(),'m4-calibration-deadline-'));
+  let clock=0,calls=0,clicks=0,clockReads=0;
+  try{
+   const result=await runCalibration({cfg:gemini,out,now:()=>{
+    if(mode==='fetch-boundary'&&++clockReads>=3)return limit;
+    return clock;
+   },open:async(root,dir,opts)=>{
+    const {width,height}=opts.viewport,second=width===1024;
+    const ids=second?['BETA','ALPHA']:['ALPHA','BETA'],events=[];
+    const observation=i=>({...mockObservation(width,height,i),round:i,remaining:LIMIT-i,screenshot:'round-0'+i+'.png'});
+    opts.preparePage({evaluate:async()=>{
+     if(mode==='event'&&clicks===4)clock=limit;
+     return events.slice();
+    }});
+    return {observe:async()=>observation(0),step:async action=>{
+     events.push({id:ids[events.length],x:action.x,y:action.y,trusted:true});clicks++;
+     if(mode==='step'&&clicks===4)clock=limit;
+     return observation(events.length);
+    },close:async()=>{if(mode==='cleanup'&&second)clock=limit;}};
+   },fetcher:async()=>{
+    calls++;if(mode==='response')clock=limit;
+    return geminiReply({op:'click',xNorm:200,yNorm:500});
+   }});
+   const expectedPass=mode==='step'&&limit===MS-1;
+   assert.equal(result.reason,expectedPass?'CALIBRATION_PASS':'INFRASTRUCTURE',JSON.stringify({mode,limit,result}));
+   assert.equal(result.requests,calls);
+   assert.equal(calls,mode==='fetch-boundary'?0:mode==='response'?1:4);
+   assert.equal(clicks,['response','fetch-boundary'].includes(mode)?0:4);
+   assert.equal(result.hits,clicks);
+   assert.equal(result.elapsedMs,limit);
+   if(!expectedPass)assert.equal(result.detail,'Calibration budget exhausted');
+  }finally{fs.rmSync(out,{recursive:true,force:true});}
+ }
+});
+
+test('neutral calibration uses real browser clicks at both sizes and captures every follow-up',{skip:!process.env.M4_UI_BROWSER,timeout:40000},async()=>{
+ const {runCalibration}=require('../scripts/m4-u4-gemini-calibration.cjs');
+ const out=fs.mkdtempSync(path.join(os.tmpdir(),'m4-calibration-real-'));
+ const coords=[[220,680],[770,310],[260,360],[710,720]];
+ let requests=0;
+ try{
+  const result=await runCalibration({out,cfg:gemini,engine:browserOptions(process.env).engine,fetcher:async(url,init)=>{
+   assert.equal(url,gemini.url);assert.equal(init.headers['x-goog-api-key'],'synthetic-google-key');
+   const p=JSON.parse(init.body),parts=p.contents[0].parts;assert.equal(parts.length,2);
+   assert.equal(parts[1].inlineData.mimeType,'image/png');assert.doesNotMatch(parts[0].text,/ALPHA|BETA|GAMMA|DELTA|Karriere/);
+   const [xNorm,yNorm]=coords[requests++];return geminiReply({op:'click',xNorm,yNorm});
+  }});
+  assert.equal(result.reason,'CALIBRATION_PASS',JSON.stringify(result));assert.equal(result.hits,4);assert.equal(requests,4);
+  for(const step of result.steps){
+   assert.equal(step.event.id,step.expected);assert.equal(step.event.trusted,true);assert.equal(step.changed,true);
+   assert.ok(fs.statSync(path.join(out,step.before)).size>33);assert.ok(fs.statSync(path.join(out,step.after)).size>33);
+  }
+  assert.equal(result.verdict,'NOT_GAME_ACCEPTANCE');
+ }finally{fs.rmSync(out,{recursive:true,force:true});}
+});
+test('neutral live workflow stays main-only and gated, with one secret reference',()=>{
+ const y=fs.readFileSync(path.resolve(__dirname,'../.github/workflows/m4-u4-gemini-calibration.yml'),'utf8');
+ assert.match(y,/^on:\n  workflow_dispatch:/m);assert.doesNotMatch(y,/^  (pull_request|push|schedule):/m);
+ for(const input of ['google_visual_consent','free_project_confirmed'])assert.match(y,new RegExp('^      '+input+':\\n        description: [^\\n]+\\n        type: boolean\\n        default: false$','m'));
+ assert.match(y,/needs: preflight\n    if: github\.ref == 'refs\/heads\/main' && inputs\.google_visual_consent == true && inputs\.free_project_confirmed == true/);
+ assert.equal((y.match(/secrets\./g)||[]).length,1);assert.match(y,/retention-days: 7/);
+ assert.match(y,/node scripts\/m4-u4-gemini-calibration\.cjs/);
 });

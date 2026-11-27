@@ -128,3 +128,53 @@ async function pruefeHausErz(browser,art,width,height,url) {
  }finally{await ctx.close();}
 }
 module.exports=pruefeHausErz;
+
+ // Independent integration regression: original manager-generated 48-trip save,
+ // real opt-in via Root, paid contract, reload in transit, unchanged standard slot.
+ async function pruefeHausErzNach48(browser,art,width,height,url,json) {
+  const ctx=await browser.newContext({viewport:{width,height},hasTouch:true});
+  const page=await ctx.newPage(),fehler=[];
+  page.on('pageerror',e=>fehler.push(String(e)));
+  const el=id=>page.locator('#'+id);
+  const slot=key=>page.evaluate(k=>localStorage.getItem(k),key);
+  const weiter=async minuten=>page.locator('[data-advance="'+minuten+'"]').tap();
+  try{
+   await page.goto(url);
+   await page.waitForURL('**/prototypes/spiel/index.html');
+   await el('import-datei').setInputFiles({name:'original-48.json',mimeType:'application/json',buffer:Buffer.from(json)});
+   await el('manager-transport-status').waitFor({state:'visible'});
+   assert.equal(await slot(standard),json);
+   assert.equal(JSON.parse(json).tick,6300);
+   await el('open-menu').tap();
+   await el('neues-spiel').tap();
+   page.once('dialog',dialog=>dialog.accept());
+   await el('kopie-haus-erz').tap();
+   await page.waitForFunction(k=>!!localStorage.getItem(k),haus);
+   assert.equal(await slot(standard),json);
+   await weiter(1);
+   const signieren=page.locator('[data-action^="haus-erz-"]');
+   await signieren.waitFor({state:'visible'});
+   assert.ok(await signieren.isEnabled());
+   await signieren.tap();
+   await weiter(1);
+   const bezahlt=JSON.parse(await slot(haus));
+   assert.equal(bezahlt.w3.auftrag.carrier,'house');
+   const id=bezahlt.kanon.industrieErz.kennung;
+   await weiter(60);await weiter(60);
+   const unterwegs=await slot(haus),u=JSON.parse(unterwegs);
+   assert.equal(u.w3.auftrag.kennung,id);
+   assert.equal(u.w3.auftrag.phase,'hin');
+   await page.reload();await el('neues-spiel').tap();await el('fortsetzen-haus-erz').tap();
+   assert.equal(await slot(haus),unterwegs);
+   await weiter(60);await weiter(60);
+   const s=JSON.parse(await slot(haus));
+   const b=s.w5ad.freight.find(f=>f.kennung===id);
+   assert.deepEqual([b.id,b.amount,b.end-b.start,b.fee,b.work],['sh003',50,120,240,120]);
+   assert.ok(s.w4.abgeschlossen>0&&s.w5.fertig>0);
+   assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),33000);
+   assert.equal(await slot(standard),json);
+   assert.deepEqual(fehler,[]);
+   console.log(art,width,height,'HAUS_ERZ_48_ROOT_OK',JSON.stringify(b));
+  }finally{await ctx.close();}
+ }
+ module.exports.pruefeHausErzNach48=pruefeHausErzNach48;

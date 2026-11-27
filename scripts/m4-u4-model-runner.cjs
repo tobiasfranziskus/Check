@@ -290,6 +290,7 @@ function geminiPayload(cfg,body){
 }
 async function ask(cfg,body,timeout,fetcher=fetch){
  if(cfg.screenshotOnly&&!visualConfigAllowed(cfg))throw Error(VISUAL_BLOCK);
+ if(body.visual?.nativeConfirm!==undefined&&!visualConfirmAllowed(cfg))throw Error(IMAGE_BLOCK);
  const headers={'Content-Type':'application/json'};
  const gemini=cfg.provider==='gemini';
  if(gemini)headers['x-goog-api-key']=cfg.key;

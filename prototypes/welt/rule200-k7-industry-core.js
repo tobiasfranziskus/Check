@@ -2360,6 +2360,9 @@ const m_core_w3 = (() => {
         throw Error('K7: unbefugter W3-Industrieauftrag');
       if(!v.erzAngenommen || (state.stations[c.quellStation].lager.erz||0)<c.fracht)
         return;
+      // Rule208 has no legacy accepted-but-unreserved transactions. Never
+      // load a new NPC contract whose full acceptance proof is missing.
+      if(npcErzSchutzProfil(state,rules)&&!npcErzBindungGueltig(state,rules,a))return;
       if((state.w5n?.frachtauftrag&&(!houseCarrier(rules,carrier)||state.w5n.frachtauftrag.schiff===sh.id))||sh.phase!=='dock'||sh.system!=='aldera'
         ||sh.auftrag!=='halten'||Object.values(sh.ladung).some(n=>n!==0))
         return; // echte W3-Kollision: auf freien Frachter warten
@@ -2453,6 +2456,8 @@ const m_core_w3 = (() => {
         && a.arbeitsKosten===k.arbeitsKosten&&a.frachtGebuehr===k.frachtGebuehr
         && a.gesamt===k.gesamt&&a.gearbeitet>=0&&a.gearbeitet<=2*k.zeit
         && (a.npcErzReserviert===undefined||npcErzBindungGueltig(state,rules,a))
+        && (!npcErzSchutzProfil(state,rules)||a.phase!=='vorbestellt'
+          ||state.kanon?.industrieErz?.erzAngenommen!==true||npcErzBindungGueltig(state,rules,a))
         && (a.carrier===undefined||houseCarrier(rules,a.carrier))
         && state.ships[a.schiff]?.owner===ownerOf(rules,a)
         && (state.ships[a.schiff]?.ladung.erz??0)===(a.phase==='hin'?c.fracht:0)

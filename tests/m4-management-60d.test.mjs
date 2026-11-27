@@ -518,3 +518,200 @@ test('M4 management: early funded industry diversification vs standard control',
     sourceHash,sourceUnchanged:source.exportieren()===original,
     scope:'Paired original career, voluntary early house copy only in second arm; stop or actual 60 days. One carrier/one miner strategy, no policy change, no private rescue, no universal strategy or standard pass claim.'}));
 });
+
+
+// Round 8: the existing S02 start exactly as published in spiel.js:176-200.
+// This is neither the ordinary standard career nor a new rule/combined profile.
+test('M4 management: published S02 opt-in, funded fleet replacement and 60-day gate', {timeout:20*60*1000},()=>{
+  const standard=start(),standardJson=standard.exportieren();
+  const activate=()=>{
+    const j=start(),w=j.weltReferenz(),s=j.zustandReferenz();
+    // Exactly the three existing public start-controller calls, no other policy changes.
+    w.politikSetzen(s,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
+    w.npcAutoSetzen(s,true);
+    w.npcSiliziumSetzen(s,true);
+    assert.ok(w.audit(s).ok);
+    return j;
+  };
+  function check(j){
+    const s=j.zustandReferenz(),w=j.weltReferenz();
+    assert.equal(s.rulesVersion,204);
+    assert.equal(Boolean(w.hausErzProfil),false);
+    assert.equal(s.kanon.npcAuto,true);
+    assert.equal(s.kanon.npcSilizium.aktiv,true);
+    assert.equal(s.kanon.politik.stilllegung,true);
+    assert.equal(s.kanon.politik.betriebsreserve.werft_extern,1060);
+    assert.deepEqual(pruefen(w,s),[]);
+    return s;
+  }
+  let j=activate();
+  const initial=j.exportieren(),trace=[],saves=new Map(),reports=[];
+  assert.equal(j.zustandReferenz().owners.house.cash,3000);
+  assert.notEqual(j.ansicht().hash,standard.ansicht().hash);
+  function open(json){
+    const j=J8.erstellen();j.oeffnen204(json,true);check(j);return j;
+  }
+  function report(label){
+    const s=check(j),w=j.weltReferenz(),{offers,p}=quote(j),book=s.kanon.buch?.summen||{};
+    const row=JSON.parse(JSON.stringify({label,tick:s.tick,day:s.tick/DAY,hash:w.hash(s),
+      cash:Object.fromEntries(Object.entries(s.owners).map(([id,o])=>[id,o.cash])),
+      houseAccount:s.stats.konto.house,ledger:s.ledger,
+      warehouses:{aldera:s.stations.st_aldera.lager,nadir:s.stations.st_nadir.lager},
+      owned:Object.values(s.ships).filter(sh=>sh.owner==='house').map(sh=>({
+        id:sh.id,owner:sh.owner,klasse:sh.klasse,system:sh.system,phase:sh.phase,
+        value:w.buchwert(s,sh.id),retired:w.stillgelegt(s,sh.id),
+        activeRemaining:w.restAktivminuten(s,sh.id),cargo:sh.ladung,pendel:s.kanon.pendel[sh.id]??null})),
+      ownership:Object.values(s.ships).map(sh=>({id:sh.id,owner:sh.owner,klasse:sh.klasse})),
+      freight:{completed:p.frachtAbgeschlossen,fees:p.frachtGebuehrBisher,wages:p.frachtLohnBisher},
+      industry:{w3:s.w3.abgeschlossen,w4:s.w4.abgeschlossen,w5:s.w5.fertig,
+        replacement:s.kanon.ersatzkaeufe,transfers:s.w5ac.completed},
+      npc:s.kanon.npc,privateWater:s.kanon.haushalte.pilot_house??null,
+      books:book,world:w.bericht(s),offers:offers.map(({id,ok,reason,kaufPlan})=>({id,ok,reason,kaufPlan}))
+    }));
+    reports.push(row);
+    console.log('M4_MANAGEMENT_60D_S02_CHECKPOINT',JSON.stringify(row));
+    return row;
+  }
+  function checkpoint(label){
+    const json=j.exportieren();
+    saves.set(trace.length,json);
+    j=open(json);
+    assert.equal(j.exportieren(),json);
+    return report(label);
+  }
+  function act(id,reason){
+    const before=j.exportieren(),s=j.zustandReferenz(),tick=s.tick,
+      cash=s.owners.house.cash,ships=new Set(Object.keys(s.ships));
+    const r=j.ausfuehren(id);assert.equal(r.ok,true,id+': '+r.reason);
+    assert.notEqual(j.exportieren(),before);
+    const end=check(j);
+    const acquired=Object.values(end.ships).filter(sh=>!ships.has(sh.id));
+    if(id.startsWith('buy-')){
+      assert.equal(acquired.length,1);assert.equal(acquired[0].owner,'house');
+      assert.ok(end.owners.house.cash<cash);
+    }
+    trace.push({tick,id,reason,houseCashDelta:end.owners.house.cash-cash,
+      acquired:acquired.map(sh=>sh.id)});
+  }
+  function advance(minutes){j.weiterspielen(minutes);trace.push({minutes});}
+  checkpoint('S02-start');
+  for(const id of ['ore-sh001','industrialOreAcceptFreight','buy-st_nadir-frachter-for-transport',
+    'stationBuildShip-for-house','transport:shipBuy'])deny(j,id);
+  const invalid=JSON.parse(initial);invalid.kanon.npcSilizium.aktiv='gratis';
+  assert.throws(()=>open(JSON.stringify(invalid)));
+  // Reuse the published, already verified P3 S02 first industrial-hull route.
+  // Leave the founding Aldera freighter to the independent NPC logistics firm.
+  for(let i=0;i<5;i++)advance(60);
+  const first=checkpoint('first-NPC-industry-300');
+  assert.ok(first.industry.w3>=1&&first.industry.w4>=1&&first.industry.w5>=1);
+  act('buy-st_nadir-frachter','reinvest original start cash into real W5 production, not a rescue purchase');
+  const firstCarrier=Object.values(j.zustandReferenz().ships).find(sh=>sh.owner==='house'&&sh.klasse==='frachter').id;
+  assert.ok(j.zustandReferenz().w5.schiffIds.includes(firstCarrier));
+  act('reposition-'+firstCarrier,'paid original 60-minute W5ac ferry');
+  checkpoint('paid-ferry-in-progress');
+  advance(60);
+  act('buy-st_aldera-miner','one productive miner to supply paid ice business');
+  const firstMiner=Object.values(j.zustandReferenz().ships).find(sh=>sh.owner==='house'&&sh.klasse==='miner').id;
+  act('ice-'+firstMiner,'start original ice shuttle');
+  advance(60);advance(60);
+  checkpoint('first-ice-supply');
+  let lastRevenue=j.zustandReferenz().stats.konto.house.erloes,
+    lastIncome=j.zustandReferenz().tick,lastDecision=lastIncome,lastFreight=0,
+    stopped=null,lastDay=0;
+  while(j.zustandReferenz().tick<LIMIT){
+    const s=check(j),w=j.weltReferenz(),tick=s.tick,{offers,p}=quote(j);
+    if(s.stats.konto.house.erloes>lastRevenue){lastRevenue=s.stats.konto.house.erloes;lastIncome=tick;}
+    if(p.frachtAbgeschlossen>lastFreight){
+      lastFreight=p.frachtAbgeschlossen;
+      if(lastFreight===1)checkpoint('first-paid-house-F4');
+    }
+    const available=id=>offers.find(o=>o.id===id&&o.ok);
+    const own=Object.values(s.ships).filter(sh=>sh.owner==='house'&&!w.stillgelegt(s,sh.id));
+    const carriers=own.filter(sh=>sh.klasse==='frachter');
+    const miners=own.filter(sh=>sh.klasse==='miner'&&sh.system==='aldera');
+    const activeMiner=miners.some(sh=>s.kanon.pendel[sh.id]&&!s.kanon.pendel[sh.id].beenden);
+    const freight=offers.find(o=>o.ok&&o.id.startsWith('freight-'));
+    const capable=carriers.some(sh=>sh.system==='aldera'&&(w.restAktivminuten(s,sh.id)??Infinity)>=120);
+    const ferry=offers.find(o=>o.ok&&o.id.startsWith('reposition-'));
+    const buyerReady=p.eisFrei>=p.eisCharge&&p.nadirKasse>=p.nadirFrachtbedarf
+      &&p.hausKasse>=p.frachtLohnbedarf;
+    const sourceReady=p.eisLager>=p.eisCharge||p.alderaKasse>=p.ankaufKosten;
+    let acted=false;
+    if(freight){
+      act(freight.id,'accept actually funded house F4 with available original hull');
+      acted=true;
+    }else if(!capable&&!p.frachtOffen&&buyerReady&&sourceReady){
+      if(ferry){
+        act(ferry.id,'bring existing paid W5 hull to route without manual flight');acted=true;
+      }else if(!carriers.some(sh=>sh.system==='nadir')&&!s.w5ac.active){
+        // Only a needed replacement, not speculative purchase of all output.
+        const buy=available('buy-st_aldera-frachter')||available('buy-st_nadir-frachter');
+        if(buy){
+          const need=(buy.kaufPlan?.kaufpreis??w.rules.economy.waren.frachter.basis)
+            +(buy.id.includes('nadir')?(buy.kaufPlan?.ueberfuehrung?.kosten??60):0)
+            +p.frachtLohnbedarf;
+          if(p.hausKasse>=need){act(buy.id,'replace exhausted productive carrier only while route is financed');acted=true;}
+        }
+      }
+    }
+    if(!acted&&!activeMiner&&buyerReady&&p.eisLager<p.eisCharge&&p.alderaKasse>=p.ankaufKosten){
+      const ice=offers.find(o=>o.ok&&o.id.startsWith('ice-'));
+      if(ice){act(ice.id,'restart ice supply using existing hull');acted=true;}
+      else if(!miners.length&&available('buy-st_aldera-miner')&&capable){
+        act('buy-st_aldera-miner','replace exhausted ice miner for funded operating route');acted=true;
+      }
+    }
+    if(!acted&&!activeMiner){
+      const ore=offers.find(o=>o.ok&&o.id.startsWith('ore-'));
+      if(ore&&p.erzExportKasse>=p.erzKosten){act(ore.id,'real local ore alternative when export and source are funded');acted=true;}
+    }
+    if(acted)lastDecision=tick;
+    if(!acted&&!p.frachtOffen&&tick-Math.max(lastIncome,lastDecision)>=DAY){
+      const pause=offers.find(o=>o.ok&&o.id.startsWith('stop-')
+        &&!s.kanon.pendel[o.id.slice(5)]?.beenden);
+      if(pause){act(pause.id,'stop unproductive duty after a day without receipts or orders');checkpoint('cost-control');}
+    }
+    // NPCs can resume trade independently; allow seven full days of observation
+    // after last paid receipt / new order before calling this strategy stopped.
+    if(!acted&&!p.frachtOffen&&!s.w5ac.active&&
+      tick-Math.max(lastIncome,lastDecision)>=7*DAY&&
+      !miners.some(sh=>s.kanon.pendel[sh.id]&&!s.kanon.pendel[sh.id].beenden)){
+      stopped={tick,lastIncome,lastDecision,reason:'seven days without receipt or new funded productive decision, no active house freight'};
+      break;
+    }
+    const step=p.frachtOffen||acted||s.w5ac.active?60:10,remain=LIMIT-tick;
+    advance(remain>=step?step:remain>=10?10:1);
+    const day=Math.floor(j.zustandReferenz().tick/DAY);
+    if(day>lastDay){lastDay=day;checkpoint('day-'+day);}
+  }
+  const end=checkpoint('final'),target=j.exportieren();
+  assert.ok(stopped||end.tick===LIMIT);
+  assert.ok(end.freight.completed>=1,'real house business, not just NPC world evolution');
+  assert.equal(end.freight.fees,end.freight.completed*240);
+  assert.equal(end.freight.wages,end.freight.completed*120);
+  deny(j,'industrialOreAcceptFreight');
+  let replay=activate();
+  assert.equal(replay.exportieren(),initial);
+  for(let n=0;n<trace.length;n++){
+    const step=trace[n];
+    if(step.id){
+      assert.equal(replay.zustandReferenz().tick,step.tick);
+      const r=replay.ausfuehren(step.id);assert.equal(r.ok,true,step.id+': '+r.reason);
+    }else replay.weiterspielen(step.minutes);
+    if(saves.has(n+1)){
+      assert.equal(replay.exportieren(),saves.get(n+1));
+      replay=open(replay.exportieren());
+    }
+  }
+  assert.equal(replay.exportieren(),target);
+  assert.equal(standard.exportieren(),standardJson);
+  assert.equal(standard.zustandReferenz().kanon.npcAuto,undefined);
+  console.log('M4_MANAGEMENT_60D_S02_RESULT',JSON.stringify({
+    profile:'published Rule204 S02 opt-in',tick:end.tick,hash:end.hash,stop:stopped,
+    lastIncome,lastDecision,houseCash:end.cash.house,houseAccount:end.houseAccount,
+    freight:end.freight,industry:end.industry,owned:end.owned,
+    cash:end.cash,world:end.world,actions:trace.filter(x=>x.id),
+    checkpoints:reports.length,replay:true,standardSourceUnchanged:true,
+    scope:'Existing published S02 only; no Haus-Erz combination, no standard pass, no private rescue; one need-based replacement strategy, not an exhaustive optimizer. Technical JSON separation, not separate browser storage slots.'
+  }));
+});

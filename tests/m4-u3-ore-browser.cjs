@@ -231,6 +231,7 @@ async function checkAfterIce(browser,kind,width,height,fixture){
   }
   const finalJson=await saved(),final=JSON.parse(finalJson);
   assert.equal(finalJson,replay.exportieren(),'same state after the original world clock advances');
+  if(version===204)assert.equal(replay.ansicht().hash,'3b74f859bf1cce63','pinned #674 original Rule204 result');
   assert.equal(final.stats.konto.house.erloes-bought.stats.konto.house.erloes,500);
   assert.ok(final.stats.verkaeufe[miner.id]>=1);
   assert.equal(final.kanon.pendel.sh002.ware,'eis');

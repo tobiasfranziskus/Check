@@ -183,6 +183,59 @@ for(const size of ['1180x820','1024x768']){
  }
 }
 
+for(const size of ['1180x820','1024x768']){
+ const options=browserOptions({...process.env,M4_UI_VIEWPORT:size});
+ for(const [name,pseudo,geometry] of [
+  ['zero-size','before','left:0;top:0;width:0;height:0'],
+  ['offscreen','after','left:-300px;top:0;width:100px;height:100px'],
+ ]){
+  for(const inventory of [false,true]){
+   const mode=inventory?'inventory':'text-only';
+   test(`${options.engine} ${size} fixed ::${pseudo} on ${name} host (${mode})`,{
+    skip:!process.env.M4_UI_BROWSER,timeout:15000
+   },async()=>{
+    const root=fs.mkdtempSync(path.join(os.tmpdir(),'m4-pseudo-'));
+    fs.writeFileSync(path.join(root,'index.html'),`<!doctype html><style>
+     #covered{position:absolute;left:40px;top:540px;width:220px;height:60px}
+     #host{position:absolute;z-index:2;${geometry}}
+     #host::${pseudo}{content:"";position:fixed;left:30px;top:530px;width:240px;height:80px;
+      background:#fff;pointer-events:none}
+     #visible{position:relative;z-index:3}
+     </style><button id="visible" onclick="this.textContent='Visible clicked'">Visible control</button>
+     <button id="covered">PSEUDO_SENTINEL</button><div id="host"></div>`);
+    const evidence=process.env.M4_U4_EVIDENCE;
+    const out=evidence?path.join(evidence,`pseudo-${options.engine}-${size}-${name}-${mode}`):path.join(root,'out');
+    let relay,page;
+    const observations=[];
+    try{
+     relay=await session(root,out,{...options,textMode:true,inventory,markButtons:inventory,
+      captureScreenshots:!!evidence,preparePage:p=>{page=p;}});
+     const host=await page.locator('#host').boundingBox();
+     if(name==='zero-size')assert.deepEqual([host.width,host.height],[0,0]);
+     else assert.ok(host.width>0&&host.x+host.width<0);
+     assert.equal(await page.evaluate(()=>document.elementFromPoint(150,570).id),'covered');
+     const view=await relay.observe();
+     observations.push(view);
+     assert.match(view.visibleText,/Visible control/);
+     if(inventory){
+      const target=view.targets.find(t=>t.label==='Visible control');
+      assert.ok(target);
+      assert.deepEqual(view.targets,[target]);
+      const clicked=await relay.step({op:'pick',id:target.id});
+      observations.push(clicked);
+      assert.match(clicked.visibleText,/Visible clicked/);
+     }else assert.equal(view.targets,undefined);
+     assert.doesNotMatch(JSON.stringify(view),/PSEUDO_SENTINEL/);
+    }finally{
+     if(evidence&&fs.existsSync(out))fs.writeFileSync(path.join(out,'observations.json'),JSON.stringify(observations,null,2));
+     if(relay)await relay.close();
+     fs.rmSync(root,{recursive:true,force:true});
+    }
+   });
+  }
+ }
+}
+
 test('viewport options and added actions use strict bounds',()=>{
  const small={width:1024,height:768};
  assert.throws(()=>browserOptions({M4_UI_VIEWPORT:'1024x820'}));

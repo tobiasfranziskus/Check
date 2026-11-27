@@ -108,16 +108,8 @@ function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,ma
   do{
    if(++scanned>8000)return null;
    const c=style(el);
-   if(c.display==='none'||c.visibility!=='visible'||Number(c.opacity)===0)continue;
-   const rects=Array.from(el.getClientRects()).filter(insideViewport);
-   if(!rects.length)continue;
-   if(c.pointerEvents==='none'){
-    // Treat effects with unknown paint bounds as potentially viewport-wide.
-    const unbounded=c.filter!=='none'||c.boxShadow!=='none'||c.textShadow!=='none'||c.outlineStyle!=='none';
-    const bounds=unbounded?[viewport]:rects;
-    boxes.push(...bounds.map(rect=>({el,rect})));
-    if(boxes.length>512)return null;
-   }
+   if(c.display==='none'||Number(c.opacity)===0)continue;
+   // Generated boxes can enter the viewport even when the host is empty or offscreen.
    for(const pseudo of ['::before','::after']){
     const generated=getComputedStyle(el,pseudo);
     if(generated.content==='none'||generated.content==='normal'||generated.display==='none'||
@@ -127,6 +119,15 @@ function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,ma
     // isolated host paints behind the host's ordinary content only.
     const behindContents=c.isolation==='isolate'&&Number(generated.zIndex)<0;
     boxes.push({el,rect:viewport,behindContents});
+    if(boxes.length>512)return null;
+   }
+   if(c.visibility==='visible'&&c.pointerEvents==='none'){
+    const rects=Array.from(el.getClientRects()).filter(insideViewport);
+    if(!rects.length)continue;
+    // Treat effects with unknown paint bounds as potentially viewport-wide.
+    const unbounded=c.filter!=='none'||c.boxShadow!=='none'||c.textShadow!=='none'||c.outlineStyle!=='none';
+    const bounds=unbounded?[viewport]:rects;
+    boxes.push(...bounds.map(rect=>({el,rect})));
     if(boxes.length>512)return null;
    }
   }while((el=all.nextNode()));

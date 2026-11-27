@@ -67,13 +67,13 @@ jobs:
           M4_ALLOW_REMOTE: '1'
           M4_GEMINI_VISUAL_CONSENT: '1'
           M4_GEMINI_FREE_CONFIRMED: '1'
-          GEMINI_API_KEY: ${{ secrets.M4_GEMINI_VISUAL_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           M4_PRODUCT_SHA: ${{ github.sha }}
           TMPDIR: ${{ runner.temp }}/m4-live
         run: |
           mkdir -p "$TMPDIR"
           if [ -z "$GEMINI_API_KEY" ]; then
-            echo 'Fehlendes Environment-Secret M4_GEMINI_VISUAL_API_KEY.' >&2
+            echo 'Fehlendes Environment-Secret GEMINI_API_KEY.' >&2
             exit 1
           fi
           export PLAYWRIGHT_MODULE="$RUNNER_TEMP/m4-ui/node_modules/playwright"

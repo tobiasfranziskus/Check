@@ -106,7 +106,7 @@ async function isolation(browser,kind,fixture){
   await el('manager-abbau-aktion').tap();assert.equal(expected.ausfuehren('buy-st_aldera-miner').ok,true);
   const working=await read(SLOT208);assert.equal(working,expected.exportieren());
   await showMenu();await el('neues-spiel').tap();
-  await el('career-recovery').evaluate(e=>e.open=true);
+  await page.locator('#career-recovery summary').tap();
   await el('fortsetzen-204').tap();
   assert.equal(await read(SLOT),fixture.json);
   assert.equal(await read(SLOT208),working);
@@ -126,7 +126,7 @@ async function isolation(browser,kind,fixture){
   await page.reload();await el('fortsetzen').tap();
   assert.equal(await read(SLOT208),s02);
   await page.reload();await el('neues-spiel').tap();
-  await el('career-recovery').evaluate(e=>e.open=true);
+  await page.locator('#career-recovery summary').tap();
   page.once('dialog',d=>d.accept());await el('vorige-208').tap();
   assert.equal(await read(SLOT208),working);assert.equal(await read(SLOT208+':vorherige'),s02);
   assert.equal(await read(SLOT),fixture.json);
@@ -142,15 +142,25 @@ async function isolation(browser,kind,fixture){
  }finally{await ctx.close();}
 }
 
+function firstPaid208(){
+ const j=J8.erstellen();j.starten208(true,false);
+ for(const id of ['buy-st_aldera-miner','buy-st_aldera-frachter','ice-sh002'])
+  assert.equal(j.ausfuehren(id).ok,true,id);
+ j.weiterspielen(60);j.weiterspielen(60);
+ assert.equal(j.ausfuehren('freight-sh003').ok,true);
+ j.weiterspielen(60);j.weiterspielen(60);
+ return {json:j.exportieren(),hash:j.ansicht().hash};
+}
 async function checkAfterIce(browser,kind,width,height,fixture){
  const ctx=await browser.newContext({viewport:{width,height},hasTouch:true});
  const page=await ctx.newPage(),errors=[];
  page.on('pageerror',err=>errors.push(String(err)));
  const el=id=>page.locator('#'+id);
- const saved=()=>page.evaluate(key=>localStorage.getItem(key),SLOT);
+ const version=JSON.parse(fixture.json).rulesVersion,slot=version===208?SLOT208:SLOT;
+ const saved=()=>page.evaluate(key=>localStorage.getItem(key),slot);
  const evidence=process.env.M4_MANAGER_EVIDENCE;
  const capture=async label=>{
-  if(evidence)await page.screenshot({path:path.join(evidence,`${kind}-${width}x${height}-after-${label}.png`)});
+  if(evidence)await page.screenshot({path:path.join(evidence,`${kind}-${width}x${height}-rule${version}-after-${label}.png`)});
  };
  const tapSize=async button=>{
   const box=await button.boundingBox();
@@ -159,7 +169,13 @@ async function checkAfterIce(browser,kind,width,height,fixture){
  };
  try{
   await page.goto('http://127.0.0.1:'+server.address().port+'/');
-  await importPrepared(page,fixture);
+  if(version===204)await importPrepared(page,fixture);
+  else{
+   await page.waitForURL('**/prototypes/spiel/index.html');
+   await el('import-datei').setInputFiles({name:'rule208-after-ice.json',mimeType:'application/json',buffer:Buffer.from(fixture.json)});
+   await el('manager-transport-status').waitFor({state:'visible'});
+   assert.equal(await saved(),fixture.json);
+  }
   const jump=el('p3-auftragszentrale'),menu=el('open-menu');
   const jumpBox=await tapSize(jump);
   assert.ok(jumpBox.y>=0&&jumpBox.y+jumpBox.height<=height,'orders shortcut must fit the first viewport');
@@ -195,7 +211,8 @@ async function checkAfterIce(browser,kind,width,height,fixture){
   assert.equal(await saved(),fixture.json,'navigation must not buy, dispatch or advance time');
 
   const replay=J8.erstellen();
-  replay.oeffnen204(fixture.json,true);
+  if(version===208)replay.oeffnen208(fixture.json,true);
+  else replay.oeffnen204(fixture.json,true);
   assert.equal(replay.ausfuehren('buy-st_aldera-miner').ok,true);
   await purchase.tap();
   assert.equal(await saved(),replay.exportieren(),'same purchase as the original command');
@@ -227,7 +244,7 @@ async function checkAfterIce(browser,kind,width,height,fixture){
   await el('fortsetzen').tap();
   assert.equal(await saved(),finalJson);
   assert.deepEqual(errors,[]);
-  console.log('M4_U3_AFTER_ICE_BROWSER',JSON.stringify({kind,width,height,minute:final.tick,
+  console.log('M4_U3_AFTER_ICE_BROWSER',JSON.stringify({kind,width,height,version,minute:final.tick,
    miner:miner.id,revenue:500,hash:replay.ansicht().hash}));
  }finally{await ctx.close();}
 }
@@ -239,11 +256,12 @@ async function checkAfterIce(browser,kind,width,height,fixture){
   const kind=process.env.WELT_BROWSER==='webkit'?'webkit':'chromium';
   browser=await (kind==='webkit'?webkit:chromium).launch(kind==='webkit'?{}:{
    executablePath:process.env.S1_CHROMIUM_PATH||undefined,args:['--no-sandbox']});
-  const firstPaidTrip=prepare('C');
+  const firstPaidTrip=prepare('C'),newPaidTrip=firstPaid208();
   await isolation(browser,kind,firstPaidTrip);
   for(const [width,height] of [[1180,820],[1024,768],[820,1180],[390,844]]){
    await check(browser,kind,width,height);
    await checkAfterIce(browser,kind,width,height,firstPaidTrip);
+   await checkAfterIce(browser,kind,width,height,newPaidTrip);
   }
  }finally{
   if(browser)await browser.close();

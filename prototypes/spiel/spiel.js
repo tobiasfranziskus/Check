@@ -90,8 +90,17 @@ function gespeicherte(key=SLOT){
 // fails. Never touch Rule204 or another profile's current/backup key.
 function speichern208(json,vorversion){
  const storage=scope.localStorage,previous=storage.getItem(SLOT_208);
- if(vorversion&&previous)storage.setItem(BACKUP_208,previous);
- storage.setItem(SLOT_208,json);
+ if(!vorversion||!previous){storage.setItem(SLOT_208,json);return;}
+ const oldBackup=storage.getItem(BACKUP_208);
+ // Backup must succeed before the current save can be replaced. If the
+ // replacement fails, keep the current bytes and restore the old backup.
+ storage.setItem(BACKUP_208,previous);
+ try{storage.setItem(SLOT_208,json);}
+ catch(e){
+   if(oldBackup===null)storage.removeItem(BACKUP_208);
+   else storage.setItem(BACKUP_208,oldBackup);
+   throw e;
+ }
 }
 function hausErzSpeichern(json,vorversion){
  const storage=scope.localStorage,backup=SLOT_HAUS_ERZ+':vorherige';
@@ -191,7 +200,8 @@ function startNeu(){
   const p8gAktiv=$('w6-p8g-start')?.checked===true;
   const pirAktiv=$('pir-start').checked;
   if([w6Aktiv,p8gAktiv,pirAktiv].filter(Boolean).length>1)throw Error('Bitte nur einen erweiterten Karrieremodus wählen');
-  const slot=pirAktiv?SLOT_PIR:p8gAktiv?SLOT_W6:SLOT_208,vorher=gespeicherte(slot);
+  const slot=pirAktiv?SLOT_PIR:p8gAktiv?SLOT_W6:SLOT_208,
+   vorher=gespeicherte(slot)||(session&&aktuellerSlot()===slot?session.exportieren():null);
   if(pirAktiv&&!scope.confirm('PIR-1 als separate Forschungskarriere beginnen?'))return;
   if(p8gAktiv&&!scope.confirm('Die experimentelle Dravos-Karriere besitzt eine eigene Spielwelt mit begrenzten Rohstofffeldern. Deine normale Karriere bleibt unverändert. Experimentelle Karriere beginnen?'))return;
   if(vorher&&!scope.confirm('Für dieses Profil besteht schon ein Spielstand. Die bisherige Version bleibt als „Vorherige Karriere“ gesichert. Trotzdem neu beginnen?'))return;
@@ -207,7 +217,7 @@ function startNeu(){
     speichern208(neu.exportieren(),true);
   }
   session=neu;sitzungsUiZuruecksetzen();
-  const ok=speichern(slot!==SLOT_208&&!!vorher);
+  const ok=slot===SLOT_208&&!!vorher?true:speichern(!!vorher);
   aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(pirAktiv?'PIR-1 · Bezahlte Patrouille ab Nadir.':p8gAktiv
    ?'Experimentelle Dravos-Karriere mit bezahltem Bergbau, Transport und Materialverträgen; deine normale Karriere bleibt unverändert.'
    :w6Aktiv?'Unabhängige Konzerne arbeiten auf eigene Rechnung; jeder Auftrag bleibt finanziert.'

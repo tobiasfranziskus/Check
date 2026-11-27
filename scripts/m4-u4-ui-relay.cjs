@@ -377,9 +377,9 @@ function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,ma
 
 // Wheel and focus may animate scrolling after Playwright has delivered the input.
 // Read the resulting viewport after a brief quiet period, bounded by the session clock.
-function waitForScroll(page,ms){
+function waitForScroll(page,ms,quietMs){
  if(ms<=0)return;
- return page.evaluate(limit=>new Promise(resolve=>{
+ return page.evaluate(({limit,quietMs})=>new Promise(resolve=>{
   let quiet,max;
   function finish(){
    clearTimeout(quiet);
@@ -389,12 +389,12 @@ function waitForScroll(page,ms){
   }
   function restart(){
    clearTimeout(quiet);
-   quiet=setTimeout(finish,150);
+   quiet=setTimeout(finish,quietMs);
   }
   document.addEventListener('scroll',restart,true);
   max=setTimeout(finish,limit);
   restart();
- }),ms);
+ }),{limit:ms,quietMs});
 }
 
 async function session(root,out,{chromium,engine='chromium',viewport,executablePath,textMode=false,
@@ -500,7 +500,10 @@ async function session(root,out,{chromium,engine='chromium',viewport,executableP
      if(a.op==='scroll'){await page.mouse.move(a.x,a.y);await page.mouse.wheel(0,a.dy);}
      if(a.op==='wait')await page.waitForTimeout(Math.min(a.ms,Math.max(0,MS-elapsed())));
      if(a.op==='reload')await page.reload({waitUntil:'domcontentloaded'});
-     await waitForScroll(page,Math.min(750,MS-elapsed()));
+     // Smooth wheel scrolling can still be moving when projection work starts.
+     // Allow it to settle within the original session deadline.
+     const wheel=a.op==='scroll';
+     await waitForScroll(page,Math.min(wheel?1500:750,MS-elapsed()),wheel?300:150);
     })();
     inFlight=task;
     try{await Promise.race([task,opened]);}finally{wake=null;}

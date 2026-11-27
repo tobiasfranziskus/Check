@@ -399,9 +399,10 @@ function waitForScroll(page,ms,quietMs){
 }
 
 async function session(root,out,{chromium,engine='chromium',viewport,executablePath,textMode=false,
- markButtons=false,inventory=textMode,captureScreenshots=false,allowDialogs=false,screenshotOnly=false,preparePage}={}){
+ markButtons=false,inventory=textMode,captureScreenshots=false,allowDialogs=false,screenshotOnly=false,allowVisualConfirm=false,preparePage}={}){
  const {width,height}=checkedViewport(viewport);
  if(screenshotOnly&&(textMode||inventory||markButtons||allowDialogs))throw Error('Screenshot-only session cannot use text tools');
+ if(allowVisualConfirm&&!screenshotOnly)throw Error('Visual confirmation requires screenshot-only session');
  if(!['chromium','webkit'].includes(engine))throw Error('Unsupported browser engine');
  const browserType=chromium||require(process.env.PLAYWRIGHT_MODULE||'playwright')[engine];
  const server=serverFor(root);
@@ -421,9 +422,9 @@ async function session(root,out,{chromium,engine='chromium',viewport,executableP
   if(textMode)await page.addInitScript(installInputGuard,guardKey);
   let nativeDialog=false,pending=null,wake=null,inFlight=null;
   page.on('dialog',d=>{
-   // Only an actual confirm in an opted-in text session during a UI action
+   // Only an actual confirm in an opted-in session during a UI action
    // may await an explicit tester decision. No automatic acceptance.
-   if(allowDialogs&&textMode&&wake&&!pending&&d.type()==='confirm'){
+   if(((allowDialogs&&textMode)||(allowVisualConfirm&&screenshotOnly))&&wake&&!pending&&d.type()==='confirm'){
     pending=d;wake();return;
    }
    nativeDialog=true;d.dismiss().catch(()=>{});
@@ -448,6 +449,12 @@ async function session(root,out,{chromium,engine='chromium',viewport,executableP
    const blockedDialog=()=>({round:rounds,elapsedMs:elapsed(),done:true,error:'Native browser dialog unsupported; infrastructure blocked'});
    if(nativeDialog)return blockedDialog();
    const obs={round:rounds,remaining:Math.max(0,LIMIT-rounds),width,height};
+   if(pending&&screenshotOnly){
+    // Native browser chrome cannot be captured in a viewport PNG.
+    const message=pending.message();
+    if(!allowVisualConfirm||typeof message!=='string'||message.length>600||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(message))return blockedDialog();
+    return {...obs,nativeConfirm:{type:'confirm',message},elapsedMs:elapsed(),done:rounds>=LIMIT||elapsed()>=MS};
+   }
    if(pending){
     obs.visibleText='[Browser-Bestätigungsdialog] '+pending.message().replace(/[\u0000-\u001f]/g,' ').slice(0,600)+'\n[dialog: accept = bestätigen, dismiss = abbrechen]';
     obs.dialog='confirm';
@@ -457,12 +464,12 @@ async function session(root,out,{chromium,engine='chromium',viewport,executableP
    }
    if(screenshotOnly){
     const budget=MS-elapsed();
-    if(budget<=0||rounds>=LIMIT)return {...obs,done:true,elapsedMs:elapsed()};
+    if(budget<=0||(rounds>=LIMIT&&!allowVisualConfirm))return {...obs,done:true,elapsedMs:elapsed()};
     const name='round-'+String(rounds).padStart(2,'0')+'.png';
     const image=await page.screenshot({type:'png',fullPage:false,scale:'css',timeout:Math.min(4000,budget)});
     if(nativeDialog)return blockedDialog();
     fs.writeFileSync(path.join(out,name),image,{mode:0o600});
-    return {...obs,screenshot:name,image,elapsedMs:elapsed(),done:elapsed()>=MS};
+    return {...obs,screenshot:name,image,elapsedMs:elapsed(),done:rounds>=LIMIT||elapsed()>=MS};
    }
    if(!pending&&(!textMode||captureScreenshots)){const name='round-'+String(rounds).padStart(2,'0')+'.jpg';
     await page.screenshot({path:path.join(out,name),type:'jpeg',quality:65,timeout:4000});obs.screenshot=name;}
@@ -471,7 +478,8 @@ async function session(root,out,{chromium,engine='chromium',viewport,executableP
   }
   async function step(raw){
    const a=action(raw,{width,height});
-   if(screenshotOnly&&!VISUAL_ACTIONS.includes(a.op))throw Error('Unsupported action or field');
+   if(screenshotOnly&&!VISUAL_ACTIONS.includes(a.op)&&!(allowVisualConfirm&&pending&&a.op==='dialog'))throw Error('Unsupported action or field');
+   if(screenshotOnly&&allowVisualConfirm&&pending&&!['dialog','stop'].includes(a.op))throw Error('Unsupported action or field');
    if(screenshotOnly&&nativeDialog)return observe();
    if(closed||rounds>=LIMIT||elapsed()>=MS||a.op==='stop'){await close();return {done:true,round:rounds,elapsedMs:elapsed()};}
    // Reject invalid inventory commands before spending a round or sending input.

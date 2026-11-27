@@ -1,8 +1,10 @@
 'use strict';
 const assert=require('node:assert/strict');
 const J8=require('../prototypes/verbund/konzern-session.js');
+const W5=require('../prototypes/w5ac/session.js');
 
 const standard='aphros-void:spielerkarriere:regel204:v1';
+const revised='aphros-void:spielerkarriere:regel208:v1';
 const haus='aphros-void:spielerkarriere:haus-erz:v1';
 const w6='aphros-void:spielerkarriere:regel207-forschung:v1';
 const pir='aphros-void:spielerkarriere:pir-1:v1';
@@ -39,20 +41,44 @@ async function pruefeHausErz(browser,art,width,height,url) {
  const minute=()=>page.locator('[data-advance="1"]').tap();
  const menu=()=>el('open-menu').tap();
  const modi=()=>el('neues-spiel').tap();
- const impl=J8.erstellen(),forschung=J8.erstellen();
+ const impl=J8.erstellen(),forschung=J8.erstellen(),legacy=J8.erstellen();
+ // Historical normal career, actually produced by the original Rule195→204
+ // entry. No conversion of a 208 save and no new House-Ore rule.
+ legacy.starten195(W5.create(42,'private195').export(),true);
+ const original204=legacy.exportieren();
+ assert.equal(JSON.parse(original204).rulesVersion,204);
  impl.startenPiraten(true);
  forschung.startenP8g(true);
  await page.addInitScript(({paare})=>{
    if(location.pathname.endsWith('/prototypes/spiel/index.html'))
      for(const [k,v] of paare)if(!localStorage.getItem(k))localStorage.setItem(k,v);
- },{paare:[[pir,impl.exportieren()],[w6,forschung.exportieren()]]});
+ },{paare:[[standard,original204],[pir,impl.exportieren()],[w6,forschung.exportieren()]]});
  try{
    await page.goto(url);
    await page.waitForURL('**/prototypes/spiel/index.html');
+   // A new normal career must be Rule208, while the real old save stays intact.
    await el('karriere-direkt').tap();
+   await el('spielwelt').waitFor({state:'visible'});
+   const original208=await slot(revised);
+   assert.ok(original208);
+   assert.equal(JSON.parse(original208).rulesVersion,208);
+   assert.equal(await slot(standard),original204);
+   assert.equal(await slot(haus),null);
+   // Explicitly resume the old career; the historical paid purchase and
+   // House-Ore copy are performed through the real browser commands.
+   await menu();await modi();
+   await page.locator('#career-recovery summary').tap();
+   await el('fortsetzen-204').tap();
+   await el('spielwelt').waitFor({state:'visible'});
+   assert.equal(await slot(standard),original204);
    await page.locator('[data-action="buy-st_aldera-frachter"]').tap();
-   const vorher=await Promise.all([standard,pir,w6].map(slot));
+   const vorher=await Promise.all([standard,revised,pir,w6].map(slot));
    assert.ok(vorher.every(Boolean));
+   const gekauft=JSON.parse(vorher[0]);
+   assert.equal(gekauft.rulesVersion,204);
+   assert.equal(gekauft.owners.house.cash,2250);
+   assert.ok(Object.values(gekauft.ships).some(sh=>sh.owner==='house'&&sh.klasse==='frachter'));
+   assert.equal(vorher[1],original208);
    await menu();await modi();
    let done=dialoge([false]);
    await el('kopie-haus-erz').tap();
@@ -122,9 +148,9 @@ async function pruefeHausErz(browser,art,width,height,url) {
    await datei(bezahlt);
    await done();
    await page.waitForFunction(({key,save})=>localStorage.getItem(key)===save,{key:haus,save:bezahlt});
-   assert.deepEqual(await Promise.all([standard,pir,w6].map(slot)),vorher);
+   assert.deepEqual(await Promise.all([standard,revised,pir,w6].map(slot)),vorher);
    assert.deepEqual(fehler,[]);
-   console.log(art,width,height,'HAUS_ERZ_BROWSER_OK',JSON.stringify({vorschauMs,beleg:b}));
+   console.log(art,width,height,'HAUS_ERZ_BROWSER_OK',JSON.stringify({vorschauMs,beleg:b,legacyRule:204,newRule:208,allFourOtherSlotsUnchanged:true}));
  }finally{await ctx.close();}
 }
 module.exports=pruefeHausErz;

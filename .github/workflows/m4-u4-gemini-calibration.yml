@@ -1,0 +1,68 @@
+name: M4-U4 Gemini – neutrale Koordinatenkalibrierung
+on:
+  workflow_dispatch:
+    inputs:
+      google_visual_consent:
+        description: 'Neutrale isolierte Bilder an Google senden, Testartefakte 7 Tage speichern. Google kann Gratisinhalte zur Produktverbesserung nutzen.'
+        type: boolean
+        default: false
+      free_project_confirmed:
+        description: 'Ich bestätige ein Gemini-Free-Tier-Projekt ohne aktivierte Abrechnung.'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: m4-u4-live-pilot
+  cancel-in-progress: false
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check branch and consent (no secret)
+        env:
+          M4_CONSENT: ${{ inputs.google_visual_consent }}
+          M4_FREE_PROJECT: ${{ inputs.free_project_confirmed }}
+        run: |
+          if [ "$GITHUB_REF" != refs/heads/main ] || [ "$M4_CONSENT" != true ] || [ "$M4_FREE_PROJECT" != true ]; then exit 1; fi
+  calibration:
+    needs: preflight
+    if: github.ref == 'refs/heads/main' && inputs.google_visual_consent == true && inputs.free_project_confirmed == true
+    environment: m4-blindtest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser without model credentials
+        run: |
+          npm install --prefix "$RUNNER_TEMP/m4-ui" playwright@1.51.1
+          "$RUNNER_TEMP/m4-ui/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Run at most four neutral image requests
+        env:
+          M4_AI_MODEL: gemini-3.5-flash-lite
+          M4_OBSERVATION_MODE: screenshot-only
+          M4_AI_PROVIDER: gemini
+          M4_ALLOW_REMOTE: '1'
+          M4_GEMINI_VISUAL_CONSENT: '1'
+          M4_GEMINI_FREE_CONFIRMED: '1'
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          M4_PRODUCT_SHA: ${{ github.sha }}
+          M4_CALIBRATION_OUT: ${{ runner.temp }}/m4-calibration
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then echo 'Fehlendes Environment-Secret GEMINI_API_KEY.' >&2; exit 1; fi
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/m4-ui/node_modules/playwright"
+          node scripts/m4-u4-gemini-calibration.cjs
+      - name: Upload neutral evidence, not game acceptance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m4-u4-gemini-calibration-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/m4-calibration
+          retention-days: 7
+          if-no-files-found: warn

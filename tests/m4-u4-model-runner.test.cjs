@@ -82,17 +82,16 @@ test('mobile workflow has explicit main consent, protected environment and no PR
  assert.match(y,/workflow_dispatch:/);assert.doesNotMatch(y,/^\s*(pull_request(?:_target)?|push|schedule):/m);
  assert.match(y,/github\.ref == 'refs\/heads\/main' && inputs\.consent == true/);
  assert.match(y,/environment: m4-blindtest/);assert.match(y,/persist-credentials: false/);
- assert.equal((y.match(/secrets\.OPENROUTER_API_KEY/g)||[]).length,2);
- const probeStep=y.indexOf('      - name: Probe free models before browser installation');
+ assert.equal((y.match(/secrets\.OPENROUTER_API_KEY/g)||[]).length,1);
  const installStep=y.indexOf('      - name: Install browser without model credentials');
- const pilotStep=y.indexOf('      - name: Run independent model pilot');
- assert.ok(probeStep>0&&probeStep<installStep&&installStep<pilotStep);
- assert.match(y.slice(probeStep,installStep),/--probe > "\$TMPDIR\/probe\.json"/);
+ const pilotStep=y.indexOf('      - name: Run screenshot-only module');
+ assert.ok(installStep>0&&installStep<pilotStep);
  assert.doesNotMatch(y.slice(installStep,pilotStep),/OPENROUTER_API_KEY|continue-on-error|if: always/);
- assert.match(y,/m4-live\/probe\.json/);
+ assert.doesNotMatch(y,/--probe|auto-free|openrouter\/free/);
+ assert.match(y,/round-\*\.png/);
  assert.match(y,/retention-days: 7/);assert.match(y,/UNREVIEWED/);
- assert.match(y,/default: 'auto-free'/);
- assert.match(y.slice(pilotStep),/M4_AI_MODEL: \$\{\{ steps\.probe\.outputs\.model \}\}/);assert.doesNotMatch(y,/M4_AI_MODEL===\x22openrouter\/free\x22/);
+ assert.match(y.slice(pilotStep),/M4_AI_MODEL: google\/gemma-4-26b-a4b-it:free/);
+ assert.match(y.slice(pilotStep),/M4_OBSERVATION_MODE: screenshot-only/);
 });
 
  test('free router allowed only with explicit consent and key',()=>{

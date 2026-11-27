@@ -5,6 +5,7 @@ const readline=require('node:readline'), os=require('node:os');
 const {randomUUID}=require('node:crypto');
 const {performance}=require('node:perf_hooks');
 const WIDTH=1180, HEIGHT=820, LIMIT=12, MS=300000;
+const VISUAL_ACTIONS=Object.freeze(['click','scroll','type','wait','reload','stop']);
 const TARGETS_PER_PAGE=20, MAX_TARGETS=4000;
 const SELECT_KEYS=Object.freeze(['ArrowUp','ArrowDown','Home','End','Enter','Escape','Space']);
 const DEFAULT_VIEWPORT=Object.freeze({width:WIDTH,height:HEIGHT});
@@ -398,8 +399,9 @@ function waitForScroll(page,ms,quietMs){
 }
 
 async function session(root,out,{chromium,engine='chromium',viewport,executablePath,textMode=false,
- markButtons=false,inventory=textMode,captureScreenshots=false,allowDialogs=false,preparePage}={}){
+ markButtons=false,inventory=textMode,captureScreenshots=false,allowDialogs=false,screenshotOnly=false,preparePage}={}){
  const {width,height}=checkedViewport(viewport);
+ if(screenshotOnly&&(textMode||inventory||markButtons||allowDialogs))throw Error('Screenshot-only session cannot use text tools');
  if(!['chromium','webkit'].includes(engine))throw Error('Unsupported browser engine');
  const browserType=chromium||require(process.env.PLAYWRIGHT_MODULE||'playwright')[engine];
  const server=serverFor(root);
@@ -443,7 +445,8 @@ async function session(root,out,{chromium,engine='chromium',viewport,executableP
   const elapsed=()=>Math.round(performance.now()-started);
   async function observe(){
    if(closed)throw Error('Session closed');
-   if(nativeDialog)return {round:rounds,elapsedMs:elapsed(),done:true,error:'Native browser dialog unsupported; infrastructure blocked'};
+   const blockedDialog=()=>({round:rounds,elapsedMs:elapsed(),done:true,error:'Native browser dialog unsupported; infrastructure blocked'});
+   if(nativeDialog)return blockedDialog();
    const obs={round:rounds,remaining:Math.max(0,LIMIT-rounds),width,height};
    if(pending){
     obs.visibleText='[Browser-Bestätigungsdialog] '+pending.message().replace(/[\u0000-\u001f]/g,' ').slice(0,600)+'\n[dialog: accept = bestätigen, dismiss = abbrechen]';
@@ -452,6 +455,15 @@ async function session(root,out,{chromium,engine='chromium',viewport,executableP
     lastProjection=await project();
     Object.assign(obs,lastProjection.observation);
    }
+   if(screenshotOnly){
+    const budget=MS-elapsed();
+    if(budget<=0||rounds>=LIMIT)return {...obs,done:true,elapsedMs:elapsed()};
+    const name='round-'+String(rounds).padStart(2,'0')+'.png';
+    const image=await page.screenshot({type:'png',fullPage:false,scale:'css',timeout:Math.min(4000,budget)});
+    if(nativeDialog)return blockedDialog();
+    fs.writeFileSync(path.join(out,name),image,{mode:0o600});
+    return {...obs,screenshot:name,image,elapsedMs:elapsed(),done:elapsed()>=MS};
+   }
    if(!pending&&(!textMode||captureScreenshots)){const name='round-'+String(rounds).padStart(2,'0')+'.jpg';
     await page.screenshot({path:path.join(out,name),type:'jpeg',quality:65,timeout:4000});obs.screenshot=name;}
    lastObservation=obs;
@@ -459,6 +471,8 @@ async function session(root,out,{chromium,engine='chromium',viewport,executableP
   }
   async function step(raw){
    const a=action(raw,{width,height});
+   if(screenshotOnly&&!VISUAL_ACTIONS.includes(a.op))throw Error('Unsupported action or field');
+   if(screenshotOnly&&nativeDialog)return observe();
    if(closed||rounds>=LIMIT||elapsed()>=MS||a.op==='stop'){await close();return {done:true,round:rounds,elapsedMs:elapsed()};}
    // Reject invalid inventory commands before spending a round or sending input.
    let picked;
@@ -528,4 +542,4 @@ async function main(){
  }}finally{clearTimeout(timer);rl.close();process.stdin.pause();await s.close();}
 }
 if(require.main===module)main().catch(()=>{console.error('Browser adapter unavailable or startup failed');process.exitCode=1;});
-module.exports={action,serverFor,session,WIDTH,HEIGHT,LIMIT,MS,checkedViewport,browserOptions,SELECT_KEYS,MAX_TARGETS,TARGETS_PER_PAGE};
+module.exports={action,serverFor,session,WIDTH,HEIGHT,LIMIT,MS,checkedViewport,browserOptions,SELECT_KEYS,MAX_TARGETS,TARGETS_PER_PAGE,VISUAL_ACTIONS};

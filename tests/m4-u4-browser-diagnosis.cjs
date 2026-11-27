@@ -10,13 +10,21 @@ const root=path.resolve(__dirname,'..');
 const sha=()=>execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 const digest=data=>createHash('sha256').update(data).digest('hex');
 
-async function diagnose(module,options,out){
+async function diagnose(module,options,out,screenshotOnly){
  const fixture=prepare(module);
  const evidence={checkout:sha(),node:process.version,module,engine:options.engine,viewport:options.viewport,
-  fixture:{id:fixture.id,hash:fixture.hash,sha256:fixture.sha256},steps:[],findings:{}};
+  testMode:screenshotOnly?'screenshot-only-technical-test':'text-diagnostic',fixture:{id:fixture.id,hash:fixture.hash,sha256:fixture.sha256},steps:[],findings:{}};
  let relay,page,view;
  const f=evidence.findings;
- const record=step=>evidence.steps.push({step,observation:view});
+ const record=step=>{
+  const {image,...observation}=view;
+  if(screenshotOnly&&!view.error){
+   assert.ok(Buffer.isBuffer(image));
+   assert.deepEqual(image,fs.readFileSync(path.join(out,view.screenshot)));
+   assert.deepEqual(Object.keys(observation).sort(),['done','elapsedMs','height','remaining','round','screenshot','width']);
+  }
+  evidence.steps.push({step,observation});
+ };
  const step=async command=>{
   view=await relay.step(command);
   record(command);
@@ -33,6 +41,10 @@ async function diagnose(module,options,out){
   return {x,y};
  }
  async function scrollPage(dy){
+  if(screenshotOnly){
+   await step({op:'scroll',x:10,y:Math.floor(view.height/2),dy});
+   return;
+  }
   const scroll=view.scrollRegions.find(region=>region.kind==='page'&&(dy<0?region.up:region.down));
   assert.ok(scroll,'No reachable page scroll point');
   await step({op:'scroll',x:scroll.x,y:scroll.y,dy});
@@ -51,6 +63,11 @@ async function diagnose(module,options,out){
   const p=await navigate(selector);
   const button=page.locator(selector);
   const box=await button.boundingBox();
+  if(screenshotOnly){
+   assert.ok(await button.evaluate((el,p)=>el.contains(document.elementFromPoint(p.x,p.y)),p));
+   await step({op:'click',...p});
+   return;
+  }
   const t=view.targets.find(t=>t.x>=box.x&&t.x<box.x+box.width&&t.y>=box.y&&t.y<box.y+box.height);
   assert.ok(t,`Missing target for ${selector} near ${JSON.stringify(p)}`);
   assert.ok(await button.evaluate((el,p)=>el.contains(document.elementFromPoint(p.x,p.y)),t));
@@ -62,36 +79,43 @@ async function diagnose(module,options,out){
 
  fs.mkdirSync(out,{recursive:true});
  try{
-  relay=await session(root,out,{...options,textMode:true,captureScreenshots:true,allowDialogs:true,preparePage:async p=>{
+  const mode=screenshotOnly?{screenshotOnly:true}:{textMode:true,captureScreenshots:true,allowDialogs:true};
+  relay=await session(root,out,{...options,...mode,preparePage:async p=>{
    page=p;
    await importPrepared(page,fixture);
    evidence.browserVersion=page.context().browser().version();
   }});
   view=await relay.observe();
   checkpoint('validated-start');
-  assert.match(view.visibleText,/Kommandobrücke/);
   assert.equal(view.round,0);
-  f.initialTruncated=view.visibleText.includes('Anzeige gekürzt');
-  f.initialTargets=view.targets.map(t=>t.label);
+  if(!screenshotOnly){
+   assert.match(view.visibleText,/Kommandobrücke/);
+   f.initialTruncated=view.visibleText.includes('Anzeige gekürzt');
+   f.initialTargets=view.targets.map(t=>t.label);
+  }
   if(module==='C'){
    await navigate('#manager-erz-aktion');
-   assert.match(view.visibleText,/Erzgeschäft|Erzcharge|Exportkäufer/);
+   if(!screenshotOnly)assert.match(view.visibleText,/Erzgeschäft|Erzcharge|Exportkäufer/);
    checkpoint('ore-disposition');
    f.oreButton=await label('#manager-erz-aktion');
    f.oreReason=await label('#manager-erz-grund');
    f.oreEnabled=await page.locator('#manager-erz-aktion').isEnabled();
    await pick('#tab-flotte');
    await navigate('#manager-flotte-auswahl');
-   assert.ok(view.targets.some(t=>t.kind==='select'));
+   if(!screenshotOnly){
+    assert.ok(view.targets.some(t=>t.kind==='select'));
+    f.fleetSelectLabels=view.targets.filter(t=>t.kind==='select').map(t=>t.label);
+   }
    checkpoint('fleet-selector');
-   f.fleetSelectLabels=view.targets.filter(t=>t.kind==='select').map(t=>t.label);
   }
   if(module==='D'){
    const explanation=/wenig Platz|Kleinere Lieferungen|Wasserwerk/;
    const p=await navigate('#manager-transport-grund');
-   f.blockVisibleAfterFirstScroll=explanation.test(view.visibleText);
-   if(!f.blockVisibleAfterFirstScroll)await scrollPage(p.y-140);
-   assert.match(view.visibleText,explanation);
+   if(!screenshotOnly){
+    f.blockVisibleAfterFirstScroll=explanation.test(view.visibleText);
+    if(!f.blockVisibleAfterFirstScroll)await scrollPage(p.y-140);
+    assert.match(view.visibleText,explanation);
+   }
    checkpoint('storage-block');
    f.block=await label('#manager-transport-grund');
    assert.match(f.block,/Nadir hat zu wenig Platz/);
@@ -106,7 +130,7 @@ async function diagnose(module,options,out){
   }
   if(module==='E'){
    await navigate('#p3-invest-aktion');
-   assert.ok(view.targets.some(t=>t.kind==='button'&&/Miner verbindlich kaufen/.test(t.label)),
+   if(!screenshotOnly)assert.ok(view.targets.some(t=>t.kind==='button'&&/Miner verbindlich kaufen/.test(t.label)),
     'Investment offer missing from the visible target inventory');
    f.investment=await label('#p3-invest-ziel');
    f.investmentEnabled=await page.locator('#p3-invest-aktion').isEnabled();
@@ -119,7 +143,7 @@ async function diagnose(module,options,out){
   if(module==='F'){
    const initial={cash:await label('#hausgeld'),time:await label('#zeit'),orders:await label('#sektor-auftraege')};
    await pick('#welt-sichern');
-   assert.match(view.visibleText,/Karriere lokal gesichert/);
+   if(!screenshotOnly)assert.match(view.visibleText,/Karriere lokal gesichert/);
    checkpoint('saved');
    assert.equal(await saved(),fixture.json);
    f.savedSha256=digest(await saved());
@@ -131,7 +155,7 @@ async function diagnose(module,options,out){
    checkpoint('reloaded-menu');
    await pick('#fortsetzen');
    checkpoint('resumed-after-reload');
-   assert.match(view.visibleText,/Kommandobrücke/);
+   if(!screenshotOnly)assert.match(view.visibleText,/Kommandobrücke/);
    assert.equal(await saved(),fixture.json);
    f.reloadedSha256=digest(await saved());
    f.initial=initial;
@@ -154,15 +178,15 @@ async function diagnose(module,options,out){
 }
 
 async function main(){
- const out=process.argv[2];
+ const out=process.argv[2],screenshotOnly=process.argv[3]==='--screenshot-only';
  if(!out)throw Error('Usage: node tests/m4-u4-browser-diagnosis.cjs <output-directory>');
  let failures=0;
  for(const size of ['1180x820','1024x768']){
   const options=browserOptions({...process.env,M4_UI_VIEWPORT:size});
   for(const module of ['C','D','E','F']){
-   const testId=`${options.engine}-${size}-${module}`;
+   const testId=`${options.engine}-${size}-${module}${screenshotOnly?'-visual':''}`;
    try{
-    await diagnose(module,options,path.resolve(out,testId));
+    await diagnose(module,options,path.resolve(out,testId),screenshotOnly);
     console.log(testId,'PASS');
    }catch(error){
     failures++;

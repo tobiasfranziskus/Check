@@ -1,4 +1,4 @@
-name: M4-U4 Gemini-Spieltest (mobil)
+name: M4-U4 Gemini-Textdiagnose (mobil)
 on:
   workflow_dispatch:
     inputs:
@@ -66,6 +66,7 @@ jobs:
       - name: Probe fixed Gemini model (no game text)
         env:
           M4_AI_PROVIDER: gemini
+          M4_OBSERVATION_MODE: text-diagnostic
           M4_AI_MODEL: ${{ inputs.model }}
           M4_ALLOW_REMOTE: '1'
           M4_GEMINI_FREE_CONFIRMED: '1'
@@ -87,6 +88,7 @@ jobs:
           M4_MODULE: ${{ inputs.module }}
           M4_AI_MODEL: ${{ inputs.model }}
           M4_AI_PROVIDER: gemini
+          M4_OBSERVATION_MODE: text-diagnostic
           M4_ALLOW_REMOTE: '1'
           M4_GEMINI_FREE_CONFIRMED: '1'
           M4_LOCAL_DIAGNOSTIC: ${{ inputs.diagnostic && '1' || '0' }}
@@ -117,7 +119,7 @@ jobs:
             const module=["A","B","C","D","E","F"].includes(process.env.M4_MODULE)?process.env.M4_MODULE:"unbekannt";
             const n=Number.isInteger(r.actions)&&r.actions>=0&&r.actions<=12?r.actions:0;
             const elapsed=Number.isFinite(r.elapsedMs)&&r.elapsedMs>=0&&r.elapsedMs<=600000?(r.elapsedMs/1000).toFixed(2)+" s":"nicht gemeldet";
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,["## M4-U4 Gemini-Spieltest","","Modul: "+module,"Modell: "+model,"Profil: "+(process.env.M4_LOCAL_DIAGNOSTIC==="1"?"Nummerierte Buttons (Diagnose)":"Freie Koordinaten"),"API-Probe: "+(p?.reason==="PROBE_OK"?"OK":"Nicht erfolgreich"),"Transportstatus: "+reason,"Diagnose: "+detail,"Aktionen: "+n,"Dauer: "+elapsed,"Checkout: "+process.env.GITHUB_SHA,"","Spielabnahme: UNREVIEWED. Evidenz und Pages-Gleichheit separat prüfen."].join("\n"));
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,["## M4-U4 Gemini-Textdiagnose","","Modul: "+module,"Modell: "+model,"Profil: "+(process.env.M4_LOCAL_DIAGNOSTIC==="1"?"Nummerierte Buttons (Diagnose)":"Freie Koordinaten"),"API-Probe: "+(p?.reason==="PROBE_OK"?"OK":"Nicht erfolgreich"),"Transportstatus: "+reason,"Diagnose: "+detail,"Aktionen: "+n,"Dauer: "+elapsed,"Checkout: "+process.env.GITHUB_SHA,"","Ausschließlich technische Textdiagnose. Spielabnahme: UNREVIEWED."].join("\n"));
             if(reason==="INFRASTRUCTURE"){console.error("M4-U4 Gemini: "+detail);process.exitCode=1;}
           '
       - name: Upload isolated test evidence

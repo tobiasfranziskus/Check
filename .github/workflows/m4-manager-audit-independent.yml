@@ -1,0 +1,88 @@
+name: M4 independent manager reproduction
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/m4-manager-audit-independent.yml'
+permissions:
+  contents: read
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - strategy: standard-etappen
+            hash: 3283b7ce2844a8e4
+            cash: '16780'
+            week: '1548'
+            receipts: '3000'
+            costs: '1200'
+            last-day: '500'
+          - strategy: s02-werft-etappen-ersatz
+            hash: abf9e75658e929e4
+            cash: '11315'
+            week: '417'
+            receipts: '2010'
+            costs: '1404'
+            last-day: '250'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 2fd3def1553674c3c05cb2ba9d9d81b968c3ccf1
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pinned original source and independent replay
+        env:
+          STRATEGY: ${{ matrix.strategy }}
+          EXPECT_HASH: ${{ matrix.hash }}
+          EXPECT_CASH: ${{ matrix.cash }}
+          EXPECT_WEEK: ${{ matrix.week }}
+          EXPECT_RECEIPTS: ${{ matrix.receipts }}
+          EXPECT_COSTS: ${{ matrix.costs }}
+          EXPECT_DAY: ${{ matrix['last-day'] }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "2fd3def1553674c3c05cb2ba9d9d81b968c3ccf1"
+          node --version
+          node --test --test-name-pattern="^(Original-Genesis|$STRATEGY ·)" tests/codex-m4-alternative-manager-audit.cjs > "$RUNNER_TEMP/manager-audit.log"
+          node - "$RUNNER_TEMP/manager-audit.log" <<'NODE'
+          const fs = require('node:fs');
+          const assert = require('node:assert/strict');
+          const log = fs.readFileSync(process.argv[2], 'utf8');
+          const marker = 'CODEX_M4_ALTERNATIVE_RESULT ';
+          const matches = log.split('\n').filter(l => l.includes(marker));
+          assert.equal(matches.length, 1, 'exactly one audited strategy');
+          const a = JSON.parse(matches[0].slice(matches[0].indexOf(marker) + marker.length));
+          const end = a.checkpoints['day-60'];
+          assert.equal(a.strategy, process.env.STRATEGY);
+          assert.equal(a.activeUntilDay60, true);
+          assert.equal(end.tick, 86400);
+          assert.equal(end.hash, process.env.EXPECT_HASH);
+          assert.equal(end.cash.house, Number(process.env.EXPECT_CASH));
+          assert.equal(a.lastWeek.cashChange, Number(process.env.EXPECT_WEEK));
+          assert.equal(a.lastWeek.receipts, Number(process.env.EXPECT_RECEIPTS));
+          assert.equal(a.lastWeek.costs, Number(process.env.EXPECT_COSTS));
+          assert.equal(a.lastWeek.lastDayReceipts, Number(process.env.EXPECT_DAY));
+          assert.ok(a.lastWeek.paidDays >= 2);
+          assert.equal(end.world.money, 33000);
+          assert.equal(end.world.minted, 0);
+          assert.equal(end.world.burned, 0);
+          assert.match(log, /^# fail 0$/m);
+          assert.match(log, /^# pass 2$/m);
+          const summary = { strategy: a.strategy, tick: end.tick, hash: end.hash, cash: end.cash.house,
+            lastWeek: a.lastWeek, world: end.world, activeUntilDay60: a.activeUntilDay60 };
+          console.log('INDEPENDENT_MANAGER_PASS', JSON.stringify(summary));
+          fs.writeFileSync(process.argv[2] + '.json', JSON.stringify(summary, null, 2));
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: manager-audit-${{ matrix.strategy }}
+          path: |
+            ${{ runner.temp }}/manager-audit.log
+            ${{ runner.temp }}/manager-audit.log.json

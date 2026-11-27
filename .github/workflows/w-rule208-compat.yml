@@ -1,0 +1,75 @@
+name: W-20261127-03 – Rule208 compatibility and long-term audit
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/w-rule208-compat.yml'
+      - 'tests/w-20261127-03-rule208-compat.cjs'
+      - 'tests/w-20261127-03-npc-ore-reservation.test.mjs'
+      - 'prototypes/welt/**'
+      - 'prototypes/verbund/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rule208-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  pinned-old-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 26ebf69c53c0a958b69457c5c0ff1826c9f52fd1
+          path: legacy204
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify the actual older source and run both loaders
+        run: |
+          set -euo pipefail
+          test "$(git -C legacy204 rev-parse HEAD)" = "26ebf69c53c0a958b69457c5c0ff1826c9f52fd1"
+          node --version
+          node tests/w-20261127-03-rule208-compat.cjs compat legacy204
+  revision-longterm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {scenario: S01, days: 90}
+          - {scenario: S02, days: 90}
+          - {scenario: S03, days: 90}
+          - {scenario: S04, days: 90}
+          - {scenario: S05, days: 90}
+          - {scenario: S06, days: 90}
+          - {scenario: S07, days: 90}
+          - {scenario: S08, days: 90}
+          - {scenario: S09, days: 90}
+          - {scenario: S10, days: 90}
+          - {scenario: S11, days: 90}
+          - {scenario: S12, days: 90}
+          - {scenario: S13, days: 90}
+          - {scenario: S02, days: 365}
+          - {scenario: S02, days: 730}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Original-world policy, revised contract rule, checked save/ledger
+        env:
+          SCENARIO: ${{ matrix.scenario }}
+          DAYS: ${{ matrix.days }}
+        run: |
+          set -euo pipefail
+          node --version
+          node tests/w-20261127-03-rule208-compat.cjs longterm "$SCENARIO" "$DAYS" | tee rule208.jsonl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rule208-${{ matrix.scenario }}-${{ matrix.days }}
+          path: rule208.jsonl

@@ -520,7 +520,8 @@ test('M4 management: early funded industry diversification vs standard control',
 });
 
 
-// Round 8: the existing S02 start exactly as published in spiel.js:176-200.
+// Rounds 8/9: the existing S02 start exactly as published in spiel.js:176-200.
+// Round 9 corrects the test-only replacement ferry timing after inspecting actual logs.
 // This is neither the ordinary standard career nor a new rule/combined profile.
 test('M4 management: published S02 opt-in, funded fleet replacement and 60-day gate', {timeout:20*60*1000},()=>{
   const standard=start(),standardJson=standard.exportieren();
@@ -618,6 +619,7 @@ test('M4 management: published S02 opt-in, funded fleet replacement and 60-day g
   let lastRevenue=j.zustandReferenz().stats.konto.house.erloes,
     lastIncome=j.zustandReferenz().tick,lastDecision=lastIncome,lastFreight=0,
     stopped=null,lastDay=0;
+  const replacementFerries=[],blockedFerries=new Set();
   while(j.zustandReferenz().tick<LIMIT){
     const s=check(j),w=j.weltReferenz(),tick=s.tick,{offers,p}=quote(j);
     if(s.stats.konto.house.erloes>lastRevenue){lastRevenue=s.stats.konto.house.erloes;lastIncome=tick;}
@@ -632,25 +634,53 @@ test('M4 management: published S02 opt-in, funded fleet replacement and 60-day g
     const activeMiner=miners.some(sh=>s.kanon.pendel[sh.id]&&!s.kanon.pendel[sh.id].beenden);
     const freight=offers.find(o=>o.ok&&o.id.startsWith('freight-'));
     const capable=carriers.some(sh=>sh.system==='aldera'&&(w.restAktivminuten(s,sh.id)??Infinity)>=120);
-    const ferry=offers.find(o=>o.ok&&o.id.startsWith('reposition-'));
     const buyerReady=p.eisFrei>=p.eisCharge&&p.nadirKasse>=p.nadirFrachtbedarf
       &&p.hausKasse>=p.frachtLohnbedarf;
     const sourceReady=p.eisLager>=p.eisCharge||p.alderaKasse>=p.ankaufKosten;
     let acted=false;
-    if(freight){
+    // A replacement bought for a genuinely financed route is an existing
+    // asset, not a fresh speculative purchase. Its paid ferry need NOT
+    // coincide with 50 free ice slots in Nadir. The old audit mistakenly
+    // required buyerReady/sourceReady at the ferry decision as well.
+    const pending=carriers.filter(sh=>sh.system==='nadir'&&s.w5.schiffIds.includes(sh.id)
+      &&!s.w5ac.completed.some(t=>t.id===sh.id));
+    const pendingOffer=offers.find(o=>o.ok&&pending.some(sh=>o.id==='reposition-'+sh.id));
+    for(const sh of pending){
+      const o=offers.find(o=>o.id==='reposition-'+sh.id);
+      if(o&&!o.ok&&!blockedFerries.has(sh.id)){
+        assert.equal(deny(j,o.id),o.reason);
+        blockedFerries.add(sh.id);
+        console.log('M4_MANAGEMENT_60D_S02_FERRY_BLOCKED',JSON.stringify({tick,id:sh.id,reason:o.reason,
+          w3:s.w3.auftrag,w5n:s.w5n.frachtauftrag,w5ac:s.w5ac.active}));
+      }
+    }
+    if(pendingOffer&&p.hausKasse>=pendingOffer.kosten+p.frachtLohnbedarf){
+      assert.deepEqual([pendingOffer.kosten,pendingOffer.minuten],[60,60]);
+      const id=pendingOffer.id.slice(11),cash=s.owners.house.cash;
+      act(pendingOffer.id,'deploy already purchased replacement at first observed legal paid ferry window');
+      const paid=check(j);
+      assert.equal(paid.owners.house.cash,cash-60);
+      assert.equal(paid.w5ac.active?.id,id);
+      assert.equal(paid.w5ac.active?.owner,'house');
+      replacementFerries.push({id,start:tick,cost:60,buyerReady,sourceReady});
+      checkpoint('replacement-ferry-paid-'+id);
+      acted=true;
+    }else if(freight){
       act(freight.id,'accept actually funded house F4 with available original hull');
       acted=true;
     }else if(!capable&&!p.frachtOffen&&buyerReady&&sourceReady){
-      if(ferry){
-        act(ferry.id,'bring existing paid W5 hull to route without manual flight');acted=true;
-      }else if(!carriers.some(sh=>sh.system==='nadir')&&!s.w5ac.active){
+      if(!carriers.some(sh=>sh.system==='nadir')&&!s.w5ac.active){
         // Only a needed replacement, not speculative purchase of all output.
         const buy=available('buy-st_aldera-frachter')||available('buy-st_nadir-frachter');
         if(buy){
           const need=(buy.kaufPlan?.kaufpreis??w.rules.economy.waren.frachter.basis)
             +(buy.id.includes('nadir')?(buy.kaufPlan?.ueberfuehrung?.kosten??60):0)
             +p.frachtLohnbedarf;
-          if(p.hausKasse>=need){act(buy.id,'replace exhausted productive carrier only while route is financed');acted=true;}
+          if(p.hausKasse>=need){
+            act(buy.id,'replace exhausted productive carrier only while route is financed');
+            checkpoint('replacement-purchase');
+            acted=true;
+          }
         }
       }
     }
@@ -679,6 +709,8 @@ test('M4 management: published S02 opt-in, funded fleet replacement and 60-day g
       stopped={tick,lastIncome,lastDecision,reason:'seven days without receipt or new funded productive decision, no active house freight'};
       break;
     }
+    // Use normal 10-minute manager steps while awaiting a free global
+    // transfer slot. Do not skip a newly purchased hull's first quote.
     const step=p.frachtOffen||acted||s.w5ac.active?60:10,remain=LIMIT-tick;
     advance(remain>=step?step:remain>=10?10:1);
     const day=Math.floor(j.zustandReferenz().tick/DAY);
@@ -689,6 +721,13 @@ test('M4 management: published S02 opt-in, funded fleet replacement and 60-day g
   assert.ok(end.freight.completed>=1,'real house business, not just NPC world evolution');
   assert.equal(end.freight.fees,end.freight.completed*240);
   assert.equal(end.freight.wages,end.freight.completed*120);
+  for(const ferry of replacementFerries){
+    const receipt=end.industry.transfers.find(t=>t.id===ferry.id&&t.owner==='house');
+    assert.ok(receipt,'replacement transfer must complete with original receipt');
+    assert.deepEqual([receipt.start,receipt.ankunft,receipt.kosten,receipt.minuten],
+      [ferry.start,ferry.start+60,60,60]);
+  }
+  assert.ok(replacementFerries.length>=1,'known reachable replacement ferry must be exercised');
   deny(j,'industrialOreAcceptFreight');
   let replay=activate();
   assert.equal(replay.exportieren(),initial);
@@ -710,7 +749,7 @@ test('M4 management: published S02 opt-in, funded fleet replacement and 60-day g
     profile:'published Rule204 S02 opt-in',tick:end.tick,hash:end.hash,stop:stopped,
     lastIncome,lastDecision,houseCash:end.cash.house,houseAccount:end.houseAccount,
     freight:end.freight,industry:end.industry,owned:end.owned,
-    cash:end.cash,world:end.world,actions:trace.filter(x=>x.id),
+    cash:end.cash,world:end.world,replacementFerries,actions:trace.filter(x=>x.id),
     checkpoints:reports.length,replay:true,standardSourceUnchanged:true,
     scope:'Existing published S02 only; no Haus-Erz combination, no standard pass, no private rescue; one need-based replacement strategy, not an exhaustive optimizer. Technical JSON separation, not separate browser storage slots.'
   }));

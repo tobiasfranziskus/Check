@@ -7,7 +7,8 @@ const path=require('node:path');
 const pw=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const W=require('../prototypes/welt/welt-kern.js');
 const ROOT=path.resolve(__dirname,'..');
-const standard='aphros-void:spielerkarriere:regel204:v1';
+const standard='aphros-void:spielerkarriere:regel208:v1';
+const legacy='aphros-void:spielerkarriere:regel204:v1';
 const pir='aphros-void:spielerkarriere:pir-1:v1';
 const browserName=process.env.WELT_BROWSER||'chromium';
 const viewports=[[1180,820],[1024,768],[820,1180],[390,844]];
@@ -25,6 +26,8 @@ async function pruefen(browser,url,width,height){
   await tap('#neues-spiel');await tap('#karriere-starten');
   const normal=await save(standard);
   assert(normal&&!JSON.parse(normal).kanon.piraten);
+  assert.equal(JSON.parse(normal).rulesVersion,208);
+  assert.equal(await save(legacy),null);
   await page.reload();await tap('#neues-spiel');
   assert.equal(await page.locator('#pir-start').isChecked(),false);
   await tap('label[for="pir-start"]');await tap('#karriere-starten');
@@ -48,6 +51,7 @@ async function pruefen(browser,url,width,height){
   const text=await save(pir), w=W.erstellenPiraten(), result=w.load(text);
   assert(result.owners.pilot_piraten.cash>0);
   assert.equal(await save(standard),normal);
+  assert.equal(await save(legacy),null);
   const download=page.waitForEvent('download');await tap('#welt-export');
   const json=await readFile(await (await download).path());
   assert.equal(json.toString(),text);
@@ -59,6 +63,7 @@ async function pruefen(browser,url,width,height){
   assert.equal(await save(pir),text);
   await tap('#open-menu');await tap('#fortsetzen');
   assert.equal(await marke.count(),0);assert.equal(await save(standard),normal);
+  assert.equal(await save(legacy),null);
   assert.deepEqual(errors,[]);
   console.log(JSON.stringify({browser:browserName,width,height,hash:w.hash(result),lohn:result.owners.pilot_piraten.cash}));
  }finally{await context.close();}

@@ -32,8 +32,10 @@ jobs:
           set -euo pipefail
           test "$(git -C legacy204 rev-parse HEAD)" = "26ebf69c53c0a958b69457c5c0ff1826c9f52fd1"
           node --version
+          node tests/w-20261127-03-rule208-compat.cjs smoke legacy204
           node tests/w-20261127-03-rule208-compat.cjs compat legacy204
   revision-longterm:
+    needs: pinned-old-build
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:

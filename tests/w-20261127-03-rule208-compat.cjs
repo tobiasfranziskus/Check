@@ -29,6 +29,63 @@ function compareGenesis(a,b){
  assert.equal(A.rulesVersion,204);assert.equal(B.rulesVersion,208);
  delete A.rulesVersion;delete B.rulesVersion;assert.deepEqual(B,A);
 }
+// Cheap real Node22 prerequisite: fresh careers, actual old build,
+ // independent money/ware audit, strict cross-version loaders and original P2.
+function smoke(oldDirectory){
+ const oldRoot=path.resolve(oldDirectory);
+ assert.notEqual(oldRoot,path.resolve(__dirname,'..'));
+ const OldW=require(path.join(oldRoot,'prototypes/welt/welt-kern.js'));
+ const OldJ8=require(path.join(oldRoot,'prototypes/verbund/konzern-session.js'));
+ const OldSource=require(path.join(oldRoot,'prototypes/w5ac/session.js'));
+ assert.equal(OldW.erstellenNpcErz208,undefined);
+ const reports=[];
+ for(const s02 of [false,true]){
+  const old=OldJ8.erstellen(),current=J8.erstellen(),fresh=J8.erstellen();
+  old.starten195(OldSource.create(42,'private195').export(),true);
+  current.starten195(OLD.create(42,'private195').export(),true);
+  if(s02)for(const j of [old,current]){
+   const w=j.weltReferenz(),s=j.zustandReferenz();
+   w.politikSetzen(s,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
+   w.npcAutoSetzen(s,true);w.npcSiliziumSetzen(s,true);
+  }
+  fresh.starten208(true,s02);
+  const oldSave=old.exportieren(),newSave=fresh.exportieren(),w=fresh.weltReferenz(),s=fresh.zustandReferenz();
+  assert.equal(current.exportieren(),oldSave);
+  compareGenesis(oldSave,newSave);
+  assert.equal(w.regel,208);assert.equal(s.tick,0);
+  assert.equal(s.owners.house.cash,3000);
+  assert.equal(s.kanon.silizium.vorrat,16);
+  assert.equal(s.kanon.silizium.felder,undefined);
+  assert.equal(w.rules.j2b.nebenfeld,undefined);
+  for(const key of ['p8c','p8d','materialSupplyEnabled','piraten','hausErz'])assert.equal(s.kanon[key],undefined,key);
+  assert.equal(roundtrip(w,s),newSave);
+  assert.equal(J8.erstellen().oeffnen204(oldSave,true).hash,old.ansicht().hash);
+  assert.equal(J8.erstellen().oeffnen208(newSave,true).hash,fresh.ansicht().hash);
+  assert.throws(()=>OldJ8.erstellen().oeffnen204(newSave,true),/Regel204/);
+  assert.throws(()=>OldW.erstellenJ4c(cap).load(newSave),/Regelversion/);
+  assert.throws(()=>J8.erstellen().oeffnen204(newSave,true),/Regel204/);
+  assert.throws(()=>J8.erstellen().oeffnen208(oldSave,true),/Regel208/);
+  for(const j of [current,fresh]){
+   assert.equal(j.ausfuehren('buy-st_aldera-miner').ok,true);
+   const id=j.ansicht().schiffe[0].id;
+   assert.equal(j.uebernehmen(id).ok,true);
+   const cmd=(type,extra={})=>({type,owner:'house',schiff:id,...extra});
+   assert.equal(j.flugBefehl(cmd('shipUndock')).ok,true);
+   j.flugSchritte(60);
+   assert.equal(j.zustandReferenz().ships[id].flug.lage,'frei');
+   for(const action of [cmd('shipLock',{zielArt:'station',ziel:'st_aldera'}),
+     cmd('shipOrbit',{zielArt:'station',ziel:'st_aldera',radius:120000}),cmd('shipUnlock')]){
+    const res=j.flugBefehl(action);assert.equal(res.ok,true,action.type+': '+res.reason);
+    const ww=j.weltReferenz(),ss=j.zustandReferenz();
+    roundtrip(ww,ss);
+   }
+  }
+  compareGenesis(current.exportieren(),fresh.exportieren());
+  reports.push({s02,oldGenesisHash:old.ansicht().hash,rule208Hash:fresh.ansicht().hash,tick:fresh.zustandReferenz().tick,
+   siliconField:16,worldMoney:33000});
+ }
+ console.log('RULE208_GENESIS_SMOKE',JSON.stringify({reports,pinnedOldBuild:true,crossVersionRejected:true,p2PaidFlight:true}));
+}
 function compat(oldDirectory){
  const oldRoot=path.resolve(oldDirectory);
  assert.notEqual(oldRoot,path.resolve(__dirname,'..'));
@@ -102,6 +159,7 @@ function longterm(id,days){
   scope:'same original W6 policies, new revision, no forced solvency or artificial trade'}));
 }
 const [mode,arg,days]=process.argv.slice(2);
-if(mode==='compat')compat(arg);
+if(mode==='smoke')smoke(arg);
+else if(mode==='compat')compat(arg);
 else if(mode==='longterm')longterm(arg,Number(days));
-else throw Error('usage: compat OLD_CHECKOUT | longterm SCENARIO DAYS');
+else throw Error('usage: smoke OLD_CHECKOUT | compat OLD_CHECKOUT | longterm SCENARIO DAYS');

@@ -40,6 +40,27 @@ function quote(j){
   assert.equal(j.exportieren(),before,'quotes and manager view must not book');
   return {offers,p};
 }
+// W-20261127-02: record original binding objects, not a UI inference.
+function freightBindings(j){
+  const s=j.zustandReferenz(),w=j.weltReferenz();
+  const a=s.w3.auftrag, i=s.kanon.industrieErz, e=s.w5n.frachtauftrag;
+  const ship=id=>{const sh=s.ships[id];return sh?{id,owner:sh.owner,klasse:sh.klasse,
+    system:sh.system,phase:sh.phase,auftrag:sh.auftrag,flug:sh.flug?.lage,
+    cargo:sh.ladung,pendel:s.kanon.pendel[id]??null,
+    oreContract:s.erzpilotVertraege?.[id]??null,retired:w.stillgelegt(s,id),
+    remaining:w.restAktivminuten(s,id)}:null;};
+  return JSON.parse(JSON.stringify({
+    w3:a,ice:e,industry:i,transfer:s.w5ac.active,returnWater:s.kanon.rueckfracht,
+    minerTransfer:s.kanon.minerWerft?.transport??null,
+    w3Carrier:ship(a?.schiff),w3Miner:ship(a?.industrieMiner),
+    houseCarriers:Object.values(s.ships).filter(sh=>sh.owner==='house'&&sh.klasse==='frachter').map(sh=>ship(sh.id)),
+    openHouseF4:(s.kanon.spielerFrachten?.auftraege??[]).filter(x=>x.end===null),
+    lastHouseF4:s.kanon.spielerFrachten?.auftraege.at(-1)??null,
+    reserves:Object.fromEntries(['w3_kauf_treuhand','w3_arbeit_treuhand','k7_werft_treuhand',
+      'w5n_fracht_kauf','w5n_fracht_arbeit','w5ac_transfer_reserved'].map(id=>[id,s.owners[id]?.cash??0])),
+    oreAtSource:s.stations.st_aldera.lager.erz,oreAtDestination:s.stations.st_nadir.lager.erz
+  }));
+}
 function snapshot(j,kind,q=quote(j)){
   const s=audit(j),w=j.weltReferenz(),p=q.p;
   const row={kind,tick:s.tick,day:s.tick/DAY,hash:j.ansicht().hash,
@@ -53,7 +74,7 @@ function snapshot(j,kind,q=quote(j)){
       cargo:sh.ladung,pendel:s.kanon.pendel[sh.id]??null,
       value:w.buchwert(s,sh.id),retired:w.stillgelegt(s,sh.id)})),
     w3:s.w3.abgeschlossen,w4:s.w4.abgeschlossen,w5:s.w5.fertig,
-    ledger:s.ledger,manager:{ice:p.abbau,freight:p.transport,ore:p.erzauftrag,
+    bindings:freightBindings(j),ledger:s.ledger,manager:{ice:p.abbau,freight:p.transport,ore:p.erzauftrag,
       pause:p.aussetzen,exportCash:p.erzExportKasse,oreCost:p.erzKosten,
       nadirIceFree:p.eisFrei,nadirCash:p.nadirKasse,nadirFreightCost:p.nadirFrachtbedarf},
     offers:q.offers.map(({id,ok,reason})=>({id,ok,reason}))};
@@ -301,6 +322,13 @@ test('M4 management: continuous standard career, real decisions, audited stop or
   }
   const end=checkpoint('final');
   assert.ok(end.tick===LIMIT||stop);
+  // Pinned standard control: its observed stop is not a foreign W3 reservation.
+  assert.equal(end.tick,9120);
+  assert.equal(end.bindings.w3,null);
+  assert.equal(end.bindings.ice,null);
+  assert.equal(end.bindings.reserves.w3_kauf_treuhand,0);
+  assert.equal(end.bindings.reserves.w3_arbeit_treuhand,0);
+  assert.equal(deny(j,'freight-sh003'),'Eislager Nadir voll');
   // Check genuine original ownership and money/commodity audits at every
   // checkpoint. Negative commands do not change any byte of the save.
   for(const id of ['ore-sh001','industrialOreAcceptFreight','freight-sh003-20'])deny(j,id);
@@ -567,7 +595,7 @@ test('M4 management: published S02 opt-in, funded fleet replacement and 60-day g
       industry:{w3:s.w3.abgeschlossen,w4:s.w4.abgeschlossen,w5:s.w5.fertig,
         replacement:s.kanon.ersatzkaeufe,transfers:s.w5ac.completed},
       npc:s.kanon.npc,privateWater:s.kanon.haushalte.pilot_house??null,
-      books:book,world:w.bericht(s),offers:offers.map(({id,ok,reason,kaufPlan})=>({id,ok,reason,kaufPlan}))
+      bindings:freightBindings(j),books:book,world:w.bericht(s),offers:offers.map(({id,ok,reason,kaufPlan})=>({id,ok,reason,kaufPlan}))
     }));
     reports.push(row);
     console.log('M4_MANAGEMENT_60D_S02_CHECKPOINT',JSON.stringify(row));
@@ -728,7 +756,57 @@ test('M4 management: published S02 opt-in, funded fleet replacement and 60-day g
       [ferry.start,ferry.start+60,60,60]);
   }
   assert.ok(replacementFerries.length>=1,'known reachable replacement ferry must be exercised');
+  // Independent reproduction on the unchanged strategy and original stop.
+  assert.equal(end.tick,42650);
+  assert.equal(end.hash,'f066f574f2748a4c');
+  const bound=end.bindings, old=j.exportieren(), w=j.weltReferenz();
+  const hull=bound.houseCarriers.find(sh=>sh.id==='sh026');
+  assert.equal(hull.owner,'house');
+  assert.deepEqual([hull.system,hull.phase,hull.auftrag,hull.flug,hull.retired,hull.remaining],
+    ['aldera','dock','halten','angedockt',false,2320]);
+  assert.ok(Object.values(hull.cargo).every(n=>n===0));
+  assert.equal(hull.pendel,null);
+  assert.equal(bound.ice,null);
+  assert.equal(bound.transfer,null);
+  assert.deepEqual(bound.openHouseF4,[]);
+  assert.deepEqual([bound.lastHouseF4.schiff,bound.lastHouseF4.start,bound.lastHouseF4.geliefert,
+    bound.lastHouseF4.end,bound.lastHouseF4.menge,bound.lastHouseF4.fracht,bound.lastHouseF4.arbeit],
+    ['sh026',32450,32510,32570,50,240,120]);
+  assert.ok(bound.w3,'original global W3 binding');
+  assert.notEqual(bound.w3.schiff,'sh026');
+  assert.equal(bound.w3Carrier.owner,'transport');
+  assert.equal(bound.w3.phase,'vorbestellt');
+  assert.deepEqual([bound.reserves.w3_kauf_treuhand,bound.reserves.w3_arbeit_treuhand,
+    bound.reserves.k7_werft_treuhand],[740,120,530]);
+  assert.deepEqual([bound.reserves.w5n_fracht_kauf,bound.reserves.w5n_fracht_arbeit,
+    bound.reserves.w5ac_transfer_reserved],[0,0,0]);
+  assert.equal(deny(j,'freight-sh026'),'Frachter bereits gebunden');
+  const commands=j.angebote();
+  assert.ok(!commands.some(o=>o.id==='industrialOreCancel'));
+  const playerCancel=deny(j,'industrialOreCancel');
   deny(j,'industrialOreAcceptFreight');
+  // Counterfactual authority probe ONLY on independent original save clones.
+  // Never perform an NPC command in the played or replayed strategy.
+  const rejected=w.load(old);
+  const ownCancel=w.execute(rejected,{type:'industrialOreCancel',owner:'house'});
+  assert.equal(ownCancel.ok,false);
+  assert.equal(w.save(rejected),old);
+  const probe=w.load(old);
+  const buyerCancel=w.execute(probe,{type:'industrialOreCancel',owner:'st_nadir'});
+  let afterCancel=null;
+  if(buyerCancel.ok){
+    assert.deepEqual(pruefen(w,probe),[]);
+    assert.equal(probe.w3.auftrag,null);
+    assert.deepEqual([probe.owners.w3_kauf_treuhand.cash,probe.owners.w3_arbeit_treuhand.cash,
+      probe.owners.k7_werft_treuhand.cash],[0,0,0]);
+    const q=open(w.save(probe));
+    const post=quote(q).offers.find(o=>o.id==='freight-sh026');
+    afterCancel={bindings:freightBindings(q),offer:post,world:w.bericht(probe)};
+  }else assert.equal(w.save(probe),old);
+  assert.equal(j.exportieren(),old);
+  console.log('M4_MANAGEMENT_60D_W3_BINDING',JSON.stringify({tick:end.tick,hash:end.hash,
+    bindings:bound,playerCancel,ownCancel,buyerCancel,afterCancel,
+    sourceUnchanged:true,scope:'Counterfactual legal-owner command on isolated save only; no NPC impersonation or cancellation in actual manager trace.'}));
   let replay=activate();
   assert.equal(replay.exportieren(),initial);
   for(let n=0;n<trace.length;n++){

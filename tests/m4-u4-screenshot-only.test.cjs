@@ -305,7 +305,7 @@ test('Gemini visual manual workflow gates the controller and artifact upload on 
  }
  assert.match(workflow,/needs: preflight\n    if: github\.ref == 'refs\/heads\/main' && inputs\.google_visual_consent == true && inputs\.free_project_confirmed == true/);
  assert.equal((workflow.match(/secrets\./g)||[]).length,1);
- assert.match(workflow,/Run screenshot-only module\n        env:[\s\S]*?GEMINI_API_KEY: \$\{\{ secrets\.M4_GEMINI_VISUAL_API_KEY \}\}/);
+ assert.match(workflow,/Run screenshot-only module\n        env:[\s\S]*?GEMINI_API_KEY: \$\{\{ secrets\.GEMINI_API_KEY \}\}/);
  assert.match(workflow,/retention-days: 7/);
  const preflight=workflow.split('          if [ "$GITHUB_REF"')[1].split('\n  pilot:')[0];
  const script='if [ "$GITHUB_REF"'+preflight;

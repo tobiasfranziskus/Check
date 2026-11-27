@@ -112,8 +112,9 @@ function viewportObservation({markButtons,inventory,targetPage,targetsPerPage,ma
    // Generated boxes can enter the viewport even when the host is empty or offscreen.
    for(const pseudo of ['::before','::after']){
     const generated=getComputedStyle(el,pseudo);
+    // WebKit can report an empty opacity for a painted pseudo-element.
     if(generated.content==='none'||generated.content==='normal'||generated.display==='none'||
-       generated.visibility!=='visible'||Number(generated.opacity)===0)continue;
+       generated.visibility!=='visible'||generated.opacity==='0')continue;
     if(generated.pointerEvents!=='none'&&!['absolute','fixed'].includes(generated.position))continue;
     // Generated layers have no DOM rectangles. A negative layer in an
     // isolated host paints behind the host's ordinary content only.

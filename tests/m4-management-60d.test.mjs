@@ -871,8 +871,21 @@ test('M4 management: published S02 opt-in, funded fleet replacement and 60-day g
   const acceptance=changes.find(x=>x.accepted);
   assert.ok(acceptance);
   // Earlier reached checkpoints cover empty cancellation and actual W3 transit.
-  const emptySource=unbegun??recoverySources.get(7220);
-  assert.ok(emptySource);
+  // Automatic commitment may already initiate undocking in the same minute.
+  // Build a genuinely unbegun counterfactual from the untouched S02 start
+  // with only original, authorized commands, no injected cash/ship/flags.
+  const unbegunFixture=w.load(initial);
+  const coreAct=cmd=>{const res=w.execute(unbegunFixture,cmd);assert.equal(res.ok,true,cmd.type+': '+res.reason);};
+  coreAct({type:'shipBuy',owner:'transport',station:'st_aldera',klasse:'frachter'});
+  const firstNPC=Object.values(unbegunFixture.ships).find(sh=>sh.owner==='transport'&&sh.klasse==='frachter');
+  assert.ok(firstNPC);
+  coreAct({type:'industrialOreOffer',owner:'st_nadir',miner:'sh001',frachter:firstNPC.id});
+  coreAct({type:'industrialOreAcceptMine',owner:'npc3'});
+  coreAct({type:'industrialOreAcceptFreight',owner:'transport'});
+  coreAct({type:'industrialOreAcceptYard',owner:'werft_extern'});
+  coreAct({type:'industrialOreCommit',owner:'st_nadir'});
+  assert.deepEqual(pruefen(w,unbegunFixture),[]);
+  const emptySource=unbegun??w.save(unbegunFixture);
   const empty=w.load(emptySource);
   assert.equal(empty.kanon.industrieErz.erzAngenommen,false);
   assert.equal(empty.erzpilotVertraege?.[empty.w3.auftrag.industrieMiner],undefined);
@@ -881,6 +894,8 @@ test('M4 management: published S02 opt-in, funded fleet replacement and 60-day g
   const cases=[rejectCancel(emptySource,'foreign house','house'),
     rejectCancel(emptySource,'foreign carrier','transport'),
     rejectCancel(partial,'real partial ore'),
+    rejectCancel(recoverySources.get(11520),'earlier actual partial ore'),
+    rejectCancel(recoverySources.get(7220),'already undocking'),
     rejectCancel(activeSource,'active W3 return')];
   const emptyRefund=refund(emptySource,'unbegun W3/W1',false);
   const lateRefund=refund(old,'W1 accepted, W3 still unbegun (existing behavior, NOT proposed automatic recovery)',true);

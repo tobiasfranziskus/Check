@@ -4,6 +4,8 @@ on:
     paths:
       - 'scripts/m4-u4-ui-relay.cjs'
       - 'scripts/m4-u4-model-runner.cjs'
+      - 'scripts/m4-u4-gemini-calibration.cjs'
+      - '.github/workflows/m4-u4-gemini-calibration.yml'
       - 'scripts/m4-u4-startstand.cjs'
       - 'tests/m4-u4-*.cjs'
       - '.github/workflows/m4-u4-visible-controls.yml'

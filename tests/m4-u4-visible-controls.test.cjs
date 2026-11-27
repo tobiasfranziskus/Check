@@ -217,6 +217,14 @@ for(const size of ['1180x820','1024x768']){
      const view=await relay.observe();
      observations.push(view);
      assert.match(view.visibleText,/Visible control/);
+     if(view.visibleText.includes('PSEUDO_SENTINEL')){
+      const paint=await page.locator('#host').evaluate((el,pseudo)=>{
+       const style=getComputedStyle(el,'::'+pseudo);
+       return Object.fromEntries(['content','display','visibility','opacity','position','pointerEvents','zIndex']
+        .map(property=>[property,style[property]]));
+      },pseudo);
+      assert.fail(`Covered text was projected; pseudo style: ${JSON.stringify(paint)}`);
+     }
      if(inventory){
       const target=view.targets.find(t=>t.label==='Visible control');
       assert.ok(target);

@@ -84,6 +84,7 @@ test('NPC ore: original #665 S02 career, real accepted 50 at tick32640 survives 
   assert.throws(()=>J8.erstellen().oeffnenPiraten(accepted,true));
   assert.throws(()=>J8.erstellen().oeffnenP8g(accepted,true));
   for(const [label,mutate] of [
+    ['missing reservation proof',q=>{delete q.w3.auftrag.npcErzReserviert;}],
     ['wrong quantity',q=>q.w3.auftrag.npcErzReserviert=49],
     ['missing consent',q=>q.kanon.industrieErz.signFracht=false],
     ['wrong carrier',q=>q.kanon.industrieErz.frachter='sh026'],

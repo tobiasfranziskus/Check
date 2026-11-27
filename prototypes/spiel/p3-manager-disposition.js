@@ -5,7 +5,7 @@
 'use strict';
 const natural=x=>Number.isSafeInteger(x)&&x>=0;
 function auswerten(w,s,angebote){
- if(!s||![204,207].includes(s.rulesVersion)||!w||w.regel!==s.rulesVersion||
+ if(!s||![204,207,208].includes(s.rulesVersion)||!w||w.regel!==s.rulesVersion||
    !Array.isArray(angebote)||w.audit(s).ok!==true)
    throw Error('Manageraufträge benötigen einen gültigen Originalweltstand und echte Angebote');
  const house=s.owners?.house?.cash,aldera=s.owners?.st_aldera?.cash,
@@ -58,7 +58,7 @@ function auswerten(w,s,angebote){
           'Deine Bergbauschiffe in Aldera sind für andere Aufträge eingeteilt.'};
  // Alternative W1 commodity: exclusively a quoted, paid, player-owned miner
  // contract. No extra world, revenue formula or third-party industry authority.
- const ore=s.rulesVersion!==204
+ const ore=![204,208].includes(s.rulesVersion)
    ?{aktion:null,bereit:false,titel:'Erzauftrag nicht verfügbar',
       grund:'Für diese Karriere gibt es kein Angebot für lokale Erzförderung in Aldera.'}
    :miners.length===0

@@ -17,7 +17,7 @@ function dock(s,sh) {
     && sh.system===st.system ? b.anker : null;
 }
 function pruefen(w,s,aktiv,ziel,sitzung){
-  if(![204,207].includes(s?.rulesVersion)||w?.regel!==s.rulesVersion||typeof w.audit!=='function')
+  if(![204,207,208].includes(s?.rulesVersion)||w?.regel!==s.rulesVersion||typeof w.audit!=='function')
     return ablehnung('Nur eine Regel204-Welt mit Original-Core ist zulässig');
   if(!sitzung || typeof sitzung.spielt!=='boolean'
      || !Object.prototype.hasOwnProperty.call(sitzung,'patrouille')
@@ -51,7 +51,7 @@ function pruefen(w,s,aktiv,ziel,sitzung){
   });
 }
 function liste(w,s,aktiv,sitzung){
-  if(![204,207].includes(s?.rulesVersion)||!s.ships)
+  if(![204,207,208].includes(s?.rulesVersion)||!s.ships)
     throw Error('J6: keine Regel204-Flotte');
   return Object.freeze(Object.values(s.ships).filter(sh=>sh.owner==='house')
     .sort((a,b)=>a.id.localeCompare(b.id,'de'))
@@ -83,7 +83,7 @@ function rollenGrund(s,sh){
   return null;
 }
 function pruefenRolle(w,s,aktiv,ziel,sitzung){
-  if(![204,207].includes(s?.rulesVersion)||w?.regel!==s.rulesVersion||!s?.ships)
+  if(![204,207,208].includes(s?.rulesVersion)||w?.regel!==s.rulesVersion||!s?.ships)
     return ablehnung('Nur die originale Regel204-Welt ist zulässig');
   if(!sitzung||typeof sitzung.spielt!=='boolean'
      ||!Object.hasOwn(sitzung,'patrouille')||!Object.hasOwn(sitzung,'duell'))

@@ -1,0 +1,15 @@
+# M4-U4 Gemini 3.5 Flash-Lite als visueller Alternativtransport
+
+CODEX-20261127-03 · Basis `15bfcc1d58b55a4fa1ceb472e2c35e0ad2a2264c` · technischer Mock-Nachweis
+
+Der Controller sendet pro Versuch genau das aktuelle Viewport-PNG als Gemini-`inlineData` (`image/png`), das neutrale Modulziel und generische Rundendaten. Er prüft Bildgröße, Dimensionen und PNG-Chunk-Prüfsummen. Das Aktionsschema erlaubt nur die bestehenden Screenshot-Aktionen. Dialoge bleiben ein Infrastrukturabbruch. Der feste native HTTPS-Endpunkt verwendet den Key ausschließlich im Header und folgt keinen Redirects. Das genaue `modelVersion`-Feld muss `gemini-3.5-flash-lite` lauten. Fehlende oder abweichende Identität sowie HTTP 429 beenden den Lauf. Das bestehende Budget von fünf Minuten, zwölf Aktionen, höchstens zwei Versuchen je Runde, 64 KiB Antwort und 1024 Ausgabetokens gilt auch hier. Es gibt keinen Anbieter-, Modell- oder Textfallback.
+
+Der separate Workflow ist nur manuell und auf `main` mit gepinntem GitHub-SHA startbar. Beide Bestätigungen stehen auf `false`. Google-Bildübertragung und siebentägige GitHub-Artefaktspeicherung brauchen eine eigene Zustimmung. Hinzu kommt die ausdrückliche Bestätigung eines Free-Tier-Projekts ohne aktivierte Abrechnung. Das Secret `M4_GEMINI_VISUAL_API_KEY` der Umgebung `m4-blindtest` wird nur dem Controller-Schritt bereitgestellt und vor dem Browserstart aus der Prozessumgebung entfernt. Sitzungen nutzen isolierte Teststarts.
+
+Google führt Flash-Lite mit Bildinput und Free Tier. Der konkrete Projekttarif lässt sich anhand des API-Keys nicht prüfen. Die Workflow-Bestätigung ist daher eine Nutzerbestätigung, keine technische Nullpreisgarantie. Google kann Inhalte aus Gratisdiensten zur Produktverbesserung nutzen. Die OpenRouter-Zustimmung gilt ausschließlich für OpenRouter. [Google-Preisliste](https://ai.google.dev/gemini-api/docs/pricing) · [Nutzungsbedingungen](https://ai.google.dev/gemini-api/terms)
+
+## Reproduzierbare Prüfung
+
+- Node 22 · `node --test tests/*.test.mjs`
+- Browser-CI · vorhandener Workflow `m4-u4-visible-controls.yml` mit Chromium und WebKit. Die Runner-Mocks prüfen den exakten Bildpayload bei 1180×820 und 1024×768, echte Klicks, Scrollen und Reload sowie die Dialogsperre. Negative Fälle prüfen manipulierte PNGs, Koordinaten, Identität, Quota, Antwortlimits, Moduswechsel, zugelassene Wiederholung, Workflow-Zustimmungen und Secret-Isolation. Die bestehenden C–F-Browserdiagnosen laufen im selben CI-Workflow.
+- Ergebnisse und Belege stehen im Draft-PR und in der Übergabe auf [#658](https://github.com/tobiasfranziskus/Check/issues/658). Der Auftrag umfasst keinen Live-Aufruf. Unabhängige QA und die formale A–F-Abnahme bleiben offen.

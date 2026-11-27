@@ -16,7 +16,7 @@
 <header class="topline">
  <a class="brand" href="../../index.html" aria-label="Aphros Void – Hauptseite"><span class="brand-mark">AV</span><span>APHROS <b>VOID</b></span></a>
  <span class="topline-status" id="mode-indicator">OFFLINE · ALDERA-SEKTOR</span>
- <button id="open-menu" class="ghost" type="button" hidden>Menü</button>
+ <button id="open-menu" class="ghost" type="button" hidden>Hauptmenü</button>
 </header>
 <main>
 <section id="startseite" class="splash">
@@ -106,6 +106,7 @@
    <p id="p3-handelszahlen" class="p3-zahlen"></p>
    <p id="p3-handelssperre-detail"></p>
   </details>
+  <button id="p3-auftragszentrale" class="ghost" type="button" aria-controls="panel-auftraege">Zur Auftragszentrale</button>
  </section>
  <section id="management-spielfeld" aria-labelledby="sektor-titel">
   <div class="sektor-kopf">
@@ -124,7 +125,7 @@
  <div class="game-grid">
   <section class="world-center" aria-label="Spielaktionen und Flotte">
    <div class="tabs" role="group" aria-label="Konzerntabs">
-    <button id="tab-auftraege" data-tab="auftraege" aria-pressed="true">Aufträge</button>
+    <button id="tab-auftraege" data-tab="auftraege" aria-pressed="true">Auftragszentrale</button>
     <button id="tab-flotte" data-tab="flotte" aria-pressed="false">Meine Flotte</button>
     <button id="tab-universum" data-tab="universum" aria-pressed="false">Wirtschaftsbericht</button>
     <button id="tab-jaeger" data-tab="jaeger" aria-pressed="false">Jägerproduktion</button>
@@ -152,6 +153,7 @@
        <p id="manager-erz-status">Ein anderer Rohstoff, dieselbe echte Wirtschaft: Nur finanzierter Bergbau und reale Abnahme.</p>
        <button id="manager-erz-aktion" type="button" disabled>Erzauftrag prüfen</button>
        <p id="manager-erz-grund" class="p3-sperre" role="status" aria-live="polite"></p>
+       <button id="manager-erz-minerkauf" class="ghost" type="button" hidden>Zum Miner-Kaufangebot</button>
       </article>
      </div>
      <section class="manager-feedback" aria-label="Auftragsfeedback">

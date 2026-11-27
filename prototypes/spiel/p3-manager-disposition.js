@@ -58,14 +58,18 @@ function auswerten(w,s,angebote){
           'Deine Bergbauschiffe in Aldera sind für andere Aufträge eingeteilt.'};
  // Alternative W1 commodity: exclusively a quoted, paid, player-owned miner
  // contract. No extra world, revenue formula or third-party industry authority.
- const ore=miners.length===0
+ const ore=s.rulesVersion!==204
+   ?{aktion:null,bereit:false,titel:'Erzauftrag nicht verfügbar',
+      grund:'Für diese Karriere gibt es kein Angebot für lokale Erzförderung in Aldera.'}
+   :miners.length===0
    ?{aktion:null,bereit:false,titel:'Erzgeschäft: eigenen Miner benötigt',
       grund:'Zuerst ein Bergbauschiff in Aldera kaufen.'}
    :nextOre
      ?{aktion:nextOre.id,bereit:nextOre.quote.ok===true,
         titel:abnahme.auftragsMenge+' Erz für Aldera fördern',grund:nextOre.quote.reason||null}
-     :{aktion:null,bereit:false,titel:'Erzauftrag erst nach Förderpause',
-        grund:'Laufendes Eis- oder Erzpendel zuerst beenden und Miner am Dock freigeben.'};
+     :{aktion:null,bereit:false,titel:'Kein freier Miner für Erz',
+        grund:'Die eigenen Miner in Aldera sind bereits eingeteilt. Eine Förderpause gibt den Miner nach der Rückkehr frei.',
+        minerkauf:mineBuy?.ok===true};
  // Completed/open freight belongs to the company even while its carrier is in Nadir.
  const ownIds=new Set(owned.filter(sh=>sh.klasse==='frachter').map(sh=>sh.id));
  const entries=(s.kanon?.spielerFrachten?.auftraege||[])

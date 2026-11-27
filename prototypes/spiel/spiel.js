@@ -329,9 +329,9 @@ function info(a){
  const kauf=namen.find(n=>n[0]===a.id);
  return kauf?'Schiff im Werftbestand von '+kauf[2]+'.':anzeigetext(a.label);
 }
-function angebotstitel(a){
+function angebotstitel(a,label=titel(a)){
  const preis=a.id.startsWith('reposition-')?a.kosten:scope.P3Handelsweg?.kaufpreis(session.weltReferenz(),a.id);
- return a.ok&&Number.isSafeInteger(preis)?titel(a)+' · '+fmt(preis)+' ISK':titel(a);
+ return a.ok&&Number.isSafeInteger(preis)?label+' · '+fmt(preis)+' ISK':label;
 }
 function datum(ms){return Math.floor(ms/1440)+' Tage · '+(ms%1440)+' Minuten';}
 
@@ -377,6 +377,7 @@ function managerDispositionAnzeigen(s,angebote){
   (p.erzAktiv>0&&p.erzExportKasse<p.erzKosten
    ?' Laufende Erzaufträge können weiter Fluglöhne kosten. Du kannst sie unter „Meine Flotte“ beenden.'
    :'');
+ $('manager-erz-minerkauf').hidden=!p.erzauftrag.minerkauf;
  for(const [id,task] of [['abbau',p.abbau],['transport',p.transport],['erz',p.erzauftrag]]){
   const button=$('manager-'+id+'-aktion');
   button.disabled=!task.bereit;button.textContent=task.titel;
@@ -1056,7 +1057,10 @@ function anzeigen(){
  $('spieleraktionen').replaceChildren(...offers.map(o=>{
   const box=d.createElement('div'),button=d.createElement('button'),small=d.createElement('small');
   box.className='order';
-  button.type='button';button.dataset.action=o.id;button.textContent=angebotstitel(o);button.disabled=!o.ok;
+  const weitererMiner=o.id==='buy-st_aldera-miner'&&a.schiffe.some(sh=>sh.klasse==='miner');
+  button.type='button';button.dataset.action=o.id;
+  button.textContent=angebotstitel(o,weitererMiner?'Weiteren Miner in Aldera kaufen':undefined);
+  button.disabled=!o.ok;
   small.textContent=o.ok?info(o):'Zurzeit gesperrt: '+anzeigetext(o.reason);
   if(o.ok)small.className='available';
   button.addEventListener('click',()=>auftrag(o.id));
@@ -1297,6 +1301,15 @@ $('manager-aussetzen-aktion')?.addEventListener('click',()=>{
 $('manager-abbau-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('abbau'));
 $('manager-erz-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('erz'));
 $('manager-transport-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('transport'));
+$('manager-erz-minerkauf').addEventListener('click',()=>{
+ $('spieleraktionen').querySelector('[data-action="buy-st_aldera-miner"]:enabled')?.focus();
+});
+$('p3-auftragszentrale').addEventListener('click',()=>{
+ tabZeigen('auftraege');
+ const tab=$('tab-auftraege');
+ tab.closest('.tabs').scrollIntoView({block:'start',behavior:'instant'});
+ tab.focus({preventScroll:true});
+});
 $('manager-flotte-auswahl')?.addEventListener('change',event=>{
  managerFlotteAuswahlId=event.currentTarget.value;
  sektorKarte?.eigenesSchiffWaehlen(managerFlotteAuswahlId);

@@ -68,6 +68,146 @@ function deny(j,id){
   return r.reason;
 }
 
+
+// Follow-up 27.11.: all branches originate in the actually replayed standard
+// checkpoint, not a synthesized fixture. Private consumption is not a subsidy
+// for this management strategy. Purchases without a credible sale stay quotes.
+function continuation(source){
+  const original=source.exportieren(),origin=source.zustandReferenz().tick;
+  assert.equal(origin,9120,'pinned original stop, not a fabricated later fixture');
+  assert.equal(source.ansicht().hash,'3f4136e766807b9e');
+  function open(json,profile,copy=false){
+    const j=J8.erstellen();
+    if(profile==='house')j.oeffnenHausErz(json,true,copy?'kopie':'lokal');
+    else j.oeffnen204(json,true);
+    return j;
+  }
+  function check(j,profile){
+    const s=j.zustandReferenz(),w=j.weltReferenz();
+    assert.equal(s.rulesVersion,204);
+    assert.equal(Boolean(w.hausErzProfil),profile==='house');
+    assert.deepEqual(pruefen(w,s),[]);
+    assert.equal(s.minted,0);assert.equal(s.burned,0);
+    return s;
+  }
+  function report(j,profile){
+    const s=check(j,profile),w=j.weltReferenz(),{offers,p}=quote(j);
+    return JSON.parse(JSON.stringify({
+      tick:s.tick,hash:w.hash(s),cash:Object.fromEntries(Object.entries(s.owners).map(([id,o])=>[id,o.cash])),
+      houseAccount:s.stats.konto.house,privateWater:s.kanon.haushalte.pilot_house??null,
+      policy:{waterTarget:s.kanon.politik.wasserwerkBis,iceBuffer:s.kanon.politik.eisPufferAldera,
+        privateSaving:s.kanon.politik.sparquote.pilot_house},
+      warehouses:{aldera:s.stations.st_aldera.lager,nadir:s.stations.st_nadir.lager},
+      ledger:s.ledger,localSales:s.stats.verkaeufe,
+      own:Object.values(s.ships).filter(sh=>sh.owner==='house').map(sh=>({
+        id:sh.id,owner:sh.owner,klasse:sh.klasse,system:sh.system,phase:sh.phase,
+        cargo:sh.ladung,pendel:s.kanon.pendel[sh.id]??null,value:w.buchwert(s,sh.id)})),
+      freight:{completed:p.frachtAbgeschlossen,fees:p.frachtGebuehrBisher,wages:p.frachtLohnBisher},
+      industry:{w3:s.w3.abgeschlossen,w4:s.w4.abgeschlossen,w5:s.w5.fertig,
+        houseReceipts:s.w5ad.freight.filter(f=>f.owner==='house'),
+        contract:s.kanon.industrieErz,active:s.w3.auftrag,gebunden:w.bericht(s).gebunden},
+      offers:offers.map(({id,ok,reason,kaufPlan})=>({id,ok,reason,kaufPlan}))
+    }));
+  }
+  function branch(profile,mode){
+    let j=open(original,profile,profile==='house');
+    const initial=j.exportieren(),before=report(j,profile),trace=[],saves=new Map(),observations=[before];
+    const act=(id,reason)=>{
+      const tick=j.zustandReferenz().tick,old=j.exportieren();
+      const r=j.ausfuehren(id);assert.equal(r.ok,true,id+': '+r.reason);
+      assert.notEqual(j.exportieren(),old);
+      check(j,profile);trace.push({tick,id,reason});
+    };
+    const advance=minutes=>{j.weiterspielen(minutes);trace.push({minutes});};
+    function checkpoint(){
+      const json=j.exportieren();
+      saves.set(trace.length,json);
+      j=open(json,profile);
+      assert.equal(j.exportieren(),json);
+      observations.push(report(j,profile));
+    }
+    if(profile==='standard'){
+      for(const id of ['freight-sh003','ore-sh002','ore-sh004','gate-freight-sh003',
+        'buy-st_nadir-frachter','buy-st_nadir-miner','buy-st_nadir-jaeger','industrialOreAcceptFreight'])
+        deny(j,id);
+      // The remaining green options are not equivalent to a paid order. Only
+      // try an existing ice miner; no need to buy another idle hull.
+      assert.ok(j.angebote().find(o=>o.id==='buy-st_aldera-miner')?.ok);
+      assert.ok(j.angebote().find(o=>o.id==='water-pilot-house-1')?.ok);
+      if(mode==='ice')act('ice-sh002','test existing ice alternative without buying a redundant miner');
+    }else{
+      assert.throws(()=>open(initial,'standard'),/Haus-Erz|Profil/);
+      assert.throws(()=>J8.erstellen().oeffnenHausErz(original,false,'kopie'));
+      deny(j,'industrialOreAcceptFreight');
+      advance(1);checkpoint(); // actual first offer decision
+    }
+    const duration=3*DAY;
+    let paused=false,positive=false;
+    while(j.zustandReferenz().tick<origin+duration){
+      const tick=j.zustandReferenz().tick;
+      if(mode!=='idle'){
+        const {offers,p}=quote(j);
+        const house=offers.find(o=>o.ok&&o.id.startsWith('haus-erz-'));
+        const freight=offers.find(o=>o.ok&&o.id.startsWith('freight-'));
+        const ore=offers.find(o=>o.ok&&o.id.startsWith('ore-'));
+        if(house){act(house.id,'accept a concrete original industrial house offer');positive=true;}
+        else if(freight){act(freight.id,'real renewed F4 opportunity');positive=true;}
+        else if(ore&&p.erzExportKasse>=p.erzKosten){
+          act(ore.id,'real renewed W1 export opportunity');positive=true;
+        }
+        if(mode==='ice'&&!paused&&tick>=origin+DAY){
+          const q=j.angebote().find(o=>o.id==='stop-sh002'&&o.ok);
+          if(q&&!positive){act(q.id,'cost control after testing existing ice capacity');paused=true;}
+        }
+      }
+      const remaining=origin+duration-tick;
+      advance(remaining>=60?60:remaining>=10?10:1);
+      const now=j.zustandReferenz().tick;
+      if(now>=origin+DAY*(observations.filter(o=>o.tick>=origin+DAY).length+1))checkpoint();
+    }
+    checkpoint();
+    const after=report(j,profile),end=j.exportieren();
+    let replay=open(initial,profile);
+    for(let i=0;i<trace.length;i++){
+      const step=trace[i];
+      if(step.id){
+        assert.equal(replay.zustandReferenz().tick,step.tick);
+        const r=replay.ausfuehren(step.id);assert.equal(r.ok,true,step.id+': '+r.reason);
+      }else replay.weiterspielen(step.minutes);
+      if(saves.has(i+1)){
+        assert.equal(replay.exportieren(),saves.get(i+1));
+        replay=open(replay.exportieren(),profile);
+      }
+    }
+    assert.equal(replay.exportieren(),end);
+    assert.equal(source.exportieren(),original,'source must remain byte-identical');
+    const delta={houseCash:after.cash.house-before.cash.house,
+      houseRevenue:after.houseAccount.erloes-before.houseAccount.erloes,
+      houseCost:after.houseAccount.kosten-before.houseAccount.kosten,
+      alderaCash:after.cash.st_aldera-before.cash.st_aldera,
+      nadirCash:after.cash.st_nadir-before.cash.st_nadir,
+      exportCash:after.cash.export-before.cash.export,
+      privateCash:after.cash.pilot_house-before.cash.pilot_house,
+      iceSales:(after.localSales.sh002||0)-(before.localSales.sh002||0),
+      iceTrips:after.freight.completed-before.freight.completed,
+      industrialTrips:after.industry.houseReceipts.length-before.industry.houseReceipts.length};
+    for(const f of after.industry.houseReceipts.slice(before.industry.houseReceipts.length))
+      assert.deepEqual([f.amount,f.end-f.start,f.fee,f.work,f.owner],[50,120,240,120,'house']);
+    console.log('M4_MANAGEMENT_60D_CONTINUATION',JSON.stringify({profile,mode,origin,
+      sourceHash:'3f4136e766807b9e',sourceUnchanged:true,replay:true,delta,
+      actions:trace.filter(x=>x.id),observations,after}));
+    return {delta,after};
+  }
+  const idle=branch('standard','idle');
+  const ice=branch('standard','ice');
+  const house=branch('house','house');
+  console.log('M4_MANAGEMENT_60D_CONTINUATION_RESULT',JSON.stringify({
+    idle:idle.delta,ice:ice.delta,house:house.delta,
+    endTick:house.after.tick,sourceUnchanged:source.exportieren()===original,
+    scope:'Three independent three-day counterfactuals from the actual replayed stop. No private water transfer, no new hull bought without demand; no universal strategy claim, no 60-day pass.'
+  }));
+}
+
 test('M4 management: continuous standard career, real decisions, audited stop or 60 days', {timeout:20*60*1000},()=>{
   let j=start();
   const trace=[],checkpoints=new Map();
@@ -187,4 +327,5 @@ test('M4 management: continuous standard career, real decisions, audited stop or
     freight:end.freight,ore:end.ore,owned:end.owned,
     limitation:'One explicit management strategy; not a universal earliest stop or a formal blind pass. A green test can reproduce an economic failure.'
   }));
+  if(stop)continuation(replay);
 });

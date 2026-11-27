@@ -94,7 +94,11 @@ test('K7-Original: eine vollständig bezahlte Referenzfahrt erzeugt Material und
   }));
 });
 
-test('K7-Original: Stundenexport kann die vollständig abgenommene Charge vor Verladung kaufen', () => {
+// W-20261127-03: only this old, explicitly superseded expectation changes.
+// Historical counterexample remains pinned at main 26ebf69c and #665:
+// https://github.com/tobiasfranziskus/Check/blob/26ebf69c53c0a958b69457c5c0ff1826c9f52fd1/tests/m4-u5-house-ore-option-a-audit.test.mjs#L97-L114
+// Original hash 61c7c97961fad4ac (tick120, export50, warehouse0).
+test('K7-Regel204: Stundenexport schützt die vollständig abgenommene NPC-Charge bis Verladung', () => {
   const {w, s} = weltZuMinute(50);
   reservieren(w, s);
   w.advance(s, 69);
@@ -104,13 +108,20 @@ test('K7-Original: Stundenexport kann die vollständig abgenommene Charge vor Ve
   assert.equal(s.tick, 120);
   assert.equal(s.kanon.industrieErz.erzAngenommen, true);
   assert.equal(s.w3.auftrag.phase, 'vorbestellt');
-  assert.equal(s.stations.st_aldera.lager.erz, 0);
-  assert.equal(s.ledger.erz.exported, 50);
+  assert.equal(s.w3.auftrag.npcErzReserviert, 50);
+  assert.equal(s.stations.st_aldera.lager.erz, 50);
+  assert.equal(s.ledger.erz.exported, 0);
   assert.equal(s.w3.geliefert, 0);
   assert.deepEqual(treuhand(s), [740, 120, 530]);
   assert.deepEqual(pruefen(w, s), []);
-  stornierungAbgelehnt(w, kopie(w, s), /Ware|Arbeit|Abnahme/);
-  console.log('K7_ORIGINAL_EXPORT', JSON.stringify({tick:s.tick, hash:w.hash(s), treuhand:treuhand(s)}));
+  stornierungAbgelehnt(w, kopie(w, s), /Ware|Arbeit|Abnahme|abgenommen/);
+  const neu=kopie(w,s);
+  w.minute(neu);
+  assert.equal(neu.w3.auftrag.phase,'hin');
+  assert.equal(neu.w3.auftrag.npcErzReserviert,undefined);
+  assert.equal(neu.ships[frachter].ladung.erz,50);
+  assert.deepEqual(pruefen(w,neu),[]);
+  console.log('K7_NPC_RESERVED_EXPORT', JSON.stringify({tick:s.tick, hash:w.hash(s), treuhand:treuhand(s)}));
 });
 
 test('K7-Original: Leerstorno löst die Reserven, Pendelstopp nach Arbeit lässt Teilfracht gebunden', () => {

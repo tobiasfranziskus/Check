@@ -55,6 +55,13 @@
    <small>Eigene Karriere mit bezahlten Patrouillen und Handelsbeobachtung. Die Fraktion startet mit einer Hülle und endlicher Kasse. Es gibt keine Angriffe.</small></span>
  </label>
  </section>
+ <section class="advanced-start" aria-label="Haus-Erztransport">
+  <h3>Haus-Erztransport</h3>
+  <p>Starte eine getrennte Kopie einer gespeicherten normalen Karriere ohne laufende Fracht. Der Hausfrachter kann darin ein finanziertes Angebot aus Nadir für 50 Erz unterschreiben.</p>
+   <button id="kopie-haus-erz" type="button" disabled>Haus-Erz-Kopie aus normalem Spielstand starten</button>
+   <button id="fortsetzen-haus-erz" type="button" hidden>Haus-Erz-Karriere fortsetzen</button>
+   <button id="vorige-haus-erz" type="button" hidden>Vorherige Haus-Erz-Karriere wiederherstellen</button>
+ </section>
  <div class="briefing-bottom">
   <div><strong>Kaufe Miner und Frachter, fördere Eis und beauftrage den Transport.</strong><p>Kaufe beide Schiffe, bevor du Wirtschaftszeit voranschreiten lässt. Andere Konzerne können den verfügbaren Frachter kaufen.</p></div>
   <button id="karriere-starten" class="primary" type="button">Ausgewählte Karriere beginnen <span aria-hidden="true">→</span></button>
@@ -174,6 +181,7 @@
      </section>
      <p class="economy-foot">Vor jedem Auftrag werden Ware, Käufer und Geld erneut geprüft. Nicht jedes Geschäft ist jederzeit möglich.</p>
     </section>
+   <p id="haus-erz-status" class="statusline" hidden></p>
     <div id="spieleraktionen" class="orders"></div>
    </div>
    <div id="panel-flotte" class="tab-panel" hidden>

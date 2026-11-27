@@ -91,7 +91,7 @@ const PIR = Object.freeze({ owner:'piraten', pilot:'pilot_piraten', schiff:'pir0
   sicherheit:Object.freeze({aldera:'sicher',cyris:'sicher',veldra:'sicher',
     orion:'umkaempft',nadir:'umkaempft',dravos:'gesetzlos',meridian:'gesetzlos'}) });
 
-function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false, piraten = false) {
+function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false, piraten = false, hausErz = false) {
   const { KANON } = m_data_kanon;
   const ort = Object.freeze({
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
@@ -102,7 +102,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   const engine = k7 ? (p8dFracht ? FACTORY.createP8dWelt(startkapital,ort) :
     p8cDravos ? FACTORY.createP8cWelt(startkapital,ort) :
     p8bZweiFelder ? FACTORY.createP8bWelt(startkapital,ort) :
-    jaegerFlug ? FACTORY.createJ4cWelt(startkapital,ort) :
+    jaegerFlug ? (hausErz ? FACTORY.createHausErzWelt(startkapital,ort) : FACTORY.createJ4cWelt(startkapital,ort)) :
     jaeger ? FACTORY.createJ4bWelt(startkapital,ort) :
     bauteile ? FACTORY.createJ3Welt(startkapital,ort) :
     silizium ? FACTORY.createJ2bWelt(startkapital, ort)
@@ -317,17 +317,26 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         const grund = abdockenPruefen(state, sh);
         if (grund) return { ok: false, type: cmd.type, reason: grund };
         // Ein in derselben Minute beendeter Dienst läuft weiter; sonst neue Reserve binden.
-        if (!state.kanon.flugdienst[sh.id]) {
-          const konto = dienstKonto(sh.id);
-          if (!state.owners[konto]) state.owners[konto] = { id: konto, kind: 'k1-reserve', cash: 0 };
-          if (state.owners[konto].cash !== 0) throw Error('K1: doppelte Flugreserve ' + sh.id);
-          m_core_buch.transfer(state, sh.owner, konto, KANON.flug.reserveMinuten * KANON.flug.lohnJeMinute, 'flugreserve');
-          state.kanon.flugdienst[sh.id] = { konto, minuten: 0 };
-        }
+        reserveBinden(state, sh);
       } else if (state.kanon.flugdienst[sh.id]?.gestrandet) {
         return { ok: false, type: cmd.type, reason: 'K1: Flugarbeit nicht finanziert; Schiff wartet auf Kapital' };
       }
       return FLUG.ausfuehren(state, cmd);
+    }
+    function reserveBinden(state, sh) {
+      if (state.kanon.flugdienst[sh.id]) return;
+      const konto = dienstKonto(sh.id);
+      if (!state.owners[konto]) state.owners[konto] = { id: konto, kind: 'k1-reserve', cash: 0 };
+      if (state.owners[konto].cash !== 0) throw Error('K1: doppelte Flugreserve ' + sh.id);
+      m_core_buch.transfer(state, sh.owner, konto, KANON.flug.reserveMinuten * KANON.flug.lohnJeMinute, 'flugreserve');
+      state.kanon.flugdienst[sh.id] = { konto, minuten: 0 };
+    }
+    function reserveLoesen(state, sh) {
+      const dienste = state.kanon.flugdienst, dienst = dienste[sh.id];
+      if (!dienst) return;
+      const konto = state.owners[dienst.konto];
+      if (konto.cash > 0) m_core_buch.transfer(state, dienst.konto, sh.owner, konto.cash, 'flugreserve-rueck');
+      delete dienste[sh.id];
     }
     // Abrechnung einer Wirtschaftsminute: Lohn, Nachschuss, Stranden, Rückgabe am Dock.
     function minutenAbrechnung(state, gefoerdert) {
@@ -336,7 +345,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         const d = k.flugdienst[id], sh = state.ships[id], konto = state.owners[d.konto];
         if (!sh) throw Error('K1: Flugdienst ohne Schiff ' + id);
         const nachschuss = () => {
-          if (konto.cash >= lohn + KANON.flug.nachschussUnter * lohn) return;
+          if (hausFoerderungGebunden(state, id) || konto.cash >= lohn + KANON.flug.nachschussUnter * lohn) return;
           const nach = Math.min(state.owners[sh.owner].cash, KANON.flug.reserveMinuten * lohn - konto.cash);
           if (nach > 0) m_core_buch.transfer(state, sh.owner, d.konto, nach, 'flugreserve');
         };
@@ -354,8 +363,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           }
         }
         if (sh.flug.lage === 'angedockt') {
-          if (konto.cash > 0) m_core_buch.transfer(state, d.konto, sh.owner, konto.cash, 'flugreserve-rueck');
-          delete k.flugdienst[id];
+          reserveLoesen(state, sh);
           continue;
         }
         if (d.gestrandet) continue;
@@ -432,7 +440,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         if (r && !r.ok) throw Error('K1-Flugplan: ' + r.reason);
       }
     }
-    return { koerperSync, ruht, alleRuhend, befehl, minutenAbrechnung, plan, dienstKonto, station, spielerJaeger };
+    return { koerperSync, ruht, alleRuhend, befehl, minutenAbrechnung, plan, dienstKonto, station, spielerJaeger, reserveBinden, reserveLoesen };
   })();
 
   const m_core_piraten = (() => {
@@ -1743,6 +1751,11 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if (state === null || typeof state !== 'object' || state.rulesVersion !== rules.rulesVersion || state.schema !== KANON.schema)
       throw Error('K1: fremde Regelversion oder Schema; keine automatische Migration');
     const k = state.kanon;
+    if ((k?.hausErz !== undefined) !== hausErz
+      || (hausErz && (!k.hausErz || !ganz(k.hausErz.folge) || Object.keys(k.hausErz).some(key=>!['folge','grund'].includes(key))
+        ||(k.hausErz.grund!==undefined&&typeof k.hausErz.grund!=='string')))
+      || k?.u7Manager!==undefined || k?.u8ErzRueckfracht!==undefined)
+      throw Error('Haus-Erz: dieser Spielstand benötigt sein eigenes Profil');
     if (!k || k.modell !== KANON.modell || !k.netto || !k.buch || !k.wasser || !k.pendel || !k.flugdienst
       || !k.verschleiss || !k.haushalte || !k.politik || !state.flug)
       throw Error('K1: Weltbuch unvollständig');
@@ -1770,13 +1783,34 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
         // beliebig neu verteilbare Namen. Auch nach der Lieferung prüfen.
         if(beteiligte && (state.ships[i.miner]?.owner!=='npc3'
           ||state.ships[i.miner]?.klasse!=='miner'
-          ||state.ships[i.frachter]?.owner!=='transport'
+          ||state.ships[i.frachter]?.owner!==(i.carrier??'transport')
           ||state.ships[i.frachter]?.klasse!=='frachter'
           ||!Number.isSafeInteger(i.erstellt)||i.erstellt<0||i.erstellt>state.tick
           ||typeof i.signMiner!=='boolean'||typeof i.signFracht!=='boolean'
           ||typeof i.signWerft!=='boolean'||typeof i.werftVerwendet!=='boolean'
           ||typeof i.erzAngenommen!=='boolean'))
           fehler.push('K7-Vertrag: unwirksame Eigentümer-/Unterschriftsbelege');
+        if(i?.carrier!==undefined){
+          const w1=state.erzpilotVertraege?.[i.miner];
+          const signiert=hausErzSignaturen(i);
+          if(!hausErz||i.carrier!=='house'||!beteiligte||!ganz(i.folge)||i.folge<1
+            ||i.folge!==k.hausErz?.folge||i.kennung!==hausErzKennung(i)
+            ||(i.werftVerwendet?(!ganz(i.werftCharge)||i.werftCharge<1||i.werftCharge>state.w5.begonnen):i.werftCharge!==undefined)
+            ||!i.signaturen||Object.entries(i.signaturen).some(([rolle,kennung])=>
+              !Object.hasOwn(HAUS_SIGNATUREN,rolle)||kennung!==i.kennung)
+            ||i.signMiner!==(i.signaturen.npc3===i.kennung)
+            ||i.signFracht!==(i.signaturen.house===i.kennung)
+            ||i.signWerft!==(i.signaturen.werft_extern===i.kennung)
+            ||(i.phase!=='angebot'&&(!signiert||i.commit!==i.kennung))
+            ||(i.phase==='aktiv'&&a?.carrier!=='house')
+            ||(a?.carrier==='house'&&(a.kennung!==i.kennung
+              ||(a.phase==='vorbestellt'&&(i.erzAngenommen
+                ?state.stations.st_aldera.lager.erz<a.menge
+                :w1?.menge!==a.menge||k.pendel[i.miner]?.ware!=='erz'||k.pendel[i.miner]?.beenden))))
+            ||(i.phase==='geliefert'&&!state.w5ad.freight.some(f=>f.kennung===i.kennung&&f.id===i.frachter)))
+            fehler.push('Haus-Erz: Vertragsidentität, Zustimmung oder physische Bindung ohne Beleg');
+        } else if(a?.carrier!==undefined||i?.kennung!==undefined||i?.signaturen!==undefined)
+          fehler.push('Haus-Erz: Vertragsdaten außerhalb des Hausauftrags');
         if(i && ['aktiv','geliefert'].includes(i.phase)
           &&sicherK7Reserve(state,i)!==(i.materialOnly||i.werftVerwendet?0:K7_PREIS.werft))
           fehler.push('K7-Werftreserve nicht einmalig aus eigenem Vermögen gebunden');
@@ -1919,6 +1953,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     // Die Kern-Initialisierung beauftragt den NPC-Miner bereits mit Erz: er erhält denselben
     // Pendelauftrag wie jedes Spielerschiff und muss ab jetzt wirklich zum Feld fliegen.
     npcPendel(state);
+    if (hausErz) state.kanon.hausErz={folge:0};
     if (k7) state.kanon.industrieErz = { phase: 'frei' };
     if (silizium) state.kanon.silizium = m_core_silizium.leer();
     if (bauteile) state.kanon.bauteile = m_core_bauteile.leer();
@@ -1971,10 +2006,164 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     return {ok:true,aktiviert};
   }
 
+  const HAUS_SIGNATUREN=Object.freeze({
+    npc3:'industrialOreAcceptMine',st_aldera:'industrialOreAcceptSource',
+    werft_extern:'industrialOreAcceptYard',house:'industrialOreAcceptFreight',
+  });
+  const HAUS_AKTIONEN=new Set([...Object.values(HAUS_SIGNATUREN),'industrialOreOffer',
+    'industrialOreCommit','industrialOreCancel']);
+  function hausErzKennung(i) {
+    return [i.folge,i.erstellt,i.miner,i.frachter,'st_aldera','st_nadir',K7_PREIS.menge,
+      K7_PREIS.nadiraufwand,K7_PREIS.frachtlohn,K7_PREIS.alderakauf,K7_PREIS.bergbau,K7_PREIS.werft].join('/');
+  }
+  function hausErzSignaturen(i) {
+    return !!i?.signaturen && Object.keys(HAUS_SIGNATUREN).every(rolle=>i.signaturen[rolle]===i.kennung);
+  }
+  function hausFoerderungGebunden(s,id) {
+    const a=hausErz && s.w3.auftrag;
+    return a?.carrier==='house' && a.industrieMiner===id && a.phase==='vorbestellt'
+      && !s.kanon.industrieErz.erzAngenommen;
+  }
+  function hausErzVoraussetzungen(s,i) {
+    if(s.flug.schritt!==0)return 'Vertragsschritte nur an der Minutengrenze';
+    const mi=s.ships[i.miner],fr=s.ships[i.frachter];
+    if (mi?.owner!=='npc3'||mi.klasse!=='miner'||fr?.owner!=='house'||fr.klasse!=='frachter')
+      return 'Eigentum der angebotenen Schiffe fehlt';
+    if ([mi,fr].some(sh=>sh.system!=='aldera'||sh.phase!=='dock'||sh.flug?.lage!=='angedockt'
+      ||sh.flug.anker!=='st_aldera'||ladungSumme(sh)!==0)
+      ||fr.auftrag!=='halten'||s.erzpilotVertraege?.[mi.id]||s.kanon.flugdienst[mi.id]
+      ||s.kanon.pendel[mi.id]?.beenden||(s.kanon.pendel[mi.id]&&s.kanon.pendel[mi.id].ware!=='erz'))
+      return 'Einsatzschiffe seit Angebot nicht mehr frei am Aldera-Dock';
+    if(s.w3.auftrag||s.w5n.frachtauftrag?.schiff===fr.id||s.w5ac.active?.id===fr.id
+      ||s.kanon.rueckfracht?.schiff===fr.id||sicherK7Reserve(s,i)!==0
+      ||s.w5.auftrag||s.kanon.minerWerft?.auftrag
+      ||s.stations.st_nadir.lager.frachter>=rules.world.stations.st_nadir.ziel.frachter)
+      return 'ein benötigter Originalauftrag ist belegt';
+    const route=kern.route(rules.world,'aldera','nadir');
+    if(!route||route.zeit!==W.flugMinuten) return 'keine Original-W3-Route';
+    if((m_core_anlage.restAktivminuten(s,mi)??Infinity)<Math.ceil(K7_PREIS.menge/rules.economy.miningRate)
+      ||(m_core_anlage.restAktivminuten(s,fr)??Infinity)<2*route.zeit)
+      return 'zu wenig Restaktivzeit für die zugesagte Leistung';
+    if(s.owners.npc3.cash<K7_PREIS.bergbau+KANON.flug.reserveMinuten*KANON.flug.lohnJeMinute
+      ||s.owners.st_aldera.cash<K7_PREIS.alderakauf||s.owners.st_nadir.cash<K7_PREIS.nadiraufwand
+      ||s.owners.house.cash<K7_PREIS.frachtlohn||s.owners.werft_extern.cash<K7_PREIS.werft)
+      return 'nicht alle fünf Vertragsparteien können vollständig vorfinanzieren';
+    return null;
+  }
+  function hausErzBinden(s,i) {
+    const m=kern.execute(s,{type:'shipMine',owner:'npc3',schiff:i.miner,ware:'erz'},rules);
+    if(!m.ok)throw Error(m.reason);
+    kern.industryOrePrebook(s,i.frachter,i.miner);
+    s.w3.auftrag.kennung=i.kennung;
+    s.owners.k7_werft_treuhand??={id:'k7_werft_treuhand',kind:'k7-reserve',cash:0};
+    m_core_buch.transfer(s,'werft_extern','k7_werft_treuhand',K7_PREIS.werft,'k7-werftreserve');
+    i.phase='aktiv';
+    i.commit=i.kennung;
+    if(kern.hausErzAbnahme(s,i.miner)?.menge!==K7_PREIS.menge)
+      throw Error('kein Platz oder keine Finanzierung für die volle W1-Abnahme');
+    m_core_flugplan.reserveBinden(s,s.ships[i.miner]);
+    s.kanon.pendel[i.miner]={ware:'erz'};
+  }
+  const hausErzProben=new WeakSet();
+  function hausErzVorschau(s,i) {
+    const grund=hausErzVoraussetzungen(s,i);
+    if(grund)return grund;
+    const q=structuredClone(s), v=structuredClone(i);
+    hausErzProben.add(q);
+    v.signMiner=true;v.signWerft=true;v.signFracht=true;
+    v.signaturen=Object.fromEntries(Object.keys(HAUS_SIGNATUREN).map(rolle=>[rolle,i.kennung]));
+    q.kanon.industrieErz=v;
+    q.kanon.hausErz.folge=v.folge;
+    const w4=q.w4.erzVerbraucht,w5=q.w5.fertig;
+    const startAktiv=m_core_anlage.aktiv(q,i.miner);
+    const rest=m_core_anlage.restAktivminuten(q,q.ships[i.miner])??Infinity;
+    try {
+      hausErzBinden(q,v);
+      for(let n=0;n<360;n++){
+        minute(q);
+        if(m_core_anlage.aktiv(q,i.miner)-startAktiv>rest
+          ||(!v.erzAngenommen&&q.kanon.flugdienst[i.miner]?.gestrandet))
+          return 'die Restaktivzeit oder Flugreserve reicht für die reale Förderfahrt nicht';
+        if(v.phase==='geliefert'&&v.werftVerwendet&&q.w5.fertig===v.werftCharge
+          &&q.w5.fertig>w5&&q.w4.erzVerbraucht>w4
+          &&q.w5ad.freight.at(-1)?.kennung===v.kennung) {
+          const a=audit(q);
+          return a.ok?null:a.fehler.join('; ');
+        }
+      }
+      return 'keine volle W1/W3/W4/W5-Abwicklung in 360 Minuten';
+    }catch(e){return e.message;}
+  }
+  function hausErzBefehl(s,cmd){
+    const {type,owner,kennung}=cmd, i=s.kanon.industrieErz;
+    const fail=reason=>({ok:false,type,reason:'Haus-Erz: '+reason});
+    const angebot=type==='industrialOreOffer';
+    const felder=angebot?['type','owner','miner','frachter']:['type','owner','kennung'];
+    if(Object.keys(cmd).length!==felder.length||felder.some(k=>!Object.hasOwn(cmd,k)))
+      return fail('Auftragskennung oder Befehlsform ungültig');
+    if(angebot){
+      if(owner!=='st_nadir'||!['frei','storniert','geliefert'].includes(i.phase))
+        return fail('nur Nadir darf ein freies Industrieangebot erstellen');
+      const folge=s.kanon.hausErz.folge+1;
+      if(!ganz(folge))return fail('Angebotsfolge erschöpft');
+      const entwurf={phase:'angebot',miner:cmd.miner,frachter:cmd.frachter,carrier:'house',
+        folge,erstellt:s.tick,signaturen:{},signMiner:false,signFracht:false,signWerft:false,
+        werftVerwendet:false,erzAngenommen:false};
+      entwurf.kennung=hausErzKennung(entwurf);
+      const grund=hausErzVorschau(s,entwurf);
+      if(grund)return fail(grund);
+      s.kanon.hausErz.folge=folge;
+      delete s.kanon.hausErz.grund;
+      s.kanon.industrieErz=entwurf;
+      return {ok:true,type,kennung:entwurf.kennung};
+    }
+    if(i.carrier!=='house'||kennung!==i.kennung)return fail('Angebotsinstanz ist nicht aktuell');
+    if(type==='industrialOreCancel'){
+      if(owner!=='st_nadir')return fail('nur Nadir darf stornieren');
+      if(i.phase==='angebot'){s.kanon.industrieErz={phase:'storniert'};return {ok:true,type};}
+      if(i.phase!=='aktiv'||s.w3.auftrag?.phase!=='vorbestellt'||i.erzAngenommen)
+        return fail('bezahlte Arbeit oder Ware vorhanden');
+      const q=structuredClone(s);
+      try{
+        kern.hausErzLeerStorno(q,i.miner);
+        kern.industryOreCancel(q);
+        const stop=kern.execute(q,{type:'shipWait',owner:'npc3',schiff:i.miner},rules);
+        if(!stop.ok)return fail(stop.reason);
+        m_core_flugplan.reserveLoesen(q,q.ships[i.miner]);
+        m_core_buch.transfer(q,'k7_werft_treuhand','werft_extern',K7_PREIS.werft,'k7-werftreserve-rueck');
+        delete q.kanon.pendel[i.miner];
+        q.kanon.industrieErz={phase:'storniert'};
+      }catch(e){return fail(e.message);}
+      Object.assign(s,q);
+      return {ok:true,type};
+    }
+    if(i.phase!=='angebot')return fail('Angebot ist nicht offen');
+    const commit=type==='industrialOreCommit';
+    if(commit ? owner!=='st_nadir'||!hausErzSignaturen(i)
+      :!Object.hasOwn(HAUS_SIGNATUREN,owner)||HAUS_SIGNATUREN[owner]!==type||i.signaturen[owner])
+      return fail('Rolle oder konkrete Zustimmung fehlt');
+    const grund=hausErzVorschau(s,i);
+    if(grund)return fail(grund);
+    if(commit){
+      const q=structuredClone(s);
+      try{hausErzBinden(q,q.kanon.industrieErz);}catch(e){return fail(e.message);}
+      Object.assign(s,q);
+    }else{
+      i.signaturen[owner]=kennung;
+      if(owner==='npc3')i.signMiner=true;
+      if(owner==='house')i.signFracht=true;
+      if(owner==='werft_extern')i.signWerft=true;
+    }
+    return {ok:true,type};
+  }
+
   // K7: drei getrennt durch Original-Firmenrechte signierte Vertragsparteien.
   // Ein Angebot und die Signaturen erzeugen keine Ware, Geld oder Schiff.
   function k7Befehl(s, cmd) {
     const type=cmd?.type, i=s.kanon.industrieErz, angebot=i?.phase==='angebot';
+    if(hausErz&&HAUS_AKTIONEN.has(type)&&(type==='industrialOreOffer'
+      ?s.ships[cmd.frachter]?.owner==='house':i?.carrier==='house'))
+      return hausErzBefehl(s,cmd);
     const erlaubte={
       industrialOreOffer:['type','owner','miner','frachter'],
       industrialOreOfferMaterial:['type','owner','miner','frachter'],
@@ -2065,6 +2254,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       const q=kern.execute(s,{type:'stationBuildShip',owner:'werft_extern',station:'st_nadir'},rules);
       if(!q.ok)throw Error('K7: Werkbudget gedeckt, aber Original-W5-Befehl abgelehnt: '+q.reason);
       i.werftVerwendet=true;
+      if(i.carrier==='house')i.werftCharge=s.w5.begonnen;
       return {ok:true,type};
     }
     if(type==='industrialOreCommit'||type==='industrialOreCommitMaterial'){
@@ -2130,8 +2320,11 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   // commands. The player's browser only changes the optional policy flag;
   // it cannot sign on behalf of NPC companies or create cash, ships or ore.
   function industrieAutoSchritt(s) {
-    if (!k7 || (s.kanon.industrieAuto !== true && s.kanon.npcAuto !== true) || s.kanon.politik.automatik !== true) return;
-    const i = s.kanon.industrieErz, nadir = s.stations[rules.w5.station].lager;
+    const i=s.kanon.industrieErz;
+    const hausFolge=hausErz&&i.carrier==='house';
+    const normal=k7&&(s.kanon.industrieAuto===true||s.kanon.npcAuto===true)&&s.kanon.politik.automatik===true;
+    if(!hausFolge&&!normal)return;
+    const nadir=s.stations[rules.w5.station].lager;
     if (i.phase === 'aktiv' || i.phase === 'geliefert') {
       // Production may begin only after the existing physical Nadir arrival
       // and after full original W4 work funding has been checked.
@@ -2158,6 +2351,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
       // signatures or issue a second W3 escrow in parallel.
       if (i.phase !== 'geliefert' || (!i.werftVerwendet&&!i.materialOnly)) return;
     }
+    if(!normal||hausErzProben.has(s))return;
     if (!['frei','storniert','geliefert'].includes(i.phase)
       || s.w3.auftrag || s.w5n.frachtauftrag || s.w4.auftrag || s.w5.auftrag
       || s.kanon.minerWerft?.auftrag) return;
@@ -2205,6 +2399,32 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           k7Befehl(s, {type:'industrialOreCancel',owner:'st_nadir'});
         return;
       }
+    }
+  }
+  function hausErzAngebotSchritt(s) {
+    if(!hausErz||hausErzProben.has(s))return;
+    const i=s.kanon.industrieErz;
+    if(i.phase==='angebot'&&i.carrier==='house'){
+      const grund=hausErzVoraussetzungen(s,i);
+      if(grund)hausErzAngebotVerwerfen(s,i,grund);
+      return;
+    }
+    if(!['frei','geliefert','storniert'].includes(i.phase)
+      )return;
+    const schiffe=ids(s.ships).map(id=>s.ships[id]);
+    const miner=schiffe.filter(sh=>sh.owner==='npc3'&&sh.klasse==='miner');
+    const frachter=schiffe.filter(sh=>sh.owner==='house'&&sh.klasse==='frachter');
+    for(const mi of miner)for(const fr of frachter){
+      const q=hausErzBefehl(s,{type:'industrialOreOffer',owner:'st_nadir',miner:mi.id,frachter:fr.id});
+      if(!q.ok)continue;
+      for(const owner of ['npc3','st_aldera','werft_extern']){
+        const r=hausErzBefehl(s,{type:HAUS_SIGNATUREN[owner],owner,kennung:q.kennung});
+        if(!r.ok){
+          hausErzBefehl(s,{type:'industrialOreCancel',owner:'st_nadir',kennung:q.kennung});
+          return;
+        }
+      }
+      return;
     }
   }
   function industrieAutoSetzen(s, aktiviert) {
@@ -2257,6 +2477,9 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   function execute(state, cmd) {
     pruefeForm(state);
     const type = cmd && cmd.type;
+    if(hausFoerderungGebunden(state,cmd?.schiff)
+      && (type==='shipShuttleStop'||type==='shipShuttle'||hat(FLUG.BEFEHLE,type)))
+      return {ok:false,type,reason:'Haus-Erz: zugesagte Förderleistung ist gebunden'};
     if (piraten && (cmd?.owner === PIR.owner || cmd?.schiff === PIR.schiff))
       return {ok:false,type,reason:'PIR-1: Fraktionsschiff gehört zur NPC-Patrouille'};
     if(jaeger&&type==='stationBuildFighter')
@@ -2338,6 +2561,13 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     if(bauteile)m_core_bauteile.minute(state);
     if(jaeger)m_core_jaeger.minute(state);
     m_core_flugplan.koerperSync(state);
+    const vertrag=hausErz&&state.kanon.industrieErz;
+    if(vertrag?.carrier==='house'&&vertrag.erzAngenommen&&state.kanon.pendel[vertrag.miner]
+      &&state.ships[vertrag.miner]?.auftrag==='foerdern'
+      &&state.ships[vertrag.miner]?.flug.lage==='angedockt'&&state.w3.auftrag?.phase==='vorbestellt'){
+      kern.execute(state,{type:'shipWait',owner:'npc3',schiff:vertrag.miner},rules);
+      delete state.kanon.pendel[vertrag.miner];
+    }
     npcPendel(state);
     const gefoerdert = {};
     for (const id of ids(state.ships)) if (ladungSumme(state.ships[id]) > (vorher[id] ?? 0) && state.ships[id].klasse === 'miner') gefoerdert[id] = true;
@@ -2350,7 +2580,10 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     m_core_firmenpolitik.schritt(state);
     m_core_disponent.schritt(state);
     m_core_flugplan.koerperSync(state);
-    m_core_flugplan.plan(state, true, true);
+    // The voluntary profile leaves new dock departures to the beginning of the
+    // next minute, so a completed job's dock boundary can be used for an offer.
+    m_core_flugplan.plan(state, !hausErz, true);
+    hausErzAngebotSchritt(state);
     if (piraten) m_core_piraten.minute(state);
     return ergebnis;
   }
@@ -2360,16 +2593,31 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   // kaufen/erzeugen. Externe teilschritt()-Aufrufe sortieren weiterhin selbst.
   function teilschrittIntern(state, sortierteSchiffIds = null) {
     pruefeForm(state);
-    if (state.flug.schritt === 0) m_core_flugplan.plan(state, true, false);
+    if (state.flug.schritt === 0) {
+      hausErzBestaetigen(state);
+      m_core_flugplan.plan(state, true, false);
+    }
     if (!FLUG.schritt(state, FLUG.DATEN, sortierteSchiffIds)) {
       m_core_flugplan.plan(state, false, false); return null;
     }
     return wirtschaftsMinute(state);
   }
   function teilschritt(state) { return teilschrittIntern(state); }
+  function hausErzAngebotVerwerfen(s,i,grund) {
+    const r=hausErzBefehl(s,{type:'industrialOreCancel',owner:'st_nadir',kennung:i.kennung});
+    if(r.ok)s.kanon.hausErz.grund=grund;
+  }
+  function hausErzBestaetigen(state) {
+    if(!hausErz||hausErzProben.has(state))return;
+    const i=state.kanon.industrieErz;
+    if(i.carrier!=='house'||i.phase!=='angebot'||!i.signFracht)return;
+    const r=hausErzBefehl(state,{type:'industrialOreCommit',owner:'st_nadir',kennung:i.kennung});
+    if(!r.ok)hausErzAngebotVerwerfen(state,i,r.reason);
+  }
   function minute(state) {
     pruefeForm(state);
     if (state.flug.schritt === 0) {
+      hausErzBestaetigen(state);
       m_core_flugplan.plan(state, true, false);
       // Bitgleiche Abkürzung: ruhende Körper ändern sich in 60 Teilschritten nicht.
       if (m_core_flugplan.alleRuhend(state)) return wirtschaftsMinute(state);
@@ -2495,6 +2743,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
     ...(p8dFracht ? {p8dGetrennteSpedition:true,p8gMaterialOnlyW3:true} : {}),
     rules, daten: KANON, regel: rules.rulesVersion, modell: KANON.modell,
     createState, politikSetzen, industrieAutoSetzen, npcAutoSetzen, npcSiliziumSetzen, npcMaterialKetteSetzen, materialSupplySetzen, execute, teilschritt, minute, advance, audit, save, load, bericht,
+    ...(hausErz ? {hausErzProfil:true} : {}),
     ...(piraten ? {piratenProfil:true} : {}), sicherheitslage:m_core_piraten.lage,
     hash: kern.hash, canonical: kern.canonical, flugKern: FLUG, kern,
     torPruefen: m_core_torfreigabe.pruefen, torFrachtPruefen: m_core_torfreigabe.darfFracht,
@@ -2757,6 +3006,7 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   erstellenJ3:(kapital={})=>erstellen(kapital,true,true,true),
   erstellenJ4b:(kapital={})=>erstellen(kapital,true,true,true,true),
   erstellenJ4c:(kapital={})=>erstellen(kapital,true,true,true,true,true),
+  erstellenHausErz:(kapital={})=>erstellen(kapital,true,true,true,true,true,false,false,false,false,true),
   erstellenPiraten:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,true),
   // Nur experimenteller Rule205-Bergbau in zwei getrennten Nadir-Feldern.
   // Kein Produkt-/Save-Autoupgrade, keine Dravos-Miner und keine Zusatz-ISK.

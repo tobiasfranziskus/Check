@@ -5,6 +5,7 @@ const path=require('node:path');
 const http=require('node:http');
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const {engpassNach48}=require('./m4-u5-engpass-ablauf.cjs');
+const pruefeHausErz=require('./m4-u5-house-ore-browser.cjs');
 const J8=require('../prototypes/verbund/konzern-session.js');
 const OLD=require('../prototypes/w5ac/session.js');
 
@@ -121,7 +122,9 @@ async function pruefeUeberfuehrung(browser,art,width,height,fixture){
    executablePath:process.env.S1_CHROMIUM_PATH||undefined,args:['--no-sandbox']
   });
   for(const [width,height] of [[1180,820],[1024,768],[820,1180],[390,844]]){
+   await pruefeHausErz(browser,art,width,height,'http://127.0.0.1:'+server.address().port+'/');
    await pruefen(browser,art,width,height,json);
+   await pruefeHausErz.pruefeHausErzNach48(browser,art,width,height,'http://127.0.0.1:'+server.address().port+'/',json);
    await pruefeUeberfuehrung(browser,art,width,height,fixture);
   }
  }finally{

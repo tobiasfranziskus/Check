@@ -8,9 +8,11 @@ const d=scope.document,$=id=>d.getElementById(id);
 const SLOT='aphros-void:spielerkarriere:regel204:v1';
 const SLOT_W6='aphros-void:spielerkarriere:regel207-forschung:v1';
 const BACKUP=SLOT+':vorherige';
+const SLOT_HAUS_ERZ='aphros-void:spielerkarriere:haus-erz:v1';
+const hausErzSitzung=()=>session?.weltReferenz().hausErzProfil===true;
 const SLOT_PIR='aphros-void:spielerkarriere:pir-1:v1';
 const piratenSitzung=()=>session?.weltReferenz().piratenProfil===true;
-const aktuellerSlot=()=>piratenSitzung()?SLOT_PIR:session?.weltReferenz().regel===207?SLOT_W6:SLOT;
+const aktuellerSlot=()=>hausErzSitzung()?SLOT_HAUS_ERZ:piratenSitzung()?SLOT_PIR:session?.weltReferenz().regel===207?SLOT_W6:SLOT;
 const MAX=5*1024*1024;
 const fmt=n=>Number(n).toLocaleString('de-DE');
 let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung=0,patrouille=null,duell=null;
@@ -56,7 +58,9 @@ function speichern(copyOld=false){
  // is a separate explicit branch, not a generic alias that could silently
  // redirect any existing Rule204/195 career storage.
  try {
-   if(piratenSitzung()){
+   if(hausErzSitzung()){
+     hausErzSpeichern(json,copyOld);
+   }else if(piratenSitzung()){
      if(copyOld){const old=scope.localStorage.getItem(SLOT_PIR);
        if(old)scope.localStorage.setItem(SLOT_PIR+':vorherige',old);}
      scope.localStorage.setItem(SLOT_PIR,json);
@@ -78,8 +82,35 @@ function speichern(copyOld=false){
 function gespeicherte(key=SLOT){
  try{return scope.localStorage.getItem(key)||null;}catch{return null;}
 }
+function hausErzSpeichern(json,vorversion){
+ const storage=scope.localStorage,backup=SLOT_HAUS_ERZ+':vorherige';
+ const vorher=storage.getItem(SLOT_HAUS_ERZ);
+ storage.setItem(SLOT_HAUS_ERZ,json);
+ if(!vorversion||!vorher)return;
+ try{storage.setItem(backup,vorher);}
+ catch(e){
+   storage.setItem(SLOT_HAUS_ERZ,vorher);
+   throw e;
+ }
+}
+function hausErzLaden(json,quelle){
+ const neu=neueSitzung(),a=neu.oeffnenHausErz(json,true,quelle==='backup'?'lokal':quelle);
+ if(a.weltgeld!==33000)throw Error('Haus-Erz: Originalweltgeld nicht nachgewiesen');
+ if(quelle==='datei'&&!scope.confirm('Diese Datei in den separaten Haus-Erz-Slot importieren? Ein offenes Haus-Erz-Angebot samt Unterschriften wird zurückgesetzt. Bezahlte Verträge bleiben erhalten.'))return;
+ if(quelle==='kopie'&&!scope.confirm('Den gespeicherten normalen Spielstand als getrennte Haus-Erz-Karriere kopieren?'))return;
+ if(quelle==='backup'&&!scope.confirm('Die vorherige Haus-Erz-Karriere öffnen und beide Speicherstände tauschen?'))return;
+ if(['datei','kopie'].includes(quelle)&&gespeicherte(SLOT_HAUS_ERZ)
+   &&!scope.confirm('Für Haus-Erz besteht bereits ein Spielstand. Diesen als Vorversion sichern und die ausgewählte Karriere öffnen?'))return;
+ if(quelle!=='lokal')hausErzSpeichern(neu.exportieren(),true);
+ session=neu;sitzungsUiZuruecksetzen();
+ aktiveSitzung(quelle==='kopie'?'Getrennte Haus-Erz-Kopie geöffnet. Nadir bietet eine Fracht an, sobald freie Schiffe und die volle Finanzierung nachgewiesen sind.':
+   'Getrennte Haus-Erz-Karriere geöffnet.');
+}
 function menustand(){
  $('fortsetzen').disabled=!gespeicherte();
+ if($('kopie-haus-erz'))$('kopie-haus-erz').disabled=!gespeicherte();
+ if($('fortsetzen-haus-erz'))$('fortsetzen-haus-erz').hidden=!gespeicherte(SLOT_HAUS_ERZ);
+ if($('vorige-haus-erz'))$('vorige-haus-erz').hidden=!gespeicherte(SLOT_HAUS_ERZ+':vorherige');
  $('fortsetzen-w6').hidden=$('fortsetzen-w6').disabled=!gespeicherte(SLOT_W6);
  $('fortsetzen-pir').hidden=$('fortsetzen-pir').disabled=!gespeicherte(SLOT_PIR);
  $('vorige-pir').hidden=!gespeicherte(SLOT_PIR+':vorherige');
@@ -94,7 +125,7 @@ function screen(id){
  if(id!=='raumbereich'&&raum)raum.deaktivieren();
  $('open-menu').hidden=id==='startseite';
  $('mode-indicator').textContent=id==='startseite'?'OFFLINE · ALDERA-SEKTOR':
-   id==='briefing'?'WEITERE SPIELMODI':piratenSitzung()?'PIR-1 · FORSCHUNG':'ONLINE · ALDERA-SEKTOR';
+   id==='briefing'?'WEITERE SPIELMODI':piratenSitzung()?'PIR-1 · FORSCHUNG':hausErzSitzung()?'HAUS-ERZ':'ONLINE · ALDERA-SEKTOR';
  if(id==='spielwelt'&&session)anzeigen();
  scope.scrollTo?.({top:0,left:0,behavior:'instant'});
 }
@@ -229,7 +260,8 @@ function weiter(n){
   if(vorher!==null){
    try{
     const restore=neueSitzung();
-    if(piratenSitzung())restore.oeffnenPiraten(vorher,true);
+    if(hausErzSitzung())restore.oeffnenHausErz(vorher,true,'lokal');
+    else if(piratenSitzung())restore.oeffnenPiraten(vorher,true);
     else if(session?.ansicht().regel===207)restore.oeffnenP8g(vorher,true);
     else restore.oeffnen204(vorher,true);
     session=restore;anzeigen();
@@ -264,7 +296,7 @@ function auftrag(id){
   // Leave the full gesture window after the purchase and its refreshed offers are visible.
   letzteAuftragsgeste={id,bis:performance.now()+350};
   managerTutor?.gebucht(id);
-  auftragMeldung((id.startsWith('stop-')?'Beendet / Abbruch angefordert: ':id.startsWith('buy-')||id.startsWith('sil-sell-')?'Abgeschlossen / gebucht: ':'Gestartet: ')+titel(a)+' · Spielminute '+session.ansicht().tick+'. Bereits verbuchte Leistungen bleiben bestehen.');
+  auftragMeldung((id.startsWith('stop-')?'Beendet / Abbruch angefordert: ':id.startsWith('buy-')||id.startsWith('sil-sell-')?'Abgeschlossen / gebucht: ':id.startsWith('haus-erz-')?'Unterschrieben: ':'Gestartet: ')+titel(a)+' · Spielminute '+session.ansicht().tick+'. Bereits verbuchte Leistungen bleiben bestehen.');
   if(kauf){
    const kasse=session.ansicht().hausgeld;
    hinweis(kauf[1]+' gekauft in '+kauf[2]+' für '+fmt(kasseVorher-kasse)+
@@ -582,14 +614,16 @@ function industrieAnzeigen(s,angebote){
   ' · Transport: '+owner(book.frachterEigentuemer)+
   ' · Raffinerie: '+konzernname(book.raffinerieEigentuemer)+
   ' · Werft: '+konzernname(book.werftEigentuemer)+
-  '. Diese fremden Aufträge gehören nicht deinem Konzern.';
+  (session.weltReferenz().hausErzProfil?'. Förderbetrieb und Aldera-Abnahme entscheiden unabhängig.':
+    '. Diese fremden Aufträge gehören nicht deinem Konzern.');
  $('p3-industrie-k7').textContent='Erzauftrag: '+book.k7Phase+
   ' · Zustimmung Bergbau '+(book.signaturen.bergbau?'erteilt':'offen')+
-  ' · Spedition '+(book.signaturen.spediteur?'erteilt':'offen')+
+  ' · Transport '+(book.signaturen.spediteur?'erteilt':'offen')+
+  (book.signaturen.aldera===undefined?'':' · Aldera-Abnahme '+(book.signaturen.aldera?'erteilt':'offen'))+
   ' · Werft '+(book.signaturen.werft?'erteilt':'offen')+
   '. Eine Zustimmung ist noch keine Lieferung oder Auszahlung.';
  $('p3-industrie-w3-geld').textContent='Erztransport: Nadir-Käuferreserve jetzt '+
-  fmt(book.w3.kaufReserve)+' ISK · Asterion-Fluglohnreserve jetzt '+
+  fmt(book.w3.kaufReserve)+' ISK · Fluglohnreserve jetzt '+
   fmt(book.w3.arbeitsReserve)+' ISK. Auftragsmittel bislang gebucht (einschließlich Tarifreserve) '+
   fmt(book.w3.erzKaufGebucht)+' ISK; Fluglöhne bereits gezahlt '+
   fmt(book.w3.fluglohnBezahlt)+' ISK; Speditionstarif bereits ausgezahlt '+
@@ -1002,7 +1036,23 @@ function anzeigen(){
   ?scope.P3ManagerKarte.auswerten(a,s,session.weltReferenz(),alleAngebote):null;
  if(kartenModell)sektorKarte.anzeigen(kartenModell);
  const offers=alleAngebote.filter(o=>allowed.has(o.id)
-   ||/^(ice-|ore-|stop-|sil-start-|sil-sell-|freight-|gate-freight-)/.test(o.id));
+   ||/^(ice-|ore-|stop-|sil-start-|sil-sell-|freight-|gate-freight-|haus-erz-)/.test(o.id));
+ const hausStatus=$('haus-erz-status');
+ if(hausStatus){
+   hausStatus.hidden=!hausErzSitzung();
+   if(!hausStatus.hidden){
+     const v=s.kanon.industrieErz,a=s.w3.auftrag;
+     const last=s.w5ad.freight.findLast(x=>x.owner==='house');
+     const phase=v.carrier==='house'&&v.phase==='angebot'
+       ?(v.signFracht?'Angebot unterschrieben. Nadir prüft Finanzierung und Schiffe beim nächsten Zeitschritt.':
+         'Nadir bietet 50 Erz Aldera → Nadir an. 240 ISK Tarif nach Rückkehr, davon 120 ISK Fluglohn aus der Hauskasse.')
+       :a?.carrier==='house'?'Haus-Erzauftrag '+a.schiff+' · '+({vorbestellt:'Förderleistung und 50 Erz gebunden',hin:'Erz unterwegs nach Nadir',rueck:'Erz geliefert, bezahlter Rückflug'}[a.phase]):
+         (s.kanon.hausErz.grund?'Letztes Angebot verworfen: '+anzeigetext(s.kanon.hausErz.grund)+'. ':'')+
+         'Nutze +1 Minute, um das nächste Angebot am Dock zu sehen.';
+     hausStatus.textContent=last?phase+' Zuletzt bezahlt: '+last.amount+' Erz, '+(last.end-last.start)
+       +' Minuten, '+last.fee+' ISK Tarif und '+last.work+' ISK Fluglohn.':phase;
+   }
+ }
  $('spieleraktionen').replaceChildren(...offers.map(o=>{
   const box=d.createElement('div'),button=d.createElement('button'),small=d.createElement('small');
   box.className='order';
@@ -1426,6 +1476,15 @@ $('fortsetzen-pir').addEventListener('click',()=>{try{
 $('vorige-pir').addEventListener('click',()=>{try{
  ladeSitzung(gespeicherte(SLOT_PIR+':vorherige'),'pir-backup',true);
 }catch(e){hinweis('Piratenforschung nicht wiederhergestellt: '+error(e),true);}});
+for(const [id,quelle,key] of [
+ ['kopie-haus-erz','kopie',SLOT],['fortsetzen-haus-erz','lokal',SLOT_HAUS_ERZ],
+ ['vorige-haus-erz','backup',SLOT_HAUS_ERZ+':vorherige']
+]){
+ $(id)?.addEventListener('click',()=>{try{
+   if(hausErzSitzung()&&quelle==='lokal'){aktiveSitzung('Haus-Erz-Karriere ist geöffnet.');return;}
+   hausErzLaden(gespeicherte(key),quelle);
+ }catch(e){hinweis('Haus-Erz-Karriere nicht geöffnet: '+error(e),true);}});
+}
 const startOptionen=['w6-npc-start','w6-p8g-start','pir-start'].map($);
 for(const option of startOptionen)option.addEventListener('change',()=>{
  if(option.checked)for(const andere of startOptionen)if(andere!==option)andere.checked=false;
@@ -1447,7 +1506,9 @@ $('import-datei').addEventListener('change',async e=>{
  const f=input?.files?.[0];if(!f)return;
  try{
    if(f.size>MAX)throw Error('Datei größer als 5 MB');
-   const json=await f.text();ladeSitzung(json,'datei');
+   const json=await f.text();
+   if(JSON.parse(json)?.kanon?.hausErz!==undefined)hausErzLaden(json,'datei');
+   else ladeSitzung(json,'datei');
  }catch(err){hinweis('Datei nicht geladen: '+error(err),true);}
  finally{input.value='';}
 });

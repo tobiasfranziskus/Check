@@ -94,11 +94,15 @@ test('NPC ore: original #665 S02 career, real accepted 50 at tick32640 survives 
 });
 
 function fixture(tick=50,extraMiner=false){
-  const j=start(),w=j.weltReferenz(),s=w.load(j.exportieren());
-  w.politikSetzen(s,{automatik:false});
+  // The actual J8 standard career starts with no NPC pendel and no NPC
+  // freighter. This controlled contract fixture intentionally uses the
+  // original Rule204 factory, as in m4-u5-house-ore-option-a-audit.test.mjs.
+  const W=require('../prototypes/welt/welt-kern.js');
+  const w=W.erstellenJ4c({carrierCash:2000,buyerCash:4000}),s=w.createState(42);
+  assert.equal(s.kanon.pendel.sh001.ware,'erz');
   act(w,s,{type:'shipShuttleStop',owner:'npc3',schiff:'sh001'});
-  act(w,s,{type:'shipBuy',owner:'transport',klasse:'frachter',station:'st_aldera'});
   const fr=Object.values(s.ships).find(x=>x.owner==='transport'&&x.klasse==='frachter').id;
+  assert.equal(fr,'sh002');
   if(extraMiner)act(w,s,{type:'shipBuy',owner:'house',klasse:'miner',station:'st_aldera'});
   w.advance(s,tick);
   act(w,s,{type:'industrialOreOffer',owner:'st_nadir',miner:'sh001',frachter:fr});

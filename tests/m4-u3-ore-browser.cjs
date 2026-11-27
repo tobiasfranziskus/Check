@@ -5,8 +5,9 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const W=require('../prototypes/welt/welt-kern.js');
+const J8=require('../prototypes/verbund/konzern-session.js');
+const {prepare,importPrepared,SLOT}=require('../scripts/m4-u4-startstand.cjs');
 const root=path.resolve(__dirname,'..');
-const SLOT='aphros-void:spielerkarriere:regel204:v1';
 const server=http.createServer((req,res)=>{
  const url=new URL(req.url,'http://localhost'),file=path.resolve(root,'.'+(url.pathname==='/'?'/index.html':url.pathname));
  if(file!==path.join(root,'index.html')&&!file.startsWith(root+path.sep+'prototypes'+path.sep))
@@ -77,6 +78,97 @@ async function check(browser,kind,width,height){
   assert.deepEqual(errors,[]);
  }finally{await ctx.close();}
 }
+
+async function checkAfterIce(browser,kind,width,height,fixture){
+ const ctx=await browser.newContext({viewport:{width,height},hasTouch:true});
+ const page=await ctx.newPage(),errors=[];
+ page.on('pageerror',err=>errors.push(String(err)));
+ const el=id=>page.locator('#'+id);
+ const saved=()=>page.evaluate(key=>localStorage.getItem(key),SLOT);
+ const evidence=process.env.M4_MANAGER_EVIDENCE;
+ const capture=async label=>{
+  if(evidence)await page.screenshot({path:path.join(evidence,`${kind}-${width}x${height}-after-${label}.png`)});
+ };
+ const tapSize=async button=>{
+  const box=await button.boundingBox();
+  assert.ok(box&&box.width>=48&&box.height>=48);
+  return box;
+ };
+ try{
+  await page.goto('http://127.0.0.1:'+server.address().port+'/');
+  await importPrepared(page,fixture);
+  const jump=el('p3-auftragszentrale'),menu=el('open-menu');
+  const jumpBox=await tapSize(jump);
+  assert.ok(jumpBox.y>=0&&jumpBox.y+jumpBox.height<=height,'orders shortcut must fit the first viewport');
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  assert.equal(await menu.innerText(),'Hauptmenü');
+  await capture('start');
+  await menu.tap();
+  assert.equal(await el('startseite').isVisible(),true);
+  await capture('menu');
+  await el('fortsetzen').tap();
+
+  await el('tab-flotte').tap();
+  await el('manager-flotte-auswahl').waitFor({state:'visible'});
+  if(width===390){
+   await jump.focus();
+   await page.keyboard.press('Enter');
+  }else await jump.tap();
+  assert.equal(await el('tab-auftraege').getAttribute('aria-pressed'),'true');
+  assert.ok(await el('tab-auftraege').evaluate(e=>e===document.activeElement));
+  assert.ok(await el('tab-universum').isVisible());
+  assert.equal(await el('manager-transport-aktion').isEnabled(),true);
+  const ore=el('manager-erz-aktion'),minerLink=el('manager-erz-minerkauf');
+  assert.equal(await ore.isEnabled(),false);
+  assert.match(await el('manager-erz-grund').innerText(),/eingeteilt.*Förderpause/);
+  await minerLink.scrollIntoViewIfNeeded();
+  await tapSize(minerLink);
+  await capture('offers');
+  await minerLink.tap();
+  const purchase=page.locator('#spieleraktionen [data-action="buy-st_aldera-miner"]');
+  assert.ok(await purchase.evaluate(e=>e===document.activeElement));
+  assert.match(await purchase.innerText(),/Weiteren Miner in Aldera kaufen · 600 ISK/);
+  await capture('purchase');
+  assert.equal(await saved(),fixture.json,'navigation must not buy, dispatch or advance time');
+
+  const replay=J8.erstellen();
+  replay.oeffnen204(fixture.json,true);
+  assert.equal(replay.ausfuehren('buy-st_aldera-miner').ok,true);
+  await purchase.tap();
+  assert.equal(await saved(),replay.exportieren(),'same purchase as the original command');
+  const bought=JSON.parse(await saved());
+  const miner=Object.values(bought.ships).find(sh=>sh.owner==='house'&&sh.klasse==='miner'&&sh.id!=='sh002');
+  assert.ok(miner);
+  assert.equal(await minerLink.isVisible(),false);
+  assert.equal(await ore.isEnabled(),true);
+  assert.equal(replay.ausfuehren('ore-'+miner.id).ok,true);
+  await ore.tap();
+  assert.equal(await saved(),replay.exportieren(),'same dispatch as the original command');
+
+  for(let i=0;i<2;i++){
+   replay.weiterspielen(60);
+   await el('manager-zeit-aktion').tap();
+  }
+  const finalJson=await saved(),final=JSON.parse(finalJson);
+  assert.equal(finalJson,replay.exportieren(),'same state after the original world clock advances');
+  assert.equal(final.stats.konto.house.erloes-bought.stats.konto.house.erloes,500);
+  assert.ok(final.stats.verkaeufe[miner.id]>=1);
+  assert.equal(final.kanon.pendel.sh002.ware,'eis');
+  assert.equal(final.ships[miner.id].owner,'house');
+  assert.equal(final.w3.abgeschlossen,0);
+  assert.equal(sum(final),33000);
+  assert.equal(final.minted,0);
+  assert.equal(final.burned,0);
+  assert.equal(replay.weltReferenz().audit(replay.zustandReferenz()).ok,true);
+  await page.reload();
+  await el('fortsetzen').tap();
+  assert.equal(await saved(),finalJson);
+  assert.deepEqual(errors,[]);
+  console.log('M4_U3_AFTER_ICE_BROWSER',JSON.stringify({kind,width,height,minute:final.tick,
+   miner:miner.id,revenue:500,hash:replay.ansicht().hash}));
+ }finally{await ctx.close();}
+}
+
 (async()=>{
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  let browser;
@@ -84,8 +176,11 @@ async function check(browser,kind,width,height){
   const kind=process.env.WELT_BROWSER==='webkit'?'webkit':'chromium';
   browser=await (kind==='webkit'?webkit:chromium).launch(kind==='webkit'?{}:{
    executablePath:process.env.S1_CHROMIUM_PATH||undefined,args:['--no-sandbox']});
-  for(const [width,height] of [[1180,820],[1024,768],[820,1180],[390,844]])
+  const firstPaidTrip=prepare('C');
+  for(const [width,height] of [[1180,820],[1024,768],[820,1180],[390,844]]){
    await check(browser,kind,width,height);
+   await checkAfterIce(browser,kind,width,height,firstPaidTrip);
+  }
  }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));

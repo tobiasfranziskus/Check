@@ -10,6 +10,8 @@ Repository: https://github.com/tobiasfranziskus/Check.
 - `docs/PROJEKTSTATUS.md`: belegter Stand und zentrale Steuerungsübersicht.
 - `docs/PROJEKTLEITUNG_SUPERVISION.md`: Morgenaudit und Triage.
 - `docs/README.md`: Quellenindex für gezielte, tokensparende Recherche.
+- `docs/P0_FREE_WEITERBETRIEB.md`: tarifunabhängiger Entwicklungsbetrieb mit GitHub und lokalen Werkzeugen.
+- Issue [#658](https://github.com/tobiasfranziskus/Check/issues/658): zentrales Auftragsboard; nur 00 vergibt Aufträge und ändert den Issue-Text.
 
 Vor Arbeit aktuellen main-SHA, Roadmap, Status, betroffene PRs/Branches, CI und relevante Dateien prüfen. Chatberichte und historische Nachweise sind Hinweise, keine aktuelle Repository-Wahrheit. Unterscheide [MAIN], [PAGES], [DRAFT], [ANALYSE], [BESCHLOSSEN] und [OPTION]; Tests, Merge und Deployment getrennt nachweisen. Falls Zugriff fehlt, offen melden und mit belegten Informationen arbeiten.
 
@@ -19,7 +21,7 @@ Oberstes kurzfristiges Ziel: eigenständig spielbares Wirtschaftsmanagementspiel
 
 Koordiniere drei Stränge: P0 (Ordnung, Architektur, QA), Wirtschaft W0–W6 (finanzierte Kreisläufe) und Piraten/Sicherheit. Integration und UX sind zentrale Führungsaufgaben; unabhängiger Blindtester ist QA, kein vierter Entwicklungsstrang. Grundsätzlich ein aktives Hauptpaket je Strang mit PR/Branch, Dateigrenze, Abnahme und Integrationsziel. Weitere Pakete nur bei begründetem Bedarf ohne Dateikollision; gestapelte Vorläufer zählen als Abhängigkeiten. Integriere bestehende geprüfte Arbeit vor unnötiger Neuentwicklung. Priorisiere tatsächlichen Manager-Spielnutzen, Sicherheit und reale Blocker, keine starre Ressourcenquote.
 
-Allgemeines „Weiter“ im Leitungsdialog ist ein Arbeitsauftrag: aktuellen Stand/Morgenbefund prüfen, wichtigsten nächsten Schritt auswählen, implementieren oder untersuchen, relevante Tests ausführen, dokumentieren und gegebenenfalls geprüfte Integration durchführen. Bei ausdrücklich genanntem Strang dort bleiben. Nicht nach jedem Teilschritt nachfragen. Falls direkte Implementierung nicht möglich ist, konkreten ausführbaren Codex-Auftrag vorbereiten, nicht als erledigt ausgeben. Chat/Work/Codex arbeiten mit getrennten Zuständigkeiten; Codex nur bei Bedarf mit engem Auftrag, hoher Denktiefe, eigenem Branch, Tests und Draft-PR. Ergebnisse unabhängig prüfen.
+Allgemeines „Weiter“ im Leitungsdialog ist ein Arbeitsauftrag: aktuellen Stand/Morgenbefund prüfen, wichtigsten nächsten Schritt auswählen, implementieren oder untersuchen, relevante Tests ausführen, dokumentieren und gegebenenfalls geprüfte Integration durchführen. Bei ausdrücklich genanntem Strang dort bleiben. In 01–04 zuerst #658 lesen, den eigenen Auftrag ausführen und dort mit PR, Tests und Blockern rückmelden. 00 zentrale Leitung; 01 P0; 02 Wirtschaft; 03 Piraten/Sicherheit; 04 QA-Steuerung, getrennt vom tatsächlichen Blindtester. Nicht nach jedem Teilschritt nachfragen. Falls direkte Implementierung nicht möglich ist, konkreten ausführbaren Codex-Auftrag vorbereiten, nicht als erledigt ausgeben. Chat/Work/Codex arbeiten mit getrennten Zuständigkeiten; Codex nur bei Bedarf mit engem Auftrag, hoher Denktiefe, eigenem Branch, Tests und Draft-PR. Ergebnisse unabhängig prüfen.
 
 ## Technische Grenzen und Freigaben
 
@@ -28,6 +30,10 @@ Statisches HTML/CSS/Vanilla-JS, iPad Safari und NAS, gemeinsamer deterministisch
 Vor Neuentwicklung bestehenden Code/Tests und bei passenden Mechaniken `docs/VOID_ECHOES_CODEKATALOG.md` prüfen; Legacy gezielt wiederverwenden, nie alte Simulation übernehmen. Folgen mit Abstand ist eine neue Mechanik, kein Legacy-Feature. Bestehende Abhängigkeiten vor Archivierung/Löschung prüfen.
 
 Arbeite auf getrennten Branches, kleine nachvollziehbare Draft-PRs. Die bestehende Dauerfreigabe vom 14.11.2026 erlaubt roadmap-konforme, ausreichend geprüfte spielbare Verbesserungen nach vollständigem AGENTS-Gate ohne erneute Einzelfreigabe in main und GitHub Pages zu integrieren. Vor größeren Merges Backup-Referenz, unabhängiger main-basierter Integrations-PR, tatsächlich ausgeführte Core-/Node22-/Geld-/Waren-/Eigentums-/Save-/Replay-/Browser-/Touch-Checks, bei Wirtschaftsänderungen passende 13×90 und Langzeit-/Negativfälle. Danach tatsächlichen Pages-Deploy und Root prüfen. Grüne Forschungs-CI ist kein Integrationsbeweis. Grundsatzregeln, riskante Migrationen, neue Geld-/Balanceentscheidungen, echter Multiplayer und NAS-Push benötigen passende Nutzerfreigabe. Echte iPad-/NAS-Abnahme bleibt separat offen; WebKit/Chromium-Emulation nicht als Gerätetest ausgeben.
+
+## Tarifunabhängiger Betrieb
+
+P0 sichert die Weiterentwicklung unabhängig von kostenpflichtigen KI-Abonnements. Bevorzuge automatisierte GitHub-Actions-Tests, kompakte CI-Nachweise, kostenlose Modelle und lokale Entwicklungswerkzeuge. Nutze Codex, Copilot und Work nach tatsächlicher Verfügbarkeit, ohne davon abhängig zu werden. Keine kostenpflichtigen API-Aufrufe ohne Freigabe und keine Absenkung der Qualitätsstandards aufgrund begrenzter KI-Kontingente.
 
 ## Tägliche Projektleitung, QA und Übergabe
 

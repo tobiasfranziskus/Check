@@ -388,7 +388,7 @@ const m_data_erzpilot = (() => {
       }};
     }
     if(research.hausErz===true)W5_RULES.hausErz=true;
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug','siliziumZweitesFeld','siliziumDravos','siliziumFracht','hausErz'].includes(k))
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug','siliziumZweitesFeld','siliziumDravos','siliziumFracht','hausErz','npcErzRevision'].includes(k))
       || (Object.hasOwn(research,'kanon')&&(research.kanon!==true||research.personalWages!==true))
       || (Object.hasOwn(research,'ort')!==(research.kanon===true))
       || (research.kanon===true&&(typeof research.ort?.imFeld!=='function'
@@ -408,7 +408,10 @@ const m_data_erzpilot = (() => {
       || (Object.hasOwn(research,'siliziumDravos')&&
         (research.siliziumDravos!==true||research.siliziumZweitesFeld!==true))
       || (Object.hasOwn(research,'siliziumFracht')&&
-        (research.siliziumFracht!==true||research.siliziumDravos!==true)))
+        (research.siliziumFracht!==true||research.siliziumDravos!==true))
+      || (Object.hasOwn(research,'npcErzRevision')&&
+        (research.npcErzRevision!==true||research.jaegerFlug!==true
+          ||research.hausErz===true||research.siliziumZweitesFeld===true)))
       throw TypeError('Unbekannter W5ad-Startparameter');
     const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
     if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
@@ -489,6 +492,9 @@ const m_data_erzpilot = (() => {
       W5_RULES.j4c=Object.freeze({owner:'house',station:'st_nadir',
         verschleissMilliJeMinute:300});
     }
+    // W-20261127-03: a separate new Standard/S02 rule revision. The original
+    // Rule204 factory and all research profiles retain their historical rules.
+    if(research.npcErzRevision===true)W5_RULES.rulesVersion=208;
     // W6/P8b [DRAFT / RESEARCH RULE205]: eine ZWEITE, raeumlich getrennte,
     // ENDLICHE Nadir-Geologie. Explizite Versuchsauswahl, niemals in Rule204.
     // Keine Schiffe, Kassen, Siliziumware oder Rettung bei der Initialisierung.
@@ -1145,9 +1151,10 @@ function preis(state, station, ware, rules) {
 return { faktorFormel, preisFormel, faktor, preis };
 })();
 
-// W-20261127-03: Standard/S02 only; no PIR, Haus-Erz or legacy/207 changes.
+// W-20261127-03: only new Rule208 Standard/S02; never alter Rule204 replay.
 function npcErzSchutzProfil(state,rules) {
-  return rules.rulesVersion===204 && rules.k7 && !rules.hausErz && !state.kanon?.piraten;
+  return rules.rulesVersion===208 && state.rulesVersion===208
+    && rules.k7 && !rules.hausErz && !state.kanon?.piraten;
 }
 function npcErzVertragGedeckt(state,rules,a) {
   const i=state.kanon?.industrieErz, c=rules.w3;
@@ -4241,6 +4248,15 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
     return createEngine({},{...options,wageTrade:true,waterTrade:true,
       personalWages:true,kanon:true,industryOre:true,
       silizium:true,bauteile:true,jaeger:true,jaegerFlug:true,hausErz:true,ort});
+  },
+  createNpcErz208Welt:(options,ort)=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('Regel208: nur nachweisbare Anfangskassen');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,
+      personalWages:true,kanon:true,industryOre:true,
+      silizium:true,bauteile:true,jaeger:true,jaegerFlug:true,npcErzRevision:true,ort});
   },
   createJ4cWelt:(options,ort)=>{
     if(options==null)options={};

@@ -124,6 +124,7 @@ async function pruefeUeberfuehrung(browser,art,width,height,fixture){
   for(const [width,height] of [[1180,820],[1024,768],[820,1180],[390,844]]){
    await pruefeHausErz(browser,art,width,height,'http://127.0.0.1:'+server.address().port+'/');
    await pruefen(browser,art,width,height,json);
+   await pruefeHausErz.pruefeHausErzNach48(browser,art,width,height,'http://127.0.0.1:'+server.address().port+'/',json);
    await pruefeUeberfuehrung(browser,art,width,height,fixture);
   }
  }finally{

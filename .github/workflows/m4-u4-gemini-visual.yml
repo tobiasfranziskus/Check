@@ -1,0 +1,107 @@
+name: M4-U4 visueller Gemini-Pilot (manuell)
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: 'Blindtestmodul A–F'
+        type: choice
+        options:
+          - A
+          - B
+          - C
+          - D
+          - E
+          - F
+        default: A
+      google_visual_consent:
+        description: 'Isolierte Viewport-Bilder an Google senden und Testartefakte 7 Tage in GitHub speichern. Google kann Gratisinhalte zur Produktverbesserung nutzen.'
+        type: boolean
+        default: false
+      free_project_confirmed:
+        description: 'Ich bestätige ein Gemini-Free-Tier-Projekt ohne aktivierte Abrechnung. Der Projekttarif ist per API-Key nicht prüfbar.'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: m4-u4-live-pilot
+  cancel-in-progress: false
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check branch and consent (no secret)
+        env:
+          M4_CONSENT: ${{ inputs.google_visual_consent }}
+          M4_FREE_PROJECT: ${{ inputs.free_project_confirmed }}
+        run: |
+          if [ "$GITHUB_REF" != refs/heads/main ]; then echo 'Bitte main auswählen.' >&2; exit 1; fi
+          if [ "$M4_CONSENT" != true ] || [ "$M4_FREE_PROJECT" != true ]; then
+            echo 'Google-Bild-/Artefaktzustimmung und Bestätigung eines Projekts ohne Abrechnung erforderlich.' >&2
+            exit 1
+          fi
+  pilot:
+    needs: preflight
+    if: github.ref == 'refs/heads/main' && inputs.google_visual_consent == true && inputs.free_project_confirmed == true
+    environment: m4-blindtest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser without model credentials
+        run: |
+          npm install --prefix "$RUNNER_TEMP/m4-ui" playwright@1.51.1
+          "$RUNNER_TEMP/m4-ui/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Run screenshot-only module
+        env:
+          M4_MODULE: ${{ inputs.module }}
+          M4_AI_MODEL: gemini-3.5-flash-lite
+          M4_OBSERVATION_MODE: screenshot-only
+          M4_AI_PROVIDER: gemini
+          M4_ALLOW_REMOTE: '1'
+          M4_GEMINI_VISUAL_CONSENT: '1'
+          M4_GEMINI_FREE_CONFIRMED: '1'
+          GEMINI_API_KEY: ${{ secrets.M4_GEMINI_VISUAL_API_KEY }}
+          M4_PRODUCT_SHA: ${{ github.sha }}
+          TMPDIR: ${{ runner.temp }}/m4-live
+        run: |
+          mkdir -p "$TMPDIR"
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo 'Fehlendes Environment-Secret M4_GEMINI_VISUAL_API_KEY.' >&2
+            exit 1
+          fi
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/m4-ui/node_modules/playwright"
+          node scripts/m4-u4-model-runner.cjs "$M4_MODULE" . > "$TMPDIR/result.json"
+      - name: Summarize transport status, not UX verdict
+        if: always()
+        env:
+          TMPDIR: ${{ runner.temp }}/m4-live
+        run: |
+          node -e '
+            const fs=require("node:fs"),path=require("node:path");
+            let r; try {r=JSON.parse(fs.readFileSync(path.join(process.env.TMPDIR,"result.json"),"utf8"));} catch {r={reason:"INFRASTRUCTURE",detail:"Pilot setup incomplete",actions:0};}
+            const reason=["INFRASTRUCTURE","MODEL_STOP","LIMIT"].includes(r.reason)?r.reason:"INFRASTRUCTURE";
+            const n=Number.isInteger(r.actions)&&r.actions>=0&&r.actions<=12?r.actions:"unbekannt";
+            const allowed=["Invalid model decision format","Invalid model JSON","Model output truncated","Model output empty","Unverified free model identity","Model identity mismatch","Model response too large","Empty model response","Invalid provider JSON","Model transport or response failed","Model timeout","Browser observation failed","Browser action failed","Current viewport image unavailable","Native browser dialog unsupported; infrastructure blocked","Screenshot-only requires a verified free image model and explicit consent","Pilot setup incomplete","Gemini response blocked or incomplete"];
+            const detail=reason==="INFRASTRUCTURE"&&(allowed.includes(r.detail)||/^Model HTTP [0-9]{3}$/.test(r.detail))?r.detail:reason==="INFRASTRUCTURE"?"Keine sichere Detaildiagnose verfügbar.":"-";
+            const model=r.model==="gemini-3.5-flash-lite"?r.model:"Noch nicht bestätigt";
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,"## M4-U4 Gemini Screenshot-only\n\nTransportstatus: "+reason+"\n\nDiagnose: "+detail+"\n\nBestätigtes Modell: "+model+"\n\nAktionen: "+n+"\n\nSpielabnahme: UNREVIEWED. Evidenz separat bewerten.\n");
+            if(reason==="INFRASTRUCTURE") process.exitCode=1;
+          '
+      - name: Upload isolated test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m4-u4-gemini-visual-${{ inputs.module }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/m4-live/result.json
+            ${{ runner.temp }}/m4-live/m4-u4-model-*/evidence.jsonl
+            ${{ runner.temp }}/m4-live/m4-u4-model-*/round-*.png
+          retention-days: 7
+          if-no-files-found: warn

@@ -22,14 +22,26 @@ function allowed(cfg){
 }
 function safeDetail(e){
  const s=String(e?.message||'');
- if(/^Model HTTP [0-9]{3}$/.test(s)||['Invalid model decision format','Invalid model JSON','Model identity mismatch','Model output truncated','Model output empty','Gemini response blocked or incomplete','Current viewport image unavailable'].includes(s))return s;
+ if(/^Model HTTP [0-9]{3}$/.test(s)||['Invalid model decision format','Invalid model JSON','Model identity mismatch','Model output truncated','Model output empty','Gemini response blocked or incomplete','Current viewport image unavailable','Calibration budget exhausted'].includes(s))return s;
  return e?.name==='TimeoutError'?'Model timeout':'Calibration setup, transport or browser failed';
 }
 async function runCalibration({cfg,out,fetcher=fetch,open=session,engine='chromium',now=()=>performance.now()}){
  const started=now(),steps=[];let requests=0,model=null;
+ const budget=()=>Math.floor(MS-(now()-started));
+ // Count only actual transport invocations, after local payload validation.
+ const boundedFetch=async(url,init)=>{
+  const remaining=budget();
+  if(remaining<=0||requests>=4)throw Error('Calibration budget exhausted');
+  const signal=AbortSignal.any([init.signal,AbortSignal.timeout(Math.max(1,Math.min(45000,remaining)))]);
+  requests++;
+  return fetcher(url,{...init,signal});
+ };
  fs.mkdirSync(out,{recursive:true});
  const finish=(reason,detail)=>{
-  const result={reason,detail,requests,hits:steps.filter(s=>s.hit).length,model,elapsedMs:Math.round(now()-started),verdict:'NOT_GAME_ACCEPTANCE',productSha:process.env.M4_PRODUCT_SHA||'UNVERIFIED',steps};
+  // Successful verdict includes the final observation, event read and session cleanup.
+  const elapsedMs=Math.floor(now()-started);
+  if(reason==='CALIBRATION_PASS'&&elapsedMs>=MS){reason='INFRASTRUCTURE';detail='Calibration budget exhausted';}
+  const result={reason,detail,requests,hits:steps.filter(s=>s.hit).length,model,elapsedMs,verdict:'NOT_GAME_ACCEPTANCE',productSha:process.env.M4_PRODUCT_SHA||'UNVERIFIED',steps};
   fs.writeFileSync(path.join(out,'result.json'),JSON.stringify(result,null,2)+'\n',{mode:0o600});return result;
  };
  if(!allowed(cfg))return finish('INFRASTRUCTURE','Calibration requires explicit free visual consent');
@@ -45,17 +57,18 @@ async function runCalibration({cfg,out,fetcher=fetch,open=session,engine='chromi
     let obs=await relay.observe();
     const order=index===0?['ALPHA','BETA']:['BETA','ALPHA'];
     for(let i=0;i<2;i++){
-     const remaining=Math.floor(MS-(now()-started));
+     const remaining=budget();
      if(remaining<=0||requests>=4||obs.error||obs.done||!Buffer.isBuffer(obs.image))return finish('INFRASTRUCTURE','Calibration observation or budget unavailable');
-     const expected=order[i];requests++;
+     const expected=order[i];
      let decision;
-     try{decision=await ask(transport,requestBody(transport,CALIBRATION_GOAL,obs,[]),Math.max(1,Math.min(45000,remaining)),fetcher);}
+     try{decision=await ask(transport,requestBody(transport,CALIBRATION_GOAL,obs,[]),Math.max(1,Math.min(45000,remaining)),boundedFetch);}
      catch(e){const detail=safeDetail(e);return finish(/^Invalid model (decision format|JSON)$/.test(detail)?'CALIBRATION_FAIL':'INFRASTRUCTURE',detail);}
      model=decision.reportedModel;
+     if(budget()<=0)return finish('INFRASTRUCTURE','Calibration budget exhausted');
      if(decision.action.op!=='click'||!decision.modelAction)return finish('CALIBRATION_FAIL','Expected one normalized click');
-     if(now()-started>=MS)return finish('INFRASTRUCTURE','Calibration budget exhausted');
      const after=await relay.step(decision.action);
-     if(after.error||after.done||!Buffer.isBuffer(after.image))return finish('INFRASTRUCTURE','Calibration follow-up image unavailable');
+     const expiredAfterStep=budget()<=0;
+     if(after.error||after.done||!Buffer.isBuffer(after.image))return finish('INFRASTRUCTURE',expiredAfterStep?'Calibration budget exhausted':'Calibration follow-up image unavailable');
      const events=await page.evaluate(()=>window.calibrationEvidence);
      const event=Array.isArray(events)?events[i]:null;
      const valid=event&&TARGETS.includes(event.id)&&Number.isInteger(event.x)&&Number.isInteger(event.y);
@@ -63,6 +76,7 @@ async function runCalibration({cfg,out,fetcher=fetch,open=session,engine='chromi
      const changed=!obs.image.equals(after.image);
      const hit=!!(evidence&&events.length===i+1&&evidence.trusted&&evidence.id===expected&&evidence.x===decision.action.x&&evidence.y===decision.action.y&&changed);
      steps.push({viewport,dpr:1,expected,modelAction:decision.modelAction,action:decision.action,event:evidence,before:viewport.width+'x'+viewport.height+'/'+obs.screenshot,after:viewport.width+'x'+viewport.height+'/'+after.screenshot,changed,hit});
+     if(expiredAfterStep||budget()<=0)return finish('INFRASTRUCTURE','Calibration budget exhausted');
      if(!hit)return finish('CALIBRATION_FAIL','Actual click did not hit the requested neutral target');
      obs=after;
     }

@@ -90,6 +90,7 @@ async function collect({ pr = null, allow = [], get = githubGet, sourceSha = nul
   }
   const pages = async (endpoint, key, label) => {
     const items = []
+    const seenIds = new Set()
     for (let page = 1; page <= 3; page++) {
       try {
         const separator = endpoint.includes('?') ? '&' : '?'
@@ -97,6 +98,14 @@ async function collect({ pr = null, allow = [], get = githubGet, sourceSha = nul
         const rows = key ? data?.[key] : data
         if (!Array.isArray(rows) || rows.some(row => !row || typeof row !== 'object' || Array.isArray(row))) {
           throw new ReadError('Unerwartete Listenantwort')
+        }
+        // Named API lists have stable numeric IDs; PR files are checked by path instead.
+        if (key) {
+          for (const row of rows) {
+            if (!positive(row.id)) throw new ReadError('Fehlende oder ungültige Listen-ID')
+            if (seenIds.has(row.id)) throw new ReadError('Doppelte Listen-ID')
+            seenIds.add(row.id)
+          }
         }
         items.push(...rows)
         if (!next) {
@@ -149,6 +158,7 @@ async function collect({ pr = null, allow = [], get = githubGet, sourceSha = nul
     const definition = catalog.items.find(item => item.path === workflow.path && positive(item.id))
     const row = {
       path: workflow.path, definition: definition ? safeText(definition.state) : null,
+      definitionListComplete: catalog.complete,
       status: catalog.complete ? 'missing' : 'unknown', relation: null, run: null,
       expectedJob: { name: workflow.job, status: null }, jobs: [], artifacts: []
     }
@@ -199,7 +209,7 @@ async function collect({ pr = null, allow = [], get = githubGet, sourceSha = nul
       },
       expectedJob: {
         name: workflow.job,
-        status: matches.length === 1 ? status(matches[0]) : jobs.complete && !matches.length ? 'missing' : 'unknown'
+        status: !jobs.complete ? 'unknown' : matches.length === 1 ? status(matches[0]) : !matches.length ? 'missing' : 'unknown'
       },
       jobsComplete: jobs.complete, artifactsComplete: artifacts.complete,
       jobs: jobs.items.map(job => ({
@@ -268,6 +278,7 @@ function markdown(report) {
       lines.push('', '### ' + row.path.split('/').at(-1), '',
         'Status ' + code(row.status) + ' · Bezug ' + code(row.relation)
         + ' · Workflow-Definition ' + md(row.definition))
+      if (!row.definitionListComplete) lines.push('Workflow-Liste unvollständig.', '')
       if (!row.run) continue
       lines.push('', '[Run ' + row.run.id + ' · Versuch ' + row.run.attempt + '](' + row.run.url + ') · SHA '
         + code(row.run.headSha) + ' · gemeldete PR-Base ' + code(row.run.reportedBaseSha), '',

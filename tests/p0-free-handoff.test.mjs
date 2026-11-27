@@ -104,6 +104,10 @@ test('verknüpft Main/PR und blättert Workflows, Dateien, Jobs und Artefakte we
   const [partial, queued] = report.pr.workflows
   assert.equal(partial.status, 'failure')
   assert.equal(partial.expectedJob.status, 'success')
+  assert.equal(partial.definitionListComplete, true)
+  assert.equal(partial.runsComplete, true)
+  assert.equal(partial.jobsComplete, true)
+  assert.equal(partial.artifactsComplete, true)
   assert.deepEqual(partial.jobs.map(job => job.status), ['success', 'failure', 'skipped', 'cancelled'])
   assert.equal(partial.artifacts.length, 2)
   assert.equal(partial.artifacts[1].expired, true)
@@ -148,7 +152,7 @@ test('ein Run ohne PR-Zuordnung bleibt unbestätigt, laufende Jobs bleiben in_pr
 
 test('API-Fehler, Seitenlimit und Diff-Mengenabweichung bleiben sichtbar', async () => {
   const { get, requests } = fixture({
-    '/actions/workflows': () => list('workflows', [defs[0]], true, 700),
+    '/actions/workflows': params => list('workflows', [params.get('page') === '1' ? defs[0] : { id: 20 + Number(params.get('page')), path: 'other' }], true, 700),
     '/actions/runs/101/attempts/2/jobs': () => { throw new Error('Authorization: Bearer should-never-appear') },
     '/pulls/42/files': () => ({ data: [{ filename: 'docs/README.md', status: 'added' }], next: false })
   })
@@ -200,5 +204,66 @@ test('die CLI akzeptiert nur PR-Nummern und relative Pfadgrenzen', () => {
   assert.match(parseArgs(['--help']).usage, /^node /)
   for (const args of [['--pr', '-1'], ['--pr', '42;whoami'], ['--allow', 'docs/'], ['--pr', '42', '--allow', '../'], ['--pr']]) {
     assert.throws(() => parseArgs(args), /node tools/)
+  }
+})
+
+test('doppelte Nicht-Zieljob-ID auf Folgeseite macht den gesamten Jobnachweis unvollständig', async () => {
+  const inventory = { id: 201, name: 'inventory', status: 'completed', conclusion: 'success' }
+  const other = { id: 202, name: 'other', status: 'completed', conclusion: 'success' }
+  const { get } = fixture({
+    '/actions/runs/101/attempts/2/jobs': params => params.get('page') === '1'
+      ? list('jobs', [inventory, other], true, 3)
+      : list('jobs', [other], false, 3)
+  })
+  const report = await collect({ get, pr: 42 })
+  const row = report.pr.workflows[0]
+  assert.equal(row.jobsComplete, false)
+  assert.equal(row.expectedJob.status, 'unknown')
+  assert.deepEqual(row.jobs.map(job => job.name), ['inventory', 'other'])
+  assert.deepEqual(report.issues, [{ source: 'PR #42 / p0-prototype-inventory.yml / Jobs', reason: 'Doppelte Listen-ID' }])
+  assert.match(markdown(report), /Jobliste unvollständig/)
+})
+
+const idCases = [
+  { endpoint: '/actions/workflows', key: 'workflows', valid: defs[0],
+    check: report => report.pr.workflows[0].definitionListComplete },
+  { endpoint: '/actions/workflows/10/runs', key: 'workflow_runs', valid: run(101, true),
+    check: report => report.pr.workflows[0].runsComplete },
+  { endpoint: '/actions/runs/101/attempts/2/jobs', key: 'jobs',
+    valid: { id: 201, name: 'inventory', status: 'completed', conclusion: 'success' },
+    check: report => report.pr.workflows[0].jobsComplete },
+  { endpoint: '/actions/runs/101/artifacts', key: 'artifacts', valid: { id: 301, name: 'Inventur' },
+    check: report => report.pr.workflows[0].artifactsComplete }
+]
+
+function idFixture({ endpoint, key, valid }, second) {
+  return fixture({
+    [endpoint]: params => key === 'workflow_runs' && params.get('event') === 'push'
+      ? list(key, [run(100, false)])
+      : list(key, [params.get('page') === '1' ? valid : second], params.get('page') === '1', 2)
+  })
+}
+
+test('doppelte IDs werden in allen vier Listentypen erkannt; PR-Dateien brauchen keine IDs', async () => {
+  for (const entry of idCases) {
+    const { get } = idFixture(entry, entry.valid)
+    const report = await collect({ get, pr: 42 })
+    assert.equal(entry.check(report), false, entry.key)
+    assert.ok(report.issues.some(issue => issue.reason === 'Doppelte Listen-ID'), entry.key)
+    assert.equal(report.pr.diff.complete, true)
+  }
+})
+
+test('fehlende, null, nichtpositive, nichtnumerische und unsichere IDs bleiben Abruflücken', async () => {
+  for (const entry of idCases) {
+    for (const invalid of [undefined, null, 0, -1, 1.5, '2', Number.MAX_SAFE_INTEGER + 1]) {
+      const bad = { ...entry.valid, id: invalid }
+      if (invalid === undefined) delete bad.id
+      const { get } = idFixture(entry, bad)
+      const report = await collect({ get, pr: 42 })
+      assert.equal(entry.check(report), false, entry.key + ': ' + invalid)
+      assert.ok(report.issues.some(issue => issue.reason === 'Fehlende oder ungültige Listen-ID'), entry.key)
+      if (entry.key === 'jobs') assert.equal(report.pr.workflows[0].expectedJob.status, 'unknown')
+    }
   }
 })

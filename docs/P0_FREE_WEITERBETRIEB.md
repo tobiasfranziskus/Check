@@ -58,7 +58,9 @@ Vor dem Push `git diff --check` und den Diff gegen den Zielbranch lesen. Nur die
 
 ## Metadatenbericht lokal lesen
 
-Den Branch mit dem Werkzeug auschecken und den Ausgabeordner außerhalb des Repos wählen, etwa unter `/tmp` bzw. `$env:TEMP`. PR 672 dient hier nur als Beispielnummer.
+**Vertrauensgrenze:** Mit lokalem `gh`-Login ausschließlich einen vertrauenswürdigen, anhand des Commit-SHA gepinnten und geprüften Werkzeugstand ausführen (nach Integration vorzugsweise den geprüften Main-Commit). Niemals beliebigen PR-Code im angemeldeten lokalen Checkout starten. Den Werkzeug-Commit getrennt vom zu untersuchenden PR wählen, mit `git rev-parse HEAD` bestätigen und bei Bedarf in einem separaten sauberen Checkout ausführen. Für den Bericht nach Möglichkeit einen nur lesenden GitHub-Zugang verwenden; Schreibzugriff wird dafür nicht benötigt. Der Ziel-PR wird ausschließlich über seine Nummer abgefragt.
+
+Den Ausgabeordner außerhalb des Repos wählen, etwa unter `/tmp` bzw. `$env:TEMP`. PR 672 dient hier nur als Beispielnummer.
 
 ```bash
 node tools/p0-free-handoff.cjs --pr 672 --allow 'docs/,tools/p0-free-handoff.cjs' --out /tmp/check-ci
@@ -68,7 +70,7 @@ node tools/p0-free-handoff.cjs --pr 672 --allow 'docs/,tools/p0-free-handoff.cjs
 node tools/p0-free-handoff.cjs --pr 672 --allow "docs/,tools/p0-free-handoff.cjs" --out (Join-Path $env:TEMP "check-ci")
 ```
 
-Ohne `--pr` zeigt der Bericht Main. Mit `--allow` gelten exakte Dateipfade und Verzeichnisse mit abschließendem `/`, auch für den alten Pfad bei Umbenennungen. Ohne Pfadgrenze bleibt die Bewertung offen. Die Detaildatei enthält bis zu drei Seiten à 100 Einträge pro Liste. Die Markdown-Ansicht zeigt bis zu 15 Einträge pro Abschnitt und verweist bei weiteren Einträgen auf JSON.
+Ohne `--pr` zeigt der Bericht Main. Mit `--allow` gelten exakte Dateipfade und Verzeichnisse mit abschließendem `/`, auch für den alten Pfad bei Umbenennungen. Ohne Pfadgrenze bleibt die Bewertung offen. Die Detaildatei enthält bis zu drei Seiten à 100 Einträge pro Liste. Workflow-, Run-, Job- und Artefaktlisten mit fehlenden, ungültigen oder wiederholten IDs gelten als unvollständig (auch bei einer Wiederholung auf einer Folgeseite). Der Jobnachweis bleibt bei unvollständiger Jobliste `unknown`. PR-Dateien werden weiterhin anhand ihrer Pfade und der gemeldeten Dateimenge geprüft. Die Markdown-Ansicht zeigt bis zu 15 Einträge pro Abschnitt und verweist bei weiteren Einträgen auf JSON.
 
 Der Bericht betrachtet die P0-Inventur und JavaScript-Regressionsprüfung für Main-Pushes und PR-Ereignisse. Er zeigt den GitHub-Abschlussstatus und beim PR den gemeldeten Bezug zur Base. `stale_head`, `stale_base` und `unverified_base` verlangen einen Blick in den verlinkten Originaljob. `missing` bezeichnet einen fehlenden Eintrag in einem erfolgreich gelesenen Ausschnitt, `unknown` einen unklaren Status oder fehlgeschlagenen Abruf. Ein grüner Job liefert allein keine Testzahl oder fachliche Freigabe. Die Artefaktliste gilt für den Run, die Jobliste für den verlinkten Versuch. Exitcode `2` kennzeichnet Abruflücken oder einen während der Erfassung geänderten Stand. Der Teilbericht bleibt lesbar. Exitcode `1` kennzeichnet CLI-/Ausgabefehler. GitHub-Jobfehler und Pfadabweichungen stehen im Bericht.
 

@@ -1,0 +1,61 @@
+name: M4-U4 visual transport and browser diagnostics
+on:
+  pull_request:
+    paths:
+      - 'scripts/m4-u4-ui-relay.cjs'
+      - 'scripts/m4-u4-model-runner.cjs'
+      - 'scripts/m4-u4-startstand.cjs'
+      - 'tests/m4-u4-*.cjs'
+      - '.github/workflows/m4-u4-visible-controls.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    name: Browser QA (${{ matrix.engine }})
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      M4_UI_BROWSER_ENGINE: ${{ matrix.engine }}
+      M4_UI_BROWSER: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install development browser
+        run: |
+          npm install --prefix "$RUNNER_TEMP/m4-u4" playwright@1.51.1
+          "$RUNNER_TEMP/m4-u4/node_modules/.bin/playwright" install --with-deps "$M4_UI_BROWSER_ENGINE"
+          echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/m4-u4/node_modules/playwright" >> "$GITHUB_ENV"
+          echo "M4_U4_EVIDENCE=$RUNNER_TEMP/m4-u4-evidence" >> "$GITHUB_ENV"
+      - name: Relay, model protocol and prepared imports
+        run: |
+          mkdir -p "$M4_U4_EVIDENCE"
+          set -o pipefail
+          node --test --test-reporter=spec tests/m4-u4-{ui-relay,model-runner,startstand,visible-controls,screenshot-only}.test.cjs | tee "$M4_U4_EVIDENCE/adapter.log"
+      - name: C–F diagnosis in both viewports
+        if: ${{ !cancelled() && env.M4_U4_EVIDENCE != '' }}
+        run: |
+          mkdir -p "$M4_U4_EVIDENCE"
+          set -o pipefail
+          node tests/m4-u4-browser-diagnosis.cjs "$M4_U4_EVIDENCE" |& tee "$M4_U4_EVIDENCE/matrix.log"
+      - name: C–F screenshot-only browser checks
+        if: ${{ !cancelled() && env.M4_U4_EVIDENCE != '' }}
+        run: |
+          mkdir -p "$M4_U4_EVIDENCE"
+          set -o pipefail
+          node tests/m4-u4-browser-diagnosis.cjs "$M4_U4_EVIDENCE" --screenshot-only |& tee "$M4_U4_EVIDENCE/visual-matrix.log"
+      - name: Upload screenshots and observations
+        if: ${{ !cancelled() && env.M4_U4_EVIDENCE != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: m4-u4-${{ matrix.engine }}
+          path: ${{ env.M4_U4_EVIDENCE }}
+          retention-days: 7

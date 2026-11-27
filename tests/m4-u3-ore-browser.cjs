@@ -7,6 +7,7 @@ const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const W=require('../prototypes/welt/welt-kern.js');
 const J8=require('../prototypes/verbund/konzern-session.js');
 const {prepare,importPrepared,SLOT}=require('../scripts/m4-u4-startstand.cjs');
+const SLOT208='aphros-void:spielerkarriere:regel208:v1';
 const root=path.resolve(__dirname,'..');
 const server=http.createServer((req,res)=>{
  const url=new URL(req.url,'http://localhost'),file=path.resolve(root,'.'+(url.pathname==='/'?'/index.html':url.pathname));
@@ -39,8 +40,10 @@ async function check(browser,kind,width,height){
   assert.ok(b&&b.width>=48&&b.height>=48,'iPad-accessible ore action');
   if(width===390){await ore.focus();await page.keyboard.press('Enter');}
   else await ore.tap();
-  const saved=()=>page.evaluate(k=>localStorage.getItem(k),SLOT);
+  const saved=()=>page.evaluate(k=>localStorage.getItem(k),SLOT208);
   const first=await saved(),s=JSON.parse(first);
+  assert.equal(s.rulesVersion,208);
+  assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),null);
   assert.equal(s.kanon.pendel.sh002.ware,'erz');
   assert.equal(s.ships.sh002.owner,'house');
   assert.equal(s.w3.abgeschlossen,0,'W1 is not misrepresented as W3');
@@ -52,7 +55,7 @@ async function check(browser,kind,width,height){
   await page.locator('#fortsetzen').tap();
   assert.equal(await saved(),first,'reload must preserve the actual ore contract');
   if(width===1180){
-   const world=W.erstellenJ4c({carrierCash:s.w5ad.profile.carrierCash,buyerCash:s.w5ad.profile.buyerCash});
+   const world=W.erstellenNpcErz208({carrierCash:s.w5ad.profile.carrierCash,buyerCash:s.w5ad.profile.buyerCash});
    let final=s,done=false,minutes=0;
    for(let i=0;i<16;i++){
     await page.locator('#manager-zeit-aktion').tap();
@@ -76,6 +79,66 @@ async function check(browser,kind,width,height){
   }else console.log('M4_U3_ORE_BROWSER_TOUCH',JSON.stringify({kind,width,height,
     quote:'paid',owner:s.ships.sh002.owner,world:sum(s)}));
   assert.deepEqual(errors,[]);
+ }finally{await ctx.close();}
+}
+
+async function isolation(browser,kind,fixture){
+ const ctx=await browser.newContext({viewport:{width:1180,height:820},hasTouch:true});
+ const page=await ctx.newPage(),errors=[];
+ page.on('pageerror',err=>errors.push(String(err)));
+ const el=id=>page.locator('#'+id),read=key=>page.evaluate(k=>localStorage.getItem(k),key);
+ const showMenu=()=>el('open-menu').tap();
+ async function newCareer(s02=false){
+  if(s02){await el('neues-spiel').tap();await el('w6-npc-start').check();await el('karriere-starten').tap();}
+  else await el('karriere-direkt').tap();
+  await el('spielwelt').waitFor({state:'visible'});
+ }
+ try{
+  await page.goto('http://127.0.0.1:'+server.address().port+'/');
+  await importPrepared(page,fixture);assert.equal(await read(SLOT),fixture.json);
+  await showMenu();await newCareer();
+  const standard=await read(SLOT208);
+  assert.equal(JSON.parse(standard).rulesVersion,208);
+  assert.equal(await read(SLOT),fixture.json);
+  assert.equal(await read(SLOT+':vorherige'),null);
+  const expected=J8.erstellen();expected.starten208(true,false);
+  assert.equal(standard,expected.exportieren());
+  await el('manager-abbau-aktion').tap();assert.equal(expected.ausfuehren('buy-st_aldera-miner').ok,true);
+  const working=await read(SLOT208);assert.equal(working,expected.exportieren());
+  await showMenu();await el('neues-spiel').tap();
+  await el('career-recovery').evaluate(e=>e.open=true);
+  await el('fortsetzen-204').tap();
+  assert.equal(await read(SLOT),fixture.json);
+  assert.equal(await read(SLOT208),working);
+  await showMenu();await el('fortsetzen').tap();
+  assert.equal(await read(SLOT208),working);
+  await showMenu();
+  page.once('dialog',d=>d.dismiss());
+  await el('karriere-direkt').tap();
+  assert.equal(await read(SLOT208),working);
+  assert.equal(await read(SLOT208+':vorherige'),null);
+  page.once('dialog',d=>d.accept());
+  await newCareer(true);
+  const s02=await read(SLOT208),j=J8.erstellen();j.starten208(true,true);
+  assert.equal(s02,j.exportieren());
+  assert.equal(await read(SLOT208+':vorherige'),working);
+  assert.equal(await read(SLOT),fixture.json);
+  await page.reload();await el('fortsetzen').tap();
+  assert.equal(await read(SLOT208),s02);
+  await page.reload();await el('neues-spiel').tap();
+  await el('career-recovery').evaluate(e=>e.open=true);
+  page.once('dialog',d=>d.accept());await el('vorige-208').tap();
+  assert.equal(await read(SLOT208),working);assert.equal(await read(SLOT208+':vorherige'),s02);
+  assert.equal(await read(SLOT),fixture.json);
+  // Real JSON import into its own slot: only the new slot is replaced.
+  await page.reload();page.once('dialog',d=>d.accept());
+  await el('import-datei').setInputFiles({name:'rule208.json',mimeType:'application/json',buffer:Buffer.from(s02)});
+  await el('spielwelt').waitFor({state:'visible'});
+  assert.equal(await read(SLOT208),s02);assert.equal(await read(SLOT208+':vorherige'),working);
+  assert.equal(await read(SLOT),fixture.json);
+  assert.deepEqual(errors,[]);
+  console.log('RULE208_BROWSER_SLOT_ISOLATION',JSON.stringify({kind,legacy:204,new:208,oldHash:fixture.hash,
+   newHash:j.ansicht().hash,oldBytesUnchanged:true,backupSwap:true,confirmCancel:true,explicitOldResume:true,import:true}));
  }finally{await ctx.close();}
 }
 
@@ -177,6 +240,7 @@ async function checkAfterIce(browser,kind,width,height,fixture){
   browser=await (kind==='webkit'?webkit:chromium).launch(kind==='webkit'?{}:{
    executablePath:process.env.S1_CHROMIUM_PATH||undefined,args:['--no-sandbox']});
   const firstPaidTrip=prepare('C');
+  await isolation(browser,kind,firstPaidTrip);
   for(const [width,height] of [[1180,820],[1024,768],[820,1180],[390,844]]){
    await check(browser,kind,width,height);
    await checkAfterIce(browser,kind,width,height,firstPaidTrip);

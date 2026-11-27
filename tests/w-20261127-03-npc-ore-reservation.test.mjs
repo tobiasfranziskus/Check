@@ -122,10 +122,12 @@ function fixture(tick=50,extraMiner=false,version=208){
   const w=(version===208?W.erstellenNpcErz208:W.erstellenJ4c)({carrierCash:2000,buyerCash:4000}),s=w.createState(42);
   assert.equal(s.kanon.pendel.sh001.ware,'erz');
   act(w,s,{type:'shipShuttleStop',owner:'npc3',schiff:'sh001'});
-  const fr=Object.values(s.ships).find(x=>x.owner==='transport'&&x.klasse==='frachter').id;
-  assert.equal(fr,'sh002');
+  // Original factory starts with a purchasable hull, not an owned carrier.
+  // Like the historical test, allow the actual NPC procurement to run first.
+  w.advance(s,tick||49);
+  const fr=Object.values(s.ships).find(x=>x.owner==='transport'&&x.klasse==='frachter')?.id;
+  assert.equal(fr,'sh002','real original NPC procurement');
   if(extraMiner)act(w,s,{type:'shipBuy',owner:'house',klasse:'miner',station:'st_aldera'});
-  w.advance(s,tick);
   act(w,s,{type:'industrialOreOffer',owner:'st_nadir',miner:'sh001',frachter:fr});
   return {w,s,fr};
 }
@@ -292,26 +294,7 @@ const Manager=require('../prototypes/spiel/p3-manager-disposition.js');
 const DAY=1440,LIMIT=60*DAY;
 function quote(j){
   const before=j.exportieren(),offers=j.angebote(),w=j.weltReferenz(),s=j.zustandReferenz();
-  // Until #674/00 releases the shared UI adapter file, Rule208 can be audited
-  // directly through the ORIGINAL J8 offers. These test-only observations
-  // read actual books/rules, never alter a state or simulate a second world.
-  // Check equivalence of these observations against the actual legacy UI adapter.
-  const charge=w.rules.w5n.charge,price=w.rules.w5n.eisPreis,goal=w.rules.w5n.zielStation;
-  const f=s.kanon.spielerFrachten,prices=w.kern.eisfrachtPreise(w.rules);
-  const p={hausKasse:s.owners.house.cash,alderaKasse:s.owners.st_aldera.cash,
-    nadirKasse:s.owners.st_nadir.cash,eisLager:s.stations.st_aldera.lager.eis??0,
-    eisCharge:charge,ankaufKosten:charge*price,
-    eisFrei:Math.max(0,w.kern.obergrenze(s,w.rules,goal,'eis')-(s.stations[goal].lager.eis??0)),
-    nadirFrachtbedarf:prices.gesamt,frachtLohnbedarf:prices.arbeit,
-    erzKosten:w.rules.erzpilot.auftragsMenge*w.rules.erzpilot.preis,
-    erzExportKasse:s.owners[w.rules.erzpilot.exportOwner].cash,
-    frachtOffen:(f?.auftraege??[]).filter(a=>a.end===null).length,
-    frachtAbgeschlossen:(f?.auftraege??[]).filter(a=>Number.isSafeInteger(a.end)&&Number.isSafeInteger(a.geliefert)).length,
-    frachtGebuehrBisher:f?.gebuehr??0,frachtLohnBisher:f?.lohn??0};
-  if(s.rulesVersion===204){
-    const legacy=Manager.auswerten(w,s,offers);
-    for(const [key,value] of Object.entries(p))assert.equal(value,legacy[key],key);
-  }
+  const p=Manager.auswerten(w,s,offers);
   assert.equal(j.exportieren(),before);return {offers,p};
 }
 function deny(j,id){const old=j.exportieren(),r=j.ausfuehren(id);

@@ -89,7 +89,9 @@ function longterm(id,days){
  // reservation semantics. No changes to the existing W6 scenario tool.
  compareGenesis(source.welt.save(source.s),w.save(s));
  const reports=[];
- for(const day of [...new Set([7,30,90,365,days])].filter(x=>x<=days).sort((a,b)=>a-b)){
+ const checkpoints=[7,30,90,365,days];
+ for(let day=30;day<days;day+=30)checkpoints.push(day);
+ for(const day of [...new Set(checkpoints)].filter(x=>x<=days).sort((a,b)=>a-b)){
   w.advance(s,day*1440-s.tick);
   const json=roundtrip(w,s);s=w.load(json);
   reports.push({day,hash:w.hash(s),...kennzahlen(w,s),worldMoney:w.bericht(s).weltgeld,

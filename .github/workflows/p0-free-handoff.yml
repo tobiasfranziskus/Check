@@ -1,0 +1,76 @@
+name: P0 - CI-Nachweis
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'Optionale PR-Nummer'
+        type: string
+      allowed_paths:
+        description: 'Optionale PR-Pfadgrenze, kommagetrennt (Verzeichnis mit / abschließen)'
+        type: string
+  pull_request:
+    paths:
+      - '.github/workflows/p0-free-handoff.yml'
+      - 'tools/p0-free-handoff.cjs'
+      - 'tests/p0-free-handoff.test.mjs'
+      - 'docs/P0_FREE_WEITERBETRIEB.md'
+
+permissions: {}
+
+jobs:
+  fixtures:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/p0-free-handoff.test.mjs
+
+  handoff:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: GitHub-Metadaten abrufen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr }}
+          ALLOWED_PATHS: ${{ inputs.allowed_paths }}
+        shell: bash
+        run: |
+          args=(--out "$RUNNER_TEMP/p0-handoff")
+          if [[ -n "$PR_NUMBER" ]]; then args+=(--pr "$PR_NUMBER"); fi
+          if [[ -n "$ALLOWED_PATHS" ]]; then args+=(--allow "$ALLOWED_PATHS"); fi
+          node tools/p0-free-handoff.cjs "${args[@]}"
+      - name: Zusammenfassung anhängen
+        if: always()
+        run: |
+          if [[ -f "$RUNNER_TEMP/p0-handoff/handoff.md" ]]; then
+            cat "$RUNNER_TEMP/p0-handoff/handoff.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p0-ci-nachweis
+          path: ${{ runner.temp }}/p0-handoff
+          if-no-files-found: ignore
+          retention-days: 7

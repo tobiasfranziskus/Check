@@ -7,15 +7,19 @@ const J8=require('../prototypes/verbund/konzern-session.js');
 const OLD=require('../prototypes/w5ac/session.js');
 const {pruefen}=require('../tools/w6-szenarien.cjs');
 
-function start(s02=false){
+function start(s02=false,version=208){
   const j=J8.erstellen();
-  j.starten195(OLD.create(42,'private195').export(),true);
-  assert.equal(j.ansicht().hash,'674400c1d181fcf2');
-  if(s02){
-    const w=j.weltReferenz(),s=j.zustandReferenz();
-    w.politikSetzen(s,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
-    w.npcAutoSetzen(s,true);w.npcSiliziumSetzen(s,true);
+  if(version===208)j.starten208(true,s02);
+  else {
+    j.starten195(OLD.create(42,'private195').export(),true);
+    assert.equal(j.ansicht().hash,'674400c1d181fcf2');
+    if(s02){
+      const w=j.weltReferenz(),s=j.zustandReferenz();
+      w.politikSetzen(s,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
+      w.npcAutoSetzen(s,true);w.npcSiliziumSetzen(s,true);
+    }
   }
+  assert.equal(j.ansicht().regel,version);
   return j;
 }
 function audit(w,s){assert.deepEqual(pruefen(w,s),[]);}
@@ -26,7 +30,10 @@ function roundtrip(w,s){
   return loaded;
 }
 function managerOpen(json){
-  const j=J8.erstellen();j.oeffnen204(json,true);assert.equal(j.exportieren(),json);return j;
+  const j=J8.erstellen(),version=JSON.parse(json).rulesVersion;
+  if(version===208)j.oeffnen208(json,true);
+  else {assert.equal(version,204);j.oeffnen204(json,true);}
+  assert.equal(j.exportieren(),json);return j;
 }
 function act(w,s,cmd){const r=w.execute(s,cmd);assert.equal(r.ok,true,cmd.type+': '+r.reason);}
 function reject(w,s,cmd){
@@ -69,9 +76,13 @@ test('NPC ore: original #665 S02 career, real accepted 50 at tick32640 survives 
   const isolated=w.load(accepted);
   reject(w,isolated,{type:'industrialOreCancel',owner:'house'});
   reject(w,isolated,{type:'industrialOreCancel',owner:'st_nadir'});
-  // Old states without proof are read byte-identically, never filled or migrated.
-  const legacy=w.load(accepted);delete legacy.w3.auftrag.npcErzReserviert;
-  const legacyJson=w.save(legacy);assert.equal(w.save(w.load(legacyJson)),legacyJson);
+  // A protected Rule208 transaction is never handed to the 204 or other
+  // profile loaders. Actual pinned older-build tests use a second checkout.
+  const old=J8.erstellen();
+  assert.throws(()=>old.oeffnen204(accepted,true),/Regel204/);
+  assert.throws(()=>J8.erstellen().oeffnenHausErz(accepted,true,'datei'));
+  assert.throws(()=>J8.erstellen().oeffnenPiraten(accepted,true));
+  assert.throws(()=>J8.erstellen().oeffnenP8g(accepted,true));
   for(const [label,mutate] of [
     ['wrong quantity',q=>q.w3.auftrag.npcErzReserviert=49],
     ['missing consent',q=>q.kanon.industrieErz.signFracht=false],
@@ -101,12 +112,13 @@ test('NPC ore: original #665 S02 career, real accepted 50 at tick32640 survives 
   console.log('W_20261127_03_ORIGINAL_REPLAY',JSON.stringify(result));
 });
 
-function fixture(tick=50,extraMiner=false){
+function fixture(tick=50,extraMiner=false,version=208){
   // The actual J8 standard career starts with no NPC pendel and no NPC
   // freighter. This controlled contract fixture intentionally uses the
-  // original Rule204 factory, as in m4-u5-house-ore-option-a-audit.test.mjs.
+  // original Rule204 factory or its Rule208 counterpart, as in the
+  // historical m4-u5-house-ore-option-a-audit.test.mjs.
   const W=require('../prototypes/welt/welt-kern.js');
-  const w=W.erstellenJ4c({carrierCash:2000,buyerCash:4000}),s=w.createState(42);
+  const w=(version===208?W.erstellenNpcErz208:W.erstellenJ4c)({carrierCash:2000,buyerCash:4000}),s=w.createState(42);
   assert.equal(s.kanon.pendel.sh001.ware,'erz');
   act(w,s,{type:'shipShuttleStop',owner:'npc3',schiff:'sh001'});
   const fr=Object.values(s.ships).find(x=>x.owner==='transport'&&x.klasse==='frachter').id;
@@ -209,20 +221,16 @@ test('NPC ore: paid partial W1 acceptance cannot certify the full W3 quantity',(
     fullAccepted:q.kanon.industrieErz.erzAngenommen,hash:w.hash(q),scope:'isolated audited boundary fixture with reduced W1 reserve'}));
 });
 
-test('NPC ore: historical missing-charge boundary remains byte-identical on load, no phantom loading',()=>{
-  const {w,s}=fixture(50);sign(w,s);
+test('Rule204 original missing-charge boundary remains byte-identical, never loaded as 208',()=>{
+  const {w,s}=fixture(50,false,204);sign(w,s);
   act(w,s,{type:'industrialOreCommit',owner:'st_nadir'});
   w.advance(s,69);
   assert.equal(s.tick,119);
   assert.equal(s.ships.sh001.ladung.erz,50);
   assert.equal(s.stations.st_aldera.lager.erz,0);
-  // Controlled compatibility fixture: mark the preceding minute as already
-  // accepted, as in a legacy contract with a lost charge. Do not edit goods,
-  // money, balances or the export ledger: actual original W1 acceptance and
-  // hours export must run. The guard must NOT retroactively certify it.
+  // Actual historical unmodified minute119. The old core must still
+  // produce the exact original minute120, including the historic export bug.
   const legacy=roundtrip(w,s);
-  legacy.kanon.industrieErz.erzAngenommen=true;
-  audit(w,legacy);
   w.minute(legacy);
   assert.equal(legacy.tick,120);
   assert.equal(legacy.stations.st_aldera.lager.erz,0);
@@ -240,12 +248,41 @@ test('NPC ore: historical missing-charge boundary remains byte-identical on load
   assert.equal(q.ships.sh002.ladung.erz??0,0);
   assert.equal(q.w3.geliefert,0);
   audit(w,q);
+  const W=require('../prototypes/welt/welt-kern.js'),newWorld=W.erstellenNpcErz208({carrierCash:2000,buyerCash:4000});
+  assert.throws(()=>newWorld.load(old),/Regelversion/);
+  assert.throws(()=>J8.erstellen().oeffnen208(old,true),/Regel208/);
   const bad=JSON.parse(old);bad.w3.auftrag.npcErzReserviert=50;
   assert.throws(()=>w.load(JSON.stringify(bad)));
   console.log('W_20261127_03_LEGACY_BOUNDARY',JSON.stringify({hash:oldHash,
     pinnedHistoricalHash:'61c7c97961fad4ac',matchesPinned:oldHash==='61c7c97961fad4ac',
     tick:legacy.tick,ore:legacy.stations.st_aldera.lager.erz,unchanged:true,
-    scope:'independent compatibility fixture; no real user save overwritten'}));
+    scope:'actual Rule204 original factory replay, no real user save overwritten'}));
+});
+
+test('Rule208 new genesis versus Rule204: same audited assets, no research features, separate version gates',()=>{
+  for(const s02 of [false,true]){
+    const a=start(s02,204),b=start(s02,208),old=a.exportieren(),fresh=b.exportieren();
+    const A=JSON.parse(old),B=JSON.parse(fresh);
+    // Compare complete genesis objects, excluding ONLY the intended revision.
+    // These comparison copies are never loaded as saves.
+    assert.equal(A.rulesVersion,204);assert.equal(B.rulesVersion,208);
+    delete A.rulesVersion;delete B.rulesVersion;assert.deepEqual(B,A);
+    assert.equal(managerOpen(old).exportieren(),old);
+    assert.equal(managerOpen(fresh).exportieren(),fresh);
+    assert.throws(()=>a.weltReferenz().load(fresh),/Regelversion/);
+    assert.throws(()=>b.weltReferenz().load(old),/Regelversion/);
+    assert.throws(()=>J8.erstellen().oeffnen204(fresh,true),/Regel204/);
+    assert.throws(()=>J8.erstellen().oeffnen208(old,true),/Regel208/);
+    assert.throws(()=>J8.erstellen().starten208(false,s02));
+    assert.throws(()=>b.starten208(true,s02));
+    assert.throws(()=>b.oeffnen208(fresh,true));
+    for(const field of ['piraten','hausErz','materialSupplyEnabled','p8c','p8d']){
+      assert.equal(B.kanon[field],undefined,field);
+    }
+    const illegal=JSON.parse(fresh);illegal.kanon.hausErz={folge:0};
+    assert.throws(()=>b.weltReferenz().load(JSON.stringify(illegal)));
+    assert.equal(a.exportieren(),old);assert.equal(b.exportieren(),fresh);
+  }
 });
 
 // Separate dynamic 60-day strategies. The exact diagnostic path above is
@@ -253,14 +290,34 @@ test('NPC ore: historical missing-charge boundary remains byte-identical on load
 const Manager=require('../prototypes/spiel/p3-manager-disposition.js');
 const DAY=1440,LIMIT=60*DAY;
 function quote(j){
-  const before=j.exportieren(),offers=j.angebote(),p=Manager.auswerten(j.weltReferenz(),j.zustandReferenz(),offers);
+  const before=j.exportieren(),offers=j.angebote(),w=j.weltReferenz(),s=j.zustandReferenz();
+  // Until #674/00 releases the shared UI adapter file, Rule208 can be audited
+  // directly through the ORIGINAL J8 offers. These test-only observations
+  // read actual books/rules, never alter a state or simulate a second world.
+  // Check equivalence of these observations against the actual legacy UI adapter.
+  const charge=w.rules.w5n.charge,price=w.rules.w5n.eisPreis,goal=w.rules.w5n.zielStation;
+  const f=s.kanon.spielerFrachten,prices=w.kern.eisfrachtPreise(w.rules);
+  const p={hausKasse:s.owners.house.cash,alderaKasse:s.owners.st_aldera.cash,
+    nadirKasse:s.owners.st_nadir.cash,eisLager:s.stations.st_aldera.lager.eis??0,
+    eisCharge:charge,ankaufKosten:charge*price,
+    eisFrei:Math.max(0,w.kern.obergrenze(s,w.rules,goal,'eis')-(s.stations[goal].lager.eis??0)),
+    nadirFrachtbedarf:prices.gesamt,frachtLohnbedarf:prices.arbeit,
+    erzKosten:w.rules.erzpilot.auftragsMenge*w.rules.erzpilot.preis,
+    erzExportKasse:s.owners[w.rules.erzpilot.exportOwner].cash,
+    frachtOffen:(f?.auftraege??[]).filter(a=>a.end===null).length,
+    frachtAbgeschlossen:(f?.auftraege??[]).filter(a=>Number.isSafeInteger(a.end)&&Number.isSafeInteger(a.geliefert)).length,
+    frachtGebuehrBisher:f?.gebuehr??0,frachtLohnBisher:f?.lohn??0};
+  if(s.rulesVersion===204){
+    const legacy=Manager.auswerten(w,s,offers);
+    for(const [key,value] of Object.entries(p))assert.equal(value,legacy[key],key);
+  }
   assert.equal(j.exportieren(),before);return {offers,p};
 }
 function deny(j,id){const old=j.exportieren(),r=j.ausfuehren(id);
   assert.equal(r.ok,false);assert.equal(j.exportieren(),old);return r.reason;}
-test('NPC ore: independent standard and S02 manager strategies to day60 or observed stop', {timeout:25*60*1000},()=>{
-  function run(s02){
-    let j=start(s02),initial=j.exportieren();
+test('NPC ore: independent standard and S02 manager strategies to day60 or observed stop', {timeout:45*60*1000},()=>{
+  function run(s02,version){
+    let j=start(s02,version),initial=j.exportieren();
     const events=[],saves=new Map(),reports=[];
     const check=j=>{const s=j.zustandReferenz();audit(j.weltReferenz(),s);return s;};
     function checkpoint(label){
@@ -442,7 +499,7 @@ test('NPC ore: independent standard and S02 manager strategies to day60 or obser
     assert.equal(final.tick,outcome.tick);
     assert.ok(final.trips>=1);
     assert.equal(final.fees,final.trips*240);assert.equal(final.wages,final.trips*120);
-    const replay=start(s02);assert.equal(replay.exportieren(),initial);
+    const replay=start(s02,version);assert.equal(replay.exportieren(),initial);
     let q=replay;
     for(let n=0;n<events.length;n++){
       const e=events[n];
@@ -451,9 +508,10 @@ test('NPC ore: independent standard and S02 manager strategies to day60 or obser
       if(saves.has(n+1)){assert.equal(q.exportieren(),saves.get(n+1));q=managerOpen(q.exportieren());}
     }
     assert.equal(q.exportieren(),target);
-    console.log('W_20261127_03_MANAGER',JSON.stringify({profile:s02?'S02':'standard',outcome,
+    if(version===204)assert.equal(final.hash,s02?'f066f574f2748a4c':'3f4136e766807b9e');
+    console.log('W_20261127_03_MANAGER',JSON.stringify({version,profile:s02?'S02':'standard',outcome,
       final,checkpoints:reports,actions:events.filter(e=>e.id),replay:true,
       scope:'one need-based strategy per profile, no rescue, no NPC commands, no standard pass through opt-in'}));
   }
-  run(false);run(true);
+  run(false,204);run(true,204);run(false,208);run(true,208);
 });

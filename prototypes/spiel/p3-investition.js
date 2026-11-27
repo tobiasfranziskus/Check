@@ -5,7 +5,7 @@
 'use strict';
 function auswerten(w,s,angebote){
  if(s?.rulesVersion===207)return Object.freeze({sichtbar:false});
- if(!s||s.rulesVersion!==204||!w||w.regel!==204||typeof w.audit!=='function'||
+ if(!s||![204,208].includes(s.rulesVersion)||!w||w.regel!==s.rulesVersion||typeof w.audit!=='function'||
     !w.audit(s).ok||typeof w.buchwert!=='function'||!Array.isArray(angebote))
   throw Error('P3-Investition: nur geprüfte Regel204-Karriere');
  const eigene=Object.values(s.ships).filter(sh=>sh.owner==='house')

@@ -5,7 +5,8 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const ROOT=path.resolve(__dirname,'..');
-const SLOT='aphros-void:spielerkarriere:regel204:v1';
+const SLOT='aphros-void:spielerkarriere:regel208:v1';
+const OLD_SLOT='aphros-void:spielerkarriere:regel204:v1';
 const sizes=[[1180,820],[1024,768],[820,1180],[390,844]];
 (async()=>{
  const server=http.createServer((req,res)=>{
@@ -31,7 +32,15 @@ const sizes=[[1180,820],[1024,768],[820,1180],[390,844]];
     await page.locator('#karriere-starten').tap();
     assert.equal(await page.locator('#spielwelt').isVisible(),true);
     const before=await page.evaluate(slot=>localStorage.getItem(slot),SLOT);
-    assert.equal(JSON.parse(before).rulesVersion,204);
+    assert.equal(JSON.parse(before).rulesVersion,208);
+    assert.equal(await page.evaluate(k=>localStorage.getItem(k),OLD_SLOT),null);
+    // Keep genuine original-204 genesis alongside the new slot.
+    const previous=await page.evaluate(k=>{
+      const legacy=window.J8KonzernSitzung.erstellen();
+      legacy.starten195(window.W5acSession.create(42,'private195').export(),true);
+      const json=legacy.exportieren();localStorage.setItem(k,json);return json;
+    },OLD_SLOT);
+    assert.equal(JSON.parse(previous).rulesVersion,204);
     const result=await page.evaluate(()=>{
       const API=window.AphrosWelt;
       if(!API||typeof API.erstellenP8d!=='function')throw Error('P8d-Modul im echten Browser-Einstieg nicht geladen');
@@ -68,7 +77,16 @@ const sizes=[[1180,820],[1024,768],[820,1180],[390,844]];
     assert.equal(result.mint,0);assert.equal(result.burn,0);
     assert.equal(result.researchEnabled,true);
     assert.equal(await page.evaluate(slot=>localStorage.getItem(slot),SLOT),before,
-      'P8g research API must not overwrite public Rule204 career');
+      'P8g research API must not overwrite public Rule208 career');
+    assert.equal(await page.evaluate(k=>localStorage.getItem(k),OLD_SLOT),previous,
+      'P8g research API must not overwrite the original Rule204 save');
+    await page.reload();
+    await page.locator('#neues-spiel').tap();
+    await page.locator('#career-recovery summary').tap();
+    await page.locator('#fortsetzen-204').tap();
+    assert.equal(await page.locator('#spielwelt').isVisible(),true);
+    assert.equal(await page.evaluate(k=>localStorage.getItem(k),OLD_SLOT),previous);
+    assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),before);
     assert.deepEqual(errors,[]);
     console.log('W6_P8G_P2_BROWSER_OK',JSON.stringify({browser:which,width,height,...result}));
    }finally{await ctx.close();}

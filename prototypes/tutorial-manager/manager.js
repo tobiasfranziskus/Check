@@ -23,7 +23,7 @@ const daten=(session,gesehen={})=>{
  const s=session.zustandReferenz(),w=session.weltReferenz();
  if(!s||!w||!w.audit(s).ok)throw Error('Managerakademie: nur geprüfte Originalwelt');
  const a=session.ansicht();
- if(![204,207].includes(a.regel)||s.rulesVersion!==a.regel)
+ if(![204,207,208].includes(a.regel)||s.rulesVersion!==a.regel)
    throw Error('Managerakademie: unvereinbare Originalkarriere');
  const angebote=session.angebote(),such=(prefix)=>angebote.find(o=>o.id.startsWith(prefix));
  const gekaufterMiner=eigener(s,'miner'),gekaufterFrachter=eigener(s,'frachter');

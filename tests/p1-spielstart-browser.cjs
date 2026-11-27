@@ -7,6 +7,8 @@ const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const W=require('../prototypes/welt/welt-kern.js');
 const OLD=require('../prototypes/w5ac/session.js');
 const SLOT='aphros-void:spielerkarriere:regel204:v1';
+const SLOT208='aphros-void:spielerkarriere:regel208:v1';
+const J8=require('../prototypes/verbund/konzern-session.js');
 async function siliziumPilot(browser,base,width,height,kind){
  // Conditional integration check only: independently signed original K2 fixture.
  // The regular career/project path above never imports it or signs for NPCs.
@@ -44,7 +46,7 @@ async function projektPfad(browser,base,width,height,kind){
   await page.locator('#tab-jaeger').tap();
   for(const id of ['buy-st_aldera-frachter','buy-st_aldera-miner'])
    await page.locator('[data-j13-action="'+id+'"]').tap();
-  const paid=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  const paid=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT208));
   const m=Object.values(paid.ships).find(s=>s.owner==='house'&&s.klasse==='miner');
   const f=Object.values(paid.ships).find(s=>s.owner==='house'&&s.klasse==='frachter');
   assert.equal(paid.owners.house.cash,1650);
@@ -53,13 +55,25 @@ async function projektPfad(browser,base,width,height,kind){
   for(let i=0;i<2;i++)await page.locator('[data-advance="60"]').tap();
   const freight=page.locator('[data-j13-action="freight-'+f.id+'"]');
   assert.equal(await freight.isEnabled(),true);await freight.tap();
-  const transit=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+  const transit=await page.evaluate(k=>localStorage.getItem(k),SLOT208);
   await page.reload();await page.locator('#fortsetzen').tap();
-  assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),transit);
+  assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT208),transit);
   for(let i=0;i<2;i++)await page.locator('[data-advance="60"]').tap();
-  const text=await page.evaluate(k=>localStorage.getItem(k),SLOT),raw=JSON.parse(text),p=raw.w5ad.profile;
-  const w=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash}),end=w.load(text);
-  assert.equal(w.audit(end).ok,true);assert.equal(w.hash(end),'e4514490aedc13bd');
+  const text=await page.evaluate(k=>localStorage.getItem(k),SLOT208),raw=JSON.parse(text),p=raw.w5ad.profile;
+  const w=W.erstellenNpcErz208({carrierCash:p.carrierCash,buyerCash:p.buyerCash}),end=w.load(text);
+  assert.equal(w.audit(end).ok,true);
+  // Preserve the actual historical Rule204 reference with an independent
+  // original-command replay, then compare the fresh 208 state except version.
+  const legacy=J8.erstellen();legacy.starten195(OLD.create(42,'private195').export(),true);
+  for(const id of ['buy-st_aldera-frachter','buy-st_aldera-miner','ice-'+m.id])
+    assert.equal(legacy.ausfuehren(id).ok,true,id);
+  legacy.weiterspielen(60);legacy.weiterspielen(60);
+  assert.equal(legacy.ausfuehren('freight-'+f.id).ok,true);
+  legacy.weiterspielen(60);legacy.weiterspielen(60);
+  assert.equal(legacy.ansicht().hash,'e4514490aedc13bd');
+  assert.equal(raw.rulesVersion,208);
+  const a=JSON.parse(legacy.exportieren()),b=JSON.parse(text);
+  delete a.rulesVersion;delete b.rulesVersion;assert.deepEqual(b,a);
   assert.equal(end.kanon.spielerFrachten.lohn,120);assert.equal(end.kanon.spielerFrachten.gebuehr,240);
   assert.equal(Object.values(end.owners).reduce((n,o)=>n+o.cash,0),33000);
   assert.equal(end.minted,0);assert.equal(end.burned,0);assert.equal(end.kanon.jaeger.fertig,0);
@@ -88,8 +102,8 @@ async function w6Optin(browser,base,width,height,kind){
   await page.locator('#karriere-starten').tap();
   assert.equal(await page.locator('#spielwelt').isVisible(),true);
   assert.equal(await page.locator('#w6-status').isVisible(),true);
-  const raw=await page.evaluate(k=>localStorage.getItem(k),SLOT),s=JSON.parse(raw);
-  const p=s.w5ad.profile,w=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+  const raw=await page.evaluate(k=>localStorage.getItem(k),SLOT208),s=JSON.parse(raw);
+  const p=s.w5ad.profile,w=W.erstellenNpcErz208({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
   assert.equal(s.kanon.npcAuto,true);
   assert.deepEqual(s.kanon.npcSilizium,{aktiv:true,werftauftrag:false});
   assert.equal(s.kanon.politik.stilllegung,true);
@@ -103,7 +117,7 @@ async function w6Optin(browser,base,width,height,kind){
   assert.match(await page.locator('#p3-npc-werft-flotte').textContent(),/0 Frachter/);
   assert.equal(await page.locator('#p3-npc-werft-aktion').isEnabled(),true);
   await page.locator('#p3-npc-werft-aktion').tap();
-  const receipt=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  const receipt=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT208));
   assert.equal(receipt.tick,60,'button uses precisely one original world advance');
   assert.ok(Object.values(receipt.ships).some(sh=>sh.owner==='transport'&&sh.klasse==='frachter'),
     'NPC spends real company cash to acquire its own first physical hull');
@@ -111,7 +125,7 @@ async function w6Optin(browser,base,width,height,kind){
   assert.equal(w.audit(w.load(JSON.stringify(receipt))).ok,true);
   assert.match(await page.locator('#p3-npc-werft-flotte').textContent(),/Asterion besitzt [1-9]/);
   await page.locator('[data-advance="1440"]').tap();
-  const after=await page.evaluate(k=>localStorage.getItem(k),SLOT),s2=JSON.parse(after);
+  const after=await page.evaluate(k=>localStorage.getItem(k),SLOT208),s2=JSON.parse(after);
   assert.equal(s2.tick,1500,'+1 Spieltag verwendet exakt 24 Original-60-Minuten-Schritte');
   assert.equal(s2.kanon.npcAuto,true);
   assert.equal(w.audit(w.load(after)).ok,true);
@@ -120,7 +134,7 @@ async function w6Optin(browser,base,width,height,kind){
   await page.locator('#fortsetzen').tap();
   assert.equal(await page.locator('#w6-status').isVisible(),true);
   assert.equal(await page.locator('#p3-npc-werft').isVisible(),true);
-  assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT),after,
+  assert.equal(await page.evaluate(k=>localStorage.getItem(k),SLOT208),after,
     'W6-Save wird bei Resume weder migriert noch still veraendert');
   assert.deepEqual(errors,[]);
   console.log('W6_P1_OPTIN_BROWSER_OK',JSON.stringify({kind,width,height,
@@ -206,7 +220,7 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
    'no paid W5 freighter means no freight button');
   assert.equal(await page.locator('#p3-industrie-auswahl').isHidden(),true);
   for(let i=0;i<5;i++)await page.locator('#p3-industrie-zeit').tap();
-  const raw=await page.evaluate(k=>localStorage.getItem(k),SLOT),s=JSON.parse(raw);
+  const raw=await page.evaluate(k=>localStorage.getItem(k),SLOT208),s=JSON.parse(raw);
   assert.equal(s.tick,300,'five original 60-minute economic steps');
   assert.ok(s.w3.abgeschlossen>=1&&s.w4.abgeschlossen>=1&&s.w5.fertig>=1);
   assert.match(await page.locator('#p3-industrie-w3').textContent(),/Erzfrachten/);
@@ -216,7 +230,7 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
   assert.equal(await page.locator('#p3-industrie-kauf').isEnabled(),true);
   const ids=new Set(Object.keys(s.ships)),house=s.owners.house.cash;
   await page.locator('#p3-industrie-kauf').tap();
-  const signed=await page.evaluate(k=>localStorage.getItem(k),SLOT),after=JSON.parse(signed);
+  const signed=await page.evaluate(k=>localStorage.getItem(k),SLOT208),after=JSON.parse(signed);
   const newShips=Object.values(after.ships).filter(sh=>!ids.has(sh.id));
   assert.equal(newShips.length,1);
   assert.equal(newShips[0].owner,'house');
@@ -229,7 +243,7 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
   assert.equal(after.ledger.frachter.consumed,s.ledger.frachter.consumed+1);
   assert.equal(after.minted,0);assert.equal(after.burned,0);
   assert.equal(Object.values(after.owners).reduce((n,o)=>n+o.cash,0),33000);
-  const w=W.erstellenJ4c({carrierCash:after.w5ad.profile.carrierCash,
+  const w=W.erstellenNpcErz208({carrierCash:after.w5ad.profile.carrierCash,
    buyerCash:after.w5ad.profile.buyerCash});
   assert.equal(w.audit(w.load(signed)).ok,true);
   assert.equal(await page.locator('#p3-industrie-kauf').isDisabled(),true,
@@ -237,7 +251,7 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
   const hash=w.hash(w.load(signed));
   await page.reload();await page.locator('#fortsetzen').tap();
   assert.equal(await page.locator('#p3-industrie').isVisible(),true);
-  assert.equal(w.hash(w.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),hash);
+  assert.equal(w.hash(w.load(await page.evaluate(k=>localStorage.getItem(k),SLOT208))),hash);
   assert.equal(await page.locator('#p3-industrie-cockpit').isVisible(),true,
    'only physically built and bought W5 ship gets a cockpit shortcut');
   assert.equal(await page.locator('#p3-industrie-fracht').isVisible(),true);
@@ -250,7 +264,7 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
    'Nadir warehouse purchase may not bypass original Aldera-only free-flight gate');
   assert.match(await page.locator('#p3-industrie-cockpit-hinweis').textContent(),
    /nur in Aldera/,'the real legal flight blocker must be visible');
-  assert.equal(w.hash(w.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),hash,
+  assert.equal(w.hash(w.load(await page.evaluate(k=>localStorage.getItem(k),SLOT208))),hash,
    'read-only ownership and pilot-permission labels must preserve the world hash');
   let transferReady=await page.locator('#p3-industrie-transfer').isEnabled();
   for(let i=0;i<24&&!transferReady;i++){
@@ -258,9 +272,9 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
    transferReady=await page.locator('#p3-industrie-transfer').isEnabled();
   }
   assert.equal(transferReady,true,'real owner-funded W5ac transfer quote available after finite original NPC contracts');
-  const preTransfer=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  const preTransfer=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT208));
   await page.locator('#p3-industrie-transfer').tap();
-  const signedTransfer=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+  const signedTransfer=await page.evaluate(k=>localStorage.getItem(k),SLOT208);
   const inTransit=JSON.parse(signedTransfer);
   const active=inTransit.w5ac.active;
   assert.equal(active.id,newShips[0].id);
@@ -271,11 +285,11 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
   assert.equal(await page.locator('#p3-industrie-cockpit').isDisabled(),true,
    'in-transit freighter may not enter a free cockpit');
   for(let i=0;i<Math.ceil(active.minuten/60)+1;i++){
-   const check=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+   const check=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT208));
    if(check.w5ac.completed.some(x=>x.id===newShips[0].id))break;
    await page.locator('#p3-industrie-zeit').tap();
   }
-  const arrivedJSON=await page.evaluate(k=>localStorage.getItem(k),SLOT);
+  const arrivedJSON=await page.evaluate(k=>localStorage.getItem(k),SLOT208);
   const arrived=JSON.parse(arrivedJSON);
   assert.ok(arrived.w5ac.completed.some(x=>x.id===newShips[0].id&&x.owner==='house'
    &&x.kosten===active.kosten),'original paid W5ac arrival receipt');
@@ -290,7 +304,7 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
   // Existing player-purchased miner, original fully paid ice shuttle, then only
   // the J8-audited genuine 50-ice F4 offer can enable the new touch button.
   await page.locator('[data-action="buy-st_aldera-miner"]').tap();
-  const withMiner=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  const withMiner=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT208));
   const miner=Object.values(withMiner.ships).find(x=>x.owner==='house'&&x.klasse==='miner');
   assert.ok(miner,'original Aldera stock supplied the paid miner');
   await page.locator('[data-action="ice-'+miner.id+'"]').tap();
@@ -299,13 +313,13 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
   assert.equal(await page.locator('#p3-industrie-fracht').isEnabled(),true,
    'real 50 ice, actual buyer cash and empty paid W5 hull produce a green quote');
   await page.locator('#p3-industrie-fracht').tap();
-  const begun=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  const begun=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT208));
   assert.equal(begun.kanon.spielerFrachten.auftraege.at(-1).schiff,newShips[0].id);
   assert.equal(begun.owners.w5n_fracht_arbeit.cash,120);
   assert.equal(begun.owners.w5n_fracht_kauf.cash,490);
   await page.locator('#p3-industrie-zeit').tap();
   await page.locator('#p3-industrie-zeit').tap();
-  const freightDone=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT));
+  const freightDone=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),SLOT208));
   assert.equal(freightDone.kanon.spielerFrachten.auftraege.filter(x=>x.end!==null).length,1);
   assert.equal(freightDone.kanon.spielerFrachten.gebuehr,240);
   assert.equal(freightDone.kanon.spielerFrachten.lohn,120);
@@ -317,7 +331,7 @@ async function w4w5IndustriePfad(browser,base,width,height,kind){
   await page.locator('#p3-industrie-cockpit').tap();
   assert.equal(await page.locator('#raumbereich').isVisible(),true);
   assert.match(await page.locator('#raum-schiff').textContent(),/Frachter/i);
-  assert.equal(w.hash(w.load(await page.evaluate(k=>localStorage.getItem(k),SLOT))),arrivalHash,
+  assert.equal(w.hash(w.load(await page.evaluate(k=>localStorage.getItem(k),SLOT208))),arrivalHash,
    'same-world pilot selection alone must not change money or goods');
   assert.deepEqual(errors,[]);
   console.log('P3_W4_W5_INDUSTRY_BROWSER_OK',JSON.stringify({
@@ -437,11 +451,11 @@ async function managerAkademiePfad(browser,base,width,height,kind){
  const ctx=await browser.newContext({viewport:{width,height},hasTouch:true});
  const page=await ctx.newPage(),errors=[];
  page.on('pageerror',e=>errors.push(String(e)));
- const key=SLOT;
+ const key=SLOT208;
  const proof=async()=>{
    const saved=await page.evaluate(k=>localStorage.getItem(k),key);
    const loaded=JSON.parse(saved),p=loaded.w5ad.profile;
-   const world=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+   const world=W.erstellenNpcErz208({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
    assert.equal(world.audit(world.load(saved)).ok,true);
    assert.equal(loaded.minted,0);assert.equal(loaded.burned,0);
    assert.equal(Object.values(loaded.owners).reduce((n,o)=>n+o.cash,0),33000);
@@ -518,9 +532,9 @@ async function pilotAkademieKarrierePfad(browser,base,width,height,kind){
  const page=await ctx.newPage(),errors=[];
  page.on('pageerror',e=>errors.push(String(e)));
  const state=async()=>{
-  const saved=await page.evaluate(key=>localStorage.getItem(key),SLOT);
+  const saved=await page.evaluate(key=>localStorage.getItem(key),SLOT208);
   const raw=JSON.parse(saved),p=raw.w5ad.profile;
-  const world=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+  const world=W.erstellenNpcErz208({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
   const val=world.load(saved);assert.equal(world.audit(val).ok,true);
   assert.equal(Object.values(raw.owners).reduce((n,o)=>n+o.cash,0),33000);
   assert.equal(raw.minted,0);assert.equal(raw.burned,0);
@@ -731,10 +745,10 @@ async function kurzerSpieleinstieg(browser,base,kind){
     assert.match(await page.locator('#hausgeld').textContent(),/3[.,]000\s*ISK/);
     assert.match(await page.locator('#weltgeld').textContent(),/33[.,]000\s*ISK/);
     assert.equal(await page.locator('#schiff-anzahl').textContent(),'0');
-    const rawStart=await page.evaluate(key=>localStorage.getItem(key),SLOT);
-    const st=JSON.parse(rawStart),p=st.w5ad.profile,w=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+    const rawStart=await page.evaluate(key=>localStorage.getItem(key),SLOT208);
+    const st=JSON.parse(rawStart),p=st.w5ad.profile,w=W.erstellenNpcErz208({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
     assert.equal(w.audit(w.load(rawStart)).ok,true);
-    assert.equal(st.rulesVersion,204);assert.equal(st.tick,0);
+    assert.equal(st.rulesVersion,208);assert.equal(st.tick,0);
     assert.equal(st.minted,0);assert.equal(st.burned,0);
     assert.equal(Object.values(st.owners).reduce((n,o)=>n+o.cash,0),33000);
     // J12: the Universe tab is now a live, read-only terminal in the SAME career.
@@ -756,7 +770,7 @@ async function kurzerSpieleinstieg(browser,base,kind){
     await link.tap();
     assert.equal(await page.locator('#panel-auftraege').isVisible(),true);
     assert.equal(await page.locator('[data-action="buy-st_aldera-miner"]').isEnabled(),true);
-    assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),rawStart,
+    assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT208),rawStart,
       'the economy terminal cannot silently buy ships or change money');
     // J13: no artificially unlocked fighter – only audited production prerequisites.
     await page.locator('#tab-jaeger').tap();
@@ -769,7 +783,7 @@ async function kurzerSpieleinstieg(browser,base,kind){
     assert.equal(await page.locator('#jaeger-kaufweg').isDisabled(),true,
       'not even an enabled purchase navigation without the real yard hull');
     assert.match(await page.locator('#jaeger-autoritaet').textContent(),/Nur Nadir darf die Werftarbeit beauftragen/);
-    assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),rawStart,
+    assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT208),rawStart,
       'reading a fighter project must not execute any company contract');
     // J13b: project actions are original player orders, revalidated on click.
     assert.match(await page.locator('#jaeger-sperren').textContent(),/K7-Erzvertrag.*nur realer Industriekäufer/s);
@@ -782,7 +796,7 @@ async function kurzerSpieleinstieg(browser,base,kind){
     await buy.tap();
     assert.match(await page.locator('#hausgeld').textContent(),/2[.,]400\s*ISK/);
     assert.equal(await page.locator('#schiff-anzahl').textContent(),'1');
-    const paid=await page.evaluate(key=>localStorage.getItem(key),SLOT);
+    const paid=await page.evaluate(key=>localStorage.getItem(key),SLOT208);
     const s=w.load(paid),ship=Object.values(s.ships).find(x=>x.owner==='house'&&x.klasse==='miner');
     assert.ok(ship);assert.equal(s.owners.house.cash,2400);assert.equal(w.audit(s).ok,true);
     assert.equal(s.minted,0);assert.equal(s.burned,0);
@@ -798,7 +812,7 @@ async function kurzerSpieleinstieg(browser,base,kind){
     assert.match(await page.locator('#raum-schiff').textContent(),/Miner/);
     assert.equal(await page.locator('#raum-buehne').getAttribute('data-bereit'),'ja');
     await page.locator('#raum-abdocken').tap();
-    const flying=JSON.parse(await page.evaluate(key=>localStorage.getItem(key),SLOT));
+    const flying=JSON.parse(await page.evaluate(key=>localStorage.getItem(key),SLOT208));
     const job=flying.kanon.flugdienst[ship.id];
     assert.ok(job,'only real F6 departure may reserve worker salaries');
     assert.equal(flying.owners[job.konto].cash,40);
@@ -835,7 +849,7 @@ async function kurzerSpieleinstieg(browser,base,kind){
     await page.locator('#ziel-orbit-abstand').fill('120000');
     await tap('[data-raum="ziel-orbit"]');
     await page.waitForFunction(()=>/Autopilot: orbit/.test(document.querySelector('#raum-lage').textContent));
-    const orbitSave=await page.evaluate(key=>localStorage.getItem(key),SLOT);
+    const orbitSave=await page.evaluate(key=>localStorage.getItem(key),SLOT208);
     assert.equal(w.load(orbitSave).ships[ship.id].flug.modus,'orbit');
     // Input stays intact across HUD ticks, also on touch keyboards.
     await page.locator('#ziel-orbit-abstand').fill('150000');
@@ -849,7 +863,7 @@ async function kurzerSpieleinstieg(browser,base,kind){
     await page.locator('#ziel-folgen-abstand').fill('90000');
     await tap('[data-raum="ziel-folgen"]');
     await page.waitForFunction(()=>/Autopilot: folgen/.test(document.querySelector('#raum-lage').textContent));
-    const followed=w.load(await page.evaluate(key=>localStorage.getItem(key),SLOT));
+    const followed=w.load(await page.evaluate(key=>localStorage.getItem(key),SLOT208));
     assert.equal(followed.ships[ship.id].flug.ziel.id,'sh001');
     await tap('[data-raum="ziel-aufschalten"]');
     assert.match(await page.locator('#raum-lage').textContent(),/Aufgeschaltet: sh001/);
@@ -863,13 +877,13 @@ async function kurzerSpieleinstieg(browser,base,kind){
     ]);
     assert.match(download.suggestedFilename(),/aphros-void-karriere-/);
     // Continue must use the dedicated P1 slot. No manually selected test JSON.
-    const stored=await page.evaluate(key=>localStorage.getItem(key),SLOT);
+    const stored=await page.evaluate(key=>localStorage.getItem(key),SLOT208);
     await page.reload();
     assert.equal(await page.locator('#startseite').isVisible(),true);
     assert.equal(await page.locator('#fortsetzen').isEnabled(),true);
     await page.locator('#fortsetzen').tap();
     assert.equal(await page.locator('#spielwelt').isVisible(),true);
-    const resumed=await page.evaluate(key=>localStorage.getItem(key),SLOT);
+    const resumed=await page.evaluate(key=>localStorage.getItem(key),SLOT208);
     assert.equal(w.hash(w.load(resumed)),w.hash(w.load(stored)));
     // Bad imports cannot replace the valid career.
     await page.locator('#open-menu').tap();
@@ -883,7 +897,7 @@ async function kurzerSpieleinstieg(browser,base,kind){
        buffer:Buffer.from(JSON.stringify({rulesVersion:204,schema:8,owners:{house:{cash:999999}}}))
     });
     await page.waitForFunction(()=>/nicht geladen|verweigert|laufende Karriere/i.test(document.querySelector('#menumeldung').textContent),null,{timeout:10000});
-    assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT),resumed);
+    assert.equal(await page.evaluate(key=>localStorage.getItem(key),SLOT208),resumed);
     assert.deepEqual(errors,[],'console/page errors are not allowed');
     console.log('P1_GAME_BROWSER_OK',JSON.stringify({
        kind,width,height,hash:w.hash(w.load(stored)),ownedShip:ship.id,

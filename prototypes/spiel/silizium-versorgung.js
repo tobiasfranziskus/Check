@@ -8,7 +8,7 @@ const ganz=n=>Number.isSafeInteger(n)&&n>=0;
 const summe=(list,feld)=>list.reduce((n,v)=>n+(v[feld]||0),0);
 function erstellen(welt,zustand){
  const r=welt?.rules,s=zustand,k=s?.kanon,b=k?.silizium;
- if(![204,207].includes(r?.rulesVersion)||s?.rulesVersion!==r.rulesVersion||!r.j2b||!r.j3||!r.j4||
+ if(![204,207,208].includes(r?.rulesVersion)||s?.rulesVersion!==r.rulesVersion||!r.j2b||!r.j3||!r.j4||
     !r.world?.systems||!Array.isArray(r.world?.fields)||
     !s?.stations?.st_nadir?.lager||!s?.owners?.npc3||!s?.owners?.st_nadir||
     !b||!s?.ledger?.silizium||typeof welt.audit!=='function')

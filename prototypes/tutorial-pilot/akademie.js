@@ -51,8 +51,8 @@ function erstellen(B){
    if(s.kanon.silizium?.auftrag?.schiff!==sh.id)return 'Nimm zuerst den vorhandenen, vollständig finanzierten Siliziumauftrag an.';
   }
   if(id==='fracht'&&!s.kanon.spielerFrachten?.auftraege?.some(x=>x.schiff===sh.id&&x.end===null))return 'Nimm zuerst einen finanzierbaren Eisfrachtauftrag für diesen Frachter an.';
-  if(id==='patrouille'&&(s.rulesVersion!==204||sh.system!=='nadir'||b.lage!=='angedockt'))return 'Beginne mit dem gekauften Jäger am Nadir-Dock.';
-  if(id==='duell'&&(s.rulesVersion!==204||!s.kanon.flugdienst?.[sh.id]))return 'Ein bezahlter Jägerflug in Nadir wird benötigt.';
+  if(id==='patrouille'&&(![204,208].includes(s.rulesVersion)||sh.system!=='nadir'||b.lage!=='angedockt'))return 'Beginne mit dem gekauften Jäger am Nadir-Dock.';
+  if(id==='duell'&&(![204,208].includes(s.rulesVersion)||!s.kanon.flugdienst?.[sh.id]))return 'Ein bezahlter Jägerflug in Nadir wird benötigt.';
   if(['patrouille','duell'].includes(id)&&['bereit','flug','aktiv'].includes(B[id+'Stand']?.()?.status))return 'Beende zuerst das laufende Training und starte danach eine neue Übung.';
   if(['patrouille','duell'].includes(id)&&!B[id+'Stand'])return 'Das zugehörige Training muss im Cockpit verfügbar sein.';
   if(id==='duell'&&sh.system!=='nadir')return 'Fliege den gekauften Jäger in Nadir.';

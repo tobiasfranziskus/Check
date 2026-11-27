@@ -16,7 +16,7 @@
 <header class="topline">
  <a class="brand" href="../../index.html" aria-label="Aphros Void – Hauptseite"><span class="brand-mark">AV</span><span>APHROS <b>VOID</b></span></a>
  <span class="topline-status" id="mode-indicator">OFFLINE · ALDERA-SEKTOR</span>
- <button id="open-menu" class="ghost" type="button" hidden>Menü</button>
+ <button id="open-menu" class="ghost" type="button" hidden>Hauptmenü</button>
 </header>
 <main>
 <section id="startseite" class="splash">
@@ -58,7 +58,7 @@
  <section class="advanced-start" aria-label="Haus-Erztransport">
   <h3>Haus-Erztransport</h3>
   <p>Starte eine getrennte Kopie einer gespeicherten normalen Karriere ohne laufende Fracht. Der Hausfrachter kann darin ein finanziertes Angebot aus Nadir für 50 Erz unterschreiben.</p>
-   <button id="kopie-haus-erz" type="button" disabled>Haus-Erz-Kopie aus normalem Spielstand starten</button>
+   <button id="kopie-haus-erz" type="button" disabled>Haus-Erz-Kopie aus bisheriger Regel204-Karriere starten</button>
    <button id="fortsetzen-haus-erz" type="button" hidden>Haus-Erz-Karriere fortsetzen</button>
    <button id="vorige-haus-erz" type="button" hidden>Vorherige Haus-Erz-Karriere wiederherstellen</button>
  </section>
@@ -71,7 +71,9 @@
    <button id="fortsetzen-w6" type="button" disabled hidden>Experimentelle Karriere fortsetzen</button>
    <button id="fortsetzen-pir" type="button" disabled hidden>Piratenforschung fortsetzen</button>
    <button id="vorige-pir" type="button" hidden>Vorherige Piratenforschung wiederherstellen</button>
-   <button id="vorige-karriere" type="button" hidden>Vorherige Karriere wiederherstellen</button>
+   <button id="fortsetzen-204" type="button" hidden>Bisherige Karriere (Regel204) fortsetzen</button>
+   <button id="vorige-karriere" type="button" hidden>Vorherige Regel204-Karriere wiederherstellen</button>
+   <button id="vorige-208" type="button" hidden>Vorherige neue Karriere (Regel208) wiederherstellen</button>
    <button id="vorige-forschung" type="button" hidden>Vorherige experimentelle Karriere wiederherstellen</button>
   </div>
  </details>
@@ -106,6 +108,7 @@
    <p id="p3-handelszahlen" class="p3-zahlen"></p>
    <p id="p3-handelssperre-detail"></p>
   </details>
+  <button id="p3-auftragszentrale" class="ghost" type="button" aria-controls="panel-auftraege">Zur Auftragszentrale</button>
  </section>
  <section id="management-spielfeld" aria-labelledby="sektor-titel">
   <div class="sektor-kopf">
@@ -124,7 +127,7 @@
  <div class="game-grid">
   <section class="world-center" aria-label="Spielaktionen und Flotte">
    <div class="tabs" role="group" aria-label="Konzerntabs">
-    <button id="tab-auftraege" data-tab="auftraege" aria-pressed="true">Aufträge</button>
+    <button id="tab-auftraege" data-tab="auftraege" aria-pressed="true">Auftragszentrale</button>
     <button id="tab-flotte" data-tab="flotte" aria-pressed="false">Meine Flotte</button>
     <button id="tab-universum" data-tab="universum" aria-pressed="false">Wirtschaftsbericht</button>
     <button id="tab-jaeger" data-tab="jaeger" aria-pressed="false">Jägerproduktion</button>
@@ -152,6 +155,7 @@
        <p id="manager-erz-status">Ein anderer Rohstoff, dieselbe echte Wirtschaft: Nur finanzierter Bergbau und reale Abnahme.</p>
        <button id="manager-erz-aktion" type="button" disabled>Erzauftrag prüfen</button>
        <p id="manager-erz-grund" class="p3-sperre" role="status" aria-live="polite"></p>
+       <button id="manager-erz-minerkauf" class="ghost" type="button" hidden>Zum Miner-Kaufangebot</button>
       </article>
      </div>
      <section class="manager-feedback" aria-label="Auftragsfeedback">

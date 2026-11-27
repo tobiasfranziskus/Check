@@ -6,7 +6,7 @@
 const legalInteger=n=>Number.isSafeInteger(n)&&n>=0;
 function auswerten(w,s,angebote,daten){
  if(s?.rulesVersion===207)return Object.freeze({sichtbar:false});
- if(!s||s.rulesVersion!==204||!w||w.regel!==204||!Array.isArray(angebote)
+ if(!s||![204,208].includes(s.rulesVersion)||!w||w.regel!==s.rulesVersion||!Array.isArray(angebote)
    ||!w.audit(s).ok||!daten?.haushalte)throw Error('P3 NPC-Markt benötigt auditierten Regel204-Weltkern');
  const eigene=Object.values(s.ships).filter(sh=>sh.owner==='house');
  const eigeneFrachter=eigene.filter(sh=>sh.klasse==='frachter');

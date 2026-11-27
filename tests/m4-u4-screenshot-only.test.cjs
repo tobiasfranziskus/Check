@@ -479,3 +479,154 @@ test('neutral live workflow stays main-only and gated, with one secret reference
  assert.equal((y.match(/secrets\./g)||[]).length,1);assert.match(y,/retention-days: 7/);
  assert.match(y,/node scripts\/m4-u4-gemini-calibration\.cjs/);
 });
+
+
+// Native confirm is a narrow exception to the formal Gemini image route.
+const visualConfirm={...gemini,visualConfirm:true};
+const confirmObservation={width:1024,height:768,round:1,remaining:LIMIT-1,nativeConfirm:{type:'confirm',message:'Neutrale Bestätigung?'}};
+test('visual native confirm payload is only real dialog text and explicit choices; never falls back to general text',async()=>{
+ const body=requestBody(visualConfirm,GOALS.C,{...confirmObservation,visibleText:'TEXT_SENTINEL',targets:[{id:1}],dom:'DOM_SENTINEL',save:'SAVE_SENTINEL'},[{note:'HISTORY_SENTINEL'}]);
+ for(const choice of ['accept','dismiss']){
+  const result=await ask(visualConfirm,body,1000,async(url,init)=>{
+   assert.equal(url,gemini.url);assert.equal(init.redirect,'error');assert.equal(init.headers['x-goog-api-key'],'synthetic-google-key');
+   const p=JSON.parse(init.body);
+   assert.deepEqual(p.contents,[{role:'user',parts:[{text:JSON.stringify({goal:GOALS.C,round:1,remaining:LIMIT-1,viewport:{width:1024,height:768},nativeConfirm:confirmObservation.nativeConfirm})}]}]);
+   assert.deepEqual(p.generationConfig.responseJsonSchema.properties.action.anyOf.map(x=>x.properties.op.enum[0]),['dialog']);
+   assert.deepEqual(p.generationConfig.responseJsonSchema.properties.action.anyOf[0].properties.choice.enum,['accept','dismiss']);
+   assert.doesNotMatch(init.body,/SENTINEL|synthetic-google-key|inlineData|history|targets/);
+   return geminiReply({op:'dialog',choice});
+  });
+  assert.deepEqual(result.action,{op:'dialog',choice});
+ }
+ for(const config of [gemini,cfg,{...visualConfirm,calibration:true},{...visualConfirm,googleVisualConsent:false},{...visualConfirm,freeProjectConfirmed:false}]){
+  assert.throws(()=>requestBody(config,GOALS.C,confirmObservation,[]),/Current viewport image unavailable/);
+  await assert.rejects(ask(config,body,1000,rejectTransport));
+ }
+ for(const override of [{image:Buffer.alloc(10)},{round:0},{remaining:0},{round:LIMIT},{nativeConfirm:{type:'prompt',message:'x'}},{nativeConfirm:{type:'confirm',message:'x',secret:'SENTINEL'}},{nativeConfirm:{type:'confirm',message:'x'.repeat(601)}}]){
+  assert.throws(()=>requestBody(visualConfirm,GOALS.C,{...confirmObservation,...override},[]),/Current viewport image unavailable/);
+ }
+ for(const action of [{op:'click',xNorm:200,yNorm:300},{op:'stop'},{op:'dialog'},{op:'dialog',choice:'yes'},{op:'dialog',choice:'accept',extra:true}]){
+  await assert.rejects(ask(visualConfirm,body,1000,async()=>geminiReply(action)),/Invalid model decision format/);
+ }
+ await assert.rejects(ask(visualConfirm,body,1000,async()=>geminiReply({op:'dialog',choice:'accept'},'wrong-model')),/identity mismatch/);
+ await assert.rejects(ask(visualConfirm,requestBody(visualConfirm,GOALS.C,mockObservation(),[]),1000,async()=>geminiReply({op:'dialog',choice:'accept'})),/Invalid model decision format/);
+});
+
+test('native confirm model error or deadline closes pending dialog without action, retry or extra request',async()=>{
+ for(const mode of ['invalid','timeout','quota','identity','late','budget']){
+  let clock=0,calls=0,steps=0,closed=0;
+  const result=await run({cfg:visualConfirm,module:'C',now:()=>clock,relay:{
+   observe:async()=>{if(mode==='budget')clock=MS;return confirmObservation;},
+   step:async()=>{steps++;throw Error('Unexpected action');},close:async()=>{closed++;}
+  },sleep:async()=>assert.fail('Unexpected retry'),fetcher:async()=>{
+   calls++;
+   if(mode==='timeout')throw Object.assign(Error('private'),{name:'TimeoutError'});
+   if(mode==='quota')return new Response('',{status:429});
+   if(mode==='late')clock=MS;
+   return geminiReply(mode==='invalid'?{op:'click',xNorm:0,yNorm:0}:{op:'dialog',choice:'accept'},mode==='identity'?'wrong-model':gemini.model);
+  }});
+  assert.equal(result.reason,['late','budget'].includes(mode)?'LIMIT':'INFRASTRUCTURE');
+  assert.equal(calls,mode==='budget'?0:1);assert.equal(steps,0);assert.equal(result.actions,0);assert.equal(closed,1);
+ }
+});
+
+for(const size of ['1180x820','1024x768']){
+ const options=browserOptions({...process.env,M4_UI_VIEWPORT:size});
+ test(options.engine+' '+size+' explicit native confirm accept/dismiss, real follow-up PNG, no hidden state payload',
+  {skip:!process.env.M4_UI_BROWSER,timeout:40000},async()=>{
+  for(const choice of ['accept','dismiss']){
+   const root=fs.mkdtempSync(path.join(os.tmpdir(),'m4-confirm-')),out=path.join(root,'out');
+   fs.writeFileSync(path.join(root,'index.html'),'<!doctype html><button style="position:absolute;left:20px;top:20px;width:180px;height:80px" onclick="this.textContent=confirm(\'Neutraler Dialog?\')?\'Accepted\':\'Dismissed\'">Open</button><button hidden>HIDDEN_SENTINEL</button>');
+   let relay,page,calls=0;const observations=[];
+   try{
+    relay=await session(root,out,{...options,screenshotOnly:true,allowVisualConfirm:true,preparePage:p=>{page=p;}});
+    await assert.rejects(relay.step({op:'dialog',choice:'accept'}),/Unsupported action/);
+    const result=await run({relay,cfg:visualConfirm,module:'C',emit:x=>observations.push(x),fetcher:async(url,init)=>{
+     const payload=JSON.parse(init.body),parts=payload.contents[0].parts;
+     const round=calls++;
+     assert.doesNotMatch(init.body,/HIDDEN_SENTINEL|synthetic-google-key/);
+     if(round===0)return geminiReply({op:'click',xNorm:Math.round(100000/(options.viewport.width-1)),yNorm:Math.round(60000/(options.viewport.height-1))});
+     if(round===1){
+      assert.equal(parts.length,1);assert.deepEqual(JSON.parse(parts[0].text).nativeConfirm,{type:'confirm',message:'Neutraler Dialog?'});
+      assert.equal(fs.existsSync(path.join(out,'round-01.png')),false);
+      await assert.rejects(relay.step({op:'click',x:100,y:60}),/Unsupported action/);
+      await assert.rejects(relay.step({op:'dialog',choice:'bad'}),/Invalid choice/);
+      return geminiReply({op:'dialog',choice});
+     }
+     assert.equal(round,2);assert.equal(parts.length,2);
+     assert.equal(await page.locator('button').first().textContent(),choice==='accept'?'Accepted':'Dismissed');
+     assert.ok(fs.statSync(path.join(out,'round-02.png')).size>33);
+     assert.notDeepEqual(fs.readFileSync(path.join(out,'round-00.png')),fs.readFileSync(path.join(out,'round-02.png')));
+     return geminiReply({op:'stop'});
+    }});
+    assert.equal(result.reason,'MODEL_STOP',JSON.stringify(result));assert.equal(result.actions,2);assert.equal(calls,3);
+    const obs=observations.filter(x=>x.kind==='observation');
+    assert.deepEqual(obs.map(o=>o.round),[0,1,2]);assert.equal(obs[1].screenshot,undefined);
+    assert.deepEqual(obs[1].nativeConfirm,{type:'confirm',message:'Neutraler Dialog?'});
+    assert.equal(obs[2].nativeConfirm,undefined);
+   }finally{if(relay)await relay.close();fs.rmSync(root,{recursive:true,force:true});}
+  }
+ });
+}
+test('real native confirmation at final round is observed but never accepted on budget cleanup',
+ {skip:!process.env.M4_UI_BROWSER,timeout:40000},async()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'m4-confirm-limit-')),out=path.join(root,'out');
+ fs.writeFileSync(path.join(root,'index.html'),'<!doctype html><button style="position:absolute;left:20px;top:20px;width:180px;height:80px" onclick="if(confirm(\'Neutral?\'))console.log(\'ACCEPTED_SENTINEL\')">Open</button>');
+ let relay,page,calls=0,accepted=false;const evidence=[];
+ try{
+  relay=await session(root,out,{...browserOptions(process.env),screenshotOnly:true,allowVisualConfirm:true,preparePage:p=>{page=p;}});
+  page.on('console',msg=>{if(msg.text()==='ACCEPTED_SENTINEL')accepted=true;});
+  const result=await run({relay,cfg:visualConfirm,module:'C',emit:x=>evidence.push(x),fetcher:async()=>{
+   calls++;return geminiReply(calls===LIMIT?{op:'click',xNorm:80,yNorm:70}:{op:'wait',ms:0});
+  }});
+  assert.equal(result.reason,'LIMIT');assert.equal(result.actions,LIMIT);assert.equal(calls,LIMIT);assert.equal(accepted,false);
+  const last=evidence.filter(x=>x.kind==='observation').at(-1);
+  assert.equal(last.done,true);assert.equal(last.round,LIMIT);assert.deepEqual(last.nativeConfirm,{type:'confirm',message:'Neutral?'});
+  assert.equal(last.screenshot,undefined);assert.equal(page.isClosed(),true);
+ }finally{if(relay)await relay.close();fs.rmSync(root,{recursive:true,force:true});}
+});
+
+
+test('visual native confirm cleanup after actual browser modal and rejected response or timeout',
+ {skip:!process.env.M4_UI_BROWSER,timeout:40000},async()=>{
+ for(const mode of ['invalid','timeout','alert']){
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'m4-confirm-abort-')),out=path.join(root,'out');
+  const js=mode==='alert'?"alert('Neutraler Hinweis')":"if(confirm('Neutral?'))console.log('ACCEPTED_SENTINEL')";
+  fs.writeFileSync(path.join(root,'index.html'),'<button style="position:absolute;left:20px;top:20px;width:180px;height:80px" onclick="'+js+'">Open</button>');
+  let relay,page,calls=0,accepted=false;const evidence=[];
+  try{
+   relay=await session(root,out,{...browserOptions(process.env),screenshotOnly:true,allowVisualConfirm:true,preparePage:p=>{page=p;}});
+   page.on('console',msg=>{if(msg.text()==='ACCEPTED_SENTINEL')accepted=true;});
+   const result=await run({relay,cfg:visualConfirm,module:'C',emit:x=>evidence.push(x),sleep:async()=>assert.fail('Unexpected retry'),fetcher:async()=>{
+    calls++;if(calls===1)return geminiReply({op:'click',xNorm:80,yNorm:70});
+    if(mode==='timeout')throw Object.assign(Error('private'),{name:'TimeoutError'});
+    return geminiReply({op:'dialog',choice:'invalid'});
+   }});
+   assert.equal(result.reason,'INFRASTRUCTURE');assert.equal(result.actions,1);assert.equal(calls,mode==='alert'?1:2);
+   assert.equal(accepted,false);assert.equal(page.isClosed(),true);
+   assert.equal(evidence.some(x=>x.kind==='decision'&&x.action.op==='dialog'),false);
+   if(mode==='alert')assert.match(result.detail,/Native browser dialog unsupported/);
+   else assert.deepEqual(evidence.filter(x=>x.kind==='observation').at(-1).nativeConfirm,{type:'confirm',message:'Neutral?'});
+  }finally{if(relay)await relay.close();fs.rmSync(root,{recursive:true,force:true});}
+ }
+});
+
+test('explicit dismissal in final action preserves final PNG without another model request',
+ {skip:!process.env.M4_UI_BROWSER,timeout:40000},async()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'m4-confirm-final-')),out=path.join(root,'out');
+ fs.writeFileSync(path.join(root,'index.html'),'<button style="position:absolute;left:20px;top:20px;width:180px;height:80px" onclick="this.textContent=confirm(\'Neutral?\')?\'Accepted\':\'Dismissed\'">Open</button>');
+ let relay,page,calls=0;const evidence=[];
+ try{
+  relay=await session(root,out,{...browserOptions(process.env),screenshotOnly:true,allowVisualConfirm:true,preparePage:p=>{page=p;}});
+  const result=await run({relay,cfg:visualConfirm,module:'C',emit:x=>evidence.push(x),fetcher:async()=>{
+   calls++;
+   return geminiReply(calls===LIMIT-1?{op:'click',xNorm:80,yNorm:70}:calls===LIMIT?{op:'dialog',choice:'dismiss'}:{op:'wait',ms:0});
+  }});
+  assert.equal(result.reason,'LIMIT');assert.equal(result.actions,LIMIT);assert.equal(calls,LIMIT);assert.equal(page.isClosed(),true);
+  const obs=evidence.filter(x=>x.kind==='observation'),last=obs.at(-1);
+  assert.deepEqual(obs.at(-2).nativeConfirm,{type:'confirm',message:'Neutral?'});
+  assert.equal(last.done,true);assert.equal(last.round,LIMIT);assert.equal(last.screenshot,'round-12.png');
+  assert.ok(fs.statSync(path.join(out,last.screenshot)).size>33);
+  assert.notDeepEqual(fs.readFileSync(path.join(out,'round-00.png')),fs.readFileSync(path.join(out,last.screenshot)));
+ }finally{if(relay)await relay.close();fs.rmSync(root,{recursive:true,force:true});}
+});

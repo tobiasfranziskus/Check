@@ -52,9 +52,16 @@ jobs:
           const assert = require('node:assert/strict');
           const log = fs.readFileSync(process.argv[2], 'utf8');
           const marker = 'CODEX_M4_ALTERNATIVE_RESULT ';
-          const matches = log.split('\n').filter(l => l.includes(marker));
-          assert.equal(matches.length, 1, 'exactly one audited strategy');
-          const a = JSON.parse(matches[0].slice(matches[0].indexOf(marker) + marker.length));
+          const lines = log.split(/\r?\n/);
+          const starts = lines.map((line, i) => line.startsWith('# ' + marker) ? i : -1).filter(i => i >= 0);
+          assert.equal(starts.length, 1, 'exactly one audited strategy');
+          const start = starts[0];
+          let payload = lines[start].slice(('# ' + marker).length);
+          let i = start + 1;
+          while (i < lines.length && lines[i].startsWith('# ') && !lines[i].startsWith('# Subtest:')) {
+            payload += lines[i++].slice(2);
+          }
+          const a = JSON.parse(payload);
           const end = a.checkpoints['day-60'];
           assert.equal(a.strategy, process.env.STRATEGY);
           assert.equal(a.activeUntilDay60, true);

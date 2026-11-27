@@ -1,0 +1,85 @@
+name: M4 Haus-Erz – gepaarter Langzeitnachweis
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/m4-house-ore-longterm.yml'
+      - 'tests/m4-u5-house-ore-scenarios.cjs'
+      - 'tools/w6-szenarien.cjs'
+      - 'prototypes/welt/**'
+      - 'prototypes/verbund/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paired:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {scenario: S01, days: 90, control: d9d72edaa778a9f5, house: d6b32676051a2aaa, trips: 4}
+          - {scenario: S02, days: 90, control: f83aa3062b729e1e, house: 20ab73c826ac2daa, trips: 16}
+          - {scenario: S03, days: 90, control: d374fd2b66cf700e, house: 98fa37f3275a7ce4, trips: 16}
+          - {scenario: S04, days: 90, control: 1a46dc5bb0b92e7d, house: 8a75ba7b245103c6, trips: 5}
+          - {scenario: S05, days: 90, control: 3462e1e3c1135822, house: 936d345cea5042e9, trips: 3}
+          - {scenario: S06, days: 90, control: b0455d090e2c9acb, house: a391096a0182ce15, trips: 5}
+          - {scenario: S07, days: 90, control: 31dd21798b0ea22d, house: 48174802d93758ed, trips: 3}
+          - {scenario: S08, days: 90, control: 08b1ed092b8b4c7a, house: a79dcfce0a3ef30f, trips: 4}
+          - {scenario: S09, days: 90, control: 9c2224e235a923dd, house: 3a68655771c89e81, trips: 4}
+          - {scenario: S10, days: 90, control: b21a7da62f90114d, house: 82037e16fad6f5da, trips: 17}
+          - {scenario: S11, days: 90, control: fd86c5f42ca550fe, house: 8095fd236a7c835d, trips: 12}
+          - {scenario: S12, days: 90, control: 78dffc7d5f1a810d, house: 5a01cd61fdd83a5c, trips: 4}
+          - {scenario: S13, days: 90, control: ddea99573545d58a, house: 6deba6fb76dddc87, trips: 5}
+          - {scenario: S02, days: 730, control: 69d2c386afddfd43, house: 12d01a5c17b57ca9, trips: 16}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reproduce paired scenarios and check pinned source evidence
+        env:
+          SCENARIO: ${{ matrix.scenario }}
+          DAYS: ${{ matrix.days }}
+          CONTROL: ${{ matrix.control }}
+          HOUSE: ${{ matrix.house }}
+          TRIPS: ${{ matrix.trips }}
+        run: |
+          set -euo pipefail
+          node --version
+          node tests/m4-u5-house-ore-scenarios.cjs "$SCENARIO" "$DAYS" | tee paired.jsonl
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const [control, house, ...extra] = fs.readFileSync('paired.jsonl', 'utf8').trim().split('\n').map(JSON.parse);
+          assert.equal(extra.length, 0);
+          const days = Number(process.env.DAYS);
+          for (const [run, profile, hash] of [[control, 'kontrolle', process.env.CONTROL], [house, 'haus', process.env.HOUSE]]) {
+            assert.equal(run.szenario, process.env.SCENARIO);
+            assert.equal(run.profil, profile);
+            assert.equal(run.verlauf.at(-1).tag, days);
+            assert.equal(run.verlauf.at(-1).hash, hash);
+            for (const p of run.verlauf) assert.equal(p.weltgeld, 33000);
+            assert.equal(run.verlauf.at(-1).gebunden, 0);
+            assert.equal(run.verlauf.at(-1).aktiverVertrag, null);
+          }
+          assert.equal(control.verlauf.at(-1).hausFrachten, 0);
+          assert.equal(house.verlauf.at(-1).hausFrachten, Number(process.env.TRIPS));
+          if (days === 730) {
+            for (const [day, c, h] of [[90, 'f83aa3062b729e1e', '20ab73c826ac2daa'], [365, 'db50ca83e94745c3', '8af4110e6f7451d2']]) {
+              const cp = control.verlauf.find(p => p.tag === day);
+              const hp = house.verlauf.find(p => p.tag === day);
+              assert.equal(cp.hash, c);
+              assert.equal(hp.hash, h);
+              assert.equal(hp.hausFrachten, 16);
+              assert.equal(hp.gebunden, 0);
+              assert.equal(hp.aktiverVertrag, null);
+            }
+          }
+          console.log('HAUS_ERZ_PAIRED_OK', process.env.SCENARIO, days, process.env.TRIPS);
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: haus-erz-${{ matrix.scenario }}-${{ matrix.days }}
+          path: paired.jsonl

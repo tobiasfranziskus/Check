@@ -166,6 +166,81 @@ test('NPC ore: standard accepted cargo and simultaneous free ore remain separate
 });
 
 
+// Boundary injection in a discarded controlled fixture, not a purported
+// reachable manager state: replace one freshly bound W1 order by a smaller
+// fully funded W1 order. Refund exactly the unused purchase and work reserves
+// before further physical mining. The ordinary core must settle the partial
+// order but must not certify 50 units for W3.
+test('NPC ore: paid partial W1 acceptance cannot certify the full W3 quantity',()=>{
+  const {w,s}=fixture(0);sign(w,s);
+  act(w,s,{type:'industrialOreCommit',owner:'st_nadir'});
+  let n=0;
+  while(!s.erzpilotVertraege?.sh001&&n++<100)w.minute(s);
+  const v=s.erzpilotVertraege.sh001;
+  assert.equal(v.menge,50);
+  assert.ok((s.ships.sh001.ladung.erz??0)<25);
+  const cut=25;
+  s.owners[v.konto].cash-=cut*v.preis;
+  s.owners.st_aldera.cash+=cut*v.preis;
+  s.owners[v.arbeitsKonto].cash-=cut*v.arbeitsPreis;
+  s.owners.npc3.cash+=cut*v.arbeitsPreis;
+  v.menge-=cut;
+  let q=roundtrip(w,s);
+  const sales=q.stats.verkaeufe.sh001;
+  const before=q.ledger.erz.mined;
+  n=0;
+  while(q.erzpilotVertraege?.sh001&&n++<160)w.minute(q);
+  assert.equal(q.stats.verkaeufe.sh001,sales+1);
+  assert.ok(q.ledger.erz.mined>=before);
+  assert.equal(q.w3.auftrag.phase,'vorbestellt');
+  assert.equal(q.kanon.industrieErz.erzAngenommen,false);
+  assert.equal(q.w3.auftrag.npcErzReserviert,undefined);
+  assert.equal(q.w3.geliefert,0);
+  audit(w,q);
+  console.log('W_20261127_03_PARTIAL_ACCEPTANCE',JSON.stringify({tick:q.tick,accepted:25,
+    fullAccepted:q.kanon.industrieErz.erzAngenommen,hash:w.hash(q),scope:'isolated audited boundary fixture with reduced W1 reserve'}));
+});
+
+test('NPC ore: historical missing-charge boundary remains byte-identical on load, no phantom loading',()=>{
+  const {w,s}=fixture(50);sign(w,s);
+  act(w,s,{type:'industrialOreCommit',owner:'st_nadir'});
+  w.advance(s,70);
+  assert.equal(s.tick,120);
+  assert.equal(s.w3.auftrag.npcErzReserviert,50);
+  assert.equal(s.stations.st_aldera.lager.erz,50);
+  // Reconstruct the old export transaction using the pinned original
+  // accounting equations, on an independent copy. This is a compatibility
+  // boundary fixture, not an actual recovered user save. Historical original
+  // tick120/hash61c7c97961fad4ac is preserved independently in #665 logs.
+  const legacy=roundtrip(w,s),cfg=w.rules.erzpilot,amount=50,value=amount*cfg.preis;
+  delete legacy.w3.auftrag.npcErzReserviert;
+  legacy.stations[cfg.station].lager.erz-=amount;
+  legacy.ledger.erz.exported+=amount;
+  legacy.owners[cfg.exportOwner].cash-=value;
+  legacy.owners[cfg.station].cash+=value;
+  legacy.stats.konto[cfg.exportOwner]??={erloes:0,kosten:0};
+  legacy.stats.konto[cfg.station]??={erloes:0,kosten:0};
+  legacy.stats.konto[cfg.exportOwner].kosten+=value;
+  legacy.stats.konto[cfg.station].erloes+=value;
+  audit(w,legacy);
+  const old=w.save(legacy),oldHash=w.hash(legacy),q=w.load(old);
+  assert.equal(w.save(q),old);
+  assert.equal(q.w3.auftrag.npcErzReserviert,undefined);
+  assert.equal(q.kanon.industrieErz.erzAngenommen,true);
+  w.minute(q);
+  assert.equal(q.w3.auftrag.phase,'vorbestellt');
+  assert.equal(q.w3.auftrag.npcErzReserviert,undefined);
+  assert.equal(q.ships.sh002.ladung.erz??0,0);
+  assert.equal(q.w3.geliefert,0);
+  audit(w,q);
+  const bad=JSON.parse(old);bad.w3.auftrag.npcErzReserviert=50;
+  assert.throws(()=>w.load(JSON.stringify(bad)));
+  console.log('W_20261127_03_LEGACY_BOUNDARY',JSON.stringify({hash:oldHash,
+    pinnedHistoricalHash:'61c7c97961fad4ac',matchesPinned:oldHash==='61c7c97961fad4ac',
+    tick:legacy.tick,ore:legacy.stations.st_aldera.lager.erz,unchanged:true,
+    scope:'independent compatibility fixture; no real user save overwritten'}));
+});
+
 // Separate dynamic 60-day strategies. The exact diagnostic path above is
 // pinned; these controls deliberately do not assume the post-fix stop/hash.
 const Manager=require('../prototypes/spiel/p3-manager-disposition.js');

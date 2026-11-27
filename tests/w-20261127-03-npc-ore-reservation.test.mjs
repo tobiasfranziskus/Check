@@ -72,8 +72,16 @@ test('NPC ore: original #665 S02 career, real accepted 50 at tick32640 survives 
   // Old states without proof are read byte-identically, never filled or migrated.
   const legacy=w.load(accepted);delete legacy.w3.auftrag.npcErzReserviert;
   const legacyJson=w.save(legacy);assert.equal(w.save(w.load(legacyJson)),legacyJson);
-  const forged=JSON.parse(accepted);forged.w3.auftrag.npcErzReserviert=49;
-  assert.throws(()=>w.load(JSON.stringify(forged)));
+  for(const [label,mutate] of [
+    ['wrong quantity',q=>q.w3.auftrag.npcErzReserviert=49],
+    ['missing consent',q=>q.kanon.industrieErz.signFracht=false],
+    ['wrong carrier',q=>q.kanon.industrieErz.frachter='sh026'],
+    ['missing funding',q=>{q.owners.w3_kauf_treuhand.cash--;q.owners.st_nadir.cash++;}],
+    ['no physical acceptance',q=>q.kanon.industrieErz.erzAngenommen=false]
+  ]){
+    const forged=JSON.parse(accepted);mutate(forged);
+    assert.throws(()=>w.load(JSON.stringify(forged)),label);
+  }
   j=advance(j,32641);s=j.zustandReferenz();
   assert.equal(s.w3.auftrag.phase,'hin');
   assert.equal(s.ships.sh030.ladung.erz,50);
@@ -204,27 +212,26 @@ test('NPC ore: paid partial W1 acceptance cannot certify the full W3 quantity',(
 test('NPC ore: historical missing-charge boundary remains byte-identical on load, no phantom loading',()=>{
   const {w,s}=fixture(50);sign(w,s);
   act(w,s,{type:'industrialOreCommit',owner:'st_nadir'});
-  w.advance(s,70);
-  assert.equal(s.tick,120);
-  assert.equal(s.w3.auftrag.npcErzReserviert,50);
-  assert.equal(s.stations.st_aldera.lager.erz,50);
-  // Reconstruct the old export transaction using the pinned original
-  // accounting equations, on an independent copy. This is a compatibility
-  // boundary fixture, not an actual recovered user save. Historical original
-  // tick120/hash61c7c97961fad4ac is preserved independently in #665 logs.
-  const legacy=roundtrip(w,s),cfg=w.rules.erzpilot,amount=50,value=amount*cfg.preis;
-  delete legacy.w3.auftrag.npcErzReserviert;
-  legacy.stations[cfg.station].lager.erz-=amount;
-  legacy.ledger.erz.exported+=amount;
-  legacy.owners[cfg.exportOwner].cash-=value;
-  legacy.owners[cfg.station].cash+=value;
-  legacy.stats.konto[cfg.exportOwner]??={erloes:0,kosten:0};
-  legacy.stats.konto[cfg.station]??={erloes:0,kosten:0};
-  legacy.stats.konto[cfg.exportOwner].kosten+=value;
-  legacy.stats.konto[cfg.station].erloes+=value;
+  w.advance(s,69);
+  assert.equal(s.tick,119);
+  assert.equal(s.ships.sh001.ladung.erz,50);
+  assert.equal(s.stations.st_aldera.lager.erz,0);
+  // Controlled compatibility fixture: mark the preceding minute as already
+  // accepted, as in a legacy contract with a lost charge. Do not edit goods,
+  // money, balances or the export ledger: actual original W1 acceptance and
+  // hours export must run. The guard must NOT retroactively certify it.
+  const legacy=roundtrip(w,s);
+  legacy.kanon.industrieErz.erzAngenommen=true;
+  audit(w,legacy);
+  w.minute(legacy);
+  assert.equal(legacy.tick,120);
+  assert.equal(legacy.stations.st_aldera.lager.erz,0);
+  assert.equal(legacy.ledger.erz.exported,50);
+  assert.equal(legacy.w3.auftrag.npcErzReserviert,undefined);
   audit(w,legacy);
   const old=w.save(legacy),oldHash=w.hash(legacy),q=w.load(old);
   assert.equal(w.save(q),old);
+  assert.equal(oldHash,'61c7c97961fad4ac','pinned original damaged state from #665 W5 log');
   assert.equal(q.w3.auftrag.npcErzReserviert,undefined);
   assert.equal(q.kanon.industrieErz.erzAngenommen,true);
   w.minute(q);
@@ -258,12 +265,15 @@ test('NPC ore: independent standard and S02 manager strategies to day60 or obser
     const check=j=>{const s=j.zustandReferenz();audit(j.weltReferenz(),s);return s;};
     function checkpoint(label){
       const json=j.exportieren();saves.set(events.length,json);j=managerOpen(json);
-      const s=check(j),w=j.weltReferenz(),b=w.bericht(s),p=quote(j).p;
+      const s=check(j),w=j.weltReferenz(),b=w.bericht(s),{p,offers}=quote(j);
       const row={label,tick:s.tick,hash:w.hash(s),house:s.owners.house.cash,
         trips:p.frachtAbgeschlossen,fees:p.frachtGebuehrBisher,wages:p.frachtLohnBisher,
         w3:s.w3.abgeschlossen,w4:s.w4.abgeschlossen,w5:s.w5.fertig,
         industry:s.kanon.industrieErz,active:s.w3.auftrag,worldMoney:b.weltgeld,bound:b.gebunden,
-        warehouse:{aldera:s.stations.st_aldera.lager,nadir:s.stations.st_nadir.lager}};
+        warehouse:{aldera:s.stations.st_aldera.lager,nadir:s.stations.st_nadir.lager},
+        ...(label==='final'?{cash:Object.fromEntries(['house','st_aldera','st_nadir','npc3','transport','werft_extern','export'].map(id=>[id,s.owners[id].cash])),
+          disposition:p,offers,houseShips:Object.values(s.ships).filter(sh=>sh.owner==='house').map(sh=>({id:sh.id,klasse:sh.klasse,system:sh.system,
+            order:sh.auftrag,retired:w.stillgelegt(s,sh.id),remaining:w.restAktivminuten(s,sh.id)}))}:{})};
       reports.push(JSON.parse(JSON.stringify(row)));return row;
     }
     function act(id,reason){

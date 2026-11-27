@@ -5,7 +5,8 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const root=path.resolve(__dirname,'..');
-const oldSlot='aphros-void:spielerkarriere:regel204:v1';
+const oldSlot='aphros-void:spielerkarriere:regel208:v1';
+const legacySlot='aphros-void:spielerkarriere:regel204:v1';
 const w6Slot='aphros-void:spielerkarriere:regel207-forschung:v1';
 const sizes=[[1180,820],[1024,768],[820,1180],[390,844]];
 const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
@@ -39,14 +40,15 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
    const url='http://127.0.0.1:'+server.address().port+'/prototypes/spiel/index.html';
    try{
     await page.goto(url);
-    // Existing normal Rule204 career remains the default and cannot gain P8h.
+    // New normal Rule208 career is the default and cannot gain P8h.
     await page.locator('#neues-spiel').tap();
     await page.locator('#karriere-starten').tap();
     assert.equal(await page.locator('#spielwelt').isVisible(),true);
     await page.locator('#tab-jaeger').tap();
     assert.equal(await page.locator('#w6-p8h-controls').isHidden(),true);
     const baseline=await page.evaluate(k=>localStorage.getItem(k),oldSlot);
-    assert.equal(JSON.parse(baseline).rulesVersion,204);
+    assert.equal(JSON.parse(baseline).rulesVersion,208);
+    assert.equal(await page.evaluate(k=>localStorage.getItem(k),legacySlot),null);
     assert.equal(JSON.parse(baseline).kanon.npcMaterialKette,undefined);
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),w6Slot),null);
 
@@ -127,7 +129,7 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),oldSlot),baseline);
     assert.deepEqual(errors,[]);
     console.log('W6_P8H_PRODUCT_TOUCH_OK',JSON.stringify({browser:which,width,height,
-       originalRule:204,researchRule:207,tick:60,worldISK:33000,mint:0,burn:0,
+       originalRule:208,researchRule:207,tick:60,worldISK:33000,mint:0,burn:0,
        optin:true,pauses:true,backup:true,dualImportConsent:true}));
    }finally{await ctx.close();}
   }

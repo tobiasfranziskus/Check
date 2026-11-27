@@ -6,7 +6,7 @@ const path=require('node:path');
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const J8=require('../prototypes/verbund/konzern-session.js');
 const root=path.resolve(__dirname,'..');
-const slot='aphros-void:spielerkarriere:regel204:v1';
+const slot='aphros-void:spielerkarriere:regel208:v1';
 const server=http.createServer((req,res)=>{
  const url=new URL(req.url,'http://localhost');
  const relative=url.pathname.replace(/^\/(?:Check|nas\/spiele\/aphros)\//,'/');
@@ -126,7 +126,7 @@ async function pruefe(browser,kind,width,height,base){
   const disabledFreight=el('#manager-flotte-aktionen [data-dispo-action="freight-'+frachterId+'"]');
   assert.equal(await disabledFreight.isDisabled(),true);
   const laufend=J8.erstellen();
-  laufend.oeffnen204(vorAuswahl,true);
+  laufend.oeffnen208(vorAuswahl,true);
   const sperre=laufend.angebote().find(o=>o.id==='freight-'+frachterId);
   assert.equal(sperre.ok,false);
   const sperrtext=sperre.reason.replace(/^K1: /,'');
@@ -162,8 +162,12 @@ async function pruefe(browser,kind,width,height,base){
   assert.match(await el('#auftrag-belege').innerText(),/Frachtgebühren: 240 ISK/);
   assert.match(await el('#auftrag-belege').innerText(),/Frachtlöhne: 120 ISK/);
   const original=await save(),j=J8.erstellen();
-  j.oeffnen204(original,true);
-  assert.equal(j.ansicht().hash,'4e86f3fc27a6005a');
+  j.oeffnen208(original,true);
+  const legacy=require('../scripts/m4-u4-startstand.cjs').prepare('C');
+  assert.equal(legacy.hash,'4e86f3fc27a6005a');
+  const a=JSON.parse(legacy.json),b=JSON.parse(original);
+  assert.equal(b.rulesVersion,208);
+  delete a.rulesVersion;delete b.rulesVersion;assert.deepEqual(b,a);
   assert.equal(j.weltReferenz().audit(j.zustandReferenz()).ok,true);
   await el('#welt-sichern').tap();
   await page.reload();

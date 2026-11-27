@@ -52,14 +52,14 @@ test('round and time limits; no action after model timeout budget',async()=>{
 
 test('cloud pilot dry-run: actual browser and mocked free-model transport, no API call',{skip:!process.env.M4_UI_BROWSER},async()=>{
  const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
- const {session}=require('../scripts/m4-u4-ui-relay.cjs');
+ const {session,browserOptions}=require('../scripts/m4-u4-ui-relay.cjs');
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'m4-mobile-mock-'));
  const remote=config({M4_AI_PROVIDER:'openrouter',M4_AI_MODEL:'test/model:free',M4_ALLOW_REMOTE:'1',OPENROUTER_API_KEY:'MOCK_ONLY_SECRET'});
  fs.writeFileSync(path.join(root,'index.html'),'<html><style>body{margin:0}button{width:220px;height:100px}</style><button onclick="this.textContent=\'RESULT_OK\'">START_TEST</button><p hidden>HIDDEN_SENTINEL</p></html>');
  const events=[],calls=[];
  let s;
  try{
-  s=await session(root,path.join(root,'out'),{textMode:true});
+  s=await session(root,path.join(root,'out'),{...browserOptions(process.env),textMode:true});
   const result=await run({relay:s,cfg:remote,module:'A',emit:e=>events.push(e),fetcher:async(url,opts)=>{
    assert.equal(url,'https://openrouter.ai/api/v1/chat/completions');
    assert.equal(opts.headers.Authorization,'Bearer MOCK_ONLY_SECRET');
@@ -82,17 +82,16 @@ test('mobile workflow has explicit main consent, protected environment and no PR
  assert.match(y,/workflow_dispatch:/);assert.doesNotMatch(y,/^\s*(pull_request(?:_target)?|push|schedule):/m);
  assert.match(y,/github\.ref == 'refs\/heads\/main' && inputs\.consent == true/);
  assert.match(y,/environment: m4-blindtest/);assert.match(y,/persist-credentials: false/);
- assert.equal((y.match(/secrets\.OPENROUTER_API_KEY/g)||[]).length,2);
- const probeStep=y.indexOf('      - name: Probe free models before browser installation');
+ assert.equal((y.match(/secrets\.OPENROUTER_API_KEY/g)||[]).length,1);
  const installStep=y.indexOf('      - name: Install browser without model credentials');
- const pilotStep=y.indexOf('      - name: Run independent model pilot');
- assert.ok(probeStep>0&&probeStep<installStep&&installStep<pilotStep);
- assert.match(y.slice(probeStep,installStep),/--probe > "\$TMPDIR\/probe\.json"/);
+ const pilotStep=y.indexOf('      - name: Run screenshot-only module');
+ assert.ok(installStep>0&&installStep<pilotStep);
  assert.doesNotMatch(y.slice(installStep,pilotStep),/OPENROUTER_API_KEY|continue-on-error|if: always/);
- assert.match(y,/m4-live\/probe\.json/);
+ assert.doesNotMatch(y,/--probe|auto-free|openrouter\/free/);
+ assert.match(y,/round-\*\.png/);
  assert.match(y,/retention-days: 7/);assert.match(y,/UNREVIEWED/);
- assert.match(y,/default: 'auto-free'/);
- assert.match(y.slice(pilotStep),/M4_AI_MODEL: \$\{\{ steps\.probe\.outputs\.model \}\}/);assert.doesNotMatch(y,/M4_AI_MODEL===\x22openrouter\/free\x22/);
+ assert.match(y.slice(pilotStep),/M4_AI_MODEL: google\/gemma-4-26b-a4b-it:free/);
+ assert.match(y.slice(pilotStep),/M4_OBSERVATION_MODE: screenshot-only/);
 });
 
  test('free router allowed only with explicit consent and key',()=>{
@@ -467,37 +466,52 @@ test('native local memory detects three-action cycles without hidden state or au
  assert.equal(bounded.history.split('; ').length,12);assert.ok(bounded.history.length<1100);assert.doesNotMatch(bounded.history,/x{49}/);
 });
 
-test('opt-in control diagnostic maps only model-selected visible buttons; default stays unchanged',async()=>{
- const {controlPalette,paletteSchema,DECISION_SCHEMA,CONFIRM_SCHEMA}=require('../scripts/m4-u4-model-runner.cjs');
+test('opt-in control diagnostic uses independent targets and preserves coordinate actions',async()=>{
+ const {paletteSchema}=require('../scripts/m4-u4-model-runner.cjs');
  const local=config({M4_AI_MODEL:'gemma4:e4b',M4_OLLAMA_NATIVE:'1',M4_LOCAL_DIAGNOSTIC:'1'});
  assert.throws(()=>config({M4_AI_MODEL:'local-test',M4_LOCAL_DIAGNOSTIC:'1'}));
- const obs={round:0,remaining:12,visibleText:'(10,20) Heading\n(25,35) [B] First\n(60,70) Disabled\n(80,90) [B] Second',done:false};
+ const targets=[{id:1,x:25,y:35,kind:'summary',label:'First'},{id:2,x:80,y:90,kind:'button',label:'Second'}];
+ const obs={round:0,remaining:12,width:1024,height:768,visibleText:'(10,20) Heading\n(60,70) Disabled',
+  targets,targetInventory:{page:1,pages:2,total:21,scanTruncated:false},
+  scrollRegions:[{x:100,y:200,down:true,up:false,kind:'page'}],done:false};
  const body=requestBody(local,'goal',obs,[]);
- assert.deepEqual(body.controls,[{id:1,x:25,y:35,label:'First'},{id:2,x:80,y:90,label:'Second'}]);
- const data=JSON.parse(body.messages[1].content);assert.deepEqual(data.buttons,['1 First','2 Second']);assert.equal(data.text,'Heading\nDisabled');assert.equal(data.screen,undefined);
- assert.deepEqual(paletteSchema(body.controls).properties.action.oneOf[0].properties.id.enum,[1,2]);
- assert.throws(()=>decision('{"action":{"op":"pick","id":9},"note":"bad"}',body.controls));
- assert.throws(()=>decision('{"action":{"op":"click","x":10,"y":20},"note":"bad"}',body.controls));
- assert.throws(()=>decision('{"action":{"op":"pick","id":1},"note":"bad"}'));
- const next={round:1,remaining:11,visibleText:'(1,2) [B] Continue',done:false};
+ assert.deepEqual(body.controls,targets);
+ const data=JSON.parse(body.messages[1].content);
+ assert.deepEqual(data.targets,targets);assert.equal(data.screen,obs.visibleText);
+ assert.deepEqual(data.targetInventory,obs.targetInventory);assert.deepEqual(data.scrollRegions,obs.scrollRegions);
+ const schema=paletteSchema(body.controls,body.viewport,body.inventoryPages);
+ assert.deepEqual(schema.properties.action.oneOf[0].properties.id.enum,[1,2]);
+ const modelDecision=action=>JSON.stringify({action,note:'test'});
+ const decide=(command,options)=>decision(modelDecision(command),body.controls,body.viewport,options);
+ assert.throws(()=>decide({op:'pick',id:9}));
+ assert.throws(()=>decide({op:'click',x:1024,y:10}));
+ assert.throws(()=>decide({op:'scroll',x:10,y:768,dy:400}));
+ assert.throws(()=>decide({op:'key',key:'Enter'}));
+ assert.throws(()=>decide({op:'key',key:'Control+A'},{selectKeys:true}));
+ assert.throws(()=>decide({op:'targets',page:3},{inventoryPages:2}));
+ assert.throws(()=>decision(modelDecision({op:'pick',id:1})));
+ assert.deepEqual(decide({op:'click',x:1023,y:767}).action,{op:'click',x:1023,y:767});
+ assert.deepEqual(decide({op:'targets',page:2},{inventoryPages:2}).action,{op:'targets',page:2});
+ assert.deepEqual(decide({op:'key',key:'ArrowDown'},{selectKeys:true}).action,{op:'key',key:'ArrowDown'});
+ const next={round:1,remaining:11,visibleText:'(1,2) Continue',done:false};
  const calls=[],actions=[],events=[];
  const relay={observe:async()=>obs,step:async a=>{actions.push(a);return next;},close:async()=>{}};
  const result=await run({relay,cfg:local,module:'A',emit:e=>events.push(e),fetcher:async(url,opts)=>{
   calls.push(JSON.parse(opts.body));const action=calls.length===1?{op:'pick',id:2}:{op:'stop'};
   return new Response(JSON.stringify({model:local.model,done:true,message:{content:JSON.stringify({action,note:'test'})}}));
  }});
- assert.equal(result.reason,'MODEL_STOP');assert.deepEqual(actions,[{op:'click',x:80,y:90}]);
+ assert.equal(result.reason,'MODEL_STOP');assert.deepEqual(actions,[{op:'pick',id:2}]);
  assert.deepEqual(events.find(e=>e.kind==='decision').chosenControl,{id:2,label:'Second'});
  assert.match(JSON.parse(calls[1].messages[1].content).history,/pick\(2\)/);
  assert.equal(JSON.parse(calls[0].messages[1].content).controls,undefined);
- assert.deepEqual(calls[0].format,paletteSchema(body.controls));
+ assert.deepEqual(calls[0].format,schema);
  const normal=requestBody(config({M4_AI_MODEL:'gemma4:e4b',M4_OLLAMA_NATIVE:'1'}),'goal',obs,[]);
  assert.equal(normal.controls,undefined);assert.equal(JSON.parse(normal.messages[1].content).screen,obs.visibleText);
- const empty=requestBody(local,'goal',{...obs,visibleText:'(1,2) Text'},[]);
+ const empty=requestBody(local,'goal',{...obs,targets:undefined,targetInventory:undefined,visibleText:'(1,2) Text'},[]);
  assert.equal(empty.controls,undefined);assert.equal(JSON.parse(empty.messages[1].content).screen,'(1,2) Text');
  const modal=requestBody(local,'goal',{...obs,dialog:'confirm'},[]);
  assert.equal(modal.controls,undefined);assert.equal(modal.dialog,'confirm');
- assert.equal(controlPalette({visibleText:'(1180,20) [B] Outside'}).controls.length,0);
+
 });
 
 test('direct Gemini requires explicit free-project confirmation and never routes via OpenRouter',async()=>{
@@ -530,21 +544,21 @@ test('Gemini opt-in diagnostic reuses the visible control mapping and preserves 
  const {ask,geminiPayload,paletteSchema}=require('../scripts/m4-u4-model-runner.cjs');
  const env={M4_AI_PROVIDER:'gemini',M4_AI_MODEL:'gemini-3.5-flash-lite',M4_ALLOW_REMOTE:'1',M4_GEMINI_FREE_CONFIRMED:'1',GEMINI_API_KEY:'synthetic-key'};
  const local=config({...env,M4_LOCAL_DIAGNOSTIC:'1'}),normal=config(env);
- const obs={round:0,remaining:12,visibleText:'(10,20) Heading\n(25,35) [B] First\n(80,90) [B] Second',done:false};
+ const obs={round:0,remaining:12,visibleText:'(10,20) Heading',targets:[{id:1,x:25,y:35,label:'First'},{id:2,x:80,y:90,label:'Second'}],done:false};
  const body=requestBody(local,'goal',obs,[]),ordinary=requestBody(normal,'goal',obs,[]);
  assert.equal(local.diagnostic,true);assert.equal(normal.diagnostic,undefined);
  assert.throws(()=>config({...env,M4_LOCAL_DIAGNOSTIC:'1',M4_GEMINI_FREE_CONFIRMED:'0'}));
  assert.equal(ordinary.controls,undefined);assert.equal(JSON.parse(ordinary.messages[1].content).screen,obs.visibleText);
  const schema=geminiPayload(local,body).generationConfig.responseJsonSchema.properties.action.anyOf;
  assert.deepEqual(schema,paletteSchema(body.controls).properties.action.oneOf);
- assert.equal(schema.some(v=>v.properties.op.enum[0]==='click'),false);
+ assert.equal(schema.some(v=>v.properties.op.enum[0]==='click'),true);
  assert.equal(geminiPayload(local,{messages:body.messages}).generationConfig.responseJsonSchema.properties.action.anyOf[0].properties.op.enum[0],'click');
  const response=action=>new Response(JSON.stringify({modelVersion:local.model,candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify({action,note:'test'})}]}}]}));
  const d=await ask(local,body,45000,async(url,opts)=>{
   assert.equal(url,local.url);assert.equal(opts.headers['x-goog-api-key'],'synthetic-key');
   assert.doesNotMatch(opts.body,/synthetic-key|"controls"/);return response({op:'pick',id:2});
  });
- assert.deepEqual(d.action,{op:'click',x:80,y:90});assert.deepEqual(d.chosenControl,{id:2,label:'Second'});
+ assert.deepEqual(d.action,{op:'pick',id:2});assert.deepEqual(d.chosenControl,{id:2,label:'Second'});
  await assert.rejects(ask(local,body,45000,async()=>response({op:'pick',id:3})));
  await assert.rejects(ask(normal,ordinary,45000,async()=>response({op:'pick',id:2})));
  const modal=requestBody(local,'goal',{...obs,dialog:'confirm'},[]);
@@ -557,7 +571,7 @@ test('Gemini 4 Hydrogen uses fixed free opt-in and both existing UI modes',async
  assert.ok(GEMINI_MODELS.includes(env.M4_AI_MODEL));
  for(const patch of [{M4_GEMINI_FREE_CONFIRMED:'0'},{M4_ALLOW_REMOTE:'0'},{GEMINI_API_KEY:''},{M4_AI_MODEL:'gemini-4-neon'},{M4_AI_MODEL:'gemini-4-carbon'},{M4_AI_MODEL:'gemini-4-argon'}])assert.throws(()=>config({...env,...patch}));
  const cfg=config(env),diag=config({...env,M4_LOCAL_DIAGNOSTIC:'1'});
- const obs={round:0,remaining:12,visibleText:'(25,35) [B] First'};
+ const obs={round:0,remaining:12,visibleText:'(25,35) First',targets:[{id:1,x:25,y:35,label:'First'}]};
  const body=requestBody(cfg,'goal',obs,[]),palette=requestBody(diag,'goal',obs,[]);
  assert.equal(cfg.url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-4-hydrogen:generateContent');
  assert.equal(geminiPayload(cfg,body).generationConfig.thinkingConfig.thinkingLevel,'low');
@@ -569,7 +583,7 @@ test('Gemini 4 Hydrogen uses fixed free opt-in and both existing UI modes',async
  });
  assert.deepEqual(d.action,{op:'click',x:25,y:35});assert.equal(d.reportedModel,cfg.model);
  const picked=await ask(diag,palette,45000,async()=>response({op:'pick',id:1}));
- assert.deepEqual(picked.action,d.action);
+ assert.deepEqual(picked.action,{op:'pick',id:1});
  await assert.rejects(ask(cfg,body,45000,async()=>response({op:'stop'},'gemini-4-carbon')));
 });
 

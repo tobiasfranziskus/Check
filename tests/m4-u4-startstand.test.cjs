@@ -2,7 +2,8 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {prepare,importPrepared,IDS,SLOT}=require('../scripts/m4-u4-startstand.cjs');
-const {session}=require('../scripts/m4-u4-ui-relay.cjs');
+const {session,browserOptions}=require('../scripts/m4-u4-ui-relay.cjs');
+const options=browserOptions(process.env);
 
 test('B-F fixtures are independent audited standard saves with deterministic provenance',()=>{
  assert.throws(()=>prepare('A'));assert.throws(()=>prepare('../B'));
@@ -19,7 +20,7 @@ test('prepared starts import through the actual public UI into isolated browser 
    const fixture=prepare(module);
    let s;
    try{
-    s=await session(root,path.join(out,module),{textMode:true,markButtons:true,preparePage:async page=>{
+    s=await session(root,path.join(out,module),{...options,textMode:true,markButtons:true,preparePage:async page=>{
      await importPrepared(page,fixture);
      await page.reload();await page.locator('#fortsetzen').click();
      await page.locator('#manager-transport-status').waitFor({state:'visible'});

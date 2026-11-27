@@ -366,7 +366,7 @@ test('Gemini visual stops at twelve actions even if the relay continues to offer
  const observe=async()=>({...obs,round:actions,remaining:LIMIT-actions});
  const result=await run({cfg:gemini,module:'A',relay:{
   observe,step:async()=>{actions++;return observe();},close:async()=>{}
- },fetcher:async()=>{requests++;return geminiReply({op:'click',x:0,y:0});}});
+ },fetcher:async()=>{requests++;return geminiReply({op:'click',xNorm:0,yNorm:0});}});
  assert.equal(result.reason,'LIMIT');
  assert.equal(result.actions,LIMIT);
  assert.equal(requests,LIMIT);

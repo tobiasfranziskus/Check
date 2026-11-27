@@ -107,7 +107,7 @@ test('M4 management: continuous standard career, real decisions, audited stop or
   act('ore-'+extra.id,'original funded local ore sale');
   deny(j,'ore-'+extra.id);
   let lastRevenue=j.zustandReferenz().stats.konto.house.erloes;
-  let lastIncomeTick=j.zustandReferenz().tick, firstBlocked=null, pauseTick=null, stop=null;
+  let lastIncomeTick=j.zustandReferenz().tick, lastRestartTick=lastIncomeTick, firstBlocked=null, pauseTick=null, stop=null;
   while(j.zustandReferenz().tick<LIMIT){
     const s=j.zustandReferenz(),tick=s.tick, rev=s.stats.konto.house.erloes;
     if(rev>lastRevenue){lastRevenue=rev;lastIncomeTick=tick;pauseTick=null;}
@@ -115,13 +115,14 @@ test('M4 management: continuous standard career, real decisions, audited stop or
     const f=get('freight-sh003');
     if(!p.frachtOffen&&f?.ok){
       act(f.id,'continue legal paid ice transport');
+      if(pauseTick!==null){pauseTick=null;lastRestartTick=tick;}
     }else if(!p.frachtOffen&&f&&!f.ok&&!firstBlocked){
       firstBlocked={tick,reason:deny(j,f.id)};
       snapshot(j,'first-blocked-freight');
     }
     // A one-day income drought prompts a real cost-control decision; the
     // policy does not spend private pilot wages solely to fund a buyer.
-    if(tick-lastIncomeTick>=DAY&&pauseTick===null&&!p.frachtOffen&&!f?.ok){
+    if(tick-Math.max(lastIncomeTick,lastRestartTick)>=DAY&&pauseTick===null&&!p.frachtOffen&&!f?.ok){
       pauseTick=tick;
       for(const o of j.angebote().filter(x=>x.ok&&x.id.startsWith('stop-'))){
         const id=o.id.slice(5);
@@ -139,18 +140,18 @@ test('M4 management: continuous standard career, real decisions, audited stop or
       if(ore&&pp.erzExportKasse>=pp.erzKosten){
         act(ore.id,'restart locally funded ore with real export liquidity');
         pauseTick=null;
-        lastIncomeTick=tick; // give the newly commissioned work a full observation window
+        lastRestartTick=tick; // give the newly commissioned work a full observation window
       }else if(ice&&!freight&&pp.eisLager<pp.eisCharge&&pp.eisFrei>=pp.eisCharge
         &&pp.alderaKasse>=pp.ankaufKosten&&pp.nadirKasse>=pp.nadirFrachtbedarf
         &&pp.hausKasse>=pp.frachtLohnbedarf){
         act(ice.id,'restart ice when both ends can finance a complete round');
         pauseTick=null;
-        lastIncomeTick=tick;
+        lastRestartTick=tick;
       }else if(freight){
-        pauseTick=null;lastIncomeTick=tick;
+        pauseTick=null;lastRestartTick=tick;
       }else if(tick-pauseTick>=2*DAY){
         const row=checkpoint('observed-economic-stop');
-        stop={tick,firstBlocked,pauseTick,reason:'No viable restart of selected W1/F4 strategy after two days of cost-control observation',
+        stop={tick,firstBlocked,pauseTick,lastIncomeTick,reason:'No viable restart of selected W1/F4 strategy after two days of cost-control observation',
           remainingOffers:row.offers};
         break;
       }

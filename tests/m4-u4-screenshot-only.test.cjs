@@ -131,7 +131,12 @@ for(const transport of [cfg,gemini])for(const size of ['1180x820','1024x768']){
       assert.equal(await page.evaluate(()=>localStorage.clicked),'yes');
       assert.equal(await page.evaluate(()=>scrollY),0);
      }
-     return (transport===gemini?geminiReply:reply)(steps[round]);
+     const step=steps[round];
+     if(transport===gemini&&['click','scroll'].includes(step.op)){
+      const {x,y,...rest}=step;
+      return geminiReply({...rest,xNorm:Math.round(x*1000/(width-1)),yNorm:Math.round(y*1000/(height-1))});
+     }
+     return (transport===gemini?geminiReply:reply)(step);
     }catch(error){transportError??=error;throw error;}
    }});
    if(transportError)throw transportError;
@@ -149,9 +154,8 @@ for(const transport of [cfg,gemini])for(const size of ['1180x820','1024x768']){
 }
 
 // Build an intact, small RGB image with the dimensions of the synthetic viewport.
-function mockObservation(){
+function mockObservation(width=1024,height=768){
  const {crc32,deflateSync}=require('node:zlib');
- const width=1024,height=768;
  const chunk=(type,data)=>{
   const output=Buffer.alloc(12+data.length);
   output.writeUInt32BE(data.length);output.write(type,4);data.copy(output,8);
@@ -209,9 +213,11 @@ test('Gemini visual payload ignores injected text, targets, history, dialog sche
  let request;
  const result=await ask(gemini,{...body,controls:[{id:1}],dialog:'confirm'},1000,async(url,init)=>{
   request={url,...init};
-  return geminiReply({op:'click',x:1023,y:767});
+  return geminiReply({op:'click',xNorm:1000,yNorm:1000});
  });
  assert.equal(result.reportedModel,gemini.model);
+ assert.deepEqual(result.modelAction,{op:'click',xNorm:1000,yNorm:1000});
+ assert.deepEqual(result.action,{op:'click',x:1023,y:767});
  assert.equal(request.url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent');
  assert.deepEqual(request.headers,{'Content-Type':'application/json','x-goog-api-key':'synthetic-google-key'});
  assert.doesNotMatch(request.body,/SENTINEL|synthetic-google-key|controls|targets|dialog|history/i);
@@ -226,8 +232,43 @@ test('Gemini visual payload ignores injected text, targets, history, dialog sche
   ['click','scroll','type','wait','reload','stop']);
 });
 
+
+test('Gemini explicit normalized coordinates map once to strict CSS pixels; other transports keep pixels',async()=>{
+ for(const [width,height] of [[1180,820],[1024,768]]){
+  const obs=mockObservation(width,height),body=requestBody(gemini,GOALS.A,obs,[]);
+  for(const [xNorm,yNorm] of [[0,0],[1000,0],[0,1000],[1000,1000],[173,689],[845,211],[500,500]]){
+   for(const op of ['click','scroll']){
+    const modelAction={op,xNorm,yNorm,...(op==='scroll'?{dy:-250}:{})};
+    const d=await ask(gemini,body,1000,async(url,init)=>{
+     const payload=JSON.parse(init.body);
+     const fields=payload.generationConfig.responseJsonSchema.properties.action.anyOf.find(v=>v.properties.op.enum[0]===op);
+     assert.deepEqual(fields.properties.xNorm,{type:'integer',minimum:0,maximum:1000});
+     assert.deepEqual(fields.properties.yNorm,{type:'integer',minimum:0,maximum:1000});
+     assert.equal(fields.properties.x,undefined);assert.equal(fields.properties.y,undefined);
+     assert.match(payload.systemInstruction.parts[0].text,/ganze Zahlen von 0 bis 1000, keine Pixel/);
+     return geminiReply(modelAction);
+    });
+    assert.deepEqual(d.modelAction,modelAction);
+    assert.deepEqual(d.action,{op,x:Math.round(xNorm*(width-1)/1000),y:Math.round(yNorm*(height-1)/1000),...(op==='scroll'?{dy:-250}:{})});
+   }
+  }
+  const pixels={op:'click',x:width-1,y:height-1};
+  const router=await ask(cfg,requestBody(cfg,GOALS.A,obs,[]),1000,async()=>reply(pixels));
+  assert.deepEqual(router.action,pixels);assert.equal(router.modelAction,undefined);
+  await assert.rejects(ask(cfg,requestBody(cfg,GOALS.A,obs,[]),1000,async()=>reply({op:'click',xNorm:1000,yNorm:1000})),/Invalid model decision format/);
+  const events=[],steps=[];
+  const observed={...obs,done:true,round:1,remaining:LIMIT-1};
+  const result=await run({cfg:gemini,module:'A',emit:e=>events.push(e),
+   relay:{observe:async()=>obs,step:async action=>{steps.push(action);return observed;},close:async()=>{}},
+   fetcher:async()=>geminiReply({op:'click',xNorm:1000,yNorm:1000})});
+  assert.equal(result.actions,1);assert.deepEqual(steps,[pixels]);
+  const decision=events.find(e=>e.kind==='decision');assert.deepEqual(decision.action,pixels);
+  assert.deepEqual(decision.modelAction,{op:'click',xNorm:1000,yNorm:1000});
+ }
+});
+
 test('Gemini visual terminal identity, quota and credential errors never fall back',async()=>{
- const obs=mockObservation(),click={op:'click',x:1,y:1};
+ const obs=mockObservation(),click={op:'click',xNorm:1,yNorm:1};
  for(const [response,detail,count] of [
   [()=>geminiReply(click,null),'Model identity mismatch',1],
   [()=>geminiReply(click,'gemini-3.8-flash'),'Model identity mismatch',1],
@@ -237,8 +278,8 @@ test('Gemini visual terminal identity, quota and credential errors never fall ba
   [()=>geminiReply(click,gemini.model,'MAX_TOKENS'),'Model output truncated',2],
   [()=>geminiReply(click,gemini.model,'SAFETY'),'Gemini response blocked or incomplete',2],
   [()=>new Response(' '.repeat(65537)),'Model response too large',2],
-  ...[{op:'click',x:1024,y:1},{op:'click',x:1,y:768},{op:'pick',id:1},{op:'dialog',choice:'accept'},
-   {op:'click',x:1,y:1,target:'extra'}].map(action=>[()=>geminiReply(action),'Invalid model decision format',2])
+  ...[{op:'click',xNorm:1001,yNorm:1},{op:'click',xNorm:1,yNorm:-1},{op:'click',xNorm:0.5,yNorm:100},{op:'click',xNorm:'1',yNorm:100},{op:'click',x:1,y:1},{op:'click',xNorm:1,yNorm:1,x:1},{op:'click',xNorm:1},{op:'pick',id:1},{op:'dialog',choice:'accept'},
+   {op:'click',xNorm:1,yNorm:1,target:'extra'},{op:'scroll',xNorm:1,yNorm:1,dy:1501}].map(action=>[()=>geminiReply(action),'Invalid model decision format',2])
  ]){
   const urls=[],events=[];
   const result=await run({cfg:gemini,module:'A',sleep:async()=>{},emit:x=>events.push(x),
@@ -325,7 +366,7 @@ test('Gemini visual stops at twelve actions even if the relay continues to offer
  const observe=async()=>({...obs,round:actions,remaining:LIMIT-actions});
  const result=await run({cfg:gemini,module:'A',relay:{
   observe,step:async()=>{actions++;return observe();},close:async()=>{}
- },fetcher:async()=>{requests++;return geminiReply({op:'click',x:0,y:0});}});
+ },fetcher:async()=>{requests++;return geminiReply({op:'click',xNorm:0,yNorm:0});}});
  assert.equal(result.reason,'LIMIT');
  assert.equal(result.actions,LIMIT);
  assert.equal(requests,LIMIT);

@@ -647,10 +647,12 @@ test('M4 management: published S02 opt-in, funded fleet replacement and 60-day g
   let lastRevenue=j.zustandReferenz().stats.konto.house.erloes,
     lastIncome=j.zustandReferenz().tick,lastDecision=lastIncome,lastFreight=0,
     stopped=null,lastDay=0;
-  const replacementFerries=[],blockedFerries=new Set();
+  const replacementFerries=[],blockedFerries=new Set(),recoverySources=new Map();
   while(j.zustandReferenz().tick<LIMIT){
     const s=check(j),w=j.weltReferenz(),tick=s.tick,{offers,p}=quote(j);
     if(s.stats.konto.house.erloes>lastRevenue){lastRevenue=s.stats.konto.house.erloes;lastIncome=tick;}
+    if(tick===32570||tick===7220||tick===11520||tick===27570||tick===33120)
+      recoverySources.set(tick,j.exportieren());
     if(p.frachtAbgeschlossen>lastFreight){
       lastFreight=p.frachtAbgeschlossen;
       if(lastFreight===1)checkpoint('first-paid-house-F4');
@@ -803,7 +805,111 @@ test('M4 management: published S02 opt-in, funded fleet replacement and 60-day g
     const post=quote(q).offers.find(o=>o.id==='freight-sh026');
     afterCancel={bindings:freightBindings(q),offer:post,world:w.bericht(probe)};
   }else assert.equal(w.save(probe),old);
+  // W-20261127-02 follow-up: distinguish unpaid W3 flight from already
+  // completed W1 work. Original NPC commands only on discarded save clones.
+  assert.equal(bound.industry.erzAngenommen,true);
+  assert.equal(bound.oreAtSource,9);
+  assert.equal(buyerCancel.ok,true,'current implementation allows cancellation after W1 acceptance');
+  const accounts=s=>Object.fromEntries(Object.entries(s.owners).map(([id,o])=>[id,o.cash]));
+  const owners=s=>Object.fromEntries(Object.entries(s.ships).map(([id,sh])=>[id,sh.owner]));
+  const refund=(source,label,accepted)=>{
+    const state=w.load(source),before=accounts(state),goods=JSON.stringify(state.ledger),
+      ownership=owners(state),i=structuredClone(state.kanon.industrieErz);
+    assert.equal(i.erzAngenommen,accepted);
+    const res=w.execute(state,{type:'industrialOreCancel',owner:'st_nadir'});
+    assert.equal(res.ok,true,label);
+    assert.deepEqual(pruefen(w,state),[]);
+    assert.equal(JSON.stringify(state.ledger),goods);
+    assert.deepEqual(owners(state),ownership);
+    const cash=accounts(state),deltas=Object.fromEntries(Object.keys(before)
+      .filter(id=>cash[id]!==before[id]).map(id=>[id,cash[id]-before[id]]));
+    assert.deepEqual(deltas,{st_nadir:740,transport:120,werft_extern:530,
+      w3_kauf_treuhand:-740,w3_arbeit_treuhand:-120,k7_werft_treuhand:-530});
+    assert.equal(state.w3.auftrag,null);
+    assert.equal(state.kanon.industrieErz.phase,'storniert');
+    const canceled=w.save(state);
+    assert.equal(open(canceled).exportieren(),canceled);
+    return {label,tick:state.tick,accepted,deltas,sourceUnchanged:true,json:canceled};
+  };
+  const rejectCancel=(source,label,owner='st_nadir')=>{
+    const state=w.load(source),res=w.execute(state,{type:'industrialOreCancel',owner});
+    assert.equal(res.ok,false,label);
+    assert.equal(w.save(state),source,label+' state-neutral');
+    return {label,tick:state.tick,owner,reason:res.reason};
+  };
+  // Follow the exact reached start of the final W3 reservation minute by
+  // minute; there are no real manager commands before the next day checkpoint.
+  const source=recoverySources.get(32570);
+  assert.ok(source,'actual W3 commit checkpoint');
+  assert.ok(!trace.some(x=>x.id&&x.tick>=32570&&x.tick<33120));
+  const microscopic=w.load(source);
+  const changes=[], startLedger=structuredClone(microscopic.ledger.erz);
+  assert.equal(microscopic.kanon.industrieErz.erstellt,32570);
+  assert.equal(microscopic.kanon.industrieErz.erzAngenommen,false);
+  let partial=null,unbegun=null,previous='';
+  for(let n=0;n<=550;n++){
+    const m=microscopic.ships.sh024, i=microscopic.kanon.industrieErz;
+    const row={tick:microscopic.tick,accepted:i.erzAngenommen,
+      mine:microscopic.ledger.erz.mined,export:microscopic.ledger.erz.exported,
+      ore:microscopic.stations.st_aldera.lager.erz,cargo:m.ladung.erz??0,
+      contract:microscopic.erzpilotVertraege?.sh024??null,
+      flight:m.flug.lage,order:m.auftrag};
+    if(JSON.stringify({...row,tick:0})!==previous){
+      changes.push(structuredClone(row));previous=JSON.stringify({...row,tick:0});
+    }
+    if(!partial&&!i.erzAngenommen&&row.cargo>0&&row.contract)
+      partial=w.save(microscopic);
+    if(!unbegun&&!i.erzAngenommen&&!row.contract&&!row.cargo&&m.flug.lage==='angedockt')
+      unbegun=w.save(microscopic);
+    if(n<550)w.advance(microscopic,1);
+  }
+  assert.equal(w.save(microscopic),recoverySources.get(33120),'minute trace matches actual career checkpoint');
+  assert.ok(partial,'real positive partial W1 cargo');
+  assert.equal(microscopic.ledger.erz.mined-startLedger.mined,50);
+  assert.equal(microscopic.ledger.erz.exported-startLedger.exported,41);
+  assert.equal(microscopic.stations.st_aldera.lager.erz,9);
+  const acceptance=changes.find(x=>x.accepted);
+  assert.ok(acceptance);
+  // Earlier reached checkpoints cover empty cancellation and actual W3 transit.
+  const emptySource=unbegun??recoverySources.get(7220);
+  assert.ok(emptySource);
+  const empty=w.load(emptySource);
+  assert.equal(empty.kanon.industrieErz.erzAngenommen,false);
+  assert.equal(empty.erzpilotVertraege?.[empty.w3.auftrag.industrieMiner],undefined);
+  const activeSource=recoverySources.get(27570);
+  assert.equal(w.load(activeSource).w3.auftrag.phase,'rueck');
+  const cases=[rejectCancel(emptySource,'foreign house','house'),
+    rejectCancel(emptySource,'foreign carrier','transport'),
+    rejectCancel(partial,'real partial ore'),
+    rejectCancel(activeSource,'active W3 return')];
+  const emptyRefund=refund(emptySource,'unbegun W3/W1',false);
+  const lateRefund=refund(old,'W1 accepted, W3 still unbegun (existing behavior, NOT proposed automatic recovery)',true);
+  // Counterfactual only: the current command permits the late refund.
+  // This is a feasibility demonstration, not an endorsement of this cancellation.
+  const runF4=()=>{
+    let q=open(lateRefund.json);
+    const b=q.zustandReferenz().kanon.spielerFrachten;
+    const count=b.auftraege.length,fees=b.gebuehr,lohn=b.lohn,tick=q.zustandReferenz().tick;
+    assert.equal(q.ausfuehren('freight-sh026').ok,true);
+    q.weiterspielen(60);
+    const mid=q.exportieren();q=open(mid);
+    assert.equal(q.exportieren(),mid);
+    q.weiterspielen(60);
+    const result=check(q).kanon.spielerFrachten, last=result.auftraege.at(-1);
+    assert.equal(result.auftraege.length,count+1);
+    assert.deepEqual([last.schiff,last.start,last.geliefert,last.end,last.menge,
+      result.gebuehr-fees,result.lohn-lohn],['sh026',tick,tick+60,tick+120,50,240,120]);
+    return {receipt:last,hash:q.ansicht().hash,json:q.exportieren()};
+  };
+  const counter=runF4();assert.equal(runF4().json,counter.json);
   assert.equal(j.exportieren(),old);
+  console.log('M4_MANAGEMENT_60D_W3_RECOVERY',JSON.stringify({
+    start:32570,end:33120,changes,acceptance,
+    rejected:cases,refunds:[emptyRefund,lateRefund].map(({json,...rest})=>rest),
+    counterfactual:{receipt:counter.receipt,hash:counter.hash,replay:true},
+    actualSourceUnchanged:true,
+    scope:'No NPC command in actual manager trace. Existing late cancellation permits W1-accepted case; not a safe automatic empty cancellation. No rule change.'
+  }));
   console.log('M4_MANAGEMENT_60D_W3_BINDING',JSON.stringify({tick:end.tick,hash:end.hash,
     bindings:bound,playerCancel,ownCancel,buyerCancel,afterCancel,
     sourceUnchanged:true,scope:'Counterfactual legal-owner command on isolated save only; no NPC impersonation or cancellation in actual manager trace.'}));

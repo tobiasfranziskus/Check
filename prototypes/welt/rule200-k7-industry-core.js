@@ -1991,7 +1991,11 @@ const m_core_erzpilot = (() => {
       if(npcErzSchutzProfil(state,rules)){
         // A partial W1 sale is paid normally, but never certifies the full W3
         // quantity. The existing prebook does not yet guarantee W1 capacity.
-        if(menge===a.menge && v.menge===a.menge && npcErzVertragGedeckt(state,rules,a)
+        // Only the first full acceptance can create the new proof. A
+        // historically accepted contract is not retroactively certified by
+        // a later ordinary W1 sale, even if its old cargo was exported.
+        if(state.kanon.industrieErz.erzAngenommen===false && a.npcErzReserviert===undefined
+          && menge===a.menge && v.menge===a.menge && npcErzVertragGedeckt(state,rules,a)
           && (state.stations[rules.w3.quellStation].lager.erz??0)>=a.menge){
           state.kanon.industrieErz.erzAngenommen=true;
           a.npcErzReserviert=menge;

@@ -9,6 +9,8 @@ const NODE=typeof module==='object'&&module.exports;
 const W=NODE?require('../welt/welt-kern.js'):scope.AphrosWelt;
 const J7=NODE?require('./kompatibilitaet.js'):scope.J7UebernahmeCheck;
 const J6=NODE?require('../j4c/flotten-wechsel.js'):scope.J6FlottenWechsel;
+const OLD=NODE?require('../w5ac/session.js'):scope.W5acSession;
+const normaleRegel=v=>v===204||v===208;
 if(!W||!J7)throw Error('J8 benötigt die vorhandenen Core- und J7-Prüfer');
 const MAX=5*1024*1024;
 const KETTE=Object.freeze([
@@ -29,7 +31,7 @@ function haushaltPlan(s,welt){
  // The 204 world already implements householdBuy, local water stock and exact ledger
  // transfers; no new buyer budget, revenue, economic rule or household authority.
  const w5n=welt?.rules?.w5n,preis=W.DATEN.wasser.preisAldera;
- if(s.rulesVersion===204 && w5n && Number.isSafeInteger(preis) && preis>0
+ if(normaleRegel(s.rulesVersion) && w5n && Number.isSafeInteger(preis) && preis>0
     && s.owners.pilot_house && s.owners.st_aldera){
    plan.push(Object.freeze({id:'water-pilot-house-1',
      label:'Eine Einheit Aldera-Wasser aus persönlichem Pilotenlohn kaufen',
@@ -50,7 +52,7 @@ function haushaltPlan(s,welt){
      hinzu('ice-'+sh.id,'Eisförderung mit '+sh.id+' (Original-Pendel)',{type:'shipShuttle',schiff:sh.id,ware:'eis'});
      // Existing W1 escrow, ore field and finite original export demand.
      // The J8 core quote validates buyer cash, own wages, ship ownership and dock.
-     if(s.rulesVersion===204)
+     if(normaleRegel(s.rulesVersion))
        hinzu('ore-'+sh.id,'Erzförderung und bezahlte Aldera-Abnahme mit '+sh.id,
          {type:'shipShuttle',schiff:sh.id,ware:'erz'});
    }
@@ -64,7 +66,7 @@ function haushaltPlan(s,welt){
    hinzu('gate-freight-'+sh.id,'F6 · Eis-Rundfracht mit Torbeleg '+sh.id,{type:'shipFreightGateIce',schiff:sh.id});
    // Rule204 already accepts the house as original W5ac owner: this only exposes
    // the fully wage-funded Nadir -> Aldera ferry, never a free cockpit teleport.
-   if(s.rulesVersion===204&&sh.system==='nadir'&&sh.heimat==='nadir'
+   if(normaleRegel(s.rulesVersion)&&sh.system==='nadir'&&sh.heimat==='nadir'
      &&s.w5?.schiffIds?.includes(sh.id))
      hinzu('reposition-'+sh.id,'W5ac · eigene Werfthuelle bezahlt nach Aldera ueberfuehren',
        {type:'shipReposition',schiff:sh.id});
@@ -131,6 +133,36 @@ function erstellen(){
    if(report.eigenerJägerGekauft||Object.values(letzter.zustand.ships).some(sh=>sh.klasse==='jaeger'))
      throw Error('J8: Quelldaten dürfen keinen bereits herbeigezauberten Jäger enthalten');
    return aktivieren(letzter.welt,letzter.zustand,'Kopie aus Regel195',quellHash);
+ }
+ // Fresh genesis only: no caller-supplied old save, no migration API.
+ // Generate the same audited new-carer starting assets from the pinned
+ // original Rule195 seed path, never reinterpret an existing career.
+ function starten208(bestaetigt,s02=false){
+   if(bestaetigt!==true||welt||typeof s02!=='boolean'||!OLD)
+     throw Error('Regel208: neuen getrennten Karrierestart ausdrücklich bestätigen');
+   const genesis=erstellen();
+   genesis.starten195(OLD.create(42,'private195').export(),true);
+   const original=genesis.exportieren(),raw=paket(original),p=raw.w5ad.profile;
+   if(raw.tick!==0||raw.rulesVersion!==204||raw.owners.house.cash!==3000
+     ||raw.w3.auftrag||raw.w5n.frachtauftrag||raw.w5ac.active)
+     throw Error('Regel208: ausschließlich neuer geprüfter Startstand');
+   const w=W.erstellenNpcErz208({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+   raw.rulesVersion=208;
+   const state=w.load(w.canonical(raw));
+   if(s02){
+     w.politikSetzen(state,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
+     w.npcAutoSetzen(state,true);w.npcSiliziumSetzen(state,true);
+   }
+   return aktivieren(w,state,s02?'Neue Regel208-S02-Karriere':'Neue Regel208-Standardkarriere',
+     genesis.ansicht().hash);
+ }
+ function oeffnen208(text,bestaetigt){
+   if(bestaetigt!==true||welt)throw Error('Regel208: getrennten Spielstand ausdrücklich bestätigen');
+   const raw=paket(text),p=raw.w5ad?.profile;
+   if(raw.rulesVersion!==208||raw.schema!==8||!safe(p?.carrierCash)||!safe(p?.buyerCash))
+     throw Error('Nur Original-Regel208 mit vollständiger Anfangsfinanzierung; keine Migration');
+   const w=W.erstellenNpcErz208({carrierCash:p.carrierCash,buyerCash:p.buyerCash}),state=w.load(text);
+   return aktivieren(w,state,'Fortgesetzter Regel208-Export',w.hash(state));
  }
  function oeffnen204(text,bestaetigt){
    if(bestaetigt!==true)throw Error('J8: ausdrückliche Spielstandauswahl erforderlich');
@@ -233,7 +265,8 @@ function erstellen(){
      eigenerJaeger:jaeger.length, pilotierbar:schiffe.some(sh=>['jaeger','miner','frachter'].includes(sh.klasse)),
      ausgabe:welt.hausErzProfil?'Haus-Erz · getrennter Spielstand':welt.regel===207
        ?'Regel207 – isolierte Forschungskopie, kein automatisches Upgrade oder Import in 204'
-       :'Regel204 – manuelle JSON-Sicherung, kein automatischer Rückweg nach Regel195'
+       :welt.regel===208?'Regel208 – neue Karriere, getrennt von Regel204':
+         'Regel204 – manuelle JSON-Sicherung, kein automatischer Rückweg nach Regel195'
    });
  }
  function angebot(cmd,mitKaufPlan=false){
@@ -250,7 +283,7 @@ function erstellen(){
        &&clone.w5ac?.active?.id===cmd.schiff ?clone.w5ac.active:null;
      let kaufPlan;
      if(mitKaufPlan&&result.ok&&cmd.type==='shipBuy'&&cmd.station==='st_nadir'&&cmd.klasse==='frachter'
-       &&zustand.rulesVersion===204){
+       &&normaleRegel(zustand.rulesVersion)){
        const schiff=clone.w5?.schiffIds?.find(id=>clone.ships[id]?.owner==='house'
          &&zustand.ships[id]?.owner!=='house');
        kaufPlan={kaufpreis:zustand.owners.house.cash-clone.owners.house.cash,
@@ -426,7 +459,7 @@ function erstellen(){
  function flugAudit(){requireState();return welt.audit(zustand);}
 
  function exportieren(){requireState();return welt.save(zustand);}
- return Object.freeze({starten195,oeffnen204,oeffnenHausErz,startenPiraten,oeffnenPiraten,startenP8g,oeffnenP8g,ansicht,angebote,ausfuehren,weiterspielen,exportieren,
+ return Object.freeze({starten195,oeffnen204,starten208,oeffnen208,oeffnenHausErz,startenPiraten,oeffnenPiraten,startenP8g,oeffnenP8g,ansicht,angebote,ausfuehren,weiterspielen,exportieren,
   piloten,uebernehmen,pilotStatus,flugBefehl,flugAngebot,flugSchritte,weltReferenz,zustandReferenz,flugAudit});
 }
 const API=Object.freeze({erstellen});

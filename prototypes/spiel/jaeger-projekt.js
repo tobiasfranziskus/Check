@@ -10,7 +10,7 @@ const gruppen=Object.freeze([
 ]);
 function erstellen(sitzung){
  const w=sitzung.weltReferenz(),s=sitzung.zustandReferenz();
- if(![204,207].includes(w?.rules.rulesVersion)||s?.rulesVersion!==w.rules.rulesVersion)throw Error('J13b: originale Regel204/207 erforderlich');
+ if(![204,207,208].includes(w?.rules.rulesVersion)||s?.rulesVersion!==w.rules.rulesVersion)throw Error('J13b: originale Regel204/207 erforderlich');
  const angebote=sitzung.angebote();
  const probe=cmd=>{
   const clone=w.load(sitzung.exportieren());

@@ -17,7 +17,7 @@ const safe=n=>Number.isSafeInteger(n)&&n>=0;
 const zeit=s=>s.tick*F.DATEN.schritteJeMinute+s.flug.schritt;
 const ansicht=p=>({sekunden:p.sekunden,zielprobe:p.zielprobe});
 function besitzer(w,s,id) {
- if(!w||w.regel!==204||s?.rulesVersion!==204||!w.audit(s).ok)
+ if(!w||![204,208].includes(s?.rulesVersion)||w.regel!==s.rulesVersion||!w.audit(s).ok)
    throw Error('Nur auditiert bezahlte Regel204-Welt');
  const sh=s.ships?.[id],belege=s.kanon?.jaeger?.kaeufe;
  if(!sh||sh.id!==id||sh.owner!=='house'||sh.klasse!=='jaeger'

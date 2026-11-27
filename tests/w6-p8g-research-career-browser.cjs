@@ -5,6 +5,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const oldSlot='aphros-void:spielerkarriere:regel204:v1';
+const newSlot='aphros-void:spielerkarriere:regel208:v1';
 const researchSlot='aphros-void:spielerkarriere:regel207-forschung:v1';
 const sizes=[[1180,820],[1024,768],[820,1180],[390,844]];
 const root=path.resolve(__dirname,'..');
@@ -108,13 +109,14 @@ const total=s=>Object.values(s.owners).reduce((n,o)=>n+o.cash,0);
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),researchSlot),paid);
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),researchSlot+':vorherige'),paid);
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),oldSlot),null);
-    // Original 204 starts in its OWN slot even when 207 research exists.
+    // New 208 starts in its OWN slot even when 207 research exists.
     await page.goto(url);
     await page.locator('#neues-spiel').tap();
     await page.locator('#karriere-starten').tap();
     assert.equal(await page.locator('#spielwelt').isVisible(),true);
-    const legacy=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),oldSlot));
-    assert.equal(legacy.rulesVersion,204);
+    const legacy=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),newSlot));
+    assert.equal(legacy.rulesVersion,208);
+    assert.equal(await page.evaluate(k=>localStorage.getItem(k),oldSlot),null);
     assert.equal(total(legacy),33000);
     assert.equal(await page.evaluate(k=>localStorage.getItem(k),researchSlot),paid);
     assert.deepEqual(errors,[],'Browser error-free for both worlds in one public P1 shell');

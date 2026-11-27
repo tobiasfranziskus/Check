@@ -166,7 +166,7 @@ function pruefen(state, cmd, flug = FLUG) {
     return 'Schiff ist nicht im freien Flug';
   const sys = flug.systeme[s.system];
   if (['shipOrbit','shipFollow','shipLock','shipUnlock'].includes(cmd.type)) {
-    if (state.rulesVersion !== 204) return 'P2 verlangt Regel204';
+    if (![204,208].includes(state.rulesVersion)) return 'P2 verlangt Regel204';
     if (cmd.type !== 'shipUnlock') {
       const z = {art: cmd.type === 'shipFollow' ? 'schiff' : cmd.zielArt, id: cmd.ziel, x: cmd.x, y: cmd.y};
       if (!zielObjekt(state, s, z, flug) || (cmd.type === 'shipLock' && z.art === 'punkt')) return 'Ziel nicht verfügbar';
@@ -343,7 +343,7 @@ function audit(state, flug = FLUG) {
     if (!ganz(b.x, -R, R) || !ganz(b.y, -R, R) || !ganz(b.vx, -k.vmax, k.vmax) || !ganz(b.vy, -k.vmax, k.vmax)
       || !ganz(b.kurs, 0, 255) || !ganz(b.sollKurs, 0, 255) || !ganz(b.sollFahrt, 0, 100))
       return fehler(id + ': Flugzahl außerhalb des Wertebereichs');
-    if (!LAGEN.includes(b.lage) || !['hand', 'anflug', 'halt', ...(state.rulesVersion === 204 ? ['orbit','folgen'] : [])].includes(b.modus) || typeof b.andocken !== 'boolean')
+    if (!LAGEN.includes(b.lage) || !['hand', 'anflug', 'halt', ...([204,208].includes(state.rulesVersion) ? ['orbit','folgen'] : [])].includes(b.modus) || typeof b.andocken !== 'boolean')
       return fehler(id + ': unbekannte Lage oder Steuerart');
     if ((b.lage === 'transit') !== (s.phase === 'reise')) return fehler(id + ': Transit passt nicht zur Core-Phase');
     const fest = b.lage === 'angedockt' || b.lage === 'andocken' || b.lage === 'abdocken';
@@ -359,7 +359,7 @@ function audit(state, flug = FLUG) {
     if (b.lage === 'angedockt' && (b.x !== sys.station.x || b.y !== sys.station.y)) return fehler(id + ': angedockt, aber nicht am Dock');
     const sequenz = b.lage === 'andocken' || b.lage === 'abdocken';
     if (!ganz(b.rest, sequenz ? 1 : 0, sequenz ? flug.andocken.schritte : 0)) return fehler(id + ': Sequenzzähler ungültig');
-    if (Object.hasOwn(b,'erfassung') && !(state.rulesVersion === 204 && b.erfassung && Object.keys(b.erfassung).sort().join() === 'art,id' && ['station','feld','schiff'].includes(b.erfassung.art) && zielForm(state,s,b.erfassung,flug))) return fehler(id + ': Zielerfassung ungültig');
+    if (Object.hasOwn(b,'erfassung') && !([204,208].includes(state.rulesVersion) && b.erfassung && Object.keys(b.erfassung).sort().join() === 'art,id' && ['station','feld','schiff'].includes(b.erfassung.art) && zielForm(state,s,b.erfassung,flug))) return fehler(id + ': Zielerfassung ungültig');
     const z = b.ziel;
     if (b.modus === 'orbit' || b.modus === 'folgen') {
       const distanz = b.modus === 'orbit' ? 'radius' : 'abstand';

@@ -91,8 +91,10 @@ const PIR = Object.freeze({ owner:'piraten', pilot:'pilot_piraten', schiff:'pir0
   sicherheit:Object.freeze({aldera:'sicher',cyris:'sicher',veldra:'sicher',
     orion:'umkaempft',nadir:'umkaempft',dravos:'gesetzlos',meridian:'gesetzlos'}) });
 
-function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false, piraten = false, hausErz = false) {
+function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = false, jaeger = false, jaegerFlug = false, p8bZweiFelder = false, p8cDravos = false, p8dFracht = false, piraten = false, hausErz = false, npcErzRevision = false) {
   const { KANON } = m_data_kanon;
+  if(npcErzRevision && (!k7||!silizium||!bauteile||!jaeger||!jaegerFlug||p8bZweiFelder||p8cDravos||p8dFracht||piraten||hausErz))
+    throw Error('Regel208: ausschließlich neues Standard-/S02-Profil');
   const ort = Object.freeze({
     imFeld: (sh, ware) => FLUG.imFeld(sh, ware),
     angedocktAn: (sh, station) => FLUG.angedocktAn(sh, station),
@@ -102,13 +104,13 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
   const engine = k7 ? (p8dFracht ? FACTORY.createP8dWelt(startkapital,ort) :
     p8cDravos ? FACTORY.createP8cWelt(startkapital,ort) :
     p8bZweiFelder ? FACTORY.createP8bWelt(startkapital,ort) :
-    jaegerFlug ? (hausErz ? FACTORY.createHausErzWelt(startkapital,ort) : FACTORY.createJ4cWelt(startkapital,ort)) :
+    jaegerFlug ? (npcErzRevision ? FACTORY.createNpcErz208Welt(startkapital,ort) : hausErz ? FACTORY.createHausErzWelt(startkapital,ort) : FACTORY.createJ4cWelt(startkapital,ort)) :
     jaeger ? FACTORY.createJ4bWelt(startkapital,ort) :
     bauteile ? FACTORY.createJ3Welt(startkapital,ort) :
     silizium ? FACTORY.createJ2bWelt(startkapital, ort)
     : FACTORY.createK7Welt(startkapital, ort)) : FACTORY.createKanonWelt(startkapital, ort);
   const kern = engine.core, rules = engine.rules;
-  if (rules.rulesVersion !== (p8dFracht ? 207 : p8cDravos ? 206 : p8bZweiFelder ? 205 : jaegerFlug ? 204 : jaeger ? 203 : bauteile ? 202 : silizium ? 201 : k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
+  if (rules.rulesVersion !== (npcErzRevision ? 208 : p8dFracht ? 207 : p8cDravos ? 206 : p8bZweiFelder ? 205 : jaegerFlug ? 204 : jaeger ? 203 : bauteile ? 202 : silizium ? 201 : k7 ? 200 : KANON.regel) || rules.schema !== KANON.schema || !rules.kanon || !rules.w5n || !rules.w5ag)
     throw Error('K1: unerwartetes Kernprofil');
   const N = FLUG.DATEN.schritteJeMinute;
   const W = rules.w5n;
@@ -1053,7 +1055,7 @@ function erstellen(startkapital = {}, k7 = false, silizium = false, bauteile = f
           // A Nadir-built W5 hull keeps its immutable origin after the ORIGINAL
           // fully paid W5ac ferry. Only its audited, completed, pre-contract
           // ferry receipt makes it an Aldera freight carrier (Rule204 only).
-          || (sh.heimat !== 'aldera' && !(rules.rulesVersion === 204
+          || (sh.heimat !== 'aldera' && !([204,208].includes(rules.rulesVersion)
             && sh.heimat === 'nadir' && s.w5?.schiffIds?.includes(sh.id)
             && s.w5ac?.completed?.some(t => t.id === sh.id
               && t.owner === owner && t.ankunft <= x.start)))
@@ -3006,6 +3008,7 @@ const api = Object.freeze({ erstellen, erstellenK7:(kapital={})=>erstellen(kapit
   erstellenJ3:(kapital={})=>erstellen(kapital,true,true,true),
   erstellenJ4b:(kapital={})=>erstellen(kapital,true,true,true,true),
   erstellenJ4c:(kapital={})=>erstellen(kapital,true,true,true,true,true),
+  erstellenNpcErz208:(kapital={})=>erstellen(kapital,true,true,true,true,true,false,false,false,false,false,true),
   erstellenHausErz:(kapital={})=>erstellen(kapital,true,true,true,true,true,false,false,false,false,true),
   erstellenPiraten:()=>erstellen({carrierCash:2000,buyerCash:4000},true,true,true,true,true,false,false,false,true),
   // Nur experimenteller Rule205-Bergbau in zwei getrennten Nadir-Feldern.

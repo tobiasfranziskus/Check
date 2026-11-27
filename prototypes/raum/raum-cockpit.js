@@ -317,7 +317,7 @@ function verbinden(B) {
       neuBauen('flotte', 'leer', $('raum-flotte'), () => [absatz('Kein Weltstand geladen.', 'note')]);
       return;
     }
-    const a = sz.aktiv, frei = a.lage === 'frei', jaeger = a.id === sz.jaeger && a.klasse === 'jaeger' && sz.regel === 204, d = B.duellStand(), p = B.patrouilleStand();
+    const a = sz.aktiv, frei = a.lage === 'frei', jaeger = a.id === sz.jaeger && a.klasse === 'jaeger' && [204,208].includes(sz.regel), d = B.duellStand(), p = B.patrouilleStand();
     const LAGE = { angedockt: 'Im Dock', frei: ['orbit','folgen'].includes(a.modus) ? 'Autopilot: ' + a.modus : a.modus === 'anflug' ? 'Autopilot: Anfliegen' : a.modus === 'hand' ? 'Handflug' : 'Freier Flug – Halt',
       andocken: 'Dockt an …', abdocken: 'Legt ab …', transit: 'Transit' };
     const zielName = (z) => z ? z.art === 'punkt' ? 'Raumpunkt (' + fmt(z.x) + ', ' + fmt(z.y) + ')' : S.objekt(sz, z.id)?.name || 'Ziel nicht mehr verfügbar' : 'Kein Flugziel';
@@ -336,7 +336,7 @@ function verbinden(B) {
     setzen('raum-lage', (LAGE[a.lage] || a.lage) + (a.gestrandet ? ' · NICHT FINANZIERT' : '') + (a.erfassung ? ' · Aufgeschaltet: ' + a.erfassung.id : ''));
     setzen('raum-fahrt', fmt(a.fahrt) + ' P/s · Kurs ' + a.kurs + '/256');
     let zusatz = 'Fracht: ' + a.ladung;
-    if(a.klasse==='frachter'&&a.lage==='transit')zusatz+=' · Vertragsfahrt: Regel204 sperrt freie Steuerung; Lieferung und Rückkehr im Original-Core';
+    if(a.klasse==='frachter'&&a.lage==='transit')zusatz+=' · Vertragsfahrt: Regel'+sz.regel+' sperrt freie Steuerung; Lieferung und Rückkehr im Original-Core';
     if (sz.bergbau && sz.bergbau.auftrag) zusatz = 'Silizium ' + sz.bergbau.auftrag.gefoerdert + '/' + sz.bergbau.auftrag.menge + (sz.bergbau.imFeld ? ' · Förderlage erreicht' : frei ? ' · im Feld unter ' + sz.bergbau.regel.abbauTempo + ' P/s halten' : '');
     else if (jaeger && p.status !== 'nicht gestartet') zusatz = 'Patrouille ' + p.status + ' · ' + p.erreicht + '/' + B.bojen.length;
     if (jaeger && d && d.status !== 'nicht gestartet') zusatz = 'Training ' + d.status + ' · Treffer ' + d.treffer + '/3 · Gegentreffer ' + d.gegnerTreffer + '/4';

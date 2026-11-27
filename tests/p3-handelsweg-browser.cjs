@@ -6,7 +6,7 @@ const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const W=require('../prototypes/welt/welt-kern.js');
 const root=path.resolve(__dirname,'..');
-const SLOT='aphros-void:spielerkarriere:regel204:v1';
+const SLOT='aphros-void:spielerkarriere:regel208:v1';
 const server=http.createServer((req,res)=>{
  const pathname=new URL(req.url,'http://localhost').pathname;
  const file=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));
@@ -71,7 +71,7 @@ async function karrierestart(browser,kind){
     await booking.tap();
    }
    const json=await save(),state=JSON.parse(json);
-   const world=W.erstellenJ4c({carrierCash:state.w5ad.profile.carrierCash,buyerCash:state.w5ad.profile.buyerCash});
+   const world=W.erstellenNpcErz208({carrierCash:state.w5ad.profile.carrierCash,buyerCash:state.w5ad.profile.buyerCash});
    const loaded=world.load(json);
    assert.equal(world.audit(loaded).ok,true);
    assert.equal(state.tick,ausverkauft?1:0);
@@ -183,8 +183,8 @@ async function karrierestart(browser,kind){
     assert.match(await page.locator('#p3-handelsstand').innerText(),/1 bezahlte Rundfahrt · 240 ISK Frachtgebühren · 120 ISK Fluglöhne/);
     const firstSave=await page.evaluate(k=>localStorage.getItem(k),SLOT);
     const first=JSON.parse(firstSave);
-    const world=W.erstellenJ4c({carrierCash:first.w5ad.profile.carrierCash,buyerCash:first.w5ad.profile.buyerCash});
-    assert.equal(first.rulesVersion,204);
+    const world=W.erstellenNpcErz208({carrierCash:first.w5ad.profile.carrierCash,buyerCash:first.w5ad.profile.buyerCash});
+    assert.equal(first.rulesVersion,208);
     assert.equal(first.kanon.spielerFrachten.gebuehr,240);
     assert.equal(first.kanon.spielerFrachten.lohn,120);
     assert.deepEqual(Object.values(first.ships).filter(sh=>sh.owner==='house').map(sh=>sh.klasse).sort(),['frachter','miner']);
@@ -203,7 +203,7 @@ async function karrierestart(browser,kind){
     console.log('M0_MANAGER_BROWSER_OK',JSON.stringify({kind,width,height,firstHash}));
     for(let i=0;i<45;i++){
      const json=await page.evaluate(k=>localStorage.getItem(k),SLOT);
-     const s=JSON.parse(json),w=W.erstellenJ4c({carrierCash:s.w5ad.profile.carrierCash,buyerCash:s.w5ad.profile.buyerCash});
+     const s=JSON.parse(json),w=W.erstellenNpcErz208({carrierCash:s.w5ad.profile.carrierCash,buyerCash:s.w5ad.profile.buyerCash});
      assert.equal(w.audit(w.load(json)).ok,true);
      assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),33000);
      assert.equal(s.minted,0);assert.equal(s.burned,0);
@@ -251,7 +251,7 @@ async function karrierestart(browser,kind){
     assert.ok(newMiner,'a second actual owned miner, never gifted');
     assert.equal(invested.owners.house.cash,1994,'exact original 600 ISK purchase');
     assert.equal(invested.stations.st_aldera.lager.miner,1,'original stock consumed once');
-    const wInvest=W.erstellenJ4c({carrierCash:invested.w5ad.profile.carrierCash,buyerCash:invested.w5ad.profile.buyerCash});
+    const wInvest=W.erstellenNpcErz208({carrierCash:invested.w5ad.profile.carrierCash,buyerCash:invested.w5ad.profile.buyerCash});
     const loaded=wInvest.load(investedText);
     assert.equal(wInvest.audit(loaded).ok,true);
     assert.equal(wInvest.buchwert(loaded,newMiner.id),600);

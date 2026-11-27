@@ -6,7 +6,7 @@ const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const W=require('../prototypes/welt/welt-kern.js');
 const P8=require('../prototypes/spiel/silizium-versorgung.js');
-const SLOT='aphros-void:spielerkarriere:regel204:v1';
+const SLOT='aphros-void:spielerkarriere:regel208:v1';
 (async()=>{
  const root=path.resolve(__dirname,'..');
  const server=http.createServer((req,res)=>{
@@ -42,7 +42,7 @@ const SLOT='aphros-void:spielerkarriere:regel204:v1';
     assert.equal(await page.locator('#w6-status').isVisible(),true);
     const original=await page.evaluate(k=>localStorage.getItem(k),SLOT);
     const before=JSON.parse(original),p=before.w5ad.profile;
-    const w=W.erstellenJ4c({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
+    const w=W.erstellenNpcErz208({carrierCash:p.carrierCash,buyerCash:p.buyerCash});
     assert.equal(w.audit(w.load(original)).ok,true);
     assert.equal(before.owners.house.cash,3000);
     await page.locator('#tab-jaeger').tap();

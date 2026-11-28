@@ -68,8 +68,9 @@ for(const module of Object.keys(IDS208))test('Rule208 '+module+' real file impor
   }});
   const first=await s.observe();assert.equal(first.round,0);assert.equal(first.remaining,12);
   assert.equal(first.error,undefined);
-  assert.equal(first.visibleText,undefined);
+  assert.equal(first.visibleText,undefined);assert.ok(Buffer.isBuffer(first.image));assert.equal(first.screenshot,'round-00.png');
   const next=await s.step({op:'wait',ms:0});assert.equal(next.round,1);assert.equal(next.error,undefined);
+  assert.ok(Buffer.isBuffer(next.image));assert.equal(next.visibleText,undefined);
  }finally{if(s)await s.close();fs.rmSync(out,{recursive:true,force:true});}
 });
 test('Rule208 import and default resume preserve the separate historical Rule204 career',{skip:!process.env.M4_UI_BROWSER,timeout:60000},async()=>{
@@ -84,9 +85,18 @@ test('Rule208 import and default resume preserve the separate historical Rule204
    await page.locator('#manager-transport-status').waitFor({state:'visible'});
    const slots=()=>page.evaluate(keys=>keys.map(k=>localStorage.getItem(k)),[SLOT,SLOT208]);
    assert.deepEqual(await slots(),[old.json,fresh.json]);
+   await page.locator('[data-advance="60"]').click();
+   await page.waitForFunction(k=>JSON.parse(localStorage.getItem(k)).tick===60,SLOT208);
+   const advanced=(await slots())[1];
+   assert.equal(JSON.parse(advanced).rulesVersion,208);
+   assert.equal((await slots())[0],old.json);
    await page.reload();await page.locator('#fortsetzen-204').click();
    await page.locator('#manager-transport-status').waitFor({state:'visible'});
-   assert.deepEqual(await slots(),[old.json,fresh.json]);
+   assert.deepEqual(await slots(),[old.json,advanced]);
+   await page.locator('[data-advance="60"]').click();
+   await page.waitForFunction(k=>JSON.parse(localStorage.getItem(k)).tick===300,SLOT);
+   assert.equal(JSON.parse((await slots())[0]).rulesVersion,204);
+   assert.equal((await slots())[1],advanced);
   }});
   assert.equal((await s.observe()).error,undefined);
  }finally{if(s)await s.close();fs.rmSync(out,{recursive:true,force:true});}

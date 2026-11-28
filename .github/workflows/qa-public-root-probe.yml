@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
-      EXPECT_SHA: 1201be7bcfceac0aeb3dcd7030de8ecd9e357201
-      EXPECT_RULE: '204'
+      EXPECT_SHA: 8607b71e7a11ff12b45d0749620ce1f9e4f2e269
+      EXPECT_RULE: '208'
       PUBLIC_ROOT: https://tobiasfranziskus.github.io/Check/
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
           const key = 'aphros-void:spielerkarriere:regel' + rule + ':v1';
           const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
           (async () => {
-            const files = ['index.html','prototypes/spiel/index.html','prototypes/spiel/spiel.js','prototypes/spiel/spiel.css','prototypes/verbund/konzern-session.js','prototypes/welt/welt-kern.js','prototypes/welt/rule200-k7-industry-core.js'];
+            const files = ["index.html","prototypes/spiel/index.html","prototypes/spiel/spiel.js","prototypes/spiel/spiel.css","prototypes/verbund/konzern-session.js","prototypes/welt/welt-kern.js","prototypes/welt/rule200-k7-industry-core.js","prototypes/flug2d/flug-kern.js","prototypes/j4c/duell.js","prototypes/j4c/flotten-wechsel.js","prototypes/j4c/patrouille.js","prototypes/raum/raum-cockpit.js","prototypes/raum/raum-szene.js","prototypes/spiel/jaeger-akte.js","prototypes/spiel/jaeger-projekt.js","prototypes/spiel/p3-handelsweg.js","prototypes/spiel/p3-industrie.js","prototypes/spiel/p3-investition.js","prototypes/spiel/p3-manager-disposition.js","prototypes/spiel/p3-npc-markt.js","prototypes/spiel/p3-npc-werft.js","prototypes/spiel/p3-wasserlohn.js","prototypes/spiel/silizium-versorgung.js","prototypes/tutorial-manager/manager.js","prototypes/tutorial-pilot/akademie.js","prototypes/welt/j2b-silizium-core.js","prototypes/welt/j3-bauteil-core.js","prototypes/welt/j4b-jaeger-werft-core.js"];
             for (const file of files) {
               const url = new URL(file === 'index.html' ? './' : file, base);
               url.searchParams.set('qa', process.env.EXPECT_SHA);

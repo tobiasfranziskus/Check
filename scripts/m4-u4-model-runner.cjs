@@ -518,7 +518,8 @@ async function main(){
  const prepared=(cfg.screenshotOnly||process.env.M4_PREPARED_START==='1')&&module!=='A';
  if(prepared&&fs.realpathSync(root)!==fs.realpathSync(path.resolve(__dirname,'..')))throw Error('Prepared start requires matching product checkout');
  const setup=prepared?require('./m4-u4-startstand.cjs'):null;
- const fixture=setup?setup.prepare(module):null;
+ // The new formal standard career is Rule208. Historical Rule204 fixtures remain available only to diagnostics.
+ const fixture=setup?setup.prepare208(module):null;
  const out=fs.mkdtempSync(path.join(os.tmpdir(),'m4-u4-model-'));
  const file=path.join(out,'evidence.jsonl');
  const emit=x=>fs.appendFileSync(file,JSON.stringify(x)+'\n',{mode:0o600});

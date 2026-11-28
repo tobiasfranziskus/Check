@@ -90,7 +90,12 @@ test('Rule208 import and default resume preserve the separate historical Rule204
    const advanced=(await slots())[1];
    assert.equal(JSON.parse(advanced).rulesVersion,208);
    assert.equal((await slots())[0],old.json);
-   await page.reload();await page.locator('#fortsetzen-204').click();
+   await page.reload();
+   // Follow the same visible recovery navigation as a player, not a hidden button.
+   await page.locator('#neues-spiel').click();
+   await page.locator('#career-recovery summary').click();
+   await page.locator('#fortsetzen-204').waitFor({state:'visible'});
+   await page.locator('#fortsetzen-204').click();
    await page.locator('#manager-transport-status').waitFor({state:'visible'});
    assert.deepEqual(await slots(),[old.json,advanced]);
    await page.locator('[data-advance="60"]').click();

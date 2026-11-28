@@ -1,6 +1,7 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {config,requestBody,decision,run,probe,selectProbe,AUTO_FREE_MODELS}=require('../scripts/m4-u4-model-runner.cjs');
+const {LIMIT,MS}=require('../scripts/m4-u4-ui-relay.cjs');
 const cfg=config({M4_AI_MODEL:'local-test'}),response=(x,model)=>new Response(JSON.stringify({model,choices:[{message:{content:JSON.stringify(x)}}]}));
 function fixture(){
  let round=0,closed=0;const actions=[];
@@ -47,6 +48,167 @@ test('round and time limits; no action after model timeout budget',async()=>{
  f=fixture();let clock=0;
  r=await run({relay:f.relay,cfg,module:'A',now:()=>clock,fetcher:async()=>{clock=300001;return response({action:{op:'click',x:10,y:10},note:'late'});}});
  assert.equal(r.reason,'LIMIT');assert.equal(f.actions.length,0);assert.equal(f.closed(),1);
+});
+
+const visualCfg={...config({
+ M4_OBSERVATION_MODE:'screenshot-only',M4_AI_PROVIDER:'gemini',M4_AI_MODEL:'gemini-3.5-flash-lite',
+ M4_ALLOW_REMOTE:'1',M4_GEMINI_VISUAL_CONSENT:'1',M4_GEMINI_FREE_CONFIRMED:'1',GEMINI_API_KEY:'OFFLINE_KEY'
+}),visualConfirm:true};
+
+function visualPNG(fill){
+ const {crc32,deflateSync}=require('node:zlib');
+ const chunk=(type,data)=>{
+  const bytes=Buffer.alloc(12+data.length);
+  bytes.writeUInt32BE(data.length);bytes.write(type,4);data.copy(bytes,8);
+  bytes.writeUInt32BE(crc32(bytes.subarray(4,-4)),bytes.length-4);
+  return bytes;
+ };
+ const header=Buffer.alloc(13);header.writeUInt32BE(1024);header.writeUInt32BE(768,4);header[8]=8;
+ const pixels=Buffer.alloc(768*1025,fill);
+ for(let y=0;y<768;y++)pixels[y*1025]=0;
+ return Buffer.concat([Buffer.from('89504e470d0a1a0a','hex'),chunk('IHDR',header),
+  chunk('IDAT',deflateSync(pixels)),chunk('IEND',Buffer.alloc(0))]);
+}
+
+function visualFixture(observations=[],overrides={}){
+ const images=[visualPNG(0),visualPNG(255)],actions=[];
+ let round=0,closed=0;
+ const observation=()=>{
+  const base={width:1024,height:768,round,remaining:LIMIT-round,done:round===LIMIT,...overrides};
+  const frame=observations[round]??0;
+  return typeof frame==='number'?{...base,image:images[frame]}:{...base,...frame};
+ };
+ return {actions,closed:()=>closed,relay:{observe:async()=>observation(),
+  step:async a=>{actions.push(a);round++;return observation();},close:async()=>{closed++;}}};
+}
+
+const visualReply=(action,note='',modelVersion=visualCfg.model,extra={})=>Response.json({
+ modelVersion,candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify({action,note,...extra})}]}}]
+});
+const visualSystem=body=>body.systemInstruction.parts[0].text;
+
+test('visual STOP is voluntary and an immediate unsupported claim stays UNREVIEWED for A–F',async()=>{
+ const questions=[];
+ for(const module of ['A','B','C','D','E','F']){
+  const f=visualFixture(),calls=[];
+  const result=await run({cfg:visualCfg,module,relay:f.relay,fetcher:async(url,init)=>{
+   calls.push(JSON.parse(init.body));
+   return visualReply({op:'stop'},'Ziel angeblich erreicht');
+  }});
+  assert.equal(result.reason,'MODEL_STOP');assert.equal(result.verdict,'UNREVIEWED');
+  assert.equal(result.actions,0);assert.equal(f.actions.length,0);assert.equal(f.closed(),1);
+  assert.equal(calls.length,1);
+  const prompt=visualSystem(calls[0]);
+  assert.match(prompt,/maximal drei\): leer/);
+  assert.match(prompt,/Wenn noch eine sinnvolle Aktion zum offenen Ziel möglich ist/);
+  questions.push(prompt.match(/Prüfe vor der Entscheidung: ([^?]+)\?/)[1]);
+ }
+ assert.deepEqual(questions.map(question=>question.match(/Karrierestart|Einnahmen deiner Flotte|Handelswegs|Problem|Weiterentwicklung|Weiterspielen/)[0]),
+  ['Karrierestart','Einnahmen deiner Flotte','Handelswegs','Problem','Weiterentwicklung','Weiterspielen']);
+});
+
+test('visual history keeps three executed actions, uses PNG comparisons and excludes injected metadata and free text',async()=>{
+ const f=visualFixture([0,0,1,1,0,0],{
+  visibleText:'HIDDEN_SENTINEL',nativeDialog:'DIALOG_SENTINEL',screenshot:'/tmp/FILE_SENTINEL.png',
+  targets:[{label:'DOM_SENTINEL'}],save:{score:'SAVE_SENTINEL'},history:['HISTORY_SENTINEL'],
+  visualHistoryContext:['CONTEXT_SENTINEL'],screenId:'VIEW_SENTINEL',sameText:false
+ });
+ const actions=[{op:'click',xNorm:123,yNorm:456},{op:'scroll',xNorm:400,yNorm:500,dy:-60},
+  {op:'type',text:'TYPED_SENTINEL'},{op:'wait',ms:0},{op:'reload'},{op:'stop'}];
+ const requests=[];
+ const result=await run({cfg:visualCfg,module:'B',relay:f.relay,fetcher:async(url,init)=>{
+  requests.push(JSON.parse(init.body));
+  return visualReply(actions[requests.length-1],'NOTE_SENTINEL');
+ }});
+ assert.equal(result.reason,'MODEL_STOP');assert.equal(result.verdict,'UNREVIEWED');
+ assert.equal(result.actions,5);assert.equal(requests.length,6);
+ assert.match(visualSystem(requests[1]),/click\(123,456\) → PNG unverändert/);
+ assert.match(visualSystem(requests[2]),/scroll\(400,500,-60\) → PNG verändert/);
+ assert.match(visualSystem(requests[4]),/scroll\(400,500,-60\) → PNG verändert \| type → PNG unverändert \| wait → PNG verändert/);
+ assert.match(visualSystem(requests[5]),/type → PNG unverändert \| wait → PNG verändert \| reload → PNG unverändert/);
+ assert.doesNotMatch(visualSystem(requests[5]),/click\(123|scroll\(400/);
+ for(const body of requests){
+  assert.doesNotMatch(JSON.stringify(body),/SENTINEL|OFFLINE_KEY/);
+  assert.equal(body.contents[0].parts.length,2);
+ }
+});
+
+test('visual STOP does not extend the twelve-action or five-minute budget',async()=>{
+ assert.equal(LIMIT,12);assert.equal(MS,300000);
+ const f=visualFixture();let calls=0;
+ const result=await run({cfg:visualCfg,module:'A',relay:f.relay,now:()=>0,fetcher:async()=>{
+  calls++;return visualReply({op:'wait',ms:0});
+ }});
+ assert.equal(result.reason,'LIMIT');assert.equal(result.verdict,'UNREVIEWED');
+ assert.equal(result.actions,12);assert.equal(calls,12);assert.equal(f.closed(),1);
+ const timed=visualFixture();let clock=0;
+ const deadline=await run({cfg:visualCfg,module:'B',relay:timed.relay,now:()=>clock,fetcher:async()=>{
+  clock=300000;return visualReply({op:'stop'});
+ }});
+ assert.equal(deadline.reason,'LIMIT');assert.equal(deadline.actions,0);
+ assert.equal(deadline.elapsedMs,300000);assert.equal(timed.actions.length,0);
+});
+
+test('visual confirmation has its own schema and rejects premature STOP without retry',async()=>{
+ const confirm={nativeConfirm:{type:'confirm',message:'Neutrale Bestätigung?'}};
+ for(const allowed of [false,true]){
+  const f=visualFixture([0,confirm,1]),calls=[];
+  const result=await run({cfg:visualCfg,module:'F',relay:f.relay,fetcher:async(url,init)=>{
+   const body=JSON.parse(init.body);calls.push(body);
+   if(calls.length===1)return visualReply({op:'click',xNorm:50,yNorm:60});
+   if(calls.length===2)return visualReply(allowed?{op:'dialog',choice:'dismiss'}:{op:'stop'});
+   return visualReply({op:'stop'});
+  }});
+  assert.equal(result.reason,allowed?'MODEL_STOP':'INFRASTRUCTURE');
+  assert.equal(result.verdict,'UNREVIEWED');assert.equal(calls.length,allowed?3:2);
+  const pending=calls[1];
+  assert.deepEqual(pending.generationConfig.responseJsonSchema.properties.action.anyOf.map(v=>v.properties.op.enum[0]),['dialog']);
+  assert.equal(pending.contents[0].parts.length,1);
+  assert.deepEqual(JSON.parse(pending.contents[0].parts[0].text).nativeConfirm,confirm.nativeConfirm);
+  assert.match(visualSystem(pending),/click\(50,60\) → Bestätigungsdialog sichtbar.*ausschließlich über den Dialog/);
+  if(allowed){
+   assert.deepEqual(f.actions[1],{op:'dialog',choice:'dismiss'});
+   assert.match(visualSystem(calls[2]),/dialog\(dismiss\) → Bild nach Dialog/);
+   assert.doesNotMatch(JSON.stringify(calls[2]),/Neutrale Bestätigung/);
+  }else assert.equal(f.actions.length,1);
+ }
+});
+
+test('visual correction retries only strict JSON and never executes an injected STOP field',async()=>{
+ const f=visualFixture(),calls=[];
+ const result=await run({cfg:visualCfg,module:'A',relay:f.relay,sleep:async()=>{},fetcher:async(url,init)=>{
+  calls.push(JSON.parse(init.body));
+  if(calls.length===1)return visualReply({op:'wait',ms:0});
+  return visualReply({op:'stop'},'',visualCfg.model,{score:'INJECTED_SENTINEL'});
+ }});
+ assert.equal(result.reason,'INFRASTRUCTURE');assert.equal(result.detail,'Invalid model decision format');
+ assert.equal(result.actions,1);assert.equal(calls.length,3);
+ const schema=calls[2].generationConfig.responseJsonSchema;
+ assert.deepEqual(schema.required,['action','note']);assert.equal(schema.additionalProperties,false);
+ assert.equal(schema.properties.action.anyOf.find(v=>v.properties.op.enum[0]==='stop').additionalProperties,false);
+ assert.match(visualSystem(calls[2]),/ausschließlich ein gültiges JSON-Objekt/);
+ assert.match(visualSystem(calls[2]),/wait → PNG unverändert/);
+ assert.doesNotMatch(JSON.stringify(calls),/INJECTED_SENTINEL/);
+});
+
+test('visual missing image, absent consent, payment, quota and wrong identity fail closed without fallback',async()=>{
+ for(const [name,expected,reply,frames,configOverride] of [
+  ['missing image',0,null,[{visibleText:'SECRET_SENTINEL'}],{}],
+  ['forged confirm',0,null,[{round:1,remaining:11,nativeConfirm:{type:'confirm',message:'Visible',secret:'SECRET_SENTINEL'}}],{}],
+  ['free confirmation',0,null,[],{freeProjectConfirmed:false}],
+  ['Google consent',0,null,[],{googleVisualConsent:false}],
+  ['payment',1,()=>new Response('PRIVATE_SENTINEL',{status:402}),[],{}],
+  ['quota',1,()=>new Response('PRIVATE_SENTINEL',{status:429}),[],{}],
+  ['identity',1,()=>visualReply({op:'stop'},'PRIVATE_SENTINEL','other-model'),[],{}]
+ ]){
+  const f=visualFixture(frames),events=[],urls=[];
+  const result=await run({cfg:{...visualCfg,...configOverride},module:'B',relay:f.relay,sleep:async()=>{},
+   emit:x=>events.push(x),fetcher:async url=>{urls.push(url);return reply();}});
+  assert.equal(result.reason,'INFRASTRUCTURE',name);assert.equal(result.verdict,'UNREVIEWED',name);
+  assert.equal(f.actions.length,0,name);assert.equal(f.closed(),1,name);
+  assert.deepEqual(urls,Array(expected).fill(visualCfg.url),name);
+  assert.doesNotMatch(JSON.stringify(events),/PRIVATE_SENTINEL|OFFLINE_KEY/);
+ }
 });
 
 

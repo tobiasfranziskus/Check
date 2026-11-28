@@ -6,13 +6,15 @@
 'use strict';
 const d=scope.document,$=id=>d.getElementById(id);
 const SLOT='aphros-void:spielerkarriere:regel204:v1';
+const SLOT_208='aphros-void:spielerkarriere:regel208:v1';
+const BACKUP_208=SLOT_208+':vorherige';
 const SLOT_W6='aphros-void:spielerkarriere:regel207-forschung:v1';
 const BACKUP=SLOT+':vorherige';
 const SLOT_HAUS_ERZ='aphros-void:spielerkarriere:haus-erz:v1';
 const hausErzSitzung=()=>session?.weltReferenz().hausErzProfil===true;
 const SLOT_PIR='aphros-void:spielerkarriere:pir-1:v1';
 const piratenSitzung=()=>session?.weltReferenz().piratenProfil===true;
-const aktuellerSlot=()=>hausErzSitzung()?SLOT_HAUS_ERZ:piratenSitzung()?SLOT_PIR:session?.weltReferenz().regel===207?SLOT_W6:SLOT;
+const aktuellerSlot=()=>hausErzSitzung()?SLOT_HAUS_ERZ:piratenSitzung()?SLOT_PIR:session?.weltReferenz().regel===207?SLOT_W6:session?.weltReferenz().regel===208?SLOT_208:SLOT;
 const MAX=5*1024*1024;
 const fmt=n=>Number(n).toLocaleString('de-DE');
 let session=null,raum=null,ansicht='startseite',flugSchritte=0,flugSeitSicherung=0,patrouille=null,duell=null;
@@ -64,6 +66,8 @@ function speichern(copyOld=false){
      if(copyOld){const old=scope.localStorage.getItem(SLOT_PIR);
        if(old)scope.localStorage.setItem(SLOT_PIR+':vorherige',old);}
      scope.localStorage.setItem(SLOT_PIR,json);
+   }else if(session.ansicht().regel===208){
+     speichern208(json,copyOld);
    }else if(session.ansicht().regel===207){
      if(copyOld){const old=scope.localStorage.getItem(SLOT_W6);
        if(old)scope.localStorage.setItem(SLOT_W6+':vorherige',old);}
@@ -81,6 +85,22 @@ function speichern(copyOld=false){
 }
 function gespeicherte(key=SLOT){
  try{return scope.localStorage.getItem(key)||null;}catch{return null;}
+}
+// Write only to the new slot; preserve prior contents if the backup write
+// fails. Never touch Rule204 or another profile's current/backup key.
+function speichern208(json,vorversion){
+ const storage=scope.localStorage,previous=storage.getItem(SLOT_208);
+ if(!vorversion||!previous){storage.setItem(SLOT_208,json);return;}
+ const oldBackup=storage.getItem(BACKUP_208);
+ // Backup must succeed before the current save can be replaced. If the
+ // replacement fails, keep the current bytes and restore the old backup.
+ storage.setItem(BACKUP_208,previous);
+ try{storage.setItem(SLOT_208,json);}
+ catch(e){
+   if(oldBackup===null)storage.removeItem(BACKUP_208);
+   else storage.setItem(BACKUP_208,oldBackup);
+   throw e;
+ }
 }
 function hausErzSpeichern(json,vorversion){
  const storage=scope.localStorage,backup=SLOT_HAUS_ERZ+':vorherige';
@@ -107,7 +127,10 @@ function hausErzLaden(json,quelle){
    'Getrennte Haus-Erz-Karriere geöffnet.');
 }
 function menustand(){
- $('fortsetzen').disabled=!gespeicherte();
+ const neue=gespeicherte(SLOT_208),alte=gespeicherte(SLOT);
+ $('fortsetzen').disabled=!(neue||alte);
+ $('fortsetzen-204').hidden=!alte;
+ $('vorige-208').hidden=!gespeicherte(BACKUP_208);
  if($('kopie-haus-erz'))$('kopie-haus-erz').disabled=!gespeicherte();
  if($('fortsetzen-haus-erz'))$('fortsetzen-haus-erz').hidden=!gespeicherte(SLOT_HAUS_ERZ);
  if($('vorige-haus-erz'))$('vorige-haus-erz').hidden=!gespeicherte(SLOT_HAUS_ERZ+':vorherige');
@@ -177,27 +200,24 @@ function startNeu(){
   const p8gAktiv=$('w6-p8g-start')?.checked===true;
   const pirAktiv=$('pir-start').checked;
   if([w6Aktiv,p8gAktiv,pirAktiv].filter(Boolean).length>1)throw Error('Bitte nur einen erweiterten Karrieremodus wählen');
-  const slot=pirAktiv?SLOT_PIR:p8gAktiv?SLOT_W6:SLOT,vorher=gespeicherte(slot);
+  const slot=pirAktiv?SLOT_PIR:p8gAktiv?SLOT_W6:SLOT_208,
+   vorher=gespeicherte(slot)||(session&&aktuellerSlot()===slot?session.exportieren():null);
   if(pirAktiv&&!scope.confirm('PIR-1 als separate Forschungskarriere beginnen?'))return;
   if(p8gAktiv&&!scope.confirm('Die experimentelle Dravos-Karriere besitzt eine eigene Spielwelt mit begrenzten Rohstofffeldern. Deine normale Karriere bleibt unverändert. Experimentelle Karriere beginnen?'))return;
   if(vorher&&!scope.confirm('Für dieses Profil besteht schon ein Spielstand. Die bisherige Version bleibt als „Vorherige Karriere“ gesichert. Trotzdem neu beginnen?'))return;
   const neu=neueSitzung();
-  const a=pirAktiv?neu.startenPiraten(true):p8gAktiv?neu.startenP8g(true):neu.starten195(scope.W5acSession.create(42,'private195').export(),true);
-  if(a.regel!==(p8gAktiv?207:204)||a.weltgeld!==(pirAktiv?33240:33000))
+  const a=pirAktiv?neu.startenPiraten(true):p8gAktiv?neu.startenP8g(true):neu.starten208(true,w6Aktiv);
+  if(a.regel!==(p8gAktiv?207:pirAktiv?204:208)||a.weltgeld!==(pirAktiv?33240:33000))
     throw Error('Ausgangswelt nicht autoritativ validiert');
-  if(w6Aktiv){
-   const welt=neu.weltReferenz(),zustand=neu.zustandReferenz();
-   if(typeof welt.politikSetzen!=='function'||typeof welt.npcAutoSetzen!=='function'
-     ||typeof welt.npcSiliziumSetzen!=='function')throw Error('W6-Firmenpolitik nicht vollständig installiert');
-   // Freigegebenes S02-Forschungsprofil. Eine Politik ist Verhalten, weder Geldquelle noch Ware.
-   welt.politikSetzen(zustand,{stilllegung:true,betriebsreserve:{werft_extern:1060}});
-   welt.npcAutoSetzen(zustand,true);
-   welt.npcSiliziumSetzen(zustand,true);
-   const audit=welt.audit(zustand);
-   if(!audit.ok)throw Error('W6: Wirtschaftsprüfung verweigert Start: '+audit.fehler.join('; '));
+  // J8 starts S02 with exactly its existing policy settings. Preserve the
+  // live previous career before selecting another slot.
+  if(session&&!speichern())throw Error('Laufende Karriere zuerst als JSON sichern.');
+  if(slot===SLOT_208&&vorher) {
+    // Refuse the replacement if its backup cannot be saved.
+    speichern208(neu.exportieren(),true);
   }
   session=neu;sitzungsUiZuruecksetzen();
-  const ok=speichern(!!vorher);
+  const ok=slot===SLOT_208&&!!vorher?true:speichern(!!vorher);
   aktiveSitzung('Karriere begonnen: '+fmt(a.weltgeld)+' ISK Weltgeld. '+(pirAktiv?'PIR-1 · Bezahlte Patrouille ab Nadir.':p8gAktiv
    ?'Experimentelle Dravos-Karriere mit bezahltem Bergbau, Transport und Materialverträgen; deine normale Karriere bleibt unverändert.'
    :w6Aktiv?'Unabhängige Konzerne arbeiten auf eigene Rechnung; jeder Auftrag bleibt finanziert.'
@@ -210,14 +230,18 @@ function ladeSitzung(json,auswahl,backup=false){
    throw Error('Ungültige Größe des Karriere-Spielstands.');
  // A named local resume may switch between independent Rule204 and Rule207 slots.
  // Other load paths (JSON import and backups) retain the existing active-session guard.
- const zielSlot=auswahl==='lokal'?SLOT:auswahl==='forschung'?SLOT_W6:auswahl==='pir'?SLOT_PIR:null;
+ const zielSlot=auswahl==='lokal'?SLOT:auswahl==='lokal208'?SLOT_208:auswahl==='forschung'?SLOT_W6:auswahl==='pir'?SLOT_PIR:null;
  const wechsel=!!session&&zielSlot!==null&&aktuellerSlot()!==zielSlot;
  if(session&&!wechsel)throw Error('Laufende Karriere zuerst als JSON exportieren und die Seite neu öffnen.');
  const raw=JSON.parse(json),regel=raw?.rulesVersion,pir=raw?.kanon?.piraten!==undefined;
  const pirZugang=['pir','pir-backup'].includes(auswahl);
  if(auswahl!=='datei'&&pir!==pirZugang)throw Error('PIR-1 benötigt seinen eigenen Spielzugang.');
  if(pir&&(regel!==204||(auswahl==='datei'&&!scope.confirm('Diesen JSON-Spielstand in die separate Piratenforschung importieren?'))))return;
- if(regel!==204&&regel!==207)throw Error('Dieser Spielstand gehört nicht zu einer unterstützten Karriere.');
+ if(![204,207,208].includes(regel))throw Error('Dieser Spielstand gehört nicht zu einer unterstützten Karriere.');
+ if(regel===208&&!['lokal208','backup208','datei'].includes(auswahl))
+   throw Error('Regel208 benötigt den eigenen Speicherplatz.');
+ if(regel!==208&&['lokal208','backup208'].includes(auswahl))
+   throw Error('Kein Regel208-Spielstand; keine automatische Migration.');
  if(regel===207&&!['forschung','forschung-backup','datei'].includes(auswahl))
    throw Error('Bitte die experimentelle Karriere über ihren eigenen Zugang öffnen.');
  if(regel===204&&['forschung','forschung-backup'].includes(auswahl))
@@ -228,18 +252,19 @@ function ladeSitzung(json,auswahl,backup=false){
    'Diese Datei enthält eine experimentelle Dravos-Karriere. Möchtest du diesen externen Spielstand ausdrücklich importieren? Deine normale Karriere bleibt separat erhalten.'))return;
  if(regel===207&&auswahl==='datei'&&raw.kanon?.npcMaterialKette===true
    &&!scope.confirm('Dieser importierte Spielstand aktiviert zusätzlich die eigenfinanzierte NPC-Folgeversorgung mit selbstständigen Werft-/Fracht-/Erzentscheidungen. Auch diese Automatik ausdrücklich übernehmen?'))return;
- const slot=pir?SLOT_PIR:regel===207?SLOT_W6:SLOT;
+ const slot=pir?SLOT_PIR:regel===207?SLOT_W6:regel===208?SLOT_208:SLOT;
  if(auswahl==='datei'&&gespeicherte(slot)&&!scope.confirm(
    'Dieser Datei-Spielstand ersetzt NUR die gleichnamige Karriere-Speicherstelle. Die bisherige wird zuvor gesichert. Fortfahren?'))return;
  const neu=neueSitzung();
- const a=pir?neu.oeffnenPiraten(json,true):regel===207?neu.oeffnenP8g(json,true):neu.oeffnen204(json,true);
+ const a=pir?neu.oeffnenPiraten(json,true):regel===207?neu.oeffnenP8g(json,true):regel===208?neu.oeffnen208(json,true):neu.oeffnen204(json,true);
  if(a.regel!==regel||a.weltgeld!==(pir?33240:33000))
    throw Error('Die Prüfung der Wirtschaft und des Spielstands ist fehlgeschlagen.');
  // Validate the destination first, then persist the old live session to its own slot.
  // If saving fails, keep the old in-memory career and do not switch.
  if(wechsel&&!speichern())throw Error('Laufende Karriere vor dem Wechsel nicht gespeichert. Bitte zuerst als JSON exportieren.');
+ if(regel===208&&(auswahl==='datei'||backup))speichern208(neu.exportieren(),!!gespeicherte(slot));
  session=neu;sitzungsUiZuruecksetzen();
- if(auswahl==='datei'||backup)speichern(!!gespeicherte(slot));
+ if(regel!==208&&(auswahl==='datei'||backup))speichern(!!gespeicherte(slot));
  aktiveSitzung(backup?'Vorherige Karriere aus dem separaten Sicherungsslot geladen.':'Willkommen zurück. Dein Spielstand wurde geprüft.');
 }
 function weiter(n){
@@ -263,6 +288,7 @@ function weiter(n){
     if(hausErzSitzung())restore.oeffnenHausErz(vorher,true,'lokal');
     else if(piratenSitzung())restore.oeffnenPiraten(vorher,true);
     else if(session?.ansicht().regel===207)restore.oeffnenP8g(vorher,true);
+    else if(session?.ansicht().regel===208)restore.oeffnen208(vorher,true);
     else restore.oeffnen204(vorher,true);
     session=restore;anzeigen();
    }catch(restoreError){
@@ -329,9 +355,9 @@ function info(a){
  const kauf=namen.find(n=>n[0]===a.id);
  return kauf?'Schiff im Werftbestand von '+kauf[2]+'.':anzeigetext(a.label);
 }
-function angebotstitel(a){
+function angebotstitel(a,label=titel(a)){
  const preis=a.id.startsWith('reposition-')?a.kosten:scope.P3Handelsweg?.kaufpreis(session.weltReferenz(),a.id);
- return a.ok&&Number.isSafeInteger(preis)?titel(a)+' · '+fmt(preis)+' ISK':titel(a);
+ return a.ok&&Number.isSafeInteger(preis)?label+' · '+fmt(preis)+' ISK':label;
 }
 function datum(ms){return Math.floor(ms/1440)+' Tage · '+(ms%1440)+' Minuten';}
 
@@ -377,6 +403,7 @@ function managerDispositionAnzeigen(s,angebote){
   (p.erzAktiv>0&&p.erzExportKasse<p.erzKosten
    ?' Laufende Erzaufträge können weiter Fluglöhne kosten. Du kannst sie unter „Meine Flotte“ beenden.'
    :'');
+ $('manager-erz-minerkauf').hidden=!p.erzauftrag.minerkauf;
  for(const [id,task] of [['abbau',p.abbau],['transport',p.transport],['erz',p.erzauftrag]]){
   const button=$('manager-'+id+'-aktion');
   button.disabled=!task.bereit;button.textContent=task.titel;
@@ -1056,7 +1083,10 @@ function anzeigen(){
  $('spieleraktionen').replaceChildren(...offers.map(o=>{
   const box=d.createElement('div'),button=d.createElement('button'),small=d.createElement('small');
   box.className='order';
-  button.type='button';button.dataset.action=o.id;button.textContent=angebotstitel(o);button.disabled=!o.ok;
+  const weitererMiner=o.id==='buy-st_aldera-miner'&&a.schiffe.some(sh=>sh.klasse==='miner');
+  button.type='button';button.dataset.action=o.id;
+  button.textContent=angebotstitel(o,weitererMiner?'Weiteren Miner in Aldera kaufen':undefined);
+  button.disabled=!o.ok;
   small.textContent=o.ok?info(o):'Zurzeit gesperrt: '+anzeigetext(o.reason);
   if(o.ok)small.className='available';
   button.addEventListener('click',()=>auftrag(o.id));
@@ -1185,7 +1215,7 @@ function cockpitBinden(){
    duellStarten:()=>{
      try{
        if(!session||!scope.J4eDuell)throw Error('F8-E-Trainingskern nicht geladen');
-       if(session.ansicht().regel!==204)throw Error('F8-E nur für die Original-Regel204-Karriere');
+       if(![204,208].includes(session.ansicht().regel))throw Error('F8-E nur für die Original-Regel204-Karriere');
        if(patrouille&&['bereit','flug'].includes(patrouille.status))
          throw Error('Eine laufende Patrouille muss zuerst abgeschlossen werden');
        if(duell?.status==='aktiv')throw Error('Ein Duelltraining läuft bereits');
@@ -1297,6 +1327,15 @@ $('manager-aussetzen-aktion')?.addEventListener('click',()=>{
 $('manager-abbau-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('abbau'));
 $('manager-erz-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('erz'));
 $('manager-transport-aktion')?.addEventListener('click',()=>managerDispositionsAuftrag('transport'));
+$('manager-erz-minerkauf').addEventListener('click',()=>{
+ $('spieleraktionen').querySelector('[data-action="buy-st_aldera-miner"]:enabled')?.focus();
+});
+$('p3-auftragszentrale').addEventListener('click',()=>{
+ tabZeigen('auftraege');
+ const tab=$('tab-auftraege');
+ tab.closest('.tabs').scrollIntoView({block:'start',behavior:'instant'});
+ tab.focus({preventScroll:true});
+});
 $('manager-flotte-auswahl')?.addEventListener('change',event=>{
  managerFlotteAuswahlId=event.currentTarget.value;
  sektorKarte?.eigenesSchiffWaehlen(managerFlotteAuswahlId);
@@ -1372,7 +1411,7 @@ $('p3-npc-werft-aktion')?.addEventListener('click',()=>{
  if(!session||!scope.P3NPCWerft)return;
  try{
   const p=scope.P3NPCWerft.auswerten(session.weltReferenz(),session.zustandReferenz());
-  if(!p.sichtbar)throw Error('Nur im ausdrücklich gewählten Regel204-S02-Modus');
+  if(!p.sichtbar)throw Error('Nur im ausdrücklich gewählten Regel204/208-S02-Modus');
   weiter(60); // Originalwelt, Eigentum, Firmenpolitik, Save und 60 bezahlte Minuten.
  }catch(e){hinweis('NPC-Flottenbericht gesperrt: '+error(e),true);anzeigen();}
 });
@@ -1440,7 +1479,7 @@ $('p3-industrie-zeit')?.addEventListener('click',()=>{
  try{
   const p=scope.P3Industrie.auswerten(session.weltReferenz(),
    session.zustandReferenz(),session.angebote());
-  if(!p.sichtbar)throw Error('Nur für ausdrücklich gewählte Regel204-S02-Wirtschaft');
+  if(!p.sichtbar)throw Error('Nur für ausdrücklich gewählte Regel204/208-S02-Wirtschaft');
   weiter(60); // Same original scheduled, fully audited economic step.
  }catch(e){hinweis('Industrieschicht gesperrt: '+error(e),true);anzeigen();}
 });
@@ -1460,10 +1499,20 @@ $('neues-spiel').addEventListener('click',()=>{for(const id of ['w6-npc-start','
 $('zurueck-hauptmenue').addEventListener('click',()=>{screen('startseite');menustand();});
 $('karriere-starten').addEventListener('click',startNeu);
 $('fortsetzen').addEventListener('click',()=>{try{
-   if(session&&aktuellerSlot()===SLOT){aktiveSitzung('Deine laufende Karriere ist geöffnet.');return;}
-   const json=gespeicherte();if(!json)throw Error('Keine Karriere gespeichert');
-   ladeSitzung(json,'lokal');
+   const slot=gespeicherte(SLOT_208)?SLOT_208:SLOT;
+   if(session&&aktuellerSlot()===slot){aktiveSitzung('Deine laufende Karriere ist geöffnet.');return;}
+   const json=gespeicherte(slot);if(!json)throw Error('Keine Karriere gespeichert');
+   ladeSitzung(json,slot===SLOT_208?'lokal208':'lokal');
  }catch(e){hinweis('Karriere nicht geöffnet: '+error(e),true);}});
+$('fortsetzen-204').addEventListener('click',()=>{try{
+ if(session&&aktuellerSlot()===SLOT){aktiveSitzung('Deine bisherige Regel204-Karriere ist geöffnet.');return;}
+ ladeSitzung(gespeicherte(SLOT),'lokal');
+}catch(e){hinweis('Regel204 nicht geöffnet: '+error(e),true);}});
+$('vorige-208').addEventListener('click',()=>{try{
+ if(session)throw Error('Erst die aktuelle Karriere als JSON sichern und die Seite neu öffnen');
+ if(!scope.confirm('Vorherige Regel208-Karriere öffnen und beide Regel208-Speicherstände tauschen?'))return;
+ ladeSitzung(gespeicherte(BACKUP_208),'backup208',true);
+}catch(e){hinweis('Regel208-Sicherung nicht geöffnet: '+error(e),true);}});
 $('fortsetzen-w6').addEventListener('click',()=>{try{
    if(session?.ansicht().regel===207){aktiveSitzung('Deine laufende Karriere ist geöffnet.');return;}
    const json=gespeicherte(SLOT_W6);if(!json)throw Error('Kein separater Forschungsstand gespeichert');

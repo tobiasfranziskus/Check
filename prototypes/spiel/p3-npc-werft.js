@@ -6,9 +6,9 @@
 'use strict';
 const integer=n=>Number.isSafeInteger(n)&&n>=0;
 function auswerten(w,s){
- if(s?.rulesVersion===207||s?.rulesVersion!==204||s?.kanon?.npcAuto!==true
+ if(s?.rulesVersion===207||![204,208].includes(s?.rulesVersion)||s?.kanon?.npcAuto!==true
    ||s?.kanon?.npcSilizium?.aktiv!==true)return Object.freeze({sichtbar:false});
- if(!w||w.regel!==204||!w.audit(s).ok)throw Error('W6-Frachterakte: Originalwelt nicht validiert');
+ if(!w||w.regel!==s.rulesVersion||!w.audit(s).ok)throw Error('W6-Frachterakte: Originalwelt nicht validiert');
  const carrier=s.owners.transport,shipyard=s.owners.werft_extern;
  if(!carrier||!shipyard)throw Error('W6-Frachterakte: Firmenkonten fehlen');
  const r=w.rules,price=r.economy.waren.frachter.basis;

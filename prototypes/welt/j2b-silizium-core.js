@@ -5,7 +5,7 @@
 (function(scope){
 'use strict';
 const create=({rules,FLUG,transfer,summe,ganz,ladungSumme,stillgelegt,pilot})=>{
-  if(![201,202,203,204,205,206,207].includes(rules.rulesVersion)||!rules.j2b)
+  if(![201,202,203,204,205,206,207,208].includes(rules.rulesVersion)||!rules.j2b)
     throw Error('J2b: ungueltige Regel201-205');
   const C=rules.j2b,W=C.charge*C.minutenJeEinheit*C.lohnJeMinute,
     P=C.charge*C.preis;

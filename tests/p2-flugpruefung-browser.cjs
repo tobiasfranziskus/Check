@@ -37,7 +37,7 @@ const server=http.createServer((req,res)=>{
    await waitStage('Etappe 5/5');await pause();await tap('[data-raum="objekt-st_aldera"]');await tap('[data-raum="ziel-andocken"]');await waitStage('Flugprüfung bestanden');await pause();
    assert.match(await page.locator('#raum-lage').textContent(),/Im Dock/i);
    const downloadEvent=page.waitForEvent('download');await tap('#raum-export');const download=await downloadEvent,save=fs.readFileSync(await download.path(),'utf8');
-   const j=J.erstellen();j.oeffnen204(save,true);const s=j.zustandReferenz();assert.equal(j.weltReferenz().audit(s).ok,true);assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),33000);assert.equal(s.minted,0);assert.equal(s.burned,0);assert.equal(j.exportieren(),save);assert.equal(save.includes('handBasis'),false);
+   const j=J.erstellen();j.oeffnen208(save,true);const s=j.zustandReferenz();assert.equal(j.weltReferenz().audit(s).ok,true);assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),33000);assert.equal(s.minted,0);assert.equal(s.burned,0);assert.equal(j.exportieren(),save);assert.equal(save.includes('handBasis'),false);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);assert.deepEqual(errors,[]);
    console.log('P2_FLUGPRUEFUNG_BROWSER_OK',kind,width,height,j.ansicht().hash);
    await page.reload();await tap('#fortsetzen');assert.equal(await page.locator('#pilotenausbildung-live').isHidden(),true);

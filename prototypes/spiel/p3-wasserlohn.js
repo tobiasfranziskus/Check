@@ -5,7 +5,7 @@
 'use strict';
 function auswerten(w,s,angebote,daten){
  if(s?.rulesVersion===207)return Object.freeze({sichtbar:false});
- if(!s||s.rulesVersion!==204||!w||w.regel!==204||!w.audit(s).ok
+ if(!s||![204,208].includes(s.rulesVersion)||!w||w.regel!==s.rulesVersion||!w.audit(s).ok
    ||!Array.isArray(angebote)||!daten?.wasser)
    throw Error('P3-Wasserkreislauf benötigt den auditierten Regel204-Originalkern');
  const frachten=(s.kanon.spielerFrachten?.auftraege||[])

@@ -15,7 +15,7 @@ const abstand = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
 const tempo = b => Math.hypot(b.vx,b.vy);
 function schiffPruefen(s,id) {
   const sh=s?.ships?.[id];
-  if(s?.rulesVersion!==204||!sh||sh.id!==id||sh.owner!=='house'||
+  if(![204,208].includes(s?.rulesVersion)||!sh||sh.id!==id||sh.owner!=='house'||
      sh.klasse!=='jaeger'||sh.system!=='nadir'||
      !s.kanon?.jaeger?.kaeufe?.some(k=>k.id===id&&k.owner==='house'&&k.station==='st_nadir'))
     throw Error('Patrouille erfordert einen im Regel204-Kern gekauften Spielerjäger');

@@ -388,7 +388,7 @@ const m_data_erzpilot = (() => {
       }};
     }
     if(research.hausErz===true)W5_RULES.hausErz=true;
-    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug','siliziumZweitesFeld','siliziumDravos','siliziumFracht','hausErz'].includes(k))
+    if(Object.keys(research).some(k=>!['carrierCash','buyerCash','wageTrade','waterTrade','personalWages','kanon','ort','industryOre','silizium','bauteile','jaeger','jaegerFlug','siliziumZweitesFeld','siliziumDravos','siliziumFracht','hausErz','npcErzRevision'].includes(k))
       || (Object.hasOwn(research,'kanon')&&(research.kanon!==true||research.personalWages!==true))
       || (Object.hasOwn(research,'ort')!==(research.kanon===true))
       || (research.kanon===true&&(typeof research.ort?.imFeld!=='function'
@@ -408,7 +408,10 @@ const m_data_erzpilot = (() => {
       || (Object.hasOwn(research,'siliziumDravos')&&
         (research.siliziumDravos!==true||research.siliziumZweitesFeld!==true))
       || (Object.hasOwn(research,'siliziumFracht')&&
-        (research.siliziumFracht!==true||research.siliziumDravos!==true)))
+        (research.siliziumFracht!==true||research.siliziumDravos!==true))
+      || (Object.hasOwn(research,'npcErzRevision')&&
+        (research.npcErzRevision!==true||research.jaegerFlug!==true
+          ||research.hausErz===true||research.siliziumZweitesFeld===true)))
       throw TypeError('Unbekannter W5ad-Startparameter');
     const carrierCash=research.carrierCash??2000,buyerCash=research.buyerCash??4000;
     if(![carrierCash,buyerCash].every(n=>Number.isSafeInteger(n)&&n>=0)
@@ -489,6 +492,9 @@ const m_data_erzpilot = (() => {
       W5_RULES.j4c=Object.freeze({owner:'house',station:'st_nadir',
         verschleissMilliJeMinute:300});
     }
+    // W-20261127-03: a separate new Standard/S02 rule revision. The original
+    // Rule204 factory and all research profiles retain their historical rules.
+    if(research.npcErzRevision===true)W5_RULES.rulesVersion=208;
     // W6/P8b [DRAFT / RESEARCH RULE205]: eine ZWEITE, raeumlich getrennte,
     // ENDLICHE Nadir-Geologie. Explizite Versuchsauswahl, niemals in Rule204.
     // Keine Schiffe, Kassen, Siliziumware oder Rettung bei der Initialisierung.
@@ -1145,11 +1151,42 @@ function preis(state, station, ware, rules) {
 return { faktorFormel, preisFormel, faktor, preis };
 })();
 
+// W-20261127-03: only new Rule208 Standard/S02; never alter Rule204 replay.
+function npcErzSchutzProfil(state,rules) {
+  return rules.rulesVersion===208 && state.rulesVersion===208
+    && rules.k7 && !rules.hausErz && !state.kanon?.piraten;
+}
+function npcErzVertragGedeckt(state,rules,a) {
+  const i=state.kanon?.industrieErz, c=rules.w3;
+  return npcErzSchutzProfil(state,rules) && a?.phase==='vorbestellt'
+    && a.carrier===undefined && a.gearbeitet===0 && a.menge===c.fracht
+    && i?.phase==='aktiv' && i.carrier===undefined && !i.materialOnly
+    && i.miner===a.industrieMiner && i.frachter===a.schiff
+    && i.signMiner===true && i.signFracht===true && i.signWerft===true
+    && i.werftVerwendet===false
+    && state.ships[i.miner]?.owner===rules.erzpilot.npcInvestor
+    && state.ships[i.miner]?.klasse==='miner'
+    && state.ships[i.frachter]?.owner===c.spedition
+    && state.ships[i.frachter]?.klasse==='frachter'
+    && state.owners.w3_kauf_treuhand?.cash===a.gesamt
+    && state.owners.w3_arbeit_treuhand?.cash===a.arbeitsKosten
+    && state.owners.k7_werft_treuhand?.cash===
+      rules.w5.material*rules.w5.materialPreis+rules.w5.dauer*rules.w5.lohnJeMinute;
+}
+function npcErzBindungGueltig(state,rules,a) {
+  return npcErzVertragGedeckt(state,rules,a)
+    && a.npcErzReserviert===a.menge && state.kanon.industrieErz.erzAngenommen===true
+    && (state.stations[rules.w3.quellStation].lager.erz??0)>=a.menge;
+}
 function gebundenesHausErz(state, rules, station, ware) {
   const a = state.w3?.auftrag;
-  return rules.hausErz && ware === 'erz' && station === rules.w3.quellStation
-    && a?.carrier === 'house' && a.phase === 'vorbestellt'
-    && state.kanon.industrieErz.erzAngenommen ? a.menge : 0;
+  if(ware!=='erz'||station!==rules.w3?.quellStation||a?.phase!=='vorbestellt')return 0;
+  if(rules.hausErz && a.carrier==='house' && state.kanon.industrieErz.erzAngenommen)
+    return a.menge;
+  // Only a new, fully booked physical W1 acceptance creates the optional
+  // proof. Historical saves with an acceptance flag but missing ore are not
+  // repaired or interpreted as a new reservation.
+  return npcErzBindungGueltig(state,rules,a)?a.npcErzReserviert:0;
 }
 const m_core_handel = (() => {
 const { div, anzahl } = m_core_zahl;
@@ -1956,8 +1993,22 @@ const m_core_erzpilot = (() => {
     }
     delete buch[schiff.id];
     if (!stornierung && menge > 0 && rules.k7 && state.w3?.auftrag?.phase === 'vorbestellt'
-      && state.w3.auftrag.industrieMiner === schiff.id && state.kanon?.industrieErz?.phase === 'aktiv')
-      state.kanon.industrieErz.erzAngenommen = true;
+      && state.w3.auftrag.industrieMiner === schiff.id && state.kanon?.industrieErz?.phase === 'aktiv') {
+      const a=state.w3.auftrag;
+      if(npcErzSchutzProfil(state,rules)){
+        // A partial W1 sale is paid normally, but never certifies the full W3
+        // quantity. The existing prebook does not yet guarantee W1 capacity.
+        // Only the first full acceptance can create the new proof. A
+        // historically accepted contract is not retroactively certified by
+        // a later ordinary W1 sale, even if its old cargo was exported.
+        if(state.kanon.industrieErz.erzAngenommen===false && a.npcErzReserviert===undefined
+          && menge===a.menge && v.menge===a.menge && npcErzVertragGedeckt(state,rules,a)
+          && (state.stations[rules.w3.quellStation].lager.erz??0)>=a.menge){
+          state.kanon.industrieErz.erzAngenommen=true;
+          a.npcErzReserviert=menge;
+        }
+      }else state.kanon.industrieErz.erzAngenommen = true;
+    }
     return menge;
   }
   function stornieren(state, rules, schiff) {
@@ -2280,6 +2331,7 @@ const m_core_w3 = (() => {
   function stornierenVorArbeit(state,rules) {
     const w=state.w3,a=w?.auftrag,c=rules.w3;
     if(!rules.k7||a?.phase!=='vorbestellt')throw Error('K7: kein unbegonnener Vertrag');
+    if(a.npcErzReserviert!==undefined)throw Error('K7: zugesagte Erzware bereits abgenommen');
     const mi=state.ships[a.industrieMiner],sh=state.ships[a.schiff];
     if(!mi||!sh||mi.flug?.lage!=='angedockt'||sh.phase!=='dock'
       ||Object.values(mi.ladung).some(x=>x!==0)
@@ -2308,6 +2360,9 @@ const m_core_w3 = (() => {
         throw Error('K7: unbefugter W3-Industrieauftrag');
       if(!v.erzAngenommen || (state.stations[c.quellStation].lager.erz||0)<c.fracht)
         return;
+      // Rule208 has no legacy accepted-but-unreserved transactions. Never
+      // load a new NPC contract whose full acceptance proof is missing.
+      if(npcErzSchutzProfil(state,rules)&&!npcErzBindungGueltig(state,rules,a))return;
       if((state.w5n?.frachtauftrag&&(!houseCarrier(rules,carrier)||state.w5n.frachtauftrag.schiff===sh.id))||sh.phase!=='dock'||sh.system!=='aldera'
         ||sh.auftrag!=='halten'||Object.values(sh.ladung).some(n=>n!==0))
         return; // echte W3-Kollision: auf freien Frachter warten
@@ -2315,6 +2370,8 @@ const m_core_w3 = (() => {
       sh.ladung.erz=c.fracht;sh.phase='reise';sh.ziel=c.zielStation;
       sh.ankunft=state.tick+a.zeit;sh.auftrag='fracht';
       a.phase='hin';a.start=state.tick;
+      // The exact protected stock has now physically moved into the hold.
+      delete a.npcErzReserviert;
       protokolliere(state,'auftrag',sh.id+': physische K7-Erzcharge erstmals geladen; W3-Geld nicht erneut reserviert',c.spedition);
       return; // Erste Arbeitsminute erst im nächsten Tick
     }
@@ -2398,6 +2455,9 @@ const m_core_w3 = (() => {
       && (!a||(a.menge===c.fracht&&a.zeit===k.zeit&&a.erzWert===k.erzWert
         && a.arbeitsKosten===k.arbeitsKosten&&a.frachtGebuehr===k.frachtGebuehr
         && a.gesamt===k.gesamt&&a.gearbeitet>=0&&a.gearbeitet<=2*k.zeit
+        && (a.npcErzReserviert===undefined||npcErzBindungGueltig(state,rules,a))
+        && (!npcErzSchutzProfil(state,rules)||a.phase!=='vorbestellt'
+          ||state.kanon?.industrieErz?.erzAngenommen!==true||npcErzBindungGueltig(state,rules,a))
         && (a.carrier===undefined||houseCarrier(rules,a.carrier))
         && state.ships[a.schiff]?.owner===ownerOf(rules,a)
         && (state.ships[a.schiff]?.ladung.erz??0)===(a.phase==='hin'?c.fracht:0)
@@ -4193,6 +4253,15 @@ const api=Object.freeze({core:m_core_index,rules:m_data_erzpilot.W5_RULES,
     return createEngine({},{...options,wageTrade:true,waterTrade:true,
       personalWages:true,kanon:true,industryOre:true,
       silizium:true,bauteile:true,jaeger:true,jaegerFlug:true,hausErz:true,ort});
+  },
+  createNpcErz208Welt:(options,ort)=>{
+    if(options==null)options={};
+    if(typeof options!=='object'||Array.isArray(options)
+      ||Object.keys(options).some(k=>!['carrierCash','buyerCash'].includes(k)))
+      throw TypeError('Regel208: nur nachweisbare Anfangskassen');
+    return createEngine({},{...options,wageTrade:true,waterTrade:true,
+      personalWages:true,kanon:true,industryOre:true,
+      silizium:true,bauteile:true,jaeger:true,jaegerFlug:true,npcErzRevision:true,ort});
   },
   createJ4cWelt:(options,ort)=>{
     if(options==null)options={};

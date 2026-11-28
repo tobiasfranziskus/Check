@@ -269,6 +269,7 @@ body.raum-aktiv .world{display:none}
 #spielwelt .karriere-handelsweg #p3-handelsaktion:hover:not(:disabled) {background:#a7e0da}
 #spielwelt .karriere-handelsweg .p3-sperre {color:var(--manager-warnung)}
 #spielwelt .karriere-handelsweg #p3-erste-foerderaktion {justify-self:start;width:auto;max-width:100%;min-height:48px}
+#spielwelt .karriere-handelsweg #p3-auftragszentrale {justify-self:start;width:auto}
 #spielwelt .karriere-handelsweg .game-message {margin:4px 0;padding:6px 10px;min-height:0;font-size:.86rem}
 #spielwelt .game-message:empty {display:none}
 #management-spielfeld {

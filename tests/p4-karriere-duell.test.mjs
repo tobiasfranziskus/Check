@@ -9,6 +9,8 @@ const J8=require('../prototypes/verbund/konzern-session.js');
 const J4e=require('../prototypes/j4c/duell.js');
 const J4d=require('../prototypes/j4c/patrouille.js');
 const W5=require('../prototypes/w5ac/session.js');
+const W=require('../prototypes/welt/welt-kern.js');
+const Szene=require('../prototypes/raum/raum-szene.js');
 
 const fixture=()=>fs.readFileSync(new URL('../prototypes/j4c/beispiel-jaeger-seed42.json',import.meta.url),'utf8');
 const session=()=>{
@@ -148,7 +150,73 @@ test('P4: public career loads preexisting F8 modules; does not serialize duel st
  assert.match(js,/J4eDuell\.beobachten\(/);
  assert.match(js,/J4eDuell\.feuern\(/);
  assert.match(js,/duell=null/);
- assert.match(cockpit,/a\.klasse === 'jaeger' && sz\.regel === 204/);
+ // Keep the paid active fighter identity gate and whitelist precisely
+ // the two ordinary rule revisions, not all rules >= 204.
+ assert.match(cockpit,/a\.id === sz\.jaeger && a\.klasse === 'jaeger' && \[204,208\]\.includes\(sz\.regel\)/);
  assert.doesNotMatch(js,/localStorage\.setItem\([^,]+,\s*duell/);
  assert.match(html,/keine Munition, Hüllenschäden, Beute oder ISK-Belohnungen/);
+});
+
+
+test('P4: Rule208 fresh career has no fighter right; paid boundary fixture retains original virtual duel and exact version gates',()=>{
+ const fresh=J8.erstellen();fresh.starten208(true,false);
+ assert.equal(Object.values(fresh.zustandReferenz().ships).some(sh=>sh.owner==='house'&&sh.klasse==='jaeger'),false);
+ const initial=fresh.exportieren();
+ assert.throws(()=>J4e.beginnen(fresh.weltReferenz(),fresh.zustandReferenz(),'sh023'),/Eigentums|Jägerkauf/);
+ assert.equal(fresh.exportieren(),initial);
+
+ // Controlled test-only compatibility boundary, NOT a user save upgrade
+ // and NOT a claim that a fresh 208 career has produced a fighter.
+ // The pinned, fully audited 204 fixture already contains a paid 900 ISK
+ // fighter, all material and salary journals, no active W3 contract.
+ // Change only the revision in this discarded test object; the real 208
+ // loader and its full audit must accept the identical paid assets.
+ const original=fixture(),raw=JSON.parse(original),p=raw.w5ad.profile;
+ const legacy=W.erstellenJ4c(p),old=legacy.load(original);
+ assert.equal(legacy.hash(old),'daec00c7618a6cd7');
+ assert.equal(old.w3.auftrag,null);assert.equal(legacy.save(old),original);
+ const revised=W.erstellenNpcErz208(p);
+ raw.rulesVersion=208;
+ const controlled=revised.save(revised.load(revised.canonical(raw)));
+ assert.deepEqual(JSON.parse(controlled),raw);
+ assert.throws(()=>J8.erstellen().oeffnen208(original,true),/Regel208/);
+ assert.throws(()=>J8.erstellen().oeffnen204(controlled,true),/Regel204/);
+ const ses=J8.erstellen();ses.oeffnen208(controlled,true);
+ const w=ses.weltReferenz(),id='sh023';
+ assert.equal(ses.uebernehmen(id,false).ok,true);
+ assert.equal(w.audit(ses.zustandReferenz()).ok,true);
+ assert.throws(()=>J4e.beginnen(w,ses.zustandReferenz(),id),/vorfinanzierten freien Jägerflug/);
+ const cash=ses.zustandReferenz().owners.house.cash;
+ assert.equal(ses.flugBefehl({type:'shipUndock',owner:'house',schiff:id}).ok,true);
+ assert.equal(ses.zustandReferenz().owners.house.cash,cash-40);
+ ses.flugSchritte(40);
+ const s=ses.zustandReferenz(),before=ses.exportieren();
+ assert.equal(s.ships[id].flug.lage,'frei');
+ const view=Szene.erzeugen(w,s,id);
+ assert.equal(view.regel,208);assert.equal(view.jaeger,id);
+ assert.equal(view.aktiv.id,id);assert.equal(view.aktiv.klasse,'jaeger');
+ const duel=J4e.beginnen(w,s,id);
+ assert.equal(J4e.feuern(w,s,duel).ok,true);
+ assert.equal(J4e.feuern(w,s,duel).ok,false);
+ assert.equal(J4e.audit(duel).ok,true);
+ assert.equal(ses.exportieren(),before);
+ assert.equal(before.includes('"zielprobe"'),false);
+ assert.equal(s.minted,0);assert.equal(s.burned,0);
+ assert.equal(Object.values(s.owners).reduce((n,o)=>n+o.cash,0),33000);
+ const loaded=J8.erstellen();loaded.oeffnen208(before,true);
+ assert.equal(loaded.exportieren(),before);
+ assert.equal(loaded.ansicht().hash,ses.ansicht().hash);
+
+ // Explicit rejection of the three excluded research versions, even
+ // with a paid fighter projection and a purported successful audit.
+ // These are isolated guard probes, not valid research save files.
+ for(const version of [205,206,207]){
+   const probe={...s,rulesVersion:version};
+   assert.throws(()=>J4e.beginnen({regel:version,rules:w.rules,audit:()=>({ok:true})},probe,id),/auditiert/);
+ }
+ assert.throws(()=>J4e.beginnen(legacy,s,id),/auditiert/);
+ const forged=w.load(before);forged.kanon.jaeger.kaeufe=[];
+ assert.throws(()=>J4e.beginnen(w,forged,id),/auditiert|Eigentums/i);
+ assert.equal(ses.exportieren(),before);
+ assert.equal(legacy.save(old),original);
 });

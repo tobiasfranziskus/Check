@@ -7,9 +7,9 @@
 'use strict';
 const natural=n=>Number.isSafeInteger(n)&&n>=0;
 function auswerten(w,s,angebote,auswahlId=null){
- if(s?.rulesVersion!==204||(!w?.hausErzProfil&&(s?.kanon?.npcAuto!==true||
+ if(![204,208].includes(s?.rulesVersion)||(!w?.hausErzProfil&&(s?.kanon?.npcAuto!==true||
    s?.kanon?.npcSilizium?.aktiv!==true)))return Object.freeze({sichtbar:false});
- if(!w||w.regel!==204||!w.audit(s).ok||!Array.isArray(angebote))
+ if(!w||w.regel!==s.rulesVersion||!w.audit(s).ok||!Array.isArray(angebote))
    throw Error('W4/W5-Produktionsakte benötigt eine auditierte Original-S02-Welt');
  const r=w.rules,ore=s.w3,refinery=s.w4,yard=s.w5;
  const nadir=s.stations.st_nadir.lager,aldera=s.stations.st_aldera.lager;

@@ -6,7 +6,7 @@
 'use strict';
 function erstellen(welt,zustand,kaufangebot){
  const r=welt?.rules,s=zustand;
- if(![204,207].includes(r?.rulesVersion)||s?.rulesVersion!==r.rulesVersion||!r?.j3||!r?.j4||
+ if(![204,207,208].includes(r?.rulesVersion)||s?.rulesVersion!==r.rulesVersion||!r?.j3||!r?.j4||
     !s?.stations?.st_nadir||!s?.owners?.st_nadir||!s?.owners?.house||
     !s?.kanon?.bauteile||!s?.kanon?.jaeger)
    throw Error('J13: nur originale, vollstaendige Regel204-Jaegerwirtschaft');

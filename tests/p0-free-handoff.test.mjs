@@ -336,7 +336,8 @@ function matrixFixture(jobOverrides = {}, extra = {}) {
 test('der Katalog deckt alle geprüften Git-Blobs ab und trennt Pflicht-, bedingte und manuelle Workflows', async () => {
   const { get } = matrixFixture()
   const report = await collect({ get, pr: 42 })
-  assert.equal(report.main.workflows.length, 22)
+  assert.equal(report.main.workflows.length, 23)
+  assert.equal(report.main.workflows.filter(row => row.path === workflowPath('qa-public-root-probe')).length, 1)
   assert.deepEqual(report.main.workflows.map(row => row.path).sort(), blobs.map(row => row.path).sort())
   assert.ok(report.main.workflows.every(row => row.definitionStatus === 'verified'))
   assert.equal(report.main.workflows.find(row => row.path === workflowPath('w6-p8g-p2-main-integration')).applicability, 'not_applicable')

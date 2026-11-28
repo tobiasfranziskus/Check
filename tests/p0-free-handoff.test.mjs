@@ -1,7 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { spawnSync } from 'node:child_process'
 import handoff from '../tools/p0-free-handoff.cjs'
 
 const { collect, markdown, parseArgs, parseResponse, safeText } = handoff
@@ -453,4 +456,111 @@ test('Push-Filter, Pages-Deployment und Root-Nachweis sind getrennt', async () =
   assert.equal(report.pages.workflow.coverage, 'metadata_success')
   assert.equal(report.pages.deployment.status, 'success')
   assert.equal(report.publicRoot.status, 'unknown')
+})
+
+test('CODEX-02: fehlender oder defekter PR-Abruf erhält den unbekannten Teilbericht', async () => {
+  for (const response of [() => { throw new Error('HTTP 503') }, () => ({ data: null }), () => ({ data: { number: 42 } })]) {
+    const { get } = fixture({ '/pulls/42': response })
+    const report = await collect({ get, pr: 42, allow: ['docs/'] })
+    assert.equal(report.pr.number, 42)
+    assert.equal(report.pr.stable, null)
+    assert.equal(report.pr.headSha, null)
+    assert.equal(report.pr.discoveryComplete, false)
+    assert.equal(report.pr.diff.complete, false)
+    assert.equal(report.pr.diff.changedFiles, null)
+    assert.deepEqual(report.pr.diff.allowedPaths, ['docs/'])
+    assert.deepEqual(report.pr.workflows, [])
+    assert.equal(report.main.sha, sha('a'))
+    assert.ok(report.pages.workflow)
+    assert.ok(report.issues.some(issue => issue.source === 'PR'))
+    assert.match(markdown(report), /PR #42/)
+    assert.match(markdown(report), /Offene CI-Evidenz/)
+  }
+})
+
+test('CODEX-02: success-Job mit laufenden, fehlenden oder inkonsistenten Schritten ist unvollständig', async () => {
+  const valid = { number: 1, name: 'Run tests', status: 'completed', conclusion: 'success' }
+  for (const steps of [
+    [{ ...valid, status: 'in_progress', conclusion: null }],
+    [{ ...valid, status: 'queued', conclusion: null }],
+    [{ ...valid, status: undefined }],
+    [{ ...valid, conclusion: null }],
+    [{ ...valid, status: 'in_progress' }],
+    undefined, [],
+    [valid, { ...valid, number: 2, conclusion: 'failure' }],
+    [valid, { ...valid, number: 2, conclusion: 'skipped' }],
+    [valid]
+  ]) {
+    const { get } = matrixFixture({
+      '/actions/runs/111/attempts/2/jobs': () => list('jobs', [
+        goodJob(470, 'ore-original-node22', { steps }),
+        goodJob(471, 'ore-browser (chromium)'), goodJob(472, 'ore-browser (webkit)')
+      ])
+    })
+    const report = await collect({ get, pr: 42 })
+    const row = report.pr.workflows.find(row => row.path === workflowPath('m4-u3-ore'))
+    const legitimate = steps?.length && steps.every(step => step.status === 'completed' && ['success', 'skipped'].includes(step.conclusion))
+    assert.equal(row.coverage, legitimate ? 'metadata_success' : 'incomplete_jobs', JSON.stringify(steps))
+    if (!legitimate) assert.match(markdown(report), /Offene CI-Evidenz/)
+  }
+})
+
+test('CODEX-02: fehlende oder gekappte frühere Versuche blockieren die Gesamtevidenz', async () => {
+  for (const capped of [false, true]) {
+    const { get } = fixture({
+      '/actions/workflows/10/runs': params => list('workflow_runs', params.get('event') === 'push'
+        ? [run(100, false, { run_attempt: capped ? 4 : 2 })] : []),
+      '/actions/runs/100/attempts/4/jobs': () => list('jobs', [goodJob(200, 'inventory')]),
+      '/actions/runs/100/attempts/3/jobs': () => list('jobs', []),
+      '/actions/runs/100/attempts/3': () => ({ data: run(100, false, { run_attempt: 3 }) }),
+      '/actions/runs/100/attempts/2': () => ({ data: run(100, false) }),
+      '/actions/runs/100/attempts/1/jobs': () => { throw new Error('HTTP 503') }
+    })
+    const report = await collect({ get })
+    const row = report.main.workflows[0]
+    assert.equal(row.jobsComplete, true)
+    assert.equal(row.expectedJob.status, 'success')
+    assert.equal(row.attemptsComplete, false)
+    assert.equal(row.coverage, 'unknown')
+    assert.ok(report.issues.length)
+    assert.match(markdown(report), /Versuchshistorie unvollständig/)
+    assert.match(markdown(report), /Offene CI-Evidenz/)
+  }
+})
+
+
+test('CODEX-02: echte CLI schreibt bei PR-HTTP-/Formfehler JSON und Markdown mit Exit2', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'p0-cli-'))
+  try {
+    for (const http of [false, true]) {
+      const preload = join(dir, 'transport.cjs')
+      writeFileSync(preload, `
+        const cp = require('node:child_process')
+        const { promisify } = require('node:util')
+        cp.execFile = Object.assign(() => {}, { [promisify.custom]: async (file, args) => {
+          if (file !== 'gh' || !args.includes('GET')) throw new Error('Unexpected transport')
+          const path = args.at(-1).split('?')[0]
+          if (path.endsWith('/pulls/42') && ${http}) throw { stdout: 'HTTP/2 503' }
+          let data = []
+          if (path.endsWith('/pulls/42')) data = null
+          if (path.endsWith('/branches/main')) data = { commit: { sha: '${sha('a')}' } }
+          if (path.endsWith('/contents/.github/workflows')) data = ${JSON.stringify(blobs)}
+          if (path.endsWith('/actions/workflows')) data = { workflows: [], total_count: 0 }
+          if (path.endsWith('/actions/runs')) data = { workflow_runs: [], total_count: 0 }
+          return { stdout: 'HTTP/2 200\\n\\n' + JSON.stringify(data) }
+        } })
+      `)
+      const result = spawnSync(process.execPath, ['--require', preload, 'tools/p0-free-handoff.cjs',
+        '--pr', '42', '--out', dir], { encoding: 'utf8', timeout: 15000 })
+      assert.equal(result.status, 2, result.stderr)
+      const report = JSON.parse(readFileSync(join(dir, 'handoff.json'), 'utf8'))
+      assert.equal(report.pr.number, 42)
+      assert.equal(report.main.sha, sha('a'))
+      assert.ok(report.pages.workflow)
+      assert.ok(report.issues.some(issue => issue.source === 'PR'))
+      assert.match(readFileSync(join(dir, 'handoff.md'), 'utf8'), /Offene CI-Evidenz/)
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 })

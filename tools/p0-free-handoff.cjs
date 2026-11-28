@@ -378,7 +378,7 @@ async function collect({ pr = null, allow = [], get = githubGet, sourceSha = nul
       const stepList = Array.isArray(job.steps) ? job.steps : []
       const steps = stepList.slice(0, 80).map(step => ({
         number: positive(step?.number) ? step.number : null, name: safeText(step?.name),
-        status: status(step ?? {})
+        status: status(step ?? {}), completed: step?.status === 'completed'
       }))
       const contextSha = sha(job.head_sha)
       const belongs = job.run_id === run.id && job.run_attempt === attempt && Boolean(contextSha)
@@ -396,7 +396,9 @@ async function collect({ pr = null, allow = [], get = githubGet, sourceSha = nul
         url: web + '/actions/runs/' + run.id + '/job/' + job.id,
         durationSeconds: started && ended && ended >= started ? (Date.parse(ended) - Date.parse(started)) / 1000 : null,
         steps, stepsComplete: Array.isArray(job.steps) && stepList.length <= 80
-          && steps.every(step => positive(step.number) && step.status !== 'unknown')
+          && steps.every(step => positive(step.number) && step.status !== 'unknown'
+            && (job.status !== 'completed' || (step.completed
+              && !['queued', 'in_progress', 'requested', 'waiting', 'pending'].includes(step.status))))
           && new Set(steps.map(step => step.number)).size === steps.length,
         diagnostic: belongs ? diagnostic : null,
         evidence: { checkout: 'unknown', tap: 'unknown', markers: 'unknown' }
@@ -520,7 +522,7 @@ async function collect({ pr = null, allow = [], get = githubGet, sourceSha = nul
     const gaps = row.expectedJobs.filter(job => job.required ? job.status !== 'success' : job.status !== 'not_applicable')
     const unexpected = current.jobs.some(job => !job.matches || (job.status === 'success'
       && (!job.stepsComplete || !job.steps.length || job.steps.some(step => ['failure', 'cancelled', 'timed_out', 'startup_failure'].includes(step.status)))))
-    row.coverage = !exact.complete || !row.runsComplete || !runStable || !current.complete || !artifacts.complete
+    row.coverage = !exact.complete || !row.runsComplete || !runStable || !current.complete || !artifacts.complete || !row.attemptsComplete
       || (relation === 'current' && applicability === 'unknown')
       || !['verified', 'system'].includes(definitionStatus) || (workflow.blob && definition?.state !== 'active') ? 'unknown'
       : relation !== 'current' ? relation
@@ -596,10 +598,10 @@ async function collect({ pr = null, allow = [], get = githubGet, sourceSha = nul
       headRef: safeText(prTarget?.ref) || null, baseSha: prTarget?.baseSha ?? null,
       baseRef: safeText(prTarget?.baseRef) || null,
       baseMatchesMain: prTarget?.baseRef === 'main' && mainTarget.headSha ? prTarget.baseSha === mainTarget.headSha : null,
-      testMerge: merge, discoveryComplete: prRuns.discoveryComplete,
-      diff: { complete: changed.complete, changedFiles: changed.changedFiles,
-        allowedPaths: changed.allowedPaths, files: changed.files },
-      workflows: prRuns.rows
+      testMerge: merge, discoveryComplete: prRuns?.discoveryComplete ?? false,
+      diff: { complete: changed?.complete ?? false, changedFiles: changed?.changedFiles ?? null,
+        allowedPaths: changed?.allowedPaths ?? allow.map(rule => safeText(rule)), files: changed?.files ?? [] },
+      workflows: prRuns?.rows ?? []
     },
     issues: issues.sort((a, b) => a.source.localeCompare(b.source))
   }
@@ -639,6 +641,7 @@ function markdown(report) {
     }
     const omitted = rows.length - Math.min(shown.length, 25)
     if (omitted) lines.push('- Weitere ' + omitted + ' Workflows im JSON, einschließlich nicht zutreffender Trigger.')
+    if (rows.some(row => row.attemptsComplete === false)) lines.push('- Versuchshistorie unvollständig. Aktuelle Jobs separat im JSON; Gesamtevidenz offen.')
     if (rows.some(row => row.jobsComplete === false)) lines.push('- Jobliste unvollständig. Einzelheiten im JSON.')
   }
   lines.push('## Main-Push', '', code(report.main.sha) + ' · ' + stability(report.main.stable)
@@ -672,7 +675,9 @@ function markdown(report) {
     if (report.issues.length > 8) lines.push('- Weitere Abruflücken im JSON.')
   }
   const target = report.pr ?? report.main
-  const blocked = target.stable !== true || !target.discoveryComplete
+  const blocked = report.issues.length > 0 || target.stable !== true || !target.discoveryComplete
+    || (report.pr && !report.pr.diff.complete)
+    || target.workflows.some(row => row.attemptsComplete === false)
     || target.workflows.some(row => !['metadata_success', 'not_applicable'].includes(row.coverage))
   lines.push('', '**Nächstes Gate** · ' + (blocked
     ? 'Offene CI-Evidenz anhand der Originaljobs klären.'

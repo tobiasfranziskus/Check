@@ -165,8 +165,50 @@ function validateSave(json, paid) {
   const fleet = Object.entries(save.ships).filter(([, ship]) => ship.owner === 'house');
   assert.equal(fleet.length, paid ? 1 : 0, 'Anzahl eigener Schiffe');
   if (paid) assert.equal(fleet[0][1].klasse, 'miner', 'Eigenes Bergbauschiff');
-  return { rule: save.rulesVersion, cash: save.owners.house.cash, worldCash: WORLD_CASH,
-    minted: save.minted, burned: save.burned, minerId: fleet[0]?.[0] };
+  return save;
+}
+
+function validatePurchase(beforeJson, afterJson) {
+  const before = validateSave(beforeJson, false);
+  const after = validateSave(afterJson, true);
+  assert.ok(Number.isSafeInteger(before.tick) && before.tick >= 0, 'Ungültige Spielminute');
+  assert.equal(after.tick, before.tick, 'Kauf ohne Zeitschritt');
+
+  const buyerDebit = before.owners.house.cash - after.owners.house.cash;
+  assert.equal(buyerDebit, MINER_PRICE, 'Abbuchung Hauskasse');
+  const sellerBefore = before.owners.werft_extern?.cash;
+  const sellerAfter = after.owners.werft_extern?.cash;
+  const sellerCredit = sellerAfter - sellerBefore;
+  assert.equal(sellerCredit, MINER_PRICE, 'Gutschrift Werftkonto werft_extern');
+  const otherAccounts = save => Object.fromEntries(Object.entries(save.owners)
+    .filter(([id]) => id !== 'house' && id !== 'werft_extern')
+    .map(([id, owner]) => [id, owner.cash]));
+  assert.deepEqual(otherAccounts(after), otherAccounts(before), 'Übrige Konten beim Kauf verändert');
+
+  const stockBefore = before.stations?.st_aldera?.lager?.miner;
+  const stockAfter = after.stations?.st_aldera?.lager?.miner;
+  assert.ok(Number.isSafeInteger(stockBefore) && stockBefore > 0 &&
+    Number.isSafeInteger(stockAfter) && stockAfter === stockBefore - 1, 'Aldera-Minerbestand: Abgang fehlt');
+  const consumedBefore = before.ledger?.miner?.consumed;
+  const consumedAfter = after.ledger?.miner?.consumed;
+  assert.ok(Number.isSafeInteger(consumedBefore) && consumedBefore >= 0 &&
+    Number.isSafeInteger(consumedAfter) && consumedAfter === consumedBefore + 1, 'Miner-Ledger: Verbrauch fehlt');
+
+  const added = Object.keys(after.ships).filter(id => !Object.hasOwn(before.ships, id));
+  assert.equal(added.length, 1, 'Genau eine neue Hülle erforderlich');
+  const [minerId] = added;
+  const miner = after.ships[minerId];
+  assert.equal(miner.id, minerId, 'Neue Miner-ID stimmt nicht mit dem Save-Eintrag überein');
+  assert.equal(miner.owner, 'house', 'Neue Hülle gehört nicht der Hausflotte');
+  assert.equal(miner.klasse, 'miner', 'Neue Hülle ist kein Miner');
+  const existingShips = Object.fromEntries(Object.entries(after.ships).filter(([id]) => id !== minerId));
+  assert.deepEqual(existingShips, before.ships, 'Übrige Schiffe beim Kauf verändert');
+
+  return { rule: after.rulesVersion, cash: after.owners.house.cash, worldCash: WORLD_CASH,
+    minted: after.minted, burned: after.burned, minerId, purchase: {
+      buyerDebit, seller: 'werft_extern', sellerCredit,
+      station: 'st_aldera', stockBefore, stockAfter, consumedBefore, consumedAfter
+    } };
 }
 
 function githubApi(token) {
@@ -242,10 +284,10 @@ async function browserSmoke(sha) {
     assert.equal(await read(), null, 'Karriereslot ist vor Neustart belegt');
     await page.locator('#karriere-direkt').tap();
     await page.locator('#spielwelt').waitFor({ state: 'visible' });
-    validateSave(await read(), false);
     await page.locator('#tab-jaeger').tap();
+    const before = await read();
     await page.locator('[data-j13-action="buy-st_aldera-miner"]').tap();
-    const paid = validateSave(await read(), true);
+    const paid = validatePurchase(before, await read());
     if (problems.length) throw problems[0];
     assert.deepEqual(errors, [], 'Browserfehler im öffentlichen Startpfad');
     return { ...paid, files: Object.fromEntries([...files].sort()) };
@@ -322,5 +364,5 @@ async function main() {
 }
 
 if (require.main === module) main();
-module.exports = { assetPath, assertSameDeployment, identifyDeployment, targetSha, validateSave,
+module.exports = { assetPath, assertSameDeployment, identifyDeployment, targetSha, validatePurchase, validateSave,
   verifyBytes, verifyRelease };

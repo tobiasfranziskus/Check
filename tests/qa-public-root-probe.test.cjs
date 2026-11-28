@@ -2,8 +2,9 @@
 
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { assetPath, identifyDeployment, targetSha, validateSave, verifyBytes, verifyRelease } =
+const { assetPath, identifyDeployment, targetSha, validatePurchase, validateSave, verifyBytes, verifyRelease } =
   require('../scripts/qa-public-root-probe.cjs');
+const { erstellen } = require('../prototypes/verbund/konzern-session.js');
 
 const sha = '0'.repeat(40);
 const other = '1'.repeat(40);
@@ -103,8 +104,8 @@ const save = (paid = true) => ({
 });
 
 test('fresh career and purchase require usable saves, real payment and house ownership', () => {
-  assert.equal(validateSave(JSON.stringify(save(false)), false).cash, 3000);
-  assert.equal(validateSave(JSON.stringify(save()), true).minerId, 'sh1');
+  assert.equal(validateSave(JSON.stringify(save(false)), false).owners.house.cash, 3000);
+  assert.equal(validateSave(JSON.stringify(save()), true).ships.sh1.owner, 'house');
   for (const patch of [{ rulesVersion: 209 }, { schema: 9 }, { ships: {} }, { ships: 'invalid' }, { burned: 1 },
     { ships: { sh1: { owner: 'guest', klasse: 'miner' } } }, { minted: undefined },
     { owners: { house: { cash: 3000 }, seller: { cash: 30000 } } },
@@ -114,6 +115,73 @@ test('fresh career and purchase require usable saves, real payment and house own
   assert.throws(() => validateSave(null, true));
   assert.throws(() => validateSave('{not-json}', false));
 });
+
+function rule208Purchase() {
+  const session = erstellen();
+  session.starten208(true);
+  const before = session.exportieren();
+  const purchase = session.ausfuehren('buy-st_aldera-miner');
+  assert.equal(purchase.ok, true, purchase.reason);
+  assert.equal(purchase.type, 'shipBuy');
+  return { before, after: session.exportieren() };
+}
+
+test('the standard Rule208 session books an Aldera miner purchase end to end', () => {
+  const { before, after } = rule208Purchase();
+  const result = validatePurchase(before, after);
+  assert.deepEqual({ rule: result.rule, cash: result.cash, worldCash: result.worldCash,
+    minted: result.minted, burned: result.burned },
+  { rule: 208, cash: 2400, worldCash: 33000, minted: 0, burned: 0 });
+  assert.match(result.minerId, /^sh[0-9]+$/);
+  assert.equal(result.purchase.seller, 'werft_extern');
+  assert.equal(result.purchase.buyerDebit, 600);
+  assert.equal(result.purchase.sellerCredit, 600);
+  assert.equal(result.purchase.stockBefore - result.purchase.stockAfter, 1);
+  assert.equal(result.purchase.consumedAfter - result.purchase.consumedBefore, 1);
+});
+
+for (const [name, change, reason] of [
+  ['a different payment recipient with unchanged world cash', (after, before) => {
+    after.owners.werft_extern.cash = before.owners.werft_extern.cash;
+    after.owners.export.cash += 600;
+  }, /Gutschrift Werftkonto/],
+  ['an unbooked stock removal', (after, before) => {
+    after.stations.st_aldera.lager.miner = before.stations.st_aldera.lager.miner;
+  }, /Aldera-Minerbestand/],
+  ['an unbooked ledger consumption', (after, before) => {
+    after.ledger.miner.consumed = before.ledger.miner.consumed;
+  }, /Miner-Ledger/],
+  ['an inconsistent new hull ID', (after, before, id) => {
+    after.ships[id].id = Object.keys(before.ships)[0];
+  }, /Neue Miner-ID/],
+  ['an additional hull', (after, before, id) => {
+    after.ships.sh999 = { ...after.ships[id], id: 'sh999', owner: 'werft_extern' };
+  }, /Genau eine neue Hülle/],
+  ['a pre-existing hull passed off as a new house miner', (after, before, id) => {
+    const existingId = Object.keys(before.ships)[0];
+    after.ships[existingId] = { ...after.ships[id], id: existingId };
+    after.ships[id].owner = 'werft_extern';
+  }, /Neue Hülle gehört nicht der Hausflotte/],
+  ['a changed pre-existing hull', (after, before) => {
+    after.ships[Object.keys(before.ships)[0]].heimat = 'changed';
+  }, /Übrige Schiffe/],
+  ['an unrelated transfer with unchanged world cash', after => {
+    after.owners.export.cash -= 1;
+    after.owners.npc3.cash += 1;
+  }, /Übrige Konten/],
+  ['a simulation step between snapshots', after => {
+    after.tick += 1;
+  }, /Kauf ohne Zeitschritt/]
+]) {
+  test(`purchase evidence rejects ${name}`, () => {
+    const { before, after } = rule208Purchase();
+    const initial = JSON.parse(before);
+    const changed = JSON.parse(after);
+    const id = Object.keys(changed.ships).find(shipId => !Object.hasOwn(initial.ships, shipId));
+    change(changed, initial, id);
+    assert.throws(() => validatePurchase(before, JSON.stringify(changed)), reason);
+  });
+}
 
 test('bounded publication polling and CDN retry happen before final attestation', async () => {
   let checks = 0;

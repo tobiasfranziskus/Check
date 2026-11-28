@@ -1,0 +1,67 @@
+name: P0 - Public Pages verification
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: 'Optional exact SHA of the current main publication'
+        type: string
+  pull_request:
+    paths:
+      - '.github/workflows/qa-public-root-probe.yml'
+      - 'scripts/qa-public-root-probe.cjs'
+      - 'tests/qa-public-root-probe.test.cjs'
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/qa-public-root-probe.test.cjs
+
+  public-pages:
+    if: >-
+      github.event_name != 'pull_request' && github.repository_id == '1438125521'
+    permissions:
+      contents: read
+      actions: read
+      deployments: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Refuse probes outside main before checkout
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo '::error::UNKNOWN: Select main for the public Pages verification.'
+          exit 1
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium for the probe
+        run: |
+          npm install --no-save --ignore-scripts --prefix "$RUNNER_TEMP/root-probe" playwright@1.51.1
+          node "$RUNNER_TEMP/root-probe/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: Verify the deployed commit and public career
+        run: node scripts/qa-public-root-probe.cjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAGES_EXPECT_SHA: ${{ inputs.expected_sha }}
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/root-probe/node_modules/playwright

@@ -1,5 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { readFileSync, readdirSync } from 'node:fs'
 import handoff from '../tools/p0-free-handoff.cjs'
 
 const { collect, markdown, parseArgs, parseResponse, safeText } = handoff
@@ -14,6 +16,13 @@ const defs = [
   { id: 10, path: '.github/workflows/p0-prototype-inventory.yml', state: 'active' },
   { id: 11, path: '.github/workflows/ui-regression.yml', state: 'active' }
 ]
+
+const workflowDir = new URL('../.github/workflows/', import.meta.url)
+const blobs = readdirSync(workflowDir).map(name => {
+  const content = readFileSync(new URL(name, workflowDir))
+  const digest = createHash('sha1').update('blob ' + content.length + '\0').update(content).digest('hex')
+  return { type: 'file', path: '.github/workflows/' + name, sha: digest }
+})
 const run = (id, target, fields = {}) => ({
   id, run_attempt: 2, status: 'completed', conclusion: 'success',
   head_branch: target ? pr.head.ref : 'main', head_sha: target ? pr.head.sha : pr.base.sha,
@@ -25,14 +34,24 @@ const list = (key, items, next = false, total = items.length) => ({ data: { [key
 
 function fixture(overrides = {}) {
   const requests = []
-  const get = (endpoint) => {
+  const runRoutes = new Map()
+  const route = (endpoint) => {
     assert.ok(endpoint.startsWith(prefix + '/'))
     const url = new URL('https://api.github.com/' + endpoint)
     const path = url.pathname.slice(prefix.length + 1)
     const params = url.searchParams
     requests.push({ path, params })
     if (path in overrides) return overrides[path](params)
+    const detail = /^\/actions\/runs\/(\d+)$/.exec(path)
+    if (detail) return { data: runRoutes.get(Number(detail[1])) }
+    const prior = /^\/actions\/runs\/(\d+)\/attempts\/1$/.exec(path)
+    if (prior) return { data: { ...runRoutes.get(Number(prior[1])), run_attempt: 1 } }
+    if (path.endsWith('/attempts/1/jobs')) return list('jobs', [])
     switch (path) {
+      case '/contents/.github/workflows': return { data: blobs }
+      case '/actions/runs': return list('workflow_runs', [])
+      case '/events':
+      case '/deployments': return { data: [], next: false }
       case '/branches/main': return { data: { commit: { sha: sha('a') } } }
       case '/pulls/42': return { data: pr }
       case '/pulls/42/files':
@@ -76,6 +95,19 @@ function fixture(overrides = {}) {
       default: assert.fail('Unerwarteter Pfad ' + path)
     }
   }
+  const get = endpoint => {
+    const response = route(endpoint)
+    for (const item of response.data?.workflow_runs ?? []) runRoutes.set(item.id, item)
+    const match = /\/actions\/runs\/(\d+)\/attempts\/(\d+)\/jobs/.exec(endpoint)
+    if (match && response.data?.jobs) {
+      const [runId, attempt] = match.slice(1).map(Number)
+      response.data.jobs = response.data.jobs.map(job => ({
+        run_id: runId, run_attempt: attempt, head_sha: runRoutes.get(runId)?.head_sha,
+        steps: [{ number: 1, name: 'Set up job', status: 'completed', conclusion: 'success' }], ...job
+      }))
+    }
+    return response
+  }
   return { get, requests }
 }
 
@@ -114,7 +146,7 @@ test('verknüpft Main/PR und blättert Workflows, Dateien, Jobs und Artefakte we
   assert.match(partial.run.url, /101\/attempts\/2$/)
   assert.equal(queued.status, 'queued')
   assert.equal(queued.expectedJob.status, 'missing')
-  assert.deepEqual(report.main.workflows.map(workflow => workflow.relation), ['current', 'stale_head'])
+  assert.deepEqual(report.main.workflows.slice(0, 2).map(workflow => workflow.relation), ['current', 'stale_head'])
   assert.ok(requests.some(({ path, params }) => path.includes('/101/attempts/2/jobs') && params.get('page') === '2'))
   assert.ok(requests.every(({ path }) => !/\/logs|\/zip/.test(path)))
   assert.match(markdown(report), /1 außerhalb/)
@@ -266,4 +298,159 @@ test('fehlende, null, nichtpositive, nichtnumerische und unsichere IDs bleiben A
       if (entry.key === 'jobs') assert.equal(report.pr.workflows[0].expectedJob.status, 'unknown')
     }
   }
+})
+
+const workflowPath = name => '.github/workflows/' + name + '.yml'
+const goodJob = (id, name, rest = {}) => ({
+  id, name, status: 'completed', conclusion: 'success', ...rest
+})
+
+function matrixFixture(jobOverrides = {}, extra = {}) {
+  const compat = { id: 12, path: workflowPath('w-rule208-compat'), state: 'active' }
+  const browser = { id: 13, path: workflowPath('m4-u3-ore'), state: 'active' }
+  const matrix = ['pinned-old-build', ...Array.from({ length: 13 }, (_, i) =>
+    'revision-longterm (S' + String(i + 1).padStart(2, '0') + ', 90)'),
+  'revision-longterm (S02, 365)', 'revision-longterm (S02, 730)']
+  return fixture({
+    '/actions/workflows': () => list('workflows', [...defs, compat, browser]),
+    '/pulls/42/files': () => ({ data: [
+      { filename: 'prototypes/verbund/konzern-session.js', status: 'modified' },
+      { filename: 'docs/README.md', status: 'added' }
+    ] }),
+    '/actions/workflows/12/runs': () => list('workflow_runs', [run(110, true)]),
+    '/actions/workflows/13/runs': () => list('workflow_runs', [run(111, true)]),
+    '/actions/runs/110/artifacts': () => list('artifacts', []),
+    '/actions/runs/111/artifacts': () => list('artifacts', []),
+    '/actions/runs/110/attempts/2/jobs': () => list('jobs', matrix.map((name, i) => goodJob(400 + i, name))),
+    '/actions/runs/111/attempts/2/jobs': () => list('jobs', [
+      goodJob(470, 'ore-original-node22'), goodJob(471, 'ore-browser (chromium)'), goodJob(472, 'ore-browser (webkit)')
+    ]),
+    ...jobOverrides,
+    ...extra
+  })
+}
+
+test('der Katalog deckt alle geprüften Git-Blobs ab und trennt Pflicht-, bedingte und manuelle Workflows', async () => {
+  const { get } = matrixFixture()
+  const report = await collect({ get, pr: 42 })
+  assert.equal(report.main.workflows.length, 22)
+  assert.deepEqual(report.main.workflows.map(row => row.path).sort(), blobs.map(row => row.path).sort())
+  assert.ok(report.main.workflows.every(row => row.definitionStatus === 'verified'))
+  assert.equal(report.main.workflows.find(row => row.path === workflowPath('w6-p8g-p2-main-integration')).applicability, 'not_applicable')
+  assert.equal(report.pr.workflows.find(row => row.path === workflowPath('m4-u4-gemini-visual')).coverage, 'not_applicable')
+  const rule = report.pr.workflows.find(row => row.path === workflowPath('w-rule208-compat'))
+  assert.equal(rule.expectedJobs.length, 16)
+  assert.equal(rule.coverage, 'metadata_success')
+  const browser = report.pr.workflows.find(row => row.path === workflowPath('m4-u3-ore'))
+  assert.equal(browser.coverage, 'metadata_success')
+  assert.ok(markdown(report).trimEnd().split('\n').length < 100)
+})
+
+test('grüner Run mit fehlenden, doppelt benannten, übersprungenen oder widersprüchlichen Matrixjobs bleibt offen', async () => {
+  const { get } = matrixFixture({
+    '/actions/runs/111/attempts/2/jobs': () => list('jobs', [
+      goodJob(470, 'ore-original-node22', { steps: [{ number: 2, name: 'Checkout', status: 'completed', conclusion: 'failure' }] }),
+      goodJob(471, 'ore-browser (chromium)', { conclusion: 'skipped' }),
+      goodJob(472, 'ore-browser (chromium)')
+    ])
+  })
+  const report = await collect({ get, pr: 42 })
+  const browser = report.pr.workflows.find(row => row.path === workflowPath('m4-u3-ore'))
+  assert.equal(browser.status, 'success')
+  assert.equal(browser.coverage, 'incomplete_jobs')
+  assert.deepEqual(browser.expectedJobs.map(job => job.status), ['success', 'unknown', 'missing'])
+  assert.equal(browser.jobs[0].diagnostic.name, 'Checkout')
+})
+
+test('ein neuerer abgebrochener Run verdrängt einen älteren grünen Run desselben SHA', async () => {
+  const { get } = fixture({
+    '/actions/workflows/10/runs': params => list('workflow_runs', params.get('event') === 'push' ? [] : [
+      run(100, true), run(101, true, { conclusion: 'cancelled' })
+    ])
+  })
+  const report = await collect({ get, pr: 42 })
+  const row = report.pr.workflows[0]
+  assert.deepEqual(row.candidates.map(item => item.id), [101, 100])
+  assert.equal(row.coverage, 'cancelled')
+})
+
+test('Retry-Wechsel, fremder Jobversuch und Run-Artefakte liefern keinen aktuellen Nachweis', async () => {
+  const { get } = fixture({
+    '/actions/runs/101': () => ({ data: run(101, true, { run_attempt: 3 }) }),
+    '/actions/runs/101/attempts/2/jobs': () => list('jobs', [goodJob(201, 'inventory', { run_attempt: 1 })]),
+    '/actions/runs/101/attempts/1/jobs': () => list('jobs', [goodJob(205, 'inventory')])
+  })
+  const { pr: result, issues } = await collect({ get, pr: 42 })
+  const row = result.workflows[0]
+  assert.equal(row.run.stable, false)
+  assert.equal(row.coverage, 'unknown')
+  assert.equal(row.jobs[0].status, 'unknown')
+  assert.equal(row.attempts[1].jobs[0].status, 'success')
+  assert.equal(row.artifacts[0].attempt, 'unknown')
+  assert.ok(issues.some(issue => /Versuch änderte/.test(issue.reason)))
+})
+
+test('unbekannte und geänderte Workflow-Definitionen werden als Lücken ausgewiesen', async () => {
+  const unexpected = workflowPath('unreviewed')
+  const { get } = matrixFixture({}, {
+    '/contents/.github/workflows': () => ({ data: [
+      ...blobs.map(file => file.path === workflowPath('m4-u3-ore') ? { ...file, sha: sha('d') } : file),
+      { path: unexpected, sha: sha('e'), type: 'file' }
+    ] })
+  })
+  const { pr: result } = await collect({ get, pr: 42 })
+  const browser = result.workflows.find(row => row.path === workflowPath('m4-u3-ore'))
+  assert.equal(browser.definitionStatus, 'drift')
+  assert.equal(browser.coverage, 'unknown')
+  assert.equal(result.workflows.find(row => row.path === unexpected).coverage, 'unknown')
+})
+
+test('Optionen, Schritttexte, Artefakte und ein Testmerge-Kandidat belegen weder Checkout noch TAP oder Marker', async () => {
+  const { get, requests } = fixture({
+    '/pulls/42': () => ({ data: { ...pr, state: 'open', merge_commit_sha: sha('c') } }),
+    ['/git/commits/' + sha('c')]: () => ({ data: {
+      sha: sha('c'), tree: { sha: sha('d') }, parents: [{ sha: sha('a') }, { sha: sha('b') }]
+    } }),
+    '/actions/runs/101/attempts/2/jobs': () => list('jobs', [goodJob(201, 'inventory', {
+      head_sha: sha('c'), steps: [{
+        number: 2, status: 'completed', conclusion: 'success', name: 'Checkout',
+        output: 'TAP version 13\n1..639\n# pass 639\nINDEPENDENT_MANAGER_PASS\nPASSWORD=do-not-export'
+      }]
+    })])
+  })
+  const report = await collect({ get, pr: 42 })
+  assert.equal(report.pr.testMerge.matchesPr, true)
+  const row = report.pr.workflows[0]
+  assert.equal(row.run.checkoutSha, null)
+  assert.deepEqual(row.jobs[0].evidence, { checkout: 'unknown', tap: 'unknown', markers: 'unknown' })
+  assert.doesNotMatch(JSON.stringify(report), /TAP version|# pass 639|INDEPENDENT_MANAGER_PASS|do-not-export/)
+  assert.ok(requests.every(({ path }) => !/\/logs|\/zip/.test(path)))
+})
+
+test('Push-Filter, Pages-Deployment und Root-Nachweis sind getrennt', async () => {
+  const deploymentRun = 'dynamic/pages/pages-build-deployment'
+  const { get } = fixture({
+    '/events': () => ({ data: [{
+      type: 'PushEvent', repo: { name: 'tobiasfranziskus/Check' },
+      payload: { ref: 'refs/heads/main', head: sha('a'), before: sha('c') }
+    }] }),
+    ['/compare/' + sha('c') + '...' + sha('a')]: () => ({ data: {
+      base_commit: { sha: sha('c') }, merge_base_commit: { sha: sha('c') }, status: 'ahead', total_commits: 1,
+      files: [{ filename: 'prototypes/spiel/spiel.js' }]
+    } }),
+    '/actions/runs': () => list('workflow_runs', [run(104, false, { event: 'dynamic', path: deploymentRun + '@main' })]),
+    '/actions/runs/104/attempts/2/jobs': () => list('jobs', [
+      goodJob(222, 'build'), goodJob(223, 'report-build-status'), goodJob(224, 'deploy')
+    ]),
+    '/actions/runs/104/artifacts': () => list('artifacts', []),
+    '/deployments': () => ({ data: [{ id: 3, sha: sha('a'), environment: 'github-pages' }] }),
+    '/deployments/3/statuses': () => ({ data: [{ id: 4, state: 'success' }] })
+  })
+  const report = await collect({ get })
+  assert.equal(report.main.pushBeforeSha, sha('c'))
+  assert.equal(report.main.workflows[0].applicability, 'required')
+  assert.equal(report.main.workflows[1].coverage, 'not_applicable')
+  assert.equal(report.pages.workflow.coverage, 'metadata_success')
+  assert.equal(report.pages.deployment.status, 'success')
+  assert.equal(report.publicRoot.status, 'unknown')
 })

@@ -1,0 +1,86 @@
+name: Independent public Pages root smoke
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/qa-public-root-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-root:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      EXPECT_SHA: 84c3ff15fda5f859070141848cdeab5c2c900d87
+      EXPECT_RULE: '208'
+      PUBLIC_ROOT: https://tobiasfranziskus.github.io/Check/
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECT_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install existing development browser
+        run: |
+          npm install --prefix "$RUNNER_TEMP/root-probe" playwright@1.51.1
+          "$RUNNER_TEMP/root-probe/node_modules/.bin/playwright" install --with-deps chromium
+          echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/root-probe/node_modules/playwright" >> "$GITHUB_ENV"
+      - name: Verify actual public bytes, new career and paid purchase
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECT_SHA"
+          node --version
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const crypto = require('node:crypto');
+          const { chromium } = require(process.env.PLAYWRIGHT_MODULE);
+          const base = new URL(process.env.PUBLIC_ROOT);
+          const rule = Number(process.env.EXPECT_RULE);
+          const key = 'aphros-void:spielerkarriere:regel' + rule + ':v1';
+          const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+          (async () => {
+            const files = ["index.html","prototypes/spiel/index.html","prototypes/spiel/spiel.js","prototypes/spiel/spiel.css","prototypes/verbund/konzern-session.js","prototypes/welt/welt-kern.js","prototypes/welt/rule200-k7-industry-core.js","prototypes/flug2d/flug-kern.js","prototypes/j4c/duell.js","prototypes/j4c/flotten-wechsel.js","prototypes/j4c/patrouille.js","prototypes/raum/raum-cockpit.js","prototypes/raum/raum-szene.js","prototypes/spiel/jaeger-akte.js","prototypes/spiel/jaeger-projekt.js","prototypes/spiel/p3-handelsweg.js","prototypes/spiel/p3-industrie.js","prototypes/spiel/p3-investition.js","prototypes/spiel/p3-manager-disposition.js","prototypes/spiel/p3-npc-markt.js","prototypes/spiel/p3-npc-werft.js","prototypes/spiel/p3-wasserlohn.js","prototypes/spiel/silizium-versorgung.js","prototypes/tutorial-manager/manager.js","prototypes/tutorial-pilot/akademie.js","prototypes/welt/j2b-silizium-core.js","prototypes/welt/j3-bauteil-core.js","prototypes/welt/j4b-jaeger-werft-core.js"];
+            for (const file of files) {
+              const url = new URL(file === 'index.html' ? './' : file, base);
+              url.searchParams.set('qa', process.env.EXPECT_SHA);
+              const response = await fetch(url, {redirect:'error',headers:{'cache-control':'no-cache'},signal:AbortSignal.timeout(20000)});
+              assert.equal(response.status, 200, file);
+              const bytes = Buffer.from(await response.arrayBuffer());
+              const expected = fs.readFileSync(file);
+              assert.equal(sha(bytes),sha(expected),'public bytes differ: '+file);
+              console.log('PUBLIC_BYTES_OK',JSON.stringify({file,sha256:sha(bytes),http:response.status}));
+            }
+            const browser = await chromium.launch();
+            try {
+              const ctx = await browser.newContext({viewport:{width:1180,height:820},hasTouch:true});
+              const page = await ctx.newPage();
+              const errors = [];
+              page.on('pageerror', e => errors.push(String(e)));
+              page.on('requestfailed', r => errors.push(r.url()+' '+r.failure()?.errorText));
+              await page.goto(base.href,{waitUntil:'domcontentloaded',timeout:30000});
+              await page.waitForURL('**/prototypes/spiel/index.html',{timeout:30000});
+              assert.equal(new URL(page.url()).origin,base.origin);
+              await page.locator('#karriere-direkt').tap();
+              await page.locator('#spielwelt').waitFor({state:'visible'});
+              const read = () => page.evaluate(k => localStorage.getItem(k),key);
+              const initial = JSON.parse(await read());
+              assert.equal(initial.rulesVersion,rule);
+              assert.equal(initial.owners.house.cash,3000);
+              await page.locator('#tab-jaeger').tap();
+              await page.locator('[data-j13-action="buy-st_aldera-miner"]').tap();
+              const purchased = JSON.parse(await read());
+              assert.equal(purchased.owners.house.cash,2400);
+              assert.equal(Object.values(purchased.ships).filter(s=>s.owner==='house'&&s.klasse==='miner').length,1);
+              assert.equal(Object.values(purchased.owners).reduce((n,o)=>n+o.cash,0),33000);
+              assert.equal(purchased.minted,0);
+              assert.equal(purchased.burned,0);
+              assert.deepEqual(errors,[]);
+              console.log('PUBLIC_ROOT_PAID_PASS',JSON.stringify({sha:process.env.EXPECT_SHA,rule,cash:purchased.owners.house.cash,worldMoney:33000,url:page.url()}));
+              await ctx.close();
+            } finally { await browser.close(); }
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
